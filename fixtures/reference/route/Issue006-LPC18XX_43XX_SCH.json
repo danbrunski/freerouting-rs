@@ -1,0 +1,7 @@
+{
+  "routeMillis": 50,
+  "result": "terminated",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "fixture": "Issue006-LPC18XX_43XX_SCH.dsn"
+}

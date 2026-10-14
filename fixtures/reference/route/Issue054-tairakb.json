@@ -1,0 +1,105 @@
+{
+  "routeMillis": 46836,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.9-0-10_14)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2654.54,
+        "y": 59.93,
+        "width": 598.95,
+        "height": -1722.36
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 2055.59,
+        "height": 1782.29
+      },
+      "area_cm2": 366.37
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 7622,
+      "trace_count": 687,
+      "via_count": 149,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 319,
+      "component_count": 5936,
+      "other_count": 529
+    },
+    "components": {
+      "total_count": 70
+    },
+    "pads": {
+      "total_count": 319
+    },
+    "nets": {
+      "total_count": 57,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 264,
+      "incomplete_count": 11
+    },
+    "traces": {
+      "total_count": 687,
+      "total_segment_count": 1297,
+      "total_length": 33339.42,
+      "total_length_mm": 3333.94,
+      "total_weighted_length": 104415224.00,
+      "average_length": 48.53,
+      "total_vertical_length": 7042.85,
+      "total_horizontal_length": 8587.80,
+      "total_angled_length": 7005.04
+    },
+    "bends": {
+      "total_count": 610,
+      "90_degree_count": 13,
+      "45_degree_count": 597,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 149,
+      "through_hole_count": 149,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 360,
+      "pre_existing_count": 360,
+      "unfixable_count": 360,
+      "router_introduced_count": 0,
+      "total_violation_um": 68879.28,
+      "min_violation_um": 6.50,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 191.33
+    },
+    "difficulty": {
+      "pin_count": 319,
+      "signal_layer_count": 2,
+      "complexity_c": 638,
+      "difficulty_d": 638.00,
+      "board_area_cm2": 366.37
+    },
+    "bounds": {
+      "min_trace_length_mm": 3151.24,
+      "min_via_count": 33,
+      "min_bend_count": 113
+    },
+    "fanout": {
+      "total_smd_pins": 264,
+      "pins_to_escape": 62,
+      "escaped_count": 261
+    }
+  },
+  "routerScore": 897.94946,
+  "fixture": "Issue054-tairakb.dsn"
+}
