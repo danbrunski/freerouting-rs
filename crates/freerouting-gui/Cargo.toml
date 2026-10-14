@@ -1,0 +1,15 @@
+[package]
+name = "freerouting-gui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "freerouting-gui"
+path = "src/main.rs"
+
+[dependencies]
+freerouting.workspace = true
+eframe = { version = "0.32", default-features = false, features = ["default_fonts", "wgpu", "wayland", "x11"] }
