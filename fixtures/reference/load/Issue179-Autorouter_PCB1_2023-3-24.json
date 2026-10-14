@@ -1,0 +1,5 @@
+{
+  "result": "exception",
+  "error": "java.lang.NullPointerException: Cannot read field \"edgeLines\" because \"\u003cparameter1\u003e\" is null",
+  "fixture": "Issue179-Autorouter_PCB1_2023-3-24.dsn"
+}

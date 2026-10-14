@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.0",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1301.00,
+        "y": -999.00,
+        "width": 999.00,
+        "height": -1201.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 302.00,
+        "height": 202.00
+      },
+      "area_cm2": 6.10
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 99,
+      "trace_count": 20,
+      "via_count": 14,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 14,
+      "component_count": 48,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 6
+    },
+    "pads": {
+      "total_count": 14
+    },
+    "nets": {
+      "total_count": 4,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 12,
+      "incomplete_count": 2
+    },
+    "traces": {
+      "total_count": 20,
+      "total_segment_count": 21,
+      "total_length": 425.05,
+      "total_length_mm": 42.50,
+      "total_weighted_length": 0.00,
+      "average_length": 21.25,
+      "total_vertical_length": 168.51,
+      "total_horizontal_length": 175.39,
+      "total_angled_length": 87.54
+    },
+    "bends": {
+      "total_count": 1,
+      "90_degree_count": 0,
+      "45_degree_count": 1,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 14,
+      "through_hole_count": 14,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 10,
+      "pre_existing_count": 0,
+      "unfixable_count": 10,
+      "router_introduced_count": 10,
+      "total_violation_um": 1809.30,
+      "min_violation_um": 9.30,
+      "max_violation_um": 200.00,
+      "avg_violation_um": 180.93
+    },
+    "difficulty": {
+      "pin_count": 14,
+      "signal_layer_count": 2,
+      "complexity_c": 28,
+      "difficulty_d": 28.00,
+      "board_area_cm2": 6.10
+    },
+    "bounds": {
+      "min_trace_length_mm": 46.58,
+      "min_via_count": 0,
+      "min_bend_count": 9
+    },
+    "fanout": {
+      "total_smd_pins": 12,
+      "pins_to_escape": 6,
+      "escaped_count": 10
+    }
+  },
+  "fixture": "Issue957-smoke-ldo-led.dsn"
+}

@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "EasyEDA Pro,2.2.47.7",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 7772.40,
+        "y": 4724.40,
+        "width": -25.40,
+        "height": -25.40
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 7797.80,
+        "height": 4749.80
+      },
+      "area_cm2": 0.37
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 4
+    },
+    "items": {
+      "total_count": 478,
+      "trace_count": 274,
+      "via_count": 33,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 170,
+      "component_count": 0,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 1
+    },
+    "pads": {
+      "total_count": 170
+    },
+    "nets": {
+      "total_count": 30,
+      "class_count": 32
+    },
+    "connections": {
+      "maximum_count": 136,
+      "incomplete_count": 75
+    },
+    "traces": {
+      "total_count": 274,
+      "total_segment_count": 274,
+      "total_length": 119539.80,
+      "total_length_mm": 119.54,
+      "total_weighted_length": 0.00,
+      "average_length": 436.28,
+      "total_vertical_length": 18919.39,
+      "total_horizontal_length": 58920.33,
+      "total_angled_length": 43948.90
+    },
+    "bends": {
+      "total_count": 0,
+      "90_degree_count": 0,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 33,
+      "through_hole_count": 33,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 135,
+      "pre_existing_count": 0,
+      "unfixable_count": 135,
+      "router_introduced_count": 135,
+      "total_violation_um": 1398.80,
+      "min_violation_um": 8.03,
+      "max_violation_um": 10.41,
+      "avg_violation_um": 10.36
+    },
+    "difficulty": {
+      "pin_count": 170,
+      "signal_layer_count": 4,
+      "complexity_c": 680,
+      "difficulty_d": 680.00,
+      "board_area_cm2": 0.37
+    },
+    "bounds": {
+      "min_trace_length_mm": 143.81,
+      "min_via_count": 0,
+      "min_bend_count": 96
+    },
+    "fanout": {
+      "total_smd_pins": 63,
+      "pins_to_escape": 50,
+      "escaped_count": 55
+    }
+  },
+  "fixture": "Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn"
+}

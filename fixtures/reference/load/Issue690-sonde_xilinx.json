@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.2",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1838.00,
+        "y": -672.10,
+        "width": 1032.00,
+        "height": -1105.90
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 806.00,
+        "height": 433.80
+      },
+      "area_cm2": 34.96
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 787,
+      "trace_count": 192,
+      "via_count": 3,
+      "conduction_area_count": 1,
+      "drill_item_count": 0,
+      "pin_count": 108,
+      "component_count": 482,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 25
+    },
+    "pads": {
+      "total_count": 108
+    },
+    "nets": {
+      "total_count": 42,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 67,
+      "incomplete_count": 20
+    },
+    "traces": {
+      "total_count": 192,
+      "total_segment_count": 206,
+      "total_length": 6377.56,
+      "total_length_mm": 637.76,
+      "total_weighted_length": 0.00,
+      "average_length": 33.22,
+      "total_vertical_length": 1752.30,
+      "total_horizontal_length": 3059.26,
+      "total_angled_length": 1607.73
+    },
+    "bends": {
+      "total_count": 14,
+      "90_degree_count": 0,
+      "45_degree_count": 12,
+      "other_angle_count": 2
+    },
+    "vias": {
+      "total_count": 3,
+      "through_hole_count": 3,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 72,
+      "pre_existing_count": 0,
+      "unfixable_count": 72,
+      "router_introduced_count": 72,
+      "total_violation_um": 17941.11,
+      "min_violation_um": 102.10,
+      "max_violation_um": 254.00,
+      "avg_violation_um": 249.18
+    },
+    "difficulty": {
+      "pin_count": 108,
+      "signal_layer_count": 2,
+      "complexity_c": 216,
+      "difficulty_d": 216.00,
+      "board_area_cm2": 34.96
+    },
+    "bounds": {
+      "min_trace_length_mm": 754.66,
+      "min_via_count": 0,
+      "min_bend_count": 44
+    },
+    "fanout": {
+      "total_smd_pins": 34,
+      "pins_to_escape": 21,
+      "escaped_count": 2
+    }
+  },
+  "fixture": "Issue690-sonde_xilinx.dsn"
+}

@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.4",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1031.95,
+        "y": -183.83,
+        "width": 209.95,
+        "height": -835.83
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 822.00,
+        "height": 652.00
+      },
+      "area_cm2": 53.59
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 476,
+      "trace_count": 0,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 43,
+      "component_count": 382,
+      "other_count": 51
+    },
+    "components": {
+      "total_count": 14
+    },
+    "pads": {
+      "total_count": 43
+    },
+    "nets": {
+      "total_count": 28,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 15,
+      "incomplete_count": 15
+    },
+    "traces": {
+      "total_count": 0,
+      "total_segment_count": 0,
+      "total_length": 0.00,
+      "total_length_mm": 0.00,
+      "total_weighted_length": 0.00,
+      "average_length": 0.00,
+      "total_vertical_length": 0.00,
+      "total_horizontal_length": 0.00,
+      "total_angled_length": 0.00
+    },
+    "bends": {
+      "total_count": 0,
+      "90_degree_count": 0,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 43,
+      "signal_layer_count": 2,
+      "complexity_c": 86,
+      "difficulty_d": 86.00,
+      "board_area_cm2": 53.59
+    },
+    "bounds": {
+      "min_trace_length_mm": 576.03,
+      "min_via_count": 0,
+      "min_bend_count": 15
+    },
+    "fanout": {
+      "total_smd_pins": 20,
+      "pins_to_escape": 19,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue742-tastexx-pcb.dsn"
+}

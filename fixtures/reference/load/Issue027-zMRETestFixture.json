@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1594.85,
+        "y": -272.05,
+        "width": 297.45,
+        "height": -1550.40
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1297.40,
+        "height": 1278.35
+      },
+      "area_cm2": 165.85
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2904,
+      "trace_count": 42,
+      "via_count": 0,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 1266,
+      "component_count": 1569,
+      "other_count": 25
+    },
+    "components": {
+      "total_count": 210
+    },
+    "pads": {
+      "total_count": 1266
+    },
+    "nets": {
+      "total_count": 168,
+      "class_count": 10
+    },
+    "connections": {
+      "maximum_count": 1078,
+      "incomplete_count": 938
+    },
+    "traces": {
+      "total_count": 42,
+      "total_segment_count": 44,
+      "total_length": 2412.64,
+      "total_length_mm": 241.26,
+      "total_weighted_length": 0.00,
+      "average_length": 57.44,
+      "total_vertical_length": 311.91,
+      "total_horizontal_length": 1719.04,
+      "total_angled_length": 381.79
+    },
+    "bends": {
+      "total_count": 2,
+      "90_degree_count": 0,
+      "45_degree_count": 2,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 1588,
+      "pre_existing_count": 0,
+      "unfixable_count": 1588,
+      "router_introduced_count": 1588,
+      "total_violation_um": 285182.40,
+      "min_violation_um": 10.64,
+      "max_violation_um": 190.60,
+      "avg_violation_um": 179.59
+    },
+    "difficulty": {
+      "pin_count": 1266,
+      "signal_layer_count": 2,
+      "complexity_c": 2532,
+      "difficulty_d": 2532.00,
+      "board_area_cm2": 165.85
+    },
+    "bounds": {
+      "min_trace_length_mm": 5620.29,
+      "min_via_count": 0,
+      "min_bend_count": 119
+    },
+    "fanout": {
+      "total_smd_pins": 774,
+      "pins_to_escape": 698,
+      "escaped_count": 86
+    }
+  },
+  "fixture": "Issue027-zMRETestFixture.dsn"
+}

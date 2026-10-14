@@ -1,0 +1,106 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,8.0.0",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1741.18,
+        "y": -659.00,
+        "width": 1058.68,
+        "height": -1341.13
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 682.50,
+        "height": 682.13
+      },
+      "area_cm2": 46.56
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2372,
+      "trace_count": 736,
+      "via_count": 92,
+      "conduction_area_count": 6,
+      "drill_item_count": 0,
+      "pin_count": 324,
+      "component_count": 1198,
+      "other_count": 16
+    },
+    "components": {
+      "total_count": 109
+    },
+    "pads": {
+      "total_count": 324
+    },
+    "nets": {
+      "total_count": 83,
+      "class_count": 3
+    },
+    "connections": {
+      "maximum_count": 239,
+      "incomplete_count": 117
+    },
+    "traces": {
+      "total_count": 736,
+      "total_segment_count": 742,
+      "total_length": 17535.93,
+      "total_length_mm": 1753.59,
+      "total_weighted_length": 0.00,
+      "average_length": 23.83,
+      "total_vertical_length": 4989.84,
+      "total_horizontal_length": 6408.62,
+      "total_angled_length": 9048.52
+    },
+    "bends": {
+      "total_count": 6,
+      "90_degree_count": 2,
+      "45_degree_count": 4,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 92,
+      "through_hole_count": 92,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 24,
+      "pre_existing_count": 0,
+      "unfixable_count": 24,
+      "router_introduced_count": 24,
+      "total_violation_um": 6822.35,
+      "min_violation_um": 11.70,
+      "max_violation_um": 1600.00,
+      "avg_violation_um": 284.26
+    },
+    "difficulty": {
+      "pin_count": 324,
+      "signal_layer_count": 2,
+      "complexity_c": 648,
+      "difficulty_d": 648.00,
+      "board_area_cm2": 46.56
+    },
+    "bounds": {
+      "min_trace_length_mm": 2077.18,
+      "min_via_count": 6,
+      "min_bend_count": 197
+    },
+    "fanout": {
+      "total_smd_pins": 307,
+      "pins_to_escape": 210,
+      "escaped_count": 197
+    }
+  },
+  "fixture": "Issue269-z10_module.dsn"
+}

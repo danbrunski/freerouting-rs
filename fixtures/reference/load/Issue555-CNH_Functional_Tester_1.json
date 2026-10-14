@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,7.0.4",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2541.00,
+        "y": -456.20,
+        "width": 507.00,
+        "height": -2109.20
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 2034.00,
+        "height": 1653.00
+      },
+      "area_cm2": 336.22
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2098,
+      "trace_count": 8,
+      "via_count": 0,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 966,
+      "component_count": 1057,
+      "other_count": 65
+    },
+    "components": {
+      "total_count": 81
+    },
+    "pads": {
+      "total_count": 966
+    },
+    "nets": {
+      "total_count": 764,
+      "class_count": 8
+    },
+    "connections": {
+      "maximum_count": 203,
+      "incomplete_count": 149
+    },
+    "traces": {
+      "total_count": 8,
+      "total_segment_count": 9,
+      "total_length": 639.37,
+      "total_length_mm": 63.94,
+      "total_weighted_length": 0.00,
+      "average_length": 79.92,
+      "total_vertical_length": 400.87,
+      "total_horizontal_length": 138.80,
+      "total_angled_length": 109.23
+    },
+    "bends": {
+      "total_count": 1,
+      "90_degree_count": 0,
+      "45_degree_count": 1,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 1830,
+      "pre_existing_count": 0,
+      "unfixable_count": 1830,
+      "router_introduced_count": 1830,
+      "total_violation_um": 463908.45,
+      "min_violation_um": 14.72,
+      "max_violation_um": 635.20,
+      "avg_violation_um": 253.50
+    },
+    "difficulty": {
+      "pin_count": 966,
+      "signal_layer_count": 2,
+      "complexity_c": 1932,
+      "difficulty_d": 1932.00,
+      "board_area_cm2": 336.22
+    },
+    "bounds": {
+      "min_trace_length_mm": 6909.48,
+      "min_via_count": 0,
+      "min_bend_count": 111
+    },
+    "fanout": {
+      "total_smd_pins": 4,
+      "pins_to_escape": 4,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue555-CNH_Functional_Tester_1.dsn"
+}

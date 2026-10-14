@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,9.0.7+1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2249.33,
+        "y": -458.88,
+        "width": 909.80,
+        "height": -1378.06
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1339.53,
+        "height": 919.18
+      },
+      "area_cm2": 123.13
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1796,
+      "trace_count": 298,
+      "via_count": 42,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 285,
+      "component_count": 980,
+      "other_count": 191
+    },
+    "components": {
+      "total_count": 75
+    },
+    "pads": {
+      "total_count": 285
+    },
+    "nets": {
+      "total_count": 79,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 196,
+      "incomplete_count": 110
+    },
+    "traces": {
+      "total_count": 298,
+      "total_segment_count": 336,
+      "total_length": 7065.10,
+      "total_length_mm": 706.51,
+      "total_weighted_length": 0.00,
+      "average_length": 23.71,
+      "total_vertical_length": 140.30,
+      "total_horizontal_length": 3479.18,
+      "total_angled_length": 3897.24
+    },
+    "bends": {
+      "total_count": 38,
+      "90_degree_count": 0,
+      "45_degree_count": 37,
+      "other_angle_count": 1
+    },
+    "vias": {
+      "total_count": 42,
+      "through_hole_count": 42,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 4,
+      "pre_existing_count": 0,
+      "unfixable_count": 4,
+      "router_introduced_count": 4,
+      "total_violation_um": 108.44,
+      "min_violation_um": 27.10,
+      "max_violation_um": 27.11,
+      "avg_violation_um": 27.11
+    },
+    "difficulty": {
+      "pin_count": 285,
+      "signal_layer_count": 2,
+      "complexity_c": 570,
+      "difficulty_d": 570.00,
+      "board_area_cm2": 123.13
+    },
+    "bounds": {
+      "min_trace_length_mm": 2185.09,
+      "min_via_count": 22,
+      "min_bend_count": 64
+    },
+    "fanout": {
+      "total_smd_pins": 236,
+      "pins_to_escape": 183,
+      "escaped_count": 128
+    }
+  },
+  "fixture": "Issue955-rotated-pad-contacts.dsn"
+}

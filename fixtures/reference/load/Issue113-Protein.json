@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.5)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1775.75,
+        "y": -754.00,
+        "width": 299.40,
+        "height": -1596.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1476.35,
+        "height": 842.00
+      },
+      "area_cm2": 124.31
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1674,
+      "trace_count": 167,
+      "via_count": 0,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 648,
+      "component_count": 856,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 78
+    },
+    "pads": {
+      "total_count": 648
+    },
+    "nets": {
+      "total_count": 203,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 444,
+      "incomplete_count": 351
+    },
+    "traces": {
+      "total_count": 167,
+      "total_segment_count": 176,
+      "total_length": 4164.96,
+      "total_length_mm": 416.50,
+      "total_weighted_length": 0.00,
+      "average_length": 24.94,
+      "total_vertical_length": 857.40,
+      "total_horizontal_length": 2524.80,
+      "total_angled_length": 836.65
+    },
+    "bends": {
+      "total_count": 9,
+      "90_degree_count": 0,
+      "45_degree_count": 9,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 810,
+      "pre_existing_count": 0,
+      "unfixable_count": 810,
+      "router_introduced_count": 810,
+      "total_violation_um": 158605.54,
+      "min_violation_um": 4.10,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 195.81
+    },
+    "difficulty": {
+      "pin_count": 648,
+      "signal_layer_count": 2,
+      "complexity_c": 1296,
+      "difficulty_d": 1296.00,
+      "board_area_cm2": 124.31
+    },
+    "bounds": {
+      "min_trace_length_mm": 11355.92,
+      "min_via_count": 13,
+      "min_bend_count": 405
+    },
+    "fanout": {
+      "total_smd_pins": 411,
+      "pins_to_escape": 328,
+      "escaped_count": 83
+    }
+  },
+  "fixture": "Issue113-Protein.dsn"
+}

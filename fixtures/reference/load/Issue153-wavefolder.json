@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.7-1)-1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1448.50,
+        "y": -356.50,
+        "width": 1251.50,
+        "height": -1458.50
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 197.00,
+        "height": 1102.00
+      },
+      "area_cm2": 21.71
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1059,
+      "trace_count": 81,
+      "via_count": 11,
+      "conduction_area_count": 1,
+      "drill_item_count": 0,
+      "pin_count": 115,
+      "component_count": 847,
+      "other_count": 4
+    },
+    "components": {
+      "total_count": 43
+    },
+    "pads": {
+      "total_count": 115
+    },
+    "nets": {
+      "total_count": 31,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 81,
+      "incomplete_count": 27
+    },
+    "traces": {
+      "total_count": 81,
+      "total_segment_count": 148,
+      "total_length": 5027.85,
+      "total_length_mm": 502.78,
+      "total_weighted_length": 0.00,
+      "average_length": 62.07,
+      "total_vertical_length": 2342.13,
+      "total_horizontal_length": 897.20,
+      "total_angled_length": 1885.77
+    },
+    "bends": {
+      "total_count": 67,
+      "90_degree_count": 0,
+      "45_degree_count": 67,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 11,
+      "through_hole_count": 11,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 97,
+      "pre_existing_count": 0,
+      "unfixable_count": 97,
+      "router_introduced_count": 97,
+      "total_violation_um": 19126.38,
+      "min_violation_um": 112.73,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 197.18
+    },
+    "difficulty": {
+      "pin_count": 115,
+      "signal_layer_count": 2,
+      "complexity_c": 230,
+      "difficulty_d": 230.00,
+      "board_area_cm2": 21.71
+    },
+    "bounds": {
+      "min_trace_length_mm": 1079.44,
+      "min_via_count": 0,
+      "min_bend_count": 64
+    },
+    "fanout": {
+      "total_smd_pins": 4,
+      "pins_to_escape": 1,
+      "escaped_count": 4
+    }
+  },
+  "fixture": "Issue153-wavefolder.dsn"
+}

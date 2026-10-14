@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,7.0.5",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2134.60,
+        "y": -189.50,
+        "width": 354.60,
+        "height": -1715.50
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1780.00,
+        "height": 1526.00
+      },
+      "area_cm2": 271.63
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 4
+    },
+    "items": {
+      "total_count": 3207,
+      "trace_count": 0,
+      "via_count": 0,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 1360,
+      "component_count": 1828,
+      "other_count": 17
+    },
+    "components": {
+      "total_count": 143
+    },
+    "pads": {
+      "total_count": 1360
+    },
+    "nets": {
+      "total_count": 343,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 993,
+      "incomplete_count": 981
+    },
+    "traces": {
+      "total_count": 0,
+      "total_segment_count": 0,
+      "total_length": 0.00,
+      "total_length_mm": 0.00,
+      "total_weighted_length": 0.00,
+      "average_length": 0.00,
+      "total_vertical_length": 0.00,
+      "total_horizontal_length": 0.00,
+      "total_angled_length": 0.00
+    },
+    "bends": {
+      "total_count": 0,
+      "90_degree_count": 0,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 136,
+      "pre_existing_count": 0,
+      "unfixable_count": 136,
+      "router_introduced_count": 136,
+      "total_violation_um": 20250.91,
+      "min_violation_um": 35.10,
+      "max_violation_um": 152.60,
+      "avg_violation_um": 148.90
+    },
+    "difficulty": {
+      "pin_count": 1360,
+      "signal_layer_count": 4,
+      "complexity_c": 5440,
+      "difficulty_d": 5440.00,
+      "board_area_cm2": 271.63
+    },
+    "bounds": {
+      "min_trace_length_mm": 24657.73,
+      "min_via_count": 0,
+      "min_bend_count": 776
+    },
+    "fanout": {
+      "total_smd_pins": 1260,
+      "pins_to_escape": 1234,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue219-LogicBoard_smt.dsn"
+}

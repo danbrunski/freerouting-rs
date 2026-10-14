@@ -1,0 +1,112 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.11)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2701.00,
+        "y": -699.00,
+        "width": 349.00,
+        "height": -2301.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 2352.00,
+        "height": 1602.00
+      },
+      "area_cm2": 376.79
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 10885,
+      "trace_count": 5981,
+      "via_count": 223,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 1365,
+      "component_count": 3307,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 138
+    },
+    "pads": {
+      "total_count": 1365
+    },
+    "nets": {
+      "total_count": 529,
+      "class_count": 3
+    },
+    "connections": {
+      "maximum_count": 834,
+      "incomplete_count": 18
+    },
+    "traces": {
+      "total_count": 5981,
+      "total_segment_count": 6272,
+      "total_length": 330858.66,
+      "total_length_mm": 33085.87,
+      "total_weighted_length": 0.00,
+      "average_length": 55.32,
+      "total_vertical_length": 82705.82,
+      "total_horizontal_length": 151001.86,
+      "total_angled_length": 133848.31
+    },
+    "bends": {
+      "total_count": 291,
+      "90_degree_count": 15,
+      "45_degree_count": 276,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 223,
+      "through_hole_count": 223,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 1365,
+      "signal_layer_count": 2,
+      "complexity_c": 2730,
+      "difficulty_d": 2730.00,
+      "board_area_cm2": 376.79
+    },
+    "bounds": {
+      "min_trace_length_mm": 33582.04,
+      "min_via_count": 0,
+      "min_bend_count": 646
+    },
+    "fanout": {
+      "total_smd_pins": 0,
+      "pins_to_escape": 0,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue190-processor.Z80.dsn"
+}

@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.5)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1291.00,
+        "y": -479.00,
+        "width": 1169.00,
+        "height": -651.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 122.00,
+        "height": 172.00
+      },
+      "area_cm2": 2.10
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 42,
+      "trace_count": 7,
+      "via_count": 2,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 12,
+      "component_count": 20,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 6
+    },
+    "pads": {
+      "total_count": 12
+    },
+    "nets": {
+      "total_count": 4,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 8,
+      "incomplete_count": 8
+    },
+    "traces": {
+      "total_count": 7,
+      "total_segment_count": 8,
+      "total_length": 188.70,
+      "total_length_mm": 18.87,
+      "total_weighted_length": 0.00,
+      "average_length": 26.96,
+      "total_vertical_length": 175.09,
+      "total_horizontal_length": 5.08,
+      "total_angled_length": 13.89
+    },
+    "bends": {
+      "total_count": 1,
+      "90_degree_count": 1,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 2,
+      "through_hole_count": 2,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 9,
+      "pre_existing_count": 0,
+      "unfixable_count": 9,
+      "router_introduced_count": 9,
+      "total_violation_um": 662.67,
+      "min_violation_um": 38.20,
+      "max_violation_um": 149.50,
+      "avg_violation_um": 73.63
+    },
+    "difficulty": {
+      "pin_count": 12,
+      "signal_layer_count": 2,
+      "complexity_c": 24,
+      "difficulty_d": 24.00,
+      "board_area_cm2": 2.10
+    },
+    "bounds": {
+      "min_trace_length_mm": 71.18,
+      "min_via_count": 0,
+      "min_bend_count": 4
+    },
+    "fanout": {
+      "total_smd_pins": 12,
+      "pins_to_escape": 12,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue069-TestSensel/TestSensel-KiCad6.dsn"
+}

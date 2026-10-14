@@ -1,0 +1,6 @@
+{
+  "result": "parse_error",
+  "location": "(pcb",
+  "error": "Not a Specctra DSN file: expected \u0027(pcb \u003cname\u003e\u0027 header",
+  "fixture": "Issue006-LPC18XX_43XX_SCH.dsn"
+}

@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,6.0.10-86aedd382b~118~ubuntu20.04.1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1903.71,
+        "y": -947.44,
+        "width": 1156.99,
+        "height": -1192.51
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 746.72,
+        "height": 245.07
+      },
+      "area_cm2": 18.30
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1155,
+      "trace_count": 56,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 278,
+      "component_count": 820,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 90
+    },
+    "pads": {
+      "total_count": 278
+    },
+    "nets": {
+      "total_count": 58,
+      "class_count": 3
+    },
+    "connections": {
+      "maximum_count": 218,
+      "incomplete_count": 218
+    },
+    "traces": {
+      "total_count": 56,
+      "total_segment_count": 58,
+      "total_length": 1622.20,
+      "total_length_mm": 162.22,
+      "total_weighted_length": 0.00,
+      "average_length": 28.97,
+      "total_vertical_length": 908.93,
+      "total_horizontal_length": 311.36,
+      "total_angled_length": 588.52
+    },
+    "bends": {
+      "total_count": 2,
+      "90_degree_count": 0,
+      "45_degree_count": 2,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 278,
+      "signal_layer_count": 2,
+      "complexity_c": 556,
+      "difficulty_d": 556.00,
+      "board_area_cm2": 18.30
+    },
+    "bounds": {
+      "min_trace_length_mm": 2161.25,
+      "min_via_count": 16,
+      "min_bend_count": 157
+    },
+    "fanout": {
+      "total_smd_pins": 232,
+      "pins_to_escape": 231,
+      "escaped_count": 8
+    }
+  },
+  "fixture": "Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn"
+}

@@ -1,0 +1,15 @@
+// Gradle init script: adds a task that writes the resolved runtime classpath of the
+// Java Freerouting build to build/reference-classpath.txt without compiling anything.
+allprojects {
+    afterEvaluate { project ->
+        project.tasks.register('referenceClasspath') {
+            def rt = project.configurations.runtimeClasspath
+            def out = project.layout.buildDirectory.file('reference-classpath.txt')
+            doLast {
+                def f = out.get().asFile
+                f.parentFile.mkdirs()
+                f.text = rt.files.join(File.pathSeparator)
+            }
+        }
+    }
+}

@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,7.0.1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2160.00,
+        "y": -481.60,
+        "width": 1167.40,
+        "height": -1474.20
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 992.60,
+        "height": 992.60
+      },
+      "area_cm2": 98.53
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 980,
+      "trace_count": 0,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 343,
+      "component_count": 632,
+      "other_count": 5
+    },
+    "components": {
+      "total_count": 46
+    },
+    "pads": {
+      "total_count": 343
+    },
+    "nets": {
+      "total_count": 104,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 235,
+      "incomplete_count": 235
+    },
+    "traces": {
+      "total_count": 0,
+      "total_segment_count": 0,
+      "total_length": 0.00,
+      "total_length_mm": 0.00,
+      "total_weighted_length": 0.00,
+      "average_length": 0.00,
+      "total_vertical_length": 0.00,
+      "total_horizontal_length": 0.00,
+      "total_angled_length": 0.00
+    },
+    "bends": {
+      "total_count": 0,
+      "90_degree_count": 0,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 343,
+      "signal_layer_count": 2,
+      "complexity_c": 686,
+      "difficulty_d": 686.00,
+      "board_area_cm2": 98.53
+    },
+    "bounds": {
+      "min_trace_length_mm": 4988.91,
+      "min_via_count": 0,
+      "min_bend_count": 148
+    },
+    "fanout": {
+      "total_smd_pins": 3,
+      "pins_to_escape": 3,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue217-8088sbc.dsn"
+}

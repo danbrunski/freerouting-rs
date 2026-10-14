@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,minimal-soe",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 571.29,
+        "y": -456.00,
+        "width": 283.00,
+        "height": -655.03
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 288.29,
+        "height": 199.03
+      },
+      "area_cm2": 5.74
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 3,
+      "trace_count": 2,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 0,
+      "component_count": 0,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 0
+    },
+    "pads": {
+      "total_count": 0
+    },
+    "nets": {
+      "total_count": 1,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 0,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 2,
+      "total_segment_count": 3,
+      "total_length": 141.63,
+      "total_length_mm": 14.16,
+      "total_weighted_length": 0.00,
+      "average_length": 70.82,
+      "total_vertical_length": 0.00,
+      "total_horizontal_length": 89.26,
+      "total_angled_length": 52.37
+    },
+    "bends": {
+      "total_count": 1,
+      "90_degree_count": 0,
+      "45_degree_count": 1,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 0,
+      "signal_layer_count": 2,
+      "complexity_c": 1,
+      "difficulty_d": 1.00,
+      "board_area_cm2": 5.74
+    },
+    "bounds": {
+      "min_trace_length_mm": 0.00,
+      "min_via_count": 0,
+      "min_bend_count": 0
+    },
+    "fanout": {
+      "total_smd_pins": 0,
+      "pins_to_escape": 0,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue757-minimal-soe.dsn"
+}

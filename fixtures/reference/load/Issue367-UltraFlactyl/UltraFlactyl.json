@@ -1,0 +1,122 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,8.0.6",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1841.00,
+        "y": -201.50,
+        "width": 254.00,
+        "height": -1613.50
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1587.00,
+        "height": 1412.00
+      },
+      "area_cm2": 224.08
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 3162,
+      "trace_count": 408,
+      "via_count": 11,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 180,
+      "component_count": 2208,
+      "other_count": 355
+    },
+    "components": {
+      "total_count": 70
+    },
+    "pads": {
+      "total_count": 180
+    },
+    "nets": {
+      "total_count": 75,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 105,
+      "incomplete_count": 22
+    },
+    "traces": {
+      "total_count": 408,
+      "total_segment_count": 442,
+      "total_length": 27185.72,
+      "total_length_mm": 2718.57,
+      "total_weighted_length": 0.00,
+      "average_length": 66.63,
+      "total_vertical_length": 10133.57,
+      "total_horizontal_length": 10230.17,
+      "total_angled_length": 10335.20
+    },
+    "bends": {
+      "total_count": 34,
+      "90_degree_count": 2,
+      "45_degree_count": 30,
+      "other_angle_count": 2
+    },
+    "vias": {
+      "total_count": 11,
+      "through_hole_count": 11,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 180,
+      "signal_layer_count": 2,
+      "complexity_c": 360,
+      "difficulty_d": 360.00,
+      "board_area_cm2": 224.08
+    },
+    "bounds": {
+      "min_trace_length_mm": 2986.49,
+      "min_via_count": 0,
+      "min_bend_count": 86
+    },
+    "fanout": {
+      "total_smd_pins": 68,
+      "pins_to_escape": 34,
+      "escaped_count": 57
+    }
+  },
+  "fixture": "Issue367-UltraFlactyl/UltraFlactyl.dsn"
+}

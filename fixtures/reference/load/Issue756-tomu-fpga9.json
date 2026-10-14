@@ -1,0 +1,105 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.99.0-2122-gdb32996fe2-dirty",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1151.00,
+        "y": -299.00,
+        "width": 249.00,
+        "height": -801.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 902.00,
+        "height": 502.00
+      },
+      "area_cm2": 45.28
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1688,
+      "trace_count": 861,
+      "via_count": 162,
+      "conduction_area_count": 13,
+      "drill_item_count": 0,
+      "pin_count": 257,
+      "component_count": 393,
+      "other_count": 2
+    },
+    "components": {
+      "total_count": 62
+    },
+    "pads": {
+      "total_count": 257
+    },
+    "nets": {
+      "total_count": 69,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 201,
+      "incomplete_count": 35
+    },
+    "traces": {
+      "total_count": 861,
+      "total_segment_count": 909,
+      "total_length": 15923.82,
+      "total_length_mm": 1592.38,
+      "total_weighted_length": 0.00,
+      "average_length": 18.49,
+      "total_vertical_length": 3107.54,
+      "total_horizontal_length": 6096.78,
+      "total_angled_length": 7345.07
+    },
+    "bends": {
+      "total_count": 48,
+      "90_degree_count": 0,
+      "45_degree_count": 41,
+      "other_angle_count": 7
+    },
+    "vias": {
+      "total_count": 162,
+      "through_hole_count": 162,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 263,
+      "pre_existing_count": 0,
+      "unfixable_count": 263,
+      "router_introduced_count": 263,
+      "total_violation_um": 11524.88,
+      "min_violation_um": 1.01,
+      "max_violation_um": 152.40,
+      "avg_violation_um": 43.82
+    },
+    "difficulty": {
+      "pin_count": 257,
+      "signal_layer_count": 2,
+      "complexity_c": 514,
+      "difficulty_d": 514.00,
+      "board_area_cm2": 45.28
+    },
+    "bounds": {
+      "min_trace_length_mm": 2037.81,
+      "min_via_count": 1,
+      "min_bend_count": 157
+    },
+    "fanout": {
+      "total_smd_pins": 205,
+      "pins_to_escape": 100,
+      "escaped_count": 162
+    }
+  },
+  "fixture": "Issue756-tomu-fpga9.dsn"
+}

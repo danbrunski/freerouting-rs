@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,7.0.10",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1661.00,
+        "y": -299.00,
+        "width": 899.00,
+        "height": -901.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 762.00,
+        "height": 602.00
+      },
+      "area_cm2": 45.87
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1557,
+      "trace_count": 335,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 288,
+      "component_count": 925,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 74
+    },
+    "pads": {
+      "total_count": 288
+    },
+    "nets": {
+      "total_count": 94,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 192,
+      "incomplete_count": 107
+    },
+    "traces": {
+      "total_count": 335,
+      "total_segment_count": 335,
+      "total_length": 9129.06,
+      "total_length_mm": 912.91,
+      "total_weighted_length": 0.00,
+      "average_length": 27.25,
+      "total_vertical_length": 2312.90,
+      "total_horizontal_length": 3769.99,
+      "total_angled_length": 5898.79
+    },
+    "bends": {
+      "total_count": 0,
+      "90_degree_count": 0,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 288,
+      "signal_layer_count": 2,
+      "complexity_c": 576,
+      "difficulty_d": 576.00,
+      "board_area_cm2": 45.87
+    },
+    "bounds": {
+      "min_trace_length_mm": 2583.53,
+      "min_via_count": 1,
+      "min_bend_count": 168
+    },
+    "fanout": {
+      "total_smd_pins": 214,
+      "pins_to_escape": 154,
+      "escaped_count": 100
+    }
+  },
+  "fixture": "Issue269-caniot-tiny-arm.dsn"
+}

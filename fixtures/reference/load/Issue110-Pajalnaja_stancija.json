@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,4.0.1-2.201512121406+6195~38~ubuntu14.04.1-stable",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2020.30,
+        "y": -634.00,
+        "width": 710.20,
+        "height": -1626.60
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1310.10,
+        "height": 992.60
+      },
+      "area_cm2": 130.04
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 627,
+      "trace_count": 0,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 175,
+      "component_count": 451,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 54
+    },
+    "pads": {
+      "total_count": 175
+    },
+    "nets": {
+      "total_count": 64,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 109,
+      "incomplete_count": 109
+    },
+    "traces": {
+      "total_count": 0,
+      "total_segment_count": 0,
+      "total_length": 0.00,
+      "total_length_mm": 0.00,
+      "total_weighted_length": 0.00,
+      "average_length": 0.00,
+      "total_vertical_length": 0.00,
+      "total_horizontal_length": 0.00,
+      "total_angled_length": 0.00
+    },
+    "bends": {
+      "total_count": 0,
+      "90_degree_count": 0,
+      "45_degree_count": 0,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 10,
+      "pre_existing_count": 0,
+      "unfixable_count": 10,
+      "router_introduced_count": 10,
+      "total_violation_um": 2002.00,
+      "min_violation_um": 200.20,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 200.20
+    },
+    "difficulty": {
+      "pin_count": 175,
+      "signal_layer_count": 2,
+      "complexity_c": 350,
+      "difficulty_d": 350.00,
+      "board_area_cm2": 130.04
+    },
+    "bounds": {
+      "min_trace_length_mm": 3053.30,
+      "min_via_count": 0,
+      "min_bend_count": 89
+    },
+    "fanout": {
+      "total_smd_pins": 0,
+      "pins_to_escape": 0,
+      "escaped_count": 0
+    }
+  },
+  "fixture": "Issue110-Pajalnaja_stancija.dsn"
+}

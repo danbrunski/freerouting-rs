@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,6.0.0-rc1-unknown-e56e61ffb5~144~ubuntu21.10.1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2701.00,
+        "y": -999.00,
+        "width": 1999.00,
+        "height": -1501.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 702.00,
+        "height": 502.00
+      },
+      "area_cm2": 35.24
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1565,
+      "trace_count": 175,
+      "via_count": 14,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 98,
+      "component_count": 1269,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 39
+    },
+    "pads": {
+      "total_count": 98
+    },
+    "nets": {
+      "total_count": 25,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 73,
+      "incomplete_count": 26
+    },
+    "traces": {
+      "total_count": 175,
+      "total_segment_count": 258,
+      "total_length": 8709.97,
+      "total_length_mm": 871.00,
+      "total_weighted_length": 0.00,
+      "average_length": 49.77,
+      "total_vertical_length": 1543.85,
+      "total_horizontal_length": 2370.71,
+      "total_angled_length": 4955.59
+    },
+    "bends": {
+      "total_count": 83,
+      "90_degree_count": 2,
+      "45_degree_count": 23,
+      "other_angle_count": 58
+    },
+    "vias": {
+      "total_count": 14,
+      "through_hole_count": 14,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 27,
+      "pre_existing_count": 0,
+      "unfixable_count": 27,
+      "router_introduced_count": 27,
+      "total_violation_um": 7805.38,
+      "min_violation_um": 1.04,
+      "max_violation_um": 400.20,
+      "avg_violation_um": 289.09
+    },
+    "difficulty": {
+      "pin_count": 98,
+      "signal_layer_count": 2,
+      "complexity_c": 196,
+      "difficulty_d": 196.00,
+      "board_area_cm2": 35.24
+    },
+    "bounds": {
+      "min_trace_length_mm": 790.17,
+      "min_via_count": 0,
+      "min_bend_count": 64
+    },
+    "fanout": {
+      "total_smd_pins": 32,
+      "pins_to_escape": 22,
+      "escaped_count": 29
+    }
+  },
+  "fixture": "Issue110-testPCBSpecctraFile.dsn"
+}

@@ -1,0 +1,107 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1751.00,
+        "y": -149.00,
+        "width": 209.00,
+        "height": -1766.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1542.00,
+        "height": 1617.00
+      },
+      "area_cm2": 249.34
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 3309,
+      "trace_count": 594,
+      "via_count": 24,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 902,
+      "component_count": 1762,
+      "other_count": 25
+    },
+    "components": {
+      "total_count": 160
+    },
+    "pads": {
+      "total_count": 902
+    },
+    "nets": {
+      "total_count": 163,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 461,
+      "incomplete_count": 189
+    },
+    "traces": {
+      "total_count": 594,
+      "total_segment_count": 886,
+      "total_length": 25305.80,
+      "total_length_mm": 2530.58,
+      "total_weighted_length": 0.00,
+      "average_length": 42.60,
+      "total_vertical_length": 10743.19,
+      "total_horizontal_length": 5810.19,
+      "total_angled_length": 12041.00
+    },
+    "bends": {
+      "total_count": 292,
+      "90_degree_count": 6,
+      "45_degree_count": 258,
+      "other_angle_count": 28
+    },
+    "vias": {
+      "total_count": 24,
+      "through_hole_count": 24,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 1479,
+      "pre_existing_count": 0,
+      "unfixable_count": 1479,
+      "router_introduced_count": 1479,
+      "total_violation_um": 230371.88,
+      "min_violation_um": 9.90,
+      "max_violation_um": 190.60,
+      "avg_violation_um": 155.76
+    },
+    "difficulty": {
+      "pin_count": 902,
+      "signal_layer_count": 2,
+      "complexity_c": 1804,
+      "difficulty_d": 1804.00,
+      "board_area_cm2": 249.34
+    },
+    "bounds": {
+      "min_trace_length_mm": 5424.25,
+      "min_via_count": 0,
+      "min_bend_count": 204
+    },
+    "fanout": {
+      "total_smd_pins": 348,
+      "pins_to_escape": 253,
+      "escaped_count": 288
+    }
+  },
+  "fixture": "Issue029-hw48na.dsn"
+}
