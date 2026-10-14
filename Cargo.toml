@@ -1,0 +1,15 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+repository = "https://github.com/danbrunski/freerouting-rs"
+rust-version = "1.85"
+
+[workspace.dependencies]
+freerouting-geometry = { path = "crates/freerouting-geometry" }
+freerouting-dsn = { path = "crates/freerouting-dsn" }
+freerouting = { path = "crates/freerouting" }

@@ -1,0 +1,12 @@
+[package]
+name = "freerouting"
+description = "PCB autorouting engine, ported from the Java Freerouting project"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+freerouting-geometry.workspace = true
+freerouting-dsn.workspace = true
