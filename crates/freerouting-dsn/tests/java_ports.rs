@@ -819,3 +819,49 @@ fn issue742_session_round_trips() {
     assert_eq!(depth, 0);
     assert_eq!(Session::parse(&text).unwrap(), session);
 }
+
+#[test]
+fn placement_rotation_formatting_matches_kicad_style() {
+    // SesRoundTripTest.placementRotationFormattingMatchesKicadStyle: whole
+    // degrees without decimals, fractions without trailing zeros.
+    let place = |name: &str, rotation: f64| Place {
+        name: name.into(),
+        location: Some(PlaceLocation {
+            at: Point::new(0.0, 0.0),
+            side: Side::Front,
+            rotation,
+        }),
+        position_locked: false,
+        pins: vec![],
+        keepouts: vec![],
+        via_keepouts: vec![],
+        place_keepouts: vec![],
+        part_number: None,
+    };
+    let session = Session {
+        name: "s".into(),
+        placement: Some(Placement {
+            components: vec![ComponentPlacement {
+                image: "img".into(),
+                places: vec![
+                    place("A", 0.0),
+                    place("B", 339.0),
+                    place("C", 338.5),
+                    place("D", 12.2501234567),
+                ],
+            }],
+            ..Placement::default()
+        }),
+        ..Session::default()
+    };
+    let text = session.to_ses();
+    for expected in [
+        "(place A 0 0 front 0)",
+        "(place B 0 0 front 339)",
+        "(place C 0 0 front 338.5)",
+        "(place D 0 0 front 12.2501234567)",
+    ] {
+        assert!(text.contains(expected), "{expected} in\n{text}");
+    }
+    assert_eq!(Session::parse(&text).unwrap(), session);
+}
