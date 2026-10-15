@@ -99,7 +99,8 @@ impl RoutingBoard {
             let Some(area) = item.as_conduction_area() else {
                 continue;
             };
-            let on_signal_layer = self.board.layer_structure.layers[area.layer() as usize].is_signal;
+            let on_signal_layer =
+                self.board.layer_structure.layers[area.layer() as usize].is_signal;
             if on_signal_layer && area.conduction_is_obstacle() != value {
                 self.board.set_conduction_is_obstacle(id, value);
                 something_changed = true;

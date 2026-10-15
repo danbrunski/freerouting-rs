@@ -106,9 +106,10 @@ impl Padstack {
     /// relative to the actual pad size, otherwise 45 % of the smallest pad
     /// radius.
     pub fn get_drill_radius(&self) -> f64 {
-        *self
-            .cached_drill_radius
-            .get_or_init(|| self.drill_radius_from_name().unwrap_or_else(|| self.smallest_radius() * 0.45))
+        *self.cached_drill_radius.get_or_init(|| {
+            self.drill_radius_from_name()
+                .unwrap_or_else(|| self.smallest_radius() * 0.45)
+        })
     }
 
     fn drill_radius_from_name(&self) -> Option<f64> {
@@ -148,7 +149,11 @@ impl Padstack {
                 min_radius = radius;
             }
         }
-        if min_radius == f64::MAX { 0.0 } else { min_radius }
+        if min_radius == f64::MAX {
+            0.0
+        } else {
+            min_radius
+        }
     }
 
     /// The directions in which traces may leave a rectangular or octagonal pad
@@ -179,7 +184,9 @@ impl Padstack {
 
 /// Java `s.replaceAll("[^0-9.]", "")`.
 fn strip_non_numeric(s: &str) -> String {
-    s.chars().filter(|c| c.is_ascii_digit() || *c == '.').collect()
+    s.chars()
+        .filter(|c| c.is_ascii_digit() || *c == '.')
+        .collect()
 }
 
 /// Java `Double.parseDouble` for strings of digits and dots.

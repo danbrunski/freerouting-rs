@@ -33,7 +33,8 @@ impl PackagePin {
         PackagePin {
             name: name.into(),
             padstack_id,
-            relative_location: Point::from(rounded).difference_by(&Point::from(IntPoint::new(0, 0))),
+            relative_location: Point::from(rounded)
+                .difference_by(&Point::from(IntPoint::new(0, 0))),
             rotation_in_degree,
             exact_relative_location: relative_location,
         }

@@ -2,7 +2,7 @@
 //! them.
 
 use std::cell::OnceCell;
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use freerouting_geometry::{
     Area, FloatPoint, IntBox, IntOctagon, IntPoint, Point, PolylineShape, PolylineShapeOps, Shape,
@@ -10,14 +10,14 @@ use freerouting_geometry::{
 };
 
 use crate::board::items::{
-    AreaKind, BoardOutline, ComponentOutline, DrillData, Item, ItemId, ItemKind, ObstacleArea,
-    Pin, PolylineTrace, StopConnectionOption, Via, base_pin_name, point_tile,
+    AreaKind, BoardOutline, ComponentOutline, DrillData, Item, ItemId, ItemKind, ObstacleArea, Pin,
+    PolylineTrace, StopConnectionOption, Via, base_pin_name, point_tile,
 };
 use crate::board::search::{SearchTreeManager, ShapeContext, TreeEntry};
 use crate::board::state::{ChangedArea, Communication};
 use crate::board::structure::{ComponentId, Components, FixedState, LayerStructure};
 use crate::datastructures::{IdGenerator, UndoableObjects};
-use crate::library::{BoardLibrary, PadstackId, Packages, Padstacks};
+use crate::library::{BoardLibrary, Packages, PadstackId, Padstacks};
 use crate::rules::{BoardRules, Nets};
 
 /// The length (in trace half widths) up to which a trace from a via to an
@@ -124,7 +124,8 @@ impl BasicBoard {
         &self.log
     }
 
-    pub(crate) fn shape_context(&self) -> ShapeContext<'_> {
+    /// What the search trees need from the board to calculate item shapes.
+    pub fn shape_context(&self) -> ShapeContext<'_> {
         ShapeContext {
             rules: &self.rules,
             padstacks: &self.library.padstacks,
@@ -332,7 +333,11 @@ impl BasicBoard {
 
     /// The drill data of a via with padstack `padstack` at `center`.
     pub(crate) fn via_drill_data(&self, padstack_id: PadstackId, center: IntPoint) -> DrillData {
-        let padstack = self.library.padstacks.get(padstack_id).expect("via padstack");
+        let padstack = self
+            .library
+            .padstacks
+            .get(padstack_id)
+            .expect("via padstack");
         let first_layer = padstack.from_layer();
         let last_layer = padstack.to_layer();
         let shape_count = (last_layer - first_layer + 1).max(0) as usize;
@@ -353,6 +358,7 @@ impl BasicBoard {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn insert_via_item(
         &mut self,
         padstack: PadstackId,
@@ -480,7 +486,9 @@ impl BasicBoard {
             }));
         }
         let location = component.location()?;
-        let rounded = transform.point(package_pin.exact_relative_location()).round();
+        let rounded = transform
+            .point(package_pin.exact_relative_location())
+            .round();
         let relative = Point::Int(rounded).difference_by(&Point::Int(location));
         let mut center = Point::Int(location).translate_by(&relative);
         if let Some(shape) = shapes.iter().flatten().next()
@@ -526,7 +534,12 @@ impl BasicBoard {
     }
 
     /// The absolute area of an area item.
-    fn absolute_area(&self, component_id: i32, relative: &Area, free: impl FnOnce() -> Area) -> Area {
+    fn absolute_area(
+        &self,
+        component_id: i32,
+        relative: &Area,
+        free: impl FnOnce() -> Area,
+    ) -> Area {
         if component_id > 0
             && let Some(component) = self.components.get(ComponentId(component_id))
             && component.is_placed()
@@ -758,7 +771,8 @@ impl BasicBoard {
         }
         let bounding_box = self.bounding_box;
         self.remove_from_trees(id);
-        if let Some(ItemKind::BoardOutline(outline)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
+        if let Some(ItemKind::BoardOutline(outline)) = self.items.get_mut(&id).map(|i| &mut i.kind)
+        {
             outline.set_keepout_outside(value, bounding_box);
         }
         self.insert_into_trees(id);
@@ -962,9 +976,12 @@ impl BasicBoard {
         items
             .into_iter()
             .filter(|id| {
-                self.items.get(id).and_then(Item::as_conduction_area).is_some_and(|area| {
-                    !self.layer_structure.layers[area.layer() as usize].is_signal
-                })
+                self.items
+                    .get(id)
+                    .and_then(Item::as_conduction_area)
+                    .is_some_and(|area| {
+                        !self.layer_structure.layers[area.layer() as usize].is_signal
+                    })
             })
             .collect()
     }
@@ -972,7 +989,9 @@ impl BasicBoard {
     /// The items of net `net_number` that are not routed: pins, fixed
     /// traces and vias, conduction areas (Java `Net.getTerminalItems`).
     pub fn net_terminal_items(&self, net_number: i32) -> Vec<ItemId> {
-        self.ids_where(|i| i.is_connectable_kind() && i.contains_net(net_number) && !i.is_routable())
+        self.ids_where(|i| {
+            i.is_connectable_kind() && i.contains_net(net_number) && !i.is_routable()
+        })
     }
 
     /// The pins of net `net_number`.
@@ -1277,10 +1296,9 @@ impl BasicBoard {
         if net_numbers.is_empty() {
             return true;
         }
-        net_numbers.iter().any(|n| {
-            let outline_is_obstacle = !(*n > 0 && self.edge_pin_nets().contains(n));
-            outline_is_obstacle
-        })
+        net_numbers
+            .iter()
+            .any(|n| !(*n > 0 && self.edge_pin_nets().contains(n)))
     }
 
     /// The nets of pins whose center or a pad corner is not inside the
@@ -1397,7 +1415,12 @@ impl BasicBoard {
 
     /// The items in normal contact with trace `id` at `point`, which must
     /// be an end corner (Java `Trace.getNormalContacts(Point, boolean)`).
-    pub fn trace_normal_contacts(&self, id: ItemId, point: &Point, ignore_net: bool) -> BTreeSet<ItemId> {
+    pub fn trace_normal_contacts(
+        &self,
+        id: ItemId,
+        point: &Point,
+        ignore_net: bool,
+    ) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
         let Some(item) = self.items.get(&id) else {
             return result;
@@ -1410,7 +1433,10 @@ impl BasicBoard {
         }
         for other_id in self.overlapping_objects(&point_tile(point), trace.layer) {
             let other = self.item_ref(other_id);
-            if other_id == id || !other.shares_layer(item) || !(ignore_net || other.shares_net(item)) {
+            if other_id == id
+                || !other.shares_layer(item)
+                || !(ignore_net || other.shares_net(item))
+            {
                 continue;
             }
             if contact_at_point(other, point) {
@@ -1501,7 +1527,12 @@ impl BasicBoard {
     /// The items reachable from `id` over normal contacts, restricted to
     /// net `net_number` if positive. With `stop_at_plane` the search does
     /// not pass conduction areas that belong to no component.
-    pub fn connected_set(&self, id: ItemId, net_number: i32, stop_at_plane: bool) -> BTreeSet<ItemId> {
+    pub fn connected_set(
+        &self,
+        id: ItemId,
+        net_number: i32,
+        stop_at_plane: bool,
+    ) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
         let Some(item) = self.items.get(&id) else {
             return result;
@@ -1510,15 +1541,62 @@ impl BasicBoard {
             return result;
         }
         result.insert(id);
-        self.connected_set_recu(id, &mut result, net_number, stop_at_plane);
+        self.connected_set_recu(
+            id,
+            &mut result,
+            net_number,
+            stop_at_plane,
+            &mut HashMap::new(),
+        );
         result
     }
 
-    fn connected_set_recu(&self, id: ItemId, result: &mut BTreeSet<ItemId>, net_number: i32, stop_at_plane: bool) {
+    /// [`connected_set`](Self::connected_set) with the normal contacts of
+    /// the visited items memoized in `contacts`, for callers that query many
+    /// items of an unchanged board.
+    pub(crate) fn connected_set_cached(
+        &self,
+        id: ItemId,
+        net_number: i32,
+        stop_at_plane: bool,
+        contacts: &mut HashMap<ItemId, Vec<ItemId>>,
+    ) -> BTreeSet<ItemId> {
+        let mut result = BTreeSet::new();
+        let Some(item) = self.items.get(&id) else {
+            return result;
+        };
+        if net_number > 0 && !item.contains_net(net_number) {
+            return result;
+        }
+        result.insert(id);
+        self.connected_set_recu(id, &mut result, net_number, stop_at_plane, contacts);
+        result
+    }
+
+    fn cached_normal_contacts(
+        &self,
+        id: ItemId,
+        contacts: &mut HashMap<ItemId, Vec<ItemId>>,
+    ) -> std::vec::IntoIter<ItemId> {
+        contacts
+            .entry(id)
+            .or_insert_with(|| self.normal_contacts(id).into_iter().collect())
+            .clone()
+            .into_iter()
+    }
+
+    fn connected_set_recu(
+        &self,
+        id: ItemId,
+        result: &mut BTreeSet<ItemId>,
+        net_number: i32,
+        stop_at_plane: bool,
+        contacts: &mut HashMap<ItemId, Vec<ItemId>>,
+    ) {
         // Java recurses; an explicit stack visits the items in the same
         // depth-first order.
         let mut stack: Vec<std::vec::IntoIter<ItemId>> =
-            vec![self.normal_contacts(id).into_iter().collect::<Vec<_>>().into_iter()];
+            vec![self.cached_normal_contacts(id, contacts)];
         while let Some(top) = stack.last_mut() {
             let Some(contact) = top.next() else {
                 stack.pop();
@@ -1532,7 +1610,7 @@ impl BasicBoard {
                 continue;
             }
             if result.insert(contact) {
-                stack.push(self.normal_contacts(contact).into_iter().collect::<Vec<_>>().into_iter());
+                stack.push(self.cached_normal_contacts(contact, contacts));
             }
         }
     }
@@ -1540,6 +1618,17 @@ impl BasicBoard {
     /// The connectable items of the net (or the nets of `id` if
     /// `net_number <= 0`) not connected to `id`.
     pub fn unconnected_set(&self, id: ItemId, net_number: i32) -> BTreeSet<ItemId> {
+        self.unconnected_set_cached(id, net_number, &mut HashMap::new())
+    }
+
+    /// [`unconnected_set`](Self::unconnected_set) with memoized contacts
+    /// (see [`connected_set_cached`](Self::connected_set_cached)).
+    pub(crate) fn unconnected_set_cached(
+        &self,
+        id: ItemId,
+        net_number: i32,
+        contacts: &mut HashMap<ItemId, Vec<ItemId>>,
+    ) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
         let Some(item) = self.items.get(&id) else {
             return result;
@@ -1554,7 +1643,7 @@ impl BasicBoard {
                 result.extend(self.connectable_items(*net));
             }
         }
-        for connected in self.connected_set(id, net_number, false) {
+        for connected in self.connected_set_cached(id, net_number, false, contacts) {
             result.remove(&connected);
         }
         result
@@ -1566,7 +1655,8 @@ impl BasicBoard {
         if net_number <= 0 {
             return result;
         }
-        let mut to_handle: BTreeSet<ItemId> = self.connectable_items(net_number).into_iter().collect();
+        let mut to_handle: BTreeSet<ItemId> =
+            self.connectable_items(net_number).into_iter().collect();
         while let Some(first) = to_handle.first().copied() {
             let set = self.connected_set(first, net_number, false);
             for id in &set {
@@ -1598,7 +1688,9 @@ impl BasicBoard {
             if contact == search_item {
                 return true;
             }
-            if visited.insert(contact) && self.is_cycle_recu(contact, visited, search_item, id, ignore_areas) {
+            if visited.insert(contact)
+                && self.is_cycle_recu(contact, visited, search_item, id, ignore_areas)
+            {
                 return true;
             }
         }
@@ -1688,7 +1780,11 @@ impl BasicBoard {
 
     /// All traces and vias from item `id` up to the next fork or terminal
     /// item (Java `Item.getConnectionItems`).
-    pub fn connection_items(&self, id: ItemId, stop_option: StopConnectionOption) -> BTreeSet<ItemId> {
+    pub fn connection_items(
+        &self,
+        id: ItemId,
+        stop_option: StopConnectionOption,
+    ) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
         let Some(item) = self.items.get(&id) else {
             return result;
@@ -1699,12 +1795,16 @@ impl BasicBoard {
         }
         for start_contact in contacts {
             let mut current_id = start_contact;
-            let Some(mut prev_contact_point) = item.normal_contact_point(self.item_ref(current_id)) else {
+            let Some(mut prev_contact_point) = item.normal_contact_point(self.item_ref(current_id))
+            else {
                 continue;
             };
             let mut prev_contact_layer = item.first_common_layer(self.item_ref(current_id));
             if item.is_trace()
-                && self.trace_normal_contacts(id, &prev_contact_point, false).len() != 1
+                && self
+                    .trace_normal_contacts(id, &prev_contact_point, false)
+                    .len()
+                    != 1
             {
                 continue;
             }
@@ -1769,8 +1869,7 @@ impl BasicBoard {
             return;
         }
         if net_number > self.rules.nets.max_net_number() {
-            self.log
-                .push("Item.assign_net_no: netNumber to big".into());
+            self.log.push("Item.assign_net_no: netNumber to big".into());
             return;
         }
         self.items.save_for_undo(&id);
@@ -1879,16 +1978,24 @@ impl BasicBoard {
 
     /// Restores the previous snapshot. Adds the nets of the changed items
     /// to `changed_nets`. Returns false if there is nothing to undo.
-    pub fn undo(&mut self, changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
+    pub fn undo(&mut self, mut changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
         self.components.undo();
-        let result = self.items.undo();
+        let result = self.items.undo_with(|cancelled| {
+            if let Some(nets) = changed_nets.as_deref_mut() {
+                nets.extend(cancelled.net_numbers().iter().copied());
+            }
+        });
         self.apply_undo_redo(result, changed_nets)
     }
 
     /// Restores the state before the last undo.
-    pub fn redo(&mut self, changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
+    pub fn redo(&mut self, mut changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
         self.components.redo();
-        let result = self.items.redo();
+        let result = self.items.redo_with(|cancelled| {
+            if let Some(nets) = changed_nets.as_deref_mut() {
+                nets.extend(cancelled.net_numbers().iter().copied());
+            }
+        });
         self.apply_undo_redo(result, changed_nets)
     }
 
@@ -1905,8 +2012,7 @@ impl BasicBoard {
             // tree entries remain.
             self.search_trees.remove(*id);
         }
-        // The nets of cancelled versions are not known any more; the
-        // restored versions and the current item list give the changed nets.
+        // The nets of the cancelled versions were added by the caller.
         for id in &restored {
             self.search_trees.remove(*id);
             self.insert_into_trees(*id);

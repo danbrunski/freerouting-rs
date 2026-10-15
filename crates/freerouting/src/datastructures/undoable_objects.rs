@@ -179,6 +179,12 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
     /// whose earlier version was restored, in Java's order, or `None` if there
     /// is nothing to undo.
     pub fn undo(&mut self) -> Option<(Vec<K>, Vec<K>)> {
+        self.undo_with(|_| {})
+    }
+
+    /// [`undo`](Self::undo), calling `on_cancelled` with each cancelled
+    /// version (Java passes the cancelled objects themselves).
+    pub fn undo_with(&mut self, mut on_cancelled: impl FnMut(&V)) -> Option<(Vec<K>, Vec<K>)> {
         if self.stack_level == 0 {
             return None;
         }
@@ -197,6 +203,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
                     self.objects.insert(key.clone(), undo_idx);
                     restored.push(self.node(undo_idx).key.clone());
                 }
+                on_cancelled(&self.node(idx).object);
                 cancelled.push(key);
             }
         }
@@ -215,6 +222,12 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
     /// restored keys as [`undo`](Self::undo) does, or `None` if there is
     /// nothing to redo.
     pub fn redo(&mut self) -> Option<(Vec<K>, Vec<K>)> {
+        self.redo_with(|_| {})
+    }
+
+    /// [`redo`](Self::redo), calling `on_cancelled` with each cancelled
+    /// version.
+    pub fn redo_with(&mut self, mut on_cancelled: impl FnMut(&V)) -> Option<(Vec<K>, Vec<K>)> {
         if self.stack_level >= self.deleted_objects_stack.len() {
             return None;
         }
@@ -231,6 +244,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
             match node.redo {
                 Some(redo_idx) if self.node(redo_idx).level == self.stack_level => {
                     self.objects.insert(key.clone(), redo_idx);
+                    on_cancelled(&self.node(idx).object);
                     cancelled.push(key);
                     restored.push(self.node(redo_idx).key.clone());
                 }
@@ -255,6 +269,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
             if let Some(pos) = restored.iter().position(|k| *k == key) {
                 restored.remove(pos);
             } else {
+                on_cancelled(&self.node(current).object);
                 cancelled.push(key);
             }
         }

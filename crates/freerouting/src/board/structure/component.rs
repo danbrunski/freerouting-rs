@@ -128,7 +128,8 @@ impl Component {
         } else {
             factor
         };
-        self.rotation_in_degree = normalize_degree(self.rotation_in_degree + f64::from(turn) * 90.0);
+        self.rotation_in_degree =
+            normalize_degree(self.rotation_in_degree + f64::from(turn) * 90.0);
         if let Some(location) = self.exact_location {
             self.exact_location =
                 Some(location.turn_90_degree_around(factor, FloatPoint::from_int_point(pole)));
@@ -141,7 +142,11 @@ impl Component {
             return;
         }
         if angle_in_degree % 90.0 == 0.0 {
-            self.turn_90_degree((angle_in_degree / 90.0) as i32, pole, flip_style_rotate_first);
+            self.turn_90_degree(
+                (angle_in_degree / 90.0) as i32,
+                pole,
+                flip_style_rotate_first,
+            );
             return;
         }
         let turn_angle = if flip_style_rotate_first && !self.on_front {
@@ -151,9 +156,10 @@ impl Component {
         };
         self.rotation_in_degree = normalize_degree(self.rotation_in_degree + turn_angle);
         if let Some(location) = self.exact_location {
-            self.exact_location = Some(
-                location.rotate(angle_in_degree.to_radians(), FloatPoint::from_int_point(pole)),
-            );
+            self.exact_location = Some(location.rotate(
+                angle_in_degree.to_radians(),
+                FloatPoint::from_int_point(pole),
+            ));
         }
     }
 
@@ -346,12 +352,16 @@ impl Components {
 
     /// Turns the component by `factor` times 90 degrees around `pole`.
     pub fn turn_90_degree(&mut self, id: ComponentId, factor: i32, pole: IntPoint) {
-        self.change(id, |c, rotate_first| c.turn_90_degree(factor, pole, rotate_first));
+        self.change(id, |c, rotate_first| {
+            c.turn_90_degree(factor, pole, rotate_first)
+        });
     }
 
     /// Rotates the component by `rotation_in_degree` around `pole`.
     pub fn rotate(&mut self, id: ComponentId, rotation_in_degree: f64, pole: IntPoint) {
-        self.change(id, |c, rotate_first| c.rotate(rotation_in_degree, pole, rotate_first));
+        self.change(id, |c, rotate_first| {
+            c.rotate(rotation_in_degree, pole, rotate_first)
+        });
     }
 
     /// Moves the component to the other side of the board.
@@ -409,11 +419,20 @@ mod tests {
         );
         components.generate_snapshot();
         components.move_by(id, &Vector::get_instance(5, 7));
-        assert_eq!(components.get(id).unwrap().location(), Some(IntPoint::new(5, 7)));
+        assert_eq!(
+            components.get(id).unwrap().location(),
+            Some(IntPoint::new(5, 7))
+        );
         components.undo().unwrap();
-        assert_eq!(components.get(id).unwrap().location(), Some(IntPoint::new(0, 0)));
+        assert_eq!(
+            components.get(id).unwrap().location(),
+            Some(IntPoint::new(0, 0))
+        );
         components.redo().unwrap();
-        assert_eq!(components.get(id).unwrap().location(), Some(IntPoint::new(5, 7)));
+        assert_eq!(
+            components.get(id).unwrap().location(),
+            Some(IntPoint::new(5, 7))
+        );
     }
 
     #[test]

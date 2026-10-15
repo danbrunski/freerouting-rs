@@ -78,7 +78,8 @@ impl Communication {
     }
 
     pub fn host_cad_is_kicad(&self) -> bool {
-        self.host_cad_lower().is_some_and(|cad| cad.contains("kicad"))
+        self.host_cad_lower()
+            .is_some_and(|cad| cad.contains("kicad"))
     }
 
     /// True if the file was written by KiCad 5 or older: the first number in
@@ -231,8 +232,11 @@ mod tests {
         info.host_cad = Some("KiCad's Pcbnew".into());
         info.host_version = Some("(5.1.5)-3".into());
         assert!(communication.host_is_old_kicad());
-        communication.specctra_parser_info.as_mut().unwrap().host_version =
-            Some("7.0.1".into());
+        communication
+            .specctra_parser_info
+            .as_mut()
+            .unwrap()
+            .host_version = Some("7.0.1".into());
         assert!(!communication.host_is_old_kicad());
         assert!(communication.host_cad_is_kicad());
         assert!(communication.host_cad_exists());

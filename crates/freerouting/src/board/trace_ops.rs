@@ -169,8 +169,11 @@ impl BasicBoard {
                         let mut found_trace_split = false;
                         if entry.item != id {
                             for line in &intersecting {
-                                let pieces =
-                                    self.split_trace_at_line(entry.item, entry.shape_index + 1, line);
+                                let pieces = self.split_trace_at_line(
+                                    entry.item,
+                                    entry.shape_index + 1,
+                                    line,
+                                );
                                 if let Some(pieces) = pieces {
                                     for piece in pieces.into_iter().flatten() {
                                         found_trace_split = true;
@@ -180,7 +183,12 @@ impl BasicBoard {
                                         // The board has changed: append the
                                         // entries found now and start over.
                                         if let Some(shape) = &current_shape {
-                                            self.collect_entries(shape, layer, &mut entries, &mut found_items);
+                                            self.collect_entries(
+                                                shape,
+                                                layer,
+                                                &mut entries,
+                                                &mut found_items,
+                                            );
                                         }
                                         index = 0;
                                         break;
@@ -223,8 +231,10 @@ impl BasicBoard {
                     }
                     FoundKind::Drill(center) => {
                         if current_segment.contains(center) {
-                            let direction = current_segment.get_line().int_direction().turn_45_degree(2);
-                            let split_line = Line::from_point_and_direction(center.expect_int(), direction);
+                            let direction =
+                                current_segment.get_line().int_direction().turn_45_degree(2);
+                            let split_line =
+                                Line::from_point_and_direction(center.expect_int(), direction);
                             // Java ignores the result here.
                             self.split_trace_at_line(id, i + 1, &split_line);
                         }
@@ -265,9 +275,13 @@ impl BasicBoard {
         found_items: &mut HashMap<ItemId, FoundItem>,
     ) {
         let start = entries.len();
-        self.search_trees
-            .default_tree()
-            .overlapping_tree_entries(shape, layer, &[], &self.items, entries);
+        self.search_trees.default_tree().overlapping_tree_entries(
+            shape,
+            layer,
+            &[],
+            &self.items,
+            entries,
+        );
         for entry in &entries[start..] {
             found_items
                 .entry(entry.item)
@@ -281,7 +295,12 @@ impl BasicBoard {
     /// `None` if nothing was split.
     ///
     /// Port of `PolylineTrace.split(int, Line)`.
-    fn split_trace_at_line(&mut self, id: ItemId, line_index: usize, end_line: &Line) -> Option<[Option<ItemId>; 2]> {
+    fn split_trace_at_line(
+        &mut self,
+        id: ItemId,
+        line_index: usize,
+        end_line: &Line,
+    ) -> Option<[Option<ItemId>; 2]> {
         let (item, trace) = self.trace_data(id)?;
         if !item.is_on_the_board() || self.is_deletion_forbidden(item) {
             return None;
@@ -294,14 +313,27 @@ impl BasicBoard {
         let nets = item.net_numbers().to_vec();
         let (class, fixed_state) = (item.clearance_class(), item.fixed_state());
         self.remove_item(id);
-        let a = self.insert_trace_without_cleaning(first, layer, half_width, &nets, class, fixed_state);
-        let b = self.insert_trace_without_cleaning(second, layer, half_width, &nets, class, fixed_state);
+        let a =
+            self.insert_trace_without_cleaning(first, layer, half_width, &nets, class, fixed_state);
+        let b = self.insert_trace_without_cleaning(
+            second,
+            layer,
+            half_width,
+            &nets,
+            class,
+            fixed_state,
+        );
         Some([a, b])
     }
 
     /// Java `PolylineTrace.splitInsideDrillPadProhibited`: a trace is split
     /// inside a pin pad only at the pin center.
-    fn split_inside_drill_pad_prohibited(&self, id: ItemId, line_index: usize, line: &Line) -> bool {
+    fn split_inside_drill_pad_prohibited(
+        &self,
+        id: ItemId,
+        line_index: usize,
+        line: &Line,
+    ) -> bool {
         let Some((item, trace)) = self.trace_data(id) else {
             return false;
         };
@@ -319,13 +351,12 @@ impl BasicBoard {
                     }
                     pad_found = true;
                 }
-                ItemKind::Trace(t) => {
-                    // Java: `t != this && t.first == p || t.last == p`
+                // Java: `t != this && t.first == p || t.last == p`
+                ItemKind::Trace(t)
                     if (other_id != id && t.first_corner() == intersection)
-                        || t.last_corner() == intersection
-                    {
-                        return false;
-                    }
+                        || t.last_corner() == intersection =>
+                {
+                    return false;
                 }
                 _ => {}
             }
@@ -337,7 +368,11 @@ impl BasicBoard {
     /// pieces.
     ///
     /// Port of `PolylineTrace.split(Point)`.
-    pub fn split_trace_at_point(&mut self, id: ItemId, point: &Point) -> Option<[Option<ItemId>; 2]> {
+    pub fn split_trace_at_point(
+        &mut self,
+        id: ItemId,
+        point: &Point,
+    ) -> Option<[Option<ItemId>; 2]> {
         let (_, trace) = self.trace_data(id)?;
         let polyline = trace.polyline.clone();
         for i in 0..polyline.lines().len().saturating_sub(2) {
@@ -359,7 +394,9 @@ impl BasicBoard {
     /// Port of `PolylineTrace.combine`.
     pub fn combine_trace(&mut self, id: ItemId) -> bool {
         let mut something_changed = false;
-        while self.is_on_board(id) && (self.combine_trace_at(id, true) || self.combine_trace_at(id, false)) {
+        while self.is_on_board(id)
+            && (self.combine_trace_at(id, true) || self.combine_trace_at(id, false))
+        {
             something_changed = true;
         }
         something_changed
@@ -461,7 +498,12 @@ impl BasicBoard {
         self.normalize_trace_recu(id, clip_shape, 0)
     }
 
-    fn normalize_trace_recu(&mut self, id: ItemId, clip_shape: Option<&IntOctagon>, depth: usize) -> bool {
+    fn normalize_trace_recu(
+        &mut self,
+        id: ItemId,
+        clip_shape: Option<&IntOctagon>,
+        depth: usize,
+    ) -> bool {
         if depth > MAX_NORMALIZATION_DEPTH {
             return false;
         }
@@ -521,12 +563,13 @@ impl BasicBoard {
             return;
         }
         self.remove_from_trees(id);
-        let layer = if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
-            trace.polyline = polyline;
-            trace.layer
-        } else {
-            return;
-        };
+        let layer =
+            if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
+                trace.polyline = polyline;
+                trace.layer
+            } else {
+                return;
+            };
         self.insert_into_trees(id);
         let clip = self.changed_area_on_layer(layer);
         self.normalize_trace(id, clip.as_ref());
@@ -579,9 +622,9 @@ impl BasicBoard {
             if !self.is_on_board(id) {
                 continue;
             }
-            if self.normalize_trace(id, None) {
-                something_changed = true;
-            } else if !self.item_ref(id).is_user_fixed() && self.remove_if_cycle(id) {
+            if self.normalize_trace(id, None)
+                || (!self.item_ref(id).is_user_fixed() && self.remove_if_cycle(id))
+            {
                 something_changed = true;
             }
         }
@@ -658,7 +701,12 @@ impl BasicBoard {
 
     /// The trace of exactly the nets `net_numbers` ending at `location` on
     /// `layer` without contact there.
-    pub fn get_trace_tail(&self, location: &Point, layer: i32, net_numbers: &[i32]) -> Option<ItemId> {
+    pub fn get_trace_tail(
+        &self,
+        location: &Point,
+        layer: i32,
+        net_numbers: &[i32],
+    ) -> Option<ItemId> {
         for id in self.overlapping_objects(&point_tile(location), layer) {
             let item = self.item_ref(id);
             let Some(trace) = item.as_trace() else {
@@ -716,7 +764,11 @@ impl BasicBoard {
 
     /// Removes the dead-end traces and vias of net `net_number` (all nets
     /// if not positive). Returns true if something was removed.
-    pub fn remove_trace_tails(&mut self, net_number: i32, stop_option: StopConnectionOption) -> bool {
+    pub fn remove_trace_tails(
+        &mut self,
+        net_number: i32,
+        stop_option: StopConnectionOption,
+    ) -> bool {
         let mut stubs: BTreeSet<ItemId> = BTreeSet::new();
         for item in self.items() {
             if !item.is_routable() || item.net_count() != 1 {

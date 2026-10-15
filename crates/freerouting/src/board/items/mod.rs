@@ -310,19 +310,20 @@ impl ObstacleArea {
         self.area = area;
     }
 
-    pub(crate) fn translate_by(&mut self, vector: &Vector) {
+    pub fn translate_by(&mut self, vector: &Vector) {
         self.translation = self.translation.add(vector);
     }
 
-    pub(crate) fn turn_90_degree(&mut self, factor: i32, pole: IntPoint) {
-        self.rotation_in_degree = normalize_degree(self.rotation_in_degree + f64::from(factor * 90));
+    pub fn turn_90_degree(&mut self, factor: i32, pole: IntPoint) {
+        self.rotation_in_degree =
+            normalize_degree(self.rotation_in_degree + f64::from(factor * 90));
         let rel_location = Point::ZERO.translate_by(&self.translation);
         self.translation = rel_location
             .turn_90_degree(factor, &Point::Int(pole))
             .difference_by(&Point::ZERO);
     }
 
-    pub(crate) fn rotate_approx(
+    pub fn rotate_approx(
         &mut self,
         angle_in_degree: f64,
         pole: FloatPoint,
@@ -340,7 +341,7 @@ impl ObstacleArea {
         self.translation = Point::Int(new_translation.round()).difference_by(&Point::ZERO);
     }
 
-    pub(crate) fn change_placement_side(&mut self, pole: IntPoint, layer_count: usize) {
+    pub fn change_placement_side(&mut self, pole: IntPoint, layer_count: usize) {
         self.side_changed = !self.side_changed;
         self.layer = layer_count as i32 - self.layer - 1;
         let rel_location = Point::ZERO.translate_by(&self.translation);
@@ -439,19 +440,20 @@ impl ComponentOutline {
         self.area = area;
     }
 
-    pub(crate) fn translate_by(&mut self, vector: &Vector) {
+    pub fn translate_by(&mut self, vector: &Vector) {
         self.translation = self.translation.add(vector);
     }
 
-    pub(crate) fn turn_90_degree(&mut self, factor: i32, pole: IntPoint) {
-        self.rotation_in_degree = normalize_degree(self.rotation_in_degree + f64::from(factor * 90));
+    pub fn turn_90_degree(&mut self, factor: i32, pole: IntPoint) {
+        self.rotation_in_degree =
+            normalize_degree(self.rotation_in_degree + f64::from(factor * 90));
         let rel_location = Point::ZERO.translate_by(&self.translation);
         self.translation = rel_location
             .turn_90_degree(factor, &Point::Int(pole))
             .difference_by(&Point::ZERO);
     }
 
-    pub(crate) fn rotate_approx(
+    pub fn rotate_approx(
         &mut self,
         angle_in_degree: f64,
         pole: FloatPoint,
@@ -469,7 +471,7 @@ impl ComponentOutline {
         self.translation = Point::Int(new_translation.round()).difference_by(&Point::ZERO);
     }
 
-    pub(crate) fn change_placement_side(&mut self, pole: IntPoint) {
+    pub fn change_placement_side(&mut self, pole: IntPoint) {
         self.is_front = !self.is_front;
         let rel_location = Point::ZERO.translate_by(&self.translation);
         self.translation = rel_location
@@ -562,12 +564,9 @@ impl BoardOutline {
 
     /// Java `BoardOutline.shapeLayer`.
     pub fn shape_layer(&self, index: usize) -> i32 {
-        let shape_count = self.tile_shape_count();
-        if shape_count > 0 {
-            (index * self.layer_count / shape_count) as i32
-        } else {
-            0
-        }
+        (index * self.layer_count)
+            .checked_div(self.tile_shape_count())
+            .map_or(0, |layer| layer as i32)
     }
 
     /// The union of the bounding boxes of the shapes.
@@ -589,7 +588,7 @@ impl BoardOutline {
         self.shapes.iter().any(|s| s.contains_float(point))
     }
 
-    pub(crate) fn layer_count(&self) -> usize {
+    pub fn layer_count(&self) -> usize {
         self.layer_count
     }
 }
@@ -749,7 +748,7 @@ impl Item {
         }
     }
 
-    pub(crate) fn drill_mut(&mut self) -> Option<&mut DrillData> {
+    pub fn drill_mut(&mut self) -> Option<&mut DrillData> {
         match &mut self.kind {
             ItemKind::Pin(pin) => Some(&mut pin.drill),
             ItemKind::Via(via) => Some(&mut via.drill),

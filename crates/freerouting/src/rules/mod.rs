@@ -401,7 +401,11 @@ pub struct NetClass {
 
 impl NetClass {
     /// A class with trace width 0 and all signal layers active.
-    pub fn new(name: impl Into<String>, layers: &LayerStructure, ignored_by_autorouter: bool) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        layers: &LayerStructure,
+        ignored_by_autorouter: bool,
+    ) -> Self {
         let signal_layers: Vec<bool> = layers.layers.iter().map(|l| l.is_signal).collect();
         NetClass {
             name: name.into(),
@@ -962,7 +966,9 @@ impl BoardRules {
             return;
         }
         let default = self.default_net_class();
-        self.net_classes.get_mut(default).set_trace_half_width(value);
+        self.net_classes
+            .get_mut(default)
+            .set_trace_half_width(value);
         self.min_trace_half_width = self.min_trace_half_width.min(value);
         self.max_trace_half_width = self.max_trace_half_width.max(value);
     }
@@ -1132,7 +1138,9 @@ impl BoardRules {
             }
             for item_class in ItemClass::ALL {
                 if class.default_item_clearance_classes.get(item_class) == from_index {
-                    class.default_item_clearance_classes.set(item_class, to_index);
+                    class
+                        .default_item_clearance_classes
+                        .set(item_class, to_index);
                 }
             }
         }
@@ -1151,13 +1159,16 @@ impl BoardRules {
                 || ItemClass::ALL
                     .iter()
                     .any(|ic| c.default_item_clearance_classes.get(*ic) == index)
-        }) || self.via_infos.iter().any(|(_, v)| v.clearance_class == index)
+        }) || self
+            .via_infos
+            .iter()
+            .any(|(_, v)| v.clearance_class == index)
     }
 
     /// Removes clearance class `index` from the matrix and renumbers the
     /// higher classes in the net classes and via infos. The caller checks
     /// that no item or rule uses it and renumbers the items.
-    pub(crate) fn remove_clearance_class_from_rules(&mut self, index: i32) {
+    pub fn remove_clearance_class_from_rules(&mut self, index: i32) {
         for id in self.net_classes.arena.order.clone() {
             let class = &mut self.net_classes.arena.items[id];
             if class.trace_clearance_class > index {
@@ -1258,10 +1269,7 @@ mod tests {
         assert!(class.is_active_routing_layer(0));
         assert!(!class.is_active_routing_layer(1));
         assert!(class.pull_tight());
-        assert_eq!(
-            class.default_item_clearance_classes.get(ItemClass::None),
-            0
-        );
+        assert_eq!(class.default_item_clearance_classes.get(ItemClass::None), 0);
         assert_eq!(class.default_item_clearance_classes.get(ItemClass::Smd), 1);
     }
 
@@ -1274,7 +1282,10 @@ mod tests {
         assert_eq!(rules.net_classes.get(a).name(), "class1");
         assert_eq!(rules.net_classes.get(b).name(), "class2");
         assert_eq!(rules.net_classes.get(a).trace_half_width(0), 250);
-        assert_eq!(rules.net_classes.find(250, 1, None), Some(rules.default_net_class()));
+        assert_eq!(
+            rules.net_classes.find(250, 1, None),
+            Some(rules.default_net_class())
+        );
         let named = rules.append_named_net_class("Power");
         assert_eq!(rules.append_named_net_class("Power"), named);
         assert_eq!(rules.net_classes.count(), 4);

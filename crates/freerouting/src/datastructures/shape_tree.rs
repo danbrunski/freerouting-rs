@@ -165,11 +165,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
             let union = bounds.union(&self.node(current).bounds);
             self.node_mut(current).bounds = union;
             let first_shape = self.node(first).bounds;
-            let first_increase =
-                area(&bounds.union(&first_shape)) - area(&first_shape);
+            let first_increase = area(&bounds.union(&first_shape)) - area(&first_shape);
             let second_shape = self.node(second).bounds;
-            let second_increase =
-                area(&bounds.union(&second_shape)) - area(&second_shape);
+            let second_increase = area(&bounds.union(&second_shape)) - area(&second_shape);
             current = if first_increase <= second_increase {
                 first
             } else {
@@ -239,9 +237,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
     /// The leaves whose bounding shape intersects `shape`, sorted by object
     /// key and then by shape index.
     pub fn overlaps(&self, shape: &RegularTileShape) -> Vec<LeafId> {
-        let mut found = Vec::new();
+        let mut found: Vec<(K, usize, LeafId)> = Vec::new();
         let Some(root) = self.root else {
-            return found;
+            return Vec::new();
         };
         let query = shape.to_tile_shape();
         let mut stack = vec![root];
@@ -249,7 +247,10 @@ impl<K: Ord + Copy> ShapeTree<K> {
             let node = self.node(current);
             if node.bounds.to_tile_shape().intersects_tile(&query) {
                 match node.kind {
-                    NodeKind::Leaf { .. } => found.push(LeafId(current as u32)),
+                    NodeKind::Leaf {
+                        object,
+                        shape_index,
+                    } => found.push((object, shape_index, LeafId(current as u32))),
                     NodeKind::Inner { first, second } => {
                         stack.push(first);
                         stack.push(second);
@@ -257,8 +258,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
                 }
             }
         }
-        found.sort_by(|a, b| self.leaf(*a).cmp(&self.leaf(*b)));
-        found
+        // A key and shape index identify a leaf, so the order is total.
+        found.sort_unstable_by_key(|&(key, index, _)| (key, index));
+        found.into_iter().map(|(_, _, leaf)| leaf).collect()
     }
 
     /// All leaves, from the leftmost to the rightmost (Java `toArray`).
@@ -352,5 +354,22 @@ mod tests {
         tree.remove_leaf(c);
         assert_eq!(tree.size(), 0);
         assert!(tree.overlaps(&bx(0, 0, 100, 100)).is_empty());
+    }
+
+    /// Port of `MinAreaTreeLeafLifecycleTest.removingSameLeafTwiceDoesNotCorruptTree`.
+    /// The other tests of that class and `ShapeSearchTreeLeafLifecycleTest`
+    /// check Java's read/write locking, which the borrow checker makes
+    /// unnecessary.
+    #[test]
+    fn removing_same_leaf_twice_does_not_corrupt_tree() {
+        let mut tree = ShapeTree::new(ShapeBoundingDirections::FortyfiveDegree);
+        let first = tree.insert(1, 0, bx(-10, -10, 10, 10));
+        tree.remove_leaf(first);
+        assert_eq!(tree.size(), 0);
+        tree.remove_leaf(first);
+        assert_eq!(tree.size(), 0);
+        let second = tree.insert(2, 0, bx(-20, -20, 20, 20));
+        assert_eq!(tree.size(), 1);
+        assert!(tree.overlaps(&bx(-100, -100, 100, 100)).contains(&second));
     }
 }

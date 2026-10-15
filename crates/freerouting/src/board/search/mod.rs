@@ -155,7 +155,8 @@ impl ShapeSearchTree {
                 .map(|bounds| self.tree.insert(item.id(), index, bounds));
             leaves.push(leaf);
         }
-        self.entries.insert(item.id(), ItemEntries { shapes, leaves });
+        self.entries
+            .insert(item.id(), ItemEntries { shapes, leaves });
     }
 
     /// Removes the entries of `id`.
@@ -177,7 +178,12 @@ impl ShapeSearchTree {
 
     /// The tree shape `index` of `item`: the stored one if the item is in
     /// the tree, else calculated.
-    pub fn tree_shape(&self, item: &Item, index: usize, ctx: &ShapeContext<'_>) -> Option<TileShape> {
+    pub fn tree_shape(
+        &self,
+        item: &Item,
+        index: usize,
+        ctx: &ShapeContext<'_>,
+    ) -> Option<TileShape> {
         match self.entries.get(&item.id()) {
             Some(entries) => entries.shapes.get(index).cloned().flatten(),
             None => self
@@ -314,7 +320,11 @@ impl ShapeSearchTree {
 
     /// Java `ShapeSearchTree.calculateTreeShapes` for every item class, with
     /// the overrides of the 45 and 90 degree trees.
-    pub fn calculate_tree_shapes(&self, item: &Item, ctx: &ShapeContext<'_>) -> Vec<Option<TileShape>> {
+    pub fn calculate_tree_shapes(
+        &self,
+        item: &Item,
+        ctx: &ShapeContext<'_>,
+    ) -> Vec<Option<TileShape>> {
         match &item.kind {
             ItemKind::Pin(_) | ItemKind::Via(_) => self.drill_item_tree_shapes(item, ctx),
             ItemKind::Trace(trace) => {
@@ -329,7 +339,12 @@ impl ShapeSearchTree {
                     .collect()
             }
             ItemKind::Area(area) => {
-                let shapes = self.obstacle_area_tree_shapes(item, area.area().split_to_convex(), area.layer(), ctx);
+                let shapes = self.obstacle_area_tree_shapes(
+                    item,
+                    area.area().split_to_convex(),
+                    area.layer(),
+                    ctx,
+                );
                 self.regularize(shapes)
             }
             ItemKind::BoardOutline(_) => {
@@ -356,14 +371,25 @@ impl ShapeSearchTree {
         }
     }
 
-    fn trace_offset_shape(&self, polyline: &Polyline, half_width: i32, index: usize) -> Option<TileShape> {
+    fn trace_offset_shape(
+        &self,
+        polyline: &Polyline,
+        half_width: i32,
+        index: usize,
+    ) -> Option<TileShape> {
         match self.kind {
-            TreeKind::NinetyDegree => Some(TileShape::IntBox(polyline.offset_box(half_width, index))),
+            TreeKind::NinetyDegree => {
+                Some(TileShape::IntBox(polyline.offset_box(half_width, index)))
+            }
             _ => polyline.offset_shape(half_width, index),
         }
     }
 
-    fn drill_item_tree_shapes(&self, item: &Item, ctx: &ShapeContext<'_>) -> Vec<Option<TileShape>> {
+    fn drill_item_tree_shapes(
+        &self,
+        item: &Item,
+        ctx: &ShapeContext<'_>,
+    ) -> Vec<Option<TileShape>> {
         let drill = item.drill().expect("drill item");
         let padstack = ctx.padstacks.get(drill.padstack);
         let mut result = Vec::with_capacity(drill.shapes.len());
@@ -377,8 +403,11 @@ impl ShapeSearchTree {
                 continue;
             };
             let layer = drill.shape_layer(i);
-            let mut offset =
-                self.clearance_compensation_value(&ctx.rules.clearance_matrix, item.clearance_class(), layer);
+            let mut offset = self.clearance_compensation_value(
+                &ctx.rules.clearance_matrix,
+                item.clearance_class(),
+                layer,
+            );
             offset += self.drill_hole_clearance_delta(item, padstack, &shape, layer, ctx);
             let tile = match self.kind {
                 TreeKind::Plain => {
@@ -461,10 +490,12 @@ impl ShapeSearchTree {
         } else {
             BoardRules::default_clearance_class()
         };
-        let copper_clearance =
-            ctx.rules
-                .clearance_matrix
-                .get_value(item.clearance_class(), clearance_class, layer, false);
+        let copper_clearance = ctx.rules.clearance_matrix.get_value(
+            item.clearance_class(),
+            clearance_class,
+            layer,
+            false,
+        );
         let value = (drill_radius + f64::from(hole_clearance) + DRILL_HOLE_CLEARANCE_MARGIN
             - copper_radius
             - f64::from(copper_clearance))
@@ -484,11 +515,16 @@ impl ShapeSearchTree {
         };
         let mut max_tree_shape_width = 50000.0;
         if ctx.communication.host_cad_exists() {
-            max_tree_shape_width =
-                f64::min(500.0 * ctx.communication.get_resolution(Unit::Mil), max_tree_shape_width);
+            max_tree_shape_width = f64::min(
+                500.0 * ctx.communication.get_resolution(Unit::Mil),
+                max_tree_shape_width,
+            );
         }
-        let offset =
-            self.clearance_compensation_value(&ctx.rules.clearance_matrix, item.clearance_class(), layer);
+        let offset = self.clearance_compensation_value(
+            &ctx.rules.clearance_matrix,
+            item.clearance_class(),
+            layer,
+        );
         let mut result = Vec::new();
         for shape in convex_shapes {
             let enlarged = shape.enlarge(f64::from(offset));
@@ -502,16 +538,22 @@ impl ShapeSearchTree {
         result
     }
 
-    fn board_outline_tree_shapes(&self, item: &Item, ctx: &ShapeContext<'_>) -> Vec<Option<TileShape>> {
+    fn board_outline_tree_shapes(
+        &self,
+        item: &Item,
+        ctx: &ShapeContext<'_>,
+    ) -> Vec<Option<TileShape>> {
         let outline = item.as_board_outline().expect("board outline");
         let matrix = &ctx.rules.clearance_matrix;
         let mut result = Vec::new();
         if outline.keepout_outside_outline_generated() {
-            let Some(convex_shapes) = outline.keepout_area().and_then(|a| a.split_to_convex()) else {
+            let Some(convex_shapes) = outline.keepout_area().and_then(|a| a.split_to_convex())
+            else {
                 return result;
             };
             for layer in 0..ctx.layer_count as i32 {
-                let offset = self.clearance_compensation_value(matrix, item.clearance_class(), layer);
+                let offset =
+                    self.clearance_compensation_value(matrix, item.clearance_class(), layer);
                 for shape in &convex_shapes {
                     result.push(Some(shape.enlarge(f64::from(offset))));
                 }
@@ -526,8 +568,11 @@ impl ShapeSearchTree {
                         let current = shape.border_line(i);
                         let next = shape.border_line((i + 1) % count);
                         let polyline = Polyline::new(&[previous, current, next]);
-                        let offset =
-                            self.clearance_compensation_value(matrix, item.clearance_class(), layer);
+                        let offset = self.clearance_compensation_value(
+                            matrix,
+                            item.clearance_class(),
+                            layer,
+                        );
                         result.push(polyline.offset_shape(half_width + offset, 0));
                         previous = current;
                     }
@@ -651,7 +696,8 @@ impl SearchTreeManager {
         if class == self.trees[0].compensated_clearance_class {
             return;
         }
-        self.trees.retain(|t| t.compensated_clearance_class != class);
+        self.trees
+            .retain(|t| t.compensated_clearance_class != class);
     }
 
     /// The tree compensated for `clearance_class`, created and filled with

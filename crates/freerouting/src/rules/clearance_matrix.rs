@@ -214,7 +214,7 @@ impl ClearanceMatrix {
 
     /// Removes class `index`. As in Java, the per-row maximum values of the
     /// remaining rows are reset to 0.
-    pub(crate) fn remove_class(&mut self, index: usize) {
+    pub fn remove_class(&mut self, index: usize) {
         self.rows.remove(index);
         for row in &mut self.rows {
             row.column.remove(index);
