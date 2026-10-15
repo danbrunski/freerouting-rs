@@ -515,7 +515,16 @@ impl Parser<'_> {
 
     /// `(component image (place ...)...)` after its keyword.
     pub(super) fn component_scope(&mut self) -> Result<ComponentPlacement> {
-        let image = self.name("component image name")?;
+        // Java's SES writer emits `(component` with no image name for components
+        // whose package has no name (e.g. mounting holes); read that as "".
+        let pos = self.peek_name_token()?.pos;
+        let image = match self.optional_name()? {
+            Some(image) => image,
+            None => {
+                self.warn(pos, "component without an image name");
+                String::new()
+            }
+        };
         let mut places = Vec::new();
         loop {
             match self.item("component")? {

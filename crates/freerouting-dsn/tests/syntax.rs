@@ -829,6 +829,21 @@ fn session_round_trip_with_pin_swaps() {
 }
 
 #[test]
+fn session_component_without_image_name() {
+    // Java's SES writer leaves the image name out for unnamed packages.
+    let src = "(session s (placement (component (place @HOLE0 1 2 front 0)) \
+               (component P (place R1 3 4 back 0))))";
+    let (session, warnings) = Session::parse_with_warnings(src).unwrap();
+    assert_eq!(warnings.len(), 1, "{warnings:?}");
+    let placement = session.placement.as_ref().unwrap();
+    assert_eq!(placement.components[0].image, "");
+    assert_eq!(placement.components[0].places[0].name, "@HOLE0");
+    assert_eq!(placement.components[1].image, "P");
+    let text = session.to_ses();
+    assert_eq!(Session::parse(&text).unwrap(), session);
+}
+
+#[test]
 fn rules_file_round_trip() {
     let src = "(rules PCB board\n (snap_angle fortyfive_degree)\n (rule (width 250) (clear 200))\n \
                (layer F.Cu (rule (width 300)))\n (padstack v (shape (circle F.Cu 600)))\n \
