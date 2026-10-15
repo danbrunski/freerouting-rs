@@ -76,6 +76,10 @@ public final class ReferenceDump {
       if (filter != null && !rel.contains(filter)) {
         continue;
       }
+      Path target = out.resolve(mode).resolve(rel.replaceAll("\\.dsn$", ".json"));
+      if (mode.equals("route") && Files.exists(target) && System.getenv("REFERENCE_REDO") == null) {
+        continue;
+      }
       System.out.println(mode + ": " + rel);
       JsonObject result;
       try {
@@ -96,7 +100,6 @@ public final class ReferenceDump {
         result.addProperty("error", t.toString());
       }
       result.addProperty("fixture", rel);
-      Path target = out.resolve(mode).resolve(rel.replaceAll("\\.dsn$", ".json"));
       Files.createDirectories(target.getParent());
       Files.writeString(target, GSON.toJson(result) + "\n", StandardCharsets.UTF_8);
     }

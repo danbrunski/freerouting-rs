@@ -29,6 +29,9 @@ output isn't: Java's maze search uses an unseeded `java.util.Random` and the rou
 runs against a wall-clock timeout, so treat routed results as a baseline for completion
 rate, via count, length, score and speed, not as an exact target.
 
+`route` skips boards that already have a `route/<board>.json`, so an interrupted run
+picks up where it stopped. Set `REFERENCE_REDO=1` to rerun everything.
+
 ## Known Java failures
 
 - `Issue006-LPC18XX_43XX_SCH.dsn` is not a PCB file (`parse_error`).
