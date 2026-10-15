@@ -8,9 +8,10 @@
 pub use freerouting_dsn as dsn;
 pub use freerouting_geometry as geometry;
 
-pub mod datastructures;
 pub mod board;
+pub mod datastructures;
 pub mod io;
 pub mod library;
 pub mod rules;
+pub mod scoring;
 mod util;

@@ -54,3 +54,52 @@ branch 3 in IntOctagon's box cutout.
   are kept; names may be keywords or numbers.
 - A non-integer value for an integer setting leaves it unset with a warning.
 - An unterminated string or `/*` comment is an error at its start, not at end of file.
+
+## freerouting (board model)
+
+**Reading a DSN file** (`io::specctra`, port of `DsnReader` and `io.specctra.parser`)
+- The DSN AST merges repeated top-level scopes and does not keep their order, so the
+  board is built in a fixed order: parser, resolution, structure, placement (flip style
+  only), library, network, wiring. Java acts on the scopes in file order; within the
+  structure scope, layers are assumed to come before keepouts and planes.
+- `autoroute_settings` counts as read wherever it is (see freerouting-dsn), so
+  `adjustPlaneAutorouteSettings` runs only for files without that scope; Java also runs
+  it when the scope comes after the first keepout or plane.
+- Where Java ends with an exception the port keeps going: keepouts, planes and windows
+  whose area does not resolve are dropped (NullPointerException); circles and polyline
+  paths in the boundary are left out of the outline (ClassCastException); a wire on an
+  unknown polyline-path layer is dropped. A file without a structure scope is a
+  `ParseError` (Java returns a null board or throws).
+- The placement scope's `resolution` and the pcb-level `unit` are ignored, as in Java.
+- The scope identifier in warning messages is the net or padstack name; Java prints the
+  scanner's current identifier.
+- Logged messages go to `BasicBoard::log_messages`; only the wiring warnings are
+  returned, as in Java.
+- Kept on purpose: the `via_padstack_names` aliasing with the first class's `use_via`
+  list, and class-class rules pairing only the first known class with the others (Java
+  shares one iterator).
+
+**Board model**
+- Items live in an arena keyed by `ItemId`; the methods of `Item` and its subclasses
+  that need the board are `BasicBoard` methods taking an id. Observers, the routing
+  ledger, Java serialization, `getHash` and the graphics update box are not ported.
+- `ShapeTree` stores leaves in an arena; `overlaps` returns them sorted by item and
+  shape index, as Java sorts them. Combining traces removes and reinserts the tree
+  entries instead of Java's `mergeEntries`; queries return the same items, only the
+  tree's internal shape differs.
+- `PolylineTrace.change` compares lines by value to find the unchanged part; Java
+  compares references.
+- Java iterates the nets in `normalizeAllTraces` in `HashMap` order; the port simulates
+  that order, but without the treeification of buckets with 9 or more keys.
+- Stale `LeafId`s and `ItemId`s cannot be used after removal; Java's locking tests
+  (`MinAreaTreeLeafLifecycleTest`, `ShapeSearchTreeLeafLifecycleTest`) have no
+  counterpart because the borrow checker rules out concurrent reads and writes.
+
+**Board statistics** (`scoring`, port of `BoardStatistics` and
+`BoardStatisticsBoundsCalculator`)
+- The connection counts, the clearance violations and `fanout.escaped_count` need the
+  design rule checker and are left out; so are the router and optimizer scores, which
+  need the router settings, and the constructor from a KiCad JSON file.
+- Java throws a NullPointerException for `Issue179-Autorouter_PCB1_2023-3-24.dsn`
+  while counting incomplete connections; the port computes the statistics.
+- The statistics are computed on construction and not cached on the board.
