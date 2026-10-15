@@ -76,6 +76,54 @@ impl Ord for CaseInsensitive {
     }
 }
 
+/// A string ordered like Java `String.compareTo` (by UTF-16 code units).
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct JavaString(pub String);
+
+impl PartialOrd for JavaString {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for JavaString {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.encode_utf16().cmp(other.0.encode_utf16())
+    }
+}
+
+/// Java `s.split(separator)` for a literal separator: trailing empty
+/// strings are removed, and a string without the separator gives itself.
+pub(crate) fn java_split(s: &str, separator: &str) -> Vec<String> {
+    if !s.contains(separator) {
+        return vec![s.to_string()];
+    }
+    let mut parts: Vec<String> = s.split(separator).map(str::to_string).collect();
+    while parts.last().is_some_and(String::is_empty) {
+        parts.pop();
+    }
+    parts
+}
+
+/// Java `s.replaceAll("\\.\\d+", "")`: removes every `.` followed by digits.
+pub(crate) fn remove_dot_numbers(s: &str) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    let mut result = String::with_capacity(s.len());
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '.' && chars.get(i + 1).is_some_and(char::is_ascii_digit) {
+            i += 1;
+            while chars.get(i).is_some_and(char::is_ascii_digit) {
+                i += 1;
+            }
+            continue;
+        }
+        result.push(chars[i]);
+        i += 1;
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
