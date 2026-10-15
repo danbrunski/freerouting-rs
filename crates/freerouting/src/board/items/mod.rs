@@ -952,7 +952,9 @@ impl Item {
     /// normal contact points with each other.
     pub fn normal_contact_point(&self, other: &Item) -> Option<Point> {
         match (&self.kind, &other.kind) {
-            (ItemKind::Trace(a), ItemKind::Trace(b)) => trace_trace_contact_point(a, b),
+            // Java dispatches to `other.normalContactPoint(this)`, which answers
+            // from the other trace's corners.
+            (ItemKind::Trace(a), ItemKind::Trace(b)) => trace_trace_contact_point(b, a),
             (ItemKind::Trace(t), _) => other
                 .drill()
                 .and_then(|d| drill_trace_contact_point(other, d, self, t)),
