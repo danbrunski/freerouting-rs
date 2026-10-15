@@ -130,6 +130,7 @@ pub struct App {
     camera: Option<Camera>,
     layer_visible: Vec<bool>,
     kind_visible: Vec<bool>,
+    show_labels: bool,
     active_layer: usize,
     dialog: FileDialog,
     loading: Option<(PathBuf, mpsc::Receiver<Result<Loaded, String>>)>,
@@ -156,6 +157,7 @@ impl App {
             camera: None,
             layer_visible: Vec::new(),
             kind_visible: vec![true; Kind::ALL.len()],
+            show_labels: true,
             active_layer: 0,
             dialog: FileDialog::new(start_dir),
             loading: None,
@@ -340,6 +342,7 @@ impl App {
         for (i, kind) in Kind::ALL.iter().enumerate() {
             ui.checkbox(&mut self.kind_visible[i], kind.label());
         }
+        ui.checkbox(&mut self.show_labels, "Reference designators");
         ui.add_space(8.0);
         ui.heading("Board");
         let count = |k: Kind| b.scene.items.iter().filter(|i| i.kind == k).count();
@@ -441,8 +444,17 @@ impl App {
             layers: &self.layer_visible,
             kinds: &self.kind_visible,
             active: self.active_layer,
+            labels: self.show_labels,
         };
-        view::paint(&painter, rect, cam, &b.tess, b.scene.layers.len(), &vis);
+        view::paint(
+            &painter,
+            rect,
+            cam,
+            &b.tess,
+            b.scene.layers.len(),
+            &b.scene.labels,
+            &vis,
+        );
 
         let pos = response.hover_pos()?;
         let p = cam.to_board(rect, pos);

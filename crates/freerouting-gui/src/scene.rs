@@ -261,9 +261,42 @@ pub struct Scene {
     pub items: Vec<Item>,
     pub nets: Vec<String>,
     pub components: usize,
+    /// Reference designators, one per placed component.
+    pub labels: Vec<Label>,
     pub bounds: Bounds,
     /// What the reader skipped or did not understand, as text.
     pub warnings: Vec<String>,
+}
+
+/// A component's reference designator. DSN files carry no silkscreen text,
+/// so the label is placed and sized from the footprint: centred on its pads
+/// and outline, along its longer side.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Label {
+    pub text: String,
+    pub center: P,
+    /// Text height in millimetres.
+    pub height: f64,
+    /// Reads bottom to top instead of left to right.
+    pub vertical: bool,
+    pub side: Side,
+}
+
+impl Label {
+    fn fit(text: &str, footprint: &Bounds, side: Side) -> Label {
+        let (w, h) = (footprint.width(), footprint.height());
+        let vertical = h > w * 1.25;
+        let (long, short) = if vertical { (h, w) } else { (w, h) };
+        let chars = text.chars().count().max(1) as f64;
+        let height = (short * 0.4).min(long / (chars * 0.8)).clamp(0.2, 2.0);
+        Label {
+            text: text.to_string(),
+            center: footprint.center(),
+            height,
+            vertical,
+            side,
+        }
+    }
 }
 
 impl Default for Bounds {
@@ -518,7 +551,9 @@ impl Scene {
         }
         let component_name = |id: i32| b.components.get(ComponentId(id)).map(|c| c.name.clone());
 
+        let mut footprints: HashMap<i32, Bounds> = HashMap::new();
         for item in b.items() {
+            let first_new = scene.items.len();
             let net = item
                 .net_numbers()
                 .first()
@@ -629,6 +664,36 @@ impl Scene {
                     }
                 }
             }
+            if item.component_id() > 0
+                && matches!(item.kind, ItemKind::Pin(_) | ItemKind::ComponentOutline(_))
+            {
+                let f = footprints.entry(item.component_id()).or_default();
+                for new in &scene.items[first_new..] {
+                    f.union(&new.geom.bounds());
+                }
+            }
+        }
+
+        for component in b.components.iter().filter(|c| c.is_placed()) {
+            let side = if component.placed_on_front() {
+                Side::Front
+            } else {
+                Side::Back
+            };
+            let footprint = match footprints.get(&component.id.0) {
+                Some(f) if !f.is_empty() => *f,
+                _ => {
+                    let Some(at) = component.exact_location() else {
+                        continue;
+                    };
+                    let mut f = Bounds::EMPTY;
+                    f.add(pt(at));
+                    f.grow(0.5)
+                }
+            };
+            scene
+                .labels
+                .push(Label::fit(&component.name, &footprint, side));
         }
 
         let mut bounds = Bounds::EMPTY;
@@ -797,6 +862,31 @@ mod tests {
         let hit = s.pick(P::new(0.8, 0.0), 0.0, all, Some(0)).unwrap();
         assert_eq!(hit.kind, Kind::Trace);
         assert!(s.pick(P::new(5.0, 4.0), 0.0, all, None).is_none());
+    }
+
+    #[test]
+    fn labels_sit_on_their_footprints() {
+        let s = scene(&Pcb::parse(DESIGN).unwrap());
+        let mut labels = s.labels.clone();
+        labels.sort_by(|a, b| a.text.cmp(&b.text));
+        assert_eq!(labels.len(), 2);
+        assert_eq!(
+            (labels[0].text.as_str(), labels[0].side),
+            ("U1", Side::Front)
+        );
+        assert_eq!(labels[1].side, Side::Back);
+        // One square pad: centred on it, as large as fits.
+        assert!(close(labels[0].center, P::new(1.0, 2.1)), "{:?}", labels[0]);
+        assert!((labels[0].height - 0.2).abs() < 1e-9, "{:?}", labels[0]);
+
+        let tall = Bounds {
+            min: P::new(0.0, 0.0),
+            max: P::new(2.0, 10.0),
+        };
+        let l = Label::fit("R12", &tall, Side::Front);
+        assert!(l.vertical);
+        assert!((l.height - 0.8).abs() < 1e-9);
+        assert!(close(l.center, P::new(1.0, 5.0)));
     }
 
     #[test]

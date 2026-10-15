@@ -4,7 +4,7 @@
 use eframe::egui::{self, Color32, Mesh, Painter, Pos2, Rect, Shape, Stroke, epaint::Vertex};
 use freerouting::dsn::ast::Side;
 
-use crate::scene::{Geom, Kind, P, Scene, Slot};
+use crate::scene::{Geom, Kind, Label, P, Scene, Slot};
 
 /// Segments used for a full circle.
 const CIRCLE_SEGMENTS: usize = 24;
@@ -207,7 +207,6 @@ impl Camera {
         }
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
     pub fn to_screen(self, rect: Rect, p: P) -> Pos2 {
         let c = rect.center();
         Pos2::new(
@@ -244,6 +243,8 @@ pub struct Visibility<'a> {
     pub layers: &'a [bool],
     pub kinds: &'a [bool],
     pub active: usize,
+    /// Reference designators.
+    pub labels: bool,
 }
 
 impl Visibility<'_> {
@@ -311,6 +312,7 @@ pub fn paint(
     camera: &Camera,
     tess: &Tessellation,
     layer_count: usize,
+    labels: &[Label],
     vis: &Visibility,
 ) {
     painter.rect_filled(rect, 0.0, BACKGROUND);
@@ -382,6 +384,44 @@ pub fn paint(
                     painter.add(Shape::line(points, Stroke::new(width, color)));
                 }
             }
+        }
+    }
+
+    if vis.labels {
+        paint_labels(painter, rect, camera, labels);
+    }
+}
+
+/// Draws reference designators, back side first and dimmer. Labels smaller
+/// than a few pixels are left out.
+fn paint_labels(painter: &Painter, rect: Rect, camera: &Camera, labels: &[Label]) {
+    const MIN_PX: f32 = 6.0;
+    let view = rect.expand(50.0);
+    for side in [Side::Back, Side::Front] {
+        let color = match side {
+            Side::Front => Color32::from_rgb(232, 232, 232),
+            Side::Back => Color32::from_rgb(140, 155, 190),
+        };
+        for label in labels.iter().filter(|l| l.side == side) {
+            let px = (label.height * camera.zoom) as f32;
+            let center = camera.to_screen(rect, label.center);
+            if px < MIN_PX || !view.contains(center) {
+                continue;
+            }
+            let galley =
+                painter.layout_no_wrap(label.text.clone(), egui::FontId::monospace(px), color);
+            let size = galley.size();
+            let (angle, pos) = if label.vertical {
+                // Rotated a quarter turn counterclockwise about the top-left
+                // corner of the text, so the text centre lands on `center`.
+                (
+                    -std::f32::consts::FRAC_PI_2,
+                    center + egui::vec2(-size.y / 2.0, size.x / 2.0),
+                )
+            } else {
+                (0.0, center - size / 2.0)
+            };
+            painter.add(egui::epaint::TextShape::new(pos, galley, color).with_angle(angle));
         }
     }
 }
