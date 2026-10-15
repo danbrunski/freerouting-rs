@@ -31,6 +31,12 @@ front. Hovering over an item shows its net and layer in the status bar.
 On Linux the app needs the usual X11/Wayland libraries (`libxkbcommon-x11`, a
 Vulkan or OpenGL driver); under WSL it runs through WSLg.
 
+## KiCad plugin
+
+[kicad-plugin](kicad-plugin/README.md) adds a PCB editor toolbar button that exports the board
+to DSN, routes it with the `freerouting` command line, imports the session back, and opens
+boards in the viewer.
+
 ## License
 
 GPL-3.0, the same as upstream Freerouting, since this is a derivative work.
