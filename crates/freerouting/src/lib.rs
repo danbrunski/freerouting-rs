@@ -1,8 +1,16 @@
-//! PCB autorouting engine: board model, design rules, DRC, autorouter and
-//! optimizer.
+//! The Freerouting engine: board model, rules and DSN board builder.
 //!
-//! Port of the headless routing core of Freerouting (`board`, `rules`, `drc`,
-//! `autoroute`, `core.scoring`). See `docs/PORT_PLAN.md` for the module map.
+//! Port of the board model of the Java Freerouting autorouter
+//! (`app.freerouting.rules`, `core.library`, `board.*`, parts of
+//! `datastructures`, `core.scoring.BoardStatistics`) and of the board-building
+//! half of `io.specctra.DsnReader`.
 
 pub use freerouting_dsn as dsn;
 pub use freerouting_geometry as geometry;
+
+pub mod datastructures;
+pub mod board;
+pub mod io;
+pub mod library;
+pub mod rules;
+mod util;
