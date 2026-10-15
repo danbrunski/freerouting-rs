@@ -13,3 +13,8 @@ path = "src/main.rs"
 [dependencies]
 freerouting.workspace = true
 eframe = { version = "0.32", default-features = false, features = ["default_fonts", "wgpu", "wayland", "x11"] }
+# eframe's `wgpu` feature turns on no wgpu backend by itself; without these the app
+# panics at startup with "No wgpu backend feature ... was enabled". GL (`gles`) is the
+# fallback for machines and VMs without a working Vulkan/Metal/DX12 driver, WSLg included.
+wgpu = { version = "25", default-features = false, features = ["dx12", "metal", "vulkan", "gles", "wgsl"] }
+earcutr = "0.5"

@@ -1,17 +1,29 @@
 //! `freerouting-gui` desktop app.
+//!
+//! Usage: `freerouting-gui [board.dsn [board.ses]]`
+
+// No console window on Windows release builds.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod app;
+mod file_dialog;
+mod scene;
+mod view;
+
+use std::path::PathBuf;
 
 fn main() -> eframe::Result {
-    let options = eframe::NativeOptions::default();
-    eframe::run_native("Freerouting", options, Box::new(|_cc| Ok(Box::new(App))))
-}
-
-struct App;
-
-impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Freerouting");
-            ui.label("No board loaded. The board viewer is not implemented yet.");
-        });
-    }
+    let open: Vec<PathBuf> = std::env::args_os().skip(1).map(PathBuf::from).collect();
+    let options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_title("Freerouting")
+            .with_inner_size([1280.0, 800.0])
+            .with_drag_and_drop(true),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "Freerouting",
+        options,
+        Box::new(|cc| Ok(Box::new(app::App::new(cc, open)))),
+    )
 }
