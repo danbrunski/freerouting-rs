@@ -756,6 +756,7 @@ dependencies = [
  "eframe",
  "freerouting",
  "wgpu",
+ "winit",
 ]
 
 [[package]]

@@ -18,3 +18,7 @@ eframe = { version = "0.32", default-features = false, features = ["default_font
 # fallback for machines and VMs without a working Vulkan/Metal/DX12 driver, WSLg included.
 wgpu = { version = "25", default-features = false, features = ["dx12", "metal", "vulkan", "gles", "wgsl"] }
 earcutr = "0.5"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Same winit as eframe; used to pick X11 under WSL (see `window_system` in main.rs).
+winit = { version = "0.30", default-features = false, features = ["x11"] }
