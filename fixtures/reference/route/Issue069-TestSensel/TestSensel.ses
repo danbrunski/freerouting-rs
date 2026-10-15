@@ -1,0 +1,160 @@
+(session TestSensel
+  (base_design TestSensel)
+  (placement
+    (resolution um 10)
+    (component "Resistor_SMD:R_0603_1608Metric"
+      (place R2 1189740.0 -506886.0 front 0)
+      (place R1 1272000.0 -507000.0 front 180)
+    )
+    (component "MyLibs:PCB_Fork_10mils_5mmx5mm"
+      (place J4 1235000.0 -595000.0 front 0)
+      (place J2 1175000.0 -595000.0 front 0)
+      (place J1 1175000.0 -535000.0 front 0)
+      (place J3 1235000.0 -535000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "(5.1.6)-1")
+    )
+    (library_out 
+      (padstack "Via[0-1]_700:300_um"
+        (shape
+          (circle F.Cu 7000 0 0)
+        )
+        (shape
+          (circle B.Cu 7000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net "/Col_2"
+        (wire
+          (path F.Cu 2540
+            1279875 -507000
+            1250576 -536299
+            1236300 -536299
+          )
+        )
+        (wire
+          (path F.Cu 2540
+            1236300 -536299
+            1236251 -536250
+            1236250 -536250
+          )
+        )
+        (wire
+          (path F.Cu 2540
+            1236300 -536299
+            1236300 -596292
+          )
+          (type protect)
+        )
+      )
+      (net "/Row_1"
+        (via "Via[0-1]_700:300_um" 1223670.0 -588775.0
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2540
+            1227440 -585000
+            1230000 -585000
+            1230000 -535000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2540
+            1223670 -583672
+            1223670 -588775
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2540
+            1223670 -588775
+            1227440 -585000
+          )
+          (type protect)
+        )
+      )
+      (net "/Col_1"
+        (wire
+          (path F.Cu 2540
+            1186504 -535115
+            1177484 -535115
+            1176300 -536299
+          )
+        )
+        (wire
+          (path F.Cu 1904
+            1190631 -536364
+            1187753 -536364
+            1186504 -535115
+          )
+        )
+        (wire
+          (path F.Cu 2540
+            1256235 -514890
+            1228634 -514890
+            1207160 -536364
+            1190631 -536364
+          )
+        )
+        (wire
+          (path F.Cu 2540
+            1176250 -536250
+            1176251 -536250
+            1176300 -536299
+          )
+        )
+        (wire
+          (path F.Cu 2540
+            1256235 -514890
+            1264125 -507000
+          )
+        )
+        (via "Via[0-1]_700:300_um" 1256235.0 -514890.0
+        )
+        (wire
+          (path F.Cu 2540
+            1176300 -536299
+            1176300 -596292
+          )
+          (type protect)
+        )
+      )
+      (net "/Row_2"
+        (wire
+          (path F.Cu 1270
+            1223750 -643750
+            1223998 -643998
+            1223998 -644000
+          )
+        )
+        (via "Via[0-1]_700:300_um" 1228500.0 -641430.0
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2540
+            1223720 -643698
+            1226230 -643698
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2540
+            1226230 -643698
+            1228500 -641430
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

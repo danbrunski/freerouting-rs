@@ -1,0 +1,49 @@
+(session "scoring-mixed-layer"
+  (base_design "scoring-mixed-layer")
+  (placement
+    (resolution um 10)
+    (component "PAD_F"
+      (place U1 20000.0 20000.0 front 0)
+    )
+    (component "PAD_B"
+      (place U2 80000.0 80000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+      (padstack "Via[0-1]_800:400_um"
+        (shape
+          (circle F.Cu 8000 0 0)
+        )
+        (shape
+          (circle B.Cu 8000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net CROSS
+        (wire
+          (path F.Cu 2500
+            20000 20000
+            82700 20000
+          )
+        )
+        (wire
+          (path B.Cu 2500
+            80000 80000
+            82700 77300
+            82700 20000
+          )
+        )
+        (via "Via[0-1]_800:400_um" 82700.0 20000.0
+        )
+      )
+    )
+  )
+)

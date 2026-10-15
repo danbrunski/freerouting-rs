@@ -1,0 +1,105 @@
+{
+  "routeMillis": 45309,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "EasyEDA Pro,2.2.47.7",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 23164.80,
+        "y": 19608.80,
+        "width": -25.40,
+        "height": -25.40
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 23190.20,
+        "height": 19634.20
+      },
+      "area_cm2": 4.55
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 4
+    },
+    "items": {
+      "total_count": 292,
+      "trace_count": 127,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 164,
+      "component_count": 0,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 1
+    },
+    "pads": {
+      "total_count": 164
+    },
+    "nets": {
+      "total_count": 52,
+      "class_count": 54
+    },
+    "connections": {
+      "maximum_count": 81,
+      "incomplete_count": 8
+    },
+    "traces": {
+      "total_count": 127,
+      "total_segment_count": 185,
+      "total_length": 28894.70,
+      "total_length_mm": 28.89,
+      "total_weighted_length": 172968032.00,
+      "average_length": 227.52,
+      "total_vertical_length": 4627.02,
+      "total_horizontal_length": 7528.28,
+      "total_angled_length": 9961.07
+    },
+    "bends": {
+      "total_count": 58,
+      "90_degree_count": 1,
+      "45_degree_count": 57,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 5,
+      "pre_existing_count": 5,
+      "unfixable_count": 5,
+      "router_introduced_count": 0,
+      "total_violation_um": 49.53,
+      "min_violation_um": 2.34,
+      "max_violation_um": 20.32,
+      "avg_violation_um": 9.91
+    },
+    "difficulty": {
+      "pin_count": 164,
+      "signal_layer_count": 4,
+      "complexity_c": 656,
+      "difficulty_d": 656.00,
+      "board_area_cm2": 4.55
+    },
+    "bounds": {
+      "min_trace_length_mm": 32.31,
+      "min_via_count": 1,
+      "min_bend_count": 50
+    },
+    "fanout": {
+      "total_smd_pins": 95,
+      "pins_to_escape": 30,
+      "escaped_count": 69
+    }
+  },
+  "routerScore": 868.09955,
+  "fixture": "Issue684-Autorouter_PCB1_2026-5-8.dsn"
+}

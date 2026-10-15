@@ -1,0 +1,236 @@
+(session "Issue433-my-board"
+  (base_design "Issue433-my-board")
+  (placement
+    (resolution um 10)
+    (component "simple_resistor:1.6000x0.6000_mm"
+      (place "R1_source_component_2" -63568.93060790263 -85004.36101920712 front 0)
+    )
+    (component "simple_chip:18.9150x18.1020_mm"
+      (place "XI_source_component_3" 20422.720000000005 48840.0 front 0)
+    )
+    (component "simple_pin_header:1.5000x3.5000_mm"
+      (place "batt_source_component_0" 36885.631738662036 -99642.0520580684 front 0)
+    )
+    (component "simple_pin_header:1.5000x12.0000_mm"
+      (place "conn_source_component_1" -107273.85294299686 -63294.53643315949 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version )
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net "Net-(R1_source_component_2-Pad2)"
+        (wire
+          (path F.Cu 1000
+            -107270 -115790
+            -76484 -85004
+            -68569 -85004
+          )
+        )
+      )
+      (net "Net-(XI_source_component_3-Pad12)"
+        (wire
+          (path F.Cu 1000
+            84981 69930
+            84981 -63998
+          )
+        )
+        (wire
+          (path B.Cu 1000
+            -58569 -63998
+            84981 -63998
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -58569 -85004
+            -58569 -63998
+          )
+        )
+        (via "Via[0-1]_600:300_um" -58569.0 -63998.0
+        )
+        (wire
+          (path F.Cu 1000
+            101248 69930
+            84981 69930
+          )
+        )
+        (via "Via[0-1]_600:300_um" 84981.0 -63998.0
+        )
+      )
+      (net "Net-(XI_source_component_3-Pad15)"
+        (wire
+          (path F.Cu 1000
+            36890 -89640
+            -9285 -43465
+            -9285 48350
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -24302 48350
+            -9285 48350
+          )
+        )
+      )
+      (net "Net-(XI_source_component_3-Pad16)"
+        (wire
+          (path F.Cu 1000
+            36890 -109640
+            -40806 -31944
+            -40806 56352
+          )
+        )
+        (wire
+          (path F.Cu 750
+            -24302 67400
+            -39194 67400
+          )
+        )
+        (wire
+          (path F.Cu 750
+            -40806 56352
+            -40806 65788
+            -39194 67400
+          )
+        )
+      )
+      (net "Net-(XI_source_component_3-Pad2)"
+        (wire
+          (path F.Cu 1000
+            -68569 -79487
+            -85337 -62719
+            -85337 75850
+            -78755 82432
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -68569 -85004
+            -68569 -79487
+          )
+        )
+        (wire
+          (path F.Cu 750
+            -78755 82432
+            -60908 82432
+            -60402 82938
+          )
+        )
+        (wire
+          (path F.Cu 750
+            -60402 95330
+            -60402 82938
+          )
+        )
+      )
+      (net "Net-(XI_source_component_3-Pad3)"
+        (wire
+          (path F.Cu 1000
+            -76669 69930
+            -79301 67298
+            -79301 33171
+          )
+        )
+        (wire
+          (path B.Cu 1000
+            -79301 33171
+            -121276 -8804
+          )
+        )
+        (wire
+          (path B.Cu 1000
+            -120396 -11808
+            -120396 -32664
+            -107270 -45790
+          )
+        )
+        (wire
+          (path B.Cu 750
+            -121276 -8804
+            -121276 -10928
+            -120396 -11808
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -60402 69930
+            -76669 69930
+          )
+        )
+        (via "Via[0-1]_600:300_um" -79301.0 33171.0
+        )
+      )
+      (net "GND_source_net_0"
+        (wire
+          (path F.Cu 1000
+            32848 105450
+            21831 105450
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -107270 -10790
+            -107270 75920
+            -75160 108030
+            -24006 108030
+            -15569 116467
+            17700 116467
+            21831 112336
+            21831 105450
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -120396 -46808
+            -120396 -67664
+            -107270 -80790
+          )
+        )
+        (wire
+          (path F.Cu 750
+            -121276 -43804
+            -121276 -45928
+            -120396 -46808
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            -107270 -10790
+            -107270 -29798
+            -121276 -43804
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            101248 95330
+            84981 95330
+          )
+        )
+        (wire
+          (path F.Cu 1000
+            32848 105450
+            74861 105450
+            84981 95330
+          )
+        )
+      )
+    )
+  )
+)

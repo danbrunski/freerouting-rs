@@ -1,0 +1,105 @@
+{
+  "routeMillis": 43975,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.0",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2329.45,
+        "y": 3965.80,
+        "width": 406.35,
+        "height": -1248.45
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1923.10,
+        "height": 5214.25
+      },
+      "area_cm2": 1002.75
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1310,
+      "trace_count": 438,
+      "via_count": 37,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 378,
+      "component_count": 452,
+      "other_count": 5
+    },
+    "components": {
+      "total_count": 36
+    },
+    "pads": {
+      "total_count": 378
+    },
+    "nets": {
+      "total_count": 211,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 167,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 438,
+      "total_segment_count": 1233,
+      "total_length": 61235.15,
+      "total_length_mm": 6123.51,
+      "total_weighted_length": 228760352.00,
+      "average_length": 139.81,
+      "total_vertical_length": 14945.56,
+      "total_horizontal_length": 20100.02,
+      "total_angled_length": 18751.51
+    },
+    "bends": {
+      "total_count": 795,
+      "90_degree_count": 2,
+      "45_degree_count": 793,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 37,
+      "through_hole_count": 37,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 378,
+      "signal_layer_count": 2,
+      "complexity_c": 756,
+      "difficulty_d": 756.00,
+      "board_area_cm2": 1002.75
+    },
+    "bounds": {
+      "min_trace_length_mm": 6180.99,
+      "min_via_count": 0,
+      "min_bend_count": 137
+    },
+    "fanout": {
+      "total_smd_pins": 0,
+      "pins_to_escape": 0,
+      "escaped_count": 0
+    }
+  },
+  "routerScore": 1000.0,
+  "fixture": "Issue632-MiniAutoPilot/Mini Auto Pilot.dsn"
+}

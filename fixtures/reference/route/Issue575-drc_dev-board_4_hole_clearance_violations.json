@@ -1,0 +1,105 @@
+{
+  "routeMillis": 10332,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,9.0.1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1417.00,
+        "y": -350.40,
+        "width": 1123.00,
+        "height": -947.75
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 294.00,
+        "height": 597.35
+      },
+      "area_cm2": 17.56
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 818,
+      "trace_count": 409,
+      "via_count": 25,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 143,
+      "component_count": 234,
+      "other_count": 7
+    },
+    "components": {
+      "total_count": 21
+    },
+    "pads": {
+      "total_count": 143
+    },
+    "nets": {
+      "total_count": 47,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 96,
+      "incomplete_count": 6
+    },
+    "traces": {
+      "total_count": 409,
+      "total_segment_count": 410,
+      "total_length": 11070.02,
+      "total_length_mm": 1107.00,
+      "total_weighted_length": 16178.27,
+      "average_length": 27.07,
+      "total_vertical_length": 5659.18,
+      "total_horizontal_length": 1560.85,
+      "total_angled_length": 8157.31
+    },
+    "bends": {
+      "total_count": 1,
+      "90_degree_count": 0,
+      "45_degree_count": 1,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 25,
+      "through_hole_count": 25,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 143,
+      "signal_layer_count": 2,
+      "complexity_c": 286,
+      "difficulty_d": 286.00,
+      "board_area_cm2": 17.56
+    },
+    "bounds": {
+      "min_trace_length_mm": 1138.42,
+      "min_via_count": 0,
+      "min_bend_count": 69
+    },
+    "fanout": {
+      "total_smd_pins": 99,
+      "pins_to_escape": 30,
+      "escaped_count": 95
+    }
+  },
+  "routerScore": 916.6667,
+  "fixture": "Issue575-drc_dev-board_4_hole_clearance_violations.dsn"
+}

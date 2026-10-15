@@ -1,0 +1,8338 @@
+(session "Issue145-smoothieboard"
+  (base_design "Issue145-smoothieboard")
+  (placement
+    (resolution um 10)
+    (component "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm"
+      (place JP36 1237360.0 -893191.0 front 270)
+      (place JP30 1198760.0 -893699.0 front 270)
+      (place JP31 1162310.0 -893826.0 front 90)
+    )
+    (component "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm::1"
+      (place JP13 1015110.0 -937641.0 front 0)
+    )
+    (component 
+      (place @HOLE0 1854580.0 -557911.0 front 0)
+      (place @HOLE1 863985.0 -557911.0 front 0)
+      (place @HOLE2 928755.0 -1486280.0 front 0)
+      (place @HOLE3 1853310.0 -1537080.0 front 0)
+    )
+    (component "smoothieboard-5driver:LQFP100"
+      (place IC1 1364360.0 -1123060.0 front 315)
+    )
+    (component "smoothieboard-5driver:CRYSTAL_3.2X2.5"
+      (place Q2 1313560.0 -1243710.0 front 90)
+      (place Q3 1166240.0 -1130680.0 front 270)
+    )
+    (component "smoothieboard-5driver:C0603"
+      (place C2 1290700.0 -1244980.0 front 270)
+      (place C3 1313560.0 -1272920.0 front 180)
+      (place C8 1497080.0 -1088140.0 front 225)
+      (place C9 1471040.0 -1189740.0 front 135)
+      (place C10 1413890.0 -1242440.0 front 135)
+      (place C11 1252600.0 -1077340.0 front 315)
+      (place C12 1304670.0 -1013840.0 front 135)
+      (place C13 1273660.0 -1244890.0 front 90)
+      (place L1 1261490.0 -1195450.0 front 225)
+      (place C6 1284760.0 -1205820.0 front 315)
+      (place C4 1024640.0 -1315470.0 front 0)
+      (place C5 1024640.0 -1363090.0 front 0)
+      (place C1 1050040.0 -1046230.0 front 90)
+      (place C14 1420880.0 -1009400.0 front 225)
+      (place C31 1505970.0 -970661.0 front 270)
+      (place C19 947805.0 -828421.0 front 180)
+      (place C17 947805.0 -844931.0 front 0)
+      (place C25 1024640.0 -883666.0 front 180)
+      (place C15 952885.0 -860171.0 front 0)
+      (place C20 1199260.0 -824611.0 front 180)
+      (place C18 1199260.0 -840486.0 front 0)
+      (place C28 1278640.0 -826516.0 front 0)
+      (place C16 1199260.0 -856361.0 front 0)
+      (place C36 1442470.0 -832866.0 front 180)
+      (place C34 1442470.0 -849376.0 front 0)
+      (place C38 1533910.0 -831596.0 front 0)
+      (place C32 1442470.0 -865886.0 front 0)
+      (place C37 1695830.0 -819531.0 front 180)
+      (place C35 1695830.0 -836041.0 front 0)
+      (place C41 1787910.0 -822071.0 front 0)
+      (place C33 1695830.0 -852551.0 front 0)
+      (place C27 945900.0 -689356.0 front 135)
+      (place C30 1204340.0 -690626.0 front 135)
+      (place C40 1707710.0 -689542.0 front 135)
+      (place C43 1455800.0 -687451.0 front 135)
+      (place C58 1189100.0 -1150370.0 front 270)
+      (place C59 1143380.0 -1128780.0 front 270)
+      (place C46 1112900.0 -1094490.0 front 270)
+      (place C47 1081790.0 -1014480.0 front 270)
+      (place C51 1208150.0 -1036700.0 front 0)
+      (place C53 1095760.0 -1244980.0 front 270)
+      (place C52 1098930.0 -1151000.0 front 90)
+      (place C54 1067820.0 -1119250.0 front 0)
+      (place C55 1070990.0 -1142110.0 front 0)
+      (place C56 1070990.0 -1252600.0 front 0)
+      (place C57 1070990.0 -1210690.0 front 0)
+      (place C44 1142110.0 -949706.0 front 270)
+      (place C65 1656410.0 -1110800.0 front 180)
+      (place C62 1507860.0 -1395760.0 front 270)
+      (place C66 1529050.0 -1364600.0 front 180)
+      (place C68 1700910.0 -899541.0 front 0)
+      (place C69 1944940.0 -822091.0 front 180)
+      (place C70 1945860.0 -843641.0 front 0)
+      (place C71 2072640.0 -842010.0 front 0)
+      (place C72 1945640.0 -864870.0 front 0)
+      (place C73 1955610.0 -694891.0 front 135)
+      (place C75 1961260.0 -1201170.0 front 0)
+      (place C76 1792990.0 -1188470.0 front 270)
+      (place C77 1805690.0 -1017020.0 front 90)
+      (place C78 1145290.0 -1236090.0 front 90)
+      (place C79 1196090.0 -1236090.0 front 90)
+      (place C80 1246890.0 -1236090.0 front 90)
+      (place C81 1113540.0 -1280540.0 front 90)
+      (place C82 1164340.0 -1280540.0 front 90)
+      (place C83 1215140.0 -1280540.0 front 90)
+    )
+    (component "smoothieboard-5driver:EIA3216"
+      (place C7 1561210.0 -1159890.0 front 270)
+      (place C21 907165.0 -752221.0 front 270)
+      (place C22 905895.0 -808101.0 front 270)
+      (place C23 905895.0 -863981.0 front 270)
+      (place C24 918595.0 -918591.0 front 180)
+      (place C45 1122430.0 -1140210.0 front 90)
+      (place C50 1213230.0 -1057020.0 front 180)
+      (place C48 1208790.0 -1144020.0 front 90)
+      (place C64 1589790.0 -1159890.0 front 270)
+      (place C61 1925070.0 -1478030.0 front 180)
+    )
+    (component "smoothieboard-5driver:R0603"
+      (place R14 1228470.0 -1485010.0 front 180)
+      (place R8 1024640.0 -1347220.0 front 0)
+      (place R9 1024640.0 -1331340.0 front 0)
+      (place R15 1220850.0 -1424690.0 front 270)
+      (place R5 1521280.0 -1200580.0 front 45)
+      (place R6 1547880.0 -1203070.0 front 90)
+      (place R10 1586610.0 -1106550.0 front 180)
+      (place R11 1586610.0 -1088140.0 front 180)
+      (place R12 1586610.0 -1069090.0 front 180)
+      (place R13 1586610.0 -1049400.0 front 180)
+      (place R16 1150370.0 -1331980.0 front 0)
+      (place R17 1150370.0 -1348490.0 front 180)
+      (place R3 1017270.0 -1047050.0 front 90)
+      (place R2 1048050.0 -990201.0 front 270)
+      (place R1 1034050.0 -1047050.0 front 90)
+      (place R37 1497710.0 -1003680.0 front 0)
+      (place R26 1024000.0 -867791.0 front 0)
+      (place R24 1024000.0 -836041.0 front 0)
+      (place R27 1279910.0 -865251.0 front 0)
+      (place R28 1279270.0 -846836.0 front 0)
+      (place R40 1533910.0 -884301.0 front 0)
+      (place R41 1533910.0 -849376.0 front 0)
+      (place R43 1790310.0 -854891.0 front 0)
+      (place R44 1788540.0 -836676.0 front 0)
+      (place R30 1443100.0 -884936.0 front 0)
+      (place R22 1024000.0 -852551.0 front 180)
+      (place R23 1279270.0 -883031.0 front 0)
+      (place R38 1533910.0 -865886.0 front 0)
+      (place R39 1789180.0 -872236.0 front 0)
+      (place R35 1532000.0 -918591.0 front 0)
+      (place R36 1532000.0 -934466.0 front 0)
+      (place R25 1024000.0 -899541.0 front 0)
+      (place R29 1279270.0 -902081.0 front 0)
+      (place R42 1532000.0 -901446.0 front 0)
+      (place R45 1789180.0 -890651.0 front 0)
+      (place R52 1208150.0 -989076.0 front 0)
+      (place R64 1165610.0 -1100840.0 front 180)
+      (place R63 1097660.0 -1093850.0 front 90)
+      (place R50 1069720.0 -1279270.0 front 180)
+      (place R62 1131950.0 -1095120.0 front 90)
+      (place R61 1017050.0 -1093420.0 front 180)
+      (place R51 1208150.0 -968756.0 front 0)
+      (place R77 1586610.0 -1030990.0 front 180)
+      (place R73 1681860.0 -1278640.0 front 180)
+      (place R75 1787270.0 -1273560.0 front 90)
+      (place R69 1575080.0 -1342240.0 front 270)
+      (place R70 1351660.0 -1395480.0 front 0)
+      (place R78 1585340.0 -1010030.0 front 180)
+      (place R74 1612010.0 -1309330.0 front 0)
+      (place R76 1741550.0 -1273560.0 front 270)
+      (place R71 1440830.0 -1282370.0 front 0)
+      (place R72 1351660.0 -1363090.0 front 0)
+      (place R65 1727580.0 -1478660.0 front 90)
+      (place R66 1814160.0 -1479540.0 front 90)
+      (place R67 1527560.0 -1461520.0 front 0)
+      (place R68 1373890.0 -1445010.0 front 270)
+      (place R7 1024640.0 -1378970.0 front 180)
+      (place R53 1208150.0 -1020190.0 front 0)
+      (place R58 1206880.0 -1076070.0 front 0)
+      (place R59 1206880.0 -1091310.0 front 0)
+      (place R60 1208150.0 -1004950.0 front 0)
+      (place R54 1067820.0 -1101470.0 front 180)
+      (place R55 1070990.0 -1159890.0 front 180)
+      (place R56 1070990.0 -1236090.0 front 180)
+      (place R57 1070990.0 -1192910.0 front 180)
+      (place R4 1732660.0 -899541.0 front 180)
+      (place R18 1696990.0 -972141.0 front 90)
+      (place R19 2071370.0 -814070.0 front 0)
+      (place R20 2030730.0 -844550.0 front 0)
+      (place R80 2030730.0 -866140.0 front 0)
+      (place R81 2031110.0 -886841.0 front 0)
+      (place R82 1951740.0 -1293240.0 front 0)
+      (place R83 1983490.0 -1293240.0 front 0)
+      (place R84 2027940.0 -1299590.0 front 270)
+      (place R85 2059690.0 -1464690.0 front 180)
+      (place R86 2075560.0 -1388490.0 front 0)
+      (place R87 2012060.0 -1226570.0 front 270)
+      (place R88 2043810.0 -1388490.0 front 180)
+      (place R89 1926340.0 -1175770.0 front 0)
+      (place R90 1558040.0 -1391670.0 front 180)
+      (place R91 1351660.0 -1378970.0 front 180)
+      (place R92 1129410.0 -1236090.0 front 270)
+      (place R93 1113540.0 -1236090.0 front 270)
+      (place R94 1164340.0 -1236090.0 front 270)
+      (place R95 1180210.0 -1236090.0 front 270)
+      (place R96 1215140.0 -1236090.0 front 270)
+      (place R97 1231010.0 -1236090.0 front 270)
+      (place R98 1145290.0 -1280540.0 front 90)
+      (place R99 1129410.0 -1280540.0 front 270)
+      (place R100 1196090.0 -1280540.0 front 90)
+      (place R101 1180210.0 -1280540.0 front 270)
+      (place R102 1246890.0 -1280540.0 front 90)
+      (place R103 1231010.0 -1280540.0 front 270)
+    )
+    (component "smoothieboard-5driver:TACTILE_SWITCH_SMD"
+      (place S1 1265300.0 -1530100.0 front 90)
+      (place S2 1239270.0 -1368170.0 front 90)
+    )
+    (component "smoothieboard-5driver:CHIP-LED0805"
+      (place LED1 1619000.0 -1106550.0 front 270)
+      (place LED2 1619000.0 -1088140.0 front 270)
+      (place LED3 1619000.0 -1069090.0 front 270)
+      (place LED4 1619000.0 -1049400.0 front 270)
+      (place LED9 1619000.0 -1030350.0 front 270)
+      (place LED10 1619000.0 -1009400.0 front 270)
+      (place LED5 1691390.0 -1471040.0 front 90)
+      (place LED6 1780290.0 -1471040.0 front 90)
+      (place LED7 1588520.0 -1462790.0 front 270)
+      (place LED8 1347850.0 -1461520.0 front 90)
+      (place LED11 2027940.0 -1334520.0 front 180)
+      (place LED12 2024760.0 -1464690.0 front 90)
+    )
+    (component "smoothieboard-5driver:MOLEX-1X6"
+      (place JP5 1041680.0 -1450890.0 front 180)
+    )
+    (component "smoothieboard-5driver:TACTILE-PTH-LED-12MM"
+      (place S3 1133220.0 -1435480.0 front 270)
+    )
+    (component "smoothieboard-5driver:MOLEX-1X3"
+      (place JP26 872875.0 -1497710.0 front 90)
+      (place JP14 909070.0 -1540260.0 front 180)
+      (place JP16 987810.0 -1540260.0 front 180)
+      (place JP19 1066550.0 -1540260.0 front 180)
+      (place JP21 1145290.0 -1540260.0 front 180)
+      (place JP22 1224030.0 -1540260.0 front 180)
+    )
+    (component "smoothieboard-5driver:1X04_NO_SILK"
+      (place JP1 1583440.0 -1229740.0 front 180)
+      (place JP10 1583440.0 -1255140.0 front 180)
+      (place JP7 1079250.0 -810006.0 front 270)
+      (place JP9 1330070.0 -804291.0 front 270)
+      (place JP12 1592330.0 -814451.0 front 270)
+      (place JP15 1638680.0 -832866.0 front 270)
+      (place JP29 1561210.0 -1112900.0 front 90)
+      (place JP18 1907290.0 -823341.0 front 270)
+      (place JP8 1691390.0 -1083690.0 front 90)
+      (place JP34 1596140.0 -982091.0 front 0)
+    )
+    (component "smoothieboard-5driver:1X03_NO_SILK"
+      (place JP2 1441200.0 -1022730.0 front 315)
+      (place JP3 1494540.0 -1043050.0 front 135)
+      (place JP4 1065910.0 -956691.0 front 0)
+      (place JP6 1116710.0 -931291.0 front 180)
+    )
+    (component "smoothieboard-5driver:1X03"
+      (place JP25 1239900.0 -1465960.0 front 90)
+      (place JP17 1400560.0 -811911.0 front 270)
+      (place JP20 1323720.0 -1326900.0 front 180)
+    )
+    (component "smoothieboard-5driver:1X02"
+      (place JP24 1123060.0 -1421510.0 front 0)
+      (place JP23 1123060.0 -1446910.0 front 0)
+      (place JP35 900815.0 -709041.0 front 180)
+    )
+    (component "smoothieboard-5driver:ETSSOP24"
+      (place IC2 988445.0 -763651.0 front 0)
+      (place IC3 1244980.0 -763651.0 front 0)
+      (place IC5 1500890.0 -763651.0 front 0)
+      (place IC6 1752980.0 -763651.0 front 0)
+      (place IC12 1991190.0 -766091.0 front 0)
+    )
+    (component "smoothieboard-5driver:R2512"
+      (place R31 1058290.0 -651891.0 front 180)
+      (place R32 912245.0 -653161.0 front 0)
+      (place R33 1308480.0 -651891.0 front 180)
+      (place R34 1182750.0 -651256.0 front 0)
+      (place R46 1563750.0 -651256.0 front 180)
+      (place R47 1438020.0 -651891.0 front 0)
+      (place R48 1815850.0 -651256.0 front 180)
+      (place R49 1681860.0 -652526.0 front 0)
+      (place R21 2046990.0 -651891.0 front 180)
+      (place R79 1935860.0 -651891.0 front 0)
+    )
+    (component "smoothieboard-5driver:08P"
+      (place SL1 865255.0 -827151.0 front 270)
+    )
+    (component "smoothieboard-5driver:0603-ARV"
+      (place RN1 971935.0 -913511.0 front 0)
+    )
+    (component "smoothieboard-5driver:TSSOP20"
+      (place IC4 1455800.0 -944626.0 front 180)
+      (place IC9 1737660.0 -952091.0 front 0)
+    )
+    (component "smoothieboard-5driver:10X04MTA"
+      (place J1 988445.0 -611251.0 front 0)
+      (place J2 1245620.0 -608711.0 front 0)
+      (place J3 1500890.0 -606806.0 front 0)
+      (place J4 1752980.0 -604901.0 front 0)
+      (place J5 1989840.0 -607441.0 front 0)
+    )
+    (component "smoothieboard-5driver:180G-4"
+      (place X1 988445.0 -568071.0 front 180)
+      (place X2 1245620.0 -569341.0 front 180)
+      (place X3 1500890.0 -568706.0 front 180)
+      (place X4 1752980.0 -565531.0 front 180)
+      (place X5 1989840.0 -566166.0 front 180)
+    )
+    (component "smoothieboard-5driver:QFN24_4MM"
+      (place IC8 1139570.0 -1034160.0 front 90)
+    )
+    (component "smoothieboard-5driver:0603"
+      (place FB1 1064640.0 -1014480.0 front 90)
+    )
+    (component "smoothieboard-5driver:C0603K"
+      (place C49 1227840.0 -1137670.0 front 270)
+    )
+    (component "smoothieboard-5driver:SOT23-5"
+      (place IC7 1167510.0 -963041.0 front 0)
+    )
+    (component "smoothieboard-5driver:SOT223"
+      (place IC10 1649480.0 -1157350.0 front 270)
+    )
+    (component "smoothieboard-5driver:SMADIODE"
+      (place D2 1870460.0 -956691.0 front 0)
+      (place D1 1619000.0 -1241170.0 front 270)
+      (place D4 1869190.0 -1004320.0 front 0)
+      (place D6 1866010.0 -1051940.0 front 0)
+      (place D7 1669160.0 -1388490.0 front 180)
+      (place D8 1758060.0 -1388490.0 front 0)
+      (place D9 1948560.0 -1401190.0 front 0)
+    )
+    (component "smoothieboard-5driver:TO220BV"
+      (place Q6 1567560.0 -1445640.0 front 180)
+      (place Q7 1312930.0 -1446280.0 front 180)
+      (place Q5 2040640.0 -1445640.0 front 180)
+    )
+    (component "smoothieboard-5driver:PANASONIC_E"
+      (place C60 1412620.0 -1338960.0 front 270)
+      (place C63 1865380.0 -1352300.0 front 180)
+      (place C26 1118620.0 -592201.0 front 270)
+      (place C29 1372620.0 -585851.0 front 270)
+      (place C39 1623720.0 -588851.0 front 270)
+      (place C42 1847060.0 -844426.0 front 90)
+      (place C74 1876560.0 -723991.0 front 270)
+    )
+    (component "smoothieboard-5driver:MOLEX8981"
+      (place POWER1 1963170.0 -1131950.0 front 0)
+    )
+    (component "smoothieboard-5driver:SOT230P700X160-4N"
+      (place Q8 1669160.0 -1331340.0 front 270)
+      (place Q9 1764410.0 -1331980.0 front 270)
+      (place Q4 1977140.0 -1334520.0 front 0)
+    )
+    (component "smoothieboard-5driver:POWER_JACK_SMD"
+      (place J10 2114550.0 -1209040.0 front 180)
+    )
+    (component "smoothieboard-5driver:180G-2"
+      (place X12 2021590.0 -977011.0 front 270)
+      (place X11 2021590.0 -1093850.0 front 270)
+      (place X7 1690750.0 -1540890.0 front 180)
+      (place X8 1780160.0 -1540890.0 front 180)
+      (place X10 1588840.0 -1540890.0 front 180)
+      (place X6 1927610.0 -1540890.0 front 0)
+      (place X9 2097790.0 -1324990.0 front 270)
+      (place X13 1469140.0 -1540890.0 front 0)
+      (place X15 1351660.0 -1540890.0 front 0)
+      (place X16 2040640.0 -1540890.0 front 180)
+    )
+    (component "smoothieboard-5driver:TO263AB"
+      (place D3 1925070.0 -1117980.0 front 180)
+    )
+    (component "smoothieboard-5driver:JP1"
+      (place JP28 1862840.0 -1426590.0 front 0)
+      (place JP11 1407540.0 -1439290.0 front 270)
+      (place JP27 1406910.0 -1407540.0 front 270)
+    )
+    (component "smoothieboard-5driver:10X02MTA"
+      (place J8 1692020.0 -1500250.0 front 180)
+      (place J6 1781160.0 -1500250.0 front 0)
+      (place J9 1587810.0 -1500250.0 front 0)
+      (place J7 2056510.0 -1324990.0 front 90)
+      (place J11 1351660.0 -1500250.0 front 180)
+      (place J13 2040640.0 -1500250.0 front 0)
+    )
+    (component "smoothieboard-5driver:MICRO-SD-SOCKET-PP"
+      (place U1 997335.0 -945261.0 front 90)
+    )
+    (component "smoothieboard-5driver:HR911105A"
+      (place RJ1 940185.0 -1187830.0 front 180)
+    )
+    (component "smoothieboard-5driver:SOIC8"
+      (place IC14 1526920.0 -1330070.0 front 270)
+      (place IC15 1961260.0 -1232920.0 front 90)
+    )
+    (component "smoothieboard-5driver:C0805"
+      (place C67 1031310.0 -1010890.0 front 90)
+    )
+    (component "smoothieboard-5driver:SOT89"
+      (place IC11 1477110.0 -1396590.0 front 180)
+    )
+    (component "smoothieboard-5driver:USB-B-PTH"
+      (place X14 957315.0 -1349890.0 front 0)
+    )
+    (component "smoothieboard-5driver:SJ_3"
+      (place SJ1 993465.0 -1486440.0 back 180)
+      (place SJ2 1043690.0 -1486920.0 back 0)
+      (place SJ3 1542160.0 -1166240.0 back 180)
+    )
+    (component "smoothieboard-5driver:SC74_INFINEON"
+      (place Q1 1042310.0 -1406240.0 front 90)
+    )
+    (component "smoothieboard-5driver:1715250000"
+      (place U$5 1445090.0 -1524890.0 front 0)
+      (place U$6 1327310.0 -1524890.0 front 0)
+      (place U$10 1613190.0 -1524890.0 front 180)
+      (place U$7 2015240.0 -1524890.0 front 0)
+    )
+    (component "smoothieboard-5driver:TO252"
+      (place Q10 1875540.0 -1137670.0 front 0)
+    )
+    (component "smoothieboard-5driver:SMB"
+      (place D5 1824740.0 -1204340.0 front 90)
+    )
+    (component "smoothieboard-5driver:1X05"
+      (place JP32 1221490.0 -1194820.0 front 180)
+      (place JP33 1583440.0 -1280540.0 front 180)
+    )
+    (component "smoothieboard-5driver:R-78"
+      (place IC13 1726310.0 -1102740.0 front 270)
+    )
+    (component "smoothieboard-5driver:PANASONIC_D"
+      (place C84 1739010.0 -1204340.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "(5.1.9)-1")
+    )
+    (library_out 
+      (padstack "Via[0-3]_800:400_um"
+        (shape
+          (circle Top 8000 0 0)
+        )
+        (shape
+          (circle Route2 8000 0 0)
+        )
+        (shape
+          (circle Route15 8000 0 0)
+        )
+        (shape
+          (circle Bottom 8000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net AGND
+        (wire
+          (path Top 2500
+            1645579 -1002232
+            1636668 -1002232
+            1629500 -1009400
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1645579.0 -1002232.0
+        )
+        (wire
+          (path Top 2500
+            1629500 -1030350
+            1638769 -1030350
+          )
+        )
+        (wire
+          (path Top 2500
+            1641748 -1037490
+            1638769 -1034511
+            1638769 -1030350
+          )
+        )
+        (wire
+          (path Top 2500
+            1641748 -1037490
+            1638769 -1040469
+            1638769 -1049400
+          )
+        )
+        (wire
+          (path Top 2500
+            1629500 -1049400
+            1638769 -1049400
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1641748.0 -1037490.0
+        )
+        (wire
+          (path Top 2500
+            1641638 -1066221
+            1638769 -1069090
+          )
+        )
+        (wire
+          (path Top 2500
+            1629500 -1069090
+            1638769 -1069090
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1641638.0 -1066221.0
+        )
+        (wire
+          (path Top 2500
+            1641748 -1076962
+            1638769 -1079941
+            1638769 -1088140
+          )
+        )
+        (wire
+          (path Top 2500
+            1629500 -1088140
+            1638769 -1088140
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1641748.0 -1076962.0
+        )
+        (wire
+          (path Top 2500
+            1647910 -1110800
+            1639141 -1110800
+          )
+        )
+        (wire
+          (path Top 2500
+            1629500 -1106550
+            1638769 -1106550
+          )
+        )
+        (wire
+          (path Top 2500
+            1639141 -1110800
+            1639141 -1106922
+            1638769 -1106550
+          )
+        )
+        (wire
+          (path Top 2500
+            1215140 -1272040
+            1215140 -1260390
+          )
+        )
+        (wire
+          (path Top 2500
+            1164340 -1272040
+            1164340 -1260429
+          )
+        )
+        (wire
+          (path Top 2500
+            1343160 -1378970
+            1334891 -1378970
+          )
+        )
+        (wire
+          (path Top 2500
+            1331856 -1368780
+            1334891 -1371815
+            1334891 -1378970
+          )
+        )
+        (wire
+          (path Top 2500
+            1538240 -1388639
+            1541271 -1391670
+          )
+        )
+        (wire
+          (path Top 2500
+            1549540 -1391670
+            1541271 -1391670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1538240.0 -1388639.0
+        )
+        (wire
+          (path Top 2500
+            1945953 -1178614
+            1943109 -1175770
+          )
+        )
+        (wire
+          (path Top 2500
+            1934840 -1175770
+            1943109 -1175770
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1945953.0 -1178614.0
+        )
+        (wire
+          (path Top 2500
+            2023863 -1221104
+            2020829 -1218070
+          )
+        )
+        (wire
+          (path Top 2500
+            2012060 -1218070
+            2020829 -1218070
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2023863.0 -1221104.0
+        )
+        (wire
+          (path Top 2500
+            2095198 -1385621
+            2092329 -1388490
+          )
+        )
+        (wire
+          (path Top 2500
+            2084060 -1388490
+            2092329 -1388490
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2095198.0 -1385621.0
+        )
+        (wire
+          (path Top 2500
+            1991990 -1304935
+            1991990 -1293240
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1991990.0 -1304935.0
+        )
+        (wire
+          (path Top 2500
+            2079870 -802429
+            2079870 -814070
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2079870.0 -802429.0
+        )
+        (wire
+          (path Top 2500
+            1331856 -1368780
+            1334891 -1365745
+            1334891 -1363090
+          )
+        )
+        (wire
+          (path Top 2500
+            1343160 -1363090
+            1334891 -1363090
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1331856.0 -1368780.0
+        )
+        (wire
+          (path Top 2500
+            1427816 -1270833
+            1430584 -1273601
+            1432330 -1273601
+          )
+        )
+        (wire
+          (path Top 2500
+            1432330 -1282370
+            1432330 -1273601
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1427816.0 -1270833.0
+        )
+        (wire
+          (path Top 2500
+            1741550 -1282060
+            1750319 -1282060
+          )
+        )
+        (wire
+          (path Top 2500
+            1753355 -1286318
+            1750319 -1283282
+            1750319 -1282060
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1753355.0 -1286318.0
+        )
+        (wire
+          (path Top 2500
+            1623986 -1297560
+            1620985 -1300561
+            1620510 -1300561
+          )
+        )
+        (wire
+          (path Top 2500
+            1620510 -1309330
+            1620510 -1300561
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1623986.0 -1297560.0
+        )
+        (wire
+          (path Top 2500
+            1029576 -1105232
+            1026533 -1102189
+            1025550 -1102189
+          )
+        )
+        (wire
+          (path Top 2500
+            1025550 -1093420
+            1025550 -1102189
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1029576.0 -1105232.0
+        )
+        (wire
+          (path Top 2500
+            1107459 -1114587
+            1110287 -1111759
+            1112900 -1111759
+          )
+        )
+        (wire
+          (path Top 2500
+            1112900 -1102990
+            1112900 -1111759
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1107459.0 -1114587.0
+        )
+        (wire
+          (path Top 2500
+            1086489 -1279270
+            1089440 -1282221
+          )
+        )
+        (wire
+          (path Top 2500
+            1078220 -1279270
+            1086489 -1279270
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1089440.0 -1282221.0
+        )
+        (wire
+          (path Top 2500
+            1112900 -1102990
+            1121169 -1102990
+          )
+        )
+        (wire
+          (path Top 2500
+            1131950 -1103620
+            1121799 -1103620
+            1121169 -1102990
+          )
+        )
+        (wire
+          (path Top 2500
+            1809136 -845532
+            1807079 -847589
+            1807079 -854891
+          )
+        )
+        (wire
+          (path Top 2500
+            1798810 -854891
+            1807079 -854891
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1809136.0 -845532.0
+        )
+        (wire
+          (path Top 2500
+            1553679 -881301
+            1550679 -884301
+          )
+        )
+        (wire
+          (path Top 2500
+            1542410 -884301
+            1550679 -884301
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1553679.0 -881301.0
+        )
+        (wire
+          (path Top 2500
+            1299584 -869943
+            1296679 -867038
+            1296679 -865251
+          )
+        )
+        (wire
+          (path Top 2500
+            1288410 -865251
+            1296679 -865251
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1299584.0 -869943.0
+        )
+        (wire
+          (path Top 2500
+            1040769 -867791
+            1043766 -870788
+          )
+        )
+        (wire
+          (path Top 2500
+            1032500 -867791
+            1040769 -867791
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1043766.0 -870788.0
+        )
+        (wire
+          (path Top 2500
+            1939070 -1478030
+            1939070 -1492385
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1939070.0 -1492385.0
+        )
+        (wire
+          (path Top 2500
+            1589790 -1145890
+            1589790 -1159231
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1589790.0 -1159231.0
+        )
+        (wire
+          (path Top 2500
+            1208790 -1144961
+            1208790 -1158020
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1208790.0 -1144961.0
+        )
+        (wire
+          (path Top 2500
+            1240592 -1056911
+            1237608 -1056911
+            1237499 -1057020
+          )
+        )
+        (wire
+          (path Top 2500
+            1227230 -1057020
+            1237499 -1057020
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1240592.0 -1056911.0
+        )
+        (wire
+          (path Top 2500
+            1136525 -1156479
+            1135968 -1156479
+            1133699 -1154210
+          )
+        )
+        (wire
+          (path Top 2500
+            1122430 -1154210
+            1133699 -1154210
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1136525.0 -1156479.0
+        )
+        (wire
+          (path Top 2500
+            1085089 -1119250
+            1085762 -1118577
+            1087978 -1118577
+          )
+        )
+        (wire
+          (path Top 2500
+            932595 -904570
+            932595 -918591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 932595.0 -904570.0
+        )
+        (wire
+          (path Top 2500
+            902593 -836959
+            905346 -839712
+            905895 -839712
+          )
+        )
+        (wire
+          (path Top 2500
+            905895 -849981
+            905895 -839712
+          )
+        )
+        (via "Via[0-3]_800:400_um" 902593.0 -836959.0
+        )
+        (wire
+          (path Top 2500
+            917164 -794101
+            919996 -796933
+          )
+        )
+        (wire
+          (path Top 2500
+            905895 -794101
+            917164 -794101
+          )
+        )
+        (via "Via[0-3]_800:400_um" 919996.0 -796933.0
+        )
+        (wire
+          (path Top 2500
+            900984 -751288
+            903782 -748490
+            907165 -748490
+          )
+        )
+        (wire
+          (path Top 2500
+            907165 -738221
+            907165 -748490
+          )
+        )
+        (via "Via[0-3]_800:400_um" 900984.0 -751288.0
+        )
+        (wire
+          (path Top 2500
+            1546819 -1142768
+            1549941 -1145890
+          )
+        )
+        (wire
+          (path Top 2500
+            1561210 -1145890
+            1549941 -1145890
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1546819.0 -1142768.0
+        )
+        (via "Via[0-3]_800:400_um" 1215140.0 -1260390.0
+        )
+        (via "Via[0-3]_800:400_um" 1164340.0 -1260429.0
+        )
+        (wire
+          (path Top 2500
+            1113540 -1260171
+            1113540 -1272040
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1113540.0 -1260171.0
+        )
+        (wire
+          (path Top 2500
+            1256113 -1217163
+            1254455 -1218821
+            1246890 -1218821
+          )
+        )
+        (wire
+          (path Top 2500
+            1246890 -1227590
+            1246890 -1218821
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1256113.0 -1217163.0
+        )
+        (wire
+          (path Top 2500
+            1196090 -1215853
+            1196090 -1227590
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1196090.0 -1215853.0
+        )
+        (wire
+          (path Top 2500
+            1145290 -1227590
+            1145290 -1216029
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1145290.0 -1216029.0
+        )
+        (wire
+          (path Top 2500
+            1805690 -999751
+            1804711 -999751
+            1801654 -996694
+          )
+        )
+        (wire
+          (path Top 2500
+            1805690 -1008520
+            1805690 -999751
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1801654.0 -996694.0
+        )
+        (wire
+          (path Top 2500
+            1804237 -1193992
+            1801259 -1196970
+          )
+        )
+        (wire
+          (path Top 2500
+            1792990 -1196970
+            1801259 -1196970
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1804237.0 -1193992.0
+        )
+        (wire
+          (path Top 2500
+            1972602 -1190059
+            1969760 -1192901
+          )
+        )
+        (wire
+          (path Top 2500
+            1969760 -1201170
+            1969760 -1192901
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1972602.0 -1190059.0
+        )
+        (wire
+          (path Top 2500
+            1938241 -693381
+            1942406 -693381
+            1943753 -694728
+          )
+        )
+        (wire
+          (path Top 2500
+            1949600 -688881
+            1943753 -694728
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1938241.0 -693381.0
+        )
+        (wire
+          (path Top 2500
+            1937140 -875947
+            1937140 -864870
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1937140.0 -875947.0
+        )
+        (wire
+          (path Top 2500
+            2081140 -830934
+            2081140 -842010
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2081140.0 -830934.0
+        )
+        (wire
+          (path Top 2500
+            1692410 -910689
+            1692410 -899541
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1692410.0 -910689.0
+        )
+        (wire
+          (path Top 2500
+            1509001 -1368684
+            1511781 -1365904
+            1511781 -1364600
+          )
+        )
+        (wire
+          (path Top 2500
+            1520550 -1364600
+            1511781 -1364600
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1509001.0 -1368684.0
+        )
+        (wire
+          (path Top 2500
+            1519389 -1406083
+            1517952 -1406083
+            1516129 -1404260
+          )
+        )
+        (wire
+          (path Top 2500
+            1507860 -1404260
+            1516129 -1404260
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1519389.0 -1406083.0
+        )
+        (wire
+          (path Top 2500
+            1647910 -1110800
+            1647910 -1121878
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1647910.0 -1121878.0
+        )
+        (wire
+          (path Top 2500
+            1154307 -962134
+            1150379 -958206
+          )
+        )
+        (wire
+          (path Top 2500
+            1142110 -958206
+            1150379 -958206
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1154307.0 -962134.0
+        )
+        (wire
+          (path Top 2500
+            1091064 -1214532
+            1088259 -1211727
+            1088259 -1210690
+          )
+        )
+        (wire
+          (path Top 2500
+            1079490 -1210690
+            1088259 -1210690
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1091064.0 -1214532.0
+        )
+        (wire
+          (path Top 2500
+            1079490 -1263949
+            1079490 -1252600
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1079490.0 -1263949.0
+        )
+        (wire
+          (path Top 2500
+            1098930 -1142500
+            1107199 -1142500
+          )
+        )
+        (wire
+          (path Top 2500
+            1122430 -1154210
+            1122430 -1143941
+          )
+        )
+        (wire
+          (path Top 2500
+            1122430 -1143941
+            1108640 -1143941
+            1107199 -1142500
+          )
+        )
+        (wire
+          (path Top 2500
+            1076320 -1119250
+            1085089 -1119250
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1087978.0 -1118577.0
+        )
+        (wire
+          (path Top 2500
+            1098930 -1142500
+            1090661 -1142500
+          )
+        )
+        (wire
+          (path Top 2500
+            1079490 -1142110
+            1090271 -1142110
+            1090661 -1142500
+          )
+        )
+        (wire
+          (path Top 2500
+            1095760 -1265286
+            1095760 -1253480
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1095760.0 -1265286.0
+        )
+        (wire
+          (path Top 2500
+            1228352 -1033767
+            1225419 -1036700
+          )
+        )
+        (wire
+          (path Top 2500
+            1216650 -1036700
+            1225419 -1036700
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1228352.0 -1033767.0
+        )
+        (wire
+          (path Top 2500
+            1081790 -1034866
+            1081790 -1022980
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1081790.0 -1034866.0
+        )
+        (wire
+          (path Top 2500
+            1112900 -1102990
+            1104631 -1102990
+          )
+        )
+        (wire
+          (path Top 2500
+            1097660 -1102350
+            1103991 -1102350
+            1104631 -1102990
+          )
+        )
+        (wire
+          (path Top 2500
+            1132181 -1140210
+            1135111 -1137280
+          )
+        )
+        (wire
+          (path Top 2500
+            1143380 -1137280
+            1135111 -1137280
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1132181.0 -1140210.0
+        )
+        (wire
+          (path Top 2500
+            1189100 -1158870
+            1180831 -1158870
+          )
+        )
+        (wire
+          (path Top 2500
+            1177709 -1158714
+            1180675 -1158714
+            1180831 -1158870
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1177709.0 -1158714.0
+        )
+        (wire
+          (path Top 2500
+            1436076 -680959
+            1437870 -680959
+            1443589 -675240
+          )
+        )
+        (wire
+          (path Top 2500
+            1449790 -681441
+            1443589 -675240
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1436076.0 -680959.0
+        )
+        (wire
+          (path Top 2500
+            1693847 -691820
+            1695853 -689814
+            1695853 -689379
+          )
+        )
+        (wire
+          (path Top 2500
+            1701700 -683532
+            1695853 -689379
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1693847.0 -691820.0
+        )
+        (wire
+          (path Top 2500
+            1190097 -676314
+            1192129 -678346
+            1192129 -678415
+          )
+        )
+        (wire
+          (path Top 2500
+            1198330 -684616
+            1192129 -678415
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1190097.0 -676314.0
+        )
+        (wire
+          (path Top 2500
+            939890 -683346
+            947882 -675354
+          )
+        )
+        (via "Via[0-3]_800:400_um" 947882.0 -675354.0
+        )
+        (wire
+          (path Top 2500
+            1675575 -849565
+            1678561 -852551
+          )
+        )
+        (wire
+          (path Top 2500
+            1687330 -852551
+            1678561 -852551
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1675575.0 -849565.0
+        )
+        (wire
+          (path Top 1874
+            1807951 -825156
+            1804866 -822071
+          )
+        )
+        (wire
+          (path Top 1874
+            1796410 -822071
+            1804866 -822071
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1807951.0 -825156.0
+        )
+        (wire
+          (path Top 2500
+            1433970 -865886
+            1425201 -865886
+          )
+        )
+        (wire
+          (path Top 2500
+            1400560 -862711
+            1422026 -862711
+            1425201 -865886
+          )
+        )
+        (wire
+          (path Top 2500
+            1554067 -834484
+            1551179 -831596
+          )
+        )
+        (wire
+          (path Top 2500
+            1542410 -831596
+            1551179 -831596
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1554067.0 -834484.0
+        )
+        (wire
+          (path Top 2500
+            1190760 -856361
+            1190760 -864630
+          )
+        )
+        (wire
+          (path Top 2500
+            1186358 -867737
+            1189465 -864630
+            1190760 -864630
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1186358.0 -867737.0
+        )
+        (wire
+          (path Top 2500
+            1287140 -826516
+            1287140 -818247
+          )
+        )
+        (wire
+          (path Top 2500
+            1296378 -816515
+            1294646 -818247
+            1287140 -818247
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1296378.0 -816515.0
+        )
+        (wire
+          (path Top 2500
+            932719 -863068
+            935616 -860171
+          )
+        )
+        (wire
+          (path Top 2500
+            944385 -860171
+            935616 -860171
+          )
+        )
+        (via "Via[0-3]_800:400_um" 932719.0 -863068.0
+        )
+        (wire
+          (path Top 2500
+            1016140 -883666
+            1004501 -883666
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1004501.0 -883666.0
+        )
+        (wire
+          (path Top 2500
+            1517143 -959257
+            1514239 -962161
+          )
+        )
+        (wire
+          (path Top 2500
+            1505970 -962161
+            1514239 -962161
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1517143.0 -959257.0
+        )
+        (wire
+          (path Top 2500
+            1439550 -989759
+            1439550 -990730
+            1426890 -1003390
+          )
+        )
+        (wire
+          (path Top 2500
+            1061469 -1054730
+            1050040 -1054730
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1061469.0 -1054730.0
+        )
+        (wire
+          (path Top 2500
+            1004466 -1356542
+            1007371 -1359447
+            1007371 -1363090
+          )
+        )
+        (wire
+          (path Top 2500
+            1016140 -1363090
+            1007371 -1363090
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1004466.0 -1356542.0
+        )
+        (wire
+          (path Top 2500
+            1012220 -1304338
+            1015083 -1307201
+            1016140 -1307201
+          )
+        )
+        (wire
+          (path Top 2500
+            1016140 -1315470
+            1016140 -1307201
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1012220.0 -1304338.0
+        )
+        (wire
+          (path Top 1874
+            1309882 -1163396
+            1309881 -1163396
+            1309881 -1162837
+            1311211 -1161507
+            1314873 -1161507
+            1318948 -1157432
+            1318948 -1153770
+            1324932 -1147786
+          )
+        )
+        (wire
+          (path Top 2500
+            1304357 -1213440
+            1301562 -1213440
+            1296971 -1218031
+          )
+        )
+        (wire
+          (path Top 2500
+            1290770 -1211830
+            1296971 -1218031
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1304357.0 -1213440.0
+        )
+        (wire
+          (path Top 2500
+            1273660 -1253390
+            1273660 -1265046
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1273660.0 -1265046.0
+        )
+        (wire
+          (path Top 2500
+            1303480 -1028820
+            1304833 -1027467
+            1304833 -1025697
+          )
+        )
+        (wire
+          (path Top 2500
+            1310680 -1019850
+            1304833 -1025697
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1303480.0 -1028820.0
+        )
+        (wire
+          (path Top 2500
+            1233111 -1072185
+            1245735 -1072185
+            1246590 -1071330
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1233111.0 -1072185.0
+        )
+        (wire
+          (path Top 2500
+            1426629 -1238797
+            1425747 -1239679
+            1425747 -1242603
+          )
+        )
+        (wire
+          (path Top 2500
+            1419900 -1248450
+            1425747 -1242603
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1426629.0 -1238797.0
+        )
+        (wire
+          (path Top 2500
+            1483763 -1186853
+            1482897 -1187719
+            1482897 -1189903
+          )
+        )
+        (wire
+          (path Top 2500
+            1477050 -1195750
+            1482897 -1189903
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1483763.0 -1186853.0
+        )
+        (wire
+          (path Top 2500
+            1509803 -1091650
+            1508937 -1090784
+            1508937 -1087977
+          )
+        )
+        (wire
+          (path Top 2500
+            1503090 -1082130
+            1508937 -1087977
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1509803.0 -1091650.0
+        )
+        (wire
+          (path Top 2500
+            1293539 -1275672
+            1296291 -1272920
+          )
+        )
+        (wire
+          (path Top 2500
+            1305060 -1272920
+            1296291 -1272920
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1293539.0 -1275672.0
+        )
+        (wire
+          (path Top 2500
+            1286921 -1265070
+            1289742 -1262249
+            1290700 -1262249
+          )
+        )
+        (wire
+          (path Top 2500
+            1290700 -1253480
+            1290700 -1262249
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1286921.0 -1265070.0
+        )
+        (wire
+          (path Top 2500
+            2094352 -1265104
+            2096345 -1265104
+            2097281 -1266040
+          )
+        )
+        (wire
+          (path Top 2500
+            2114550 -1266040
+            2097281 -1266040
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2094352.0 -1265104.0
+        )
+        (wire
+          (path Top 2500
+            1962159 -1357520
+            1962159 -1347345
+          )
+        )
+        (wire
+          (path Top 2500
+            1948140 -1357520
+            1962159 -1357520
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1962159.0 -1347345.0
+        )
+        (wire
+          (path Top 2500
+            1741410 -1316999
+            1751596 -1316999
+          )
+        )
+        (wire
+          (path Top 2500
+            1741410 -1302980
+            1741410 -1316999
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1751596.0 -1316999.0
+        )
+        (wire
+          (path Top 2500
+            1646160 -1316359
+            1635747 -1316359
+          )
+        )
+        (wire
+          (path Top 2500
+            1646160 -1302340
+            1646160 -1316359
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1635747.0 -1316359.0
+        )
+        (wire
+          (path Top 2500
+            1477110 -1363138
+            1477110 -1379320
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1477110.0 -1363138.0
+        )
+        (wire
+          (path Top 2500
+            1507860 -1404260
+            1478840 -1404260
+            1477110 -1405990
+          )
+        )
+        (wire
+          (path Top 1874
+            1987260 -1226570
+            2001216 -1226570
+          )
+        )
+        (wire
+          (path Top 1874
+            2003306 -1220124
+            2001216 -1222214
+            2001216 -1226570
+          )
+        )
+        (wire
+          (path Top 2500
+            2012060 -1218070
+            2010006 -1220124
+            2003306 -1220124
+          )
+        )
+        (wire
+          (path Top 2500
+            1636070 -1131103
+            1632937 -1134236
+          )
+        )
+        (wire
+          (path Top 2500
+            1618492 -1134236
+            1632937 -1134236
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1636070.0 -1131103.0
+        )
+        (wire
+          (path Top 2500
+            1258320 -1382681
+            1261217 -1379784
+          )
+        )
+        (wire
+          (path Top 2500
+            1258320 -1393570
+            1258320 -1382681
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1261217.0 -1379784.0
+        )
+        (wire
+          (path Top 2500
+            1258320 -1342770
+            1258320 -1331881
+          )
+        )
+        (wire
+          (path Top 2500
+            1257188 -1328834
+            1257188 -1330749
+            1258320 -1331881
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1257188.0 -1328834.0
+        )
+        (wire
+          (path Top 2500
+            1284350 -1541735
+            1284350 -1555500
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1284350.0 -1541735.0
+        )
+        (wire
+          (path Top 2500
+            1284350 -1504700
+            1284350 -1490803
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1284350.0 -1490803.0
+        )
+        (wire
+          (path Top 2500
+            1177010 -976042
+            1177010 -966773
+          )
+        )
+        (wire
+          (path Top 2500
+            1183548 -965066
+            1181841 -966773
+            1177010 -966773
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1183548.0 -965066.0
+        )
+        (wire
+          (path Top 2500
+            1518210 -1333399
+            1515189 -1336420
+          )
+        )
+        (wire
+          (path Top 2500
+            1500920 -1336420
+            1515189 -1336420
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1518210.0 -1333399.0
+        )
+        (wire
+          (path Top 1874
+            874806 -976588
+            877879 -979661
+          )
+        )
+        (wire
+          (path Top 1874
+            888335 -979661
+            877879 -979661
+          )
+        )
+        (via "Via[0-3]_800:400_um" 874806.0 -976588.0
+        )
+        (wire
+          (path Top 2500
+            993335 -1038214
+            993335 -1022761
+          )
+        )
+        (via "Via[0-3]_800:400_um" 993335.0 -1038214.0
+        )
+        (wire
+          (path Top 2500
+            851835 -1068175
+            851835 -1081261
+          )
+        )
+        (via "Via[0-3]_800:400_um" 851835.0 -1068175.0
+        )
+        (wire
+          (path Top 2500
+            1740487 -911905
+            1734410 -917982
+            1734410 -922913
+          )
+        )
+        (wire
+          (path Top 2500
+            1721410 -914691
+            1724025 -912076
+            1724025 -911694
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1740487.0 -911905.0
+        )
+        (wire
+          (path Top 2500
+            1744387 -970024
+            1747410 -973047
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1744387.0 -970024.0
+        )
+        (wire
+          (path Top 2500
+            1715890 -970106
+            1718831 -973047
+            1721410 -973047
+          )
+        )
+        (wire
+          (path Top 2500
+            1721410 -981269
+            1721410 -973047
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1715890.0 -970106.0
+        )
+        (wire
+          (path Top 2500
+            1753910 -981269
+            1753910 -973047
+          )
+        )
+        (wire
+          (path Top 2500
+            1747410 -981269
+            1747410 -973047
+          )
+        )
+        (wire
+          (path Top 2500
+            1747410 -973047
+            1753910 -973047
+          )
+        )
+        (wire
+          (path Top 2500
+            1753910 -933986
+            1753910 -922913
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1753910.0 -933986.0
+        )
+        (wire
+          (path Top 2500
+            1721410 -922913
+            1721410 -914691
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1724025.0 -911694.0
+        )
+        (wire
+          (path Top 2500
+            1466894 -923670
+            1466894 -926726
+          )
+        )
+        (wire
+          (path Top 2500
+            1439550 -982551
+            1439550 -973804
+          )
+        )
+        (wire
+          (path Top 2500
+            1439550 -989759
+            1439550 -982551
+          )
+        )
+        (wire
+          (path Top 2500
+            1439550 -982551
+            1455373 -982551
+            1459050 -978874
+            1459050 -973804
+          )
+        )
+        (wire
+          (path Top 2500
+            1472050 -973804
+            1472050 -983225
+            1470482 -984793
+            1470505 -984816
+          )
+        )
+        (wire
+          (path Top 2500
+            1465550 -915448
+            1465550 -923670
+          )
+        )
+        (wire
+          (path Top 2500
+            1466894 -923670
+            1472050 -923670
+          )
+        )
+        (wire
+          (path Top 2500
+            1465550 -923670
+            1466894 -923670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1466894.0 -926726.0
+        )
+        (wire
+          (path Top 2500
+            1439550 -915448
+            1439550 -904396
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1439550.0 -904396.0
+        )
+        (wire
+          (path Top 2500
+            1472050 -915448
+            1472050 -923670
+          )
+        )
+        (wire
+          (path Top 2500
+            1439550 -915448
+            1439550 -923670
+          )
+        )
+        (wire
+          (path Top 2500
+            1446050 -915448
+            1446050 -923670
+          )
+        )
+        (wire
+          (path Top 2500
+            1446050 -923670
+            1439550 -923670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1439550.0 -989759.0
+        )
+        (via "Via[0-3]_800:400_um" 1470505.0 -984816.0
+        )
+        (wire
+          (path Top 2500
+            1135380 -1029970
+            1139570 -1034160
+          )
+        )
+        (wire
+          (path Top 2500
+            1986280 -759460
+            1991190 -764370
+            1991190 -766091
+          )
+        )
+        (wire
+          (path Top 2500
+            1951334 -721142
+            1954264 -724072
+            1955440 -724072
+          )
+        )
+        (wire
+          (path Top 2500
+            1955440 -735591
+            1955440 -724072
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1951334.0 -721142.0
+        )
+        (wire
+          (path Top 2500
+            2026940 -721305
+            2026940 -735591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2026940.0 -721305.0
+        )
+        (wire
+          (path Top 2500
+            1748790 -770890
+            1752980 -766700
+            1752980 -763651
+          )
+        )
+        (wire
+          (path Top 2500
+            1717230 -718425
+            1717230 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1717230.0 -718425.0
+        )
+        (wire
+          (path Top 2500
+            1788730 -721632
+            1796627 -721632
+          )
+        )
+        (wire
+          (path Top 2500
+            1788730 -733151
+            1788730 -721632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1796627.0 -721632.0
+        )
+        (wire
+          (path Top 2500
+            1496060 -756920
+            1500890 -761750
+            1500890 -763651
+          )
+        )
+        (wire
+          (path Top 2500
+            1465140 -733151
+            1465140 -747794
+            1465128 -747806
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1465128.0 -747806.0
+        )
+        (wire
+          (path Top 2500
+            1542641 -719902
+            1538370 -719902
+            1536640 -721632
+          )
+        )
+        (wire
+          (path Top 2500
+            1536640 -733151
+            1536640 -721632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1542641.0 -719902.0
+        )
+        (wire
+          (path Top 2500
+            1240790 -770890
+            1244980 -766700
+            1244980 -763651
+          )
+        )
+        (wire
+          (path Top 2500
+            1209230 -733151
+            1209230 -747520
+            1209214 -747520
+            1209210 -747524
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1209210.0 -747524.0
+        )
+        (wire
+          (path Top 2500
+            1280730 -718559
+            1280730 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1280730.0 -718559.0
+        )
+        (wire
+          (path Top 2500
+            984250 -770890
+            988445 -766695
+            988445 -763651
+          )
+        )
+        (wire
+          (path Top 2500
+            952695 -733151
+            952695 -747438
+            952683 -747450
+          )
+        )
+        (via "Via[0-3]_800:400_um" 952683.0 -747450.0
+        )
+        (wire
+          (path Top 2500
+            1024195 -721632
+            1027115 -718712
+          )
+        )
+        (wire
+          (path Top 2500
+            1024195 -733151
+            1024195 -721632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1027115.0 -718712.0
+        )
+        (wire
+          (path Top 1874
+            1324933 -1147785
+            1324932 -1147786
+          )
+        )
+        (wire
+          (path Top 1874
+            1302488 -1170790
+            1309882 -1163396
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1324932.0 -1147786.0
+        )
+        (wire
+          (path Top 2500
+            1326208 -1175354
+            1316630 -1184932
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1326208.0 -1175354.0
+        )
+        (wire
+          (path Top 2500
+            1429767 -1167254
+            1420138 -1157625
+            1420138 -1157223
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1420138.0 -1157223.0
+        )
+        (wire
+          (path Top 2500
+            1327237 -1050582
+            1317590 -1040935
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1317590.0 -1040935.0
+        )
+        (wire
+          (path Top 2500
+            1403996 -1212194
+            1394412 -1202610
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1403996.0 -1212194.0
+        )
+        (wire
+          (path Top 1874
+            1436053 -1108495
+            1440052 -1104496
+            1440052 -1103937
+            1440052 -1103936
+          )
+        )
+        (wire
+          (path Top 1874
+            1447445 -1096543
+            1440052 -1103936
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1436053.0 -1108495.0
+        )
+        (wire
+          (path Top 2500
+            1387341 -1036439
+            1377758 -1046022
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1377758.0 -1046022.0
+        )
+        (wire
+          (path Top 1874
+            1287171 -1110069
+            1285132 -1108030
+            1285132 -1107473
+            1285133 -1107472
+          )
+        )
+        (wire
+          (path Top 1874
+            1277739 -1100079
+            1285133 -1107472
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1287171.0 -1110069.0
+        )
+        (via "Via[0-3]_800:400_um" 1996440.0 -774700.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1986280.0 -759460.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1986280.0 -774700.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 2006600.0 -774700.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1974850.0 -774700.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1974850.0 -759460.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1996440.0 -759460.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 2006600.0 -759460.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1144270.0 -1038860.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1135380.0 -1029970.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 972820.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 984250.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 994410.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1004570.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 972820.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 984250.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 994410.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1004570.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1229360.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1261110.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1250950.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1250950.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1240790.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1229360.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1261110.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1240790.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1484630.0 -772160.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1516380.0 -756920.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1506220.0 -756920.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1506220.0 -772160.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1496060.0 -756920.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1484630.0 -756920.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1516380.0 -772160.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1496060.0 -772160.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1737360.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1769110.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1758950.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1758950.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1748790.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1737360.0 -755650.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1769110.0 -770890.0
+          (type protect)
+        )
+        (via "Via[0-3]_800:400_um" 1748790.0 -770890.0
+          (type protect)
+        )
+      )
+      (net "3.3V"
+        (wire
+          (path Top 2500
+            2039230 -844550
+            2039230 -835781
+          )
+        )
+        (wire
+          (path Top 2500
+            2042740 -832280
+            2039239 -835781
+            2039230 -835781
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2042740.0 -832280.0
+        )
+        (wire
+          (path Top 2500
+            2039230 -866140
+            2039230 -874909
+          )
+        )
+        (wire
+          (path Top 2500
+            2039610 -886841
+            2039610 -875289
+            2039230 -874909
+          )
+        )
+        (wire
+          (path Top 2500
+            2039230 -866140
+            2039230 -844550
+          )
+        )
+        (wire
+          (path Top 2500
+            1721271 -961026
+            1719522 -962775
+          )
+        )
+        (wire
+          (path Top 2500
+            1719522 -962775
+            1725923 -969175
+          )
+        )
+        (wire
+          (path Top 2500
+            1705759 -963641
+            1706625 -962775
+            1719522 -962775
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1721271.0 -961026.0
+        )
+        (wire
+          (path Top 2500
+            1725923 -969175
+            1727910 -971163
+            1727910 -981269
+          )
+        )
+        (wire
+          (path Top 2500
+            1725923 -969175
+          )
+        )
+        (wire
+          (path Top 2500
+            1216650 -989076
+            1224919 -989076
+          )
+        )
+        (wire
+          (path Top 2500
+            1290461 -999631
+            1235474 -999631
+            1224919 -989076
+          )
+        )
+        (wire
+          (path Top 2500
+            1517604 -1006805
+            1553925 -1006805
+            1578110 -1030990
+          )
+        )
+        (wire
+          (path Top 2500
+            1216650 -989076
+            1208381 -989076
+          )
+        )
+        (wire
+          (path Top 2500
+            1208381 -1020190
+            1208381 -989076
+          )
+        )
+        (wire
+          (path Top 2500
+            1199650 -1036700
+            1208381 -1027969
+            1208381 -1020190
+          )
+        )
+        (wire
+          (path Top 2500
+            1797680 -890651
+            1797680 -872236
+          )
+        )
+        (wire
+          (path Top 2500
+            1545457 -946246
+            1542446 -943235
+            1540500 -943235
+          )
+        )
+        (wire
+          (path Top 2500
+            1540500 -934466
+            1540500 -943235
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1545457.0 -946246.0
+        )
+        (wire
+          (path Top 2500
+            1287770 -883031
+            1297441 -883031
+            1306963 -873509
+            1306963 -857760
+            1296039 -846836
+          )
+        )
+        (wire
+          (path Top 2500
+            1065910 -956691
+            1032500 -923281
+            1032500 -899541
+          )
+        )
+        (wire
+          (path Top 2500
+            1540500 -918591
+            1540500 -934466
+          )
+        )
+        (wire
+          (path Top 2500
+            1540500 -901446
+            1540500 -909822
+          )
+        )
+        (wire
+          (path Top 2500
+            1540500 -918591
+            1540500 -909822
+          )
+        )
+        (wire
+          (path Top 2500
+            1540500 -909822
+            1533910 -903232
+            1533910 -875547
+          )
+        )
+        (wire
+          (path Top 2500
+            1542410 -865886
+            1542410 -874655
+          )
+        )
+        (wire
+          (path Top 2500
+            1541020 -874833
+            1541198 -874655
+            1542410 -874655
+          )
+        )
+        (wire
+          (path Top 1874
+            1533910 -875547
+            1540306 -875547
+            1541020 -874833
+          )
+        )
+        (wire
+          (path Top 2500
+            1287770 -902081
+            1287770 -883031
+          )
+        )
+        (wire
+          (path Top 2500
+            1032500 -852551
+            1024231 -852551
+          )
+        )
+        (wire
+          (path Top 2500
+            1033140 -883666
+            1024231 -874757
+            1024231 -852551
+          )
+        )
+        (wire
+          (path Top 2500
+            1462619 -882186
+            1459869 -884936
+          )
+        )
+        (wire
+          (path Top 2500
+            1451600 -884936
+            1459869 -884936
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1462619.0 -882186.0
+        )
+        (wire
+          (path Top 2500
+            1797680 -872236
+            1790310 -864866
+            1790310 -847666
+            1788771 -846127
+            1788771 -836676
+          )
+        )
+        (wire
+          (path Top 2500
+            1542410 -865886
+            1542410 -849376
+          )
+        )
+        (wire
+          (path Top 2500
+            1287770 -846836
+            1296039 -846836
+          )
+        )
+        (wire
+          (path Top 2500
+            1032500 -852551
+            1032500 -836041
+          )
+        )
+        (wire
+          (path Top 2500
+            1514479 -1003680
+            1517604 -1006805
+          )
+        )
+        (wire
+          (path Top 2500
+            1506210 -1003680
+            1514479 -1003680
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1517604.0 -1006805.0
+        )
+        (wire
+          (path Top 2500
+            1050040 -1037730
+            1058309 -1037730
+          )
+        )
+        (wire
+          (path Top 2500
+            1064640 -1022980
+            1064640 -1031749
+          )
+        )
+        (wire
+          (path Top 2500
+            1064640 -1031749
+            1064290 -1031749
+            1058309 -1037730
+          )
+        )
+        (wire
+          (path Top 2500
+            1048050 -998701
+            1039281 -998701
+          )
+        )
+        (wire
+          (path Top 2500
+            1031310 -1002390
+            1035592 -1002390
+            1039281 -998701
+          )
+        )
+        (wire
+          (path Top 2500
+            1034050 -1038550
+            1017270 -1038550
+          )
+        )
+        (wire
+          (path Top 2500
+            1166590 -1320599
+            1163978 -1323211
+            1158870 -1323211
+          )
+        )
+        (wire
+          (path Top 2500
+            1158870 -1331980
+            1158870 -1323211
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1166590.0 -1320599.0
+        )
+        (wire
+          (path Top 2500
+            1158870 -1348490
+            1158870 -1331980
+          )
+        )
+        (wire
+          (path Top 2500
+            1219970 -1476241
+            1219970 -1460927
+            1220850 -1460047
+            1220850 -1433190
+          )
+        )
+        (wire
+          (path Top 2500
+            1219970 -1485010
+            1219970 -1476241
+          )
+        )
+        (wire
+          (path Top 2500
+            1199230 -1057020
+            1199230 -1045751
+          )
+        )
+        (wire
+          (path Top 2500
+            1199650 -1036700
+            1199650 -1045331
+            1199230 -1045751
+          )
+        )
+        (wire
+          (path Top 2500
+            1561210 -1173890
+            1561210 -1163621
+          )
+        )
+        (wire
+          (path Top 2500
+            1523827 -1158984
+            1556573 -1158984
+            1561210 -1163621
+          )
+        )
+        (wire
+          (path Top 2500
+            2064140 -842010
+            2055371 -842010
+          )
+        )
+        (wire
+          (path Top 2500
+            2039230 -844550
+            2052831 -844550
+            2055371 -842010
+          )
+        )
+        (wire
+          (path Top 2500
+            1724160 -899541
+            1709410 -899541
+          )
+        )
+        (wire
+          (path Top 2500
+            1680470 -1146715
+            1664910 -1131155
+            1664910 -1110800
+          )
+        )
+        (wire
+          (path Top 2500
+            1680470 -1146715
+            1680470 -1136081
+          )
+        )
+        (wire
+          (path Top 2500
+            1680470 -1157350
+            1680470 -1146715
+          )
+        )
+        (wire
+          (path Top 2500
+            1162310 -920208
+            1158010 -924508
+            1158010 -940771
+          )
+        )
+        (wire
+          (path Top 2500
+            1162310 -920208
+            1162310 -900326
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1162310.0 -920208.0
+        )
+        (wire
+          (path Top 2500
+            1216650 -1020190
+            1208381 -1020190
+          )
+        )
+        (wire
+          (path Top 2500
+            1797040 -836676
+            1788771 -836676
+          )
+        )
+        (wire
+          (path Top 2500
+            1525410 -831596
+            1525410 -839865
+          )
+        )
+        (wire
+          (path Top 2500
+            1542410 -849376
+            1534141 -849376
+          )
+        )
+        (wire
+          (path Top 2500
+            1534141 -849376
+            1534141 -842394
+            1531612 -839865
+            1525410 -839865
+          )
+        )
+        (wire
+          (path Top 2500
+            1270140 -826516
+            1270140 -834785
+          )
+        )
+        (wire
+          (path Top 2500
+            1287770 -846836
+            1287770 -838067
+          )
+        )
+        (wire
+          (path Top 2500
+            1287770 -838067
+            1273422 -838067
+            1270140 -834785
+          )
+        )
+        (wire
+          (path Top 2500
+            1032500 -899541
+            1032500 -890772
+          )
+        )
+        (wire
+          (path Top 2500
+            1032500 -890772
+            1033140 -890132
+            1033140 -883666
+          )
+        )
+        (wire
+          (path Top 2500
+            1505970 -979161
+            1505970 -987930
+          )
+        )
+        (wire
+          (path Top 2500
+            1506210 -1003680
+            1506210 -988170
+            1505970 -987930
+          )
+        )
+        (wire
+          (path Top 2500
+            1441200 -1022730
+            1437569 -1019099
+            1437569 -1010287
+          )
+        )
+        (wire
+          (path Top 2500
+            1050040 -1037730
+            1041771 -1037730
+          )
+        )
+        (wire
+          (path Top 2500
+            1034050 -1038550
+            1040951 -1038550
+            1041771 -1037730
+          )
+        )
+        (wire
+          (path Top 2500
+            1273660 -1221818
+            1273660 -1236390
+          )
+        )
+        (wire
+          (path Top 2500
+            1255480 -1201460
+            1273660 -1219640
+            1273660 -1221818
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1273660.0 -1221818.0
+        )
+        (wire
+          (path Top 2500
+            1290461 -999631
+            1298660 -1007830
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1290461.0 -999631.0
+        )
+        (wire
+          (path Top 2500
+            1415765 -1228545
+            1407880 -1236430
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1415765.0 -1228545.0
+        )
+        (wire
+          (path Top 2500
+            1523827 -1158984
+            1489776 -1158984
+            1465030 -1183730
+          )
+        )
+        (wire
+          (path Top 2500
+            1523827 -1158984
+            1523827 -1126907
+            1491070 -1094150
+          )
+        )
+        (wire
+          (path Top 2500
+            1150379 -941206
+            1150814 -940771
+            1158010 -940771
+          )
+        )
+        (wire
+          (path Top 2500
+            1162310 -900326
+            1198633 -900326
+            1198760 -900199
+          )
+        )
+        (wire
+          (path Top 2500
+            1198760 -900199
+            1236852 -900199
+            1237360 -899691
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1523827 -1158984
+            1526826 -1161983
+            1526826 -1166240
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1533270 -1166240
+            1526826 -1166240
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1523827.0 -1158984.0
+        )
+        (wire
+          (path Bottom 2500
+            1059024 -1486920
+            1061984 -1489880
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1052580 -1486920
+            1059024 -1486920
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1061984.0 -1489880.0
+        )
+        (wire
+          (path Top 2500
+            1618492 -1157350
+            1632937 -1157350
+          )
+        )
+        (wire
+          (path Top 2500
+            1680470 -1157350
+            1680470 -1178619
+          )
+        )
+        (wire
+          (path Top 2500
+            1680470 -1178619
+            1654206 -1178619
+            1632937 -1157350
+          )
+        )
+        (wire
+          (path Top 2500
+            1696925 -1136081
+            1680470 -1136081
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1696925.0 -1136081.0
+        )
+        (wire
+          (path Top 2500
+            1158010 -950040
+            1158010 -940771
+          )
+        )
+        (wire
+          (path Top 2500
+            1142110 -941206
+            1150379 -941206
+          )
+        )
+        (wire
+          (path Top 1874
+            1038865 -1393641
+            1035766 -1396740
+          )
+        )
+        (wire
+          (path Top 1874
+            1030310 -1396740
+            1035766 -1396740
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1038865.0 -1393641.0
+        )
+        (wire
+          (path Top 2500
+            888335 -1001661
+            899104 -1001661
+          )
+        )
+        (wire
+          (path Top 2500
+            1031310 -1002390
+            899833 -1002390
+            899104 -1001661
+          )
+        )
+        (wire
+          (path Top 2500
+            1724160 -899541
+            1731821 -907202
+            1731821 -914180
+            1727910 -918091
+            1727910 -922913
+          )
+        )
+        (wire
+          (path Top 2500
+            1696990 -963641
+            1705759 -963641
+          )
+        )
+        (wire
+          (path Top 2500
+            1446804 -998213
+            1457240 -987777
+            1457262 -987777
+            1463569 -981470
+            1463569 -981448
+            1465550 -979467
+            1465550 -973804
+          )
+        )
+        (wire
+          (path Top 1874
+            1437569 -1010287
+            1446804 -1001052
+            1446804 -998213
+          )
+        )
+        (wire
+          (path Top 2500
+            1465030 -1183730
+            1458829 -1177529
+          )
+        )
+        (wire
+          (path Top 1874
+            1433303 -1163719
+            1440698 -1171113
+          )
+        )
+        (wire
+          (path Top 1874
+            1447156 -1178131
+            1440697 -1171672
+            1440697 -1171114
+            1440698 -1171113
+          )
+        )
+        (wire
+          (path Top 2500
+            1458829 -1177529
+            1458227 -1178131
+            1447156 -1178131
+          )
+        )
+        (wire
+          (path Top 2500
+            1343756 -1186090
+            1330772 -1199074
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1343756.0 -1186090.0
+        )
+        (wire
+          (path Top 1874
+            1414876 -1015416
+            1398270 -1032022
+            1398270 -1032582
+          )
+        )
+        (wire
+          (path Top 2500
+            1414870 -1015410
+            1414876 -1015416
+          )
+        )
+        (wire
+          (path Top 1874
+            1390877 -1039975
+            1398270 -1032582
+          )
+        )
+        (wire
+          (path Top 2500
+            1281275 -1096543
+            1273661 -1088928
+          )
+        )
+        (wire
+          (path Top 2500
+            1258610 -1083350
+            1264811 -1089551
+          )
+        )
+        (wire
+          (path Top 2500
+            1264811 -1089551
+            1273038 -1089551
+            1273661 -1088928
+          )
+        )
+        (wire
+          (path Top 2500
+            1450981 -1100079
+            1443366 -1107694
+          )
+        )
+        (wire
+          (path Top 2500
+            1491070 -1094150
+            1464783 -1120437
+            1455805 -1120437
+            1443366 -1107998
+            1443366 -1107694
+          )
+        )
+        (wire
+          (path Top 2500
+            1407880 -1236430
+            1401679 -1230229
+          )
+        )
+        (wire
+          (path Top 2500
+            1401679 -1230229
+            1400818 -1230229
+            1383805 -1213216
+          )
+        )
+      )
+      (net AVCC
+        (wire
+          (path Top 2500
+            1311656 -1154551
+            1298953 -1167254
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1311656.0 -1154551.0
+        )
+        (wire
+          (path Top 2500
+            1278750 -1199810
+            1272549 -1193609
+          )
+        )
+        (wire
+          (path Top 2500
+            1272549 -1193609
+            1271669 -1193609
+            1267500 -1189440
+          )
+        )
+        (wire
+          (path Top 2500
+            992652 -920955
+            991458 -919761
+            983935 -919761
+          )
+        )
+        (via "Via[0-3]_800:400_um" 992652.0 -920955.0
+        )
+        (wire
+          (path Top 2500
+            967935 -919761
+            975935 -919761
+          )
+        )
+        (wire
+          (path Top 2500
+            967935 -919761
+            959935 -919761
+          )
+        )
+        (wire
+          (path Top 2500
+            975935 -919761
+            983935 -919761
+          )
+        )
+        (wire
+          (path Top 2500
+            1306024 -1174325
+            1298409 -1181940
+          )
+        )
+        (wire
+          (path Top 2500
+            1291338 -1180333
+            1291338 -1174869
+          )
+        )
+        (wire
+          (path Top 2500
+            1267500 -1189440
+            1276607 -1180333
+            1291338 -1180333
+          )
+        )
+        (wire
+          (path Top 2500
+            1291338 -1180333
+            1296802 -1180333
+            1298409 -1181940
+          )
+        )
+        (wire
+          (path Top 2500
+            1298953 -1167254
+            1291338 -1174869
+          )
+        )
+      )
+      (net "ENET_TXD1"
+        (wire
+          (path Top 2500
+            1120007 -1007097
+            1127070 -1014160
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1120007.0 -1007097.0
+        )
+      )
+      (net "ENET_CRS"
+        (wire
+          (path Top 2500
+            1227967 -1006928
+            1226897 -1006928
+            1224919 -1004950
+          )
+        )
+        (wire
+          (path Top 2500
+            1216650 -1004950
+            1224919 -1004950
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1227967.0 -1006928.0
+        )
+      )
+      (net "ENET_RXD0"
+        (wire
+          (path Top 2500
+            1230019 -1082440
+            1223649 -1076070
+          )
+        )
+        (wire
+          (path Top 2500
+            1215380 -1076070
+            1223649 -1076070
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1230019.0 -1082440.0
+        )
+      )
+      (net "ENET_RXD1"
+        (wire
+          (path Top 2500
+            1226459 -1094120
+            1223649 -1091310
+          )
+        )
+        (wire
+          (path Top 2500
+            1215380 -1091310
+            1223649 -1091310
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1226459.0 -1094120.0
+        )
+      )
+      (net "ENET_RX_ER"
+        (wire
+          (path Top 2500
+            1181943 -1032829
+            1179498 -1030384
+          )
+        )
+        (wire
+          (path Top 2500
+            1186337 -1044934
+            1186337 -1037223
+            1181943 -1032829
+          )
+        )
+        (wire
+          (path Top 1250
+            1186204 -1028568
+            1181943 -1032829
+          )
+        )
+        (wire
+          (path Top 1250
+            1179498 -1030384
+            1178565 -1031317
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1186337.0 -1044934.0
+        )
+        (wire
+          (path Top 2500
+            1199650 -1020190
+            1191381 -1020190
+          )
+        )
+        (wire
+          (path Top 1874
+            1178565 -1031317
+            1159913 -1031317
+            1159570 -1031660
+          )
+        )
+        (wire
+          (path Top 1874
+            1188078 -1028568
+            1186204 -1028568
+          )
+        )
+        (wire
+          (path Top 2500
+            1191381 -1020190
+            1191381 -1025265
+            1188078 -1028568
+          )
+        )
+        (wire
+          (path Top 2500
+            1293556 -1064603
+            1297986 -1064603
+            1298409 -1064180
+          )
+        )
+        (wire
+          (path Top 2500
+            1306024 -1071795
+            1298409 -1064180
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1293556.0 -1064603.0
+        )
+      )
+      (net "ENET_REF_CLK"
+        (wire
+          (path Top 2500
+            1227024 -977768
+            1224919 -975663
+            1224919 -968756
+          )
+        )
+        (wire
+          (path Top 2500
+            1216650 -968756
+            1224919 -968756
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1227024.0 -977768.0
+        )
+        (wire
+          (path Top 2500
+            1295802 -1054502
+            1309559 -1068259
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1295802.0 -1054502.0
+        )
+      )
+      (net "ENET_MDIO"
+        (wire
+          (path Top 2500
+            1172144 -1009087
+            1172144 -1008313
+            1191381 -989076
+          )
+        )
+        (wire
+          (path Top 2500
+            1172144 -1009087
+            1172143 -1009087
+            1159570 -1021660
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1172144.0 -1009087.0
+        )
+        (wire
+          (path Top 2500
+            1199650 -989076
+            1191381 -989076
+          )
+        )
+      )
+      (net EN1
+        (wire
+          (path Top 2500
+            960395 -754106
+            960395 -744879
+            959195 -743679
+            959195 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 960395.0 -754106.0
+        )
+      )
+      (net DIR1
+        (wire
+          (path Top 2500
+            1017695 -747808
+            1017695 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1017695.0 -747808.0
+        )
+      )
+      (net STP1
+        (wire
+          (path Top 2500
+            1384349 -1018218
+            1384349 -1013856
+          )
+        )
+        (wire
+          (path Top 2500
+            1376734 -1025833
+            1384349 -1018218
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1384349.0 -1013856.0
+        )
+      )
+      (net STP3
+        (wire
+          (path Top 2500
+            1544424 -805670
+            1530140 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1530140 -794151
+            1530140 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1544424.0 -805670.0
+        )
+        (wire
+          (path Top 2500
+            1409894 -1004495
+            1409894 -1006815
+            1383805 -1032904
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1409894.0 -1004495.0
+        )
+      )
+      (net EN4
+        (wire
+          (path Top 2500
+            1723730 -747857
+            1723730 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1723730.0 -747857.0
+        )
+      )
+      (net DIR4
+        (wire
+          (path Top 2500
+            1782230 -747739
+            1782230 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1782230.0 -747739.0
+        )
+      )
+      (net STP4
+        (wire
+          (path Top 2500
+            1782230 -794151
+            1782230 -802774
+            1776106 -808898
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1776106.0 -808898.0
+        )
+        (wire
+          (path Top 2500
+            1409293 -1030917
+            1407005 -1030917
+            1394412 -1043510
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1409293.0 -1030917.0
+        )
+      )
+      (net TH1
+        (wire
+          (path Top 2500
+            907165 -766221
+            895896 -766221
+          )
+        )
+        (wire
+          (path Top 2500
+            865255 -763651
+            893326 -763651
+            895896 -766221
+          )
+        )
+        (wire
+          (path Top 2500
+            951414 -904509
+            954166 -907261
+          )
+        )
+        (wire
+          (path Top 2500
+            959935 -907261
+            954166 -907261
+          )
+        )
+        (via "Via[0-3]_800:400_um" 951414.0 -904509.0
+        )
+      )
+      (net TH2
+        (wire
+          (path Top 2500
+            905895 -822101
+            894626 -822101
+          )
+        )
+        (wire
+          (path Top 2500
+            865255 -814451
+            886976 -814451
+            894626 -822101
+          )
+        )
+        (wire
+          (path Top 2500
+            967935 -900742
+            968050 -900627
+            968050 -897897
+          )
+        )
+        (wire
+          (path Top 2500
+            967935 -907261
+            967935 -900742
+          )
+        )
+        (via "Via[0-3]_800:400_um" 968050.0 -897897.0
+        )
+        (wire
+          (path Top 1874
+            1304245 -1147260
+            1299275 -1152230
+            1299275 -1152790
+          )
+        )
+        (wire
+          (path Top 1874
+            1291882 -1160183
+            1299275 -1152790
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1304245.0 -1147260.0
+        )
+      )
+      (net TH3
+        (wire
+          (path Top 2500
+            905895 -877981
+            905895 -867712
+          )
+        )
+        (wire
+          (path Top 2500
+            865255 -865251
+            903434 -865251
+            905895 -867712
+          )
+        )
+        (wire
+          (path Top 2500
+            905895 -877981
+            958953 -877981
+            975935 -894963
+            975935 -907261
+          )
+        )
+        (wire
+          (path Top 1874
+            1280953 -1164041
+            1278584 -1166410
+          )
+        )
+        (wire
+          (path Top 1874
+            1288346 -1156648
+            1280953 -1164041
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1278584.0 -1166410.0
+        )
+      )
+      (net RSTOUT
+        (wire
+          (path Top 2500
+            1142070 -1000136
+            1142070 -1014160
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1142070.0 -1000136.0
+        )
+        (wire
+          (path Top 1874
+            1303690 -1191361
+            1305702 -1189349
+            1305702 -1188790
+            1305702 -1188789
+          )
+        )
+        (wire
+          (path Top 1874
+            1313095 -1181396
+            1305702 -1188789
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1303690.0 -1191361.0
+        )
+      )
+      (net TH4
+        (wire
+          (path Top 1874
+            980852 -953507
+            992744 -953507
+            1008610 -937641
+          )
+        )
+        (via "Via[0-3]_800:400_um" 980852.0 -953507.0
+        )
+        (wire
+          (path Top 1874
+            1294108 -1143255
+            1292203 -1145160
+            1292203 -1145718
+            1292204 -1145718
+          )
+        )
+        (wire
+          (path Top 1874
+            1284810 -1153112
+            1292204 -1145718
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1294108.0 -1143255.0
+        )
+      )
+      (net P2.6
+        (wire
+          (path Top 2500
+            1729948 -1265104
+            1732737 -1265104
+            1732781 -1265060
+          )
+        )
+        (wire
+          (path Top 2500
+            1741550 -1265060
+            1732781 -1265060
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1729948.0 -1265104.0
+        )
+        (wire
+          (path Top 2500
+            1741550 -1265060
+            1787270 -1265060
+          )
+        )
+        (wire
+          (path Top 1874
+            1397626 -1061510
+            1397626 -1061511
+            1397626 -1065919
+          )
+        )
+        (wire
+          (path Top 1874
+            1405019 -1054117
+            1397626 -1061510
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1397626.0 -1065919.0
+        )
+      )
+      (net P2.7
+        (wire
+          (path Top 2500
+            1371416 -1360103
+            1368429 -1363090
+          )
+        )
+        (wire
+          (path Top 2500
+            1360160 -1363090
+            1368429 -1363090
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1371416.0 -1360103.0
+        )
+        (wire
+          (path Top 2500
+            1515189 -1349120
+            1518168 -1346141
+          )
+        )
+        (wire
+          (path Top 2500
+            1500920 -1349120
+            1515189 -1349120
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1518168.0 -1346141.0
+        )
+      )
+      (net EN2
+        (wire
+          (path Top 2500
+            1215730 -733151
+            1215730 -743761
+            1216725 -744756
+            1216725 -754243
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1216725.0 -754243.0
+        )
+      )
+      (net DIR2
+        (wire
+          (path Top 2500
+            1274230 -747475
+            1274230 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1274230.0 -747475.0
+        )
+      )
+      (net EN3
+        (wire
+          (path Top 2500
+            1473184 -754292
+            1473184 -745579
+            1471640 -744035
+            1471640 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1473184.0 -754292.0
+        )
+        (wire
+          (path Top 2500
+            1433303 -1082401
+            1442952 -1072752
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1442952.0 -1072752.0
+        )
+      )
+      (net DIR3
+        (wire
+          (path Top 2500
+            1530140 -747520
+            1530140 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1530140.0 -747520.0
+        )
+      )
+      (net PWM0
+        (wire
+          (path Top 2500
+            1558040 -1280540
+            1586830 -1309330
+            1603510 -1309330
+          )
+        )
+        (wire
+          (path Top 2500
+            1662130 -1275679
+            1665091 -1278640
+          )
+        )
+        (wire
+          (path Top 2500
+            1673360 -1278640
+            1665091 -1278640
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1662130.0 -1275679.0
+        )
+        (wire
+          (path Top 1874
+            1388456 -1057097
+            1390555 -1054998
+            1390555 -1054440
+            1390555 -1054439
+          )
+        )
+        (wire
+          (path Top 1874
+            1397948 -1047046
+            1390555 -1054439
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1388456.0 -1057097.0
+        )
+      )
+      (net PWM1
+        (wire
+          (path Top 2500
+            1524667 -1293746
+            1524667 -1317274
+          )
+        )
+        (wire
+          (path Top 2500
+            1532640 -1280540
+            1524667 -1288513
+            1524667 -1293746
+          )
+        )
+        (wire
+          (path Top 2500
+            1524667 -1293746
+            1468975 -1293746
+            1457599 -1282370
+          )
+        )
+        (wire
+          (path Top 2500
+            1449330 -1282370
+            1457599 -1282370
+          )
+        )
+        (wire
+          (path Top 1874
+            1500920 -1323720
+            1514876 -1323720
+          )
+        )
+        (wire
+          (path Top 1874
+            1524667 -1317274
+            1521322 -1317274
+            1514876 -1323720
+          )
+        )
+        (wire
+          (path Top 2500
+            1409098 -1042967
+            1413344 -1042967
+          )
+        )
+        (wire
+          (path Top 2500
+            1401483 -1050582
+            1409098 -1042967
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1413344.0 -1042967.0
+        )
+      )
+      (net "POT_SCL"
+        (wire
+          (path Top 2500
+            1497332 -951635
+            1498062 -951635
+            1515231 -934466
+          )
+        )
+        (wire
+          (path Top 2500
+            1523500 -934466
+            1515231 -934466
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1497332.0 -951635.0
+        )
+        (wire
+          (path Top 2500
+            1691390 -1007490
+            1713003 -1007490
+            1734410 -986083
+            1734410 -981269
+          )
+        )
+        (wire
+          (path Top 2500
+            1459050 -933348
+            1459050 -915448
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1459050.0 -933348.0
+        )
+        (wire
+          (path Top 2500
+            1443366 -1134231
+            1443366 -1138426
+          )
+        )
+        (wire
+          (path Top 2500
+            1450981 -1146041
+            1443366 -1138426
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1443366.0 -1134231.0
+        )
+      )
+      (net "POT_SDA"
+        (wire
+          (path Top 2500
+            1452550 -907226
+            1462972 -896804
+            1489058 -896804
+            1489058 -898970
+            1493317 -903229
+            1499338 -903229
+            1499604 -902963
+            1515231 -918591
+          )
+        )
+        (wire
+          (path Top 2500
+            1512264 -921558
+            1515231 -918591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1512264.0 -921558.0
+        )
+        (wire
+          (path Top 2500
+            1740910 -989491
+            1738067 -992334
+            1738254 -992521
+          )
+        )
+        (wire
+          (path Top 2500
+            1740910 -981269
+            1740910 -989491
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1738254.0 -992521.0
+        )
+        (wire
+          (path Top 2500
+            1452550 -915448
+            1452550 -907226
+          )
+        )
+        (wire
+          (path Top 2500
+            1523500 -918591
+            1515231 -918591
+          )
+        )
+        (wire
+          (path Top 1874
+            1433278 -1134850
+            1440052 -1141624
+            1440052 -1142183
+          )
+        )
+        (wire
+          (path Top 1874
+            1447445 -1149577
+            1440052 -1142183
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1433278.0 -1134850.0
+        )
+      )
+      (net "P1_22"
+        (wire
+          (path Top 2500
+            1960240 -1281706
+            1960240 -1293240
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1960240.0 -1281706.0
+        )
+        (wire
+          (path Top 2500
+            1974990 -1293240
+            1960240 -1293240
+          )
+        )
+      )
+      (net "P1_23"
+        (wire
+          (path Top 1874
+            1970081 -1236047
+            1973304 -1239270
+          )
+        )
+        (wire
+          (path Top 1874
+            1987260 -1239270
+            1973304 -1239270
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1970081.0 -1236047.0
+        )
+        (wire
+          (path Top 2500
+            2012060 -1235070
+            2003291 -1235070
+          )
+        )
+        (wire
+          (path Top 2500
+            1987260 -1239270
+            2001529 -1239270
+          )
+        )
+        (wire
+          (path Top 2500
+            2003291 -1235070
+            2003291 -1237508
+            2001529 -1239270
+          )
+        )
+        (wire
+          (path Top 2500
+            1402752 -1175149
+            1406643 -1175149
+            1408011 -1173781
+          )
+        )
+        (wire
+          (path Top 2500
+            1415625 -1181396
+            1408011 -1173781
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1402752.0 -1175149.0
+        )
+      )
+      (net VBB
+        (wire
+          (path Top 2500
+            2053340 -1500250
+            2053340 -1481741
+          )
+        )
+        (wire
+          (path Top 2500
+            2068190 -1464690
+            2059921 -1464690
+          )
+        )
+        (wire
+          (path Top 2500
+            2053340 -1481741
+            2059921 -1475160
+            2059921 -1464690
+          )
+        )
+        (wire
+          (path Top 2500
+            2027940 -1291090
+            2027940 -1299359
+          )
+        )
+        (wire
+          (path Top 2500
+            2056510 -1312290
+            2056510 -1301401
+          )
+        )
+        (wire
+          (path Top 2500
+            2056510 -1301401
+            2054468 -1299359
+            2027940 -1299359
+          )
+        )
+        (wire
+          (path Top 2500
+            1566244 -1001357
+            1568571 -1003684
+            1568571 -1010030
+          )
+        )
+        (wire
+          (path Top 2500
+            1576840 -1010030
+            1568571 -1010030
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1566244.0 -1001357.0
+        )
+        (wire
+          (path Top 2500
+            1961620 -700901
+            1955773 -706748
+          )
+        )
+        (wire
+          (path Top 2500
+            1876560 -753991
+            1886829 -753991
+          )
+        )
+        (wire
+          (path Top 2500
+            1886829 -753991
+            1934072 -706748
+            1955773 -706748
+          )
+        )
+        (wire
+          (path Top 2500
+            1937360 -851910
+            1926338 -851910
+          )
+        )
+        (wire
+          (path Top 2500
+            1937360 -843641
+            1937360 -851910
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1926338.0 -851910.0
+        )
+        (wire
+          (path Top 2500
+            1480245 -712165
+            1484640 -716560
+            1484640 -733151
+          )
+        )
+        (wire
+          (path Top 2500
+            1480245 -712165
+            1480245 -711896
+            1461810 -693461
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1480245.0 -712165.0
+        )
+        (wire
+          (path Top 2500
+            1705730 -703542
+            1713720 -695552
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1705730.0 -703542.0
+        )
+        (wire
+          (path Top 2500
+            1203849 -706021
+            1204503 -705367
+            1204503 -702483
+          )
+        )
+        (wire
+          (path Top 2500
+            1210350 -696636
+            1204503 -702483
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1203849.0 -706021.0
+        )
+        (wire
+          (path Top 2500
+            972195 -715651
+            972195 -733151
+          )
+        )
+        (wire
+          (path Top 2500
+            951910 -695366
+            972195 -715651
+          )
+        )
+        (via "Via[0-3]_800:400_um" 972195.0 -715651.0
+        )
+        (wire
+          (path Top 2500
+            1676195 -827973
+            1678561 -830339
+            1678561 -836041
+          )
+        )
+        (wire
+          (path Top 2500
+            1687330 -836041
+            1678561 -836041
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1676195.0 -827973.0
+        )
+        (wire
+          (path Top 2500
+            1400560 -811911
+            1400560 -815966
+            1433970 -849376
+          )
+        )
+        (wire
+          (path Top 2500
+            1179175 -837670
+            1181991 -840486
+          )
+        )
+        (wire
+          (path Top 2500
+            1190760 -840486
+            1181991 -840486
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1179175.0 -837670.0
+        )
+        (wire
+          (path Top 2500
+            927331 -836041
+            930415 -836041
+            939305 -844931
+          )
+        )
+        (via "Via[0-3]_800:400_um" 927331.0 -836041.0
+        )
+        (wire
+          (path Top 2500
+            1898340 -1185670
+            1890071 -1185670
+          )
+        )
+        (wire
+          (path Top 2500
+            1841606 -1226340
+            1849401 -1226340
+            1890071 -1185670
+          )
+        )
+        (wire
+          (path Top 2500
+            1841606 -1226340
+            1845470 -1226340
+            1861570 -1242440
+          )
+        )
+        (wire
+          (path Top 2500
+            1824740 -1226340
+            1841606 -1226340
+          )
+        )
+        (wire
+          (path Top 2500
+            1961620 -700901
+            1974940 -714221
+            1974940 -735591
+          )
+        )
+        (wire
+          (path Top 2500
+            2007440 -735591
+            2007440 -747110
+          )
+        )
+        (wire
+          (path Top 2500
+            1974940 -735591
+            1974940 -747110
+          )
+        )
+        (wire
+          (path Top 2500
+            1974940 -747110
+            2007440 -747110
+          )
+        )
+        (wire
+          (path Top 2500
+            1517140 -733151
+            1517140 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            1484640 -733151
+            1484640 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            1484640 -744670
+            1517140 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            1210350 -696636
+            1228730 -715016
+            1228730 -733151
+          )
+        )
+        (wire
+          (path Top 2500
+            1261230 -733151
+            1261230 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            1228730 -733151
+            1228730 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            1228730 -744670
+            1261230 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            1004695 -733151
+            1004695 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            972195 -733151
+            972195 -744670
+          )
+        )
+        (wire
+          (path Top 2500
+            972195 -744670
+            1004695 -744670
+          )
+        )
+      )
+      (net MS2
+        (wire
+          (path Top 2500
+            1241730 -808818
+            1241730 -794151
+          )
+        )
+        (wire
+          (path Top 2500
+            1189675 -878114
+            1198760 -887199
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1189675.0 -878114.0
+        )
+        (wire
+          (path Top 2500
+            1982794 -811165
+            1987940 -806019
+            1987940 -796591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1982794.0 -811165.0
+        )
+        (wire
+          (path Top 2500
+            1749699 -813458
+            1749699 -805701
+            1749730 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1749730 -794151
+            1749730 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1749699.0 -813458.0
+        )
+        (wire
+          (path Top 2500
+            1500768 -808798
+            1497640 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1497640 -794151
+            1497640 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1500768.0 -808798.0
+        )
+        (via "Via[0-3]_800:400_um" 1241730.0 -808818.0
+        )
+        (wire
+          (path Top 2500
+            986788 -818807
+            984441 -816460
+            984441 -794905
+            985195 -794151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 986788.0 -818807.0
+        )
+      )
+      (net MS1
+        (wire
+          (path Top 2500
+            1162310 -876282
+            1162310 -887326
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1162310.0 -876282.0
+        )
+        (wire
+          (path Top 2500
+            1947731 -785072
+            1981440 -785072
+          )
+        )
+        (wire
+          (path Top 2500
+            1981440 -796591
+            1981440 -785072
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1947731.0 -785072.0
+        )
+        (wire
+          (path Top 2500
+            1740479 -808421
+            1743230 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1743230 -794151
+            1743230 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1740479.0 -808421.0
+        )
+        (wire
+          (path Top 2500
+            1491140 -794151
+            1491140 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1235230 -782647
+            1235245 -782632
+            1491140 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1235230 -782647
+            1235230 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1235230 -783766
+            1235230 -782647
+          )
+        )
+        (wire
+          (path Top 2500
+            1235230 -794151
+            1235230 -783766
+          )
+        )
+        (wire
+          (path Top 2500
+            1235230 -782632
+            1201254 -782632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1201254.0 -782632.0
+        )
+        (wire
+          (path Top 2500
+            978695 -794151
+            978695 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1016495 -778984
+            1012847 -782632
+            978695 -782632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1016495.0 -778984.0
+        )
+      )
+      (net "5V"
+        (wire
+          (path Top 2500
+            1619000 -1217675
+            1619000 -1201706
+          )
+        )
+        (wire
+          (path Top 2500
+            1618492 -1180464
+            1632937 -1180464
+          )
+        )
+        (wire
+          (path Top 2500
+            1619000 -1201706
+            1619872 -1201706
+            1632937 -1188641
+            1632937 -1180464
+          )
+        )
+        (wire
+          (path Top 2500
+            1792990 -1179970
+            1784721 -1179970
+          )
+        )
+        (wire
+          (path Top 2500
+            1763010 -1204340
+            1763010 -1194071
+          )
+        )
+        (wire
+          (path Top 2500
+            1763010 -1194071
+            1770620 -1194071
+            1784721 -1179970
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1006425 -1473919
+            1003523 -1476821
+            1002355 -1476821
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1002355 -1486440
+            1002355 -1476821
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1006425.0 -1473919.0
+        )
+        (wire
+          (path Bottom 2500
+            1002355 -1486440
+            1008799 -1486440
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1034800 -1486920
+            1009279 -1486920
+            1008799 -1486440
+          )
+        )
+        (wire
+          (path Top 2500
+            1589790 -1173890
+            1601059 -1173890
+          )
+        )
+        (wire
+          (path Top 2500
+            1618492 -1180464
+            1604047 -1180464
+          )
+        )
+        (wire
+          (path Top 2500
+            1601059 -1173890
+            1601059 -1177476
+            1604047 -1180464
+          )
+        )
+      )
+      (net "12VREG"
+        (wire
+          (path Top 2500
+            1952666 -1230020
+            1949216 -1226570
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1952666.0 -1230020.0
+        )
+        (wire
+          (path Top 2500
+            1535630 -1336042
+            1535630 -1336420
+          )
+        )
+        (wire
+          (path Top 2500
+            1535630 -1336420
+            1535133 -1336420
+            1528417 -1343136
+            1528417 -1349265
+            1535483 -1356331
+            1537550 -1356331
+          )
+        )
+        (wire
+          (path Top 2500
+            1539662 -1336420
+            1535630 -1336420
+          )
+        )
+        (wire
+          (path Top 2500
+            1537550 -1364600
+            1537550 -1356331
+          )
+        )
+        (wire
+          (path Top 2500
+            1552920 -1336420
+            1539662 -1336420
+          )
+        )
+        (wire
+          (path Top 1874
+            1507860 -1387260
+            1515816 -1387260
+          )
+        )
+        (wire
+          (path Top 1874
+            1537550 -1372854
+            1530222 -1372854
+            1515816 -1387260
+          )
+        )
+        (wire
+          (path Top 2500
+            1537550 -1364600
+            1537550 -1372854
+          )
+        )
+        (wire
+          (path Top 2500
+            1507860 -1387260
+            1499591 -1387260
+          )
+        )
+        (wire
+          (path Top 2500
+            1499591 -1387260
+            1499591 -1384271
+            1492100 -1376780
+          )
+        )
+        (wire
+          (path Top 2500
+            1952760 -1201170
+            1952760 -1209439
+          )
+        )
+        (wire
+          (path Top 1874
+            1935260 -1226570
+            1949216 -1226570
+          )
+        )
+        (wire
+          (path Top 1874
+            1954922 -1220124
+            1949216 -1225830
+            1949216 -1226570
+          )
+        )
+        (wire
+          (path Top 2500
+            1952760 -1209439
+            1954922 -1211601
+            1954922 -1220124
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1535630.0 -1336042.0
+        )
+      )
+      (net EN5
+        (wire
+          (path Top 2500
+            1961940 -735591
+            1961940 -749870
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1961940.0 -749870.0
+        )
+        (wire
+          (path Top 2500
+            1331782 -1065269
+            1327782 -1065269
+          )
+        )
+        (wire
+          (path Top 2500
+            1320166 -1057653
+            1327782 -1065269
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1331782.0 -1065269.0
+        )
+      )
+      (net STP5
+        (wire
+          (path Top 2500
+            2020440 -796591
+            2020440 -805670
+            2015101 -811009
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2015101.0 -811009.0
+        )
+        (wire
+          (path Top 2500
+            1421854 -1051424
+            1412090 -1061188
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1421854.0 -1051424.0
+        )
+      )
+      (net DIR5
+        (wire
+          (path Top 2500
+            2020440 -749943
+            2020440 -735591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2020440.0 -749943.0
+        )
+      )
+      (net MS3
+        (wire
+          (path Top 2500
+            2019359 -782019
+            2016306 -785072
+            2013940 -785072
+          )
+        )
+        (wire
+          (path Top 2500
+            2013940 -796591
+            2013940 -785072
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2019359.0 -782019.0
+        )
+        (wire
+          (path Top 2500
+            1775730 -794151
+            1775730 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1544523 -782632
+            1775730 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1544523 -782632
+            1523640 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1523640 -794151
+            1523640 -782632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1544523.0 -782632.0
+        )
+        (wire
+          (path Top 2500
+            1014108 -808583
+            1011195 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1011195 -794151
+            1011195 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1014108.0 -808583.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/RX_0"
+        (wire
+          (path Top 2500
+            1254617 -1107969
+            1263052 -1099534
+          )
+        )
+        (wire
+          (path Top 2500
+            1270668 -1107150
+            1263052 -1099534
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1254617.0 -1107969.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SD_CS"
+        (wire
+          (path Top 2500
+            1022750 -1066644
+            1033844 -1055550
+            1034050 -1055550
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1022750.0 -1066644.0
+        )
+        (wire
+          (path Top 1874
+            907864 -1026734
+            904791 -1023661
+          )
+        )
+        (wire
+          (path Top 1874
+            894335 -1023661
+            904791 -1023661
+          )
+        )
+        (via "Via[0-3]_800:400_um" 907864.0 -1026734.0
+        )
+        (wire
+          (path Top 2500
+            1322886 -1016297
+            1321359 -1017824
+          )
+        )
+        (wire
+          (path Top 2500
+            1321736 -1019606
+            1332428 -1030298
+            1335238 -1030298
+            1341379 -1036439
+          )
+        )
+        (wire
+          (path Top 1874
+            1321359 -1017824
+            1321359 -1019229
+            1321736 -1019606
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1322886.0 -1016297.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SD_SCK"
+        (wire
+          (path Top 2500
+            904093 -990661
+            890335 -990661
+          )
+        )
+        (via "Via[0-3]_800:400_um" 904093.0 -990661.0
+        )
+        (wire
+          (path Top 2500
+            1344915 -1032904
+            1335256 -1023245
+            1335256 -1022843
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1335256.0 -1022843.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SD_MISO"
+        (wire
+          (path Top 2500
+            1039281 -981701
+            1036485 -978905
+          )
+        )
+        (wire
+          (path Top 2500
+            1048050 -981701
+            1039281 -981701
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1036485.0 -978905.0
+        )
+        (wire
+          (path Top 1874
+            903864 -971734
+            900791 -968661
+          )
+        )
+        (wire
+          (path Top 1874
+            890335 -968661
+            900791 -968661
+          )
+        )
+        (via "Via[0-3]_800:400_um" 903864.0 -971734.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SD_MOSI"
+        (wire
+          (path Top 2500
+            1008178 -1028595
+            1008178 -1045424
+            1010035 -1047281
+            1017270 -1047281
+          )
+        )
+        (wire
+          (path Top 2500
+            1017270 -1055550
+            1017270 -1047281
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1008178.0 -1028595.0
+        )
+        (wire
+          (path Top 1874
+            907318 -1016407
+            904537 -1016407
+            900791 -1012661
+          )
+        )
+        (wire
+          (path Top 1874
+            890335 -1012661
+            900791 -1012661
+          )
+        )
+        (via "Via[0-3]_800:400_um" 907318.0 -1016407.0
+        )
+        (wire
+          (path Top 2500
+            1351986 -1025833
+            1342547 -1016394
+            1342547 -1015876
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1342547.0 -1015876.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/Z_MAX"
+        (via "Via[0-3]_800:400_um" 1204968.0 -1261679.0
+        )
+        (wire
+          (path Top 2500
+            1231010 -1289040
+            1215140 -1289040
+          )
+        )
+        (wire
+          (path Top 2500
+            1436295 -1145497
+            1432370 -1145497
+          )
+        )
+        (wire
+          (path Top 2500
+            1443910 -1153112
+            1436295 -1145497
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1432370.0 -1145497.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/Z_MIN"
+        (wire
+          (path Top 2500
+            1180210 -1289040
+            1164340 -1289040
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/Y_MAX"
+        (wire
+          (path Top 2500
+            1129410 -1289040
+            1113540 -1289040
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/Y_MIN"
+        (wire
+          (path Top 2500
+            1257711 -1235837
+            1255159 -1238389
+            1255159 -1244590
+          )
+        )
+        (wire
+          (path Top 2500
+            1246890 -1244590
+            1255159 -1244590
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1257711.0 -1235837.0
+        )
+        (wire
+          (path Top 2500
+            1231010 -1244590
+            1246890 -1244590
+          )
+        )
+        (wire
+          (path Top 2500
+            1426232 -1170790
+            1420120 -1164678
+            1412860 -1164678
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1412860.0 -1164678.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/X_MAX"
+        (wire
+          (path Top 2500
+            1180210 -1244590
+            1196090 -1244590
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/X_MIN"
+        (wire
+          (path Top 2500
+            1129410 -1244590
+            1145290 -1244590
+          )
+        )
+        (wire
+          (path Top 2500
+            1429017 -1187717
+            1419161 -1177861
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1429017.0 -1187717.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/LED4"
+        (wire
+          (path Top 2500
+            1578110 -1049400
+            1569841 -1049400
+          )
+        )
+        (wire
+          (path Top 2500
+            1561210 -1036700
+            1569841 -1045331
+            1569841 -1049400
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/LED3"
+        (wire
+          (path Top 2500
+            1578110 -1069090
+            1569841 -1069090
+          )
+        )
+        (wire
+          (path Top 2500
+            1561210 -1062100
+            1562851 -1062100
+            1569841 -1069090
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/LED2"
+        (wire
+          (path Top 2500
+            1578110 -1088140
+            1569841 -1088140
+          )
+        )
+        (wire
+          (path Top 2500
+            1561210 -1087500
+            1569201 -1087500
+            1569841 -1088140
+          )
+        )
+        (wire
+          (path Top 2500
+            1409098 -1203153
+            1413079 -1203153
+          )
+        )
+        (wire
+          (path Top 2500
+            1401483 -1195538
+            1409098 -1203153
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1413079.0 -1203153.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/LED1"
+        (wire
+          (path Top 2500
+            1561210 -1112900
+            1573877 -1112900
+          )
+        )
+        (wire
+          (path Top 2500
+            1573877 -1112900
+            1573877 -1110783
+            1578110 -1106550
+          )
+        )
+        (wire
+          (path Top 2500
+            1390333 -1191459
+            1390333 -1187555
+          )
+        )
+        (wire
+          (path Top 2500
+            1397948 -1199074
+            1390333 -1191459
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1390333.0 -1187555.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/USB_D-"
+        (wire
+          (path Top 2500
+            1033140 -1307201
+            1036170 -1304171
+          )
+        )
+        (wire
+          (path Top 2500
+            1033140 -1315470
+            1033140 -1307201
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1036170.0 -1304171.0
+        )
+        (wire
+          (path Top 2500
+            1033140 -1331340
+            1033140 -1315470
+          )
+        )
+        (wire
+          (path Top 2500
+            1378975 -1198530
+            1383262 -1198530
+          )
+        )
+        (wire
+          (path Top 2500
+            1390877 -1206145
+            1383262 -1198530
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1378975.0 -1198530.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/USB_D+"
+        (wire
+          (path Top 2500
+            1041409 -1347220
+            1044186 -1344443
+          )
+        )
+        (wire
+          (path Top 2500
+            1033140 -1347220
+            1041409 -1347220
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1044186.0 -1344443.0
+        )
+        (wire
+          (path Top 2500
+            1033140 -1378970
+            1033140 -1363090
+          )
+        )
+        (wire
+          (path Top 2500
+            1033140 -1347220
+            1033140 -1363090
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/SDA"
+        (wire
+          (path Top 2500
+            1547880 -1211570
+            1547880 -1219839
+          )
+        )
+        (wire
+          (path Top 2500
+            1532640 -1229740
+            1542541 -1219839
+            1547880 -1219839
+          )
+        )
+        (wire
+          (path Top 2500
+            1349230 -1232761
+            1344371 -1227902
+          )
+        )
+        (wire
+          (path Top 2500
+            1351986 -1220287
+            1344371 -1227902
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1349230.0 -1232761.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SCL"
+        (wire
+          (path Top 2500
+            1515270 -1206590
+            1509423 -1212437
+          )
+        )
+        (wire
+          (path Top 2500
+            1507240 -1229740
+            1509423 -1227557
+            1509423 -1212438
+            1509423 -1212437
+          )
+        )
+      )
+      (net "Net-(C3-Pad1)"
+        (wire
+          (path Top 2500
+            1322060 -1272920
+            1322060 -1264651
+          )
+        )
+        (wire
+          (path Top 2500
+            1322060 -1264651
+            1321560 -1264151
+            1321560 -1254710
+          )
+        )
+        (wire
+          (path Top 2500
+            1321560 -1254710
+            1330829 -1254710
+          )
+        )
+        (wire
+          (path Top 1874
+            1331747 -1230129
+            1331747 -1226384
+            1344915 -1213216
+          )
+        )
+        (wire
+          (path Top 2500
+            1330829 -1254710
+            1330829 -1231047
+            1331747 -1230129
+          )
+        )
+      )
+      (net "Net-(C2-Pad1)"
+        (wire
+          (path Top 2500
+            1305560 -1232710
+            1296291 -1232710
+          )
+        )
+        (wire
+          (path Top 2500
+            1290700 -1236480
+            1292521 -1236480
+            1296291 -1232710
+          )
+        )
+        (wire
+          (path Top 2500
+            1305560 -1232710
+            1305560 -1222441
+          )
+        )
+        (wire
+          (path Top 1874
+            1325791 -1221523
+            1329537 -1221523
+            1341379 -1209681
+          )
+        )
+        (wire
+          (path Top 2500
+            1305560 -1222441
+            1324873 -1222441
+            1325791 -1221523
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/P1_30"
+        (wire
+          (path Top 1874
+            1347156 -1196273
+            1345236 -1198193
+            1345236 -1198751
+            1345237 -1198751
+          )
+        )
+        (wire
+          (path Top 1874
+            1337843 -1206145
+            1345237 -1198751
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1347156.0 -1196273.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/RESET"
+        (wire
+          (path Top 2500
+            1239900 -1485010
+            1245239 -1485010
+          )
+        )
+        (wire
+          (path Top 2500
+            1236970 -1485010
+            1239900 -1485010
+          )
+        )
+        (wire
+          (path Top 2500
+            1239900 -1465960
+            1239900 -1485010
+          )
+        )
+        (wire
+          (path Top 2500
+            1246250 -1504700
+            1246250 -1555500
+          )
+        )
+        (wire
+          (path Top 2500
+            1246250 -1504700
+            1246250 -1493811
+          )
+        )
+        (wire
+          (path Top 2500
+            1245239 -1485010
+            1245239 -1492800
+            1246250 -1493811
+          )
+        )
+        (wire
+          (path Top 2500
+            1339637 -1176067
+            1323701 -1192003
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1339637.0 -1176067.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/PLAY"
+        (wire
+          (path Top 2500
+            1141309 -1368703
+            1147871 -1362141
+          )
+        )
+        (wire
+          (path Top 2500
+            1141870 -1331980
+            1150139 -1331980
+          )
+        )
+        (wire
+          (path Top 2500
+            1150370 -1341989
+            1150370 -1332211
+            1150139 -1331980
+          )
+        )
+        (wire
+          (path Top 1874
+            1147871 -1362141
+            1150370 -1359642
+            1150370 -1341989
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1141309.0 -1368703.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SD_CD"
+        (wire
+          (path Top 2500
+            1458052 -1107150
+            1465668 -1099534
+          )
+        )
+        (wire
+          (path Top 2500
+            1473871 -1101058
+            1467192 -1101058
+            1465668 -1099534
+          )
+        )
+        (wire
+          (path Top 2500
+            1474520 -1099027
+            1474520 -1100409
+            1473871 -1101058
+          )
+        )
+        (wire
+          (path Top 2500
+            1479807 -1093740
+            1474520 -1093740
+          )
+        )
+        (wire
+          (path Top 1874
+            1474520 -1099027
+            1474520 -1093740
+          )
+        )
+        (wire
+          (path Top 1874
+            1479807 -1093740
+            1479807 -1085395
+          )
+        )
+        (wire
+          (path Top 2500
+            1487173 -1085395
+            1479807 -1085395
+          )
+        )
+        (wire
+          (path Top 1874
+            1487173 -1085395
+            1487173 -1078029
+          )
+        )
+        (wire
+          (path Top 2500
+            1494539 -1078029
+            1487173 -1078029
+          )
+        )
+        (wire
+          (path Top 1874
+            1494539 -1078029
+            1494539 -1070663
+          )
+        )
+        (wire
+          (path Top 2500
+            1501905 -1070663
+            1494539 -1070663
+          )
+        )
+        (wire
+          (path Top 1874
+            1501905 -1070663
+            1501905 -1063297
+          )
+        )
+        (wire
+          (path Top 2500
+            1510250 -1063297
+            1501905 -1063297
+          )
+        )
+        (wire
+          (path Top 1874
+            1510250 -1063297
+            1510250 -1054952
+          )
+        )
+        (wire
+          (path Top 2500
+            1518595 -1054952
+            1510250 -1054952
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1473871.0 -1101058.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/ISP_BOOT"
+        (wire
+          (path Top 2500
+            1220850 -1416190
+            1229619 -1416190
+          )
+        )
+        (wire
+          (path Top 2500
+            1239900 -1415160
+            1230649 -1415160
+            1229619 -1416190
+          )
+        )
+        (wire
+          (path Top 2500
+            1220850 -1416190
+            1220850 -1407921
+          )
+        )
+        (wire
+          (path Top 2500
+            1220850 -1407921
+            1220220 -1407291
+            1220220 -1393570
+          )
+        )
+        (wire
+          (path Top 2500
+            1220220 -1393570
+            1220220 -1342770
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/MISO1"
+        (wire
+          (path Top 1874
+            1416804 -1085318
+            1418839 -1083283
+            1418839 -1082724
+            1418839 -1082723
+          )
+        )
+        (wire
+          (path Top 1874
+            1426232 -1075330
+            1418839 -1082723
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1416804.0 -1085318.0
+        )
+      )
+      (net "/smoothieboard-5driver_1/SCK1"
+        (wire
+          (path Top 2500
+            1422696 -1071795
+            1433090 -1061401
+            1436298 -1061401
+            1439048 -1058651
+            1477121 -1058651
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/SSEL1"
+        (wire
+          (path Top 2500
+            1459161 -1040691
+            1446729 -1040691
+            1419161 -1068259
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_1/P2.9"
+        (wire
+          (path Top 2500
+            1063313 -1396740
+            1054310 -1396740
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1063313.0 -1396740.0
+        )
+        (wire
+          (path Top 2500
+            1405834 -1074515
+            1415625 -1064724
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1405834.0 -1074515.0
+        )
+      )
+      (net "Net-(R8-Pad1)"
+        (wire
+          (path Top 2500
+            1016140 -1347220
+            999590 -1347220
+          )
+        )
+        (via "Via[0-3]_800:400_um" 999590.0 -1347220.0
+        )
+      )
+      (net "Net-(R9-Pad1)"
+        (wire
+          (path Top 2500
+            1016140 -1331340
+            1007871 -1331340
+          )
+        )
+        (wire
+          (path Top 2500
+            977127 -1337390
+            1001821 -1337390
+            1007871 -1331340
+          )
+        )
+      )
+      (net "Net-(R5-Pad2)"
+        (wire
+          (path Top 2500
+            1547880 -1194570
+            1556649 -1194570
+          )
+        )
+        (wire
+          (path Top 2500
+            1559416 -1188006
+            1556649 -1190773
+            1556649 -1194570
+          )
+        )
+        (wire
+          (path Top 2500
+            1527290 -1194570
+            1533138 -1188722
+          )
+        )
+        (wire
+          (path Top 2500
+            1547880 -1194570
+            1538985 -1194570
+            1533138 -1188722
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1542160 -1166240
+            1542160 -1175859
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1559416 -1188006
+            1554307 -1188006
+            1542160 -1175859
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1559416.0 -1188006.0
+        )
+      )
+      (net "Net-(LED1-PadA)"
+        (wire
+          (path Top 2500
+            1608500 -1106550
+            1595110 -1106550
+          )
+        )
+      )
+      (net "Net-(LED2-PadA)"
+        (wire
+          (path Top 2500
+            1608500 -1088140
+            1595110 -1088140
+          )
+        )
+      )
+      (net "Net-(LED3-PadA)"
+        (wire
+          (path Top 2500
+            1608500 -1069090
+            1595110 -1069090
+          )
+        )
+      )
+      (net "Net-(LED4-PadA)"
+        (wire
+          (path Top 2500
+            1608500 -1049400
+            1595110 -1049400
+          )
+        )
+      )
+      (net "Net-(JP5-Pad3)"
+        (wire
+          (path Bottom 2500
+            990880 -1450890
+            993465 -1453475
+            993465 -1486440
+          )
+        )
+      )
+      (net "Net-(JP24-Pad1)"
+        (wire
+          (path Top 2500
+            1141870 -1348490
+            1133601 -1348490
+          )
+        )
+        (wire
+          (path Top 2500
+            1123060 -1421510
+            1123060 -1359031
+            1133601 -1348490
+          )
+        )
+      )
+      (net "Net-(JP26-Pad3)"
+        (wire
+          (path Top 2500
+            1104400 -1299235
+            1104400 -1237764
+            1106305 -1235859
+            1113540 -1235859
+          )
+        )
+        (wire
+          (path Top 2500
+            1113540 -1227590
+            1113540 -1235859
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1104400.0 -1299235.0
+        )
+        (wire
+          (path Top 2500
+            1113540 -1227590
+            1129410 -1227590
+          )
+        )
+      )
+      (net "Net-(JP14-Pad1)"
+        (wire
+          (path Top 2500
+            1215140 -1252630
+            1207231 -1252630
+            1205451 -1254410
+            1201958 -1254410
+            1197699 -1258669
+            1197699 -1262162
+            1196090 -1263771
+          )
+        )
+        (wire
+          (path Top 2500
+            1246890 -1272040
+            1246890 -1263771
+          )
+        )
+        (wire
+          (path Top 2500
+            1215140 -1252630
+            1218380 -1252630
+            1229521 -1263771
+            1246890 -1263771
+          )
+        )
+        (wire
+          (path Top 2500
+            1215140 -1244590
+            1215140 -1252630
+          )
+        )
+        (wire
+          (path Top 2500
+            1164340 -1248724
+            1179387 -1263771
+            1196090 -1263771
+          )
+        )
+        (wire
+          (path Top 2500
+            1164340 -1248724
+            1164340 -1252859
+          )
+        )
+        (wire
+          (path Top 2500
+            1164340 -1244590
+            1164340 -1248724
+          )
+        )
+        (wire
+          (path Top 2500
+            1145290 -1262209
+            1135940 -1252859
+            1113540 -1252859
+          )
+        )
+        (wire
+          (path Top 2500
+            1164340 -1252859
+            1154640 -1252859
+            1145290 -1262209
+          )
+        )
+        (wire
+          (path Top 2500
+            1145290 -1263771
+            1145290 -1262209
+          )
+        )
+        (wire
+          (path Top 2500
+            1196090 -1272040
+            1196090 -1263771
+          )
+        )
+        (wire
+          (path Top 2500
+            1113540 -1244590
+            1113540 -1252859
+          )
+        )
+        (wire
+          (path Top 2500
+            1145290 -1272040
+            1145290 -1263771
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1066550 -1540260
+            1066550 -1527593
+          )
+        )
+        (wire
+          (path Bottom 2500
+            1066550 -1527593
+            1043690 -1504733
+            1043690 -1486920
+          )
+        )
+      )
+      (net "Net-(JP14-Pad3)"
+        (wire
+          (path Top 2500
+            1157990 -1185309
+            1157990 -1200012
+          )
+        )
+        (wire
+          (path Top 2500
+            1158801 -1207836
+            1164340 -1213375
+            1164340 -1227590
+          )
+        )
+        (wire
+          (path Top 1874
+            1157990 -1200012
+            1158801 -1200823
+            1158801 -1207836
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1157990.0 -1185309.0
+        )
+        (wire
+          (path Top 2500
+            1180210 -1227590
+            1164340 -1227590
+          )
+        )
+      )
+      (net "Net-(JP16-Pad3)"
+        (wire
+          (path Top 2500
+            1215140 -1227590
+            1215140 -1219321
+          )
+        )
+        (wire
+          (path Top 2500
+            1206254 -1217343
+            1208232 -1219321
+            1215140 -1219321
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1206254.0 -1217343.0
+        )
+        (wire
+          (path Top 2500
+            1231010 -1227590
+            1215140 -1227590
+          )
+        )
+      )
+      (net "Net-(JP19-Pad3)"
+        (wire
+          (path Top 2500
+            1142286 -1300313
+            1145290 -1297309
+          )
+        )
+        (wire
+          (path Top 2500
+            1145290 -1289040
+            1145290 -1297309
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1142286.0 -1300313.0
+        )
+        (wire
+          (path Top 2500
+            1145290 -1289040
+            1145290 -1280771
+          )
+        )
+        (wire
+          (path Top 2500
+            1129410 -1272040
+            1129410 -1280309
+          )
+        )
+        (wire
+          (path Top 2500
+            1129410 -1280309
+            1144828 -1280309
+            1145290 -1280771
+          )
+        )
+      )
+      (net "Net-(JP21-Pad3)"
+        (wire
+          (path Top 2500
+            1193035 -1300364
+            1196090 -1297309
+          )
+        )
+        (wire
+          (path Top 2500
+            1196090 -1289040
+            1196090 -1297309
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1193035.0 -1300364.0
+        )
+        (wire
+          (path Top 2500
+            1196090 -1289040
+            1196090 -1280771
+          )
+        )
+        (wire
+          (path Top 2500
+            1180210 -1272040
+            1180210 -1280309
+          )
+        )
+        (wire
+          (path Top 2500
+            1180210 -1280309
+            1195628 -1280309
+            1196090 -1280771
+          )
+        )
+      )
+      (net "Net-(JP22-Pad3)"
+        (wire
+          (path Top 2500
+            1246890 -1300390
+            1246890 -1289040
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1246890.0 -1300390.0
+        )
+        (wire
+          (path Top 2500
+            1246890 -1289040
+            1246890 -1280771
+          )
+        )
+        (wire
+          (path Top 2500
+            1231010 -1272040
+            1231010 -1280309
+          )
+        )
+        (wire
+          (path Top 2500
+            1231010 -1280309
+            1246428 -1280309
+            1246890 -1280771
+          )
+        )
+      )
+      (net "Net-(Q1-Pad1)"
+        (wire
+          (path Top 2500
+            1016140 -1378970
+            1007871 -1378970
+          )
+        )
+        (wire
+          (path Top 1874
+            1030310 -1406240
+            1024854 -1406240
+          )
+        )
+        (wire
+          (path Top 1874
+            986905 -1402494
+            1021108 -1402494
+            1024854 -1406240
+          )
+        )
+        (wire
+          (path Top 2500
+            1007871 -1378970
+            1007871 -1381528
+            986905 -1402494
+          )
+        )
+        (wire
+          (path Top 2500
+            1054310 -1406240
+            1030310 -1406240
+          )
+        )
+        (wire
+          (path Top 2500
+            1054310 -1406240
+            1054310 -1415740
+          )
+        )
+        (wire
+          (path Top 2500
+            1030310 -1406240
+            1030310 -1415740
+          )
+        )
+      )
+      (net "Net-(IC4-Pad15)"
+        (wire
+          (path Top 2500
+            1452550 -973804
+            1452550 -962735
+          )
+        )
+        (wire
+          (path Top 2500
+            1461063 -1022646
+            1480029 -1003680
+            1489210 -1003680
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1461063.0 -1022646.0
+        )
+        (via "Via[0-3]_800:400_um" 1452550.0 -962735.0
+        )
+      )
+      (net "/smoothieboard-5driver_2/P0W"
+        (wire
+          (path Top 2500
+            1430049 -985027
+            1433050 -982026
+          )
+        )
+        (wire
+          (path Top 2500
+            1433050 -973804
+            1433050 -982026
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1430049.0 -985027.0
+        )
+        (wire
+          (path Top 2500
+            1032083 -782632
+            1024195 -782632
+          )
+        )
+        (wire
+          (path Top 2500
+            1024195 -794151
+            1024195 -782632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1032083.0 -782632.0
+        )
+      )
+      (net "Net-(IC2-PadP09)"
+        (wire
+          (path Top 2500
+            1015500 -836041
+            1007231 -836041
+          )
+        )
+        (wire
+          (path Top 2500
+            1007231 -836041
+            1004695 -833505
+            1004695 -794151
+          )
+        )
+      )
+      (net "Net-(IC2-PadP08)"
+        (wire
+          (path Top 2500
+            1004428 -849748
+            1007231 -852551
+          )
+        )
+        (wire
+          (path Top 2500
+            1015500 -852551
+            1007231 -852551
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1004428.0 -849748.0
+        )
+        (wire
+          (path Top 2500
+            1015500 -852551
+            1015500 -867791
+          )
+        )
+      )
+      (net "Net-(IC2-PadP07)"
+        (wire
+          (path Top 2500
+            1004134 -899541
+            1015500 -899541
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1004134.0 -899541.0
+        )
+        (wire
+          (path Top 2500
+            991695 -794151
+            991695 -808419
+            991711 -808435
+          )
+        )
+        (via "Via[0-3]_800:400_um" 991711.0 -808435.0
+        )
+      )
+      (net "Net-(C15-Pad2)"
+        (wire
+          (path Top 2500
+            977032 -814376
+            977032 -844524
+            961385 -860171
+          )
+        )
+        (wire
+          (path Top 2500
+            977032 -814376
+            972195 -809539
+            972195 -794151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 977032.0 -814376.0
+        )
+      )
+      (net "Net-(C17-Pad2)"
+        (wire
+          (path Top 2500
+            966734 -816030
+            966734 -834502
+            956305 -844931
+          )
+        )
+        (wire
+          (path Top 2500
+            966734 -816030
+            965695 -814991
+            965695 -794151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 966734.0 -816030.0
+        )
+      )
+      (net "Net-(C19-Pad1)"
+        (wire
+          (path Top 2500
+            956305 -828421
+            956305 -820152
+          )
+        )
+        (wire
+          (path Top 2500
+            956305 -820152
+            959195 -817262
+            959195 -794151
+          )
+        )
+      )
+      (net "Net-(C19-Pad2)"
+        (wire
+          (path Top 2500
+            952695 -794151
+            952695 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            939305 -828421
+            939305 -819060
+            952695 -805670
+          )
+        )
+      )
+      (net "Net-(IC2-PadP15)"
+        (wire
+          (path Top 2500
+            1011195 -718796
+            1011195 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1011195.0 -718796.0
+        )
+      )
+      (net "Net-(IC2-PadP17)"
+        (wire
+          (path Top 2500
+            998195 -733151
+            998195 -718839
+            998211 -718839
+            998215 -718835
+          )
+        )
+        (via "Via[0-3]_800:400_um" 998215.0 -718835.0
+        )
+      )
+      (net "Net-(IC2-PadP18)"
+        (wire
+          (path Top 2500
+            991695 -733151
+            991695 -722597
+            987660 -718562
+          )
+        )
+        (via "Via[0-3]_800:400_um" 987660.0 -718562.0
+        )
+      )
+      (net "/smoothieboard-5driver_2/P1W"
+        (wire
+          (path Top 2500
+            1288235 -805670
+            1280730 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1280730 -794151
+            1280730 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1288235.0 -805670.0
+        )
+      )
+      (net "Net-(IC3-PadP09)"
+        (wire
+          (path Top 2500
+            1270770 -846836
+            1262501 -846836
+          )
+        )
+        (wire
+          (path Top 2500
+            1258355 -808545
+            1258355 -842690
+            1262501 -846836
+          )
+        )
+        (wire
+          (path Top 2500
+            1261230 -805670
+            1258355 -808545
+          )
+        )
+        (wire
+          (path Top 2500
+            1261230 -794151
+            1261230 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1258355.0 -808545.0
+        )
+      )
+      (net "Net-(IC3-PadP08)"
+        (wire
+          (path Top 2500
+            1260345 -868047
+            1263141 -865251
+          )
+        )
+        (wire
+          (path Top 2500
+            1271410 -865251
+            1263141 -865251
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1260345.0 -868047.0
+        )
+        (wire
+          (path Top 2500
+            1270770 -883031
+            1270770 -874262
+          )
+        )
+        (wire
+          (path Top 2500
+            1271410 -865251
+            1271410 -874020
+          )
+        )
+        (wire
+          (path Top 2500
+            1270770 -874262
+            1271168 -874262
+            1271410 -874020
+          )
+        )
+      )
+      (net "Net-(IC3-PadP07)"
+        (wire
+          (path Top 2500
+            1249272 -880507
+            1249272 -888852
+            1262501 -902081
+          )
+        )
+        (wire
+          (path Top 2500
+            1270770 -902081
+            1262501 -902081
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1249272.0 -880507.0
+        )
+      )
+      (net "Net-(C16-Pad2)"
+        (wire
+          (path Top 2500
+            1207760 -856361
+            1216529 -856361
+          )
+        )
+        (wire
+          (path Top 2500
+            1228730 -808451
+            1228730 -844160
+            1216529 -856361
+          )
+        )
+        (wire
+          (path Top 2500
+            1228730 -808451
+            1228730 -794151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1228730.0 -808451.0
+        )
+      )
+      (net "Net-(C18-Pad2)"
+        (wire
+          (path Top 2500
+            1219434 -840486
+            1207760 -840486
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1219434.0 -840486.0
+        )
+      )
+      (net "Net-(C20-Pad1)"
+        (wire
+          (path Top 2500
+            1207760 -824611
+            1207760 -816342
+          )
+        )
+        (wire
+          (path Top 2500
+            1207760 -816342
+            1215730 -808372
+            1215730 -794151
+          )
+        )
+      )
+      (net "Net-(C20-Pad2)"
+        (wire
+          (path Top 2500
+            1190760 -824611
+            1190760 -816342
+          )
+        )
+        (wire
+          (path Top 2500
+            1209230 -794151
+            1209230 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1190760 -816342
+            1198558 -816342
+            1209230 -805670
+          )
+        )
+      )
+      (net "Net-(IC3-PadP15)"
+        (wire
+          (path Top 2500
+            1267730 -718503
+            1267730 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1267730.0 -718503.0
+        )
+      )
+      (net "Net-(IC3-PadP17)"
+        (wire
+          (path Top 2500
+            1254730 -733151
+            1254730 -718804
+            1254742 -718792
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1254742.0 -718792.0
+        )
+      )
+      (net "Net-(IC3-PadP18)"
+        (wire
+          (path Top 2500
+            1247234 -711849
+            1247234 -721566
+            1248230 -722562
+            1248230 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1247234.0 -711849.0
+        )
+      )
+      (net "Net-(IC3-PadP19)"
+        (wire
+          (path Top 2500
+            1239837 -704794
+            1239837 -715780
+            1241730 -717673
+            1241730 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1239837.0 -704794.0
+        )
+      )
+      (net "Net-(IC5-PadP09)"
+        (wire
+          (path Top 2500
+            1514292 -846527
+            1517141 -849376
+          )
+        )
+        (wire
+          (path Top 2500
+            1525410 -849376
+            1517141 -849376
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1514292.0 -846527.0
+        )
+      )
+      (net "Net-(IC5-PadP08)"
+        (wire
+          (path Top 2500
+            1514095 -861778
+            1517141 -864824
+            1517141 -865886
+          )
+        )
+        (wire
+          (path Top 2500
+            1525410 -865886
+            1517141 -865886
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1514095.0 -861778.0
+        )
+        (wire
+          (path Top 2500
+            1525410 -865886
+            1525410 -884301
+          )
+        )
+      )
+      (net "Net-(IC5-PadP07)"
+        (wire
+          (path Top 2500
+            1512145 -898360
+            1515231 -901446
+          )
+        )
+        (wire
+          (path Top 2500
+            1523500 -901446
+            1515231 -901446
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1512145.0 -898360.0
+        )
+      )
+      (net "Net-(C32-Pad2)"
+        (wire
+          (path Top 2500
+            1488199 -816262
+            1488199 -828657
+            1450970 -865886
+          )
+        )
+        (wire
+          (path Top 2500
+            1488199 -816262
+            1484640 -812703
+            1484640 -794151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1488199.0 -816262.0
+        )
+      )
+      (net "Net-(C34-Pad2)"
+        (wire
+          (path Top 2500
+            1478128 -816474
+            1478128 -822196
+            1477570 -822754
+            1477570 -822776
+            1450970 -849376
+          )
+        )
+        (wire
+          (path Top 2500
+            1478140 -794151
+            1478140 -816462
+            1478128 -816474
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1478128.0 -816474.0
+        )
+      )
+      (net "Net-(C36-Pad1)"
+        (wire
+          (path Top 2500
+            1471640 -794151
+            1471640 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1450970 -832866
+            1471639 -812197
+            1471639 -805670
+            1471640 -805670
+          )
+        )
+      )
+      (net "Net-(C36-Pad2)"
+        (wire
+          (path Top 2500
+            1465140 -794151
+            1465140 -805670
+          )
+        )
+        (wire
+          (path Top 2500
+            1433970 -832866
+            1433970 -824597
+          )
+        )
+        (wire
+          (path Top 2500
+            1433970 -824597
+            1446213 -824597
+            1465140 -805670
+          )
+        )
+      )
+      (net "Net-(IC5-PadP15)"
+        (wire
+          (path Top 2500
+            1523640 -718714
+            1523640 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1523640.0 -718714.0
+        )
+      )
+      (net "Net-(IC5-PadP17)"
+        (wire
+          (path Top 2500
+            1510640 -733151
+            1510640 -718820
+            1510656 -718820
+            1510660 -718816
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1510660.0 -718816.0
+        )
+      )
+      (net "Net-(IC5-PadP18)"
+        (wire
+          (path Top 2500
+            1503144 -712063
+            1503144 -721582
+            1504140 -722578
+            1504140 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1503144.0 -712063.0
+        )
+      )
+      (net "Net-(IC5-PadP19)"
+        (wire
+          (path Top 2500
+            1492918 -712750
+            1497640 -717472
+            1497640 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1492918.0 -712750.0
+        )
+      )
+      (net "/smoothieboard-5driver_2/P3W"
+        (wire
+          (path Top 2500
+            1481390 -904386
+            1478550 -907226
+          )
+        )
+        (wire
+          (path Top 2500
+            1478550 -915448
+            1478550 -907226
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1481390.0 -904386.0
+        )
+        (wire
+          (path Top 2500
+            1788730 -805670
+            1785817 -808583
+            1786260 -809026
+          )
+        )
+        (wire
+          (path Top 2500
+            1788730 -794151
+            1788730 -805670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1786260.0 -809026.0
+        )
+      )
+      (net "Net-(IC6-PadP09)"
+        (wire
+          (path Top 2500
+            1767615 -825399
+            1771771 -829555
+            1771771 -836676
+          )
+        )
+        (wire
+          (path Top 2500
+            1780040 -836676
+            1771771 -836676
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1767615.0 -825399.0
+        )
+      )
+      (net "Net-(IC6-PadP08)"
+        (wire
+          (path Top 2500
+            1770482 -849945
+            1773541 -853004
+            1773541 -854891
+          )
+        )
+        (wire
+          (path Top 2500
+            1781810 -854891
+            1773541 -854891
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1770482.0 -849945.0
+        )
+        (wire
+          (path Top 2500
+            1781810 -854891
+            1781810 -863660
+          )
+        )
+        (wire
+          (path Top 2500
+            1780680 -872236
+            1780680 -864790
+            1781810 -863660
+          )
+        )
+      )
+      (net "Net-(IC6-PadP07)"
+        (wire
+          (path Top 2500
+            1769375 -890651
+            1780680 -890651
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1769375.0 -890651.0
+        )
+      )
+      (net "Net-(C33-Pad2)"
+        (wire
+          (path Top 2500
+            1704330 -863803
+            1704330 -852551
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1704330.0 -863803.0
+        )
+      )
+      (net "Net-(C35-Pad2)"
+        (wire
+          (path Top 2500
+            1715896 -828478
+            1713099 -831275
+            1713099 -836041
+          )
+        )
+        (wire
+          (path Top 2500
+            1704330 -836041
+            1713099 -836041
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1715896.0 -828478.0
+        )
+      )
+      (net "Net-(C37-Pad1)"
+        (wire
+          (path Top 2500
+            1723730 -794151
+            1723730 -807205
+            1723060 -807205
+            1718801 -811464
+            1718801 -813829
+            1713099 -819531
+          )
+        )
+        (wire
+          (path Top 2500
+            1704330 -819531
+            1713099 -819531
+          )
+        )
+      )
+      (net "Net-(C37-Pad2)"
+        (wire
+          (path Top 1874
+            1717230 -794151
+            1717230 -805357
+          )
+        )
+        (wire
+          (path Top 1874
+            1687330 -811277
+            1711310 -811277
+            1717230 -805357
+          )
+        )
+        (wire
+          (path Top 2500
+            1687330 -819531
+            1687330 -811277
+          )
+        )
+      )
+      (net "Net-(IC6-PadP15)"
+        (wire
+          (path Top 2500
+            1775730 -718627
+            1775730 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1775730.0 -718627.0
+        )
+      )
+      (net "Net-(IC6-PadP17)"
+        (wire
+          (path Top 2500
+            1762730 -733151
+            1762730 -718861
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1762730.0 -718861.0
+        )
+      )
+      (net "Net-(IC6-PadP19)"
+        (wire
+          (path Top 2500
+            1749730 -733151
+            1749730 -721632
+          )
+        )
+        (wire
+          (path Top 2500
+            1727781 -697961
+            1735840 -697961
+            1751120 -713241
+            1751120 -720242
+            1749730 -721632
+          )
+        )
+        (wire
+          (path Top 2500
+            1727781 -697961
+            1727781 -710809
+            1738604 -721632
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1727781.0 -697961.0
+        )
+      )
+      (net "Net-(IC6-PadP20)"
+        (wire
+          (path Top 2500
+            1743230 -715826
+            1743230 -733151
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1743230.0 -715826.0
+        )
+      )
+      (net "/smoothieboard-5driver_2/TH4_P"
+        (wire
+          (path Top 2500
+            914864 -918591
+            914864 -904942
+          )
+        )
+        (wire
+          (path Top 2500
+            904595 -918591
+            914864 -918591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 914864.0 -904942.0
+        )
+        (wire
+          (path Top 2500
+            992609 -910166
+            998919 -910166
+            1021610 -932857
+            1021610 -937641
+          )
+        )
+        (wire
+          (path Top 2500
+            992609 -910166
+            989704 -907261
+          )
+        )
+        (wire
+          (path Top 2500
+            983935 -907261
+            989704 -907261
+          )
+        )
+        (via "Via[0-3]_800:400_um" 992609.0 -910166.0
+        )
+      )
+      (net "Net-(IC4-Pad1)"
+        (wire
+          (path Top 2500
+            1485050 -915448
+            1485050 -948527
+            1484952 -948625
+            1484952 -954645
+            1485050 -954743
+            1485050 -973804
+          )
+        )
+        (wire
+          (path Top 2500
+            1426550 -915448
+            1426550 -923670
+          )
+        )
+        (wire
+          (path Top 2500
+            1419608 -923670
+            1426550 -923670
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1419608.0 -923670.0
+        )
+        (wire
+          (path Top 2500
+            1434600 -884936
+            1434600 -893705
+          )
+        )
+        (wire
+          (path Top 2500
+            1434600 -893705
+            1426550 -901755
+            1426550 -915448
+          )
+        )
+      )
+      (net "Net-(IC8-Pad24)"
+        (wire
+          (path Top 2500
+            1097660 -1085350
+            1097660 -1068570
+            1119570 -1046660
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/RD+"
+        (wire
+          (path Top 2500
+            1051325 -1233194
+            1054221 -1236090
+          )
+        )
+        (wire
+          (path Top 2500
+            1062490 -1236090
+            1054221 -1236090
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1051325.0 -1233194.0
+        )
+        (wire
+          (path Top 2500
+            1062490 -1236090
+            1062490 -1252600
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/RD-"
+        (wire
+          (path Top 2500
+            1062490 -1210690
+            1053721 -1210690
+          )
+        )
+        (wire
+          (path Top 2500
+            1029085 -1206880
+            1049911 -1206880
+            1053721 -1210690
+          )
+        )
+        (wire
+          (path Top 2500
+            1062490 -1192910
+            1062490 -1210690
+          )
+        )
+        (wire
+          (path Top 2500
+            1107719 -1037105
+            1108164 -1036660
+            1119570 -1036660
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1107719.0 -1037105.0
+        )
+      )
+      (net "/smoothieboard-5driver_3/TD+"
+        (wire
+          (path Top 2500
+            1003685 -1143380
+            1014574 -1143380
+          )
+        )
+        (wire
+          (path Top 2500
+            1014574 -1143380
+            1038704 -1119250
+            1059320 -1119250
+          )
+        )
+        (wire
+          (path Top 2500
+            1059320 -1101470
+            1059320 -1119250
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/TD-"
+        (wire
+          (path Top 2500
+            1062490 -1156080
+            1062490 -1142110
+          )
+        )
+        (wire
+          (path Top 2500
+            1062490 -1159890
+            1062490 -1156080
+          )
+        )
+        (wire
+          (path Top 2500
+            1029085 -1156080
+            1062490 -1156080
+          )
+        )
+        (wire
+          (path Top 1874
+            1109504 -1027003
+            1119227 -1027003
+            1119570 -1026660
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1109504.0 -1027003.0
+        )
+      )
+      (net "Net-(C45-PadA)"
+        (wire
+          (path Top 2500
+            1079490 -1181480
+            1079490 -1159890
+          )
+        )
+        (wire
+          (path Top 2500
+            1079490 -1192910
+            1079490 -1181480
+          )
+        )
+        (wire
+          (path Top 2500
+            1029085 -1181480
+            1079490 -1181480
+          )
+        )
+        (wire
+          (path Top 2500
+            1095760 -1236480
+            1095760 -1227711
+          )
+        )
+        (wire
+          (path Top 2500
+            1079490 -1192910
+            1087759 -1192910
+          )
+        )
+        (wire
+          (path Top 2500
+            1087759 -1192910
+            1098626 -1203777
+            1098626 -1224845
+            1095760 -1227711
+          )
+        )
+        (wire
+          (path Top 2500
+            1098709 -1120191
+            1104728 -1126210
+            1122430 -1126210
+          )
+        )
+        (wire
+          (path Top 2500
+            1098709 -1120191
+            1098709 -1118976
+            1081203 -1101470
+            1080455 -1101470
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1098709.0 -1120191.0
+        )
+        (wire
+          (path Top 2500
+            1080455 -1101470
+            1084589 -1101470
+          )
+        )
+        (wire
+          (path Top 2500
+            1076320 -1101470
+            1080455 -1101470
+          )
+        )
+        (wire
+          (path Top 2500
+            1098930 -1159500
+            1090661 -1159500
+          )
+        )
+        (wire
+          (path Top 2500
+            1079490 -1159890
+            1090271 -1159890
+            1090661 -1159500
+          )
+        )
+        (wire
+          (path Top 2500
+            1095760 -1236480
+            1087491 -1236480
+          )
+        )
+        (wire
+          (path Top 2500
+            1079490 -1236090
+            1087101 -1236090
+            1087491 -1236480
+          )
+        )
+        (wire
+          (path Top 2500
+            1064640 -1005980
+            1081790 -1005980
+          )
+        )
+        (wire
+          (path Top 2500
+            1084589 -1101470
+            1084589 -1099564
+            1090303 -1093850
+            1105040 -1093850
+            1112900 -1085990
+          )
+        )
+        (wire
+          (path Top 2500
+            1112900 -1085990
+            1112900 -1068330
+            1127070 -1054160
+          )
+        )
+        (wire
+          (path Top 2500
+            1081790 -1005980
+            1103890 -1005980
+            1119570 -1021660
+          )
+        )
+      )
+      (net "Net-(IC7-Pad2)"
+        (wire
+          (path Top 2500
+            1167510 -976042
+            1167510 -985311
+          )
+        )
+        (wire
+          (path Top 2500
+            1167510 -985311
+            1147070 -1005751
+            1147070 -1014160
+          )
+        )
+      )
+      (net "Net-(IC8-Pad11)"
+        (wire
+          (path Top 2500
+            1176358 -1026317
+            1179517 -1023158
+            1181957 -1023158
+            1186215 -1018900
+            1186215 -1016460
+            1191381 -1011294
+            1191381 -1004950
+          )
+        )
+        (wire
+          (path Top 2500
+            1199650 -1004950
+            1191381 -1004950
+          )
+        )
+        (wire
+          (path Top 1874
+            1176358 -1026317
+            1159913 -1026317
+            1159570 -1026660
+          )
+        )
+      )
+      (net "Net-(IC8-Pad8)"
+        (wire
+          (path Top 2500
+            1198380 -1076070
+            1190111 -1076070
+          )
+        )
+        (wire
+          (path Top 1874
+            1178554 -1042003
+            1159913 -1042003
+            1159570 -1041660
+          )
+        )
+        (wire
+          (path Top 2500
+            1190111 -1076070
+            1178554 -1064513
+            1178554 -1042003
+          )
+        )
+      )
+      (net "Net-(IC8-Pad7)"
+        (wire
+          (path Top 2500
+            1198380 -1091310
+            1190111 -1091310
+          )
+        )
+        (wire
+          (path Top 2500
+            1164326 -1054271
+            1164326 -1065525
+            1190111 -1091310
+          )
+        )
+        (wire
+          (path Top 2500
+            1164326 -1054271
+            1159570 -1049515
+            1159570 -1046660
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1164326.0 -1054271.0
+        )
+      )
+      (net "Net-(C48-PadA)"
+        (wire
+          (path Top 2500
+            1208790 -1130020
+            1220059 -1130020
+          )
+        )
+        (wire
+          (path Top 2500
+            1227840 -1128920
+            1221159 -1128920
+            1220059 -1130020
+          )
+        )
+      )
+      (net "Net-(C58-Pad1)"
+        (wire
+          (path Top 2500
+            1174110 -1089092
+            1174110 -1100840
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1174110.0 -1089092.0
+        )
+        (wire
+          (path Top 2500
+            1174110 -1100840
+            1182379 -1100840
+          )
+        )
+        (wire
+          (path Top 2500
+            1182379 -1100840
+            1189100 -1107561
+            1189100 -1141870
+          )
+        )
+        (wire
+          (path Top 2500
+            1174240 -1141680
+            1183509 -1141680
+          )
+        )
+        (wire
+          (path Top 2500
+            1189100 -1141870
+            1183699 -1141870
+            1183509 -1141680
+          )
+        )
+      )
+      (net "Net-(C59-Pad1)"
+        (wire
+          (path Top 2500
+            1152914 -1088942
+            1156043 -1092071
+            1157110 -1092071
+          )
+        )
+        (wire
+          (path Top 2500
+            1157110 -1100840
+            1157110 -1092071
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1152914.0 -1088942.0
+        )
+        (wire
+          (path Top 2500
+            1157110 -1100840
+            1157110 -1109609
+          )
+        )
+        (wire
+          (path Top 2500
+            1157110 -1109609
+            1158240 -1110739
+            1158240 -1119680
+          )
+        )
+        (wire
+          (path Top 2500
+            1158240 -1119680
+            1148971 -1119680
+          )
+        )
+        (wire
+          (path Top 2500
+            1143380 -1120280
+            1148371 -1120280
+            1148971 -1119680
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/LED2/NINTSEL"
+        (wire
+          (path Top 2500
+            1143157 -1078231
+            1132070 -1078231
+          )
+        )
+        (wire
+          (path Top 2500
+            1132070 -1078231
+            1132070 -1054160
+          )
+        )
+        (wire
+          (path Top 2500
+            1131950 -1078351
+            1132070 -1078231
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1143157.0 -1078231.0
+        )
+        (wire
+          (path Top 2500
+            1131950 -1086620
+            1131950 -1078351
+          )
+        )
+      )
+      (net "Net-(R50-Pad2)"
+        (wire
+          (path Top 2500
+            1050097 -1275295
+            1052951 -1278149
+            1052951 -1279270
+          )
+        )
+        (wire
+          (path Top 2500
+            1061220 -1279270
+            1052951 -1279270
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1050097.0 -1275295.0
+        )
+      )
+      (net "Net-(R61-Pad2)"
+        (wire
+          (path Top 2500
+            997294 -1100647
+            1000281 -1097660
+            1000281 -1093420
+          )
+        )
+        (wire
+          (path Top 2500
+            1008550 -1093420
+            1000281 -1093420
+          )
+        )
+        (via "Via[0-3]_800:400_um" 997294.0 -1100647.0
+        )
+      )
+      (net "Net-(IC7-Pad4)"
+        (wire
+          (path Top 2500
+            1191381 -968756
+            1190760 -968134
+            1190817 -968077
+            1190817 -962055
+            1186559 -957797
+            1180538 -957797
+            1179026 -959309
+            1177010 -959309
+          )
+        )
+        (wire
+          (path Top 2500
+            1177010 -950040
+            1177010 -959309
+          )
+        )
+        (wire
+          (path Top 2500
+            1199650 -968756
+            1191381 -968756
+          )
+        )
+      )
+      (net "Net-(LED9-PadA)"
+        (wire
+          (path Top 2500
+            1595110 -1030990
+            1603379 -1030990
+          )
+        )
+        (wire
+          (path Top 2500
+            1608500 -1030350
+            1604019 -1030350
+            1603379 -1030990
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/PWM1_FET"
+        (wire
+          (path Top 2500
+            1592960 -1420240
+            1592960 -1401731
+          )
+        )
+        (wire
+          (path Top 2500
+            1592960 -1401731
+            1584870 -1401731
+            1574809 -1391670
+          )
+        )
+        (wire
+          (path Top 2500
+            1575080 -1350740
+            1575080 -1359009
+          )
+        )
+        (wire
+          (path Top 2500
+            1566540 -1391670
+            1574809 -1391670
+          )
+        )
+        (wire
+          (path Top 2500
+            1574809 -1391670
+            1574809 -1359280
+            1575080 -1359009
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/GPIO_FET"
+        (wire
+          (path Top 2500
+            1360160 -1395480
+            1351891 -1395480
+          )
+        )
+        (wire
+          (path Top 2500
+            1338330 -1420880
+            1349219 -1420880
+          )
+        )
+        (wire
+          (path Top 2500
+            1349219 -1420880
+            1351891 -1418208
+            1351891 -1395480
+          )
+        )
+        (wire
+          (path Top 2500
+            1360160 -1378970
+            1360160 -1395480
+          )
+        )
+      )
+      (net "Net-(Q8-Pad1)"
+        (wire
+          (path Top 2500
+            1690360 -1278640
+            1690360 -1287409
+          )
+        )
+        (wire
+          (path Top 2500
+            1692160 -1302340
+            1692160 -1288321
+          )
+        )
+        (wire
+          (path Top 2500
+            1690360 -1287409
+            1691248 -1287409
+            1692160 -1288321
+          )
+        )
+      )
+      (net "Net-(Q9-Pad1)"
+        (wire
+          (path Top 2500
+            1787270 -1282060
+            1787270 -1290329
+          )
+        )
+        (wire
+          (path Top 2500
+            1787270 -1290329
+            1787410 -1290469
+            1787410 -1302980
+          )
+        )
+      )
+      (net "Net-(IC14-Pad7)"
+        (wire
+          (path Top 1874
+            1575080 -1330166
+            1559366 -1330166
+            1552920 -1323720
+          )
+        )
+        (wire
+          (path Top 2500
+            1575080 -1333740
+            1575080 -1330166
+          )
+        )
+      )
+      (net "Net-(IC14-Pad5)"
+        (wire
+          (path Top 2500
+            1538651 -1349120
+            1535683 -1346152
+            1535687 -1346152
+          )
+        )
+        (wire
+          (path Top 2500
+            1552920 -1349120
+            1538651 -1349120
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1535687.0 -1346152.0
+        )
+      )
+      (net "/smoothieboard-5driver_3/MOSFET_DRIVE"
+        (wire
+          (path Top 2500
+            1394840 -1439290
+            1384459 -1439290
+          )
+        )
+        (wire
+          (path Top 2500
+            1373890 -1436510
+            1382659 -1436510
+          )
+        )
+        (wire
+          (path Top 2500
+            1384459 -1439290
+            1384459 -1438310
+            1382659 -1436510
+          )
+        )
+        (wire
+          (path Top 2500
+            1519060 -1461520
+            1527329 -1461520
+          )
+        )
+        (wire
+          (path Top 2500
+            1575110 -1500250
+            1564221 -1500250
+          )
+        )
+        (wire
+          (path Top 2500
+            1564221 -1500250
+            1559398 -1500250
+            1527329 -1468181
+            1527329 -1461520
+          )
+        )
+        (wire
+          (path Top 2500
+            1412620 -1368960
+            1422889 -1368960
+          )
+        )
+        (wire
+          (path Top 2500
+            1462120 -1376780
+            1462120 -1366011
+          )
+        )
+        (wire
+          (path Top 2500
+            1422889 -1368960
+            1425838 -1366011
+            1462120 -1366011
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/VBB_IN"
+        (wire
+          (path Top 2500
+            1950470 -1106550
+            1901481 -1106550
+            1886970 -1121061
+          )
+        )
+        (wire
+          (path Top 2500
+            1886970 -1143380
+            1886970 -1121061
+          )
+        )
+        (wire
+          (path Top 2500
+            1875540 -1112670
+            1883931 -1121061
+            1886970 -1121061
+          )
+        )
+        (wire
+          (path Top 2500
+            1886970 -1143380
+            1836170 -1143380
+          )
+        )
+        (wire
+          (path Top 2500
+            2033457 -1149216
+            2036281 -1152040
+          )
+        )
+        (wire
+          (path Top 2500
+            2053550 -1152040
+            2036281 -1152040
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2033457.0 -1149216.0
+        )
+      )
+      (net "Net-(LED10-PadA)"
+        (wire
+          (path Top 2500
+            1593840 -1010030
+            1602109 -1010030
+          )
+        )
+        (wire
+          (path Top 2500
+            1608500 -1009400
+            1602739 -1009400
+            1602109 -1010030
+          )
+        )
+      )
+      (net "Net-(D7-PadA)"
+        (wire
+          (path Top 2500
+            1669160 -1360340
+            1650141 -1360340
+          )
+        )
+        (wire
+          (path Top 2500
+            1645665 -1388490
+            1645665 -1372521
+          )
+        )
+        (wire
+          (path Top 2500
+            1645665 -1372521
+            1650141 -1368045
+            1650141 -1360340
+          )
+        )
+      )
+      (net "Net-(D8-PadA)"
+        (wire
+          (path Top 2500
+            1781555 -1388490
+            1781555 -1372521
+          )
+        )
+        (wire
+          (path Top 2500
+            1781555 -1372521
+            1775951 -1372521
+            1764410 -1360980
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_3/SMALL_MOSFET_POWER"
+        (wire
+          (path Top 2500
+            1814160 -1488040
+            1814160 -1496309
+          )
+        )
+        (wire
+          (path Top 2500
+            1793860 -1500250
+            1804749 -1500250
+          )
+        )
+        (wire
+          (path Top 2500
+            1804749 -1500250
+            1808690 -1496309
+            1814160 -1496309
+          )
+        )
+        (wire
+          (path Top 2500
+            1727580 -1487160
+            1727580 -1495429
+          )
+        )
+        (wire
+          (path Top 2500
+            1704720 -1500250
+            1715609 -1500250
+          )
+        )
+        (wire
+          (path Top 2500
+            1715609 -1500250
+            1720430 -1495429
+            1727580 -1495429
+          )
+        )
+        (wire
+          (path Top 2500
+            1911070 -1478030
+            1900801 -1478030
+          )
+        )
+        (wire
+          (path Top 2500
+            1862840 -1439290
+            1880333 -1439290
+          )
+        )
+        (wire
+          (path Top 2500
+            1880333 -1439290
+            1880333 -1457562
+            1900801 -1478030
+          )
+        )
+      )
+      (net "Net-(LED5-PadA)"
+        (wire
+          (path Top 2500
+            1727580 -1470160
+            1718811 -1470160
+          )
+        )
+        (wire
+          (path Top 2500
+            1701890 -1471040
+            1717931 -1471040
+            1718811 -1470160
+          )
+        )
+      )
+      (net "Net-(LED6-PadA)"
+        (wire
+          (path Top 2500
+            1790790 -1471040
+            1814160 -1471040
+          )
+        )
+      )
+      (net "Net-(LED7-PadA)"
+        (wire
+          (path Top 2500
+            1536060 -1461520
+            1544329 -1461520
+          )
+        )
+        (wire
+          (path Top 2500
+            1578020 -1462790
+            1545599 -1462790
+            1544329 -1461520
+          )
+        )
+      )
+      (net "Net-(LED8-PadA)"
+        (wire
+          (path Top 2500
+            1358350 -1461520
+            1367619 -1461520
+          )
+        )
+        (wire
+          (path Top 2500
+            1367619 -1461520
+            1367619 -1459781
+            1373890 -1453510
+          )
+        )
+      )
+      (net "Net-(D5-PadA)"
+        (wire
+          (path Top 2500
+            1917840 -1175770
+            1909571 -1175770
+          )
+        )
+        (wire
+          (path Top 2500
+            1852740 -1185670
+            1861009 -1185670
+          )
+        )
+        (wire
+          (path Top 2500
+            1861009 -1185670
+            1872612 -1174067
+            1907868 -1174067
+            1909571 -1175770
+          )
+        )
+        (wire
+          (path Top 2500
+            1852740 -1185670
+            1844471 -1185670
+          )
+        )
+        (wire
+          (path Top 2500
+            1824740 -1182340
+            1841141 -1182340
+            1844471 -1185670
+          )
+        )
+      )
+      (net "Net-(IC9-Pad15)"
+        (wire
+          (path Top 2500
+            1741160 -887837
+            1741160 -899541
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1741160.0 -887837.0
+        )
+        (wire
+          (path Top 2500
+            1740910 -933997
+            1740910 -922913
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1740910.0 -933997.0
+        )
+      )
+      (net "Net-(IC9-Pad1)"
+        (wire
+          (path Top 1874
+            1687537 -969799
+            1685441 -971895
+          )
+        )
+        (wire
+          (path Top 1874
+            1688236 -943447
+            1688236 -969100
+            1687537 -969799
+          )
+        )
+        (wire
+          (path Top 2500
+            1687537 -969799
+            1690110 -972372
+            1696990 -972372
+          )
+        )
+        (wire
+          (path Top 2500
+            1696990 -980641
+            1696990 -972372
+          )
+        )
+        (wire
+          (path Top 2500
+            1708410 -922913
+            1688236 -943087
+            1688236 -943447
+          )
+        )
+        (wire
+          (path Top 2500
+            1696990 -980641
+            1705759 -980641
+          )
+        )
+        (wire
+          (path Top 2500
+            1708410 -981269
+            1708410 -973047
+          )
+        )
+        (wire
+          (path Top 2500
+            1705759 -980641
+            1705759 -975698
+            1708410 -973047
+          )
+        )
+        (wire
+          (path Top 2500
+            1766910 -931135
+            1766910 -981269
+          )
+        )
+        (wire
+          (path Top 2500
+            1766910 -922913
+            1766910 -931135
+          )
+        )
+      )
+      (net "/smoothieboard-5driver_4/THETA_CURRENT"
+        (wire
+          (path Top 2500
+            1714910 -922913
+            1714910 -933940
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1714910.0 -933940.0
+        )
+      )
+      (net "/smoothieboard-5driver_4/PW5"
+        (wire
+          (path Top 2500
+            1774036 -914691
+            1760410 -914691
+          )
+        )
+        (wire
+          (path Top 2500
+            1760410 -922913
+            1760410 -914691
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1774036.0 -914691.0
+        )
+        (wire
+          (path Top 2500
+            2026940 -796591
+            2026940 -811213
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2026940.0 -811213.0
+        )
+      )
+      (net "/smoothieboard-5driver_4/ZETA_CURRENT"
+        (wire
+          (path Top 2500
+            1760410 -981269
+            1760410 -967949
+            1759611 -967150
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1759611.0 -967150.0
+        )
+      )
+      (net "Net-(IC12-PadP09)"
+        (wire
+          (path Top 2500
+            2022230 -844550
+            2013961 -844550
+          )
+        )
+        (wire
+          (path Top 2500
+            2013961 -844550
+            2007440 -838029
+            2007440 -796591
+          )
+        )
+      )
+      (net "Net-(IC12-PadP08)"
+        (wire
+          (path Top 2500
+            2053900 -814070
+            2042959 -825011
+            2039730 -825011
+            2035471 -829270
+            2035471 -832499
+            2030499 -837471
+            2030499 -866140
+          )
+        )
+        (wire
+          (path Top 2500
+            2056120 -814070
+            2053900 -814070
+          )
+        )
+        (wire
+          (path Top 2500
+            2051777 -809471
+            2053900 -811594
+            2053900 -814070
+          )
+        )
+        (wire
+          (path Top 2500
+            2022230 -866140
+            2030499 -866140
+          )
+        )
+        (wire
+          (path Top 2500
+            2062870 -814070
+            2056120 -814070
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2051777.0 -809471.0
+        )
+      )
+      (net "Net-(IC12-PadP07)"
+        (wire
+          (path Top 2500
+            2011455 -883955
+            2014341 -886841
+          )
+        )
+        (wire
+          (path Top 2500
+            2022610 -886841
+            2014341 -886841
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2011455.0 -883955.0
+        )
+        (wire
+          (path Top 2500
+            1994440 -796591
+            1994440 -810915
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1994440.0 -810915.0
+        )
+      )
+      (net "Net-(C72-Pad2)"
+        (wire
+          (path Top 2500
+            1954140 -873139
+            1957182 -876181
+          )
+        )
+        (wire
+          (path Top 2500
+            1954140 -864870
+            1954140 -873139
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1957182.0 -876181.0
+        )
+      )
+      (net "Net-(C70-Pad2)"
+        (wire
+          (path Top 2500
+            1966152 -840618
+            1963129 -843641
+          )
+        )
+        (wire
+          (path Top 2500
+            1954360 -843641
+            1963129 -843641
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1966152.0 -840618.0
+        )
+      )
+      (net "Net-(C69-Pad1)"
+        (wire
+          (path Top 2500
+            1953440 -822091
+            1961940 -813591
+            1961940 -796591
+          )
+        )
+      )
+      (net "Net-(C69-Pad2)"
+        (wire
+          (path Top 2500
+            1955440 -796591
+            1955440 -808110
+          )
+        )
+        (wire
+          (path Top 2500
+            1936440 -822091
+            1936440 -813822
+          )
+        )
+        (wire
+          (path Top 2500
+            1936440 -813822
+            1949728 -813822
+            1955440 -808110
+          )
+        )
+      )
+      (net "Net-(IC12-PadP15)"
+        (wire
+          (path Top 2500
+            2013940 -721163
+            2013940 -735591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2013940.0 -721163.0
+        )
+      )
+      (net "Net-(IC12-PadP18)"
+        (wire
+          (path Top 2500
+            1994440 -735591
+            1994440 -721059
+            1994480 -721059
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1994480.0 -721059.0
+        )
+      )
+      (net "Net-(IC12-PadP19)"
+        (wire
+          (path Top 2500
+            1986944 -714226
+            1986944 -723821
+            1987940 -724817
+            1987940 -735591
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1986944.0 -714226.0
+        )
+      )
+      (net "Net-(IC12-PadP22)"
+        (wire
+          (path Top 2500
+            1965406 -721227
+            1968251 -724072
+            1968440 -724072
+          )
+        )
+        (wire
+          (path Top 2500
+            1968440 -735591
+            1968440 -724072
+          )
+        )
+        (via "Via[0-3]_800:400_um" 1965406.0 -721227.0
+        )
+      )
+      (net "Net-(Q4-Pad1)"
+        (wire
+          (path Top 2500
+            1943240 -1293240
+            1934971 -1293240
+          )
+        )
+        (wire
+          (path Top 2500
+            1948140 -1311520
+            1934121 -1311520
+          )
+        )
+        (wire
+          (path Top 2500
+            1934971 -1293240
+            1934121 -1294090
+            1934121 -1311520
+          )
+        )
+      )
+      (net "Net-(D9-PadA)"
+        (wire
+          (path Top 2500
+            2027940 -1345020
+            2027940 -1335751
+          )
+        )
+        (wire
+          (path Top 2500
+            2006140 -1334520
+            2020159 -1334520
+          )
+        )
+        (wire
+          (path Top 2500
+            2027940 -1335751
+            2021390 -1335751
+            2020159 -1334520
+          )
+        )
+      )
+      (net "Net-(LED11-PadA)"
+        (wire
+          (path Top 2500
+            2027940 -1324020
+            2027940 -1308090
+          )
+        )
+      )
+      (net "Net-(Q5-PadG)"
+        (wire
+          (path Top 2500
+            2067060 -1388490
+            2067060 -1397259
+          )
+        )
+        (wire
+          (path Top 2500
+            2066040 -1420240
+            2066040 -1398279
+            2067060 -1397259
+          )
+        )
+        (wire
+          (path Top 2500
+            2052310 -1388490
+            2067060 -1388490
+          )
+        )
+      )
+      (net "Net-(LED12-PadA)"
+        (wire
+          (path Top 2500
+            2035260 -1464690
+            2051190 -1464690
+          )
+        )
+      )
+      (net "Net-(IC15-Pad7)"
+        (wire
+          (path Top 2500
+            2024063 -1391468
+            2027041 -1388490
+          )
+        )
+        (wire
+          (path Top 2500
+            2035310 -1388490
+            2027041 -1388490
+          )
+        )
+        (via "Via[0-3]_800:400_um" 2024063.0 -1391468.0
+        )
+      )
+      (net "/smoothieboard-5driver_4/VBBREG"
+        (wire
+          (path Top 2500
+            1805690 -1025520
+            1813959 -1025520
+          )
+        )
+        (wire
+          (path Top 2500
+            1842515 -1051940
+            1826546 -1051940
+          )
+        )
+        (wire
+          (path Top 2500
+            1826546 -1051940
+            1826546 -1038107
+            1813959 -1025520
+          )
+        )
+      )
+    )
+  )
+)

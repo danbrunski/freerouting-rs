@@ -1,0 +1,35 @@
+(session "Issue756-minimal-hang"
+  (base_design "Issue756-minimal-hang")
+  (placement
+    (resolution um 10)
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "minimal-repro")
+    )
+    (library_out 
+    )
+    (network_out 
+      (net +5V
+        (wire
+          (path F.Cu 10000
+            1006000 -400000
+            1005000 -405000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 10000
+            1005000 -405000
+            998000 -392000
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

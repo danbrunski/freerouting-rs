@@ -1,0 +1,105 @@
+{
+  "routeMillis": 300,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.2",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 862.06,
+        "y": -498.11,
+        "width": 796.56,
+        "height": -563.61
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 65.50,
+        "height": 65.50
+      },
+      "area_cm2": 0.43
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 52,
+      "trace_count": 14,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 17,
+      "component_count": 20,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 7
+    },
+    "pads": {
+      "total_count": 17
+    },
+    "nets": {
+      "total_count": 5,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 10,
+      "incomplete_count": 4
+    },
+    "traces": {
+      "total_count": 14,
+      "total_segment_count": 24,
+      "total_length": 101.69,
+      "total_length_mm": 10.17,
+      "total_weighted_length": 430809.00,
+      "average_length": 7.26,
+      "total_vertical_length": 41.37,
+      "total_horizontal_length": 7.36,
+      "total_angled_length": 24.10
+    },
+    "bends": {
+      "total_count": 10,
+      "90_degree_count": 0,
+      "45_degree_count": 10,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 8,
+      "pre_existing_count": 8,
+      "unfixable_count": 8,
+      "router_introduced_count": 0,
+      "total_violation_um": 457.21,
+      "min_violation_um": 50.70,
+      "max_violation_um": 63.60,
+      "avg_violation_um": 57.15
+    },
+    "difficulty": {
+      "pin_count": 17,
+      "signal_layer_count": 2,
+      "complexity_c": 34,
+      "difficulty_d": 34.00,
+      "board_area_cm2": 0.43
+    },
+    "bounds": {
+      "min_trace_length_mm": 11.65,
+      "min_via_count": 0,
+      "min_bend_count": 10
+    },
+    "fanout": {
+      "total_smd_pins": 11,
+      "pins_to_escape": 7,
+      "escaped_count": 7
+    }
+  },
+  "routerScore": 456.7501,
+  "fixture": "PCBench-retroreflectors-CONGFLOCK.dsn"
+}

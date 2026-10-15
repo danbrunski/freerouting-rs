@@ -1,0 +1,50 @@
+(session "Issue954-circle"
+  (base_design "Issue954-circle")
+  (placement
+    (resolution um 10)
+    (component "physical_hole"
+      (place P0 100000.0 -100000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+      (padstack Via560
+        (shape
+          (circle F.Cu 5600 0 0)
+        )
+        (shape
+          (circle B.Cu 5600 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net TEST
+        (wire
+          (path F.Cu 1500
+            100000 -29250
+            107764 -37014
+            127798 -37014
+          )
+        )
+        (wire
+          (path B.Cu 1500
+            111768 -128409
+            127798 -112379
+            127798 -37014
+          )
+        )
+        (via Via560 127798.0 -37014.0
+        )
+        (via Via560 111768.0 -128409.0
+          (type protect)
+        )
+      )
+    )
+  )
+)

@@ -1,0 +1,45 @@
+(session "Issue208-freerouting"
+  (base_design "Issue208-freerouting")
+  (placement
+    (resolution um 10)
+    (component "SnapEDA:TE_1-2199119-5"
+      (place J6 1440968.0 -835818.0 front 0)
+      (place J10 996358.0 -402214.0 front 180)
+      (place J8 544928.0 -403012.0 front 180)
+      (place J11 1222588.0 -402310.0 front 180)
+      (place J7 318348.0 -404088.0 front 180)
+      (place J13 1447970.0 -402686.0 front 180)
+      (place J3 763270.0 -836168.0 front 0)
+      (place J2 538048.0 -835900.0 front 0)
+      (place J5 1213612.0 -836422.0 front 0)
+      (place J4 987806.0 -835914.0 front 0)
+      (place J1 311912.0 -836386.0 front 0)
+      (place J9 769452.0 -402818.0 front 180)
+    )
+    (component "MountingHole:MountingHole_3.2mm_M3_Pad_Via"
+      (place H3 1463849.0 -653589.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "7.0.2")
+    )
+    (library_out 
+      (padstack "Via[0-1]_685.8:330.2_um"
+        (shape
+          (circle F.Cu 6858 0 0)
+        )
+        (shape
+          (circle B.Cu 6858 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

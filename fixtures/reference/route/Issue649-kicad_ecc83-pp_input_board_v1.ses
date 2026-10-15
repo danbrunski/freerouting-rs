@@ -1,0 +1,200 @@
+(session "Issue649-kicad_ecc83-pp_input_board_v1"
+  (base_design "Issue649-kicad_ecc83-pp_input_board_v1")
+  (placement
+    (resolution um 10)
+    (component "Footprints:CP_Radial_D10.0mm_P5.00mm"
+      (place C1 1416050.0 -996950.0 front 90)
+    )
+    (component "Footprints:C_Disc_D4.7mm_W2.5mm_P5.00mm"
+      (place C2 1371600.0 -1250950.0 front 90)
+    )
+    (component "Footprints:MountingHole_3.2mm_M3_DIN965_Pad"
+      (place P5 1250950.0 -939800.0 front 0)
+      (place P6 1695450.0 -939800.0 front 0)
+      (place P7 1695450.0 -1327150.0 front 0)
+      (place P8 1250950.0 -1327150.0 front 0)
+    )
+    (component "Footprints:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      (place R1 1362710.0 -1079500.0 front 270)
+      (place R4 1644650.0 -1174750.0 front 270)
+    )
+    (component "Footprints:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal::1"
+      (place R2 1562100.0 -958850.0 front 180)
+      (place R3 1339850.0 -1250950.0 front 180)
+    )
+    (component "Footprints:Altech_AK300_1x02_P5.00mm_45-Degree"
+      (place P2 1282700.0 -1127760.0 front 270)
+      (place P3 1282700.0 -1007110.0 front 270)
+    )
+    (component "Footprints:Altech_AK300_1x02_P5.00mm_45-Degree::1"
+      (place P4 1455420.0 -1311910.0 front 0)
+    )
+    (component "Footprints:Valve_ECC-83-1"
+      (place U1 1492250.0 -1136650.0 front 0)
+    )
+    (component "Footprints:Altech_AK300_1x02_P5.00mm_45-Degree::2"
+      (place P1 1663700.0 -1054100.0 front 90)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.2")
+    )
+    (library_out 
+      (padstack "Via[0-1]_1200:600_um"
+        (shape
+          (circle "top_cu" 12000 0 0)
+        )
+        (shape
+          (circle "bottom_cu" 12000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net "Net-(P3-P1)"
+        (wire
+          (path "top_cu" 8000
+            1282700 -1007110
+            1305717 -1007110
+          )
+        )
+        (wire
+          (path "top_cu" 8000
+            1305717 -1007110
+            1315877 -996950
+            1416050 -996950
+          )
+        )
+        (wire
+          (path "bottom_cu" 8000
+            1457650 -1089550
+            1416050 -1047950
+            1416050 -996950
+          )
+        )
+      )
+      (net "Net-(P2-P1)"
+        (wire
+          (path "top_cu" 8000
+            1339850 -1250950
+            1371600 -1250950
+          )
+        )
+        (wire
+          (path "bottom_cu" 8000
+            1282700 -1127760
+            1282700 -1150777
+          )
+        )
+        (wire
+          (path "bottom_cu" 8000
+            1282700 -1150777
+            1288454 -1150777
+            1339850 -1202173
+            1339850 -1250950
+          )
+        )
+      )
+      (net "Net-(U1A-K)"
+        (wire
+          (path "bottom_cu" 8000
+            1362710 -1155700
+            1362710 -1171717
+          )
+        )
+        (wire
+          (path "bottom_cu" 8000
+            1362710 -1171717
+            1371600 -1180607
+            1371600 -1200950
+          )
+        )
+        (wire
+          (path "top_cu" 8000
+            1362710 -1155700
+            1378727 -1155700
+          )
+        )
+        (wire
+          (path "top_cu" 8000
+            1436150 -1154950
+            1379477 -1154950
+            1378727 -1155700
+          )
+        )
+      )
+      (net "Net-(P1-PM)"
+        (wire
+          (path "top_cu" 8000
+            1548250 -1155350
+            1625250 -1155350
+            1644650 -1174750
+          )
+        )
+        (wire
+          (path "bottom_cu" 8000
+            1663700 -1004100
+            1640674 -1027126
+            1640674 -1170774
+            1644650 -1174750
+          )
+        )
+      )
+      (net "Net-(P4-P1)"
+        (wire
+          (path "bottom_cu" 8000
+            1457650 -1184650
+            1455420 -1186880
+            1455420 -1311910
+          )
+        )
+      )
+      (net "Net-(P4-PM)"
+        (wire
+          (path "bottom_cu" 8000
+            1492250 -1078150
+            1492250 -1298740
+            1505420 -1311910
+          )
+        )
+        (wire
+          (path "top_cu" 8000
+            1492250 -1078150
+            1515350 -1078150
+            1526750 -1089550
+          )
+        )
+      )
+      (net "Net-(U1A-G)"
+        (wire
+          (path "top_cu" 8000
+            1526750 -1184650
+            1460950 -1118850
+            1436150 -1118850
+          )
+        )
+        (wire
+          (path "top_cu" 8000
+            1436150 -1118850
+            1402060 -1118850
+            1362710 -1079500
+          )
+        )
+      )
+      (net "Net-(U1B-K)"
+        (wire
+          (path "bottom_cu" 8000
+            1548250 -1118850
+            1562100 -1105000
+            1562100 -958850
+          )
+        )
+      )
+    )
+  )
+)

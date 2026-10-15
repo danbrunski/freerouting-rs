@@ -1,0 +1,105 @@
+{
+  "routeMillis": 26096,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2224.25,
+        "y": -251.49,
+        "width": 622.59,
+        "height": -1466.25
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1601.66,
+        "height": 1214.76
+      },
+      "area_cm2": 194.56
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2141,
+      "trace_count": 373,
+      "via_count": 0,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 247,
+      "component_count": 1512,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 84
+    },
+    "pads": {
+      "total_count": 247
+    },
+    "nets": {
+      "total_count": 77,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 169,
+      "incomplete_count": 1
+    },
+    "traces": {
+      "total_count": 373,
+      "total_segment_count": 754,
+      "total_length": 27858.72,
+      "total_length_mm": 2785.87,
+      "total_weighted_length": 87002264.00,
+      "average_length": 74.69,
+      "total_vertical_length": 8959.05,
+      "total_horizontal_length": 6667.31,
+      "total_angled_length": 8497.08
+    },
+    "bends": {
+      "total_count": 381,
+      "90_degree_count": 3,
+      "45_degree_count": 378,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 0,
+      "through_hole_count": 0,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 247,
+      "signal_layer_count": 2,
+      "complexity_c": 494,
+      "difficulty_d": 494.00,
+      "board_area_cm2": 194.56
+    },
+    "bounds": {
+      "min_trace_length_mm": 2245.86,
+      "min_via_count": 0,
+      "min_bend_count": 120
+    },
+    "fanout": {
+      "total_smd_pins": 0,
+      "pins_to_escape": 0,
+      "escaped_count": 0
+    }
+  },
+  "routerScore": 992.1105,
+  "fixture": "Issue107-freq_teiler_200kHz_kicad.dsn"
+}

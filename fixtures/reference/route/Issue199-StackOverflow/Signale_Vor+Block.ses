@@ -1,0 +1,100 @@
+(session "Signale_Vor+Block"
+  (base_design "Signale_Vor+Block")
+  (placement
+    (resolution um 10)
+    (component "Capacitor_SMD:C_1210_3225Metric_Pad1.33x2.70mm_HandSolder"
+      (place C6 1086000.0 -877000.0 front 180)
+      (place C2 1229000.0 -877000.0 front 180)
+      (place C4 1157000.0 -877000.0 front 180)
+      (place C3 1379000.0 -877000.0 front 180)
+      (place C7 1018000.0 -877000.0 front 180)
+      (place C5 1303000.0 -877000.0 front 180)
+      (place C1 1447000.0 -877000.0 front 180)
+    )
+    (component "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm"
+      (place JP5 1243000.0 -758000.0 front 0)
+      (place JP4 1189000.0 -757000.0 front 180)
+      (place JP6 1304000.0 -758000.0 front 180)
+      (place JP9 1460000.0 -758000.0 front 0)
+      (place JP3 1132000.0 -758000.0 front 180)
+      (place JP1 1016000.0 -758000.0 front 180)
+      (place JP8 1402000.0 -758000.0 front 180)
+      (place JP7 1355000.0 -758000.0 front 180)
+      (place JP2 1072500.0 -758000.0 front 180)
+    )
+    (component "Diode_SMD:D_SOD-323_HandSoldering"
+      (place D7 1249000.0 -1151000.0 front 180)
+      (place D8 1412000.0 -1028000.0 front 0)
+      (place D3 981000.0 -1125000.0 front 90)
+      (place D2 994000.0 -971000.0 front 180)
+      (place D4 1246000.0 -810000.0 front 270)
+      (place D6 1241000.0 -1075000.0 front 0)
+      (place D5 1467000.0 -809000.0 front 270)
+      (place D1 1113000.0 -1028000.0 front 0)
+    )
+    (component "MountingHole:MountingHole_4.3mm_M4_DIN965"
+      (place H1 932000.0 -598000.0 front 0)
+      (place H4 1578000.0 -599000.0 front 0)
+      (place H3 1577000.0 -1311000.0 front 0)
+      (place H2 933000.0 -1309000.0 front 0)
+    )
+    (component "Package_TO_SOT_SMD:SOT-323_SC-70_Handsoldering"
+      (place Q3 1459000.0 -978000.0 front 90)
+      (place Q2 1079300.0 -965500.0 front 0)
+      (place Q1 1209000.0 -968000.0 front 180)
+    )
+    (component "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
+      (place R12 1194000.0 -813000.0 front 0)
+      (place R5 1170000.0 -1148000.0 front 0)
+      (place R11 1132000.0 -813000.0 front 0)
+      (place R16 1310000.0 -1006000.0 front 0)
+      (place R4 1009000.0 -1049000.0 front 0)
+      (place R14 1356000.0 -811000.0 front 0)
+      (place R13 1302000.0 -813000.0 front 0)
+      (place R8 1457000.0 -1100000.0 front 180)
+      (place R15 1406000.0 -811000.0 front 0)
+      (place R9 1015000.0 -813000.0 front 0)
+      (place R10 1074000.0 -813000.0 front 0)
+    )
+    (component "Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder"
+      (place R3 1177000.0 -1041000.0 front 90)
+      (place R18 1380000.0 -945000.0 front 0)
+      (place R17 1317000.0 -1148000.0 front 90)
+      (place R1 1257000.0 -1009500.0 front 90)
+      (place R6 1078000.0 -1160000.0 front 180)
+      (place R7 1136000.0 -1098000.0 front 0)
+      (place R2 1378000.0 -1100000.0 front 0)
+    )
+    (component "Connector:ASTO25-10polig"
+      (place J1 1264000.0 -572450.0 front 180)
+    )
+    (component "Connector:ASTO25-6polig"
+      (place J2 1202000.0 -1182000.0 front 180)
+    )
+    (component "Package_TO_SOT_SMD:SOT-23"
+      (place Q4 1310000.0 -946000.0 front 90)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "7.0.2")
+    )
+    (library_out 
+      (padstack "Via[0-1]_800:400_um"
+        (shape
+          (circle F.Cu 8000 0 0)
+        )
+        (shape
+          (circle B.Cu 8000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

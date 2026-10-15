@@ -1,0 +1,21 @@
+(session "scoring-perfect-two-pin"
+  (base_design "scoring-perfect-two-pin")
+  (placement
+    (resolution um 10)
+    (component PAD
+      (place U1 20000.0 50000.0 front 0)
+      (place U2 80000.0 50000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+    )
+    (network_out 
+    )
+  )
+)

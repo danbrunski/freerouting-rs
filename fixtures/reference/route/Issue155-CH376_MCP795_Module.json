@@ -1,0 +1,105 @@
+{
+  "routeMillis": 3171,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.4)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1665.70,
+        "y": -937.00,
+        "width": 1306.10,
+        "height": -1475.20
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 359.60,
+        "height": 538.20
+      },
+      "area_cm2": 19.35
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 434,
+      "trace_count": 119,
+      "via_count": 14,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 87,
+      "component_count": 213,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 15
+    },
+    "pads": {
+      "total_count": 87
+    },
+    "nets": {
+      "total_count": 34,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 53,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 119,
+      "total_segment_count": 298,
+      "total_length": 8280.97,
+      "total_length_mm": 828.10,
+      "total_weighted_length": 26535030.00,
+      "average_length": 69.59,
+      "total_vertical_length": 2892.17,
+      "total_horizontal_length": 2023.71,
+      "total_angled_length": 1961.28
+    },
+    "bends": {
+      "total_count": 179,
+      "90_degree_count": 1,
+      "45_degree_count": 178,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 14,
+      "through_hole_count": 14,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 87,
+      "signal_layer_count": 2,
+      "complexity_c": 174,
+      "difficulty_d": 174.00,
+      "board_area_cm2": 19.35
+    },
+    "bounds": {
+      "min_trace_length_mm": 736.41,
+      "min_via_count": 0,
+      "min_bend_count": 46
+    },
+    "fanout": {
+      "total_smd_pins": 43,
+      "pins_to_escape": 0,
+      "escaped_count": 34
+    }
+  },
+  "routerScore": 1000.0,
+  "fixture": "Issue155-CH376_MCP795_Module.dsn"
+}

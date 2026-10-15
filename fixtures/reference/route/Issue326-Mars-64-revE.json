@@ -1,0 +1,105 @@
+{
+  "routeMillis": 45438,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1017.00,
+        "y": -430.80,
+        "width": 557.80,
+        "height": -1448.80
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 459.20,
+        "height": 1018.00
+      },
+      "area_cm2": 46.75
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1474,
+      "trace_count": 364,
+      "via_count": 153,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 200,
+      "component_count": 748,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 80
+    },
+    "pads": {
+      "total_count": 200
+    },
+    "nets": {
+      "total_count": 94,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 106,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 364,
+      "total_segment_count": 1062,
+      "total_length": 39877.52,
+      "total_length_mm": 3987.75,
+      "total_weighted_length": 127797880.00,
+      "average_length": 109.55,
+      "total_vertical_length": 12101.99,
+      "total_horizontal_length": 7090.80,
+      "total_angled_length": 15994.61
+    },
+    "bends": {
+      "total_count": 698,
+      "90_degree_count": 5,
+      "45_degree_count": 693,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 153,
+      "through_hole_count": 153,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 64,
+      "pre_existing_count": 64,
+      "unfixable_count": 64,
+      "router_introduced_count": 0,
+      "total_violation_um": 12812.80,
+      "min_violation_um": 200.20,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 200.20
+    },
+    "difficulty": {
+      "pin_count": 200,
+      "signal_layer_count": 2,
+      "complexity_c": 400,
+      "difficulty_d": 400.00,
+      "board_area_cm2": 46.75
+    },
+    "bounds": {
+      "min_trace_length_mm": 3362.76,
+      "min_via_count": 64,
+      "min_bend_count": 91
+    },
+    "fanout": {
+      "total_smd_pins": 200,
+      "pins_to_escape": 0,
+      "escaped_count": 180
+    }
+  },
+  "routerScore": 986.3904,
+  "fixture": "Issue326-Mars-64-revE.dsn"
+}

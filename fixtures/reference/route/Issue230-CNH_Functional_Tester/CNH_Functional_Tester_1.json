@@ -1,0 +1,105 @@
+{
+  "routeMillis": 19277,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,7.0.4",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2542.00,
+        "y": -455.20,
+        "width": 333.63,
+        "height": -2110.20
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 2208.37,
+        "height": 1655.00
+      },
+      "area_cm2": 365.49
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2414,
+      "trace_count": 309,
+      "via_count": 15,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 966,
+      "component_count": 1057,
+      "other_count": 65
+    },
+    "components": {
+      "total_count": 81
+    },
+    "pads": {
+      "total_count": 966
+    },
+    "nets": {
+      "total_count": 764,
+      "class_count": 8
+    },
+    "connections": {
+      "maximum_count": 203,
+      "incomplete_count": 1
+    },
+    "traces": {
+      "total_count": 309,
+      "total_segment_count": 706,
+      "total_length": 59673.88,
+      "total_length_mm": 5967.39,
+      "total_weighted_length": 303796256.00,
+      "average_length": 193.12,
+      "total_vertical_length": 10293.05,
+      "total_horizontal_length": 20704.68,
+      "total_angled_length": 15469.11
+    },
+    "bends": {
+      "total_count": 397,
+      "90_degree_count": 0,
+      "45_degree_count": 397,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 15,
+      "through_hole_count": 15,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 6,
+      "pre_existing_count": 6,
+      "unfixable_count": 6,
+      "router_introduced_count": 0,
+      "total_violation_um": 1610.64,
+      "min_violation_um": 235.11,
+      "max_violation_um": 335.10,
+      "avg_violation_um": 268.44
+    },
+    "difficulty": {
+      "pin_count": 966,
+      "signal_layer_count": 2,
+      "complexity_c": 1932,
+      "difficulty_d": 1932.00,
+      "board_area_cm2": 365.49
+    },
+    "bounds": {
+      "min_trace_length_mm": 6909.48,
+      "min_via_count": 0,
+      "min_bend_count": 111
+    },
+    "fanout": {
+      "total_smd_pins": 4,
+      "pins_to_escape": 1,
+      "escaped_count": 4
+    }
+  },
+  "routerScore": 993.1041,
+  "fixture": "Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn"
+}

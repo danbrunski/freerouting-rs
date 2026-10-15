@@ -1,0 +1,105 @@
+{
+  "routeMillis": 11479,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.2",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1610.82,
+        "y": -500.64,
+        "width": 906.82,
+        "height": -1005.99
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 704.01,
+        "height": 505.36
+      },
+      "area_cm2": 35.58
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 824,
+      "trace_count": 347,
+      "via_count": 12,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 215,
+      "component_count": 249,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 57
+    },
+    "pads": {
+      "total_count": 215
+    },
+    "nets": {
+      "total_count": 36,
+      "class_count": 3
+    },
+    "connections": {
+      "maximum_count": 155,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 347,
+      "total_segment_count": 504,
+      "total_length": 8182.42,
+      "total_length_mm": 818.24,
+      "total_weighted_length": 23998902.00,
+      "average_length": 23.58,
+      "total_vertical_length": 2026.89,
+      "total_horizontal_length": 3175.14,
+      "total_angled_length": 1225.79
+    },
+    "bends": {
+      "total_count": 157,
+      "90_degree_count": 0,
+      "45_degree_count": 157,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 12,
+      "through_hole_count": 12,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 215,
+      "signal_layer_count": 2,
+      "complexity_c": 430,
+      "difficulty_d": 430.00,
+      "board_area_cm2": 35.58
+    },
+    "bounds": {
+      "min_trace_length_mm": 762.18,
+      "min_via_count": 0,
+      "min_bend_count": 91
+    },
+    "fanout": {
+      "total_smd_pins": 130,
+      "pins_to_escape": 0,
+      "escaped_count": 130
+    }
+  },
+  "routerScore": 1000.0,
+  "fixture": "PCBench-Box0-hv-analog-breakout.dsn"
+}

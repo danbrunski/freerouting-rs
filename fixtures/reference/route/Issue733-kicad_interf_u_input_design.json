@@ -1,0 +1,105 @@
+{
+  "routeMillis": 4114,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.2",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2020.05,
+        "y": -340.90,
+        "width": 791.75,
+        "height": -1426.94
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1228.30,
+        "height": 1086.04
+      },
+      "area_cm2": 133.40
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1516,
+      "trace_count": 678,
+      "via_count": 84,
+      "conduction_area_count": 1,
+      "drill_item_count": 0,
+      "pin_count": 379,
+      "component_count": 373,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 25
+    },
+    "pads": {
+      "total_count": 379
+    },
+    "nets": {
+      "total_count": 173,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 201,
+      "incomplete_count": 19
+    },
+    "traces": {
+      "total_count": 678,
+      "total_segment_count": 764,
+      "total_length": 51049.92,
+      "total_length_mm": 5104.99,
+      "total_weighted_length": 162184.13,
+      "average_length": 75.29,
+      "total_vertical_length": 19171.10,
+      "total_horizontal_length": 25728.17,
+      "total_angled_length": 6361.46
+    },
+    "bends": {
+      "total_count": 86,
+      "90_degree_count": 2,
+      "45_degree_count": 82,
+      "other_angle_count": 2
+    },
+    "vias": {
+      "total_count": 84,
+      "through_hole_count": 84,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 379,
+      "signal_layer_count": 2,
+      "complexity_c": 758,
+      "difficulty_d": 758.00,
+      "board_area_cm2": 133.40
+    },
+    "bounds": {
+      "min_trace_length_mm": 4820.20,
+      "min_via_count": 0,
+      "min_bend_count": 146
+    },
+    "fanout": {
+      "total_smd_pins": 62,
+      "pins_to_escape": 5,
+      "escaped_count": 28
+    }
+  },
+  "routerScore": 873.9635,
+  "fixture": "Issue733-kicad_interf_u_input_design.dsn"
+}

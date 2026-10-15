@@ -1,0 +1,147 @@
+(session "PCBench-retroreflectors-CONGFLOCK"
+  (base_design "PCBench-retroreflectors-CONGFLOCK")
+  (placement
+    (resolution um 10)
+    (component "GSG-0402"
+      (place R2 808990.0 -539750.0 front 0)
+      (place R1 812800.0 -519430.0 back 180)
+    )
+    (component "GSG-SOT416-GDS"
+      (place Q1 807720.0 -524510.0 front 0)
+    )
+    (component "GSG-50MIL-HEADER-1x2-TH"
+      (place P2 812800.0 -508000.0 front 0)
+      (place P1 812800.0 -551180.0 front 180)
+    )
+    (component "GSG-0402-SHORT-10MIL"
+      (place R4 812800.0 -538480.0 back 180)
+      (place R3 821690.0 -524510.0 front 270)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.2")
+    )
+    (library_out 
+      (padstack "Via[0-1]_889:635_um"
+        (shape
+          (circle F.Cu 8890 0 0)
+        )
+        (shape
+          (circle B.Cu 8890 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net "/DRAIN"
+        (wire
+          (path B.Cu 5080
+            806450 -508000
+            806450 -518431
+          )
+        )
+        (wire
+          (path B.Cu 5080
+            806450 -518431
+            806467 -518431
+            807466 -519430
+          )
+        )
+        (wire
+          (path F.Cu 5080
+            807720 -517500
+            807720 -509406
+          )
+        )
+        (wire
+          (path F.Cu 5080
+            806450 -508000
+            806450 -508136
+            807720 -509406
+          )
+        )
+      )
+      (net "/GATE"
+        (wire
+          (path F.Cu 5080
+            806450 -551180
+            803656 -548386
+            803656 -539750
+          )
+        )
+        (wire
+          (path F.Cu 5080
+            803656 -539750
+            803656 -531859
+          )
+        )
+        (wire
+          (path F.Cu 5080
+            803656 -531859
+            803055 -531859
+            802716 -531520
+          )
+        )
+      )
+      (net "/SOURCE"
+        (wire
+          (path F.Cu 5080
+            813694 -531859
+            813063 -531859
+            812724 -531520
+          )
+        )
+        (wire
+          (path F.Cu 5080
+            814324 -531859
+            813694 -531859
+          )
+        )
+        (wire
+          (path F.Cu 5080
+            814324 -539750
+            814324 -531859
+          )
+        )
+      )
+      (net GND
+        (wire
+          (path F.Cu 5080
+            819150 -508000
+            821690 -510540
+            821690 -515601
+          )
+        )
+        (wire
+          (path B.Cu 5080
+            818134 -519430
+            818134 -521525
+            809942 -529717
+            809271 -529717
+          )
+        )
+        (wire
+          (path B.Cu 5080
+            819150 -508000
+            818134 -509016
+            818134 -519430
+          )
+        )
+      )
+      (net "N-000003"
+        (wire
+          (path B.Cu 5080
+            819150 -551180
+            821709 -548621
+            821709 -538480
+          )
+        )
+      )
+    )
+  )
+)

@@ -1,0 +1,105 @@
+{
+  "routeMillis": 45307,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.6)-1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 940.80,
+        "y": -253.00,
+        "width": 253.00,
+        "height": -890.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 687.80,
+        "height": 637.00
+      },
+      "area_cm2": 43.81
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1423,
+      "trace_count": 483,
+      "via_count": 45,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 278,
+      "component_count": 616,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 37
+    },
+    "pads": {
+      "total_count": 278
+    },
+    "nets": {
+      "total_count": 101,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 147,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 483,
+      "total_segment_count": 1065,
+      "total_length": 29112.93,
+      "total_length_mm": 2911.29,
+      "total_weighted_length": 91457968.00,
+      "average_length": 60.28,
+      "total_vertical_length": 4878.71,
+      "total_horizontal_length": 11351.09,
+      "total_angled_length": 6514.36
+    },
+    "bends": {
+      "total_count": 582,
+      "90_degree_count": 1,
+      "45_degree_count": 581,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 45,
+      "through_hole_count": 45,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 278,
+      "signal_layer_count": 2,
+      "complexity_c": 556,
+      "difficulty_d": 556.00,
+      "board_area_cm2": 43.81
+    },
+    "bounds": {
+      "min_trace_length_mm": 2694.05,
+      "min_via_count": 17,
+      "min_bend_count": 115
+    },
+    "fanout": {
+      "total_smd_pins": 113,
+      "pins_to_escape": 0,
+      "escaped_count": 113
+    }
+  },
+  "routerScore": 1000.0,
+  "fixture": "Issue034-Green14SegLED.dsn"
+}

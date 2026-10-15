@@ -1,0 +1,1592 @@
+(session "Issue690-sonde_xilinx"
+  (base_design "Issue690-sonde_xilinx")
+  (placement
+    (resolution um 10)
+    (component "sonde-xilinx:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+      (place R14 1625600.0 -889000.0 front 180)
+      (place R9 1219200.0 -805180.0 front 180)
+      (place R4 1219200.0 -1041400.0 front 180)
+      (place R13 1625600.0 -1054100.0 front 180)
+      (place R12 1625600.0 -990600.0 front 180)
+      (place R11 1625600.0 -939800.0 front 180)
+      (place R8 1219200.0 -876300.0 front 180)
+      (place R7 1219200.0 -927100.0 front 180)
+      (place R6 1219327.0 -838200.0 front 180)
+      (place R10 1219200.0 -772160.0 front 180)
+      (place R1 1219200.0 -738632.0 front 180)
+    )
+    (component "sonde-xilinx:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal::1"
+      (place R2 1371600.0 -723900.0 front 0)
+      (place R5 1511300.0 -736600.0 front 0)
+    )
+    (component "sonde-xilinx:D_A-405_P7.62mm_Horizontal"
+      (place D2 1600200.0 -787400.0 front 180)
+      (place D1 1346200.0 -723900.0 front 180)
+    )
+    (component "sonde-xilinx:C_Axial_L5.1mm_D3.1mm_P12.50mm_Horizontal"
+      (place C1 1346200.0 -762000.0 front 0)
+    )
+    (component "sonde-xilinx:PinHeader_1x06_P2.54mm_Vertical"
+      (place P1 1696720.0 -801370.0 front 0)
+    )
+    (component "sonde-xilinx:DIP-14_W7.62mm_LongPads"
+      (place U2 1409700.0 -825500.0 front 0)
+      (place U1 1270000.0 -825500.0 front 0)
+    )
+    (component "sonde-xilinx:C_Disc_D5.1mm_W3.2mm_P5.00mm"
+      (place C5 1450000.0 -1028700.0 front 270)
+      (place C4 1490000.0 -1028700.0 front 270)
+      (place C2 1409700.0 -1028700.0 front 270)
+    )
+    (component "sonde-xilinx:C_Disc_D5.1mm_W3.2mm_P5.00mm::1"
+      (place C3 1511300.0 -698500.0 front 0)
+    )
+    (component "sonde-xilinx:DSUB-25_Male_EdgeMount_P2.77mm"
+      (place J1 1055116.0 -891032.0 front 270)
+    )
+    (component "sonde-xilinx:DSUB-9_Male_EdgeMount_P2.77mm"
+      (place J2 1816100.0 -901192.0 back 90)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.2")
+    )
+    (library_out 
+      (padstack "Via[0-1]_1651:635_um"
+        (shape
+          (circle "top_copper" 16510 0 0)
+        )
+        (shape
+          (circle "bottom_copper" 16510 0 0)
+        )
+        (attach off)
+      )
+      (padstack "Via[0-1]_1778:635_um"
+        (shape
+          (circle "top_copper" 17780 0 0)
+        )
+        (shape
+          (circle "bottom_copper" 17780 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (wire
+          (path "top_copper" 6350
+            1816100 -887342
+            1792350 -887342
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1816100 -859642
+            1792350 -859642
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1792350 -859642
+            1792350 -887342
+          )
+        )
+        (via "Via[0-1]_1778:635_um" 1778000.0 -812800.0
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1409700 -927100
+            1409700 -901700
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1778000 -812800
+            1809750 -812800
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1816100 -943610
+            1816100 -887730
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1816100 -887730
+            1816100 -819150
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1809750 -812800
+            1816100 -819150
+          )
+          (type protect)
+        )
+      )
+      (net "/CLK-D1"
+        (wire
+          (path "top_copper" 6350
+            1055116 -780232
+            1055370 -779978
+            1055370 -779780
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1107440 -772160
+            1098550 -781050
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1060450 -781050
+            1055370 -779780
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1117600 -772160
+            1107440 -772160
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1098550 -781050
+            1060450 -781050
+          )
+          (type protect)
+        )
+      )
+      (net "/CTRL-D3"
+        (wire
+          (path "top_copper" 6350
+            1054100 -838200
+            1055370 -834390
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1117600 -876300
+            1098550 -857250
+            1098550 -844550
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1098550 -844550
+            1092200 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1092200 -838200
+            1054100 -838200
+          )
+          (type protect)
+        )
+      )
+      (net "/DONE-SELECT*"
+        (wire
+          (path "top_copper" 6350
+            1055116 -1057232
+            1055370 -1056978
+            1055370 -1054100
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1117600 -1041400
+            1117600 -1047750
+            1111250 -1054100
+            1055370 -1054100
+          )
+          (type protect)
+        )
+      )
+      (net "/PWR_3,3-5V"
+        (wire
+          (path "bottom_copper" 6350
+            1696720 -800100
+            1696720 -801370
+          )
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1684020 -787400
+            1696720 -800100
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1710510 -786130
+            1695990 -800645
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1816100 -800100
+            1816100 -845820
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1802130 -786130
+            1710510 -786130
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1600200 -787400
+            1684020 -787400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1816100 -800100
+            1802130 -786130
+          )
+          (type protect)
+        )
+      )
+      (net "/TCK-CCLK"
+        (wire
+          (path "bottom_copper" 6350
+            1670050 -946150
+            1625600 -990600
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1722120 -902970
+            1746250 -927100
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1670050 -923290
+            1670050 -946150
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1696720 -902970
+            1722120 -902970
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1746250 -927100
+            1816100 -927100
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1696720 -902970
+            1690370 -902970
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1816100 -927100
+            1816100 -929640
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1690370 -902970
+            1670050 -923290
+          )
+          (type protect)
+        )
+      )
+      (net "/TD0-DONE"
+        (wire
+          (path "bottom_copper" 6350
+            1816100 -873492
+            1816100 -873760
+          )
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1766570 -852170
+            1784350 -869950
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1625600 -889000
+            1625600 -881380
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1625600 -881380
+            1654810 -852170
+            1696720 -852170
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1696720 -852170
+            1766570 -852170
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1784350 -869950
+            1809750 -869950
+            1816100 -873760
+          )
+          (type protect)
+        )
+      )
+      (net "/TD0-PROG-D4"
+        (wire
+          (path "top_copper" 6350
+            1055116 -863332
+            1055370 -863078
+            1055370 -862330
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1132840 -894080
+            1143000 -883920
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1136650 -838200
+            1117600 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1055370 -862330
+            1075690 -862330
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1143000 -883920
+            1143000 -844550
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1075690 -862330
+            1107440 -894080
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1143000 -844550
+            1136650 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1107440 -894080
+            1132840 -894080
+          )
+          (type protect)
+        )
+      )
+      (net "/TDI-DIN"
+        (wire
+          (path "bottom_copper" 6350
+            1816100 -901192
+            1816100 -901700
+          )
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1696720 -877570
+            1675130 -877570
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1728470 -877570
+            1752600 -901700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1662430 -890270
+            1662430 -914400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1625600 -939800
+            1637030 -939800
+            1662430 -914400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1752600 -901700
+            1816100 -901700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1696720 -877570
+            1728470 -877570
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1675130 -877570
+            1662430 -890270
+          )
+          (type protect)
+        )
+      )
+      (net "/TDI-DIN-D0"
+        (wire
+          (path "top_copper" 6350
+            1055116 -752532
+            1055116 -752094
+            1055370 -751840
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1107440 -718820
+            1076960 -749300
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1162050 -727710
+            1153160 -718820
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1060450 -755650
+            1055370 -751840
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1076960 -749300
+            1060450 -749300
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1060450 -749300
+            1060450 -755650
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1149350 -927100
+            1162050 -914400
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1153160 -718820
+            1107440 -718820
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1117600 -927100
+            1149350 -927100
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1162050 -914400
+            1162050 -727710
+          )
+          (type protect)
+        )
+      )
+      (net "/TMS-PROG"
+        (wire
+          (path "bottom_copper" 6350
+            1816100 -957580
+            1816100 -956592
+          )
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1625600 -1054100
+            1625600 -1036320
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1727200 -958850
+            1696720 -928370
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1816100 -958850
+            1816100 -957580
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1625600 -1036320
+            1696720 -965200
+            1696720 -928370
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1816100 -958850
+            1727200 -958850
+          )
+          (type protect)
+        )
+      )
+      (net "/TMS-PROG-D2"
+        (wire
+          (path "top_copper" 6350
+            1117600 -805180
+            1099820 -805180
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1099820 -805180
+            1098550 -806450
+            1060450 -806450
+            1055370 -807720
+          )
+          (type protect)
+        )
+      )
+      (net "/VCC_SENSE-ERROR*"
+        (wire
+          (path "bottom_copper" 6350
+            1055116 -766382
+            1055370 -766128
+            1055370 -765810
+          )
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1094230 -762000
+            1060450 -762000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1060450 -762000
+            1055370 -765810
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1094230 -762000
+            1117600 -738632
+          )
+          (type protect)
+        )
+      )
+      (net VCC
+        (wire
+          (path "bottom_copper" 10160
+            1346200 -762000
+            1346200 -723900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1511300 -736600
+            1511300 -787400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1485900 -825500
+            1485900 -793750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1485900 -793750
+            1492250 -787400
+            1511300 -787400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1511300 -787400
+            1524000 -787400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1346200 -825500
+            1346200 -762000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 10160
+            1371600 -723900
+            1346200 -723900
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1454150 -698500
+            1485900 -698500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1504950 -736600
+            1511300 -736600
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1498600 -711200
+            1498600 -730250
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1498600 -730250
+            1504950 -736600
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1371600 -723900
+            1428750 -723900
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1428750 -723900
+            1454150 -698500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 10160
+            1485900 -698500
+            1498600 -711200
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1B-O)"
+        (wire
+          (path "bottom_copper" 6350
+            1371600 -965200
+            1377950 -971550
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1504950 -984250
+            1524000 -965200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1441450 -996950
+            1498600 -996950
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1371600 -996950
+            1371600 -1022350
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1371600 -1022350
+            1377950 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1498600 -996950
+            1504950 -990600
+            1504950 -984250
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1308100 -952500
+            1320800 -965200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1377950 -990600
+            1371600 -996950
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1377950 -1028700
+            1409700 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1524000 -965200
+            1524000 -939800
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1320800 -965200
+            1371600 -965200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1409700 -1028700
+            1441450 -996950
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1270000 -952500
+            1308100 -952500
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1377950 -971550
+            1377950 -990600
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1A-O)"
+        (via "Via[0-1]_1778:635_um" 1244600.0 -876300.0
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1473200 -723900
+            1473200 -704850
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1447800 -882650
+            1447800 -863600
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1473200 -704850
+            1479550 -698500
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1447800 -863600
+            1435100 -850900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1524000 -889000
+            1454150 -889000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1397000 -850900
+            1384300 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1270000 -876300
+            1244600 -876300
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1409700 -850900
+            1397000 -850900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1384300 -838200
+            1384300 -762000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1454150 -889000
+            1447800 -882650
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1384300 -762000
+            1422400 -723900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1435100 -850900
+            1409700 -850900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1422400 -723900
+            1473200 -723900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1479550 -698500
+            1511300 -698500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1447800 -742950
+            1466850 -742950
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1466850 -742950
+            1473200 -736600
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1435100 -781050
+            1441450 -774700
+            1441450 -749300
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1244600 -876300
+            1244600 -800100
+            1263650 -781050
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1263650 -781050
+            1435100 -781050
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1441450 -749300
+            1447800 -742950
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1473200 -736600
+            1473200 -723900
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1D-O)"
+        (wire
+          (path "bottom_copper" 6350
+            1365250 -908050
+            1365250 -933450
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1308100 -1047750
+            1320800 -1060450
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1289050 -965200
+            1295400 -965200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1257300 -965200
+            1289050 -965200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1517650 -1028700
+            1524000 -1035050
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1466850 -1047750
+            1466850 -1035050
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1466850 -1035050
+            1473200 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1358900 -901700
+            1365250 -908050
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1250950 -946150
+            1250950 -958850
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1320800 -1060450
+            1454150 -1060450
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1295400 -965200
+            1308100 -977900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1308100 -977900
+            1308100 -1047750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1454150 -1060450
+            1466850 -1047750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1257300 -939800
+            1250950 -946150
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1257300 -965200
+            1250950 -958850
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1490000 -1028700
+            1473200 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1524000 -1035050
+            1524000 -1054100
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1490000 -1028700
+            1517650 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1358900 -939800
+            1257300 -939800
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1365250 -933450
+            1358900 -939800
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1346200 -901700
+            1358900 -901700
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1C-O)"
+        (wire
+          (path "bottom_copper" 6350
+            1455350 -1009650
+            1517650 -1009650
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1346200 -977900
+            1346200 -1041400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1352550 -1047750
+            1441450 -1047750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1450000 -1039200
+            1441450 -1047750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1346200 -1041400
+            1352550 -1047750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1517650 -1009650
+            1524000 -1003300
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1450000 -1028700
+            1450000 -1039200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1450000 -1015000
+            1455350 -1009650
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1524000 -1003300
+            1524000 -990600
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1450000 -1028700
+            1450000 -1015000
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(D1-K)"
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -730250
+            1219200 -738632
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -730250
+            1225550 -723900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1225550 -723900
+            1270000 -723900
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(J1-Pad11)"
+        (wire
+          (path "top_copper" 6350
+            1055116 -918732
+            1055370 -918478
+            1055370 -916940
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1055116 -1001832
+            1055370 -1001578
+            1055370 -999490
+          )
+        )
+        (wire
+          (path "top_copper" 6350
+            1098550 -1022350
+            1092200 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1055370 -999490
+            1098550 -999490
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1055370 -916940
+            1092200 -916940
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1092200 -1028700
+            1054100 -1028700
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1092200 -916940
+            1098550 -923290
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1098550 -923290
+            1098550 -1022350
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U2A-O)"
+        (via "Via[0-1]_1778:635_um" 1390650.0 -1003300.0
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1409700 -876300
+            1390650 -895350
+            1390650 -1003300
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1390650 -1003300
+            1352550 -1041400
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_copper" 6350
+            1352550 -1041400
+            1219200 -1041400
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1A-E)"
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -838200
+            1244600 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1244600 -838200
+            1257300 -825500
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1257300 -825500
+            1270000 -825500
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1B-D)"
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -927100
+            1270000 -927100
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1B-E)"
+        (wire
+          (path "bottom_copper" 6350
+            1301750 -901700
+            1314450 -889000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1358900 -850900
+            1365250 -857250
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1365250 -882650
+            1365250 -857250
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1301750 -901700
+            1327150 -927100
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1327150 -927100
+            1346200 -927100
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1358900 -850900
+            1346200 -850900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1225550 -901700
+            1270000 -901700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1314450 -889000
+            1358900 -889000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1270000 -901700
+            1301750 -901700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -895350
+            1225550 -901700
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1358900 -889000
+            1365250 -882650
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -895350
+            1219200 -876300
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1D-D)"
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -805180
+            1243330 -805180
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1314450 -876300
+            1308100 -869950
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1295400 -806450
+            1244600 -806450
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1314450 -876300
+            1346200 -876300
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1308100 -869950
+            1308100 -819150
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1308100 -819150
+            1295400 -806450
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1243330 -805180
+            1244600 -806450
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(U1C-D)"
+        (wire
+          (path "bottom_copper" 6350
+            1244600 -787400
+            1314450 -787400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1314450 -787400
+            1320800 -793750
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1371600 -952500
+            1346200 -952500
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1320800 -793750
+            1320800 -831850
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1377950 -946150
+            1377950 -850900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1229360 -772160
+            1244600 -787400
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1365250 -838200
+            1377950 -850900
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 4318
+            1327150 -838200
+            1365250 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1320800 -831850
+            1327150 -838200
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1377950 -946150
+            1371600 -952500
+          )
+          (type protect)
+        )
+        (wire
+          (path "bottom_copper" 6350
+            1219200 -772160
+            1229360 -772160
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

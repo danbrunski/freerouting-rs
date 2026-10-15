@@ -1,0 +1,105 @@
+{
+  "routeMillis": 4414,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,9.0.0",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 935.38,
+        "y": -163.06,
+        "width": 266.72,
+        "height": -382.06
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 668.66,
+        "height": 219.00
+      },
+      "area_cm2": 14.64
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 730,
+      "trace_count": 131,
+      "via_count": 15,
+      "conduction_area_count": 22,
+      "drill_item_count": 0,
+      "pin_count": 92,
+      "component_count": 465,
+      "other_count": 5
+    },
+    "components": {
+      "total_count": 36
+    },
+    "pads": {
+      "total_count": 92
+    },
+    "nets": {
+      "total_count": 31,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 83,
+      "incomplete_count": 9
+    },
+    "traces": {
+      "total_count": 131,
+      "total_segment_count": 139,
+      "total_length": 2339.40,
+      "total_length_mm": 233.94,
+      "total_weighted_length": 361004.56,
+      "average_length": 17.86,
+      "total_vertical_length": 509.37,
+      "total_horizontal_length": 1144.89,
+      "total_angled_length": 646.15
+    },
+    "bends": {
+      "total_count": 8,
+      "90_degree_count": 0,
+      "45_degree_count": 8,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 15,
+      "through_hole_count": 15,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 1,
+      "pre_existing_count": 1,
+      "unfixable_count": 1,
+      "router_introduced_count": 0,
+      "total_violation_um": 100.00,
+      "min_violation_um": 100.00,
+      "max_violation_um": 100.00,
+      "avg_violation_um": 100.00
+    },
+    "difficulty": {
+      "pin_count": 92,
+      "signal_layer_count": 2,
+      "complexity_c": 184,
+      "difficulty_d": 184.00,
+      "board_area_cm2": 14.64
+    },
+    "bounds": {
+      "min_trace_length_mm": 338.56,
+      "min_via_count": 5,
+      "min_bend_count": 61
+    },
+    "fanout": {
+      "total_smd_pins": 76,
+      "pins_to_escape": 24,
+      "escaped_count": 62
+    }
+  },
+  "routerScore": 855.12274,
+  "fixture": "Issue367-Charger.dsn"
+}

@@ -1,0 +1,105 @@
+{
+  "routeMillis": 45277,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,9.0.6",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1686.01,
+        "y": -844.04,
+        "width": 1284.01,
+        "height": -1256.04
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 402.00,
+        "height": 412.00
+      },
+      "area_cm2": 16.56
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 452,
+      "trace_count": 256,
+      "via_count": 29,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 161,
+      "component_count": 1,
+      "other_count": 5
+    },
+    "components": {
+      "total_count": 48
+    },
+    "pads": {
+      "total_count": 161
+    },
+    "nets": {
+      "total_count": 54,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 107,
+      "incomplete_count": 14
+    },
+    "traces": {
+      "total_count": 256,
+      "total_segment_count": 461,
+      "total_length": 8199.74,
+      "total_length_mm": 819.97,
+      "total_weighted_length": 23738834.00,
+      "average_length": 32.03,
+      "total_vertical_length": 3746.78,
+      "total_horizontal_length": 1298.79,
+      "total_angled_length": 1840.20
+    },
+    "bends": {
+      "total_count": 205,
+      "90_degree_count": 3,
+      "45_degree_count": 202,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 29,
+      "through_hole_count": 29,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 161,
+      "signal_layer_count": 2,
+      "complexity_c": 322,
+      "difficulty_d": 322.00,
+      "board_area_cm2": 16.56
+    },
+    "bounds": {
+      "min_trace_length_mm": 895.26,
+      "min_via_count": 0,
+      "min_bend_count": 91
+    },
+    "fanout": {
+      "total_smd_pins": 138,
+      "pins_to_escape": 26,
+      "escaped_count": 113
+    }
+  },
+  "routerScore": 825.54517,
+  "fixture": "Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn"
+}

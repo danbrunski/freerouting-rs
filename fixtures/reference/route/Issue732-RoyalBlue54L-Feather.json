@@ -1,0 +1,105 @@
+{
+  "routeMillis": 52139,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.2",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1778.25,
+        "y": -914.30,
+        "width": 1171.15,
+        "height": -1200.10
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 607.10,
+        "height": 285.80
+      },
+      "area_cm2": 17.35
+    },
+    "layers": {
+      "total_count": 8,
+      "signal_count": 8
+    },
+    "items": {
+      "total_count": 1271,
+      "trace_count": 233,
+      "via_count": 74,
+      "conduction_area_count": 10,
+      "drill_item_count": 0,
+      "pin_count": 389,
+      "component_count": 483,
+      "other_count": 82
+    },
+    "components": {
+      "total_count": 71
+    },
+    "pads": {
+      "total_count": 389
+    },
+    "nets": {
+      "total_count": 95,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 304,
+      "incomplete_count": 107
+    },
+    "traces": {
+      "total_count": 233,
+      "total_segment_count": 596,
+      "total_length": 4178.28,
+      "total_length_mm": 417.83,
+      "total_weighted_length": 11267604.00,
+      "average_length": 17.93,
+      "total_vertical_length": 1094.48,
+      "total_horizontal_length": 806.57,
+      "total_angled_length": 1397.85
+    },
+    "bends": {
+      "total_count": 363,
+      "90_degree_count": 11,
+      "45_degree_count": 352,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 74,
+      "through_hole_count": 74,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 10,
+      "pre_existing_count": 10,
+      "unfixable_count": 10,
+      "router_introduced_count": 0,
+      "total_violation_um": 283.41,
+      "min_violation_um": 3.10,
+      "max_violation_um": 53.70,
+      "avg_violation_um": 28.34
+    },
+    "difficulty": {
+      "pin_count": 389,
+      "signal_layer_count": 8,
+      "complexity_c": 3112,
+      "difficulty_d": 3112.00,
+      "board_area_cm2": 17.35
+    },
+    "bounds": {
+      "min_trace_length_mm": 1671.53,
+      "min_via_count": 11,
+      "min_bend_count": 191
+    },
+    "fanout": {
+      "total_smd_pins": 303,
+      "pins_to_escape": 158,
+      "escaped_count": 233
+    }
+  },
+  "routerScore": 530.59406,
+  "fixture": "Issue732-RoyalBlue54L-Feather.dsn"
+}

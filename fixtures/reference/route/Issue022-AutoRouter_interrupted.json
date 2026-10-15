@@ -1,0 +1,105 @@
+{
+  "routeMillis": 48419,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1804.40,
+        "y": -151.40,
+        "width": 151.40,
+        "height": -1829.80
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1653.00,
+        "height": 1678.40
+      },
+      "area_cm2": 277.44
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 4068,
+      "trace_count": 1029,
+      "via_count": 58,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 1133,
+      "component_count": 1813,
+      "other_count": 33
+    },
+    "components": {
+      "total_count": 171
+    },
+    "pads": {
+      "total_count": 1133
+    },
+    "nets": {
+      "total_count": 205,
+      "class_count": 10
+    },
+    "connections": {
+      "maximum_count": 552,
+      "incomplete_count": 43
+    },
+    "traces": {
+      "total_count": 1029,
+      "total_segment_count": 1457,
+      "total_length": 42377.05,
+      "total_length_mm": 4237.70,
+      "total_weighted_length": 71518776.00,
+      "average_length": 41.18,
+      "total_vertical_length": 13311.85,
+      "total_horizontal_length": 13068.15,
+      "total_angled_length": 16622.08
+    },
+    "bends": {
+      "total_count": 428,
+      "90_degree_count": 7,
+      "45_degree_count": 416,
+      "other_angle_count": 5
+    },
+    "vias": {
+      "total_count": 58,
+      "through_hole_count": 58,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 9,
+      "pre_existing_count": 9,
+      "unfixable_count": 9,
+      "router_introduced_count": 0,
+      "total_violation_um": 1548.90,
+      "min_violation_um": 24.10,
+      "max_violation_um": 190.60,
+      "avg_violation_um": 172.10
+    },
+    "difficulty": {
+      "pin_count": 1133,
+      "signal_layer_count": 2,
+      "complexity_c": 2266,
+      "difficulty_d": 2266.00,
+      "board_area_cm2": 277.44
+    },
+    "bounds": {
+      "min_trace_length_mm": 5683.48,
+      "min_via_count": 0,
+      "min_bend_count": 211
+    },
+    "fanout": {
+      "total_smd_pins": 430,
+      "pins_to_escape": 103,
+      "escaped_count": 427
+    }
+  },
+  "routerScore": 895.83093,
+  "fixture": "Issue022-AutoRouter_interrupted.dsn"
+}

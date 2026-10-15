@@ -1,0 +1,105 @@
+{
+  "routeMillis": 56612,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.9)-1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2166.57,
+        "y": -505.73,
+        "width": 788.32,
+        "height": -1596.12
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1378.25,
+        "height": 1090.39
+      },
+      "area_cm2": 150.28
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 3
+    },
+    "items": {
+      "total_count": 5144,
+      "trace_count": 1043,
+      "via_count": 369,
+      "conduction_area_count": 1,
+      "drill_item_count": 0,
+      "pin_count": 1055,
+      "component_count": 2619,
+      "other_count": 57
+    },
+    "components": {
+      "total_count": 322
+    },
+    "pads": {
+      "total_count": 1055
+    },
+    "nets": {
+      "total_count": 245,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 793,
+      "incomplete_count": 367
+    },
+    "traces": {
+      "total_count": 1043,
+      "total_segment_count": 1493,
+      "total_length": 15212.78,
+      "total_length_mm": 1521.28,
+      "total_weighted_length": 43244164.00,
+      "average_length": 14.59,
+      "total_vertical_length": 4084.20,
+      "total_horizontal_length": 3165.64,
+      "total_angled_length": 4291.27
+    },
+    "bends": {
+      "total_count": 450,
+      "90_degree_count": 12,
+      "45_degree_count": 438,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 369,
+      "through_hole_count": 369,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 42,
+      "pre_existing_count": 42,
+      "unfixable_count": 42,
+      "router_introduced_count": 0,
+      "total_violation_um": 8408.40,
+      "min_violation_um": 200.20,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 200.20
+    },
+    "difficulty": {
+      "pin_count": 1055,
+      "signal_layer_count": 3,
+      "complexity_c": 3165,
+      "difficulty_d": 3165.00,
+      "board_area_cm2": 150.28
+    },
+    "bounds": {
+      "min_trace_length_mm": 8576.55,
+      "min_via_count": 1,
+      "min_bend_count": 660
+    },
+    "fanout": {
+      "total_smd_pins": 804,
+      "pins_to_escape": 680,
+      "escaped_count": 648
+    }
+  },
+  "routerScore": 381.80524,
+  "fixture": "Issue145-smoothieboard.dsn"
+}

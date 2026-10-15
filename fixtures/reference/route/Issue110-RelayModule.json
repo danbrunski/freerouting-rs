@@ -1,0 +1,105 @@
+{
+  "routeMillis": 45443,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,6.0.4-6f826c9f35~116~ubuntu21.10.1",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1898.50,
+        "y": -1799.00,
+        "width": 946.50,
+        "height": -2251.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 952.00,
+        "height": 452.00
+      },
+      "area_cm2": 43.03
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1192,
+      "trace_count": 269,
+      "via_count": 40,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 152,
+      "component_count": 722,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 33
+    },
+    "pads": {
+      "total_count": 152
+    },
+    "nets": {
+      "total_count": 64,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 88,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 269,
+      "total_segment_count": 587,
+      "total_length": 13591.18,
+      "total_length_mm": 1359.12,
+      "total_weighted_length": 81252072.00,
+      "average_length": 50.52,
+      "total_vertical_length": 2010.89,
+      "total_horizontal_length": 4988.04,
+      "total_angled_length": 3924.70
+    },
+    "bends": {
+      "total_count": 318,
+      "90_degree_count": 2,
+      "45_degree_count": 316,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 40,
+      "through_hole_count": 40,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 152,
+      "signal_layer_count": 2,
+      "complexity_c": 304,
+      "difficulty_d": 304.00,
+      "board_area_cm2": 43.03
+    },
+    "bounds": {
+      "min_trace_length_mm": 1205.17,
+      "min_via_count": 4,
+      "min_bend_count": 80
+    },
+    "fanout": {
+      "total_smd_pins": 72,
+      "pins_to_escape": 0,
+      "escaped_count": 56
+    }
+  },
+  "routerScore": 1000.0,
+  "fixture": "Issue110-RelayModule.dsn"
+}

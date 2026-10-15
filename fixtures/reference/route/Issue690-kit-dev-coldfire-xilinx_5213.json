@@ -1,0 +1,105 @@
+{
+  "routeMillis": 55044,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.2",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2288.00,
+        "y": -362.79,
+        "width": 691.55,
+        "height": -1475.20
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1596.45,
+        "height": 1112.41
+      },
+      "area_cm2": 177.59
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 4
+    },
+    "items": {
+      "total_count": 5767,
+      "trace_count": 2889,
+      "via_count": 254,
+      "conduction_area_count": 3,
+      "drill_item_count": 0,
+      "pin_count": 825,
+      "component_count": 1795,
+      "other_count": 1
+    },
+    "components": {
+      "total_count": 160
+    },
+    "pads": {
+      "total_count": 825
+    },
+    "nets": {
+      "total_count": 278,
+      "class_count": 2
+    },
+    "connections": {
+      "maximum_count": 541,
+      "incomplete_count": 274
+    },
+    "traces": {
+      "total_count": 2889,
+      "total_segment_count": 3205,
+      "total_length": 94403.26,
+      "total_length_mm": 9440.33,
+      "total_weighted_length": 773561.56,
+      "average_length": 32.68,
+      "total_vertical_length": 30335.49,
+      "total_horizontal_length": 36125.50,
+      "total_angled_length": 32038.32
+    },
+    "bends": {
+      "total_count": 316,
+      "90_degree_count": 2,
+      "45_degree_count": 289,
+      "other_angle_count": 25
+    },
+    "vias": {
+      "total_count": 254,
+      "through_hole_count": 254,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 22,
+      "pre_existing_count": 22,
+      "unfixable_count": 22,
+      "router_introduced_count": 0,
+      "total_violation_um": 1324.76,
+      "min_violation_um": 2.50,
+      "max_violation_um": 150.00,
+      "avg_violation_um": 60.22
+    },
+    "difficulty": {
+      "pin_count": 825,
+      "signal_layer_count": 4,
+      "complexity_c": 3300,
+      "difficulty_d": 3300.00,
+      "board_area_cm2": 177.59
+    },
+    "bounds": {
+      "min_trace_length_mm": 9610.29,
+      "min_via_count": 0,
+      "min_bend_count": 443
+    },
+    "fanout": {
+      "total_smd_pins": 549,
+      "pins_to_escape": 393,
+      "escaped_count": 221
+    }
+  },
+  "routerScore": 328.73322,
+  "fixture": "Issue690-kit-dev-coldfire-xilinx_5213.dsn"
+}

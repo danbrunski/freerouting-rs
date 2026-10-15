@@ -1,0 +1,28 @@
+(session "Issue756-minimal-ok"
+  (base_design "Issue756-minimal-ok")
+  (placement
+    (resolution um 10)
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "minimal-repro")
+    )
+    (library_out 
+    )
+    (network_out 
+      (net +5V
+        (wire
+          (path F.Cu 10000
+            1005000 -405000
+            998000 -392000
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

@@ -1,0 +1,66 @@
+(session "Issue143-rpi_splitter_mod"
+  (base_design "Issue143-rpi_splitter_mod")
+  (placement
+    (resolution mil 2540)
+    (component "USB-A-S-NOSILK-FEMALE$SparkFun-Connectors"
+      (place J1 1016000.0 127000.0 front 90)
+    )
+    (component "USB-MINIB$SparkFun-Connectors"
+      (place J2 977900.0 2044700.0 front 180)
+      (place J3 1016000.0 3556000.0 front 270)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution mil 2540)
+    (parser
+      (host_cad CadSoft)
+      (host_version "Eagle V 9.5 - Using eagle2freerouting.ulp, version 2022-09-01, on 9/20/2022 9:56 PM")
+    )
+    (library_out 
+      (padstack Round1$13.779528
+        (shape
+          (circle "1#Top" 75640 0 0)
+        )
+        (shape
+          (circle "16#Bottom" 75640 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net VCC
+        (wire
+          (path "1#Top" 30480
+            557163 1884700
+            547821 1875358
+            547821 1124842
+          )
+        )
+        (wire
+          (path "16#Bottom" 40640
+            547821 1124842
+            666000 1006663
+          )
+        )
+        (wire
+          (path "1#Top" 30480
+            727900 1884700
+            557163 1884700
+          )
+        )
+        (via Round1$13.779528 547821.0 1124842.0
+        )
+        (wire
+          (path "1#Top" 40640
+            666000 1006663
+            666000 802200
+          )
+        )
+        (via Round1$13.779528 666000.0 1006663.0
+        )
+      )
+    )
+  )
+)

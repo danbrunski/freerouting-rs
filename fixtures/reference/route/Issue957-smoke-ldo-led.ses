@@ -1,0 +1,244 @@
+(session "Issue957-smoke-ldo-led"
+  (base_design "Issue957-smoke-ldo-led")
+  (placement
+    (resolution um 10)
+    (component "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+      (place U1 1085500.0 -1121500.0 front 270)
+    )
+    (component "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+      (place J1 1022700.0 -1066460.0 front 180)
+    )
+    (component "Capacitor_SMD:C_0805_2012Metric"
+      (place C1 1062500.0 -1055500.0 front 90)
+    )
+    (component "Resistor_SMD:R_0603_1608Metric"
+      (place R1 1131500.0 -1051500.0 front 0)
+    )
+    (component "LED_SMD:LED_0603_1608Metric"
+      (place D1 1147500.0 -1072000.0 front 180)
+    )
+    (component "Capacitor_Tantalum_SMD:CP_EIA-3216-18_Kemet-A"
+      (place C2 1086000.0 -1049500.0 front 90)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.0")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (via "Via[0-1]_600:300_um" 1269750.0 -1029750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1149750.0 -1029750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1029750.0 -1142250.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1044750.0 -1029750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1209750.0 -1089750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1209750.0 -1149750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1104750.0 -1022250.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1029750.0 -1089750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1269750.0 -1089750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1149750.0 -1104750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1104750.0 -1172250.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1269750.0 -1149750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1209750.0 -1029750.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1149750.0 -1149750.0
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1022700 -1041060
+            1057560 -1041060
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1146940 -1080440
+            1130930 -1080440
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1086000 -1035980
+            1075980 -1046000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1075980 -1046000
+            1062500 -1046000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1130930 -1046800
+            1130930 -1080440
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1155380 -1072000
+            1146940 -1080440
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1057560 -1041060
+            1062500 -1046000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1130930 -1080440
+            1121370 -1090000
+            1108500 -1090000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1086000 -1035980
+            1120100 -1035980
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1120100 -1035980
+            1130930 -1046800
+          )
+          (type protect)
+        )
+      )
+      (net +3V3
+        (wire
+          (path F.Cu 2500
+            1086000 -1063025
+            1085500 -1063525
+            1085500 -1090000
+          )
+        )
+        (wire
+          (path F.Cu 2500
+            1085500 -1063520
+            1085500 -1090000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1085500 -1153000
+            1085500 -1090000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1111720 -1063020
+            1123250 -1051500
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1086000 -1063020
+            1085500 -1063520
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1086000 -1063020
+            1111720 -1063020
+          )
+          (type protect)
+        )
+      )
+      (net +5V
+        (wire
+          (path F.Cu 2500
+            1062500 -1065000
+            1062500 -1090000
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1022700 -1066460
+            1061040 -1066460
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1061040 -1066460
+            1062500 -1065000
+          )
+          (type protect)
+        )
+      )
+      (net "LED_A"
+        (wire
+          (path F.Cu 2500
+            1139750 -1051500
+            1139750 -1071880
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 2500
+            1139750 -1071880
+            1139620 -1072000
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

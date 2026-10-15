@@ -1,0 +1,107 @@
+(session "min_fr_test_no_quotes"
+  (base_design "min_fr_test_no_quotes")
+  (placement
+    (resolution um 10)
+    (component "TestPoint:TestPoint_Pad_1.0x1.0mm"
+      (place J4 1629000.0 -920000.0 front 0)
+      (place J8 1710000.0 -900000.0 front 0)
+      (place J7 1590000.0 -850000.0 front 0)
+      (place J1 1550000.0 -850000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "8.0.1")
+    )
+    (library_out 
+      (padstack "Via[0-3]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle In1.Cu 6000 0 0)
+        )
+        (shape
+          (circle In2.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (wire
+          (path F.Cu 2000
+            1600111 -852094
+            1598017 -850000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            1590000 -850000
+            1598017 -850000
+          )
+        )
+        (via "Via[0-3]_600:300_um" 1600111.0 -852094.0
+        )
+        (wire
+          (path F.Cu 2000
+            1618973 -917990
+            1620983 -920000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            1629000 -920000
+            1620983 -920000
+          )
+        )
+        (via "Via[0-3]_600:300_um" 1618973.0 -917990.0
+        )
+      )
+      (net "Net-(J1-Pin_1)"
+        (wire
+          (path F.Cu 2000
+            1701983 -900000
+            1699815 -897832
+            1607849 -897832
+          )
+        )
+        (wire
+          (path In1.Cu 2000
+            1607849 -897832
+            1560017 -850000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            1558017 -850000
+            1560017 -850000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            1550000 -850000
+            1558017 -850000
+          )
+        )
+        (via "Via[0-3]_600:300_um" 1560017.0 -850000.0
+        )
+        (wire
+          (path F.Cu 2000
+            1710000 -900000
+            1701983 -900000
+          )
+        )
+        (via "Via[0-3]_600:300_um" 1607849.0 -897832.0
+        )
+      )
+    )
+  )
+)

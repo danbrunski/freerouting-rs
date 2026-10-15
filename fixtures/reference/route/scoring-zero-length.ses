@@ -1,0 +1,30 @@
+(session "scoring-zero-length"
+  (base_design "scoring-zero-length")
+  (placement
+    (resolution um 10)
+    (component PAD
+      (place U1 40000.0 40000.0 front 0)
+      (place U2 40000.0 40000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+      (padstack "Via[0-1]_800:400_um"
+        (shape
+          (circle F.Cu 8000 0 0)
+        )
+        (shape
+          (circle B.Cu 8000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

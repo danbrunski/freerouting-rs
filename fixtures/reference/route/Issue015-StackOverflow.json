@@ -1,0 +1,105 @@
+{
+  "routeMillis": 48392,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1804.40,
+        "y": -151.40,
+        "width": 151.40,
+        "height": -1829.80
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1653.00,
+        "height": 1678.40
+      },
+      "area_cm2": 277.44
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 3053,
+      "trace_count": 817,
+      "via_count": 34,
+      "conduction_area_count": 2,
+      "drill_item_count": 0,
+      "pin_count": 762,
+      "component_count": 1415,
+      "other_count": 23
+    },
+    "components": {
+      "total_count": 135
+    },
+    "pads": {
+      "total_count": 762
+    },
+    "nets": {
+      "total_count": 186,
+      "class_count": 10
+    },
+    "connections": {
+      "maximum_count": 520,
+      "incomplete_count": 51
+    },
+    "traces": {
+      "total_count": 817,
+      "total_segment_count": 1219,
+      "total_length": 43708.39,
+      "total_length_mm": 4370.84,
+      "total_weighted_length": 50898136.00,
+      "average_length": 53.50,
+      "total_vertical_length": 11981.86,
+      "total_horizontal_length": 14241.09,
+      "total_angled_length": 17710.17
+    },
+    "bends": {
+      "total_count": 402,
+      "90_degree_count": 3,
+      "45_degree_count": 392,
+      "other_angle_count": 7
+    },
+    "vias": {
+      "total_count": 34,
+      "through_hole_count": 34,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 1,
+      "pre_existing_count": 1,
+      "unfixable_count": 1,
+      "router_introduced_count": 0,
+      "total_violation_um": 24.10,
+      "min_violation_um": 24.10,
+      "max_violation_um": 24.10,
+      "avg_violation_um": 24.10
+    },
+    "difficulty": {
+      "pin_count": 762,
+      "signal_layer_count": 2,
+      "complexity_c": 1524,
+      "difficulty_d": 1524.00,
+      "board_area_cm2": 277.44
+    },
+    "bounds": {
+      "min_trace_length_mm": 5390.13,
+      "min_via_count": 0,
+      "min_bend_count": 186
+    },
+    "fanout": {
+      "total_smd_pins": 404,
+      "pins_to_escape": 117,
+      "escaped_count": 372
+    }
+  },
+  "routerScore": 869.2096,
+  "fixture": "Issue015-StackOverflow.dsn"
+}

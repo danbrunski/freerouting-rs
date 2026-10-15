@@ -1,0 +1,105 @@
+{
+  "routeMillis": 45551,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.9)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2003.21,
+        "y": -255.36,
+        "width": 692.67,
+        "height": -1566.42
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 1310.54,
+        "height": 1311.06
+      },
+      "area_cm2": 171.82
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2672,
+      "trace_count": 512,
+      "via_count": 34,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 291,
+      "component_count": 1820,
+      "other_count": 15
+    },
+    "components": {
+      "total_count": 122
+    },
+    "pads": {
+      "total_count": 291
+    },
+    "nets": {
+      "total_count": 65,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 226,
+      "incomplete_count": 18
+    },
+    "traces": {
+      "total_count": 512,
+      "total_segment_count": 990,
+      "total_length": 34380.98,
+      "total_length_mm": 3438.10,
+      "total_weighted_length": 96190320.00,
+      "average_length": 67.15,
+      "total_vertical_length": 8074.52,
+      "total_horizontal_length": 8322.72,
+      "total_angled_length": 13799.08
+    },
+    "bends": {
+      "total_count": 478,
+      "90_degree_count": 2,
+      "45_degree_count": 476,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 34,
+      "through_hole_count": 34,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 10,
+      "pre_existing_count": 10,
+      "unfixable_count": 10,
+      "router_introduced_count": 0,
+      "total_violation_um": 1749.14,
+      "min_violation_um": 7.94,
+      "max_violation_um": 200.20,
+      "avg_violation_um": 174.91
+    },
+    "difficulty": {
+      "pin_count": 291,
+      "signal_layer_count": 2,
+      "complexity_c": 582,
+      "difficulty_d": 582.00,
+      "board_area_cm2": 171.82
+    },
+    "bounds": {
+      "min_trace_length_mm": 3896.96,
+      "min_via_count": 0,
+      "min_bend_count": 219
+    },
+    "fanout": {
+      "total_smd_pins": 213,
+      "pins_to_escape": 59,
+      "escaped_count": 206
+    }
+  },
+  "routerScore": 892.4741,
+  "fixture": "Issue157-TeamAdapt-LinePCB.dsn"
+}

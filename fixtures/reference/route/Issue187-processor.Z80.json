@@ -1,0 +1,105 @@
+{
+  "routeMillis": 8185,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,(6.0.11)",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 2703.00,
+        "y": -697.00,
+        "width": 347.00,
+        "height": -2369.05
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 2356.00,
+        "height": 1672.05
+      },
+      "area_cm2": 393.93
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 7171,
+      "trace_count": 2026,
+      "via_count": 324,
+      "conduction_area_count": 0,
+      "drill_item_count": 0,
+      "pin_count": 1365,
+      "component_count": 3447,
+      "other_count": 9
+    },
+    "components": {
+      "total_count": 143
+    },
+    "pads": {
+      "total_count": 1365
+    },
+    "nets": {
+      "total_count": 529,
+      "class_count": 3
+    },
+    "connections": {
+      "maximum_count": 834,
+      "incomplete_count": 0
+    },
+    "traces": {
+      "total_count": 2026,
+      "total_segment_count": 6683,
+      "total_length": 331035.09,
+      "total_length_mm": 33103.51,
+      "total_weighted_length": 1169398528.00,
+      "average_length": 163.39,
+      "total_vertical_length": 72652.61,
+      "total_horizontal_length": 127319.29,
+      "total_angled_length": 83033.88
+    },
+    "bends": {
+      "total_count": 4657,
+      "90_degree_count": 17,
+      "45_degree_count": 4640,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 324,
+      "through_hole_count": 324,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 0,
+      "pre_existing_count": 0,
+      "unfixable_count": 0,
+      "router_introduced_count": 0,
+      "total_violation_um": 0.00,
+      "min_violation_um": 0.00,
+      "max_violation_um": 0.00,
+      "avg_violation_um": 0.00
+    },
+    "difficulty": {
+      "pin_count": 1365,
+      "signal_layer_count": 2,
+      "complexity_c": 2730,
+      "difficulty_d": 2730.00,
+      "board_area_cm2": 393.93
+    },
+    "bounds": {
+      "min_trace_length_mm": 33344.68,
+      "min_via_count": 0,
+      "min_bend_count": 645
+    },
+    "fanout": {
+      "total_smd_pins": 0,
+      "pins_to_escape": 0,
+      "escaped_count": 0
+    }
+  },
+  "routerScore": 1000.0,
+  "fixture": "Issue187-processor.Z80.dsn"
+}

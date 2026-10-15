@@ -1,0 +1,17 @@
+(session "empty_board"
+  (base_design "empty_board")
+  (placement
+    (resolution um 10)
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+    )
+    (network_out 
+    )
+  )
+)

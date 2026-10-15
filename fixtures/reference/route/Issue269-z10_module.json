@@ -1,0 +1,105 @@
+{
+  "routeMillis": 58353,
+  "result": "timed_out",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,8.0.0",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1786.00,
+        "y": -658.00,
+        "width": 1009.00,
+        "height": -1381.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 777.00,
+        "height": 723.00
+      },
+      "area_cm2": 56.18
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2519,
+      "trace_count": 845,
+      "via_count": 132,
+      "conduction_area_count": 4,
+      "drill_item_count": 0,
+      "pin_count": 324,
+      "component_count": 1198,
+      "other_count": 16
+    },
+    "components": {
+      "total_count": 109
+    },
+    "pads": {
+      "total_count": 324
+    },
+    "nets": {
+      "total_count": 83,
+      "class_count": 3
+    },
+    "connections": {
+      "maximum_count": 237,
+      "incomplete_count": 51
+    },
+    "traces": {
+      "total_count": 845,
+      "total_segment_count": 900,
+      "total_length": 19080.33,
+      "total_length_mm": 1908.03,
+      "total_weighted_length": 6061129.50,
+      "average_length": 22.58,
+      "total_vertical_length": 5362.57,
+      "total_horizontal_length": 7807.48,
+      "total_angled_length": 9589.96
+    },
+    "bends": {
+      "total_count": 55,
+      "90_degree_count": 2,
+      "45_degree_count": 50,
+      "other_angle_count": 3
+    },
+    "vias": {
+      "total_count": 132,
+      "through_hole_count": 132,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 10,
+      "pre_existing_count": 10,
+      "unfixable_count": 10,
+      "router_introduced_count": 0,
+      "total_violation_um": 183.86,
+      "min_violation_um": 7.30,
+      "max_violation_um": 51.90,
+      "avg_violation_um": 18.39
+    },
+    "difficulty": {
+      "pin_count": 324,
+      "signal_layer_count": 2,
+      "complexity_c": 648,
+      "difficulty_d": 648.00,
+      "board_area_cm2": 56.18
+    },
+    "bounds": {
+      "min_trace_length_mm": 2070.03,
+      "min_via_count": 5,
+      "min_bend_count": 196
+    },
+    "fanout": {
+      "total_smd_pins": 307,
+      "pins_to_escape": 184,
+      "escaped_count": 253
+    }
+  },
+  "routerScore": 712.60925,
+  "fixture": "Issue269-z10_module.dsn"
+}

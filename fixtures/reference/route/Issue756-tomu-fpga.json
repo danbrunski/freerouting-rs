@@ -1,0 +1,105 @@
+{
+  "routeMillis": 30181,
+  "result": "completed",
+  "maxPasses": 100,
+  "timeout": "00:00:45",
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.99.0-2114-gb0ad87cd8e",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1201.00,
+        "y": -254.00,
+        "width": 248.00,
+        "height": -802.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 953.00,
+        "height": 548.00
+      },
+      "area_cm2": 52.22
+    },
+    "layers": {
+      "total_count": 2,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1617,
+      "trace_count": 790,
+      "via_count": 162,
+      "conduction_area_count": 13,
+      "drill_item_count": 0,
+      "pin_count": 257,
+      "component_count": 393,
+      "other_count": 2
+    },
+    "components": {
+      "total_count": 62
+    },
+    "pads": {
+      "total_count": 257
+    },
+    "nets": {
+      "total_count": 69,
+      "class_count": 1
+    },
+    "connections": {
+      "maximum_count": 201,
+      "incomplete_count": 15
+    },
+    "traces": {
+      "total_count": 790,
+      "total_segment_count": 920,
+      "total_length": 15974.48,
+      "total_length_mm": 1597.45,
+      "total_weighted_length": 122305.20,
+      "average_length": 20.22,
+      "total_vertical_length": 3118.25,
+      "total_horizontal_length": 6189.24,
+      "total_angled_length": 7268.17
+    },
+    "bends": {
+      "total_count": 130,
+      "90_degree_count": 4,
+      "45_degree_count": 109,
+      "other_angle_count": 17
+    },
+    "vias": {
+      "total_count": 162,
+      "through_hole_count": 162,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 72,
+      "pre_existing_count": 72,
+      "unfixable_count": 72,
+      "router_introduced_count": 0,
+      "total_violation_um": 7356.31,
+      "min_violation_um": 8.36,
+      "max_violation_um": 152.40,
+      "avg_violation_um": 102.17
+    },
+    "difficulty": {
+      "pin_count": 257,
+      "signal_layer_count": 2,
+      "complexity_c": 514,
+      "difficulty_d": 514.00,
+      "board_area_cm2": 52.22
+    },
+    "bounds": {
+      "min_trace_length_mm": 2037.81,
+      "min_via_count": 1,
+      "min_bend_count": 157
+    },
+    "fanout": {
+      "total_smd_pins": 205,
+      "pins_to_escape": 75,
+      "escaped_count": 180
+    }
+  },
+  "routerScore": 892.702,
+  "fixture": "Issue756-tomu-fpga.dsn"
+}
