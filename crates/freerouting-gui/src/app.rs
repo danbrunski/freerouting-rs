@@ -136,6 +136,11 @@ pub struct App {
     error: Option<String>,
     show_warnings: bool,
     fit_requested: bool,
+    /// The canvas size the view was last fitted to, while the user has not
+    /// panned or zoomed since. The view is fitted again when the canvas size
+    /// changes: on Windows the first frames come before the window has its
+    /// final size, and a fit to that size leaves the board off-screen.
+    auto_fit: Option<egui::Vec2>,
 }
 
 impl App {
@@ -157,6 +162,7 @@ impl App {
             error: None,
             show_warnings: false,
             fit_requested: false,
+            auto_fit: None,
         };
         // `freerouting-gui board.dsn [board.ses]`: the session is read once
         // the design is loaded.
@@ -411,20 +417,24 @@ impl App {
             );
             return None;
         };
-        if self.camera.is_none() || self.fit_requested {
+        let resized = self.auto_fit.is_some_and(|size| size != rect.size());
+        if self.camera.is_none() || self.fit_requested || resized {
             self.camera = Some(Camera::fit(&b.scene, rect));
             self.fit_requested = false;
+            self.auto_fit = Some(rect.size());
         }
         let cam = self.camera.as_mut().unwrap();
 
         if response.dragged() {
             cam.pan(response.drag_delta());
+            self.auto_fit = None;
         }
         if let Some(hover) = response.hover_pos() {
             let (scroll, pinch) = ui.input(|i| (i.smooth_scroll_delta, i.zoom_delta()));
             let factor = (f64::from(scroll.y) / 200.0).exp() * f64::from(pinch);
             if factor != 1.0 {
                 cam.zoom_at(rect, hover, factor);
+                self.auto_fit = None;
             }
         }
         let vis = Visibility {
