@@ -3,7 +3,7 @@
 **Goal:** a full port of Freerouting to Rust: a fast, correct routing engine plus a
 cross-platform desktop GUI that runs on Windows, macOS, Linux and WSL (through WSLg).
 
-Source: `danbrunski/freerouting` at `fc4bd20` (Java 25, Gradle). About 140k lines of
+Source: `danbrunski/freerouting` at `cda540f` (Java 25, Gradle). About 140k lines of
 production Java across ~60 packages: ~75k of routing core, ~25k of Swing GUI and
 interactive editing, and the rest API, job management, analytics and settings.
 

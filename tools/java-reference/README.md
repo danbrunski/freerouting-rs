@@ -10,7 +10,7 @@ tools/java-reference/run.sh ../freerouting route 100 00:00:45
 ```
 
 The first argument is a checkout of `danbrunski/freerouting` (the port is pinned to
-`fc4bd20`). The script needs `python3`, `pip`, `curl` and the Gradle wrapper in that
+`cda540f`). The script needs `python3`, `pip`, `curl` and the Gradle wrapper in that
 checkout, which it only uses to resolve dependencies. You don't need a JDK 25 install:
 the script takes a Java 25 runtime from the `jdk4py` wheel and compiles with the Eclipse
 compiler (ECJ). Set `JAVA=/path/to/java` to use your own Java 25+ instead. Build

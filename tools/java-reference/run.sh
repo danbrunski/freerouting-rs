@@ -3,7 +3,7 @@
 #
 #   tools/java-reference/run.sh JAVA_REPO MODE [MAX_PASSES] [TIMEOUT] [NAME_FILTER]
 #
-# JAVA_REPO  checkout of danbrunski/freerouting (the port is pinned to fc4bd20)
+# JAVA_REPO  checkout of danbrunski/freerouting (the port is pinned to cda540f)
 # MODE       load  -> fixtures/reference/load/*.json  (parse + board statistics)
 #            route -> fixtures/reference/route/*.json and *.ses (batch autorouter)
 #

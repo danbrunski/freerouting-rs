@@ -76,14 +76,14 @@
       "buried_count": 0
     },
     "clearance_violations": {
-      "total_count": 1479,
+      "total_count": 101,
       "pre_existing_count": 0,
-      "unfixable_count": 1479,
-      "router_introduced_count": 1479,
-      "total_violation_um": 230371.88,
-      "min_violation_um": 9.90,
+      "unfixable_count": 101,
+      "router_introduced_count": 101,
+      "total_violation_um": 3883.99,
+      "min_violation_um": 10.08,
       "max_violation_um": 190.60,
-      "avg_violation_um": 155.76
+      "avg_violation_um": 38.46
     },
     "difficulty": {
       "pin_count": 902,

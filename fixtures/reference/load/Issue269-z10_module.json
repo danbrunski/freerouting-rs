@@ -28,10 +28,10 @@
       "signal_count": 2
     },
     "items": {
-      "total_count": 2372,
+      "total_count": 2370,
       "trace_count": 736,
       "via_count": 92,
-      "conduction_area_count": 6,
+      "conduction_area_count": 4,
       "drill_item_count": 0,
       "pin_count": 324,
       "component_count": 1198,
@@ -48,8 +48,8 @@
       "class_count": 3
     },
     "connections": {
-      "maximum_count": 239,
-      "incomplete_count": 117
+      "maximum_count": 237,
+      "incomplete_count": 120
     },
     "traces": {
       "total_count": 736,
@@ -75,14 +75,14 @@
       "buried_count": 0
     },
     "clearance_violations": {
-      "total_count": 24,
+      "total_count": 7,
       "pre_existing_count": 0,
-      "unfixable_count": 24,
-      "router_introduced_count": 24,
-      "total_violation_um": 6822.35,
+      "unfixable_count": 7,
+      "router_introduced_count": 7,
+      "total_violation_um": 122.11,
       "min_violation_um": 11.70,
-      "max_violation_um": 1600.00,
-      "avg_violation_um": 284.26
+      "max_violation_um": 51.90,
+      "avg_violation_um": 17.44
     },
     "difficulty": {
       "pin_count": 324,
@@ -92,14 +92,14 @@
       "board_area_cm2": 46.56
     },
     "bounds": {
-      "min_trace_length_mm": 2077.18,
-      "min_via_count": 6,
-      "min_bend_count": 197
+      "min_trace_length_mm": 2070.03,
+      "min_via_count": 5,
+      "min_bend_count": 196
     },
     "fanout": {
       "total_smd_pins": 307,
       "pins_to_escape": 210,
-      "escaped_count": 197
+      "escaped_count": 195
     }
   },
   "fixture": "Issue269-z10_module.dsn"

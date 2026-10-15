@@ -1,7 +1,7 @@
 # Divergences from Java Freerouting
 
 Places where the Rust port deliberately behaves differently from the Java reference
-(`danbrunski/freerouting` at `fc4bd20`). Anything not listed here is meant to match
+(`danbrunski/freerouting` at `cda540f`). Anything not listed here is meant to match
 Java; a difference that isn't listed is a bug in the port.
 
 Each crate's docs carry the full detail; this file is the index.
