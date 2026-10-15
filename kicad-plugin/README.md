@@ -27,7 +27,12 @@ It copies `freerouting_rs/` into the newest KiCad version's user `scripting/plug
 `settings.json` there. Without `--bin-dir` the plugin looks in `FREEROUTING_RS_BIN`, the PATH
 and `~/.cargo/bin`.
 
-On Windows the executables can instead be a Linux build inside WSL, shown through WSLg:
+On Windows with the `x86_64-pc-windows-gnu` toolchain, the build needs a full mingw-w64
+(for example WinLibs, `winget install BrechtSanders.WinLibs.POSIX.MSVCRT`) on the PATH: the
+`dlltool` that ships with Rust calls an assembler it doesn't bundle. The MSVC toolchain needs
+nothing extra beyond the Visual Studio build tools.
+
+The executables can instead be a Linux build inside WSL, shown through WSLg:
 
 ```
 python kicad-plugin/install.py --wsl-bin-dir /home/me/freerouting-rs/target/release
