@@ -57,6 +57,14 @@
 //! - [`connection`], with [`route_connection`](connection::route_connection):
 //!   one connection searched, located, ripped and inserted
 //!   (`AutorouteEngine.autorouteConnection`, `ripConnections`).
+//!
+//! The connection routing of the batch passes (A11):
+//!
+//! - [`batch::connection`]: the Freerouting connection router with its
+//!   plane-tap and neck-down policies (`AutorouteConnectionRouter`);
+//! - [`batch::strict_drc`]: the strict-DRC rejection and rollback;
+//! - [`batch::pass`]: one routing pass (`AutoroutePassRunner.runSingleThread`),
+//!   `remove_tails` and the optimizer's `route_passes_for_optimizer`.
 
 pub mod batch;
 pub mod connection;

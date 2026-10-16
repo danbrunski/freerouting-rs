@@ -72,7 +72,7 @@ fn class_name(item: &Item) -> &'static str {
 }
 
 /// The fields of an item after its id (Java `itemFields`).
-fn item_fields(board: &RoutingBoard, item: &Item) -> Vec<(&'static str, ProbeValue)> {
+pub fn item_fields(board: &RoutingBoard, item: &Item) -> Vec<(&'static str, ProbeValue)> {
     let nets = ProbeValue::ints(item.net_numbers().iter().map(|n| i64::from(*n)));
     let class = i64::from(item.clearance_class());
     let fixed = fixed_name(item.fixed_state());

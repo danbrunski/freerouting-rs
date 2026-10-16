@@ -1,0 +1,17 @@
+{"kind":"pass","board":"Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes","javaCommit":"a773a70ec","format":1}
+{"stage":"pass:1","items":[116,115,101,81,80,69,57,45,16,15,3,2]}
+{"conn":0,"item":116,"net":9,"state":"ROUTED","ripped":[],"maxIdBefore":126,"maxIdAfter":141,"added":5,"addedHash":"60064bcefa2c0783","boardHash":"5cdd7e043c7cc8dc","failures":0,"units":29731}
+{"conn":1,"item":115,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":141,"maxIdAfter":175,"added":3,"addedHash":"6225e2e954e94bec","boardHash":"4ee504083fa28306","failures":0,"units":57760}
+{"conn":2,"item":101,"net":9,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":175,"maxIdAfter":175,"added":0,"addedHash":"cbf29ce484222325","boardHash":"4ee504083fa28306","failures":0,"units":240}
+{"conn":3,"item":81,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":175,"maxIdAfter":178,"added":1,"addedHash":"fcaafa7d4dcf671b","boardHash":"da082549a32723a1","failures":0,"units":17156}
+{"conn":4,"item":80,"net":4,"state":"ROUTED","ripped":[],"maxIdBefore":178,"maxIdAfter":188,"added":4,"addedHash":"ffeb636ada953598","boardHash":"5d76b73c397c84f8","failures":0,"units":17483}
+{"conn":5,"item":69,"net":4,"state":"ROUTED","ripped":[],"maxIdBefore":188,"maxIdAfter":192,"added":1,"addedHash":"8b9de9594e14da94","boardHash":"9ffaf2e28ff60e14","failures":0,"units":9764}
+{"conn":6,"item":57,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":192,"maxIdAfter":212,"added":4,"addedHash":"07bc69ff4c2d3ea7","boardHash":"12ee09913b9019fe","failures":0,"units":37783}
+{"conn":7,"item":45,"net":4,"state":"ROUTED","ripped":[],"maxIdBefore":212,"maxIdAfter":228,"added":3,"addedHash":"f3c12bb29ee2c002","boardHash":"11003b157486f4e8","failures":0,"units":73483}
+{"conn":8,"item":16,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":228,"maxIdAfter":230,"added":1,"addedHash":"1404ac4de98ecb9e","boardHash":"a94ba238a10dc9ce","failures":0,"units":23163}
+{"conn":9,"item":15,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":230,"maxIdAfter":265,"added":3,"addedHash":"aacdedf7accbe0b3","boardHash":"4679091f992782bf","failures":0,"units":183345}
+{"conn":10,"item":3,"net":1,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":265,"maxIdAfter":265,"added":0,"addedHash":"cbf29ce484222325","boardHash":"4679091f992782bf","failures":0,"units":889}
+{"conn":11,"item":2,"net":4,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":265,"maxIdAfter":265,"added":0,"addedHash":"cbf29ce484222325","boardHash":"4679091f992782bf","failures":0,"units":614}
+{"tails":1,"removed":false,"units":1423,"incomplete":0,"incompleteNets":[],"continue":true,"maxGeneratedId":265,"boardHash":"4679091f992782bf"}
+{"stage":"pass:2","items":[]}
+{"stage":"real","pass1":true,"pass2":true}

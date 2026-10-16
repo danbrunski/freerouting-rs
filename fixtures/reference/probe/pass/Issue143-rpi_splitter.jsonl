@@ -1,0 +1,14 @@
+{"kind":"pass","board":"Issue143-rpi_splitter","javaCommit":"a773a70ec","format":1}
+{"stage":"pass:1","items":[23,22,21,16,10,7,4,3,2]}
+{"conn":0,"item":23,"net":3,"state":"ROUTED","ripped":[],"maxIdBefore":33,"maxIdAfter":65,"added":7,"addedHash":"ebad82b91c9f6d60","boardHash":"515febd300d97639","failures":0,"units":87418}
+{"conn":1,"item":22,"net":2,"state":"FAILED","ripped":[],"maxIdBefore":65,"maxIdAfter":85,"added":0,"addedHash":"cbf29ce484222325","boardHash":"515febd300d97639","failures":1,"units":349169}
+{"conn":2,"item":21,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":85,"maxIdAfter":109,"added":5,"addedHash":"ae5948d10387ec83","boardHash":"8e0b95a3f8b5858a","failures":0,"units":174612}
+{"conn":3,"item":16,"net":5,"state":"ROUTED","ripped":[],"maxIdBefore":109,"maxIdAfter":127,"added":5,"addedHash":"c6ceab87ae6d918b","boardHash":"dce00179560ee50d","failures":0,"units":65504}
+{"conn":4,"item":10,"net":3,"state":"ROUTED","ripped":[],"maxIdBefore":127,"maxIdAfter":172,"added":3,"addedHash":"8e901fe32703c3fb","boardHash":"cfcbedf171ab66d7","failures":0,"units":128409}
+{"conn":5,"item":7,"net":5,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":172,"maxIdAfter":172,"added":0,"addedHash":"cbf29ce484222325","boardHash":"cfcbedf171ab66d7","failures":0,"units":318}
+{"conn":6,"item":4,"net":3,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":172,"maxIdAfter":172,"added":0,"addedHash":"cbf29ce484222325","boardHash":"cfcbedf171ab66d7","failures":0,"units":749}
+{"conn":7,"item":3,"net":2,"state":"ROUTED","ripped":[],"maxIdBefore":172,"maxIdAfter":332,"added":6,"addedHash":"90591fe16917de7d","boardHash":"60dd84b237cd43f7","failures":0,"units":446798}
+{"conn":8,"item":2,"net":1,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":332,"maxIdAfter":332,"added":0,"addedHash":"cbf29ce484222325","boardHash":"60dd84b237cd43f7","failures":0,"units":458}
+{"tails":1,"removed":false,"units":1688,"incomplete":0,"incompleteNets":[],"continue":true,"maxGeneratedId":332,"boardHash":"60dd84b237cd43f7"}
+{"stage":"pass:2","items":[]}
+{"stage":"real","pass1":true,"pass2":true}

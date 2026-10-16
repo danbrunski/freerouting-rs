@@ -13,13 +13,24 @@
 //! - [`report`]: the unrouted report, the last-mile corridor and blocker
 //!   test, and the routable-layer check.
 //!
+//! The connection routing of the passes (A11):
+//!
+//! - [`connection`]: `FreeroutingConnectionRouter` with its plane-tap and
+//!   neck-down policies (`AutorouteConnectionRouter`);
+//! - [`strict_drc`]: the strict-DRC rejection and its rollback;
+//! - [`pass`]: the pass runner (`AutoroutePassRunner.runSingleThread`),
+//!   `remove_tails` and the optimizer's `route_passes_for_optimizer`.
+//!
 //! Java line numbers are at `a773a70ec`.
 
+pub mod connection;
 pub mod control;
 pub mod fanout_rules;
 pub mod ordering;
+pub mod pass;
 pub mod report;
 pub mod ripup_policy;
+pub mod strict_drc;
 
 /// The minimum number of passes before the stagnation rules and the
 /// periodic restore check apply (`BatchAutorouter.STOP_AT_PASS_MINIMUM`).

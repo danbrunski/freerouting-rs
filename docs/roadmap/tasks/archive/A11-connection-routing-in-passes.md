@@ -7,7 +7,7 @@ that violates clearance from pass 3 on, counts failures and rips a net that keep
 and removes tails at the end of the pass. This checklist ports that as the Freerouting
 connection-router stage and the pass runner, adds the entry point the optimizer (O06)
 calls, and compares a whole pass connection by connection with Java: the step from rung 2
-to rung 3 ([A00](A00-autorouter-README.md); pipeline report P8 items 1–2).
+to rung 3 ([A00](../A00-autorouter-README.md); pipeline report P8 items 1–2).
 
 **Prerequisites:**
 - A06 (`route_connection`), A10 (traits, ordering, ripup policy), A08 (failure log,
@@ -77,7 +77,7 @@ probe, and an example binary for the determinism check.
 
 ## Checklist
 
-- [ ] **A11.1 — `FreeroutingConnectionRouter`.** Port `AutorouteConnectionRouter.route`
+- [x] **A11.1 — `FreeroutingConnectionRouter`.** Port `AutorouteConnectionRouter.route`
   (`:30-180`):
   - via cost: `plane_via_costs` when the net contains a plane, else `via_costs`; the
     control from A01 with `ripup_allowed = true`, `ripup_costs` from the ripup policy,
@@ -103,7 +103,20 @@ probe, and an example binary for the determinism check.
     in A08's `Progress` event for G07.5's routing overlay; nothing else reads it.
   - **Accept:** covered by A11.7; a unit test that the fallback reuses the budget.
 
-- [ ] **A11.2 — Plane taps and neck-down as policies.**
+  *Done 2026-10-16:* `autoroute/batch/connection.rs` (`FreeroutingConnectionRouter`,
+  registered as `freerouting-connection`; `connection_params` picks the plane via cost;
+  `maze_budget_ms`/`maze_work_budget`; `calculate_airline` into the new
+  `ConnectionOutcome::airline`, which the pass runner's `Progress` carries). Covered by A11.7:
+  `pass_matches_java` equal on all 11 boards, work units included. Budget reuse:
+  `the_plane_fallback_and_the_neck_down_continue_the_connections_work_limit`
+  (`tests/autoroute_pass.rs`): one limit, counted from before the primary attempt, spans the
+  primary attempt, the fallback and the neck-down call (`units_done` equals the meter growth
+  since the plane-tap call; the fallback inherits the exceeded limit and adds no work); unit
+  test `the_maze_budget_doubles_per_pass_up_to_i32_max`. Stage types extended for it in
+  `stages.rs`: `ConnectionParams::{pull_tight_accuracy, strict_check}`,
+  `ConnectionOutcome::airline`, `NeckDownAttempt` (the attempt's sets, control, limit and
+  ripped set handed to `NeckDownPolicy::retry`).
+- [x] **A11.2 — Plane taps and neck-down as policies.**
   - `FreeroutingPlaneTaps` (`:59-77`): a plane net whose connected set holds a
     conduction area gives `ConnectedToPlane`; otherwise start = connected set, primary =
     `power_plane_areas(unconnected)` when not empty with fallback = unconnected, else
@@ -117,7 +130,15 @@ probe, and an example binary for the determinism check.
     pad and no trace between the two GND pads (the routing half of `PlaneFanoutViaTest`;
     A12 adds the fanout half); a unit test of the neck-down width clamp.
 
-- [ ] **A11.3 — Strict DRC.** `enforce_strict_drc(board, net, max_id_before) ->
+  *Done 2026-10-16:* `FreeroutingPlaneTaps` (`freerouting-plane-taps`; the router makes
+  the two board facts, `ConnectedToPlane` and start = connected set, the policy the
+  destinations) and `FreeroutingNeckDown` (`freerouting-neck-down`; `neck_half_width` with the
+  `46bf9e2ef` `min_trace_width_um` floor, `narrower_somewhere`, `clamp_half_widths`).
+  `pass_one_gives_every_gnd_pad_its_own_via_to_the_plane` (min_fr_test pass 1, no fanout: each
+  GND pad connected to the plane, not chained to the other by traces, 2 GND vias, no via
+  touching an SMD pad, no trace on a plane layer);
+  `neck_down_clamps_every_half_width_and_keeps_the_compensation`.
+- [x] **A11.3 — Strict DRC.** `enforce_strict_drc(board, net, max_id_before) ->
   Option<AttemptResult>` (`BatchAutorouter.java:313-337`): collect the net's traces and
   vias with an id above the watermark in `connectable_items` order; if any has a clearance
   violation, remove all of them with one `remove_items` and return `Failed`. Then the
@@ -127,7 +148,16 @@ probe, and an example binary for the determinism check.
     rejects and the trace count drops; watermark `max_generated_id` returns `None` and
     the violation count is unchanged).
 
-- [ ] **A11.4 — The pass runner.** Port `runSingleThread` (`:40-253`) as
+  *Done 2026-10-16:* `autoroute/batch/strict_drc.rs` (`enforce_strict_drc`,
+  `apply_strict_drc_after_route` with the snapshot restore and a `replaced` event). Ported
+  `StrictDrcEnforcementTest`: `strict_drc_rips_new_items_when_they_carry_violations`,
+  `strict_drc_keeps_connections_whose_new_items_are_clean` (Issue575 BBD Mars-64). The
+  "no limit spans a board replacement" decision:
+  `a_strict_drc_restore_gives_the_next_connection_a_limit_on_the_restored_board` (the
+  rejection and restore are driven through `apply_strict_drc_after_route` on the fixture's
+  violating wiring, since no small board makes the router insert a violation; the restored
+  board's meter is 0 and the next connection's limit counts only its own work on it).
+- [x] **A11.4 — The pass runner.** Port `runSingleThread` (`:40-253`) as
   `run_pass(board, pass, stages, ctx) -> PassOutcome`:
   - `select`, and `order` when `pass > 1`; an empty list returns "nothing to route";
   - for each item, for each of its nets: stop on a router stop; `max_items` reached →
@@ -142,13 +172,23 @@ probe, and an example binary for the determinism check.
   - return `routed > 0 || failed > 0`; a Java exception path returns false.
   - **Accept:** covered by A11.7; a unit test that `max_items` sets the full stop.
 
-- [ ] **A11.5 — `remove_tails`.** `BatchAutorouter.removeTails` (`:534-550`):
+  *Done 2026-10-16:* `autoroute/batch/pass.rs` (`PassRunner::run_pass{,_observed}`,
+  `PassStages`, `PassObserver`, `PassOutcome`; Progress after each connection and at the pass
+  end while listening). Covered by A11.7 (`pass_matches_java`, 11 boards, the failure counts
+  and ripups of `PCBench-retroreflectors-CONGFLOCK` (14 failed connections),
+  `TestSensel` (4), `Issue508-SMD-routing-issue-demo` (2), `Issue143-rpi_splitter` (1)
+  included). `max_items_requests_a_full_stop` (one item counted, `is_stop_requested`, Java's
+  log line); `a_pass_with_nothing_to_route_says_so`.
+- [x] **A11.5 — `remove_tails`.** `BatchAutorouter.removeTails` (`:534-550`):
   `start_marking_changed_area`, `remove_trace_tails(-1, option)`, then
   `opt_changed_area` with `PullTightParams::after_connection` (O05.4), the same parameters
   as after a routed connection.
   - **Accept:** covered by A11.7.
 
-- [ ] **A11.6 — Optimizer entry point.** `route_passes_for_optimizer(board, max_passes,
+  *Done 2026-10-16:* `PassRunner::remove_tails` (returns `remove_trace_tails`' result).
+  Covered by A11.7: every `tails` line (result, work units, incomplete count and nets, board
+  hash) equal on all 11 boards; `remove_tails_takes_the_stop_option`.
+- [x] **A11.6 — Optimizer entry point.** `route_passes_for_optimizer(board, max_passes,
   ripup_costs, accuracy, with_preferred_directions, settings, ctx) -> u32` =
   `autoroutePassesForOptimizingItem` (`:253-289`): a pass runner with
   `remove_unconnected_vias = true` and pass logging off; passes `1..=max_passes` while
@@ -157,7 +197,11 @@ probe, and an example binary for the determinism check.
   - **Accept:** a unit test of the returned count for a board that completes in pass 1 and
     one that never completes; O06 is the consumer.
 
-- [ ] **A11.7 — `pass` probe.** Java kind `pass`: load the board as J01's route mode does
+  *Done 2026-10-16:* `route_passes_for_optimizer` in `pass.rs`.
+  `route_passes_for_optimizer_counts_as_java`: min_fr_test completes in pass 1 and returns 2
+  (pass 2 finds nothing), the completed board returns 1, and with no routable layer every pass
+  fails and `max_passes = 3` returns 4.
+- [x] **A11.7 — `pass` probe.** Java kind `pass`: load the board as J01's route mode does
   (fanout off, so the pass sees the loaded board), build the `BatchAutorouter`, and run
   pass 1 then pass 2 by replicating `runSingleThread`'s item loop around the real
   package-private `autorouteItem` (reflection), with Java's own `getAutorouteItems` and
@@ -174,9 +218,24 @@ probe, and an example binary for the determinism check.
     too; a board where only the units differ is listed with its reason (tree shape, B02)
     until B02's proof lands.
 
-- [ ] **A11.8 — Determinism with the audit.** `examples/route_pass.rs <board.dsn>
+  *Done 2026-10-16:* Java kind `pass` in `AutorouteProbe.java` (`replicaPass`, `pass`),
+  row `pass` in `fixtures.tsv` (the 10 boards of `connection-parity.txt` and J2),
+  `fixtures/reference/probe/pass/` from `generate.sh <a773a70ec worktree> pass` (11 boards,
+  80 KB, no digests). The pin is `a773a70ec`, J01's (the checklist's `30baad7e2` predates it).
+  `replica_matches_real` (`{"stage":"real","pass1":true,"pass2":true}`) on all 11.
+  `CARGO_TARGET_DIR=... cargo test -p freerouting --test autoroute_pass pass_matches_java`:
+  ok, `PASS_EXPECTED_MISMATCHES` empty, work units equal on every connection and tail removal
+  (no board listed for units). Rust writer `tests/support/pass_lines.rs`; J2's full Rust output
+  (`examples/route_pass`) equals Java's below the header.
+- [~] **A11.8 — Determinism with the audit.** `examples/route_pass.rs <board.dsn>
   <out.jsonl>` writes the `pass` probe lines for passes 1 and 2.
   - **Accept:** `tools/determinism-check.sh` reports `identical` on every board of
     `connection-parity.txt` and on J2, run with P02.1's audit on
     (`router.debug.audit_incremental = true`) and zero audit differences. Load averages in
     the done note. If P02.1 has not landed, mark the item `[~]` with that remainder.
+  *Partial 2026-10-16:* `examples/route_pass.rs` writes the probe lines.
+  `tools/determinism-check.sh --out <a11>/det -- route_all.sh {OUT}` (route_pass on all 11
+  boards of the `pass` row, release): `identical`, idle load 4.44, loaded 4.97 with 8 burners
+  (the machine was not quiet: other agents). Remains: the run with P02.1's audit on
+  (`router.debug.audit_incremental = true`, zero audit differences); P02.1 has not landed
+  (owner P02).

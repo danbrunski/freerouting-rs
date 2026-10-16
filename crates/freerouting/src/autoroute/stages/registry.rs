@@ -7,10 +7,13 @@ use std::fmt;
 
 use super::{
     BoardStage, ConnectionOutcome, ConnectionParams, ConnectionRouter, Destinations, FailureRecord,
-    FanoutStage, FanoutSummary, NeckDownPolicy, NetOrdering, Optimizer, OptimizerSummary,
-    PassController, PlaneTapPolicy, RipupPolicy, RouteTask, StageCtx,
+    FanoutStage, FanoutSummary, NeckDownAttempt, NeckDownPolicy, NetOrdering, Optimizer,
+    OptimizerSummary, PassController, PlaneTapPolicy, RipupPolicy, RouteTask, StageCtx,
 };
 use crate::autoroute::AttemptState;
+use crate::autoroute::batch::connection::{
+    FreeroutingConnectionRouter, FreeroutingNeckDown, FreeroutingPlaneTaps,
+};
 use crate::autoroute::batch::control::FreeroutingPassController;
 use crate::autoroute::batch::ordering::FreeroutingOrdering;
 use crate::autoroute::batch::report::UnroutedReportStage;
@@ -92,6 +95,7 @@ impl NeckDownPolicy for NotPorted {
         &mut self,
         _: &mut RoutingBoard,
         _: &RouteTask,
+        _: NeckDownAttempt<'_>,
         _: &ConnectionOutcome,
         _: &ConnectionParams,
         _: &mut StageCtx,
@@ -224,24 +228,13 @@ impl StageRegistry {
         r.board_stages.insert("freerouting-unrouted-report", |_| {
             Box::new(UnroutedReportStage)
         });
-        r.connection_router.insert("freerouting-connection", |_| {
-            Box::new(NotPorted {
-                id: "freerouting-connection",
-                owner: "A11.1",
-            })
+        r.connection_router.insert("freerouting-connection", |s| {
+            Box::new(FreeroutingConnectionRouter::from_settings(s))
         });
-        r.plane_taps.insert("freerouting-plane-taps", |_| {
-            Box::new(NotPorted {
-                id: "freerouting-plane-taps",
-                owner: "A11.2",
-            })
-        });
-        r.neck_down.insert("freerouting-neck-down", |_| {
-            Box::new(NotPorted {
-                id: "freerouting-neck-down",
-                owner: "A11.2",
-            })
-        });
+        r.plane_taps
+            .insert("freerouting-plane-taps", |_| Box::new(FreeroutingPlaneTaps));
+        r.neck_down
+            .insert("freerouting-neck-down", |_| Box::new(FreeroutingNeckDown));
         r.fanout.insert(DEFAULT_FANOUT, |_| {
             Box::new(NotPorted {
                 id: DEFAULT_FANOUT,

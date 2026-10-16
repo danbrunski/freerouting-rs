@@ -39,7 +39,7 @@ The optimizer stays aggregates-only until a later ledger line says otherwise.
 | [A07](A07-angle-variants.md) | 90° and any-angle room graphs and locator, with a `TreeMap`-faithful set; probes equal on synthetic fixtures | M–L / medium | A06, B03 (90°, plain), O02 |
 | [A08](archive/A08-support-classes.md) ✅ | `BoardHistory`, `RoutingFailureLog`, `ItemRouteResult`, router events, two-level cancel token | S / low | B01, B06 for the real-board tests; none for the rest |
 | [A10](archive/A10-stage-traits-and-batch-control.md) ✅ | D9 stage traits and registry; pure pass controller, item ordering and shuffle, ripup policy, fanout rules | M / medium | C02, C03.7, A08 |
-| [A11](A11-connection-routing-in-passes.md) | Connection router stage, strict DRC, the pass runner, the optimizer entry point; `pass` probe equal | L / high | A06, A08, A10, O05, B01, J01; P02.1 for A11.8 |
+| [A11](archive/A11-connection-routing-in-passes.md) ✅ | Connection router stage, strict DRC, the pass runner, the optimizer entry point; `pass` probe equal | L / high | A06, A08, A10, O05, B01, J01; P02.1 for A11.8 |
 | [A12](A12-fanout.md) | `RoutingBoard.fanout` and `BatchFanout` as the fanout stage; D8 plane-via tests | M / medium | A11, O05, B01 |
 | [A13](A13-batch-loop-and-pipeline.md) | The batch loop with snapshots and restores, last-mile ripup, `run_pipeline`; determinism with the audit | M–L / high | A12, B01, B06, P02.1 |
 | [A14](A14-board-parity-gate.md) | Rung 3: route every fixture, `ses-diff` against `fixtures/reference/route`; ported Java fixture tests | L / high | A13, J01, C05, F02.2, F02.4, F02.5 |

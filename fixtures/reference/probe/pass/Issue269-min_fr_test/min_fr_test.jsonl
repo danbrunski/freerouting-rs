@@ -1,0 +1,9 @@
+{"kind":"pass","board":"Issue269-min_fr_test/min_fr_test","javaCommit":"a773a70ec","format":1}
+{"stage":"pass:1","items":[21,3,30,12]}
+{"conn":0,"item":21,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":38,"maxIdAfter":51,"added":3,"addedHash":"523141888a7b1b47","boardHash":"8f6b2423677ed00e","failures":0,"units":20731}
+{"conn":1,"item":3,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":51,"maxIdAfter":67,"added":3,"addedHash":"ebfb264182f57b37","boardHash":"020519e5136ccc03","failures":0,"units":25842}
+{"conn":2,"item":30,"net":2,"state":"ROUTED","ripped":[],"maxIdBefore":67,"maxIdAfter":96,"added":6,"addedHash":"c6028a16cb43e860","boardHash":"7a3de9c8e46780d4","failures":0,"units":72428}
+{"conn":3,"item":12,"net":2,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":96,"maxIdAfter":96,"added":0,"addedHash":"cbf29ce484222325","boardHash":"7a3de9c8e46780d4","failures":0,"units":542}
+{"tails":1,"removed":false,"units":826,"incomplete":0,"incompleteNets":[],"continue":true,"maxGeneratedId":96,"boardHash":"7a3de9c8e46780d4"}
+{"stage":"pass:2","items":[]}
+{"stage":"real","pass1":true,"pass2":true}

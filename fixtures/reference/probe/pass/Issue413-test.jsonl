@@ -1,0 +1,7 @@
+{"kind":"pass","board":"Issue413-test","javaCommit":"a773a70ec","format":1}
+{"stage":"pass:1","items":[21,14]}
+{"conn":0,"item":21,"net":4,"state":"ROUTED","ripped":[],"maxIdBefore":37,"maxIdAfter":58,"added":2,"addedHash":"231161fac90ec73e","boardHash":"b35e8725af095fd6","failures":0,"units":41776}
+{"conn":1,"item":14,"net":4,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":58,"maxIdAfter":58,"added":0,"addedHash":"cbf29ce484222325","boardHash":"b35e8725af095fd6","failures":0,"units":190}
+{"tails":1,"removed":false,"units":1040,"incomplete":0,"incompleteNets":[],"continue":true,"maxGeneratedId":58,"boardHash":"b35e8725af095fd6"}
+{"stage":"pass:2","items":[]}
+{"stage":"real","pass1":true,"pass2":true}

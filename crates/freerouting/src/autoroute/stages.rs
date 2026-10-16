@@ -54,8 +54,8 @@
 //!
 //! The Freerouting ids: `freerouting-ordering` (A10.4),
 //! `freerouting-ripup` (A10.5), `freerouting-passes` (A10.3),
-//! `freerouting-unrouted-report` (A10.7); `freerouting-connection` (A11.1),
-//! `freerouting-plane-taps` and `freerouting-neck-down` (A11.2),
+//! `freerouting-unrouted-report` (A10.7), `freerouting-connection` (A11.1),
+//! `freerouting-plane-taps` and `freerouting-neck-down` (A11.2);
 //! `freerouting-fanout` (A12.3) and `freerouting-optimizer` (O06) are
 //! registered as [`NotPorted`] placeholders until those checklists replace
 //! the factory. The registry, the selection and the placeholders are in the
@@ -63,11 +63,16 @@
 
 use std::collections::BTreeSet;
 
+use freerouting_geometry::FloatPoint;
+
 use crate::autoroute::AttemptState;
+use crate::autoroute::control::AutorouteControl;
 pub use crate::autoroute::events::Phase;
 use crate::autoroute::events::{CancelToken, RouterEvents};
+use crate::autoroute::path::RipupCosts;
 use crate::board::items::ItemId;
 use crate::board::routing_board::RoutingBoard;
+use crate::board::search::WorkLimit;
 use crate::settings::RouterSettings;
 use crate::settings::board::BoardRouterSettings;
 use crate::settings::layers::TraceCostFactor;
@@ -128,6 +133,12 @@ pub struct ConnectionParams {
     pub remove_unconnected_vias: bool,
     /// The search budget in work units (B02.7), never time.
     pub work_budget: u64,
+    /// The accuracy of the pull-tight after a routed connection (Java
+    /// `BatchAutorouter.tracePullTightAccuracy`; A11).
+    pub pull_tight_accuracy: i32,
+    /// True if a routed connection with new clearance violations is
+    /// rejected ([`RipupPolicy::strict_check`] of this pass; A11).
+    pub strict_check: bool,
 }
 
 /// A failed search's account of why it failed: A04's failure record. Only
@@ -175,6 +186,10 @@ pub struct ConnectionOutcome {
     pub work_limit_hit: bool,
     /// The work the attempt did.
     pub work: WorkStats,
+    /// The airline of the attempt: the nearest pin or via centres of the
+    /// start and destination sets (Java `AutorouteAirlineCalculator`), for
+    /// the GUI's routing overlay (A11.1). It decides nothing.
+    pub airline: Option<(FloatPoint, FloatPoint)>,
 }
 
 impl ConnectionOutcome {
@@ -189,6 +204,7 @@ impl ConnectionOutcome {
             failure: None,
             work_limit_hit: false,
             work: WorkStats::default(),
+            airline: None,
         }
     }
 }
@@ -523,6 +539,24 @@ pub trait PlaneTapPolicy {
     ) -> Destinations;
 }
 
+/// What a failed attempt hands to the [`NeckDownPolicy`] (A11.2): Java's
+/// `retryConnectionNecked` gets the attempt's own route sets, control and
+/// work limit, and adds to its ripped set.
+pub struct NeckDownAttempt<'a> {
+    /// The start set the attempt routed from.
+    pub start: &'a BTreeSet<ItemId>,
+    /// The destination set it routed to (the fallback, if it was used).
+    pub dest: &'a BTreeSet<ItemId>,
+    /// The attempt's control (its layers and trace half widths).
+    pub control: &'a AutorouteControl,
+    /// The attempt's maze-search limit; a retry continues it.
+    pub work_limit: &'a WorkLimit,
+    /// The items ripped so far, in `TreeSet<Item>` order.
+    pub ripped: &'a mut BTreeSet<ItemId>,
+    /// Their ripup costs, in Java's `LinkedHashMap` order.
+    pub ripped_costs: &'a mut RipupCosts,
+}
+
 /// Retries a failed connection with narrower traces (neck-down). May add
 /// and remove traces and vias like a [`ConnectionRouter`].
 pub trait NeckDownPolicy {
@@ -533,6 +567,7 @@ pub trait NeckDownPolicy {
         &mut self,
         board: &mut RoutingBoard,
         task: &RouteTask,
+        attempt: NeckDownAttempt<'_>,
         failed: &ConnectionOutcome,
         p: &ConnectionParams,
         ctx: &mut StageCtx,

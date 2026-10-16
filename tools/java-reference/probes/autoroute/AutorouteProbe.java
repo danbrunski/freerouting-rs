@@ -101,6 +101,17 @@ import java.util.UUID;
  *       then for up to 12 nets with route items the net's route items removed and its sampled
  *       connection routed as in insert, through the other nets' routes, on the same board, which
  *       keeps what each connection inserted and ripped).
+ *   <li>pass (A11.7): passes 1 and 2 of a BatchAutorouter(job) on the loaded board (no fanout),
+ *       by replicating AutoroutePassRunner.runSingleThread's item loop around the real
+ *       package-private autorouteItem, with Java's own getAutorouteItems and
+ *       reorderSingleThreadItems (reflection). Per pass the item list; per connection the item,
+ *       net, state, ripped ids, maxGeneratedId before and after, the count and FNV-1a 64 of the
+ *       added traces and vias (itemFields lines, id order), the FNV-1a 64 of every trace and via,
+ *       the item's failure count and the thread's WorkMeter units from before autorouteItem to
+ *       after the failure handling. Per pass the tail removal (its result and units), the
+ *       routing ledger's incomplete count and nets, the pass result and the board hash. Then the
+ *       real autoroutePass(1) and (2) on a second fresh load, and whether each pass left the
+ *       same board hash as the replica's.
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -136,12 +147,68 @@ public class AutorouteProbe {
         case "locate-routed" -> locateRouted(out, Loaded.load(dsn));
         case "insert" -> insert(out, dsn);
         case "insert-routed" -> insertRouted(out, Loaded.load(dsn));
+        case "pass" -> pass(out, dsn);
+        case "treemap" -> treeMap(out);
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
       out.exception(t);
     }
     out.write(args[2]);
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // treemap (A07.3)
+  // ------------------------------------------------------------------------------------------
+
+  static final int TREEMAP_SEQUENCES = 200;
+  static final int TREEMAP_POINTS = 50;
+  static final int TREEMAP_RANGE = 32;
+
+  /** A point of the treemap probe: its index in the sequence and its distance from 0. */
+  record TreePoint(int index, int x, int y, double dist) {}
+
+  /**
+   * Not transitive, the shape of SortedRoomNeighbours.SortedRoomNeighbour.compareTo: distances
+   * within 1.0 count as equal and fall through to the y difference, then the x difference.
+   */
+  static int treeCompare(TreePoint a, TreePoint b) {
+    double delta = a.dist() - b.dist();
+    if (Math.abs(delta) <= 1.0) {
+      delta = a.y() - b.y();
+    }
+    int res = delta > 0 ? 1 : delta < 0 ? -1 : 0;
+    if (res == 0) {
+      res = a.x() - b.x();
+    }
+    return res;
+  }
+
+  /**
+   * 200 sequences of 50 points (x and y from nextInt(32) of one new Random(13)) into a TreeSet
+   * with treeCompare: per sequence the points, whether each add added it, and the iteration
+   * order as point indexes.
+   */
+  static void treeMap(Out out) {
+    Random random = new Random(13);
+    for (int seq = 0; seq < TREEMAP_SEQUENCES; seq++) {
+      java.util.TreeSet<TreePoint> set = new java.util.TreeSet<>(AutorouteProbe::treeCompare);
+      List<Integer> coords = new ArrayList<>();
+      boolean[] added = new boolean[TREEMAP_POINTS];
+      for (int i = 0; i < TREEMAP_POINTS; i++) {
+        int x = random.nextInt(TREEMAP_RANGE);
+        int y = random.nextInt(TREEMAP_RANGE);
+        coords.add(x);
+        coords.add(y);
+        added[i] = set.add(new TreePoint(i, x, y, Math.sqrt((double) x * x + (double) y * y)));
+      }
+      List<Integer> order = new ArrayList<>();
+      for (TreePoint p : set) {
+        order.add(p.index());
+      }
+      out.line(new Line().str("stage", "treemap").num("seq", seq).raw("points", ints(coords))
+          .raw("added", boolArray(added)).raw("order", ints(order)).end());
+    }
   }
 
   // ------------------------------------------------------------------------------------------
@@ -1460,6 +1527,217 @@ public class AutorouteProbe {
       Conn conn = sample(l.board).get(i);
       insertConnection(out, l, conn);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // pass (A11.7)
+  // ------------------------------------------------------------------------------------------
+
+  /** A stoppable thread nobody stops (the job's thread for the probe's BatchAutorouter). */
+  static app.freerouting.core.StoppableThread idleThread() {
+    return new app.freerouting.core.StoppableThread() {
+      @Override
+      protected void threadAction() {}
+    };
+  }
+
+  /** A declared method of {@code type}, accessible. */
+  static java.lang.reflect.Method method(Class<?> type, String name, Class<?>... params)
+      throws Exception {
+    java.lang.reflect.Method m = type.getDeclaredMethod(name, params);
+    m.setAccessible(true);
+    return m;
+  }
+
+  /** Sets a declared field of {@code target}'s class (or a superclass) by reflection. */
+  static void setField(Object target, String name, Object value) throws Exception {
+    Class<?> type = target.getClass();
+    while (type != null) {
+      try {
+        java.lang.reflect.Field field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
+        return;
+      } catch (NoSuchFieldException e) {
+        type = type.getSuperclass();
+      }
+    }
+    throw new NoSuchFieldException(name);
+  }
+
+  /** FNV-1a 64 of every trace and via, "{"item":id,fields}" in id order. */
+  static long routeHash(RoutingBoard board) {
+    java.util.TreeMap<Integer, String> lines = new java.util.TreeMap<>();
+    for (Item item : board.getItems()) {
+      if (isRouteItem(item)) {
+        lines.put(item.getId(), "{\"item\":" + item.getId() + "," + itemFields(item) + "}");
+      }
+    }
+    return fnvLines(lines.values());
+  }
+
+  /** The traces and vias with an id above {@code maxId}, "{"added":id,fields}" in id order. */
+  static List<String> addedLines(RoutingBoard board, int maxId) {
+    java.util.TreeMap<Integer, String> lines = new java.util.TreeMap<>();
+    for (Item item : board.getItems()) {
+      if (isRouteItem(item) && item.getId() > maxId) {
+        lines.put(item.getId(), "{\"added\":" + item.getId() + "," + itemFields(item) + "}");
+      }
+    }
+    return new ArrayList<>(lines.values());
+  }
+
+  static BatchRouter batchRouter(Loaded l) throws Exception {
+    l.job.thread = idleThread();
+    return new BatchRouter(new app.freerouting.autoroute.pipeline.BatchAutorouter(l.job));
+  }
+
+  /** The probe's handle on a BatchAutorouter's package-private and private members. */
+  static final class BatchRouter {
+    final Object router;
+    final Class<?> type;
+
+    BatchRouter(Object router) {
+      this.router = router;
+      this.type = router.getClass();
+    }
+
+    RoutingBoard board() throws Exception {
+      return privateField(router, "board");
+    }
+
+    Object passRunner() throws Exception {
+      return privateField(router, "passRunner");
+    }
+  }
+
+  /** One replicated pass; returns whether it routed or failed something (Java's result). */
+  @SuppressWarnings("unchecked")
+  static boolean replicaPass(Out out, BatchRouter r, int passNo, long[] hashes) throws Exception {
+    RoutingBoard board = r.board();
+    List<Item> items = (List<Item>) method(r.type, "getAutorouteItems", RoutingBoard.class)
+        .invoke(r.router, board);
+    if (items.isEmpty()) {
+      out.line(new Line().str("stage", "pass:" + passNo).raw("items", "[]").end());
+      hashes[passNo - 1] = routeHash(board);
+      return false;
+    }
+    Object runner = r.passRunner();
+    if (passNo > 1) {
+      method(runner.getClass(), "reorderSingleThreadItems", List.class, int.class)
+          .invoke(runner, items, passNo);
+    }
+    out.line(new Line().str("stage", "pass:" + passNo).raw("items", ids(items)).end());
+    java.lang.reflect.Method autorouteItem = method(r.type, "autorouteItem", Item.class,
+        int.class, java.util.SortedSet.class, java.util.Map.class, int.class);
+    int routed = 0;
+    int notRouted = 0;
+    int index = 0;
+    for (Item currentItem : items) {
+      for (int i = 0; i < currentItem.netCount(); i++) {
+        int totalItemsRouted = privateField(r.router, "totalItemsRouted");
+        setField(r.router, "totalItemsRouted", totalItemsRouted + 1);
+        board = r.board();
+        board.startMarkingChangedArea();
+        java.util.SortedSet<Item> ripped = new java.util.TreeSet<>();
+        java.util.Map<Item, Integer> costs = new java.util.LinkedHashMap<>();
+        int net = currentItem.getNetNumber(i);
+        int maxBefore = board.communication.idGenerator.maxGeneratedId();
+        long start = workUnits();
+        app.freerouting.autoroute.AutorouteAttemptResult result =
+            (app.freerouting.autoroute.AutorouteAttemptResult) autorouteItem.invoke(
+                r.router, currentItem, net, ripped, costs, passNo);
+        board = r.board();
+        // AutoroutePassRunner.java:150-198.
+        if (result.state == app.freerouting.autoroute.AutorouteAttemptState.ROUTED) {
+          ++routed;
+        } else if (result.state == app.freerouting.autoroute.AutorouteAttemptState.ALREADY_CONNECTED
+            || result.state == app.freerouting.autoroute.AutorouteAttemptState.NO_UNCONNECTED_NETS
+            || result.state
+                == app.freerouting.autoroute.AutorouteAttemptState.CONNECTED_TO_PLANE) {
+          // skipped
+        } else {
+          board.failureLog.recordFailure(currentItem, passNo, result.state, result.details);
+          int failureCount = board.failureLog.getFailureCount(currentItem);
+          if (failureCount >= 2) {
+            List<Item> tracesToRip = new ArrayList<>();
+            for (Item netItem : board.getConnectableItems(net)) {
+              if (isRouteItem(netItem) && !netItem.isUserFixed() && netItem.netCount() == 1) {
+                tracesToRip.add(netItem);
+              }
+            }
+            if (!tracesToRip.isEmpty()) {
+              board.removeItems(tracesToRip);
+            }
+          }
+          ++notRouted;
+        }
+        long units = workUnits() - start;
+        List<String> added = addedLines(board, maxBefore);
+        out.line(new Line().num("conn", index).num("item", currentItem.getId()).num("net", net)
+            .str("state", result.state.name()).raw("ripped", ids(ripped))
+            .num("maxIdBefore", maxBefore)
+            .num("maxIdAfter", board.communication.idGenerator.maxGeneratedId())
+            .num("added", added.size()).str("addedHash", hex(fnvLines(added)))
+            .str("boardHash", hex(routeHash(board)))
+            .num("failures", board.failureLog.getFailureCount(currentItem))
+            .num("units", units).end());
+        index++;
+      }
+    }
+    // BatchAutorouter.removeTails, as runSingleThread calls it.
+    board = r.board();
+    boolean removeUnconnectedVias =
+        (boolean) method(r.type, "isRemoveUnconnectedVias").invoke(r.router);
+    app.freerouting.board.model.items.Item.StopConnectionOption option = removeUnconnectedVias
+        ? app.freerouting.board.model.items.Item.StopConnectionOption.NONE
+        : app.freerouting.board.model.items.Item.StopConnectionOption.FANOUT_VIA;
+    int accuracy = (int) method(r.type, "getTracePullTightAccuracy").invoke(r.router);
+    AutorouteControl.ExpansionCostFactor[] traceCosts =
+        (AutorouteControl.ExpansionCostFactor[]) method(r.type, "getTraceCosts").invoke(r.router);
+    app.freerouting.core.StoppableThread thread = privateField(r.router, "thread");
+    long start = workUnits();
+    board.startMarkingChangedArea();
+    boolean removed = board.removeTraceTails(-1, option);
+    board.optChangedArea(new int[0], null, accuracy, traceCosts, thread, 1000);
+    long units = workUnits() - start;
+    int incomplete = board.routingLedger().incompleteCount();
+    java.util.Set<Integer> nets = new java.util.TreeSet<>(board.routingLedger()
+        .incompleteNetNumbers());
+    // AutoroutePassRunner.java:233-239, the anti-oscillation state.
+    int previous = privateField(runner, "previousIncompleteCount");
+    int stagnation = privateField(runner, "stagnationCount");
+    setField(runner, "stagnationCount",
+        previous >= 0 && incomplete >= previous ? stagnation + 1 : 0);
+    setField(runner, "previousIncompleteCount", incomplete);
+    setField(runner, "previousIncompleteNets", nets);
+    boolean result = routed > 0 || notRouted > 0;
+    long hash = routeHash(board);
+    hashes[passNo - 1] = hash;
+    out.line(new Line().num("tails", passNo).bool("removed", removed).num("units", units)
+        .num("incomplete", incomplete).raw("incompleteNets", ints(nets))
+        .bool("continue", result)
+        .num("maxGeneratedId", board.communication.idGenerator.maxGeneratedId())
+        .str("boardHash", hex(hash)).end());
+    return result;
+  }
+
+  /** pass: the replica's passes 1 and 2, then the real ones on a second load. */
+  static void pass(Out out, String dsn) throws Exception {
+    long[] replica = new long[2];
+    BatchRouter r = batchRouter(Loaded.load(dsn));
+    for (int passNo = 1; passNo <= 2; passNo++) {
+      replicaPass(out, r, passNo, replica);
+    }
+    BatchRouter real = batchRouter(Loaded.load(dsn));
+    java.lang.reflect.Method autoroutePass = method(real.type, "autoroutePass", int.class);
+    boolean[] same = new boolean[2];
+    for (int passNo = 1; passNo <= 2; passNo++) {
+      autoroutePass.invoke(real.router, passNo);
+      same[passNo - 1] = routeHash(real.board()) == replica[passNo - 1];
+    }
+    out.line(new Line().str("stage", "real").bool("pass1", same[0]).bool("pass2", same[1])
+        .end());
   }
 
   // ------------------------------------------------------------------------------------------

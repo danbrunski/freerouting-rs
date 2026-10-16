@@ -480,6 +480,19 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   `AutorouteControl::neckdown_half_width` and the micro-neck-down skips narrower candidates.
   Unset (the default) it changes nothing, so the pin's behaviour is unchanged.
 
+**Batch passes** (`autoroute::batch::{connection, strict_drc, pass}`, A11; tests
+`tests/autoroute_pass.rs`, `pass_matches_java`)
+- The airline of the connection being routed (`ConnectionOutcome::airline`, the GUI's overlay
+  only; it decides nothing) breaks a distance tie by the sets' descending item-id order; Java's
+  `AutorouteAirlineCalculator` iterates its `HashSet`s, so a tie can pick another pair.
+- The pull-tight after a routed connection and in `remove_tails` runs without the cancel token
+  (`PullTightParams::stop` takes an owned `Arc`, a stage only borrows the token); Java's checks
+  the thread's full stop. Only a requested stop sees it: Java stops tightening at once, the port
+  at the 1,000 nominal ms work limit. Results without a stop are the same.
+- Java's `Necked retry routed net ...` info line and its trace logging are not written; the pass
+  runner returns the `Max items limit reached` and `Autorouter <details>` job log lines in
+  `PassOutcome::log`.
+
 **Interactive routing** (`interactive`, I01, port of `gui.interactive.Route`, `RouteState`,
 `DynamicRouteState`, `StitchRouteState` and `GuiBoardRoutingSettings`; tests
 `tests/interactive_route.rs`, `interactive::settings::tests`)

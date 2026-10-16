@@ -1,0 +1,16 @@
+{"kind":"pass","board":"Issue110-testProjectFromFreeroutingBugTest","javaCommit":"a773a70ec","format":1}
+{"stage":"pass:1","items":[48,47,42,41,17,12,11,10]}
+{"conn":0,"item":48,"net":8,"state":"ROUTED","ripped":[],"maxIdBefore":63,"maxIdAfter":129,"added":16,"addedHash":"3bdb6ce5747f9c5b","boardHash":"b350d0ddaedf6fa3","failures":0,"units":76589}
+{"conn":1,"item":47,"net":7,"state":"ROUTED","ripped":[73],"maxIdBefore":129,"maxIdAfter":148,"added":3,"addedHash":"87b5322a1a3aeb38","boardHash":"54e4894d19782a93","failures":0,"units":34793}
+{"conn":2,"item":42,"net":2,"state":"ROUTED","ripped":[],"maxIdBefore":148,"maxIdAfter":181,"added":7,"addedHash":"4098d463c152fa63","boardHash":"8444c01804788d64","failures":0,"units":29603}
+{"conn":3,"item":41,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":181,"maxIdAfter":240,"added":4,"addedHash":"2a1bcb19bd6b84b1","boardHash":"dd510105f52fbd78","failures":0,"units":81470}
+{"conn":4,"item":17,"net":7,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":240,"maxIdAfter":240,"added":0,"addedHash":"cbf29ce484222325","boardHash":"dd510105f52fbd78","failures":0,"units":196}
+{"conn":5,"item":12,"net":2,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":240,"maxIdAfter":240,"added":0,"addedHash":"cbf29ce484222325","boardHash":"dd510105f52fbd78","failures":0,"units":428}
+{"conn":6,"item":11,"net":1,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":240,"maxIdAfter":240,"added":0,"addedHash":"cbf29ce484222325","boardHash":"dd510105f52fbd78","failures":0,"units":228}
+{"conn":7,"item":10,"net":8,"state":"ROUTED","ripped":[144],"maxIdBefore":240,"maxIdAfter":325,"added":4,"addedHash":"49043c1a8f2dbe41","boardHash":"425b88e782a9ec6c","failures":0,"units":120154}
+{"tails":1,"removed":false,"units":708,"incomplete":1,"incompleteNets":[7],"continue":true,"maxGeneratedId":325,"boardHash":"425b88e782a9ec6c"}
+{"stage":"pass:2","items":[17,47]}
+{"conn":0,"item":17,"net":7,"state":"ROUTED","ripped":[],"maxIdBefore":325,"maxIdAfter":368,"added":3,"addedHash":"7a43c1006f138175","boardHash":"a58501f4e18af575","failures":0,"units":36762}
+{"conn":1,"item":47,"net":7,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":368,"maxIdAfter":368,"added":0,"addedHash":"cbf29ce484222325","boardHash":"a58501f4e18af575","failures":0,"units":212}
+{"tails":2,"removed":false,"units":874,"incomplete":0,"incompleteNets":[],"continue":true,"maxGeneratedId":368,"boardHash":"a58501f4e18af575"}
+{"stage":"real","pass1":true,"pass2":true}

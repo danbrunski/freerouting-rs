@@ -1,0 +1,11 @@
+{"kind":"pass","board":"Issue368-CorneyIslandWireless_input_design","javaCommit":"a773a70ec","format":1}
+{"stage":"pass:1","items":[33,32,21,20,12,3]}
+{"conn":0,"item":33,"net":3,"state":"ROUTED","ripped":[],"maxIdBefore":43,"maxIdAfter":49,"added":3,"addedHash":"aa827b4843340df4","boardHash":"e476da2b7f831c51","failures":0,"units":3946}
+{"conn":1,"item":32,"net":1,"state":"ROUTED","ripped":[],"maxIdBefore":49,"maxIdAfter":54,"added":1,"addedHash":"e7453998aa4a1569","boardHash":"7006265f00a15cb2","failures":0,"units":5286}
+{"conn":2,"item":21,"net":2,"state":"ROUTED","ripped":[],"maxIdBefore":54,"maxIdAfter":60,"added":3,"addedHash":"8f3e4768d4b4fc55","boardHash":"0a5fcc52021d5f1f","failures":0,"units":5245}
+{"conn":3,"item":20,"net":1,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":60,"maxIdAfter":60,"added":0,"addedHash":"cbf29ce484222325","boardHash":"0a5fcc52021d5f1f","failures":0,"units":104}
+{"conn":4,"item":12,"net":3,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":60,"maxIdAfter":60,"added":0,"addedHash":"cbf29ce484222325","boardHash":"0a5fcc52021d5f1f","failures":0,"units":168}
+{"conn":5,"item":3,"net":2,"state":"NO_UNCONNECTED_NETS","ripped":[],"maxIdBefore":60,"maxIdAfter":60,"added":0,"addedHash":"cbf29ce484222325","boardHash":"0a5fcc52021d5f1f","failures":0,"units":176}
+{"tails":1,"removed":false,"units":316,"incomplete":0,"incompleteNets":[],"continue":true,"maxGeneratedId":60,"boardHash":"0a5fcc52021d5f1f"}
+{"stage":"pass:2","items":[]}
+{"stage":"real","pass1":true,"pass2":true}
