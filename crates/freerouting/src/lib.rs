@@ -19,4 +19,5 @@ pub mod quality;
 pub mod rules;
 pub mod scoring;
 pub mod settings;
+pub mod shove;
 mod util;

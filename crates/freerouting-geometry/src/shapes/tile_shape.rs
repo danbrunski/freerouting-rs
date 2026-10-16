@@ -1144,3 +1144,23 @@ impl TileShape {
         }
     }
 }
+
+impl TileShape {
+    /// [`cutout_polyline`](TileShapeOps::cutout_polyline) with Java's
+    /// identity outcome made explicit: `None` where Java's
+    /// `TileShape.cutout(Polyline)` returns its input polyline itself (no
+    /// entrance points and the first corner not in the interior), else the
+    /// pieces Java builds (possibly none).
+    ///
+    /// Java's `ShapeTraceEntries.cutoutTrace` tells "nothing cut off" by
+    /// object identity (`pieces[0] == traceLines`); a newly built piece that
+    /// equals the input is `Some`, so value equality never stands in for it.
+    pub fn cutout_polyline_outcome(&self, polyline: &Polyline) -> Option<Vec<Polyline>> {
+        if self.entrance_points(polyline).is_empty()
+            && !self.contains_inside(&polyline.first_corner())
+        {
+            return None;
+        }
+        Some(self.cutout_polyline(polyline))
+    }
+}

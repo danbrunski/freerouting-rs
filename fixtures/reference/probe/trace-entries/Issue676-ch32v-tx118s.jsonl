@@ -1,0 +1,1013 @@
+{"kind":"trace-entries","board":"Issue676-ch32v-tx118s","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"store","maxGeneratedId":112}
+{"i":0,"trace":102,"segment":1,"from":"1367536,1161542","to":"1537536,991542","shape":"oct 1342536 966542 1562536 1186542 170639 581349 2493723 2564433"}
+{"i":0,"obstacles":[102,94,78,16,2],"ok":false,"found":94,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":0,"maxGeneratedId":112}
+{"i":1,"trace":82,"segment":1,"from":"1523111,254889","to":"1413111,144889","shape":"oct 1388111 119889 1548111 279889 1232867 1303577 1522645 1813355"}
+{"i":1,"obstacles":[82,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":1,"maxGeneratedId":112}
+{"i":2,"trace":70,"segment":1,"from":"1016000,703580","to":"1096000,703580","shape":"oct 991000 678580 1121000 728580 277065 427775 1684225 1834935"}
+{"i":2,"obstacles":[110,70,2],"ok":true,"found":70,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":2,"maxGeneratedId":112}
+{"i":3,"trace":96,"segment":1,"from":"1270000,912622","to":"1210000,972622","shape":"oct 1185000 887622 1295000 997622 202023 392733 2147267 2217977"}
+{"i":3,"obstacles":[96,2],"ok":false,"found":96,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":3,"maxGeneratedId":112}
+{"i":4,"trace":105,"segment":1,"from":"1946500,385860","to":"1976500,415860","shape":"oct 1921500 360860 2001500 440860 1525285 1595995 2297005 2427715"}
+{"i":4,"obstacles":[105,2],"ok":true,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":4,"maxGeneratedId":112}
+{"i":5,"trace":90,"segment":1,"from":"1616497,889000","to":"1576497,929000","shape":"oct 1551497 864000 1641497 954000 612142 762852 2470142 2540852"}
+{"i":5,"obstacles":[90,18,2],"ok":false,"found":90,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":5,"maxGeneratedId":112}
+{"i":6,"trace":61,"segment":1,"from":"1763776,1538224","to":"1593776,1368224","shape":"oct 1568776 1343224 1788776 1563224 190197 260907 2926645 3337355"}
+{"i":6,"obstacles":[107,61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":6,"maxGeneratedId":112}
+{"i":7,"trace":89,"segment":1,"from":"1315720,1335405","to":"1315720,1385405","shape":"oct 1290720 1310405 1340720 1410405 -105040 15670 2615770 2736480"}
+{"i":7,"obstacles":[89],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":7,"maxGeneratedId":112}
+{"i":8,"trace":103,"segment":1,"from":"1642708,1270000","to":"1642708,1390000","shape":"oct 1617708 1245000 1667708 1415000 217353 408063 2877353 3068063"}
+{"i":8,"obstacles":[103,100,23,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":8,"maxGeneratedId":112}
+{"i":9,"trace":94,"segment":1,"from":"1606584,1001216","to":"1436584,1171216","shape":"oct 1411584 976216 1631584 1196216 230013 640723 2572445 2643155"}
+{"i":9,"obstacles":[102,95,94,78,21,16,2],"ok":false,"found":102,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":9,"maxGeneratedId":112}
+{"i":10,"trace":96,"segment":1,"from":"1270000,732155","to":"1350000,812155","shape":"oct 1245000 707155 1375000 837155 502490 573200 1966800 2197510"}
+{"i":10,"obstacles":[96,81,2],"ok":false,"found":81,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":10,"maxGeneratedId":112}
+{"i":11,"trace":67,"segment":1,"from":"300482,1324578","to":"190482,1324578","shape":"oct 165482 1299578 325482 1349578 -1169451 -988741 1479705 1660415"}
+{"i":11,"obstacles":[67,49],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":11,"maxGeneratedId":112}
+{"i":12,"trace":84,"segment":1,"from":"878563,1270000","to":"1078563,1270000","shape":"oct 853563 1245000 1103563 1295000 -426792 -156082 2113208 2383918"}
+{"i":12,"obstacles":[84,17,2],"ok":true,"found":84,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":12,"maxGeneratedId":112}
+{"i":13,"trace":80,"segment":1,"from":"334391,1111250","to":"224391,1221250","shape":"oct 199391 1086250 359391 1246250 -1032214 -741504 1410286 1480996"}
+{"i":13,"obstacles":[80,77,51],"ok":false,"found":80,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":13,"maxGeneratedId":112}
+{"i":14,"trace":88,"segment":1,"from":"978218,1524000","to":"798218,1524000","shape":"oct 773218 1499000 1003218 1549000 -761137 -510427 2286863 2537573"}
+{"i":14,"obstacles":[111,88,9],"ok":false,"found":9,"tails":false,"depth":0,"pieces":0,"vias":[111]}
+{"i":14,"maxGeneratedId":112}
+{"i":15,"trace":93,"segment":1,"from":"1038390,1016000","to":"848390,826000","shape":"oct 823390 801000 1063390 1041000 -12965 57745 1639035 2089745"}
+{"i":15,"obstacles":[93,92,19,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":15,"maxGeneratedId":112}
+{"i":16,"trace":62,"segment":1,"from":"1632619,1143000","to":"1472619,983000","shape":"oct 1447619 958000 1657619 1168000 454264 524974 2420264 2810974"}
+{"i":16,"obstacles":[94,78,62,21,16,2],"ok":false,"found":94,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":16,"maxGeneratedId":112}
+{"i":17,"trace":96,"segment":1,"from":"1270000,997077","to":"1270000,1017077","shape":"oct 1245000 972077 1295000 1042077 217568 308278 2231722 2322432"}
+{"i":17,"obstacles":[102,96,2],"ok":false,"found":102,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":17,"maxGeneratedId":112}
+{"i":18,"trace":65,"segment":1,"from":"1680845,698500","to":"1490845,508500","shape":"oct 1465845 483500 1705845 723500 946990 1017700 1963990 2414700"}
+{"i":18,"obstacles":[109,65,2],"ok":true,"found":65,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":18,"maxGeneratedId":112}
+{"i":19,"trace":98,"segment":1,"from":"924719,508000","to":"924719,408000","shape":"oct 899719 383000 949719 533000 381364 552074 1297364 1468074"}
+{"i":19,"obstacles":[98,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":19,"maxGeneratedId":112}
+{"i":20,"trace":91,"segment":1,"from":"763270,1524000","to":"623270,1384000","shape":"oct 598270 1359000 788270 1549000 -796085 -725375 1971915 2322625"}
+{"i":20,"obstacles":[91,9,8,2],"ok":false,"found":9,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":20,"maxGeneratedId":112}
+{"i":21,"trace":61,"segment":1,"from":"1562608,1739392","to":"1362608,1539392","shape":"oct 1337608 1514392 1587608 1764392 -212139 -141429 2866645 3337355"}
+{"i":21,"obstacles":[61,60,2],"ok":false,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":21,"maxGeneratedId":112}
+{"i":22,"trace":59,"segment":1,"from":"279527,1740027","to":"279527,1890027","shape":"oct 254527 1715027 304527 1915027 -1645855 -1425145 1984199 2204909"}
+{"i":22,"obstacles":[60,59,3,2],"ok":true,"found":59,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":22,"maxGeneratedId":112}
+{"i":23,"trace":61,"segment":1,"from":"1636014,1665986","to":"1546014,1575986","shape":"oct 1521014 1550986 1661014 1690986 -65327 5383 3086645 3337355"}
+{"i":23,"obstacles":[61,2],"ok":false,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":23,"maxGeneratedId":112}
+{"i":24,"trace":83,"segment":1,"from":"444500,877697","to":"334500,987697","shape":"oct 309500 852697 469500 1012697 -688552 -397842 1286842 1357552"}
+{"i":24,"obstacles":[83,51,50],"ok":false,"found":51,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":24,"maxGeneratedId":112}
+{"i":25,"trace":81,"segment":1,"from":"1397000,406400","to":"1507000,406400","shape":"oct 1372000 381400 1532000 431400 955245 1135955 1768045 1948755"}
+{"i":25,"obstacles":[82,81,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":25,"maxGeneratedId":112}
+{"i":26,"trace":104,"segment":1,"from":"417576,508000","to":"567576,658000","shape":"oct 392576 483000 592576 683000 -125779 -55069 890221 1260931"}
+{"i":26,"obstacles":[104,2],"ok":true,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":26,"maxGeneratedId":112}
+{"i":27,"trace":99,"segment":1,"from":"1882392,1253108","to":"1882392,1213108","shape":"oct 1857392 1188108 1907392 1278108 593929 704639 3060145 3170855"}
+{"i":27,"obstacles":[103,99,10,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":27,"maxGeneratedId":112}
+{"i":28,"trace":70,"segment":1,"from":"1016000,724281","to":"1216000,524281","shape":"oct 991000 499281 1241000 749281 256364 727074 1704926 1775636"}
+{"i":28,"obstacles":[110,98,97,70,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":28,"maxGeneratedId":112}
+{"i":29,"trace":82,"segment":1,"from":"1434338,343662","to":"1454338,323662","shape":"oct 1409338 298662 1479338 368662 1055321 1166031 1742645 1813355"}
+{"i":29,"obstacles":[82,81,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":29,"maxGeneratedId":112}
+{"i":30,"trace":70,"segment":1,"from":"1016000,812292","to":"1196000,632292","shape":"oct 991000 607292 1221000 837292 168353 599063 1792937 1863647"}
+{"i":30,"obstacles":[110,71,70,2],"ok":true,"found":70,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":30,"maxGeneratedId":112}
+{"i":31,"trace":81,"segment":1,"from":"1397000,527812","to":"1517000,647812","shape":"oct 1372000 502812 1542000 672812 833833 904543 1889457 2200167"}
+{"i":31,"obstacles":[109,81,2],"ok":false,"found":109,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":31,"maxGeneratedId":112}
+{"i":32,"trace":66,"segment":1,"from":"635318,1143000","to":"625318,1153000","shape":"oct 600318 1118000 660318 1178000 -563037 -472327 1742963 1813673"}
+{"i":32,"obstacles":[66,8],"ok":false,"found":8,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":32,"maxGeneratedId":112}
+{"i":33,"trace":104,"segment":1,"from":"396240,508000","to":"236240,348000","shape":"oct 211240 323000 421240 533000 -147115 -76405 548885 939595"}
+{"i":33,"obstacles":[104,48,47,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":33,"maxGeneratedId":112}
+{"i":34,"trace":80,"segment":1,"from":"292862,1111250","to":"292862,1011250","shape":"oct 267862 986250 317862 1136250 -853743 -683033 1268757 1439467"}
+{"i":34,"obstacles":[80,77,51],"ok":false,"found":51,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":34,"maxGeneratedId":112}
+{"i":35,"trace":59,"segment":1,"from":"278067,1738567","to":"448067,1738567","shape":"oct 253067 1713567 473067 1763567 -1495855 -1255145 1981279 2221989"}
+{"i":35,"obstacles":[60,59,3,2],"ok":false,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":35,"maxGeneratedId":112}
+{"i":36,"trace":69,"segment":1,"from":"1062292,698500","to":"1212292,548500","shape":"oct 1037292 523500 1237292 723500 328437 699147 1725437 1796147"}
+{"i":36,"obstacles":[110,69,68],"ok":true,"found":68,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":36,"maxGeneratedId":112}
+{"i":37,"trace":74,"segment":1,"from":"356299,356299","to":"496299,216299","shape":"oct 331299 191299 521299 381299 -35355 315355 677243 747953"}
+{"i":37,"obstacles":[74,48],"ok":false,"found":74,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":37,"maxGeneratedId":112}
+{"i":38,"trace":91,"segment":1,"from":"862854,1524000","to":"752854,1634000","shape":"oct 727854 1499000 887854 1659000 -916501 -625791 2351499 2422209"}
+{"i":38,"obstacles":[91,9,2],"ok":true,"found":91,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":38,"maxGeneratedId":112}
+{"i":39,"trace":75,"segment":1,"from":"440246,254000","to":"600246,254000","shape":"oct 415246 229000 625246 279000 150891 381601 658891 889601"}
+{"i":39,"obstacles":[75,7,2],"ok":false,"found":75,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":39,"maxGeneratedId":112}
+{"i":40,"trace":60,"segment":1,"from":"1297178,1778000","to":"1167178,1778000","shape":"oct 1142178 1753000 1322178 1803000 -646177 -445467 2909823 3110533"}
+{"i":40,"obstacles":[60,2],"ok":true,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":40,"maxGeneratedId":112}
+{"i":41,"trace":74,"segment":1,"from":"289243,289243","to":"289243,249243","shape":"oct 264243 224243 314243 314243 -35355 75355 503131 613841"}
+{"i":41,"obstacles":[74,48],"ok":false,"found":74,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":41,"maxGeneratedId":112}
+{"i":42,"trace":101,"segment":1,"from":"254000,770636","to":"74000,770636","shape":"oct 49000 745636 279000 795636 -731991 -481281 809281 1059991"}
+{"i":42,"obstacles":[101,50,2],"ok":true,"found":101,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":42,"maxGeneratedId":112}
+{"i":43,"trace":59,"segment":1,"from":"297371,1757871","to":"177371,1877871","shape":"oct 152371 1732871 322371 1902871 -1735855 -1425145 2019887 2090597"}
+{"i":43,"obstacles":[60,59,3,2],"ok":false,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":43,"maxGeneratedId":112}
+{"i":44,"trace":62,"segment":1,"from":"1724361,1143000","to":"1694361,1113000","shape":"oct 1669361 1088000 1749361 1168000 546006 616716 2772006 2902716"}
+{"i":44,"obstacles":[108,62,21,2],"ok":true,"found":62,"tails":false,"depth":0,"pieces":0,"vias":[108]}
+{"i":44,"maxGeneratedId":112}
+{"i":45,"trace":98,"segment":1,"from":"792798,508000","to":"782798,518000","shape":"oct 757798 483000 817798 543000 229443 320153 1265443 1336153"}
+{"i":45,"obstacles":[98,6,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":45,"maxGeneratedId":112}
+{"i":46,"trace":82,"segment":1,"from":"1467993,310007","to":"1397993,310007","shape":"oct 1372993 285007 1492993 335007 1052631 1193341 1672645 1813355"}
+{"i":46,"obstacles":[82,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":46,"maxGeneratedId":112}
+{"i":47,"trace":60,"segment":1,"from":"832676,1778000","to":"802676,1778000","shape":"oct 777676 1753000 857676 1803000 -1010679 -909969 2545321 2646031"}
+{"i":47,"obstacles":[60,2],"ok":false,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":47,"maxGeneratedId":112}
+{"i":48,"trace":75,"segment":1,"from":"653606,254000","to":"543606,254000","shape":"oct 518606 229000 678606 279000 254251 434961 762251 942961"}
+{"i":48,"obstacles":[76,75,7,2],"ok":false,"found":7,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":48,"maxGeneratedId":112}
+{"i":49,"trace":89,"segment":1,"from":"1584960,1066165","to":"1424960,1226165","shape":"oct 1399960 1041165 1609960 1251165 163440 554150 2615770 2686480"}
+{"i":49,"obstacles":[89],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":49,"maxGeneratedId":112}
+{"i":50,"trace":91,"segment":1,"from":"953802,1524000","to":"953802,1384000","shape":"oct 928802 1359000 978802 1549000 -605553 -394843 2302447 2513157"}
+{"i":50,"obstacles":[111,91,2],"ok":true,"found":91,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":50,"maxGeneratedId":112}
+{"i":51,"trace":85,"segment":1,"from":"897255,1087755","to":"727255,917755","shape":"oct 702255 892755 922255 1112755 -225855 -155145 1609655 2020365"}
+{"i":51,"obstacles":[87,85,4,2],"ok":false,"found":87,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":51,"maxGeneratedId":112}
+{"i":52,"trace":91,"segment":1,"from":"848011,1524000","to":"758011,1524000","shape":"oct 733011 1499000 873011 1549000 -801344 -640634 2246656 2407366"}
+{"i":52,"obstacles":[91,9,2],"ok":true,"found":91,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":52,"maxGeneratedId":112}
+{"i":53,"trace":100,"segment":1,"from":"1540068,1270000","to":"1540068,1450000","shape":"oct 1515068 1245000 1565068 1475000 54713 305423 2774713 3025423"}
+{"i":53,"obstacles":[103,100,23,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":53,"maxGeneratedId":112}
+{"i":54,"trace":59,"segment":1,"from":"284353,1744853","to":"284353,1944853","shape":"oct 259353 1719853 309353 1969853 -1695855 -1425145 1993851 2264561"}
+{"i":54,"obstacles":[60,59,3,2,1],"ok":false,"found":3,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":54,"maxGeneratedId":112}
+{"i":55,"trace":99,"segment":1,"from":"1951917,1183583","to":"1821917,1313583","shape":"oct 1796917 1158583 1976917 1338583 472979 803689 3100145 3170855"}
+{"i":55,"obstacles":[103,99,10,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":55,"maxGeneratedId":112}
+{"i":56,"trace":77,"segment":1,"from":"349726,1110774","to":"459726,1110774","shape":"oct 324726 1085774 484726 1135774 -796403 -615693 1425145 1605855"}
+{"i":56,"obstacles":[80,77,67,66,51],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":56,"maxGeneratedId":112}
+{"i":57,"trace":101,"segment":1,"from":"254000,745490","to":"454000,945490","shape":"oct 229000 720490 479000 970490 -526845 -456135 964135 1434845"}
+{"i":57,"obstacles":[101,50,2],"ok":false,"found":101,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":57,"maxGeneratedId":112}
+{"i":58,"trace":93,"segment":1,"from":"959003,1016000","to":"1059003,1116000","shape":"oct 934003 991000 1084003 1141000 -92352 -21642 1939648 2210358"}
+{"i":58,"obstacles":[93,92,86,20,19,2],"ok":false,"found":86,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":58,"maxGeneratedId":112}
+{"i":59,"trace":86,"segment":1,"from":"970292,1143000","to":"1120292,993000","shape":"oct 945292 968000 1145292 1168000 -208063 162647 2077937 2148647"}
+{"i":59,"obstacles":[93,86,85,20,19,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":59,"maxGeneratedId":112}
+{"i":60,"trace":63,"segment":1,"from":"1778873,1503045","to":"1778873,1483045","shape":"oct 1753873 1458045 1803873 1528045 240473 331183 3226563 3317273"}
+{"i":60,"obstacles":[107,63],"ok":true,"found":63,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":60,"maxGeneratedId":112}
+{"i":61,"trace":104,"segment":1,"from":"548259,508000","to":"408259,648000","shape":"oct 383259 483000 573259 673000 -275096 75614 1020904 1091614"}
+{"i":61,"obstacles":[104,6,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":61,"maxGeneratedId":112}
+{"i":62,"trace":75,"segment":1,"from":"499809,254000","to":"559809,254000","shape":"oct 474809 229000 584809 279000 210454 341164 718454 849164"}
+{"i":62,"obstacles":[75,7,2],"ok":false,"found":7,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":62,"maxGeneratedId":112}
+{"i":63,"trace":93,"segment":1,"from":"976304,1016000","to":"826304,866000","shape":"oct 801304 841000 1001304 1041000 -75051 -4341 1656949 2027659"}
+{"i":63,"obstacles":[93,92,19,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":63,"maxGeneratedId":112}
+{"i":64,"trace":69,"segment":1,"from":"1194880,698500","to":"1274880,618500","shape":"oct 1169880 593500 1299880 723500 461025 691735 1858025 1928735"}
+{"i":64,"obstacles":[69],"ok":true,"found":69,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":64,"maxGeneratedId":112}
+{"i":65,"trace":62,"segment":1,"from":"1677076,1143000","to":"1677076,1253000","shape":"oct 1652076 1118000 1702076 1278000 388721 569431 2784721 2965431"}
+{"i":65,"obstacles":[103,62,23,21,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":65,"maxGeneratedId":112}
+{"i":66,"trace":106,"segment":1,"from":"1967026,601000","to":"1857026,601000","shape":"oct 1832026 576000 1992026 626000 1220671 1401381 2422671 2603381"}
+{"i":66,"obstacles":[106,105,41,2],"ok":true,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":66,"maxGeneratedId":112}
+{"i":67,"trace":90,"segment":1,"from":"1639832,889000","to":"1759832,769000","shape":"oct 1614832 744000 1784832 914000 715477 1026187 2493477 2564187"}
+{"i":67,"obstacles":[112,90,73,18,2],"ok":false,"found":112,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":67,"maxGeneratedId":112}
+{"i":68,"trace":97,"segment":1,"from":"1233519,566769","to":"1293519,566769","shape":"oct 1208519 541769 1318519 591769 631395 762105 1764933 1895643"}
+{"i":68,"obstacles":[97,96,2],"ok":true,"found":96,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":68,"maxGeneratedId":112}
+{"i":69,"trace":67,"segment":1,"from":"460756,1184339","to":"410756,1134339","shape":"oct 385756 1109339 485756 1209339 -758938 -688228 1509740 1680450"}
+{"i":69,"obstacles":[80,77,67,66],"ok":false,"found":80,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":69,"maxGeneratedId":112}
+{"i":70,"trace":76,"segment":1,"from":"1342390,254000","to":"1532390,254000","shape":"oct 1317390 229000 1557390 279000 1053035 1313745 1561035 1821745"}
+{"i":70,"obstacles":[82,79,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":70,"maxGeneratedId":112}
+{"i":71,"trace":87,"segment":1,"from":"701294,1016000","to":"561294,876000","shape":"oct 536294 851000 726294 1041000 -350061 -279351 1401939 1752649"}
+{"i":71,"obstacles":[87,4,2],"ok":false,"found":87,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":71,"maxGeneratedId":112}
+{"i":72,"trace":64,"segment":1,"from":"889000,1046480","to":"1059000,1216480","shape":"oct 864000 1021480 1084000 1241480 -192835 -122125 1900125 2310835"}
+{"i":72,"obstacles":[72,64],"ok":true,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":72,"maxGeneratedId":112}
+{"i":73,"trace":65,"segment":1,"from":"1767332,698500","to":"1777332,688500","shape":"oct 1742332 663500 1802332 723500 1033477 1124187 2430477 2501187"}
+{"i":73,"obstacles":[73,65,2],"ok":false,"found":73,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":73,"maxGeneratedId":112}
+{"i":74,"trace":105,"segment":1,"from":"1946500,526048","to":"2016500,526048","shape":"oct 1921500 501048 2041500 551048 1385097 1525807 2437193 2577903"}
+{"i":74,"obstacles":[105,41,2],"ok":true,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":74,"maxGeneratedId":112}
+{"i":75,"trace":92,"segment":1,"from":"775462,838962","to":"865462,748962","shape":"oct 750462 723962 890462 863962 -98855 151855 1579069 1649779"}
+{"i":75,"obstacles":[92,5,2],"ok":false,"found":92,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":75,"maxGeneratedId":112}
+{"i":76,"trace":62,"segment":1,"from":"1696879,1143000","to":"1606879,1233000","shape":"oct 1581879 1118000 1721879 1258000 338524 589234 2804524 2875234"}
+{"i":76,"obstacles":[103,100,62,23,21,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":76,"maxGeneratedId":112}
+{"i":77,"trace":104,"segment":1,"from":"542036,508000","to":"612036,508000","shape":"oct 517036 483000 637036 533000 -1319 139391 1014681 1155391"}
+{"i":77,"obstacles":[104,6,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":77,"maxGeneratedId":112}
+{"i":78,"trace":80,"segment":1,"from":"328105,1111250","to":"328105,1081250","shape":"oct 303105 1056250 353105 1136250 -818500 -717790 1374000 1474710"}
+{"i":78,"obstacles":[80,77,51],"ok":true,"found":77,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":78,"maxGeneratedId":112}
+{"i":79,"trace":104,"segment":1,"from":"333121,508000","to":"193121,648000","shape":"oct 168121 483000 358121 673000 -490234 -139524 805766 876476"}
+{"i":79,"obstacles":[104,101,47,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":79,"maxGeneratedId":112}
+{"i":80,"trace":93,"segment":1,"from":"1032500,1016000","to":"1062500,1016000","shape":"oct 1007500 991000 1087500 1041000 -18855 81855 2013145 2113855"}
+{"i":80,"obstacles":[93,19,2],"ok":true,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":80,"maxGeneratedId":112}
+{"i":81,"trace":71,"segment":1,"from":"1056670,869125","to":"1176670,749125","shape":"oct 1031670 724125 1201670 894125 152190 462900 1890440 1961150"}
+{"i":81,"obstacles":[71,70,22,2],"ok":false,"found":71,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":81,"maxGeneratedId":112}
+{"i":82,"trace":100,"segment":1,"from":"1545057,1270000","to":"1455057,1180000","shape":"oct 1430057 1155000 1570057 1295000 239702 310412 2599702 2850412"}
+{"i":82,"obstacles":[103,102,100,23,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":82,"maxGeneratedId":112}
+{"i":83,"trace":84,"segment":1,"from":"796819,1270000","to":"916819,1390000","shape":"oct 771819 1245000 941819 1415000 -508536 -437826 2031464 2342174"}
+{"i":83,"obstacles":[84,8,2],"ok":false,"found":84,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":83,"maxGeneratedId":112}
+{"i":84,"trace":105,"segment":1,"from":"1946500,539928","to":"1926500,559928","shape":"oct 1901500 514928 1971500 584928 1331217 1441927 2451073 2521783"}
+{"i":84,"obstacles":[106,105,41,2],"ok":true,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":84,"maxGeneratedId":112}
+{"i":85,"trace":74,"segment":1,"from":"321056,321056","to":"411056,411056","shape":"oct 296056 296056 436056 436056 -35355 35355 606757 857467"}
+{"i":85,"obstacles":[83,74,48],"ok":false,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":85,"maxGeneratedId":112}
+{"i":86,"trace":61,"segment":1,"from":"1661160,1640840","to":"1671160,1650840","shape":"oct 1636160 1615840 1696160 1675840 -15035 55675 3266645 3357355"}
+{"i":86,"obstacles":[61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":86,"maxGeneratedId":112}
+{"i":87,"trace":105,"segment":1,"from":"1946500,369898","to":"2116500,199898","shape":"oct 1921500 174898 2141500 394898 1541247 1951957 2281043 2351753"}
+{"i":87,"obstacles":[105,52,2,1],"ok":false,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":87,"maxGeneratedId":112}
+{"i":88,"trace":82,"segment":1,"from":"1523746,254254","to":"1523746,164254","shape":"oct 1498746 139254 1548746 279254 1234137 1394847 1652645 1813355"}
+{"i":88,"obstacles":[82,79,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":88,"maxGeneratedId":112}
+{"i":89,"trace":105,"segment":1,"from":"1946500,359488","to":"1776500,189488","shape":"oct 1751500 164488 1971500 384488 1551657 1622367 1930633 2341343"}
+{"i":89,"obstacles":[105,53,52,2],"ok":false,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":89,"maxGeneratedId":112}
+{"i":90,"trace":79,"segment":1,"from":"1675088,254000","to":"1485088,254000","shape":"oct 1460088 229000 1700088 279000 1195733 1456443 1703733 1964443"}
+{"i":90,"obstacles":[82,79,76,53,2],"ok":false,"found":53,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":90,"maxGeneratedId":112}
+{"i":91,"trace":103,"segment":1,"from":"1713597,1270000","to":"1713597,1190000","shape":"oct 1688597 1165000 1738597 1295000 408242 558952 2868242 3018952"}
+{"i":91,"obstacles":[108,103,62,2],"ok":false,"found":108,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":91,"maxGeneratedId":112}
+{"i":92,"trace":61,"segment":1,"from":"1726946,1575054","to":"1746946,1555054","shape":"oct 1701946 1530054 1771946 1600054 116537 227247 3266645 3337355"}
+{"i":92,"obstacles":[107,61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":92,"maxGeneratedId":112}
+{"i":93,"trace":72,"segment":1,"from":"829628,1138873","to":"949628,1018873","shape":"oct 804628 993873 974628 1163873 -344600 -33890 1933146 2003856"}
+{"i":93,"obstacles":[72,66,64],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":93,"maxGeneratedId":112}
+{"i":94,"trace":64,"segment":1,"from":"889000,989584","to":"729000,829584","shape":"oct 704000 804584 914000 1014584 -135939 -65229 1523229 1913939"}
+{"i":94,"obstacles":[64,5],"ok":false,"found":5,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":94,"maxGeneratedId":112}
+{"i":95,"trace":77,"segment":1,"from":"360299,1100201","to":"250299,1100201","shape":"oct 225299 1075201 385299 1125201 -885257 -704547 1315145 1495855"}
+{"i":95,"obstacles":[80,77,51],"ok":false,"found":80,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":95,"maxGeneratedId":112}
+{"i":96,"trace":77,"segment":1,"from":"439642,1020858","to":"379642,960858","shape":"oct 354642 935858 464642 1045858 -616571 -545861 1305145 1495855"}
+{"i":96,"obstacles":[83,77,50],"ok":false,"found":50,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":96,"maxGeneratedId":112}
+{"i":97,"trace":63,"segment":1,"from":"1786842,1311783","to":"1726842,1371783","shape":"oct 1701842 1286783 1811842 1396783 319704 510414 3063270 3133980"}
+{"i":97,"obstacles":[63],"ok":false,"found":63,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":97,"maxGeneratedId":112}
+{"i":98,"trace":97,"segment":1,"from":"1177608,510858","to":"1177608,420858","shape":"oct 1152608 395858 1202608 535858 631395 792105 1563111 1723821"}
+{"i":98,"obstacles":[98,97,2],"ok":true,"found":97,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":98,"maxGeneratedId":112}
+{"i":99,"trace":59,"segment":1,"from":"259461,1719961","to":"159461,1719961","shape":"oct 134461 1694961 284461 1744961 -1595855 -1425145 1844067 2014777"}
+{"i":99,"obstacles":[59,3,2],"ok":false,"found":59,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":99,"maxGeneratedId":112}
+{"i":100,"trace":72,"segment":1,"from":"853440,1115060","to":"853440,1125060","shape":"oct 828440 1090060 878440 1150060 -306975 -226265 1933145 2013855"}
+{"i":100,"obstacles":[72,66,64],"ok":true,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":100,"maxGeneratedId":112}
+{"i":101,"trace":96,"segment":1,"from":"1270000,749046","to":"1420000,899046","shape":"oct 1245000 724046 1445000 924046 485599 556309 1983691 2354401"}
+{"i":101,"obstacles":[96,81,78,2],"ok":false,"found":96,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":101,"maxGeneratedId":112}
+{"i":102,"trace":77,"segment":1,"from":"402876,1057624","to":"302876,1057624","shape":"oct 277876 1032624 427876 1082624 -790103 -619393 1325145 1495855"}
+{"i":102,"obstacles":[83,80,77,51],"ok":true,"found":77,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":102,"maxGeneratedId":112}
+{"i":103,"trace":89,"segment":1,"from":"1533525,1117600","to":"1623525,1027600","shape":"oct 1508525 1002600 1648525 1142600 380570 631280 2615770 2686480"}
+{"i":103,"obstacles":[89],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":103,"maxGeneratedId":112}
+{"i":104,"trace":63,"segment":1,"from":"1785636,1340739","to":"1785636,1350739","shape":"oct 1760636 1315739 1810636 1375739 399542 480252 3091020 3171730"}
+{"i":104,"obstacles":[63],"ok":true,"found":63,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":104,"maxGeneratedId":112}
+{"i":105,"trace":77,"segment":1,"from":"402495,1058005","to":"402495,1178005","shape":"oct 377495 1033005 427495 1203005 -810865 -620155 1425145 1615855"}
+{"i":105,"obstacles":[83,80,77,67,51],"ok":false,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":105,"maxGeneratedId":112}
+{"i":106,"trace":72,"segment":1,"from":"827215,1141286","to":"947215,1261286","shape":"oct 802215 1116286 972215 1286286 -349426 -278716 1933146 2243856"}
+{"i":106,"obstacles":[72,66],"ok":true,"found":66,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":106,"maxGeneratedId":112}
+{"i":107,"trace":65,"segment":1,"from":"1731899,698500","to":"1661899,768500","shape":"oct 1636899 673500 1756899 793500 858044 1068754 2395044 2465754"}
+{"i":107,"obstacles":[73,65,2],"ok":false,"found":73,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":107,"maxGeneratedId":112}
+{"i":108,"trace":95,"segment":1,"from":"1639431,992000","to":"1729431,992000","shape":"oct 1614431 967000 1754431 1017000 612076 772786 2596076 2756786"}
+{"i":108,"obstacles":[95,94,16,2],"ok":true,"found":94,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":108,"maxGeneratedId":112}
+{"i":109,"trace":78,"segment":1,"from":"1486154,978154","to":"1376154,868154","shape":"oct 1351154 843154 1511154 1003154 472645 543355 2208953 2499663"}
+{"i":109,"obstacles":[81,78,16,2],"ok":false,"found":81,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":109,"maxGeneratedId":112}
+{"i":110,"trace":76,"segment":1,"from":"1350645,254000","to":"1230645,254000","shape":"oct 1205645 229000 1375645 279000 941290 1132000 1449290 1640000"}
+{"i":110,"obstacles":[76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":110,"maxGeneratedId":112}
+{"i":111,"trace":94,"segment":1,"from":"1605384,1002416","to":"1525384,1082416","shape":"oct 1500384 977416 1630384 1107416 407613 638323 2572445 2643155"}
+{"i":111,"obstacles":[95,94,78,21,16,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":111,"maxGeneratedId":112}
+{"i":112,"trace":80,"segment":1,"from":"265525,1111250","to":"265525,1271250","shape":"oct 240525 1086250 290525 1296250 -1041080 -810370 1341420 1572130"}
+{"i":112,"obstacles":[80,67,51,49],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":112,"maxGeneratedId":112}
+{"i":113,"trace":70,"segment":1,"from":"1016000,747649","to":"1016000,867649","shape":"oct 991000 722649 1041000 892649 112996 303706 1728294 1919004"}
+{"i":113,"obstacles":[110,71,70,22,2],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":113,"maxGeneratedId":112}
+{"i":114,"trace":72,"segment":1,"from":"878777,1089724","to":"958777,1009724","shape":"oct 853777 984724 983777 1114724 -246302 -15592 1933146 2003856"}
+{"i":114,"obstacles":[72,64],"ok":true,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":114,"maxGeneratedId":112}
+{"i":115,"trace":89,"segment":1,"from":"1550035,1101090","to":"1610035,1161090","shape":"oct 1525035 1076090 1635035 1186090 413590 484300 2615770 2806480"}
+{"i":115,"obstacles":[89],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":115,"maxGeneratedId":112}
+{"i":116,"trace":96,"segment":1,"from":"1270000,779717","to":"1270000,939717","shape":"oct 1245000 754717 1295000 964717 294928 525638 2014362 2245072"}
+{"i":116,"obstacles":[96,2],"ok":true,"found":96,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":116,"maxGeneratedId":112}
+{"i":117,"trace":91,"segment":1,"from":"807799,1524000","to":"807799,1374000","shape":"oct 782799 1349000 832799 1549000 -751556 -530846 2146444 2367154"}
+{"i":117,"obstacles":[91,9,2],"ok":false,"found":91,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":117,"maxGeneratedId":112}
+{"i":118,"trace":60,"segment":1,"from":"604647,1778000","to":"794647,1968000","shape":"oct 579647 1753000 819647 1993000 -1208708 -1137998 2347292 2798002"}
+{"i":118,"obstacles":[60,2,1],"ok":false,"found":1,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":118,"maxGeneratedId":112}
+{"i":119,"trace":91,"segment":1,"from":"947055,1524000","to":"997055,1474000","shape":"oct 922055 1449000 1022055 1549000 -612300 -441590 2435700 2506410"}
+{"i":119,"obstacles":[111,91,2],"ok":false,"found":111,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":119,"maxGeneratedId":112}
+{"i":120,"trace":65,"segment":1,"from":"1647127,698500","to":"1727127,618500","shape":"oct 1622127 593500 1752127 723500 913272 1143982 2310272 2380982"}
+{"i":120,"obstacles":[109,65,2],"ok":true,"found":65,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":120,"maxGeneratedId":112}
+{"i":121,"trace":106,"segment":1,"from":"1954816,601000","to":"2024816,601000","shape":"oct 1929816 576000 2049816 626000 1318461 1459171 2520461 2661171"}
+{"i":121,"obstacles":[106,105,41,2],"ok":false,"found":106,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":121,"maxGeneratedId":112}
+{"i":122,"trace":75,"segment":1,"from":"348234,254000","to":"228234,374000","shape":"oct 203234 229000 373234 399000 -181121 129589 566879 637589"}
+{"i":122,"obstacles":[75,48,2],"ok":true,"found":75,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":122,"maxGeneratedId":112}
+{"i":123,"trace":82,"segment":1,"from":"1506093,271907","to":"1346093,111907","shape":"oct 1321093 86907 1531093 296907 1198831 1269541 1422645 1813355"}
+{"i":123,"obstacles":[82,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":123,"maxGeneratedId":112}
+{"i":124,"trace":90,"segment":1,"from":"1696891,889000","to":"1696891,939000","shape":"oct 1671891 864000 1721891 964000 722536 843246 2550536 2671246"}
+{"i":124,"obstacles":[112,95,90,18,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[112]}
+{"i":124,"maxGeneratedId":112}
+{"i":125,"trace":62,"segment":1,"from":"1736688,1143000","to":"1566688,1143000","shape":"oct 1541688 1118000 1761688 1168000 388333 629043 2674333 2915043"}
+{"i":125,"obstacles":[108,62,21,2],"ok":false,"found":108,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":125,"maxGeneratedId":112}
+{"i":126,"trace":67,"segment":1,"from":"421386,1218787","to":"421386,1378787","shape":"oct 396386 1193787 446386 1403787 -992756 -762046 1604818 1835528"}
+{"i":126,"obstacles":[67],"ok":true,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":126,"maxGeneratedId":112}
+{"i":127,"trace":93,"segment":1,"from":"964647,1016000","to":"764647,1216000","shape":"oct 739647 991000 989647 1241000 -486708 -15998 1945292 2016002"}
+{"i":127,"obstacles":[93,92,85,84,19,8,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":127,"maxGeneratedId":112}
+{"i":128,"trace":100,"segment":1,"from":"1577357,1270000","to":"1507357,1200000","shape":"oct 1482357 1175000 1602357 1295000 272002 342712 2672002 2882712"}
+{"i":128,"obstacles":[103,100,23,21,2],"ok":false,"found":21,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":128,"maxGeneratedId":112}
+{"i":129,"trace":88,"segment":1,"from":"979964,1524000","to":"1089964,1524000","shape":"oct 954964 1499000 1114964 1549000 -579391 -398681 2468609 2649319"}
+{"i":129,"obstacles":[111,89,88],"ok":false,"found":111,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":129,"maxGeneratedId":112}
+{"i":130,"trace":96,"segment":1,"from":"1270000,752158","to":"1330000,812158","shape":"oct 1245000 727158 1355000 837158 482487 553197 1986803 2177513"}
+{"i":130,"obstacles":[96,81,2],"ok":false,"found":81,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":130,"maxGeneratedId":112}
+{"i":131,"trace":104,"segment":1,"from":"657162,508000","to":"507162,658000","shape":"oct 482162 483000 682162 683000 -186193 184517 1129807 1200517"}
+{"i":131,"obstacles":[104,98,6,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":131,"maxGeneratedId":112}
+{"i":132,"trace":85,"segment":1,"from":"915670,1106170","to":"915670,1176170","shape":"oct 890670 1081170 940670 1201170 -295855 -155145 1986485 2127195"}
+{"i":132,"obstacles":[86,85,2],"ok":true,"found":85,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":132,"maxGeneratedId":112}
+{"i":133,"trace":79,"segment":1,"from":"1558638,254000","to":"1388638,424000","shape":"oct 1363638 229000 1583638 449000 929283 1339993 1777283 1847993"}
+{"i":133,"obstacles":[82,81,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":133,"maxGeneratedId":112}
+{"i":134,"trace":90,"segment":1,"from":"1635744,889000","to":"1675744,849000","shape":"oct 1610744 824000 1700744 914000 711389 862099 2489389 2560099"}
+{"i":134,"obstacles":[112,90,18,2],"ok":true,"found":90,"tails":false,"depth":0,"pieces":0,"vias":[112]}
+{"i":134,"maxGeneratedId":112}
+{"i":135,"trace":94,"segment":1,"from":"1600368,1007432","to":"1530368,937432","shape":"oct 1505368 912432 1625368 1032432 557581 628291 2432445 2643155"}
+{"i":135,"obstacles":[95,94,78,18,16,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":135,"maxGeneratedId":112}
+{"i":136,"trace":100,"segment":1,"from":"1503041,1270000","to":"1503041,1250000","shape":"oct 1478041 1225000 1528041 1295000 197686 288396 2717686 2808396"}
+{"i":136,"obstacles":[102,100,23,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":136,"maxGeneratedId":112}
+{"i":137,"trace":76,"segment":1,"from":"1342390,254000","to":"1512390,254000","shape":"oct 1317390 229000 1537390 279000 1053035 1293745 1561035 1801745"}
+{"i":137,"obstacles":[82,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":137,"maxGeneratedId":112}
+{"i":138,"trace":79,"segment":1,"from":"1584775,254000","to":"1624775,294000","shape":"oct 1559775 229000 1649775 319000 1295420 1366130 1803420 1954130"}
+{"i":138,"obstacles":[82,79,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":138,"maxGeneratedId":112}
+{"i":139,"trace":102,"segment":1,"from":"1405636,1205992","to":"1225636,1025992","shape":"oct 1200636 1000992 1430636 1230992 164289 234999 2216273 2646983"}
+{"i":139,"obstacles":[102,96,2],"ok":false,"found":102,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":139,"maxGeneratedId":112}
+{"i":140,"trace":63,"segment":1,"from":"1793827,1144143","to":"1593827,944143","shape":"oct 1568827 919143 1818827 1169143 614329 685039 2502615 2973325"}
+{"i":140,"obstacles":[108,89,63],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":140,"maxGeneratedId":112}
+{"i":141,"trace":95,"segment":1,"from":"1767108,992000","to":"1737108,992000","shape":"oct 1712108 967000 1792108 1017000 709753 810463 2693753 2794463"}
+{"i":141,"obstacles":[95,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":141,"maxGeneratedId":112}
+{"i":142,"trace":99,"segment":1,"from":"1939969,1195531","to":"1979969,1235531","shape":"oct 1914969 1170531 2004969 1260531 709083 779793 3100145 3250855"}
+{"i":142,"obstacles":[99,10,2],"ok":true,"found":99,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":142,"maxGeneratedId":112}
+{"i":143,"trace":74,"segment":1,"from":"404876,404876","to":"264876,264876","shape":"oct 239876 239876 429876 429876 -35355 35355 494397 845107"}
+{"i":143,"obstacles":[83,74,48],"ok":false,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":143,"maxGeneratedId":112}
+{"i":144,"trace":98,"segment":1,"from":"867093,508000","to":"867093,408000","shape":"oct 842093 383000 892093 533000 323738 494448 1239738 1410448"}
+{"i":144,"obstacles":[98,2],"ok":true,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":144,"maxGeneratedId":112}
+{"i":145,"trace":82,"segment":1,"from":"1507109,270891","to":"1507109,200891","shape":"oct 1482109 175891 1532109 295891 1200863 1341573 1672645 1813355"}
+{"i":145,"obstacles":[82,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":145,"maxGeneratedId":112}
+{"i":146,"trace":82,"segment":1,"from":"1434465,343535","to":"1324465,453535","shape":"oct 1299465 318535 1459465 478535 835575 1126285 1742645 1813355"}
+{"i":146,"obstacles":[82,81,2],"ok":true,"found":81,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":146,"maxGeneratedId":112}
+{"i":147,"trace":82,"segment":1,"from":"1449070,328930","to":"1529070,408930","shape":"oct 1424070 303930 1554070 433930 1084785 1155495 1742645 1973355"}
+{"i":147,"obstacles":[82,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":147,"maxGeneratedId":112}
+{"i":148,"trace":60,"segment":1,"from":"1268222,1778000","to":"1198222,1778000","shape":"oct 1173222 1753000 1293222 1803000 -615133 -474423 2940867 3081577"}
+{"i":148,"obstacles":[60,2],"ok":true,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":148,"maxGeneratedId":112}
+{"i":149,"trace":82,"segment":1,"from":"1443482,334518","to":"1623482,514518","shape":"oct 1418482 309518 1648482 539518 1073609 1144319 1742645 2173355"}
+{"i":149,"obstacles":[82,81,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":149,"maxGeneratedId":112}
+{"i":150,"trace":70,"segment":1,"from":"1016000,790194","to":"1066000,740194","shape":"oct 991000 715194 1091000 815194 190451 361161 1770839 1841549"}
+{"i":150,"obstacles":[110,71,70,2],"ok":true,"found":70,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":150,"maxGeneratedId":112}
+{"i":151,"trace":102,"segment":1,"from":"1340676,1130205","to":"1340676,1260205","shape":"oct 1315676 1105205 1365676 1285205 45116 245826 2435526 2636236"}
+{"i":151,"obstacles":[102,2],"ok":false,"found":102,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":151,"maxGeneratedId":112}
+{"i":152,"trace":84,"segment":1,"from":"952019,1270000","to":"1052019,1270000","shape":"oct 927019 1245000 1077019 1295000 -353336 -182626 2186664 2357374"}
+{"i":152,"obstacles":[84,17,2],"ok":true,"found":84,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":152,"maxGeneratedId":112}
+{"i":153,"trace":82,"segment":1,"from":"1438529,339471","to":"1608529,509471","shape":"oct 1413529 314471 1633529 534471 1063703 1134413 1742645 2153355"}
+{"i":153,"obstacles":[82,81,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":153,"maxGeneratedId":112}
+{"i":154,"trace":75,"segment":1,"from":"323342,254000","to":"173342,254000","shape":"oct 148342 229000 348342 279000 -116013 104697 391987 612697"}
+{"i":154,"obstacles":[75,48,2],"ok":false,"found":48,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":154,"maxGeneratedId":112}
+{"i":155,"trace":68,"segment":1,"from":"992886,721614","to":"1172886,901614","shape":"oct 967886 696614 1197886 926614 235917 306627 1679145 2109855"}
+{"i":155,"obstacles":[110,69,68],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":155,"maxGeneratedId":112}
+{"i":156,"trace":83,"segment":1,"from":"444500,786257","to":"444500,936257","shape":"oct 419500 761257 469500 961257 -527112 -306402 1195402 1416112"}
+{"i":156,"obstacles":[83],"ok":true,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":156,"maxGeneratedId":112}
+{"i":157,"trace":70,"segment":1,"from":"1016000,728980","to":"1006000,728980","shape":"oct 981000 703980 1041000 753980 241665 322375 1699625 1780335"}
+{"i":157,"obstacles":[110,70,2],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":157,"maxGeneratedId":112}
+{"i":158,"trace":62,"segment":1,"from":"1622920,1143000","to":"1622920,1053000","shape":"oct 1597920 1028000 1647920 1168000 444565 605275 2640565 2801275"}
+{"i":158,"obstacles":[95,94,62,21,16,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":158,"maxGeneratedId":112}
+{"i":159,"trace":103,"segment":1,"from":"1661046,1270000","to":"1551046,1380000","shape":"oct 1526046 1245000 1686046 1405000 135691 426401 2895691 2966401"}
+{"i":159,"obstacles":[103,100,23,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":159,"maxGeneratedId":112}
+{"i":160,"trace":86,"segment":1,"from":"1022930,1143000","to":"1162930,1283000","shape":"oct 997930 1118000 1187930 1308000 -155425 -84715 2130575 2481285"}
+{"i":160,"obstacles":[86,84,20,17,2],"ok":false,"found":84,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":160,"maxGeneratedId":112}
+{"i":161,"trace":67,"segment":1,"from":"330708,1298131","to":"330708,1348131","shape":"oct 305708 1273131 355708 1373131 -1052778 -932068 1593484 1714194"}
+{"i":161,"obstacles":[67,49],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":161,"maxGeneratedId":112}
+{"i":162,"trace":84,"segment":1,"from":"847673,1270000","to":"847673,1180000","shape":"oct 822673 1155000 872673 1295000 -457682 -296972 1992318 2153028"}
+{"i":162,"obstacles":[84,8,2],"ok":true,"found":84,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":162,"maxGeneratedId":112}
+{"i":163,"trace":79,"segment":1,"from":"1643638,254000","to":"1763638,374000","shape":"oct 1618638 229000 1788638 399000 1354283 1424993 1862283 2172993"}
+{"i":163,"obstacles":[79,53,2],"ok":false,"found":79,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":163,"maxGeneratedId":112}
+{"i":164,"trace":102,"segment":1,"from":"1389063,1186656","to":"1399063,1176656","shape":"oct 1364063 1151656 1424063 1211656 167052 257762 2540364 2611074"}
+{"i":164,"obstacles":[102,2],"ok":true,"found":102,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":164,"maxGeneratedId":112}
+{"i":165,"trace":90,"segment":1,"from":"1618711,889000","to":"1718711,789000","shape":"oct 1593711 764000 1743711 914000 694356 965066 2472356 2543066"}
+{"i":165,"obstacles":[90,18,2],"ok":false,"found":90,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":165,"maxGeneratedId":112}
+{"i":166,"trace":63,"segment":1,"from":"1790779,1217295","to":"1630779,1057295","shape":"oct 1605779 1032295 1815779 1242295 538129 608839 2652719 3043429"}
+{"i":166,"obstacles":[108,89,63],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":166,"maxGeneratedId":112}
+{"i":167,"trace":98,"segment":1,"from":"925671,508000","to":"1075671,508000","shape":"oct 900671 483000 1100671 533000 382316 603026 1398316 1619026"}
+{"i":167,"obstacles":[98,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":167,"maxGeneratedId":112}
+{"i":168,"trace":76,"segment":1,"from":"1428242,254000","to":"1568242,114000","shape":"oct 1403242 89000 1593242 279000 1138887 1489597 1646887 1717597"}
+{"i":168,"obstacles":[82,79,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":168,"maxGeneratedId":112}
+{"i":169,"trace":105,"segment":1,"from":"1946500,297028","to":"2036500,387028","shape":"oct 1921500 272028 2061500 412028 1614117 1684827 2208173 2458883"}
+{"i":169,"obstacles":[105,52,2],"ok":false,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":169,"maxGeneratedId":112}
+{"i":170,"trace":88,"segment":1,"from":"1108551,1524000","to":"1298551,1334000","shape":"oct 1083551 1309000 1323551 1549000 -450804 -94 2597196 2667906"}
+{"i":170,"obstacles":[89,88],"ok":true,"found":88,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":170,"maxGeneratedId":112}
+{"i":171,"trace":70,"segment":1,"from":"1016000,708152","to":"1146000,708152","shape":"oct 991000 683152 1171000 733152 272493 473203 1688797 1889507"}
+{"i":171,"obstacles":[110,70,2],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":171,"maxGeneratedId":112}
+{"i":172,"trace":105,"segment":1,"from":"1946500,513556","to":"1826500,633556","shape":"oct 1801500 488556 1971500 658556 1157589 1468299 2424701 2495411"}
+{"i":172,"obstacles":[106,105,41,2],"ok":true,"found":105,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":172,"maxGeneratedId":112}
+{"i":173,"trace":72,"segment":1,"from":"834073,1134428","to":"944073,1244428","shape":"oct 809073 1109428 969073 1269428 -335710 -265000 1933146 2223856"}
+{"i":173,"obstacles":[72,66],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":173,"maxGeneratedId":112}
+{"i":174,"trace":81,"segment":1,"from":"1397000,719836","to":"1397000,529836","shape":"oct 1372000 504836 1422000 744836 641809 902519 1891481 2152191"}
+{"i":174,"obstacles":[81,2],"ok":true,"found":81,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":174,"maxGeneratedId":112}
+{"i":175,"trace":71,"segment":1,"from":"1063360,876300","to":"883360,1056300","shape":"oct 858360 851300 1088360 1081300 -208295 222415 1904305 1975015"}
+{"i":175,"obstacles":[93,92,87,85,71,70,22,19,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":175,"maxGeneratedId":112}
+{"i":176,"trace":60,"segment":1,"from":"873697,1778000","to":"823697,1778000","shape":"oct 798697 1753000 898697 1803000 -989658 -868948 2566342 2687052"}
+{"i":176,"obstacles":[60,2],"ok":true,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":176,"maxGeneratedId":112}
+{"i":177,"trace":88,"segment":1,"from":"1126966,1524000","to":"1036966,1524000","shape":"oct 1011966 1499000 1151966 1549000 -522389 -361679 2525611 2686321"}
+{"i":177,"obstacles":[111,89,88],"ok":false,"found":111,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":177,"maxGeneratedId":112}
+{"i":178,"trace":78,"segment":1,"from":"1464437,956437","to":"1494437,926437","shape":"oct 1439437 901437 1519437 981437 472645 603355 2385519 2456229"}
+{"i":178,"obstacles":[78,18,2],"ok":false,"found":18,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":178,"maxGeneratedId":112}
+{"i":179,"trace":89,"segment":1,"from":"1413510,1237615","to":"1363510,1237615","shape":"oct 1338510 1212615 1438510 1262615 90540 211250 2565770 2686480"}
+{"i":179,"obstacles":[89],"ok":false,"found":89,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":179,"maxGeneratedId":112}
+{"i":180,"trace":105,"segment":1,"from":"1946500,465323","to":"1826500,345323","shape":"oct 1801500 320323 1971500 490323 1445822 1516532 2136468 2447178"}
+{"i":180,"obstacles":[105,53,2],"ok":false,"found":53,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":180,"maxGeneratedId":112}
+{"i":181,"trace":60,"segment":1,"from":"621538,1778000","to":"431538,1968000","shape":"oct 406538 1753000 646538 1993000 -1571817 -1121107 2364183 2434893"}
+{"i":181,"obstacles":[60,2,1],"ok":false,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":181,"maxGeneratedId":112}
+{"i":182,"trace":69,"segment":1,"from":"1532065,698500","to":"1532065,868500","shape":"oct 1507065 673500 1557065 893500 628210 868920 2195210 2435920"}
+{"i":182,"obstacles":[109,69],"ok":true,"found":69,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":182,"maxGeneratedId":112}
+{"i":183,"trace":69,"segment":1,"from":"1497775,698500","to":"1497775,798500","shape":"oct 1472775 673500 1522775 823500 663920 834630 2160920 2331630"}
+{"i":183,"obstacles":[109,69],"ok":false,"found":109,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":183,"maxGeneratedId":112}
+{"i":184,"trace":71,"segment":1,"from":"1073069,886714","to":"1083069,896714","shape":"oct 1048069 861714 1108069 921714 151000 221710 1924428 2015138"}
+{"i":184,"obstacles":[71,22,2],"ok":true,"found":71,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":184,"maxGeneratedId":112}
+{"i":185,"trace":79,"segment":1,"from":"1651713,254000","to":"1581713,254000","shape":"oct 1556713 229000 1676713 279000 1292358 1433068 1800358 1941068"}
+{"i":185,"obstacles":[82,79,76,53,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":185,"maxGeneratedId":112}
+{"i":186,"trace":93,"segment":1,"from":"987838,1016000","to":"917838,946000","shape":"oct 892838 921000 1012838 1041000 -63517 7193 1828483 2039193"}
+{"i":186,"obstacles":[93,92,19,2],"ok":true,"found":92,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":186,"maxGeneratedId":112}
+{"i":187,"trace":87,"segment":1,"from":"759079,1016000","to":"869079,1016000","shape":"oct 734079 991000 894079 1041000 -292276 -111566 1739724 1920434"}
+{"i":187,"obstacles":[92,87,85,4,2],"ok":false,"found":92,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":187,"maxGeneratedId":112}
+{"i":188,"trace":85,"segment":1,"from":"948436,1138936","to":"968436,1158936","shape":"oct 923436 1113936 993436 1183936 -225855 -155145 2052017 2162727"}
+{"i":188,"obstacles":[86,85,20,2],"ok":false,"found":20,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":188,"maxGeneratedId":112}
+{"i":189,"trace":92,"segment":1,"from":"939546,1003046","to":"1019546,1003046","shape":"oct 914546 978046 1044546 1028046 -98855 51855 1907237 2057947"}
+{"i":189,"obstacles":[93,92,19,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":189,"maxGeneratedId":112}
+{"i":190,"trace":94,"segment":1,"from":"1597488,1010312","to":"1517488,930312","shape":"oct 1492488 905312 1622488 1035312 551821 622531 2412445 2643155"}
+{"i":190,"obstacles":[95,94,78,18,16,2],"ok":false,"found":18,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":190,"maxGeneratedId":112}
+{"i":191,"trace":73,"segment":1,"from":"1883347,752418","to":"1883347,572418","shape":"oct 1858347 547418 1908347 777418 1095574 1346284 2420410 2671120"}
+{"i":191,"obstacles":[106,105,73,42,41,2],"ok":false,"found":73,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":191,"maxGeneratedId":112}
+{"i":192,"trace":64,"segment":1,"from":"889000,896366","to":"1059000,896366","shape":"oct 864000 871366 1084000 921366 -42721 197989 1750011 1990721"}
+{"i":192,"obstacles":[64],"ok":true,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":192,"maxGeneratedId":112}
+{"i":193,"trace":62,"segment":1,"from":"1679501,1143000","to":"1589501,1233000","shape":"oct 1564501 1118000 1704501 1258000 321146 571856 2787146 2857856"}
+{"i":193,"obstacles":[103,100,62,23,21,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":193,"maxGeneratedId":112}
+{"i":194,"trace":71,"segment":1,"from":"1022453,832422","to":"1002453,832422","shape":"oct 977453 807422 1047453 857422 134676 225386 1799520 1890230"}
+{"i":194,"obstacles":[71,70,22,2],"ok":true,"found":70,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":194,"maxGeneratedId":112}
+{"i":195,"trace":106,"segment":1,"from":"1959304,601000","to":"2049304,601000","shape":"oct 1934304 576000 2074304 626000 1322949 1483659 2524949 2685659"}
+{"i":195,"obstacles":[106,105,41,2],"ok":false,"found":106,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":195,"maxGeneratedId":112}
+{"i":196,"trace":86,"segment":1,"from":"995813,1143000","to":"815813,963000","shape":"oct 790813 938000 1020813 1168000 -182542 -111832 1743458 2174168"}
+{"i":196,"obstacles":[93,92,87,86,85,20,4,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":196,"maxGeneratedId":112}
+{"i":197,"trace":77,"segment":1,"from":"430879,1029621","to":"550879,1149621","shape":"oct 405879 1004621 575879 1174621 -634097 -563387 1425145 1735855"}
+{"i":197,"obstacles":[83,77,67,66],"ok":false,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":197,"maxGeneratedId":112}
+{"i":198,"trace":87,"segment":1,"from":"799465,1016000","to":"909465,1126000","shape":"oct 774465 991000 934465 1151000 -251890 -181180 1780110 2070820"}
+{"i":198,"obstacles":[87,86,85,4,2],"ok":true,"found":85,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":198,"maxGeneratedId":112}
+{"i":199,"trace":64,"segment":1,"from":"889000,940308","to":"809000,1020308","shape":"oct 784000 915308 914000 1045308 -246663 -15953 1793953 1864663"}
+{"i":199,"obstacles":[64,4],"ok":false,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":199,"maxGeneratedId":112}
+{"i":200,"trace":82,"segment":1,"from":"1453642,324358","to":"1353642,224358","shape":"oct 1328642 199358 1478642 349358 1093929 1164639 1542645 1813355"}
+{"i":200,"obstacles":[82,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":200,"maxGeneratedId":112}
+{"i":201,"trace":97,"segment":1,"from":"1206849,540099","to":"1346849,400099","shape":"oct 1181849 375099 1371849 565099 631395 982105 1711593 1782303"}
+{"i":201,"obstacles":[98,97,82,81,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":201,"maxGeneratedId":112}
+{"i":202,"trace":66,"segment":1,"from":"631508,1143000","to":"801508,973000","shape":"oct 606508 948000 826508 1168000 -546847 -136137 1739153 1809863"}
+{"i":202,"obstacles":[66,4],"ok":false,"found":4,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":202,"maxGeneratedId":112}
+{"i":203,"trace":79,"segment":1,"from":"1661063,254000","to":"1661063,94000","shape":"oct 1636063 69000 1686063 279000 1371708 1602418 1719708 1950418"}
+{"i":203,"obstacles":[79,53,2],"ok":false,"found":79,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":203,"maxGeneratedId":112}
+{"i":204,"trace":90,"segment":1,"from":"1649370,889000","to":"1479370,1059000","shape":"oct 1454370 864000 1674370 1084000 385015 795725 2503015 2573725"}
+{"i":204,"obstacles":[95,94,90,78,18,16,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":204,"maxGeneratedId":112}
+{"i":205,"trace":69,"segment":1,"from":"1217740,698500","to":"1047740,528500","shape":"oct 1022740 503500 1242740 723500 483885 554595 1540885 1951595"}
+{"i":205,"obstacles":[69],"ok":false,"found":69,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":205,"maxGeneratedId":112}
+{"i":206,"trace":82,"segment":1,"from":"1411224,366776","to":"1561224,366776","shape":"oct 1386224 341776 1586224 391776 1009093 1229803 1742645 1963355"}
+{"i":206,"obstacles":[82,81,2],"ok":true,"found":81,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":206,"maxGeneratedId":112}
+{"i":207,"trace":65,"segment":1,"from":"1678940,698500","to":"1728940,698500","shape":"oct 1653940 673500 1753940 723500 945085 1065795 2342085 2462795"}
+{"i":207,"obstacles":[109,73,65,2],"ok":false,"found":109,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":207,"maxGeneratedId":112}
+{"i":208,"trace":61,"segment":1,"from":"1623822,1678178","to":"1663822,1638178","shape":"oct 1598822 1613178 1688822 1703178 -89711 60999 3266645 3337355"}
+{"i":208,"obstacles":[61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":208,"maxGeneratedId":112}
+{"i":209,"trace":67,"segment":1,"from":"465582,1180116","to":"615582,1330116","shape":"oct 440582 1155116 640582 1355116 -749889 -679179 1610343 1981053"}
+{"i":209,"obstacles":[67,66,8],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":209,"maxGeneratedId":112}
+{"i":210,"trace":88,"segment":1,"from":"1104741,1524000","to":"1124741,1544000","shape":"oct 1079741 1499000 1149741 1569000 -454614 -383904 2593386 2704096"}
+{"i":210,"obstacles":[89,88],"ok":true,"found":88,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":210,"maxGeneratedId":112}
+{"i":211,"trace":60,"segment":1,"from":"763905,1778000","to":"613905,1928000","shape":"oct 588905 1753000 788905 1953000 -1349450 -978740 2506550 2577260"}
+{"i":211,"obstacles":[60,2,1],"ok":false,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":211,"maxGeneratedId":112}
+{"i":212,"trace":99,"segment":1,"from":"1928330,1207170","to":"1928330,1187170","shape":"oct 1903330 1162170 1953330 1232170 685805 776515 3080145 3170855"}
+{"i":212,"obstacles":[99,10,2],"ok":true,"found":99,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":212,"maxGeneratedId":112}
+{"i":213,"trace":68,"segment":1,"from":"891413,823087","to":"891413,723087","shape":"oct 866413 698087 916413 848087 32971 203681 1579145 1749855"}
+{"i":213,"obstacles":[68,64],"ok":false,"found":68,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":213,"maxGeneratedId":112}
+{"i":214,"trace":86,"segment":1,"from":"962071,1143000","to":"802071,983000","shape":"oct 777071 958000 987071 1168000 -216284 -145574 1749716 2140426"}
+{"i":214,"obstacles":[87,86,85,20,4,2],"ok":false,"found":4,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":214,"maxGeneratedId":112}
+{"i":215,"trace":68,"segment":1,"from":"935482,779018","to":"935482,599018","shape":"oct 910482 574018 960482 804018 121109 371819 1499145 1749855"}
+{"i":215,"obstacles":[110,68,64],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":215,"maxGeneratedId":112}
+{"i":216,"trace":87,"segment":1,"from":"815340,1016000","to":"705340,1126000","shape":"oct 680340 991000 840340 1151000 -456015 -165305 1795985 1866695"}
+{"i":216,"obstacles":[87,85,4,2],"ok":false,"found":4,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":216,"maxGeneratedId":112}
+{"i":217,"trace":60,"segment":1,"from":"1147572,1778000","to":"1197572,1728000","shape":"oct 1122572 1703000 1222572 1803000 -665783 -495073 2890217 2960927"}
+{"i":217,"obstacles":[60,2],"ok":false,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":217,"maxGeneratedId":112}
+{"i":218,"trace":61,"segment":1,"from":"1694434,1607566","to":"1494434,1607566","shape":"oct 1469434 1582566 1719434 1632566 -148487 122223 3066645 3337355"}
+{"i":218,"obstacles":[61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":218,"maxGeneratedId":112}
+{"i":219,"trace":72,"segment":1,"from":"855790,1112711","to":"855790,1082711","shape":"oct 830790 1057711 880790 1137711 -292276 -191566 1903146 2003856"}
+{"i":219,"obstacles":[72,66,64],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":219,"maxGeneratedId":112}
+{"i":220,"trace":59,"segment":1,"from":"255016,1715516","to":"125016,1585516","shape":"oct 100016 1560516 280016 1740516 -1495855 -1425145 1675177 2005887"}
+{"i":220,"obstacles":[59,3,2],"ok":true,"found":59,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":220,"maxGeneratedId":112}
+{"i":221,"trace":59,"segment":1,"from":"267145,1727645","to":"267145,1677645","shape":"oct 242145 1652645 292145 1752645 -1495855 -1375145 1909435 2030145"}
+{"i":221,"obstacles":[59,3,2],"ok":false,"found":59,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":221,"maxGeneratedId":112}
+{"i":222,"trace":94,"segment":1,"from":"1595952,1011848","to":"1395952,811848","shape":"oct 1370952 786848 1620952 1036848 548749 619459 2172445 2643155"}
+{"i":222,"obstacles":[95,94,81,78,18,16,2],"ok":false,"found":18,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":222,"maxGeneratedId":112}
+{"i":223,"trace":79,"segment":1,"from":"1566288,254000","to":"1466288,354000","shape":"oct 1441288 229000 1591288 379000 1076933 1347643 1784933 1855643"}
+{"i":223,"obstacles":[82,81,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":223,"maxGeneratedId":112}
+{"i":224,"trace":78,"segment":1,"from":"1437640,929640","to":"1457640,949640","shape":"oct 1412640 904640 1482640 974640 472645 543355 2331925 2442635"}
+{"i":224,"obstacles":[81,78,2],"ok":true,"found":78,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":224,"maxGeneratedId":112}
+{"i":225,"trace":68,"segment":1,"from":"954659,759841","to":"1124659,589841","shape":"oct 929659 564841 1149659 784841 159463 570173 1679145 1749855"}
+{"i":225,"obstacles":[110,69,68],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":225,"maxGeneratedId":112}
+{"i":226,"trace":104,"segment":1,"from":"547370,508000","to":"457370,508000","shape":"oct 432370 483000 572370 533000 -85985 74725 930015 1090725"}
+{"i":226,"obstacles":[104,6,2],"ok":true,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":226,"maxGeneratedId":112}
+{"i":227,"trace":103,"segment":1,"from":"1705933,1270000","to":"1705933,1280000","shape":"oct 1680933 1245000 1730933 1305000 390578 471288 2940578 3021288"}
+{"i":227,"obstacles":[103,23,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":227,"maxGeneratedId":112}
+{"i":228,"trace":65,"segment":1,"from":"1694752,698500","to":"1694752,518500","shape":"oct 1669752 493500 1719752 723500 960897 1211607 2177897 2428607"}
+{"i":228,"obstacles":[65,2],"ok":true,"found":65,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":228,"maxGeneratedId":112}
+{"i":229,"trace":102,"segment":1,"from":"1332675,1120870","to":"1342675,1130870","shape":"oct 1307675 1095870 1367675 1155870 176450 247160 2418190 2508900"}
+{"i":229,"obstacles":[102,2],"ok":false,"found":102,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":229,"maxGeneratedId":112}
+{"i":230,"trace":64,"segment":1,"from":"889000,902208","to":"799000,992208","shape":"oct 774000 877208 914000 1017208 -228563 22147 1755853 1826563"}
+{"i":230,"obstacles":[64,4],"ok":false,"found":4,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":230,"maxGeneratedId":112}
+{"i":231,"trace":68,"segment":1,"from":"936244,778256","to":"976244,738256","shape":"oct 911244 713256 1001244 803256 122633 273343 1679145 1749855"}
+{"i":231,"obstacles":[110,69,68,64],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":231,"maxGeneratedId":112}
+{"i":232,"trace":99,"segment":1,"from":"1945840,1189660","to":"1845840,1189660","shape":"oct 1820840 1164660 1970840 1214660 620825 791535 3000145 3170855"}
+{"i":232,"obstacles":[108,99,62,10,2],"ok":false,"found":108,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":232,"maxGeneratedId":112}
+{"i":233,"trace":63,"segment":1,"from":"1789287,1253109","to":"1789287,1403109","shape":"oct 1764287 1228109 1814287 1428109 350823 571533 3007041 3227751"}
+{"i":233,"obstacles":[63],"ok":false,"found":63,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":233,"maxGeneratedId":112}
+{"i":234,"trace":86,"segment":1,"from":"985384,1143000","to":"965384,1123000","shape":"oct 940384 1098000 1010384 1168000 -192971 -122261 2053029 2163739"}
+{"i":234,"obstacles":[86,85,20,2],"ok":true,"found":85,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":234,"maxGeneratedId":112}
+{"i":235,"trace":75,"segment":1,"from":"347790,254000","to":"307790,294000","shape":"oct 282790 229000 372790 319000 -21565 129145 566435 637145"}
+{"i":235,"obstacles":[75,48,2],"ok":false,"found":75,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":235,"maxGeneratedId":112}
+{"i":236,"trace":92,"segment":1,"from":"886968,950468","to":"706968,950468","shape":"oct 681968 925468 911968 975468 -278855 -28145 1622081 1872791"}
+{"i":236,"obstacles":[92,87,85,4,2],"ok":false,"found":87,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":236,"maxGeneratedId":112}
+{"i":237,"trace":98,"segment":1,"from":"1054735,508000","to":"1124735,578000","shape":"oct 1029735 483000 1149735 603000 511380 582090 1527380 1738090"}
+{"i":237,"obstacles":[98,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":237,"maxGeneratedId":112}
+{"i":238,"trace":98,"segment":1,"from":"1034256,508000","to":"1034256,528000","shape":"oct 1009256 483000 1059256 553000 470901 561611 1506901 1597611"}
+{"i":238,"obstacles":[98,2],"ok":true,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":238,"maxGeneratedId":112}
+{"i":239,"trace":85,"segment":1,"from":"888238,1078738","to":"888238,1038738","shape":"oct 863238 1013738 913238 1103738 -225855 -115145 1891621 2002331"}
+{"i":239,"obstacles":[93,92,87,85,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":239,"maxGeneratedId":112}
+{"i":240,"trace":63,"segment":1,"from":"1792288,1181100","to":"1962288,1011100","shape":"oct 1767288 986100 1987288 1206100 575833 986543 2938033 3008743"}
+{"i":240,"obstacles":[108,63],"ok":true,"found":63,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":240,"maxGeneratedId":112}
+{"i":241,"trace":95,"segment":1,"from":"1897255,992000","to":"2007255,882000","shape":"oct 1872255 857000 2032255 1017000 869900 1160610 2853900 2924610"}
+{"i":241,"obstacles":[95,11,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":241,"maxGeneratedId":112}
+{"i":242,"trace":61,"segment":1,"from":"1699260,1602740","to":"1559260,1602740","shape":"oct 1534260 1577740 1724260 1627740 -78835 131875 3126645 3337355"}
+{"i":242,"obstacles":[61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":242,"maxGeneratedId":112}
+{"i":243,"trace":101,"segment":1,"from":"254000,810800","to":"314000,870800","shape":"oct 229000 785800 339000 895800 -592155 -521445 1029445 1220155"}
+{"i":243,"obstacles":[101,50,2],"ok":false,"found":101,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":243,"maxGeneratedId":112}
+{"i":244,"trace":70,"segment":1,"from":"1016000,757428","to":"1016000,777428","shape":"oct 991000 732428 1041000 802428 203217 293927 1738073 1828783"}
+{"i":244,"obstacles":[110,71,70,2],"ok":true,"found":70,"tails":false,"depth":0,"pieces":0,"vias":[110]}
+{"i":244,"maxGeneratedId":112}
+{"i":245,"trace":104,"segment":1,"from":"401574,508000","to":"471574,578000","shape":"oct 376574 483000 496574 603000 -141781 -71071 874219 1084929"}
+{"i":245,"obstacles":[104,47,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":245,"maxGeneratedId":112}
+{"i":246,"trace":100,"segment":1,"from":"1485710,1270000","to":"1495710,1260000","shape":"oct 1460710 1235000 1520710 1295000 180355 271065 2720355 2791065"}
+{"i":246,"obstacles":[102,100,23,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":246,"maxGeneratedId":112}
+{"i":247,"trace":97,"segment":1,"from":"1177703,510953","to":"1077703,410953","shape":"oct 1052703 385953 1202703 535953 631395 702105 1453301 1724011"}
+{"i":247,"obstacles":[98,97,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":247,"maxGeneratedId":112}
+{"i":248,"trace":96,"segment":1,"from":"1270000,994855","to":"1270000,1014855","shape":"oct 1245000 969855 1295000 1039855 219790 310500 2229500 2320210"}
+{"i":248,"obstacles":[102,96,2],"ok":true,"found":96,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":248,"maxGeneratedId":112}
+{"i":249,"trace":101,"segment":1,"from":"254000,536639","to":"174000,616639","shape":"oct 149000 511639 279000 641639 -477994 -247284 755284 825994"}
+{"i":249,"obstacles":[104,101,47,2],"ok":false,"found":104,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":249,"maxGeneratedId":112}
+{"i":250,"trace":86,"segment":1,"from":"1045997,1143000","to":"1195997,993000","shape":"oct 1020997 968000 1220997 1168000 -132358 238352 2153642 2224352"}
+{"i":250,"obstacles":[93,86,20,19,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":250,"maxGeneratedId":112}
+{"i":251,"trace":83,"segment":1,"from":"444500,637096","to":"454500,627096","shape":"oct 419500 602096 479500 662096 -227951 -137241 1046241 1116951"}
+{"i":251,"obstacles":[83],"ok":false,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":251,"maxGeneratedId":112}
+{"i":252,"trace":80,"segment":1,"from":"256000,1111250","to":"126000,981250","shape":"oct 101000 956250 281000 1136250 -890605 -819895 1071895 1402605"}
+{"i":252,"obstacles":[80,51,50],"ok":false,"found":50,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":252,"maxGeneratedId":112}
+{"i":253,"trace":64,"segment":1,"from":"889000,1022350","to":"829000,1082350","shape":"oct 804000 997350 914000 1107350 -288705 -97995 1875995 1946705"}
+{"i":253,"obstacles":[72,66,64,4],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":253,"maxGeneratedId":112}
+{"i":254,"trace":60,"segment":1,"from":"1275461,1778000","to":"1245461,1808000","shape":"oct 1220461 1753000 1300461 1833000 -597894 -467184 3018106 3088816"}
+{"i":254,"obstacles":[60,2],"ok":true,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":254,"maxGeneratedId":112}
+{"i":255,"trace":84,"segment":1,"from":"945992,1270000","to":"1025992,1190000","shape":"oct 920992 1165000 1050992 1295000 -359363 -128653 2180637 2251347"}
+{"i":255,"obstacles":[86,84,20,17,2],"ok":false,"found":86,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":255,"maxGeneratedId":112}
+{"i":256,"trace":91,"segment":1,"from":"728186,1524000","to":"728186,1594000","shape":"oct 703186 1499000 753186 1619000 -901169 -760459 2216831 2357541"}
+{"i":256,"obstacles":[91,9,2],"ok":true,"found":91,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":256,"maxGeneratedId":112}
+{"i":257,"trace":97,"segment":1,"from":"1181989,515239","to":"1251989,515239","shape":"oct 1156989 490239 1276989 540239 631395 772105 1661873 1802583"}
+{"i":257,"obstacles":[98,97,2],"ok":false,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":257,"maxGeneratedId":112}
+{"i":258,"trace":64,"segment":1,"from":"889000,923798","to":"889000,1023798","shape":"oct 864000 898798 914000 1048798 -170153 557 1777443 1948153"}
+{"i":258,"obstacles":[72,64],"ok":true,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":258,"maxGeneratedId":112}
+{"i":259,"trace":64,"segment":1,"from":"889000,1021080","to":"799000,931080","shape":"oct 774000 906080 914000 1046080 -167435 -96725 1694725 1945435"}
+{"i":259,"obstacles":[72,64,4],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":259,"maxGeneratedId":112}
+{"i":260,"trace":83,"segment":1,"from":"444500,820547","to":"544500,820547","shape":"oct 419500 795547 569500 845547 -411402 -240692 1229692 1400402"}
+{"i":260,"obstacles":[83],"ok":true,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":260,"maxGeneratedId":112}
+{"i":261,"trace":79,"segment":1,"from":"1586688,254000","to":"1406688,254000","shape":"oct 1381688 229000 1611688 279000 1117333 1368043 1625333 1876043"}
+{"i":261,"obstacles":[82,79,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":261,"maxGeneratedId":112}
+{"i":262,"trace":100,"segment":1,"from":"1480064,1270000","to":"1470064,1280000","shape":"oct 1445064 1245000 1505064 1305000 154709 245419 2714709 2785419"}
+{"i":262,"obstacles":[102,100,23,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":262,"maxGeneratedId":112}
+{"i":263,"trace":91,"segment":1,"from":"794845,1524000","to":"814845,1544000","shape":"oct 769845 1499000 839845 1569000 -764510 -693800 2283490 2394200"}
+{"i":263,"obstacles":[91,9,2],"ok":false,"found":91,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":263,"maxGeneratedId":112}
+{"i":264,"trace":90,"segment":1,"from":"1623310,889000","to":"1793310,719000","shape":"oct 1598310 694000 1818310 914000 698955 1109665 2476955 2547665"}
+{"i":264,"obstacles":[90,73,65,18,2],"ok":false,"found":73,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":264,"maxGeneratedId":112}
+{"i":265,"trace":94,"segment":1,"from":"1593624,1014176","to":"1463624,1144176","shape":"oct 1438624 989176 1618624 1169176 284093 614803 2572445 2643155"}
+{"i":265,"obstacles":[95,94,78,21,16,2],"ok":false,"found":95,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":265,"maxGeneratedId":112}
+{"i":266,"trace":98,"segment":1,"from":"851853,508000","to":"851853,528000","shape":"oct 826853 483000 876853 553000 288498 379208 1324498 1415208"}
+{"i":266,"obstacles":[98,6,2],"ok":true,"found":98,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":266,"maxGeneratedId":112}
+{"i":267,"trace":72,"segment":1,"from":"860552,1107948","to":"910552,1157948","shape":"oct 835552 1082948 935552 1182948 -282751 -212041 1933145 2103855"}
+{"i":267,"obstacles":[72,66,64],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":267,"maxGeneratedId":112}
+{"i":268,"trace":60,"segment":1,"from":"994347,1778000","to":"924347,1778000","shape":"oct 899347 1753000 1019347 1803000 -889008 -748298 2666992 2807702"}
+{"i":268,"obstacles":[60,2],"ok":true,"found":60,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":268,"maxGeneratedId":112}
+{"i":269,"trace":90,"segment":1,"from":"1617349,889000","to":"1757349,749000","shape":"oct 1592349 724000 1782349 914000 692994 1043704 2470994 2541704"}
+{"i":269,"obstacles":[90,73,65,18,2],"ok":false,"found":90,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":269,"maxGeneratedId":112}
+{"i":270,"trace":77,"segment":1,"from":"395065,1065435","to":"475065,1145435","shape":"oct 370065 1040435 500065 1170435 -705725 -635015 1425145 1655855"}
+{"i":270,"obstacles":[83,80,77,67,66,51],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":270,"maxGeneratedId":112}
+{"i":271,"trace":62,"segment":1,"from":"1626153,1143000","to":"1626153,1093000","shape":"oct 1601153 1068000 1651153 1168000 447798 568508 2683798 2804508"}
+{"i":271,"obstacles":[62,21,2],"ok":false,"found":62,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":271,"maxGeneratedId":112}
+{"i":272,"trace":78,"segment":1,"from":"1481201,973201","to":"1421201,1033201","shape":"oct 1396201 948201 1506201 1058201 352645 543355 2419047 2489757"}
+{"i":272,"obstacles":[78,16,2],"ok":false,"found":16,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":272,"maxGeneratedId":112}
+{"i":273,"trace":72,"segment":1,"from":"852361,1116140","to":"812361,1076140","shape":"oct 787361 1051140 877361 1141140 -299134 -228424 1853146 2003856"}
+{"i":273,"obstacles":[72,66,64,4],"ok":false,"found":72,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":273,"maxGeneratedId":112}
+{"i":274,"trace":88,"segment":1,"from":"1090930,1524000","to":"950930,1664000","shape":"oct 925930 1499000 1115930 1689000 -748425 -397715 2579575 2650285"}
+{"i":274,"obstacles":[111,89,88],"ok":true,"found":88,"tails":false,"depth":0,"pieces":0,"vias":[111]}
+{"i":274,"maxGeneratedId":112}
+{"i":275,"trace":82,"segment":1,"from":"1435481,342519","to":"1465481,312519","shape":"oct 1410481 287519 1490481 367519 1057607 1188317 1742645 1813355"}
+{"i":275,"obstacles":[82,81,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":275,"maxGeneratedId":112}
+{"i":276,"trace":78,"segment":1,"from":"1482217,974217","to":"1452217,974217","shape":"oct 1427217 949217 1507217 999217 442645 543355 2391079 2491789"}
+{"i":276,"obstacles":[78,16,2],"ok":true,"found":78,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":276,"maxGeneratedId":112}
+{"i":277,"trace":82,"segment":1,"from":"1444244,333756","to":"1534244,423756","shape":"oct 1419244 308756 1559244 448756 1075133 1145843 1742645 1993355"}
+{"i":277,"obstacles":[82,81,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":277,"maxGeneratedId":112}
+{"i":278,"trace":77,"segment":1,"from":"411544,1048957","to":"471544,1108957","shape":"oct 386544 1023957 496544 1133957 -672768 -602058 1425146 1615856"}
+{"i":278,"obstacles":[83,77,67,66],"ok":false,"found":67,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":278,"maxGeneratedId":112}
+{"i":279,"trace":69,"segment":1,"from":"1164590,698500","to":"1024590,698500","shape":"oct 999590 673500 1189590 723500 290735 501445 1687735 1898445"}
+{"i":279,"obstacles":[110,69,68],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":279,"maxGeneratedId":112}
+{"i":280,"trace":61,"segment":1,"from":"1624076,1677924","to":"1554076,1677924","shape":"oct 1529076 1652924 1649076 1702924 -159203 -18493 3196645 3337355"}
+{"i":280,"obstacles":[61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":280,"maxGeneratedId":112}
+{"i":281,"trace":103,"segment":1,"from":"1693890,1270000","to":"1623890,1200000","shape":"oct 1598890 1175000 1718890 1295000 388535 459245 2788535 2999245"}
+{"i":281,"obstacles":[103,62,23,21,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":281,"maxGeneratedId":112}
+{"i":282,"trace":100,"segment":1,"from":"1563439,1270000","to":"1503439,1330000","shape":"oct 1478439 1245000 1588439 1355000 138084 328794 2798084 2868794"}
+{"i":282,"obstacles":[103,100,23,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":282,"maxGeneratedId":112}
+{"i":283,"trace":68,"segment":1,"from":"949198,765302","to":"1119198,935302","shape":"oct 924198 740302 1144198 960302 148541 219251 1679145 2089855"}
+{"i":283,"obstacles":[110,68],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":283,"maxGeneratedId":112}
+{"i":284,"trace":82,"segment":1,"from":"1407414,370586","to":"1487414,290586","shape":"oct 1382414 265586 1512414 395586 1001473 1232183 1742645 1813355"}
+{"i":284,"obstacles":[82,81,79,76,2],"ok":true,"found":76,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":284,"maxGeneratedId":112}
+{"i":285,"trace":70,"segment":1,"from":"1016000,791210","to":"1016000,801210","shape":"oct 991000 766210 1041000 826210 179435 260145 1771855 1852565"}
+{"i":285,"obstacles":[110,71,70,2],"ok":false,"found":110,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":285,"maxGeneratedId":112}
+{"i":286,"trace":67,"segment":1,"from":"430276,1211009","to":"240276,1211009","shape":"oct 215276 1186009 455276 1236009 -1006088 -745378 1415930 1676640"}
+{"i":286,"obstacles":[67,51],"ok":false,"found":51,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":286,"maxGeneratedId":112}
+{"i":287,"trace":85,"segment":1,"from":"889127,1079627","to":"949127,1079627","shape":"oct 864127 1054627 974127 1104627 -225855 -95145 1933399 2064109"}
+{"i":287,"obstacles":[93,92,86,85,2],"ok":false,"found":93,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":287,"maxGeneratedId":112}
+{"i":288,"trace":100,"segment":1,"from":"1469691,1270000","to":"1409691,1330000","shape":"oct 1384691 1245000 1494691 1355000 44336 235046 2704336 2775046"}
+{"i":288,"obstacles":[102,100,2],"ok":true,"found":100,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":288,"maxGeneratedId":112}
+{"i":289,"trace":82,"segment":1,"from":"1472946,305054","to":"1282946,115054","shape":"oct 1257946 90054 1497946 330054 1132537 1203247 1362645 1813355"}
+{"i":289,"obstacles":[82,76,2],"ok":false,"found":82,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":289,"maxGeneratedId":112}
+{"i":290,"trace":61,"segment":1,"from":"1592326,1709674","to":"1642326,1759674","shape":"oct 1567326 1684674 1667326 1784674 -152703 -81993 3266645 3437355"}
+{"i":290,"obstacles":[61,2],"ok":true,"found":61,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":290,"maxGeneratedId":112}
+{"i":291,"trace":99,"segment":1,"from":"1897533,1237967","to":"1897533,1277967","shape":"oct 1872533 1212967 1922533 1302967 584211 694921 3100145 3210855"}
+{"i":291,"obstacles":[103,99,10,2],"ok":false,"found":103,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":291,"maxGeneratedId":112}
+{"i":292,"trace":89,"segment":1,"from":"1136650,1514475","to":"1046650,1424475","shape":"oct 1021650 1399475 1161650 1539475 -413180 -342470 2435770 2686480"}
+{"i":292,"obstacles":[89,88],"ok":true,"found":88,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":292,"maxGeneratedId":112}
+{"i":293,"trace":101,"segment":1,"from":"254000,822325","to":"184000,752325","shape":"oct 159000 727325 279000 847325 -603680 -532970 900970 1111680"}
+{"i":293,"obstacles":[101,50,2],"ok":false,"found":101,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":293,"maxGeneratedId":112}
+{"i":294,"trace":80,"segment":1,"from":"325819,1111250","to":"285819,1111250","shape":"oct 260819 1086250 350819 1136250 -860786 -750076 1361714 1472424"}
+{"i":294,"obstacles":[80,77,51],"ok":false,"found":51,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":294,"maxGeneratedId":112}
+{"i":295,"trace":64,"segment":1,"from":"889000,956056","to":"1029000,816056","shape":"oct 864000 791056 1054000 981056 -102411 248299 1809701 1880411"}
+{"i":295,"obstacles":[64],"ok":false,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":295,"maxGeneratedId":112}
+{"i":296,"trace":69,"segment":1,"from":"1379474,698500","to":"1389474,688500","shape":"oct 1354474 663500 1414474 723500 645619 736329 2042619 2113329"}
+{"i":296,"obstacles":[69],"ok":true,"found":69,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":296,"maxGeneratedId":112}
+{"i":297,"trace":77,"segment":1,"from":"394399,1066102","to":"394399,1086102","shape":"oct 369399 1041102 419399 1111102 -727058 -636348 1425146 1515856"}
+{"i":297,"obstacles":[80,77,51],"ok":false,"found":80,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":297,"maxGeneratedId":112}
+{"i":298,"trace":66,"segment":1,"from":"652463,1143000","to":"512463,1003000","shape":"oct 487463 978000 677463 1168000 -525892 -455182 1480108 1830818"}
+{"i":298,"obstacles":[83,77,66,4],"ok":false,"found":83,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":298,"maxGeneratedId":112}
+{"i":299,"trace":64,"segment":1,"from":"889000,908050","to":"1069000,1088050","shape":"oct 864000 883050 1094000 1113050 -54405 16305 1761695 2192405"}
+{"i":299,"obstacles":[64],"ok":false,"found":64,"tails":false,"depth":0,"pieces":0,"vias":[]}
+{"i":299,"maxGeneratedId":112}
+{"stage":"cutout","maxGeneratedId":112}
+{"k":0,"obstacles":[102,94,78,16,2],"gone":[],"new":["113:1460500,1270000 1460507,1269994 1460500,1270000 1270000,1047750 2628096,0 2628095,1","114:2430060,0 2430061,-1 1460500,1270000 1270000,1047750 1270000,1047750 1269993,1047756","115:1607553,0 1607553,1 1591800,1016000 1615800,992000 1615800,992000 1615799,991999","116:1397000,889000 1396999,889001 1397000,889000 1524000,1016000 2430060,0 2430061,-1"],"maxGeneratedId":116}
+{"k":1,"obstacles":[82,79,76,2],"gone":[],"new":["117:1169204,0 1169203,-1 1524000,254000 1397000,381000 1397000,381000 1397001,381001","118:1736500,254000 1736500,253999 1736500,254000 1524000,254000 1593128,0 1593128,1","119:698500,254000 698500,254001 698500,254000 1524000,254000 1169204,0 1169203,-1"],"maxGeneratedId":119}
+{"k":2,"obstacles":[110,70,2],"gone":[],"new":["120:0,773597 -1,773597 1016000,698500 1016000,825500 1016000,825500 1016001,825500"],"maxGeneratedId":120}
+{"k":3,"obstacles":[96,2],"gone":[],"new":["121:1270000,603250 1269999,603250 1270000,603250 1270000,1047750 0,842605 1,842605","122:2281640,0 2281639,1 1270000,603250 1270000,1047750 1270000,1047750 1270001,1047750"],"maxGeneratedId":122}
+{"k":4,"obstacles":[105,2],"gone":[],"new":["123:1946500,254000 1946499,254000 1946500,254000 1946500,601000 0,315843 1,315843","124:1461622,0 1461621,-1 1946500,254000 1946500,601000 1946500,601000 1946501,601000"],"maxGeneratedId":124}
+{"k":5,"obstacles":[90,18,2],"gone":[],"new":["125:1686514,0 1686514,1 1591800,889000 1762125,889000 1762125,889000 1762125,888999"],"maxGeneratedId":125}
+{"k":6,"obstacles":[107,61,2],"gone":[],"new":["126:126534,0 126533,-1 1778000,1524000 1524000,1778000 1524000,1778000 1524001,1778001"],"maxGeneratedId":126}
+{"k":7,"obstacles":[89],"gone":[],"new":["127:1762125,889000 1762124,888999 1762125,889000 1127125,1524000 79333,0 79334,1","128:1245703,0 1245703,-1 1762125,889000 1127125,1524000 1127125,1524000 1127126,1524001"],"maxGeneratedId":128}
+{"k":8,"obstacles":[103,100,23,2],"gone":[],"new":["129:1712725,0 1712725,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","130:1572691,0 1572691,-1 1591800,1270000 1460500,1270000 1460500,1270000 1460500,1270001"],"maxGeneratedId":130}
+{"k":9,"obstacles":[115,113,102,95,94,78,21,16,2],"gone":[115,113],"new":["131:1460500,1270000 1460507,1269994 1460500,1270000 1270000,1047750 0,1241233 -1,1241233","132:1460500,1270000 1460507,1269994 1460500,1270000 1270000,1047750 0,1241233 -1,1241233","133:1366567,0 1366567,-1 1460500,1270000 1270000,1047750 1270000,1047750 1269993,1047756","134:1968500,992000 1968500,991999 1968500,992000 1615800,992000 1676601,0 1676601,1","135:1397000,889000 1396999,889001 1397000,889000 1524000,1016000 2508782,0 2508783,-1"],"maxGeneratedId":135}
+{"k":9,"walk":"3263935a82c52dd3","nodes":3529,"leaves":1765}
+{"k":10,"obstacles":[121,96,81,2],"gone":[121],"new":["136:1270000,603250 1269999,603250 1270000,603250 1270000,1047750 0,662138 1,662138","137:438827,0 438826,-1 1270000,603250 1270000,1047750 0,842605 1,842605","138:1270000,603250 1269999,603250 1270000,603250 1270000,1047750 0,662138 1,662138","139:438827,0 438826,-1 1270000,603250 1270000,1047750 1270000,1047750 1270001,1047750","140:1397000,889000 1397001,889000 1397000,889000 1397000,381000 2261173,0 2261172,1","141:636863,0 636864,1 1397000,889000 1397000,381000 1397000,381000 1396999,381000"],"maxGeneratedId":141}
+{"k":11,"obstacles":[67,49],"gone":[],"new":["142:-925078,0 -925077,1 254000,1365250 508000,1143000 508000,1143000 507993,1142992"],"maxGeneratedId":142}
+{"k":12,"obstacles":[84,17,2],"gone":[],"new":["143:698500,1270000 698500,1270001 698500,1270000 1075200,1270000 808546,0 808546,-1"],"maxGeneratedId":143}
+{"k":13,"obstacles":[80,77,51],"gone":[],"new":["144:-677841,0 -677840,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999"],"maxGeneratedId":144}
+{"k":14,"obstacles":[111,88,9],"gone":[],"new":["145:1048235,0 1048235,1 968375,1524000 1127125,1524000 1127125,1524000 1127125,1523999"],"maxGeneratedId":145}
+{"k":15,"obstacles":[93,92,19,2],"gone":[],"new":["146:698500,762000 698499,762001 698500,762000 952500,1016000 778373,0 778373,-1"],"maxGeneratedId":146}
+{"k":16,"obstacles":[135,116,94,78,62,21,16,2],"gone":[135,116],"new":["147:1397000,889000 1396999,889001 1397000,889000 1524000,1016000 2356601,0 2356602,-1","148:1397000,889000 1396999,889001 1397000,889000 1524000,1016000 2356601,0 2356602,-1","149:588637,0 588638,1 1591800,1016000 1615800,992000 1615800,992000 1615799,991999","150:1397000,889000 1396999,889001 1397000,889000 1524000,1016000 2356601,0 2356602,-1","151:1702636,0 1702636,1 1591800,1143000 1793875,1143000 1793875,1143000 1793875,1142999"],"maxGeneratedId":151}
+{"k":17,"obstacles":[139,133,122,114,102,96,2],"gone":[139,133,122,114],"new":["152:438827,0 438826,-1 1270000,603250 1270000,1047750 0,927060 1,927060","153:1366567,0 1366567,-1 1460500,1270000 1270000,1047750 2386095,0 2386094,1","154:2430060,0 2430061,-1 1460500,1270000 1270000,1047750 2386095,0 2386094,1","155:1460500,1270000 1460507,1269994 1460500,1270000 1270000,1047750 2386095,0 2386094,1","156:1270000,603250 1269999,603250 1270000,603250 1270000,1047750 0,927060 1,927060"],"maxGeneratedId":156}
+{"k":18,"obstacles":[109,65,2],"gone":[],"new":["157:1750862,0 1750862,1 1587500,698500 1778000,698500 1778000,698500 1778000,698499"],"maxGeneratedId":157}
+{"k":19,"obstacles":[98,2],"gone":[],"new":["158:698500,508000 698500,508001 698500,508000 1174750,508000 854702,0 854702,-1","159:994736,0 994736,1 698500,508000 1174750,508000 1174750,508000 1174750,507999"],"maxGeneratedId":159}
+{"k":19,"walk":"6993583035f92dec","nodes":3563,"leaves":1782}
+{"k":20,"obstacles":[91,9,8,2],"gone":[],"new":["160:833287,0 833287,1 698500,1524000 968375,1524000 968375,1524000 968375,1523999"],"maxGeneratedId":160}
+{"k":21,"obstacles":[126,61,60,2],"gone":[126],"new":["161:126534,0 126533,-1 1778000,1524000 1524000,1778000 -77766,0 -77765,1","162:1778000,1524000 1777999,1523999 1778000,1524000 1524000,1778000 -77766,0 -77765,1","163:-275802,0 -275803,-1 1524000,1778000 317500,1778000 317500,1778000 317500,1778001"],"maxGeneratedId":163}
+{"k":22,"obstacles":[163,60,59,3,2],"gone":[163],"new":["164:-275802,0 -275803,-1 1524000,1778000 317500,1778000 349544,0 349544,1","165:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 349544,0 349544,1"],"maxGeneratedId":165}
+{"k":23,"obstacles":[162,161,61,2],"gone":[162,161],"new":["166:1778000,1524000 1777999,1523999 1778000,1524000 1524000,1778000 69046,0 69047,1","167:126534,0 126533,-1 1778000,1524000 1524000,1778000 69046,0 69047,1","168:1778000,1524000 1777999,1523999 1778000,1524000 1524000,1778000 69046,0 69047,1","169:-128990,0 -128991,-1 1778000,1524000 1524000,1778000 1524000,1778000 1524001,1778001"],"maxGeneratedId":169}
+{"k":24,"obstacles":[83,51,50],"gone":[],"new":["170:444500,444500 444499,444500 444500,444500 444500,1016000 0,807680 1,807680","171:1421215,0 1421214,1 444500,444500 444500,1016000 444500,1016000 444501,1016000"],"maxGeneratedId":171}
+{"k":25,"obstacles":[141,117,82,81,2],"gone":[141,117],"new":["172:636863,0 636864,1 1397000,889000 1397000,381000 0,476417 -1,476417","173:1169204,0 1169203,-1 1524000,254000 1397000,381000 0,336383 1,336383","174:1524000,254000 1523999,253999 1524000,254000 1397000,381000 0,336383 1,336383","175:1397000,889000 1397001,889000 1397000,889000 1397000,381000 0,476417 -1,476417"],"maxGeneratedId":175}
+{"k":26,"obstacles":[104,2],"gone":[],"new":["176:698500,508000 698500,507999 698500,508000 254000,508000 8594,0 8595,1","177:347559,0 347559,-1 698500,508000 254000,508000 254000,508000 254000,508001"],"maxGeneratedId":177}
+{"k":27,"obstacles":[129,103,99,10,2],"gone":[129],"new":["178:1712725,0 1712725,1 1591800,1270000 1865500,1270000 1812375,0 1812375,-1","179:1591800,1270000 1591800,1270001 1591800,1270000 1865500,1270000 1812375,0 1812375,-1","180:1968500,1167000 1968499,1166999 1968500,1167000 1865500,1270000 768302,0 768303,1"],"maxGeneratedId":180}
+{"k":28,"obstacles":[159,120,110,98,97,70,2],"gone":[159,120],"new":["181:994736,0 994736,1 698500,508000 1174750,508000 1641263,0 1641264,-1","182:0,794298 -1,794298 1016000,698500 1016000,825500 1016000,825500 1016001,825500","183:698500,508000 698500,508001 698500,508000 1174750,508000 1641263,0 1641264,-1","184:1839299,0 1839298,1 1174750,508000 1270000,603250 1270000,603250 1270001,603249","185:0,794298 -1,794298 1016000,698500 1016000,825500 1016000,825500 1016001,825500"],"maxGeneratedId":185}
+{"k":29,"obstacles":[174,173,82,81,76,2],"gone":[174,173],"new":["186:1524000,254000 1523999,253999 1524000,254000 1397000,381000 1229694,0 1229695,1","187:1524000,254000 1523999,253999 1524000,254000 1397000,381000 1229694,0 1229695,1","188:1397000,889000 1397001,889000 1397000,889000 1397000,381000 991658,0 991657,-1","189:698500,254000 698500,254001 698500,254000 1524000,254000 1678982,0 1678983,-1","190:1229694,0 1229695,1 698500,254000 1524000,254000 1524000,254000 1524000,253999"],"maxGeneratedId":190}
+{"k":29,"walk":"f002303c919df2a9","nodes":3603,"leaves":1802}
+{"k":30,"obstacles":[185,182,110,71,70,2],"gone":[185,182],"new":["191:1075200,889000 1075835,888408 1075200,889000 1016000,825500 1927310,0 1927309,1","192:1016000,698500 1015999,698500 1016000,698500 1016000,825500 1729274,0 1729275,-1"],"maxGeneratedId":192}
+{"k":31,"obstacles":[188,175,172,109,81,2],"gone":[188,175,172],"new":["193:1397000,889000 1397001,889000 1397000,889000 1397000,381000 770170,0 770169,-1","194:0,457795 1,457795 1397000,889000 1397000,381000 991658,0 991657,-1","195:1397000,889000 1397001,889000 1397000,889000 1397000,381000 770170,0 770169,-1","196:636863,0 636864,1 1397000,889000 1397000,381000 770170,0 770169,-1","197:1397000,889000 1397001,889000 1397000,889000 1397000,381000 770170,0 770169,-1","198:0,457795 1,457795 1397000,889000 1397000,381000 1397000,381000 1396999,381000"],"maxGeneratedId":198}
+{"k":32,"obstacles":[66,8],"gone":[],"new":["199:825500,1143000 825500,1142999 825500,1143000 508000,1143000 705335,0 705335,1","200:555301,0 555301,-1 825500,1143000 508000,1143000 508000,1143000 508000,1143001"],"maxGeneratedId":200}
+{"k":33,"obstacles":[177,104,48,47,2],"gone":[177],"new":["201:-210778,0 -210779,-1 698500,508000 254000,508000 254000,508000 254000,508001","202:698500,508000 698500,507999 698500,508000 254000,508000 466257,0 466257,1","203:-210778,0 -210779,-1 698500,508000 254000,508000 254000,508000 254000,508001"],"maxGeneratedId":203}
+{"k":34,"obstacles":[80,77,51],"gone":[],"new":["204:362879,0 362879,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999"],"maxGeneratedId":204}
+{"k":35,"obstacles":[165,164,60,59,3,2],"gone":[165,164],"new":["205:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 2285652,0 2285651,1","206:-275802,0 -275803,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","207:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 2285652,0 2285651,1"],"maxGeneratedId":207}
+{"k":36,"obstacles":[110,69,68],"gone":[],"new":["208:1587500,698500 1587500,698499 1587500,698500 1016000,698500 1859810,0 1859809,1","209:992275,0 992275,-1 1016000,698500 889000,825500 889000,825500 889001,825501"],"maxGeneratedId":209}
+{"k":37,"obstacles":[74,48],"gone":[],"new":["210:254000,254000 253999,254001 254000,254000 444500,444500 613580,0 613581,-1","211:811616,0 811615,1 254000,254000 444500,444500 444500,444500 444501,444499"],"maxGeneratedId":211}
+{"k":38,"obstacles":[160,91,9,2],"gone":[160],"new":["212:932871,0 932871,1 698500,1524000 968375,1524000 968375,1524000 968375,1523999","213:698500,1524000 698500,1524001 698500,1524000 968375,1524000 2287836,0 2287837,-1","214:932871,0 932871,1 698500,1524000 968375,1524000 968375,1524000 968375,1523999"],"maxGeneratedId":214}
+{"k":39,"obstacles":[75,7,2],"gone":[],"new":["215:698500,254000 698500,253999 698500,254000 254000,254000 670263,0 670263,1","216:370229,0 370229,-1 698500,254000 254000,254000 254000,254000 254000,254001"],"maxGeneratedId":216}
+{"k":39,"walk":"423aedc8703dfdb9","nodes":3637,"leaves":1819}
+{"k":40,"obstacles":[207,206,205,60,2],"gone":[207,206,205],"new":["217:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 1367195,0 1367195,1","218:1097161,0 1097161,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","219:-275802,0 -275803,-1 1524000,1778000 317500,1778000 1367195,0 1367195,1","220:1097161,0 1097161,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","221:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 1367195,0 1367195,1","222:1097161,0 1097161,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","223:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 1367195,0 1367195,1","224:1097161,0 1097161,-1 1524000,1778000 317500,1778000 317500,1778000 317500,1778001"],"maxGeneratedId":224}
+{"k":41,"obstacles":[210,74,48],"gone":[210],"new":["225:677504,0 677503,1 254000,254000 444500,444500 444500,444500 444501,444499"],"maxGeneratedId":225}
+{"k":42,"obstacles":[101,50,2],"gone":[],"new":["226:254000,508000 253999,508000 254000,508000 254000,857250 0,700619 1,700619","227:0,840653 -1,840653 254000,508000 254000,857250 254000,857250 254001,857250"],"maxGeneratedId":227}
+{"k":43,"obstacles":[224,60,59,3,2],"gone":[224],"new":["228:1097161,0 1097161,-1 1524000,1778000 317500,1778000 367388,0 367388,1","229:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 367388,0 367388,1"],"maxGeneratedId":229}
+{"k":44,"obstacles":[151,108,62,21,2],"gone":[151],"new":["230:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 482343,0 482342,-1"],"maxGeneratedId":230}
+{"k":45,"obstacles":[183,158,98,6,2],"gone":[183,158],"new":["231:698500,508000 698500,508001 698500,508000 1174750,508000 712781,0 712781,-1","232:862815,0 862815,1 698500,508000 1174750,508000 1641263,0 1641264,-1","233:698500,508000 698500,508001 698500,508000 1174750,508000 712781,0 712781,-1","234:698500,508000 698500,508001 698500,508000 1174750,508000 712781,0 712781,-1","235:862815,0 862815,1 698500,508000 1174750,508000 1174750,508000 1174750,507999"],"maxGeneratedId":235}
+{"k":46,"obstacles":[190,189,187,186,119,82,76,2],"gone":[190,189,187,186,119],"new":["236:1257004,0 1257005,1 698500,254000 1524000,254000 1524000,254000 1524000,253999","237:698500,254000 698500,254001 698500,254000 1524000,254000 1608982,0 1608983,-1","238:1524000,254000 1523999,253999 1524000,254000 1397000,381000 1257004,0 1257005,1","239:1524000,254000 1523999,253999 1524000,254000 1397000,381000 1257004,0 1257005,1","240:698500,254000 698500,254001 698500,254000 1524000,254000 1608982,0 1608983,-1","241:1524000,254000 1523999,253999 1524000,254000 1397000,381000 1257004,0 1257005,1","242:0,380024 -1,380024 1524000,254000 1397000,381000 1397000,381000 1397001,381001","243:698500,254000 698500,254001 698500,254000 1524000,254000 1608982,0 1608983,-1","244:1257004,0 1257005,1 698500,254000 1524000,254000 1524000,254000 1524000,253999"],"maxGeneratedId":244}
+{"k":47,"obstacles":[229,228,222,220,218,60,2],"gone":[229,228,222,220,218],"new":["245:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 902693,0 902693,1","246:732659,0 732659,-1 1524000,1778000 317500,1778000 367388,0 367388,1","247:1097161,0 1097161,-1 1524000,1778000 317500,1778000 902693,0 902693,1","248:732659,0 732659,-1 1524000,1778000 317500,1778000 367388,0 367388,1","249:1097161,0 1097161,-1 1524000,1778000 317500,1778000 902693,0 902693,1","250:732659,0 732659,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","251:1097161,0 1097161,-1 1524000,1778000 317500,1778000 902693,0 902693,1","252:732659,0 732659,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","253:1097161,0 1097161,-1 1524000,1778000 317500,1778000 902693,0 902693,1","254:732659,0 732659,-1 1524000,1778000 317500,1778000 2285652,0 2285651,1","255:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 902693,0 902693,1","256:732659,0 732659,-1 1524000,1778000 317500,1778000 317500,1778000 317500,1778001"],"maxGeneratedId":256}
+{"k":48,"obstacles":[243,240,237,215,76,75,7,2],"gone":[243,240,237,215],"new":["257:723623,0 723623,1 698500,254000 1524000,254000 1608982,0 1608983,-1","258:723623,0 723623,1 698500,254000 1524000,254000 1608982,0 1608983,-1","259:723623,0 723623,1 698500,254000 1524000,254000 1608982,0 1608983,-1","260:723623,0 723623,1 698500,254000 1524000,254000 1524000,254000 1524000,253999","261:473589,0 473589,-1 698500,254000 254000,254000 254000,254000 254000,254001"],"maxGeneratedId":261}
+{"k":49,"obstacles":[127,89],"gone":[127],"new":["262:1762125,889000 1762124,888999 1762125,889000 1127125,1524000 617813,0 617814,1","263:99777,0 99776,-1 1762125,889000 1127125,1524000 79333,0 79334,1","264:1762125,889000 1762124,888999 1762125,889000 1127125,1524000 617813,0 617814,1","265:99777,0 99776,-1 1762125,889000 1127125,1524000 1127125,1524000 1127126,1524001"],"maxGeneratedId":265}
+{"k":49,"walk":"50fcbd5bfe3d0182","nodes":3689,"leaves":1845}
+{"k":50,"obstacles":[214,212,111,91,2],"gone":[214,212],"new":["266:698500,1524000 698500,1524001 698500,1524000 968375,1524000 883785,0 883785,-1"],"maxGeneratedId":266}
+{"k":51,"obstacles":[87,85,4,2],"gone":[],"new":["267:698500,1016000 698500,1016001 698500,1016000 825500,1016000 -289518,0 -289519,-1","268:952500,1143000 952501,1142999 952500,1143000 825500,1016000 2084028,0 2084027,1"],"maxGeneratedId":268}
+{"k":52,"obstacles":[266,213,91,9,2],"gone":[266,213],"new":["269:918028,0 918028,1 698500,1524000 968375,1524000 968375,1524000 968375,1523999"],"maxGeneratedId":269}
+{"k":53,"obstacles":[179,130,103,100,23,2],"gone":[179,130],"new":["270:1610085,0 1610085,1 1591800,1270000 1865500,1270000 1812375,0 1812375,-1","271:1470051,0 1470051,-1 1591800,1270000 1460500,1270000 1460500,1270000 1460500,1270001","272:1610085,0 1610085,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","273:1470051,0 1470051,-1 1591800,1270000 1460500,1270000 1460500,1270000 1460500,1270001"],"maxGeneratedId":273}
+{"k":54,"obstacles":[256,60,59,3,2,1],"gone":[256],"new":["274:732659,0 732659,-1 1524000,1778000 317500,1778000 354370,0 354370,1","275:1524000,1778000 1524000,1777999 1524000,1778000 317500,1778000 354370,0 354370,1"],"maxGeneratedId":275}
+{"k":55,"obstacles":[272,270,180,178,103,99,10,2],"gone":[272,270,180,178],"new":["276:1610085,0 1610085,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","277:1610085,0 1610085,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","278:1712725,0 1712725,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","279:1591800,1270000 1591800,1270001 1591800,1270000 1865500,1270000 3036482,0 3036483,-1"],"maxGeneratedId":279}
+{"k":56,"obstacles":[204,200,144,142,80,77,67,66,51],"gone":[204,200,144,142],"new":["280:0,1040757 1,1040757 349250,1111250 444500,1016000 444500,1016000 444499,1015999","281:555301,0 555301,-1 825500,1143000 508000,1143000 1669518,0 1669517,1","282:0,1040757 1,1040757 349250,1111250 444500,1016000 444500,1016000 444499,1015999","283:-925078,0 -925077,1 254000,1365250 508000,1143000 0,1180791 -1,1180791","284:254000,1111250 254000,1111251 254000,1111250 349250,1111250 279709,0 279709,-1","285:0,1040757 1,1040757 349250,1111250 444500,1016000 444500,1016000 444499,1015999","286:254000,1365250 254007,1365258 254000,1365250 508000,1143000 0,1180791 -1,1180791","287:825500,1143000 825500,1142999 825500,1143000 508000,1143000 1669518,0 1669517,1"],"maxGeneratedId":287}
+{"k":57,"obstacles":[227,226,101,50,2],"gone":[227,226],"new":["288:-590508,0 -590509,-1 254000,508000 254000,857250 254000,857250 254001,857250","289:254000,508000 253999,508000 254000,508000 254000,857250 0,675473 1,675473","290:254000,508000 253999,508000 254000,508000 254000,857250 0,675473 1,675473","291:-590508,0 -590509,-1 254000,508000 254000,857250 254000,857250 254001,857250"],"maxGeneratedId":291}
+{"k":58,"obstacles":[93,92,86,20,19,2],"gone":[],"new":["292:1075200,1016000 1075200,1015999 1075200,1016000 952500,1016000 42021,0 42022,1","293:698500,762000 698499,762001 698500,762000 952500,1016000 1875985,0 1875986,-1","294:-156015,0 -156016,-1 1075200,1143000 952500,1143000 952500,1143000 952500,1143001"],"maxGeneratedId":294}
+{"k":59,"obstacles":[294,292,268,93,86,85,20,19,2],"gone":[294,292,268],"new":["295:2014274,0 2014275,-1 1075200,1016000 952500,1016000 952500,1016000 952500,1016001","296:1075200,1143000 1075200,1142999 1075200,1143000 952500,1143000 2212310,0 2212309,1","297:2014274,0 2014275,-1 952500,1143000 825500,1016000 825500,1016000 825499,1016001"],"maxGeneratedId":297}
+{"k":59,"walk":"7e0e54d9d78e5862","nodes":3713,"leaves":1857}
+{"k":60,"obstacles":[107,63],"gone":[],"new":["298:0,1413028 1,1413028 1778000,1524000 1793875,1143000 1793875,1143000 1793851,1142999"],"maxGeneratedId":298}
+{"k":61,"obstacles":[202,176,104,6,2],"gone":[202,176],"new":["299:698500,508000 698500,507999 698500,508000 254000,508000 618276,0 618276,1","300:698500,508000 698500,507999 698500,508000 254000,508000 618276,0 618276,1","301:698500,508000 698500,507999 698500,508000 254000,508000 618276,0 618276,1","302:957241,0 957242,-1 698500,508000 254000,508000 254000,508000 254000,508001"],"maxGeneratedId":302}
+{"k":62,"obstacles":[261,75,7,2],"gone":[261],"new":["303:429792,0 429792,-1 698500,254000 254000,254000 254000,254000 254000,254001","304:698500,254000 698500,253999 698500,254000 254000,254000 629826,0 629826,1","305:429792,0 429792,-1 698500,254000 254000,254000 254000,254000 254000,254001"],"maxGeneratedId":305}
+{"k":63,"obstacles":[295,293,146,93,92,19,2],"gone":[295,293,146],"new":["306:698500,762000 698499,762001 698500,762000 952500,1016000 1593286,0 1593287,-1","307:698500,762000 698499,762001 698500,762000 952500,1016000 1593286,0 1593287,-1","308:1075200,1016000 1075200,1015999 1075200,1016000 952500,1016000 1046321,0 1046321,1","309:698500,762000 698499,762001 698500,762000 952500,1016000 1593286,0 1593287,-1"],"maxGeneratedId":309}
+{"k":64,"obstacles":[208,69],"gone":[208],"new":["310:1587500,698500 1587500,698499 1587500,698500 1016000,698500 1992398,0 1992397,1","311:1587500,698500 1587500,698499 1587500,698500 1016000,698500 1992398,0 1992397,1","312:1124863,0 1124863,-1 1587500,698500 1016000,698500 1016000,698500 1016000,698501"],"maxGeneratedId":312}
+{"k":65,"obstacles":[279,278,277,276,230,103,62,23,21,2],"gone":[279,278,277,276,230],"new":["313:1591800,1270000 1591800,1270001 1591800,1270000 1865500,1270000 1607059,0 1607059,-1","314:1747093,0 1747093,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","315:1747093,0 1747093,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","316:1747093,0 1747093,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","317:1747093,0 1747093,1 1591800,1270000 1865500,1270000 3036482,0 3036483,-1","318:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 1607059,0 1607059,-1","319:1591800,1270000 1591800,1270001 1591800,1270000 1865500,1270000 1607059,0 1607059,-1","320:1747093,0 1747093,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","321:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 1607059,0 1607059,-1","322:1747093,0 1747093,1 1591800,1143000 1793875,1143000 1793875,1143000 1793875,1142999"],"maxGeneratedId":322}
+{"k":66,"obstacles":[124,106,105,41,2],"gone":[124],"new":["323:1461622,0 1461621,-1 1946500,254000 1946500,601000 0,530983 1,530983","324:1946500,254000 1946499,254000 1946500,254000 1946500,601000 0,530983 1,530983"],"maxGeneratedId":324}
+{"k":67,"obstacles":[125,112,90,73,18,2],"gone":[125],"new":["325:2627850,0 2627849,1 1591800,889000 1762125,889000 1762125,889000 1762125,888999","326:2627850,0 2627849,1 1591800,889000 1762125,889000 1762125,889000 1762125,888999","327:1968500,796000 1968565,795873 1968500,796000 1778000,698500 1089850,0 1089851,1","328:0,698983 1,698983 1968500,796000 1778000,698500 1778000,698500 1777935,698627"],"maxGeneratedId":328}
+{"k":68,"obstacles":[184,156,138,136,97,96,2],"gone":[184,156,138,136],"new":["329:0,636786 -1,636786 1270000,603250 1270000,1047750 0,927060 1,927060","330:0,636786 -1,636786 1270000,603250 1270000,1047750 0,662138 1,662138","331:0,636786 -1,636786 1270000,603250 1270000,1047750 0,662138 1,662138","332:1174750,508000 1174749,508001 1174750,508000 1270000,603250 1701270,0 1701271,-1","333:0,636786 -1,636786 1270000,603250 1270000,1047750 1270000,1047750 1270001,1047750"],"maxGeneratedId":333}
+{"k":69,"obstacles":[286,283,80,77,67,66],"gone":[286,283],"new":["334:254000,1365250 254007,1365258 254000,1365250 508000,1143000 -822601,0 -822602,-1","335:-925078,0 -925077,1 254000,1365250 508000,1143000 -822601,0 -822602,-1","336:254000,1111250 254000,1111251 254000,1111250 349250,1111250 340739,0 340739,-1","337:0,1064322 1,1064322 349250,1111250 444500,1016000 444500,1016000 444499,1015999","338:254000,1365250 254007,1365258 254000,1365250 508000,1143000 -822601,0 -822602,-1","339:825500,1143000 825500,1142999 825500,1143000 508000,1143000 -624565,0 -624564,1"],"maxGeneratedId":339}
+{"k":69,"walk":"e2bd7f0e11b5964d","nodes":3757,"leaves":1879}
+{"k":70,"obstacles":[260,259,258,257,244,241,239,238,236,118,82,79,76,2],"gone":[260,259,258,257,244,241,239,238,236,118],"new":["340:723623,0 723623,1 698500,254000 1524000,254000 1272373,0 1272373,-1","341:723623,0 723623,1 698500,254000 1524000,254000 1272373,0 1272373,-1","342:723623,0 723623,1 698500,254000 1524000,254000 1272373,0 1272373,-1","343:723623,0 723623,1 698500,254000 1524000,254000 1272373,0 1272373,-1","344:1736500,254000 1736500,253999 1736500,254000 1524000,254000 1602407,0 1602407,1","345:0,324017 -1,324017 1524000,254000 1397000,381000 1397000,381000 1397001,381001","346:1736500,254000 1736500,253999 1736500,254000 1524000,254000 1602407,0 1602407,1","347:698500,254000 698500,254001 698500,254000 1524000,254000 1272373,0 1272373,-1"],"maxGeneratedId":347}
+{"k":71,"obstacles":[267,87,4,2],"gone":[267],"new":["348:771311,0 771311,1 698500,1016000 825500,1016000 825500,1016000 825500,1015999"],"maxGeneratedId":348}
+{"k":72,"obstacles":[72,64],"gone":[],"new":["349:825500,1143000 825501,1143001 825500,1143000 889000,1079500 -256498,0 -256499,-1","350:0,976463 1,976463 889000,1079500 889000,825500 889000,825500 888999,825500"],"maxGeneratedId":350}
+{"k":73,"obstacles":[328,327,157,73,65,2],"gone":[328,327,157],"new":["351:1968500,796000 1968565,795873 1968500,796000 1778000,698500 2564850,0 2564849,1","352:1968500,796000 1968565,795873 1968500,796000 1778000,698500 2564850,0 2564849,1","353:1587500,698500 1587500,698501 1587500,698500 1778000,698500 1697315,0 1697315,-1"],"maxGeneratedId":353}
+{"k":74,"obstacles":[324,323,105,41,2],"gone":[324,323],"new":["354:1946500,254000 1946499,254000 1946500,254000 1946500,601000 0,456031 1,456031","355:1946500,254000 1946499,254000 1946500,254000 1946500,601000 0,456031 1,456031","356:0,596065 -1,596065 1946500,254000 1946500,601000 1946500,601000 1946501,601000"],"maxGeneratedId":356}
+{"k":75,"obstacles":[309,307,306,92,5,2],"gone":[309,307,306],"new":["357:698500,762000 698499,762001 698500,762000 952500,1016000 1515406,0 1515407,-1","358:698500,762000 698499,762001 698500,762000 952500,1016000 1515406,0 1515407,-1","359:698500,762000 698499,762001 698500,762000 952500,1016000 1515406,0 1515407,-1","360:698500,762000 698499,762001 698500,762000 952500,1016000 1515406,0 1515407,-1","361:1713442,0 1713441,1 698500,762000 952500,1016000 952500,1016000 952501,1015999"],"maxGeneratedId":361}
+{"k":76,"obstacles":[322,321,319,318,313,103,100,62,23,21,2],"gone":[322,321,319,318,313],"new":["362:1766896,0 1766896,1 1591800,1143000 1793875,1143000 1793875,1143000 1793875,1142999","363:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 2740861,0 2740862,-1","364:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 2740861,0 2740862,-1","365:2938897,0 2938896,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","366:274861,0 274860,-1 1591800,1270000 1460500,1270000 1460500,1270000 1460500,1270001","367:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 2740861,0 2740862,-1","368:1766896,0 1766896,1 1591800,1143000 1793875,1143000 1793875,1143000 1793875,1142999"],"maxGeneratedId":368}
+{"k":77,"obstacles":[301,300,299,104,6,2],"gone":[301,300,299],"new":["369:698500,508000 698500,507999 698500,508000 254000,508000 682053,0 682053,1","370:698500,508000 698500,507999 698500,508000 254000,508000 682053,0 682053,1","371:698500,508000 698500,507999 698500,508000 254000,508000 682053,0 682053,1","372:698500,508000 698500,507999 698500,508000 254000,508000 682053,0 682053,1","373:472019,0 472019,-1 698500,508000 254000,508000 254000,508000 254000,508001"],"maxGeneratedId":373}
+{"k":78,"obstacles":[337,336,284,80,77,51],"gone":[337,336,284],"new":["374:398122,0 398122,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999","375:254000,1111250 254000,1111251 254000,1111250 349250,1111250 258088,0 258088,-1","376:254000,1111250 254000,1111251 254000,1111250 349250,1111250 258088,0 258088,-1","377:254000,1111250 254000,1111251 254000,1111250 349250,1111250 258088,0 258088,-1","378:398122,0 398122,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999"],"maxGeneratedId":378}
+{"k":79,"obstacles":[373,302,290,289,203,201,104,101,47,2],"gone":[373,302,290,289,203,201],"new":["379:472019,0 472019,-1 698500,508000 254000,508000 403138,0 403138,1","380:957241,0 957242,-1 698500,508000 254000,508000 403138,0 403138,1","381:698500,508000 698500,507999 698500,508000 254000,508000 403138,0 403138,1","382:940139,0 940138,1 254000,508000 254000,857250 254000,857250 254001,857250"],"maxGeneratedId":382}
+{"k":79,"walk":"94792bb7d1b94d37","nodes":3771,"leaves":1886}
+{"k":80,"obstacles":[308,93,19,2],"gone":[308],"new":["383:962483,0 962483,-1 1075200,1016000 952500,1016000 952500,1016000 952500,1016001"],"maxGeneratedId":383}
+{"k":81,"obstacles":[191,71,70,22,2],"gone":[191],"new":["384:1016000,698500 1015999,698500 1016000,698500 1016000,825500 1826777,0 1826778,-1"],"maxGeneratedId":384}
+{"k":82,"obstacles":[366,273,271,155,132,131,103,102,100,23,2],"gone":[366,273,271,155,132,131],"new":["385:1385040,0 1385040,-1 1460500,1270000 1270000,1047750 2386095,0 2386094,1","386:1615074,0 1615074,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","387:1385040,0 1385040,-1 1460500,1270000 1270000,1047750 1270000,1047750 1269993,1047756"],"maxGeneratedId":387}
+{"k":83,"obstacles":[143,84,8,2],"gone":[143],"new":["388:698500,1270000 698500,1270001 698500,1270000 1075200,1270000 726802,0 726802,-1","389:698500,1270000 698500,1270001 698500,1270000 1075200,1270000 726802,0 726802,-1","390:-374163,0 -374162,1 698500,1270000 1075200,1270000 1075200,1270000 1075200,1269999"],"maxGeneratedId":390}
+{"k":84,"obstacles":[356,106,105,41,2],"gone":[356],"new":["391:1946500,254000 1946499,254000 1946500,254000 1946500,601000 0,469911 1,469911"],"maxGeneratedId":391}
+{"k":85,"obstacles":[225,211,170,83,74,48],"gone":[225,211,170],"new":["392:921130,0 921129,1 444500,444500 444500,1016000 0,807680 1,807680","393:921130,0 921129,1 444500,444500 444500,1016000 444500,1016000 444501,1016000","394:254000,254000 253999,254001 254000,254000 444500,444500 543094,0 543095,-1"],"maxGeneratedId":394}
+{"k":86,"obstacles":[168,167,166,61,2],"gone":[168,167,166],"new":["395:1778000,1524000 1777999,1523999 1778000,1524000 1524000,1778000 119338,0 119339,1","396:126534,0 126533,-1 1778000,1524000 1524000,1778000 119338,0 119339,1","397:1778000,1524000 1777999,1523999 1778000,1524000 1524000,1778000 119338,0 119339,1","398:1778000,1524000 1777999,1523999 1778000,1524000 1524000,1778000 119338,0 119339,1","399:-78698,0 -78699,-1 1778000,1524000 1524000,1778000 1524000,1778000 1524001,1778001"],"maxGeneratedId":399}
+{"k":87,"obstacles":[391,355,354,123,105,52,2,1],"gone":[391,355,354,123],"new":["400:1946500,254000 1946499,254000 1946500,254000 1946500,601000 2217380,0 2217381,-1","401:0,439915 -1,439915 1946500,254000 1946500,601000 0,469911 1,469911","402:1946500,254000 1946499,254000 1946500,254000 1946500,601000 2217380,0 2217381,-1","403:0,439915 -1,439915 1946500,254000 1946500,601000 0,456031 1,456031","404:1946500,254000 1946499,254000 1946500,254000 1946500,601000 2217380,0 2217381,-1","405:0,439915 -1,439915 1946500,254000 1946500,601000 0,456031 1,456031","406:1946500,254000 1946499,254000 1946500,254000 1946500,601000 2217380,0 2217381,-1","407:1946500,254000 1946499,254000 1946500,254000 1946500,601000 2217380,0 2217381,-1","408:0,439915 -1,439915 1946500,254000 1946500,601000 1946500,601000 1946501,601000"],"maxGeneratedId":408}
+{"k":88,"obstacles":[82,79,76,2],"gone":[],"new":["409:1170474,0 1170473,-1 1524000,254000 1397000,381000 1397000,381000 1397001,381001","410:1736500,254000 1736500,253999 1736500,254000 1524000,254000 1593763,0 1593763,1","411:698500,254000 698500,254001 698500,254000 1524000,254000 1453729,0 1453729,-1"],"maxGeneratedId":411}
+{"k":89,"obstacles":[407,406,404,402,400,105,53,52,2],"gone":[407,406,404,402,400],"new":["412:1946500,254000 1946499,254000 1946500,254000 1946500,601000 1686030,0 1686031,1","413:1946500,254000 1946499,254000 1946500,254000 1946500,601000 1686030,0 1686031,1","414:1946500,254000 1946499,254000 1946500,254000 1946500,601000 1686030,0 1686031,1","415:1946500,254000 1946499,254000 1946500,254000 1946500,601000 1686030,0 1686031,1","416:1946500,254000 1946499,254000 1946500,254000 1946500,601000 1686030,0 1686031,1","417:1946500,254000 1946499,254000 1946500,254000 1946500,601000 1686030,0 1686031,1","418:0,429505 -1,429505 1946500,254000 1946500,601000 1946500,601000 1946501,601000"],"maxGeneratedId":418}
+{"k":89,"walk":"1e06904d76e6f3e1","nodes":3793,"leaves":1897}
+{"k":90,"obstacles":[411,410,409,346,344,82,79,76,53,2],"gone":[411,410,409,346,344],"new":["419:698500,254000 698500,254001 698500,254000 1524000,254000 1415071,0 1415071,-1","420:1132070,0 1132069,-1 1524000,254000 1397000,381000 1397000,381000 1397001,381001","421:1132070,0 1132069,-1 1524000,254000 1397000,381000 1397000,381000 1397001,381001","422:698500,254000 698500,254001 698500,254000 1524000,254000 1415071,0 1415071,-1"],"maxGeneratedId":422}
+{"k":91,"obstacles":[386,365,320,317,316,315,314,108,103,62,2],"gone":[386,365,320,317,316,315,314],"new":["423:1615074,0 1615074,1 1591800,1270000 1865500,1270000 1643580,0 1643580,-1","424:1783614,0 1783614,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","425:1783614,0 1783614,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","426:1783614,0 1783614,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","427:1591800,1270000 1591800,1270001 1591800,1270000 1865500,1270000 1643580,0 1643580,-1","428:1783614,0 1783614,1 1591800,1270000 1865500,1270000 1865500,1270000 1865500,1269999","429:1591800,1143000 1591800,1143001 1591800,1143000 1793875,1143000 2804579,0 2804580,-1","430:622615,0 622616,1 1591800,1143000 1793875,1143000 1793875,1143000 1793875,1142999"],"maxGeneratedId":430}
+{"k":92,"obstacles":[398,397,396,395,107,61,2],"gone":[398,397,396,395],"new":["431:52874,0 52873,-1 1778000,1524000 1524000,1778000 1524000,1778000 1524001,1778001"],"maxGeneratedId":431}
+{"k":93,"obstacles":[349,339,287,199,72,66,64],"gone":[349,339,287,199],"new":["432:759611,0 759611,-1 825500,1143000 508000,1143000 -624565,0 -624564,1","433:759611,0 759611,-1 825500,1143000 508000,1143000 1669518,0 1669517,1","434:759611,0 759611,-1 825500,1143000 508000,1143000 705335,0 705335,1","435:759611,0 759611,-1 825500,1143000 508000,1143000 508000,1143000 508000,1143001","436:1869483,0 1869484,-1 889000,1079500 889000,825500 889000,825500 888999,825500"],"maxGeneratedId":436}
+{"k":94,"obstacles":[436,350,64,5],"gone":[436,350],"new":["437:-1566,0 -1565,1 889000,1079500 889000,825500 889000,825500 888999,825500","438:-1566,0 -1565,1 889000,1079500 889000,825500 889000,825500 888999,825500","439:889000,1079500 889001,1079500 889000,1079500 889000,825500 0,1059601 -1,1059601","440:-1566,0 -1565,1 889000,1079500 889000,825500 889000,825500 888999,825500"],"maxGeneratedId":440}
+{"k":95,"obstacles":[378,377,376,375,374,80,77,51],"gone":[378,377,376,375,374],"new":["441:-640884,0 -640883,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999","442:-640884,0 -640883,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999","443:-640884,0 -640883,1 349250,1111250 444500,1016000 444500,1016000 444499,1015999"],"maxGeneratedId":443}
+{"k":96,"obstacles":[443,442,441,393,285,282,280,171,83,77,50],"gone":[443,442,441,393,285,282,280,171],"new":["444:921130,0 921129,1 444500,444500 444500,1016000 -482198,0 -482197,1","445:444500,444500 444499,444500 444500,444500 444500,1016000 -482198,0 -482197,1","446:349250,1111250 349251,1111251 349250,1111250 444500,1016000 -680234,0 -680235,-1"],"maxGeneratedId":446}
+{"k":97,"obstacles":[298,63],"gone":[298],"new":["447:0,1241766 1,1241766 1778000,1524000 1793875,1143000 1793875,1143000 1793851,1142999","448:1778000,1524000 1778024,1524001 1778000,1524000 1793875,1143000 3197643,0 3197642,1","449:0,1241766 1,1241766 1778000,1524000 1793875,1143000 1793875,1143000 1793851,1142999"],"maxGeneratedId":449}
+{"k":98,"obstacles":[332,235,232,181,98,97,2],"gone":[332,235,232,181],"new":["450:862815,0 862815,1 698500,508000 1174750,508000 1107591,0 1107591,-1","451:862815,0 862815,1 698500,508000 1174750,508000 1107591,0 1107591,-1","452:994736,0 994736,1 698500,508000 1174750,508000 1107591,0 1107591,-1","453:698500,508000 698500,508001 698500,508000 1174750,508000 1107591,0 1107591,-1","454:1787484,0 1787483,1 1174750,508000 1270000,603250 1270000,603250 1270001,603249"],"maxGeneratedId":454}
+{"k":99,"obstacles":[59,3,2],"gone":[],"new":["455:2078440,0 2078439,1 254000,1714500 317500,1778000 317500,1778000 317501,1777999"],"maxGeneratedId":455}
+{"k":99,"walk":"e51af550d392e07e","nodes":3787,"leaves":1894}
