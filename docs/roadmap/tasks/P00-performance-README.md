@@ -19,10 +19,27 @@ tree.
 
 ## Order
 
-P01 comes first. Its tooling items can start as soon as the A series has a
-routing CLI; the stats output can be built into the A series' search core
-(the sinks in A04). P02 and P05 follow P01's profiles. P03 can run alongside
-P02. P04 is last, because it gives up exact parity with Java on purpose.
+Decided by Dan 2026-10-16 (the review's question below): **P01 → P02 → P04
+→ P03 and P05 → the route-changing Q items.**
+
+1. **P01** first. Its tooling items can start as soon as the A series has a
+   routing CLI; the stats output can be built into the A series' search core
+   (the sinks in A04). P01.5 sets the speed target.
+2. **P02** next: every speed-up that keeps results byte-identical. Its
+   numbers say how far the parity-shaped tree can go.
+3. **P04** right after P02, and only after rung 3 (A14) and F03's gate. D5
+   caps the two hottest paths, overlap queries and room completion, until
+   the tree is freed, so P04 is the lever if P02 falls short of the target.
+   It changes routes, so it lands before any route-changing Q item: each Q
+   measurement is then paired against the freed tree once, not re-baselined
+   when the tree changes later. The Java-shaped tree stays selectable (P04
+   "Decisions"), so the parity suite keeps its exact Java reference.
+4. **P03 and P05** after P04, measured against the freed tree. P03.1 (the
+   statistics and analyses) may run earlier beside P02; it changes no route.
+5. The speed target from P01.5 is stated for the default tree. The parity
+   tree is measured too, but it is the reference, not the product.
+
+Report-only Q items (Q03, Q01.4, Q02.1, Q06) do not wait for P04.
 
 ## Series rules
 
@@ -54,3 +71,6 @@ P02. P04 is last, because it gives up exact parity with Java on purpose.
   *Recommendation:* keep P04 after P02, but run it before P05 and before any
   Q item that changes routes, so the tree is freed once and every later
   measurement is against the freed tree. P01.5 says which, from the numbers.
+  *Decided by Dan 2026-10-16: as recommended, with the Java-shaped tree kept
+  as a selectable mode. Recorded in "Order" above, in P04's decisions, in
+  [performance.md](../performance.md) and in Q00's order.*

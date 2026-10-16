@@ -82,16 +82,23 @@ measurements of the Rust port.
 2. **At parity (P01):** profiles and baselines. These give the first honest
    Rust-against-Java numbers, and P01 sets the release target, which
    port-completion.md proposes as 3× lower median wall time.
-3. **After parity:**
-   - P02: optimizations that keep results identical;
-   - P03: parallelism with an ordered merge;
-   - P05: SIMD where P01 shows a hot data-parallel loop.
-4. **Freeing the search tree (P04).** The tree's shape decides routes today
-   (D5). A faster tree first needs room completion that doesn't depend on
-   visit order, for example by visiting obstacles in item-id order. That
-   changes routes, so it is a measured divergence. Once it is accepted, the
-   tree can be replaced by anything faster that returns the same result
-   sets.
+3. **After parity, P02:** optimizations that keep results identical. Its
+   numbers say how far the parity-shaped tree can go.
+4. **Freeing the search tree (P04), right after P02** (Dan, 2026-10-16).
+   The tree's shape decides routes today (D5). A faster tree first needs
+   room completion that doesn't depend on visit order, for example by
+   visiting obstacles in item-id order, and a work unit that doesn't count
+   nodes. Both change routes, so they are a measured divergence, and they
+   land before any route-changing Q item so every later measurement is
+   paired against the freed tree once. The Java-shaped tree is kept as a
+   selectable mode (`router.search_tree = "java"`): the parity suite and the
+   probes keep their exact Java reference on it, and the fast tree becomes
+   the default only when its measurement accepts it. The speed target is
+   stated for the default tree.
+5. **Then P03 and P05**, measured against the freed tree: parallelism with
+   an ordered merge, and SIMD where P01 shows a hot data-parallel loop.
+   P03.1 (statistics and analyses) may run beside P02, since it changes no
+   route.
 
 ## Large boards in the GUI
 

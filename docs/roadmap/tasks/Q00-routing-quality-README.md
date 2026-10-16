@@ -31,8 +31,11 @@ Sizes: S under about 1k lines of Rust, M 1–3k, L more.
 1. **Now:** Q03. It needs only the loaded board, the rules and F02's dev
    crate. It is the one Q item that may land before parity, because a static
    diagnostic changes no routes.
-2. **After board parity (rung 3)**, in this order of expected value on Dan's
-   boards:
+2. **After board parity (rung 3) and after P04** (Dan, 2026-10-16: P04
+   frees the search tree and changes routes, so every route-changing Q item
+   is measured against the freed tree, once; the report-only items Q01.4,
+   Q02.1 and Q06 need only rung 3), in this order of expected value on
+   Dan's boards:
    - Q04 (time saved on every `canary-pwr` run, mostly byte-identical);
    - Q01 and Q02 (the two failure causes canary-09 named);
    - Q06 (needs the A04 failure record), then Q05.1 instrumentation;
@@ -42,8 +45,9 @@ Sizes: S under about 1k lines of Rust, M 1–3k, L more.
 3. Q01.6 (narrowness cost) waits for Q05.2's lattice and the A04 cost hook.
 
 The critical path into Q is the port's: J01 → B → O → A (rung 3) → the F03
-gate. F03.1 (comparator) and F03.4 (preregistration) must land before any Q
-item's first measurement.
+gate → P01, P02, P04. F03.1 (comparator) and F03.4 (preregistration) must
+land before any Q item's first measurement, and the first measurement of a
+route-changing item waits for P04's default-tree decision.
 
 ## Parallel lanes and file ownership
 

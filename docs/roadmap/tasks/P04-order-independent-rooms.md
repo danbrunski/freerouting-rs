@@ -13,8 +13,12 @@ This checklist removes the tie on purpose, after parity:
 Steps 1 and 2 change routes, so they are a deliberate divergence, measured
 under the Q-series rules ([routing-quality.md](../routing-quality.md)).
 
-Prerequisites: P01, P02, the A-series board-parity gate, and F03's gate
-comparator.
+**Position (Dan, 2026-10-16):** P04 runs right after P02 and before P03,
+P05 and every route-changing Q item, so the tree is freed once and every
+later measurement is paired against the freed tree. See P00 "Order".
+
+Prerequisites: P01, P02, the A-series board-parity gate (rung 3), and F03's
+gate comparator.
 
 ## What exists and what this adds
 
@@ -35,6 +39,19 @@ comparator.
   `benchmark` set, the same fraction of connections hit them as before.
 - **The tree is free only after both changes are accepted.** Until then any
   tree change must keep fingerprints identical.
+- **Both trees stay (Dan, 2026-10-16).** The Java-shaped tree with Java's
+  work unit is not replaced; it becomes a selectable implementation,
+  `router.search_tree = "java" | "fast"` (one key beside P04.1's
+  `router.room_order`), as D9 does for stages. `java` is the parity mode:
+  the board-parity gate (A14), the tree fingerprints (B02), the
+  complete-shape and maze-log probes (B03, A04) and `connection-parity`
+  keep running on it, bit-exact against Java, for as long as the port
+  exists. `fast` becomes the default only when P04.3's measurement accepts
+  it. A change to shared code (room completion, the maze search, the
+  shover) must keep the `java` mode's probes identical; a change to the
+  fast tree must keep `ses-diff` identical against its own previous build.
+  The cost is one extra implementation of the tree trait; the parity tree is
+  the one the port already has.
 
 ## File ownership
 
@@ -83,3 +100,6 @@ comparator.
     - `ses-diff` identical on `benchmark` against P04.2's build.
     - Wall time and callgrind counts are given before and after.
     - The P02.1 audit is clean.
+    - `router.search_tree = "java"` still passes A14's exact-parity set and
+      the B02, B03 and A04 probes unchanged; `tools/determinism-check.sh`
+      passes in both modes; the CLI logs which tree ran.
