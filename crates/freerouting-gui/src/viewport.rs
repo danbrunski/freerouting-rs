@@ -35,6 +35,8 @@ pub struct ViewState {
     pub zoom_rect_armed: bool,
     /// The canvas as of the last frame.
     pub canvas: Rect,
+    /// How the board is drawn: the GPU pipeline or the CPU fallback.
+    pub renderer: view::Renderer,
     /// The cursor, while it is over the canvas.
     pub cursor: Option<Pos2>,
     /// The corners of the rectangle being dragged for a zoom.
@@ -55,6 +57,7 @@ impl Default for ViewState {
             crosshair: false,
             zoom_rect_armed: false,
             canvas: Rect::from_min_size(Pos2::ZERO, Vec2::new(1.0, 1.0)),
+            renderer: view::Renderer::default(),
             cursor: None,
             zoom_rect_drag: None,
             pan_anchor: None,
@@ -224,6 +227,7 @@ pub fn canvas(
         b.scene.layers.len(),
         &b.scene.labels,
         &view.visibility(),
+        &view.renderer,
     );
     draw_overlays(&painter, view, rect);
 

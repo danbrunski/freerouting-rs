@@ -9,16 +9,21 @@ use std::time::Instant;
 
 use eframe::egui;
 
+use crate::analysis::Analysis;
 use crate::args::Args;
-use crate::capture::Scripted;
+use crate::capture::{FrameReport, Scripted};
 use crate::commands::Command;
+use crate::drc_export::{ExportDialog, ExportJob};
 use crate::file_dialog::FileDialog;
 use crate::input;
+use crate::lists::Lists;
+use crate::overlays::OverlayState;
 use crate::panels::warnings;
 use crate::scene::Kind;
+use crate::selection::Selection;
 use crate::session::{self, CurrentDesign, Loaded};
 use crate::settings::PersistedSettings;
-use crate::stats::{FrameStats, PaintStats};
+use crate::stats::{FrameStats, OverlayCounts, PaintStats};
 use crate::viewport::ViewState;
 
 type LoadResult = Result<Loaded, String>;
@@ -31,10 +36,30 @@ pub struct App {
     pub(crate) error: Option<String>,
     pub(crate) show_warnings: bool,
     pub(crate) settings: PersistedSettings,
-    stats: FrameStats,
+    pub(crate) stats: FrameStats,
     show_stats: bool,
     pub(crate) scripted: Scripted,
     scripted_run: bool,
+    // G03: selection, background analysis, overlays, lists, delete all and
+    // the DRC export.
+    pub(crate) selection: Selection,
+    pub(crate) analysis: Analysis,
+    pub(crate) overlay: OverlayState,
+    pub(crate) overlay_counts: OverlayCounts,
+    pub(crate) lists: Lists,
+    pub(crate) confirm_delete: bool,
+    pub(crate) export_dialog: ExportDialog,
+    pub(crate) export_job: Option<ExportJob>,
+    /// A message for the status bar that is not an error.
+    pub(crate) notice: Option<String>,
+    /// Tile the loaded board this many times (`--bench-synthetic`).
+    synthetic: Option<(u32, u32)>,
+    /// When the load in progress, or the last one, started.
+    load_started: Option<Instant>,
+    /// Frames that finished painting since the last update.
+    done: Vec<crate::stats::FrameCpu>,
+    /// The tessellation last counted as a full build.
+    seen_tess: Option<u64>,
 }
 
 impl App {
@@ -82,6 +107,19 @@ impl App {
             show_stats: std::env::var_os("FREEROUTING_GUI_STATS").is_some(),
             scripted: Scripted::new(&args),
             scripted_run: args.scripted(),
+            selection: Selection::default(),
+            analysis: Analysis::default(),
+            overlay: OverlayState::default(),
+            overlay_counts: OverlayCounts::default(),
+            lists: Lists::default(),
+            confirm_delete: false,
+            export_dialog: ExportDialog::default(),
+            export_job: None,
+            notice: None,
+            synthetic: args.synthetic,
+            load_started: None,
+            done: Vec::new(),
+            seen_tess: None,
         };
         if !args.open.is_empty() {
             app.start_load(ctx, args.open, None);
@@ -105,8 +143,49 @@ impl App {
         &self.view
     }
 
+    /// The view, for tests and scripts that place the camera.
+    pub fn view_mut(&mut self) -> &mut ViewState {
+        &mut self.view
+    }
+
+    /// The frames that finished painting since the last update, by both
+    /// definitions of frame CPU (see [`crate::stats`]).
+    pub fn clock(&self) -> &std::sync::Arc<crate::stats::FrameClock> {
+        &self.view.renderer.clock
+    }
+
     pub fn stats(&self) -> &FrameStats {
         &self.stats
+    }
+
+    /// The selected items.
+    pub fn selection(&self) -> &Selection {
+        &self.selection
+    }
+
+    /// The background analysis: ratsnest and design rules check.
+    pub fn analysis(&self) -> &Analysis {
+        &self.analysis
+    }
+
+    /// Which overlays are on.
+    pub fn overlay(&self) -> OverlayState {
+        self.overlay
+    }
+
+    /// The Info list windows.
+    pub fn lists(&self) -> &Lists {
+        &self.lists
+    }
+
+    /// The last message that is not an error (an export result).
+    pub fn notice(&self) -> Option<&str> {
+        self.notice.as_deref()
+    }
+
+    /// True while a DRC report is being written.
+    pub fn is_exporting(&self) -> bool {
+        self.export_job.is_some()
     }
 
     /// The settings as they would be saved now.
@@ -140,6 +219,19 @@ impl App {
             }
             Command::Quit => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
             Command::ShowWarnings => self.show_warnings = true,
+            command @ (Command::Select(_)
+            | Command::ClearSelection
+            | Command::ZoomSelection
+            | Command::ToggleRatsnest
+            | Command::ToggleViolations
+            | Command::RunDrc
+            | Command::ShowList(_)
+            | Command::DeleteAll
+            | Command::ConfirmDeleteAll
+            | Command::Undo
+            | Command::Redo
+            | Command::ExportDrcDialog
+            | Command::ExportDrcReport(_)) => self.execute_analysis(ctx, command),
             view_command => {
                 let signal: Vec<bool> = self
                     .loaded
@@ -174,9 +266,17 @@ impl App {
         current: Option<CurrentDesign>,
     ) {
         let (tx, rx) = mpsc::channel();
-        let (ctx, files) = (ctx.clone(), paths.clone());
+        let (ctx, files, synthetic) = (ctx.clone(), paths.clone(), self.synthetic);
+        self.load_started = Some(Instant::now());
+        self.view.renderer.clock.reset_first_paint();
         std::thread::spawn(move || {
-            let _ = tx.send(session::load_all(&files, current));
+            let loaded = session::load_all(&files, current).map(|mut loaded| {
+                if let Some((nx, ny)) = synthetic {
+                    crate::bench_synthetic::tile_loaded(&mut loaded, nx, ny);
+                }
+                loaded
+            });
+            let _ = tx.send(loaded);
             ctx.request_repaint();
         });
         self.loading = Some((paths, rx));
@@ -222,6 +322,9 @@ impl App {
         }
         self.loaded = Some(board);
         self.error = None;
+        self.analysis.reset();
+        self.selection.clear();
+        self.notice = None;
     }
 
     fn commands_this_frame(&mut self, ctx: &egui::Context) -> Vec<Command> {
@@ -235,12 +338,29 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let started = Instant::now();
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let clock = self.view.renderer.clock.clone();
+        clock.begin_update();
+        self.done = clock.take_done();
+        for f in &self.done {
+            self.stats.record_full(f.frame_ms);
+        }
+        self.view
+            .renderer
+            .select(frame.wgpu_render_state().map(|s| s.target_format));
         self.poll_load();
+        self.count_builds();
+        self.analysis
+            .poll(ctx, self.loaded.as_ref().map(|b| &b.session));
+        self.poll_export();
         let mut commands = self.commands_this_frame(ctx);
         let (panel_commands, canvas) = self.panels(ctx);
         commands.extend(panel_commands);
+        if let Some(b) = &self.loaded {
+            commands.extend(self.lists.show(ctx, &b.session, &self.analysis));
+        }
+        commands.extend(self.confirm_delete_ui(ctx));
+        commands.extend(self.export_dialog.ui(ctx).map(Command::ExportDrcReport));
         for command in commands {
             self.execute(ctx, command);
         }
@@ -256,7 +376,7 @@ impl eframe::App for App {
                 });
             self.show_warnings = open;
         }
-        let ms = started.elapsed().as_secs_f64() * 1000.0;
+        let ms = clock.end_update();
         self.finish_frame(ctx, ms, canvas.paint);
     }
 
@@ -273,13 +393,34 @@ impl eframe::App for App {
 }
 
 impl App {
+    /// Counts a board's tessellation as a full build the first time it is
+    /// seen, however it came about (a load or `Loaded::rebuild_scene`).
+    fn count_builds(&mut self) {
+        let id = self.loaded.as_ref().map(|b| b.tess.with(|s| s.id()));
+        if id.is_some() && id != self.seen_tess {
+            self.stats.record_build();
+            self.seen_tess = id;
+        }
+    }
+
     fn finish_frame(&mut self, ctx: &egui::Context, ms: f64, paint: PaintStats) {
         self.stats.record(ms, paint);
+        self.stats.overlay = self.overlay_counts;
         if self.show_stats {
             crate::stats::overlay(ctx, &self.stats);
         }
         let ready = self.loading.is_none() && (self.loaded.is_some() || self.error.is_some());
+        let first_frame_ms = self
+            .load_started
+            .zip(self.view.renderer.clock.first_paint_end())
+            .map(|(start, end)| end.saturating_duration_since(start).as_secs_f64() * 1000.0);
+        let report = FrameReport {
+            ms,
+            paint,
+            done: &self.done,
+            first_frame_ms,
+        };
         self.scripted
-            .after_frame(ctx, ready, ms, paint, self.loaded.as_ref());
+            .after_frame(ctx, ready, &report, self.loaded.as_ref());
     }
 }

@@ -68,7 +68,7 @@ Paths are under `crates/freerouting-gui/`.
 
 ## Checklist
 
-- [ ] **G03.1 — Selection model, highlight, zoom to selection.**
+- [x] **G03.1 — Selection model, highlight, zoom to selection.**
   - `src/selection.rs`: `Selection { items: BTreeSet<ItemId> }` with
     `set`, `toggle`, `clear`; `Command::Select(Vec<ItemId>)`,
     `Command::ClearSelection`, `Command::ZoomSelection` (key W while the
@@ -84,8 +84,20 @@ Paths are under `crates/freerouting-gui/`.
       side of their union.
     - `snapshot_highlight`: the snapshot `highlight_issue159.png` shows the
       two pads highlighted (the implementer opens it and describes it).
+  *Done 2026-10-15:* `src/selection.rs` (`Selection { items: BTreeSet<ItemId> }`,
+  `set`, `toggle`, `clear`), `Command::{Select, ClearSelection, ZoomSelection}`, key
+  `W`, `overlays/highlight.rs`. Zoom to selection fits the `bounding_box_of` box
+  plus 10 % through `Camera::zoom_to_rect`.
+  `ui_drc::zoom_to_selection_contains_items` (Issue159, the two pads farthest apart
+  in a row; the pair has to be wider than tall, because the canvas is wider than
+  tall and a tall union cannot fit in 1.25 times its larger side): the visible
+  rectangle contains both boxes and its larger side is at most 1.25 times the
+  larger side of the union. `w_without_a_selection_keeps_the_view`. Snapshot
+  `tests/snapshots/highlight_issue159.png`, opened: the view is zoomed to the two
+  pads and each is a circle with a cyan outline and a translucent cyan fill (the
+  board's yellow airlines and the "Checks" panel are visible too).
 
-- [ ] **G03.2 — Ratsnest overlay.**
+- [x] **G03.2 — Ratsnest overlay.**
   - After every load and every edit, a worker computes
     `DesignRulesChecker::all_airlines()`; the overlay draws them as
     hairlines in the incompletes colour. G and a toolbar toggle switch it.
@@ -100,8 +112,21 @@ Paths are under `crates/freerouting-gui/`.
     - The overlay draws exactly as many lines as `all_airlines().len()`
       (counter in `stats.rs`).
     - `snapshot_ratsnest_issue143`, opened and described by the implementer.
+  *Done 2026-10-15:* `analysis.rs` (a worker over an `Arc` clone, results tagged
+  `(load, revision, edit_generation)`, stale ones hidden, one worker at a time;
+  the ratsnest is sent first), `overlays/ratsnest.rs`, `G` and a toolbar toggle
+  ("Ratsnest", on by default), side panel "Incomplete connections: n".
+  `ui_drc::incomplete_counts_match_reference`: the panel label equals
+  `statistics.connections.incomplete_count` of the load reference for
+  Issue508-SMD-routing-issue-demo (6), Issue143-rpi_splitter (5) and
+  Issue684-Autorouter_PCB1_2026-5-8 (75), the engine's `incomplete_count()` equals
+  it, and `stats().overlay.airlines` (counter in `stats.rs`, `OverlayCounts`)
+  equals `all_airlines().len()`. `g_toggles_the_ratsnest`.
+  Snapshot `ratsnest_issue143.png`, opened: the Issue143 board with five thin
+  yellow lines between pads of J1, J2 and J3, and "Incomplete connections: 5" in
+  the side panel.
 
-- [ ] **G03.3 — Background DRC and violation markers.**
+- [x] **G03.3 — Background DRC and violation markers.**
   - A worker runs `DesignRulesChecker::check()` after the load and after
     each edit; Run DRC in the Info menu forces a run. V and a toolbar toggle
     show the markers.
@@ -116,8 +141,23 @@ Paths are under `crates/freerouting-gui/`.
       ≤ 50 ms.
     - An Xvfb screenshot of Issue313 with markers on, taken with the
       implementer recipe (or `--screenshot`), opened and described.
+  *Done 2026-10-15:* the same worker runs the rest of the check
+  (`all_clearance_violations`, `all_unconnected_items`, `zone_island_violations`);
+  Info > Run DRC forces a run (`Command::RunDrc`); `V` and a toolbar toggle
+  ("Violations", off by default as in Java); `overlays/violations.rs` draws each
+  violation's shape with a ring around its centre.
+  `ui_drc::violation_markers_match_reference`: `stats().overlay.markers` equals
+  `statistics.clearance_violations.total_count` of the load reference for
+  PCBench-retroreflectors-CONGFLOCK (8), Issue684 (5) and Issue313-FastTest (40),
+  and the panel shows the count. `edits_start_a_new_analysis_and_stale_results_are_hidden`.
+  Release: `drc_does_not_block_frames_issue190` ran 72 frames while the worker ran,
+  maximum frame CPU 13.9 ms (limit 50 ms; machine not measured quiet, other agents
+  building). Xvfb screenshot (`tools/gui/smoke.sh fixtures/Issue313-FastTest.dsn
+  --keys v`, release binary), opened: Issue313 with 40 red ringed translucent
+  markers on the vias and pads, three thin yellow airlines, and "Incomplete
+  connections: 3", "Clearance violations: 40" in the side panel.
 
-- [ ] **G03.4 — Info > Clearance Violations.**
+- [x] **G03.4 — Info > Clearance Violations.**
   - `src/panels/object_list.rs`: a generic list window with Java's
     `WindowObjectList` buttons (Select, Invert, Info, Recalculate) and a
     filter field. Info opens the item-info window once G04.3 exists and is
@@ -136,8 +176,30 @@ Paths are under `crates/freerouting-gui/`.
     `{first_item, second_item}`; the row text equals the template filled by
     the same rule as Java (a unit test in `panels/violations.rs` checks one
     row against a string built from the Java source's formatting).
+  *Done 2026-10-15:* `panels/object_list.rs` (the generic window: Select, Invert,
+  Info (disabled, tooltip from Java, until G04.3), Recalculate, filter, Ctrl+click,
+  double click selects), `panels/violations.rs`, `text.rs` (Java's bundle texts and
+  `TextManager.getText` / `String.valueOf(float)` / `NumberFormat` formatting). The
+  row follows `WindowClearanceViolations.ViolationInfo`: `{{clearance_mm}}` is
+  `(expected_clearance - actual_clearance) / 10000` as `%.4f` (the shortfall, not
+  the actual clearance; Java divides by 10000 whatever the board unit is), items are
+  `pin`, `via [net]`, `trace [net]`, `conduction area`, `via keepout`,
+  `component keepout`, `keepout`, `board outline`, else `unknown`, the location is
+  the centre of gravity in design-file units as `(x , y)`, the layer is its name;
+  sorted by shortfall (largest first), then layer. Empty text "No clearance
+  violations found."
+  `ui_drc::clearance_list_select` (through Info > Clearance Violations on Issue684):
+  5 rows, all found in the UI, the first row equals `violations::row_text` of the
+  violation with the largest shortfall, clicking it and Select sets the selection to
+  `{first_item, second_item}` and the view contains both items.
+  `panels::violations::tests::row_text_follows_the_java_template` checks a row
+  against the string built from the Java template (pin and trace, then via and
+  unknown). `clearance_list_empty_text`. Divergence: Java's `TreeSet` drops
+  violations with equal shortfall and layer (67 violations show as 3 rows on
+  Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations), this list keeps
+  all; pinned by `java_a11y_list_counts`, `docs/DIVERGENCES.md` "freerouting-gui".
 
-- [ ] **G03.5 — Info > Incomplete Connections.**
+- [x] **G03.5 — Info > Incomplete Connections.**
   - One row per airline, grouped by net, with Java's `WindowIncompletes`
     text (read the class for its row format). Select selects both endpoint
     items.
@@ -145,8 +207,17 @@ Paths are under `crates/freerouting-gui/`.
     `Issue143-rpi_splitter`, the row count equals `all_airlines().len()`;
     Select on the first row sets the selection to its `from_item` and
     `to_item`.
+  *Done 2026-10-15:* `panels/incompletes.rs`: one row per airline sorted (stable) by
+  net name, text `AirLine.toString` (`net: <from> - <to>` with `Item.toString`:
+  lower-case class name, ` #pin` for a pin index, ` of component #n`). Empty text
+  "Route completed." Select selects `from_item` and `to_item` and zooms.
+  `ui_drc::incompletes_list` (Issue143): the row count equals `all_airlines().len()`,
+  rows are grouped by net, Select on the first row sets the selection to its two
+  items. `java_a11y_list_counts` (the count of Java's
+  `ViolationsIncompletesListA11yTest`: 9 incompletes on
+  Issue575-drc_dev-board_4_hole_clearance_violations).
 
-- [ ] **G03.6 — Length violations, unconnected traces and vias, zone islands.**
+- [x] **G03.6 — Length violations, unconnected traces and vias, zone islands.**
   - Three lists from `length_violation`, `all_unconnected_items()` and
     `zone_island_violations()`, with Java's texts
     (`length_violation_max_message`, `length_violation_min_message`,
@@ -163,8 +234,25 @@ Paths are under `crates/freerouting-gui/`.
     fixture with `(length …)` rules or a small DSN in
     `crates/freerouting-gui/tests/data/`. Each empty list shows Java's empty
     text (a test on a clean fixture).
+  *Done 2026-10-15:* `panels/length.rs` (Java's `WindowLengthViolations`: nets sorted by
+  name ignoring case, `length_violation_max_message` / `_min_message`, lengths in the
+  design unit through `String.valueOf(float)`, Select selects every item of the
+  net), `panels/unconnected.rs` (one row per `all_unconnected_items()` finding with
+  `unconnected_route_row_message`; Java's window lists a different notion, see
+  DIVERGENCES), `panels/islands.rs` (the DRC report's text; Java has no window).
+  `ui_drc::other_lists_match_engine`: row counts equal `all_unconnected_items().len()`
+  and `zone_island_violations().len()` and `length_violation_count()` on
+  Issue143-rpi_splitter_mod, Issue054-tairakb and Issue029-hw48na, each with at
+  least one unconnected finding. No fixture has `(length ...)` rules, so
+  `tests/data/length_violation.dsn` (new) has one net too long (10000 against a
+  maximum of 5000) and one too short: `length_violations_list` checks both rows
+  as text. `tests/data/zone_islands.dsn` (new) gives copper islands:
+  `zone_islands_list`. `empty_lists_show_javas_texts`: "Route completed.", "No
+  clearance violations found.", "No unconnected traces or vias found.", "No zone
+  islands found." on a clean board, "No length violations found." on Issue143.
+  Route stubs: the menu entry is absent, `route_stubs` (B08.3) has not landed.
 
-- [ ] **G03.7 — Delete all traces and vias, with undo.**
+- [~] **G03.7 — Delete all traces and vias, with undo.**
   - Other > Delete All Traces and Vias (Java label) and a toolbar button.
     A confirmation dialog says that conduction areas are unfilled too and
     that later routing ignores them, as in Java.
@@ -180,8 +268,26 @@ Paths are under `crates/freerouting-gui/`.
     the values before the delete; after B, it equals the values after the
     delete. Until B08's unfill lands, the item is partial with "needs
     `unfill_conduction_areas` (B08)".
+  *Partial 2026-10-15:* needs `unfill_conduction_areas` (B08.5, `board/gui_ops.rs`),
+  which has not landed: Delete All deletes the traces and vias but does not unfill
+  conduction areas or set "ignore conduction" yet. Everything else is done: Other >
+  Delete All Traces and Vias and a toolbar button "Delete All" open a confirmation
+  that says conduction areas are unfilled and later routing ignores them (the text is
+  there now, the behaviour waits for B08.5); on confirm `generate_snapshot()` then
+  `delete_all_traces_and_vias()` through `Session::edit`, the scene is rebuilt in full
+  (`stats.full_rebuilds`), the analysis reruns; `U`/`Ctrl+Z` undo, `B`/`Ctrl+Y` redo.
+  `ui_drc::delete_all_and_undo` (Issue684, as the item says; its load reference has
+  0 traces and 0 vias, so the check is vacuous there) and
+  `delete_all_and_undo_with_wiring` (Issue026-J2_reference with its session, which
+  has traces and vias): after confirming, traces and vias are 0 and the incomplete
+  count is at least the value before; after U the `BoardStatistics` (traces, vias,
+  incomplete) equal the values before; after B the values after.
+  `ctrl_z_and_ctrl_y_undo_and_redo`, `cancelling_delete_all_keeps_the_wiring`.
+  When B08.5 lands: call `unfill_conduction_areas()` inside `App::delete_all`
+  (`app_analysis.rs`) after `delete_all_traces_and_vias()`, and add a conduction
+  area board to the test.
 
-- [ ] **G03.8 — File > Export DRC report.**
+- [x] **G03.8 — File > Export DRC report.**
   - Writes `generate_report(source, "mm")` as JSON through the same
     serializer the CLI uses (`drc/json.rs`), where `source` is the design's
     file name, as `drc/runner.rs::run_drc` computes it. Writes to a temp
@@ -191,3 +297,11 @@ Paths are under `crates/freerouting-gui/`.
     `freerouting::drc::run_drc` with default options on the same path, with
     every field compared except the report's `date`
     (`drc/report.rs` stamps the current time).
+  *Done 2026-10-15:* `drc_export.rs`, File > Export DRC report… (a small window with the
+  path, default `<design stem>_drc.json` next to the design), `Command::ExportDrcReport`.
+  A worker runs `generate_report(file name of the design, "mm")` over an `Arc` clone
+  and writes `to_json()` (the CLI's serializer) to `<path>.tmp`, then renames it.
+  `ui_drc::drc_export_equals_cli`: for Issue313-FastTest.dsn the exported JSON equals
+  `run_drc` with default options on the same path in every member but `date`;
+  `drc_export_equals_cli_with_session` does the same with the `.ses` on top;
+  `export_menu_opens_a_dialog_with_a_default_path`.

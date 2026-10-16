@@ -1,0 +1,31 @@
+(pcb zone_islands
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "test")
+    (host_version "1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer Top (type signal))
+    (layer Bottom (type signal))
+    (boundary (rect pcb 0 0 10000 10000))
+    (plane GND (polygon Top 0 0 0 4000 0 4000 4000 0 4000))
+    (via v)
+    (rule (width 100) (clearance 100))
+  )
+  (placement)
+  (library
+    (padstack v (shape (circle Top 100)) (shape (circle Bottom 100)) (attach off))
+  )
+  (network
+    (net GND)
+    (net SIG)
+  )
+  (wiring
+    (via v 500 2000 (net GND))
+    (via v 3500 2000 (net GND))
+    (wire (path Top 100 2000 0 2000 4000) (net SIG))
+  )
+)

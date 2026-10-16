@@ -9,12 +9,14 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Instant;
 
 use freerouting::board::RoutingBoard;
 use freerouting::dsn::{self, Pcb, Session as SesFile};
 use freerouting::io::specctra::{BoardReadResult, SesImportSummary, build_board, import_session};
 
 use crate::scene::Scene;
+use crate::stats::LoadTimings;
 use crate::view::Tessellation;
 
 /// The files a session was read from.
@@ -53,11 +55,35 @@ impl Session {
     }
 }
 
+impl Session {
+    /// Runs `f` on the board for editing and counts the edit when `f`
+    /// returns true (G03). Like [`board_mut`](Self::board_mut), it copies
+    /// the board first if a background job still shares it.
+    pub fn edit(&mut self, f: impl FnOnce(&mut RoutingBoard) -> bool) -> bool {
+        let changed = f(Arc::make_mut(&mut self.board));
+        if changed {
+            self.edit_generation += 1;
+        }
+        changed
+    }
+}
+
 /// A board that has been read and tessellated.
 pub struct Loaded {
     pub session: Session,
     pub scene: Scene,
     pub tess: Tessellation,
+    /// How long the phases of the load took.
+    pub timings: LoadTimings,
+}
+
+impl Loaded {
+    /// Builds the scene and its tessellation again from the session board,
+    /// after an edit (G03; G05.5 patches instead).
+    pub fn rebuild_scene(&mut self) {
+        self.scene = Scene::from_board(&self.session.design.name, &self.session.board);
+        self.tess = Tessellation::new(&self.scene);
+    }
 }
 
 /// The design a session file was written for, if one is already open.
@@ -68,9 +94,19 @@ fn read_text(path: &Path) -> Result<String, String> {
     Ok(dsn::decode(&bytes).into_owned())
 }
 
+#[cfg(test)]
 fn read_design(path: &Path) -> Result<(Pcb, Vec<String>), String> {
-    let (pcb, warnings) = Pcb::parse_with_warnings(&read_text(path)?)
-        .map_err(|e| format!("{}: {e}", path.display()))?;
+    read_design_timed(path, &mut LoadTimings::default())
+}
+
+fn read_design_timed(path: &Path, timings: &mut LoadTimings) -> Result<(Pcb, Vec<String>), String> {
+    let started = Instant::now();
+    let text = read_text(path)?;
+    timings.read_ms += started.elapsed().as_secs_f64() * 1000.0;
+    let started = Instant::now();
+    let (pcb, warnings) =
+        Pcb::parse_with_warnings(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+    timings.parse_ms += started.elapsed().as_secs_f64() * 1000.0;
     Ok((pcb, warnings.iter().map(ToString::to_string).collect()))
 }
 
@@ -143,6 +179,8 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
     let is_session = path
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("ses"));
+    let started = Instant::now();
+    let mut timings = LoadTimings::default();
     let mut warnings = Vec::new();
     let mut ses = None;
     let (pcb, design_path) = if is_session {
@@ -153,7 +191,7 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
         ses = Some(file);
         match found {
             Some(design) => {
-                let (pcb, w) = read_design(&design)?;
+                let (pcb, w) = read_design_timed(&design, &mut timings)?;
                 warnings.extend(w);
                 (Arc::new(pcb), design)
             }
@@ -165,15 +203,23 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
             })?,
         }
     } else {
-        let (pcb, w) = read_design(path)?;
+        let (pcb, w) = read_design_timed(path, &mut timings)?;
         warnings.extend(w);
         (Arc::new(pcb), path.to_path_buf())
     };
+    let phase = Instant::now();
     let mut board = build(&pcb, &design_path, &mut warnings)?;
     let ses_summary = ses.map(|file| import_session(&mut board, &file));
+    timings.board_ms = phase.elapsed().as_secs_f64() * 1000.0;
     let board = Arc::new(board);
+    let phase = Instant::now();
     let scene = Scene::from_board(&pcb.name, &board);
+    timings.scene_ms = phase.elapsed().as_secs_f64() * 1000.0;
     let tess = Tessellation::new(&scene);
+    let built = tess.build_times();
+    timings.tessellation_ms = built.tessellation_ms;
+    timings.chunking_ms = built.chunking_ms;
+    timings.total_ms = started.elapsed().as_secs_f64() * 1000.0;
     Ok(Loaded {
         session: Session {
             board,
@@ -190,6 +236,7 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
         },
         scene,
         tess,
+        timings,
     })
 }
 

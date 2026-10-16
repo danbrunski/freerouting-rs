@@ -6,7 +6,9 @@ use eframe::egui;
 use crate::app::App;
 use crate::commands::Command;
 use crate::menu;
+use crate::overlays;
 use crate::panels::{board_stats, layers};
+use crate::toolbar;
 use crate::viewport::{self, CanvasOut};
 
 /// The side panel's width before the user drags it. This is the width the
@@ -23,6 +25,9 @@ impl App {
                 &self.settings.recent_files,
             ));
         });
+        egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
+            commands.extend(toolbar::ui(ui, self.overlay, self.loaded.is_some()));
+        });
         let status_id = egui::Id::new("status");
         let status: Option<String> = ctx
             .data(|d| d.get_temp::<Option<String>>(status_id))
@@ -34,7 +39,13 @@ impl App {
                     ui.spinner();
                     ui.label(format!("Reading {}", paths[0].display()));
                 }
-                _ => drop(ui.label(status.unwrap_or_default())),
+                _ => {
+                    if let Some(notice) = &self.notice {
+                        ui.label(notice);
+                        ui.separator();
+                    }
+                    ui.label(status.unwrap_or_default());
+                }
             });
         });
         let width = self
@@ -53,6 +64,11 @@ impl App {
                             commands.extend(layers::ui(ui, &b.scene, &self.view));
                             ui.add_space(8.0);
                             commands.extend(board_stats::ui(ui, b));
+                            ui.add_space(8.0);
+                            commands.extend(board_stats::checks(
+                                ui,
+                                &board_stats::Checks::of(&b.session, &self.analysis),
+                            ));
                         }
                     });
             });
@@ -77,6 +93,19 @@ impl App {
             .frame(egui::Frame::NONE)
             .show(ctx, |ui| {
                 out = viewport::canvas(ui, &mut self.view, self.loaded.as_ref(), &message);
+                self.overlay_counts = Default::default();
+                if let (Some(b), Some(camera)) = (&self.loaded, self.view.camera) {
+                    let inputs = overlays::Inputs {
+                        board: &b.session.board,
+                        ratsnest: self.analysis.ratsnest(&b.session).map(|r| &**r),
+                        drc: self.analysis.drc(&b.session).map(|d| &**d),
+                        selection: &self.selection,
+                        state: self.overlay,
+                    };
+                    let painter = ui.painter_at(self.view.canvas);
+                    self.overlay_counts =
+                        overlays::draw(&painter, self.view.canvas, &camera, &inputs);
+                }
                 // The status bar is laid out before the canvas, so a new
                 // hover text shows on the next frame.
                 if ctx.data(|d| d.get_temp::<Option<String>>(status_id)) != Some(out.status.clone())

@@ -9,8 +9,8 @@ instead of rebuilding it, and keepout construction. It is the report's
 GUI-5 (GUI, plugin and packaging report §4).
 
 **Prerequisites:**
-- [G03](G03-ratsnest-drc-and-info-lists.md) (selection model, overlays,
-  delete-all with undo) and [G02](G02-gpu-board-renderer.md) G02.4 (chunk
+- [G03](archive/G03-ratsnest-drc-and-info-lists.md) (selection model, overlays,
+  delete-all with undo) and [G02](archive/G02-gpu-board-renderer.md) G02.4 (chunk
   patching by `ItemId`).
 - B01: the board change journal (`take_changes`), for G05.5.
 - B04: the selection filter (`ItemSelectionFilter`, filtered picks), for

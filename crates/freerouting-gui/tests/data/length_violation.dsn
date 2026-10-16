@@ -1,0 +1,40 @@
+(pcb length_violation
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "test")
+    (host_version "1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal))
+    (layer B.Cu (type signal))
+    (boundary (rect pcb 0 0 30000 10000))
+    (via v)
+    (rule (width 200) (clearance 200))
+  )
+  (placement
+    (component fp
+      (place U1 2000 5000 front 0)
+      (place U2 12000 5000 front 0)
+      (place U3 20000 2000 front 0)
+      (place U4 23000 2000 front 0)
+    )
+  )
+  (library
+    (image fp (pin sq 1 0 0))
+    (padstack sq (shape (rect F.Cu -300 -300 300 300)) (attach off))
+    (padstack v (shape (circle F.Cu 300)) (shape (circle B.Cu 300)) (attach off))
+  )
+  (network
+    (net N1 (pins U1-1 U2-1))
+    (net N2 (pins U3-1 U4-1))
+    (class too_long N1 (circuit (length 5000 0)) (rule (width 200) (clearance 200)))
+    (class too_short N2 (circuit (length 100000 50000)) (rule (width 200) (clearance 200)))
+  )
+  (wiring
+    (wire (path F.Cu 200 2000 5000 12000 5000) (net N1))
+    (wire (path F.Cu 200 20000 2000 23000 2000) (net N2))
+  )
+)

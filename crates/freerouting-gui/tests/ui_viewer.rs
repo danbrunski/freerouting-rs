@@ -38,5 +38,8 @@ fn snapshot_issue159() {
         return;
     }
     let mut harness = app_harness(&[ISSUE159]);
-    harness.snapshot("viewer_issue159");
+    // `viewer_issue159.png` is the G01 golden that tests/ui_render.rs compares
+    // the GPU canvas with; the full window, with G03's toolbar and Checks
+    // section, has its own snapshot.
+    harness.snapshot("viewer_issue159_g03");
 }

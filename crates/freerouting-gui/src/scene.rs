@@ -8,11 +8,12 @@
 
 use std::collections::HashMap;
 
-use freerouting::board::RoutingBoard;
-use freerouting::board::items::{AreaKind, ItemKind};
+use freerouting::board::items::{AreaKind, Item as BoardItem, ItemId, ItemKind};
 use freerouting::board::structure::ComponentId;
+use freerouting::board::{BasicBoard, RoutingBoard};
 use freerouting::dsn::ast::Side;
 use freerouting::geometry::{Area, FloatPoint, PolylineShapeOps, Shape};
+use freerouting::io::CoordinateTransform;
 /// A point in millimetres, Y up (board coordinates, as in the file).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct P {
@@ -235,6 +236,9 @@ pub enum Slot {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Item {
+    /// The engine item this was flattened from. One engine item can give
+    /// several scene items.
+    pub id: ItemId,
     pub kind: Kind,
     pub slot: Slot,
     pub geom: Geom,
@@ -262,6 +266,85 @@ pub struct Scene {
     /// Reference designators, one per placed component.
     pub labels: Vec<Label>,
     pub bounds: Bounds,
+    /// A grid over the items for [`Scene::pick`]; built by
+    /// [`Scene::build_index`]. A scene without one is searched linearly.
+    pub index: Option<PickIndex>,
+}
+
+/// Items by the cells of a uniform grid their boxes overlap, so a pick looks
+/// at the few items near the cursor instead of all of them. Items that
+/// overlap many cells (planes, outlines) are in `large` and always looked at.
+#[derive(Clone, Debug)]
+pub struct PickIndex {
+    min: P,
+    cell: f64,
+    nx: usize,
+    ny: usize,
+    cells: Vec<Vec<u32>>,
+    large: Vec<u32>,
+}
+
+/// An item overlapping more cells than this goes to the `large` list.
+const LARGE_CELLS: usize = 16;
+
+impl PickIndex {
+    fn build(items: &[Item], bounds: &Bounds) -> Option<PickIndex> {
+        if items.is_empty() || bounds.is_empty() {
+            return None;
+        }
+        let (w, h) = (bounds.width().max(1e-6), bounds.height().max(1e-6));
+        // About four items per cell.
+        let cell = (w * h / (items.len() as f64 / 4.0).max(1.0))
+            .sqrt()
+            .max(w.max(h) / 1024.0);
+        let mut index = PickIndex {
+            min: bounds.min,
+            cell,
+            nx: ((w / cell).ceil() as usize).max(1),
+            ny: ((h / cell).ceil() as usize).max(1),
+            cells: Vec::new(),
+            large: Vec::new(),
+        };
+        index.cells = vec![Vec::new(); index.nx * index.ny];
+        for (n, item) in items.iter().enumerate() {
+            let b = item.geom.bounds();
+            let ((x0, y0), (x1, y1)) = (index.cell_of(b.min), index.cell_of(b.max));
+            if (x1 - x0 + 1) * (y1 - y0 + 1) > LARGE_CELLS {
+                index.large.push(n as u32);
+                continue;
+            }
+            for y in y0..=y1 {
+                for x in x0..=x1 {
+                    index.cells[y * index.nx + x].push(n as u32);
+                }
+            }
+        }
+        Some(index)
+    }
+
+    /// The cell holding `p`, clamped to the grid.
+    fn cell_of(&self, p: P) -> (usize, usize) {
+        let at = |v: f64, n: usize| ((v / self.cell).floor().max(0.0) as usize).min(n - 1);
+        (at(p.x - self.min.x, self.nx), at(p.y - self.min.y, self.ny))
+    }
+
+    /// Indices of the items whose boxes may reach within `slack` of `p`, in
+    /// ascending order.
+    fn candidates(&self, p: P, slack: f64) -> Vec<u32> {
+        let ((x0, y0), (x1, y1)) = (
+            self.cell_of(P::new(p.x - slack, p.y - slack)),
+            self.cell_of(P::new(p.x + slack, p.y + slack)),
+        );
+        let mut out = self.large.clone();
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                out.extend_from_slice(&self.cells[y * self.nx + x]);
+            }
+        }
+        out.sort_unstable();
+        out.dedup();
+        out
+    }
 }
 
 /// A component's reference designator. DSN files carry no silkscreen text,
@@ -315,57 +398,252 @@ fn circle_ring(center: P, radius: f64) -> Vec<P> {
         .collect()
 }
 
+/// Turns engine items into drawable [`Item`]s: the coordinate conversion and
+/// the lookups that every item needs, built once per board.
+///
+/// One engine item can give several scene items (a pin or a via has one shape
+/// per layer, a board outline one line per shape), in the order they are
+/// pushed. Patching a drawn board by `ItemId` (G02.4) flattens just the
+/// changed items through the same code as the full load.
+pub struct Flattener<'a> {
+    b: &'a BasicBoard,
+    mm: f64,
+    ct: CoordinateTransform,
+    layer_count: usize,
+    net_index: HashMap<i32, usize>,
+}
+
+impl<'a> Flattener<'a> {
+    pub fn new(board: &'a RoutingBoard) -> Flattener<'a> {
+        let b = board.basic();
+        let comm = &b.communication;
+        let mut net_index = HashMap::new();
+        for (i, net) in b.rules.nets.iter().enumerate() {
+            net_index.insert(net.net_number, i);
+        }
+        Flattener {
+            b,
+            mm: comm.unit.micrometers() / 1000.0,
+            ct: comm.coordinate_transform,
+            layer_count: b.layer_structure.layers.len(),
+            net_index,
+        }
+    }
+
+    fn pt(&self, p: FloatPoint) -> P {
+        let [x, y] = self.ct.board_to_dsn_point(p);
+        P::new(x * self.mm, y * self.mm)
+    }
+
+    fn len(&self, v: f64) -> f64 {
+        self.ct.board_to_dsn(v) * self.mm
+    }
+
+    fn slot(&self, layer: i32) -> Option<Slot> {
+        usize::try_from(layer)
+            .ok()
+            .filter(|&l| l < self.layer_count)
+            .map(Slot::Layer)
+    }
+
+    fn component_name(&self, id: i32) -> Option<String> {
+        self.b
+            .components
+            .get(ComponentId(id))
+            .map(|c| c.name.clone())
+    }
+
+    fn shape_geom(&self, s: &Shape) -> Option<Geom> {
+        match s {
+            Shape::Circle(c) => (c.radius > 0).then(|| Geom::Circle {
+                center: self.pt(c.center.to_float()),
+                radius: self.len(f64::from(c.radius)),
+            }),
+            Shape::Polyline(_) => {
+                let outer: Vec<P> = s
+                    .corner_approx_arr()
+                    .into_iter()
+                    .map(|p| self.pt(p))
+                    .collect();
+                (outer.len() >= 3).then_some(Geom::Polygon {
+                    outer,
+                    holes: Vec::new(),
+                })
+            }
+        }
+    }
+
+    fn ring(&self, s: &Shape) -> Option<Vec<P>> {
+        match self.shape_geom(s)? {
+            Geom::Circle { center, radius } => Some(circle_ring(center, radius)),
+            Geom::Polygon { outer, .. } => Some(outer),
+            Geom::Path { .. } => None,
+        }
+    }
+
+    fn area_geom(&self, a: &Area) -> Option<Geom> {
+        let holes: Vec<Vec<P>> = a.get_holes().iter().filter_map(|h| self.ring(h)).collect();
+        if holes.is_empty() {
+            self.shape_geom(&a.get_border())
+        } else {
+            Some(Geom::Polygon {
+                outer: self.ring(&a.get_border())?,
+                holes,
+            })
+        }
+    }
+
+    /// The scene items of the board item `id`, in push order. Empty if the
+    /// item is not on the board or has nothing to draw.
+    pub fn item(&self, id: ItemId) -> Vec<Item> {
+        let mut out = Vec::new();
+        if let Some(item) = self.b.item(id) {
+            self.flatten(item, &mut out);
+        }
+        out
+    }
+
+    /// Appends the scene items of `item` to `out`.
+    pub fn flatten(&self, item: &BoardItem, out: &mut Vec<Item>) {
+        let id = item.id();
+        let net = item
+            .net_numbers()
+            .first()
+            .and_then(|n| self.net_index.get(n).copied());
+        let mut push = |kind: Kind, slot: Slot, geom: Geom, owner: Option<String>| {
+            out.push(Item {
+                id,
+                kind,
+                slot,
+                geom,
+                net,
+                owner,
+            });
+        };
+        match &item.kind {
+            ItemKind::Pin(pin) => {
+                let owner = match (
+                    self.component_name(item.component_id()),
+                    self.b.pin_name(item),
+                ) {
+                    (Some(c), Some(p)) => Some(format!("{c}-{p}")),
+                    (c, _) => c,
+                };
+                for (i, shape) in pin.drill.shapes.iter().enumerate() {
+                    let (Some(shape), Some(slot)) =
+                        (shape, self.slot(pin.drill.first_layer + i as i32))
+                    else {
+                        continue;
+                    };
+                    if let Some(g) = self.shape_geom(shape) {
+                        push(Kind::Pad, slot, g, owner.clone());
+                    }
+                }
+            }
+            ItemKind::Via(via) => {
+                for (i, shape) in via.drill.shapes.iter().enumerate() {
+                    let (Some(shape), Some(slot)) =
+                        (shape, self.slot(via.drill.first_layer + i as i32))
+                    else {
+                        continue;
+                    };
+                    if let Some(g) = self.shape_geom(shape) {
+                        push(Kind::Via, slot, g, None);
+                    }
+                }
+            }
+            ItemKind::Trace(trace) => {
+                if let Some(slot) = self.slot(trace.layer) {
+                    let points = trace
+                        .polyline
+                        .corner_approx_arr()
+                        .into_iter()
+                        .map(|p| self.pt(p))
+                        .collect();
+                    let width = self.len(2.0 * f64::from(trace.half_width));
+                    push(Kind::Trace, slot, Geom::Path { points, width }, None);
+                }
+            }
+            ItemKind::Area(area) => {
+                let kind = match area.kind {
+                    AreaKind::Obstacle => Kind::Keepout,
+                    AreaKind::ViaObstacle => Kind::ViaKeepout,
+                    AreaKind::ComponentObstacle => Kind::PlaceKeepout,
+                    AreaKind::Conduction { .. } => Kind::Plane,
+                };
+                let owner = area
+                    .name
+                    .clone()
+                    .filter(|n| !n.is_empty())
+                    .or_else(|| self.component_name(item.component_id()));
+                if let (Some(slot), Some(g)) =
+                    (self.slot(area.layer()), self.area_geom(area.area()))
+                {
+                    push(kind, slot, g, owner);
+                }
+            }
+            ItemKind::ComponentOutline(outline) => {
+                let side = if outline.is_front() {
+                    Side::Front
+                } else {
+                    Side::Back
+                };
+                let points: Vec<P> = outline
+                    .area()
+                    .get_border()
+                    .corner_approx_arr()
+                    .into_iter()
+                    .map(|p| self.pt(p))
+                    .collect();
+                let g = match outline.area().get_border() {
+                    Shape::Circle(c) => Geom::Path {
+                        points: {
+                            let mut r = circle_ring(
+                                self.pt(c.center.to_float()),
+                                self.len(f64::from(c.radius)),
+                            );
+                            r.push(r[0]);
+                            r
+                        },
+                        width: 0.0,
+                    },
+                    _ if outline.is_closed => closed_line(points),
+                    _ => Geom::Path { points, width: 0.0 },
+                };
+                push(
+                    Kind::ComponentOutline,
+                    Slot::Silk(side),
+                    g,
+                    self.component_name(item.component_id()),
+                );
+            }
+            ItemKind::BoardOutline(outline) => {
+                for shape in outline.shapes() {
+                    let points = shape
+                        .corner_approx_arr()
+                        .into_iter()
+                        .map(|p| self.pt(p))
+                        .collect();
+                    push(Kind::Outline, Slot::Board, closed_line(points), None);
+                }
+            }
+        }
+    }
+}
+
+fn closed_line(mut points: Vec<P>) -> Geom {
+    if let Some(&first) = points.first() {
+        points.push(first);
+    }
+    Geom::Path { points, width: 0.0 }
+}
+
 impl Scene {
     /// Takes the drawable items of a board.
     pub fn from_board(name: &str, board: &RoutingBoard) -> Scene {
         let b = board.basic();
-        let comm = &b.communication;
-        let mm = comm.unit.micrometers() / 1000.0;
-        let ct = comm.coordinate_transform;
-        let pt = |p: FloatPoint| {
-            let [x, y] = ct.board_to_dsn_point(p);
-            P::new(x * mm, y * mm)
-        };
-        let len = |v: f64| ct.board_to_dsn(v) * mm;
-        let shape_geom = |s: &Shape| -> Option<Geom> {
-            match s {
-                Shape::Circle(c) => (c.radius > 0).then(|| Geom::Circle {
-                    center: pt(c.center.to_float()),
-                    radius: len(f64::from(c.radius)),
-                }),
-                Shape::Polyline(_) => {
-                    let outer: Vec<P> = s.corner_approx_arr().into_iter().map(pt).collect();
-                    (outer.len() >= 3).then_some(Geom::Polygon {
-                        outer,
-                        holes: Vec::new(),
-                    })
-                }
-            }
-        };
-        let ring = |s: &Shape| -> Option<Vec<P>> {
-            match shape_geom(s)? {
-                Geom::Circle { center, radius } => Some(circle_ring(center, radius)),
-                Geom::Polygon { outer, .. } => Some(outer),
-                Geom::Path { .. } => None,
-            }
-        };
-        let area_geom = |a: &Area| -> Option<Geom> {
-            let holes: Vec<Vec<P>> = a.get_holes().iter().filter_map(ring).collect();
-            if holes.is_empty() {
-                shape_geom(&a.get_border())
-            } else {
-                Some(Geom::Polygon {
-                    outer: ring(&a.get_border())?,
-                    holes,
-                })
-            }
-        };
-        let closed_line = |mut points: Vec<P>| {
-            if let Some(&first) = points.first() {
-                points.push(first);
-            }
-            Geom::Path { points, width: 0.0 }
-        };
+        let fl = Flattener::new(board);
+        let pt = |p: FloatPoint| fl.pt(p);
 
         let mut scene = Scene {
             name: name.to_string(),
@@ -381,133 +659,12 @@ impl Scene {
             components: b.components.count(),
             ..Scene::default()
         };
-        let layer_count = scene.layers.len();
-        let slot = |layer: i32| {
-            usize::try_from(layer)
-                .ok()
-                .filter(|&l| l < layer_count)
-                .map(Slot::Layer)
-        };
-        let mut net_index: HashMap<i32, usize> = HashMap::new();
-        for net in b.rules.nets.iter() {
-            net_index.insert(net.net_number, scene.nets.len());
-            scene.nets.push(net.name.clone());
-        }
-        let component_name = |id: i32| b.components.get(ComponentId(id)).map(|c| c.name.clone());
+        scene.nets = b.rules.nets.iter().map(|n| n.name.clone()).collect();
 
         let mut footprints: HashMap<i32, Bounds> = HashMap::new();
         for item in b.items() {
             let first_new = scene.items.len();
-            let net = item
-                .net_numbers()
-                .first()
-                .and_then(|n| net_index.get(n).copied());
-            let mut push = |kind: Kind, slot: Slot, geom: Geom, owner: Option<String>| {
-                scene.items.push(Item {
-                    kind,
-                    slot,
-                    geom,
-                    net,
-                    owner,
-                });
-            };
-            match &item.kind {
-                ItemKind::Pin(pin) => {
-                    let owner = match (component_name(item.component_id()), b.pin_name(item)) {
-                        (Some(c), Some(p)) => Some(format!("{c}-{p}")),
-                        (c, _) => c,
-                    };
-                    for (i, shape) in pin.drill.shapes.iter().enumerate() {
-                        let (Some(shape), Some(slot)) =
-                            (shape, slot(pin.drill.first_layer + i as i32))
-                        else {
-                            continue;
-                        };
-                        if let Some(g) = shape_geom(shape) {
-                            push(Kind::Pad, slot, g, owner.clone());
-                        }
-                    }
-                }
-                ItemKind::Via(via) => {
-                    for (i, shape) in via.drill.shapes.iter().enumerate() {
-                        let (Some(shape), Some(slot)) =
-                            (shape, slot(via.drill.first_layer + i as i32))
-                        else {
-                            continue;
-                        };
-                        if let Some(g) = shape_geom(shape) {
-                            push(Kind::Via, slot, g, None);
-                        }
-                    }
-                }
-                ItemKind::Trace(trace) => {
-                    if let Some(slot) = slot(trace.layer) {
-                        let points = trace
-                            .polyline
-                            .corner_approx_arr()
-                            .into_iter()
-                            .map(pt)
-                            .collect();
-                        let width = len(2.0 * f64::from(trace.half_width));
-                        push(Kind::Trace, slot, Geom::Path { points, width }, None);
-                    }
-                }
-                ItemKind::Area(area) => {
-                    let kind = match area.kind {
-                        AreaKind::Obstacle => Kind::Keepout,
-                        AreaKind::ViaObstacle => Kind::ViaKeepout,
-                        AreaKind::ComponentObstacle => Kind::PlaceKeepout,
-                        AreaKind::Conduction { .. } => Kind::Plane,
-                    };
-                    let owner = area
-                        .name
-                        .clone()
-                        .filter(|n| !n.is_empty())
-                        .or_else(|| component_name(item.component_id()));
-                    if let (Some(slot), Some(g)) = (slot(area.layer()), area_geom(area.area())) {
-                        push(kind, slot, g, owner);
-                    }
-                }
-                ItemKind::ComponentOutline(outline) => {
-                    let side = if outline.is_front() {
-                        Side::Front
-                    } else {
-                        Side::Back
-                    };
-                    let points: Vec<P> = outline
-                        .area()
-                        .get_border()
-                        .corner_approx_arr()
-                        .into_iter()
-                        .map(pt)
-                        .collect();
-                    let g = match outline.area().get_border() {
-                        Shape::Circle(c) => Geom::Path {
-                            points: {
-                                let mut r =
-                                    circle_ring(pt(c.center.to_float()), len(f64::from(c.radius)));
-                                r.push(r[0]);
-                                r
-                            },
-                            width: 0.0,
-                        },
-                        _ if outline.is_closed => closed_line(points),
-                        _ => Geom::Path { points, width: 0.0 },
-                    };
-                    push(
-                        Kind::ComponentOutline,
-                        Slot::Silk(side),
-                        g,
-                        component_name(item.component_id()),
-                    );
-                }
-                ItemKind::BoardOutline(outline) => {
-                    for shape in outline.shapes() {
-                        let points = shape.corner_approx_arr().into_iter().map(pt).collect();
-                        push(Kind::Outline, Slot::Board, closed_line(points), None);
-                    }
-                }
-            }
+            fl.flatten(item, &mut scene.items);
             if item.component_id() > 0
                 && matches!(item.kind, ItemKind::Pin(_) | ItemKind::ComponentOutline(_))
             {
@@ -550,7 +707,28 @@ impl Scene {
             }
         }
         scene.bounds = if outline.is_empty() { bounds } else { outline };
+        scene.build_index();
         scene
+    }
+
+    /// The scene items of the engine item `id` (none if it is not on the
+    /// board or has nothing to draw), for patching a drawn board. Use
+    /// [`Flattener`] to do many.
+    pub fn item(board: &RoutingBoard, id: ItemId) -> Vec<Item> {
+        Flattener::new(board).item(id)
+    }
+
+    /// Builds the grid [`pick`](Self::pick) uses. Call it after `items` and
+    /// `bounds` are final; changing `items` later leaves the grid stale, so
+    /// call it again then.
+    pub fn build_index(&mut self) {
+        // Items outside the outline are clamped into the border cells, so
+        // the grid covers the items, not just the outline.
+        let mut all = Bounds::EMPTY;
+        for item in &self.items {
+            all.union(&item.geom.bounds());
+        }
+        self.index = PickIndex::build(&self.items, &all);
     }
 
     /// The topmost item at `p` on the shown layers and kinds, preferring the
@@ -576,9 +754,38 @@ impl Scene {
             };
             (!on_active, kind)
         };
+        let hit =
+            |i: &&Item| shown(i) && i.geom.bounds().grow(slack).contains(p) && i.geom.hit(p, slack);
+        match &self.index {
+            Some(index) => index
+                .candidates(p, slack)
+                .into_iter()
+                .map(|n| &self.items[n as usize])
+                .filter(hit)
+                .min_by_key(|i| rank(i)),
+            None => self.items.iter().filter(hit).min_by_key(|i| rank(i)),
+        }
+    }
+
+    /// [`pick`](Self::pick) without the grid, for checking it.
+    #[cfg(test)]
+    fn pick_linear(&self, p: P, slack: f64, active: Option<usize>) -> Option<&Item> {
+        let rank = |item: &Item| {
+            let on_active = matches!(item.slot, Slot::Layer(l) if Some(l) == active);
+            let kind = match item.kind {
+                Kind::Via => 0,
+                Kind::Pad => 1,
+                Kind::Trace => 2,
+                Kind::ComponentOutline => 3,
+                Kind::Plane => 4,
+                Kind::Keepout | Kind::ViaKeepout | Kind::PlaceKeepout => 5,
+                Kind::Outline => 6,
+            };
+            (!on_active, kind)
+        };
         self.items
             .iter()
-            .filter(|i| shown(i) && i.geom.bounds().grow(slack).contains(p) && i.geom.hit(p, slack))
+            .filter(|i| i.geom.bounds().grow(slack).contains(p) && i.geom.hit(p, slack))
             .min_by_key(|i| rank(i))
     }
 }
@@ -659,6 +866,42 @@ mod tests {
 
         assert!(close(s.bounds.min, P::new(0.0, 0.0)), "{:?}", s.bounds);
         assert!(close(s.bounds.max, P::new(10.0, 5.0)), "{:?}", s.bounds);
+    }
+
+    #[test]
+    fn the_grid_picks_what_a_linear_scan_picks() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn"
+        );
+        let result = freerouting::io::specctra::read_board(&std::fs::read(path).unwrap());
+        let s = Scene::from_board("t", result.board().expect("board"));
+        assert!(s.index.is_some());
+        let (b, mut seed) = (s.bounds, 12345u64);
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let mut hits = 0;
+        for i in 0..4000 {
+            let p = P::new(
+                b.min.x - 2.0 + next() * (b.width() + 4.0),
+                b.min.y - 2.0 + next() * (b.height() + 4.0),
+            );
+            let slack = [0.0, 0.05, 0.4][i % 3];
+            let active = Some(i % 4);
+            let fast = s.pick(p, slack, |_| true, active);
+            let slow = s.pick_linear(p, slack, active);
+            assert_eq!(
+                fast.map(std::ptr::from_ref),
+                slow.map(std::ptr::from_ref),
+                "{p:?}"
+            );
+            hits += usize::from(fast.is_some());
+        }
+        assert!(hits > 500, "{hits} hits");
     }
 
     #[test]

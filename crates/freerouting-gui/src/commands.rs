@@ -4,6 +4,8 @@
 
 use std::path::PathBuf;
 
+use freerouting::board::items::ItemId;
+
 use crate::scene::Kind;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -37,4 +39,40 @@ pub enum Command {
     ToggleKind(Kind),
     ToggleLabels,
     ShowWarnings,
+    // G03: selection, analysis, lists, delete all, DRC export.
+    /// Replaces the selection (Java `selectItems`).
+    Select(Vec<ItemId>),
+    ClearSelection,
+    /// Fits the view to the selection (Java `zoomSelection`, key `W`).
+    ZoomSelection,
+    /// Shows or hides the ratsnest (key `G`).
+    ToggleRatsnest,
+    /// Shows or hides the clearance violation markers (key `V`).
+    ToggleViolations,
+    /// Runs the design rules check again (Info > Run DRC).
+    RunDrc,
+    /// Opens an Info list window.
+    ShowList(ListKind),
+    /// Asks before deleting all traces and vias (Other menu, toolbar).
+    DeleteAll,
+    /// Deletes all traces and vias after the confirmation.
+    ConfirmDeleteAll,
+    /// Key `U` and `Ctrl+Z`.
+    Undo,
+    /// Key `B` and `Ctrl+Y`.
+    Redo,
+    /// Opens the Export DRC report window.
+    ExportDrcDialog,
+    /// Writes the DRC report as JSON to the path.
+    ExportDrcReport(PathBuf),
+}
+
+/// The Info list windows (Java `BoardMenuInfo`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ListKind {
+    Incompletes,
+    LengthViolations,
+    ClearanceViolations,
+    Unconnected,
+    ZoneIslands,
 }

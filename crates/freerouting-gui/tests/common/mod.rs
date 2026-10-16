@@ -61,8 +61,8 @@ pub fn app_harness(files: &[&str]) -> Harness<'static, App> {
     harness
 }
 
-/// Steps frames until the background load finishes, then until the UI is
-/// still.
+/// Steps frames until the background load and the first analysis finish,
+/// then until the UI is still.
 pub fn wait_for_load(harness: &mut Harness<'_, App>) {
     let start = Instant::now();
     harness.step();
@@ -74,7 +74,20 @@ pub fn wait_for_load(harness: &mut Harness<'_, App>) {
         std::thread::sleep(Duration::from_millis(5));
         harness.step();
     }
-    harness.run();
+    // The side panel and the overlays show the background analysis (G03);
+    // wait for it so that the UI, and with it every snapshot, is settled.
+    while let Some(loaded) = harness.state().loaded() {
+        if harness.state().analysis().is_idle(&loaded.session) {
+            break;
+        }
+        assert!(
+            start.elapsed() < Duration::from_secs(300),
+            "the analysis did not finish"
+        );
+        std::thread::sleep(Duration::from_millis(5));
+        harness.step();
+    }
+    let _ = harness.run_ok();
     assert!(
         harness.state().error().is_none(),
         "load failed: {:?}",

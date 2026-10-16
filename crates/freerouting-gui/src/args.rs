@@ -1,6 +1,7 @@
 //! Command-line arguments:
 //! `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom] [--frames N]
-//! [--screenshot out.png] [--exit] [--control-dir dir]`.
+//! [--screenshot out.png] [--exit] [--control-dir dir]
+//! [--bench-synthetic 4x4 board.dsn]`.
 
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -35,6 +36,9 @@ pub struct Args {
     /// once the board is drawn, and takes the screenshot only after `shoot`
     /// appears, so the script can send keys in between.
     pub control_dir: Option<PathBuf>,
+    /// `--bench-synthetic 4x4 board.dsn`: tile the board's scene `nx` by
+    /// `ny` times before drawing it. Implies `--bench pan-zoom`.
+    pub synthetic: Option<(u32, u32)>,
 }
 
 impl Args {
@@ -68,6 +72,13 @@ impl Args {
                         .filter(|&n| n > 0)
                         .ok_or("--frames needs a positive number")?;
                 }
+                "--bench-synthetic" => {
+                    let tiling = value("--bench-synthetic")?;
+                    let tiling = tiling.to_string_lossy().into_owned();
+                    out.synthetic = Some(parse_tiling(&tiling)?);
+                    out.open.push(PathBuf::from(value("--bench-synthetic")?));
+                    out.bench.get_or_insert(BenchScript::PanZoom);
+                }
                 "--screenshot" => out.screenshot = Some(PathBuf::from(value("--screenshot")?)),
                 "--exit" => out.exit = true,
                 "--control-dir" => out.control_dir = Some(PathBuf::from(value("--control-dir")?)),
@@ -77,6 +88,14 @@ impl Args {
         }
         Ok(out)
     }
+}
+
+/// `4x4` as `(4, 4)`: columns by rows, each at least 1.
+fn parse_tiling(text: &str) -> Result<(u32, u32), String> {
+    let bad = || format!("--bench-synthetic needs a tiling like 4x4, not {text:?}");
+    let (nx, ny) = text.split_once(['x', 'X']).ok_or_else(bad)?;
+    let n = |t: &str| t.parse::<u32>().ok().filter(|&n| (1..=16).contains(&n));
+    Ok((n(nx).ok_or_else(bad)?, n(ny).ok_or_else(bad)?))
 }
 
 #[cfg(test)]
@@ -99,6 +118,17 @@ mod tests {
         assert!(a.exit && a.scripted());
         assert!(!parse(&["a.dsn"]).unwrap().scripted());
         assert_eq!(parse(&[]).unwrap().frames, DEFAULT_FRAMES);
+    }
+
+    #[test]
+    fn parses_the_synthetic_tiling() {
+        let a = parse(&["--bench-synthetic", "4x3", "a.dsn", "--frames", "9"]).unwrap();
+        assert_eq!(a.synthetic, Some((4, 3)));
+        assert_eq!(a.open, [PathBuf::from("a.dsn")]);
+        assert_eq!(a.bench, Some(BenchScript::PanZoom));
+        assert!(parse(&["--bench-synthetic", "4", "a.dsn"]).is_err());
+        assert!(parse(&["--bench-synthetic", "0x4", "a.dsn"]).is_err());
+        assert!(parse(&["--bench-synthetic", "4x4"]).is_err());
     }
 
     #[test]

@@ -11,7 +11,7 @@ use eframe::egui::{self, ColorImage};
 use crate::args::Args;
 use crate::bench::Bench;
 use crate::session::Loaded;
-use crate::stats::PaintStats;
+use crate::stats::{FrameCpu, PaintStats};
 use crate::view::Camera;
 use crate::viewport::ViewState;
 
@@ -24,6 +24,17 @@ enum Shot {
     Idle,
     Requested,
     Done,
+}
+
+/// What the app knows about the frame that just ended.
+pub struct FrameReport<'a> {
+    /// Update CPU of this frame, in milliseconds.
+    pub ms: f64,
+    pub paint: PaintStats,
+    /// Frames whose callbacks finished since the last update (frame CPU).
+    pub done: &'a [FrameCpu],
+    /// From the start of the load to the end of the first board paint.
+    pub first_frame_ms: Option<f64>,
 }
 
 pub struct Scripted {
@@ -66,13 +77,16 @@ impl Scripted {
         &mut self,
         ctx: &egui::Context,
         ready: bool,
-        ms: f64,
-        paint: PaintStats,
+        frame: &FrameReport<'_>,
         loaded: Option<&Loaded>,
     ) {
         if let (Some(bench), Some(loaded)) = (&mut self.bench, loaded) {
             ctx.request_repaint();
-            if let Some(json) = bench.frame_done(ms, paint, loaded.tess.triangle_count()) {
+            bench.set_load(loaded.timings, frame.first_frame_ms);
+            bench.full_done(frame.done);
+            if let Some(json) =
+                bench.frame_done(frame.ms, frame.paint, loaded.tess.triangle_count())
+            {
                 println!("{json}");
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 self.bench = None;

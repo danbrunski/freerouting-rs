@@ -9,7 +9,7 @@ report's GUI-7 (GUI, plugin and packaging report §1.6, §3.2 items 3–4, §4),
 and where frame targets FT4–FT6 are met during a real run.
 
 **Prerequisites:**
-- [G02](G02-gpu-board-renderer.md): chunked buffers patched by `ItemId`
+- [G02](archive/G02-gpu-board-renderer.md): chunked buffers patched by `ItemId`
   (G02.4).
 - A08: router events and the two-level cancel token (`autoroute/events.rs`).
 - A13: the batch loop and `run_pipeline`, the routing job the GUI starts.

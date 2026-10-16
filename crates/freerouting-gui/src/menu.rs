@@ -4,8 +4,9 @@ use std::path::{Path, PathBuf};
 
 use eframe::egui::{self, RichText};
 
-use crate::commands::Command;
+use crate::commands::{Command, ListKind};
 use crate::session::Loaded;
+use crate::text;
 
 fn file_name(p: &Path) -> String {
     p.file_name()
@@ -50,6 +51,13 @@ pub fn ui(ui: &mut egui::Ui, loaded: Option<&Loaded>, recent: &[PathBuf]) -> Vec
                 out.push(Command::Reload);
                 ui.close();
             }
+            if ui
+                .add_enabled(loaded.is_some(), egui::Button::new("Export DRC report…"))
+                .clicked()
+            {
+                out.push(Command::ExportDrcDialog);
+                ui.close();
+            }
             ui.separator();
             if ui.button("Quit").clicked() {
                 out.push(Command::Quit);
@@ -78,6 +86,7 @@ pub fn ui(ui: &mut egui::Ui, loaded: Option<&Loaded>, recent: &[PathBuf]) -> Vec
                 Command::ToggleCrosshair,
             );
         });
+        analysis_menus(ui, &mut out, loaded.is_some());
         if let Some(b) = loaded {
             ui.separator();
             ui.label(RichText::new(file_name(&b.session.paths.design)).strong());
@@ -91,4 +100,36 @@ pub fn ui(ui: &mut egui::Ui, loaded: Option<&Loaded>, recent: &[PathBuf]) -> Vec
         }
     });
     out
+}
+
+/// The Info and Other menus of Java's board menu bar.
+fn analysis_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
+    ui.add_enabled_ui(board_open, |ui| {
+        ui.menu_button(text::MENU_INFO, |ui| {
+            for (label, kind) in [
+                (text::MENU_INCOMPLETES, ListKind::Incompletes),
+                (text::MENU_LENGTH_VIOLATIONS, ListKind::LengthViolations),
+                (
+                    text::MENU_CLEARANCE_VIOLATIONS,
+                    ListKind::ClearanceViolations,
+                ),
+                (text::MENU_UNCONNECTED_ROUTE, ListKind::Unconnected),
+                (text::MENU_ZONE_ISLANDS, ListKind::ZoneIslands),
+            ] {
+                item(ui, out, label, Command::ShowList(kind));
+            }
+            ui.separator();
+            item(ui, out, text::MENU_RUN_DRC, Command::RunDrc);
+        });
+        ui.menu_button(text::MENU_OTHER, |ui| {
+            if ui
+                .button(text::DELETE_ALL)
+                .on_hover_text(text::DELETE_ALL_TOOLTIP)
+                .clicked()
+            {
+                out.push(Command::DeleteAll);
+                ui.close();
+            }
+        });
+    });
 }

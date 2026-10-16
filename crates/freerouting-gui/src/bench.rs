@@ -5,12 +5,18 @@
 //! frames is counted: fit; 10 zoom-in steps of x1.25 at the board centre;
 //! pans of 20 % of the view width right, down, left and up; 10 zoom-out
 //! steps. The first [`WARMUP`] frames are not counted.
+//!
+//! The report has both definitions of frame CPU (see [`crate::stats`]):
+//! `p50_ms`, `p95_ms`, `max_ms` are the time inside `App::update` (FT0 as G01
+//! recorded it), and `frame_p50_ms`, `frame_p95_ms`, `frame_max_ms` add what
+//! eframe does until the board's callback has painted. Frames complete one
+//! update later, so the frame figures cover one frame fewer.
 
 use eframe::egui::Rect;
 
 use crate::args::BenchScript;
 use crate::scene::P;
-use crate::stats::{PaintStats, load_average_1m, percentile};
+use crate::stats::{FrameCpu, LoadTimings, PaintStats, load_average_1m, percentile};
 use crate::view::Camera;
 
 /// Frames run before counting starts.
@@ -56,6 +62,12 @@ pub struct Bench {
     fit: Option<Camera>,
     last: PaintStats,
     triangles: usize,
+    /// Frame CPU (second definition) of the counted frames.
+    full: Vec<f64>,
+    seen_full: usize,
+    load: LoadTimings,
+    first_frame_ms: Option<f64>,
+    counted_from: Option<std::time::Instant>,
 }
 
 impl Bench {
@@ -68,6 +80,28 @@ impl Bench {
             fit: None,
             last: PaintStats::default(),
             triangles: 0,
+            full: Vec::with_capacity(frames),
+            seen_full: 0,
+            load: LoadTimings::default(),
+            first_frame_ms: None,
+            counted_from: None,
+        }
+    }
+
+    /// The load phases and the time to the first frame, for the report.
+    pub fn set_load(&mut self, load: LoadTimings, first_frame_ms: Option<f64>) {
+        self.load = load;
+        self.first_frame_ms = first_frame_ms;
+    }
+
+    /// Frames whose callbacks finished (frame CPU). The first [`WARMUP`] are
+    /// not counted.
+    pub fn full_done(&mut self, done: &[FrameCpu]) {
+        for frame in done {
+            if self.seen_full >= WARMUP && self.full.len() < self.frames {
+                self.full.push(frame.frame_ms);
+            }
+            self.seen_full += 1;
         }
     }
 
@@ -84,6 +118,8 @@ impl Bench {
     /// counted frame.
     pub fn frame_done(&mut self, ms: f64, paint: PaintStats, triangles: usize) -> Option<String> {
         if self.step >= WARMUP {
+            self.counted_from
+                .get_or_insert_with(std::time::Instant::now);
             self.samples.push(ms);
         }
         self.step += 1;
@@ -92,22 +128,41 @@ impl Bench {
         (self.samples.len() >= self.frames).then(|| self.report())
     }
 
-    /// `{"script", "frames", "p50_ms", "p95_ms", "max_ms", "triangles",
-    /// "draws", "uploaded_bytes", "load_avg_1m"}`. `triangles` is the
-    /// tessellation's count; `draws` and `uploaded_bytes` are those of the
-    /// last frame.
+    /// One JSON object. `p50_ms`, `p95_ms`, `max_ms` are update CPU;
+    /// `frame_*` are frame CPU (`frame_frames` samples). `triangles` is the
+    /// tessellation's count; `draws`, `uploaded_bytes`, `chunks_drawn`,
+    /// `chunks_total` and `gpu_buffer_bytes` are those of the last frame.
+    /// `wall_ms` is the mean time per counted frame, presentation included.
+    /// `first_frame_ms` is the time from the start of the load to the end of
+    /// the first board paint; `load_ms` has the load phases.
     pub fn report(&self) -> String {
-        let max = self.samples.iter().copied().fold(0.0, f64::max);
+        let max = |v: &[f64]| v.iter().copied().fold(0.0, f64::max);
+        let wall = self.counted_from.map_or(0.0, |t| {
+            t.elapsed().as_secs_f64() * 1000.0 / self.samples.len().max(1) as f64
+        });
+        let first = self
+            .first_frame_ms
+            .map_or_else(|| "null".to_string(), |ms| format!("{ms:.1}"));
         format!(
-            "{{\"script\":\"{}\",\"frames\":{},\"p50_ms\":{:.3},\"p95_ms\":{:.3},\"max_ms\":{:.3},\"triangles\":{},\"draws\":{},\"uploaded_bytes\":{},\"load_avg_1m\":{:.2}}}",
+            "{{\"script\":\"{}\",\"frames\":{},\"p50_ms\":{:.3},\"p95_ms\":{:.3},\"max_ms\":{:.3},\"frame_frames\":{},\"frame_p50_ms\":{:.3},\"frame_p95_ms\":{:.3},\"frame_max_ms\":{:.3},\"wall_ms\":{:.3},\"triangles\":{},\"draws\":{},\"uploaded_bytes\":{},\"chunks_drawn\":{},\"chunks_total\":{},\"gpu_buffer_bytes\":{},\"first_frame_ms\":{},\"load_ms\":{},\"load_avg_1m\":{:.2}}}",
             self.script.name(),
             self.samples.len(),
             percentile(self.samples.clone(), 50.0),
             percentile(self.samples.clone(), 95.0),
-            max,
+            max(&self.samples),
+            self.full.len(),
+            percentile(self.full.clone(), 50.0),
+            percentile(self.full.clone(), 95.0),
+            max(&self.full),
+            wall,
             self.triangles,
             self.last.draws,
             self.last.uploaded_bytes,
+            self.last.chunks_drawn,
+            self.last.chunks_total,
+            self.last.gpu_buffer_bytes,
+            first,
+            self.load.json(),
             load_average_1m()
         )
     }
@@ -169,5 +224,6 @@ mod tests {
             json.contains("\"triangles\":5,\"draws\":7,\"uploaded_bytes\":99,"),
             "{json}"
         );
+        assert!(json.contains("\"frame_frames\":0,"), "{json}");
     }
 }

@@ -28,8 +28,10 @@ The app is a board viewer for now. Nothing in it edits or routes.
   tools (inspect and region select come later); the right button is reserved
   for context menus. `A` or `Home` fits the board, `Z` / `O` zoom in / out by
   2 at the cursor, `C` centres on the cursor, `F` then a left-drag zooms to
-  the dragged rectangle, `,` toggles a crosshair, `Esc` cancels `F`. `G V U B
-  S R D W` are reserved for the checklists that add them (`input::RESERVED`).
+  the dragged rectangle, `,` toggles a crosshair, `Esc` cancels `F`. `G`
+  toggles the ratsnest, `V` the violation markers, `W` zooms to the selection,
+  `U`/`Ctrl+Z` undo and `B`/`Ctrl+Y` redo. `S R D` are reserved for the
+  checklists that add them (`input::RESERVED`).
   The view fits again automatically when the window resizes, until the user
   pans or zooms. (Open question for Dan, G00 question 1: this is the
   recommended set; the change from "any button pans, `F` fits" awaits his
@@ -47,6 +49,29 @@ The app is a board viewer for now. Nothing in it edits or routes.
   coordinates, so it matches the CAD tool. It also describes the item under
   the cursor: its kind, its owner (`U1-3` for a pad), its net and its layer.
 - A warnings window lists what the DSN reader skipped.
+- **Ratsnest, DRC and the Info lists (G03).** After every load and every edit
+  a worker thread (`analysis.rs`) runs the engine's `DesignRulesChecker` over
+  an `Arc` clone of the session board: first the ratsnest (airlines, the
+  incomplete count), then the clearance violations, unconnected items and zone
+  islands. A result carries the `Tag` (load, board revision, edit generation)
+  it was computed for and is hidden once the session has moved on; one worker
+  runs at a time. The side panel's "Checks" section shows "Incomplete
+  connections: n" and "Clearance violations: n" (clicking opens the list). The
+  overlays (`overlays/`) are egui shapes drawn after the canvas: airlines as
+  1 px lines (`G`, toolbar "Ratsnest", on by default), violation markers as the
+  violation's shape with a ring (`V`, toolbar "Violations", off by default,
+  as in Java) and the selection highlight. Info > Incomplete Connections,
+  Length Violations, Clearance Violations, Unconnected traces and vias and
+  Zone Islands open list windows (`panels/object_list.rs` is the generic one:
+  Select, Invert, Info (disabled until G04.3), Recalculate and a filter). Select
+  sets the selection and zooms to it. Run DRC forces a new run. Other > Delete
+  All Traces and Vias (also a toolbar button) asks first, takes a snapshot and
+  deletes; Undo/Redo (`U`/`B`, `Ctrl+Z`/`Ctrl+Y`, toolbar) restore the
+  snapshots, and the scene is rebuilt in full after each (G05.5 will patch it).
+  File > Export DRC report writes the JSON report of the engine's
+  `generate_report` (the same serializer as `-drc`, coordinates in mm). Row
+  texts follow Java's bundles (`text.rs`); `docs/DIVERGENCES.md` lists where
+  the lists differ from Java's.
 
 Screenshots from the cloud sessions are in the project's shared folder under
 `freerouting-rs/gui/`.
@@ -57,16 +82,21 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | --- | --- |
 | `lib.rs` | The library target (`freerouting_gui`), so integration tests can reach `App`. |
 | `main.rs` | Argument collection, window options, the WSL X11 switch (see below). |
-| `args.rs` | The command line: files, `--bench`, `--frames`, `--screenshot`, `--exit`, `--control-dir`. |
+| `args.rs` | The command line: files, `--bench`, `--bench-synthetic 4x4 board.dsn`, `--frames`, `--screenshot`, `--exit`, `--control-dir`. |
 | `app.rs` | `App`: state, `execute(Command)` (the one path for menus, keys and tests), background loading, `save`. `layout.rs` lays out one frame (menu, status bar, side panel, canvas). |
 | `commands.rs` | `enum Command`, every user action. |
 | `input.rs` | The key table (Java's keys). `viewport.rs` has the mouse model, `ViewState` (camera, visibility, active layer) and the hover status. |
 | `session.rs` | `Session` (the engine board as `Arc<RoutingBoard>`, the design, paths, `edit_generation`/`saved_generation`, warnings, SES summary), `load()` and `find_design()`. |
-| `scene.rs` | `Scene::from_board(&RoutingBoard)` flattens the engine board into drawable `Item`s (kind, slot, geometry in mm, net, owner) and `Label`s. `Scene::pick()` does the hover hit-testing. |
-| `view.rs` | `Tessellation` turns the scene into triangles once per load, as f32 mm relative to the board centre, one batch per (slot, kind). `Camera` handles pan and zoom. `paint()` transforms the vertices every frame, draws them and reports what it drew. Also the colours and the label drawing. |
+| `scene.rs` | `Scene::from_board(&RoutingBoard)` flattens the engine board into drawable `Item`s (`ItemId`, kind, slot, geometry in mm, net, owner) and `Label`s; `Flattener` does one engine item at a time, for patches. `Scene::pick()` does the hover hit-testing through a grid (`build_index`). |
+| `view.rs` | `tessellate_item` triangulates one scene item; `Tessellation` holds the board's chunks (`canvas::chunks::ChunkSet`) behind a mutex that the GPU callback shares. `Camera` handles pan and zoom. `paint()` makes the draw plan and draws it on the GPU path or, as the fallback, with `paint_cpu`; `Renderer` picks the path. Also the colours and the label drawing. |
+| `canvas/` | The GPU board canvas (G02): `chunks.rs` (chunks, grid, patching), `gpu.rs` (pipelines, buffers, paint callback), `board.wgsl`, `hairline.wgsl`. See "Renderer" below. |
+| `bench_synthetic.rs` | The 4x4 stress board of `--bench-synthetic`. |
 | `panels/`, `menu.rs` | The side panel sections (`layers`, `board_stats`) and the warnings window, each a function `ui(ui, ..) -> Vec<Command>`; the menu bar. |
 | `settings.rs` | `PersistedSettings`, stored under one key with a schema version. |
-| `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics, the `--bench` script, the in-app screenshot. |
+| `analysis.rs`, `lists.rs`, `selection.rs`, `text.rs`, `toolbar.rs`, `drc_export.rs`, `app_analysis.rs` | G03: the background ratsnest and DRC with their result tags; the Info list windows and how their rows are built; `Selection` (a `BTreeSet<ItemId>`); the Java texts; the toolbar; the DRC report export; `App`'s G03 commands (selection, zoom to selection, delete all, undo and redo). |
+| `overlays/` | Ratsnest, violation markers and selection highlight, drawn with egui shapes after the canvas. `Frame` converts board coordinates to the millimetres of the scene. `draw` returns what it drew (`stats.overlay`). |
+| `panels/{object_list,violations,incompletes,length,unconnected,islands}.rs` | The generic list window and one module per list: its rows (text, items) from the engine results. |
+| `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
 | `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`. |
 
 The data flows like this: the file is read into a `dsn::Pcb`.
@@ -141,7 +171,14 @@ cargo fmt -p freerouting-gui
   session loading against the engine, the bench script, argument parsing) and
   egui_kittest tests in `tests/`: `ui_viewer.rs` (loading, the side panel, a
   snapshot), `ui_input.rs` (Java's mouse and keys), `ui_settings.rs`
-  (persistence, Open Recent). `tests/common/mod.rs` has the harness helpers.
+  (persistence, Open Recent), `ui_drc.rs` (G03: selection and zoom, the
+  ratsnest and violation counts against `fixtures/reference/load/*.json`, the Info
+  lists, delete all with undo, the DRC export against `run_drc`; the harness
+  waits for the first analysis, so snapshots show settled counts). The two
+  small boards in `tests/data/` (`length_violation.dsn`, `zone_islands.dsn`) exist
+  because no fixture has length rules or copper islands.
+  `viewer_issue159.png` is the G01 golden that `ui_render.rs` compares the GPU canvas
+  with; the full window has its own `viewer_issue159_g03.png`. `tests/common/mod.rs` has the harness helpers.
   A full test run takes about 40 seconds in debug. `view::tests::tessellates_fixture_boards`
   covers every fixture under 50 KB; the larger fixtures are too slow to build
   in a debug build.
@@ -192,7 +229,8 @@ cargo fmt -p freerouting-gui
 width right, down, left and up; 10 zoom-out steps; repeated), one step per
 frame, ignores the first 30 frames and prints
 `{"script","frames","p50_ms","p95_ms","max_ms","triangles","draws","uploaded_bytes","load_avg_1m"}`.
-"Frame CPU" is the time on the GUI thread inside `App::update`, which includes
+(G02 added keys; see "Renderer".) "Frame CPU" here, as FT0 was first
+recorded, is the time on the GUI thread inside `App::update`, which includes
 building and painting the board's shapes. It excludes egui's tessellation,
 queue submission and presentation (under Xvfb that is llvmpipe rasterising,
 not a usable metric). `triangles` is the tessellation's count; `draws` and
@@ -220,20 +258,151 @@ metric is the time inside `App::update` only: it does not include egui
 tessellating the 3 to 3.3 thousand meshes and the renderer uploading them,
 which is the larger part of the cost today (a bench run takes about 45 ms per
 frame wall-clock under llvmpipe). So FT0 understates what a GPU renderer
-saves; G02 should measure its own number the same way and compare, and may
-want to add the egui tessellation time to the definition.
+saves. G02 did that: see "Renderer" for the re-baselined FT0 with egui's
+tessellation and upload included.
+
+## Renderer (G02)
+
+The board is drawn by one wgpu paint callback (`canvas/gpu.rs`); the CPU painter
+is the fallback.
+
+- **Chunks.** `canvas/chunks.rs` groups the scene items by (slot, kind), then by
+  the cell of a uniform grid over the board (cell size chosen so the median
+  occupied cell holds about 1,000 items), and cuts each group into chunks of at
+  most 4,096 items. A chunk keeps its items in ascending `ItemId` order, its
+  triangles, its hairline segments and the bounding box of its items. Issue190
+  has 96 chunks, the 4x4 board 1,514.
+- **GPU.** `BoardGpu` (in egui's `callback_resources`) has two pipelines
+  (`board.wgsl` for triangles, `hairline.wgsl` for lines), one vertex, index and
+  segment buffer per chunk, and a camera uniform. The colour of a draw comes from a
+  dynamic-offset uniform table indexed by (slot, kind), rewritten only when the
+  active layer changes. Colours are premultiplied gamma values, converted for an
+  sRGB target the way egui's shader does, so the board blends like egui's own
+  meshes. The vertex shader maps points to clip space exactly as egui's does,
+  over the whole screen (the callback widens the viewport; egui's scissor
+  rectangle still clips to the canvas), so the board lands on the same pixels as
+  the CPU painter's (`cpu_and_gpu_match`: 0.0000 % of the canvas differs on
+  Issue159 and Issue690).
+- **Hairlines** (board and footprint outlines, zero-width paths) are instanced
+  quads expanded in the vertex shader: one point wide at every zoom, square caps.
+  A point is `pixels_per_point` pixels, so `hairline_is_one_pixel` finds exactly
+  `round(pixels_per_point)` lit rows.
+- **Culling.** Each frame `canvas::plan` lists, in draw order, the chunks of the
+  visible slots and kinds whose box meets the view (plus a 2-point margin). The
+  draw order is the first canvas's: copper layers from the bottom up skipping the
+  active one, the active layer, back silk, front silk, board; kinds in
+  `Kind::ALL` order; per kind the triangles of all chunks, then the hairlines.
+  `chunks_drawn` and `chunks_total` count them (Issue190 at 20x: 15 of 96).
+- **Patching.** `Tessellation::patch(removed, added)` (`ChunkSet::patch`) finds
+  the chunks that own a removed `ItemId` through a `BTreeMap<i32, Vec<chunk>>`,
+  rebuilds just those and the ones that receive an added item (the chunk of its
+  group whose `lo_id` range holds the id), and marks them dirty; the next
+  `prepare` re-uploads exactly those buffers. A chunk over 8,192 items splits. A
+  patched chunk is bit-identical to one built fresh from the same items
+  (`patch_equals_fresh_build`). `Scene::item(board, id)` (or
+  `Flattener::item(id)` for many) makes the scene items of one engine item (B08's `ItemGeometry` replaces that in G07).
+  Nothing calls `patch` yet: `Loaded::rebuild_scene` (G03) still rebuilds in
+  full, and the checklists G05.5 and G07.4 switch to `patch`.
+- **Fallback.** `FREEROUTING_GUI_RENDERER=cpu`, or no wgpu render state, draws the
+  same plan as egui meshes (`view::paint_cpu`; hairlines become quads). Only the
+  environment variable is read at start; `ViewState::renderer.force_cpu` does the
+  same for tests. `FREEROUTING_GUI_CULL=0` turns the culling off, to measure it.
+- **Counters** (`stats.rs`, `FrameStats`): `draws`, `triangles`, `chunks_drawn`,
+  `chunks_total`, `uploaded_bytes` (last frame; the callback's `prepare` runs
+  after the update that made it, so a frame reports the previous one's
+  upload), `uploaded_total`, `gpu_buffer_bytes`, `full_rebuilds`.
+  A panning frame uploads 32 bytes (`no_upload_after_first_frame`).
+- **Two frame CPU definitions.** *Update CPU* (G01's, FT0 as first recorded) is the time
+  inside `App::update`. *Frame CPU* (FT1 and later) adds what eframe does between
+  the update and the board's callback (finishing egui's pass, tessellating its
+  shapes, uploading its meshes) and the callback's `prepare` and `paint`;
+  `FrameClock` measures it, with an empty marker callback on the CPU path. It still
+  excludes queue submission and presentation. `--bench` prints both: `p50_ms`,
+  `p95_ms`, `max_ms` are update CPU, `frame_*` are frame CPU (one frame fewer,
+  since a frame completes after its update), plus `wall_ms` (mean per frame,
+  llvmpipe included), `chunks_drawn`, `chunks_total`, `gpu_buffer_bytes`,
+  `first_frame_ms` and `load_ms` (the load phases).
+- **Synthetic board.** `--bench-synthetic 4x4 board.dsn` tiles the loaded scene
+  4 by 4 with a gap of 10 % of the board size and ids offset per tile (on the load
+  thread), then runs `--bench pan-zoom`. Issue190 gives 174,160 engine items
+  (12,473 scene items per tile, 199,568 in all) and 5,600,896 triangles.
+
+### Renderer numbers (this machine, lavapipe, 2026-10-15)
+
+Release build under Xvfb, `--bench pan-zoom --frames 600`, three runs each. The
+machine was not quiet (other sessions were building; load average 9 to 15 on 8
+cores, target is at most 1.0), so read them as upper bounds on the new renderer;
+ratios hold because the old and new runs were interleaved.
+
+FT0 re-baselined with the old renderer under the *frame CPU* definition (the old
+code plus a marker callback; ms):
+
+| Board | update p50 / p95 (G01 recorded) | frame p50 | frame p95 | frame max |
+|---|---|---|---|---|
+| Issue190 | 2.6 / 3.1 to 3.6 (quiet-ish); 2.9 / 3.3 to 8.1 (these runs) | 11.9, 7.9, 7.9 | 26.4, 19.5, 9.8 | 51.3, 59.7, 13.5 |
+| Issue690 (coldfire) | 0.67 / 0.86 to 0.95 | 3.5, 3.3, 3.3 | 4.9, 4.3, 4.5 | 18.4, 8.3, 7.2 |
+
+The new renderer (frame CPU, ms):
+
+| Board | Run | update p50 / p95 | frame p50 | frame p95 | frame max | draws | load 1 min |
+|---|---|---|---|---|---|---|---|
+| Issue190 (FT1) | 1 | 0.23 / 0.33 | 0.333 | 0.461 | 3.58 | 55 | 11.2 |
+| | 2 | 0.18 / 0.33 | 0.260 | 0.444 | 1.07 | 55 | 13.2 |
+| | 3 | 0.21 / 0.34 | 0.299 | 0.468 | 4.59 | 55 | 15.2 |
+| Issue690 | 1 | 0.18 / 0.28 | 0.268 | 0.433 | 0.69 | 81 | 11.7 |
+| | 2 | 0.18 / 0.29 | 0.270 | 0.436 | 1.11 | 81 | 11.5 |
+| | 3 | 0.18 / 0.28 | 0.272 | 0.430 | 0.85 | 81 | 10.3 |
+| 4x4 Issue190 (FT2) | 1 | 1.09 / 1.46 | 1.286 | 1.796 | 6.87 | 386 | 15.3 |
+| | 2 | 1.07 / 1.30 | 1.254 | 1.550 | 6.18 | 386 | 13.2 |
+| | 3 | 1.05 / 1.35 | 1.222 | 1.582 | 5.47 | 386 | 8.8 |
+
+- **FT1** (p95 at most 2 ms and at least 5x better than FT0): met. Frame CPU p95
+  is 0.44 to 0.47 ms against 9.8 to 26.4 ms (at least 21x) under the same
+  definition; against G01's recorded update p95 (3.07 to 3.57) it is at least
+  6.5x.
+- **FT2 CPU part** (p95 at most 4 ms): met, 1.55 to 1.80 ms. The 4x4 board has
+  `gpu_buffer_bytes` 124,442,080 (118.7 MiB). The wall-clock part (60 fps on Dan's
+  GPU) is manual: needs the Windows run. The 1 ms update p50 on this board is the
+  hover test and the label loop, not the board.
+- **FT3** (Issue190 file to first frame at most 1.5 s, tessellation plus chunking at
+  most 200 ms): met. `first_frame_ms` is the time from the start of the load to the
+  end of the first board paint (CPU, presentation excluded): 264, 411 and 736 ms in
+  the three runs above (load-dependent). Load phases (ms, release, load 12 to 20):
+
+  | Phase | Before (G01 renderer) | After |
+  |---|---|---|
+  | read | 19 (read plus parse) | 1.7 |
+  | parse | | 15.6 |
+  | `build_board` | 422 | 169 |
+  | scene | 4.1 | 2.2 |
+  | tessellation | 6.8 | 4.6 |
+  | chunking | | 0.8 |
+  | total | 452 | 194 |
+
+  `build_board` is the only phase that matters and it is the engine's. Tessellation
+  was never the problem, so nothing was parallelised (no `rayon`). The load runs on
+  a background thread, and the first `prepare` uploads the board (7.8 MB for Issue190).
+- **FT4 CPU part** (200 removed plus 200 added items, at most 2 ms): `delta_200_200`
+  on Issue190, release, median of 20: 0.44 ms; the bytes uploaded are exactly the
+  dirty chunks' (64 of 96 chunks, 7.55 MB, because the 200 random items touch most
+  of the large trace chunks), plus the 32-byte camera. 0 full rebuilds.
+- **FT6 static** (at most 64 MB): Issue190 has 7.4 MiB of GPU buffers. The growth
+  across routing passes is G07.4's.
+- Not done: the Windows run of `freerouting-gui.exe --bench pan-zoom --frames 600`
+  on Issue190 and on the 4x4 board (DX12, and `WGPU_BACKEND=gl`). Dan runs it; the
+  numbers go here.
 
 ## What's next
 
 In plan order. Each item needs engine work first, so check what has landed in
 `crates/freerouting` before starting one.
 
-1. **Ratsnest (airlines):** lines for the connections still to be routed.
-   It needs the engine's connectivity/unrouted data (Java `RatsNest`). Draw it
-   as a hairline overlay with its own toggle, and count the unrouted
-   connections in the side panel.
-2. **DRC panel:** a list of violations, where clicking one zooms to it, plus
-   markers on the canvas. It needs the engine DRC.
+1. **Ratsnest and DRC panel:** done in G03 (see "What works"). Open: Delete All
+   does not unfill conduction areas until B08 ports `unfillConductionAreas`
+   (G03.7), the Info button of the lists waits for G04.3, and Route Stubs waits
+   for B08.3.
+2. **Selection by mouse** (inspect tool, G05): `Selection` and its highlight
+   exist; only the lists set it today.
 3. **Autorouter run:** start and stop the router from the GUI, with live
    progress. The board should redraw as routes land, which needs a way to
    rebuild or patch the `Scene`/`Tessellation` from engine change events
@@ -249,10 +418,8 @@ Other gaps:
 - Screen readers: eframe's `accesskit` feature is on, so the widgets are in
   the accessibility tree (egui_kittest finds them by label through it). Nobody
   has tried a screen reader on it.
-- Performance: every frame transforms all vertices on the CPU. That is fine
-  for the fixtures. For very large boards, consider caching the transformed
-  meshes while the camera is still, or a wgpu paint callback that transforms
-  on the GPU.
+- Performance: done in G02 (see "Renderer"). The vertices stay on the GPU;
+  a frame uploads 32 bytes.
 - Widget style: the panels use egui's default dark style. Dan asked about
   native Windows looks, which turned out to be about the title bar only (now
   fixed). A Windows-like light theme is an open offer, not a request.

@@ -12,25 +12,20 @@
 //! | `+` / `-` | next / previous signal layer |
 //! | `,` | crosshair cursor on or off |
 //! | `Esc` | cancel |
+//! | `G` | ratsnest on or off |
+//! | `V` | clearance violation markers on or off |
+//! | `W` | zoom to the selection |
+//! | `U`, `Ctrl+Z` | undo |
+//! | `B`, `Ctrl+Y` | redo |
 //! | `Ctrl+O` | open |
 
 use eframe::egui::{InputState, Key};
 
 use crate::commands::Command;
 
-/// Java's tool and edit keys, kept free for the checklists that add them:
-/// G (ratsnest), V (violations), U and B (undo, redo), S, R and D (inspect,
-/// route and drag modes), W (pin swap).
-pub const RESERVED: [Key; 8] = [
-    Key::G,
-    Key::V,
-    Key::U,
-    Key::B,
-    Key::S,
-    Key::R,
-    Key::D,
-    Key::W,
-];
+/// Java's tool keys, kept free for the checklists that add them: S, R and D
+/// (inspect, route and drag modes). G, V, U, B and W are used since G03.
+pub const RESERVED: [Key; 3] = [Key::S, Key::R, Key::D];
 
 const DIGITS: [Key; 9] = [
     Key::Num1,
@@ -51,6 +46,14 @@ pub fn key_commands(input: &InputState, typing: bool) -> Vec<Command> {
     if input.modifiers.command && input.key_pressed(Key::O) {
         out.push(Command::OpenDialog);
     }
+    if !typing && input.modifiers.command && !input.modifiers.alt {
+        if input.key_pressed(Key::Z) {
+            out.push(Command::Undo);
+        }
+        if input.key_pressed(Key::Y) {
+            out.push(Command::Redo);
+        }
+    }
     if typing || input.modifiers.command || input.modifiers.alt {
         return out;
     }
@@ -66,6 +69,11 @@ pub fn key_commands(input: &InputState, typing: bool) -> Vec<Command> {
         (Key::Plus, Command::StepActiveLayer(1)),
         (Key::Equals, Command::StepActiveLayer(1)),
         (Key::Minus, Command::StepActiveLayer(-1)),
+        (Key::G, Command::ToggleRatsnest),
+        (Key::V, Command::ToggleViolations),
+        (Key::W, Command::ZoomSelection),
+        (Key::U, Command::Undo),
+        (Key::B, Command::Redo),
     ];
     for (key, command) in table {
         if input.key_pressed(key) {

@@ -1,42 +1,65 @@
 //! The board canvas: tessellates a [`Scene`] once, then draws it every frame
 //! through a pan/zoom camera.
+//!
+//! [`Tessellation`] is the CPU builder: it triangulates each scene item
+//! ([`tessellate_item`]) and keeps the result in chunks
+//! ([`crate::canvas::chunks`]). [`paint`] draws the chunks that are on screen,
+//! either through the GPU pipeline of [`crate::canvas`] or, as a fallback
+//! (`FREEROUTING_GUI_RENDERER=cpu`, or no wgpu render state), with egui
+//! meshes ([`paint_cpu`]). Both paths use the same draw plan, so they draw
+//! the same chunks in the same order.
 
-use eframe::egui::{self, Color32, Mesh, Painter, Pos2, Rect, Shape, Stroke, epaint::Vertex};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+
+use eframe::egui::{self, Color32, Mesh, Painter, Pos2, Rect, Shape, epaint::Vertex};
+use freerouting::board::items::ItemId;
 use freerouting::dsn::ast::Side;
 
-use crate::scene::{Geom, Kind, Label, P, Scene, Slot};
-use crate::stats::PaintStats;
+use crate::canvas::chunks::{BuildTimes, ChunkSet, MeshBuf, PatchReport};
+use crate::canvas::{self, GpuCounters};
+use crate::scene::{Geom, Item, Kind, Label, P, Scene, Slot};
+use crate::stats::{FrameClock, PaintStats};
 
 /// Segments used for a full circle.
 const CIRCLE_SEGMENTS: usize = 24;
 
-/// Triangles of one kind of item on one slot, in millimetres relative to
-/// [`Tessellation::origin`]. `f32` is plenty once the large board offset is
-/// taken out.
-#[derive(Default)]
-struct Batch {
-    slot: Option<Slot>,
-    kind: Option<Kind>,
-    vertices: Vec<[f32; 2]>,
-    indices: Vec<u32>,
+/// Cosine and sine of the angles of a disc's rim, computed once. They are the
+/// values `f32::cos` and `f32::sin` give for the same angles, so the discs
+/// are the ones the first version of the canvas drew.
+fn rim() -> &'static [[f32; 2]; CIRCLE_SEGMENTS] {
+    static RIM: std::sync::OnceLock<[[f32; 2]; CIRCLE_SEGMENTS]> = std::sync::OnceLock::new();
+    RIM.get_or_init(|| {
+        std::array::from_fn(|i| {
+            let a = i as f32 * std::f32::consts::TAU / CIRCLE_SEGMENTS as f32;
+            [a.cos(), a.sin()]
+        })
+    })
 }
 
-impl Batch {
+/// Appends the triangles (or, for hairlines, segments) of one item to a
+/// buffer, in millimetres relative to `origin`. Indices count from the
+/// buffer's vertex count at the call, so the caller shifts them to the
+/// buffer's start.
+struct Builder<'a> {
+    out: &'a mut MeshBuf,
+    first: usize,
+}
+
+impl Builder<'_> {
     fn push(&mut self, v: [f32; 2]) -> u32 {
-        self.vertices.push(v);
-        (self.vertices.len() - 1) as u32
+        self.out.vertices.push(v);
+        (self.out.vertices.len() - 1 - self.first) as u32
     }
 
     fn triangle(&mut self, a: u32, b: u32, c: u32) {
-        self.indices.extend([a, b, c]);
+        self.out.indices.extend([a, b, c]);
     }
 
     fn disc(&mut self, c: [f32; 2], r: f32) {
         let center = self.push(c);
-        let first = self.vertices.len() as u32;
-        for i in 0..CIRCLE_SEGMENTS {
-            let a = i as f32 * std::f32::consts::TAU / CIRCLE_SEGMENTS as f32;
-            self.push([c[0] + r * a.cos(), c[1] + r * a.sin()]);
+        let first = center + 1;
+        for [cos, sin] in rim() {
+            self.push([c[0] + r * cos, c[1] + r * sin]);
         }
         let n = CIRCLE_SEGMENTS as u32;
         for i in 0..n {
@@ -74,109 +97,142 @@ impl Batch {
         let Ok(tris) = earcutr::earcut(&flat, &hole_starts, 2) else {
             return;
         };
-        let base = self.vertices.len() as u32;
+        let base = (self.out.vertices.len() - self.first) as u32;
         for p in flat.chunks_exact(2) {
-            self.vertices.push([p[0] as f32, p[1] as f32]);
+            self.out.vertices.push([p[0] as f32, p[1] as f32]);
         }
-        self.indices.extend(tris.iter().map(|&i| base + i as u32));
+        self.out
+            .indices
+            .extend(tris.iter().map(|&i| base + i as u32));
+    }
+
+    /// A hairline through `points`: one segment per pair of points.
+    fn line(&mut self, points: &[[f32; 2]], width: f32) {
+        match points {
+            [] => {}
+            [only] => self
+                .out
+                .lines
+                .push([only[0], only[1], only[0], only[1], width]),
+            _ => {
+                for s in points.windows(2) {
+                    self.out
+                        .lines
+                        .push([s[0][0], s[0][1], s[1][0], s[1][1], width]);
+                }
+            }
+        }
     }
 }
 
-/// A line drawn with a stroke of at least one pixel: board and footprint
-/// outlines, and zero-width paths.
-struct Line {
-    slot: Slot,
-    kind: Kind,
-    points: Vec<[f32; 2]>,
-    width: f32,
+/// Appends the geometry of `item` to `out`: triangles for filled shapes,
+/// hairline segments for the board and footprint outlines and for
+/// zero-width paths. Vertices are in millimetres relative to `origin`.
+/// Indices count from the first vertex this call adds.
+pub fn tessellate_item(origin: P, item: &Item, out: &mut MeshBuf) {
+    let rel = |p: &P| [(p.x - origin.x) as f32, (p.y - origin.y) as f32];
+    let first = out.vertices.len();
+    let mut b = Builder { out, first };
+    let is_line = matches!(item.kind, Kind::Outline | Kind::ComponentOutline)
+        || matches!(item.geom, Geom::Path { width, .. } if width == 0.0);
+    if is_line {
+        let (points, width): (Vec<[f32; 2]>, f64) = match &item.geom {
+            Geom::Path { points, width } => (points.iter().map(rel).collect(), *width),
+            Geom::Circle { center, radius } => (
+                (0..=CIRCLE_SEGMENTS * 2)
+                    .map(|i| {
+                        let a = i as f64 * std::f64::consts::TAU / (CIRCLE_SEGMENTS * 2) as f64;
+                        rel(&P::new(
+                            center.x + radius * a.cos(),
+                            center.y + radius * a.sin(),
+                        ))
+                    })
+                    .collect(),
+                0.0,
+            ),
+            Geom::Polygon { outer, .. } => {
+                let mut pts: Vec<_> = outer.iter().map(rel).collect();
+                if let Some(&p) = pts.first() {
+                    pts.push(p);
+                }
+                (pts, 0.0)
+            }
+        };
+        b.line(&points, width as f32);
+        return;
+    }
+    match &item.geom {
+        Geom::Circle { center, radius } => b.disc(rel(center), *radius as f32),
+        Geom::Path { points, width } => {
+            let r = *width as f32 / 2.0;
+            let pts: Vec<_> = points.iter().map(rel).collect();
+            for &p in &pts {
+                b.disc(p, r);
+            }
+            for s in pts.windows(2) {
+                b.segment(s[0], s[1], r);
+            }
+        }
+        Geom::Polygon { outer, holes } => {
+            let outer: Vec<_> = outer.iter().map(rel).collect();
+            let holes: Vec<Vec<_>> = holes.iter().map(|h| h.iter().map(rel).collect()).collect();
+            b.polygon(&outer, &holes);
+        }
+    }
 }
 
-/// The scene, ready to draw.
+/// The scene, ready to draw: its chunks, shared with the GPU callback that
+/// uploads and draws them.
 pub struct Tessellation {
-    /// The point in millimetres that vertex coordinates are relative to.
-    origin: P,
-    batches: Vec<Batch>,
-    lines: Vec<Line>,
+    chunks: Arc<Mutex<ChunkSet>>,
+    counters: Arc<GpuCounters>,
+    times: BuildTimes,
 }
 
 impl Tessellation {
+    /// Triangulates and chunks the scene (the full build).
     pub fn new(scene: &Scene) -> Tessellation {
-        let origin = scene.bounds.center();
-        let rel = |p: &P| [(p.x - origin.x) as f32, (p.y - origin.y) as f32];
-        let mut batches: Vec<Batch> = Vec::new();
-        let mut lines = Vec::new();
-        let mut batch_of = std::collections::HashMap::new();
-        for item in &scene.items {
-            let is_line = matches!(item.kind, Kind::Outline | Kind::ComponentOutline)
-                || matches!(item.geom, Geom::Path { width, .. } if width == 0.0);
-            if is_line {
-                let (points, width) = match &item.geom {
-                    Geom::Path { points, width } => (points.iter().map(rel).collect(), *width),
-                    Geom::Circle { center, radius } => (
-                        (0..=CIRCLE_SEGMENTS * 2)
-                            .map(|i| {
-                                let a =
-                                    i as f64 * std::f64::consts::TAU / (CIRCLE_SEGMENTS * 2) as f64;
-                                rel(&P::new(
-                                    center.x + radius * a.cos(),
-                                    center.y + radius * a.sin(),
-                                ))
-                            })
-                            .collect(),
-                        0.0,
-                    ),
-                    Geom::Polygon { outer, .. } => {
-                        let mut pts: Vec<_> = outer.iter().map(rel).collect();
-                        pts.push(pts[0]);
-                        (pts, 0.0)
-                    }
-                };
-                lines.push(Line {
-                    slot: item.slot,
-                    kind: item.kind,
-                    points,
-                    width: width as f32,
-                });
-                continue;
-            }
-            let i = *batch_of.entry((item.slot, item.kind)).or_insert_with(|| {
-                batches.push(Batch {
-                    slot: Some(item.slot),
-                    kind: Some(item.kind),
-                    ..Batch::default()
-                });
-                batches.len() - 1
-            });
-            let batch = &mut batches[i];
-            match &item.geom {
-                Geom::Circle { center, radius } => batch.disc(rel(center), *radius as f32),
-                Geom::Path { points, width } => {
-                    let r = *width as f32 / 2.0;
-                    let pts: Vec<_> = points.iter().map(rel).collect();
-                    for &p in &pts {
-                        batch.disc(p, r);
-                    }
-                    for s in pts.windows(2) {
-                        batch.segment(s[0], s[1], r);
-                    }
-                }
-                Geom::Polygon { outer, holes } => {
-                    let outer: Vec<_> = outer.iter().map(rel).collect();
-                    let holes: Vec<Vec<_>> =
-                        holes.iter().map(|h| h.iter().map(rel).collect()).collect();
-                    batch.polygon(&outer, &holes);
-                }
-            }
-        }
+        let set = ChunkSet::build(scene, scene.bounds.center());
+        let times = set.times;
         Tessellation {
-            origin,
-            batches,
-            lines,
+            chunks: Arc::new(Mutex::new(set)),
+            counters: Arc::new(GpuCounters::default()),
+            times,
         }
     }
 
+    fn lock(&self) -> MutexGuard<'_, ChunkSet> {
+        self.chunks.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Reads the chunks.
+    pub fn with<R>(&self, f: impl FnOnce(&ChunkSet) -> R) -> R {
+        f(&self.lock())
+    }
+
     pub fn triangle_count(&self) -> usize {
-        self.batches.iter().map(|b| b.indices.len() / 3).sum()
+        self.with(ChunkSet::triangle_count)
+    }
+
+    /// Removes the scene items of the engine items `removed` and adds
+    /// `added` (flattened with [`crate::scene::Flattener`]), rebuilding only
+    /// the chunks they touch. The GPU uploads just those on the next frame.
+    pub fn patch(&self, removed: &[ItemId], added: &[Item]) -> PatchReport {
+        self.lock().patch(removed, added)
+    }
+
+    /// The GPU-side counters of this board.
+    pub fn counters(&self) -> &Arc<GpuCounters> {
+        &self.counters
+    }
+
+    pub(crate) fn shared(&self) -> &Arc<Mutex<ChunkSet>> {
+        &self.chunks
+    }
+
+    /// How long the grouping and the triangulation of the full build took.
+    pub fn build_times(&self) -> BuildTimes {
+        self.times
     }
 }
 
@@ -293,7 +349,7 @@ pub fn layer_color(index: usize, count: usize) -> Color32 {
     }
 }
 
-fn kind_color(kind: Kind, slot: Slot, layer_count: usize) -> Color32 {
+pub(crate) fn kind_color(kind: Kind, slot: Slot, layer_count: usize) -> Color32 {
     let layer = match slot {
         Slot::Layer(i) => layer_color(i, layer_count),
         _ => Color32::GRAY,
@@ -316,7 +372,73 @@ fn kind_color(kind: Kind, slot: Slot, layer_count: usize) -> Color32 {
 
 pub const BACKGROUND: Color32 = Color32::from_rgb(12, 14, 18);
 
+/// Which painter draws the board.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RenderPath {
+    /// The wgpu pipeline of [`crate::canvas`].
+    Gpu,
+    /// egui meshes, built on the CPU every frame.
+    Cpu,
+}
+
+/// How the canvas is drawn this frame.
+#[derive(Clone)]
+pub struct Renderer {
+    pub path: RenderPath,
+    /// The format of the render target, while a wgpu render state exists.
+    pub target_format: Option<eframe::wgpu::TextureFormat>,
+    /// Skip chunks that are off screen. Always on; the environment variable
+    /// `FREEROUTING_GUI_CULL=0` turns it off to measure what culling saves.
+    pub cull: bool,
+    pub clock: Arc<FrameClock>,
+    forced_cpu: bool,
+}
+
+impl Default for Renderer {
+    fn default() -> Self {
+        Renderer {
+            path: RenderPath::Cpu,
+            target_format: None,
+            cull: std::env::var("FREEROUTING_GUI_CULL").map_or(true, |v| v != "0"),
+            clock: Arc::new(FrameClock::default()),
+            forced_cpu: std::env::var("FREEROUTING_GUI_RENDERER").is_ok_and(|v| v == "cpu"),
+        }
+    }
+}
+
+impl Renderer {
+    /// Draws with the CPU painter even where a wgpu render state exists, as
+    /// `FREEROUTING_GUI_RENDERER=cpu` does.
+    pub fn force_cpu(&mut self, on: bool) {
+        self.forced_cpu = on;
+    }
+
+    /// Picks the path for the coming frame: the GPU one when eframe gave a
+    /// wgpu render state and `FREEROUTING_GUI_RENDERER` is not `cpu`.
+    pub fn select(&mut self, target_format: Option<eframe::wgpu::TextureFormat>) {
+        self.target_format = target_format;
+        self.path = if target_format.is_some() && !self.forced_cpu {
+            RenderPath::Gpu
+        } else {
+            RenderPath::Cpu
+        };
+    }
+}
+
+/// The board point range on screen, with a margin of a few points for line
+/// widths.
+fn view_box(camera: &Camera, rect: Rect) -> crate::scene::Bounds {
+    const MARGIN_PT: f64 = 2.0;
+    let hw = f64::from(rect.width()) / 2.0 / camera.zoom + MARGIN_PT / camera.zoom;
+    let hh = f64::from(rect.height()) / 2.0 / camera.zoom + MARGIN_PT / camera.zoom;
+    crate::scene::Bounds {
+        min: P::new(camera.center.x - hw, camera.center.y - hh),
+        max: P::new(camera.center.x + hw, camera.center.y + hh),
+    }
+}
+
 /// Draws the board and reports what it drew.
+#[allow(clippy::too_many_arguments)]
 pub fn paint(
     painter: &Painter,
     rect: Rect,
@@ -325,89 +447,104 @@ pub fn paint(
     layer_count: usize,
     labels: &[Label],
     vis: &Visibility,
+    renderer: &Renderer,
 ) -> PaintStats {
-    let mut stats = PaintStats::default();
     painter.rect_filled(rect, 0.0, BACKGROUND);
-
-    // Bottom layer first, the active layer last, everything off the copper
-    // layers on top.
-    let mut order: Vec<Slot> = (0..layer_count)
-        .rev()
-        .filter(|&i| i != vis.active)
-        .map(Slot::Layer)
-        .collect();
-    order.push(Slot::Layer(vis.active));
-    order.extend([Slot::Silk(Side::Back), Slot::Silk(Side::Front), Slot::Board]);
-
-    let c = rect.center();
-    let z = camera.zoom as f32;
-    let ox = (tess.origin.x - camera.center.x) as f32;
-    let oy = (tess.origin.y - camera.center.y) as f32;
-    let to_screen = |v: [f32; 2]| Pos2::new(c.x + (v[0] + ox) * z, c.y - (v[1] + oy) * z);
-
-    for slot in order {
-        if !vis.slot(slot) {
-            continue;
+    let view = view_box(camera, rect);
+    let (plan, origin) =
+        tess.with(|set| (canvas::plan(set, vis, &view, renderer.cull), set.origin()));
+    let colors = canvas::color_table(layer_count, vis.active);
+    let mut stats = PaintStats {
+        triangles: plan.triangles,
+        draws: plan.draws.len() as u64,
+        chunks_drawn: plan.chunks_drawn,
+        chunks_total: plan.chunks_total,
+        ..PaintStats::default()
+    };
+    match renderer.path {
+        RenderPath::Gpu => {
+            let (pending, buffer_bytes) = tess.counters().take_frame();
+            stats.uploaded_bytes = pending;
+            stats.gpu_buffer_bytes = buffer_bytes;
+            canvas::add_board_callback(
+                painter, rect, camera, tess, origin, plan, &colors, renderer,
+            );
         }
-        let dim = matches!(slot, Slot::Layer(i) if i != vis.active);
-        for kind in Kind::ALL {
-            if !vis.kind(kind) {
-                continue;
-            }
-            let mut color = kind_color(kind, slot, layer_count);
-            if dim {
-                // Opaque shapes are dimmed toward the background rather than
-                // made translucent: the round joints of a trace overlap its
-                // segments and would show as darker dots.
-                color = if color.is_opaque() {
-                    BACKGROUND.lerp_to_gamma(color, 0.6)
-                } else {
-                    color.gamma_multiply(0.6)
-                };
-            }
-            for batch in tess
-                .batches
-                .iter()
-                .filter(|b| b.slot == Some(slot) && b.kind == Some(kind))
-            {
-                let mut mesh = Mesh::default();
-                mesh.indices.clone_from(&batch.indices);
-                mesh.vertices = batch
-                    .vertices
-                    .iter()
-                    .map(|&v| Vertex {
-                        pos: to_screen(v),
-                        uv: egui::epaint::WHITE_UV,
-                        color,
-                    })
-                    .collect();
-                stats.triangles += (mesh.indices.len() / 3) as u64;
-                stats.uploaded_bytes += (mesh.vertices.len() * 20 + mesh.indices.len() * 4) as u64;
-                stats.draws += 1;
-                stats.chunks_drawn += 1;
-                painter.add(Shape::mesh(mesh));
-            }
-            for line in tess
-                .lines
-                .iter()
-                .filter(|l| l.slot == slot && l.kind == kind)
-            {
-                let width = (line.width * z).max(1.0);
-                stats.draws += 1;
-                let points: Vec<Pos2> = line.points.iter().map(|&v| to_screen(v)).collect();
-                if points.len() == 1 {
-                    painter.circle_filled(points[0], width / 2.0, color);
-                } else {
-                    painter.add(Shape::line(points, Stroke::new(width, color)));
-                }
-            }
+        RenderPath::Cpu => {
+            stats.uploaded_bytes =
+                tess.with(|set| paint_cpu(painter, rect, camera, set, &plan, &colors));
+            canvas::add_clock_marker(painter, rect, renderer);
         }
     }
-
     if vis.labels {
         paint_labels(painter, rect, camera, labels);
     }
     stats
+}
+
+/// The fallback painter: one egui mesh per chunk draw, with the vertices
+/// moved to the screen on the CPU. Hairline segments become quads of at
+/// least one point, as in the shader. Returns the bytes handed to egui.
+pub fn paint_cpu(
+    painter: &Painter,
+    rect: Rect,
+    camera: &Camera,
+    set: &ChunkSet,
+    plan: &canvas::Plan,
+    colors: &[Color32],
+) -> u64 {
+    let c = rect.center();
+    let z = camera.zoom as f32;
+    let origin = set.origin();
+    let ox = (origin.x - camera.center.x) as f32;
+    let oy = (origin.y - camera.center.y) as f32;
+    let to_screen = |v: [f32; 2]| Pos2::new(c.x + (v[0] + ox) * z, c.y - (v[1] + oy) * z);
+    let mut bytes = 0u64;
+    for draw in &plan.draws {
+        let chunk = set.chunk(draw.chunk);
+        let color = colors[draw.color as usize];
+        let mut mesh = Mesh::default();
+        let vertex = |pos: Pos2| Vertex {
+            pos,
+            uv: egui::epaint::WHITE_UV,
+            color,
+        };
+        if draw.lines {
+            for &[ax, ay, bx, by, width] in &chunk.mesh.lines {
+                let (a, b) = (to_screen([ax, ay]), to_screen([bx, by]));
+                let d = b - a;
+                let len = d.length();
+                let dir = if len > 1e-6 {
+                    d / len
+                } else {
+                    egui::vec2(1.0, 0.0)
+                };
+                let half = 0.5 * (width * z).max(1.0);
+                let n = egui::vec2(-dir.y, dir.x) * half;
+                let (p0, p1) = (a - dir * half, b + dir * half);
+                let base = mesh.vertices.len() as u32;
+                mesh.vertices.extend([
+                    vertex(p0 - n),
+                    vertex(p0 + n),
+                    vertex(p1 - n),
+                    vertex(p1 + n),
+                ]);
+                mesh.indices
+                    .extend([base, base + 1, base + 2, base + 2, base + 1, base + 3]);
+            }
+        } else {
+            mesh.indices.clone_from(&chunk.mesh.indices);
+            mesh.vertices = chunk
+                .mesh
+                .vertices
+                .iter()
+                .map(|&v| vertex(to_screen(v)))
+                .collect();
+        }
+        bytes += (mesh.vertices.len() * 20 + mesh.indices.len() * 4) as u64;
+        painter.add(Shape::mesh(mesh));
+    }
+    bytes
 }
 
 /// Draws reference designators, back side first and dimmer. Labels smaller
@@ -483,13 +620,16 @@ mod tests {
             };
             let scene = Scene::from_board("", board);
             let tess = Tessellation::new(&scene);
-            for b in &tess.batches {
-                assert!(
-                    b.indices.iter().all(|&i| (i as usize) < b.vertices.len()),
-                    "{}",
-                    path.display()
-                );
-            }
+            tess.with(|set| {
+                for c in set.chunks() {
+                    let m = &c.mesh;
+                    assert!(
+                        m.indices.iter().all(|&i| (i as usize) < m.vertices.len()),
+                        "{}",
+                        path.display()
+                    );
+                }
+            });
             boards += 1;
         }
         assert!(boards > 20, "only {boards} boards read");

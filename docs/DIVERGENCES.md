@@ -81,8 +81,24 @@ branch 3 in IntOctagon's box cutout.
 
 **Board model**
 - Items live in an arena keyed by `ItemId`; the methods of `Item` and its subclasses
-  that need the board are `BasicBoard` methods taking an id. Observers, the routing
-  ledger, Java serialization, `getHash` and the graphics update box are not ported.
+  that need the board are `BasicBoard` methods taking an id. Observers and the
+  graphics update box are replaced by the change journal (`board::journal`), which a
+  consumer turns on and drains with `take_changes`.
+- Java serialization is `BoardSnapshot` (`board::snapshot`): it holds what Java
+  serializes and no search trees; `restore()` rebuilds the default tree in item-list
+  order, as `readObject` does. `Clone` on the boards is not a Java copy.
+- `state_hash` (Java `getHash`) has Java's equality but leaves out the DRC cache
+  `Item.smallestClearance`, which Java's `clearanceViolations()` writes as a side
+  effect; the port has no such cache. The `state-hash` probe found no step where this
+  changes an equality (`tests/board_probe_state_hash.rs`).
+- The routing ledger (`drc::RoutingLedger`) counts exactly: undo, redo, in-place trace
+  changes and net changes mark the nets they touch. Java's `NetRoutingLedger` hears only
+  inserts and removals and goes stale after them; the `ledger` probe
+  (`fixtures/reference/probe/ledger/`) shows Java's count differing from a fresh count
+  after an undo, net changes and cutouts (`tests/drc_ledger.rs`).
+- Java bug kept on purpose: a snapshot restore or deep copy rebuilds the default tree
+  without clearance compensation and drops the compensated trees, even when
+  compensation was on (`deep_copy_drops_clearance_compensation`).
 - `ShapeTree` stores leaves in an arena; `overlaps` returns them sorted by item and
   shape index, as Java sorts them. Combining traces removes and reinserts the tree
   entries instead of Java's `mergeEntries`; queries return the same items, only the
@@ -193,3 +209,43 @@ branch 3 in IntOctagon's box cutout.
   name differs in the matrix and the class dump, and `-inc ''` flags the class in Java but
   is a blank name to the port. Everything else, `postLoadViolations` included, matches
   (`EXPECTED_MISMATCHES` in `job_prepare_reference.rs`).
+
+**Writing a session file** (`io::specctra::ses_writer`, port of `SesWriter`; tests
+`tests/ses_writer.rs`, `tests/ses_round_trip.rs`)
+- The default output is Java's exact text (`SesStyle::Java`); `SesStyle::Plain` is the
+  syntax-tree writer's layout. Both parse to equal trees.
+- A component that is not placed is written as `(place name)`; Java throws a
+  `NullPointerException` on it.
+- Java's `SesReader` and `SesWriter` both divide by `dsn_to_board(1) / resolution`, so a session
+  they wrote reads back scaled wrongly where that factor is not 1 (`Issue676-ch32v-tx118s`,
+  0.1: 100 times too large). The port reproduces both sides (kept bug; the written text is
+  Java's byte for byte); `ses_round_trip.rs` lists the board as an expected mismatch of the
+  round-trip property.
+- The library of a board whose adjacent rules file adds via padstacks (`Issue029-hw48na`) lacks
+  them in `library_out` until the rules reader (C04) lands; `ses_writer.rs` strips them from
+  Java's text before comparing.
+
+## freerouting-gui
+
+(The GUI is rebuilt with egui, not translated from Swing; only behaviour that Java
+users would notice is listed. Texts follow the English Java bundles.)
+
+**Info lists** (G03, `panels/{violations,length}.rs`)
+- Java keeps the clearance violations of `WindowClearanceViolations` in a `TreeSet`
+  ordered by shortfall (largest first), then layer, so violations with the same
+  shortfall on the same layer compare equal and all but one vanish from the list (on
+  `Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn` 67 violations
+  show as 3 rows). The port keeps every violation, in the same order. The length
+  violation list has the same fix for nets whose names are equal ignoring case.
+  Pinned by `tests/ui_drc.rs::java_a11y_list_counts`.
+- Unconnected traces and vias (`WindowUnconnectedRoute`): rows come from the engine's
+  `all_unconnected_items()` (split nets, dangling traces, dangling vias), with Java's
+  row text; Java lists groups of connected traces and vias that touch no pin or area.
+- Zone islands have an Info list (Info > Zone Islands) that Java lacks, with the text of
+  the DRC report. Info > Run DRC is new too: the check runs in the background after
+  every edit, and Run DRC forces a run.
+- Delete All Traces and Vias asks for confirmation and can be undone (U, Ctrl+Z, B,
+  Ctrl+Y); Java does neither. Until the engine ports `unfillConductionAreas` the
+  conduction areas are not unfilled and "ignore conduction" is not set, as Java does.
+- Zoom to the selection (W) fits the box of the selection plus 10 %; Java offsets the
+  box by the largest trace half width.
