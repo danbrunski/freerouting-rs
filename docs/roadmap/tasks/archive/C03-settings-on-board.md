@@ -391,7 +391,7 @@ or `docs/`.
     file at '<loc>': <detail>`); a board Java fails to load must fail in the port
     (checked per scenario).
 
-- [~] **C03.7 — `BoardRouterSettings`, the router's read-only view.**
+- [x] **C03.7 — `BoardRouterSettings`, the router's read-only view.**
   Java getters, which A01 and later the fanout and optimizer stages call:
   - `getTraceCosts`: per layer `(getHorizontalTraceCosts,
     getVerticalTraceCosts)`, with the array length as the count;
@@ -430,6 +430,14 @@ or `docs/`.
     the view;
   - `owner_config_reaches_router_view`: with the `owner-config` scenario
     `start_ripup_costs()` is 1500 on `Issue413-test.dsn`, equal to C01's dump.
-  - Remaining: the `Issue029-hw48na.dsn` half of `owner_config_reaches_router_view`
-    (C01's dump has 100, the rules file's value, which overrides Dan's 1500) needs
-    the rules file applied: C04.3/C04.4.
+  - The `Issue029-hw48na.dsn` half of `owner_config_reaches_router_view` waited on
+    the rules file (C04.3/C04.4).
+
+  *Done 2026-10-15 (C04):* `owner_config_reaches_router_view` now also runs
+  `Issue029-hw48na.dsn` with the `owner-config` scenario and its adjacent rules
+  file: `job.board_settings.start_ripup_costs()` and
+  `job.settings.scoring.start_ripup_costs` are 100, the rules file's value, not
+  Dan's 1500, and equal C01's dump (`effective.startRipupCosts` = 100). The
+  rules file's `autoroute_settings` are applied on top of the merge by
+  `prepare_job` (`rules_reader::apply_rules_file`, `SettingsPatch::apply_from`).
+  `cargo test -p freerouting --test settings_board`: 21 passed.

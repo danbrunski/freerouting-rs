@@ -53,7 +53,7 @@ fn add_boundary_shape(ctx: &mut ReadContext, info: &mut BoardConstructionInfo, s
     }
 }
 
-fn snap_angle(angle: ast::SnapAngle) -> AngleRestriction {
+pub(crate) fn snap_angle(angle: ast::SnapAngle) -> AngleRestriction {
     match angle {
         ast::SnapAngle::None => AngleRestriction::None,
         ast::SnapAngle::NinetyDegree => AngleRestriction::NinetyDegree,

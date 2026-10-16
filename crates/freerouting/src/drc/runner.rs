@@ -9,7 +9,9 @@ use std::path::{Path, PathBuf};
 use super::checker::DesignRulesChecker;
 use super::report::DrcReport;
 use crate::board::RoutingBoard;
-use crate::io::specctra::{BoardReadResult, SesImportSummary, read_board, read_session};
+use crate::io::specctra::{
+    BoardReadResult, SesImportSummary, read_board, read_rules, read_session,
+};
 
 /// What to check.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -18,8 +20,8 @@ pub struct DrcRunOptions {
     pub design_file: PathBuf,
     /// A session file whose wires and vias are added before the check.
     pub session_file: Option<PathBuf>,
-    /// A rules file (Java applies it before the session; not supported
-    /// yet, see [`DrcRun::messages`]).
+    /// A rules file (`-dr`), applied before the session. Its
+    /// `autoroute_settings` are ignored: the check does not route.
     pub rules_file: Option<PathBuf>,
     /// The unit of the report coordinates.
     pub coordinate_unit: String,
@@ -70,6 +72,47 @@ pub fn load_design(bytes: &[u8]) -> Result<RoutingBoard, String> {
     Ok(board)
 }
 
+/// `DrcRunner.initializeDrc`'s rules step. Java ignores the result of the
+/// read: it logs "loaded successfully" after a file that failed to parse too.
+fn apply_rules(
+    board: RoutingBoard,
+    rules: &Path,
+    design: &Path,
+    messages: &mut Vec<String>,
+) -> RoutingBoard {
+    if !rules.exists() {
+        messages.push(format!("RULES file for DRC not found: {}", rules.display()));
+        return board;
+    }
+    messages.push(format!("Loading RULES file for DRC: {}", rules.display()));
+    let board = match std::fs::read(rules) {
+        Ok(bytes) => {
+            let design_name = design_name(design);
+            let (board, result) = read_rules(board, &freerouting_dsn::decode(&bytes), &design_name);
+            match result {
+                Ok(outcome) => messages.extend(outcome.log.into_iter().map(|l| l.text)),
+                Err(e) => messages.push(e.to_string()),
+            }
+            board
+        }
+        Err(e) => {
+            messages.push(format!("Failed to load RULES file for DRC: {e}"));
+            return board;
+        }
+    };
+    messages.push("RULES file loaded for DRC successfully".into());
+    board
+}
+
+/// The job name Java gives a design file: its name up to the last dot.
+fn design_name(design: &Path) -> String {
+    let name = file_name(design);
+    match name.rfind('.') {
+        Some(index) => name[..index].to_string(),
+        None => name,
+    }
+}
+
 /// Port of `DrcRunner.initializeDrc`: loads the design (and session), runs
 /// the checker and returns the report with the V2 quality and optimizer
 /// scores.
@@ -83,10 +126,7 @@ pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
         load_design(&bytes).map_err(|e| format!("Failed to load board for DRC check: {e}"))?;
 
     if let Some(rules) = &options.rules_file {
-        messages.push(format!(
-            "RULES files are not supported yet; ignoring '{}'",
-            rules.display()
-        ));
+        board = apply_rules(board, rules, design, &mut messages);
     }
 
     let mut session_summary = None;

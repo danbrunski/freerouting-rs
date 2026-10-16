@@ -100,6 +100,7 @@ pub fn read_board_from_str(text: &str) -> BoardReadResult {
 pub fn build_board(pcb: &Pcb) -> BoardReadResult {
     let mut ctx = ReadContext::new();
     let read_ok = read_scopes(&mut ctx, pcb);
+    super::parser::set_last_scope_identifier(&ctx.scope_identifier);
     let warnings = std::mem::take(&mut ctx.warnings);
     if read_ok {
         let Some(mut board) = ctx.board.take() else {

@@ -1,0 +1,16 @@
+# Java DRC reports of `-de Issue029-hw48na.dsn -dr <rules> -drc out.json` (cda540f), digested as in
+# java_drc_digest.py: <mode> <rules file> <type> <count> <value>. Made by running the Java CLI with
+# the arguments of fixtures/reference/clirun rows 07 and 08 (C01.6) in a scratch directory and
+# running java_drc_digest.py over the two reports; reference_drc.rs compares with them (C04.5).
+drc	Issue029-hw48na_invalid.rules	clearance	2	d13947b91f4cb3d1
+drc	Issue029-hw48na_invalid.rules	holeClearance	9	a09aa5af8b3bba44
+drc	Issue029-hw48na_invalid.rules	via_dangling	1	8dcb7849d5a9c365
+drc	Issue029-hw48na_invalid.rules	unconnectedItems	131	034c102f931f9265
+drc	Issue029-hw48na_invalid.rules	track_dangling	92	2721,2732,2748,2761,2763,2764,2766,2769,2806,2807,2812,2813,2823,2825,2826,2839,2840,2841,2847,2849,2854,2855,2860,2861,2868,2877,2884,2896,2902,2904,2914,2917,2920,2935,2936,2949,3017,3018,3019,3020,3022,3023,3025,3026,3028,3029,3031,3032,3033,3034,3036,3037,3039,3040,3042,3043,3045,3049,3076,3078,3085,3088,3091,3094,3097,3100,3103,3106,3109,3112,3115,3118,3121,3124,3127,3130,3133,3136,3139,3142,3143,3145,3151,3152,3180,3233,3235,3237,3238,3263,3268,3274
+drc	Issue029-hw48na_invalid.rules	scores	453.16	949.0
+drc	Issue029-hw48na_valid.rules	clearance	2	d13947b91f4cb3d1
+drc	Issue029-hw48na_valid.rules	holeClearance	9	a09aa5af8b3bba44
+drc	Issue029-hw48na_valid.rules	via_dangling	1	8dcb7849d5a9c365
+drc	Issue029-hw48na_valid.rules	unconnectedItems	131	034c102f931f9265
+drc	Issue029-hw48na_valid.rules	track_dangling	92	2721,2732,2748,2761,2763,2764,2766,2769,2806,2807,2812,2813,2823,2825,2826,2839,2840,2841,2847,2849,2854,2855,2860,2861,2868,2877,2884,2896,2902,2904,2914,2917,2920,2935,2936,2949,3017,3018,3019,3020,3022,3023,3025,3026,3028,3029,3031,3032,3033,3034,3036,3037,3039,3040,3042,3043,3045,3049,3076,3078,3085,3088,3091,3094,3097,3100,3103,3106,3109,3112,3115,3118,3121,3124,3127,3130,3133,3136,3139,3142,3143,3145,3151,3152,3180,3233,3235,3237,3238,3263,3268,3274
+drc	Issue029-hw48na_valid.rules	scores	453.16	949.0

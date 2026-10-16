@@ -595,7 +595,10 @@ mod reference {
             .collect();
         let bytes = std::fs::read(repo(&format!("tools/java-reference/cases/{case}.dsn"))).unwrap();
         let mut input = JobInput::new(bytes, case);
-        input.rules = RulesChoice::None;
+        // `explicit-cost-rules` has an adjacent `.rules` file (C04.4); the
+        // other cases have none.
+        input.rules = RulesChoice::Adjacent;
+        input.dsn_dir = Some(repo("tools/java-reference/cases"));
         let job = prepare_job(&input, &ResolveContext { cores: 8 }).unwrap();
         let rust: Vec<(f64, f64)> = (0..job.board.layer_count())
             .map(|i| {
@@ -647,6 +650,17 @@ mod reference {
         assert!(applied);
         assert_bits_equal(&java, &rust);
         assert_eq!(rust, vec![(1.0, 1.0), (2.0, 1.0), (1.0, 1.0), (1.0, 1.0)]);
+
+        // The same rule in an adjacent rules file lands on **both** F.Cu and
+        // In1.Cu (C01's observation, matched on purpose): the second merge
+        // reads the rules file's layer names alone, so `In1.Cu`, the only
+        // layer it names, is layer 0 there and sets F.Cu's cost, and
+        // `RulesReader.read` then sets the real In1.Cu. The explicit cost
+        // still suppresses the computed ones.
+        let (java, rust, applied) = costs("explicit-cost-rules");
+        assert!(applied);
+        assert_bits_equal(&java, &rust);
+        assert_eq!(rust, vec![(2.0, 1.0), (2.0, 1.0), (1.0, 1.0), (1.0, 1.0)]);
     }
 
     #[test]
@@ -654,7 +668,7 @@ mod reference {
         // Dan's `freerouting.json` sets `scoring.start_ripup_costs = 1500`.
         // `Issue413-test` has no rules file or DSN override, so the router's
         // view shows it. (On `Issue029-hw48na` the rules file's value wins
-        // through the quirk C04.3 pins; that half waits on C04.)
+        // through the quirk C04.3 pins; the second half below.)
         let dump = JsonValue::parse(
             &std::fs::read_to_string(repo("fixtures/reference/settings/Issue413-test.json"))
                 .unwrap(),
@@ -685,5 +699,38 @@ mod reference {
         // The other costs are the defaults.
         assert_eq!(job.board_settings.via_costs(), 50);
         assert_eq!(job.board_settings.plane_via_costs(), 5);
+
+        // `Issue029-hw48na` has an adjacent rules file with `start_ripup_costs
+        // 100`: its `autoroute_settings` override the config file, so the
+        // router's view shows 100 and not 1500, as in Java's dump.
+        let dump = JsonValue::parse(
+            &std::fs::read_to_string(repo("fixtures/reference/settings/Issue029-hw48na.json"))
+                .unwrap(),
+        )
+        .unwrap();
+        let java = member(
+            member(
+                member(member(&dump, "scenarios"), "owner-config"),
+                "effective",
+            ),
+            "startRipupCosts",
+        );
+        assert_eq!(number(java), 100.0);
+        let bytes = std::fs::read(repo("fixtures/Issue029-hw48na.dsn")).unwrap();
+        let mut input = JobInput::new(bytes, "Issue029-hw48na");
+        input.rules = RulesChoice::Adjacent;
+        input.dsn_dir = Some(repo("fixtures"));
+        input.config_file = Some(
+            freerouting::settings::json_file::load_config_file(
+                &repo("tools/java-reference/cases/owner-freerouting.json"),
+                true,
+            )
+            .unwrap()
+            .patch,
+        );
+        let job = prepare_job(&input, &ResolveContext { cores: 8 }).unwrap();
+        assert!(job.rules_path.is_some());
+        assert_eq!(job.board_settings.start_ripup_costs(), 100);
+        assert_eq!(job.settings.scoring.start_ripup_costs, 100);
     }
 }

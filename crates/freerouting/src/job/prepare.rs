@@ -8,8 +8,7 @@
 //! step that looks redundant:
 //!
 //! 1. the first merge ([`resolve`]): defaults, config file, DSN, environment,
-//!    CLI (and any extra sources, for example a testing profile). The rules
-//!    file of `-dr` joins this merge at priority 40 when C04 lands;
+//!    CLI (and any extra sources, for example a testing profile);
 //! 2. read the board;
 //! 3. `set_layer_count` if the counts differ, then the board-specific cost
 //!    tuning, the net-class exclusions and the five overrides. **The costs
@@ -17,18 +16,24 @@
 //!    sets `costs_initialized`, so the second tuning in step 6 is a no-op:
 //!    trace costs come from the unexpanded box;
 //! 4. expand the bounding box to all items and reduce the nets;
-//! 5. the rules file onto the board and its `autoroute_settings` onto the
-//!    settings (the C04 hook, [`apply_rules_file`]);
+//! 5. only with a rules file (C04): the second merge, then the file onto the
+//!    board and its `autoroute_settings` onto the merged settings
+//!    ([`apply_rules_file`]), **after** the CLI and every other source;
 //! 6. the tuning and the net-class exclusions again;
 //! 7. the SES import.
 //!
-//! **The scheduler's second merge is left out.** Java re-merges at
-//! `RoutingJobScheduler.java:101-174`; the first merge's result comes back
-//! through `ApiSettings` at priority 70, and after step 3 that result has no
-//! null field a lower source could fill, so the re-merge changes nothing.
+//! **The scheduler's second merge runs only with a rules file.** Java
+//! re-merges at `RoutingJobScheduler.java:101-174`: the sources again, the
+//! rules file's `autoroute_settings` at priority 40, and the first merge's
+//! result at priority 70 (`ApiSettings`). Without a rules file the result
+//! comes back unchanged, because after step 3 it has no null field a lower
+//! source could fill. With one it matters: the rules source reads its layer
+//! names from the rules file alone (`RulesReader.discoverLayerStructure`), so
+//! a `layer_rule` for `In1.Cu` in a file that names only that layer lands on
+//! layer index 0 (`F.Cu`) of the board, wherever the board's layers have no
+//! cost yet. `RulesReader.read` then puts the same rule on the right layer.
 //! `tests/job_prepare_reference.rs` compares the result with Java's dumps,
-//! which run the real second merge, on every fixture and scenario. If that
-//! ever fails the second merge goes back in (docs/DIVERGENCES.md, Settings).
+//! which run the real second merge, on every fixture and scenario.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -37,22 +42,28 @@ use std::path::PathBuf;
 use super::overrides::{self, OverrideState};
 use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
-use crate::dsn::ast::Pcb;
-use crate::io::specctra::{BoardReadResult, SesImportSummary, build_board, read_board_from_str};
-use crate::settings::autoroute_scope::patch_from_dsn;
+use crate::dsn::ast::{Pcb, RulesFile};
+use crate::io::specctra::{
+    BoardReadResult, SesImportSummary, apply_rules_file, build_board, read_board_from_str,
+};
+use crate::settings::autoroute_scope::{patch_from_dsn, patch_from_rules};
 use crate::settings::board::{
     BoardRouterSettings, apply_board_specific, apply_net_class_exclusions,
 };
 use crate::settings::{ResolveContext, RouterSettings, SettingsPatch, Source, defaults, resolve};
 
-/// Which rules file a job uses.
+/// Which rules file a job uses (`RoutingJobScheduler.java:115-157`).
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum RulesChoice {
     /// No rules file, not even an adjacent one.
     None,
-    /// A rules file given on the command line (`-dr`).
+    /// A rules file given with `-dr` or as `-de a.dsn+b.rules`. If it does
+    /// not exist nothing is read, and the adjacent file is **not** tried:
+    /// Java's chain stops at the first branch whose setting is present.
     Explicit(PathBuf),
-    /// `<design name>.rules` next to the DSN file, if it exists.
+    /// `<file name up to its last '.'>.rules` in the DSN file's directory,
+    /// if it exists. So `processor.Z80.dsn` looks for `processor.Z80.rules`,
+    /// never for `processor.rules`.
     #[default]
     Adjacent,
 }
@@ -149,7 +160,7 @@ pub struct PreparedJob {
     pub log: Vec<LogLine>,
     /// The result of the session import, if a session was given.
     pub ses_summary: Option<SesImportSummary>,
-    /// The rules file that was found and skipped (C04 reads it).
+    /// The rules file that was read, if any.
     pub rules_path: Option<PathBuf>,
 }
 
@@ -161,26 +172,12 @@ fn push(log: &mut Vec<LogLine>, level: LogLevel, text: impl Into<String>) {
 }
 
 /// The rules file of the job, if one is to be read (Java's chain in
-/// `RoutingJobScheduler`: the explicit file if it exists, else the adjacent
-/// file).
-fn find_rules_file(input: &JobInput, log: &mut Vec<LogLine>) -> Option<PathBuf> {
+/// `RoutingJobScheduler`: the explicit file if one is named and exists,
+/// else, for a DSN input, the adjacent file).
+pub fn find_rules_file(input: &JobInput) -> Option<PathBuf> {
     match &input.rules {
         RulesChoice::None => None,
-        RulesChoice::Explicit(path) => {
-            if path.exists() {
-                Some(path.clone())
-            } else {
-                push(
-                    log,
-                    LogLevel::Warn,
-                    format!(
-                        "RULES file '{}' does not exist; ignoring it",
-                        path.display()
-                    ),
-                );
-                None
-            }
-        }
+        RulesChoice::Explicit(path) => path.exists().then(|| path.clone()),
         RulesChoice::Adjacent => {
             let adjacent = input
                 .dsn_dir
@@ -191,23 +188,37 @@ fn find_rules_file(input: &JobInput, log: &mut Vec<LogLine>) -> Option<PathBuf> 
     }
 }
 
-/// Step 5, the rules hook: the rules file onto the board and its
-/// `autoroute_settings` onto the settings. Until C04 lands it logs the DRC
-/// runner's text and skips the file.
-fn apply_rules_file(
-    path: &std::path::Path,
-    _board: &mut RoutingBoard,
-    _patch: &mut SettingsPatch,
-    log: &mut Vec<LogLine>,
-) {
-    push(
-        log,
-        LogLevel::Warn,
-        format!(
-            "RULES files are not supported yet; ignoring '{}'",
-            path.display()
-        ),
-    );
+/// What step 5 read from the rules file: its text parsed, or nothing.
+fn read_rules_file(path: &std::path::Path, log: &mut Vec<LogLine>) -> Option<RulesFile> {
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            push(
+                log,
+                LogLevel::Warn,
+                format!("Failed to read rules file: {}: {e}", path.display()),
+            );
+            return None;
+        }
+    };
+    match RulesFile::parse_with_warnings(&freerouting_dsn::decode(&bytes)) {
+        Ok((rules, warnings)) => {
+            for warning in warnings {
+                push(log, LogLevel::Warn, warning.to_string());
+            }
+            Some(rules)
+        }
+        Err(e) => {
+            // `RulesReader.read` returns false after logging; the board and
+            // the settings are left as they are.
+            push(
+                log,
+                LogLevel::Warn,
+                format!("RulesReader.read: {e} in '{}'", path.display()),
+            );
+            None
+        }
+    }
 }
 
 /// Loads a job the way Java does before it routes. See the module docs for
@@ -236,7 +247,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     for warning in &merged.warnings {
         push(&mut log, LogLevel::Warn, warning.clone());
     }
-    let provenance = merged.provenance;
+    let mut provenance = merged.provenance;
     let mut patch = merged.patch;
 
     // 2. Read the board.
@@ -275,10 +286,24 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     board.expand_bounding_box_to_include_all_items();
     board.reduce_nets_of_route_items();
 
-    // 5. The rules file.
-    let rules_path = find_rules_file(input, &mut log);
-    if let Some(path) = &rules_path {
-        apply_rules_file(path, &mut board, &mut patch, &mut log);
+    // 5. The rules file: the second merge, the rules onto the board, their
+    // `autoroute_settings` on top of everything.
+    let rules_path = find_rules_file(input);
+    if let Some(path) = &rules_path
+        && let Some(rules) = read_rules_file(path, &mut log)
+    {
+        let mut second = sources.clone();
+        second.push((Source::RulesFile, patch_from_rules(&rules)));
+        second.push((Source::Api, patch.clone()));
+        let merged = resolve(&second, ctx);
+        provenance = merged.provenance;
+        patch = merged.patch;
+        let (rules_board, outcome) = apply_rules_file(board, &rules, &input.design_name);
+        board = rules_board;
+        log.extend(outcome.log);
+        if let Some(autoroute) = &outcome.autoroute {
+            patch.apply_from(autoroute);
+        }
     }
 
     // 6. The tuning and the exclusions again (the tuning is a no-op unless the

@@ -21,6 +21,25 @@ use crate::util::JavaString;
 use layer::DsnLayerStructure;
 use shape::DsnArea;
 
+thread_local! {
+    /// Java's static `SpecctraDsnStreamReader.scopeIdentifier`: the last name
+    /// any reader noted. Later messages of other readers (the rules reader's
+    /// header check) print whatever was left there.
+    static LAST_SCOPE_IDENTIFIER: std::cell::RefCell<String> =
+        const { std::cell::RefCell::new(String::new()) };
+}
+
+/// The last scope identifier a DSN read noted on this thread (empty before
+/// the first read).
+pub(crate) fn last_scope_identifier() -> String {
+    LAST_SCOPE_IDENTIFIER.with(|id| id.borrow().clone())
+}
+
+/// Remembers the scope identifier a finished read ended with.
+pub(crate) fn set_last_scope_identifier(identifier: &str) {
+    LAST_SCOPE_IDENTIFIER.with(|id| *id.borrow_mut() = identifier.to_string());
+}
+
 /// The id of a net in the DSN net list: name and subnet number.
 ///
 /// Port of `io.specctra.parser.Net.Id`, ordered as Java orders it.

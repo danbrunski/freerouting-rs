@@ -199,6 +199,22 @@ pub(crate) fn find_padstack<'a>(
         .or_else(|| padstacks.get_by_name(&remove_dot_numbers(name)))
 }
 
+/// `Library.readPadstackScope` for a padstack of a rules file: adds the
+/// padstack to the board's library unless one of that name exists. Returns
+/// false where Java's reader does.
+pub(crate) fn read_padstack_scope(ctx: &mut ReadContext, padstack: &ast::Padstack) -> bool {
+    let structure = ctx.layer_structure.clone();
+    let transform = ctx.coordinate_transform;
+    let layer_count = ctx.board().layer_count();
+    let mut padstacks = std::mem::replace(
+        &mut ctx.board().library.padstacks,
+        Padstacks::new(layer_count),
+    );
+    let ok = add_padstack(ctx, padstack, &structure, &transform, &mut padstacks);
+    ctx.board().library.padstacks = padstacks;
+    ok
+}
+
 /// Reads the library scope. Returns false where Java's reader does.
 pub(crate) fn read_library(ctx: &mut ReadContext, library: &ast::Library) -> bool {
     let structure = ctx.layer_structure.clone();

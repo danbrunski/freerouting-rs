@@ -60,6 +60,52 @@ fn circuit_lengths(circuit: Option<&ast::Circuit>) -> (f64, f64) {
     }
 }
 
+/// Java `NetClass.readScope`'s result with its circuit lists.
+fn dsn_net_class(class: &ast::NetClass) -> DsnNetClass<'_> {
+    let (max, min) = circuit_lengths(class.circuit.as_ref());
+    DsnNetClass {
+        class,
+        use_via: class
+            .circuit
+            .as_ref()
+            .map(|c| c.use_via.clone())
+            .unwrap_or_default(),
+        use_layer: class
+            .circuit
+            .as_ref()
+            .map(|c| c.use_layer.clone())
+            .unwrap_or_default(),
+        min_trace_length: min,
+        max_trace_length: max,
+    }
+}
+
+/// `Network.insertNetClass` for a class of a rules file (the rules reader
+/// calls it with `viaAtSmdAllowed = false`, which is `ctx`'s default).
+pub(crate) fn insert_rules_net_class(ctx: &mut ReadContext, class: &ast::NetClass) {
+    insert_net_class(ctx, &dsn_net_class(class));
+}
+
+/// `Network.readViaInfo` for a via of a rules file. `None` when Java returns
+/// `null` (the padstack is unknown).
+pub(crate) fn read_rules_via_info(ctx: &mut ReadContext, via: &ast::NetworkVia) -> Option<ViaInfo> {
+    read_via_info(ctx, via)
+}
+
+/// `RulesReader.applyViaInfo`: an info with the name of an existing one
+/// replaces it at the end of the list.
+pub(crate) fn replace_via_info(board: &mut RoutingBoard, info: ViaInfo) {
+    if let Some(existing) = board.rules.via_infos.get_by_name(&info.name) {
+        board.rules.via_infos.remove(existing);
+    }
+    board.rules.via_infos.add(info);
+}
+
+/// `Network.addViaRule` for a via rule of a rules file.
+pub(crate) fn add_rules_via_rule(board: &mut RoutingBoard, rule: &ast::ViaRule) -> bool {
+    add_via_rule(board, rule)
+}
+
 /// Reads the network scope. Returns false where Java's reader does.
 pub(crate) fn read_network(ctx: &mut ReadContext, network: &ast::Network) -> bool {
     for net in &network.nets {
@@ -72,29 +118,7 @@ pub(crate) fn read_network(ctx: &mut ReadContext, network: &ast::Network) -> boo
             None => return false,
         }
     }
-    let classes: Vec<DsnNetClass> = network
-        .classes
-        .iter()
-        .map(|class| {
-            let (max, min) = circuit_lengths(class.circuit.as_ref());
-            DsnNetClass {
-                class,
-                use_via: class
-                    .circuit
-                    .as_ref()
-                    .map(|c| c.use_via.clone())
-                    .unwrap_or_default(),
-                use_layer: class
-                    .circuit
-                    .as_ref()
-                    .map(|c| c.use_layer.clone())
-                    .unwrap_or_default(),
-                min_trace_length: min,
-                max_trace_length: max,
-            }
-        })
-        .collect();
-    let mut classes = classes;
+    let mut classes: Vec<DsnNetClass> = network.classes.iter().map(dsn_net_class).collect();
 
     // Java appends the `use_via` lists of the classes to the via padstack
     // names. Without a structure via scope it takes the first class's list
@@ -521,6 +545,9 @@ fn insert_net_class(ctx: &mut ReadContext, dsn_class: &DsnNetClass) {
         board.rules.default_net_class();
         board.rules.append_named_net_class(&class.name)
     };
+    // Java's messages name the board's net class, which is the default class
+    // (named `default`) for a class called `kicad_default` too.
+    let log_name = board.rules.net_classes.get(net_class).name().to_string();
     if let Some(name) = &class.clearance_class {
         let no = board.rules.clearance_matrix.get_no(name);
         if no >= 0 {
@@ -531,8 +558,7 @@ fn insert_net_class(ctx: &mut ReadContext, dsn_class: &DsnNetClass) {
                 .set_trace_clearance_class(no);
         } else {
             board.log.push(format!(
-                "Network.insert_net_class: clearance class not found at '{}'",
-                class.name
+                "Network.insert_net_class: clearance class not found at '{log_name}'"
             ));
         }
     }
@@ -544,8 +570,7 @@ fn insert_net_class(ctx: &mut ReadContext, dsn_class: &DsnNetClass) {
                 .get_mut(net_class)
                 .set_via_rule(Some(rule)),
             None => board.log.push(format!(
-                "Network.insert_net_class: via rule not found at '{}'",
-                class.name
+                "Network.insert_net_class: via rule not found at '{log_name}'"
             )),
         }
     }
@@ -612,8 +637,7 @@ fn insert_net_class(ctx: &mut ReadContext, dsn_class: &DsnNetClass) {
             let layer = board.layer_structure.get_no(layer_name);
             if layer < 0 {
                 board.log.push(format!(
-                    "Network.insert_net_class: layer not found at '{}'",
-                    class.name
+                    "Network.insert_net_class: layer not found at '{log_name}'"
                 ));
                 continue;
             }
@@ -639,8 +663,7 @@ fn insert_net_class(ctx: &mut ReadContext, dsn_class: &DsnNetClass) {
                         clearance_rule_found = true;
                     }
                     ast::Rule::Length(_) => board.log.push(format!(
-                        "Network.insert_net_class: layer rule type not yet implemented at '{}'",
-                        class.name
+                        "Network.insert_net_class: layer rule type not yet implemented at '{log_name}'"
                     )),
                 }
             }

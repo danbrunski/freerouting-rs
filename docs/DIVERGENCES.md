@@ -152,8 +152,6 @@ branch 3 in IntOctagon's box cutout.
 - The session reader imports the wires of `Issue676-ch32v-tx118s.dsn` (1 000 000 units
   per mm). Java's `SesReader` fails on all 48 with a ClassCastException
   (RationalVector to IntVector) and imports none.
-- Rules files (`-dr`, `board.dsn+board.rules`) are not supported. The runner logs a
-  message and ignores them.
 - The report's `date` is in UTC; Java uses the local zone. `freeroutingVersion` is
   `rs-<crate version>`.
 - `RoutingBoard::reduce_nets_of_route_items` reports whether a net was removed.
@@ -194,24 +192,70 @@ branch 3 in IntOctagon's box cutout.
 **Loading a job for routing** (`job`, port of the load sequence of `CliRunner.initializeCli`,
 `RoutingJobScheduler` and `HeadlessBoardManager`; tests `tests/job_*.rs`,
 `tests/settings_board.rs`, `tests/outline_pin_gap.rs`)
-- The scheduler's second merge (`RoutingJobScheduler.java:101-174`) is left out: its
-  `ApiSettings` carry the first merge's result, which after the board tuning has no null
-  field a lower source could fill. `job_prepare_reference.rs` compares the settings, the
-  tuned layer arrays, the clearance matrix and the post-load DRC count with Java's dumps,
-  which run the real second merge, on every board and scenario; if it ever fails, the
-  second merge goes back in.
+- The scheduler's second merge (`RoutingJobScheduler.java:101-174`) runs only when the job
+  has a rules file: its `ApiSettings` carry the first merge's result, which after the board
+  tuning has no null field a lower source could fill, so without a rules file the merge
+  changes nothing. With one it does (`explicit-cost-rules`, see "Rules files").
+  `job_prepare_reference.rs` compares the settings, the tuned layer arrays, the clearance
+  matrix and the post-load DRC count with Java's dumps, which run the real second merge, on
+  every board and scenario.
 - `ignore_net_classes` names that match no net class are warned about in the job log; Java
   warns only on its API path.
 - The tuning's debug log ("changed parameters") and `job.drcSettings.clearanceToleranceUm`
   (the override also writes it) are not ported; log lines of the overrides are returned as
   `LogLine`s.
-- A rules file is skipped with the DRC runner's notice until C04 lands.
 - `Issue684-Autorouter_PCB1_2026-5-8` and `Issue721-Autorouter_CE2632_HarryMu_2026-6-15`
   have a net class named `''`. Java keeps the quote characters in the name; the port's DSN
   reader accepts `'` as a quote (see freerouting-dsn) and reads an empty name, so the class
   name differs in the matrix and the class dump, and `-inc ''` flags the class in Java but
   is a blank name to the port. Everything else, `postLoadViolations` included, matches
   (`EXPECTED_MISMATCHES` in `job_prepare_reference.rs`).
+
+**Rules files** (`io::specctra::{rules_reader, rules_writer}`, port of `RulesReader`,
+`RulesWriter` and the rules discovery of `RoutingJobScheduler`; tests `tests/rules_reader.rs`,
+`tests/rules_writer.rs`, `tests/reference_drc.rs`)
+- Java's behaviour that the port keeps, each pinned by a test: a rules file's
+  `autoroute_settings` override the merged settings, the CLI included, and switch every layer
+  and the optimizer back on; a `layer` scope with an unknown layer applies to all layers; a
+  via type with an existing name moves to the end; the clearance matrix changes without
+  re-inserting the tree items; a different header name is a warning. A rule in the file for
+  one layer lands on two layers when the file names a single layer: the second merge reads
+  the rules file's layer names alone (`discoverLayerStructure`), so `In1.Cu`, the only layer
+  `explicit-cost-rules.rules` names, is layer 0 (`F.Cu`) there, and `RulesReader.read` then
+  sets the real `In1.Cu` (C01's observation; `explicit_layer_cost_suppresses_computed_costs`).
+- The discovery order is Java's: the job's own file (`-dr`, `a.dsn+b.rules`), else the
+  adjacent `<file name up to its last '.'>.rules` for a DSN input. A named file that does not
+  exist is not read, silently, and the adjacent file is not tried; `processor.Z80.dsn` does
+  not pick up `processor.rules`.
+- The file is parsed completely before anything is applied, so a syntax error leaves the
+  board untouched; Java applies the scopes before the error and returns `false`.
+- Java's scanner prints `DsnFile.read_string_scope: closing bracket expected at ...` while it
+  recovers from a net class with `(via_rule 1A EXTERNAL 1oz)` (unquoted words). The port's
+  parser skips the extra words with its own warnings (`line N, column M: unexpected 'EXTERNAL'
+  in via_rule scope ignored`); the other log lines and the DRC report are Java's
+  (`Issue029-hw48na_invalid.rules`). The scope identifier in the header warning is the last
+  one a DSN read noted on the thread, as Java's static field.
+- After an `autoroute_settings` scope that names an unknown layer, Java's scanner is left in
+  the middle of the scope and reads on from there; the port drops the scope and continues
+  with the next one.
+- The DRC runner reads the file like Java (`Loading RULES file for DRC`, `RULES file loaded
+  for DRC successfully` even after a failed read), with its own `autoroute_settings` ignored.
+- The writer builds the plain syntax tree, so the text has `snap_angle` and `via_rule`, which
+  both readers accept; Java's text has `snapAngle` and `viaRule`, which its own reader skips,
+  so a Java round trip loses the snap angle and the via rules. The tests compare Java's text
+  with those two words renamed. Trace costs are Java's `float` text read as a `double`
+  (`2.8`), the design name goes through the tree writer's quoting where Java writes it raw (a
+  name with blanks reads back as its first word in Java), and an empty clearance class name
+  is `(clearance v)` where Java writes `(type )` (both read as the default rule). Names go
+  through `IdentifierType.write`'s removal of the string quote.
+- The format is lossy, in Java and here: the default rule holds layer 0 only, a named class
+  has one `(clearance v (type name))` that Java's reader skips (a type needs an underscore
+  to be read as a pair, and `MIN_EXTERN_188A` becomes `MIN` and `EXTERN_188A`), and reading
+  starts by setting every cell to the default. `rules_round_trip_on_every_fixture` states
+  what does come back.
+- Five boards differ from Java's dumps (`EXPECTED_MISMATCHES` in `tests/rules_writer.rs`): two
+  design names with blanks, the `''` class names of `Issue684` and `Issue721`, and a via type
+  with an empty class name in `Issue179` (Java's text does not parse in the port).
 
 **Writing a session file** (`io::specctra::ses_writer`, port of `SesWriter`; tests
 `tests/ses_writer.rs`, `tests/ses_round_trip.rs`)

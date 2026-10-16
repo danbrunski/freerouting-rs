@@ -19,7 +19,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use freerouting::drc::json::JsonValue;
-use freerouting::drc::{DesignRulesChecker, DrcReport, DrcViolation, load_design};
+use freerouting::drc::{
+    DesignRulesChecker, DrcReport, DrcRunOptions, DrcViolation, load_design, run_drc,
+};
 use freerouting::io::read_session;
 
 const ISSUE721: &str = "Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn";
@@ -313,4 +315,111 @@ fn drc_of_loaded_boards_matches_java() {
 #[test]
 fn drc_of_routed_boards_matches_java() {
     compare_mode("route");
+}
+
+// ---- C04.5: rules files in the DRC runner -------------------------------------
+
+/// The Java digests of the DRC runs with a rules file
+/// (`data/java_drc_rules_digest.tsv`), by rules file name.
+fn java_rules_digests() -> BTreeMap<String, Digest> {
+    let text = include_str!("data/java_drc_rules_digest.tsv");
+    let mut result: BTreeMap<String, Digest> = BTreeMap::new();
+    for line in text.lines().filter(|l| !l.starts_with('#')) {
+        let fields: Vec<&str> = line.split('\t').collect();
+        result.entry(fields[1].to_string()).or_default().insert(
+            fields[2].to_string(),
+            (
+                fields[3].to_string(),
+                fields.get(4).unwrap_or(&"").to_string(),
+            ),
+        );
+    }
+    result
+}
+
+/// The log lines of C01.6's `clirun` row about the rules file, without the
+/// level: the ones from `RulesReader` and `Network`. Left out are Java's
+/// `DsnFile.read_string_scope` lines, which its scanner prints while it
+/// recovers from a `(via_rule 1A EXTERNAL 1oz)` with unquoted spaces; the
+/// port's parser skips the extra words with a warning of its own
+/// (docs/DIVERGENCES.md, "Rules files").
+fn java_rules_log_lines(row: &str) -> Vec<String> {
+    let text = std::fs::read_to_string(fixtures_dir().join(format!("reference/clirun/{row}.json")))
+        .unwrap();
+    let JsonValue::Object(members) = JsonValue::parse(&text).unwrap() else {
+        panic!("clirun row is an object")
+    };
+    let Some((_, JsonValue::Array(lines))) = members.iter().find(|(k, _)| k == "logLines") else {
+        panic!("no logLines")
+    };
+    lines
+        .iter()
+        .filter_map(|l| match l {
+            JsonValue::String(s) => s.strip_prefix("WARN   "),
+            _ => None,
+        })
+        .filter(|l| l.starts_with("RulesReader.") || l.starts_with("Network.insert_net_class"))
+        .map(String::from)
+        .collect()
+}
+
+/// Rows 07 and 08 of C01.6's `clirun` dump: `-de Issue029-hw48na.dsn -dr
+/// <valid or invalid>.rules -drc out.json`. The violations of the report
+/// (per type: count, and a hash of the violations in report order) and the
+/// scores equal Java's, which a rules file changes a lot (21 clearance
+/// violations without it, 2 with it).
+#[test]
+fn drc_with_a_rules_file_matches_java() {
+    let java = java_rules_digests();
+    assert_eq!(java.len(), 2);
+    for (rules, row) in [
+        ("Issue029-hw48na_valid.rules", "07-drc-valid-rules"),
+        ("Issue029-hw48na_invalid.rules", "08-drc-invalid-rules"),
+    ] {
+        let mut options = DrcRunOptions::new(fixtures_dir().join("Issue029-hw48na.dsn"));
+        options.rules_file = Some(fixtures_dir().join(rules));
+        let run = run_drc(&options).unwrap();
+        let differences = compare(&java[rules], &run.report);
+        assert!(differences.is_empty(), "{rules}: {differences:?}");
+
+        // The log lines match Java's text, in order.
+        let rules_path = options.rules_file.as_ref().unwrap().display().to_string();
+        assert!(
+            run.messages
+                .contains(&format!("Loading RULES file for DRC: {rules_path}")),
+            "{:?}",
+            run.messages
+        );
+        assert!(
+            run.messages
+                .contains(&"RULES file loaded for DRC successfully".to_string())
+        );
+        let rust: Vec<&String> = run
+            .messages
+            .iter()
+            .filter(|l| l.starts_with("RulesReader.") || l.starts_with("Network.insert_net_class"))
+            .collect();
+        assert_eq!(
+            rust,
+            java_rules_log_lines(row).iter().collect::<Vec<_>>(),
+            "{rules}"
+        );
+    }
+}
+
+#[test]
+fn a_missing_rules_file_is_a_warning() {
+    let mut options = DrcRunOptions::new(fixtures_dir().join("Issue029-hw48na.dsn"));
+    options.rules_file = Some(PathBuf::from("no/such/file.rules"));
+    let run = run_drc(&options).unwrap();
+    assert!(
+        run.messages
+            .contains(&"RULES file for DRC not found: no/such/file.rules".to_string()),
+        "{:?}",
+        run.messages
+    );
+    // The report is the one without rules.
+    let java = java_digests("load");
+    let differences = compare(&java["Issue029-hw48na.dsn"], &run.report);
+    assert!(differences.is_empty(), "{differences:?}");
 }

@@ -6,8 +6,11 @@
 //! `fixture`, `cli` and `owner-config`, and compares the static part of the
 //! settings tree: everything except `layers`, the cost arrays and
 //! `costs_initialized`, which C03 compares after the board tuning. A board
-//! with an adjacent rules file is listed as waiting on C04, which applies
-//! the rules file on top of the merge.
+//! with an adjacent rules file gets the rules file's `autoroute_settings` as
+//! `RoutingJobScheduler` and `RulesReader.read` apply them (C04.3): the
+//! rules source at priority 40 in the second merge, then the file's scopes
+//! read against the board's layers on top of the merged result. The rest of
+//! the rules file (the board part) is compared by `job_prepare_reference.rs`.
 
 // Patches are built field by field, as the Java tests build `RouterSettings`.
 #![allow(clippy::field_reassign_with_default)]
@@ -16,7 +19,9 @@ use std::path::{Path, PathBuf};
 
 use freerouting::drc::json::JsonValue;
 use freerouting::dsn::ast::Pcb;
-use freerouting::settings::autoroute_scope::patch_from_dsn;
+use freerouting::dsn::ast::RulesFile;
+use freerouting::io::specctra::rules_reader::autoroute_patch;
+use freerouting::settings::autoroute_scope::{patch_from_dsn, patch_from_rules};
 use freerouting::settings::json_file::load_config_file;
 use freerouting::settings::profiles::{TestingProfile, java_cli_default, java_fixture_test};
 use freerouting::settings::validate::validate;
@@ -388,14 +393,29 @@ fn object_member<'a>(value: &'a JsonValue, key: &str) -> Option<&'a JsonValue> {
     }
 }
 
-/// `RoutingJobScheduler`'s two merges for one scenario.
-fn scheduler_merge(proto: Vec<(Source, SettingsPatch)>, dsn: &SettingsPatch) -> Resolved {
+/// `RoutingJobScheduler`'s two merges for one scenario, then `RulesReader`'s
+/// `autoroute_settings` on top when the board has a rules file (`rules` and
+/// the board's layer names).
+fn scheduler_merge(
+    proto: Vec<(Source, SettingsPatch)>,
+    dsn: &SettingsPatch,
+    rules: Option<(&RulesFile, &[String])>,
+) -> Resolved {
     let mut first = proto;
     first.push((Source::Dsn, dsn.clone()));
     let job = resolve(&first, &ctx());
     let mut second = first;
+    if let Some((rules, _)) = rules {
+        second.push((Source::RulesFile, patch_from_rules(rules)));
+    }
     second.push((Source::Api, job.patch));
-    resolve(&second, &ctx())
+    let mut resolved = resolve(&second, &ctx());
+    if let Some((rules, layer_names)) = rules
+        && let Some(parsed) = autoroute_patch(rules, layer_names)
+    {
+        resolved.patch.apply_from(&parsed);
+    }
+    resolved
 }
 
 fn scenario_patches(scenario: &str, base: &str, inc_class: &str) -> Vec<(Source, SettingsPatch)> {
@@ -442,23 +462,19 @@ fn scenario_patches(scenario: &str, base: &str, inc_class: &str) -> Vec<(Source,
 /// Boards whose dumps are known to differ, with the reason. Empty: none yet.
 const EXPECTED_MISMATCHES: &[(&str, &str)] = &[];
 
-/// The boards with an adjacent rules file wait on C04, which applies the
-/// rules file's `autoroute_settings` on top of the merge (the adjacent file
-/// is named after the DSN, so `Issue191-processor.Z80/processor.rules` is not
-/// one of them).
-const WAITING_ON_C04: &[&str] = &[
-    "Issue029-hw48na",
-    "Issue107-freq_teiler_200kHz_kicad",
-    "Issue107-freq_teiler_200kHz_kicad_bad",
-    "Issue593-BBD_Mars-64",
-    "explicit-cost-rules",
-];
+/// The scenarios with an adjacent rules file in Java's dumps that this test
+/// reads: four fixtures and `explicit-cost-rules`, four scenarios each. (The
+/// fifth rules fixture, `Issue742-tastexx-pcb/tastexx-pcb`, is in a
+/// sub-directory that `job_prepare_reference.rs` walks and this test does
+/// not; the adjacent file is named after the DSN, so
+/// `Issue191-processor.Z80/processor.rules` is not one of them.)
+const SCENARIOS_WITH_RULES: usize = 20;
 
-fn waits_on_c04(scenario: &JsonValue) -> bool {
-    !matches!(
-        object_member(scenario, "adjacentRules"),
-        None | Some(JsonValue::Null)
-    )
+fn adjacent_rules(scenario: &JsonValue) -> Option<String> {
+    match object_member(scenario, "adjacentRules") {
+        Some(JsonValue::String(name)) => Some(name.clone()),
+        _ => None,
+    }
 }
 
 #[test]
@@ -496,7 +512,7 @@ fn settings_match_java_dumps() {
     }
     files.sort();
     let mut compared = 0;
-    let mut waiting = Vec::new();
+    let mut with_rules = 0;
     let mut failures = Vec::new();
     for (name, dump_path, dsn_path) in &files {
         let text = std::fs::read_to_string(dump_path).unwrap();
@@ -511,6 +527,11 @@ fn settings_match_java_dumps() {
             Err(_) => continue, // Java rejects it too: its dump holds a failure object
         };
         let dsn = patch_from_dsn(&pcb);
+        let layer_names: Vec<String> = pcb
+            .structure
+            .as_ref()
+            .map(|s| s.layers.iter().map(|l| l.name.clone()).collect())
+            .unwrap_or_default();
         for scenario in ["default", "fixture", "cli", "owner-config"] {
             let Some(expected) = object_member(scenarios, scenario) else {
                 continue;
@@ -518,16 +539,25 @@ fn settings_match_java_dumps() {
             if object_member(expected, "settings").is_none() {
                 continue; // a load failure in Java
             }
-            if waits_on_c04(expected) {
-                waiting.push(format!("{name}/{scenario}"));
-                continue;
+            let rules = adjacent_rules(expected).map(|file| {
+                let path = dsn_path.with_file_name(file);
+                let bytes = std::fs::read(&path).unwrap();
+                let text = freerouting::dsn::decode(&bytes);
+                RulesFile::parse(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
+            });
+            if rules.is_some() {
+                with_rules += 1;
             }
             let inc_class = match object_member(expected, "incClass") {
                 Some(JsonValue::String(s)) => s.clone(),
                 _ => "POWER".to_string(),
             };
             let base = name.rsplit('/').next().unwrap().to_string();
-            let resolved = scheduler_merge(scenario_patches(scenario, &base, &inc_class), &dsn);
+            let resolved = scheduler_merge(
+                scenario_patches(scenario, &base, &inc_class),
+                &dsn,
+                rules.as_ref().map(|r| (r, layer_names.as_slice())),
+            );
             let rust = JsonValue::parse(&dump(&resolved).to_pretty_string()).unwrap();
             let java_static = static_part(object_member(expected, "settings").unwrap());
             let mut differences = Vec::new();
@@ -543,16 +573,11 @@ fn settings_match_java_dumps() {
             compared += 1;
         }
     }
-    eprintln!(
-        "compared {compared} board scenarios, {} waiting on C04",
-        waiting.len()
+    eprintln!("compared {compared} board scenarios, {with_rules} with a rules file");
+    assert_eq!(
+        with_rules, SCENARIOS_WITH_RULES,
+        "scenarios with a rules file"
     );
-    let mut boards: Vec<&str> = waiting
-        .iter()
-        .map(|w| w.rsplit_once('/').unwrap().0)
-        .collect();
-    boards.dedup();
-    assert_eq!(boards, WAITING_ON_C04, "the boards waiting on C04");
     assert!(
         failures.is_empty(),
         "{} mismatches:\n{}",

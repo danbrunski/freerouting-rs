@@ -11,11 +11,17 @@
 //! - `postLoadViolations` against Rust's full clearance check after
 //!   `prepare_job`, the end-to-end check of the overrides.
 //!
-//! The boards with an adjacent rules file wait on C04.4.
+//! The boards with an adjacent rules file (`Issue029-hw48na`, both `Issue107`
+//! boards, `Issue593-BBD_Mars-64`, `Issue742-tastexx-pcb` and the synthetic
+//! `explicit-cost-rules`) are compared too (C04.4): `prepare_job` finds the
+//! rules file next to the DSN, runs the second merge and applies the file.
+//! The board block holds the via infos in order, the via rules, the snap
+//! angle and the padstack names (C04.1, C04.2).
 
 use std::path::{Path, PathBuf};
 
 use freerouting::board::BasicBoard;
+use freerouting::board::structure::AngleRestriction;
 use freerouting::drc::DesignRulesChecker;
 use freerouting::drc::json::JsonValue;
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
@@ -316,7 +322,105 @@ fn board_json(board: &BasicBoard) -> JsonValue {
         ),
         ("planeNets", JsonValue::Array(planes)),
         ("netClasses", JsonValue::Array(classes)),
+        ("viaInfos", via_infos_json(board)),
+        ("viaRules", via_rules_json(board)),
+        (
+            "snapAngle",
+            JsonValue::string(match rules.trace_angle_restriction() {
+                AngleRestriction::None => "NONE",
+                AngleRestriction::NinetyDegree => "NINETY_DEGREE",
+                AngleRestriction::FortyfiveDegree => "FORTYFIVE_DEGREE",
+            }),
+        ),
+        // Java's library of a design without a library scope has no padstack
+        // list at all (`null`, dropped by `without_nulls`); the port's is empty.
+        (
+            "padstacks",
+            if board.library.padstacks.count() == 0 {
+                JsonValue::Null
+            } else {
+                JsonValue::Array(
+                    board
+                        .library
+                        .padstacks
+                        .iter()
+                        .map(|p| JsonValue::string(p.name.clone()))
+                        .collect(),
+                )
+            },
+        ),
+        (
+            "viaPadstacks",
+            JsonValue::Array(
+                board
+                    .library
+                    .via_padstack_ids()
+                    .iter()
+                    .map(|id| {
+                        JsonValue::string(board.library.padstacks.get(*id).unwrap().name.clone())
+                    })
+                    .collect(),
+            ),
+        ),
     ])
+}
+
+fn via_infos_json(board: &BasicBoard) -> JsonValue {
+    JsonValue::Array(
+        board
+            .rules
+            .via_infos
+            .iter()
+            .map(|(_, info)| {
+                obj(vec![
+                    ("name", JsonValue::string(info.name.clone())),
+                    (
+                        "padstack",
+                        JsonValue::string(
+                            board
+                                .library
+                                .padstacks
+                                .get(info.padstack)
+                                .unwrap()
+                                .name
+                                .clone(),
+                        ),
+                    ),
+                    (
+                        "clearanceClass",
+                        JsonValue::string(class_name(board, info.clearance_class)),
+                    ),
+                    ("attachSmd", JsonValue::Bool(info.attach_smd_allowed)),
+                ])
+            })
+            .collect(),
+    )
+}
+
+fn via_rules_json(board: &BasicBoard) -> JsonValue {
+    JsonValue::Array(
+        board
+            .rules
+            .via_rules
+            .iter()
+            .map(|(_, rule)| {
+                obj(vec![
+                    ("name", JsonValue::string(rule.name.clone())),
+                    (
+                        "vias",
+                        JsonValue::Array(
+                            rule.vias()
+                                .iter()
+                                .map(|v| {
+                                    JsonValue::string(board.rules.via_infos.get(*v).name.clone())
+                                })
+                                .collect(),
+                        ),
+                    ),
+                ])
+            })
+            .collect(),
+    )
 }
 
 fn rust_scenario(prepared: &PreparedJob) -> JsonValue {
@@ -326,7 +430,7 @@ fn rust_scenario(prepared: &PreparedJob) -> JsonValue {
     obj(vec![
         ("settings", settings_json(prepared)),
         ("effective", effective_json(prepared)),
-        ("board", board_json(&prepared.board)),
+        ("board", without_nulls(&board_json(&prepared.board))),
         ("postLoadViolations", int(violations as i64)),
     ])
 }
@@ -364,6 +468,11 @@ const BOARD_KEYS: &[&str] = &[
     "ignoreConduction",
     "planeNets",
     "netClasses",
+    "viaInfos",
+    "viaRules",
+    "snapAngle",
+    "padstacks",
+    "viaPadstacks",
 ];
 
 fn java_scenario(expected: &JsonValue) -> JsonValue {
@@ -375,6 +484,11 @@ fn java_scenario(expected: &JsonValue) -> JsonValue {
         board_members
             .iter()
             .filter(|(k, _)| BOARD_KEYS.contains(&k.as_str()))
+            // A design without padstacks is `null` or `[]` in Java, depending
+            // on whether it had a library scope; the port's list is empty.
+            .filter(|(k, v)| {
+                !(k == "padstacks" && matches!(v, JsonValue::Array(items) if items.is_empty()))
+            })
             .cloned()
             .collect(),
     );
@@ -415,11 +529,16 @@ fn cli_arguments(base: &str, inc_class: &str) -> Vec<String> {
     .collect()
 }
 
-fn job_input(bytes: Vec<u8>, base: &str, scenario: &str, inc_class: &str) -> JobInput {
+fn job_input(
+    bytes: Vec<u8>,
+    base: &str,
+    dsn_dir: &Path,
+    scenario: &str,
+    inc_class: &str,
+) -> JobInput {
     let mut input = JobInput::new(bytes, base);
-    // The adjacent rules file waits on C04; the lookup stays off so that the
-    // log does not carry the skip notice for the boards that have one.
-    input.rules = RulesChoice::None;
+    input.rules = RulesChoice::Adjacent;
+    input.dsn_dir = Some(dsn_dir.to_path_buf());
     match scenario {
         "default" => {}
         "fixture" => input
@@ -484,16 +603,6 @@ const EXPECTED_MISMATCHES: &[(&str, &str)] = &[
 const QUOTED_EMPTY_NAME: &str =
     "a net class named '' (quoted empty name): Java keeps the quotes in the name";
 
-/// The boards with an adjacent rules file wait on C04.4.
-const WAITING_ON_C04: &[&str] = &[
-    "Issue029-hw48na",
-    "Issue107-freq_teiler_200kHz_kicad",
-    "Issue107-freq_teiler_200kHz_kicad_bad",
-    "Issue593-BBD_Mars-64",
-    "Issue742-tastexx-pcb/tastexx-pcb",
-    "explicit-cost-rules",
-];
-
 struct Case {
     name: String,
     dump: PathBuf,
@@ -548,7 +657,8 @@ fn cases() -> Vec<Case> {
 #[derive(Default)]
 struct CaseResult {
     compared: usize,
-    waiting: Vec<String>,
+    /// How many of those had an adjacent rules file in Java.
+    with_rules: usize,
     failures: Vec<String>,
 }
 
@@ -569,6 +679,7 @@ fn run_case(case: &Case) -> CaseResult {
     };
     let bytes = std::fs::read(&case.dsn).unwrap_or_else(|e| panic!("{}: {e}", case.dsn.display()));
     let base = case.name.rsplit('/').next().unwrap().to_string();
+    let dsn_dir = case.dsn.parent().unwrap();
     for scenario in ["default", "fixture", "cli", "owner-config"] {
         let Some(expected) = member(scenarios, scenario) else {
             continue;
@@ -576,7 +687,7 @@ fn run_case(case: &Case) -> CaseResult {
         let key = format!("{}/{scenario}", case.name);
         if member(expected, "settings").is_none() {
             // Java failed to load the board; so must the port.
-            let input = job_input(bytes.clone(), &base, scenario, "POWER");
+            let input = job_input(bytes.clone(), &base, dsn_dir, scenario, "POWER");
             if prepare_job(&input, &ctx()).is_ok() {
                 result
                     .failures
@@ -588,14 +699,13 @@ fn run_case(case: &Case) -> CaseResult {
             member(expected, "adjacentRules"),
             None | Some(JsonValue::Null)
         ) {
-            result.waiting.push(key);
-            continue;
+            result.with_rules += 1;
         }
         let inc_class = match member(expected, "incClass") {
             Some(JsonValue::String(s)) => s.clone(),
             _ => "POWER".to_string(),
         };
-        let input = job_input(bytes.clone(), &base, scenario, &inc_class);
+        let input = job_input(bytes.clone(), &base, dsn_dir, scenario, &inc_class);
         let prepared = match prepare_job(&input, &ctx()) {
             Ok(p) => p,
             Err(e) => {
@@ -651,30 +761,23 @@ fn prepare_job_matches_java_dumps() {
         }
     });
     let mut compared = 0;
-    let mut waiting = Vec::new();
+    let mut with_rules = 0;
     let mut failures = Vec::new();
     for slot in results {
         let r = slot.into_inner().unwrap().expect("every case ran");
         compared += r.compared;
-        waiting.extend(r.waiting);
+        with_rules += r.with_rules;
         failures.extend(r.failures);
     }
-    eprintln!(
-        "compared {compared} board scenarios, {} waiting on C04",
-        waiting.len()
-    );
+    eprintln!("compared {compared} board scenarios, {with_rules} with a rules file");
     assert!(
         failures.is_empty(),
         "{} mismatches:\n{}",
         failures.len(),
         failures.join("\n")
     );
-    let mut boards: Vec<&str> = waiting
-        .iter()
-        .map(|w| w.rsplit_once('/').unwrap().0)
-        .collect();
-    boards.dedup();
-    assert_eq!(boards, WAITING_ON_C04, "the boards waiting on C04");
+    // Six boards (five fixtures and `explicit-cost-rules`) in four scenarios.
+    assert_eq!(with_rules, 24, "the scenarios with an adjacent rules file");
 }
 
 /// `prepare_job` against `load_design` on the largest fixture, release
