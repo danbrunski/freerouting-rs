@@ -37,3 +37,31 @@ picks up where it stopped. Set `REFERENCE_REDO=1` to rerun everything.
 - `Issue006-LPC18XX_43XX_SCH.dsn` is not a PCB file (`parse_error`).
 - `Issue179-Autorouter_PCB1_2023-3-24.dsn` throws a `NullPointerException` in Java
   (`exception`).
+
+## Probes
+
+`probe.sh` compiles and runs one Java probe against the Java classes of a pin checkout, for
+differential tests whose expected values must come from Java:
+
+```sh
+git -C ../freerouting worktree add --detach <scratchpad>/java-pin <pin>
+TMPDIR=<scratchpad> tools/java-reference/probe.sh <scratchpad>/java-pin tools/java-reference/probes/JavaRandomProbe.java
+# 30 63 48 84 70
+# [8, 1, 4, 3, 9, 6, 0, 2, 5, 7]
+git -C ../freerouting worktree remove --force <scratchpad>/java-pin
+```
+
+- The probe is any `.java` file with a `main`; its class is the file name, prefixed by its
+  `package` if it has one. Extra arguments go to `main`. Stdout and the exit status are the
+  probe's. A compile error prints ECJ's message on stderr and exits 1.
+- When `target/java-reference/classes` (or the checkout's `build/reference-classpath.txt`) is
+  missing, the script builds it through `run.sh` with a fixture filter that matches no board,
+  so no reference file is written.
+- The cached classes must come from the checkout given: `run.sh` records the commit in the
+  generated `Constants.java`, and `probe.sh` exits 2 when that differs from the checkout's
+  HEAD. Delete `target/java-reference/classes` to rebuild for another pin.
+- Never point it at `../freerouting` itself, which another session edits; use a detached
+  worktree. `REFERENCE_WORK_DIR` and `JAVA` work as for `run.sh`; the probe is compiled into a
+  temporary directory under `TMPDIR`.
+- `probes/` holds probes worth keeping. `JavaRandomProbe.java` prints the `java.util.Random`
+  values `freerouting_geometry::jmath` is tested against.

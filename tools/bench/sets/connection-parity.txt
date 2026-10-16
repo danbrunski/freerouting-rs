@@ -1,0 +1,14 @@
+# Rung 2 of the verification ladder (connection parity): the smallest fixtures
+# with at least two connections, by connections.maximum_count in
+# fixtures/reference/load. Copies of the same board under another name are left
+# out. Paths are relative to the repository root. See tools/bench/README.md.
+fixtures/Issue269-min_fr_test/min_fr_test.dsn                 # 3 connections
+fixtures/Issue368-CorneyIslandWireless_input_design.dsn       # 3
+fixtures/Issue110-testProjectFromFreeroutingBugTest.dsn       # 4
+fixtures/Issue143-rpi_splitter.dsn                            # 5
+fixtures/Issue413-test.dsn                                    # 5
+fixtures/Issue508-SMD-routing-issue-demo.dsn                  # 6
+fixtures/Issue069-TestSensel/TestSensel.dsn                   # 8
+fixtures/Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn  # 9, power planes
+fixtures/Issue433-my-board.dsn                                # 9
+fixtures/PCBench-retroreflectors-CONGFLOCK.dsn                # 10

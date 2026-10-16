@@ -136,3 +136,25 @@ worth watching when the router is ported.
   it stays in `docs/development/` so GitHub never runs it. To enable it, move
   it to `.github/workflows/ci.yml`; pushing that directory needs Dan's own git
   credentials (the cloud sessions' GitHub token can't).
+
+## Parity and benchmark tools (F02)
+
+Engine sessions own these too. Details in each tool's README or header.
+
+| Tool | What it does |
+| --- | --- |
+| `tools/java-reference/probe.sh <pin worktree> <Probe.java> [args]` | Compiles and runs one Java probe against the pin's classes (builds them through `run.sh` if missing; refuses a class cache from another commit). `probes/JavaRandomProbe.java`, `probes/SesImportStats.java` (Java's statistics after importing a SES). |
+| `crates/freerouting-dev`, binary `freerouting-dev` | Dev-only (`publish = false`). `ses-diff board.dsn a.ses b.ses [--json f]`: structural session comparison (wires and vias per net, in board coordinates) plus the statistics after importing each. `bench --set <file> --java <jar> [--rust <bin>] --runs N --out <dir>`: times both engines on a quiet machine (refuses above load 1.0 by default), optimizer off unless `--optimize`; writes `bench.json` and `bench.md`. See [tools/bench/README.md](../../tools/bench/README.md). |
+| `tools/determinism-check.sh --out <dir> [--ignore RE] -- <cmd with {OUT}>` | Runs a command idle and beside one busy loop per core, compares the outputs byte for byte. Test: `tools/test-determinism-check.sh`. |
+| `tools/bench/sets/*.txt` | Board sets: `connection-parity` (rung 2), `benchmark` (rungs 3 and 5), `owner` (`canary-pwr`), `kicad` (projects for the oracle). |
+| `tools/kicad-oracle/grade.sh <project> -- <engine with {DSN} {SES}>` | Grades a routed session with KiCad's own DRC (WSL KiCad 10.0.7) under the board's original rules, minus what the unrouted input reports, plus copper narrower than its net class. See [tools/kicad-oracle/README.md](../../tools/kicad-oracle/README.md). |
+
+Two findings from building them:
+- Java's route statistics in `fixtures/reference/route/*.json` are taken on
+  the routed board in memory. Importing the SES Java wrote gives the same
+  incomplete count, violations, vias and length, but bends can differ: on
+  `Issue508-DAC2020_bm01`, 841 in the JSON and 839 after an import, in Java
+  (`probes/SesImportStats.java`) as in Rust.
+- KiCad's `ImportSpecctraSES` gives a via or wire that touches only a pad the
+  pad's net, whatever net the session names, so KiCad's DRC can't see a lone
+  via in a pad of another net.

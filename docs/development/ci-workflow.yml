@@ -36,6 +36,9 @@ jobs:
       - name: Provenance check
         if: runner.os == 'Linux'
         run: tools/check-provenance.sh
+      - name: KiCad oracle unit tests (plain Python, no KiCad)
+        if: runner.os == 'Linux'
+        run: python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'
 
   plugin-tests:
     strategy:

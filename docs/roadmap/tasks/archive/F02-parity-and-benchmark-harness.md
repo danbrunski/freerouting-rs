@@ -1,7 +1,7 @@
 # F02 — Parity and benchmark harness
 
 Opened 2026-10-15. The verification ladder in
-[port-completion.md](../port-completion.md) needs four tools that don't exist
+[port-completion.md](../../port-completion.md) needs four tools that don't exist
 yet:
 - a one-line way to run a Java probe at the pin;
 - a structural SES comparison;
@@ -60,7 +60,7 @@ What this adds:
 
 ## Checklist
 
-- [ ] **F02.1 — One-command Java probes.**
+- [x] **F02.1 — One-command Java probes.**
   `tools/java-reference/probe.sh <pin-checkout> <Probe.java> [args...]`:
   - builds the pinned classes through `run.sh` if
     `target/java-reference/classes` is missing
@@ -77,8 +77,24 @@ What this adds:
     - A probe with a syntax error fails with a non-zero exit and ECJ's message.
     - The implementer agent's four-command recipe is replaced by the script,
       with the worktree add/remove steps kept.
+  *Done 2026-10-15:* `tools/java-reference/probe.sh` and
+  `probes/JavaRandomProbe.java`. With an empty `REFERENCE_WORK_DIR` and a
+  fresh `cda540f` worktree, `probe.sh <pin> probes/JavaRandomProbe.java`
+  built the classes through `run.sh` (fixture filter that matches nothing, no
+  reference file written, `git status --short fixtures/reference` clean) and
+  printed exactly `30 63 48 84 70` and `[8, 1, 4, 3, 9, 6, 0, 2, 5, 7]` in
+  10 s; on the shared `target/java-reference` cache it reuses the classes.
+  `freerouting-dev`'s `tests/probe_values.rs::java_random_probe_values_match_jmath`
+  asserts the same values on `jmath::JavaRandom` (jmath's own tests assert
+  `30, 63` and the shuffle). A probe with `int x = ;` exits 1 and prints ECJ's
+  `Syntax error on token "=", VariableInitializer expected after this token`.
+  A packaged probe with arguments passes them and its exit status (3)
+  through. A class cache from another commit than the worktree's HEAD is
+  refused with exit 2. `.claude/agents/implementer.md`'s four commands are
+  replaced by the script, with the worktree add/remove steps kept;
+  `tools/java-reference/README.md` has a "Probes" section.
 
-- [ ] **F02.2 — `freerouting-dev ses-diff`.**
+- [x] **F02.2 — `freerouting-dev ses-diff`.**
   `freerouting-dev ses-diff board.dsn a.ses b.ses [--json out.json]` loads the
   board, imports each session into its own copy, and compares:
   - per net: wires and vias as described under the decisions
@@ -97,8 +113,29 @@ What this adds:
     - on `Issue508-DAC2020_bm01`, the statistics of an import of Java's
       reference SES match `fixtures/reference/route/Issue508-DAC2020_bm01.json`
       on the compared fields
+  *Done 2026-10-15:* new crate `crates/freerouting-dev` (`publish = false`,
+  depends only on `freerouting`, hand-rolled argument parsing, no new
+  dependency): `session_geometry.rs` (wires and vias keyed in board
+  coordinates converted as `read_session` does, multisets per net, paths
+  direction-normalized), `ses_diff.rs` (import into a clone of the loaded
+  board per session, statistics, text and `--json` report), `json_read.rs`.
+  `cargo test -p freerouting-dev`: 11 passed. `tests/ses_diff.rs`:
+  `java_session_is_equivalent_to_itself`;
+  `reordered_and_reformatted_session_is_equivalent` (nets, items and path
+  points reversed, every path number rewritten `N` -> `N.0`);
+  `via_moved_by_one_unit_is_reported_with_net_and_position` (net and both
+  positions in the text); `removed_wire_is_reported_and_incomplete_count_rises`
+  (net `N$2`: its own count 0 -> 1, total 18 -> 19; Java's import of the same
+  edited SES, `probes/SesImportStats.java` at `cda540f`, gives 19);
+  `imported_java_session_matches_java_route_statistics` (incomplete 18,
+  violations 0, vias 126, length 3778.74 mm equal to the route JSON; bends
+  839 against the JSON's 841, which Java counted on its routed board in
+  memory: Java's own import of the SES also gives 839, so bends are compared
+  with Java's import); `json_output_lists_differing_nets`. CLI exit codes:
+  `freerouting-dev ses-diff` on the same SES twice exits 0 (0.18 s release),
+  with a wire removed exits 1.
 
-- [ ] **F02.3 — `freerouting-dev bench`.**
+- [x] **F02.3 — `freerouting-dev bench`.**
   `freerouting-dev bench --set <file> --java <jar> [--rust <bin>] --runs N
   --out <dir>`:
   - routes each board with each engine, using the per-board bounds in
@@ -116,8 +153,31 @@ What this adds:
     - A run started while a CPU burner holds the load above the threshold
       waits and then refuses with a clear message, without timing anything.
     - The markdown table renders with one row per board and engine.
+  *Done 2026-10-15:* `crates/freerouting-dev/src/bench.rs` (set and
+  `route-bounds.tsv` reading, load wait and refusal, `java -version` check,
+  timed runs with a safety timeout, SES statistics, `WORK_LIMIT_CUTOFF`
+  count) and `bench_report.rs` (`bench.json`, `bench.md`); `--max-passes`
+  default 5 until J01.3's bounds file exists. A Java-only run of 3 small
+  fixtures (`min_fr_test`, `Issue368-CorneyIslandWireless_input_design`,
+  `Issue110-testProjectFromFreeroutingBugTest`) with the `a773a70ec` jar,
+  `--runs 2`, wrote `bench.json` and `bench.md` (medians 3.23 / 3.51 /
+  3.18 s, spreads 0.19 / 0.64 / 0.04 s); other agents held the load at
+  9–10 the whole time, so that run used `--max-load 12`, and its table
+  records it. With 8 CPU burners and the default limit 1.0,
+  `--load-wait 20` printed `waiting up to 20 s`, then `refusing to time: the
+  1-minute load average is 8.30, above the limit 1.00, after waiting 20 s`,
+  exit 3, no output directory and no Java process started. Tests
+  (`cargo test -p freerouting-dev --test bench`, 9 passed):
+  `markdown_has_one_row_per_board_and_engine` (4 rows for 2 boards x 2
+  engines, same cell count as the header),
+  `busy_machine_waits_then_refuses_without_timing`,
+  `quiet_machine_is_timed_once_the_load_drops`,
+  `json_records_every_run_with_its_load`, set, bounds, version, median and
+  cut-off parsing. With `--rust` pointing at today's CLI the Rust rows read
+  `skipped: the Rust CLI does not route yet (exit 2, no SES)`; timing Rust
+  routes waits for the router (A13/A14).
 
-- [ ] **F02.4 — Determinism check.**
+- [x] **F02.4 — Determinism check.**
   `tools/determinism-check.sh --out <dir> -- <command with {OUT} placeholder>`:
   - runs the command once on an idle machine and once beside one busy-loop
     process per core (started 5 s before, killed after)
@@ -132,8 +192,20 @@ What this adds:
       current time.
     - No burner process is left running after either run (check with `pgrep`
       in the test), including after Ctrl-C.
+  *Done 2026-10-15:* `tools/determinism-check.sh` (options `--out`,
+  `--ignore REGEX` for timing lines, `--warmup`; the command runs in its own
+  process group, so the traps stop it and its children). Its test,
+  `REFERENCE_WORK_DIR=<scratch>/jwork tools/test-determinism-check.sh <pin
+  worktree at cda540f> <scratch>/det-test`, prints `determinism-check tests
+  passed`: a Java `load` dump of `Issue508-DAC2020_bm01` through
+  `reference.ReferenceDump` into `{OUT}` reports `identical` (idle run at load
+  3.45, loaded run at 3.38 with 8 burners); `date +%s.%N > {OUT}` reports
+  `different:` with the first line and exits 1; `pgrep -f
+  determinism-check-burner` is empty after both, and after a SIGINT to the
+  script's process group in the middle of the loaded run (exit 130, `sleep`
+  child gone too). J01.4 now says how to call the dump into `{OUT}`.
 
-- [ ] **F02.5 — Board sets.**
+- [x] **F02.5 — Board sets.**
   Commit `tools/bench/sets/`, one board path per line with `#` comments:
   - `connection-parity.txt`: the smallest fixtures with at least two
     connections, for rung 2 of the verification ladder (choose by
@@ -154,8 +226,21 @@ What this adds:
       each board's connection count and size.
     - `freerouting-dev bench --set connection-parity.txt` (Java only)
       completes.
+  *Done 2026-10-15:* `tools/bench/sets/connection-parity.txt` (10 boards, 3–10
+  connections), `benchmark.txt` (16 boards, 9–1125 connections, with the four
+  inner-plane and two watch-list boards), `owner.txt` (the five in-repo
+  `canary-pwr` variants plus one out-of-repo snapshot). Every listed path
+  exists (checked with a script over all three sets; the out-of-repo one
+  exists on this machine too). `tools/bench/README.md` explains each set and
+  how it was chosen, with a table of connections, pins, layers, nets and DSN
+  size per board from `fixtures/reference/load`. `freerouting-dev bench --set
+  tools/bench/sets/connection-parity.txt --java freerouting-a773a70ec.jar
+  --runs 1 --max-load 16` completed all 10 boards in 34 s, exit 0 (load 5.4–6.6
+  from other agents). Its statistics for `Issue413-test`, `TestSensel` and
+  `PCBench-retroreflectors-CONGFLOCK` (8 / 16 / 9 violations) equal Java's own
+  import of the same SES files (`probes/SesImportStats.java`).
 
-- [ ] **F02.6 — KiCad DRC as an independent oracle.**
+- [x] **F02.6 — KiCad DRC as an independent oracle.**
   For a board with a `.kicad_pcb`, grade a routed session with KiCad's own DRC
   rather than Freerouting's model. This follows KiCadRoutingTools' practice of
   grading with KiCad as the oracle. Two KiCad 10 installs are available:
@@ -255,5 +340,40 @@ What this adds:
     - The originals' checksums are unchanged.
     - The scripts written for the 2026-10-15 head-to-head
       (`scratchpad/h2h/scripts/`, summarized in
-      [X01](X01-krt-head-to-head.md)) are the starting point, not a separate
+      [X01](../X01-krt-head-to-head.md)) are the starting point, not a separate
       tool.
+  *Done 2026-10-15:* `tools/kicad-oracle/` (`grade.sh`, `grade-set.sh`,
+  `kicad_steps.py` for pcbnew, `oracle_lib.py` pure Python, `README.md`,
+  `tests/`) and `tools/bench/sets/kicad.txt` (16 bundled demos of the
+  WSL-native KiCad 10.0.7 plus Dan's `canary-pwr` and `canary-hat`, all out of
+  the repo). Built from the head-to-head's `prep.py`, `import_ses.py`,
+  `strip_placement.py`, `classwidths.py`, `stats.py`, `summarize.py` and
+  `run_board.sh`. Uses the WSL KiCad 10.0.7 (`kicad-cli` and `pcbnew` must
+  report the same version, which goes into every summary). With the
+  `a773a70ec` jar at 5 passes, optimizer off: `ecc83-pp` graded clean (exit 0,
+  drc_real 0, 14 input unconnected items -> 0), `pic_programmer` exit 1
+  (drc_real 2: copper against PCB text, which KiCad's DSN export leaves out),
+  `canary-pwr` (copy of `~/code/canary/hardware/canary-pwr-rev1.0`) exit 1
+  (drc_real 39, mostly `via_dangling`; 71 unconnected; 1 keepout removed, the
+  fan inlet; 134 tracks / 80.2 mm narrower than their net class, worst
+  `/Pi_Supply/LM_SW` 0.401 mm against 1.5 mm; 2 tracks below the 0.15 mm
+  minimum), each with `summary.json` written. `tests/run-oracle-tests.sh
+  <jar> <scratch>` prints `kicad-oracle tests passed`: a via on SMD pad
+  `JP1-1` (net VCC) of `pic_programmer`, joined to net `/pic_sockets/VCC_PIC`,
+  adds 2 new `shorting_items` (KiCad's copper-overlap class) that the unedited
+  Java session doesn't have, exit 1; on `ecc83-pp` with the project's
+  `clearance` set to `warning`, a via 0.05 mm inside the clearance of pad
+  `P6-1` gives 2 new `clearance` items at severity `error` (unedited drc_real
+  0); an empty session on a synthetic board with one pad across the edge gives
+  `preexisting=1, drc_real=0`, exit 0; `KICAD_CLI=<missing>` gives exit 2 and
+  `not graded`; `pgrep -x kicad` is empty before and after; the 49 original
+  files' checksums are unchanged (`grade.sh` also checks its own originals and
+  records `originals_unchanged`). `python3 -m unittest discover -s
+  tools/kicad-oracle/tests -p 'test_*.py'`: 7 tests OK (keepout removal,
+  class widths, placement strip, severity forcing, pre-existing matching,
+  exit codes, 199 cap). Found on the way: KiCad's `ImportSpecctraSES` gives a
+  via or wire that touches only a pad the pad's net, whatever net the session
+  says, so a lone via in a pad of another net is invisible to KiCad's DRC; the
+  test joins it to its own net's copper. The Windows 10.0.5 install is not
+  wired up (needs `wslpath -w`); grading Rust-routed sessions waits for the
+  router (A13/A14).

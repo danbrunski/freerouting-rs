@@ -1,0 +1,26 @@
+# Boards with a .kicad_pcb, graded by KiCad's own DRC (tools/kicad-oracle/grade.sh).
+# One KiCad project directory per line, or the .kicad_pcb itself where a directory holds
+# several. All are outside the repository and skipped when missing.
+#
+# KiCad's bundled demos of the WSL-native KiCad 10.0.7 (/usr/share/kicad/demos). The
+# Windows install (10.0.5, the version Dan saves his boards with) has the same set under
+# C:\Program Files\KiCad\10.0\share\kicad\demos; never mix versions in one comparison.
+/usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb
+/usr/share/kicad/demos/sonde xilinx
+/usr/share/kicad/demos/stickhub
+/usr/share/kicad/demos/interf_u
+/usr/share/kicad/demos/pic_programmer
+/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213
+/usr/share/kicad/demos/complex_hierarchy
+/usr/share/kicad/demos/multichannel/multichannel_mixer-unrouted.kicad_pcb
+/usr/share/kicad/demos/video
+/usr/share/kicad/demos/microwave
+/usr/share/kicad/demos/tiny_tapeout
+/usr/share/kicad/demos/openair-max
+/usr/share/kicad/demos/royalblue54L_feather
+/usr/share/kicad/demos/cm5_minima
+/usr/share/kicad/demos/vme-wren
+/usr/share/kicad/demos/jetson-agx-thor-baseboard
+# Dan's boards (read-only; grade.sh works on copies).
+~/code/canary/hardware/canary-pwr-rev1.0
+~/code/canary/hardware/canary-hat-rev2.1

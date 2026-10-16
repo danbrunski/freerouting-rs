@@ -1,0 +1,262 @@
+//! The parts of `freerouting-dev bench` that don't launch an engine (F02.3).
+
+use std::cell::Cell;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
+use freerouting_dev::bench::{
+    BenchOptions, BenchResult, BoardResult, Bounds, Engine, EngineResult, RunRecord, SetEntry,
+    bounds_for, count_cutoffs, java_major_version, read_bounds, read_set, wait_for_quiet,
+};
+use freerouting_dev::bench_report::{median, spread, to_json, to_markdown};
+use freerouting_dev::json_read::Json;
+use freerouting_dev::ses_diff::SessionStatistics;
+
+#[test]
+fn sets_skip_comments_and_resolve_paths() {
+    let root = Path::new("/repo");
+    let entries = read_set(
+        "# a comment\n\nfixtures/a.dsn  # trailing\n/abs/b.dsn\n~/boards/c.dsn\n",
+        root,
+    );
+    let written: Vec<&str> = entries.iter().map(|e| e.written.as_str()).collect();
+    assert_eq!(written, ["fixtures/a.dsn", "/abs/b.dsn", "~/boards/c.dsn"]);
+    assert_eq!(entries[0].path, PathBuf::from("/repo/fixtures/a.dsn"));
+    assert_eq!(entries[1].path, PathBuf::from("/abs/b.dsn"));
+    assert!(entries[2].path.ends_with("boards/c.dsn"));
+    assert!(!entries[2].path.starts_with("~"));
+}
+
+#[test]
+fn route_bounds_by_board_name() {
+    let table = read_bounds("board\tmax_passes\tmax_items\nbm01\t100\t\nbig\t20\t5000\n").unwrap();
+    let entry = |p: &str| SetEntry {
+        written: p.into(),
+        path: PathBuf::from(format!("/r/{p}")),
+    };
+    let default = Bounds {
+        max_passes: 5,
+        max_items: None,
+    };
+    assert_eq!(
+        bounds_for(&table, &entry("fixtures/bm01.dsn"), default),
+        Bounds {
+            max_passes: 100,
+            max_items: None
+        }
+    );
+    assert_eq!(
+        bounds_for(&table, &entry("fixtures/big.dsn"), default),
+        Bounds {
+            max_passes: 20,
+            max_items: Some(5000)
+        }
+    );
+    assert_eq!(bounds_for(&table, &entry("other.dsn"), default), default);
+    assert!(read_bounds("name\tpasses\n").is_err());
+    assert!(read_bounds("board\tmax_passes\nx\tmany\n").is_err());
+}
+
+#[test]
+fn busy_machine_waits_then_refuses_without_timing() {
+    let reads = Cell::new(0);
+    let start = Instant::now();
+    let result = wait_for_quiet(
+        || {
+            reads.set(reads.get() + 1);
+            Some(7.5)
+        },
+        1.0,
+        Duration::from_millis(200),
+        Duration::from_millis(50),
+    );
+    let message = result.unwrap_err();
+    assert!(start.elapsed() >= Duration::from_millis(200));
+    assert!(reads.get() >= 3, "polled {} times", reads.get());
+    assert!(message.starts_with("refusing to time"), "{message}");
+    assert!(
+        message.contains("7.50") && message.contains("1.00"),
+        "{message}"
+    );
+}
+
+#[test]
+fn quiet_machine_is_timed_once_the_load_drops() {
+    let loads = [3.0, 2.0, 0.5];
+    let i = Cell::new(0);
+    let load = wait_for_quiet(
+        || {
+            let v = loads[i.get().min(loads.len() - 1)];
+            i.set(i.get() + 1);
+            Some(v)
+        },
+        1.0,
+        Duration::from_secs(10),
+        Duration::from_millis(1),
+    );
+    assert_eq!(load, Ok(0.5));
+    let unreadable = wait_for_quiet(|| None, 1.0, Duration::ZERO, Duration::ZERO);
+    assert!(unreadable.unwrap_err().contains("--max-load off"));
+}
+
+#[test]
+fn java_versions_are_read() {
+    assert_eq!(
+        java_major_version("openjdk version \"25.0.4.1\" 2026-08-18"),
+        Some(25)
+    );
+    assert_eq!(java_major_version("java version \"1.8.0_402\""), Some(8));
+    assert_eq!(
+        java_major_version("openjdk version \"21\" 2023-09-19"),
+        Some(21)
+    );
+    assert_eq!(java_major_version("no version here"), None);
+}
+
+#[test]
+fn medians_and_spreads() {
+    assert_eq!(median(&[3.0, 1.0, 2.0]), Some(2.0));
+    assert_eq!(median(&[4.0, 1.0, 2.0, 3.0]), Some(2.5));
+    assert_eq!(median(&[]), None);
+    assert_eq!(spread(&[3.0, 1.0, 2.5]), Some(2.0));
+}
+
+#[test]
+fn cutoff_lines_are_counted() {
+    let log = "INFO x\nINFO WORK_LIMIT_CUTOFF site=maze_search nominal_ms=1 units=2\n\
+               INFO WORK_LIMIT_CUTOFF site=pull_tight nominal_ms=1 units=2\n";
+    assert_eq!(count_cutoffs(log), 2);
+}
+
+fn run(run: usize, wall: f64, vias: usize) -> RunRecord {
+    RunRecord {
+        run,
+        wall_seconds: wall,
+        load_before: Some(0.4),
+        load_after: Some(0.9),
+        exit_status: Some(0),
+        timed_out: false,
+        work_limit_cutoffs: 0,
+        statistics: Some(SessionStatistics {
+            incomplete_connections: 0,
+            clearance_violations: 0,
+            vias,
+            trace_length_mm: 12.5,
+            bends: 3,
+        }),
+        note: None,
+    }
+}
+
+fn sample_result() -> BenchResult {
+    let options = BenchOptions {
+        set_file: "tools/bench/sets/x.txt".into(),
+        out_dir: "out".into(),
+        runs: 2,
+        engines: vec![
+            Engine {
+                name: "java",
+                command: vec!["java".into(), "-jar".into(), "fr.jar".into()],
+            },
+            Engine {
+                name: "rust",
+                command: vec!["freerouting".into()],
+            },
+        ],
+        default_bounds: Bounds {
+            max_passes: 5,
+            max_items: None,
+        },
+        bounds_file: None,
+        optimize: false,
+        max_load: Some(1.0),
+        load_wait: Duration::from_secs(1),
+        timeout: Duration::from_secs(1),
+        java_version: Some("openjdk version \"25\"".into()),
+    };
+    let board = |name: &str| BoardResult {
+        entry: SetEntry {
+            written: name.into(),
+            path: PathBuf::from(name),
+        },
+        bounds: options.default_bounds,
+        engines: vec![
+            EngineResult {
+                engine: "java",
+                runs: vec![run(1, 2.0, 4), run(2, 3.0, 5)],
+                skipped: None,
+            },
+            EngineResult {
+                engine: "rust",
+                runs: Vec::new(),
+                skipped: Some("the Rust CLI does not route yet (exit 2, no SES)".into()),
+            },
+        ],
+    };
+    BenchResult {
+        boards: vec![board("fixtures/a.dsn"), board("fixtures/b.dsn")],
+        options,
+        missing: vec![SetEntry {
+            written: "~/gone.dsn".into(),
+            path: "/home/gone.dsn".into(),
+        }],
+        aborted: None,
+    }
+}
+
+#[test]
+fn markdown_has_one_row_per_board_and_engine() {
+    let table = to_markdown(&sample_result());
+    let rows: Vec<&str> = table
+        .lines()
+        .filter(|l| l.starts_with("| fixtures/"))
+        .collect();
+    assert_eq!(rows.len(), 4, "{table}");
+    assert!(
+        rows[0].starts_with("| fixtures/a.dsn | java | 5 | 2 | 2.50 | 1.00 | 0.40 | 0 | 0 | 4–5 |"),
+        "{}",
+        rows[0]
+    );
+    assert!(
+        rows[1].starts_with("| fixtures/a.dsn | rust |"),
+        "{}",
+        rows[1]
+    );
+    assert!(rows[1].ends_with("skipped: the Rust CLI does not route yet (exit 2, no SES) |"));
+    let header_cells = table
+        .lines()
+        .find(|l| l.starts_with("| board"))
+        .unwrap()
+        .matches('|')
+        .count();
+    for row in &rows {
+        assert_eq!(row.matches('|').count(), header_cells, "{row}");
+    }
+    assert!(table.contains("Skipped (file missing):\n- ~/gone.dsn"));
+}
+
+#[test]
+fn json_records_every_run_with_its_load() {
+    let json = Json::parse(&to_json(&sample_result()).to_pretty_string()).unwrap();
+    let Some(Json::Array(boards)) = json.get("boards") else {
+        panic!("no boards");
+    };
+    assert_eq!(boards.len(), 2);
+    let Some(Json::Array(engines)) = boards[0].get("engines") else {
+        panic!("no engines");
+    };
+    let java = &engines[0];
+    assert_eq!(
+        java.path("median_wall_seconds").and_then(Json::as_f64),
+        Some(2.5)
+    );
+    let Some(Json::Array(runs)) = java.get("runs") else {
+        panic!("no runs");
+    };
+    assert_eq!(runs.len(), 2);
+    assert_eq!(runs[0].get("load_before").and_then(Json::as_f64), Some(0.4));
+    assert_eq!(runs[0].get("load_after").and_then(Json::as_f64), Some(0.9));
+    assert_eq!(runs[1].get("exit_status").and_then(Json::as_f64), Some(0.0));
+    assert!(engines[1].get("skipped").is_some());
+    assert_eq!(json.get("optimizer"), Some(&Json::Bool(false)));
+}

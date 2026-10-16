@@ -19,7 +19,7 @@ report §6.4).
 
 Prerequisites: K07 (reader, `read_design`), [C05](C00-cli-settings-io-README.md)
 (the SES writer, whose endpoint snapping and `(attach off)` handling this
-reuses for the copper it emits), [F02.6](F02-parity-and-benchmark-harness.md)
+reuses for the copper it emits), [F02.6](archive/F02-parity-and-benchmark-harness.md)
 (KiCad DRC grading), C07 for the CLI flag. Routed boards from the A series
 are not needed to start: a session imported with `read_session` gives a
 routed board to write.

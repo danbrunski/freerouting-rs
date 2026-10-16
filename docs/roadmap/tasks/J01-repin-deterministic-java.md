@@ -56,7 +56,7 @@ byte-identical to `a773a70ec` while the new setting is unset. `07c970db9`,
 "Skip keepouts and planes whose shape cannot be read", is one such commit:
 Java now skips such areas with a warning instead of throwing, as the port
 already does. Its ledger line says "Port: no". J01.4 also needs
-[F02.4](F02-parity-and-benchmark-harness.md)'s determinism script.
+[F02.4](archive/F02-parity-and-benchmark-harness.md)'s determinism script.
 
 ## What exists and what this adds
 
@@ -215,10 +215,14 @@ What this adds:
 
 - [ ] **J01.4 — Prove the Java references are deterministic.**
   For each board, run the harness's `route` mode through
-  [F02.4](F02-parity-and-benchmark-harness.md)'s
+  [F02.4](archive/F02-parity-and-benchmark-harness.md)'s
   `tools/determinism-check.sh`. That routes it twice into the scratchpad,
   once idle and once beside one CPU burner per core, and compares the SES
   byte for byte. Also compare the JSON fields except timing.
+  The harness writes to `fixtures/reference`, so call `reference.ReferenceDump`
+  directly with `{OUT}` as its output directory, and drop the timing lines with
+  `--ignore '"routeMillis"'`; the script's header has the command line for a
+  `load` dump, and `route` takes the same with `route` and the bounds.
   - **Accept:** on at least 8 fixtures spanning small to large, including
     `Issue145-smoothieboard`, `Issue753-CPU-85_r104`,
     `Issue555-CNH_Functional_Tester_1`, `Issue269-z10_module` and one board

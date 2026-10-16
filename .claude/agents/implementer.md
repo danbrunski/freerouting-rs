@@ -100,21 +100,17 @@ and there is no measured history for this repo yet, so pace by progress:
   pin, never from reasoning about what Java would do (see
   `crates/freerouting-geometry/tests/java_reference.rs`). To run a probe:
   1. `git -C ../freerouting worktree add --detach <scratchpad>/java-pin cda540f`
-  2. `tools/java-reference/run.sh <scratchpad>/java-pin load 100 00:02:00 Issue508-DAC2020_bm01`
-     builds the Java classes into `target/java-reference/` and re-dumps
-     one load reference. `git status --short fixtures/reference` must
-     stay clean afterwards. If it doesn't, the build is not the pin, so
-     stop and report it. The script compiles only when
-     `target/java-reference/classes` is missing, so that cache must only
-     ever come from a pin checkout.
-  3. Put `Probe.java` in the scratchpad, then compile and run it with
-     ECJ. The jdk4py runtime can't launch `.java` files directly.
-     ```
-     J=target/java-reference/jdk4py/jdk4py/java-runtime/bin/java
-     CP="target/java-reference/classes:<scratchpad>/java-pin/src/main/resources:$(cat <scratchpad>/java-pin/build/reference-classpath.txt)"
-     JAVA_TOOL_OPTIONS= $J -jar target/java-reference/ecj-3.46.100.jar --release 25 -nowarn -cp "$CP" -d <scratchpad>/probe <scratchpad>/Probe.java
-     JAVA_TOOL_OPTIONS= $J -cp "<scratchpad>/probe:$CP" Probe
-     ```
+  2. Put `Probe.java` in the scratchpad (a class with a `main`), then run
+     `TMPDIR=<scratchpad> tools/java-reference/probe.sh <scratchpad>/java-pin <scratchpad>/Probe.java [args...]`.
+     It builds the Java classes into `target/java-reference/` through
+     `run.sh` when they are missing (writing no reference file), refuses
+     with exit 2 when the cached classes come from another commit than
+     the worktree's HEAD, compiles the probe with ECJ and runs it on the
+     jdk4py runtime with `run.sh`'s classpath. Stdout and the exit status
+     are the probe's; a compile error prints ECJ's message and exits 1.
+     `tools/java-reference/probes/JavaRandomProbe.java` is a sample.
+  3. If you deleted the cache to rebuild it, check that
+     `git status --short fixtures/reference` is still clean.
   4. When you are done: `git -C ../freerouting worktree remove --force <scratchpad>/java-pin`.
 - Never edit or regenerate `fixtures/reference/` or the DRC digest
   unless the task is a re-pin.

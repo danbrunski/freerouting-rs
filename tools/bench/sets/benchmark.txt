@@ -1,0 +1,20 @@
+# The speed and quality benchmark (rungs 3 and 5): 16 boards from 9 to 1125
+# connections. Includes the four inner-plane boards of the Java fork's HANDOVER
+# and the two watch-list boards of docs/development/engine.md. Paths are
+# relative to the repository root. See tools/bench/README.md.
+fixtures/Issue433-my-board.dsn                                # 9 connections
+fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn           # 21, KiCad demo ecc83
+fixtures/Issue508-DAC2020_bm02.dsn                            # 34
+fixtures/Issue690-sonde_xilinx.dsn                            # 67, KiCad demo sonde
+fixtures/Issue508-DAC2020_bm07.dsn                            # 86
+fixtures/Issue508-DAC2020_bm01.dsn                            # 195
+fixtures/Issue508-DAC2020_bm10.dsn                            # 199, 4 layers
+fixtures/Issue093-interf_u.dsn                                # 201, KiCad demo interf_u
+fixtures/Issue555-CNH_Functional_Tester_1.dsn                 # 203, inner planes
+fixtures/Issue269-z10_module.dsn                              # 237, inner planes
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn            # 541, 4 layers, KiCad demo
+fixtures/Issue753-CPU-85_r104.dsn                             # 569, inner planes
+fixtures/Issue066-Project_GP8B.dsn                            # 759, watch list
+fixtures/Issue145-smoothieboard.dsn                           # 793, inner planes, watch list
+fixtures/Issue219-LogicBoard_smt.dsn                          # 993, 4 layers
+fixtures/Issue420-contribution-board.dsn                      # 1125

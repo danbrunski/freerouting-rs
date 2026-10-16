@@ -1,0 +1,12 @@
+# Dan's boards. canary-pwr is in the repository since 2026-10-15 (Dan approved
+# committing it; fixtures/canary-pwr/README.md). Its results move by about +-10
+# unrouted with small input changes, so compare across the variants, not repeat
+# runs. Further owner boards stay outside the repository: list them by absolute
+# or ~/ path; the bench skips them with a note when the file is missing.
+fixtures/canary-pwr/canary-pwr-pours1.dsn                     # 313 connections
+fixtures/canary-pwr/canary-pwr-pours2.dsn                     # 313
+fixtures/canary-pwr/canary-pwr-pours3.dsn                     # 313
+fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn            # 322
+fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn   # 312
+# Out of the repository (the Java session's stale snapshot, kept for history).
+~/code/freerouting/logs/canary-pwr/canary-pwr-2026-10-15-1747-stale.dsn
