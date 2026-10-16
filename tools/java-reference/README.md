@@ -152,6 +152,13 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
     command:
     `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> editor`
     (then `find fixtures/reference/probe/editor -type d -empty -delete`).
+  - `transform` (`TransformProbe.java`, I04): the move, turn, mirror and copy of a selection with
+    `MoveItemState`'s and `CopyItemState`'s board calls transcribed headless and the real
+    `ComponentItemTransform`; 12 seeded move trials and 8 copy trials per stage on J2 and
+    DAC2020_bm05 (as loaded and with their session) and Issue955-rotated-pad-contacts (as
+    loaded). One command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> transform`
+    (then `find fixtures/reference/probe/transform -type d -empty -delete`).
 
 ## Settings, writer and CLI dumps (C01)
 

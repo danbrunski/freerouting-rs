@@ -17,12 +17,16 @@
 //!   `next_layer`, `previous_layer`, `signal_layer` (`digit`), `toggle_push`;
 //! - settings: `update_settings` with any of `layer`, `push`, `stitch`, `all_layers`,
 //!   `tidy_width`, `accuracy` (the others keep their value); `update_options` with any of
-//!   `drag_components` and `filter` (an array of Java choice names, `FIXED`/`UNFIXED` included);
+//!   `drag_components`, `component_grid` (`[horizontal, vertical]`) and `filter` (an array of Java
+//!   choice names, `FIXED`/`UNFIXED` included);
 //! - history: `undo`, `redo`, `snapshot`;
 //! - sessions: `start_route`, `start_pin_swap`, `select_at`, `toggle_select`, `start_hole`
 //!   (`x`, `y`), `start_keepout` (`kind`: `tile`, `polygon`, `circle`; `x`, `y`);
 //! - selection: `select_region` (`box`: `[llx, lly, urx, ury]`), `extend` (`extent`: `nets`,
 //!   `components`, `connected_sets`, `connections`), `filter`, `delete`, `fix` (`fixed`);
+//! - move and copy of the selection (I04): `move_selection` and `copy_selection` (`x`, `y`),
+//!   `rotate_selection` (`degrees`), `mirror_selection`, `reset_rotation`; the session ends with
+//!   `complete` or `cancel`, a copy is inserted with `click`;
 //! - one-step constructions: `insert_keepout` (`kind`, `points`: the clicks; a circle takes
 //!   `points[0]` and `radius`; `layer`, default 0), `add_hole` (`area`, `points`).
 //!
@@ -185,6 +189,17 @@ pub fn parse_editor_script(text: &str, layer_count: usize) -> Result<EditorScrip
                 if let Some(v) = c.get("drag_components").and_then(Json::as_bool) {
                     options.drag.drag_components_enabled = v;
                 }
+                if let Some(Json::Array(grid)) = c.get("component_grid") {
+                    let v: Vec<i32> = grid
+                        .iter()
+                        .filter_map(Json::as_f64)
+                        .map(|v| v as i32)
+                        .collect();
+                    if v.len() != 2 {
+                        return Err(format!("command {i}: a component grid is two numbers"));
+                    }
+                    options.component_grid = (v[0], v[1]);
+                }
                 if let Some(Json::Array(names)) = c.get("filter") {
                     let mut filter = ItemFilter::none();
                     for n in names {
@@ -231,6 +246,13 @@ pub fn parse_editor_script(text: &str, layer_count: usize) -> Result<EditorScrip
             }),
             "filter" => Command::FilterSelection,
             "delete" => Command::DeleteSelection,
+            "move_selection" => Command::MoveSelection { to: point()? },
+            "rotate_selection" => Command::RotateSelection {
+                degrees: num("degrees")?,
+            },
+            "mirror_selection" => Command::MirrorSelection,
+            "reset_rotation" => Command::ResetRotation,
+            "copy_selection" => Command::CopySelection { to: point()? },
             "fix" => Command::FixSelection(c.get("fixed").and_then(Json::as_bool).unwrap_or(true)),
             "insert_keepout" => {
                 let points = points_of(c, i)?;
@@ -275,6 +297,8 @@ fn mode_text(mode: ModeKind) -> String {
         ModeKind::SelectingRegion => "selecting_region".into(),
         ModeKind::PinSwap => "pin_swap".into(),
         ModeKind::Constructing => "constructing".into(),
+        ModeKind::Moving => "moving".into(),
+        ModeKind::Copying => "copying".into(),
     }
 }
 

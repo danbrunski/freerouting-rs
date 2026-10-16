@@ -31,6 +31,16 @@
 //!   siblings do: a session in progress is dropped as it is and the
 //!   selection is cleared.
 //!
+//! - `MoveSelection`, `RotateSelection`, `MirrorSelection` and `ResetRotation`
+//!   with a selection start `MoveItemState` ([`ModeKind::Moving`], I04): the
+//!   selection is detached, `Move` and `MoveSelection { to }` move it,
+//!   `Click` and `Complete` put it down (refused while it violates a
+//!   clearance), `Cancel` undoes. `CopySelection { to }` starts
+//!   `CopyItemState` ([`ModeKind::Copying`]): `Move` and `CopySelection`
+//!   move the preview, `Click` inserts a copy (as often as wanted),
+//!   `Complete` and `Cancel` end it. A session starts at the last pointer
+//!   position, or at the command's own position if there was none.
+//!
 //! After every command the board's change journal (B01.7) is drained into
 //! [`Response::delta`], so the GUI redraws what changed and refreshes the
 //! ratsnest of the changed nets; undo and redo report Java's changed nets
@@ -38,22 +48,27 @@
 
 use std::collections::BTreeSet;
 
-use freerouting_geometry::{FloatPoint, IntBox, IntPoint};
+use freerouting_geometry::{FloatPoint, IntBox, IntPoint, PolylineShapeOps};
 
 use super::Status;
 use super::construct::{
     ConstructClick, Construction, KeepoutKind, KeepoutShape, add_hole, insert_keepout,
 };
+use super::copy::CopySession;
 use super::drag::{DragBudget, DragSession, DragSettings, DragStep};
 use super::edit_ops::{delete_selection, fix_selection};
 use super::history;
+use super::move_items::{MoveRefusal, MoveSession};
 use super::overlay::RouteOverlay;
 use super::pin_swap::PinSwap;
 use super::route::{RouteBudget, RouteInput, RouteSession};
 use super::select::{self, Extent};
 use super::settings::EditSettings;
+use crate::board::GeometryShape;
 use crate::board::items::ItemId;
-use crate::board::{BoardChanges, ItemFilter, RoutingBoard};
+use crate::board::{
+    BoardChanges, ItemFilter, ItemGeometry, RoutingBoard, geometry_of_item, tile_geometry,
+};
 
 /// The tool of a menu mode (Java's `RouteMenuState`, `DragMenuState`,
 /// `InspectMenuState`).
@@ -80,6 +95,10 @@ pub enum ModeKind {
     PinSwap,
     /// A keepout or hole is being drawn.
     Constructing,
+    /// The selection floats and follows the pointer (`MoveItemState`).
+    Moving,
+    /// A preview of the selection follows the pointer (`CopyItemState`).
+    Copying,
 }
 
 /// Editor input, in board coordinates. The GUI maps keys and the mouse to
@@ -152,6 +171,29 @@ pub enum Command {
     DeleteSelection,
     /// By decision 1 (I03.6): fix (`true`) or unfix the selection.
     FixSelection(bool),
+    /// By decision 1 (I04.2): picks the selection up and moves it so that the
+    /// pointer is at `to`, starting `MoveItemState` if it is not running.
+    MoveSelection {
+        to: FloatPoint,
+    },
+    /// I04.2: turns the floating selection by `degrees` around the pointer
+    /// (a multiple of 90 turns exactly, else `rotateApprox`), starting the
+    /// move if it is not running. Java's `+`, `*`, `-` are 90, 180 and 270;
+    /// `turn45Degree(n)` is `45 n`.
+    RotateSelection {
+        degrees: f64,
+    },
+    /// I04.2: flips the floating selection to the other board side (Java's
+    /// `/` and `changePlacementSide`).
+    MirrorSelection,
+    /// I04.2: turns the floating components back to rotation 0 (Java's
+    /// `resetRotation`).
+    ResetRotation,
+    /// I04.3: starts a copy of the selection and moves its preview so that
+    /// the pointer is at `to`; `Click` inserts it.
+    CopySelection {
+        to: FloatPoint,
+    },
 }
 
 /// Editor input that Java keeps in the workspace settings and the GUI
@@ -166,6 +208,10 @@ pub struct EditorOptions {
     pub length_matching_visible: bool,
     pub route_budget: RouteBudget,
     pub drag_budget: DragBudget,
+    /// Java's `WorkspaceSettings.getHorizontalComponentGrid` and
+    /// `getVerticalComponentGrid` (default 0, 0: none): a move snaps the
+    /// first component to this grid.
+    pub component_grid: (i32, i32),
 }
 
 impl Default for EditorOptions {
@@ -176,6 +222,7 @@ impl Default for EditorOptions {
             length_matching_visible: true,
             route_budget: RouteBudget::JAVA,
             drag_budget: DragBudget::JAVA,
+            component_grid: (0, 0),
         }
     }
 }
@@ -201,6 +248,11 @@ pub struct Overlay {
     pub construction: Option<ConstructionOverlay>,
     /// A region selection's first corner and the pointer.
     pub region: Option<(FloatPoint, FloatPoint)>,
+    /// The floating items of a move, or the preview of a copy (items that
+    /// are not on the board), in board coordinates.
+    pub floating: Vec<ItemGeometry>,
+    /// The clearance violations of the floating items: layer and area.
+    pub floating_violations: Vec<(i32, GeometryShape)>,
 }
 
 /// The result of one command.
@@ -232,6 +284,8 @@ enum Session {
     Region { corner1: Option<FloatPoint> },
     PinSwap(PinSwap),
     Construct(Box<Construction>),
+    Move(Box<MoveSession>),
+    Copy(Box<CopySession>),
 }
 
 /// The interactive editor: a board, the settings, the mode and the
@@ -327,6 +381,8 @@ impl Editor {
             Session::Region { .. } => ModeKind::SelectingRegion,
             Session::PinSwap(_) => ModeKind::PinSwap,
             Session::Construct(_) => ModeKind::Constructing,
+            Session::Move(_) => ModeKind::Moving,
+            Session::Copy(_) => ModeKind::Copying,
         }
     }
 
@@ -336,10 +392,23 @@ impl Editor {
 
     /// Applies one command; runs to completion within the budgets.
     pub fn apply(&mut self, cmd: Command) -> Response {
-        if let Command::Press(p) | Command::Move(p) | Command::DragTo(p) | Command::Click(p) = cmd {
+        if let Command::Press(p)
+        | Command::Move(p)
+        | Command::DragTo(p)
+        | Command::Click(p)
+        | Command::SelectAt(p)
+        | Command::ToggleSelect(p) = cmd
+        {
             self.pointer = Some(p);
         }
+        let moved_to = match cmd {
+            Command::MoveSelection { to } | Command::CopySelection { to } => Some(to),
+            _ => None,
+        };
         let out = self.dispatch(cmd);
+        if moved_to.is_some() {
+            self.pointer = moved_to;
+        }
         Response {
             mode: self.mode(),
             delta: self.board.take_changes(),
@@ -385,6 +454,8 @@ impl Editor {
                 Session::Region { corner1 } => self.region_command(corner1, cmd),
                 Session::PinSwap(swap) => self.pin_swap_command(swap, cmd),
                 Session::Construct(construction) => self.construct_command(*construction, cmd),
+                Session::Move(session) => self.move_command(*session, cmd),
+                Session::Copy(session) => self.copy_command(*session, cmd),
             },
         }
     }
@@ -434,6 +505,15 @@ impl Editor {
                 self.set_selection(None);
                 Out::default()
             }
+            Command::MoveSelection { .. }
+            | Command::RotateSelection { .. }
+            | Command::MirrorSelection
+            | Command::ResetRotation
+                if !menu =>
+            {
+                self.start_move(cmd)
+            }
+            Command::CopySelection { to } if !menu => self.start_copy(to),
             Command::StartKeepout { kind, at } => {
                 let construction = Construction::keepout(&self.board, kind, at);
                 self.session = Session::Construct(Box::new(construction));
@@ -583,6 +663,10 @@ impl Editor {
         }
         if layer >= 0 && (layer as usize) < self.board.layer_count() {
             self.settings.layer = layer;
+            if let Session::Copy(copy) = &mut self.session {
+                // Java `CopyItemState.changeLayerAction`
+                copy.change_layer(layer);
+            }
         }
         Out::default()
     }
@@ -755,6 +839,125 @@ impl Editor {
     }
 
     // ------------------------------------------------------------------
+    // Move and copy of the selection (I04)
+    // ------------------------------------------------------------------
+
+    /// Where a move or copy starts: the pointer, else `fallback`.
+    fn session_origin(&self, fallback: FloatPoint) -> FloatPoint {
+        self.pointer.unwrap_or(fallback)
+    }
+
+    /// The centre of the first selected item, the pole of a rotation that
+    /// starts without a pointer.
+    fn selection_centre(&self) -> FloatPoint {
+        self.selection
+            .iter()
+            .filter_map(|id| self.board.item(*id))
+            .map(|item| item.bounding_box().centre_of_gravity())
+            .next()
+            .unwrap_or(FloatPoint::new(0.0, 0.0))
+    }
+
+    /// Java `MoveItemState.getInstance` from the selection, then the command
+    /// that started it.
+    fn start_move(&mut self, cmd: Command) -> Out {
+        let fallback = match cmd {
+            Command::MoveSelection { to } => to,
+            _ => self.selection_centre(),
+        };
+        let at = self.session_origin(fallback);
+        let started = MoveSession::start(
+            &mut self.board,
+            &self.selection,
+            self.options.component_grid,
+            at,
+        );
+        let session = match started {
+            Ok(session) => session,
+            Err(MoveRefusal { select, status }) => {
+                // Java adds the items that block the move to the selection.
+                self.selection.extend(select);
+                return Out::status(Some(status));
+            }
+        };
+        // The picked-up items leave the selection; a refusal keeps it.
+        self.selection.clear();
+        self.session = Session::Move(Box::new(session));
+        self.move_command_on_current(cmd)
+    }
+
+    fn move_command_on_current(&mut self, cmd: Command) -> Out {
+        match std::mem::replace(&mut self.session, Session::None) {
+            Session::Move(session) => self.move_command(*session, cmd),
+            other => {
+                self.session = other;
+                Out::default()
+            }
+        }
+    }
+
+    fn move_command(&mut self, mut session: MoveSession, cmd: Command) -> Out {
+        let mut status = None;
+        match cmd {
+            Command::Move(p) | Command::MoveSelection { to: p } => {
+                session.move_to(&mut self.board, p);
+            }
+            Command::RotateSelection { degrees } => {
+                status = session.rotate(&mut self.board, degrees);
+            }
+            Command::MirrorSelection => status = session.change_placement_side(&mut self.board),
+            Command::ResetRotation => status = session.reset_rotation(&mut self.board),
+            Command::Click(_) | Command::Complete => {
+                let outcome = session.complete(&mut self.board);
+                if outcome.done {
+                    self.set_selection(None);
+                    return Out::status(Some(outcome.status));
+                }
+                status = Some(outcome.status);
+            }
+            Command::Cancel => {
+                session.cancel(&mut self.board);
+                self.set_selection(None);
+                return Out::default();
+            }
+            _ => {}
+        }
+        self.session = Session::Move(Box::new(session));
+        Out::status(status)
+    }
+
+    /// Java `CopyItemState.getInstance` from the selection.
+    fn start_copy(&mut self, to: FloatPoint) -> Out {
+        let at = self.session_origin(to);
+        let Some(mut session) =
+            CopySession::start(&mut self.board, &self.selection, self.settings.layer, at)
+        else {
+            return Out::default();
+        };
+        session.change_position(&self.board, to);
+        self.session = Session::Copy(Box::new(session));
+        Out::default()
+    }
+
+    fn copy_command(&mut self, mut session: CopySession, cmd: Command) -> Out {
+        let mut status = None;
+        match cmd {
+            Command::Move(p) | Command::CopySelection { to: p } => {
+                session.change_position(&self.board, p);
+            }
+            Command::Click(p) => {
+                session.change_position(&self.board, p);
+                status = session.insert(&mut self.board).and_then(|o| o.status);
+            }
+            // The state is left; the selection stays (the parent state).
+            Command::Complete | Command::Cancel => return Out::default(),
+            _ => {}
+        }
+        self.session = Session::Copy(Box::new(session));
+        Out::status(status)
+    }
+
+    // ------------------------------------------------------------------
     // Overlay
     // ------------------------------------------------------------------
 
@@ -796,6 +999,15 @@ impl Editor {
                     overlay.region = Some((*c1, p));
                 }
             }
+            Session::Move(session) => {
+                overlay.floating = session.items().map(geometry_of_item).collect();
+                overlay.floating_violations = session
+                    .violations()
+                    .iter()
+                    .map(|v| (v.layer, tile_geometry(&v.shape)))
+                    .collect();
+            }
+            Session::Copy(session) => overlay.floating = session.preview_geometry(),
             Session::None => {}
         }
         overlay

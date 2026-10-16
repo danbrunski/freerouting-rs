@@ -13,14 +13,14 @@
 //! - `Issue955PlacementLifecycleTest.dsnRoundTripPreservesBothContacts`:
 //!   already ported by C06, `tests/dsn_round_trip.rs`.
 //! - `quarterTurnPreservesContact`, `arbitraryTurnPreservesContact`,
-//!   `mirrorPreservesContact`: need `board.actions.ComponentItemTransform`
-//!   and `detachItemForMove`; owner I04.
+//!   `mirrorPreservesContact`: ported by I04 in `tests/interactive_transform.rs`.
 //! - `packageIdentityIncludesFractionalOffsets`: needs
 //!   `io.kicad.KiCadJsonReader`, which no checklist ports (K05 reads
 //!   `.kicad_pcb`); owner: none.
 //! - `board.actions.ComponentItemTransformTest`: all but
 //!   `componentRotationApiUsesExactQuarterTurns` (in `tests/java_ports.rs`)
-//!   need `ComponentItemTransform`; owner I04.
+//!   are ported by I04 in `tests/java_ports.rs`
+//!   (`board_actions_component_item_transform`).
 //!
 //! `board.BoardItemRenderingMetadataTest` is in `tests/java_ports.rs`.
 
@@ -656,7 +656,8 @@ fn swap_pins_exchanges_nets_and_changed_to_until_undo() {
 //   `tests/dsn_round_trip.rs::dsn_round_trip_preserves_both_contacts`.
 // - quarterTurnPreservesContact, arbitraryTurnPreservesContact,
 //   mirrorPreservesContact: they run `board.actions.ComponentItemTransform.apply`
-//   on items detached with `detachItemForMove`; owner I04.
+//   on items detached with `detachItemForMove`; ported by I04 in
+//   `tests/interactive_transform.rs`.
 // - packageIdentityIncludesFractionalOffsets: it calls the private
 //   `io.kicad.KiCadJsonReader.arePackagePinsIdentical`; no checklist ports
 //   the KiCad JSON reader (K05 reads `.kicad_pcb`).

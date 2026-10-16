@@ -7,7 +7,7 @@ the other side, and drop them (`MoveItemState`), or place a copy
 `GuiBoardLegacyEditActions.moveSelectedItems` and `copySelectedItems` are
 no-ops. The engine helper `ComponentItemTransform` is still tested in Java.
 This checklist exists so the feature can be built if Dan wants it; **do not
-start it until decision 1 in [I00](I00-interactive-README.md) says so**, and
+start it until decision 1 in [I00](../I00-interactive-README.md) says so**, and
 not before the G series has selection.
 
 **Prerequisites:** decision 1; I03; B05 (item `translate_by`,
@@ -55,7 +55,7 @@ burning an id, `Components::copy`); B08 (`detach_item_for_move`).
 
 ## Checklist
 
-- [ ] **I04.1 — `ComponentItemTransform`.**
+- [x] **I04.1 — `ComponentItemTransform`.**
   - Java: `ComponentItemTransform.apply` and helpers.
   - Rust: `interactive/transform.rs`, `apply_transform(board, detached,
     angle, mirror, pole) -> Result<Vec<ItemId>, TransformError>`.
@@ -66,7 +66,9 @@ burning an id, `Components::copy`); B08 (`detach_item_for_move`).
   - **Accept:** `ComponentItemTransformTest` (6) ported: shared junction
     via, undo/redo, conflict rejection, illegal angles.
 
-- [ ] **I04.2 — Move, rotate and mirror of a selection.**
+  *Done 2026-10-16:* `interactive/transform.rs`, `apply_transform(board, detached: &[Item], angle, mirror, pole) -> Result<Vec<Item>, TransformError>`. It returns the transformed copies (not ids): detached items are not in the board's arena, so the copies are values the caller inserts; Java returns `List<Item>` too. A refusal names its reason (`Rejection`), Java returns `null`. The detached items go into the trees for a moment through `UndoableObjects::insert_untracked` (new, no undo bookkeeping, unit test `untracked_objects_leave_the_structure_as_it_was`). All six `ComponentItemTransformTest` tests are ported in `tests/java_ports.rs` `board_actions_component_item_transform` (8 tests: the four parameter sets of the shared-junction test, conflicting anchors -> `ConflictingAnchors`, new foreign-net clearance -> `NewViolations`, non-grid escape rotates rigidly, illegal trace angle -> `IllegalTrace`; `componentRotationApiUsesExactQuarterTurns` was B05's). Differential: `transform_matches_java_{j2,bm05,issue955}` compare 132, 132 and 80 probe lines (accept/refuse per operation, floating items, ids, component poses, default-tree fingerprints) with Java at `a773a70ec`. `cargo test -p freerouting --test java_ports --test interactive_transform`: 56 and 17 passed.
+
+- [x] **I04.2 — Move, rotate and mirror of a selection.**
   - Java: `MoveItemState` (all engine parts: grid snapping of the move
     vector, 90°/45°/any-angle turns, side change, reset rotation, complete
     and cancel; the net-items bookkeeping that feeds the ratsnest).
@@ -77,7 +79,9 @@ burning an id, `Components::copy`); B08 (`detach_item_for_move`).
     listed above ported; rotating a component by 90° four times returns it
     to its placement (`state_hash` equal).
 
-- [ ] **I04.3 — Copy of a selection.**
+  *Done 2026-10-16:* `interactive/move_items.rs` (`MoveSession`: `getInstance` with the component and connected-set extension and its refusals, the grid snap, move, `turn90Degree`, `rotate`, `changePlacementSide`, `resetRotation`, `complete`, `cancel`; new file, the checklist named `transform.rs`) and `Command::{MoveSelection { to }, RotateSelection { degrees }, MirrorSelection, ResetRotation}` in `interactive/editor.rs` (`ModeKind::Moving`, floating items and violations in `Overlay`). The transform cases of `Issue955PlacementLifecycleTest`: `quarter_turn_preserves_contact`, `arbitrary_turn_preserves_contact`, `mirror_preserves_contact` in `tests/interactive_transform.rs`; the other cases of that class are B05.8's in `tests/item_transform.rs` (`back_side_*`, `copy_*`, `shape_and_pin_use_same_anchor`, ...). `four_quarter_turns_leave_the_board_state_unchanged`: a cancelled move with four 90-degree turns has the same `state_hash`, components and item hash as one without; `four_quarter_turns_return_the_selection_to_its_placement`: the floating geometry equals the start after four turns and a completed move equals the original items but for their ids. Probe comparison as in I04.1 (12 move trials per stage with moves, turns, 45/-45/30/135/12.5 degree rotations, mirrors, resets, complete and cancel; 5 refusal reasons). DIVERGENCES: "Interactive move and copy of a selection".
+
+- [x] **I04.3 — Copy of a selection.**
   - Java: `CopyItemState` (`changePadstackLayers` creates or reuses a
     padstack per layer pair; `insert` copies items with `copy(0)`, adds
     packages and components for copied component items, then inserts).
@@ -86,9 +90,13 @@ burning an id, `Components::copy`); B08 (`detach_item_for_move`).
     preview) and the copy cases of `Issue955PlacementLifecycleTest` ported;
     `copy_burns_ids_in_java_order` on a 3-item selection.
 
-- [ ] **I04.4 — Replay, determinism and divergence notes.**
+  *Done 2026-10-16:* `interactive/copy.rs` (`CopySession`, `change_padstack_layers`) and `Command::CopySelection { to }` (`ModeKind::Copying`; `Click` inserts, `SetLayer` is `changeLayerAction`). `CopyItemPreviewTest` (both parameters) is `copy_preview_follows_cursor_without_moving_source_pin` and `..._keepout`: the preview's exact geometry moves by the board offset, keeps its size, and the source component's exact location is unchanged. The copy cases of `Issue955PlacementLifecycleTest` (`copyConstructionPreservesLocation`, `copyRebindingInvalidatesCachedPadGeometry`, `copyRebindingInvalidatesCachedKeepoutGeometry`) were ported by B05.8 in `tests/item_transform.rs` (`copy_construction_preserves_location`, ...). `copy_burns_ids_in_java_order`: three preview ids from `max + 1` in selection order, then one id per inserted copy; the probe compares preview ids, inserted ids, padstack and package counts (layer changes), components and `maxGeneratedId` on 8 trials per stage and board.
+
+- [x] **I04.4 — Replay, determinism and divergence notes.**
   - `examples/edit_script.rs` accepts the new commands; DIVERGENCES lines
     for "disabled in Java's GUI at the pin; enabled here by decision".
   - **Accept:** a committed script (select, move, rotate, mirror, copy,
     undo) on bm05 replays to identical output under
     `tools/determinism-check.sh`.
+
+  *Done 2026-10-16:* `tests/support/editor_script.rs` (the editor script format used by `examples/edit_script.rs`) has `move_selection`, `rotate_selection`, `mirror_selection`, `reset_rotation`, `copy_selection` and the option `component_grid`; `crates/freerouting/tests/data/edit_script_i04_bm05.json` (22 commands: select, move, four turns, 45 degrees, mirror, reset, complete, undo, select, copy twice, cancel, undo twice) on bm05 without a session. `tools/determinism-check.sh --out <dir> -- target/.../examples/edit_script fixtures/Issue508-DAC2020_bm05.dsn crates/freerouting/tests/data/edit_script_i04_bm05.json {OUT}` (idle, then beside 8 burners) printed `identical`; `the_edit_script_replays_identically` replays it twice in the test. DIVERGENCES lines under "Interactive move and copy of a selection" (disabled in Java's GUI at the pin, enabled by decision 1; the plane-area and multi-net conduction area refusals; the command semantics).

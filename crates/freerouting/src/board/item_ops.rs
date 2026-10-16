@@ -370,39 +370,51 @@ impl BasicBoard {
     /// area of more than one net, which Java's `ConductionArea.copy` refuses
     /// (before it takes an id).
     pub fn copy_item(&mut self, id: ItemId, new_id: Option<ItemId>) -> Option<Item> {
-        let item = self.items.get(&id)?;
+        let item = self.items.get(&id)?.clone();
+        self.copy_of(&item, new_id)
+    }
+
+    /// [`copy_item`](Self::copy_item) for an item that need not be on the
+    /// board, such as a detached copy (Java `copy(int)` on any item).
+    pub fn copy_of(&mut self, item: &Item, new_id: Option<ItemId>) -> Option<Item> {
         if item.is_conduction_area() && item.net_count() != 1 {
             self.log.push(
                 "ConductionArea.copy not yet implemented for areas with more than 1 net".into(),
             );
             return None;
         }
-        let kind = match &item.kind {
-            ItemKind::BoardOutline(outline) => ItemKind::BoardOutline(outline.copy_shapes()),
-            other => other.clone(),
-        };
-        let (nets, class, component, fixed) = (
-            item.net_numbers.clone(),
-            item.clearance_class,
-            item.component_id,
-            item.fixed_state,
-        );
         let new_id = match new_id {
             Some(id) if id.0 > 0 => id,
             _ => self.burn_item_id(),
         };
-        let mut kind = kind;
-        if let ItemKind::Pin(pin) = &mut kind {
-            // A new Pin's changedTo is the pin itself.
-            pin.changed_to = new_id;
-        }
-        let fixed = if matches!(kind, ItemKind::BoardOutline(_)) {
-            FixedState::SystemFixed
-        } else {
-            fixed
-        };
-        Some(Item::new(new_id, nets, class, component, fixed, kind))
+        Some(copy_with_id(item, new_id))
     }
+}
+
+/// A copy of `item` with the id `new_id` that is not on the board (the part
+/// of Java's per-class `copy(int)` after the id is chosen).
+pub(crate) fn copy_with_id(item: &Item, new_id: ItemId) -> Item {
+    let kind = match &item.kind {
+        ItemKind::BoardOutline(outline) => ItemKind::BoardOutline(outline.copy_shapes()),
+        other => other.clone(),
+    };
+    let (nets, class, component, fixed) = (
+        item.net_numbers.clone(),
+        item.clearance_class,
+        item.component_id,
+        item.fixed_state,
+    );
+    let mut kind = kind;
+    if let ItemKind::Pin(pin) = &mut kind {
+        // A new Pin's changedTo is the pin itself.
+        pin.changed_to = new_id;
+    }
+    let fixed = if matches!(kind, ItemKind::BoardOutline(_)) {
+        FixedState::SystemFixed
+    } else {
+        fixed
+    };
+    Item::new(new_id, nets, class, component, fixed, kind)
 }
 
 /// `Point.translateBy` for a drill centre. A translation by a rational

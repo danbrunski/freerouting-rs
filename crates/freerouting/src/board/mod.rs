@@ -45,7 +45,7 @@ pub use pin_exits::TraceExitRestriction;
 // leftovers), in their own files.
 pub mod item_geometry;
 
-pub use item_geometry::{GeometryShape, ItemGeometry, LayerShape};
+pub use item_geometry::{GeometryShape, ItemGeometry, LayerShape, geometry_of_item, tile_geometry};
 pub mod gui_ops;
 
 pub use gui_ops::DetachError;

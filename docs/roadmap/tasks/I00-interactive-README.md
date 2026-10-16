@@ -17,7 +17,7 @@ narrative is in [optimizer-and-editing.md](../optimizer-and-editing.md).
 | [I01](archive/I01-route-session.md) ✅ | `RouteSession`: route start, dynamic and stitch routing with push-and-shove, neckdown, SMD snap, layer change with vias, cancel; parameter resolution; overlay data | L / medium-high | O01, O04; B01 (snapshots, change journal), B04 (`pick_nearest_routing_item`, filters), B05 (`connect_to_trace`, swappable pins, neckdown half width) |
 | [I02](archive/I02-drag-and-make-space.md) ✅ | `MoveComponent`, drag of drill items and components, make-space | M / medium | I01; O04 (`move_drill_item`); B04 (`check_move_item`); B05 (item moves) |
 | [I03](archive/I03-editor-commands.md) ✅ | `Editor::apply` dispatch, selection, pin swap, keepout construction, undo/redo with deltas; delete and fix/unfix by decision 1 | M–L / medium | I01, I02; B04, B05 (pin swap) |
-| [I04](I04-selection-transforms.md) | Move, rotate, mirror and copy of selected items (optional; decision 1) | M / medium | I03; B05 (transforms, `copy(0)`), B08 (`detach_item_for_move`) |
+| [I04](archive/I04-selection-transforms.md) ✅ | Move, rotate, mirror and copy of selected items (optional; decision 1) | M / medium | I03; B05 (transforms, `copy(0)`), B08 (`detach_item_for_move`) |
 
 ## Order and critical path
 

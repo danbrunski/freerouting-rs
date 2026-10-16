@@ -79,3 +79,16 @@ pub use editor::{
 pub use history::HistoryStep;
 pub use pin_swap::{PinSwap, SwapOutcome};
 pub use select::Extent;
+
+// I04: `transform` (I04.1), [`apply_transform`], Java's
+// `board.actions.ComponentItemTransform`; `move_items` (I04.2), [`MoveSession`],
+// Java's `MoveItemState` (move, turn and mirror a selection); `copy` (I04.3),
+// [`CopySession`], Java's `CopyItemState`. Disabled in Java's GUI at the pin; enabled by
+// decision 1 of I00 (DIVERGENCES, "Interactive move and copy of a selection").
+pub mod copy;
+pub mod move_items;
+pub mod transform;
+
+pub use copy::{CopyOutcome, CopySession, change_padstack_layers};
+pub use move_items::{MoveOutcome, MoveRefusal, MoveSession};
+pub use transform::{Rejection, TransformError, apply_transform};

@@ -1494,3 +1494,243 @@ mod board_actions_move_component {
         assert_eq!(center(&board, pins[0]), IntPoint::new(CX, CY));
     }
 }
+
+/// `board.actions.ComponentItemTransformTest` (I04.1): `ComponentItemTransform.apply`
+/// (`interactive::apply_transform`) on items detached with `detachItemForMove` and
+/// copied with `copy(0)`.
+///
+/// Ported: five of the six tests, `sharedJunctionViaAndUndoRemainConsistent` as one test per
+/// parameter set (four) and the other four. Not ported here:
+/// `componentRotationApiUsesExactQuarterTurns`, ported by B05 (it calls only the component API,
+/// `component_rotation_api_uses_exact_quarter_turns` above).
+/// The reference comparison with Java's accept/refuse decisions, ids and positions is
+/// `tests/interactive_transform.rs` (probe `transform`).
+mod board_actions_component_item_transform {
+    use super::*;
+    use freerouting::board::items::Item;
+    use freerouting::board::structure::{AngleRestriction, ComponentId};
+    use freerouting::interactive::{Rejection, TransformError, apply_transform};
+
+    fn board() -> RoutingBoard {
+        let layers = LayerStructure::new(vec![Layer::new("Top", true), Layer::new("Bottom", true)]);
+        let matrix = ClearanceMatrix::default_instance(layers.count(), 10);
+        let mut rules = BoardRules::new(layers.clone(), matrix);
+        rules.create_default_net_class();
+        let outline = IntBox::new(-100_000, -100_000, 100_000, 100_000);
+        let mut board = RoutingBoard::new(
+            outline,
+            layers,
+            vec![PolylineShape::Tile(TileShape::from(outline))],
+            0,
+            rules,
+            Communication::default(),
+        );
+        let class = board.rules.default_net_class();
+        board.rules.nets.add("one", 1, false, class);
+        board.rules.nets.add("two", 1, false, class);
+        board
+    }
+
+    fn pin(board: &mut RoutingBoard, x: f64, y: f64, net: i32) -> ItemId {
+        let circle = ConvexShape::Circle(Circle::new(IntPoint::new(0, 0), 20));
+        let pad = board
+            .library
+            .padstacks
+            .add_unnamed(vec![Some(circle.clone()), Some(circle)]);
+        let pkg = board.library.packages.add_unnamed(vec![PackagePin::new(
+            "1",
+            pad,
+            FloatPoint::new(0.0, 0.0),
+            0.0,
+        )]);
+        let name = format!("C{}", board.components.count());
+        let component = board.components.add_precise(
+            name,
+            Some(FloatPoint::new(x, y)),
+            0.0,
+            true,
+            pkg,
+            pkg,
+            false,
+            None,
+        );
+        board
+            .insert_pin(component.0, 0, &[net], 1, FixedState::Unfixed)
+            .expect("pin")
+    }
+
+    fn trace(board: &mut RoutingBoard, from: IntPoint, to: IntPoint) -> ItemId {
+        board
+            .insert_trace_without_cleaning(
+                Polyline::from_points(&[Point::Int(from), Point::Int(to)]),
+                0,
+                2,
+                &[1],
+                1,
+                FixedState::Unfixed,
+            )
+            .expect("trace")
+    }
+
+    fn center(board: &RoutingBoard, id: ItemId) -> IntPoint {
+        board.item(id).unwrap().drill().unwrap().center
+    }
+
+    /// Java's `detach`: `detachItemForMove(item)`, then `item.copy(0)`.
+    fn detach(board: &mut RoutingBoard, ids: &[ItemId]) -> Vec<Item> {
+        ids.iter()
+            .map(|&id| {
+                let item = board.item(id).unwrap().clone();
+                board.detach_item_for_move(id).expect("detach");
+                board.copy_of(&item, None).expect("copy")
+            })
+            .collect()
+    }
+
+    fn insert_all(board: &mut RoutingBoard, items: Vec<Item>) -> Vec<ItemId> {
+        items.into_iter().map(|i| board.insert_item(i)).collect()
+    }
+
+    fn first_pin(board: &RoutingBoard) -> ItemId {
+        *board.pins().first().expect("a pin")
+    }
+
+    fn shared_junction(rotate_first: bool, front: bool, half: f64) {
+        let mut board = board();
+        board.components.set_flip_style_rotate_first(rotate_first);
+        let pin = pin(&mut board, 2000.0 + half, 3000.0 + half, 1);
+        if !front {
+            let component = ComponentId(board.item(pin).unwrap().component_id());
+            let pole = IntPoint::new(2000, 0);
+            board.components.change_side(component, pole);
+            board.change_placement_side(pin, pole);
+        }
+        let original = center(&board, pin);
+        let first = trace(
+            &mut board,
+            original,
+            IntPoint::new(original.x + 1000, original.y),
+        );
+        let second = trace(
+            &mut board,
+            original,
+            IntPoint::new(original.x, original.y + 1000),
+        );
+        let padstack = board.item(pin).unwrap().drill().unwrap().padstack;
+        let via = board.insert_via(padstack, original, &[1], 1, FixedState::Unfixed, true);
+        assert_eq!(board.normal_contacts(pin).len(), 3);
+        board.generate_snapshot();
+        let detached = detach(&mut board, &[pin, first, second, via]);
+        let moved = apply_transform(&mut board, &detached, 90.0, false, IntPoint::new(100, 200))
+            .expect("the transform is accepted");
+        let ids = insert_all(&mut board, moved);
+        let moved_pin = ids[0];
+        assert_eq!(board.normal_contacts(moved_pin).len(), 3);
+        let new_center = center(&board, moved_pin);
+        assert_eq!(new_center, center(&board, ids[3]));
+        assert!(board.undo(None));
+        assert_eq!(center(&board, first_pin(&board)), original);
+        assert_eq!(board.normal_contacts(first_pin(&board)).len(), 3);
+        assert!(board.redo(None));
+        assert_eq!(center(&board, first_pin(&board)), new_center);
+        assert_eq!(board.normal_contacts(first_pin(&board)).len(), 3);
+    }
+
+    #[test]
+    fn shared_junction_via_and_undo_remain_consistent_front_move_first() {
+        shared_junction(false, true, 0.5);
+    }
+
+    #[test]
+    fn shared_junction_via_and_undo_remain_consistent_front_rotate_first() {
+        shared_junction(true, true, 0.5);
+    }
+
+    #[test]
+    fn shared_junction_via_and_undo_remain_consistent_back_move_first() {
+        shared_junction(false, false, -0.5);
+    }
+
+    #[test]
+    fn shared_junction_via_and_undo_remain_consistent_back_rotate_first() {
+        shared_junction(true, false, -0.5);
+    }
+
+    #[test]
+    fn conflicting_anchors_reject_without_changing_pose_or_search_tree() {
+        let mut board = board();
+        let a = pin(&mut board, 2000.5, 3000.5, 1);
+        let b = pin(&mut board, 4000.0, 3001.0, 1);
+        let (from, to) = (center(&board, a), center(&board, b));
+        let wire = trace(&mut board, from, to);
+        let component = ComponentId(board.item(a).unwrap().component_id());
+        let location = board.components.get(component).unwrap().exact_location();
+        let detached = detach(&mut board, &[a, b, wire]);
+        let result = apply_transform(&mut board, &detached, 90.0, false, IntPoint::new(0, 0));
+        assert_eq!(
+            result.unwrap_err(),
+            TransformError::Rejected(Rejection::ConflictingAnchors)
+        );
+        assert_eq!(
+            board.components.get(component).unwrap().exact_location(),
+            location
+        );
+        let ids = insert_all(&mut board, detached);
+        assert_eq!(board.normal_contacts(ids[0]).len(), 1);
+        assert_eq!(board.normal_contacts(ids[1]).len(), 1);
+        assert_eq!(board.normal_contacts(ids[2]).len(), 2);
+    }
+
+    #[test]
+    fn new_foreign_net_clearance_rejects_and_leaves_stationary_pin_untouched() {
+        let mut board = board();
+        let a = pin(&mut board, 2000.5, 3000.5, 1);
+        let obstacle = pin(&mut board, -3000.0, 2001.0, 2);
+        let before = center(&board, obstacle);
+        let detached = detach(&mut board, &[a]);
+        let result = apply_transform(&mut board, &detached, 90.0, false, IntPoint::new(0, 0));
+        assert_eq!(
+            result.unwrap_err(),
+            TransformError::Rejected(Rejection::NewViolations)
+        );
+        assert_eq!(center(&board, obstacle), before);
+        assert!(board.normal_contacts(obstacle).is_empty());
+        insert_all(&mut board, detached);
+        assert_eq!(board.all_clearance_violations().len(), 0);
+    }
+
+    #[test]
+    fn existing_non_grid_pin_escape_can_still_rotate_rigidly() {
+        let mut board = board();
+        board
+            .rules
+            .set_trace_angle_restriction(AngleRestriction::FortyfiveDegree);
+        let a = pin(&mut board, 2000.5, 3000.5, 1);
+        let from = center(&board, a);
+        let wire = trace(&mut board, from, IntPoint::new(from.x + 1000, from.y + 600));
+        let detached = detach(&mut board, &[a, wire]);
+        let moved = apply_transform(&mut board, &detached, 90.0, false, IntPoint::new(0, 0))
+            .expect("the escape is already non-grid, so it may rotate");
+        let ids = insert_all(&mut board, moved);
+        assert_eq!(board.normal_contacts(ids[0]).len(), 1);
+    }
+
+    #[test]
+    fn illegal_trace_angle_rejects_rather_than_distorting_copper() {
+        let mut board = board();
+        board
+            .rules
+            .set_trace_angle_restriction(AngleRestriction::NinetyDegree);
+        let a = pin(&mut board, 2000.5, 3000.5, 1);
+        let from = center(&board, a);
+        let wire = trace(&mut board, from, IntPoint::new(from.x + 1000, from.y));
+        let detached = detach(&mut board, &[a, wire]);
+        let result = apply_transform(&mut board, &detached, 45.0, false, IntPoint::new(0, 0));
+        assert!(matches!(
+            result.unwrap_err(),
+            TransformError::Rejected(Rejection::IllegalTrace(_))
+        ));
+        let ids = insert_all(&mut board, detached);
+        assert_eq!(board.normal_contacts(ids[0]).len(), 1);
+    }
+}

@@ -167,6 +167,39 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
         self.maybe_collect_garbage();
     }
 
+    /// Adds a scratch object under a key that is not in use, without touching
+    /// the undo bookkeeping (no redo is disabled, no delete list changes).
+    /// [`remove_untracked`](Self::remove_untracked) takes it out again and
+    /// leaves the structure as it was. For the transient tree-only insertion
+    /// of Java's `ComponentItemTransform` and the copy preview checks, which
+    /// put detached items into the search trees for a moment.
+    ///
+    /// # Panics
+    /// If `key` is already in use.
+    pub(crate) fn insert_untracked(&mut self, key: K, object: V) {
+        assert!(
+            !self.objects.contains_key(&key),
+            "insert_untracked: the key is in use"
+        );
+        let idx = self.alloc(Node {
+            key: key.clone(),
+            object: Arc::new(object),
+            level: self.stack_level,
+            undo: None,
+            redo: None,
+        });
+        self.objects.insert(key, idx);
+    }
+
+    /// Takes out a scratch object added by
+    /// [`insert_untracked`](Self::insert_untracked).
+    pub(crate) fn remove_untracked(&mut self, key: &K) {
+        if let Some(idx) = self.objects.remove(key) {
+            self.nodes[idx] = None;
+            self.free.push(idx);
+        }
+    }
+
     /// Removes the object with key `key`, keeping it for undo. Returns false if
     /// it was not found.
     pub fn delete(&mut self, key: &K) -> bool {
@@ -496,6 +529,43 @@ mod tests {
 
     fn values(objects: &UndoableObjects<i32, &'static str>) -> Vec<(i32, &'static str)> {
         objects.iter().map(|(k, v)| (*k, *v)).collect()
+    }
+
+    /// A scratch object leaves no trace: not in the walk, not in the undo or
+    /// redo, and it keeps a possible redo.
+    #[test]
+    fn untracked_objects_leave_the_structure_as_it_was() {
+        let mut objects = UndoableObjects::new();
+        objects.insert(1, "a");
+        objects.generate_snapshot();
+        objects.delete(&1);
+        objects.undo().unwrap();
+        let nodes = objects.node_count();
+        let walk = |o: &UndoableObjects<i32, &'static str>| {
+            let mut text = String::new();
+            o.walk_state(|record| match record {
+                StateRecord::Header {
+                    stack_level,
+                    redo_possible,
+                } => text.push_str(&format!("h{stack_level}{redo_possible};")),
+                StateRecord::Key(k) => text.push_str(&format!("k{k};")),
+                StateRecord::Node { level, object } => text.push_str(&format!("n{level}{object};")),
+                StateRecord::Seen(i) => text.push_str(&format!("s{i};")),
+                StateRecord::NoNode => text.push_str("-;"),
+                StateRecord::DeletedLevel(n) => text.push_str(&format!("d{n};")),
+            });
+            text
+        };
+        let before = walk(&objects);
+        objects.insert_untracked(7, "scratch");
+        assert_eq!(values(&objects), vec![(1, "a"), (7, "scratch")]);
+        objects.remove_untracked(&7);
+        assert_eq!(values(&objects), vec![(1, "a")]);
+        assert_eq!(walk(&objects), before);
+        assert_eq!(objects.node_count(), nodes);
+        // the redo that was possible before still is
+        assert!(objects.redo().is_some());
+        assert_eq!(values(&objects), Vec::<(i32, &'static str)>::new());
     }
 
     #[test]

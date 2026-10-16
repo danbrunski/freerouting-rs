@@ -126,6 +126,67 @@ impl ItemGeometry {
     }
 }
 
+impl GeometryShape {
+    /// The shape moved by `(dx, dy)` (the interactive copy preview draws
+    /// component items at the offset of the copy).
+    pub fn translated(&self, dx: i32, dy: i32) -> GeometryShape {
+        let (fx, fy) = (f64::from(dx), f64::from(dy));
+        let vector =
+            freerouting_geometry::Vector::Int(freerouting_geometry::IntVector::new(dx, dy));
+        let shift = |p: &FloatPoint| FloatPoint::new(p.x + fx, p.y + fy);
+        match self {
+            GeometryShape::Polygon { outer, holes } => GeometryShape::Polygon {
+                outer: outer.iter().map(shift).collect(),
+                holes: holes
+                    .iter()
+                    .map(|h| h.iter().map(shift).collect())
+                    .collect(),
+            },
+            GeometryShape::Polyline {
+                corners,
+                half_width,
+            } => GeometryShape::Polyline {
+                corners: corners.iter().map(shift).collect(),
+                half_width: *half_width,
+            },
+            GeometryShape::Circle { center, radius } => GeometryShape::Circle {
+                center: IntPoint::new(center.x.wrapping_add(dx), center.y.wrapping_add(dy)),
+                radius: *radius,
+            },
+            GeometryShape::Octagon(o) => GeometryShape::Octagon(o.translate_by(&vector)),
+            GeometryShape::Box(b) => GeometryShape::Box(b.translate_by(&vector)),
+        }
+    }
+}
+
+impl ItemGeometry {
+    /// The geometry moved by `(dx, dy)`.
+    pub fn translated(&self, dx: i32, dy: i32) -> ItemGeometry {
+        ItemGeometry {
+            shapes: self
+                .shapes
+                .iter()
+                .map(|s| LayerShape {
+                    layer: s.layer,
+                    shape: s.shape.translated(dx, dy),
+                })
+                .collect(),
+            ..self.clone()
+        }
+    }
+}
+
+/// The drawable geometry of an item that need not be on a board (a floating
+/// copy of the interactive editor).
+pub fn geometry_of_item(item: &Item) -> ItemGeometry {
+    geometry_of(item)
+}
+
+/// The drawable form of a tile shape (a clearance violation's area).
+pub fn tile_geometry(shape: &TileShape) -> GeometryShape {
+    plain_shape(&Shape::from(shape.clone()))
+}
+
 impl BasicBoard {
     /// The drawable geometry of item `id`; `None` if it is not on the board.
     pub fn item_geometry(&self, id: ItemId) -> Option<ItemGeometry> {

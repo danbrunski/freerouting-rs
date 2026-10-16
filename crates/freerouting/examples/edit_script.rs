@@ -18,7 +18,10 @@
 //!
 //! A script whose settings say `"tool": "editor"` is an editor script (I03.8): every
 //! `interactive::Command`, replayed through `Editor::apply` (the format is in
-//! `tests/support/editor_script.rs`), with Java's budgets (`--unlimited`: none).
+//! `tests/support/editor_script.rs`), with Java's budgets (`--unlimited`: none). I04 adds
+//! `move_selection`, `rotate_selection`, `mirror_selection`, `reset_rotation` and
+//! `copy_selection`; `tests/data/edit_script_i04_bm05.json` (select, move, turn, mirror, copy,
+//! undo on bm05, no session) is replayed twice, idle and loaded, by `tools/determinism-check.sh`.
 //!
 //! A script whose settings say `"tool": "drag"` is a drag script (I02.5): `press`, `drag_to` and
 //! `release` commands (the format is in `tests/support/drag_script.rs`), replayed with Java's

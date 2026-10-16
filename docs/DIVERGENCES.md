@@ -568,6 +568,32 @@ construction states and `GuiBoardHistoryController`; tests `tests/interactive_ed
   `nothing_selected`; a hole in an area whose border or a hole is not a polyline shape (Java's
   `ClassCastException`) reports `adding_hole_failed`.
 
+**Interactive move and copy of a selection** (`interactive::{transform, move_items, copy}`, I04,
+port of `board.actions.ComponentItemTransform`, `MoveItemState` and `CopyItemState`; tests
+`tests/interactive_transform.rs` against the `transform` probe, `tests/java_ports.rs`
+`board_actions_component_item_transform`)
+- Move, rotate, mirror and copy of the selection are disabled in Java's GUI at the pin
+  (`GuiBoardLegacyEditActions.moveSelectedItems` and `copySelectedItems` are no-ops and nothing
+  calls `MoveItemState` or `CopyItemState`); enabled here by decision (I00 decision 1, accepted by
+  Dan). The state classes are transcribed headless by the probe and compared line by line on
+  three boards (`transform_matches_java_*`).
+- `apply_transform` returns the transformed copies and, for a refusal, the reason (Java returns
+  `null`); the editor shows Java's `insertion_failed_because_of_obstacles` for every reason.
+  Java's `HashMap`/`HashSet` of contacts are sorted maps and sets; no result depends on their
+  order.
+- A selected item that the board keeps when detached for a move (the conduction area of a power
+  plane, which `detachItemForMove` does not remove) is refused with
+  `some_items_cannot_be_moved_because_they_are_fixed`; Java would insert its copy beside the
+  original. A conduction area of several nets, which `ConductionArea.copy` refuses with a
+  `null`, is left out of a copy preview; Java adds the `null` and fails with a
+  `NullPointerException` when the copy is inserted.
+- The editor commands are not Java's keys: `MoveSelection { to }` starts `MoveItemState` at the
+  last pointer position (the command's own position if there was none) and moves to `to`;
+  `RotateSelection { degrees }` is `turn90Degree`, `rotate` and `turn45Degree` in one (a
+  multiple of 90 turns exactly); `Click` in a copy first moves the preview to the click, where
+  Java's click inserts at the last mouse move. After a move or its cancel the editor is in the
+  menu, as Java returns `parentState.returnState`; a copy returns to the selection.
+
 ## freerouting-kicad
 
 Differences from KiCad's own DSN export, which is what Java reads. The reader builds the same
