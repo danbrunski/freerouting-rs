@@ -143,9 +143,13 @@ impl Session<'_> {
     }
 
     /// Java `invalidateDrillPages`: the drill pages overlapping `shape`
-    /// must be recalculated. A03 fills the drill page array; until then
-    /// there is nothing to invalidate.
-    pub fn invalidate_drill_pages(&mut self, _shape: &TileShape) {}
+    /// must be recalculated (A03). Nothing to do before the page array is
+    /// built: its pages have no drills yet.
+    pub fn invalidate_drill_pages(&mut self, shape: &TileShape) {
+        if let Some(pages) = self.drill_pages.as_mut() {
+            pages.invalidate(shape);
+        }
+    }
 
     /// Java `completeExpansionRoom` (`:432-545`): completes the shape of
     /// the incomplete room `room` and returns the new complete rooms. The
@@ -337,6 +341,7 @@ impl Session<'_> {
         self.sections.clear();
         self.by_java_id.clear();
         self.queue.clear();
+        self.clear_drills();
     }
 
     /// Java `ItemAutorouteInfo.getExpansionRoom(index, tree)`

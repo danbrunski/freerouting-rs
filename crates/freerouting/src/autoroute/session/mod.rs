@@ -52,9 +52,11 @@
 //! - [`doors`]: `ExpansionDoor` and `TargetItemExpansionDoor` geometry and
 //!   their sections;
 //! - [`queue`]: `MazeListElement` and the maze queue;
-//! - [`init`]: the search initialisation (`MazeSearchEngine.init`).
+//! - [`init`]: the search initialisation (`MazeSearchEngine.init`);
+//! - [`drills`]: the drill pages and drills (`autoroute/drill/*`, A03).
 
 pub mod doors;
+pub mod drills;
 mod incomplete45;
 pub mod init;
 pub mod neighbours45;
@@ -238,6 +240,9 @@ pub struct ItemAutorouteInfo {
     /// The obstacle room of each tree shape (`expansionRoomArr`), created
     /// on demand.
     pub obstacle_rooms: Option<Vec<Option<RoomId>>>,
+    /// The drill of a via (`Via.autorouteDrillInfo`), created on demand
+    /// (A03.4).
+    pub drill: Option<drills::DrillId>,
 }
 
 /// The neighbour calculation of a tree kind (Java
@@ -343,6 +348,11 @@ pub struct Session<'b> {
     pub(crate) tree_ops: Vec<TreeOp>,
     pub(crate) queue: MazeQueue,
     pub(crate) distance: DestinationDistance,
+    /// The drill pages (`AutorouteEngine.drillPageArray`), built on first
+    /// use (A03).
+    pub(crate) drill_pages: Option<drills::DrillPageArray>,
+    /// The drills of the pages and vias, never reused within a session.
+    pub(crate) drills: Vec<drills::ExpansionDrill>,
 }
 
 impl<'b> Session<'b> {
@@ -388,6 +398,8 @@ impl<'b> Session<'b> {
             tree_ops: Vec::new(),
             queue: MazeQueue::new(),
             distance,
+            drill_pages: None,
+            drills: Vec::new(),
         }
     }
 

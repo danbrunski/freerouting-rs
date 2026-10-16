@@ -1,0 +1,14 @@
+{"kind":"drills","board":"Issue143-rpi_splitter","javaCommit":"a773a70ec","format":1}
+sample 1 aee1653a08f5556c
+off:1 1138 af4e50a212ca661e
+off:2 1138 e80a5cb055b34294
+off:3 1138 737362adae9859c1
+off:5 1138 5b02918a01cdef3e
+on:1 1138 12182acde93a411a
+on:2 1138 6f9928fa723d04c8
+on:3 1138 60799e4b12ba082d
+on:5 1138 997a4a38dd6ae7e2
+smd:1 1137 36ceffc2df290a6b
+smd:2 1141 a0c5dba42dade612
+smd:3 1143 080e1762466ccd13
+smd:5 1140 f96aebfe58012a35

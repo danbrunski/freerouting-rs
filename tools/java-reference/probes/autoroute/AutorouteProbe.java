@@ -67,6 +67,11 @@ import java.util.UUID;
  *       autoroute tree's walk hash after AutorouteEngine.clear().
  *   <li>door-sections (A02.5): ExpansionDoor.getSectionSegments of a hand-built pair of doors at
  *       four offsets, then of the first 100 doors of the routable sampled connections.
+ *   <li>drills (A03.5): per sampled connection and variant, after MazeSearchEngine.getInstance:
+ *       DrillPage.getDrills (attachSmd = ctrl.attachSmdAllowed) on every page of the engine's
+ *       page array in row-major order, each page with its drills (location, shape, layers, the
+ *       room id per layer), then the room counter and the tree's walk hash after clear(). A
+ *       third variant "smd" repeats ripup off with attachSmd forced on.
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -95,6 +100,7 @@ public class AutorouteProbe {
         case "distance" -> distance(out, Loaded.load(dsn));
         case "start-rooms" -> startRooms(out, Loaded.load(dsn));
         case "door-sections" -> doorSections(out, Loaded.load(dsn));
+        case "drills" -> drills(out, Loaded.load(dsn));
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -772,6 +778,101 @@ public class AutorouteProbe {
       }
       printed += doors.size();
       engine.clear();
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // drills (A03.5)
+  // ------------------------------------------------------------------------------------------
+
+  /** A point: [x,y] for an IntPoint, else its text. */
+  static String pointJson(app.freerouting.geometry.planar.Point point) {
+    if (point instanceof app.freerouting.geometry.planar.IntPoint p) {
+      return "[" + p.x + "," + p.y + "]";
+    }
+    return quoted(String.valueOf(point));
+  }
+
+  /** The drills of every page of the engine, row by row, as a real search would see them. */
+  static void drillLines(Out out, AutorouteEngine engine, boolean attachSmd) throws Exception {
+    java.lang.reflect.Field pagesField =
+        app.freerouting.autoroute.drill.DrillPageArray.class.getDeclaredField("pages");
+    pagesField.setAccessible(true);
+    DrillPage[][] pages = (DrillPage[][]) pagesField.get(engine.drillPageArray);
+    for (DrillPage[] row : pages) {
+      for (DrillPage page : row) {
+        Collection<ExpansionDrill> drills = page.getDrills(engine, attachSmd);
+        out.line(new Line().num("page", page.getId()).raw("bounds", boxJson(page.shape))
+            .num("drills", drills.size()).end());
+        for (ExpansionDrill drill : drills) {
+          StringBuilder rooms = new StringBuilder("[");
+          for (int i = 0; i < drill.roomArr.length; i++) {
+            if (i > 0) {
+              rooms.append(',');
+            }
+            rooms.append(drill.roomArr[i] == null ? "null" : drill.roomArr[i].getId());
+          }
+          rooms.append(']');
+          out.line(new Line().num("drill", drill.getId()).raw("location", pointJson(drill.location))
+              .raw("shape", shapeJson(drill.getShape())).num("first", drill.firstLayer)
+              .num("last", drill.lastLayer).raw("rooms", rooms.toString()).end());
+        }
+      }
+    }
+  }
+
+  /**
+   * The variants of the drills kind: ripup off, ripup on, and "smd" (ripup off with attachSmd
+   * forced on, so the own-net SMD pin rules of getDrills are compared on boards whose via rules
+   * all say attach off).
+   */
+  static void drills(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Conn> conns = sample(board);
+    sampleLine(out, board, conns);
+    for (String variant : new String[] {"off", "on", "smd"}) {
+      boolean ripup = variant.equals("on");
+      for (Conn conn : conns) {
+        String stage = variant + ":" + conn.net;
+        if (!conn.state.isEmpty()) {
+          out.line(new Line().str("stage", stage).num("net", conn.net).str("state", conn.state)
+              .end());
+          continue;
+        }
+        AutorouteControl c;
+        try {
+          c = routerControl(l, conn.net, ripup);
+        } catch (RuntimeException e) {
+          out.line(new Line().str("stage", stage).num("net", conn.net)
+              .str("exception", e.getClass().getSimpleName()).end());
+          continue;
+        }
+        AutorouteEngine engine = new AutorouteEngine(board, c.traceClearanceClassIndex, false);
+        engine.initConnection(conn.net, null, null);
+        MazeSearchEngine search;
+        try {
+          search = MazeSearchEngine.getInstance(conn.start, conn.dest, engine, c);
+        } catch (Exception e) {
+          out.line(new Line().str("stage", stage).num("net", conn.net)
+              .str("exception", e.getClass().getSimpleName()).end());
+          engine.clear();
+          out.line(treeLine("cleared", engine.autorouteSearchTree));
+          continue;
+        }
+        boolean attachSmd = variant.equals("smd") || c.attachSmdAllowed;
+        out.line(new Line().str("stage", stage).num("net", conn.net).bool("ok", search != null)
+            .bool("attachSmd", attachSmd).end());
+        if (search != null) {
+          drillLines(out, engine, attachSmd);
+        }
+        List<app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom> complete =
+            privateField(engine, "completeExpansionRooms");
+        int count = privateField(engine, "expansionRoomInstanceCount");
+        out.line(new Line().num("roomCount", count)
+            .num("complete", complete == null ? 0 : complete.size()).end());
+        engine.clear();
+        out.line(treeLine("cleared", engine.autorouteSearchTree));
+      }
     }
   }
 

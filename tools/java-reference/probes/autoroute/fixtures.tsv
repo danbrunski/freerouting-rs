@@ -13,3 +13,4 @@ control	@ladder
 distance	@ladder
 start-rooms	@ladder
 door-sections	fixtures/Issue026-J2_reference.dsn
+drills	fixtures/scoring-mixed-layer.dsn	fixtures/Issue508-SMD-routing-issue-demo.dsn	fixtures/Issue143-rpi_splitter.dsn	fixtures/Issue143-rpi_splitter_mod.dsn	fixtures/Issue508-DAC2020_bm08.dsn	fixtures/Issue026-J2_reference.dsn
