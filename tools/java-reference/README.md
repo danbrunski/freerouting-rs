@@ -144,6 +144,14 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
     wiring unfixed. One command:
     `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> drag-script`
     (then `find fixtures/reference/probe/drag-script -type d -empty -delete`).
+  - `editor` (`EditorProbe.java`, I03): the board calls of the editor states transcribed
+    headless: seeded single-item selections picked and extended four ways, region selections,
+    pin swaps (`checkChangeNet` both ways, `Pin.swap`) on rpi_splitter with a logical part added
+    to its DSN text, and tiles, polygons and circles (with holes) under each angle restriction
+    through `checkShape` + `insertObstacle`; on J2, DAC2020_bm05 and the pin-swap board. One
+    command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> editor`
+    (then `find fixtures/reference/probe/editor -type d -empty -delete`).
 
 ## Settings, writer and CLI dumps (C01)
 

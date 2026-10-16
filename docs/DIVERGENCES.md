@@ -532,6 +532,30 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   in the workspace settings. `MoveComponent`'s identity-hash sets are sorted sets; at the pin no
   result depends on their order (`move_component_order_is_item_id_order`).
 
+**Interactive editor** (`interactive::{editor, select, pin_swap, construct, history, edit_ops}`,
+I03, port of `gui.interactive.InteractiveStateController`, the menu, inspect, region, pin swap and
+construction states and `GuiBoardHistoryController`; tests `tests/interactive_editor.rs`)
+- Delete of the selection is disabled in Java's GUI at the pin (`GuiBoardLegacyEditActions` makes
+  it a no-op); enabled here by decision (I00 decision 1, accepted by Dan): one snapshot, the
+  deletion-forbidden and user-fixed items stay with Java's
+  `some_items_are_fixed_and_could_therefore_not_be_removed`, the rest go through
+  `remove_items_and_pull_tight` when push is on, else `remove_items`
+  (`delete_selection_keeps_fixed_items_and_undo_restores`).
+- Fix and unfix of the selection are disabled in Java's GUI at the pin; enabled here by decision
+  (I00 decision 1). They take one snapshot and save each changed item for undo, so one undo
+  restores the fixed states; Java's `Item.setFixedState` and `unfix` change the item without
+  saving it (`fix_and_unfix_are_undoable`).
+- A route, drag or pin swap starts only from a menu mode, as Java's keys and popups do; Java's
+  `InteractiveStateController.startRoute` would also start one from another state after a
+  warning. `SetTool` drops a session in progress as Java's `setRouteMenuState` does.
+- A circle keepout's radius is the distance from its centre to the completing click (or the last
+  `Move`); Java takes it from the last repaint of the pointer position, which is the same point
+  unless the pointer moved without a repaint.
+- Java failures that became defined results: a region selection completed before its first
+  corner was set (Java's `NullPointerException` in `createSelectionBox`) reports
+  `nothing_selected`; a hole in an area whose border or a hole is not a polyline shape (Java's
+  `ClassCastException`) reports `adding_hole_failed`.
+
 ## freerouting-kicad
 
 Differences from KiCad's own DSN export, which is what Java reads. The reader builds the same

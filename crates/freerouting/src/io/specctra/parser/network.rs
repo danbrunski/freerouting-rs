@@ -1278,11 +1278,7 @@ pub(crate) fn insert_logical_parts(ctx: &mut ReadContext, part_library: Option<&
         for component_name in &mapping.components {
             let id = board.components.get_by_name(component_name).map(|c| c.id);
             match id {
-                Some(id) => board
-                    .components
-                    .get_mut(id)
-                    .expect("component")
-                    .set_logical_part(part),
+                Some(id) => board.components.set_logical_part(id, part),
                 None => board.log.push(format!(
                     "Network.insert_logical_parts: board component not found at '{component_name}'"
                 )),

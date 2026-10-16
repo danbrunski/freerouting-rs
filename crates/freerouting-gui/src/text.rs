@@ -453,7 +453,8 @@ pub const NC_REMOVE_TIP: &str = "Remove the selected net class.";
 pub const NC_ASSIGN: &str = "Assign";
 pub const NC_ASSIGN_TIP: &str = "Assign net classes to nets.";
 pub const NC_SELECT: &str = "Select";
-pub const NC_SELECT_TIP: &str = "Select the items belonging to the chosen net classes on the board.";
+pub const NC_SELECT_TIP: &str =
+    "Select the items belonging to the chosen net classes on the board.";
 pub const NC_SHOW_NETS: &str = "Show Nets";
 pub const NC_SHOW_NETS_TIP: &str = "Display a list of all nets in the selected classes.";
 pub const NC_FILTER_INCOMPLETES: &str = "Filter Incomplete Connections";
@@ -533,7 +534,8 @@ pub const EV_REMOVE: &str = "Remove";
 pub const EV_REMOVE_TIP: &str = "Remove the selected via.";
 pub const EV_NEW_VIA: &str = "new_via_";
 pub const EV_LAST_NOT_REMOVED: &str = "The last via cannot be removed.";
-pub const EV_IN_RULE: &str = "The via was not removed because it is still used by via rule {{name}}.";
+pub const EV_IN_RULE: &str =
+    "The via was not removed because it is still used by via rule {{name}}.";
 pub const EV_REMOVED: &str = "Via {{name}} removed.";
 
 // WindowVia_en.properties
@@ -599,7 +601,8 @@ pub const RP_IGNORE_CONDUCTION: &str = "Ignore conduction areas";
 pub const RP_IGNORE_CONDUCTION_TIP: &str =
     "When enabled, conduction areas are treated as non-obstacles during routing.";
 pub const RP_RESTRICT_PIN_EXITS: &str = "Restrict pin exit directions";
-pub const RP_RESTRICT_PIN_EXITS_TIP: &str = "When enabled, trace exits from rectangular pins are restricted to their shorter sides.";
+pub const RP_RESTRICT_PIN_EXITS_TIP: &str =
+    "When enabled, trace exits from rectangular pins are restricted to their shorter sides.";
 pub const RP_PAD_TO_TURN: &str = "Pad-to-turn gap:";
 pub const RP_PAD_TO_TURN_TIP: &str = "Minimum distance a trace must travel after leaving a pad before it can turn. Higher values are more restrictive.";
 pub const RP_COMPENSATION: &str = "Clearance compensation";
@@ -634,6 +637,24 @@ pub const CREATING_CIRCLE: &str = "Creating a circular keepout";
 pub const CREATING_POLYGON: &str = "Creating a polygon keepout";
 pub const KEEPOUT_DONE: &str = "Keepout created successfully.";
 pub const KEEPOUT_OVERLAPS: &str = "Keepout canceled because it overlaps existing items.";
+pub const ADDING_HOLE: &str = "Adding a hole to an obstacle area";
+pub const HOLE_DONE: &str = "Hole added successfully";
+pub const HOLE_FAILED: &str = "Failed to add hole";
+pub const NO_ITEM_FOR_HOLE: &str = "No item found to which a hole can be added.";
+pub const NO_AREA_FOR_HOLE: &str = "No obstacle area found in which to add a hole.";
+pub const HOLE_IN_CIRCLE: &str = "Adding a hole to a circle is not yet implemented.";
+
+/// The text of a hole construction's status key (Java's
+/// `InteractiveState_en.properties`).
+pub fn hole_status(key: &str) -> &'static str {
+    match key {
+        "adding_hole_completed" => HOLE_DONE,
+        "no_item_found_for_adding_hole" => NO_ITEM_FOR_HOLE,
+        "no_obstacle_area_found_for_adding_hole" => NO_AREA_FOR_HOLE,
+        "adding_hole_to_circle_not_yet_implemented" => HOLE_IN_CIRCLE,
+        _ => HOLE_FAILED,
+    }
+}
 
 // WindowSelectParameter_en.properties
 pub const SELECT_TITLE: &str = "General Settings";
@@ -679,13 +700,11 @@ pub const TB_NETS_TIP: &str = "Extend the selection to whole nets (N).";
 pub const TB_CONN_SETS: &str = "Connected Sets";
 pub const TB_CONN_SETS_TIP: &str = "Extend the selection to entire connected sets (S).";
 pub const TB_CONNECTIONS: &str = "Connections";
-pub const TB_CONNECTIONS_TIP: &str =
-    "Extend the selection to the next fork or terminal item (E).";
+pub const TB_CONNECTIONS_TIP: &str = "Extend the selection to the next fork or terminal item (E).";
 pub const TB_COMPONENTS: &str = "Components";
 pub const TB_COMPONENTS_TIP: &str = "Extend the selection to entire components.";
 pub const TB_VIOLATIONS: &str = "Violations";
-pub const TB_VIOLATIONS_TIP: &str =
-    "Show or hide clearance violations for the selected items (V).";
+pub const TB_VIOLATIONS_TIP: &str = "Show or hide clearance violations for the selected items (V).";
 pub const TB_ZOOM_SELECTION: &str = "Zoom Selection";
 pub const TB_ZOOM_SELECTION_TIP: &str = "Zoom to show the selected items (W).";
 pub const TB_ZOOM_ALL: &str = "Zoom All";
@@ -719,7 +738,6 @@ pub const POPUP_ZOOM_IN: &str = "Zoom in (Z)";
 pub const POPUP_ZOOM_OUT: &str = "Zoom out (O)";
 pub const POPUP_NEEDS_ROUTE: &str = "Needs the interactive route session (I01).";
 pub const POPUP_NEEDS_SWAP: &str = "Needs pin swapping in the editor (I03.3).";
-pub const POPUP_NEEDS_HOLE: &str = "Needs the editor's hole command (I03.4).";
 
 // WindowObjectInfo_en.properties and the words of Common_en.properties that
 // `Item.printInfo` puts between the values.

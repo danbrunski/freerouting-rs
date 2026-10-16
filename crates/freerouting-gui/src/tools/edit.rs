@@ -3,26 +3,25 @@
 //! Java's inspect toolbar has no such buttons at the pin: the edits it
 //! lists route to `GuiBoardLegacyEditActions`, whose methods are empty
 //! (`docs/DIVERGENCES.md`, "Delete, Fix and Unfix of the selection"). Dan
-//! accepted adding these three. The editor command that owns them (I03.6)
-//! has not landed, so the engine's primitives are called here, in the order
-//! I03.6 specifies; that command replaces these functions.
+//! accepted adding these three. The engine owns them (I03.6,
+//! `freerouting::interactive::{delete_selection, fix_selection}`); these
+//! functions only map their outcome for the GUI.
 //!
 //! - **Delete**: items whose deletion is forbidden (`is_deletion_forbidden`:
 //!   items of components, user-fixed items, power planes) stay and the
 //!   status is Java's `some_items_are_fixed_and_could_therefore_not_be_removed`;
 //!   the rest are removed after one snapshot. Nothing removable: no
-//!   snapshot, no edit.
-//! - **Fix** / **Unfix**: the fixed state of every selected item, without a
-//!   snapshot. `BasicBoard::set_fixed_state` and `unfix` change the item in
-//!   place and do not save it for undo (Java's `Item.setFixedState` does not
-//!   either), so these two edits are not undoable until I03.6 gives the
-//!   engine an undoable form.
+//!   snapshot, no edit. The GUI has no push setting yet, so the removal is
+//!   the plain one (the engine's push-off path); G09 passes the user's
+//!   settings.
+//! - **Fix** / **Unfix**: the fixed state of every selected item after one
+//!   snapshot, undoably (the engine saves each item for undo first).
 
 use std::collections::BTreeSet;
 
 use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
-use freerouting::board::structure::FixedState;
+use freerouting::interactive::{EditSettings, delete_selection, fix_selection};
 
 /// What an edit of the selection did.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -40,69 +39,32 @@ impl EditOutcome {
     }
 }
 
+impl From<freerouting::interactive::EditOutcome> for EditOutcome {
+    fn from(outcome: freerouting::interactive::EditOutcome) -> Self {
+        EditOutcome {
+            changed: outcome.changed,
+            refused: outcome.refused,
+        }
+    }
+}
+
 /// Removes the removable items of `ids`.
 pub fn delete(board: &mut RoutingBoard, ids: &BTreeSet<ItemId>) -> EditOutcome {
-    let (removable, refused): (Vec<ItemId>, Vec<ItemId>) = ids
-        .iter()
-        .copied()
-        .filter(|id| board.basic().item(*id).is_some())
-        .partition(|id| {
-            board
-                .basic()
-                .item(*id)
-                .is_some_and(|item| !board.basic().is_deletion_forbidden(item))
-        });
-    if removable.is_empty() {
-        return EditOutcome {
-            changed: 0,
-            refused: refused.len(),
-        };
-    }
-    board.generate_snapshot();
-    board.remove_items(removable.iter().copied());
-    EditOutcome {
-        changed: removable.len(),
-        refused: refused.len(),
-    }
+    let settings = EditSettings {
+        push_enabled: false,
+        ..EditSettings::for_board(board)
+    };
+    delete_selection(board, &settings, ids).into()
 }
 
 /// Fixes the items of `ids` (user fixed). Items that are fixed already are
 /// not counted.
 pub fn fix(board: &mut RoutingBoard, ids: &BTreeSet<ItemId>) -> EditOutcome {
-    let mut changed = 0;
-    for id in ids {
-        let Some(item) = board.basic().item(*id) else {
-            continue;
-        };
-        if item.fixed_state() != FixedState::UserFixed {
-            board.set_fixed_state(*id, FixedState::UserFixed);
-            changed += 1;
-        }
-    }
-    EditOutcome {
-        changed,
-        refused: 0,
-    }
+    fix_selection(board, ids, true).into()
 }
 
 /// Unfixes the items of `ids` (Java `Item.unfix`: not the system-fixed
 /// ones). Items that are unfixed already are not counted.
 pub fn unfix(board: &mut RoutingBoard, ids: &BTreeSet<ItemId>) -> EditOutcome {
-    let mut changed = 0;
-    for id in ids {
-        let Some(item) = board.basic().item(*id) else {
-            continue;
-        };
-        if matches!(
-            item.fixed_state(),
-            FixedState::UserFixed | FixedState::ShoveFixed
-        ) {
-            board.unfix(*id);
-            changed += 1;
-        }
-    }
-    EditOutcome {
-        changed,
-        refused: 0,
-    }
+    fix_selection(board, ids, false).into()
 }

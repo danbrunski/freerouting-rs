@@ -322,11 +322,18 @@ impl App {
     fn start_keepout(&mut self, kind: KeepoutKind, at: P) {
         self.tools.popup = None;
         let Some(b) = &self.loaded else { return };
+        let point = inspect::board_point(b.session.board.basic(), at);
         if kind == KeepoutKind::Hole {
-            self.notice = Some(text::POPUP_NEEDS_HOLE.to_string());
+            let layer = self.view.active_layer as i32;
+            match keepout::KeepoutTool::start_hole(&b.session.board, layer, point) {
+                Ok(tool) => {
+                    self.tools.keepout = Some(tool);
+                    self.notice = Some(text::ADDING_HOLE.to_string());
+                }
+                Err(key) => self.notice = Some(text::hole_status(key).to_string()),
+            }
             return;
         }
-        let point = inspect::board_point(b.session.board.basic(), at);
         self.tools.keepout = Some(keepout::KeepoutTool::start(kind, &b.session.board, point));
         self.notice = Some(
             match kind {
@@ -345,7 +352,7 @@ impl App {
         let Some(b) = &self.loaded else { return };
         if tool.kind == KeepoutKind::Circle {
             // The click that sets the radius ends a circle.
-            self.complete_keepout(Some(point.round()));
+            self.complete_keepout(Some(point));
         } else {
             tool.add_corner(&b.session.board, point);
         }
@@ -353,7 +360,7 @@ impl App {
 
     /// Completes the keepout under construction. A circle takes its radius
     /// from `radius_point`, or from the cursor if there is none.
-    fn complete_keepout(&mut self, radius_point: Option<freerouting::geometry::IntPoint>) {
+    fn complete_keepout(&mut self, radius_point: Option<FloatPoint>) {
         let Some(mut tool) = self.tools.keepout.take() else {
             return;
         };
@@ -366,8 +373,9 @@ impl App {
         };
         let radius_point = radius_point.or_else(|| {
             let mm = camera.zip(cursor).map(|(c, p)| c.to_board(canvas, p))?;
-            Some(inspect::board_point(b.session.board.basic(), mm).round())
+            Some(inspect::board_point(b.session.board.basic(), mm))
         });
+        let hole = tool.kind == KeepoutKind::Hole;
         let mut outcome = keepout::Outcome::Refused;
         b.session.edit(|board| {
             outcome = keepout::complete(&mut tool, board, layer, radius_point);
@@ -376,10 +384,20 @@ impl App {
         match outcome {
             keepout::Outcome::Inserted(_) => {
                 self.after_board_edit();
-                self.notice = Some(text::KEEPOUT_DONE.to_string());
+                let done = if hole {
+                    text::HOLE_DONE
+                } else {
+                    text::KEEPOUT_DONE
+                };
+                self.notice = Some(done.to_string());
             }
             keepout::Outcome::Refused => {
-                self.notice = Some(text::KEEPOUT_OVERLAPS.to_string());
+                let refused = if hole {
+                    text::HOLE_FAILED
+                } else {
+                    text::KEEPOUT_OVERLAPS
+                };
+                self.notice = Some(refused.to_string());
             }
         }
     }

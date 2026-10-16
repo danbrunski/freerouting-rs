@@ -1602,16 +1602,42 @@ fn tile_and_circle_keepouts() {
     exec(&mut h, Command::CanvasClick { at, toggle: false });
     assert_eq!(obstacles(&h).len(), before + 2);
     assert_eq!(h.state().notice(), Some(text::KEEPOUT_OVERLAPS));
-    // Holes wait for the editor command.
+    // A hole needs a keepout under its start (I03.4's editor command).
+    let empty = free_square(&h, 2.0, 3);
     exec(
         &mut h,
         Command::StartKeepout {
             kind: KeepoutKind::Hole,
-            at,
+            at: empty,
         },
     );
     assert!(h.state().tools().keepout.is_none());
-    assert_eq!(h.state().notice(), Some(text::POPUP_NEEDS_HOLE));
+    assert_eq!(h.state().notice(), Some(text::NO_ITEM_FOR_HOLE));
+    // A hole in a tile: the tile is removed and reinserted with the hole.
+    let tile = free_square(&h, 3.0, 4);
+    draw_keepout(&mut h, KeepoutKind::Tile, tile, 3.0);
+    let with_tile = obstacles(&h).len();
+    let hole = square(P::new(tile.x + 1.0, tile.y + 1.0), 1.0);
+    exec(
+        &mut h,
+        Command::StartKeepout {
+            kind: KeepoutKind::Hole,
+            at: hole[0],
+        },
+    );
+    assert_eq!(h.state().notice(), Some(text::ADDING_HOLE));
+    for p in &hole[1..] {
+        exec(
+            &mut h,
+            Command::CanvasClick {
+                at: *p,
+                toggle: false,
+            },
+        );
+    }
+    exec(&mut h, Command::Complete);
+    assert_eq!(h.state().notice(), Some(text::HOLE_DONE));
+    assert_eq!(obstacles(&h).len(), with_tile, "removed and reinserted");
 }
 
 #[test]

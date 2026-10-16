@@ -12,7 +12,7 @@
 //!
 //! The display rows (Center display, Zoom in, Zoom out) act on the click
 //! location, not on the cursor, which has moved into the menu. Entries
-//! whose engine work has not landed (route, pin swap, hole) are shown
+//! whose engine work has not landed (route, pin swap) are shown
 //! disabled with a tooltip naming what is missing.
 
 use eframe::egui;
@@ -118,11 +118,13 @@ pub fn entries(mode: Mode, at: P) -> Vec<Entry> {
                                 at,
                             },
                         ),
-                        Entry::Item {
-                            label: text::POPUP_HOLE,
-                            command: Command::ClosePopup,
-                            disabled: Some(text::POPUP_NEEDS_HOLE),
-                        },
+                        item(
+                            text::POPUP_HOLE,
+                            Command::StartKeepout {
+                                kind: KeepoutKind::Hole,
+                                at,
+                            },
+                        ),
                     ],
                 },
             ];

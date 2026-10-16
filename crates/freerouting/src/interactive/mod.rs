@@ -56,3 +56,26 @@ pub use drag::{
     find_item_to_move,
 };
 pub use move_component::{MoveBudget, MoveComponent, SortedItem, requires_drill_item_mover};
+
+// I03: the editor. `editor` (I03.1), [`Editor::apply`] with [`Command`] and
+// [`Response`]; `select` (I03.2), the selection queries; `pin_swap` (I03.3);
+// `construct` (I03.4), keepouts and holes; `history` (I03.5), undo and redo;
+// `edit_ops` (I03.6), delete and fix/unfix of the selection.
+pub mod construct;
+pub mod edit_ops;
+pub mod editor;
+pub mod history;
+pub mod pin_swap;
+pub mod select;
+
+pub use construct::{
+    ConstructClick, ConstructOutcome, Construction, KeepoutKind, KeepoutShape, add_hole,
+    insert_keepout,
+};
+pub use edit_ops::{EditOutcome, delete_selection, fix_selection, set_fixed_state_undoable};
+pub use editor::{
+    Command, ConstructionOverlay, Editor, EditorOptions, ModeKind, Overlay, Response, Tool,
+};
+pub use history::HistoryStep;
+pub use pin_swap::{PinSwap, SwapOutcome};
+pub use select::Extent;

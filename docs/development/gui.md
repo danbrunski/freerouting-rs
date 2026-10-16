@@ -104,11 +104,15 @@ The app is a board viewer for now. Nothing in it edits or routes.
   buttons (Nets `N`, Connected Sets `S`, Connections `E`, Components), Violations (`V`), the
   three zoom buttons, and Delete (`Delete`), Fix and Unfix (decision G00 question 6; Java's
   toolbar has the first ten only). The right button opens the context menu of the mode (Select
-  item, Start route and Swap pin disabled until I01/I03, Create keepout > Tile, Circle, Polygon;
-  with items selected the extend entries; the display rows act on the click location). A keepout is
-  built from clicked corners (snapped to the board's angle restriction as in Java), a rubber band
-  follows the cursor, Enter completes, Esc cancels; an overlap says `Keepout canceled because it
-  overlaps existing items.` Settings > Select is `WindowSelectParameter` ("General Settings":
+  item, Start route and Swap pin disabled until G09 wires I01/I03, Create keepout > Tile, Circle,
+  Polygon, Hole; with items selected the extend entries; the display rows act on the click
+  location). A keepout is built from clicked corners by the engine's `interactive::Construction`
+  (I03.4: snapped to the board's angle restriction, concave tile corners dropped, as in Java), a
+  rubber band follows the cursor, Enter completes, Esc cancels; an overlap says `Keepout canceled
+  because it overlaps existing items.` A hole starts on a keepout, via keepout or conduction area
+  of the active layer, takes the corners inside it and replaces the area with one that has the
+  hole (Java's `HoleConstructionState`). Delete, Fix and Unfix call the engine's I03.6
+  `delete_selection` / `fix_selection`; Fix and Unfix are undoable. Settings > Select is `WindowSelectParameter` ("General Settings":
   selection layers and the ten selectable classes, persisted). The item info window
   (`panels/item_info.rs`, the toolbar's Info, `I`, the Info buttons of the lists) prints the
   engine's `item_info` fields with Java's words. Every edit goes through
@@ -145,7 +149,7 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `look.rs`, `windows.rs` | G04: `Look` (the palette, the visibility levels, the dimming and the six virtual layers; `draw_color` is the one place a colour is decided) and the display windows that are plain flags (visibility, display options, colours, log, About). |
 | `panels/{nets,components,library}.rs` | G04: the rows of the Nets, Placed Components, Library Packages and Library Padstacks lists. |
 | `panels/{display,colors,status,log,about}.rs`, `panels/layers.rs` | G04: the window contents (each a function that returns commands), the status bar, the log (`Log::entries` composes the loader warnings, the engine's messages and the events) and the visibility sliders. |
-| `tools/{inspect,popup,keepout,edit}.rs`, `tools/mod.rs` | G05: `Tools` (the selection settings, the keepout under construction, the context menu, the shown violations, the item info windows); `App::execute_tool` runs the canvas commands (`CanvasClick`, `SelectRegion`, `ExtendSelection`, `DeleteSelection`, `OpenPopup`, `StartKeepout`, ...). `inspect.rs` has the pick, region and extend rules on the engine's queries; `popup.rs` the menu rows by mode; `keepout.rs` the corner snapping and the insertion (interim: the editor command I03.4 will own it); `edit.rs` Delete, Fix and Unfix (interim: I03.6). |
+| `tools/{inspect,popup,keepout,edit}.rs`, `tools/mod.rs` | G05: `Tools` (the selection settings, the keepout under construction, the context menu, the shown violations, the item info windows); `App::execute_tool` runs the canvas commands (`CanvasClick`, `SelectRegion`, `ExtendSelection`, `DeleteSelection`, `OpenPopup`, `StartKeepout`, ...). `inspect.rs` has the pick, region and extend rules on the engine's queries; `popup.rs` the menu rows by mode; `keepout.rs` maps clicks onto the engine's `interactive::Construction` (I03.4); `edit.rs` maps Delete, Fix and Unfix onto `interactive::{delete_selection, fix_selection}` (I03.6). |
 | `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs` | G05: Settings > Select ("General Settings", `SelectionSettings`), the toolbar over the canvas while items are selected, the item info window (G04.3), the keepout's rubber band. |
 | `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
 | `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`. |
@@ -497,10 +501,10 @@ In plan order. Each item needs engine work first, so check what has landed in
    Stubs waits for B08.3. G04 (windows, display options, colours, status bar) is
    done, including the item info window.
 2. **Selection by mouse, safe edits and keepouts:** done in G05 (see "What works").
-   Open: Start route, Swap pin and the Hole keepout (I01, I03.3, I03.4), and moving
-   the interim keepout/Delete/Fix/Unfix code of `tools/{keepout,edit}.rs` into the
-   engine's editor commands (I03.4, I03.6). Fix and Unfix are not undoable until then
-   (`set_fixed_state` does not save the item for undo, as in Java).
+   The Hole keepout and the engine forms of keepouts, Delete, Fix and Unfix landed with
+   I03 (2026-10-16). Open: Start route and Swap pin, and moving the canvas tools onto
+   `interactive::Editor::apply` (G09); Delete still takes the push-off path (plain
+   removal) because the GUI has no push setting yet.
 3. **Autorouter run:** start and stop the router from the GUI, with live
    progress. The board should redraw as routes land, which needs a way to
    rebuild or patch the `Scene`/`Tessellation` from engine change events

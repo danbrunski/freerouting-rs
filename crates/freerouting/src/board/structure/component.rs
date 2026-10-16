@@ -425,6 +425,21 @@ impl Components {
         }
     }
 
+    /// Assigns logical part `part` to component `id` (Java
+    /// `component.setLogicalPart`). Java changes the object its undo list
+    /// holds, so the copy in the undo list changes too, without a snapshot;
+    /// otherwise an undo would restore a copy without the part.
+    pub fn set_logical_part(&mut self, id: ComponentId, part: Option<LogicalPartId>) {
+        let Some(component) = self.get_mut(id) else {
+            return;
+        };
+        component.set_logical_part(part);
+        let key = CaseInsensitive(component.name.clone());
+        if let Some(stored) = self.undo_list.get_mut(&key) {
+            stored.set_logical_part(part);
+        }
+    }
+
     /// Whether the components on the back side are rotated before they are
     /// mirrored.
     pub fn flip_style_rotate_first(&self) -> bool {
