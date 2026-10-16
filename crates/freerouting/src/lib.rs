@@ -12,6 +12,7 @@ pub mod board;
 pub mod datastructures;
 pub mod drc;
 pub mod io;
+pub mod job;
 pub mod library;
 pub mod rules;
 pub mod scoring;

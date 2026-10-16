@@ -58,6 +58,7 @@
 //! - Hexadecimal floating point literals are not accepted as numbers.
 
 pub mod autoroute_scope;
+pub mod board;
 pub mod cli_args;
 pub mod config_path;
 pub mod dump;

@@ -98,7 +98,7 @@ or `docs/`.
 
 ## Checklist
 
-- [ ] **C03.1 — Board-specific cost tuning.**
+- [x] **C03.1 — Board-specific cost tuning.**
   Java: `RouterSettings.applyBoardSpecificOptimizations` (:318-509), with
   `setLayerCount` (:568) and `applyBoardSpecificOptimizationsIfNeeded`.
   Rust: `settings::board::apply_board_specific(patch: &mut SettingsPatch,
@@ -142,7 +142,24 @@ or `docs/`.
       `preferredCost`/`againstCost` equal C01's dump bit for bit. The
       second case shows 1.0/1.0 on every layer but `In1.Cu`.
 
-- [ ] **C03.2 — `BoardOutline::minimum_pin_gap`.**
+  *Done 2026-10-15:* `settings::board::{apply_board_specific,
+  apply_board_specific_if_needed, apply_net_class_exclusions}`; tests in
+  `tests/settings_board.rs` (21 pass).
+  - Ports: `Issue729TraceCostSettingsTest` (5 tests: tuned once, 2:1 aspect
+    penalty values, user costs 4.5/3.2/2.0 kept, `if_needed` skip and layer-count
+    run, `set_layer_count(4)` resets the flag), `Issue885...` explicit-cost test
+    (0.25/0.50 survive, array entries written), `RouterSettingsMergeTest`'s second
+    test (explicit `routable=false` and direction survive). Extra tests for the
+    outer-layer add, plane layers, zero arrays, the layer-count rebuild and a
+    degenerate box.
+  - `explicit_layer_cost_suppresses_computed_costs` (`reference::` module in
+    `settings_board.rs`): `aspect-4layer` per-layer preferred/against costs equal
+    C01's dump bit for bit (`F.Cu` 1.8/3.8, `In1.Cu` 1.0/1.5); on
+    `explicit-one-layer-cost` they are 1.0/1.0 everywhere but `In1.Cu` (2.0/1.0),
+    also bit-equal. `job_prepare_reference.rs` compares `layers` and both cost
+    arrays on all 652 scenarios (see C03.6).
+
+- [x] **C03.2 — `BoardOutline::minimum_pin_gap`.**
   Java: `BoardOutline.minimumPinGap`, `cornerGap` and `distanceToOutline`
   (:143-200). Rules:
   - Take the minimum over every pin and every layer from its first to its
@@ -160,7 +177,17 @@ or `docs/`.
       from Java's text, bit for bit.
     - A test on a board with no pins gives +∞.
 
-- [ ] **C03.3 — Copper-to-edge clearance override.**
+  *Done 2026-10-15:* `BoardOutline::minimum_pin_gap` (`board/items/mod.rs`,
+  appended to `impl BoardOutline`) and `BasicBoard::minimum_pin_gap`
+  (`job/overrides.rs`). `tests/outline_pin_gap.rs`:
+  `minimum_pin_gap_matches_java_on_every_board` compares Java's
+  `Double.toString` text with the port's on all 169 boards of the `default`
+  dumps (163 finite, 6 `Infinity`): 0 mismatches. Unit tests: a board without
+  pins gives +infinity (`"Infinity"`), the smallest corner distance, 0 for a pad
+  on or outside the outline (and the early return), a round pad measured from
+  its bounding box, empty shapes skipped.
+
+- [x] **C03.3 — Copper-to-edge clearance override.**
   Java: `applyCopperToEdgeClearanceOverride` (:490-595).
   Rust: `job::overrides::apply_edge_clearance(board, settings, state:
   &mut OverrideState) -> Vec<LogLine>`.
@@ -189,7 +216,25 @@ or `docs/`.
     - For every fixture, the `board_edge` row and the outline class equal
       C01.1's `default` (250, capped) and `fixture` (0) scenarios.
 
-- [ ] **C03.4 — Hole-clearance override.**
+  *Done 2026-10-15:* `job::overrides::apply_edge_clearance`,
+  `um_to_board_units`, `OverrideState`; tests in `tests/job_overrides.rs`
+  (21 pass).
+  - `CopperToEdgeClearanceCapTest` both tests on
+    `PCBench-retroreflectors-CONGFLOCK.dsn`: pin gap 2159 < default 2500 board
+    units, every layer's `board_edge` self-clearance within 1.0 of the gap; the
+    explicit 400 um value is exact. Also pinned: an explicit 250 is capped like
+    the default (value detection), 250 + 1e-10 too, 250.001 is not; an explicit
+    DSN outline class wins over the default value; the default applies again
+    once `edge_applied`; negative values warn and change nothing; Java's
+    rounding order (`um * resolution`, scale, half-up round).
+  - `DevBoardClearanceRoutingTest` clearance assertions on
+    `Issue558-dev-board.dsn` (650 um): `board_edge` exists, the outline is in it,
+    the value is exact on every layer.
+  - `job_prepare_reference.rs`: the clearance matrix (so the `board_edge` row)
+    and `outlineClearanceClass` equal C01.1's `default` (250, capped) and
+    `fixture` (0) scenarios on every board (also `cli`, `owner-config`).
+
+- [x] **C03.4 — Hole-clearance override.**
   Java: `applyHoleClearanceOverride` (:370) and
   `assignHoleKeepoutClearanceClass` (:428).
   - A null value is skipped. A negative value gives a warning and is
@@ -218,7 +263,22 @@ or `docs/`.
       equals the one after (use B02's fingerprint once it exists,
       otherwise item-by-item tree shapes).
 
-- [ ] **C03.5 — Plane nets, plane-as-obstacle, tolerance, net-class
+  *Done 2026-10-15:* `job::overrides::apply_hole_clearance` (with
+  `assign_hole_keepout_clearance_class`); tests in `tests/job_overrides.rs`.
+  - `HoleKeepoutClearanceTest.npthKeepoutsGetHoleEdgeClearanceClass` on
+    `Issue230-CNH_Functional_Tester_1.dsn` with `java_fixture_test()` plus
+    `hole_clearance_um = 250`: `hole_edge` exists, all circular package keepouts
+    are in it, at least one exists, and `hole_edge` is at least 250 um in board
+    units (2500) on every layer. **40 keepouts reclassified.**
+  - `hole_edge` entries equal `max(units, matrix(default AREA class, c))`
+    (28 entries above the hole clearance).
+  - With the default 0: `a_hole_clearance_of_zero_changes_nothing` compares the
+    stored tree shapes of every item in every tree item by item before and after
+    (B02's fingerprint does not exist yet): equal, no `hole_edge` class.
+  - A large value (5000 um) rebuilds the trees: a detector test shows the shapes
+    are stale after only setting the rule and current after the override.
+
+- [x] **C03.5 — Plane nets, plane-as-obstacle, tolerance, net-class
   exclusions.**
   Java: `applyPlaneNetsOverride` (:597), `applyPlaneAsObstacleOverride`
   (:623), `applyClearanceToleranceOverride` (:636) and
@@ -247,7 +307,26 @@ or `docs/`.
         a `kicad_default` pin.
       - C01.1's `cli` scenario flags equal Rust's on every fixture.
 
-- [ ] **C03.6 — `prepare_job`: Java's load sequence.**
+  *Done 2026-10-15:* `apply_plane_nets`, `apply_plane_as_obstacle`,
+  `apply_clearance_tolerance` (`job/overrides.rs`) and `apply_net_class_exclusions`
+  (`settings/board.rs`).
+  - `PowerPlaneValidationTest.testPlaneNetsOverride` and
+    `testPlaneAsObstacleOverride` ported (`job_overrides.rs`); plane nets also
+    tested for trimming, case, blanks, all subnets, already-plane nets;
+    tolerance for 0, negative, NaN and infinities.
+  - `Issue885...applyNetClassExclusions` (`POWER` flagged) in `settings_board.rs`,
+    plus case-insensitivity, blanks and the warning for an unknown name.
+  - `ignore_net_classes_is_honoured_headless` on `Issue558-dev-board.dsn`:
+    `ignore_net_classes = ["Power,Default"]` as one element flags the class
+    `Power,Default`; `has_ignored_nets` is true for its pins and false for a pin
+    of the DSN's `kicad_default` class (which is the board's `default` class).
+    The real `-inc Power,Default` splits at the comma and flags `default`
+    (test `the_inc_flag_splits_at_the_comma_and_flags_the_default_class`).
+  - C01.1's `cli` scenario: `isIgnoredByAutorouter` of every net class equals
+    Rust's on every board (inside `job_prepare_reference.rs`), except the two
+    boards with a class named `''` (see C03.6).
+
+- [x] **C03.6 — `prepare_job`: Java's load sequence.**
   Rust: `job::prepare::prepare_job(input: &JobInput, ctx: &ResolveContext)
   -> Result<PreparedJob, JobError>`.
   - `JobInput` holds:
@@ -282,7 +361,37 @@ or `docs/`.
     are listed as waiting on C04.4. The done note gives the release-build
     time of `prepare_job` on the largest fixture against `load_design`.
 
-- [ ] **C03.7 — `BoardRouterSettings`, the router's read-only view.**
+  *Done 2026-10-15:* `job::prepare::{prepare_job, JobInput, PreparedJob,
+  RulesChoice, JobError}`; `tests/job_prepare_reference.rs`
+  (`prepare_job_matches_java_dumps`, 38 s at opt-level 1, 52 s in release; cases
+  run on worker threads and merge in case order).
+  - **652 board scenarios** compared (every fixture and synthetic case, four
+    scenarios each) without an adjacent rules file: every field of `settings`
+    (including `layers` and both cost arrays), the `effective` block, the clearance
+    matrix, the outline class, `minimumPinGap`, hole clearance, tolerance,
+    `ignoreConduction`, plane nets, every net class (trace widths, flags, default
+    item classes), and `postLoadViolations` against Rust's full clearance check
+    after `prepare_job`. The dropped second merge is proven by these comparisons:
+    Java's dumps run the real one.
+  - Mismatches (8, listed in `EXPECTED_MISMATCHES` with the reason and a
+    DIVERGENCES line): `Issue684-Autorouter_PCB1_2026-5-8` and
+    `Issue721-Autorouter_CE2632_HarryMu_2026-6-15`, four scenarios each, because
+    they have a net class named `''` whose quotes Java keeps; nothing else differs
+    and `postLoadViolations` match.
+  - 24 scenarios (6 boards) wait on C04.4: `Issue029-hw48na`,
+    `Issue107-freq_teiler_200kHz_kicad`, `Issue107-freq_teiler_200kHz_kicad_bad`,
+    `Issue593-BBD_Mars-64`, `Issue742-tastexx-pcb/tastexx-pcb` and the
+    `explicit-cost-rules` case (asserted by name in the test). The rules hook
+    `apply_rules_file` logs `RULES files are not supported yet; ignoring '<path>'`.
+  - Timing (release, largest fixture `Issue187-processor.Z80.dsn`, 1.99 MB, median
+    of 5, machine busy with other builds): `load_design` 0.67 s / 0.84 s,
+    `prepare_job` 0.96 s / 0.69 s over two runs: within noise of each other
+    (`cargo test --release --test job_prepare_reference timing -- --ignored --nocapture`).
+  - `JobError` carries Java's text (`There was a parse error while reading board
+    file at '<loc>': <detail>`); a board Java fails to load must fail in the port
+    (checked per scenario).
+
+- [~] **C03.7 — `BoardRouterSettings`, the router's read-only view.**
   Java getters, which A01 and later the fanout and optimizer stages call:
   - `getTraceCosts`: per layer `(getHorizontalTraceCosts,
     getVerticalTraceCosts)`, with the array length as the count;
@@ -307,3 +416,20 @@ or `docs/`.
       scenario, `start_ripup_costs()` is 1500 on `Issue413-test.dsn`. On
       `Issue029-hw48na.dsn` it equals C01's dump, the rules file's value,
       once C04 lands; mark it `[~]` until then.
+
+  *Partial 2026-10-15:* `settings::board::BoardRouterSettings` (plain `Vec`s,
+  computed once from `RouterSettings`; `PreparedJob::board_settings`). Done:
+  - unit tests of each fallback (`settings_board.rs`: explicit layer value, array
+    entry, 1.0 past the array, `getTraceCosts` length from the array, direction
+    `layer % 2 == 1`, clamped default bend cost, unset routable, scalar getters,
+    neck width);
+  - on every board the view equals C01.1's `effective` block (layers' active,
+    direction, bend, preferred/against/horizontal/vertical costs, the flag, via
+    costs, plane via costs, start ripup, the run flags, warnings) for all four
+    scenarios: inside `job_prepare_reference.rs`, where `effective` is built from
+    the view;
+  - `owner_config_reaches_router_view`: with the `owner-config` scenario
+    `start_ripup_costs()` is 1500 on `Issue413-test.dsn`, equal to C01's dump.
+  - Remaining: the `Issue029-hw48na.dsn` half of `owner_config_reaches_router_view`
+    (C01's dump has 100, the rules file's value, which overrides Dan's 1500) needs
+    the rules file applied: C04.3/C04.4.

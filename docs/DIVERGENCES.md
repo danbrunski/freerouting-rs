@@ -171,3 +171,25 @@ branch 3 in IntOctagon's box cutout.
   the rules file, as `RulesReader.discoverLayerStructure` does; a non-integer value in
   a DSN or rules `autoroute_settings` integer scope is left unset (see freerouting-dsn)
   where Java sets 0 and then clamps it to 1.
+
+**Loading a job for routing** (`job`, port of the load sequence of `CliRunner.initializeCli`,
+`RoutingJobScheduler` and `HeadlessBoardManager`; tests `tests/job_*.rs`,
+`tests/settings_board.rs`, `tests/outline_pin_gap.rs`)
+- The scheduler's second merge (`RoutingJobScheduler.java:101-174`) is left out: its
+  `ApiSettings` carry the first merge's result, which after the board tuning has no null
+  field a lower source could fill. `job_prepare_reference.rs` compares the settings, the
+  tuned layer arrays, the clearance matrix and the post-load DRC count with Java's dumps,
+  which run the real second merge, on every board and scenario; if it ever fails, the
+  second merge goes back in.
+- `ignore_net_classes` names that match no net class are warned about in the job log; Java
+  warns only on its API path.
+- The tuning's debug log ("changed parameters") and `job.drcSettings.clearanceToleranceUm`
+  (the override also writes it) are not ported; log lines of the overrides are returned as
+  `LogLine`s.
+- A rules file is skipped with the DRC runner's notice until C04 lands.
+- `Issue684-Autorouter_PCB1_2026-5-8` and `Issue721-Autorouter_CE2632_HarryMu_2026-6-15`
+  have a net class named `''`. Java keeps the quote characters in the name; the port's DSN
+  reader accepts `'` as a quote (see freerouting-dsn) and reads an empty name, so the class
+  name differs in the matrix and the class dump, and `-inc ''` flags the class in Java but
+  is a blank name to the port. Everything else, `postLoadViolations` included, matches
+  (`EXPECTED_MISMATCHES` in `job_prepare_reference.rs`).

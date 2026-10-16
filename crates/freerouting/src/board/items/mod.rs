@@ -591,6 +591,67 @@ impl BoardOutline {
     pub fn layer_count(&self) -> usize {
         self.layer_count
     }
+
+    /// Java `BoardOutline.minimumPinGap`: the smallest gap, in board units,
+    /// between the copper of a pin and the outline lines, over `pin_shapes`
+    /// (the pad shape of every pin on every layer from its first to its
+    /// last). 0 if a pad corner is not inside the outline, `+∞` without
+    /// shapes.
+    ///
+    /// Pad corners are sampled, so the result is exact for polygonal pads
+    /// and never larger than the true gap for round pads, which are
+    /// measured from their bounding box.
+    pub fn minimum_pin_gap<'a>(&self, pin_shapes: impl IntoIterator<Item = &'a Shape>) -> f64 {
+        let mut result = f64::INFINITY;
+        for shape in pin_shapes {
+            result = result.min(self.corner_gap(shape));
+            if result <= 0.0 {
+                return 0.0;
+            }
+        }
+        result
+    }
+
+    /// Java `BoardOutline.cornerGap`.
+    fn corner_gap(&self, pad_shape: &Shape) -> f64 {
+        let mut result = f64::INFINITY;
+        if pad_shape.is_empty() || !pad_shape.is_bounded() {
+            return result;
+        }
+        match pad_shape {
+            Shape::Polyline(polyline) => {
+                for c in 0..polyline.border_line_count() {
+                    result = result.min(self.distance_to_outline(polyline.corner_approx(c)));
+                }
+            }
+            other => {
+                let bounds = other.bounding_box();
+                for c in 0..4 {
+                    result = result.min(self.distance_to_outline(bounds.corner(c).to_float()));
+                }
+            }
+        }
+        result
+    }
+
+    /// Java `BoardOutline.distanceToOutline`: the distance to the outline
+    /// lines, 0 for points that are not inside the outline.
+    fn distance_to_outline(&self, point: FloatPoint) -> f64 {
+        if !self.contains_float(point) {
+            return 0.0;
+        }
+        let mut result = f64::INFINITY;
+        for shape in &self.shapes {
+            let corner_count = shape.border_line_count();
+            for i in 0..corner_count {
+                let from = shape.corner(i).to_float();
+                let to = shape.corner((i + 1) % corner_count).to_float();
+                result = result
+                    .min(freerouting_geometry::FloatLine::new(from, to).segment_distance(point));
+            }
+        }
+        result
+    }
 }
 
 /// The class-specific data of an item.
