@@ -420,4 +420,29 @@ mod tests {
         assert_eq!(double_stream_sum([]).to_bits(), 0);
         assert!(std::iter::empty::<f64>().sum::<f64>().is_sign_negative());
     }
+
+    /// `Random.nextDouble` (A04.2): the bits of `new Random(42).nextDouble()`
+    /// five times, and of `new Random(3000).nextDouble()` (the maze search's
+    /// seed at the default start ripup costs), from Java at `a773a70ec`
+    /// (`NextDoubleProbe` in the A04 scratch, run with
+    /// `tools/java-reference/probe.sh`).
+    #[test]
+    fn next_double_matches_java() {
+        let mut random = JavaRandom::new(42);
+        let bits: Vec<u64> = (0..5).map(|_| random.next_double().to_bits()).collect();
+        assert_eq!(
+            bits,
+            [
+                0x3fe7_4833_a06f_f457,
+                0x3fe5_dcf7_7862_2e01,
+                0x3fd3_c20f_3f12_bbb4,
+                0x3fd1_bba7_6b52_c856,
+                0x3fe5_4c2d_50bb_0864,
+            ]
+        );
+        assert_eq!(
+            JavaRandom::new(3000).next_double().to_bits(),
+            0x3fec_d377_ddf8_89c4
+        );
+    }
 }

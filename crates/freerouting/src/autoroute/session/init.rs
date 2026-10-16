@@ -192,7 +192,8 @@ impl Session<'_> {
                     already_checked: false,
                     ripup_cost: 0,
                 };
-                self.queue.add(key, element);
+                // A04.2: through the fanout filter, as Java's overridden add.
+                self.queue_element(key, element);
                 start_ok = true;
             }
         }

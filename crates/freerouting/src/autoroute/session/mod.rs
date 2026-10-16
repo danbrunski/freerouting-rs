@@ -53,15 +53,24 @@
 //!   their sections;
 //! - [`queue`]: `MazeListElement` and the maze queue;
 //! - [`init`]: the search initialisation (`MazeSearchEngine.init`);
-//! - [`drills`]: the drill pages and drills (`autoroute/drill/*`, A03).
+//! - [`drills`]: the drill pages and drills (`autoroute/drill/*`, A03);
+//! - [`search`]: the maze search, one core generic over a sink
+//!   (`MazeSearchEngine`, A04), with [`sink`] (its hooks), [`layers`]
+//!   (`MazeExpansionEngine`), [`ripup`] (`MazeRipupResolver`, `Connection`)
+//!   and [`shove_room`] (`MazeTraceShover`).
 
 pub mod doors;
 pub mod drills;
 mod incomplete45;
 pub mod init;
+pub mod layers;
 pub mod neighbours45;
 pub mod queue;
+pub mod ripup;
 pub mod rooms;
+pub mod search;
+pub mod shove_room;
+pub mod sink;
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -71,6 +80,7 @@ use freerouting_geometry::{Stoppable, TileShape, TileShapeOps};
 use crate::autoroute::control::AutorouteControl;
 use crate::autoroute::distance::DestinationDistance;
 use crate::autoroute::java_ids;
+use crate::board::RoutingBoard;
 use crate::board::basic_board::BasicBoard;
 use crate::board::items::ItemId;
 use crate::board::search::complete_shape::CompletionScratch;
@@ -98,6 +108,10 @@ pub struct TargetDoorId(pub u32);
 pub enum ExpandableRef {
     Door(DoorId),
     TargetDoor(TargetDoorId),
+    /// `ExpansionDrill` (A04: a layer change).
+    Drill(drills::DrillId),
+    /// `DrillPage` (A04: the page whose drills are expanded next).
+    DrillPage(drills::DrillPageId),
 }
 
 /// The kind of a room.
@@ -320,7 +334,7 @@ pub enum TreeOp {
 
 /// The room graph and maze queue of one connection search.
 pub struct Session<'b> {
-    pub(crate) board: &'b mut BasicBoard,
+    pub(crate) board: &'b mut RoutingBoard,
     pub(crate) control: &'b AutorouteControl,
     /// The clearance class of the autoroute tree.
     pub(crate) tree_class: i32,
@@ -363,7 +377,7 @@ impl<'b> Session<'b> {
     /// checks of the search test `stop` and `work_limit` (Java
     /// `isStopRequested`); either may be absent.
     pub fn new(
-        board: &'b mut BasicBoard,
+        board: &'b mut RoutingBoard,
         control: &'b AutorouteControl,
         stop: Option<&'b dyn Stoppable>,
         work_limit: Option<WorkLimit>,

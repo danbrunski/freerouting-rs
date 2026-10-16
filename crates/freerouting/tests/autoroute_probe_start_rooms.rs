@@ -177,6 +177,8 @@ fn start_room_lines(out: &mut ProbeWriter, stage: &str, conn: &Conn, s: &Session
             let kind = match element.door {
                 ExpandableRef::Door(_) => "ExpansionDoor",
                 ExpandableRef::TargetDoor(_) => "TargetItemExpansionDoor",
+                ExpandableRef::Drill(_) => "ExpansionDrill",
+                ExpandableRef::DrillPage(_) => "DrillPage",
             };
             let next_room = element
                 .next_room

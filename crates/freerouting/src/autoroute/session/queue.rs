@@ -8,15 +8,20 @@
 //! `>` as `MazeListElement.compareTo` does (`:80-113`), the ints by value. A
 //! full tie is equal, so the `TreeSet` keeps the element already there and
 //! drops the newcomer. `-0.0` is stored as `0.0` (the two compare equal
-//! either way), and no NaN may enter (`debug_assert!`). A04 adds the fanout
-//! filter of the queue's `add` and may change the container.
+//! either way), and no NaN may enter (`debug_assert!`).
+//!
+//! A fanout search filters what enters the queue (A04.2, the `add` override
+//! of `MazeSearchEngine.java:91-137`): [`FanoutFilter`], applied by
+//! [`Session::queue_element`] to every element, the start doors of the
+//! initialisation included.
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
-use freerouting_geometry::FloatLine;
+use freerouting_geometry::{FloatLine, FloatPoint};
 
-use super::{Adjustment, ExpandableRef, RoomId};
+use super::{Adjustment, ExpandableRef, RoomId, Session};
+use crate::autoroute::control::AutorouteControl;
 
 /// The order of the maze queue (`MazeListElement.compareTo`).
 #[derive(Clone, Copy, Debug)]
@@ -114,11 +119,124 @@ pub struct MazeListElement {
 pub struct MazeQueue {
     order: BTreeMap<QueueKey, usize>,
     elements: Vec<MazeListElement>,
+    filter: Option<FanoutFilter>,
+}
+
+/// The queue filter of a fanout search (`MazeSearchEngine.java:91-137`).
+///
+/// On the start layer, an element whose entry midpoint is farther than the
+/// maximum escape length from the pin centre is refused; a drill nearer
+/// than the minimum escape length is refused. Lengths are `setting_mm *
+/// 1000.0 * resolution(UM)`; a plane fanout's minimum is 0.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FanoutFilter {
+    pub pin_center: FloatPoint,
+    pub start_layer: i32,
+    /// `maxLen * resolution`, in board units.
+    pub max_escape: f64,
+    /// `minLen * resolution`, in board units.
+    pub min_escape: f64,
+}
+
+impl FanoutFilter {
+    /// The filter of `control`, `None` unless it is a fanout with a start
+    /// pin centre. `max_escape_mm` and `min_escape_mm` are the settings'
+    /// `fanout.max_escape_length_mm` and `fanout.min_escape_length_mm`
+    /// (defaults 4.5 and 2.5, `DefaultSettings.java:186-187`; Java's 3 mm
+    /// and 0.5 mm apply only to absent fanout settings, which the port
+    /// never has), `resolution_um` the board's units per micrometre.
+    pub fn new(
+        control: &AutorouteControl,
+        max_escape_mm: f64,
+        min_escape_mm: f64,
+        resolution_um: f64,
+    ) -> Option<FanoutFilter> {
+        if !control.is_fanout {
+            return None;
+        }
+        let pin_center = control.fanout_start_pin_center.as_ref()?.to_float();
+        Some(FanoutFilter::with_lengths(
+            pin_center,
+            control.fanout_start_pin_layer,
+            max_escape_mm,
+            min_escape_mm,
+            control.is_plane_fanout,
+            resolution_um,
+        ))
+    }
+
+    /// The filter around `pin_center` on `start_layer` with the escape
+    /// lengths in millimetres; a plane fanout's minimum is 0
+    /// (`PLANE_FANOUT_MIN_ESCAPE_LENGTH_UM`).
+    pub fn with_lengths(
+        pin_center: FloatPoint,
+        start_layer: i32,
+        max_escape_mm: f64,
+        min_escape_mm: f64,
+        plane_fanout: bool,
+        resolution_um: f64,
+    ) -> FanoutFilter {
+        // PARITY: MazeSearchEngine.java:102-130, `(mm * 1000.0) * resolution`.
+        let max_len = max_escape_mm * 1000.0;
+        let min_len = if plane_fanout {
+            0.0
+        } else {
+            min_escape_mm * 1000.0
+        };
+        FanoutFilter {
+            pin_center,
+            start_layer,
+            max_escape: max_len * resolution_um,
+            min_escape: min_len * resolution_um,
+        }
+    }
+
+    /// True if the element may enter the queue: `next_room_layer` is the
+    /// layer of its next room, `drill_location` the location of its drill.
+    pub fn admits(
+        &self,
+        shape_entry: &FloatLine,
+        next_room_layer: Option<i32>,
+        drill_location: Option<FloatPoint>,
+    ) -> bool {
+        if next_room_layer == Some(self.start_layer) {
+            let entry = shape_entry.a.middle_point(shape_entry.b);
+            if entry.distance(self.pin_center) > self.max_escape {
+                return false;
+            }
+        }
+        if let Some(location) = drill_location
+            && location.distance(self.pin_center) < self.min_escape
+        {
+            return false;
+        }
+        true
+    }
+}
+
+/// What became of an element offered to the queue.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Push {
+    Added,
+    /// The fanout filter refused it.
+    Refused,
+    /// An equal key is queued; the newcomer is dropped.
+    Tie,
 }
 
 impl MazeQueue {
     pub fn new() -> MazeQueue {
         MazeQueue::default()
+    }
+
+    /// Sets the fanout filter (`None` for none).
+    pub fn set_fanout_filter(&mut self, filter: Option<FanoutFilter>) {
+        self.filter = filter;
+    }
+
+    /// The fanout filter.
+    pub fn fanout_filter(&self) -> Option<&FanoutFilter> {
+        self.filter.as_ref()
     }
 
     /// Adds `element` under `key` unless an equal key is queued (Java
@@ -163,6 +281,28 @@ impl MazeQueue {
     }
 }
 
+impl Session<'_> {
+    /// Offers `element` to the maze queue under `key`: Java's
+    /// `mazeExpansionList.add`, with the fanout filter of the queue.
+    pub fn queue_element(&mut self, key: QueueKey, element: MazeListElement) -> Push {
+        if let Some(filter) = self.queue.fanout_filter() {
+            let layer = element.next_room.map(|r| self.room(r).layer());
+            let location = match element.door {
+                ExpandableRef::Drill(drill) => Some(self.drill(drill).location.to_float()),
+                _ => None,
+            };
+            if !filter.admits(&element.shape_entry, layer, location) {
+                return Push::Refused;
+            }
+        }
+        if self.queue.add(key, element) {
+            Push::Added
+        } else {
+            Push::Tie
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,6 +324,44 @@ mod tests {
             already_checked: false,
             ripup_cost: 0,
         }
+    }
+
+    fn entry(x: f64, y: f64) -> FloatLine {
+        FloatLine::new(FloatPoint::new(x, y), FloatPoint::new(x, y))
+    }
+
+    /// A04.2: the fanout filter at the exact boundary distances (resolution
+    /// 10 units per micrometre: 4.5 mm is 45000, 2.5 mm 25000). An entry at
+    /// exactly the maximum passes (`>` refuses), a drill at exactly the
+    /// minimum passes (`<` refuses); off the start layer the maximum does
+    /// not apply.
+    #[test]
+    fn fanout_filter_boundaries() {
+        let centre = FloatPoint::new(1000.0, -2000.0);
+        let filter = FanoutFilter::with_lengths(centre, 0, 4.5, 2.5, false, 10.0);
+        assert_eq!(filter.max_escape, 45000.0);
+        assert_eq!(filter.min_escape, 25000.0);
+        let at_max = entry(1000.0 + 45000.0, -2000.0);
+        assert!(filter.admits(&at_max, Some(0), None));
+        let beyond_max = entry(1000.0 + 45000.0 + 1e-6, -2000.0);
+        assert!(!filter.admits(&beyond_max, Some(0), None));
+        assert!(filter.admits(&beyond_max, Some(1), None));
+        assert!(filter.admits(&beyond_max, None, None));
+        // A diagonal entry: the midpoint of the entry line counts.
+        let line = FloatLine::new(
+            FloatPoint::new(1000.0, -2000.0),
+            FloatPoint::new(1000.0, 88000.0),
+        );
+        assert!(filter.admits(&line, Some(0), None));
+        let near = entry(1000.0, -2000.0);
+        let at_min = FloatPoint::new(1000.0, -2000.0 + 25000.0);
+        assert!(filter.admits(&near, Some(0), Some(at_min)));
+        let inside_min = FloatPoint::new(1000.0, -2000.0 + 25000.0 - 1e-6);
+        assert!(!filter.admits(&near, Some(1), Some(inside_min)));
+        // A plane fanout allows a drill at the pin centre.
+        let plane = FanoutFilter::with_lengths(centre, 0, 4.5, 2.5, true, 10.0);
+        assert_eq!(plane.min_escape, 0.0);
+        assert!(plane.admits(&near, Some(0), Some(centre)));
     }
 
     /// Port of `MazeListElementTest.compareToReturnsZeroForSameInstance`.

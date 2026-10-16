@@ -1,0 +1,14 @@
+{"kind":"maze-routed","board":"Issue413-test","javaCommit":"a773a70ec","format":1}
+unfix 1 f5be9d95fbd9e9b1
+cut:1 1 424d297beadae890
+off:1 48485 dc0bd01dafbdfdb5
+on:1 48485 fb399bff3ac9b4e4
+cut:2 1 b74adbbab71b6dd7
+off:2 49 93cfef9d091c4e6d
+on:2 49 29d7f9c7401511e1
+cut:3 1 ee69bba5567cbab3
+off:3 48 3acb438099bed8e6
+on:3 48 e995ecfea7d0b35a
+cut:5 1 eabcb5b10df445f7
+off:5 254 623e0018b393b4f6
+on:5 254 9ad9939dd3fe5cb2

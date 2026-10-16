@@ -72,6 +72,17 @@ import java.util.UUID;
  *       page array in row-major order, each page with its drills (location, shape, layers, the
  *       room id per layer), then the room counter and the tree's walk hash after clear(). A
  *       third variant "smd" repeats ripup off with attachSmd forced on.
+ *   <li>maze-log (A04.8): per sampled connection and variant, MazeSearchEngine.getInstance, then
+ *       occupyNextElement step by step (at most 200,000 calls). Before each call the queue is
+ *       walked from its first element: the element the call expands (the first whose section
+ *       is unoccupied) is printed with its door kind and id, section, key bits, next room,
+ *       backtrack door and flags, then the occupied ones popped before it, whether its
+ *       section is occupied after the call, and the thread's WorkMeter units since the
+ *       engine's connection was set. At the end: the destination, the room counter, the queue
+ *       size and the units; then the tree's walk hash after clear(). No WorkLimit is passed.
+ *   <li>maze-routed (A04.8): maze-log through pre-routed traces. The board's traces and vias
+ *       are unfixed; then, for up to 12 nets with route items, the net's route items are
+ *       removed and its sampled connection is searched as in maze-log (see mazeRouted).
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -101,6 +112,8 @@ public class AutorouteProbe {
         case "start-rooms" -> startRooms(out, Loaded.load(dsn));
         case "door-sections" -> doorSections(out, Loaded.load(dsn));
         case "drills" -> drills(out, Loaded.load(dsn));
+        case "maze-log" -> mazeLog(out, Loaded.load(dsn));
+        case "maze-routed" -> mazeRouted(out, Loaded.load(dsn));
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -872,6 +885,198 @@ public class AutorouteProbe {
             .num("complete", complete == null ? 0 : complete.size()).end());
         engine.clear();
         out.line(treeLine("cleared", engine.autorouteSearchTree));
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // maze-log (A04.8)
+  // ------------------------------------------------------------------------------------------
+
+  /** At most this many occupyNextElement calls per connection (both sides). */
+  static final int MAZE_MAX_STEPS = 200000;
+
+  static String expandableKind(app.freerouting.autoroute.expansion.ExpandableObject door) {
+    return door == null ? "null" : door.getClass().getSimpleName();
+  }
+
+  static String adjustmentName(MazeSearchElement.Adjustment adjustment) {
+    return adjustment == null ? "null" : adjustment.name();
+  }
+
+  /** The occupation of section {@code section} of {@code door}; false out of range. */
+  static boolean sectionOccupied(app.freerouting.autoroute.expansion.ExpandableObject door,
+      int section) {
+    return section < door.mazeSearchElementCount()
+        && door.getMazeSearchElement(section).isOccupied;
+  }
+
+  static long workUnits() {
+    return app.freerouting.datastructures.WorkMeter.current().units();
+  }
+
+  /** Steps one search with occupyNextElement and prints every step, then the end. */
+  static void mazeSteps(Out out, AutorouteEngine engine, MazeSearchEngine search, long start)
+      throws Exception {
+    int step = 0;
+    boolean more = true;
+    while (more && step < MAZE_MAX_STEPS) {
+      int skipped = 0;
+      MazeListElement next = null;
+      for (MazeListElement element : search.mazeExpansionList) {
+        if (!element.door.getMazeSearchElement(element.sectionNoOfDoor).isOccupied) {
+          next = element;
+          break;
+        }
+        skipped++;
+      }
+      Line line = new Line().num("step", step);
+      if (next != null) {
+        line.str("kind", expandableKind(next.door)).num("door", next.door.getId())
+            .num("section", next.sectionNoOfDoor)
+            .raw("key", "[" + quoted(bits(next.sortingValue)) + ","
+                + quoted(bits(next.expansionValue)) + "]");
+        if (next.nextRoom == null) {
+          line.raw("room", "[]");
+        } else {
+          line.raw("room", "[" + quoted(next.nextRoom.getClass().getSimpleName()) + ","
+              + next.nextRoom.getId() + "," + next.nextRoom.getLayer() + "]");
+        }
+        if (next.backtrackDoor == null) {
+          line.raw("back", "[]");
+        } else {
+          line.raw("back", "[" + quoted(expandableKind(next.backtrackDoor)) + ","
+              + next.backtrackDoor.getId() + "," + next.sectionNoOfBacktrackDoor + "]");
+        }
+        line.bool("checked", next.alreadyChecked).str("adjust", adjustmentName(next.adjustment))
+            .bool("ripped", next.roomRipped).num("ripup", next.ripupCost);
+      }
+      more = search.occupyNextElement();
+      line.num("skipped", skipped);
+      if (next != null) {
+        line.bool("occupied", sectionOccupied(next.door, next.sectionNoOfDoor));
+      }
+      line.num("units", workUnits() - start);
+      out.line(line.end());
+      step++;
+    }
+    app.freerouting.autoroute.expansion.ExpandableObject destination =
+        privateField(search, "destinationDoor");
+    int destinationSection = privateField(search, "sectionNoOfDestinationDoor");
+    int count = privateField(engine, "expansionRoomInstanceCount");
+    Line end = new Line().num("steps", step).bool("capped", more);
+    if (destination == null) {
+      end.raw("destination", "[]");
+    } else {
+      end.raw("destination", "[" + quoted(expandableKind(destination)) + ","
+          + destination.getId() + "," + destinationSection + "]");
+    }
+    out.line(end.num("roomCount", count).num("queue", search.mazeExpansionList.size())
+        .num("units", workUnits() - start).end());
+  }
+
+  static void mazeLog(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Conn> conns = sample(board);
+    sampleLine(out, board, conns);
+    for (String variant : new String[] {"off", "on"}) {
+      for (Conn conn : conns) {
+        mazeConnection(out, l, conn, variant);
+      }
+    }
+  }
+
+  /** One connection of maze-log and maze-routed in one variant (ripup off or on). */
+  static void mazeConnection(Out out, Loaded l, Conn conn, String variant) throws Exception {
+    RoutingBoard board = l.board;
+    boolean ripup = variant.equals("on");
+    String stage = variant + ":" + conn.net;
+    if (!conn.state.isEmpty()) {
+      out.line(new Line().str("stage", stage).num("net", conn.net).str("state", conn.state)
+          .end());
+      return;
+    }
+    AutorouteControl c;
+    try {
+      c = routerControl(l, conn.net, ripup);
+    } catch (RuntimeException e) {
+      out.line(new Line().str("stage", stage).num("net", conn.net)
+          .str("exception", e.getClass().getSimpleName()).end());
+      return;
+    }
+    AutorouteEngine engine = new AutorouteEngine(board, c.traceClearanceClassIndex, false);
+    engine.initConnection(conn.net, null, null);
+    long start = workUnits();
+    MazeSearchEngine search;
+    try {
+      search = MazeSearchEngine.getInstance(conn.start, conn.dest, engine, c);
+      out.line(new Line().str("stage", stage).num("net", conn.net).bool("ok", search != null)
+          .num("units", workUnits() - start).end());
+      if (search != null) {
+        mazeSteps(out, engine, search, start);
+      }
+    } catch (Exception e) {
+      out.line(new Line().str("exception", e.getClass().getSimpleName()).end());
+    }
+    engine.clear();
+    out.line(treeLine("cleared", engine.autorouteSearchTree));
+  }
+
+  /** At most this many nets are cut and searched per board by maze-routed. */
+  static final int MAZE_ROUTED_NETS = 12;
+
+  static boolean isRouteItem(Item item) {
+    return item instanceof app.freerouting.board.model.items.Trace
+        || item instanceof app.freerouting.board.model.items.Via;
+  }
+
+  /**
+   * maze-routed (A04.8 for A04.6 and A04.7): the board's own traces and vias are unfixed
+   * (Item.unfix), then net after net (up to 12 nets that have route items) the route items of
+   * the net are removed in item order and the net's sampled connection is searched as in
+   * maze-log, ripup off and on, through the other nets' routes. The removed items stay removed.
+   */
+  static void mazeRouted(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Integer> unfixed = new ArrayList<>();
+    for (Item item : board.getItems()) {
+      if (isRouteItem(item)) {
+        item.unfix();
+        unfixed.add(item.getId());
+      }
+    }
+    out.line(new Line().str("stage", "unfix").raw("items", ints(unfixed)).end());
+    int done = 0;
+    int maxNet = board.rules.nets.maxNetNumber();
+    for (int net = 1; net <= maxNet && done < MAZE_ROUTED_NETS; net++) {
+      List<Item> routed = new ArrayList<>();
+      for (Item item : board.getItems()) {
+        if (isRouteItem(item) && item.containsNet(net)) {
+          routed.add(item);
+        }
+      }
+      if (routed.isEmpty()) {
+        continue;
+      }
+      List<Integer> removed = new ArrayList<>();
+      for (Item item : routed) {
+        board.removeItem(item);
+        removed.add(item.getId());
+      }
+      Conn conn = null;
+      for (Conn candidate : sample(board)) {
+        if (candidate.net == net) {
+          conn = candidate;
+        }
+      }
+      out.line(new Line().str("stage", "cut:" + net).raw("removed", ints(removed))
+          .bool("connection", conn != null).end());
+      if (conn == null) {
+        continue;
+      }
+      done++;
+      for (String variant : new String[] {"off", "on"}) {
+        mazeConnection(out, l, conn, variant);
       }
     }
   }

@@ -386,6 +386,16 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   (`ninety_degree_and_any_angle_rooms_are_a07`). No fixture routes at those angles. A07 ports
   them.
 
+**Maze search** (`autoroute::session::{search, layers, ripup, shove_room}`, A04; tests
+`tests/autoroute_probe_maze.rs`, `tests/autoroute_search_sinks.rs`)
+- `Connection.get` walks a closed loop of traces without forks forever in Java; the port stops
+  the walk after `4 * (item count + 1)` steps (`a_closed_loop_of_traces_ends_the_connection_walk`).
+  Normalization combines such traces, so no loaded board has one.
+- The maze queue keys hold the door's Java id at the time of the push; Java's `TreeSet`
+  compares ids at comparison time, and a drill page's id changes when its drills are first
+  calculated. The orders differ only for a full tie of both doubles with an element of such a
+  page; no `maze-log` or `maze-routed` board has one.
+
 ## freerouting-cli
 
 **Command line and job outputs** (`freerouting-cli`; `freerouting::job::{run, outputs, deadline,

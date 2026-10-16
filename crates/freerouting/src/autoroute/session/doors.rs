@@ -146,6 +146,13 @@ impl Session<'_> {
         match object {
             ExpandableRef::Door(door) => self.door_java_id(door),
             ExpandableRef::TargetDoor(door) => self.target_door_java_id(door),
+            ExpandableRef::Drill(drill) => Ok(self.drill(drill).java_id()),
+            ExpandableRef::DrillPage(page) => self
+                .built_drill_pages()
+                .map(|pages| pages.page(page).java_id())
+                .ok_or(RoomError::NullPointer {
+                    at: "DrillPage.getId",
+                }),
         }
     }
 
