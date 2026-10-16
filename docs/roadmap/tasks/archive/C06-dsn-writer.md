@@ -75,7 +75,7 @@ section test; C06.7 runs the full fixture set.
 
 ## Checklist
 
-- [ ] **C06.1 — Frame, parser, resolution, unit, layers, boundary, via list,
+- [x] **C06.1 — Frame, parser, resolution, unit, layers, boundary, via list,
   control.**
   Java: `DsnWriter.writePcbScope`, the full form of `Parser.writeScope`
   (`string_quote`, `space_in_quoted_tokens`, host,
@@ -89,7 +89,10 @@ section test; C06.7 runs the full fixture set.
     via padstack list and snap angle as the original. That is a section
     test comparing those fields directly.
 
-- [ ] **C06.2 — Rules, keepouts and planes in the structure.**
+  *Done 2026-10-16:* `dsn_writer::pcb_from_board`, `write_dsn`, `write_dsn_to` (`io/specctra/dsn_writer/{mod,structure,rules}.rs`).
+  `tests/dsn_writer.rs::frame_survives_the_round_trip` compares, on all 165 fixtures that load, the layer names and signal flags, the outline shapes, resolution and unit, the via padstack list, the snap angle, `via_at_smd`, the bounding box and the outline's clearance class of the board and of the board read back from its own DSN: no difference. `tests/dsn_round_trip.rs::rust_tree_equals_the_tree_of_javas_dump_scope_by_scope` compares the parser, resolution, unit, layers, boundaries and via list with Java's dumps (19 boards, `a773a70ec`; the Java files are identical to `cda540f`: `git diff cda540f a773a70ec --stat -- src/main/java/app/freerouting/io/specctra` is empty). Differences from Java (docs/DIVERGENCES.md, "Writing a design file"): the `pcb` rectangle is shrunk by the 1000 the reader adds (`the_bounding_box_does_not_grow`); the via list loses the names the classes append.
+
+- [x] **C06.2 — Rules, keepouts and planes in the structure.**
   Java: `Rule.writeDefaultRule`, `writeNonDefaultClearanceRules`,
   `writeNamedClearanceRules`, `writeLayerRule`, `writeItemClearanceClass`;
   `Structure.writeKeepouts` and `writeKeepoutScope`, covering `keepout`,
@@ -102,14 +105,18 @@ section test; C06.7 runs the full fixture set.
       conduction areas (net, layer, shape, `is_obstacle`) are equal, in
       item-list order.
 
-- [ ] **C06.3 — Placement.**
+  *Done 2026-10-16:* `rules.rs` (clearance matrix as pairs, layer rules, owned classes), `structure.rs` (keepouts, planes). `clearance_matrix_survives_the_round_trip` (names and values per layer, default trace widths, `smd_to_turn_gap`) and `areas_survive_the_round_trip` (kind, layer, shape, class, and for conduction areas net, fixed state and `is_obstacle`, in item-list order) pass on all 165 fixtures with no expected mismatch. Pinned differences: `named_clearance_classes_are_written_as_pairs`, `layer_rules_carry_the_width_of_their_layer`, `keepout_kinds_classes_and_fixed_states_are_written` (a place keepout stays a `place_keepout`, a class of `null` or `default` that the reader would not infer is written).
+
+- [x] **C06.3 — Placement.**
   Java: `Placement.writeScope`, `Package.writePlacementScope`,
   `Component.writeScope`, `writePinInfo`, `writeKeepoutInfos`.
   - **Accept:** on every fixture, every component's name, package, side,
     rotation, position (exact), fixed flag, and pin and keepout
     clearance-class overrides survive the round trip.
 
-- [ ] **C06.4 — Library images, padstacks, part library.**
+  *Done 2026-10-16:* `placement.rs`. `placement_survives_the_round_trip` compares name, package, side, placed flag, exact position, rotation, fixed flag, logical part and the pin and keepout clearance classes of every component on all 165 fixtures; equal. A placed component that owns no item (a logo without pads) is not written (Java's `writePlacementScope` cannot tell it from a deleted one) and is left out of the comparison on both sides.
+
+- [x] **C06.4 — Library images, padstacks, part library.**
   Java: `Library.writeScope`; `Package.writeScope` (pins, outlines,
   keepouts through `writePackageKeepout`); `Library.writePadstackScope`
   (shapes per layer, `(attach off)`, rotation flags); `PartLibrary.writeScope`
@@ -120,7 +127,9 @@ section test; C06.7 runs the full fixture set.
     Padstacks are compared on name, shapes per layer and the attach flag.
     The logical parts are equal too.
 
-- [ ] **C06.5 — Network: nets, via infos, via rules, classes.**
+  *Done 2026-10-16:* `library.rs`. `library_survives_the_round_trip` compares each package (pins with padstack, exact relative position and rotation; outlines by their corners; keepouts, via keepouts and place keepouts with names and layers), each padstack (shapes and auxiliary shapes per layer, `attach`, `absolute`) and the logical parts with their components, on all 165 fixtures. One expected mismatch (`EXPECTED` in `tests/dsn_support/mod.rs`): `Issue179` padstack `p7`, a two-line sliver with no corners to write. Port of `NonConvexPadstackTest.dsnExportPreservesAuxiliaryShapesInRoundTrip`: `dsn_export_preserves_auxiliary_shapes_in_round_trip`.
+
+- [x] **C06.5 — Network: nets, via infos, via rules, classes.**
   Java: `Network.writeScope`, `Net.writeScope` (pins, `writeCircuit`),
   `writeViaInfos`, `writeViaRules`, `writeNetClasses`, `writeNetClass`, and
   the class-class rules.
@@ -128,7 +137,9 @@ section test; C06.7 runs the full fixture set.
     contains-plane), net classes (all fields), via infos (in order) and via
     rules equal the original. `BoardStatistics` `nets.*` are equal.
 
-- [ ] **C06.6 — Wiring.**
+  *Done 2026-10-16:* `network.rs`. `network_survives_the_round_trip` compares each net (number, name, subnet, class, contains-plane, length constraint, pins), each net class (widths per layer, active layers, trace clearance class, the four default item clearance classes, via rule, shove-fixed, pull-tight, lengths), the via infos in order and the via rules (two rules of one name collapse to the last, as `addViaRule` does) on all 165 fixtures. One expected mismatch: `canary-pwr/canary-pwr-pours-as-planes` (the reader numbers the nets of ignored copper pours in file order; the pours are not items). `BoardStatistics` (so `nets.*`) are equal after the round trip (`round_trip_gives_the_same_statistics_and_drc_result_on_every_fixture`). Class-class rules are not written by Java and the board keeps none. Pinned: `net_classes_are_written_the_way_the_reader_makes_them`, `plane_nets_survive_through_use_net_and_plane_scopes`.
+
+- [x] **C06.6 — Wiring.**
   Java: `Wiring.writeScope`, `writeWireScope`, `writeViaScope`,
   `writeConductionAreaScope` (non-plane areas only), `writeNet`,
   `writeFixedState`.
@@ -138,7 +149,9 @@ section test; C06.7 runs the full fixture set.
     state) equal the original. Compare them as sets keyed by geometry,
     since item ids are renumbered.
 
-- [ ] **C06.7 — Full round trip, the Java comparison, `DsnWriterTest`.**
+  *Done 2026-10-16:* `wiring.rs`. `wiring_survives_the_round_trip` (traces by layer, width, corners, nets, fixed state and class; vias by padstack, position, nets, fixed state and class; compared as sorted lists) passes on all 165 fixtures, and `wiring_survives_with_the_route_reference_imported` on every fixture that has a Java route reference (the session imported, then the traces normalized the way the reader does). It also asserts that the writer writes every trace with a net and every via. A session can state a via the design already has; the board has both and the reader skips the second, so the comparison deduplicates the original's vias by position.
+
+- [x] **C06.7 — Full round trip, the Java comparison, `DsnWriterTest`.**
   - **Accept:**
     - `dsn_round_trip.rs`: on every fixture that Java loads (the
       `reference_load` set), the round trip gives a board equal to the
@@ -154,7 +167,13 @@ section test; C06.7 runs the full fixture set.
     - The release-build write time of `Issue190-processor.Z80` is in the
       done note.
 
-- [ ] **C06.8 — `-do out.dsn`.**
+  *Done 2026-10-16:* `tests/dsn_round_trip.rs`.
+  - `round_trip_gives_the_same_statistics_and_drc_result_on_every_fixture`: `BoardStatistics` (every field, a superset of `reference_load.rs`'s) and the full DRC findings (type, severity, description without item ids, items sorted; an unconnected pair by its net, because the pair names the lowest-id item of each group and ids are renumbered) equal on all 165 fixtures; `components.total_count` is compared without the item-less components Java does not write.
+  - `rust_tree_equals_the_tree_of_javas_dump_scope_by_scope`: Rust's `Pcb` against the tree of Java's dump (keywords `snapAngle`, `viaRule`, `logicalPart`, `shoveFixed` rewritten) on the 19 boards, scope by scope; every scope has its explained difference noted in the test (`unexplained`), and all else is equal.
+  - Ports of `DsnWriterTest`: `writes_valid_dsn_header`, `roundtrip_preserves_layer_count`, `output_stream_contains_data_after_write`. Not ported: `compatModeProducesOutput` (`compatMode` is not ported). Also ported: `NonConvexPadstackTest.dsnExportPreservesAuxiliaryShapesInRoundTrip` and `Issue955PlacementLifecycleTest.dsnRoundTripPreservesBothContacts` (three round trips).
+  - Release build, `write_dsn` of `Issue190-processor.Z80`: 46.3 ms for 2 355 821 bytes (best of 5; `cargo test --release --test dsn_round_trip write_time -- --nocapture`).
+
+- [~] **C06.8 — `-do out.dsn`.**
   Register the DSN format in C07.4's output table (`job/outputs.rs`), so
   `-do out.dsn` and extra `.dsn` outputs write the final board. If C06
   lands before C07.4, C07.4 registers it instead and ticks this item's
@@ -169,3 +188,5 @@ section test; C06.7 runs the full fixture set.
       exits 0.
     - `out.dsn` is non-empty and loads with `build_board` to the same
       `BoardStatistics` as the input.
+
+  *Partial 2026-10-16:* `crates/freerouting/src/job/outputs.rs` does not exist yet (C07.4 owns it), so the format is not registered and the CLI test `do_dsn_writes_the_board` is not written: C07.4 registers `.dsn` with `io::specctra::dsn_writer::write_dsn_to` (it takes any `Write`; wrap the temporary file in a `BufWriter`) and adds that test. Done here: the DIVERGENCES entry ("Writing a design file": Java's headless `-do x.dsn` writes 0 bytes and no error; Rust writes the board as it is, including the classes `prepare_job` added) and the engine side of the accept clause, `tests/dsn_round_trip.rs::prepare_job_classes_are_written` (after `prepare_job` the matrix has `board_edge`; the re-read board has the same matrix, frame, areas and outline class). The non-empty output and `BoardStatistics` equality hold for all fixtures (`round_trip_gives_the_same_statistics_and_drc_result_on_every_fixture`).

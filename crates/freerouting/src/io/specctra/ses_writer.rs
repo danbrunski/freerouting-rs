@@ -140,7 +140,7 @@ pub fn session_from_board(board: &BasicBoard, design_name: &str) -> Session {
     }
 }
 
-fn dsn_unit(unit: Unit) -> dsn::Unit {
+pub(crate) fn dsn_unit(unit: Unit) -> dsn::Unit {
     match unit {
         Unit::Mil => dsn::Unit::Mil,
         Unit::Inch => dsn::Unit::Inch,
@@ -324,7 +324,7 @@ fn padstack_out(
 /// `CoordinateTransform.boardToDsn(Shape, Layer)` and, with `relative`, `boardToDsnRel`:
 /// a box becomes a rectangle, any other polyline shape a polygon of its corners, a circle a
 /// circle. The coordinates are not rounded.
-fn board_shape_to_dsn(
+pub(crate) fn board_shape_to_dsn(
     shape: &Shape,
     layer: LayerRef,
     transform: &CoordinateTransform,

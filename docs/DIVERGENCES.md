@@ -272,6 +272,56 @@ branch 3 in IntOctagon's box cutout.
   them in `library_out` until the rules reader (C04) lands; `ses_writer.rs` strips them from
   Java's text before comparing.
 
+**Writing a design file** (`io::specctra::dsn_writer`, port of `DsnWriter` and the `write*`
+methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_trip.rs`)
+- The layout is the plain one of `Pcb::to_dsn`, not `IndentFileWriter`'s; the comparison with
+  Java is on parsed trees (19 dumps in `fixtures/reference/dsn`). `compatMode` is not ported
+  (only the GUI's compatible export uses it). No `autoroute_settings` is written, as in Java.
+- `-do out.dsn` writes the board as it is, including the classes `prepare_job` added
+  (`board_edge`, `hole_edge`); a re-read board then has an explicit outline class, so the
+  default edge override is skipped on the next run. Java's headless `-do x.dsn` writes a 0-byte
+  file and no error (C07.4 registers the format in `job/outputs.rs`; `write_dsn_to` is its
+  writer).
+- Java's writer is not the inverse of its reader in several places. Where the engine reads
+  something that Java's writer loses, Rust writes what the reader needs, so that
+  `build_board(parse(write_dsn(board)))` has the same layers, outline, rules, areas, components,
+  library, nets, classes, via types and wiring (the `*_survive_the_round_trip` tests) and the
+  same statistics and DRC result (`round_trip_gives_the_same_statistics_and_drc_result_on_every_fixture`).
+  The differences, each pinned by a test in `tests/dsn_writer.rs`:
+  * Named clearance classes are written as pairs `(clearance v (type a b))` that rebuild the
+    matrix, class by class and layer by layer; Java writes `(clearance v (type name))`, which
+    its reader skips (`named_clearance_classes_are_written_as_pairs`). A layer's rule repeats
+    the layer's own trace width, not layer 0's (`layer_rules_carry_the_width_of_their_layer`).
+  * A net class that has `(rule (clearance v))` makes the reader create its clearance class
+    (and make it the default clearance class of every item kind of the class): such a class is
+    written with that rule instead of in the structure rules, the via types the reader makes
+    for it are left out, the via rules are left out, each class that has a rule of its own gets
+    its `use_via` and the structure's via list loses the names the classes append. Java writes
+    the classes, via types and rules, which makes the re-read net classes default their item
+    clearance classes. The plan checks on a copy of the matrix and the rules that the reader ends
+    with the board's, and falls back to Java's form if not
+    (`net_classes_are_written_the_way_the_reader_makes_them`). A `use_layer` is left out when
+    it lists the signal layers (Java's would zero the trace width of the power layers).
+  * Items are written oldest first. Java writes the newest first (`startReadObject`), which
+    reverses the item list on every write and read (`items_are_written_oldest_first`).
+  * The `pcb` rectangle is the board's box shrunk by the 1000 the reader adds, so a board does
+    not grow with each write (`the_bounding_box_does_not_grow`).
+  * A `place_keepout` of the structure scope is written as `place_keepout` (Java: `keepout`),
+    and the place keepouts of an image are written (Java leaves them out). A clearance class is
+    written for the outline, a plane or a keepout whenever the reader's default would be
+    another one (Java: only for keepouts of a class that is not `default`). The fixed state of a
+    conduction area is written, and Java's `shoveFixed` is `shove_fixed`
+    (`keepout_kinds_classes_and_fixed_states_are_written`). Names of image keepouts are written
+    when the file named them: the keepouts of placed components refer to them.
+  * A power layer lists the nets of its planes in `use_net`, and a fixed area of a plane net on
+    a signal layer is a `plane` scope (Java: wiring): only these make the reader mark a net as
+    a plane net (`plane_nets_survive_through_use_net_and_plane_scopes`).
+- A placed component that owns no item (a logo without pads) is not written, as in Java, which
+  cannot tell it from a component whose items were all deleted. A padstack shape with no corner
+  (`Issue179`'s `p7`) and the nets of the ignored copper pours of `canary-pwr-pours-as-planes`
+  are expected mismatches of the round trip (`EXPECTED` in `tests/dsn_support/mod.rs`).
+- Java writes an `(image` without a name for a package made without one (`Issue145`).
+
 **Infeasible-connection diagnostic** (`quality::feasibility`, Q03; tests
 `tests/quality_feasibility.rs`, `tests/quality_feasibility_java.rs`)
 - New, with no Java counterpart (Java's `AutorouteUnroutedReport` only lists unrouted

@@ -19,3 +19,5 @@ pub use ses_writer::{SesStyle, session_from_board, snapped_endpoint, write_ses, 
 pub use rules_reader::{RulesError, RulesOutcome, apply_rules_file, read_rules};
 pub use rules_writer::{rules_from_board, write_rules};
 
+pub mod dsn_writer;
+pub use dsn_writer::{pcb_from_board, write_dsn, write_dsn_to};
