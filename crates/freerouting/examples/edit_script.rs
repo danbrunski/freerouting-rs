@@ -1,0 +1,79 @@
+//! Replays an interactive edit script on a board (I01.8):
+//!
+//! ```text
+//! cargo run --release -p freerouting --example edit_script -- <dsn> [ses] <script.json> <out> [--unlimited]
+//! ```
+//!
+//! The board is loaded as the Java probes load it, the session `ses` (if given) imported, and the
+//! script's route commands (start, moves, clicks, layer changes, snapshots, complete, cancel; the
+//! format is in `tests/support/edit_script.rs`) replayed with Java's route budgets (3000 nominal
+//! ms per check, 2000 for pull-tight, 64,000 work units each; `--unlimited`: none). `<out>` gets
+//! one line per command and the canonical item dump. `tools/determinism-check.sh` runs it twice to
+//! show the output does not depend on the machine load:
+//!
+//! ```text
+//! tools/determinism-check.sh --out <scratch>/det -- target/release/examples/edit_script \
+//!   fixtures/Issue026-J2_reference.dsn crates/freerouting/tests/data/edit_script_j2.json {OUT}
+//! ```
+
+#[path = "../tests/board_probe/mod.rs"]
+mod board_probe;
+#[path = "../tests/support/edit_script.rs"]
+mod edit_script;
+#[path = "../tests/support/item_dump.rs"]
+mod item_dump;
+
+use std::process::ExitCode;
+
+use freerouting::interactive::RouteBudget;
+
+fn canonical(path: &str) -> String {
+    std::fs::canonicalize(path).map_or_else(|_| path.to_string(), |p| p.display().to_string())
+}
+
+fn main() -> ExitCode {
+    let mut args: Vec<String> = std::env::args().skip(1).collect();
+    let budget = if let Some(i) = args.iter().position(|a| a == "--unlimited") {
+        args.remove(i);
+        RouteBudget::UNLIMITED
+    } else {
+        RouteBudget::JAVA
+    };
+    let (dsn, ses, script, out) = match args.as_slice() {
+        [dsn, script, out] => (dsn, None, script, out),
+        [dsn, ses, script, out] => (dsn, Some(ses), script, out),
+        _ => {
+            eprintln!("usage: edit_script <dsn> [ses] <script.json> <out> [--unlimited]");
+            return ExitCode::from(2);
+        }
+    };
+    let text = match std::fs::read_to_string(script) {
+        Ok(text) => text,
+        Err(e) => {
+            eprintln!("edit_script: {script}: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let script = match edit_script::parse_script(&text) {
+        Ok(script) => script,
+        Err(e) => {
+            eprintln!("edit_script: {script}: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let row = board_probe::Row {
+        dsn: canonical(dsn),
+        ses: ses.map(|s| canonical(s)),
+        board: dsn.clone(),
+    };
+    let mut board = board_probe::load(&row);
+    board_probe::import_session(&mut board, &row);
+    let lines = edit_script::replay(&mut board, &script, budget);
+    let mut text = lines.join("\n");
+    text.push('\n');
+    if let Err(e) = std::fs::write(out, text) {
+        eprintln!("edit_script: {out}: {e}");
+        return ExitCode::from(1);
+    }
+    ExitCode::SUCCESS
+}

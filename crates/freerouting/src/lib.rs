@@ -12,6 +12,7 @@ pub mod autoroute;
 pub mod board;
 pub mod datastructures;
 pub mod drc;
+pub mod interactive;
 pub mod io;
 pub mod job;
 pub mod library;

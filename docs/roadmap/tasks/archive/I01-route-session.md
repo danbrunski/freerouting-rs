@@ -5,7 +5,7 @@ pin or trace, move the mouse, and a trace follows with push-and-shove,
 neckdown, SMD snap and via layer changes. In Java that logic is spread over
 `RouteState` (456 lines), `DynamicRouteState`, `StitchRouteState` and `Route`
 (844 lines), mixed with Swing calls. This checklist ports the behaviour as an
-engine `RouteSession` with no UI types. See [I00](I00-interactive-README.md)
+engine `RouteSession` with no UI types. See [I00](../I00-interactive-README.md)
 for the API shape and the series rules.
 
 **Prerequisites:**
@@ -72,7 +72,7 @@ for the API shape and the series rules.
 
 ## Checklist
 
-- [ ] **I01.1 — Settings and parameter resolution.**
+- [x] **I01.1 — Settings and parameter resolution.**
   - Java: `GuiBoardRoutingSettings.getTraceHalfwidth/isActiveRoutingLayer/getTraceClearanceClass/getViaRule`
     (`:64-108`).
   - Rust: `interactive/settings.rs`: `EditSettings`, `ManualRules`,
@@ -82,8 +82,20 @@ for the API shape and the series rules.
     override, and a missing manual via rule falls back to the net class's).
   - **Accept:** unit tests for net-class rules, manual rules, a net without
     a net class and a manual via-rule index out of range.
+  - *Done 2026-10-16:* `interactive/settings.rs` (`EditSettings` with Java's
+    `WorkspaceSettings` defaults, `ManualRules`, `LayerMask`,
+    `resolve_route_params`/`resolve_with_rules`). Unit tests
+    `interactive::settings::tests::{net_class_rules_of_the_first_net,
+    a_layer_is_active_if_any_route_net_may_use_it,
+    manual_rules_override_the_net_class,
+    manual_via_rule_index_out_of_range_falls_back_to_the_net_class,
+    a_net_without_a_net_class, layer_mask_and_defaults}`:
+    `cargo test -p freerouting --lib interactive` → 6 passed. A net number
+    without a net stands in for "a net without a net class" (every port net
+    has one); its defined results and the out-of-range fallback are in
+    DIVERGENCES, "Interactive routing".
 
-- [ ] **I01.2 — Route start.**
+- [x] **I01.2 — Route start.**
   - Java: `RouteState.getInstance` (`:45-167`), `startOk`, `pickRoutingItem`,
     `getRouteNetNumbersAtTiePin`.
   - Rust: `RouteSession::start(board, settings, at) -> Result<(Self,
@@ -106,8 +118,15 @@ for the API shape and the series rules.
       -1)`.
   - **Accept:** I01.7's start outcomes (start point, nets, half widths,
     clearance class, mode, layer) equal.
+  - *Done 2026-10-16:* `interactive/route/start.rs` (`RouteSession::start`,
+    `StartInfo`, `StartError`). Every start line of the `route-script` probe
+    (item, point, nets, half widths, clearance class, via rule, stitch, layer,
+    target count) equals Java on all 10 boards: `cargo test -p freerouting --test interactive_route route_script` → 10 passed (`route_script_matches_java_{j2,bm08,bm05,rpi_splitter,issue413,issue676,issue957,smd_demo,scoring_mixed_layer,issue110}`). The trace-start
+    path runs on the 4 trace starts per variant; where `connectToTrace` splits
+    the picked trace, Java's `getUnconnectedSet` on the removed trace is
+    reproduced (bm05 route 21).
 
-- [ ] **I01.3 — Next corner, neckdown and connecting to the target.**
+- [x] **I01.3 — Next corner, neckdown and connecting to the target.**
   - Java: `Route` constructor, `nextCorner`, `tryNeckdownAtStart/AtEnd`,
     `connectToTarget`, `connect`, `angledConnection`,
     `calculateTargetPointsAndAreas`, `calcNearestTargetPoint`,
@@ -131,8 +150,15 @@ for the API shape and the series rules.
     `opt_changed_area` with the keep point and Route's pull-tight budget.
   - Push on: depths 20/8/5; off: 0/0/0. Push enabled is read at start.
   - **Accept:** I01.7.
+  - *Done 2026-10-16:* `interactive/route.rs` (`next_corner`, `RouteStep`,
+    `RouteBudget::JAVA` = 3000/2000 nominal ms, fresh check limits per insert,
+    neckdown try and `connect` pair). Every corner line (ended flag, layer, last
+    corner, shove-failing obstacle, nearest target, `maxGeneratedId`) and every
+    per-route canonical dump equal Java on the 10 boards, push on/off ×
+    dynamic/stitch: `cargo test -p freerouting --test interactive_route route_script` → 10 passed (`route_script_matches_java_{j2,bm08,bm05,rpi_splitter,issue413,issue676,issue957,smd_demo,scoring_mixed_layer,issue110}`). Java's stale target objects are mirrored by a
+    last-seen shape cache (rpi_splitter route 14, smd-demo route 22).
 
-- [ ] **I01.4 — Layer change and cancel.**
+- [x] **I01.4 — Layer change and cancel.**
   - Java: `Route.changeLayer` (`:260-317`), `RouteState.changeLayerAction`
     (`:365-441`), `RouteState.cancel` (`:334-363`).
   - Rust: `RouteSession::change_layer(board, to, budget) -> LayerChange`,
@@ -150,8 +176,16 @@ for the API shape and the series rules.
     accuracy)` when push is on, else `remove_items`.
   - **Accept:** I01.7 layer-change steps; `layer_change_without_spanning_via_quirk`
     (the kept quirk); `cancel_removes_tail_only`.
+  - *Done 2026-10-16:* `interactive/route/layer.rs` (`change_layer` →
+    `LayerChange` + `Status`, `cancel`). The probe's layer-change lines
+    (changed/failed, failing layer) and cancel lines equal Java on the 10
+    boards (in the 8 `.jsonl` outputs 104 changed, 211 failed, 120 cancels; no board
+    reaches a plane): `cargo test -p freerouting --test interactive_route route_script` → 10 passed (`route_script_matches_java_{j2,bm08,bm05,rpi_splitter,issue413,issue676,issue957,smd_demo,scoring_mixed_layer,issue110}`). `layer_change_without_spanning_via_quirk`,
+    `cancel_removes_tail_only` (push on and off), `layer_change_with_a_via`:
+    `cargo test -p freerouting --test interactive_route -- --skip route_script`
+    → 5 passed. DIVERGENCES, "Interactive routing", has the quirk.
 
-- [ ] **I01.5 — Dynamic and stitch modes.**
+- [x] **I01.5 — Dynamic and stitch modes.**
   - Dynamic: `Move` adds a corner; `Click` ends; `Snapshot` takes one;
     `Complete`/`Cancel` as Java's Enter/Space and Esc. Stitch: `Click`
     takes a snapshot then adds a corner; `Move` only updates the nearest
@@ -159,8 +193,16 @@ for the API shape and the series rules.
   - Rust: a `RouteMode` policy in `interactive/route.rs`.
   - **Accept:** unit tests that replay the same pointer sequence in both
     modes on J2 and check snapshot counts (undo depth) and corner counts.
+  - *Done 2026-10-16:* `RouteMode`, `RouteInput`, `RouteEvent`,
+    `RouteSession::handle`. `dynamic_and_stitch_modes_replay_the_same_pointer_sequence`
+    (J2, six moves, `Snapshot`, a click): dynamic 6 steps, snapshot, end, 2
+    snapshots; stitch 6 target updates, `Snapshot` ignored, the click 1
+    snapshot + 1 corner, 2 snapshots; the board's undo depth equals
+    `snapshots_taken` in both (`interactive_route` → passed). The probe mirror
+    drives stitch steps through `handle(Click)` and dynamic ones through
+    `handle(Move)`. `Cancel` is `RouteSession::cancel` (I01.4).
 
-- [ ] **I01.6 — Overlay data.**
+- [x] **I01.6 — Overlay data.**
   - Java: the data `Route.draw` uses (`:466-592`): target items, swap pins
     and their incompletes, the incomplete from the last corner to the
     nearest target (flagged when the net's length limits are violated),
@@ -172,8 +214,17 @@ for the API shape and the series rules.
   - **Accept:** unit tests on `Issue026-J2_reference` comparing ellipse
     parameters and target ids with values computed by hand from the DSN's
     net lengths (written in the test).
+  - *Done 2026-10-16:* `interactive/overlay.rs` (`RouteOverlay::new(session,
+    board, length_matching_visible)`, `RouteIncomplete`, `LengthEllipse`).
+    `overlay_ellipses_and_targets_on_j2`: J2 has no length rules, so the test
+    writes net 1's limits (none; max 100000; min 60000 + max 100000; max
+    20000; min 50000 only, visible and not) and checks the 21 target ids in
+    Java's order, the incomplete (from, to, width 100 or 300, violation flag)
+    and the radii computed by hand (`0.5 L`, `0.5 sqrt(L² − 24000²)`), centre
+    and rotation π/2: `cargo test -p freerouting --test interactive_route
+    overlay` → 1 passed.
 
-- [ ] **I01.7 — Probe `route-script`.**
+- [x] **I01.7 — Probe `route-script`.**
   - Java: `RouteScriptProbe` drives `Route` headless (its constructor needs
     only a `RoutingBoard`; `draw` is never called). It transcribes the board
     calls of `RouteState.getInstance` with fixed settings (current layer 0,
@@ -193,8 +244,15 @@ for the API shape and the series rules.
     the end of each route.
   - **Accept:** identical on at least 9 of 10 boards; on the remaining one
     the first differing step is printed and its cause named.
+  - *Done 2026-10-16:* `tools/java-reference/probes/board/RouteScriptProbe.java`,
+    `fixtures/reference/probe/route-script/` (8 `.jsonl`, J2 and bm08 as
+    `.digest`), `tests/interactive_route.rs`. Identical on 10 of 10 boards:
+    `cargo test -p freerouting --test interactive_route route_script` → 10 passed (`route_script_matches_java_{j2,bm08,bm05,rpi_splitter,issue413,issue676,issue957,smd_demo,scoring_mixed_layer,issue110}`). Generated at `a773a70ec` with
+    `JDK_JAVA_OPTIONS=-Xmx4g REFERENCE_WORK_DIR=… generate.sh <pin> route-script`
+    (Java's own run of J2: 885 ms). The script adds 4 trace starts per variant
+    and a cancel every fifth route to the checklist's 20 pin starts.
 
-- [ ] **I01.8 — Replay and determinism.**
+- [x] **I01.8 — Replay and determinism.**
   - `examples/edit_script.rs <dsn> [ses] <script.json> <out>` replays route
     commands (start, moves, clicks, layer changes, cancel) and writes the
     canonical dump.
@@ -202,3 +260,15 @@ for the API shape and the series rules.
     under `tools/determinism-check.sh`; after J01, the same script with
     Java's Route budgets (3000 check, 2000 pull-tight, × 64,000 units)
     still matches the probe.
+  - *Done 2026-10-16:* `examples/edit_script.rs` (`[--unlimited]` drops the
+    budgets), `tests/support/edit_script.rs` (script parser and replay, shared
+    with the test), `tests/data/edit_script_j2.json` (60 commands: the
+    `load/push-dynamic` routes 0-4 of the J2 probe, 48 moves, 4 layer changes,
+    a cancel). `tools/determinism-check.sh --out … -- target/release/examples/edit_script
+    fixtures/Issue026-J2_reference.dsn crates/freerouting/tests/data/edit_script_j2.json {OUT}`
+    → `identical` (70 lines; idle load 17.99, loaded 18.47 with 8 burners).
+    J01 is the pin: `edit_script_replays_the_probe_routes` replays the script
+    with `RouteBudget::JAVA` (3000/2000 nominal ms × 64,000 units) and matches
+    every command state and the final dump of the probe mirror, which
+    `route_script_matches_java_j2` (also with the Java budgets) proves equal to
+    Java; `RouteBudget::UNLIMITED` gives the same output.

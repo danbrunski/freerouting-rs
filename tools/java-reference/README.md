@@ -131,6 +131,13 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
     of whole boards with the costs, on the `pull-tight` board set. One command:
     `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> opt-vias`
     (then `find fixtures/reference/probe/opt-vias -type d -empty -delete`).
+  - `route-script` (`RouteScriptProbe.java`, I01): interactive routing through
+    `gui.interactive.Route` headless, with `RouteState`'s board calls transcribed: seeded starts
+    at pins and traces, twelve corner steps towards the nearest target pin with a layer change
+    before the ninth, a cancel every fifth route; push on and off, dynamic and stitch. One
+    command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> route-script`
+    (then `find fixtures/reference/probe/route-script -type d -empty -delete`).
 
 ## Settings, writer and CLI dumps (C01)
 

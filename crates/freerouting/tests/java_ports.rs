@@ -1166,3 +1166,38 @@ mod any_angle_tightener_cycle {
         assert_eq!(items, expected);
     }
 }
+
+/// `app.freerouting.gui.workspace` and `gui.interactive` (I01): the route
+/// session and its settings. Java has no unit tests of `Route`, `RouteState`,
+/// `DynamicRouteState`, `StitchRouteState` or `GuiBoardRoutingSettings`; the
+/// session is compared with Java by the `route-script` probe
+/// (`tests/interactive_route.rs`).
+///
+/// Not ported: `WorkspaceSettingsMergerTest` (merging the settings into
+/// `RouterSettings`), `WorkspaceSettingsPropertyChangeTest` (Swing property
+/// change events) and `WorkspaceSettingsSingletonTest` (the singleton);
+/// `EditSettings` is a plain value without a merger, listeners or a global
+/// instance. Ported instead: the defaults of the `WorkspaceSettings(board)`
+/// constructor that `EditSettings::new` carries.
+mod gui_workspace_settings {
+    use freerouting::interactive::EditSettings;
+
+    #[test]
+    fn edit_settings_have_the_workspace_settings_defaults() {
+        let s = EditSettings::new(4);
+        assert_eq!(s.layer, 0);
+        assert!(s.push_enabled);
+        assert!(s.select_on_all_visible_layers);
+        assert!(!s.stitch_route);
+        assert_eq!(s.trace_tidy_width, i32::MAX);
+        assert!(s.via_snap_to_smd_center);
+        assert!(!s.manual_rule_selection);
+        assert!(!s.highlight_routing_obstacle);
+        assert_eq!(s.manual_rules.clearance_class, 1);
+        assert_eq!(s.manual_rules.via_rule_index, 0);
+        assert_eq!(s.pull_tight_accuracy, 500);
+        assert!(s.automatic_neckdown);
+        assert_eq!(s.manual_rules.trace_half_widths, vec![1000; 4]);
+        assert!((0..4).all(|l| s.visible_layers.is_visible(l)));
+    }
+}
