@@ -21,6 +21,8 @@ Prerequisites: F02.2 (the `freerouting-dev` crate, for the subcommand);
 B05 (`Pin` neck-down half-width) for Q03.5 only. Q06 later turns its result
 into the `infeasible` verdict.
 
+**Fixture:** `fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn` is the board the 17 infeasible pins in this checklist come from (with its net-class bug: VCAP, +12V_RAW and +5V_SHUNT at 0.2 mm).
+
 ## What exists and what this adds
 
 | Exists | Used for |

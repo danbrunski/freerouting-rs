@@ -21,7 +21,7 @@ is not evidence that anything works.
 | **K** KiCad | [K00](K00-kicad-README.md) | 8 | 56 | Plugin hardening and routing, a KiCad package, a direct `.kicad_pcb` reader (rule areas, copper text, board rules), an optional writer |
 | **R** Release | [R00](R00-release-README.md) | 2 | 12 | Release builds for Windows, macOS and Linux; signing |
 | **P** Performance | [P00](P00-performance-README.md) | 5 | 19 | Profiling and baselines; optimizations that keep results identical; parallelism; a freed search tree; SIMD and an allocator trial |
-| **Q** Routing quality | [Q00](Q00-routing-quality-README.md) | 8 | 41 | Measured improvements beyond Java: planes, neck-down, diagnostics, stop rule, ripup, ordering, budgets |
+| **Q** Routing quality | [Q00](Q00-routing-quality-README.md) | 9 | 47 | Measured improvements beyond Java: planes, neck-down, diagnostics, stop rule, ripup, ordering, budgets, trace-only keepouts |
 | **X** Algorithms from KiCadRoutingTools | [X00](X00-krt-algorithms-README.md) | 12 | 65 | The head-to-head, then KRT algorithms as D9 stages: plane repair, a grid router, length matching, differential pairs, escapes |
 
 ## Where to start
@@ -57,9 +57,12 @@ owns.
   - `[ ]` not done.
   - `[x]` done, with a `*Done <date>:*` note under the item giving the test
     names, commands and measured numbers that prove each **Accept:** clause.
-  - `[~]` partial, with the named remainder: an operator decision, a push,
-    a Windows or KiCad check, or work in another series that hasn't landed.
-  A box is never ticked on a claim nobody ran.
+  - `[~]` partial, with a `*Partial <date>:*` note naming the remainder and
+    the checklist that owns it (an id such as `A13` or `F01.2`): an
+    operator decision, a push, a Windows or KiCad check, or work in another
+    series that hasn't landed.
+  A box is never ticked on a claim nobody ran. Mark each item as soon as it
+  is done, in the same change as the work, never later from memory.
 - **Each checklist file has these sections:**
   1. A header: when it was opened and why.
   2. **What exists and what this adds**: the Rust and Java starting point,
@@ -73,8 +76,18 @@ owns.
 - **Anchors drift.** Java line numbers refer to the pinned commit; Rust line
   numbers refer to the commit the checklist was written at. Find code by its
   symbol name.
-- **Finished checklists** move to `archive/` with their links updated, once
-  every box is `[x]` (or `[~]` with a remainder owned by another series).
+- **Finished checklists move to `archive/`.** A checklist is finished when no
+  box is `[ ]`, every `[x]` has its `*Done*` note, and every `[~]` names the
+  checklist that owns its remainder. Archive it with
+  `python3 tools/roadmap/checklists.py archive <file>`. The tool refuses an
+  unfinished checklist, moves it (`git mv`), rewrites every link to and from
+  it, marks it ✅ in its series README, and fails if any roadmap link breaks.
+  The implementer archives its checklist when its dispatch finishes the last
+  item; the orchestrator commits the move with the work.
+- **Check the state after every dispatch:**
+  `python3 tools/roadmap/checklists.py status --strict`. It lists every
+  checklist's `[x]`/`[~]`/`[ ]` counts, flags any ticked box without its
+  evidence note, and names finished checklists that haven't been archived.
 
 ## Shared rules
 
@@ -107,5 +120,8 @@ them.
   `cargo test --workspace`. These are the same commands as CI.
 - **No new dependency** without a `NEW DEP: <crate> — <why>` line in the
   report. The orchestrator decides.
+- **The board's design rules are hard limits (D8).** Never narrower, smaller or
+  closer than the board allows, and never rewrite the board's rules. Grade every
+  result under the board's original rules.
 - **Owner rules (D8) are behaviour.** No via in a pad. Honour
   `(attach off)`. Plane-net pads get their own via to the plane.

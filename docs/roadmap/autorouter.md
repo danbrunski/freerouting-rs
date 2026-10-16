@@ -112,7 +112,7 @@ items and, when the search failed, its failure record.
 **Determinism (D2).** Java's randomness is already seeded: the maze search's `Random` is
 reseeded with the ripup cost for every connection, and its random factor never fires at
 `cda540f` because `ripupPassNo` stays 1. The pass shuffle is seeded with
-`pass * 1000003 + maxNetNumber`. Java's `30baad7e2`, the commit J01 re-pins to, turned
+`pass * 1000003 + maxNetNumber`. Java's `30baad7e2` (included in `a773a70ec`, the commit J01 re-pins to) turned
 every wall-clock limit into a work count: 64,000 units per nominal millisecond, one unit
 per search-tree node popped (in `MinAreaTree` queries and the three `completeShape`
 traversals). The Rust router creates its limits at the same points with the same budgets,

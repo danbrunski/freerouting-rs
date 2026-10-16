@@ -287,14 +287,28 @@ this repo a speed-up must still produce identical results:
      that isn't yours goes under *Failures outside your files*, unfixed,
      and you still return `IMPLEMENTED`. Never `git stash` to find out,
      because it pockets other agents' in-flight edits.
-4. **Record checkbox evidence yourself** in the checklist file. Mark an
-   item `[x]` only when every **Accept:** clause holds, and add a
-   `*Done <date>:*` note under it with the test names, commands and
-   measured numbers that prove each clause. Mark it `[~]` with the named
-   remainder when step 2 applies. You have the evidence in context and the
-   orchestrator does not; transcribing it from your report loses it. Edit
-   only your own items' text, and keep every other edit in that file. Never
-   tick a box on a claim you did not run.
+4. **Record checkbox evidence yourself** in the checklist file, item by
+   item, as soon as each one is done, not at the end from memory.
+   - Mark an item `[x]` only when every **Accept:** clause holds, and add a
+     `*Done <date>:*` note under it with the test names, commands and
+     measured numbers that prove each clause.
+   - Mark it `[~]` when step 2 applies, with a `*Partial <date>:*` note
+     naming the remainder and the checklist that owns it (an id such as
+     `A13` or `F01.2`).
+   You have the evidence in context and the orchestrator does not;
+   transcribing it from your report loses it. Edit only your own items'
+   text, and keep every other edit in that file. Never tick a box on a
+   claim you did not run.
+
+   Before returning, run
+   `python3 tools/roadmap/checklists.py status --strict` and fix any
+   evidence it flags on your items. If no box in your checklist is `[ ]`
+   any more, archive it with
+   `python3 tools/roadmap/checklists.py archive <checklist file>`. That
+   moves it to `docs/roadmap/tasks/archive/` and rewrites the roadmap
+   links; these link edits are allowed outside your files. List the move in
+   your **Files** section. If the tool refuses, its reason goes in the
+   report.
 5. **Return**, as your entire final message, either `IMPLEMENTED` or
    `BLOCKED: <reason>`, followed by these sections in this order. Omit a
    section only when it is genuinely empty, and then say "none".

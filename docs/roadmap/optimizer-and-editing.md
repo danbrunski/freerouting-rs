@@ -94,7 +94,7 @@ names them:
   that never pull-tightens with a finite tidy width. Each is kept during the
   parity phase, pinned by a test and listed in DIVERGENCES.md.
 
-**Determinism (D2).** The fork's `30baad7e2`, J01's re-pin target, turned
+**Determinism (D2).** The fork's `30baad7e2` (included in `a773a70ec`, J01's re-pin target) turned
 every wall-clock limit in this area into a WorkLimit at the same call site:
 the pull-tight guard after each connection and in `removeTails`, the shover
 and drill-mover checks, `removeItemsAndPullTight`, and the interactive Route

@@ -12,6 +12,8 @@ Prerequisites: board parity (rung 3); A10 (the `PassController` trait and
 registry) and A13 (the pass loop) and A08 (board history); B01 (snapshots);
 F03.1, F03.4.
 
+**Fixtures:** `fixtures/canary-pwr/canary-pwr-pours1..3.dsn`, the variant set, with Java sessions at `a773a70ec` (see `fixtures/canary-pwr/README.md`).
+
 ## What exists and what this adds
 
 | Exists | State at cda540f |
@@ -22,6 +24,21 @@ F03.1, F03.4.
 | A10 `PassController` trait, `FreeroutingPassController` (A10, port of the above) | the default implementation |
 | KRT `GridSearch::extend_budget` (#529): a tranche of work must improve the best heuristic by `max(2 cells, 2 % of best_h)` | the quantum idea, at search level |
 | KRT `improvement_gate.py` (#600): revert the run if it ends worse on nets lost against gained **or** on disconnected pads, "neither axis may outvote the other" | the output guard |
+
+**Measured in Java (the Java session, 2026-10-15, `a773a70ec`, deterministic,
+`canary-pwr` "pours1"):**
+- **Pass 1 is the best pass at every ripup cost.** With `start_ripup_costs`
+  100, 500 and 1500, pass 1 leaves 120, 109 and 100 connections unrouted.
+  Every later pass is worse (161–185), and the loop's periodic restore puts the
+  pass-1 board back.
+- **The later passes are wasted time.** `-mp 1` gives the same SES as
+  `-mp 10`, so passes 2–10 are about 60 % of the routing time for nothing.
+- **Cause:** Java's ripup is greedy. Ripped blockers often can't be rerouted,
+  and nothing remembers congestion between passes.
+
+This is the strongest case for Q04 on Dan's board. A stop rule that ends the
+run after the first restore that can't beat pass 1 would have saved about
+60 % of the routing time with a byte-identical result.
 
 ## Decisions made here
 

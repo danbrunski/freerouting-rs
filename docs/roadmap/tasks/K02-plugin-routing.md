@@ -75,6 +75,8 @@ on real boards; the Windows end-to-end check.
   - `options.py`: `RouteOptions { max_passes (-mp, 0–9999), threads (-mt,
     0–1024), optimizer (on/off, `--router.optimizer.enabled`), improvement
     threshold (-oit), ignore_net_classes (-inc, comma list), seed (--seed),
+    min_trace_width_um (`--router.min_trace_width_um`, filled from the board's
+    Board Setup `min_track_width` by default, D8: the DSN doesn't carry it),
     timeout (--timeout, e.g. "10m"), rule_area_fixup (K01.2) }`;
     `to_args()` builds the argument list in a fixed order; `load(path)`
     and `save(path)` with the schema and defensive restore. Ranges and

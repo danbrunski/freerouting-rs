@@ -26,7 +26,11 @@ exactly.
 clamps to 0 on `Issue508-DAC2020_bm01`, so Java's optimizer rejects every
 pass there and does nothing. The Java session is looking at it. A Java (or
 Rust) optimizer run that changes nothing on bm01 says nothing about parity;
-no acceptance here counts it as such.
+no acceptance here counts it as such. The Java session is fixing the clamp
+(ranking by the unclamped score), and the fix lands with the commit J01
+pins to. Also from the Java session: **the optimizer only runs on completely
+routed boards**, so `canary-pwr` and other partly routed boards never reach it.
+Pick optimizer reference boards from those Java routes to completion.
 
 **Prerequisites:**
 - O05 (`opt_changed_area` with trace costs);

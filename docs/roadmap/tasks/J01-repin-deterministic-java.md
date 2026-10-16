@@ -36,7 +36,26 @@ to 285 CPU s.
   rejects every pass there. Optimizer references may show the optimizer
   doing nothing for that reason.
 
-The new pin is `30baad7e2` or a later ledger commit. J01.4 also needs
+**The pin is `a773a70ec`** (main of `../freerouting`, committed locally and not
+pushed when this was written; a cloud session needs it pushed first). It
+adds three commits on top of `30baad7e2`, each with a ledger line:
+- `68a9efed0` "Rank optimizer passes by the unclamped score". On fully
+  routed bm01 the optimizer now accepts its passes: vias 142 → 127, bends
+  1237 → 1171, length +0.2 %, 0 violations. bm02 is identical.
+- `7bef8995f` "Write DSN output headlessly instead of an empty file".
+- `a773a70ec` "Log a machine-readable line when a work limit cuts off".
+  Routing is unchanged: bm01 at 5 passes gives the same SES as `30baad7e2`.
+The Java session keeps a frozen jar at
+`~/code/freerouting/logs/jars/freerouting-a773a70ec.jar`.
+Later ledger commits are bug fixes only (the Java fork's rule since
+2026-10-15). If J01 runs after more of them land, pin to the latest one
+that the ledger marks as not changing routing, and list them in J01.1.
+At the time of writing the newest is `46bf9e2ef`, "Add router.min_trace_width_um to
+stop neckdowns below the board minimum". It includes `07c970db9` and is
+byte-identical to `a773a70ec` while the new setting is unset. `07c970db9`,
+"Skip keepouts and planes whose shape cannot be read", is one such commit:
+Java now skips such areas with a warning instead of throwing, as the port
+already does. Its ledger line says "Port: no". J01.4 also needs
 [F02.4](F02-parity-and-benchmark-harness.md)'s determinism script.
 
 ## What exists and what this adds
@@ -125,6 +144,11 @@ What this adds:
       `FanoutSettings`;
     - new tests `WorkLimitTest` and `WorkLimitDeterminismTest`. Port both
       in B02 and A11+.
+  - `07c970db9` (if the pin includes it): Java skips keepouts and planes
+    whose shape can't be read, instead of throwing a NullPointerException.
+    In DIVERGENCES.md's board-model line "Where Java ends with an exception
+    the port keeps going …", drop keepouts and planes; windows and the
+    other cases in that line still diverge.
   - **Accept:** the inventory table (file, group, what Rust must do, which
     series) is in the checklist's done note. Every changed `src/main` file
     appears in it.
@@ -151,6 +175,34 @@ What this adds:
     `result`
   - fail the board, without writing a reference, when the safety timeout
     fires
+  The cut-off lines. The Java session implemented this format; it lands with
+  the clamp-fix commit, which is the pin. Java logs one line per WorkLimit
+  instance at INFO, after the usual `<date> <time> INFO   ` prefix. There is
+  no `[<job>]` topic in these lines, so anchor on the marker, not on the line
+  start:
+  ```
+  <date> <time> INFO   WORK_LIMIT_CUTOFF site=<site> nominal_ms=<n> units=<u>[ <key>=<value>...]
+  WORK_LIMIT_CUTOFF site=(\S+) nominal_ms=(-?\d+) units=(\d+)(?: (.*))?$
+  ```
+  Example from bm01 at 5 passes, optimizer off. It has three lines of
+  `WORK_LIMIT_CUTOFF site=pull_tight nominal_ms=1000 units=64455759 nets=[]`,
+  so bm01 is **not** a zero-cut-off board.
+  - `units` is the work done when the cut-off was detected. It can overshoot
+    `nominal_ms × 64,000`, because the checks are coarse.
+  - Sites and their context:
+    - `maze_search`: `net=<n> item=<id> ripup_pass=<p>`;
+    - `fanout_pin`: `net=<n> item=<pin id> pin=<Ref-Pad> pass=<fanout pass>`;
+    - `pull_tight`: `nets=[a, b]` (`[]` = all nets). This covers both the
+      guard after a connection and the `remove_tails` one;
+    - `move_component`, `interactive_route`: no context, GUI only.
+  - TraceShover, DrillItemMover and ForcedPadRouter never create a limit of
+    their own. They report under the `maze_search` or `fanout_pin` limit they
+    were handed.
+  - The batch pass is not on the line. Lines for pass N come before that
+    pass's `Auto-routing pass #N ... was completed` line, so the harness
+    assigns each line to a pass by counting those.
+  Store the parsed fields per board: site, nominal ms, units, the context
+  map, and the pass.
   Choose the bounds:
   - Route each fixture once with a high pass limit and record the time.
   - Then set per-board bounds so the full run is about 2 h or less.

@@ -157,6 +157,12 @@ Paths are under `crates/freerouting/src/` unless they start with
     - `plane_as_obstacle` (aliases `conduction_is_obstacle`,
       `planeAsObstacle`, `conductionIsObstacle`) false;
     - `neck_width_um` 0.0;
+    - `min_trace_width_um` unset (Java fork `46bf9e2ef`, ledger "Port: yes").
+      Opt-in. When set, it floors every narrowing: pin neck-downs in the maze
+      search and the inserter, the inserter's micro-neckdown, and
+      `neck_width_um`. Unset gives byte-identical results to `a773a70ec`.
+      This is how D8's board minimum reaches the router when the input is a
+      DSN, which doesn't carry `min_track_width` (Q02, K02);
     - `strict_drc` false;
     - `result_json` null;
     - `layers` null.

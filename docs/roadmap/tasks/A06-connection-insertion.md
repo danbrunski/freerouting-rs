@@ -100,6 +100,10 @@ What this adds: `autoroute/path/insert.rs`, `autoroute/connection.rs` with
   (`:570-712`; B05's `trace_neckdown_halfwidth`, `insert_forced_trace_segment`) and
   `insertFanoutMicroNeckdown` (`:486-554`). The `LinkedHashSet<Integer>` of candidate
   widths (`:493`) becomes a `Vec<i32>` with a contains check, keeping insertion order.
+  Java's micro-neckdown tries 3/4, 3/5 and 1/2 of the class width with no lower bound,
+  which gave a 0.12 mm track on `canary-pwr`. At `46bf9e2ef` the opt-in
+  `router.min_trace_width_um` (C02) floors it, the pin neck-downs here and in A04, and
+  `neck_width_um`. Port that floor with the same semantics; unset changes nothing.
   - **Accept:** covered by A06.7 on `Issue508-SMD-routing-issue-demo` and
     `Issue508-DAC2020_bm08`; a unit test of the width list order.
 

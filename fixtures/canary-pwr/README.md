@@ -4,9 +4,21 @@ Dan's CANary power board (`hardware/canary-pwr-rev1.0` in the private
 `danbrunski/canary` repository): 4 layers, with In1 and In2 as planes, so
 routing is on F.Cu and B.Cu. The board has hand-laid power pours, Kelvin
 pairs and gate drives, locked and exported as `type fix`. Dan approved
-committing these on 2026-10-15. The DSNs were produced by canary's
-`hardware/tools/dsn_export.py` (not yet committed in canary when these were
-added) and handed over by the CANary layout session.
+committing these on 2026-10-15. They were handed over by the CANary layout
+session.
+
+**Exporter:** canary's `hardware/tools/dsn_export.py` at canary commit
+`bf594116` (git blob `cf4cbf60f5c740504d3943b3a8913e777b073ec1`, file sha256
+`08ccf583480bd724…`). The same commit adds `hardware/tools/autoroute.sh`
+(refill, export, Freerouting, import, DRC) and `hardware/tools/ses_import.py`.
+Per fixture:
+- `pours2`, `pours3` and `pours-as-planes` were made by code equivalent to
+  `bf594116`, with the edge and fiducial keepouts already in. That commit
+  only adds docstring text.
+- `pours1` predates the keepouts: the same script without the edge and
+  fiducial clearance step, and with the board's old same-net via spacing.
+- The 17:47 unpoured DSN is a plain KiCad export
+  (`pcbnew.ExportSpecctraDSN`) with no post-processing.
 
 | File | sha256 (prefix) | What it is | Used by |
 |---|---|---|---|

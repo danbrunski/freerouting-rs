@@ -84,6 +84,15 @@ can run in parallel; X04 → X05 → X06 and X08 → X09 are sequential.
 
 ## Rules for this series
 
+- **Not ported: KRT's fab-tier escalation and rule rewriting (D8).** KRT's
+  default `--fab-tier auto` "rescues" a failing net by dropping to an
+  advanced fab tier (0.089–0.127 mm tracks, 0.25/0.15 mm vias). It then
+  rewrites the routed project's DRC minimums to match. Dan's ruling
+  (2026-10-15): the board's design rules are hard limits. Every X stage
+  routes within them and never edits them. When X01 or any other comparison
+  runs KRT itself, its primary arm uses `--fab-tier standard` (the board's
+  rules as a hard floor), and results are graded under the original rules.
+
 These add to the shared rules in [README.md](README.md) and to Q00's
 measurement rules, which apply here unchanged.
 

@@ -144,8 +144,10 @@ What this adds:
     `Issue555-CNH_Functional_Tester_1`, `Issue269-z10_module`) and the two
     watch-list boards from `engine.md` (`Issue066-Project_GP8B`,
     `Issue145-smoothieboard`)
-  - `owner.txt`: out-of-repo paths for `canary-pwr` and its variants, skipped
-    when missing
+  - `owner.txt`: Dan's boards. `canary-pwr` is in the repo since 2026-10-15
+    (`fixtures/canary-pwr/`: three variants pours1–3, the planes variant and
+    the unpoured board; Dan approved committing them). Any further owner
+    boards are out-of-repo paths, skipped when missing
   - **Accept:**
     - Every in-repo path exists.
     - `tools/bench/README.md` explains each set and how it was chosen, with
@@ -201,6 +203,26 @@ What this adds:
     - Exit codes: 0 graded clean, 1 router-attributable items, 2 not graded.
       "Not graded" (no `kicad-cli`, a failed import) never counts as a pass.
     - Strip the SES `(placement ...)` scope before `ImportSpecctraSES`.
+    - **Measure copper narrower than its net class.** KiCad's DRC checks a
+      track against the board minimum, never against its net class's width,
+      so a 1.5 mm power net routed at 0.089 mm passes. That is a
+      current-capacity (physics) violation under D8. Report, per engine:
+      tracks and length narrower than their net class, the worst shortfall,
+      and the five nets with the most under-width length. Take net → class
+      width from the `(class ...)` scopes of the DSN KiCad exported (their
+      `(rule (width …))`, in the DSN's unit). KiCad 10.0.5's Python returns
+      an unwrapped object from `GetEffectiveNetClass()`, so it can't be used
+      for this. In the head-to-head on `canary-pwr`: Freerouting 175 mm
+      (short pin neck-downs; worst +5V_SHUNT at 0.5 mm against 1.5 mm); KRT
+      at its default tier 672 mm (worst +12V_BUS at 0.089 mm against
+      1.5 mm).
+    - **Don't trust capped counts.** KiCad 10's DRC reported at most 199
+      `track_width` items in the 2026-10-15 head-to-head. coldfire's
+      Freerouting result had 305 tracks below the minimum width and reported
+      199. interf_u's KRT result had 594 and reported 199. Clearance items
+      weren't capped at 199 (424 reported). Count widths, via sizes and drills
+      from the board's geometry, and treat any DRC count of exactly 199 as
+      "≥ 199".
     - **DSN keepouts:** remove the keepouts that KiCad's DSN export makes
       from rule areas that ban only footprints or pads. The `.kicad_pcb`
       says which they are, by `(tracks allowed)(vias allowed)`. Otherwise

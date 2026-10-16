@@ -154,6 +154,21 @@ it depends on.
   - signal-layer pours are ignored for nets that have a power-layer plane
   - the flat cost settings work
   - the best board is the one saved
+  - **the board's design rules are hard limits (Dan, 2026-10-15).** No
+    trace narrower than the minimum track width, no via or drill smaller
+    than the board allows, no clearance below the rules. No trace narrower
+    than its own net class's width either, because class widths carry
+    current. The one exception is a short neck-down at a pin that can't take
+    the full width; Q02 bounds its length, and it never goes below the
+    board minimum. KiCad's DRC doesn't check class widths, so the oracle
+    measures them separately (F02.6). These limits come
+    from the manufacturer's capabilities or from physics. Completion is
+    never bought by relaxing them, and a router never rewrites the board's
+    rules. A connection that can't be routed within them is reported as
+    unrouted, with the reason (Q03), not routed narrower. The 2026-10-15
+    head-to-head (X01) showed why this needs saying: KiCadRoutingTools'
+    default `--fab-tier auto` escalated to 0.089–0.127 mm tracks and
+    0.25/0.15 mm vias and lowered the board's minimums to match.
 - **D9 — One engine, interchangeable algorithms (Dan, 2026-10-15).**
   - **A pipeline of stages.** A routing job runs fanout, net ordering,
     connection routing, the ripup policy, the optimizer, and special stages
@@ -256,8 +271,9 @@ append to (`lib.rs` module lists, `DIVERGENCES.md`).
 
 - **Development focus is freerouting-rs** (Dan, 2026-10-15, as relayed by the
   Java session). The Java fork now gets only bug fixes and cleanup, no
-  large features. Its determinism commit `30baad7e2` is the base for the
-  re-pin (J01).
+  large features. Its determinism commit `30baad7e2` and three fixes after it
+  (the optimizer score clamp, headless DSN output, a machine-readable
+  work-limit cut-off line) make up `a773a70ec`, the re-pin target (J01).
 - **Dan's Java fork** (`../freerouting`) keeps `docs/development/PORT_LEDGER.md`:
   one line per Java commit after the pin, with its measurements and
   "Port: yes/no/later". The J series adopts ledger entries by re-pinning or by

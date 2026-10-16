@@ -28,6 +28,27 @@ A11's pass runner and A12's fanout, using B01's snapshots for every restore. The
 What this adds: `autoroute/batch/{batch_loop.rs, last_mile.rs, snapshot.rs}`,
 `autoroute/pipeline.rs` with `run_pipeline`, and an example binary that routes a board.
 
+**Measured in Java (the Java session, 2026-10-15, `a773a70ec`, deterministic,
+`canary-pwr` "pours1"):**
+- **Pass 1 is the best pass at every ripup cost.** With `start_ripup_costs`
+  100, 500 and 1500, pass 1 leaves 120, 109 and 100 connections unrouted.
+  Every later pass is worse (161–185), and the loop's periodic restore puts the
+  pass-1 board back.
+- **The later passes are wasted time.** `-mp 1` gives the same SES as
+  `-mp 10`, so passes 2–10 are about 60 % of the routing time for nothing.
+- **Cause:** Java's ripup is greedy. Ripped blockers often can't be rerouted,
+  and nothing remembers congestion between passes.
+
+**Port the loop as Java has it, for parity, and record this as a known Java
+weakness.** Changing it is a deliberate divergence (Q04, Q05) once pass-1
+parity holds. Also seen on that board: `BasicBoard.normalizeTraces` hits its
+2000-iteration oscillation guard 10 times, around fixed hand-laid copper (a
+split/combine loop). Rust already has the guard and Java's per-board
+suppression (`MAX_NORMALIZE_ITERATIONS`, `basic_board.rs`;
+`BasicBoard::normalize_traces`, `trace_ops.rs`). Parity must reproduce the
+same suppression on the same nets. Finding the oscillation's cause is a later
+Q candidate.
+
 ## Decisions made here
 
 - **A restore is a B01 snapshot restore, never a `Clone`.** The history stores B01

@@ -14,6 +14,8 @@ provisional id; see "Decisions"); C02 (settings model) and C03 (settings
 applied to the board); F03.1 and F03.4 for the measurement; F02.6 for KiCad
 grading.
 
+**Fixture:** `fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn` is Dan's board with the pours left as KiCad planes: the case this checklist exists for. Its siblings `canary-pwr-pours1..3.dsn` are the same board with the pours exported as fixed wires; that is the workaround to compare against (see `fixtures/canary-pwr/README.md`).
+
 ## What exists and what this adds
 
 | Exists | State |

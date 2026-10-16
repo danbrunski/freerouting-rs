@@ -23,6 +23,8 @@ zero and not consulted in the parity path); A11 (rip events from the pass
 loop); A10 (`RipupPolicy` trait); Q06 (blocker attribution); B01 (snapshots);
 F03.1, F03.4.
 
+**Fixtures:** `fixtures/canary-pwr/canary-pwr-pours1..3.dsn`, the variant set, with Java sessions at `a773a70ec`; pass 1 is the best pass on all of them.
+
 ## What exists and what this adds
 
 | Exists | State |
@@ -33,6 +35,23 @@ F03.1, F03.4.
 | KRT `HistoryField` (sorted parallel arrays, lexsort eviction), charges: contest (frontier ∩ routed copper) at full increment, rip footprint weight 1.0, raw failed frontier 0.25; shipped cost 0.1 mm-equivalent, cap 0.5, no escalation, no decay | the design |
 | KRT `obstacle_costs.compute_ripped_route_costs`: +0.1 mm-equivalent within 1 mm of a ripped net's former copper until it reroutes | the corridor cost |
 | KRT `net_cost.py`: `sqrt(pads)·sqrt(span)`; P(ripped again \| ripped k times) ≈ 0.9 for every k | the victim cost; KRT never turned it on by default |
+
+**Measured in Java (the Java session, 2026-10-15, `a773a70ec`, deterministic,
+`canary-pwr` "pours1"):**
+- **Pass 1 is the best pass at every ripup cost.** With `start_ripup_costs`
+  100, 500 and 1500, pass 1 leaves 120, 109 and 100 connections unrouted.
+  Every later pass is worse (161–185), and the loop's periodic restore puts the
+  pass-1 board back.
+- **The later passes are wasted time.** `-mp 1` gives the same SES as
+  `-mp 10`, so passes 2–10 are about 60 % of the routing time for nothing.
+- **Cause:** Java's ripup is greedy. Ripped blockers often can't be rerouted,
+  and nothing remembers congestion between passes.
+
+So the case for Q05 rests on more than KRT's weak evidence: on Dan's board,
+Java's memoryless greedy ripup makes every pass after the first worse. That
+makes history costs (negotiated congestion) the most promising divergence for
+completion. It is still measured under the Q rules, starting from a pass-1
+board that matches Java.
 
 ## Decisions made here
 

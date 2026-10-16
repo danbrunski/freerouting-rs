@@ -89,6 +89,63 @@ X01 preregistration, the results, and the order in X00.
 | X01.7 | `tools/krt-h2h/classify.py` | — |
 | X01.8 | `tools/krt-h2h/results/x01-demos.json` | `X00-krt-algorithms-README.md` ("Order and critical path" only) |
 
+## Pilot run, 2026-10-15 (not this checklist's protocol)
+
+An informal head-to-head ran before this checklist could be followed. It had
+no preregistration, used a scratchpad harness and a local KRT clone at
+`0486e799`, and covered six boards that differ partly from X01's list. Its
+numbers inform the plan but **tick no box here**; X01 still has to run as
+written. Setup:
+- boards stripped of tracks and vias, zones kept;
+- Freerouting is Dan's `freerouting-dev.jar` (the fork's main at
+  `de7a4fd2c`), headless, `start_ripup_costs=1500`, a 10-minute job cap;
+  `canary-pwr` without the footprint-only fan-inlet keepout;
+- KRT is `route.py` with defaults, then with board-rule settings;
+- every result graded by KiCad 10.0.5's DRC under the board's **original**
+  rules, minus the stripped input's own items, plus copper narrower than its
+  net class (from the exported DSN; KiCad's DRC doesn't check that).
+
+Unrouted connections, new copper DRC items, and copper narrower than its net
+class:
+
+| Board (connections) | Freerouting | KRT default (`--fab-tier auto`) | KRT strict (`--escalation off --no-power-tap-neckdown`) |
+|---|---|---|---|
+| ecc83 (14) | 0 · 0 · 0 mm | 0 · 0 · 0 mm | — (KRT exact sizes: 0 · 0 · 0 mm) |
+| sonde (48) | 3 · 2 shorts¹ · 35 mm | 0 · 0 · 0 mm | 0 · 0 · 0 mm |
+| StickHub (128) | 29 · 161² · 42 mm | 0 · 54 · 0 mm | 8 · 39³ · 0 mm |
+| interf_u (164) | 13 · 11 · 162 mm | 6 · 729 · 1033 mm | 18 · 8 · 70 mm |
+| canary-pwr (220) | 78 · 57 · 175 mm | 10 · 357 · 672 mm | 60 · 29 · 122 mm⁴ |
+| coldfire (478) | 44 · 214² · 290 mm | 2 · 326 · 471 mm | 15 · 7 · 187 mm |
+
+1. Shorts against copper text that KiCad's DSN export leaves out.
+2. Mostly tracks below the board's minimum width: Freerouting's pin
+   neck-down doesn't know the minimum, because the DSN doesn't carry it.
+3. Mostly solder-mask bridges (37).
+4. Cut off by the 10-minute cap (exit 124).
+
+Findings:
+- **KRT's default completion lead comes from breaking the board's rules.**
+  It escalates to 0.089–0.127 mm tracks and 0.25/0.15 mm vias, lowers the
+  project's minimums to match, and narrows power nets: +12V_BUS was routed
+  at 0.089 mm against its 1.5 mm class. Dan's ruling (D8): design rules are
+  hard limits.
+- **Held to the board's rules (strict), KRT still routes more on four of
+  five boards** (sonde, StickHub, canary-pwr, coldfire) with fewer new DRC
+  items. It routes fewer on interf_u. It uses more vias (182 vs 130 on
+  canary-pwr, 498 vs 319 on coldfire) and 1.4–4.2 GB of memory against
+  Freerouting's 0.3–2.7 GB.
+- **Time is mixed.** KRT strict is faster on coldfire (297 s vs 501 s) and
+  slower on interf_u (386 s vs 47 s).
+- **Freerouting's own losses are partly input fidelity:** copper text and
+  the board's minimum width are missing from the DSN. The K series' direct
+  `.kicad_pcb` reader and Java's new `router.min_trace_width_um` (C02)
+  address both.
+- **Grading lessons**, now in F02.6:
+  - grade under the original rules;
+  - measure class width separately;
+  - KiCad reports at most 199 `track_width` items;
+  - KiCad 10.0.5's `GetEffectiveNetClass()` is unusable from Python.
+
 ## Checklist
 
 - [ ] **X01.1 — Preregistration.**

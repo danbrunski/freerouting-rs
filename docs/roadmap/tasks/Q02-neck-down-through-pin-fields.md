@@ -45,9 +45,15 @@ of a pad 95 (102 at 500 µm); plus no ripup for the retry 91 (98 at 500 µm).
 - **D** defaults to the pin's component courtyard (its package outline
   bounding box, when the DSN gives one) plus one pin pitch on that
   component; with no outline, the pin's own bounding box plus one pitch. The
-  neck width is `max(2·trace_neckdown_half_width(layer), class minimum)`; the
-  class minimum is the narrowest width any net class on the board allows on
-  that layer, never lower. The preregistration also carries KRT's 2.5 mm path
+  neck width is `max(2·trace_neckdown_half_width(layer), class minimum,
+  board minimum track width)`. The class minimum is the narrowest width any
+  net class on the board allows on that layer. The board minimum is the
+  board's `min_track_width`, from the `.kicad_pcb`/`.kicad_pro` reader (K05.3,
+  K07.5), or `router.min_trace_width_um` (C02; Java fork `46bf9e2ef`, opt-in) when
+  the input is a DSN, which doesn't carry it. Never
+  lower (D8: the board's design rules are hard limits). Freerouting at the
+  pin necks below it: on StickHub in the head-to-head, 147 tracks were
+  0.112 mm against a 0.15 mm minimum. The preregistration also carries KRT's 2.5 mm path
   length as an arm.
 - **Hooks needed from the A series.** A04's maze search takes a width policy:
   `fn half_width(&self, room: &RoomShape, layer: i32) -> i32`, with the
