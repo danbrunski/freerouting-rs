@@ -19,7 +19,7 @@ K05–K07 can compare the reader against KiCad bit for bit.
 Prerequisites: none. KiCad 10 is needed only for K04.8. This machine has
 two: Windows KiCad 10.0.5 (Dan's, the one the plugin runs in) and WSL KiCad
 10.0.7 from the Ubuntu packages (`/usr/bin/kicad-cli`; system `python3`
-imports `pcbnew`), see K00 "Two KiCads". [F04](F04-provenance.md) is a prerequisite
+imports `pcbnew`), see K00 "Two KiCads". [F04](archive/F04-provenance.md) is a prerequisite
 only if an item translates KiCadRoutingTools (KRT) code; the plan here takes
 KRT's pitfalls and test cases, not its code.
 

@@ -39,7 +39,7 @@ copies KRT code.
 
 ## Checklist
 
-- [ ] **F04.1 — Notices.**
+- [~] **F04.1 — Notices.**
   - **`THIRD_PARTY_NOTICES.md`:** lists each third-party source with its
     licence, copyright line, project URL and where its code lives here.
   - **`LICENSES/MIT-KiCadRoutingTools.txt`:** holds KRT's full MIT text
@@ -53,7 +53,12 @@ copies KRT code.
     - R01's packaging test lists `THIRD_PARTY_NOTICES.md` in each archive
       (partial until R01 lands).
 
-- [ ] **F04.2 — A provenance ledger and a check.**
+  *Partial 2026-10-15:* `THIRD_PARTY_NOTICES.md`, `LICENSES/MIT-KiCadRoutingTools.txt`
+  (`cmp` identical to `git show 0486e799:LICENSE` in KiCadRoutingTools) and the
+  README License paragraph are done. Remaining: R01's packaging test listing
+  `THIRD_PARTY_NOTICES.md` in each archive and the plugin package (owner R01).
+
+- [~] **F04.2 — A provenance ledger and a check.**
   - **`docs/PROVENANCE.md`:** one row per port: the Rust file and symbol, the
     KRT path, symbol and commit, the port date, and "translated" or
     "adapted".
@@ -68,3 +73,12 @@ copies KRT code.
       and no header.
     - It passes on the tree.
     - The CI step is added (partial until F01.2's workflow is pushed).
+
+  *Partial 2026-10-15:* `docs/PROVENANCE.md` and `tools/check-provenance.sh`
+  done. Checked in a scratch fixture: fails (exit 1) on a `Portions ported from`
+  file with no header and no row, passes (exit 0) with both, fails on a ledger
+  row naming a missing file; passes on the tree (exit 0). The CI step
+  (`Provenance check`, Linux only) is appended to the prepared workflow
+  `docs/development/ci-workflow.yml`. Remaining: GitHub CI is disabled by Dan
+  (2026-10-15), so the step has never run. Owner: F01.2 / R01, when CI is
+  re-enabled.

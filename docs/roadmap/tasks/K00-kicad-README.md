@@ -111,7 +111,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
 - **Reader results are graded two ways:** against `build_board` of KiCad 10's
   DSN export of the same board (K07), and by KiCad's own DRC through F02.6.
 - **KRT code may be ported** (MIT into GPL-3.0, decision D9), following
-  [F04](F04-provenance.md): the file keeps KRT's copyright line and an SPDX
+  [F04](archive/F04-provenance.md): the file keeps KRT's copyright line and an SPDX
   header, names its KRT source path and commit (`0486e799` at the time of
   writing), and gets a row in `docs/PROVENANCE.md`. An item that translates
   KRT code lists F04 as a prerequisite. Ideas without code are credited in

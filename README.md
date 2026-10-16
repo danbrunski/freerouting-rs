@@ -40,3 +40,7 @@ boards in the viewer.
 ## License
 
 GPL-3.0, the same as upstream Freerouting, since this is a derivative work.
+
+Portions are ported from KiCadRoutingTools (MIT, Copyright (c) 2026
+drandyhaas). Its licence text is in `LICENSES/MIT-KiCadRoutingTools.txt` and
+the sources are listed in `THIRD_PARTY_NOTICES.md`.
