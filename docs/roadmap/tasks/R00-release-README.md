@@ -4,7 +4,7 @@ Opened 2026-10-15. The R series produces the release builds that "complete"
 requires (item 7 of [port-completion.md](../port-completion.md)): Windows,
 macOS universal and Linux, from one tag-triggered workflow, with a version
 gate and checksums. CI (fmt, clippy and tests on three systems) is
-[F01.2](F01-dev-loop-and-ci.md), not part of this series. The narrative is
+[F01.2](archive/F01-dev-loop-and-ci.md), not part of this series. The narrative is
 in [desktop-app.md](../desktop-app.md).
 
 ## Task index

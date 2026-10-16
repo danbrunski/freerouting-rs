@@ -16,7 +16,7 @@ are the [P series](tasks/P00-performance-README.md).
   `Issue508-DAC2020_bm01` in a GUI run. Its fanout on that board ran 8 passes
   in 1.8 s.
 - **The test loop is the slow part of development:** 1.5–4 min for the
-  workspace in plain debug, 23 s at opt-level 1 ([F01](tasks/F01-dev-loop-and-ci.md)).
+  workspace in plain debug, 23 s at opt-level 1 ([F01](tasks/archive/F01-dev-loop-and-ci.md)).
 - **First profile.** A callgrind profile of a release DRC run on
   `Issue178-KeebMaker_Sofle_Choc` (670 M instructions) spends 20.6 % in
   `BTreeMap` iteration and 14.5 % in an iterator `try_fold`. It's a hint, not

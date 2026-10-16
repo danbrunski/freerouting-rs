@@ -13,3 +13,7 @@ rust-version = "1.85"
 freerouting-geometry = { path = "crates/freerouting-geometry" }
 freerouting-dsn = { path = "crates/freerouting-dsn" }
 freerouting = { path = "crates/freerouting" }
+
+# Opt-level 1: `cargo test --workspace` warm takes 26 s instead of 181 s; overflow checks and debug assertions stay on.
+[profile.dev]
+opt-level = 1

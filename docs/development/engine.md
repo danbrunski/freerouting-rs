@@ -66,8 +66,10 @@ baseline for completion, vias, length and speed, not an exact target.
 | DRC, incompletes, airlines, SES import | `freerouting::drc`, `io::specctra::ses_reader` | `tests/reference_load.rs` (connections and violations on every board) and `tests/reference_drc.rs` (the full Java DRC report, on each board as loaded and with Java's routed SES imported). Remaining differences are listed in those tests with reasons. |
 | `freerouting -de board.dsn [board.ses] -drc [report.json]` | `freerouting-cli` | Same JSON report as Java's DRC command. Routing isn't implemented yet. |
 
-About 300 tests, all passing: `cargo test --workspace` takes about a minute in
-a debug build, mostly the reference comparisons.
+About 300 tests, all passing: `cargo test --workspace` takes about 26 s warm
+(the workspace `dev` profile uses `opt-level = 1`; at `opt-level = 0` it took
+181 s, mostly the reference comparisons). Overflow checks and debug assertions
+stay on. For debugger stepping, build with `CARGO_PROFILE_DEV_OPT_LEVEL=0`.
 
 ### Loose ends from the DRC stage
 
@@ -126,7 +128,10 @@ worth watching when the router is ported.
   iteration); Java `HashMap` order is simulated where needed.
 - Every expected mismatch with Java lives in the test that would otherwise
   fail, with the reason next to it.
-- The GitHub token used by cloud sessions couldn't push `.github/workflows/`, so
-  there is no CI yet. A ready-made workflow (fmt, clippy, test on Linux,
-  Windows, macOS) is in [ci-workflow.yml](ci-workflow.yml); a session using
-  Dan's own git credentials can move it to `.github/workflows/ci.yml`.
+- CI is prepared in [ci-workflow.yml](ci-workflow.yml) (fmt, `clippy -D
+  warnings` and `cargo test --workspace` on Linux, Windows and macOS, the same
+  three commands as the local gate, with read-only permissions, a 30-minute
+  timeout and `rust-cache`). It is disabled at Dan's request (2026-10-15):
+  it stays in `docs/development/` so GitHub never runs it. To enable it, move
+  it to `.github/workflows/ci.yml`; pushing that directory needs Dan's own git
+  credentials (the cloud sessions' GitHub token can't).

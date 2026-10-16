@@ -246,17 +246,15 @@ this repo a speed-up must still produce identical results:
      on the files you touched. Never format files outside your diff.
    - `cargo clippy --workspace --all-targets -- -D warnings`. This is
      clean at `b119467`, so any warning is yours.
-   - Tests: run them in your own opt-level-1 target directory:
-     `CARGO_PROFILE_DEV_OPT_LEVEL=1 CARGO_TARGET_DIR=<scratchpad>/target-o1 cargo test --workspace`
+   - Tests: run them in your own target directory (parallel agents contend
+     for `target/`; the workspace `dev` profile is already `opt-level = 1`):
+     `CARGO_TARGET_DIR=<scratchpad>/target-o1 cargo test --workspace`
      if you touched geometry, dsn or the engine. That is about 300
-     tests. A warm run of the whole workspace takes about 23 s there,
-     against 1.5–4 min in plain debug, where `reference_drc`,
-     `reference_load` and the GUI tessellation test dominate. Overflow
-     checks and debug assertions stay on, and the results are the same.
-     The first build takes about a minute. Never set that variable on
-     the shared `target/`, because it rebuilds everything there under
-     other agents. Use `-p freerouting-gui` or `-p freerouting-cli` if
-     you only touched that crate.
+     tests. A warm run of the whole workspace takes about 26 s there
+     (181 s before the profile change). Overflow checks and debug
+     assertions stay on. The first build takes about a minute. Use
+     `-p freerouting-gui` or `-p freerouting-cli` if you only touched
+     that crate.
    - For plugin changes, run
      `python3 -m py_compile kicad-plugin/freerouting_rs/*.py` and call
      `tools.py` functions directly.
@@ -281,7 +279,7 @@ this repo a speed-up must still produce identical results:
      trace to a file in your step-0 dirty list? If that isn't obvious,
      run just that test at HEAD in a throwaway worktree
      (`git worktree add --detach <scratchpad>/head HEAD`, then
-     `cargo test` there with `CARGO_PROFILE_DEV_OPT_LEVEL=1` and
+     `cargo test` there with
      `CARGO_TARGET_DIR=<scratchpad>/head-target`, then
      `git worktree remove --force <scratchpad>/head`). A failure
      that isn't yours goes under *Failures outside your files*, unfixed,
