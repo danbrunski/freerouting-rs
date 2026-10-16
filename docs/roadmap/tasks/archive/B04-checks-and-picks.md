@@ -63,7 +63,7 @@ B04's code goes in new files.
 
 ## Checklist
 
-- [ ] **B04.1 — The `board-queries` probe.**
+- [x] **B04.1 — The `board-queries` probe.**
   One Java probe covers every method of this checklist, so each later item
   only adds the Rust side.
   - Fixtures: Issue026-J2_reference (+ its SES), Issue508-DAC2020_bm08
@@ -101,8 +101,28 @@ B04's code goes in new files.
     `tests/board_probe_queries.rs` compares the echoed inputs for every board
     (the Rust sampler reproduces Java's) and holds one `#[test]` per method that
     later items switch on.
+  - *Done 2026-10-16:* `tools/java-reference/probes/board/BoardQueriesProbe.java` (the `Boards`
+    block verbatim: `board_probe_ids::probe_loader_copies_identical` passes; one README line),
+    `tests/board_probe_queries.rs`, and `fixtures/reference/probe/board-queries/*.jsonl` for 7
+    boards, all under 1 MiB (173-762 KB). Probed at `a773a70ec` in an isolated worktree; the
+    ported Java files (`BasicBoard`, `RoutingBoardSearchFacade`, `ItemSelectionFilter`, the item
+    classes, `PolylineTrace`) are unchanged from `cda540f` (`git diff --stat cda540f
+    a773a70ec`); `ShapeSearchTree` only gains work-meter ticks and `PolygonShape` a per-split
+    `Random(99)`. The probe found the tie-pin board itself: Issue433-my-board (`fixtures.tsv`
+    row 72, pin 3 has two nets), probed with its row's session. Interpretations: J2's SES is
+    `fixtures/Issue026-J2_reference.ses`; Issue413, Issue957, Issue145 and Issue676 are load
+    only; the temporary trace of `checkTraceShape` gets a fixed id so it burns none (only
+    `checkPolylineTrace` moves `maxGeneratedId`); the pick, move and net-change methods also run
+    at each pin pair's first pin (more hits than random points). `generate.sh <a773a70ec
+    worktree> board-queries` run twice: `7 boards` each, all 7 files byte-identical (`cmp`).
+    `cargo test -p freerouting --test board_probe_queries`: 13 passed: `inputs_match_java` (the
+    board inputs, 300 samples and up to 200 pin pairs of all 8 stages),
+    `probed_boards_match_java`, one test per method (`check_shape`, `check_trace_shape`,
+    `check_polyline_trace`, `check_trace_segment`, `pick_items_filtered`,
+    `pick_nearest_routing_item`, `check_move_item`, `check_change_net`, `item_helpers`,
+    `offset_shapes`, each `*_matches_java`) and `check_move_item_adds_item_to_ignore_set`.
 
-- [ ] **B04.2 — `ItemFilter` and `pick_items_filtered`.**
+- [x] **B04.2 — `ItemFilter` and `pick_items_filtered`.**
   - Java: `ItemSelectionFilter` (`board/actions/ItemSelectionFilter.java`);
     `isSelectedByFilter` per item class: a trace needs `TRACES`, a via `VIAS`, a
     pin `PINS`, and so on, each also gated by `FIXED`/`UNFIXED` on the item's
@@ -114,8 +134,20 @@ B04's code goes in new files.
     also use them.
   - **Accept:** `pick_items_filtered` equal to the probe for every filter on every
     board; a unit test per item kind and fixed state.
+  - *Done 2026-10-16:* `board/selection_filter.rs`: `SelectableChoice` (Java's order,
+    `java_name`), `ItemFilter` (a `u16` bitset: `default()`, `only`, `of`, `all`, `none`,
+    `with`, `is_selected`, `filter`), `Item::selectable_choice` / `is_selected_by`, and
+    `BasicBoard::pick_items_filtered` (`pick_items` unchanged). `cargo test --test
+    board_probe_queries pick_items_filtered_matches_java` passes: no filter, each of the 10
+    single-choice filters and the default filter, at the 300 samples and every pin-pair start,
+    on all 8 stages of the 7 probed boards (Issue026-J2_reference `ses` and `compensated`,
+    Issue508-DAC2020_bm08 `ses`, Issue413-test, Issue957-smoke-ldo-led, Issue145-smoothieboard
+    and Issue676-ch32v-tx118s `load`, and the tie-pin board Issue433-my-board `ses`). Unit tests
+    `board::selection_filter::tests::{every_item_kind_and_fixed_state,
+    default_filter_matches_java_constructor, single_choice_filter_adds_fixed_states}` pass (9
+    item kinds x 4 fixed states x every class/fixed-state filter).
 
-- [ ] **B04.3 — `check_shape` and `check_trace_shape`.**
+- [~] **B04.3 — `check_shape` and `check_trace_shape`.**
   - Java: `BasicBoard.checkShape` (`:1069-1094`): split the area into convex tiles;
     false if a tile leaves the board box or overlaps (with clearance) an object
     that is an obstacle for all the nets. `checkTraceShape` (`:1101-1158`):
@@ -134,8 +166,29 @@ B04's code goes in new files.
     Issue145-smoothieboard, release) is in the done note, with zero heap
     allocations per call after warm-up (counted with a counting allocator in the
     benchmark only).
+  - *Partial 2026-10-16:* `board/queries.rs`: `check_shape`, `check_trace_shape`, and
+    `clearance_entries` / `overlapping_items_with_clearance_java`, Java's five-argument
+    `overlappingTreeEntriesWithClearance`, which keeps the clearance search in a compensated
+    tree (the tree's `overlapping_tree_entries_with_clearance` is the four-argument form that
+    switches to the plain overlap; `check_shape`, the touching pins, `check_move_item` and
+    `check_change_net` need the five-argument one, or stage `compensated` differs).
+    `check_shape_matches_java` and `check_trace_shape_matches_java` pass on all 8 stages of the
+    7 probed boards (Issue026-J2_reference `ses` and `compensated`, Issue508-DAC2020_bm08 `ses`,
+    Issue413-test, Issue957-smoke-ldo-led, Issue145-smoothieboard and Issue676-ch32v-tx118s
+    `load`, and the tie-pin board Issue433-my-board `ses`); on Issue433-my-board the
+    foreign-trace-at-tie-pin branch fires (pin 3, trace 47, twice), as in Java. Benchmark `cargo
+    run --release -p freerouting --example check_trace_shape_bench` (Issue145-smoothieboard, 1
+    000 checks with contact pins, 5 timed runs after a warm-up, machine busy with other agents):
+    uncompensated min 9.68 ms / median 11.65 ms per 1 000 checks, compensated min 3.82 / median
+    7.30 (a rerun at load average 42 on 8 cores: min 21.85 and 3.32 ms). **Remainder (P02.2,
+    scratch reuse):** zero heap allocations per call. Measured after warm-up: 56.5
+    (uncompensated) and 33.0 (compensated) allocations per call. `check_trace_shape`'s own loop
+    allocates nothing (a thread-local entry vector); the allocations are in the tree queries
+    (`ShapeTree::overlaps`' stack and candidate vectors, the clearance query's sort and result
+    vectors, `board/search/mod.rs` and `datastructures/shape_tree.rs`, B02-owned) and in the
+    geometry's simplex shapes.
 
-- [ ] **B04.4 — `touching_pins_at_end_corners` and `check_polyline_trace`.**
+- [x] **B04.4 — `touching_pins_at_end_corners` and `check_polyline_trace`.**
   - Java: `Trace.touchingPinsAtEndCorners` (`Trace.java:390-410`): for the first
     and then the last corner, the corner's surrounding octagon enlarged by the
     half width, `overlappingItemsWithClearance` on the layer with no ignored
@@ -149,8 +202,18 @@ B04's code goes in new files.
     class)`, which calls `burn_item_id()` first.
   - **Accept:** the probe's booleans equal **and** `maxGeneratedId` equal after the
     whole sequence on every board.
+  - *Done 2026-10-16:* `board/queries.rs`: `touching_pins_at_end_corners(trace_id)`,
+    `touching_pins_at_polyline_end_corners(polyline, layer, half_width, nets, class)` (unsaved
+    trace) and `check_polyline_trace`, which calls `burn_item_id()` first and checks the default
+    tree's shapes of the temporary trace. `check_polyline_trace_matches_java` passes on all 8
+    stages of the 7 probed boards (Issue026-J2_reference `ses` and `compensated`,
+    Issue508-DAC2020_bm08 `ses`, Issue413-test, Issue957-smoke-ldo-led, Issue145-smoothieboard
+    and Issue676-ch32v-tx118s `load`, and the tie-pin board Issue433-my-board `ses`): every
+    boolean and the `maxGeneratedId` after every call (e.g. J2 `ses` 180 -> 680 over 500 calls).
+    `check_trace_shape_matches_java` compares the unsaved trace's touching pins and
+    `item_helpers_match_java` those of every trace on the board.
 
-- [ ] **B04.5 — `check_trace_segment`, both forms.**
+- [x] **B04.5 — `check_trace_segment`, both forms.**
   - Java: `RoutingBoardSearchFacade.checkTraceSegment` (`:29-107`):
     - equal points give 0. The line-segment form needs a 3-line polyline, else 0;
     - the shape to check is `offsetShape(halfWidth, 0)`;
@@ -170,8 +233,16 @@ B04's code goes in new files.
     `check_trace_segment_line(segment, …) -> f64`.
   - **Accept:** results bit-equal to the probe on every board, both forms, both
     `only_not_shovable` values.
+  - *Done 2026-10-16:* `RoutingBoard::check_trace_segment(from, to, ...)` and
+    `check_trace_segment_line(segment, ...)` in `board/queries.rs`, Java's expression order and
+    `Math.max(0.0, x)` (NaN kept, -0.0 -> 0.0). `check_trace_segment_matches_java` passes, raw
+    bits equal for both forms and both `only_not_shovable` values at the 300 samples and every
+    pin pair, on all 8 stages of the 7 probed boards (Issue026-J2_reference `ses` and
+    `compensated`, Issue508-DAC2020_bm08 `ses`, Issue413-test, Issue957-smoke-ldo-led,
+    Issue145-smoothieboard and Issue676-ch32v-tx118s `load`, and the tie-pin board
+    Issue433-my-board `ses`).
 
-- [ ] **B04.6 — `pick_nearest_routing_item`, `check_move_item`, `check_change_net`.**
+- [x] **B04.6 — `pick_nearest_routing_item`, `check_move_item`, `check_change_net`.**
   - Java: `RoutingBoardSearchFacade.java:111-217`.
     - `pickNearestRoutingItem` walks `overlappingItems(point, layer)` (highest id
       first) and skips non-connectable items. A trace is a candidate if it is on
@@ -190,8 +261,17 @@ B04's code goes in new files.
     BTreeSet<ItemId>>)`, `check_change_net(id, net)`.
   - **Accept:** all three equal to the probe on every board; a unit test that
     `check_move_item` adds the item to the ignore set.
+  - *Done 2026-10-16:* `RoutingBoard::pick_nearest_routing_item`, `check_move_item` and
+    `check_change_net` in `board/queries.rs`. `pick_nearest_routing_item_matches_java` (without
+    and with the first pick as `from_item`), `check_move_item_matches_java` (ignore `None` and a
+    set, plus the set's contents after the call) and `check_change_net_matches_java` pass on all
+    8 stages of the 7 probed boards (Issue026-J2_reference `ses` and `compensated`,
+    Issue508-DAC2020_bm08 `ses`, Issue413-test, Issue957-smoke-ldo-led, Issue145-smoothieboard
+    and Issue676-ch32v-tx118s `load`, and the tie-pin board Issue433-my-board `ses`).
+    `check_move_item_adds_item_to_ignore_set` passes (added on success and on failure, not for a
+    connected trace, which is refused first).
 
-- [ ] **B04.7 — Item query helpers on the router path.**
+- [x] **B04.7 — Item query helpers on the router path.**
   - Java and Rust names:
     - `DrillItem.minWidth` (`DrillItem.java:369`) → `min_width(id)`;
     - `getTraceConnectionShape` for drill items (a point tile at the centre,
@@ -211,3 +291,24 @@ B04's code goes in new files.
   - **Accept:** the probe's helper lines equal for every pin, via and trace of
     every board; `offset_shapes` equal for 200 seeded polylines per tree kind (a
     probe stage that builds all three trees).
+  - *Partial 2026-10-16:* `board/item_queries.rs`: `min_width`, `trace_connection_shape(tree,
+    id, index)` (drill items, traces, conduction areas), `tile_shape_on_layer`,
+    `Item::pin_drill_allowed`, `is_connected_on_layer`, `compensated_half_width(tree, id)` and
+    `nearest_end_point`. `item_helpers_match_java` passes for every pin, via, trace and
+    conduction area on all 8 stages of the 7 probed boards (Issue026-J2_reference `ses` and
+    `compensated`, Issue508-DAC2020_bm08 `ses`, Issue413-test, Issue957-smoke-ldo-led,
+    Issue145-smoothieboard and Issue676-ch32v-tx118s `load`, and the tie-pin board
+    Issue433-my-board `ses`) (Java's lines carry the helpers plus each trace's touching end
+    pins). `offset_shapes_match_java` passes: 200 seeded polylines on J2 with random `from`/`to`
+    (including -1 and past the end), the plain, 45 and 90 degree kinds. `java_ports.rs`
+    `trace_geometry_characterization` now also checks `trace_connection_shape`. **Remainder
+    (B02.6):** the test computes each kind's `offsetShapes` from the geometry
+    (`Polyline::offset_shapes_range`, `offset_box`) because `ShapeSearchTree::offset_shapes` and
+    `BasicBoard::tree_shape_on_layer` are B02.6's and not landed; switch `tree_offset_shapes` in
+    `tests/board_probe_queries.rs` to the tree method once B02.6 is done (B02's uncommitted
+    `ShapeSearchTree::offset_shapes` already gives the same 600 lines, checked 2026-10-16), and
+    `tree_shape_on_layer` needs no B04 re-export beyond B02.6's public method.
+  - *Done 2026-10-16 (by B02):* `tree_offset_shapes` in `tests/board_probe_queries.rs` now calls
+    `ShapeSearchTree::offset_shapes` (B02.6; `from`/`to` clamped at 0 as Java clamps `fromNo`),
+    and `BasicBoard::tree_shape_on_layer` is B02.6's public method. `cargo test -p freerouting
+    --test board_probe_queries`: 13 passed (`offset_shapes_match_java` included).

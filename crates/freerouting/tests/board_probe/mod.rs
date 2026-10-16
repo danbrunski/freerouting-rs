@@ -314,3 +314,18 @@ fn first_difference(java: &[&str], rust: &[String]) -> Option<usize> {
     let n = java.len().max(rust.len());
     (1..n).find(|&i| java.get(i).copied() != rust.get(i).map(String::as_str))
 }
+
+/// The boards a whole-corpus probe test runs on (B02): the comma-separated
+/// `TREE_PROBE_BOARDS` if set; else every row in a release build or with
+/// `BOARD_PROBE_ALL=1`; else, in a debug build (the workspace gate), only
+/// `debug_subset`, because the full corpus takes minutes there. `None` means
+/// every row.
+pub fn board_filter(debug_subset: &[&str]) -> Option<Vec<String>> {
+    if let Ok(boards) = std::env::var("TREE_PROBE_BOARDS") {
+        return Some(boards.split(',').map(str::to_string).collect());
+    }
+    if !cfg!(debug_assertions) || std::env::var("BOARD_PROBE_ALL").is_ok_and(|v| v == "1") {
+        return None;
+    }
+    Some(debug_subset.iter().map(|b| b.to_string()).collect())
+}

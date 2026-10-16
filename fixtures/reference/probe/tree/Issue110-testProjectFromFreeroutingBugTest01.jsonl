@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue110-testProjectFromFreeroutingBugTest01","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":79,"leaves":40,"maxDepth":17,"shapeHash":"f09bb9547c97fd9a","contentDigest":"030b4c5d04113063"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":79,"leaves":40,"maxDepth":11,"shapeHash":"31958487be399ae4","contentDigest":"a87574643ad5c3c5"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":147,"leaves":74,"maxDepth":18,"shapeHash":"ee2f25e66d7ec7d6","contentDigest":"2b5732387000f840"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":147,"leaves":74,"maxDepth":12,"shapeHash":"c1e0b64be46ad40d","contentDigest":"5dc5b5378e3dcbfc"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":147,"leaves":74,"maxDepth":12,"shapeHash":"fa618b65356ce445","contentDigest":"2b5732387000f840"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":79,"leaves":40,"maxDepth":17,"shapeHash":"f09bb9547c97fd9a","contentDigest":"030b4c5d04113063"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":79,"leaves":40,"maxDepth":11,"shapeHash":"31958487be399ae4","contentDigest":"a87574643ad5c3c5"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":147,"leaves":74,"maxDepth":19,"shapeHash":"f2100486ca352b28","contentDigest":"2b5732387000f840"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":147,"leaves":74,"maxDepth":13,"shapeHash":"2936304e55686299","contentDigest":"5dc5b5378e3dcbfc"}

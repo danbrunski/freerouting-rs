@@ -1,0 +1,14 @@
+{"kind":"tree","board":"Issue558-dev-board","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":429,"leaves":215,"maxDepth":45,"shapeHash":"2bf6ab014329f0f2","contentDigest":"8fa3a59c852ccdbd"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":429,"leaves":215,"maxDepth":53,"shapeHash":"bf80de5730988724","contentDigest":"a6c213eb1af37b3f"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":429,"leaves":215,"maxDepth":53,"shapeHash":"bf80de5730988724","contentDigest":"a6c213eb1af37b3f"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1427,"leaves":714,"maxDepth":45,"shapeHash":"f27028e3273bbd92","contentDigest":"97cac18d500d7c79"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":1427,"leaves":714,"maxDepth":57,"shapeHash":"0954d9382ad0aac7","contentDigest":"6d746f11a8e57a36"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":1427,"leaves":714,"maxDepth":57,"shapeHash":"0954d9382ad0aac7","contentDigest":"6d746f11a8e57a36"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1427,"leaves":714,"maxDepth":38,"shapeHash":"863f6fabaec5cf9e","contentDigest":"97cac18d500d7c79"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":429,"leaves":215,"maxDepth":45,"shapeHash":"2bf6ab014329f0f2","contentDigest":"8fa3a59c852ccdbd"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":429,"leaves":215,"maxDepth":53,"shapeHash":"bf80de5730988724","contentDigest":"a6c213eb1af37b3f"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":429,"leaves":215,"maxDepth":53,"shapeHash":"bf80de5730988724","contentDigest":"a6c213eb1af37b3f"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1427,"leaves":714,"maxDepth":45,"shapeHash":"13f4b37e44dcb236","contentDigest":"97cac18d500d7c79"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":1427,"leaves":714,"maxDepth":56,"shapeHash":"09cf74086f1ca8d0","contentDigest":"6d746f11a8e57a36"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":1427,"leaves":714,"maxDepth":56,"shapeHash":"09cf74086f1ca8d0","contentDigest":"6d746f11a8e57a36"}

@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue955-rotated-pad-contacts","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":2391,"leaves":1196,"maxDepth":82,"shapeHash":"a57b07d643d371f5","contentDigest":"0816e002ea7135cf"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":2643,"leaves":1322,"maxDepth":34,"shapeHash":"aa1d0d2f0053f7c5","contentDigest":"52a9d78c86e8dfc8"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4193,"leaves":2097,"maxDepth":82,"shapeHash":"3738843c959c018f","contentDigest":"e062404d4ec1c44d"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":4445,"leaves":2223,"maxDepth":35,"shapeHash":"2836f11a09387400","contentDigest":"777b57d96b7d7c3a"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4193,"leaves":2097,"maxDepth":46,"shapeHash":"7b7f3ef330f39f67","contentDigest":"e062404d4ec1c44d"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":2391,"leaves":1196,"maxDepth":82,"shapeHash":"a57b07d643d371f5","contentDigest":"0816e002ea7135cf"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":2643,"leaves":1322,"maxDepth":34,"shapeHash":"aa1d0d2f0053f7c5","contentDigest":"52a9d78c86e8dfc8"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4193,"leaves":2097,"maxDepth":82,"shapeHash":"5a507b2c57048410","contentDigest":"e062404d4ec1c44d"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":4445,"leaves":2223,"maxDepth":34,"shapeHash":"f7852a815d453ea4","contentDigest":"777b57d96b7d7c3a"}

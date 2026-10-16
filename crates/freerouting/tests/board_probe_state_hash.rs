@@ -131,7 +131,11 @@ fn state_hash_tracks_changes() {
         a.x + (b.x - a.x) / 2 + 5000,
         a.y + (b.y - a.y) / 2 + 5000,
     ));
-    board.change_trace(id, Polyline::from_points(&[first, mid, last]));
+    board.change_trace(
+        id,
+        Polyline::from_points(&[first, mid, last]),
+        freerouting::board::LineReuse::NONE,
+    );
     let h4 = board.state_hash();
     assert_ne!(h4, h2, "trace change");
 

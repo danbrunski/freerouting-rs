@@ -1,0 +1,16 @@
+{"kind":"tree-ops","board":"scoring-empty-net","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"insert-via","step":"insert-via","maxGeneratedId":2,"items":2}
+{"stage":"insert-via","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"47d4c4cfa0edfcfe","contentDigest":"feecee8b95701180"}
+{"stage":"insert-via","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"b6f1831adb8dadcb","contentDigest":"8b45d1492c595122"}
+{"stage":"remove","step":"remove","maxGeneratedId":2,"items":2}
+{"stage":"remove","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"47d4c4cfa0edfcfe","contentDigest":"feecee8b95701180"}
+{"stage":"remove","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"b6f1831adb8dadcb","contentDigest":"8b45d1492c595122"}
+{"stage":"undo-redo","step":"remove","maxGeneratedId":2,"items":2}
+{"stage":"undo-redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"47d4c4cfa0edfcfe","contentDigest":"feecee8b95701180"}
+{"stage":"undo-redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"b6f1831adb8dadcb","contentDigest":"8b45d1492c595122"}
+{"stage":"undo-redo","step":"undo","maxGeneratedId":2,"items":2}
+{"stage":"undo-redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"47d4c4cfa0edfcfe","contentDigest":"feecee8b95701180"}
+{"stage":"undo-redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"b6f1831adb8dadcb","contentDigest":"8b45d1492c595122"}
+{"stage":"undo-redo","step":"redo","maxGeneratedId":2,"items":2}
+{"stage":"undo-redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"47d4c4cfa0edfcfe","contentDigest":"feecee8b95701180"}
+{"stage":"undo-redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":19,"leaves":10,"maxDepth":6,"shapeHash":"b6f1831adb8dadcb","contentDigest":"8b45d1492c595122"}

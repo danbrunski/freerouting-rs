@@ -10,13 +10,66 @@ use freerouting_geometry::{
     IntOctagon, Line, LineSegment, Point, Polyline, PolylineShapeOps, TileShape,
 };
 
+use crate::board::autoroute_log::AutorouteChange;
 use crate::board::basic_board::{BasicBoard, MAX_NORMALIZE_ITERATIONS};
 use crate::board::items::{Item, ItemId, ItemKind, StopConnectionOption, point_tile};
-use crate::board::search::TreeEntry;
+use crate::board::search::{TraceChange, TraceMerge, TreeEntry};
 use crate::util::java_hash_map_order;
 
 /// The recursion limit of [`BasicBoard::normalize_trace`].
 const MAX_NORMALIZATION_DEPTH: usize = 16;
+
+/// Which lines of a trace's new polyline are the old polyline's own lines,
+/// for [`BasicBoard::change_trace`].
+///
+/// Java's `PolylineTrace.change` finds the unchanged start and end of the
+/// trace by comparing the `Line` objects by *reference*
+/// (`PolylineTrace.java:956-982`), and keeps the tree leaves of the shapes
+/// around them. The port has no object identity, so the caller says it:
+/// `prefix` is the number of leading lines of the new polyline that are the
+/// same Java objects as the old polyline's at the same index, `suffix` the
+/// number of trailing ones (counted from each polyline's end). Callers compute
+/// it from how they built the new polyline (O00: "unchanged is an explicit
+/// outcome"). Java's `new Polyline(Line[])` creates a new object wherever
+/// it turns a line around, and `Line.translate` always does.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LineReuse {
+    pub prefix: usize,
+    pub suffix: usize,
+}
+
+impl LineReuse {
+    /// No line is reused: every line of the new polyline is a new object.
+    pub const NONE: LineReuse = LineReuse {
+        prefix: 0,
+        suffix: 0,
+    };
+
+    /// The leading and trailing lines that are equal by value. Only for
+    /// callers whose Java code is shown to create new line objects exactly
+    /// where the values change; each says why in a `// PARITY:` comment.
+    pub fn by_value(old: &Polyline, new: &Polyline) -> LineReuse {
+        let (old, new) = (old.lines(), new.lines());
+        let same = |a: &Line, b: &Line| a.a() == b.a() && a.b() == b.b();
+        let last_index = old.len().min(new.len());
+        let prefix = (0..last_index)
+            .take_while(|&i| same(&old[i], &new[i]))
+            .count();
+        let suffix = (1..=last_index)
+            .take_while(|&i| same(&old[old.len() - i], &new[new.len() - i]))
+            .count();
+        LineReuse { prefix, suffix }
+    }
+}
+
+/// What [`BasicBoard::change_trace`] did.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ChangeOutcome {
+    /// The new lines are the old ones (Java's early return); only the undo
+    /// snapshot was taken.
+    Unchanged,
+    Changed,
+}
 
 /// The data of an item found by an overlap query in
 /// [`BasicBoard::split_trace`]. Java keeps references to the found items,
@@ -262,6 +315,12 @@ impl BasicBoard {
         if !own_trace_split {
             result.push(id);
         }
+        if result.len() > 1 && self.autoroute_log.is_some() {
+            // Java `additionalUpdateAfterChange` on each piece.
+            for piece in &result {
+                self.log_autoroute(AutorouteChange::SplitPiece(*piece));
+            }
+        }
         result
     }
 
@@ -398,6 +457,8 @@ impl BasicBoard {
             && (self.combine_trace_at(id, true) || self.combine_trace_at(id, false))
         {
             something_changed = true;
+            // Java `board.additionalUpdateAfterChange(this)` after each combine.
+            self.log_autoroute(AutorouteChange::Combined(id));
         }
         something_changed
     }
@@ -462,6 +523,14 @@ impl BasicBoard {
             other_trace.polyline.lines().to_vec()
         };
         let layer = this_trace.layer;
+        let half_width = this_trace.half_width;
+        let clearance_class = this.clearance_class();
+        // Java `changeOrder` of the merge: the other trace runs the other way.
+        let change_order = if at_start {
+            other_trace.first_corner() == this_trace.first_corner()
+        } else {
+            other_trace.last_corner() == this_trace.last_corner()
+        };
         let (front, back) = if at_start {
             (&other_lines, &this_lines)
         } else {
@@ -472,14 +541,46 @@ impl BasicBoard {
         let mut new_lines: Vec<Line> = front[..keep].to_vec();
         new_lines.extend_from_slice(&back[1..]);
         let joined = Polyline::new(&new_lines);
+        // Java's entry numbers: the other trace's lines in front, this
+        // trace's at the end.
+        let joint_lines = if at_start {
+            other_lines.len()
+        } else {
+            this_lines.len()
+        };
 
         self.items.save_for_undo(&id);
         self.note_changed(id);
-        self.remove_from_trees(id);
-        if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
-            trace.polyline = joined;
+        let has_tree_entries = {
+            let tree = self.search_trees.default_tree();
+            tree.contains(id) && tree.contains(other_id)
+        };
+        if joined.lines().len() != new_lines.len() || !has_tree_entries {
+            // Java `replaceGeometry`: parallel lines were skipped at the
+            // join, or a trace lacks default-tree entries.
+            self.remove_from_trees(id);
+            self.set_trace_polyline(id, joined);
+            self.insert_into_trees(id);
+        } else {
+            let merge = TraceMerge {
+                from: other_id,
+                to: id,
+                change_order,
+                joined: &joined,
+                to_half_width: half_width,
+                to_clearance_class: clearance_class,
+                to_layer: layer,
+                from_entry_no: joint_lines - 3,
+                to_entry_no: joint_lines - usize::from(skip_line),
+            };
+            let missing =
+                self.search_trees
+                    .merge_entries(&merge, at_start, &self.rules.clearance_matrix);
+            // Java `otherTrace.clearSearchTreeEntries()`: the merge took the
+            // other trace's entries, so its removal below removes no leaves.
+            self.set_trace_polyline(id, joined);
+            self.reinsert_in_trees(id, &missing);
         }
-        self.insert_into_trees(id);
         self.note_changed(id);
         let too_short = self
             .trace_data(id)
@@ -490,6 +591,13 @@ impl BasicBoard {
         self.remove_item(other_id);
         self.join_changed_area(corner.to_float(), layer);
         true
+    }
+
+    /// Sets the polyline of trace `id` without touching the trees.
+    fn set_trace_polyline(&mut self, id: ItemId, polyline: Polyline) {
+        if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
+            trace.polyline = polyline;
+        }
     }
 
     /// Splits trace `id` at intersections and combines the pieces. Returns
@@ -538,45 +646,66 @@ impl BasicBoard {
         result
     }
 
-    /// Changes the geometry of trace `id` to `polyline` and normalizes it.
+    /// Changes the geometry of trace `id` to `polyline` and normalizes it
+    /// with the changed area's clip. `reuse` says how many leading and
+    /// trailing lines of `polyline` are the old polyline's own lines (see
+    /// [`LineReuse`]); their tree leaves are kept.
     ///
-    /// Port of `PolylineTrace.change`. Java compares the lines by
-    /// reference to find the unchanged part; the port compares them by
-    /// value.
-    pub fn change_trace(&mut self, id: ItemId, polyline: Polyline) {
+    /// Port of `PolylineTrace.change`, with its order: `saveForUndo` first,
+    /// then the early return when nothing changed, then `changeEntries` on
+    /// every tree, the new lines and the normalization. A trace that is not
+    /// on the board only gets the new lines.
+    pub fn change_trace(
+        &mut self,
+        id: ItemId,
+        polyline: Polyline,
+        reuse: LineReuse,
+    ) -> ChangeOutcome {
         let Some((item, trace)) = self.trace_data(id) else {
-            return;
+            return ChangeOutcome::Unchanged;
         };
         if !item.is_on_the_board() {
-            if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
-                trace.polyline = polyline;
-            }
-            return;
+            self.set_trace_polyline(id, polyline);
+            return ChangeOutcome::Changed;
         }
-        let old = trace.polyline.lines();
-        let new = polyline.lines();
-        let unchanged = old.len() == new.len()
-            && old
-                .iter()
-                .zip(new)
-                .all(|(a, b)| a.a() == b.a() && a.b() == b.b());
+        let (layer, half_width, clearance_class) =
+            (trace.layer, trace.half_width, item.clearance_class());
+        let old_lines = trace.polyline.lines().len();
+        let new_lines = polyline.lines().len();
+        // Java's additionalUpdateAfterChange does nothing without retained
+        // autorouter rooms; the change log records it (B02.8).
+        self.log_autoroute(AutorouteChange::Changed(id));
         self.items.save_for_undo(&id);
-        if unchanged {
-            return;
+        let last_index = old_lines.min(new_lines);
+        // PARITY: Java scans for the first and the last line that is not the
+        // same object; both scans finding none means no change.
+        let first_different = reuse.prefix.min(last_index);
+        if first_different == last_index || reuse.suffix >= last_index {
+            return ChangeOutcome::Unchanged;
         }
+        let keep_at_start = first_different.saturating_sub(2);
+        let keep_at_end = reuse.suffix.saturating_sub(2);
         self.note_changed(id);
-        self.remove_from_trees(id);
-        let layer =
-            if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
-                trace.polyline = polyline;
-                trace.layer
-            } else {
-                return;
-            };
-        self.insert_into_trees(id);
+        let change = TraceChange {
+            id,
+            new_polyline: &polyline,
+            half_width,
+            clearance_class,
+            layer,
+            keep_at_start,
+            keep_at_end,
+        };
+        let missing = self
+            .search_trees
+            .change_entries(&change, &self.rules.clearance_matrix);
+        self.set_trace_polyline(id, polyline);
+        self.reinsert_in_trees(id, &missing);
         self.note_changed(id);
         let clip = self.changed_area_on_layer(layer);
+        // Java logs and swallows a normalization exception; the port's
+        // normalization has no failure path.
         self.normalize_trace(id, clip.as_ref());
+        ChangeOutcome::Changed
     }
 
     /// Combines the traces of net `net_number` (all nets if negative) that

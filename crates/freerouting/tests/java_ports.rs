@@ -278,9 +278,7 @@ fn same_net_via_with_attach_disallowed_is_not_obstacle_for_smd_pin() {
 }
 
 // ---------------------------------------------------------------------------
-// board.PolylineTraceSplitTest. `testCombineAtEndRecoversMissingDefaultTreeEntries`
-// is not ported: it removes a trace from the search trees behind the
-// board's back, which the Rust board does not allow.
+// board.PolylineTraceSplitTest, all tests.
 
 fn trace_ids_with_net(board: &RoutingBoard, net: i32) -> Vec<ItemId> {
     board
@@ -457,6 +455,71 @@ fn trace_geometry_characterization() {
     assert_eq!(trace.tile_shape_count(), 1);
     assert_eq!(trace.length(), 10000.0);
     assert!(board.tile_shape(item, 0).is_some());
+    // getTraceConnectionShape(defaultTree, 0) (B04.7).
+    let tree = board.search_trees().default_tree();
+    assert!(board.trace_connection_shape(tree, id, 0).is_some());
+}
+
+/// `testCombineAtEndRecoversMissingDefaultTreeEntries`: the end combine
+/// takes Java's `replaceGeometry` fallback when a trace has lost its
+/// default-tree entries, and the fallback restores them.
+#[test]
+fn combine_at_end_recovers_missing_default_tree_entries() {
+    let mut board = one_layer_board(2_000_000);
+    let (start, join, end) = (ip(10000, 10000), ip(20000, 10000), ip(30000, 10000));
+    let insert = |board: &mut RoutingBoard, a: &Point, b: &Point| {
+        board
+            .insert_trace_without_cleaning(
+                Polyline::from_corners(a, b),
+                0,
+                1000,
+                &[1],
+                1,
+                FixedState::Unfixed,
+            )
+            .unwrap()
+    };
+    let first = insert(&mut board, &start, &join);
+    let second = insert(&mut board, &join, &end);
+    // A live trace whose tree entries were removed before the geometry
+    // change; it stays marked on the board, so the combine reaches the
+    // fallback.
+    board.drop_tree_entries_for_test(first);
+    assert!(!board.search_trees().default_tree().contains(first));
+
+    assert!(
+        board.combine_trace(first),
+        "the traces should combine through the fallback path"
+    );
+    assert!(board.item(first).is_some_and(|i| i.is_on_the_board()));
+    assert!(
+        board.item(second).is_none(),
+        "the consumed trace is removed"
+    );
+    assert!(
+        board.search_trees().default_tree().contains(first),
+        "the fallback restores the default-tree entries"
+    );
+    assert_eq!(ends(&board, first), (start, end));
+}
+
+// ---------------------------------------------------------------------------
+// fixtures.CombineStackOverflowTest
+
+/// `combineDoesNotOverflowOnLongCollinearTrace`: about 4 000 connected
+/// collinear wire segments of one net load on a thread with a 256 KiB
+/// stack (the combine is a loop, not a recursion).
+#[test]
+fn combine_does_not_overflow_on_long_collinear_trace() {
+    let reader = std::thread::Builder::new()
+        .name("combine-stackoverflow-reader".into())
+        .stack_size(256 * 1024)
+        .spawn(|| {
+            let bytes = std::fs::read(fixture("Issue723-CombineStackOverflow.dsn")).unwrap();
+            matches!(read_board(&bytes), BoardReadResult::Success { .. })
+        })
+        .expect("reader thread");
+    assert!(reader.join().expect("no stack overflow"), "the board loads");
 }
 
 // ---------------------------------------------------------------------------

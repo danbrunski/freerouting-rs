@@ -90,6 +90,7 @@ fn journal_records_change() {
     board.change_trace(
         id,
         Polyline::from_points(&[Point::Int(a), Point::Int(bend), Point::Int(b)]),
+        freerouting::board::LineReuse::NONE,
     );
     let changes = board.take_changes();
     assert!(changes.changed.contains(&id), "{changes:?}");

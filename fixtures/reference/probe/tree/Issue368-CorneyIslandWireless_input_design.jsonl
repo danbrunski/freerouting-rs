@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue368-CorneyIslandWireless_input_design","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":71,"leaves":36,"maxDepth":13,"shapeHash":"e431f964e72f489e","contentDigest":"b87ce30ae386094b"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":71,"leaves":36,"maxDepth":10,"shapeHash":"64a183588742f770","contentDigest":"b90eda431c991fc1"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":89,"leaves":45,"maxDepth":13,"shapeHash":"bc35d7e85d02499b","contentDigest":"7d1f81432a4a9d4e"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":89,"leaves":45,"maxDepth":12,"shapeHash":"efdfc3a020e1895a","contentDigest":"3d9d7b9bd9ea74a0"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":89,"leaves":45,"maxDepth":11,"shapeHash":"74cab60b6eb40c1d","contentDigest":"7d1f81432a4a9d4e"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":71,"leaves":36,"maxDepth":13,"shapeHash":"e431f964e72f489e","contentDigest":"b87ce30ae386094b"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":71,"leaves":36,"maxDepth":10,"shapeHash":"64a183588742f770","contentDigest":"b90eda431c991fc1"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":89,"leaves":45,"maxDepth":13,"shapeHash":"2901cdd60ce128d2","contentDigest":"7d1f81432a4a9d4e"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":89,"leaves":45,"maxDepth":11,"shapeHash":"d579044682eae789","contentDigest":"3d9d7b9bd9ea74a0"}

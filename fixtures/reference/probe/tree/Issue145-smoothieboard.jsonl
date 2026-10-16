@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue145-smoothieboard","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":5471,"leaves":2736,"maxDepth":132,"shapeHash":"b03a747ec32b3921","contentDigest":"905848773fb0d3fc"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":5471,"leaves":2736,"maxDepth":79,"shapeHash":"c7d1c7239a799e64","contentDigest":"8115a6aee0ad4454"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":11393,"leaves":5697,"maxDepth":142,"shapeHash":"474245293d3d1b13","contentDigest":"7b93c58b9bbfde3e"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":11393,"leaves":5697,"maxDepth":79,"shapeHash":"57985ec4d97fe25c","contentDigest":"75785ba734848ace"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":11393,"leaves":5697,"maxDepth":77,"shapeHash":"a265e8f79a3f7903","contentDigest":"7b93c58b9bbfde3e"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":5471,"leaves":2736,"maxDepth":132,"shapeHash":"b03a747ec32b3921","contentDigest":"905848773fb0d3fc"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":5471,"leaves":2736,"maxDepth":79,"shapeHash":"c7d1c7239a799e64","contentDigest":"8115a6aee0ad4454"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":11393,"leaves":5697,"maxDepth":142,"shapeHash":"9a0895f6d5422128","contentDigest":"7b93c58b9bbfde3e"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":11393,"leaves":5697,"maxDepth":79,"shapeHash":"b65364c246f1fd0a","contentDigest":"75785ba734848ace"}

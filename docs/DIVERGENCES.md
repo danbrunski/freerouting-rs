@@ -102,12 +102,12 @@ branch 3 in IntOctagon's box cutout.
 - Java bug kept on purpose: a snapshot restore or deep copy rebuilds the default tree
   without clearance compensation and drops the compensated trees, even when
   compensation was on (`deep_copy_drops_clearance_compensation`).
-- `ShapeTree` stores leaves in an arena; `overlaps` returns them sorted by item and
-  shape index, as Java sorts them. Combining traces removes and reinserts the tree
-  entries instead of Java's `mergeEntries`; queries return the same items, only the
-  tree's internal shape differs.
-- `PolylineTrace.change` compares lines by value to find the unchanged part; Java
-  compares references.
+- `ShapeTree` stores leaves in an arena; `overlaps` returns them sorted by object
+  (rooms, then items, each by id descending) and shape index, as Java sorts them.
+- Known bug, not a deliberate difference (B02.2): on Issue721 the DSN reader gives the pins
+  and vias of nets in a net class that class's clearance class, where Java keeps the default
+  ones, so their shapes in the compensated autoroute trees differ by the clearance step; the
+  default tree and DRC are unaffected (`EXPECTED_MISMATCHES` in `tests/board_probe_tree.rs`).
 - Java iterates the nets in `normalizeAllTraces` in `HashMap` order; the port simulates
   that order, but without the treeification of buckets with 9 or more keys.
 - Stale `LeafId`s and `ItemId`s cannot be used after removal; Java's locking tests

@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue951-corney_island_wireless","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":2627,"leaves":1314,"maxDepth":82,"shapeHash":"942c28d4f9d65c6a","contentDigest":"7ac11f61eac10e07"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":2627,"leaves":1314,"maxDepth":53,"shapeHash":"bc69f517c49b11ca","contentDigest":"e8e91ae885409272"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4559,"leaves":2280,"maxDepth":82,"shapeHash":"daee9d9c80fd9382","contentDigest":"0c6602747e532a03"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":4559,"leaves":2280,"maxDepth":53,"shapeHash":"ee55a890a58f0a12","contentDigest":"dc12b97912149b5e"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4559,"leaves":2280,"maxDepth":41,"shapeHash":"d1d96141085c5a6d","contentDigest":"0c6602747e532a03"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":2627,"leaves":1314,"maxDepth":82,"shapeHash":"942c28d4f9d65c6a","contentDigest":"7ac11f61eac10e07"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":2627,"leaves":1314,"maxDepth":53,"shapeHash":"bc69f517c49b11ca","contentDigest":"e8e91ae885409272"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4559,"leaves":2280,"maxDepth":82,"shapeHash":"bbd0cef54fdc8071","contentDigest":"0c6602747e532a03"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":4559,"leaves":2280,"maxDepth":53,"shapeHash":"3ece45f93e3c0bc5","contentDigest":"dc12b97912149b5e"}

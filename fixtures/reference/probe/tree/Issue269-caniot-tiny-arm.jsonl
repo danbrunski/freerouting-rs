@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue269-caniot-tiny-arm","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1649,"leaves":825,"maxDepth":75,"shapeHash":"e703662d3cf82755","contentDigest":"6f25af04d867a4ae"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":1649,"leaves":825,"maxDepth":31,"shapeHash":"9f5904c2be2fba33","contentDigest":"305c1864fa39b36b"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":3333,"leaves":1667,"maxDepth":76,"shapeHash":"591011e5f6e3e1af","contentDigest":"2b067ee80b8fcef7"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":3333,"leaves":1667,"maxDepth":31,"shapeHash":"62442d6f42e6410f","contentDigest":"aadfca45c3d611ac"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":3333,"leaves":1667,"maxDepth":31,"shapeHash":"41427fa6a87e8a70","contentDigest":"2b067ee80b8fcef7"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1649,"leaves":825,"maxDepth":75,"shapeHash":"e703662d3cf82755","contentDigest":"6f25af04d867a4ae"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":1649,"leaves":825,"maxDepth":31,"shapeHash":"9f5904c2be2fba33","contentDigest":"305c1864fa39b36b"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":3333,"leaves":1667,"maxDepth":75,"shapeHash":"e41fbfde33454594","contentDigest":"2b067ee80b8fcef7"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":3333,"leaves":1667,"maxDepth":31,"shapeHash":"aa74015fccf58827","contentDigest":"aadfca45c3d611ac"}

@@ -1,0 +1,10 @@
+{"kind":"tree","board":"Issue723-CombineStackOverflow","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":73,"leaves":37,"maxDepth":21,"shapeHash":"8b0e872f8d09fb27","contentDigest":"6a95f176c07c67d8"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":73,"leaves":37,"maxDepth":16,"shapeHash":"aa22240cb6b0abef","contentDigest":"2c763bba32a4dd6b"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":73,"leaves":37,"maxDepth":21,"shapeHash":"8b0e872f8d09fb27","contentDigest":"6a95f176c07c67d8"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":73,"leaves":37,"maxDepth":16,"shapeHash":"aa22240cb6b0abef","contentDigest":"2c763bba32a4dd6b"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":73,"leaves":37,"maxDepth":16,"shapeHash":"cf0f885005ecfa1e","contentDigest":"6a95f176c07c67d8"}
+{"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":73,"leaves":37,"maxDepth":21,"shapeHash":"8b0e872f8d09fb27","contentDigest":"6a95f176c07c67d8"}
+{"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":73,"leaves":37,"maxDepth":16,"shapeHash":"aa22240cb6b0abef","contentDigest":"2c763bba32a4dd6b"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":73,"leaves":37,"maxDepth":21,"shapeHash":"8b0e872f8d09fb27","contentDigest":"6a95f176c07c67d8"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":73,"leaves":37,"maxDepth":16,"shapeHash":"aa22240cb6b0abef","contentDigest":"2c763bba32a4dd6b"}

@@ -65,6 +65,8 @@ pub struct BasicBoard {
     pub(crate) changed_area: Option<ChangedArea>,
     /// Messages Java writes to its log during board operations.
     pub(crate) log: Vec<String>,
+    /// The autoroute change log (`board::autoroute_log`); `None` while off.
+    pub(crate) autoroute_log: Option<Vec<crate::board::AutorouteChange>>,
     /// The clearance violations the board had when it was loaded for
     /// routing (Java `preExistingClearanceViolationsCount`); the statistics
     /// count only the violations beyond these as router introduced.
@@ -106,6 +108,7 @@ impl BasicBoard {
             pre_existing_clearance_violations_count: 0,
             ledger: RoutingLedger::default(),
             journal: None,
+            autoroute_log: None,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -157,6 +160,12 @@ impl BasicBoard {
     /// The search trees.
     pub fn search_trees(&self) -> &SearchTreeManager {
         &self.search_trees
+    }
+
+    /// The item list with its undo structure (Java `itemList`), read-only;
+    /// the search-tree queries take it.
+    pub fn item_list(&self) -> &UndoableObjects<ItemId, Item> {
+        &self.items
     }
 
     /// The item with id `id`.
@@ -268,6 +277,7 @@ impl BasicBoard {
                 .pre_existing_clearance_violations_count,
             ledger: RoutingLedger::default(),
             journal: None,
+            autoroute_log: None,
         };
         board.insert_all_into_trees();
         board
@@ -313,6 +323,7 @@ impl BasicBoard {
         item.on_the_board = true;
         self.items.insert(id, item);
         self.insert_into_trees(id);
+        self.log_autoroute(crate::board::AutorouteChange::Inserted(id));
         self.revision += 1;
         if invalidates {
             self.invalidate_edge_pin_nets();
@@ -431,6 +442,33 @@ impl BasicBoard {
         {
             item.on_the_board = true;
         }
+    }
+
+    /// Removes and inserts item `id` in the search trees `indexes` only (the
+    /// trees a leaf-reuse operation could not update).
+    pub(crate) fn reinsert_in_trees(&mut self, id: ItemId, indexes: &[usize]) {
+        if indexes.is_empty() {
+            return;
+        }
+        let ctx = ShapeContext {
+            rules: &self.rules,
+            padstacks: &self.library.padstacks,
+            communication: &self.communication,
+            layer_count: self.layer_structure.count(),
+        };
+        if let Some(item) = self.items.get(&id) {
+            self.search_trees.reinsert_in(indexes, item, &ctx);
+        }
+    }
+
+    /// Removes the entries of item `id` from every search tree but leaves it
+    /// marked as on the board. Test support only: the port of Java's
+    /// `PolylineTraceSplitTest.testCombineAtEndRecoversMissingDefaultTreeEntries`
+    /// builds this broken state with `searchTreeManager.remove(first);
+    /// first.setOnTheBoard(true)`.
+    #[doc(hidden)]
+    pub fn drop_tree_entries_for_test(&mut self, id: ItemId) {
+        self.search_trees.remove(id);
     }
 
     /// Removes item `id` from the search trees (Java
@@ -1072,6 +1110,7 @@ impl BasicBoard {
             return false;
         }
         let invalidates = matches!(item.kind, ItemKind::Pin(_) | ItemKind::BoardOutline(_));
+        self.log_autoroute(crate::board::AutorouteChange::Removed(id));
         self.remove_from_trees(id);
         let note = self.items.get(&id).map(|item| self.removal_note(item));
         self.items.delete(&id);
@@ -1310,9 +1349,11 @@ impl BasicBoard {
         ignore_nets: &[i32],
         clearance_class: i32,
     ) -> BTreeSet<ItemId> {
+        // Java goes through the five-argument form, which searches with the
+        // clearance also in a compensated tree.
         self.search_trees
             .default_tree()
-            .overlapping_tree_entries_with_clearance(
+            .clearance_search_entries(
                 shape,
                 layer,
                 ignore_nets,
@@ -2198,6 +2239,14 @@ impl BasicBoard {
             layer_count: self.layer_structure.count(),
         };
         self.search_trees.rebuild(&self.items, &ctx);
+        if self.autoroute_log.is_some() {
+            // Java clears each item's derived data before the reinsertion and
+            // again in `insertAllBoardItems`.
+            let ids = self.item_ids();
+            for id in ids.iter().chain(ids.iter()) {
+                self.log_autoroute(crate::board::AutorouteChange::InfoCleared(*id));
+            }
+        }
     }
 
     // ------------------------------------------------------------------
@@ -2273,6 +2322,7 @@ impl BasicBoard {
         for id in &restored {
             self.search_trees.remove(*id);
             self.insert_into_trees(*id);
+            self.log_autoroute(crate::board::AutorouteChange::InfoCleared(*id));
             if let (Some(nets), Some(item)) = (changed_nets.as_deref_mut(), self.items.get(id)) {
                 nets.extend(item.net_numbers().iter().copied());
             }
@@ -2320,6 +2370,96 @@ impl BasicBoard {
     /// True if the edge-pin-net cache of the outline is filled.
     pub fn edge_pin_nets_cached(&self) -> bool {
         self.edge_pin_nets.get().is_some()
+    }
+
+    /// The tree shape of drill item `id` (a pin or via) on board `layer` in
+    /// the tree compensated for `tree_class` (Java
+    /// `DrillItem.getTreeShapeOnLayer`, `DrillItem.java:241-250`). `None` if
+    /// there is no such tree, the item is no drill item, or `layer` is
+    /// outside its layer range.
+    pub fn tree_shape_on_layer(
+        &self,
+        tree_class: i32,
+        id: ItemId,
+        layer: i32,
+    ) -> Option<TileShape> {
+        let tree = self.search_trees.tree_by_class(tree_class)?;
+        let item = self.items.get(&id)?;
+        let drill = item.drill()?;
+        if layer < drill.first_layer || layer > drill.last_layer {
+            return None;
+        }
+        let index = (layer - drill.first_layer) as usize;
+        tree.tree_shape(item, index, &self.shape_context())
+    }
+
+    /// Port of `ShapeSearchTree.reduceTraceShapeAtTiePin` (`:922-965`) on
+    /// the tree compensated for `tree_class`: if trace `trace` starts (or
+    /// ends) at the centre of pin `pin`, the pin's tree shape on the trace
+    /// layer is cut out of the trace's first (or last) tree shape. The last
+    /// 2-dimensional piece that contains the compare corner (corner 1, or
+    /// corner `count - 2`) is kept, else the first 2-dimensional piece, and
+    /// stored with `change_item_shape`. Returns true if the shape changed.
+    /// The maze search calls it on the autoroute tree, and the change stays
+    /// for later connections.
+    pub fn reduce_trace_shape_at_tie_pin(
+        &mut self,
+        tree_class: i32,
+        pin: ItemId,
+        trace: ItemId,
+    ) -> bool {
+        let Some((trace_item, polyline, layer)) = self
+            .items
+            .get(&trace)
+            .and_then(|i| i.as_trace().map(|t| (i, t.polyline.clone(), t.layer)))
+        else {
+            return false;
+        };
+        let Some(center) = self
+            .items
+            .get(&pin)
+            .and_then(|p| p.drill())
+            .map(|d| d.center)
+        else {
+            return false;
+        };
+        let Some(pin_shape) = self.tree_shape_on_layer(tree_class, pin, layer) else {
+            return false;
+        };
+        let center = freerouting_geometry::Point::Int(center);
+        let corner_count = polyline.corner_count();
+        let (shape_no, compare_corner) = if polyline.first_corner() == center {
+            (0, polyline.corner_approx(1))
+        } else if polyline.last_corner() == center {
+            (corner_count - 2, polyline.corner_approx(corner_count - 2))
+        } else {
+            return false;
+        };
+        let Some(tree) = self.search_trees.tree_by_class(tree_class) else {
+            return false;
+        };
+        let Some(trace_shape) = tree.tree_shape(trace_item, shape_no, &self.shape_context()) else {
+            return false;
+        };
+        if trace_shape.intersection(&pin_shape).dimension() < 2 {
+            return false;
+        }
+        let Some(pieces) = trace_shape.cutout(&pin_shape) else {
+            return false;
+        };
+        let mut new_shape: Option<TileShape> = None;
+        for piece in pieces {
+            if piece.dimension() == 2
+                && (new_shape.is_none() || piece.contains_float(compare_corner))
+            {
+                new_shape = Some(piece);
+            }
+        }
+        let new_shape =
+            new_shape.unwrap_or_else(|| TileShape::Simplex(freerouting_geometry::Simplex::empty()));
+        self.search_trees
+            .tree_by_class_mut(tree_class)
+            .is_some_and(|tree| tree.change_item_shape(trace, shape_no, new_shape))
     }
 
     /// The search tree compensated for `clearance_class`, created and

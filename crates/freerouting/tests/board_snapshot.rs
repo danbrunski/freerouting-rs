@@ -52,8 +52,8 @@ fn tree_shape(tree: &ShapeSearchTree) -> Vec<String> {
         .map(|leaf| {
             let (item, index) = shape_tree.leaf(leaf);
             format!(
-                "{} {} {} {:?}",
-                item.0,
+                "{:?} {} {} {:?}",
+                item,
                 index,
                 shape_tree.distance_to_root(leaf),
                 shape_tree.leaf_bounds(leaf)

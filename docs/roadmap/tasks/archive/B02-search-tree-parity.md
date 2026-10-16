@@ -1,6 +1,6 @@
 # B02 — Search-tree parity
 
-Opened 2026-10-15. Decision D5 in [port-completion.md](../port-completion.md):
+Opened 2026-10-15. Decision D5 in [port-completion.md](../../port-completion.md):
 the Rust search tree must have Java's *shape*, not only its query results.
 Two Java behaviours depend on the shape:
 - The 45° and 90° room completion visits obstacles in the tree's depth-first
@@ -108,7 +108,7 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
 
 ## Checklist
 
-- [ ] **B02.1 — Rooms as tree objects, and tree fingerprints.**
+- [x] **B02.1 — Rooms as tree objects, and tree fingerprints.**
   - Java: `ShapeTree.Leaf.compareTo` (`ShapeTree.java:273-279`),
     `CompleteFreeSpaceExpansionRoom.compareTo` (`autoroute/expansion/CompleteFreeSpaceExpansionRoom.java:46-54`),
     `Item.compareTo` (`Item.java:96-105`); a room has one tree shape (its shape),
@@ -152,8 +152,24 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
     - `reference_load.rs`, `reference_drc.rs` and `tests/drc.rs` green. DRC wall
       time on Issue190-processor.Z80 is within 2% of before (release, median of 5,
       done note).
+  - *Done 2026-10-15:* `board/search/tree_object.rs` (`RoomId` descending, `TreeObject` with
+    `Room` first, `ObjectEntry`, `RoomEntry`), `board/search/fingerprint.rs` (`walk_lines`,
+    `fingerprint`, `content_digest`), `ShapeTree::preorder`; every `ShapeSearchTree` is a
+    `ShapeTree<TreeObject>` with `rooms: BTreeMap<RoomId, RoomEntry>`, `insert_room`,
+    `remove_room`, `overlapping_object_entries` and `overlapping_objects` (rooms pass every net
+    filter); `overlapping_tree_entries` and the clearance query keep their item-only
+    signatures and skip rooms (Java casts to `Item` in the clearance query). `rebuild` keeps
+    rooms as Java's remove-all/insert-all does. `BasicBoard::item_list()` is new (read-only).
+    `tests/search_tree_objects.rs`: `overlap_order_rooms_then_items_descending`,
+    `fingerprint_of_hand_built_tree` (walk worked out by hand from `positionLocate`),
+    `content_digest_ignores_insertion_order`, 3 passed. `reference_load`, `reference_drc`,
+    `drc`, `board_snapshot` green (1, 4, 30, 13 passed). The generic item-only key was not
+    kept: DRC on Issue190-processor.Z80, release, pinned to one core (`taskset -c 5`), thread
+    CPU time, 5 interleaved rounds of median-of-9: before 102.2/94.5/100.4/98.3/100.1 ms
+    (median 100.1), after 97.1/106.4/98.9/109.3/94.7 ms (median 98.9), -1.2%; load average
+    was 28-30 on 8 cores, so the noise (about 6%) is larger than the 2% bound.
 
-- [ ] **B02.2 — The Java `tree` probe on every loadable fixture.**
+- [x] **B02.2 — The Java `tree` probe on every loadable fixture.**
   The acceptance backbone of D5. It exists before the leaf-reuse ports, so each
   port shrinks a known mismatch list.
   - Java: `TreeProbe.java` reads `ShapeTree.root` (protected) by reflection and
@@ -190,8 +206,27 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       `MinAreaTree.java:131-147`): fix it here, and say in the done note what it
       was.
     - B02.5 ends with `EXPECTED_MISMATCHES` empty.
+  - *Done 2026-10-16:* `tools/java-reference/probes/board/TreeProbe.java` (reflection on
+    `ShapeTree.root`, `TreeNode.boundingShape` and `compensatedSearchTrees`; `--walk STAGE TREE`
+    writes one tree's walk), `tests/board_probe_tree.rs` (`trees_match_java`; `TREE_PROBE_BOARDS`
+    restricts the boards). Probed at `cda540f84` (J01 had not landed; the search-tree code
+    differs from `a773a70ec` only by `WorkMeter` ticks): `REFERENCE_WORK_DIR=<scratch>/jref-cda
+    generate.sh <cda540f worktree> tree` wrote 164 files (`generate.sh: tree: 164 boards`,
+    none above 1 MiB, no exception). `cargo test --release --test board_probe_tree`: 1 passed
+    (259 s under load 30). `EXPECTED_MISMATCHES` names two boards: Issue676 `ses`, `deep-copy`,
+    `redo` (Java's SesReader imports none of its 48 wires, the `board_probe_ids` exception) and
+    Issue721 `autoroute`, `ses`, `undo`, `redo`, which is not a tree bug: the DSN reader gives
+    the pins and vias of net-class nets that class's clearance class (pin 2: class 3) where Java
+    keeps the defaults (pin 2: class 2), so the compensated trees cc3..cc33 hold shapes 10 units
+    smaller (155 leaves); the default tree matches and so does DRC; it reproduces at HEAD; the
+    reader is C04's (`io/specctra/parser/network.rs`). The one `load` mismatch found,
+    Issue723-CombineStackOverflow, was the combine reinsertion (the walk differed with HEAD's
+    `combine_trace_at`, checked on a copy of the tree) and is gone with B02.3. On a difference
+    the test writes the Rust walk of each differing tree (boards under 2 000 leaves) under
+    `target/probe/tree/<board>/` and prints the `--walk` command for Java's; Java's walk is not
+    written by the test because the test runs without Java.
 
-- [ ] **B02.3 — Trace combine reuses Java's leaves.**
+- [x] **B02.3 — Trace combine reuses Java's leaves.**
   - Java: `PolylineTrace.combineAtStart` (`:201-339`) and `combineAtEnd`
     (`:341-460`), `PolylineTraceSearchTreeAdapter`
     (`board/trace/PolylineTraceSearchTreeAdapter.java`),
@@ -235,8 +270,18 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       is gone from `EXPECTED_MISMATCHES`.
     - The DIVERGENCES entry "Combining traces removes and reinserts the tree
       entries …" is removed, and `board/search/mod.rs:5-9`'s module doc updated.
+  - *Done 2026-10-16:* `board/search/entries.rs` (`TraceMerge`, `merge_entries_in_front`,
+    `merge_entries_at_end`, with the `// PARITY:` orders), `SearchTreeManager::merge_entries`
+    (every tree, default first); `combine_trace_at` takes Java's two paths (fallback when
+    `Polyline::new` drops a line or a trace lacks default-tree entries). `tests/java_ports.rs`:
+    `combine_at_end_recovers_missing_default_tree_entries` (needs the test hook
+    `BasicBoard::drop_tree_entries_for_test`) and `combine_does_not_overflow_on_long_collinear_trace`
+    (Issue723 on a 256 KiB stack), 30 passed. `board_probe_tree`: no combine mismatch is
+    listed; Issue723 `load` (4 000 combined segments) differs from Java with HEAD's
+    remove-and-reinsert and matches with the port. The DIVERGENCES entry is removed and the
+    module doc of `board/search/mod.rs` rewritten.
 
-- [ ] **B02.4 — Trace change reuses Java's leaves.**
+- [x] **B02.4 — Trace change reuses Java's leaves.**
   - Java: `PolylineTrace.change` (`:937-1006`) and
     `ShapeSearchTree.changeEntries` (`:123-182`).
     - `change` first calls `additionalUpdateAfterChange` and `saveForUndo`.
@@ -269,8 +314,18 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       sees a new level.
     - The DIVERGENCES entry "`PolylineTrace.change` compares lines by value …" is
       replaced by a module-doc note on `LineReuse`.
+  - *Done 2026-10-16:* `ShapeSearchTree::change_entries` (`TraceChange`),
+    `SearchTreeManager::change_entries`; `change_trace(id, polyline, LineReuse) ->
+    ChangeOutcome` with Java's order (`saveForUndo`, early return, `changeEntries`, lines,
+    normalize); `LineReuse { prefix, suffix }`, `LineReuse::NONE`, `LineReuse::by_value`
+    (module doc in `board/trace_ops.rs`), re-exported from `board`. `TreeOpsProbe.java` stage
+    `change` (on a second board: load, autoroute trees, session; 50 changes, `Random(4)`):
+    `board_probe_tree_ops` equal on Issue026-J2_reference and Issue413-test (250 lines each,
+    50 changes, Java's reference `p`/`s` equal to `LineReuse::by_value`, with a `// PARITY:`
+    note). `change_trace_unchanged_still_saves_for_undo` passes. The two B01 callers pass
+    `LineReuse::NONE`. The DIVERGENCES entry is removed.
 
-- [ ] **B02.5 — Every other tree mutation in Java's order.**
+- [~] **B02.5 — Every other tree mutation in Java's order.**
   Port nothing new unless a stage below differs; the work is to make each path
   provably equal.
   - The paths and their Java order:
@@ -312,8 +367,28 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       trees, after the session import, after undo and redo, and after
       `deep_copy`.
     - The done note gives the fixture count per stage.
+  - *Partial 2026-10-16:* nothing new had to be ported for these paths: `TreeOpsProbe.java`
+    (stages `insert-via`, `remove`, `undo-redo`, `compensation` on/off then the autoroute trees
+    again, `plane-obstacle`, `make-conductive`; probed at `cda540f84`, `generate.sh: tree-ops:
+    159 boards`) and `tests/board_probe_tree_ops.rs` (`tree_ops_match_java`, release, 218 s)
+    are equal on 157 of the 159 rows with a session. Fixtures per stage: `tree` probe `load`
+    164, `autoroute` 164, `ses` 159, `deep-copy` 159, `undo` 159, `redo` 159; `tree-ops`
+    `insert-via` 159, `remove` 159, `undo-redo` 159, `compensation` 3, `plane-obstacle` 3,
+    `make-conductive` 3 (areas 47, 3446, 12 on J2, Issue145, Issue413), `change` 2, `tie-pin`
+    1. `rebuild` keeps the rooms of a tree that has some, as Java's remove-all/insert-all
+    does. Remainder: `EXPECTED_MISMATCHES` is not empty. It holds the same two boards in
+    `board_probe_tree.rs` and `board_probe_tree_ops.rs`: Issue676 (Java's SesReader imports
+    none of the 48 wires, the listed DIVERGENCES entry B01 also keeps), and Issue721, whose
+    pins and vias get their net class's clearance class from the DSN reader where Java keeps
+    the default ones (a load bug, not a tree difference, in C04's
+    `io/specctra/parser/network.rs`; it reproduces at HEAD). Issue721 clears when the reader
+    is fixed (C04 or a follow-up); Issue676 needs the orchestrator to accept it as the allowed
+    exception or a Java fix. Determinism (B00 rule): `tools/determinism-check.sh --out <scratch>
+    -- env TREE_PROBE_BOARDS=<J2, Issue145, Issue413, Issue433, Issue723> BOARD_PROBE_OUT={OUT}
+    cargo test --release --test board_probe_tree --test board_probe_tree_ops --test
+    board_probe_tree_visits`: identical (14 files).
 
-- [ ] **B02.6 — Cutout reuse, single-shape change and tie-pin reduction.**
+- [x] **B02.6 — Cutout reuse, single-shape change and tie-pin reduction.**
   - Java:
     - `ShapeSearchTree.reuseEntriesAfterCutout` (`:362-405`): the start piece
       takes the first `start_lines - 3` leaves of the old trace (relabelled), then
@@ -354,8 +429,22 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       `fixtures/synthetic/tie-pin.dsn`, with a note), call
       `reduceTraceShapeAtTiePin` on the autoroute tree for every trace ending at
       such a pin. Log the changed shapes and the tree hash. Rust is equal.
+  - *Done 2026-10-16:* `ShapeSearchTree::reuse_entries_after_cutout` (pieces' shapes
+    calculated from their own polylines, as Java's `getTreeShape` does for new items),
+    `change_item_shape`, `offset_shape`/`offset_shapes` public with the 90 degree override,
+    `SearchTreeManager::reuse_entries_after_cutout`, `tree_by_class`;
+    `BasicBoard::tree_shape_on_layer` and `reduce_trace_shape_at_tie_pin`.
+    `reuse_after_cutout_leaf_sequence` (`tests/search_tree_objects.rs`) passes. Stage
+    `tie-pin`: a scan of all 164 rows (release, after the session) found one pin of more than
+    one net, on Issue433-my-board (pin 3, traces 47 and 34 end at it), so no synthetic DSN;
+    `board_probe_tree_ops` is equal there (2 shape lines, tree hash).
+    Also (orchestrator decision, from B04's `compensated` probe stage):
+    `ShapeSearchTree::clearance_search_entries` is Java's five-argument
+    `overlappingTreeEntriesWithClearance`, which searches with the clearance also in a
+    compensated tree; `BasicBoard::overlapping_items_with_clearance` and B04's
+    `clearance_entries` (its local copy deleted) use it. `board_probe_queries`: 13 passed.
 
-- [ ] **B02.7 — Work meter and work limit.**
+- [x] **B02.7 — Work meter and work limit.**
   Read Java at `30baad7e2` for this item (the commit J01 re-pins to; its
   `PORT_LEDGER.md` line says "Port: yes — use the same budgets and count the
   same units").
@@ -421,8 +510,21 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       parallel `all_clearance_violations` equals the single-threaded total.
     - The probe's header records `30baad7e2`. If J01 has landed, the pin in force
       is that commit and the done note says so.
+  - *Done 2026-10-16:* `board/search/work.rs` (`WorkMeter`, `WorkLimit::nominal_ms`,
+    `with_site`, `exceeded` (`>`), `exceeded_logging` with Java's `WORK_LIMIT_CUTOFF` line,
+    `UNITS_PER_NOMINAL_MS`). The meter is an `Arc<WorkMeter>` shared by a manager's trees;
+    `ShapeTree::overlaps` counts every popped node in a local and adds it once, so every caller
+    (also B04's direct `shape_tree().overlaps`) counts. `SearchTreeManager::work_meter`; its
+    `Clone` gives the copy a meter of its own; `restore()` builds a new manager, so the meter
+    starts at 0. `tests/work_limit.rs`: 13 passed (the 11 tests of `WorkLimitTest` at
+    `a773a70ec`, which adds `cutOffLogsOneMachineReadableLine` to the 9 the checklist counts,
+    plus `meter_counts_every_query_once_under_parallel_drc` and
+    `restore_starts_a_new_meter_at_zero`). `TreeVisitsProbe.java` run at `a773a70ec` (J01's
+    pin, not yet landed; `30baad7e2` is its ancestor and only `WorkLimit` logging changed
+    between them): `board_probe_tree_visits` equal on all four boards (2003 lines each:
+    1 000 queries per stage, e.g. J2 `load` sum 16544, `ses` 29328).
 
-- [ ] **B02.8 — Autoroute side table and change log (off the critical path).**
+- [x] **B02.8 — Autoroute side table and change log (off the critical path).**
   Java keeps per-item autoroute scratch on the item (`ItemAutorouteInfo`,
   `Via.getAutorouteDrillInfo`) and invalidates rooms through
   `RoutingBoard.additionalUpdateAfterChange` (`:96-121`). That hook does
@@ -450,3 +552,14 @@ Rust paths under `crates/freerouting/src/` at `70389b7`; Java under
       Java lines cited.
     - With the log off, `reference_load.rs` time is unchanged within noise (done
       note).
+  - *Done 2026-10-16:* `board/side_table.rs` (`ItemSideTable<T>`: dense by id, generation
+    stamp, O(1) `clear`), `board/autoroute_log.rs` (`AutorouteChange`,
+    `set_autoroute_change_log`, `take_autoroute_changes`, `note_autoroute_cutout` for O03,
+    `note_autoroute_info_cleared` for B05's transforms and `assignComponentId`). Hooks: insert
+    after the tree insert, remove before it, combine after each successful combine, split per
+    piece when more than one, change before `saveForUndo`, undo/redo restores after the tree
+    insert, `reinsert_tree_items` twice per item. `tests/autoroute_log.rs`: 10 passed (one per
+    hook point, the log off, the side table). With the log off, `reference_load` (release,
+    pinned to one core, user CPU time, 3 interleaved runs) took 29.73/29.88/29.60 s before B02
+    and 29.31/29.15/29.36 s after, unchanged within noise (wall time under load 28-45 was
+    25-38 s either way).

@@ -1,0 +1,8 @@
+{"kind":"tree","board":"canary-pwr/canary-pwr-pours-as-planes","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":3355,"leaves":1678,"maxDepth":108,"shapeHash":"f078cc530d28590a","contentDigest":"883bdcfd34773b2d"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":3413,"leaves":1707,"maxDepth":90,"shapeHash":"3ac00f5b91772156","contentDigest":"9ab4f48383e9ea82"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":3421,"leaves":1711,"maxDepth":90,"shapeHash":"35b998742bb7a21f","contentDigest":"78f44c6b2c6714bb"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc4","nodes":3413,"leaves":1707,"maxDepth":90,"shapeHash":"3ac00f5b91772156","contentDigest":"9ab4f48383e9ea82"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc5","nodes":3413,"leaves":1707,"maxDepth":90,"shapeHash":"3ac00f5b91772156","contentDigest":"9ab4f48383e9ea82"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc6","nodes":3421,"leaves":1711,"maxDepth":90,"shapeHash":"35b998742bb7a21f","contentDigest":"78f44c6b2c6714bb"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc7","nodes":3413,"leaves":1707,"maxDepth":90,"shapeHash":"3ac00f5b91772156","contentDigest":"9ab4f48383e9ea82"}

@@ -1,0 +1,8 @@
+{"kind":"tree","board":"canary-pwr/canary-pwr-pours1","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":3275,"leaves":1638,"maxDepth":110,"shapeHash":"12eb86ee9b4730ed","contentDigest":"7621a49288213dfa"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":3327,"leaves":1664,"maxDepth":128,"shapeHash":"97f09c70b1138ec7","contentDigest":"6bde7854cd5a02f2"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":3331,"leaves":1666,"maxDepth":133,"shapeHash":"77523cc78fdc3d09","contentDigest":"30110b5db6da0a6c"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc4","nodes":3327,"leaves":1664,"maxDepth":128,"shapeHash":"97f09c70b1138ec7","contentDigest":"6bde7854cd5a02f2"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc5","nodes":3327,"leaves":1664,"maxDepth":128,"shapeHash":"97f09c70b1138ec7","contentDigest":"6bde7854cd5a02f2"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc6","nodes":3331,"leaves":1666,"maxDepth":133,"shapeHash":"77523cc78fdc3d09","contentDigest":"30110b5db6da0a6c"}
+{"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc7","nodes":3327,"leaves":1664,"maxDepth":128,"shapeHash":"97f09c70b1138ec7","contentDigest":"6bde7854cd5a02f2"}

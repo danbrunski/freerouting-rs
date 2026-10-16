@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use freerouting_geometry::{RegularTileShape, ShapeBoundingDirections, TileShapeOps};
+
+use crate::board::search::WorkMeter;
 
 /// Handle of a leaf in a [`ShapeTree`]. Valid until the leaf is removed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -27,7 +31,9 @@ struct Node<K> {
 ///
 /// [`overlaps`](Self::overlaps) returns the leaves sorted by object key, then
 /// shape index, as Java sorts them with `Leaf.compareTo`, so the shape of the
-/// tree does not show in query results.
+/// tree does not show in query results. It adds the nodes it visits to the
+/// tree's [`WorkMeter`] (Java `WorkMeter.tick()` in
+/// `MinAreaTree.overlapsUnlocked`); a clone shares the meter.
 #[derive(Clone, Debug)]
 pub struct ShapeTree<K> {
     directions: ShapeBoundingDirections,
@@ -35,6 +41,7 @@ pub struct ShapeTree<K> {
     nodes: Vec<Option<Node<K>>>,
     free: Vec<usize>,
     leaf_count: usize,
+    meter: Arc<WorkMeter>,
 }
 
 impl<K: Ord + Copy> ShapeTree<K> {
@@ -45,7 +52,19 @@ impl<K: Ord + Copy> ShapeTree<K> {
             nodes: Vec::new(),
             free: Vec::new(),
             leaf_count: 0,
+            meter: Arc::new(WorkMeter::new()),
         }
+    }
+
+    /// The meter the queries count their visited nodes on.
+    pub fn meter(&self) -> &Arc<WorkMeter> {
+        &self.meter
+    }
+
+    /// Counts the queries on `meter` from now on (a board's trees share
+    /// one).
+    pub fn set_meter(&mut self, meter: Arc<WorkMeter>) {
+        self.meter = meter;
     }
 
     /// The fixed directions of the bounding shapes in this tree.
@@ -236,6 +255,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
 
     /// The leaves whose bounding shape intersects `shape`, sorted by object
     /// key and then by shape index.
+    ///
+    /// Every node popped off the traversal stack, leaf or inner, hit or
+    /// miss, is one unit of work; the count is added to the meter once.
     pub fn overlaps(&self, shape: &RegularTileShape) -> Vec<LeafId> {
         let mut found: Vec<(K, usize, LeafId)> = Vec::new();
         let Some(root) = self.root else {
@@ -243,7 +265,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
         };
         let query = shape.to_tile_shape();
         let mut stack = vec![root];
+        let mut visited = 0u64;
         while let Some(current) = stack.pop() {
+            visited += 1;
             let node = self.node(current);
             if node.bounds.to_tile_shape().intersects_tile(&query) {
                 match node.kind {
@@ -258,6 +282,7 @@ impl<K: Ord + Copy> ShapeTree<K> {
                 }
             }
         }
+        self.meter.add(visited);
         // A key and shape index identify a leaf, so the order is total.
         found.sort_unstable_by_key(|&(key, index, _)| (key, index));
         found.into_iter().map(|(_, _, leaf)| leaf).collect()
@@ -294,6 +319,31 @@ impl<K: Ord + Copy> ShapeTree<K> {
             };
         }
         result
+    }
+
+    /// Visits every node in preorder: a node, then its first child's
+    /// subtree, then its second child's. `visit` gets the depth (the root
+    /// has depth 0), the bounding shape, and for a leaf its key and shape
+    /// index.
+    pub fn preorder(&self, mut visit: impl FnMut(usize, &RegularTileShape, Option<(K, usize)>)) {
+        let Some(root) = self.root else {
+            return;
+        };
+        let mut stack = vec![(root, 0usize)];
+        while let Some((current, depth)) = stack.pop() {
+            let node = self.node(current);
+            match node.kind {
+                NodeKind::Leaf {
+                    object,
+                    shape_index,
+                } => visit(depth, &node.bounds, Some((object, shape_index))),
+                NodeKind::Inner { first, second } => {
+                    visit(depth, &node.bounds, None);
+                    stack.push((second, depth + 1));
+                    stack.push((first, depth + 1));
+                }
+            }
+        }
     }
 
     /// The number of nodes from `leaf` up to the root.
