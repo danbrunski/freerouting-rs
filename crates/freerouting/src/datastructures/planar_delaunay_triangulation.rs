@@ -12,9 +12,8 @@
 
 use std::collections::BTreeMap;
 
+use freerouting_geometry::jmath::JavaRandom;
 use freerouting_geometry::{CRIT_INT, IntPoint, Point, Side};
-
-use super::JavaRandom;
 
 /// The fixed seed Java shuffles the input corners with.
 const SEED: i64 = 99;

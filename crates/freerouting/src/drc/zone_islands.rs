@@ -14,6 +14,7 @@
 
 use std::collections::HashMap;
 
+use freerouting_geometry::jmath::round_to_i32;
 use freerouting_geometry::{
     Area, FloatPoint, IntBox, IntPoint, PolylineShape, PolylineShapeOps, Shape, TileShape,
 };
@@ -791,7 +792,7 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
     );
     max_clearance = max_clearance.max(matrix_max + 100.0 * resolution_um);
     let spoke_width = 400.0 * resolution_um;
-    let max_cl = java_round(max_clearance);
+    let max_cl = round_to_i32(max_clearance);
     let bbox = ca.bounding_box();
     let inflated = IntBox::new(
         bbox.ll.x - max_cl,
@@ -891,10 +892,6 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
         }
     }
     Some((operands, drill_count))
-}
-
-fn java_round(value: f64) -> i32 {
-    (value + 0.5).floor() as i32
 }
 
 /// The islands of the detailed fill of conduction area `ca`; empty for an

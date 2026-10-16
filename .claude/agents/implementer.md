@@ -116,9 +116,12 @@ and there is no measured history for this repo yet, so pace by progress:
   `DIVERGENCES.md` line that gives the same reason. Never loosen a
   comparison to make a test pass.
 - Before porting a helper, grep the workspace for an existing port of
-  it. `java.util.Random` was ported twice (`freerouting_geometry::jmath`
-  and `freerouting::datastructures`) because nobody checked. Use
-  `jmath`'s.
+  it. Java numeric semantics live in `freerouting_geometry::jmath`:
+  `Math.round`, `(int) Math.round` (`round_to_i32`), `(int)` casts,
+  `Math.rint`, `java.util.Random` and `Collections.shuffle`. Use those,
+  never a local copy. Local copies of `Random` and `Math.round` had to
+  be removed once already, and the `Math.round` copies were subtly
+  wrong.
 
 ## Pre-made decisions (from PORT_PLAN; implement them, don't reopen them)
 

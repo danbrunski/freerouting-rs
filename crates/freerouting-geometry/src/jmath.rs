@@ -83,6 +83,14 @@ impl JavaRandom {
             r
         }
     }
+
+    /// `Collections.shuffle(list, random)`.
+    pub fn shuffle<T>(&mut self, list: &mut [T]) {
+        for i in (2..=list.len()).rev() {
+            let j = self.next_int(i as i32) as usize;
+            list.swap(i - 1, j);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -128,5 +136,20 @@ mod tests {
         assert_eq!(r.next_int(100), 30);
         assert_eq!(r.next_int(100), 63);
         assert_eq!(r.next_int(16), 10);
+        // Powers of two take the multiply branch.
+        let mut r = JavaRandom::new(7);
+        let got: Vec<i32> = (0..3).map(|_| r.next_int(16)).collect();
+        assert_eq!(got, vec![11, 10, 11]);
+    }
+
+    #[test]
+    fn shuffle_matches_java() {
+        // List<Integer> l = 0..9; Collections.shuffle(l, new Random(99))
+        let mut list: Vec<i32> = (0..10).collect();
+        JavaRandom::new(99).shuffle(&mut list);
+        assert_eq!(list, [8, 1, 4, 3, 9, 6, 0, 2, 5, 7]);
+        let mut short = vec![0, 1, 2];
+        JavaRandom::new(99).shuffle(&mut short);
+        assert_eq!(short, [2, 0, 1]);
     }
 }

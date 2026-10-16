@@ -4,6 +4,7 @@
 
 use freerouting_dsn::Session;
 use freerouting_dsn::ast::{LayerRef, Shape, WiringItem};
+use freerouting_geometry::jmath::round_to_i32;
 use freerouting_geometry::{IntPoint, Point, Polyline};
 
 use crate::board::BasicBoard;
@@ -20,11 +21,6 @@ pub struct SesImportSummary {
     pub vias_imported: usize,
     /// Nets, wires or vias that could not be imported.
     pub errors_encountered: usize,
-}
-
-/// Java's `Math.round` to `int`.
-fn java_round(value: f64) -> i32 {
-    (value + 0.5).floor() as i64 as i32
 }
 
 /// Reads the session file `text` and inserts its wires (as user fixed
@@ -101,12 +97,12 @@ pub fn import_session(board: &mut BasicBoard, session: &Session) -> SesImportSum
                         .iter()
                         .map(|p| {
                             Point::Int(IntPoint::new(
-                                java_round(p.x / denominator),
-                                java_round(p.y / denominator),
+                                round_to_i32(p.x / denominator),
+                                round_to_i32(p.y / denominator),
                             ))
                         })
                         .collect();
-                    let half_width = java_round(width / (2.0 * denominator));
+                    let half_width = round_to_i32(width / (2.0 * denominator));
                     board.insert_trace(
                         Polyline::from_points(&corners),
                         layer_no,
@@ -139,8 +135,8 @@ pub fn import_session(board: &mut BasicBoard, session: &Session) -> SesImportSum
                         continue;
                     };
                     let center = IntPoint::new(
-                        java_round(via.at.x / denominator),
-                        java_round(via.at.y / denominator),
+                        round_to_i32(via.at.x / denominator),
+                        round_to_i32(via.at.y / denominator),
                     );
                     board.insert_via(
                         padstack,

@@ -5,6 +5,7 @@
 
 use std::collections::HashSet;
 
+use freerouting_geometry::jmath::round_to_i32;
 use freerouting_geometry::{FloatPoint, PolylineShapeOps, TileShape};
 
 use crate::board::BasicBoard;
@@ -270,8 +271,8 @@ impl BasicBoard {
                         tree.clearance_compensation_value(matrix, other.clearance_class(), layer),
                     )
                 } else {
-                    let c1 = java_round(0.5 * minimum_clearance);
-                    (c1, java_round(minimum_clearance - f64::from(c1)))
+                    let c1 = round_to_i32(0.5 * minimum_clearance);
+                    (c1, round_to_i32(minimum_clearance - f64::from(c1)))
                 };
                 let enlarged1 = if cl_comp1 > 0 {
                     current_shape.enlarge(f64::from(cl_comp1))
@@ -364,11 +365,6 @@ impl BasicBoard {
             _ => true,
         }
     }
-}
-
-/// Java `Math.round` for the clearance compensation values.
-fn java_round(value: f64) -> i32 {
-    (value + 0.5).floor() as i32
 }
 
 /// Java `Item.calculateClearanceBetweenTwoShapes`: a binary search for the
