@@ -261,6 +261,41 @@ users would notice is listed. Texts follow the English Java bundles.)
 - Zoom to the selection (W) fits the box of the selection plus 10 %; Java offsets the
   box by the largest trace half width.
 
+**Board windows and display options** (G04, `look.rs`, `windows.rs`, `panels/{nets,components,library,layers,display,colors,status,log,about}.rs`; tests `tests/ui_windows.rs`)
+- Info > Nets is in the Info menu; Java has it among the rules windows. Its Select on Board button is
+  Java's double-click made visible (Java hides the button); the filter looks at `Net #n (name)` as
+  Java's does, so a class name never matches. The nets window prints `Net.printInfo` for the chosen
+  rows as one line each (the terminal items are counted, not a button that opens them).
+- Placed Components lists every component (`Components.count()`, as Java does; the task text said
+  "placed ones only", which is the same set on `Issue159`). Their windows are titled like the menu
+  items, because Java's three windows have no bundle of their own.
+- The object sliders of Display > Layer and Object Visibility are relative to the default look:
+  100 % is the colour and alpha the canvas always had (planes at 0.35 alpha), where Java's own
+  default for conduction areas and keepouts is 20 %. Only the ten kinds the port draws have a
+  slider (traces, vias, pins, conduction areas, the three keepouts, component outlines, highlight,
+  incomplete connections); Java's length matching areas and drill holes are not drawn. A level
+  below 100 % mixes opaque shapes into the background instead of using alpha (the joints of a
+  trace would show as dark dots); 0 hides. The dimming slider starts at 40 % (factor 0.6, what the
+  canvas always used; Java's factor is 0.7, slider 30 %).
+- The virtual layers are not dimmed when a copper layer is active (Java dims them by the same
+  factor); the part numbers are drawn under the reference designator, in a smaller type, and only
+  while the fabrication layer of their side is on (Java draws them at the component's location in
+  a fixed 12 point font, whatever the zoom).
+- The colour manager has no columns for fixed traces and fixed vias (the scene does not tell
+  fixed items apart), nor for the component, length matching area and drill hole colours (nothing
+  drawn uses them). The defaults are the port's own colours, not Java's table, except the courtyard
+  and fabrication colours. Reset to Defaults is new.
+- Rotation and mirroring turn the map from the board to the screen about the view centre, so the
+  displayed section stays (Java keeps the viewport centre when it mirrors). Text stays upright and
+  unmirrored; a label that follows the tall side of a footprint turns with a quarter turn.
+- The status bar shows `Errors: n` and `Warnings: n` as words (Java: icons) and the cursor position
+  in the design file's frame with Y up, in the chosen unit (Java prints `-y`, because its user
+  coordinate runs down). The counters open the log window, which lists the loader warnings, the
+  engine's log messages and the app's events (loads, design rules checks, exports), newest last.
+  The unit label is Java's `Unit.toString`: `mil`, `inch`, `mm`, `um`.
+- About has no donate, sponsor or telemetry line; it shows the version, the git commit
+  (`FREEROUTING_GIT_COMMIT` at build time, `unknown` until R01.2 sets it), the license and links.
+
 **Dropped Java features** (G00 question 2, accepted by Dan 2026-10-15; recorded 2026-10-16)
 - `.frb` snapshots (Java serialization, `BoardSnapshotManager`, `SafeObjectInputStream`):
   not ported. DSN + SES + `.rules` carry everything they did; the GUI's own session state

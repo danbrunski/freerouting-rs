@@ -113,6 +113,240 @@ pub const VIOLATIONS_TOOLTIP: &str = "Toggle the clearance violation markers (V)
 pub const DRC_RUNNING: &str = "Checking…";
 pub const CALCULATING: &str = "Calculating…";
 
+// ---------------------------------------------------------------------------
+// G04: board windows and display options
+// ---------------------------------------------------------------------------
+
+// BoardMenuInfo_en.properties, BoardMenuDisplay_en.properties,
+// BoardMenuHelp_en.properties. Nets are in Java's Rules menu; the port keeps
+// the Info menu for everything that reads the board.
+pub const MENU_NETS: &str = "Nets";
+pub const MENU_COMPONENTS: &str = "Placed Components";
+pub const MENU_PACKAGES: &str = "Library Packages";
+pub const MENU_PADSTACKS: &str = "Library Padstacks";
+pub const MENU_DISPLAY: &str = "Display";
+pub const MENU_VISIBILITY: &str = "Layer and Object Visibility";
+pub const MENU_COLORS: &str = "Color Manager";
+pub const MENU_MISC: &str = "Miscellaneous";
+pub const MENU_HELP: &str = "Help";
+pub const MENU_ABOUT: &str = "About";
+/// Not in Java's menus: Java writes to a console and shows the counts in the
+/// status bar; this is the window the status bar's counters open.
+pub const MENU_LOG: &str = "Log";
+
+// WindowNets_en.properties
+pub const NETS_TITLE: &str = "Nets";
+pub const NETS_INCOMPLETE_ONLY: &str = "Incomplete connections only";
+pub const NETS_INCOMPLETE_ONLY_TIP: &str =
+    "Display only incomplete connections for the selected nets.";
+pub const NETS_SELECT: &str = "Select on Board";
+pub const NETS_SELECT_TIP: &str = "Select the chosen nets on the board.";
+pub const NET_COUNT: &str = "There are {{count}} nets on the board.";
+pub const NET_EXPLANATION: &str =
+    "A net groups the pins and other board items that must be electrically connected.";
+/// `WindowObjectList_en.properties` `list_empty`.
+pub const LIST_EMPTY: &str = "No items found.";
+/// `Net.printInfo` with the words of `Common_en.properties`.
+pub const NET_INFO: &str = "Net {{name}}: class {{class}}, {{terminals}} terminal items, via count {{vias}}, trace length {{length}}";
+/// The row of `WindowNets`: `"Net #" + n + " (" + name + ") - Class: " + class`.
+pub const NET_ROW: &str = "Net #{{number}} ({{name}}) - Class: {{class}}";
+
+// Library windows. Java's three windows have no bundle of their own; their
+// titles are the menu items.
+pub const COMPONENTS_TITLE: &str = MENU_COMPONENTS;
+pub const PACKAGES_TITLE: &str = MENU_PACKAGES;
+pub const PADSTACKS_TITLE: &str = MENU_PADSTACKS;
+
+// WindowVisibility_en.properties
+pub const VISIBILITY_TITLE: &str = "Visibility";
+pub const VISIBILITY_HEADER: &str = "Use the sliders to adjust layer and object visibility.";
+pub const VISIBILITY_LAYER_SECTION: &str = "Layer Visibility";
+pub const VISIBILITY_LAYER_TIP: &str =
+    "Adjust the visibility of board layers from fully hidden to fully visible.";
+pub const VISIBILITY_OBJECT_SECTION: &str = "Object Visibility";
+pub const VISIBILITY_OBJECT_TIP: &str =
+    "Adjust the visibility of board objects from fully hidden to fully visible.";
+pub const VISIBILITY_RESET: &str = "Reset to Defaults";
+pub const VISIBILITY_RESET_TIP: &str = "Restore the original visibility values.";
+pub const OBJ_TRACES: &str = "Traces";
+pub const OBJ_VIAS: &str = "Vias";
+pub const OBJ_PINS: &str = "Pins";
+pub const OBJ_CONDUCTION_AREAS: &str = "Conduction Areas";
+pub const OBJ_KEEPOUTS: &str = "Keepouts";
+pub const OBJ_VIA_KEEPOUTS: &str = "Via Keepouts";
+pub const OBJ_PLACE_KEEPOUTS: &str = "Component Keepouts";
+pub const OBJ_COMPONENT_OUTLINES: &str = "Component Outlines";
+pub const OBJ_HIGHLIGHT: &str = "Highlight";
+pub const OBJ_INCOMPLETES: &str = "Incomplete Connections";
+
+// WindowDisplayMisc_en.properties
+pub const DISPLAY_TITLE: &str = "Display Options";
+pub const CROSSHAIR: &str = "Crosshair cursor";
+pub const CROSSHAIR_SMALL: &str = "Small";
+pub const CROSSHAIR_LARGE: &str = "Large";
+pub const CROSSHAIR_TIP: &str = "Shortcut: comma key.";
+pub const ROTATION: &str = "Board rotation:";
+pub const ROTATION_NONE: &str = "None";
+pub const ROTATION_90: &str = "90 degrees";
+pub const ROTATION_180: &str = "180 degrees";
+pub const ROTATION_270: &str = "-90 degrees";
+pub const MIRRORING: &str = "Board mirroring:";
+pub const MIRROR_NONE: &str = "None";
+pub const MIRROR_LEFT_RIGHT: &str = "Mirror left to right";
+pub const MIRROR_TOP_BOTTOM: &str = "Mirror top to bottom";
+pub const LAYER_DIMMING: &str = "Automatic layer dimming:";
+pub const LAYER_DIMMING_TIP: &str = "Use the slider to adjust automatic layer-dimming intensity.";
+/// BoardToolbar_en.properties `unit_heading`.
+pub const UNIT: &str = "Unit";
+
+// WindowSelectParameter_en.properties: the virtual layers.
+pub const F_SILKSCREEN: &str = "F.Silkscreen";
+pub const B_SILKSCREEN: &str = "B.Silkscreen";
+pub const F_COURTYARD: &str = "F.Courtyard";
+pub const B_COURTYARD: &str = "B.Courtyard";
+pub const F_FAB: &str = "F.Fab";
+pub const B_FAB: &str = "B.Fab";
+pub const F_SILKSCREEN_TIP: &str =
+    "Front silkscreen with component labels and reference designators.";
+pub const B_SILKSCREEN_TIP: &str =
+    "Back silkscreen with component labels and reference designators.";
+pub const F_COURTYARD_TIP: &str = "Front courtyard: component placement clearance boundary.";
+pub const B_COURTYARD_TIP: &str = "Back courtyard: component placement clearance boundary.";
+pub const F_FAB_TIP: &str =
+    "Front fabrication layer showing component body outlines for assembly drawings.";
+pub const B_FAB_TIP: &str =
+    "Back fabrication layer with component body outlines for assembly drawings.";
+
+// ColorManager_en.properties and ColorTableModel_en.properties
+pub const COLORS_TITLE: &str = "Color Manager";
+pub const COLOR_LAYER: &str = "Layer";
+pub const COLOR_BACKGROUND: &str = "Background";
+pub const COLOR_HIGHLIGHT: &str = "Highlight";
+pub const COLOR_INCOMPLETES: &str = "Incomplete Connections";
+pub const COLOR_VIOLATIONS: &str = "Clearance Violations";
+pub const COLOR_OUTLINE: &str = "Outline";
+pub const COLOR_SILKSCREEN_FRONT: &str = "Silkscreen Front";
+pub const COLOR_SILKSCREEN_BACK: &str = "Silkscreen Back";
+pub const COLOR_COURTYARD_FRONT: &str = "Courtyard Front";
+pub const COLOR_COURTYARD_BACK: &str = "Courtyard Back";
+pub const COLOR_FAB_FRONT: &str = "Fabrication Front";
+pub const COLOR_FAB_BACK: &str = "Fabrication Back";
+/// Not in Java, which has no reset.
+pub const COLORS_RESET: &str = "Reset to Defaults";
+pub const COLORS_RESET_TIP: &str = "Restore the original colours.";
+
+// BoardPanelStatus_en.properties and the log window
+pub const STATUS_ERRORS: &str = "Errors";
+pub const STATUS_WARNINGS: &str = "Warnings";
+pub const STATUS_COUNTER_TIP: &str = "Click to open the log.";
+pub const STATUS_CURRENT_LAYER: &str = "Current layer:";
+pub const STATUS_CURSOR: &str = "Cursor:";
+pub const LOG_TITLE: &str = "Log";
+pub const LOG_EMPTY: &str = "The log is empty.";
+pub const LOG_LEVEL_ERROR: &str = "error";
+pub const LOG_LEVEL_WARNING: &str = "warning";
+pub const LOG_LEVEL_INFO: &str = "info";
+
+// WindowAbout_en.properties. No telemetry and no sponsor dialog (G00
+// question 2); the donate line is not shown.
+pub const ABOUT_TITLE: &str = "About";
+pub const ABOUT_DESCRIPTION: &str = "Freerouting — an open-source PCB autorouter";
+pub const ABOUT_VERSION: &str = "Version:";
+pub const ABOUT_COMMIT: &str = "Commit:";
+pub const ABOUT_LICENSE: &str = "License: GPL-3.0";
+pub const ABOUT_WARRANTY: &str = "This program is provided without warranty.";
+pub const ABOUT_PORT: &str = "Rust port: https://github.com/danbrunski/freerouting-rs";
+pub const ABOUT_HOMEPAGE: &str =
+    "Latest release: https://github.com/freerouting/freerouting/releases";
+pub const ABOUT_SUPPORT: &str =
+    "Report an issue: https://github.com/freerouting/freerouting/issues";
+
+/// The version of the app (`CARGO_PKG_VERSION`).
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// The git commit the app was built from. R01.2's build stamp sets
+/// `FREEROUTING_GIT_COMMIT` at compile time; until it lands this is
+/// "unknown".
+pub const GIT_COMMIT: &str = match option_env!("FREEROUTING_GIT_COMMIT") {
+    Some(commit) => commit,
+    None => "unknown",
+};
+
+/// The unit selector's button text (`BoardToolbar_en.properties`).
+pub fn unit_button(unit: freerouting::board::structure::Unit) -> &'static str {
+    use freerouting::board::structure::Unit;
+    match unit {
+        Unit::Mil => "mil",
+        Unit::Inch => "in",
+        Unit::Mm => "mm",
+        Unit::Um => "µm",
+    }
+}
+
+/// The unit selector's tooltip.
+pub fn unit_tooltip(unit: freerouting::board::structure::Unit) -> &'static str {
+    use freerouting::board::structure::Unit;
+    match unit {
+        Unit::Mil => "A thousandth of an inch (mil).",
+        Unit::Inch => "Inches.",
+        Unit::Mm => "Millimeters.",
+        Unit::Um => "Micrometers.",
+    }
+}
+
+/// The unit label of the status bar (Java `Unit.toString`).
+pub fn unit_label(unit: freerouting::board::structure::Unit) -> &'static str {
+    unit.name()
+}
+
+/// A length given in millimetres, in `unit`, as Java's `NumberFormat` writes
+/// it in the lists: grouped by thousands, at most four fraction digits.
+pub fn format_length(mm: f64, unit: freerouting::board::structure::Unit) -> String {
+    use freerouting::board::structure::Unit;
+    format_number(Unit::scale(mm, Unit::Mm, unit))
+}
+
+/// `NumberFormat` with exactly `digits` fraction digits, grouped by
+/// thousands (Java `nf.setMinimumFractionDigits(d); setMaximumFractionDigits(d)`).
+pub fn format_fixed(value: f64, digits: usize) -> String {
+    let fixed = format!("{value:.digits$}");
+    let (int, frac) = fixed.split_once('.').unwrap_or((&fixed, ""));
+    let (sign, int) = match int.strip_prefix('-') {
+        Some(rest) => ("-", rest),
+        None => ("", int),
+    };
+    let mut grouped = String::new();
+    for (i, c) in int.chars().enumerate() {
+        if i > 0 && (int.len() - i) % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(c);
+    }
+    if frac.is_empty() {
+        format!("{sign}{grouped}")
+    } else {
+        format!("{sign}{grouped}.{frac}")
+    }
+}
+
+/// The cursor position of the status bar, in `unit`: Java
+/// `FloatPoint.toString(locale, 2, 10)`, `X` and `Y` with two fraction digits
+/// padded to 10 characters. (Java prints `-y` because its user Y runs down;
+/// the port's coordinates are the design file's, with Y up, as the CAD tool
+/// shows them.)
+pub fn format_position(x_mm: f64, y_mm: f64, unit: freerouting::board::structure::Unit) -> String {
+    use freerouting::board::structure::Unit;
+    let (x, y) = (
+        Unit::scale(x_mm, Unit::Mm, unit),
+        Unit::scale(y_mm, Unit::Mm, unit),
+    );
+    format!(
+        "X {:>10}   Y {:>10}",
+        format_fixed(x, 2),
+        format_fixed(y, 2)
+    )
+}
+
 /// Java `String.valueOf(float)`: the shortest decimal that reads back as the
 /// same float, in plain notation from 1e-3 up to (not including) 1e7 and as
 /// computerized scientific notation (`1.0E7`) outside.
@@ -237,6 +471,33 @@ mod tests {
         ] {
             assert_eq!(java_float_to_string(v), s, "{v}");
         }
+    }
+
+    /// Java: `Unit.scale(2.54, MM, MIL)` is 100 (25.4 um per mil), and the
+    /// lists print it through `NumberFormat` with at most four fraction
+    /// digits, which gives "100".
+    #[test]
+    fn mil_is_mm_over_0_0254() {
+        use freerouting::board::structure::Unit;
+        assert_eq!(format_length(2.54, Unit::Mil), "100");
+        assert_eq!(format_length(2.54, Unit::Mm), "2.54");
+        assert_eq!(format_length(2.54, Unit::Um), "2,540");
+        assert_eq!(format_length(25.4, Unit::Inch), "1");
+        assert_eq!(format_length(0.1, Unit::Mil), "3.937");
+    }
+
+    #[test]
+    fn status_position_is_padded_with_two_digits() {
+        use freerouting::board::structure::Unit;
+        assert_eq!(
+            format_position(12.345, -0.5, Unit::Mm),
+            "X      12.35   Y      -0.50"
+        );
+        assert_eq!(
+            format_position(25.4, 2540.0, Unit::Inch),
+            "X       1.00   Y     100.00"
+        );
+        assert_eq!(format_fixed(1234567.891, 2), "1,234,567.89");
     }
 
     #[test]

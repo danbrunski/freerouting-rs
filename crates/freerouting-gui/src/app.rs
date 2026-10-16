@@ -17,7 +17,9 @@ use crate::drc_export::{ExportDialog, ExportJob};
 use crate::file_dialog::FileDialog;
 use crate::input;
 use crate::lists::Lists;
+use crate::look::{Object, VIRTUAL_LAYERS, virtual_name};
 use crate::overlays::OverlayState;
+use crate::panels::log::{Level, Log};
 use crate::panels::warnings;
 use crate::scene::Kind;
 use crate::selection::Selection;
@@ -25,6 +27,7 @@ use crate::session::{self, CurrentDesign, Loaded};
 use crate::settings::PersistedSettings;
 use crate::stats::{FrameStats, OverlayCounts, PaintStats};
 use crate::viewport::ViewState;
+use crate::windows::Windows;
 
 type LoadResult = Result<Loaded, String>;
 
@@ -52,6 +55,12 @@ pub struct App {
     pub(crate) export_job: Option<ExportJob>,
     /// A message for the status bar that is not an error.
     pub(crate) notice: Option<String>,
+    // G04: the display windows and the log.
+    pub(crate) windows: Windows,
+    pub(crate) log: Log,
+    /// The analysis state a "design rules check finished" line was logged
+    /// for, so each result is logged once.
+    logged_drc: Option<crate::analysis::Tag>,
     /// Tile the loaded board this many times (`--bench-synthetic`).
     synthetic: Option<(u32, u32)>,
     /// When the load in progress, or the last one, started.
@@ -95,6 +104,7 @@ impl App {
                 view.kind_visible[i] = on;
             }
         }
+        restore_look(&mut view, &settings);
         let mut app = App {
             loaded: None,
             view,
@@ -116,6 +126,9 @@ impl App {
             export_dialog: ExportDialog::default(),
             export_job: None,
             notice: None,
+            windows: Windows::default(),
+            log: Log::default(),
+            logged_drc: None,
             synthetic: args.synthetic,
             load_started: None,
             done: Vec::new(),
@@ -178,6 +191,17 @@ impl App {
         &self.lists
     }
 
+    /// Which of the display windows (visibility, display options, colours,
+    /// log, About) are open.
+    pub fn windows(&self) -> &Windows {
+        &self.windows
+    }
+
+    /// The log: loader warnings, engine messages and the app's events.
+    pub fn log_entries(&self) -> Vec<crate::panels::log::Entry> {
+        self.log.entries(self.loaded.as_ref().map(|b| &b.session))
+    }
+
     /// The last message that is not an error (an export result).
     pub fn notice(&self) -> Option<&str> {
         self.notice.as_deref()
@@ -191,17 +215,55 @@ impl App {
     /// The settings as they would be saved now.
     pub fn settings_snapshot(&self) -> PersistedSettings {
         let mut s = self.settings.clone();
+        self.collect_settings(&mut s);
+        s
+    }
+
+    /// Writes the view's state into `s`: what the user chose in this
+    /// session, keyed by names so that it carries over to other boards.
+    fn collect_settings(&self, s: &mut PersistedSettings) {
         for (i, kind) in Kind::ALL.iter().enumerate() {
             s.kind_visible
                 .insert(kind.label().to_string(), self.view.kind_visible[i]);
         }
         s.show_labels = self.view.show_labels;
+        let look = &self.view.look;
+        for object in Object::ALL {
+            s.object_levels
+                .insert(object.label().to_string(), look.object_level(object));
+        }
+        s.dim = (look.dim() != crate::look::DEFAULT_DIM).then_some(look.dim());
+        for i in 0..VIRTUAL_LAYERS {
+            s.virtual_layers
+                .insert(virtual_name(i).to_string(), look.virtual_on(i));
+        }
+        s.unit = Some(self.view.unit.name().to_string());
+        s.crosshair = self.view.crosshair;
+        // The "other" colours belong to the user, the layer colours to the
+        // layers of the board that is open, by name.
+        s.colors.retain(|key, _| !key.starts_with("other/"));
+        let names: Vec<String> = self
+            .loaded
+            .iter()
+            .flat_map(|b| b.scene.layers.iter().map(|l| l.name.clone()))
+            .collect();
+        for name in &names {
+            let prefix = format!("layer/{name}/");
+            s.colors.retain(|key, _| !key.starts_with(&prefix));
+        }
+        s.colors.extend(look.changed_colors(&names));
         if let Some(b) = &self.loaded {
-            for (layer, &on) in b.scene.layers.iter().zip(&self.view.layer_visible) {
+            for ((layer, &on), &level) in b
+                .scene
+                .layers
+                .iter()
+                .zip(&self.view.layer_visible)
+                .zip(look.layer_levels())
+            {
                 s.layer_visible_by_name.insert(layer.name.clone(), on);
+                s.layer_level_by_name.insert(layer.name.clone(), level);
             }
         }
-        s
     }
 
     /// Runs one command: the single path for menus, keys and tests.
@@ -219,6 +281,9 @@ impl App {
             }
             Command::Quit => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
             Command::ShowWarnings => self.show_warnings = true,
+            Command::ShowWindow(kind) => self.windows.set(kind, true),
+            Command::CloseWindow(kind) => self.windows.set(kind, false),
+            Command::RecalculateList(kind) => self.lists.window(kind).invalidate(),
             command @ (Command::Select(_)
             | Command::ClearSelection
             | Command::ZoomSelection
@@ -297,13 +362,27 @@ impl App {
         self.loading = None;
         match result {
             Ok(board) => {
-                for path in paths {
+                for path in &paths {
                     self.settings.last_dir = path.parent().map(PathBuf::from);
-                    self.settings.remember_file(path);
+                    self.settings.remember_file(path.clone());
                 }
+                let summary = format!(
+                    "Loaded {} in {:.0} ms: {} layers, {} items.",
+                    paths
+                        .last()
+                        .map_or_else(String::new, |p| p.display().to_string()),
+                    board.timings.total_ms,
+                    board.scene.layers.len(),
+                    board.session.board.item_count(),
+                );
                 self.set_board(board);
+                self.log.clear();
+                self.log.push(Level::Info, summary);
             }
-            Err(e) => self.error = Some(e),
+            Err(e) => {
+                self.log.push(Level::Error, e.clone());
+                self.error = Some(e);
+            }
         }
     }
 
@@ -313,12 +392,23 @@ impl App {
                 && b.session.paths.design == board.session.paths.design
         });
         if !same {
+            // What the user chose on the board that was open goes to the
+            // settings first, so another board with the same layer names
+            // starts the way this one ended.
+            let mut stored = self.settings.clone();
+            self.collect_settings(&mut stored);
+            self.settings = stored;
             self.view.reset_for_board(board.scene.layers.len());
+            let names: Vec<String> = board.scene.layers.iter().map(|l| l.name.clone()).collect();
             for (i, layer) in board.scene.layers.iter().enumerate() {
                 if let Some(&on) = self.settings.layer_visible_by_name.get(&layer.name) {
                     self.view.layer_visible[i] = on;
                 }
+                if let Some(&level) = self.settings.layer_level_by_name.get(&layer.name) {
+                    self.view.look.set_layer_level(i, level);
+                }
             }
+            self.view.look.apply_colors(&self.settings.colors, &names);
         }
         self.loaded = Some(board);
         self.error = None;
@@ -353,12 +443,23 @@ impl eframe::App for App {
         self.analysis
             .poll(ctx, self.loaded.as_ref().map(|b| &b.session));
         self.poll_export();
+        self.log_analysis();
         let mut commands = self.commands_this_frame(ctx);
         let (panel_commands, canvas) = self.panels(ctx);
         commands.extend(panel_commands);
         if let Some(b) = &self.loaded {
-            commands.extend(self.lists.show(ctx, &b.session, &self.analysis));
+            commands.extend(
+                self.lists
+                    .show(ctx, &b.session, &self.analysis, self.view.unit),
+            );
         }
+        let layer_names: Vec<String> = self
+            .loaded
+            .iter()
+            .flat_map(|b| b.scene.layers.iter().map(|l| l.name.clone()))
+            .collect();
+        let entries = self.log.entries(self.loaded.as_ref().map(|b| &b.session));
+        commands.extend(self.windows.show(ctx, &self.view, &layer_names, &entries));
         commands.extend(self.confirm_delete_ui(ctx));
         commands.extend(self.export_dialog.ui(ctx).map(Command::ExportDrcReport));
         for command in commands {
@@ -392,7 +493,64 @@ impl eframe::App for App {
     }
 }
 
+/// Puts the stored display options into a new view: the unit, the crosshair,
+/// the object levels, the dimming, the virtual layers and the "other"
+/// colours. The layer levels and layer colours wait for a board, whose layer
+/// names they are keyed by.
+fn restore_look(view: &mut ViewState, settings: &PersistedSettings) {
+    view.crosshair = settings.crosshair;
+    if let Some(unit) = settings
+        .unit
+        .as_deref()
+        .and_then(freerouting::board::structure::Unit::from_name)
+    {
+        view.unit = unit;
+    }
+    for object in Object::ALL {
+        if let Some(&level) = settings.object_levels.get(object.label()) {
+            view.look.set_object_level(object, level);
+        }
+    }
+    if let Some(dim) = settings.dim {
+        view.look.set_dim(dim);
+    }
+    for i in 0..VIRTUAL_LAYERS {
+        if let Some(&on) = settings.virtual_layers.get(virtual_name(i)) {
+            view.look.set_virtual_on(i, on);
+        }
+    }
+    view.look.apply_colors(&settings.colors, &[]);
+}
+
 impl App {
+    /// Logs each design rules check once it has finished (G04.8).
+    fn log_analysis(&mut self) {
+        let Some(b) = &self.loaded else { return };
+        let Some(drc) = self.analysis.drc(&b.session) else {
+            return;
+        };
+        let tag = self.analysis.tag_of(&b.session);
+        if self.logged_drc == Some(tag) {
+            return;
+        }
+        self.logged_drc = Some(tag);
+        let incomplete = self
+            .analysis
+            .ratsnest(&b.session)
+            .map_or(0, |r| r.incomplete_count);
+        self.log.push(
+            Level::Info,
+            format!(
+                "Design rules check: {} clearance violations, {} unconnected, {} zone islands, \
+                 {incomplete} incomplete connections ({:.0} ms).",
+                drc.clearance.len(),
+                drc.unconnected.len(),
+                drc.islands.len(),
+                drc.elapsed.as_secs_f64() * 1000.0,
+            ),
+        );
+    }
+
     /// Counts a board's tessellation as a full build the first time it is
     /// seen, however it came about (a load or `Loaded::rebuild_scene`).
     fn count_builds(&mut self) {

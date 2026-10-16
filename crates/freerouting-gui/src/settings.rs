@@ -31,6 +31,23 @@ pub struct PersistedSettings {
     /// At most [`MAX_RECENT`], newest first.
     pub recent_files: Vec<PathBuf>,
     pub side_panel_width: Option<f32>,
+    // G04: display options. New fields are `#[serde(default)]` through the
+    // struct, so settings stored before them still load (the schema stays 1).
+    /// A copper layer's visibility level in percent, by layer name.
+    pub layer_level_by_name: BTreeMap<String, u8>,
+    /// A kind of object's visibility level in percent, by its label.
+    pub object_levels: BTreeMap<String, u8>,
+    /// The automatic layer dimming slider; `None` is the default.
+    pub dim: Option<u8>,
+    /// The six virtual layers, by name.
+    pub virtual_layers: BTreeMap<String, bool>,
+    /// Colours that differ from the defaults, `key -> [r, g, b]` (see
+    /// `look::Look::changed_colors`).
+    pub colors: BTreeMap<String, [u8; 3]>,
+    /// The unit of the status bar and the lists ("mil", "inch", "mm", "um").
+    pub unit: Option<String>,
+    /// The large crosshair.
+    pub crosshair: bool,
 }
 
 impl Default for PersistedSettings {
@@ -43,6 +60,13 @@ impl Default for PersistedSettings {
             last_dir: None,
             recent_files: Vec::new(),
             side_panel_width: None,
+            layer_level_by_name: BTreeMap::new(),
+            object_levels: BTreeMap::new(),
+            dim: None,
+            virtual_layers: BTreeMap::new(),
+            colors: BTreeMap::new(),
+            unit: None,
+            crosshair: false,
         }
     }
 }
@@ -64,6 +88,16 @@ impl PersistedSettings {
 
     fn sanitized(mut self) -> Self {
         self.recent_files.truncate(MAX_RECENT);
+        // A level is a percentage; anything else in a hand-edited file is
+        // clamped rather than trusted.
+        for level in self
+            .layer_level_by_name
+            .values_mut()
+            .chain(self.object_levels.values_mut())
+        {
+            *level = (*level).min(100);
+        }
+        self.dim = self.dim.map(|d| d.min(100));
         if self
             .side_panel_width
             .is_some_and(|w| !w.is_finite() || w < 0.0)

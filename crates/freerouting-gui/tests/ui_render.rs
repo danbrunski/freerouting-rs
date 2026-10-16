@@ -12,9 +12,11 @@ use egui_kittest::Harness;
 use freerouting::board::items::ItemId;
 use freerouting::geometry::jmath::JavaRandom;
 use freerouting_gui::App;
+use freerouting_gui::commands::Command;
+use freerouting_gui::look::{Look, OtherColor};
 use freerouting_gui::scene::{Bounds, Geom, Item, Kind, Layer, P, Scene, Slot};
 use freerouting_gui::session::{self, Loaded};
-use freerouting_gui::view::{self, Camera, Renderer, Tessellation, Visibility};
+use freerouting_gui::view::{self, Camera, Labels, Mirror, Renderer, Tessellation, Visibility};
 
 const ISSUE159: &str = "Issue159-setonix_2hp-pcb.dsn";
 const ISSUE690: &str = "Issue690-kit-dev-coldfire-xilinx_5213.dsn";
@@ -52,8 +54,9 @@ fn no_upload_after_first_frame() {
         harness.render().expect("render");
         harness.step();
         let up = harness.state().stats().uploaded_bytes;
-        // The camera uniform only: 8 floats.
-        assert_eq!(up, 32, "frame {i}");
+        // The camera uniform only: 12 floats (G04.6 added the orientation's
+        // four to the first eight).
+        assert_eq!(up, 48, "frame {i}");
         assert!(up <= 4096);
     }
     assert_eq!(harness.state().stats().full_rebuilds, 0);
@@ -111,6 +114,7 @@ impl eframe::App for LineApp {
             kinds: &[true; 9],
             active: 0,
             labels: false,
+            look: &Look::new(1),
         };
         view::paint(
             &painter,
@@ -118,7 +122,7 @@ impl eframe::App for LineApp {
             &self.camera,
             &self.tess,
             1,
-            &[],
+            &Labels::default(),
             &vis,
             &self.renderer,
         );
@@ -150,10 +154,7 @@ fn hairline_is_one_pixel() {
             (fit.zoom * 20.0, 0.00037),
             (fit.zoom * 20.0, 0.0012),
         ] {
-            harness.state_mut().camera = Camera {
-                center: P::new(5.0, dy),
-                zoom,
-            };
+            harness.state_mut().camera = Camera::new(P::new(5.0, dy), zoom);
             harness.step();
             let image = harness.render().expect("render");
             let x = (SIZE[0] / 2.0 * ppp) as u32;
@@ -180,10 +181,7 @@ fn at_20x(harness: &mut Harness<'static, App>) -> (u64, u64) {
         .center();
     let view = harness.state_mut().view_mut();
     let fit = view.camera.expect("camera");
-    view.camera = Some(Camera {
-        center: centre,
-        zoom: fit.zoom * 20.0,
-    });
+    view.camera = Some(Camera::new(centre, fit.zoom * 20.0));
     view.auto_fit = None;
     harness.step();
     let stats = harness.state().stats();
@@ -301,8 +299,26 @@ fn frames_flow_during_load() {
 }
 
 fn render_with(path_cpu: bool, board: &str) -> (Vec<u8>, (u32, u32), Rect) {
+    render_oriented(path_cpu, board, 0, Mirror::None)
+}
+
+/// `render_with` with the board turned by `turns` quarter turns and mirrored.
+fn render_oriented(
+    path_cpu: bool,
+    board: &str,
+    turns: u8,
+    mirror: Mirror,
+) -> (Vec<u8>, (u32, u32), Rect) {
     let mut harness = app_harness(&[board]);
     harness.state_mut().view_mut().renderer.force_cpu(path_cpu);
+    let ctx = harness.ctx.clone();
+    harness
+        .state_mut()
+        .execute(&ctx, Command::SetMirror(mirror));
+    harness
+        .state_mut()
+        .execute(&ctx, Command::SetRotation(turns));
+    harness.step();
     harness.step();
     let image = harness.render().expect("render");
     if let Ok(dir) = std::env::var("G02_DUMP") {
@@ -351,6 +367,45 @@ fn cpu_and_gpu_match() {
     }
 }
 
+/// The shaders' camera has the orientation's basis: the GPU draws a rotated and
+/// mirrored board on the pixels the CPU painter does (G04.6).
+#[test]
+fn cpu_and_gpu_match_when_rotated() {
+    if !rendering_enabled() {
+        return;
+    }
+    for (turns, mirror) in [
+        (1, Mirror::None),
+        (2, Mirror::None),
+        (3, Mirror::None),
+        (0, Mirror::LeftRight),
+        (1, Mirror::TopBottom),
+    ] {
+        let (cpu, size, rect) = render_oriented(true, ISSUE159, turns, mirror);
+        let (gpu, size_gpu, _) = render_oriented(false, ISSUE159, turns, mirror);
+        assert_eq!(size, size_gpu);
+        let share = fraction_differing(&cpu, &gpu, size.0, rect);
+        eprintln!(
+            "{turns} {mirror:?}: {:.4} % of the canvas differs",
+            share * 100.0
+        );
+        assert!(
+            share <= 0.01,
+            "{turns} {mirror:?}: {:.3} % differ",
+            share * 100.0
+        );
+        // The board is really turned: a rotated render differs from the
+        // upright one by much more than the painters differ from each other.
+        let (upright, _, _) = render_oriented(false, ISSUE159, 0, Mirror::None);
+        // (A mirror alone moves little on this narrow, near-symmetric board.)
+        let least = if turns == 0 { 0.001 } else { 0.02 };
+        assert!(
+            fraction_differing(&gpu, &upright, size.0, rect) > least,
+            "{turns} {mirror:?} looks like no turn"
+        );
+    }
+}
+
 /// The board drawn into the canvas rectangle of the G01 viewer (the window
 /// of `viewer_issue159` has the board in (203, 22)-(1280, 778)), with
 /// nothing else on screen.
@@ -371,11 +426,30 @@ impl eframe::App for CanvasApp {
         let painter = ctx.layer_painter(egui::LayerId::background());
         let camera = Camera::fit(&self.loaded.scene, G01_CANVAS);
         let layers = self.loaded.scene.layers.len();
+        // The golden is the first canvas, which drew every component outline
+        // in the silkscreen colours and no part numbers; G04.5 gives the
+        // courtyard and fabrication outlines their own colours.
+        let mut look = Look::new(layers);
+        for (silk, others) in [
+            (
+                OtherColor::SilkscreenFront,
+                [OtherColor::CourtyardFront, OtherColor::FabFront],
+            ),
+            (
+                OtherColor::SilkscreenBack,
+                [OtherColor::CourtyardBack, OtherColor::FabBack],
+            ),
+        ] {
+            for other in others {
+                look.set_other_color(other, look.other_color(silk));
+            }
+        }
         let vis = Visibility {
             layers: &vec![true; layers],
             kinds: &[true; 9],
             active: 0,
             labels: true,
+            look: &look,
         };
         view::paint(
             &painter,
@@ -383,7 +457,7 @@ impl eframe::App for CanvasApp {
             &camera,
             &self.loaded.tess,
             layers,
-            &self.loaded.scene.labels,
+            &Labels::designators(&self.loaded.scene.labels),
             &vis,
             &self.renderer,
         );

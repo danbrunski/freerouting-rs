@@ -67,6 +67,8 @@ pub fn rows(board: &BasicBoard, airlines: &[AirLine]) -> Vec<Row> {
         .map(|a| Row {
             text: row_text(board, a),
             items: vec![a.from_item, a.to_item],
+            detail: None,
+            filter_text: None,
         })
         .collect()
 }

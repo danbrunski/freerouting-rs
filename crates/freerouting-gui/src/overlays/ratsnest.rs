@@ -1,13 +1,11 @@
 //! The ratsnest: one hairline per airline (Java `NetIncompletesGraphics`).
 
-use eframe::egui::{Color32, Painter, Rect, Stroke};
+use eframe::egui::{Painter, Rect, Stroke};
 
 use super::Frame;
 use crate::analysis::Ratsnest;
+use crate::look::{Look, Object, OtherColor};
 use crate::view::Camera;
-
-/// The colour of the airlines.
-pub const COLOR: Color32 = Color32::from_rgb(255, 225, 110);
 
 /// Draws every airline as a 1 px line and returns how many.
 pub fn draw(
@@ -16,8 +14,17 @@ pub fn draw(
     camera: &Camera,
     frame: &Frame,
     ratsnest: &Ratsnest,
+    look: &Look,
 ) -> usize {
-    let stroke = Stroke::new(1.0, COLOR);
+    // The colour is the "incomplete connections" colour at the level of the
+    // "incomplete connections" object slider; level 0 draws nothing.
+    if look.object_level(Object::Incompletes) == 0 {
+        return 0;
+    }
+    let stroke = Stroke::new(
+        1.0,
+        look.overlay_color(OtherColor::Incompletes, Object::Incompletes),
+    );
     for line in &ratsnest.airlines {
         let from = camera.to_screen(rect, frame.pt(line.from_corner));
         let to = camera.to_screen(rect, frame.pt(line.to_corner));

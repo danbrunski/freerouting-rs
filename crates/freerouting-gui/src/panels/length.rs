@@ -63,6 +63,8 @@ pub fn rows(board: &BasicBoard, violations: &[(i32, f64)]) -> Vec<Row> {
                 .filter(|i| i.contains_net(*net))
                 .map(|i| i.id())
                 .collect::<Vec<ItemId>>(),
+            detail: None,
+            filter_text: None,
         })
         .collect()
 }

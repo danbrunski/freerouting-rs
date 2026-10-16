@@ -12,6 +12,10 @@ struct Camera {
     // in points.
     center: vec2<f32>,
     half_screen: vec2<f32>,
+    // The camera's orientation: a board offset (dx, dy) lands
+    // zoom * (basis.x * dx + basis.y * dy, basis.z * dx + basis.w * dy) points
+    // from the centre (screen y down). The entries are 0, 1 or -1.
+    basis: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -25,7 +29,11 @@ struct Fill {
 // A board point in screen points.
 fn to_screen(p: vec2<f32>) -> vec2<f32> {
     let d = p - camera.offset;
-    return vec2<f32>(camera.center.x + d.x * camera.zoom, camera.center.y - d.y * camera.zoom);
+    let rotated = vec2<f32>(
+        camera.basis.x * d.x + camera.basis.y * d.y,
+        camera.basis.z * d.x + camera.basis.w * d.y,
+    );
+    return camera.center + rotated * camera.zoom;
 }
 
 // Screen points to clip space, as egui's shader does.

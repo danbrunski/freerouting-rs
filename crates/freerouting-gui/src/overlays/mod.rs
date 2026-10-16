@@ -16,6 +16,7 @@ use freerouting::geometry::{FloatPoint, IntBox};
 use freerouting::io::CoordinateTransform;
 
 use crate::analysis::{Drc, Ratsnest};
+use crate::look::Look;
 use crate::scene::{Bounds, P};
 use crate::selection::Selection;
 use crate::stats::OverlayCounts;
@@ -93,6 +94,8 @@ impl Frame {
 
 /// What the overlays draw this frame.
 pub struct Inputs<'a> {
+    /// The colours and levels of the highlight, the airlines and the markers.
+    pub look: &'a Look,
     pub board: &'a RoutingBoard,
     pub ratsnest: Option<&'a Ratsnest>,
     pub drc: Option<&'a Drc>,
@@ -107,12 +110,12 @@ pub fn draw(painter: &Painter, rect: Rect, camera: &Camera, inputs: &Inputs<'_>)
     if inputs.state.show_ratsnest
         && let Some(ratsnest) = inputs.ratsnest
     {
-        counts.airlines = ratsnest::draw(painter, rect, camera, &frame, ratsnest);
+        counts.airlines = ratsnest::draw(painter, rect, camera, &frame, ratsnest, inputs.look);
     }
     if inputs.state.show_violations
         && let Some(drc) = inputs.drc
     {
-        counts.markers = violations::draw(painter, rect, camera, &frame, drc);
+        counts.markers = violations::draw(painter, rect, camera, &frame, drc, inputs.look);
     }
     if !inputs.selection.is_empty() {
         counts.highlighted = highlight::draw(
@@ -122,6 +125,7 @@ pub fn draw(painter: &Painter, rect: Rect, camera: &Camera, inputs: &Inputs<'_>)
             &frame,
             inputs.board.basic(),
             inputs.selection,
+            inputs.look,
         );
     }
     counts

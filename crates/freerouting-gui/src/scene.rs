@@ -230,8 +230,12 @@ pub enum Slot {
     Layer(usize),
     /// Not on a copper layer: the board outline.
     Board,
-    /// A footprint outline on the front or back.
+    /// A footprint's silkscreen outline on the front or back.
     Silk(Side),
+    /// A footprint's courtyard (G04.5).
+    Courtyard(Side),
+    /// A footprint's fabrication outline (G04.5).
+    Fab(Side),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -265,6 +269,9 @@ pub struct Scene {
     pub components: usize,
     /// Reference designators, one per placed component.
     pub labels: Vec<Label>,
+    /// Part numbers of the placed components that have one, drawn on the
+    /// fabrication layers (Java `BoardRenderer.drawComponentPartNumbers`).
+    pub part_numbers: Vec<Label>,
     pub bounds: Bounds,
     /// A grid over the items for [`Scene::pick`]; built by
     /// [`Scene::build_index`]. A scene without one is searched linearly.
@@ -374,6 +381,27 @@ impl Label {
             height,
             vertical,
             side,
+        }
+    }
+}
+
+impl Label {
+    /// The label for a part number, set in a smaller type just after this
+    /// designator along the line of the text, so the two do not overlap.
+    pub fn part_number_below(&self, number: &str) -> Label {
+        let height = self.height * 0.8;
+        let offset = (self.height + height) / 2.0 * 1.1;
+        let center = if self.vertical {
+            P::new(self.center.x + offset, self.center.y)
+        } else {
+            P::new(self.center.x, self.center.y - offset)
+        };
+        Label {
+            text: number.to_string(),
+            center,
+            height,
+            vertical: self.vertical,
+            side: self.side,
         }
     }
 }
@@ -610,9 +638,17 @@ impl<'a> Flattener<'a> {
                     _ if outline.is_closed => closed_line(points),
                     _ => Geom::Path { points, width: 0.0 },
                 };
+                // Java `BoardRenderer.virtualLayerFor`.
+                let slot = if outline.is_courtyard {
+                    Slot::Courtyard(side)
+                } else if outline.is_fabrication {
+                    Slot::Fab(side)
+                } else {
+                    Slot::Silk(side)
+                };
                 push(
                     Kind::ComponentOutline,
-                    Slot::Silk(side),
+                    slot,
                     g,
                     self.component_name(item.component_id()),
                 );
@@ -692,9 +728,11 @@ impl Scene {
                     f.grow(0.5)
                 }
             };
-            scene
-                .labels
-                .push(Label::fit(&component.name, &footprint, side));
+            let label = Label::fit(&component.name, &footprint, side);
+            if let Some(number) = component.part_number().filter(|n| !n.is_empty()) {
+                scene.part_numbers.push(label.part_number_below(number));
+            }
+            scene.labels.push(label);
         }
 
         let mut bounds = Bounds::EMPTY;

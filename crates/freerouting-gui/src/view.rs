@@ -17,6 +17,7 @@ use freerouting::dsn::ast::Side;
 
 use crate::canvas::chunks::{BuildTimes, ChunkSet, MeshBuf, PatchReport};
 use crate::canvas::{self, GpuCounters};
+use crate::look::{Look, OtherColor};
 use crate::scene::{Geom, Item, Kind, Label, P, Scene, Slot};
 use crate::stats::{FrameClock, PaintStats};
 
@@ -236,6 +237,78 @@ impl Tessellation {
     }
 }
 
+/// Mirroring of the displayed board (Java `ScreenTransform`: left and right,
+/// or top and bottom, are swapped; the two are exclusive in the window).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Mirror {
+    #[default]
+    None,
+    LeftRight,
+    TopBottom,
+}
+
+/// How the board is turned on the screen: a rotation by quarter turns
+/// (counterclockwise, as Java's `setRotation(0.5 * Math.PI)` is), then
+/// mirroring. Board coordinates are never rotated; only the map from board to
+/// screen is (G04.6), so picking and hovering use the inverse of this.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Orientation {
+    /// 0, 1, 2 or 3 quarter turns.
+    pub quarter_turns: u8,
+    pub mirror: Mirror,
+}
+
+impl Orientation {
+    /// `[a, b, c, d]` with `screen = zoom * (a dx + b dy, c dx + d dy)` for a
+    /// board offset `(dx, dy)` (Y up) from the view centre, and screen Y down.
+    /// All four are 0, 1 or -1, so the map is exact.
+    pub fn basis(self) -> [i32; 4] {
+        let (c, s) = [(1, 0), (0, 1), (-1, 0), (0, -1)][usize::from(self.quarter_turns % 4)];
+        let fx = if self.mirror == Mirror::LeftRight {
+            -1
+        } else {
+            1
+        };
+        let fy = if self.mirror == Mirror::TopBottom {
+            -1
+        } else {
+            1
+        };
+        [fx * c, -fx * s, -fy * s, -fy * c]
+    }
+
+    /// True if the board's x axis runs up or down on the screen.
+    pub fn swaps_axes(self) -> bool {
+        self.quarter_turns % 2 == 1
+    }
+
+    /// A board offset as a screen offset, in board units (not yet scaled by
+    /// the zoom).
+    fn to_screen_delta(self, dx: f64, dy: f64) -> (f64, f64) {
+        let [a, b, c, d] = self.basis().map(f64::from);
+        (a * dx + b * dy, c * dx + d * dy)
+    }
+
+    /// A screen offset (already divided by the zoom) as a board offset.
+    fn to_board_delta(self, u: f64, v: f64) -> (f64, f64) {
+        // The basis is orthogonal, so the inverse is the transpose.
+        let [a, b, c, d] = self.basis().map(f64::from);
+        (a * u + c * v, b * u + d * v)
+    }
+
+    /// The half extent on the board of a screen box of half sizes `hw`, `hh`.
+    fn board_extent(self, hw: f64, hh: f64) -> (f64, f64) {
+        let [a, b, c, d] = self.basis().map(|v| f64::from(v.abs()));
+        (a * hw + c * hh, b * hw + d * hh)
+    }
+
+    /// The extent on the screen of a board box of sides `w`, `h`.
+    fn screen_extent(self, w: f64, h: f64) -> (f64, f64) {
+        let [a, b, c, d] = self.basis().map(|v| f64::from(v.abs()));
+        (a * w + b * h, c * w + d * h)
+    }
+}
+
 /// Pan and zoom.
 #[derive(Clone, Copy, Debug)]
 pub struct Camera {
@@ -243,10 +316,26 @@ pub struct Camera {
     pub center: P,
     /// Pixels per millimetre.
     pub zoom: f64,
+    /// Rotation and mirroring about the centre.
+    pub orientation: Orientation,
 }
 
 impl Camera {
+    /// A camera looking at `center` at `zoom`, not rotated.
+    pub fn new(center: P, zoom: f64) -> Camera {
+        Camera {
+            center,
+            zoom,
+            orientation: Orientation::default(),
+        }
+    }
+
     pub fn fit(scene: &Scene, rect: Rect) -> Camera {
+        Camera::fit_oriented(scene, rect, Orientation::default())
+    }
+
+    /// The camera that fits the board in `rect` turned as `orientation`.
+    pub fn fit_oriented(scene: &Scene, rect: Rect, orientation: Orientation) -> Camera {
         let b = if scene.bounds.is_empty() {
             crate::scene::Bounds {
                 min: P::new(-10.0, -10.0),
@@ -255,29 +344,29 @@ impl Camera {
         } else {
             scene.bounds
         };
-        let w = b.width().max(1e-3);
-        let h = b.height().max(1e-3);
+        let (w, h) = orientation.screen_extent(b.width().max(1e-3), b.height().max(1e-3));
         let zoom = (f64::from(rect.width()) / w).min(f64::from(rect.height()) / h) * 0.92;
         Camera {
             center: b.center(),
             zoom,
+            orientation,
         }
     }
 
     pub fn to_screen(self, rect: Rect, p: P) -> Pos2 {
         let c = rect.center();
-        Pos2::new(
-            c.x + ((p.x - self.center.x) * self.zoom) as f32,
-            c.y - ((p.y - self.center.y) * self.zoom) as f32,
-        )
+        let (sx, sy) = self
+            .orientation
+            .to_screen_delta(p.x - self.center.x, p.y - self.center.y);
+        Pos2::new(c.x + (sx * self.zoom) as f32, c.y + (sy * self.zoom) as f32)
     }
 
     pub fn to_board(self, rect: Rect, s: Pos2) -> P {
         let c = rect.center();
-        P::new(
-            self.center.x + f64::from(s.x - c.x) / self.zoom,
-            self.center.y - f64::from(s.y - c.y) / self.zoom,
-        )
+        let u = f64::from(s.x - c.x) / self.zoom;
+        let v = f64::from(s.y - c.y) / self.zoom;
+        let (dx, dy) = self.orientation.to_board_delta(u, v);
+        P::new(self.center.x + dx, self.center.y + dy)
     }
 
     /// Zooms by `factor`, keeping the board point under `anchor` in place.
@@ -289,16 +378,23 @@ impl Camera {
         self.center.y += before.y - after.y;
     }
 
+    /// Moves the view by `delta` screen points (the board follows the mouse).
     pub fn pan(&mut self, delta: egui::Vec2) {
-        self.center.x -= f64::from(delta.x) / self.zoom;
-        self.center.y += f64::from(delta.y) / self.zoom;
+        let (dx, dy) = self.orientation.to_board_delta(
+            f64::from(delta.x) / self.zoom,
+            f64::from(delta.y) / self.zoom,
+        );
+        self.center.x -= dx;
+        self.center.y -= dy;
     }
 
     /// Centres the view on the rectangle with corners `a` and `b` and zooms
     /// so that it just fits in `rect` (Java: `BoardPanel.zoomFrame`).
     pub fn zoom_to_rect(&mut self, rect: Rect, a: P, b: P) {
-        let w = (a.x - b.x).abs().max(1e-9);
-        let h = (a.y - b.y).abs().max(1e-9);
+        let (w, h) = self
+            .orientation
+            .screen_extent((a.x - b.x).abs(), (a.y - b.y).abs());
+        let (w, h) = (w.max(1e-9), h.max(1e-9));
         let zoom = (f64::from(rect.width()) / w).min(f64::from(rect.height()) / h);
         self.zoom = zoom.clamp(1e-3, 1e6);
         self.center = P::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
@@ -312,65 +408,26 @@ pub struct Visibility<'a> {
     pub active: usize,
     /// Reference designators.
     pub labels: bool,
+    /// Colours, levels, dimming and the virtual layers.
+    pub look: &'a Look,
 }
 
 impl Visibility<'_> {
     pub fn kind(&self, kind: Kind) -> bool {
         self.kinds[Kind::ALL.iter().position(|&k| k == kind).unwrap()]
+            && self.look.kind_visible(kind)
     }
 
     pub fn slot(&self, slot: Slot) -> bool {
-        match slot {
+        let checked = match slot {
             Slot::Layer(i) => self.layers.get(i).copied().unwrap_or(false),
-            Slot::Board | Slot::Silk(_) => true,
-        }
+            _ => true,
+        };
+        checked && self.look.slot_visible(slot)
     }
 }
 
-/// The color of copper layer `index` of `count`: red for the top, blue for
-/// the bottom, as most PCB tools draw them.
-pub fn layer_color(index: usize, count: usize) -> Color32 {
-    const INNER: [Color32; 8] = [
-        Color32::from_rgb(127, 200, 127),
-        Color32::from_rgb(206, 125, 44),
-        Color32::from_rgb(79, 203, 203),
-        Color32::from_rgb(219, 98, 139),
-        Color32::from_rgb(167, 165, 198),
-        Color32::from_rgb(40, 204, 217),
-        Color32::from_rgb(232, 178, 167),
-        Color32::from_rgb(242, 237, 161),
-    ];
-    if index == 0 {
-        Color32::from_rgb(200, 52, 52)
-    } else if index + 1 == count {
-        Color32::from_rgb(77, 127, 196)
-    } else {
-        INNER[(index - 1) % INNER.len()]
-    }
-}
-
-pub(crate) fn kind_color(kind: Kind, slot: Slot, layer_count: usize) -> Color32 {
-    let layer = match slot {
-        Slot::Layer(i) => layer_color(i, layer_count),
-        _ => Color32::GRAY,
-    };
-    match kind {
-        Kind::Trace => layer,
-        Kind::Pad => layer.lerp_to_gamma(Color32::WHITE, 0.15),
-        Kind::Via => Color32::from_rgb(212, 196, 120),
-        Kind::Plane => layer.gamma_multiply(0.35),
-        Kind::Keepout => Color32::from_rgb(150, 110, 200).gamma_multiply(0.3),
-        Kind::ViaKeepout => Color32::from_rgb(150, 150, 150).gamma_multiply(0.25),
-        Kind::PlaceKeepout => Color32::from_rgb(120, 160, 120).gamma_multiply(0.2),
-        Kind::Outline => Color32::from_rgb(222, 214, 120),
-        Kind::ComponentOutline => match slot {
-            Slot::Silk(Side::Back) => Color32::from_rgb(110, 125, 160),
-            _ => Color32::from_rgb(190, 190, 190),
-        },
-    }
-}
-
-pub const BACKGROUND: Color32 = Color32::from_rgb(12, 14, 18);
+pub use crate::look::{BACKGROUND, layer_color};
 
 /// Which painter draws the board.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -431,9 +488,34 @@ fn view_box(camera: &Camera, rect: Rect) -> crate::scene::Bounds {
     const MARGIN_PT: f64 = 2.0;
     let hw = f64::from(rect.width()) / 2.0 / camera.zoom + MARGIN_PT / camera.zoom;
     let hh = f64::from(rect.height()) / 2.0 / camera.zoom + MARGIN_PT / camera.zoom;
+    let (hw, hh) = camera.orientation.board_extent(hw, hh);
     crate::scene::Bounds {
         min: P::new(camera.center.x - hw, camera.center.y - hh),
         max: P::new(camera.center.x + hw, camera.center.y + hh),
+    }
+}
+
+/// The text drawn over the board: reference designators and part numbers.
+#[derive(Clone, Copy, Default)]
+pub struct Labels<'a> {
+    pub designators: &'a [Label],
+    pub part_numbers: &'a [Label],
+}
+
+impl<'a> Labels<'a> {
+    pub fn of(scene: &'a Scene) -> Labels<'a> {
+        Labels {
+            designators: &scene.labels,
+            part_numbers: &scene.part_numbers,
+        }
+    }
+
+    /// Designators only, for callers that draw no part numbers.
+    pub fn designators(designators: &'a [Label]) -> Labels<'a> {
+        Labels {
+            designators,
+            part_numbers: &[],
+        }
     }
 }
 
@@ -445,15 +527,15 @@ pub fn paint(
     camera: &Camera,
     tess: &Tessellation,
     layer_count: usize,
-    labels: &[Label],
+    labels: &Labels,
     vis: &Visibility,
     renderer: &Renderer,
 ) -> PaintStats {
-    painter.rect_filled(rect, 0.0, BACKGROUND);
+    painter.rect_filled(rect, 0.0, vis.look.background());
     let view = view_box(camera, rect);
     let (plan, origin) =
         tess.with(|set| (canvas::plan(set, vis, &view, renderer.cull), set.origin()));
-    let colors = canvas::color_table(layer_count, vis.active);
+    let colors = canvas::color_table(vis.look, layer_count, vis.active);
     let mut stats = PaintStats {
         triangles: plan.triangles,
         draws: plan.draws.len() as u64,
@@ -477,8 +559,9 @@ pub fn paint(
         }
     }
     if vis.labels {
-        paint_labels(painter, rect, camera, labels);
+        paint_labels(painter, rect, camera, labels.designators);
     }
+    paint_part_numbers(painter, rect, camera, labels.part_numbers, vis.look);
     stats
 }
 
@@ -498,7 +581,11 @@ pub fn paint_cpu(
     let origin = set.origin();
     let ox = (origin.x - camera.center.x) as f32;
     let oy = (origin.y - camera.center.y) as f32;
-    let to_screen = |v: [f32; 2]| Pos2::new(c.x + (v[0] + ox) * z, c.y - (v[1] + oy) * z);
+    let [ba, bb, bc, bd] = camera.orientation.basis().map(|v| v as f32);
+    let to_screen = |v: [f32; 2]| {
+        let (dx, dy) = (v[0] + ox, v[1] + oy);
+        Pos2::new(c.x + (ba * dx + bb * dy) * z, c.y + (bc * dx + bd * dy) * z)
+    };
     let mut bytes = 0u64;
     for draw in &plan.draws {
         let chunk = set.chunk(draw.chunk);
@@ -548,36 +635,70 @@ pub fn paint_cpu(
 }
 
 /// Draws reference designators, back side first and dimmer. Labels smaller
-/// than a few pixels are left out.
+/// than a few pixels are left out. The text stays upright and unmirrored
+/// whatever the orientation; a label that reads along the tall side of a
+/// footprint turns when a quarter turn swaps the sides.
 fn paint_labels(painter: &Painter, rect: Rect, camera: &Camera, labels: &[Label]) {
-    const MIN_PX: f32 = 6.0;
-    let view = rect.expand(50.0);
     for side in [Side::Back, Side::Front] {
         let color = match side {
             Side::Front => Color32::from_rgb(232, 232, 232),
             Side::Back => Color32::from_rgb(140, 155, 190),
         };
-        for label in labels.iter().filter(|l| l.side == side) {
-            let px = (label.height * camera.zoom) as f32;
-            let center = camera.to_screen(rect, label.center);
-            if px < MIN_PX || !view.contains(center) {
-                continue;
-            }
-            let galley =
-                painter.layout_no_wrap(label.text.clone(), egui::FontId::monospace(px), color);
-            let size = galley.size();
-            let (angle, pos) = if label.vertical {
-                // Rotated a quarter turn counterclockwise about the top-left
-                // corner of the text, so the text centre lands on `center`.
-                (
-                    -std::f32::consts::FRAC_PI_2,
-                    center + egui::vec2(-size.y / 2.0, size.x / 2.0),
-                )
-            } else {
-                (0.0, center - size / 2.0)
-            };
-            painter.add(egui::epaint::TextShape::new(pos, galley, color).with_angle(angle));
+        draw_labels(painter, rect, camera, labels, side, color);
+    }
+}
+
+/// Part numbers on the fabrication layers (Java `drawComponentPartNumbers`):
+/// the colour of the fabrication layer of the side, at its level, and only
+/// while that layer is on.
+fn paint_part_numbers(
+    painter: &Painter,
+    rect: Rect,
+    camera: &Camera,
+    labels: &[Label],
+    look: &Look,
+) {
+    for (side, index, color) in [
+        (Side::Back, 5, OtherColor::FabBack),
+        (Side::Front, 4, OtherColor::FabFront),
+    ] {
+        if look.virtual_on(index) {
+            let color = look.overlay_color(color, crate::look::Object::ComponentOutlines);
+            draw_labels(painter, rect, camera, labels, side, color);
         }
+    }
+}
+
+fn draw_labels(
+    painter: &Painter,
+    rect: Rect,
+    camera: &Camera,
+    labels: &[Label],
+    side: Side,
+    color: Color32,
+) {
+    const MIN_PX: f32 = 6.0;
+    let view = rect.expand(50.0);
+    for label in labels.iter().filter(|l| l.side == side) {
+        let px = (label.height * camera.zoom) as f32;
+        let center = camera.to_screen(rect, label.center);
+        if px < MIN_PX || !view.contains(center) {
+            continue;
+        }
+        let galley = painter.layout_no_wrap(label.text.clone(), egui::FontId::monospace(px), color);
+        let size = galley.size();
+        let vertical = label.vertical != camera.orientation.swaps_axes();
+        let (angle, pos) = if vertical {
+            // Rotated a quarter turn counterclockwise about the top-left
+            // corner of the text, so the text centre lands on `center`.
+            (
+                -std::f32::consts::FRAC_PI_2,
+                center + egui::vec2(-size.y / 2.0, size.x / 2.0),
+            )
+        } else {
+            (0.0, center - size / 2.0)
+        };
+        painter.add(egui::epaint::TextShape::new(pos, galley, color).with_angle(angle));
     }
 }
 
@@ -588,10 +709,7 @@ mod tests {
     #[test]
     fn camera_round_trip_and_zoom_anchor() {
         let rect = Rect::from_min_size(Pos2::ZERO, egui::vec2(800.0, 600.0));
-        let mut cam = Camera {
-            center: P::new(10.0, 20.0),
-            zoom: 4.0,
-        };
+        let mut cam = Camera::new(P::new(10.0, 20.0), 4.0);
         let s = cam.to_screen(rect, P::new(12.0, 21.0));
         assert_eq!(s, Pos2::new(408.0, 296.0));
         let anchor = Pos2::new(100.0, 50.0);
@@ -599,6 +717,106 @@ mod tests {
         cam.zoom_at(rect, anchor, 2.5);
         let after = cam.to_board(rect, anchor);
         assert!((before.x - after.x).abs() < 1e-9 && (before.y - after.y).abs() < 1e-9);
+    }
+
+    /// The eight orientations map a board offset to the screen as Java's
+    /// `ScreenTransform` does: a rotation of the board counterclockwise by
+    /// quarter turns, then the mirroring, Y down on the screen.
+    #[test]
+    fn orientations_follow_java_screen_transform() {
+        let rect = Rect::from_min_size(Pos2::ZERO, egui::vec2(200.0, 200.0));
+        let to = |turns, mirror, p: P| {
+            let mut cam = Camera::new(P::new(0.0, 0.0), 10.0);
+            cam.orientation = Orientation {
+                quarter_turns: turns,
+                mirror,
+            };
+            let s = cam.to_screen(rect, p);
+            (s.x - 100.0, s.y - 100.0)
+        };
+        let east = P::new(1.0, 0.0);
+        let north = P::new(0.0, 1.0);
+        // No turn: east is right, north is up (smaller screen y).
+        assert_eq!(to(0, Mirror::None, east), (10.0, 0.0));
+        assert_eq!(to(0, Mirror::None, north), (0.0, -10.0));
+        // Rotation 90: the board turns counterclockwise, east becomes north.
+        assert_eq!(to(1, Mirror::None, east), (0.0, -10.0));
+        assert_eq!(to(1, Mirror::None, north), (-10.0, 0.0));
+        assert_eq!(to(2, Mirror::None, east), (-10.0, 0.0));
+        assert_eq!(to(3, Mirror::None, east), (0.0, 10.0));
+        assert_eq!(to(3, Mirror::None, north), (10.0, 0.0));
+        // Mirrored left to right: east is left; top to bottom: north is down.
+        assert_eq!(to(0, Mirror::LeftRight, east), (-10.0, 0.0));
+        assert_eq!(to(0, Mirror::LeftRight, north), (0.0, -10.0));
+        assert_eq!(to(0, Mirror::TopBottom, east), (10.0, 0.0));
+        assert_eq!(to(0, Mirror::TopBottom, north), (0.0, 10.0));
+        // The mirroring comes after the rotation, as in Java.
+        assert_eq!(to(1, Mirror::LeftRight, east), (0.0, -10.0));
+        assert_eq!(to(1, Mirror::TopBottom, east), (0.0, 10.0));
+    }
+
+    #[test]
+    fn every_orientation_round_trips_and_pans_with_the_mouse() {
+        let rect = Rect::from_min_size(Pos2::ZERO, egui::vec2(800.0, 600.0));
+        for turns in 0..4 {
+            for mirror in [Mirror::None, Mirror::LeftRight, Mirror::TopBottom] {
+                let mut cam = Camera::new(P::new(12.5, -3.0), 7.5);
+                cam.orientation = Orientation {
+                    quarter_turns: turns,
+                    mirror,
+                };
+                let p = P::new(14.25, 1.5);
+                let back = cam.to_board(rect, cam.to_screen(rect, p));
+                assert!((back.x - p.x).abs() < 1e-4 && (back.y - p.y).abs() < 1e-4);
+                // The board follows the mouse by the distance it moved.
+                let before = cam.to_screen(rect, p);
+                cam.pan(egui::vec2(30.0, -20.0));
+                let after = cam.to_screen(rect, p);
+                assert!(
+                    (after.x - before.x - 30.0).abs() < 1e-3,
+                    "{turns} {mirror:?}"
+                );
+                assert!(
+                    (after.y - before.y + 20.0).abs() < 1e-3,
+                    "{turns} {mirror:?}"
+                );
+                // Zooming keeps the point under the cursor.
+                let anchor = Pos2::new(123.0, 456.0);
+                let under = cam.to_board(rect, anchor);
+                cam.zoom_at(rect, anchor, 3.0);
+                let still = cam.to_board(rect, anchor);
+                assert!((under.x - still.x).abs() < 1e-9 && (under.y - still.y).abs() < 1e-9);
+            }
+        }
+    }
+
+    #[test]
+    fn a_quarter_turn_swaps_the_fitted_sides() {
+        let rect = Rect::from_min_size(Pos2::ZERO, egui::vec2(1000.0, 500.0));
+        let scene = Scene {
+            bounds: crate::scene::Bounds {
+                min: P::new(0.0, 0.0),
+                max: P::new(100.0, 10.0),
+            },
+            ..Scene::default()
+        };
+        let flat = Camera::fit(&scene, rect);
+        let turned = Camera::fit_oriented(
+            &scene,
+            rect,
+            Orientation {
+                quarter_turns: 1,
+                mirror: Mirror::None,
+            },
+        );
+        // A long board lies across the canvas; turned, it stands up and
+        // must be smaller to fit the height.
+        assert!((flat.zoom - 1000.0 / 100.0 * 0.92).abs() < 1e-9);
+        assert!((turned.zoom - 500.0 / 100.0 * 0.92).abs() < 1e-9);
+        // A zoom rectangle fits the screen extent of the box.
+        let mut cam = turned;
+        cam.zoom_to_rect(rect, P::new(0.0, 0.0), P::new(100.0, 10.0));
+        assert!((cam.zoom - 5.0).abs() < 1e-9);
     }
 
     /// Every fixture board under 50 KB (the larger ones are slow to build in

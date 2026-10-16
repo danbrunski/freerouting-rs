@@ -45,10 +45,30 @@ The app is a board viewer for now. Nothing in it edits or routes.
   labels, the last folder, the recent files and the side panel width. The
   stored value carries a schema version; anything this version does not
   understand falls back to the defaults.
-- The status bar shows the cursor position in millimetres, in file
-  coordinates, so it matches the CAD tool. It also describes the item under
-  the cursor: its kind, its owner (`U1-3` for a pad), its net and its layer.
+- The status bar (G04.8, `panels/status.rs`) shows `Errors: n` and `Warnings: n`
+  (a click opens the log window), the status line (an error, what is loading, the last
+  notice, or what is under the cursor: its kind, its owner such as `U1-3` for a pad, its
+  net and its layer), `Current layer: name`, and the cursor position in the chosen unit
+  (`X` and `Y`, two fraction digits, padded as Java pads them) with the unit's label. The
+  position is in the design file's frame, so it matches the CAD tool.
 - A warnings window lists what the DSN reader skipped.
+- **Board windows and display options (G04).** Info > Nets, Placed Components, Library
+  Packages and Library Padstacks open lists over the board's own data on the same
+  `ListWindow` the G03 lists use (rows built when the window opens, on Recalculate and
+  when the board or the unit changes; Select selects and zooms). The nets window has the
+  filter, "Incomplete connections only", the net count and `Net.printInfo` of the chosen
+  nets. Display > Layer and Object Visibility has a 0 to 100 % slider (steps of 10) per
+  copper layer and per kind of object, Display > Miscellaneous the crosshair (small or
+  large; `,`), the board rotation (0, 90, 180, -90) and mirroring (left to right, top to
+  bottom) and the automatic layer dimming slider, and Display > Color Manager the colour of
+  each kind of item on each layer and the other colours. The toolbar has the unit selector
+  (mil, in, mm, um). The side panel has six virtual layers (F/B silkscreen, courtyard and
+  fabrication: component outlines are split by `is_courtyard`, `is_fabrication` and side;
+  part numbers are drawn on the fabrication layers). Help > About shows the version, the
+  commit (`unknown` until R01.2), the license and the links. The levels, the colours, the
+  virtual layers, the unit and the crosshair are persisted (`settings.rs`; layer levels and
+  layer colours by layer name). The item info window waits for B08.2 (G04.3): the Info
+  buttons stay disabled until then.
 - **Ratsnest, DRC and the Info lists (G03).** After every load and every edit
   a worker thread (`analysis.rs`) runs the engine's `DesignRulesChecker` over
   an `Arc` clone of the session board: first the ratsnest (airlines, the
@@ -96,6 +116,9 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `analysis.rs`, `lists.rs`, `selection.rs`, `text.rs`, `toolbar.rs`, `drc_export.rs`, `app_analysis.rs` | G03: the background ratsnest and DRC with their result tags; the Info list windows and how their rows are built; `Selection` (a `BTreeSet<ItemId>`); the Java texts; the toolbar; the DRC report export; `App`'s G03 commands (selection, zoom to selection, delete all, undo and redo). |
 | `overlays/` | Ratsnest, violation markers and selection highlight, drawn with egui shapes after the canvas. `Frame` converts board coordinates to the millimetres of the scene. `draw` returns what it drew (`stats.overlay`). |
 | `panels/{object_list,violations,incompletes,length,unconnected,islands}.rs` | The generic list window and one module per list: its rows (text, items) from the engine results. |
+| `look.rs`, `windows.rs` | G04: `Look` (the palette, the visibility levels, the dimming and the six virtual layers; `draw_color` is the one place a colour is decided) and the display windows that are plain flags (visibility, display options, colours, log, About). |
+| `panels/{nets,components,library}.rs` | G04: the rows of the Nets, Placed Components, Library Packages and Library Padstacks lists. |
+| `panels/{display,colors,status,log,about}.rs`, `panels/layers.rs` | G04: the window contents (each a function that returns commands), the status bar, the log (`Log::entries` composes the loader warnings, the engine's messages and the events) and the visibility sliders. |
 | `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
 | `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`. |
 
@@ -171,7 +194,9 @@ cargo fmt -p freerouting-gui
   session loading against the engine, the bench script, argument parsing) and
   egui_kittest tests in `tests/`: `ui_viewer.rs` (loading, the side panel, a
   snapshot), `ui_input.rs` (Java's mouse and keys), `ui_settings.rs`
-  (persistence, Open Recent), `ui_drc.rs` (G03: selection and zoom, the
+  (persistence, Open Recent), `ui_windows.rs` (G04: the nets, component and library
+  lists, the visibility sliders, virtual layers, hover under rotation and mirroring,
+  units, colours, the status bar counters, the log and About; four snapshots), `ui_drc.rs` (G03: selection and zoom, the
   ratsnest and violation counts against `fixtures/reference/load/*.json`, the Info
   lists, delete all with undo, the DRC export against `run_drc`; the harness
   waits for the first analysis, so snapshots show settled counts). The two
@@ -311,7 +336,7 @@ is the fallback.
   `chunks_total`, `uploaded_bytes` (last frame; the callback's `prepare` runs
   after the update that made it, so a frame reports the previous one's
   upload), `uploaded_total`, `gpu_buffer_bytes`, `full_rebuilds`.
-  A panning frame uploads 32 bytes (`no_upload_after_first_frame`).
+  A panning frame uploads 48 bytes (`no_upload_after_first_frame`; 32 before G04.6 added the orientation's basis to the camera uniform).
 - **Two frame CPU definitions.** *Update CPU* (G01's, FT0 as first recorded) is the time
   inside `App::update`. *Frame CPU* (FT1 and later) adds what eframe does between
   the update and the board's callback (finishing egui's pass, tessellating its
@@ -385,7 +410,7 @@ The new renderer (frame CPU, ms):
 - **FT4 CPU part** (200 removed plus 200 added items, at most 2 ms): `delta_200_200`
   on Issue190, release, median of 20: 0.44 ms; the bytes uploaded are exactly the
   dirty chunks' (64 of 96 chunks, 7.55 MB, because the 200 random items touch most
-  of the large trace chunks), plus the 32-byte camera. 0 full rebuilds.
+  of the large trace chunks), plus the camera (32 bytes then, 48 since G04.6). 0 full rebuilds.
 - **FT6 static** (at most 64 MB): Issue190 has 7.4 MiB of GPU buffers. The growth
   across routing passes is G07.4's.
 - Not done: the Windows run of `freerouting-gui.exe --bench pan-zoom --frames 600`
@@ -399,8 +424,9 @@ In plan order. Each item needs engine work first, so check what has landed in
 
 1. **Ratsnest and DRC panel:** done in G03 (see "What works"). Open: Delete All
    does not unfill conduction areas until B08 ports `unfillConductionAreas`
-   (G03.7), the Info button of the lists waits for G04.3, and Route Stubs waits
-   for B08.3.
+   (G03.7), the Info button of the lists waits for G04.3 (B08.2's `item_info`),
+   and Route Stubs waits for B08.3. G04 (windows, display options, colours,
+   status bar) is done except G04.3.
 2. **Selection by mouse** (inspect tool, G05): `Selection` and its highlight
    exist; only the lists set it today.
 3. **Autorouter run:** start and stop the router from the GUI, with live
@@ -419,7 +445,7 @@ Other gaps:
   the accessibility tree (egui_kittest finds them by label through it). Nobody
   has tried a screen reader on it.
 - Performance: done in G02 (see "Renderer"). The vertices stay on the GPU;
-  a frame uploads 32 bytes.
+  a frame uploads the 48-byte camera.
 - Widget style: the panels use egui's default dark style. Dan asked about
   native Windows looks, which turned out to be about the title bar only (now
   fixed). A Windows-like light theme is an open offer, not a request.

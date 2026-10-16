@@ -64,7 +64,7 @@ pipeline reads, and must not change the draw code itself.
 
 ## Checklist
 
-- [ ] **G04.1 — Info > Nets.**
+- [x] **G04.1 — Info > Nets.**
   - Port of `WindowNets`: rows "Net #n (name) – Class" with pin count, via
     count and trace length (`net_pins`, `net_via_count`,
     `net_trace_length`); a filter; "incomplete connections only" using
@@ -78,8 +78,10 @@ pipeline reads, and must not change the draw code itself.
       `connectable_items(net)`.
     - `nets_incomplete_only`: with the toggle on, the row count equals the
       number of nets with `incomplete_count_of(net) > 0`.
+  *Done 2026-10-15:* `panels/nets.rs`, the nets list on the G03 `ListWindow` (new `ListSpec`: Java hides the nets window's Info, Invert and Recalculate buttons and names Select "Select on Board"), Info > Nets. Rows read `Net #n (name) - Class: c` in net number order; the filter looks at `Net #n (name)` (Java's `Net.toString`); the chosen rows print `Net.printInfo` (terminal items, via count, trace length in the chosen unit) under the list. `tests/ui_windows.rs::nets_filter_and_select` (Issue754, 368 nets, typing "GND" leaves the 39 whose name contains it, Select on Board makes the selection equal `connectable_items(net)`) and `nets_incomplete_only` (183 of 368 nets, equal to the nets with `incomplete_count_of(net) > 0`) pass; unit test `panels::nets::tests`.
 
-- [ ] **G04.2 — Placed Components, Library Packages, Library Padstacks.**
+
+- [x] **G04.2 — Placed Components, Library Packages, Library Padstacks.**
   - Ports of `WindowComponents`, `WindowPackages`, `WindowPadstacks`, on the
     generic list window. Select on a component selects
     `component_items(id)` and zooms to them.
@@ -88,8 +90,10 @@ pipeline reads, and must not change the draw code itself.
     `Components::count` (placed ones only, as Java lists them),
     `Packages::count` and `Padstacks::count`; Select on the first component
     zooms so that its items' bounding box is visible.
+  *Done 2026-10-15:* `panels/{components,library}.rs`; Info > Placed Components, Library Packages, Library Padstacks, sorted by name ignoring case as Java sorts them. Java's `WindowComponents.fillList` lists `components.count()` components, placed or not (the "placed ones only" in the Accept text is the same set on Issue159: 15 components, all placed). `ui_windows.rs::library_window_counts`: Issue159 has 15 components, 6 packages, 9 padstacks, and the three lists have 15, 6 and 9 rows; Select on the first component selects `component_items(id)` and the visible box of the view contains the box of those items. `package_and_padstack_select`: the padstack rows' items add up to every pin and via on the board.
 
-- [ ] **G04.3 — Item info window.**
+
+- [~] **G04.3 — Item info window.**
   *Waits on B08 (`item_info`).* Until then the item is partial.
   - Port of `WindowObjectInfo`: opened with I over an item, by
     double-click, or from a list's Info button; shows B08's `ItemInfo`
@@ -102,8 +106,10 @@ pipeline reads, and must not change the draw code itself.
     each with Java's `printInfo` output for the same item (a probe through
     F02.1's `probe.sh`, or B08's own test) and records both in the done
     note.
+  *Partial 2026-10-15:* nothing done. `BasicBoard::item_info` and `ItemInfo` (B08.2, `board/item_info.rs`) have not landed, and the item info window is a rendering of exactly those fields. The Info buttons of all lists stay disabled (`ListSpec::show_info`) and the I key stays free. Remainder: the window (`src/panels/item_info.rs`), the I key and double-click in `input.rs`/`viewport.rs`, the Info button of the lists, `item_info_fields`, and the one-pad-one-trace comparison with Java's `printInfo`. Owner: B08.2.
 
-- [ ] **G04.4 — Visibility sliders and layer dimming.**
+
+- [x] **G04.4 — Visibility sliders and layer dimming.**
   - Port of `WindowVisibility`: 0–100 % per layer and per object type, plus
     Reset; `WindowDisplayMisc`'s automatic layer-dimming slider replaces the
     fixed 0.6. 0 % hides, as today's unchecked box does.
@@ -113,8 +119,10 @@ pipeline reads, and must not change the draw code itself.
       implementer opens all three and describes the difference.
     - `visibility_persists`: the slider values survive a save and restore
       (G01.8's round trip).
+  *Done 2026-10-15:* `Look` (`look.rs`) holds a 0 to 100 % level per copper layer and per object kind (ten kinds the port draws) and the dimming slider (default 40 % = the old fixed 0.6); `layers::visibility_ui` is the window (sliders in steps of 10, Reset), `panels/display.rs` has the dimming slider; 0 hides (the layer or kind leaves the plan), a level between mixes opaque colours into the background and lowers the alpha of translucent ones. `ui_windows.rs::visibility_slider_levels` (Issue690, top layer at 0, 50, 100 %: items of that layer in the draw list 0, 2442, 2442; the colour-table entry is the layer's own colour at 100 % and `background.lerp_to_gamma(own, 0.5)` at 50 %; snapshots `visibility_issue690_{0,50,100}.png`). I opened all three: at 0 % the red top-layer traces, pads and vias are gone and the green, orange and blue inner and bottom copper shows through (the via discs of the other layers stay); at 50 % the top layer is a dark red; at 100 % it is the bright red of before. `visibility_persists`: the layer level, two object levels, the dimming and a virtual layer survive a save and a fresh app (`settings.rs`, by layer name and object label; the schema stays 1, because the new fields are `#[serde(default)]` and a bump would drop the user's recent files). Unit tests in `look::tests`.
 
-- [ ] **G04.5 — Virtual layers: silkscreen, courtyard, fabrication.**
+
+- [x] **G04.5 — Virtual layers: silkscreen, courtyard, fabrication.**
   - Split component outlines by `is_courtyard`, `is_fabrication` and
     `is_front()` into six slots (F/B silkscreen, courtyard, fabrication)
     with six toggles, as in `WindowSelectParameter`. Part numbers are drawn
@@ -126,8 +134,10 @@ pipeline reads, and must not change the draw code itself.
     `ComponentOutline` items on the board, and hiding the courtyard toggle
     removes exactly the courtyard items from the draw list (stats counter);
     a snapshot with only courtyards visible, opened and described.
+  *Done 2026-10-15:* `Slot::{Courtyard, Fab}(Side)` next to `Silk(Side)` (six virtual layers in Java's order, `look::virtual_index`), six toggles in the side panel (`WindowSelectParameter` names and tooltips), and the part numbers of placed components drawn on the fabrication layers (`Scene::part_numbers`, `paint_part_numbers`; under the designator in a smaller type instead of Java's fixed 12 pt at the component's location, see DIVERGENCES). `ui_windows.rs::virtual_layer_counts` on Issue159 (164 `ComponentOutline` items: 31 courtyard, 67 fabrication, 66 silkscreen): the six slots hold 66, 0, 30, 1, 60, 7 scene items, summing to 164; hiding the two courtyard toggles takes the draw list from 164 to 133 outline items, exactly the 31 courtyard items; 15 part numbers. `snapshot_courtyards_only` (`courtyards_issue159.png`): only the magenta and cyan courtyard circles and rectangles and the yellow board outline are drawn, the copper, other outlines, designators and airlines hidden. The G01 canvas golden test now sets the courtyard and fabrication colours to the silkscreen ones, because the golden predates the split.
 
-- [ ] **G04.6 — Units, crosshair, rotation and mirroring.**
+
+- [x] **G04.6 — Units, crosshair, rotation and mirroring.**
   - A unit selector (mm, mil, inch, µm) used by the status bar, the lists
     and the item-info window (Java `gui/board/BoardToolbar.java` ~line 456,
     `gui/workspace/GuiBoardManager.java` `changeUserUnit`).
@@ -140,8 +150,10 @@ pipeline reads, and must not change the draw code itself.
     - `tests/ui_windows.rs::hover_under_rotation`: on Issue159, the hover
       text over a known pad's centre names that pad at rotation 0, 90, 180
       and −90 and with each mirroring.
+  *Done 2026-10-15:* `view::Orientation` (quarter turns, counterclockwise, then left-right or top-bottom mirroring, Java's order) in `Camera`; the 2x2 basis (entries 0, 1, -1) goes to both shaders through the camera uniform (48 bytes now) and to `paint_cpu`, so the map is exact and at rotation 0 bit for bit the old one (the existing snapshots and the G01 golden are unchanged). Picking, hover, pan, zoom, zoom-to-rectangle, fit and culling use the same map or its inverse; labels stay upright. `panels/display.rs` (Display > Miscellaneous: crosshair small or large, rotation, mirroring, dimming), the unit selector in the toolbar (mil, in, mm, um), `text::{format_length, format_fixed, format_position, unit_label}`, `,` unchanged. `text::tests::mil_is_mm_over_0_0254` (2.54 mm in mil is "100"; the lists use the four-digit `NumberFormat`, the status bar two fixed digits padded to 10, as `FloatPoint.toString(locale, 2, 10)`). `ui_windows.rs::hover_under_rotation`: on Issue159 the hover text over a known pad's centre names that pad (`Pad · U… · net · layer`) at each of the 4 rotations with each of the 3 mirror settings (12 cases), and the cursor reads back the pad centre within 0.05 mm. `ui_render.rs::cpu_and_gpu_match_when_rotated`: GPU and CPU differ on 0.0000 % of the canvas at 5 orientations and differ from the upright board by more than 2 %; `view::tests` pin the eight maps against Java's `ScreenTransform`; `snapshot_rotated_and_mirrored` (`rotated_mirrored_issue159.png`, looked at: the board lies on its side with the LED row at the right, text upright). Also `unit_selector_changes_the_status_bar`.
 
-- [ ] **G04.7 — Colour manager.**
+
+- [x] **G04.7 — Colour manager.**
   - Port of `ColorManager`: per-layer item colours (traces, vias, pins,
     conduction areas, keepouts, via and place keepouts) and the "other"
     colours (background, highlight, incompletes, violations, outline,
@@ -151,8 +163,10 @@ pipeline reads, and must not change the draw code itself.
     trace colour of layer 0 changes the colour the canvas uses for that
     batch (read from the palette, not from pixels), and the change survives
     a save and restore.
+  *Done 2026-10-15:* `panels/colors.rs` (Display > Color Manager: a colour button per layer and kind: traces, vias, pins, conduction areas, keepouts, via keepouts, component keepouts; and the other colours: background, highlight, incomplete connections, clearance violations, outline, silkscreen, courtyard and fabrication, front and back; Reset to Defaults) over `Look`, which the canvas's colour table, the highlight, the airlines and the violation markers read. Not ported (nothing draws them or the scene lacks the data): fixed traces and vias, component front and back, length matching area, drill hole. `ui_windows.rs::colour_change_persists`: `SetItemColor(0, Trace, [10, 200, 30])` changes the colour-table entry of (layer 0, traces) from red to that colour (read from `canvas::color_table`, not pixels), the background colour change comes back with a fresh app, the layer colour comes back after the board is opened (by layer name), another layer is untouched, and Reset restores the table and empties the stored colours. `look::tests::colour_edits_round_trip_by_layer_name`. Screenshot of the real app under Xvfb: the colour window shows the 2-layer table and the eleven other colours.
 
-- [ ] **G04.8 — Status bar, log window, About.**
+
+- [x] **G04.8 — Status bar, log window, About.**
   - Port of `BoardPanelStatus`: cursor position in the chosen unit, active
     layer, a status line, and error and warning counters. Clicking a
     counter opens the log window.
@@ -164,3 +178,5 @@ pipeline reads, and must not change the draw code itself.
     `Issue754-avionics_hub`, the warning counter equals the number of
     loader warnings, and clicking it opens the log listing them in order.
     `about_shows_version`: About shows `CARGO_PKG_VERSION`.
+  *Done 2026-10-15:* `panels/{status,log,about}.rs`, `windows.rs`. The status bar has `Errors: n` and `Warnings: n` (clicking opens the log), the status line, `Current layer: name` and the cursor position with the unit label. `Log::entries` lists the loader warnings, the engine's `log_messages` and the app's events (a load, each design rules check, an export), newest last; the counters count the Error and Warning entries. `ui_windows.rs::warning_counter_opens_log` (Issue754: 8 loader warnings): the bar reads `Warnings: 8` and `Errors: 0`, clicking the counter opens the log, whose warning entries are the 8 loader warnings in order and are the first 8 entries; `errors_are_counted` (an unreadable file gives `Errors: 1`); `about_shows_version` (Help > About shows `Version: 0.1.0` = `CARGO_PKG_VERSION`, the license and the links; `Commit: unknown` until R01.2 sets `FREEROUTING_GIT_COMMIT`); `status_bar_names_the_layer`. Looked at the real app under Xvfb (`freerouting-gui` on Issue159, Info, Display and Help menus, Nets, Display Options, Color Manager and About windows open): all draw as expected. Java's "current board score" field is not ported (no score yet).
+

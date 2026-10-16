@@ -50,6 +50,8 @@ pub fn rows(board: &BasicBoard, findings: &[UnconnectedItems]) -> Vec<Row> {
         .map(|f| Row {
             text: row_text(board, f),
             items: f.all_items.clone(),
+            detail: None,
+            filter_text: None,
         })
         .collect()
 }

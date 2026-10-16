@@ -7,12 +7,10 @@ use freerouting::board::items::{Item, ItemId, ItemKind};
 use freerouting::geometry::{PolylineShapeOps, Shape};
 
 use super::Frame;
+use crate::look::{Look, MAX_LEVEL, Object, OtherColor};
 use crate::scene::{Geom, P};
 use crate::selection::Selection;
 use crate::view::Camera;
-
-/// The highlight colour.
-pub const COLOR: Color32 = Color32::from_rgb(0, 235, 255);
 
 /// The shapes of item `id` in millimetres, one per layer for pads and vias.
 /// Empty if the item is gone.
@@ -116,9 +114,20 @@ pub fn draw(
     frame: &Frame,
     board: &BasicBoard,
     selection: &Selection,
+    look: &Look,
 ) -> usize {
-    let stroke = Stroke::new(2.0, COLOR);
-    let fill = Color32::from_rgba_unmultiplied(0, 235, 255, 70);
+    // The highlight colour at the level of the "highlight" slider; at level
+    // 0 nothing is drawn.
+    let base = look.other_color(OtherColor::Highlight);
+    let level = f32::from(look.object_level(Object::Highlight)) / f32::from(MAX_LEVEL);
+    if level == 0.0 {
+        return 0;
+    }
+    let alpha = |a: u8| {
+        Color32::from_rgba_unmultiplied(base.r(), base.g(), base.b(), a).gamma_multiply(level)
+    };
+    let stroke = Stroke::new(2.0, alpha(255));
+    let fill = alpha(70);
     let screen = |p: P| camera.to_screen(rect, p);
     let mut drawn = 0;
     for id in &selection.items {
@@ -132,10 +141,7 @@ pub fn draw(
                 Geom::Path { points, width } => {
                     let w = ((width * camera.zoom) as f32).max(2.0);
                     let line: Vec<Pos2> = points.into_iter().map(screen).collect();
-                    painter.add(Draw::line(
-                        line,
-                        Stroke::new(w, Color32::from_rgba_unmultiplied(0, 235, 255, 150)),
-                    ));
+                    painter.add(Draw::line(line, Stroke::new(w, alpha(150))));
                 }
                 Geom::Polygon { outer, .. } => {
                     let points: Vec<Pos2> = outer.into_iter().map(screen).collect();

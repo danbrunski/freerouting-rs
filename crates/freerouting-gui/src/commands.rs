@@ -5,8 +5,11 @@
 use std::path::PathBuf;
 
 use freerouting::board::items::ItemId;
+use freerouting::board::structure::Unit;
 
+use crate::look::{ItemColor, Object, OtherColor};
 use crate::scene::Kind;
+use crate::view::Mirror;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
@@ -65,6 +68,45 @@ pub enum Command {
     ExportDrcDialog,
     /// Writes the DRC report as JSON to the path.
     ExportDrcReport(PathBuf),
+    // G04: windows, display options, colours.
+    /// Opens (or brings up) a window.
+    ShowWindow(WindowKind),
+    /// Closes a window.
+    CloseWindow(WindowKind),
+    /// Rebuilds the rows of a board list (Nets, Components, Packages,
+    /// Padstacks) from the board.
+    RecalculateList(ListKind),
+    /// The unit of the status bar, the lists and the item info window.
+    SetUnit(Unit),
+    /// The crosshair: small (the system cursor) is off, large is on.
+    SetCrosshair(bool),
+    /// Board rotation in quarter turns, counterclockwise (0, 1, 2, 3).
+    SetRotation(u8),
+    SetMirror(Mirror),
+    /// A copper layer's visibility level, 0 to 100 %.
+    SetLayerLevel(usize, u8),
+    /// A kind of object's visibility level, 0 to 100 %.
+    SetObjectLevel(Object, u8),
+    /// The slider of the automatic layer dimming (0 = no dimming).
+    SetDim(u8),
+    /// Visibility window > Reset to defaults.
+    ResetLevels,
+    /// Shows or hides one of the six virtual layers (Java's order).
+    ToggleVirtualLayer(usize),
+    /// Colour manager: one layer's colour of one kind of item.
+    SetItemColor(usize, ItemColor, [u8; 3]),
+    SetOtherColor(OtherColor, [u8; 3]),
+    ResetColors,
+}
+
+/// The windows of the Info, Display and Help menus that are plain flags.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum WindowKind {
+    Visibility,
+    DisplayMisc,
+    Colors,
+    Log,
+    About,
 }
 
 /// The Info list windows (Java `BoardMenuInfo`).
@@ -75,4 +117,9 @@ pub enum ListKind {
     ClearanceViolations,
     Unconnected,
     ZoneIslands,
+    // G04: lists over the board's own data.
+    Nets,
+    Components,
+    Packages,
+    Padstacks,
 }

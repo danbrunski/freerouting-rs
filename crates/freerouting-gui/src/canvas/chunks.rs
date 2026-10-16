@@ -52,21 +52,25 @@ pub fn kind_index(kind: Kind) -> usize {
     }
 }
 
-/// Position of `slot` in the slot list: the copper layers, then the back
-/// silk, the front silk and the board.
+/// Position of `slot` in the slot list: the copper layers, then the back and
+/// front silkscreen, courtyard and fabrication layers, then the board.
 pub fn slot_index(slot: Slot, layers: usize) -> usize {
     use freerouting::dsn::ast::Side;
     match slot {
         Slot::Layer(i) => i,
         Slot::Silk(Side::Back) => layers,
         Slot::Silk(Side::Front) => layers + 1,
-        Slot::Board => layers + 2,
+        Slot::Courtyard(Side::Back) => layers + 2,
+        Slot::Courtyard(Side::Front) => layers + 3,
+        Slot::Fab(Side::Back) => layers + 4,
+        Slot::Fab(Side::Front) => layers + 5,
+        Slot::Board => layers + 6,
     }
 }
 
 /// Number of slots for a board with `layers` copper layers.
 pub fn slot_count(layers: usize) -> usize {
-    layers + 3
+    layers + 7
 }
 
 /// The triangles and hairline segments of some items. Indices count from the
@@ -613,6 +617,10 @@ pub fn slot_of_index(i: usize, layers: usize) -> Slot {
         None => Slot::Layer(i),
         Some(0) => Slot::Silk(Side::Back),
         Some(1) => Slot::Silk(Side::Front),
+        Some(2) => Slot::Courtyard(Side::Back),
+        Some(3) => Slot::Courtyard(Side::Front),
+        Some(4) => Slot::Fab(Side::Back),
+        Some(5) => Slot::Fab(Side::Front),
         Some(_) => Slot::Board,
     }
 }

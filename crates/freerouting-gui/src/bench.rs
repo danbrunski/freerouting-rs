@@ -36,6 +36,7 @@ pub fn pan_zoom_camera(step: usize, fit: Camera, canvas: Rect) -> Camera {
     let zoomed = |n: usize| Camera {
         center: fit.center,
         zoom: fit.zoom * ZOOM_STEP.powi(n as i32),
+        orientation: fit.orientation,
     };
     match k {
         0 => fit,
@@ -178,10 +179,7 @@ mod tests {
     }
 
     fn fit() -> Camera {
-        Camera {
-            center: P::new(50.0, 20.0),
-            zoom: 8.0,
-        }
+        Camera::new(P::new(50.0, 20.0), 8.0)
     }
 
     #[test]

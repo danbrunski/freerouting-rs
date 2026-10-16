@@ -8,6 +8,7 @@ use crate::app::App;
 use crate::commands::Command;
 use crate::drc_export::ExportJob;
 use crate::overlays::Frame;
+use crate::panels::log::Level;
 use crate::text;
 
 /// The box of the selection grows by this fraction of its width and of its
@@ -159,10 +160,15 @@ impl App {
     pub(crate) fn poll_export(&mut self) {
         let Some(job) = &self.export_job else { return };
         let Some(result) = job.poll() else { return };
-        self.notice = Some(match result {
-            Ok(()) => format!("DRC report written to {}", job.path.display()),
-            Err(e) => format!("Could not write the DRC report: {e}"),
-        });
+        let (level, message) = match result {
+            Ok(()) => (
+                Level::Info,
+                format!("DRC report written to {}", job.path.display()),
+            ),
+            Err(e) => (Level::Error, format!("Could not write the DRC report: {e}")),
+        };
+        self.log.push(level, message.clone());
+        self.notice = Some(message);
         self.export_job = None;
     }
 }

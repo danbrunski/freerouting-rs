@@ -7,15 +7,23 @@ use freerouting::geometry::PolylineShapeOps;
 
 use super::Frame;
 use crate::analysis::Drc;
+use crate::look::{Look, OtherColor};
 use crate::view::Camera;
 
-pub const COLOR: Color32 = Color32::from_rgb(255, 70, 70);
 const RING_RADIUS: f32 = 7.0;
 
 /// Draws one marker per clearance violation and returns how many.
-pub fn draw(painter: &Painter, rect: Rect, camera: &Camera, frame: &Frame, drc: &Drc) -> usize {
-    let outline = Stroke::new(1.0, COLOR);
-    let fill = Color32::from_rgba_unmultiplied(255, 70, 70, 90);
+pub fn draw(
+    painter: &Painter,
+    rect: Rect,
+    camera: &Camera,
+    frame: &Frame,
+    drc: &Drc,
+    look: &Look,
+) -> usize {
+    let color = look.other_color(OtherColor::Violations);
+    let outline = Stroke::new(1.0, color);
+    let fill = Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 90);
     for violation in &drc.clearance {
         let points: Vec<Pos2> = violation
             .shape
@@ -28,7 +36,7 @@ pub fn draw(painter: &Painter, rect: Rect, camera: &Camera, frame: &Frame, drc: 
             painter.add(Shape::convex_polygon(points, fill, outline));
         }
         let centre = camera.to_screen(rect, frame.pt(violation.location()));
-        painter.circle_stroke(centre, RING_RADIUS, Stroke::new(1.5, COLOR));
+        painter.circle_stroke(centre, RING_RADIUS, Stroke::new(1.5, color));
     }
     drc.clearance.len()
 }

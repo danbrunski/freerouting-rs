@@ -40,6 +40,8 @@ pub fn rows(board: &BasicBoard, islands: &[ZoneIslandViolation]) -> Vec<Row> {
             Row {
                 text: row_text(board, island),
                 items,
+                detail: None,
+                filter_text: None,
             }
         })
         .collect()

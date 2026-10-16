@@ -11,6 +11,7 @@
 //! | [`commands`] | `Command`, every user action |
 //! | [`input`] | the key table (Java's keys) |
 //! | [`viewport`] | camera, visibility, mouse model, hover status |
+//! | [`look`], [`windows`] | colours, visibility levels and the virtual layers; the display, colour, log and About windows (G04) |
 //! | [`session`] | the open design: the engine board, files, loading |
 //! | [`scene`], [`view`] | the board flattened to drawable shapes, and drawing |
 //! | [`canvas`] | the board's geometry in chunks, the wgpu pipeline that draws it |
@@ -33,6 +34,7 @@ pub mod file_dialog;
 pub mod input;
 mod layout;
 pub mod lists;
+pub mod look;
 pub mod menu;
 pub mod overlays;
 pub mod panels;
@@ -45,5 +47,6 @@ pub mod text;
 pub mod toolbar;
 pub mod view;
 pub mod viewport;
+pub mod windows;
 
 pub use app::App;

@@ -8,11 +8,14 @@
 
 use eframe::egui::{self, Color32, PointerButton, Pos2, Rect, Sense, Stroke, Vec2};
 
+use freerouting::board::structure::Unit;
+
 use crate::commands::Command;
+use crate::look::{Look, snap_level};
 use crate::scene::{Item, Kind, P, Scene, Slot};
 use crate::session::Loaded;
 use crate::stats::PaintStats;
-use crate::view::{self, Camera, Visibility};
+use crate::view::{self, Camera, Labels, Orientation, Visibility};
 
 /// Zoom factor of the `Z` and `O` keys (Java's `c_zoom_factor`).
 pub const KEY_ZOOM: f64 = 2.0;
@@ -31,6 +34,13 @@ pub struct ViewState {
     /// final size, and a fit to that size leaves the board off-screen.
     pub auto_fit: Option<Vec2>,
     pub crosshair: bool,
+    /// Colours, visibility levels, layer dimming and the virtual layers
+    /// (G04.4, G04.5, G04.7).
+    pub look: Look,
+    /// Rotation and mirroring of the displayed board (G04.6).
+    pub orientation: Orientation,
+    /// The unit of the status bar, the lists and the item info window.
+    pub unit: Unit,
     /// The next left-drag zooms to its rectangle.
     pub zoom_rect_armed: bool,
     /// The canvas as of the last frame.
@@ -55,6 +65,9 @@ impl Default for ViewState {
             fit_requested: false,
             auto_fit: None,
             crosshair: false,
+            look: Look::default(),
+            orientation: Orientation::default(),
+            unit: Unit::Mm,
             zoom_rect_armed: false,
             canvas: Rect::from_min_size(Pos2::ZERO, Vec2::new(1.0, 1.0)),
             renderer: view::Renderer::default(),
@@ -79,15 +92,31 @@ impl ViewState {
             kinds: &self.kind_visible,
             active: self.active_layer,
             labels: self.show_labels,
+            look: &self.look,
         }
     }
 
     /// A new board: all layers on, first layer active, fitted view.
     pub fn reset_for_board(&mut self, layers: usize) {
         self.layer_visible = vec![true; layers];
+        self.look.reset_for_board(layers);
         self.active_layer = 0;
         self.camera = None;
         self.auto_fit = None;
+    }
+
+    /// Turns or mirrors the board about the view centre, so the displayed
+    /// section stays (Java keeps the viewport centre when it mirrors). A view
+    /// that has not been moved by the user is fitted again, because a quarter
+    /// turn changes which side of the board is the long one.
+    fn set_orientation(&mut self, orientation: Orientation) {
+        self.orientation = orientation;
+        if let Some(cam) = self.camera.as_mut() {
+            cam.orientation = orientation;
+            if self.auto_fit.is_some() {
+                self.fit_requested = true;
+            }
+        }
     }
 
     /// The point the key commands act on: the cursor, else the canvas centre.
@@ -150,16 +179,79 @@ impl ViewState {
                 }
             }
             Command::ToggleLabels => self.show_labels = !self.show_labels,
+            Command::SetCrosshair(on) => self.crosshair = *on,
+            Command::SetRotation(turns) => {
+                self.set_orientation(Orientation {
+                    quarter_turns: turns % 4,
+                    ..self.orientation
+                });
+            }
+            Command::SetMirror(mirror) => {
+                self.set_orientation(Orientation {
+                    mirror: *mirror,
+                    ..self.orientation
+                });
+            }
+            Command::SetUnit(unit) => self.unit = *unit,
+            Command::SetLayerLevel(layer, level) => {
+                self.look.set_layer_level(*layer, snap_level(*level));
+            }
+            Command::SetObjectLevel(object, level) => {
+                self.look.set_object_level(*object, snap_level(*level));
+            }
+            Command::SetDim(dim) => self.look.set_dim(snap_level(*dim)),
+            Command::ResetLevels => self.look.reset_levels(),
+            Command::ToggleVirtualLayer(i) if *i < crate::look::VIRTUAL_LAYERS => {
+                self.look.set_virtual_on(*i, !self.look.virtual_on(*i));
+            }
+            Command::SetItemColor(layer, column, [r, g, b]) => {
+                self.look
+                    .set_item_color(*layer, *column, Color32::from_rgb(*r, *g, *b));
+            }
+            Command::SetOtherColor(color, [r, g, b]) => {
+                self.look
+                    .set_other_color(*color, Color32::from_rgb(*r, *g, *b));
+            }
+            Command::ResetColors => self.look.reset_colors(),
             _ => {}
         }
     }
 }
 
+/// Where the cursor is and what is under it, for the status bar.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Hover {
+    /// The cursor on the board, in millimetres of the design file's frame.
+    pub cursor: Option<P>,
+    /// What is under it (`Pad · U1-3 · net GND · F.Cu`).
+    pub description: Option<String>,
+}
+
+/// Where the canvas leaves its [`Hover`] for the status bar, which is laid
+/// out before the canvas. The type of the stored value is `Hover` on both
+/// the read and the write, or the read silently returns nothing.
+fn hover_id() -> egui::Id {
+    egui::Id::new("hover")
+}
+
+/// The hover of the last frame.
+pub fn hover_of(ctx: &egui::Context) -> Hover {
+    ctx.data(|d| d.get_temp::<Hover>(hover_id()))
+        .unwrap_or_default()
+}
+
+/// Stores the hover for the next frame's status bar; true if it changed.
+pub fn store_hover(ctx: &egui::Context, hover: &Hover) -> bool {
+    let changed = hover_of(ctx) != *hover;
+    ctx.data_mut(|d| d.insert_temp(hover_id(), hover.clone()));
+    changed
+}
+
 /// What a frame of the canvas produced.
 #[derive(Default)]
 pub struct CanvasOut {
-    /// The hover text for the status bar.
-    pub status: Option<String>,
+    /// The hover for the status bar.
+    pub hover: Hover,
     pub paint: PaintStats,
 }
 
@@ -213,7 +305,7 @@ pub fn canvas(
     };
     let resized = view.auto_fit.is_some_and(|size| size != rect.size());
     if view.camera.is_none() || view.fit_requested || resized {
-        view.camera = Some(Camera::fit(&b.scene, rect));
+        view.camera = Some(Camera::fit_oriented(&b.scene, rect, view.orientation));
         view.fit_requested = false;
         view.auto_fit = Some(rect.size());
     }
@@ -225,14 +317,14 @@ pub fn canvas(
         &cam,
         &b.tess,
         b.scene.layers.len(),
-        &b.scene.labels,
+        &Labels::of(&b.scene),
         &view.visibility(),
         &view.renderer,
     );
     draw_overlays(&painter, view, rect);
 
     let mut out = CanvasOut {
-        status: None,
+        hover: Hover::default(),
         paint,
     };
     let Some(pos) = response.hover_pos() else {
@@ -246,12 +338,10 @@ pub fn canvas(
         |i| vis.slot(i.slot) && vis.kind(i.kind),
         Some(view.active_layer),
     );
-    let mut status = format!("X {:.3}  Y {:.3} mm", p.x, p.y);
-    if let Some(item) = picked {
-        status.push_str("    ");
-        status.push_str(&describe(&b.scene, item));
-    }
-    out.status = Some(status);
+    out.hover = Hover {
+        cursor: Some(p),
+        description: picked.map(|item| describe(&b.scene, item)),
+    };
     out
 }
 

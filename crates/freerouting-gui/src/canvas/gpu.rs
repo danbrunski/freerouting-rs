@@ -21,18 +21,22 @@ use crate::stats::FrameClock;
 use crate::view::{Camera, Tessellation};
 
 /// Bytes of the camera uniform.
-pub const CAMERA_BYTES: usize = 32;
+pub const CAMERA_BYTES: usize = 48;
 
 /// The camera as the shaders read it: where the view is centred relative to
 /// the board origin (millimetres), points per millimetre, and the centre of
 /// the canvas in screen points. The shaders map points to clip space the way
 /// egui's own shader does, over the whole screen (the callback widens the
 /// viewport to it), so the board lands on the same pixels as the CPU painter's.
+/// `basis` is the camera's [`Orientation`](crate::view::Orientation): a board
+/// offset `(dx, dy)` lands `zoom * (a dx + b dy, c dx + d dy)` points from the
+/// centre, with all four 0, 1 or -1.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CameraUniform {
     pub offset: [f32; 2],
     pub zoom: f32,
     pub center: [f32; 2],
+    pub basis: [f32; 4],
 }
 
 impl CameraUniform {
@@ -44,6 +48,7 @@ impl CameraUniform {
             ],
             zoom: camera.zoom as f32,
             center: [rect.center().x, rect.center().y],
+            basis: camera.orientation.basis().map(|v| v as f32),
         }
     }
 
@@ -58,6 +63,10 @@ impl CameraUniform {
             self.center[1],
             screen[0] / 2.0,
             screen[1] / 2.0,
+            self.basis[0],
+            self.basis[1],
+            self.basis[2],
+            self.basis[3],
         ];
         let mut out = [0u8; CAMERA_BYTES];
         for (chunk, w) in out.chunks_exact_mut(4).zip(words) {

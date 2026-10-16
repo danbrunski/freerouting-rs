@@ -91,6 +91,8 @@ pub fn rows(board: &BasicBoard, violations: &[ClearanceViolation]) -> Vec<Row> {
         .map(|v| Row {
             text: row_text(board, &frame, v),
             items: vec![v.first_item, v.second_item],
+            detail: None,
+            filter_text: None,
         })
         .collect()
 }

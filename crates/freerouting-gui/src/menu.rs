@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use eframe::egui::{self, RichText};
 
-use crate::commands::{Command, ListKind};
+use crate::commands::{Command, ListKind, WindowKind};
 use crate::session::Loaded;
 use crate::text;
 
@@ -87,6 +87,15 @@ pub fn ui(ui: &mut egui::Ui, loaded: Option<&Loaded>, recent: &[PathBuf]) -> Vec
             );
         });
         analysis_menus(ui, &mut out, loaded.is_some());
+        display_menu(ui, &mut out, loaded.is_some());
+        ui.menu_button(text::MENU_HELP, |ui| {
+            item(
+                ui,
+                &mut out,
+                text::MENU_ABOUT,
+                Command::ShowWindow(WindowKind::About),
+            );
+        });
         if let Some(b) = loaded {
             ui.separator();
             ui.label(RichText::new(file_name(&b.session.paths.design)).strong());
@@ -119,6 +128,21 @@ fn analysis_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
                 item(ui, out, label, Command::ShowList(kind));
             }
             ui.separator();
+            for (label, kind) in [
+                (text::MENU_NETS, ListKind::Nets),
+                (text::MENU_COMPONENTS, ListKind::Components),
+                (text::MENU_PACKAGES, ListKind::Packages),
+                (text::MENU_PADSTACKS, ListKind::Padstacks),
+            ] {
+                item(ui, out, label, Command::ShowList(kind));
+            }
+            ui.separator();
+            item(
+                ui,
+                out,
+                text::MENU_LOG,
+                Command::ShowWindow(WindowKind::Log),
+            );
             item(ui, out, text::MENU_RUN_DRC, Command::RunDrc);
         });
         ui.menu_button(text::MENU_OTHER, |ui| {
@@ -129,6 +153,21 @@ fn analysis_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
             {
                 out.push(Command::DeleteAll);
                 ui.close();
+            }
+        });
+    });
+}
+
+/// The Display menu of Java's board menu bar (`BoardMenuDisplay`).
+fn display_menu(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
+    ui.add_enabled_ui(board_open, |ui| {
+        ui.menu_button(text::MENU_DISPLAY, |ui| {
+            for (label, window) in [
+                (text::MENU_VISIBILITY, WindowKind::Visibility),
+                (text::MENU_COLORS, WindowKind::Colors),
+                (text::MENU_MISC, WindowKind::DisplayMisc),
+            ] {
+                item(ui, out, label, Command::ShowWindow(window));
             }
         });
     });

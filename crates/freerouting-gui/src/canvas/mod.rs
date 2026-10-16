@@ -27,8 +27,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use eframe::egui::{Color32, Painter, Rect};
 
+use crate::look::Look;
 use crate::scene::{Bounds, Kind};
-use crate::view::{Camera, Renderer, Tessellation, Visibility, kind_color};
+use crate::view::{Camera, Renderer, Tessellation, Visibility};
 use chunks::{KINDS, kind_index, slot_count, slot_of_index};
 
 pub use gpu::CameraUniform;
@@ -67,7 +68,7 @@ pub fn plan(set: &chunks::ChunkSet, vis: &Visibility, view: &Bounds, cull: bool)
     // layers on top.
     let mut order: Vec<usize> = (0..layers).rev().filter(|&i| i != vis.active).collect();
     order.push(vis.active);
-    order.extend([layers, layers + 1, layers + 2]);
+    order.extend(layers..slot_count(layers));
 
     let mut plan = Plan::default();
     let mut lines = Vec::new();
@@ -114,27 +115,15 @@ pub fn plan(set: &chunks::ChunkSet, vis: &Visibility, view: &Bounds, cull: bool)
     plan
 }
 
-/// The colour of every (slot, kind), indexed `slot * KINDS + kind`, with the
-/// layers other than `active` dimmed.
-pub fn color_table(layer_count: usize, active: usize) -> Vec<Color32> {
-    use crate::view::BACKGROUND;
+/// The colour of every (slot, kind), indexed `slot * KINDS + kind`: the
+/// palette, the levels and the dimming of the layers other than `active`
+/// ([`Look::draw_color`]).
+pub fn color_table(look: &Look, layer_count: usize, active: usize) -> Vec<Color32> {
     let mut table = Vec::with_capacity(slot_count(layer_count) * KINDS);
     for slot_i in 0..slot_count(layer_count) {
         let slot = slot_of_index(slot_i, layer_count);
-        let dim = matches!(slot, crate::scene::Slot::Layer(i) if i != active);
         for kind in Kind::ALL {
-            let mut color = kind_color(kind, slot, layer_count);
-            if dim {
-                // Opaque shapes are dimmed toward the background rather than
-                // made translucent: the round joints of a trace overlap its
-                // segments and would show as darker dots.
-                color = if color.is_opaque() {
-                    BACKGROUND.lerp_to_gamma(color, 0.6)
-                } else {
-                    color.gamma_multiply(0.6)
-                };
-            }
-            table.push(color);
+            table.push(look.draw_color(kind, slot, active));
         }
     }
     table
@@ -233,18 +222,19 @@ mod tests {
 
     #[test]
     fn color_table_dims_inactive_layers() {
-        let table = color_table(2, 0);
+        let look = Look::new(2);
+        let table = color_table(&look, 2, 0);
         assert_eq!(table.len(), slot_count(2) * KINDS);
         let trace = kind_index(Kind::Trace);
         let active = table[trace];
         let dimmed = table[KINDS + trace];
         assert_eq!(
             active,
-            kind_color(Kind::Trace, crate::scene::Slot::Layer(0), 2)
+            look.draw_color(Kind::Trace, crate::scene::Slot::Layer(0), 0)
         );
         assert_ne!(
             dimmed,
-            kind_color(Kind::Trace, crate::scene::Slot::Layer(1), 2)
+            look.base_color(Kind::Trace, crate::scene::Slot::Layer(1))
         );
     }
 }

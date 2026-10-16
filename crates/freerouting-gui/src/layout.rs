@@ -7,7 +7,7 @@ use crate::app::App;
 use crate::commands::Command;
 use crate::menu;
 use crate::overlays;
-use crate::panels::{board_stats, layers};
+use crate::panels::{board_stats, layers, status};
 use crate::toolbar;
 use crate::viewport::{self, CanvasOut};
 
@@ -26,27 +26,39 @@ impl App {
             ));
         });
         egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
-            commands.extend(toolbar::ui(ui, self.overlay, self.loaded.is_some()));
+            commands.extend(toolbar::ui(
+                ui,
+                self.overlay,
+                self.loaded.is_some(),
+                self.view.unit,
+            ));
         });
-        let status_id = egui::Id::new("status");
-        let status: Option<String> = ctx
-            .data(|d| d.get_temp::<Option<String>>(status_id))
-            .flatten();
+        // The status bar is laid out before the canvas, so the hover of the
+        // last frame is what it shows.
+        let hover = viewport::hover_of(ctx);
+        let (errors, warnings) = self.log.counts(self.loaded.as_ref().map(|b| &b.session));
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
-            ui.horizontal(|ui| match (&self.error, &self.loading) {
-                (Some(e), _) => drop(ui.colored_label(ui.visuals().error_fg_color, e)),
-                (None, Some((paths, _))) => {
-                    ui.spinner();
-                    ui.label(format!("Reading {}", paths[0].display()));
-                }
-                _ => {
-                    if let Some(notice) = &self.notice {
-                        ui.label(notice);
-                        ui.separator();
-                    }
-                    ui.label(status.unwrap_or_default());
-                }
-            });
+            let layer = self
+                .loaded
+                .as_ref()
+                .and_then(|b| b.scene.layers.get(self.view.active_layer))
+                .map(|l| l.name.as_str());
+            commands.extend(status::ui(
+                ui,
+                &status::Status {
+                    errors,
+                    warnings,
+                    error: self.error.as_deref(),
+                    loading: self
+                        .loading
+                        .as_ref()
+                        .map(|(paths, _)| format!("Reading {}", paths[0].display())),
+                    notice: self.notice.as_deref(),
+                    hover: &hover,
+                    layer,
+                    unit: self.view.unit,
+                },
+            ));
         });
         let width = self
             .settings
@@ -96,6 +108,7 @@ impl App {
                 self.overlay_counts = Default::default();
                 if let (Some(b), Some(camera)) = (&self.loaded, self.view.camera) {
                     let inputs = overlays::Inputs {
+                        look: &self.view.look,
                         board: &b.session.board,
                         ratsnest: self.analysis.ratsnest(&b.session).map(|r| &**r),
                         drc: self.analysis.drc(&b.session).map(|d| &**d),
@@ -106,13 +119,10 @@ impl App {
                     self.overlay_counts =
                         overlays::draw(&painter, self.view.canvas, &camera, &inputs);
                 }
-                // The status bar is laid out before the canvas, so a new
-                // hover text shows on the next frame.
-                if ctx.data(|d| d.get_temp::<Option<String>>(status_id)) != Some(out.status.clone())
-                {
+                // A new hover shows on the next frame.
+                if viewport::store_hover(ctx, &out.hover) {
                     ctx.request_repaint();
                 }
-                ctx.data_mut(|d| d.insert_temp(status_id, out.status.clone()));
             });
         (commands, out)
     }
