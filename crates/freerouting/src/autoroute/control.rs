@@ -19,6 +19,12 @@
 //!   only grow them (`RoutingBoard.fanout` rebuilds up to three times). The
 //!   port keeps that.
 //!
+//! **The fanout's merged via rule** (A12.1). `RoutingBoard.fanout` replaces
+//! `viaRule` by a new `ViaRule` that is not on the board: the class's vias
+//! followed by those of the board's first via rule that it lacks. Here
+//! [`AutorouteControl::merged_via_rule`] holds that list, and every reader
+//! of the via rule goes through [`AutorouteControl::via_rule_vias`].
+//!
 //! Java's `settings` field and the debug-only `fanoutStartPinName` are not
 //! carried; the settings a search reads are copied into the fields here.
 //! Where Java throws (a missing net, no via rule at all, a net class
@@ -32,7 +38,7 @@ use crate::board::items::ItemId;
 use crate::board::structure::Unit;
 use crate::geometry::Point;
 use crate::geometry::jmath::max_f64;
-use crate::rules::ViaRuleId;
+use crate::rules::{BoardRules, ViaInfoId, ViaRuleId};
 use crate::settings::board::BoardRouterSettings;
 
 /// The horizontal and vertical trace costs on a layer (Java
@@ -140,6 +146,10 @@ pub struct AutorouteControl {
     pub fanout_start_pin_layer: i32,
     pub remove_unconnected_vias: bool,
     pub via_rule: ViaRuleId,
+    /// The vias of a via rule that is not on the board, in place of
+    /// `via_rule`'s (the fanout's merged rule, A12.1); `None` for the
+    /// board's rule.
+    pub merged_via_rule: Option<Vec<ViaInfoId>>,
     pub net_number: i32,
     pub via_clearance_class: i32,
     pub via_infos: Vec<ViaMask>,
@@ -245,6 +255,7 @@ impl AutorouteControl {
             fanout_start_pin_layer: -1,
             remove_unconnected_vias: true,
             via_rule: ViaRuleId(0),
+            merged_via_rule: None,
             net_number: 0,
             via_clearance_class: 0,
             via_infos: Vec::new(),
@@ -307,6 +318,15 @@ impl AutorouteControl {
         self.rebuild_via_info(board, via_costs, net_number)
     }
 
+    /// The vias of the control's via rule (Java `viaRule`): the merged
+    /// rule's when set, else those of `via_rule` on the board.
+    pub fn via_rule_vias<'a>(&'a self, rules: &'a BoardRules) -> &'a [ViaInfoId] {
+        match &self.merged_via_rule {
+            Some(vias) => vias,
+            None => rules.via_rules.get(self.via_rule).vias(),
+        }
+    }
+
     /// `rebuildViaInfo` (`AutorouteControl.java:240-286`): the via masks and
     /// the via costs of the current via rule.
     pub fn rebuild_via_info(
@@ -316,14 +336,14 @@ impl AutorouteControl {
         net_number: i32,
     ) -> Result<(), ControlError> {
         let rules = &board.rules;
-        let rule = rules.via_rules.get(self.via_rule);
-        self.via_clearance_class = match rule.get_via(0) {
-            Some(via) => rules.via_infos.get(via).clearance_class,
+        let vias = self.via_rule_vias(rules).to_vec();
+        self.via_clearance_class = match vias.first() {
+            Some(via) => rules.via_infos.get(*via).clearance_class,
             None => 1,
         };
-        self.via_infos = Vec::with_capacity(rule.via_count());
+        self.via_infos = Vec::with_capacity(vias.len());
         self.attach_smd_allowed = false;
-        for &via_id in rule.vias() {
+        for &via_id in &vias {
             let via = rules.via_infos.get(via_id);
             if via.attach_smd_allowed {
                 self.attach_smd_allowed = true;

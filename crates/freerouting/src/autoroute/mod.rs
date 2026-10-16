@@ -65,6 +65,12 @@
 //! - [`batch::strict_drc`]: the strict-DRC rejection and rollback;
 //! - [`batch::pass`]: one routing pass (`AutoroutePassRunner.runSingleThread`),
 //!   `remove_tails` and the optimizer's `route_passes_for_optimizer`.
+//!
+//! The fanout (A12):
+//!
+//! - [`fanout_pin`]: the escape of one SMD pin (`RoutingBoard.fanout`);
+//! - [`batch::fanout`]: the fanout passes, `FreeroutingFanout`
+//!   (`BatchFanout`).
 
 pub mod batch;
 pub mod connection;
@@ -72,6 +78,7 @@ pub mod control;
 pub mod distance;
 pub mod events;
 pub mod failure_log;
+pub mod fanout_pin;
 pub mod history;
 pub mod item_route_result;
 pub mod java_ids;

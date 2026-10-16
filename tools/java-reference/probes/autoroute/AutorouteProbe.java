@@ -112,6 +112,27 @@ import java.util.UUID;
  *       routing ledger's incomplete count and nets, the pass result and the board hash. Then the
  *       real autoroutePass(1) and (2) on a second fresh load, and whether each pass left the
  *       same board hash as the replica's.
+ *   <li>fanout (A12.6): fanout pass 0 (BatchFanout.fanoutPass) on the loaded board, by
+ *       replicating its pin loop around the real RoutingBoard.fanout and
+ *       BatchAutorouter.enforceStrictDrc, with BatchFanout's own component and pin order
+ *       (reflection on a BatchFanout built by its private constructor). Per component a stage
+ *       line; per pin the component and pin ids, the net, the skip reason or the state, whether
+ *       the strict DRC rejected it, maxGeneratedId before and after, the count and FNV-1a 64 of
+ *       the added traces and vias, the FNV-1a 64 of all traces and vias and the thread's
+ *       WorkMeter units from before the pin's WorkLimit to after the strict DRC. Then the pass
+ *       counters, and whether the real BatchFanout.fanoutBoard with fanout.maxPasses = 1 on a
+ *       second load left the same traces and vias and the same board hash
+ *       (replica_matches_real).
+ *   <li>fanout-cutoff (A12.6): fanout with fanout.maxMillisecondsPerPin = 1, so the per-pin
+ *       WorkLimit fires.
+ *   <li>fanout-frames (A12.5): fanout on Issue558-dev-board with U2 as placed, rotated 90
+ *       degrees and mirrored to the back (crates/freerouting/tests/data/fanout-frames/), then
+ *       U2's SMD pins with a net and how many of them are escaped (isPinEscaped) after the
+ *       replica's pass.
+ *   <li>plane-island (A12.4): fanout on min_fr_test with its GND plane cut into a main plane
+ *       and a same-net island under both GND pads (crates/freerouting/tests/data/plane-island/),
+ *       then per GND pin the conduction areas in its connected set, and the board's incomplete
+ *       count (BoardStatistics).
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -149,6 +170,10 @@ public class AutorouteProbe {
         case "insert-routed" -> insertRouted(out, Loaded.load(dsn));
         case "pass" -> pass(out, dsn);
         case "treemap" -> treeMap(out);
+        case "fanout" -> fanout(out, dsn, null, null);
+        case "fanout-cutoff" -> fanout(out, dsn, 1L, null);
+        case "fanout-frames" -> fanout(out, dsn, null, "U2");
+        case "plane-island" -> planeIsland(out, dsn);
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -1738,6 +1763,218 @@ public class AutorouteProbe {
     }
     out.line(new Line().str("stage", "real").bool("pass1", same[0]).bool("pass2", same[1])
         .end());
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // fanout (A12.6)
+  // ------------------------------------------------------------------------------------------
+
+  /** The skip reason of BatchFanout.fanoutPass's via check (:268-289), or null. */
+  static String fanoutViaSkip(RoutingBoard board, RouterSettings settings, int netNumber) {
+    Net net = board.rules.nets.get(netNumber);
+    if (net == null) {
+      return null;
+    }
+    app.freerouting.rules.NetClass netClass = net.getNetClass();
+    app.freerouting.rules.ViaRule viaRule = netClass != null ? netClass.getViaRule() : null;
+    boolean hasBoardVias =
+        !board.rules.viaRules.isEmpty() && board.rules.viaRules.firstElement().viaCount() > 0;
+    boolean fallbackAllowed = settings.fanout != null
+        && Boolean.TRUE.equals(settings.fanout.fallbackToBoardVias) && hasBoardVias;
+    boolean canUseVias = (viaRule != null && viaRule.viaCount() > 0) || fallbackAllowed;
+    return canUseVias ? null : "no_vias";
+  }
+
+  /** The replica of fanoutPass(0) on l's board; returns its route hash. */
+  @SuppressWarnings("unchecked")
+  static long replicaFanoutPass(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    RouterSettings settings = l.job.routerSettings;
+    app.freerouting.core.StoppableThread thread = l.job.thread;
+    java.lang.reflect.Constructor<?> ctor =
+        app.freerouting.autoroute.pipeline.BatchFanout.class.getDeclaredConstructor(
+            RoutingBoard.class, RouterSettings.class, app.freerouting.core.StoppableThread.class);
+    ctor.setAccessible(true);
+    Object fanout = ctor.newInstance(board, settings, thread);
+    java.util.SortedSet<Object> components = privateField(fanout, "sortedComponents");
+    int passNo = 0;
+    int ripupCosts = settings.getStartRipupCosts() * (passNo + 1);
+    long baseMillisPerPin = settings.fanout != null && settings.fanout.maxMillisecondsPerPin != null
+        ? settings.fanout.maxMillisecondsPerPin
+        : 10000L;
+    boolean ripupAllowed = (settings.fanout == null || settings.fanout.ripupAllowed == null)
+        || Boolean.TRUE.equals(settings.fanout.ripupAllowed);
+    int effectiveRipupCosts = ripupAllowed ? ripupCosts : -1;
+    java.util.Map<Integer, Integer> failedPinGeneration = new java.util.HashMap<>();
+    java.util.Map<Integer, Integer> componentGeneration = new java.util.HashMap<>();
+    int totalItemsFanouted = 0;
+    int routed = 0;
+    int notRouted = 0;
+    int insertErrors = 0;
+    int alreadyConnected = 0;
+    int viasBefore = board.getVias().size();
+    int index = 0;
+    outer:
+    for (Object component : components) {
+      app.freerouting.board.model.structure.Component boardComponent =
+          privateField(component, "boardComponent");
+      java.util.SortedSet<Object> pins = privateField(component, "smdPins");
+      out.line(new Line().str("stage", "component:" + boardComponent.id)
+          .num("pins", pins.size()).end());
+      for (Object fanoutPin : pins) {
+        app.freerouting.board.model.items.Pin pin = privateField(fanoutPin, "boardPin");
+        if (settings.fanout != null && settings.fanout.maxItems != null
+            && settings.fanout.maxItems > 0 && totalItemsFanouted >= settings.fanout.maxItems) {
+          break outer;
+        }
+        long start = workUnits();
+        int maxBefore = board.communication.idGenerator.maxGeneratedId();
+        double maxMilliseconds = baseMillisPerPin * (passNo + 1);
+        app.freerouting.datastructures.WorkLimit workLimit =
+            new app.freerouting.datastructures.WorkLimit((long) maxMilliseconds, "fanout_pin",
+                () -> "");
+        String state;
+        boolean strict = false;
+        int netNumber = pin.getNetNumber(0);
+        if (pin.hasIgnoredNets()) {
+          state = "skip:ignored_net";
+        } else {
+          // BatchFanout.java:264, targetCount: a log value, but its queries count work.
+          pin.getUnconnectedSet(netNumber).size();
+          String skip = fanoutViaSkip(board, settings, netNumber);
+          Integer failed = failedPinGeneration.get(pin.getId());
+          int generation = componentGeneration.getOrDefault(boardComponent.id, 0);
+          if (skip != null) {
+            state = "skip:" + skip;
+          } else if (failed != null && failed.intValue() == generation) {
+            state = "skip:no_retry";
+          } else {
+            maxBefore = board.communication.idGenerator.maxGeneratedId();
+            board.startMarkingChangedArea();
+            app.freerouting.autoroute.AutorouteAttemptResult result =
+                board.fanout(pin, settings, effectiveRipupCosts, thread, workLimit);
+            if (result.state == app.freerouting.autoroute.AutorouteAttemptState.ROUTED) {
+              app.freerouting.autoroute.AutorouteAttemptResult rejection =
+                  app.freerouting.autoroute.pipeline.BatchAutorouter.enforceStrictDrc(
+                      board, netNumber, maxBefore);
+              if (rejection != null) {
+                result = rejection;
+                strict = true;
+              }
+            }
+            switch (result.state) {
+              case ROUTED -> {
+                ++routed;
+                totalItemsFanouted++;
+                componentGeneration.merge(boardComponent.id, 1, Integer::sum);
+              }
+              case ALREADY_CONNECTED -> ++alreadyConnected;
+              case FAILED, INSERT_ERROR -> {
+                if (result.state == app.freerouting.autoroute.AutorouteAttemptState.FAILED) {
+                  ++notRouted;
+                } else {
+                  ++insertErrors;
+                }
+                totalItemsFanouted++;
+                failedPinGeneration.put(pin.getId(),
+                    componentGeneration.getOrDefault(boardComponent.id, 0));
+              }
+              default -> {}
+            }
+            state = result.state.name();
+          }
+        }
+        long units = workUnits() - start;
+        List<String> added = addedLines(board, maxBefore);
+        out.line(new Line().num("pin", index).num("component", boardComponent.id)
+            .num("item", pin.getId()).num("net", netNumber).str("state", state)
+            .bool("strict", strict).num("maxIdBefore", maxBefore)
+            .num("maxIdAfter", board.communication.idGenerator.maxGeneratedId())
+            .num("added", added.size()).str("addedHash", hex(fnvLines(added)))
+            .str("boardHash", hex(routeHash(board))).num("units", units).end());
+        index++;
+      }
+    }
+    long hash = routeHash(board);
+    out.line(new Line().num("pass", passNo).num("routed", routed).num("notRouted", notRouted)
+        .num("insertErrors", insertErrors).num("alreadyConnected", alreadyConnected)
+        .num("extraVias", Math.max(0, board.getVias().size() - viasBefore))
+        .num("maxGeneratedId", board.communication.idGenerator.maxGeneratedId())
+        .str("boardHash", hex(hash)).end());
+    return hash;
+  }
+
+  /**
+   * fanout: the replica's pass 0, then the real one-pass fanoutBoard on a second load. With
+   * {@code maxMillisecondsPerPin} non-null, both use that per-pin budget.
+   */
+  static void fanout(Out out, String dsn, Long maxMillisecondsPerPin, String escapesOf)
+      throws Exception {
+    Loaded replica = Loaded.load(dsn);
+    replica.job.thread = idleThread();
+    Loaded real = Loaded.load(dsn);
+    real.job.thread = idleThread();
+    for (Loaded l : List.of(replica, real)) {
+      l.job.routerSettings.fanout.maxPasses = 1;
+      if (maxMillisecondsPerPin != null) {
+        l.job.routerSettings.fanout.maxMillisecondsPerPin = maxMillisecondsPerPin;
+      }
+    }
+    long replicaHash = replicaFanoutPass(out, replica);
+    String replicaBoardHash = replica.board.getHash();
+    app.freerouting.autoroute.pipeline.BatchFanout.fanoutBoard(
+        real.board, real.job.routerSettings, real.job.thread);
+    boolean same = routeHash(real.board) == replicaHash
+        && real.board.getHash().equals(replicaBoardHash);
+    out.line(new Line().str("stage", "real").bool("replica_matches_real", same).end());
+    if (escapesOf != null) {
+      // The escape count (BoardStatistics.isPinEscaped) of the component's SMD pins with a net.
+      app.freerouting.board.model.structure.Component component =
+          replica.board.components.get(escapesOf);
+      int pins = 0;
+      int escaped = 0;
+      for (app.freerouting.board.model.items.Pin pin : replica.board.getSmdPins()) {
+        if (pin.getComponentId() == component.id && pin.netCount() > 0) {
+          pins++;
+          if (app.freerouting.core.scoring.BoardStatistics.isPinEscaped(pin)) {
+            escaped++;
+          }
+        }
+      }
+      out.line(new Line().str("stage", "escapes").str("component", escapesOf)
+          .num("smdPins", pins).num("escaped", escaped).end());
+    }
+  }
+
+  /** plane-island: fanout, then which planes each plane-net SMD pin reaches. */
+  static void planeIsland(Out out, String dsn) throws Exception {
+    Loaded l = Loaded.load(dsn);
+    l.job.thread = idleThread();
+    app.freerouting.autoroute.pipeline.BatchFanout.fanoutBoard(
+        l.board, l.job.routerSettings, l.job.thread);
+    out.line(new Line().str("stage", "pin-planes").str("boardHash", hex(routeHash(l.board)))
+        .end());
+    for (app.freerouting.board.model.items.Pin pin : l.board.getPins()) {
+      if (pin.firstLayer() != pin.lastLayer() || pin.netCount() != 1) {
+        continue;
+      }
+      int net = pin.getNetNumber(0);
+      Net rulesNet = l.board.rules.nets.get(net);
+      if (rulesNet == null || !rulesNet.containsPlane()) {
+        continue;
+      }
+      java.util.TreeSet<Integer> areas = new java.util.TreeSet<>();
+      for (Item item : pin.getConnectedSet(net)) {
+        if (item instanceof ConductionArea) {
+          areas.add(item.getId());
+        }
+      }
+      out.line(new Line().num("pinPlanes", pin.getId()).num("net", net).raw("areas", ints(areas))
+          .end());
+    }
+    app.freerouting.core.scoring.BoardStatistics stats =
+        new app.freerouting.core.scoring.BoardStatistics(l.board, null, false);
+    out.line(new Line().num("incomplete", stats.connections.incompleteCount).end());
   }
 
   // ------------------------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+{"kind":"fanout","board":"Issue269-min_fr_test/min_fr_test","javaCommit":"a773a70ec","format":1}
+{"stage":"component:1","pins":1}
+{"pin":0,"component":1,"item":3,"net":1,"state":"ROUTED","strict":false,"maxIdBefore":38,"maxIdAfter":52,"added":3,"addedHash":"a5a3dda11c7021ee","boardHash":"5ecde569ce21ed79","units":21948}
+{"stage":"component:2","pins":1}
+{"pin":1,"component":2,"item":12,"net":2,"state":"ROUTED","strict":false,"maxIdBefore":52,"maxIdAfter":63,"added":3,"addedHash":"91b49e78726afad5","boardHash":"0fa29ebd27216e80","units":18849}
+{"stage":"component:3","pins":1}
+{"pin":2,"component":3,"item":21,"net":1,"state":"ROUTED","strict":false,"maxIdBefore":63,"maxIdAfter":74,"added":3,"addedHash":"441018e8252ef072","boardHash":"ea9c3587d206d490","units":20773}
+{"stage":"component:4","pins":1}
+{"pin":3,"component":4,"item":30,"net":2,"state":"ROUTED","strict":false,"maxIdBefore":74,"maxIdAfter":85,"added":3,"addedHash":"57d80cdfcdabec47","boardHash":"feb10ffcf994f0cf","units":16172}
+{"pass":0,"routed":4,"notRouted":0,"insertErrors":0,"alreadyConnected":0,"extraVias":4,"maxGeneratedId":85,"boardHash":"feb10ffcf994f0cf"}
+{"stage":"real","replica_matches_real":true}

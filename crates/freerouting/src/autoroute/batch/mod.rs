@@ -21,10 +21,15 @@
 //! - [`pass`]: the pass runner (`AutoroutePassRunner.runSingleThread`),
 //!   `remove_tails` and the optimizer's `route_passes_for_optimizer`.
 //!
+//! The fanout (A12):
+//!
+//! - [`fanout`]: `FreeroutingFanout`, the fanout passes (`BatchFanout`).
+//!
 //! Java line numbers are at `a773a70ec`.
 
 pub mod connection;
 pub mod control;
+pub mod fanout;
 pub mod fanout_rules;
 pub mod ordering;
 pub mod pass;

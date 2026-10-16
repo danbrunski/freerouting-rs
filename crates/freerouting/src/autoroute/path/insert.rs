@@ -528,10 +528,9 @@ impl Inserter<'_> {
         };
         let nets = self.net_numbers();
         let rules = &self.board.rules;
-        let vias: Vec<_> = rules
-            .via_rules
-            .get(self.ctrl.via_rule)
-            .vias()
+        let vias: Vec<_> = self
+            .ctrl
+            .via_rule_vias(rules)
             .iter()
             .map(|id| rules.via_infos.get(*id).clone())
             .collect();

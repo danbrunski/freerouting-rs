@@ -56,8 +56,8 @@
 //! `freerouting-ripup` (A10.5), `freerouting-passes` (A10.3),
 //! `freerouting-unrouted-report` (A10.7), `freerouting-connection` (A11.1),
 //! `freerouting-plane-taps` and `freerouting-neck-down` (A11.2);
-//! `freerouting-fanout` (A12.3) and `freerouting-optimizer` (O06) are
-//! registered as [`NotPorted`] placeholders until those checklists replace
+//! `freerouting-fanout` (A12.3); `freerouting-optimizer` (O06) is
+//! registered as a [`NotPorted`] placeholder until that checklist replaces
 //! the factory. The registry, the selection and the placeholders are in the
 //! `registry` submodule (`stages/registry.rs`), re-exported here.
 
@@ -346,11 +346,16 @@ pub struct FinishDecision {
 }
 
 /// What a fanout run reports (Java `FanoutRunSummary`, without its time
-/// and escape statistics).
+/// and the escape percentage).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct FanoutSummary {
     /// Passes completed.
     pub completed_passes: u32,
+    /// SMD pins with a net that are escaped after the run
+    /// (`BoardStatistics.fanout.escapedCount`, A12.3).
+    pub escaped: usize,
+    /// SMD pins with a net (`BoardStatistics.fanout.totalSmdPins`, A12.3).
+    pub total: usize,
     /// True if the fanout deadline stopped it.
     pub timed_out: bool,
 }

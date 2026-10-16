@@ -229,11 +229,10 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
                 return Ok(());
             };
             let padstack_id = via.1.drill.padstack;
-            let in_rule = board
-                .rules
-                .via_rules
-                .get(control.via_rule)
-                .contains_padstack(padstack_id, &board.rules.via_infos);
+            let in_rule = control
+                .via_rule_vias(&board.rules)
+                .iter()
+                .any(|v| board.rules.via_infos.get(*v).padstack == padstack_id);
             if !in_rule || via.0.clearance_class() != control.via_clearance_class {
                 return Ok(());
             }
@@ -382,8 +381,8 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
         let location = self.s.drill(drill).location.clone();
         let vias: Vec<(f64, i32, bool)> = {
             let board = &*self.s.board;
-            let rule = board.rules.via_rules.get(control.via_rule);
-            rule.vias()
+            control
+                .via_rule_vias(&board.rules)
                 .iter()
                 .filter_map(|id| {
                     let info = board.rules.via_infos.get(*id);

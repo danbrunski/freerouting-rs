@@ -245,7 +245,9 @@ impl RoutingBoard {
             return ForcedInsert::Unchanged;
         }
         let combined_lines = combined.lines().len();
-        let start_shape_no = combined_lines - new_polyline.lines().len();
+        // PARITY: RoutingBoard.java:555, an `int` that can be negative when the
+        // combination dropped lines; `offsetShapes` clamps it to 0.
+        let start_shape_no = combined_lines.saturating_sub(new_polyline.lines().len());
         let trace_shapes = combined.offset_shapes_range(
             compensated_half_width,
             start_shape_no,

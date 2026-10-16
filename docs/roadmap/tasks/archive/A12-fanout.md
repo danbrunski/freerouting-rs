@@ -6,7 +6,7 @@ escape trace and a via, component by component, for up to 20 passes. It is also 
 the owner rule "plane-net pads get their own via to the plane" (D8) acts first. This
 checklist ports `RoutingBoard.fanout` (one pin) and `BatchFanout` (the passes) as the
 Freerouting fanout stage, and compares the fanout pass pin by pin with Java
-([A00](A00-autorouter-README.md); pipeline report P8 item 4).
+([A00](../A00-autorouter-README.md); pipeline report P8 item 4).
 
 **Prerequisites:**
 - A11 (strict DRC, the connection-router pieces), A10.6 (component and pin order, stop
@@ -59,7 +59,7 @@ What this adds: `autoroute/fanout_pin.rs` (one pin), `autoroute/batch/fanout.rs`
 
 ## Checklist
 
-- [ ] **A12.1 — `fanout_pin`.** Port `RoutingBoard.fanout` (`:990-1145`):
+- [x] **A12.1 — `fanout_pin`.** Port `RoutingBoard.fanout` (`:990-1145`):
   - guards: a pin spanning layers or with more than one net → `AlreadyConnected`; ignored
     nets → `Skipped`; any connected-set item off the pin's layer → `AlreadyConnected`; no
     unconnected items → `NoUnconnectedNets`;
@@ -78,7 +78,21 @@ What this adds: `autoroute/fanout_pin.rs` (one pin), `autoroute/batch/fanout.rs`
   - **Accept:** covered by A12.6; a unit test of the stable distance sort with two equal
     distances.
 
-- [ ] **A12.2 — The fanout pass.** Port `fanoutPass` (`:174-480`) per component and pin in
+  *Done 2026-10-16:* `autoroute/fanout_pin.rs` (`fanout_pin`, `box_distance_square`,
+  `sort_by_box_distance`). Guards, the stable distance sort (`(ll.x + ur.x)` as a wrapping
+  `i32` sum, then `/ 2.0`, `total_cmp`), the control (`for_net_default`, `is_fanout`, the
+  merged via rule as the new `AutorouteControl::merged_via_rule`, read through
+  `via_rule_vias` by `rebuild_via_info`, `session/layers.rs` (two sites) and
+  `path/insert.rs`), one ripped set and the caller's `WorkLimit` across the plane /
+  closest / all-targets attempts (`// PARITY(quirk):` in the module docs), and the
+  pin-net-only `opt_changed_area` with the 1,000 ms guard. Unit tests
+  `autoroute::fanout_pin::tests::{the_target_sort_is_stable_for_equal_distances,
+  the_box_centre_sum_wraps_as_a_java_int, negative_zero_sorts_before_zero_as_double_compare}`
+  (`cargo test -p freerouting --lib fanout`: 4 passed). Covered by A12.6
+  (`fanout_matches_java`, `fanout_cutoff_matches_java`). Java's exception for a control that
+  cannot be built is `Failed` here (DIVERGENCES "Fanout", `a_control_error_fails_the_pin`).
+
+- [x] **A12.2 — The fanout pass.** Port `fanoutPass` (`:174-480`) per component and pin in
   A10.6's order: stop at `fanout.max_items`; skip pins with ignored nets; skip pins whose net
   class has no vias unless the fallback is allowed and the first board via rule has vias;
   skip pins that already failed in the component's current generation (`retry_fanout`);
@@ -88,13 +102,32 @@ What this adds: `autoroute/fanout_pin.rs` (one pin), `autoroute/batch/fanout.rs`
   the pin's generation; stop on the deadline or a router stop.
   - **Accept:** covered by A12.6.
 
-- [ ] **A12.3 — `FreeroutingFanout` (the stage).** Port `fanoutBoard` (`:89-172`): up to
+  *Done 2026-10-16:* `autoroute/batch/fanout.rs` (`FanoutRun::pass`, `fanout_one`): the
+  per-pin `WorkLimit` (`max_milliseconds_per_pin * (pass + 1)` as a `double`, then `(long)`)
+  created before the skips, the ignored-net skip, the `targetCount` read (its contact queries
+  count against the limit, as in Java), the via skip, `retry_fanout` on `BTreeMap`
+  generations, watermark, `start_marking_changed_area`, `fanout_pin` with
+  `start_ripup_costs * (pass + 1)` or -1, `enforce_strict_drc` always on `Routed`, Java's
+  counting, then the deadline and router-stop checks. A `FanoutObserver` sees every pin (the
+  probe). Covered by A12.6: `fanout_matches_java` equal pin by pin, work units included, on
+  the four boards, and `fanout_cutoff_matches_java` on bm01 (55 pins cut off by the limit).
+
+- [x] **A12.3 — `FreeroutingFanout` (the stage).** Port `fanoutBoard` (`:89-172`): up to
   `fanout.max_passes` (default 20) passes with A10.6's stop rules; return a `FanoutSummary
   { passes, escaped, total, timed_out }` from `BoardStatistics`; `Progress` events per pin
   and per pass (A08). Register it as `freerouting-fanout`.
   - **Accept:** covered by A12.4–A12.6.
 
-- [ ] **A12.4 — D8 plane vias.** Port `fixtures/PlaneFanoutViaTest` on
+  *Done 2026-10-16:* `FanoutRun::run` (the pass loop with `FanoutPassTracker`, the
+  stop-only `fanout.timeout` deadline) and `FreeroutingFanout` (`FanoutStage`, registered
+  as `freerouting-fanout` in `stages/registry.rs`, replacing the `NotPorted` placeholder).
+  `FanoutSummary` gained `escaped` and `total` (from `BoardStatistics.fanout`) beside
+  `completed_passes` and `timed_out`. `Progress` (phase `Fanout`) at the start of each pass,
+  after each pin and at its end, while someone listens. Tests:
+  `the_registry_builds_the_fanout_stage` (min_fr_test: escaped 4 of 4, not timed out),
+  `autoroute_batch_control` 39 passed, and A12.4-A12.6.
+
+- [x] **A12.4 — D8 plane vias.** Port `fixtures/PlaneFanoutViaTest` on
   `Issue269-min_fr_test/min_fr_test.dsn`, with the harness settings of the Java test
   (`RoutingFixtureTest`, `TestingSettings`: copper-to-edge clearance 0, the optimizer off):
   exactly 2 GND SMD pads, each connected to a conduction area; the pads not chained to each
@@ -106,7 +139,20 @@ What this adds: `autoroute/fanout_pin.rs` (one pin), `autoroute/batch/fanout.rs`
   - **Accept:** `plane_fanout_via` green; `plane_island` matches Java, with the done note
     saying which way Java went.
 
-- [ ] **A12.5 — Ported fanout tests.** As work-bounded Rust tests with `TestingSettings`
+  *Done 2026-10-16:* `tests/autoroute_fanout.rs`. `plane_fanout_via` green on
+  `min_fr_test` with `TestingProfile` (edge clearance 0, optimizer off), the fanout stage,
+  then routing passes: 2 GND SMD pads, each on the plane, not chained, 2 GND vias, no via on
+  a pad, 0 traces on plane layers. `plane_island` green and equal to Java (probe kind
+  `plane-island`, board `crates/freerouting/tests/data/plane-island/min_fr_test-island.dsn`:
+  the GND plane of min_fr_test cut into a main plane, area 2, and a same-net island under
+  both GND pads, area 3). **Java connects through the island:** after the fanout both GND
+  pins' connected sets hold area 3 (the island) and not the main plane, so the router then
+  treats them as connected to a plane; the incomplete count is 2 (GND's island-to-main
+  connection and the unrouted signal net) in Java and Rust, and equals Rust's DRC
+  (`DesignRulesChecker::incomplete_count`, GND 1). Recorded in the test; the rule that a tap
+  must reach the main plane goes to Q01 (and X02.2's report).
+
+- [x] **A12.5 — Ported fanout tests.** As work-bounded Rust tests with `TestingSettings`
   semantics (edge clearance 0, optimizer off):
   - `fixtures/SmdPinFanoutRoutingTest`: `Issue558-dev-board.dsn` 0 unrouted after 10
     passes; fanout-only mode stops at pass 0 with vias > 0; `Issue508-DAC2020_bm06.dsn`
@@ -124,7 +170,29 @@ What this adds: `autoroute/fanout_pin.rs` (one pin), `autoroute/batch/fanout.rs`
     tests run after A13 wires the stage into the pipeline; until then they call
     `FreeroutingFanout` directly.
 
-- [ ] **A12.6 — `fanout` probe and the work-limit determinism test.**
+  *Done 2026-10-16:* `tests/autoroute_fanout.rs`, `cargo test -p freerouting --test
+  autoroute_fanout`: 18 passed, 2 ignored (bm10 and the determinism dump), 6.7 s at the dev
+  profile. Until A13 a job is `run_job`: the fanout stage, then plain routing passes (no
+  restores, no optimizer).
+  - `smd_pin_fanout_issue558_dev_board`: 0 incomplete (fanout 2 passes, escaped 97/99;
+    6 routing passes). `smd_pin_fanout_fanout_only_mode`: 0 routing passes, 51 vias.
+    `smd_pin_fanout_issue508_bm06`: 1 incomplete (bound 8). `smd_pin_fanout_smd_routing_issue_demo`:
+    0 incomplete (bound 2). `smd_pin_fanout_issue508_bm10` (`#[ignore]`, run once with
+    `--ignored`): 0 incomplete, fanout escaped 245/245, 10.6 s; it first panicked with an
+    overflow in `shove/forced.rs` (`start_shape_no`), fixed by clamping as Java's
+    `offsetShapes` does.
+  - `issue952_fanout_only_stage_skips_ignored_net_class`,
+    `issue952_full_autoroute_with_fanout_skips_ignored_net_class`,
+    `issue952_all_net_classes_ignored_gives_no_vias_and_traces`,
+    `issue952_full_pipeline_skips_ignored_net_class` (case 4 without the optimizer): green.
+  - `dac2020_bm11_fanout_trace`: escaped 156 of 157 (bound 154), 4 fanout passes.
+  - `footprint_frames_match_java` (kind `fanout-frames`, copies in
+    `crates/freerouting/tests/data/fanout-frames/`): one fanout pass equal to Java pin by pin
+    on each copy; U2 (51 SMD pins with a net) escaped as placed Java 51 / Rust 51, rotated 90°
+    Java 50 / Rust 50, mirrored to the back Java 50 / Rust 50. The counts do not agree across
+    copies (51 vs 50): a finding for the Q series.
+
+- [x] **A12.6 — `fanout` probe and the work-limit determinism test.**
   - Java kind `fanout`: load as J01's route mode does and run `BatchFanout.fanoutBoard`
     for one pass (`fanout.max_passes = 1`). The probe replicates `fanoutPass`'s pin loop
     around the real `RoutingBoard.fanout`, as A11.7 does for passes, and checks itself
@@ -148,3 +216,19 @@ What this adds: `autoroute/fanout_pin.rs` (one pin), `autoroute/batch/fanout.rs`
       tree shape, since a limit fires there (`[~]` until then);
     - `tools/determinism-check.sh` on a fanout-only run of the four boards reports
       `identical`.
+  *Done 2026-10-16:* Java kinds `fanout` and `fanout-cutoff` in `AutorouteProbe.java`
+  (`replicaFanoutPass`, `fanout`), rows in `fixtures.tsv`, references in
+  `fixtures/reference/probe/fanout{,-cutoff}/` generated with `generate.sh` at `a773a70ec`;
+  `replica_matches_real` true on every board. Rust `tests/support/fanout_lines.rs`.
+  - `fanout_matches_java` equal on `Issue508-SMD-routing-issue-demo` (8 routed, 2 failed),
+    `Issue269-min_fr_test/min_fr_test` (4 routed), `Issue558-dev-board` (92 routed, 2 already
+    connected) and `Issue508-DAC2020_bm08` (25 routed), work units per pin included.
+  - `work_limit_determinism::{cut_off_fanout_is_the_same_when_busy, tiny_budget_really_cuts_off}`
+    green (bm01, one thread per core spinning for the busy run). The board after the 1 ms
+    run equals Java's: `fanout_cutoff_matches_java` (kind `fanout-cutoff`, bm01: 129 routed,
+    55 failed on the limit, units equal on every pin), so the tree shape holds where a limit
+    fires.
+  - `tools/determinism-check.sh --out <scratch>/det -- env FANOUT_DUMP_OUT={OUT}
+    <autoroute_fanout test binary> --ignored --exact dump_fanout_only_runs` (full
+    fanout-only runs of the four boards, every pin line and the state hash): `identical`.
+    P02.1's audit (`router.debug.audit_incremental`) has not landed, so the run is without it.

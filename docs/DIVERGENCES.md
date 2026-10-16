@@ -491,6 +491,18 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   runner returns the `Max items limit reached` and `Autorouter <details>` job log lines in
   `PassOutcome::log`.
 
+**Fanout** (`autoroute::{fanout_pin, batch::fanout}`, A12; tests `tests/autoroute_fanout.rs`,
+`fanout_matches_java`)
+- Where `RoutingBoard.fanout` builds a control that Java's `AutorouteControl` constructor or
+  `rebuildViaInfo` cannot build (a net class without a via rule while the board has via rules,
+  so `BatchFanout` lets the pin through on the fallback), Java's exception leaves
+  `BatchFanout.fanoutBoard`; the port returns `Failed` with the error text for that pin and goes
+  on (`a_control_error_fails_the_pin`).
+- The pull-tight after a fanned-out pin runs without the cancel token, as in the batch passes.
+- `fanout.timeout` is read once when the stage starts, as a deadline that only stops work; Java's
+  progress throttle (one update a second) is not ported: a `Progress` goes out at the start of a
+  pass, after each pin and at its end, while someone listens.
+
 **Interactive routing** (`interactive`, I01, port of `gui.interactive.Route`, `RouteState`,
 `DynamicRouteState`, `StitchRouteState` and `GuiBoardRoutingSettings`; tests
 `tests/interactive_route.rs`, `interactive::settings::tests`)

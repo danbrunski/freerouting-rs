@@ -15,6 +15,7 @@ use crate::autoroute::batch::connection::{
     FreeroutingConnectionRouter, FreeroutingNeckDown, FreeroutingPlaneTaps,
 };
 use crate::autoroute::batch::control::FreeroutingPassController;
+use crate::autoroute::batch::fanout::FreeroutingFanout;
 use crate::autoroute::batch::ordering::FreeroutingOrdering;
 use crate::autoroute::batch::report::UnroutedReportStage;
 use crate::autoroute::batch::ripup_policy::FreeroutingRipupPolicy;
@@ -235,12 +236,8 @@ impl StageRegistry {
             .insert("freerouting-plane-taps", |_| Box::new(FreeroutingPlaneTaps));
         r.neck_down
             .insert("freerouting-neck-down", |_| Box::new(FreeroutingNeckDown));
-        r.fanout.insert(DEFAULT_FANOUT, |_| {
-            Box::new(NotPorted {
-                id: DEFAULT_FANOUT,
-                owner: "A12.3",
-            })
-        });
+        r.fanout
+            .insert(DEFAULT_FANOUT, |_| Box::new(FreeroutingFanout));
         r.optimizer.insert(DEFAULT_OPTIMIZER_ALGORITHM, |_| {
             Box::new(NotPorted {
                 id: DEFAULT_OPTIMIZER_ALGORITHM,

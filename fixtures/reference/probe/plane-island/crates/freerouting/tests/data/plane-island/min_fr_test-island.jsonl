@@ -1,0 +1,5 @@
+{"kind":"plane-island","board":"crates/freerouting/tests/data/plane-island/min_fr_test-island","javaCommit":"a773a70ec","format":1}
+{"stage":"pin-planes","boardHash":"f00fa460d6456fc7"}
+{"pinPlanes":22,"net":1,"areas":[3]}
+{"pinPlanes":4,"net":1,"areas":[3]}
+{"incomplete":2}
