@@ -1,0 +1,82 @@
+USAGE
+  freerouting -de <design.dsn> -do <output.ses> [PARAMETERS]
+  freerouting -de <design.dsn> -drc [report.json] [PARAMETERS]
+
+Settings are read from, in order of priority (the last wins): the built-in
+defaults, the settings file, the DSN file, FREEROUTING__ROUTER__* environment
+variables, then the command line. Router flags set the settings named under
+them; the names are the JSON paths of the settings table.
+
+PARAMETERS
+  -de <design.dsn>[+<session.ses>][+<design.rules>]
+      Load the Specctra design file. The files may also be separate
+      arguments, in any order; the last .dsn wins.
+  -di <design_directory>
+      Accepted and ignored (the folder of the GUI's open dialogs).
+  -dr <design_rules_file>
+      Read routing rules from a .rules file. Without it an adjacent
+      <design>.rules is read if it exists.
+  -do <output.ses>[+<other output>]
+      Save the result. The first file is the main output; others are extra
+      outputs. Written formats: .ses, .dsn, .rules, .drc and .drc.json (the
+      design rules check report). Anything else (.frb, .scr, .json,
+      .kicad_pcb) is refused before any work. A file is written whole or not
+      at all, and never with 0 bytes.
+  -drc [report.json]
+      Check the design rules of the design (and session) and write the
+      report, to standard output without a file. Nothing is routed.
+  -mp <number_of_passes>
+      Maximum number of auto-routing passes; 0 or more than 9999 means
+      unlimited.
+      Setting: autorouter.max_passes [default: 0]
+  -mt <number_of_threads>
+      Accepted, and as in Java it has no effect on a headless run (it sets
+      the flat max_threads, which no stage reads). Use
+      --router.optimizer.max_threads for the optimizer.
+      Setting: max_threads
+  -oit <threshold>
+      Optimizer improvement threshold; a value between 0 and 1 is a fraction
+      (deprecated; use --router.optimizer.improvement_threshold).
+      Setting: optimizer.improvement_threshold [default: 2.5]
+  -inc <class>[,<class>...]
+      Net classes the autorouter leaves alone (deprecated; use
+      --router.autorouter.ignore_net_classes). Names are split on commas; a
+      backslash keeps a comma: -inc 'Power\,Default' is one class named
+      Power,Default.
+      Setting: autorouter.ignore_net_classes
+  -us <strategy>, -is <strategy>
+      Accepted and ignored.
+  -l <language>, -dl, -da, -dct <seconds>, -host <name>
+      Accepted and ignored (GUI language, file logging, analytics, dialog
+      timeout and the name of the calling program).
+  -ll <level>
+      Console log level: TRACE, DEBUG, INFO (the default), WARN, ERROR or OFF.
+  -h, -help, --help
+      Display this help.
+
+LONG FLAGS
+  --router.<path>=<value>, --optimizer.<path>=<value>
+      Set any router setting by its path, for example
+      --router.autorouter.max_passes=5 or --router.scoring.via_costs=40.
+  --scoring-version=<v1|v2>, --router-scoring-version=<v1|v2>,
+  --optimizer-scoring-version=<v1|v2|lower_bound>
+      Choose the score versions.
+      Setting: router_scoring.version, optimizer_scoring.version
+  --settings <file>
+      Read this settings file (JSON, as Java's freerouting.json) instead of
+      the default <config dir>/freerouting-rs/freerouting.json.
+  --user_data_path=<dir>
+      Read <dir>/freerouting.json.
+  --logging.console.level=<level>
+      The same as -ll.
+  --gui.*, --api_server.*, --mcp_server.*, --usage_and_diagnostic_data.*,
+  --feature_flags.*, --profile.*, --debug.*, --logging.*
+      Accepted and ignored.
+
+NOT SUPPORTED
+  --compare-boards=<a>,<b> and --calculate-benchmark-scores exit 2; use
+  freerouting-dev ses-diff.
+
+EXIT CODES
+  0  the job finished (or timed out) and wrote an output file
+  1  anything else

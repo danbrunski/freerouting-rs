@@ -133,7 +133,7 @@ token and A13 owns `run_pipeline`; C07 only calls them.
 
 ## Checklist
 
-- [ ] **C07.1 — Argument parser: files and modes.**
+- [x] **C07.1 — Argument parser: files and modes.**
   Java: `GlobalSettings.applyCommandLineArguments`.
   - Matching is by prefix (`startsWith("-de")`).
   - A value is taken only when the next argument doesn't start with `-`.
@@ -164,7 +164,9 @@ token and A13 owns `run_pipeline`; C07 only calls them.
     - For every C01.2 `argv.json` entry, the file fields equal Java's.
     - `parses_drc_arguments` still passes.
 
-- [ ] **C07.2 — Settings flags into the CLI patch.**
+  *Done 2026-10-16:* `crates/freerouting-cli/src/args.rs` (one walk with Java's prefix order, `FLAGS` table; the crate now has a lib target so tests can call it) and `tests/args_java.rs`: every `-de`/`-do` case of `GlobalSettingsCommandLineTest` and the argument cases of `GlobalSettingsTest` are ported by name (`+` splitting, spaces, `mechkeys_MF68+10--…ses`, `perf++`, `board.v1+final.dsn`, last DSN wins with Java's warning, bare `-de`, an existing path with `+` used whole). `argv_json_file_fields_equal_java` and `argv_json_rejection_warnings_equal_java` compare all 126 `fixtures/reference/argv.json` entries (file fields, help flag, DRC report file; the rejection warnings). `parses_drc_arguments` moved to `args.rs` unit tests and passes. `cargo test -p freerouting-cli --test args_java`: 48 passed. Files are classified in argument order as Java does (the checklist's "sorted by extension" is not what Java does; the dumps agree with argument order).
+
+- [x] **C07.2 — Settings flags into the CLI patch.**
   Java: `CliSettings.parseArguments` and `applyRouterSetting`, plus
   `mapFlagToProperty`.
   - Short flags: `-mp` → `router.max_passes`, `-mt` → `router.max_threads`
@@ -196,7 +198,9 @@ token and A13 owns `run_pipeline`; C07 only calls them.
     - C02.8's `cli` scenario test switches to this parser and still
       passes.
 
-- [ ] **C07.3 — Flags accepted and ignored; help.**
+  *Done 2026-10-16:* `args::parse` hands the router settings to the engine's `parse_cli_arguments` (CliSettings port) and adds the `\,` escape for `-inc` (`apply_escaped_inc`). `tests/args_java.rs`: `legacy_batch_mode_enables_router_when_json_disables_it`, `explicit_router_enabled_false_overrides_legacy_batch_mode`, `cli_routable_layers_does_not_disable_router`, `cli_can_disable_router_and_optimizer`, `cli_settings_parses_inc_flag_into_ignore_net_classes`, `mt_does_nothing_headless`, `inc_escaped_comma_names_one_class`, `mp_10000_is_unlimited` (patch 10000, resolved 0 with Java's validation warning), `settings_flags_choose_the_config_file`. `argv_json_cli_patch_equals_java` compares the CLI patch (`dump_patch`) and the parsed arguments with `cliSettings` for all 126 entries. The `-inc Power,Default` warning on `Issue558-dev-board.dsn` is `comma_split_warns_when_it_looks_like_a_mistake` (`cli_outputs.rs`). C02.8's `cli` scenario: `settings_reference.rs` still passes unchanged on the engine's parser, and `the_cli_scenario_patch_is_the_engines` (`settings_parity.rs`) shows `args::parse` gives the same patch and parsed arguments for that scenario's arguments (the engine test cannot call the CLI crate).
+
+- [x] **C07.3 — Flags accepted and ignored; help.**
   - Accepted with a debug log and no effect: `-host`, `-di`, `-l`, `-dct`,
     `-da`, `-us`, `-is`, `-dl`, and any `--gui.*`, `--api_server.*`,
     `--mcp_server.*`, `--usage_and_diagnostic_data.*`,
@@ -223,7 +227,9 @@ token and A13 owns `run_pipeline`; C07 only calls them.
       warning.
     - `freerouting -help` exits 0.
 
-- [ ] **C07.4 — Job flow and outputs, never 0 bytes.**
+  *Done 2026-10-16:* `FLAGS` and `LONG_FLAGS` in `args.rs`, `src/help.txt` (Java's usage plus every flag with its settings path). `accepted_and_ignored_flags` (debug log only: `-host -di -l -dct -dl -da -us -is`, `--gui.* --api_server.* --mcp_server.* --usage_and_diagnostic_data.* --feature_flags.* --profile.* --debug.* --logging.*`, `--user_data_path`, `--settings`), `unknown_flags_each_give_exactly_one_warning` (`-im`, `-hr`, `-x`, `--x`, `--`, `--=x`, `--a=b=c`), `-ll`/`--logging.console.level` set the console level. `--compare-boards` and `--calculate-benchmark-scores` are recognized and exit 2 with `not supported; use freerouting-dev ses-diff` (`refused_java_commands_exit_2`, DIVERGENCES). `java_plugin_command_line_parses_cleanly`: the plugin's exact arguments with a host containing spaces and quotes give no warning and the same inputs, outputs and patch as `-de in.dsn -do out.ses`. `freerouting -help` exits 0 (`no_zero_byte_outputs`, row 9).
+
+- [x] **C07.4 — Job flow and outputs, never 0 bytes.**
   Java: `CliRunner.initializeCli` and `writeCliOutputIfAvailable`,
   `RoutingJobSchedulerActionThread.setJobOutput`, `MultiOutputGenerator`
   (SES, DRC JSON).
@@ -249,7 +255,9 @@ token and A13 owns `run_pipeline`; C07 only calls them.
       between the temp write and the rename. The target is absent; the
       temp file is removed at the next start.
 
-- [ ] **C07.5 — Deadlines stop work; the outcome mapping.**
+  *Done 2026-10-16:* `freerouting::job::run::{run_job, JobContext, JobOutcome, JobState}`, `job::outputs` (format table, `write_atomic`, stale-temp cleanup; a `BufWriter` wraps the temporary file, as C06.8 asked), `cli.rs` (reads files, calls `run_job`). `.dsn` is registered (`do_dsn_writes_the_board`, C06.8's test), also `.rules` and `.drc`/`.drc.json`. `tests/cli_outputs.rs` (17 pass): `no_zero_byte_outputs` runs C01.6 rows 1, 2, 3, 4, 5, 6 and 9 (row 1 and row 3's SES byte-identical to Java's; row 5 and 6 exit 1 with Java's messages; row 4 refused before any work with nothing written; row 3's `.drc.json` is a DRC report, Java wrote a KiCad design JSON, DIVERGENCES). Row 2 is asserted at the new pin: `a773a70ec` (`7bef8995f`) writes a DSN and exits 0, as Rust does (the committed dump is still `cda540f`'s exit 1 and 0 bytes; the test accepts the regenerated dump and does not hard-code the old row). `existing_output_is_deleted_at_start`, `killed_run_leaves_no_partial_file` (env hook `FREEROUTING_TEST_ABORT_BEFORE_RENAME` aborts between write and rename; the target is absent, one `.out.ses.<pid>.tmp` is left, the next run removes it), `unsupported_output_formats_are_refused_before_any_work`, `no_routable_layer_terminates_the_job` (exit 1), `a_zero_pass_run_completes`. Engine unit tests: `exit_code_follows_the_state_and_the_written_files`, format table, atomic writer. The CLI uses `ResolveContext::from_machine()` (cores only set default thread counts, D2).
+
+- [x] **C07.5 — Deadlines stop work; the outcome mapping.**
   Java: `RoutingJobSchedulerActionThread.threadAction`. It has a monitor
   that polls once a second, calls `requestStop()` at the deadline and
   allows a 30 s grace period. It also has `assignTerminalState`.
@@ -269,7 +277,9 @@ token and A13 owns `run_pipeline`; C07 only calls them.
       on the stub pipeline: exit 0, a non-empty SES and the warning line.
     - C07.8 repeats this with routing.
 
-- [ ] **C07.6 — Log lines tools parse.**
+  *Done 2026-10-16:* `job::deadline::{Watcher, StopLevel, assign_terminal_state, mark_timed_out_if_still_active, terminate_on_error}`: one thread waits on a condvar for the earliest armed deadline and calls A08's `CancelToken` (`stop_all`, or `stop_router` for a router-level limit); no polling, no grace; a zero limit stops before `arm` returns. The job limit is armed by `run_job`; the fanout and optimizer limits are stage-relative, so the pipeline arms them at stage start (`Watcher::arm`, C07.8; the stub has no stages). `terminal_state_mapping_table` names each `RoutingJobSchedulerActionThreadTest` method (`jobClockStopBecomesTimedOut`, `stopBeforeTheJobClockCompletes`, `userCancelWinsOverTheExpiredJobClock`, ...) and `monitor_and_error_paths` the rest (`finishedJobStaysCompletedWhenTheMonitorAssignsTimeout`, `monitorTimeoutIsKeptWhenThePipelineFinishes`, `testFatalErrorSetsJobStateToTerminated`); watcher tests for earliest-fires, disarm, drop. `timeouts_only_stop_work` (stub): `job_timeout=24:00:00` and none give byte-identical SES; `00:00:00` exits 0 with a non-empty SES, the warning line `warning: stopped by wall-clock limit; result is timing-dependent` and state TIMED_OUT. C07.8 repeats it with routing.
+
+- [x] **C07.6 — Log lines tools parse.**
   `job::log::LogLine { level, text }`, collected by the engine;
   `freerouting-cli/src/log.rs` prints them with the console level filter.
   The texts are those listed in Decisions.
@@ -283,7 +293,9 @@ token and A13 owns `run_pipeline`; C07 only calls them.
       `compare.py`'s regex, copied into the test. A 1-violation line does
       not match, as in Java.
 
-- [ ] **C07.7 — Settings parity gates (KRT's rule).**
+  *Done 2026-10-16:* `job::log` (`format_score`, `decimal_format_0_00`, `format_duration`, pass, stage-summary and save lines) and `freerouting-cli/src/log.rs` (stderr, no timestamps, `warning: `/`error: ` prefixes, console level filter). `format_score_table` covers `0.125 → 0.12`, `0.375 → 0.38`, 0/1/2 violations (singular for 1), negative zero, non-finite values. `compare_py_regex_matches` (`cli_outputs.rs`, regex hand-written because the workspace has no regex crate): the stub run's stage summary matches (1 unrouted, 0 violations on `Issue413-test.dsn`), a 1-violation line does not, as in Java. The summary stops after the score. The stub logs the stage summary only when the router is enabled, with a warning that routing is not implemented; pass lines wait for C07.8. Every run also logs `Effective start_ripup_costs: N (source: …)` (C00 open question 1; `the_settings_file_and_its_source_are_logged`).
+
+- [x] **C07.7 — Settings parity gates (KRT's rule).**
   Mechanical tests, each with a negative control that makes it fail:
   - every flag `args.rs` accepts maps to a `FIELDS` path, or appears in a
     `CLI_ONLY` list with a one-line reason (`-de`, `-do`, `-drc`, `-dr`,
@@ -300,6 +312,8 @@ token and A13 owns `run_pipeline`; C07 only calls them.
   - **Accept:** `settings_parity.rs` passes. Each negative control (an
     unmapped test flag, a changed default, a stray call in a copy of
     `main.rs`) fails it, as shown in the done note.
+
+  *Done 2026-10-16:* `tests/settings_parity.rs` (10 pass): `every_flag_maps_to_a_fields_path_or_is_cli_only`, `mapped_flags_set_their_fields`, `every_field_is_reachable_from_the_command_line` (every `FIELDS` path with a default via `--router.<path>=`), `no_default_in_help_or_args_differs_from_fields` (the `Setting: <path> [default: v]` lines of `help.txt` against `FIELDS`; no inlined `unwrap_or(<number>)` in `args.rs` or `cli.rs`), `main_rs_holds_no_behaviour` (its calls are `main`, `args`, `skip`, `collect`, `run`; `cli.rs` reaches only `drc`, `job`, `settings` of the engine; the dispatch lives in `cli.rs` and `run_job`, so `main.rs` is one line), `the_cli_path_and_prepare_job_give_equal_dumps`. Negative controls (each fails the gate on a damaged copy): `an_unmapped_flag_fails_the_gate` (a flag with a non-`FIELDS` path, absent from the help, and a CLI-only flag with no reason), `a_changed_default_fails_the_gate` (`[default: 2.5]` → `3.5`, a renamed path, an inlined `unwrap_or(25)`), `a_stray_call_in_main_rs_fails_the_gate` (`std::fs::read`, and a `freerouting::board` use in `main.rs` and `cli.rs`).
 
 - [ ] **C07.8 — Wire the router.**
   Replace the stub with A13's `run_pipeline`, passing:
@@ -326,3 +340,5 @@ token and A13 owns `run_pipeline`; C07 only calls them.
       fixtures/Issue026-J2_reference.dsn -do {OUT} -mp 3` reports
       `identical`.
     - Mark `[~]` until A13 lands.
+
+  *Not attempted 2026-10-16:* waits on A13 (`run_pipeline`). The stub is `run_pipeline_stub` in `crates/freerouting/src/job/run.rs`; it is called with the prepared job, the cancel token and the job deadline, and the stage-relative limits are armed through `Watcher::arm`.

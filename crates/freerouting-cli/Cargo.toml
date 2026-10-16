@@ -6,6 +6,10 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[lib]
+name = "freerouting_cli"
+path = "src/lib.rs"
+
 [[bin]]
 name = "freerouting"
 path = "src/main.rs"
