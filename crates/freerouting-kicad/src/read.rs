@@ -14,6 +14,7 @@ use freerouting_dsn::ast::{
 };
 
 use crate::classes::ClassTable;
+use crate::dru::{self, DruFile, DruReport};
 use crate::error::{ErrorKind, KicadError, Warning};
 use crate::fmt6g::c_fmt_6g;
 use crate::footprints::{
@@ -61,6 +62,9 @@ pub struct KicadRead {
     pub extras: Extras,
     /// What the reader decided: rule areas, planes, arcs, dropped zones.
     pub report: ReadReport,
+    /// What became of each `.kicad_dru` rule ([`crate::dru`], K07.5); empty
+    /// (`present == false`) when no rules file was given.
+    pub rules: DruReport,
 }
 
 /// Options of the reader.
@@ -79,6 +83,12 @@ pub struct ReadOptions {
     /// reader keeps them as planes (K00 question 6, K06.4), after the board's
     /// own zones, and warns once per zone.
     pub drop_footprint_zones: bool,
+    /// Apply the `.kicad_dru` rules the DSN can express (class-pair
+    /// clearances, class track widths). Off by default: KiCad's DSN export
+    /// ignores the file, so Java never saw these rules, and applying them
+    /// changes routing (K00 question 7). Rules that cannot be expressed are
+    /// reported either way ([`KicadRead::rules`]).
+    pub apply_design_rules: bool,
 }
 
 /// Reads a board with the name `board.dsn` in the tree.
@@ -102,6 +112,19 @@ pub fn read_with(
     name: &str,
     text: &str,
     project: Option<&str>,
+    options: ReadOptions,
+) -> Result<KicadRead, KicadError> {
+    read_with_rules(name, text, project, None, options)
+}
+
+/// [`read_with`] and the text of the board's `.kicad_dru` (K07.5). A rules
+/// file that does not parse is a warning, not an error: the board is read
+/// without it.
+pub fn read_with_rules(
+    name: &str,
+    text: &str,
+    project: Option<&str>,
+    dru: Option<&str>,
     options: ReadOptions,
 ) -> Result<KicadRead, KicadError> {
     let trace = std::env::var_os("FR_KICAD_TRACE").is_some();
@@ -610,6 +633,31 @@ pub fn read_with(
             .collect(),
         ..Placement::default()
     };
+    let mut structure = structure;
+    let mut network = network;
+    let rules = match dru {
+        Some(dru_text) => match DruFile::parse(dru_text) {
+            Ok(file) => {
+                let copper_names: Vec<String> =
+                    (0..copper).map(|p| layers.name(p).to_owned()).collect();
+                dru::apply(
+                    &file,
+                    options.apply_design_rules,
+                    &mut network,
+                    &mut structure,
+                    &copper_names,
+                )
+            }
+            Err(e) => {
+                warnings.push(Warning {
+                    line: 0,
+                    message: format!("the .kicad_dru file could not be read: {e}"),
+                });
+                DruReport::default()
+            }
+        },
+        None => DruReport::default(),
+    };
     let host_version = match &hdr.generator_version {
         Some(v) => format!("{v} (freerouting-kicad)"),
         None => "(freerouting-kicad)".to_owned(),
@@ -649,6 +697,7 @@ pub fn read_with(
         warnings,
         extras,
         report,
+        rules,
     })
 }
 

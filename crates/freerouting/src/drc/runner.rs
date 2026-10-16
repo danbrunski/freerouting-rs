@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use super::checker::DesignRulesChecker;
 use super::report::DrcReport;
 use crate::board::RoutingBoard;
+use crate::io::kicad::{DesignKind, design_kind, read_design};
 use crate::io::specctra::{
     BoardReadResult, SesImportSummary, read_board, read_rules, read_session,
 };
@@ -16,7 +17,7 @@ use crate::io::specctra::{
 /// What to check.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DrcRunOptions {
-    /// The DSN design file.
+    /// The design file: a DSN, or a `.kicad_pcb` (K07.1).
     pub design_file: PathBuf,
     /// A session file whose wires and vias are added before the check.
     pub session_file: Option<PathBuf>,
@@ -53,11 +54,18 @@ pub struct DrcRun {
 /// its bounding box to all items and reduces the nets of traces and vias at
 /// tie pins (`HeadlessBoardManager.applyImmediatePostLoadProcessing`).
 pub fn load_design(bytes: &[u8]) -> Result<RoutingBoard, String> {
-    let mut board = match read_board(bytes) {
-        BoardReadResult::Success { board, .. }
+    board_of_read(read_board(bytes)).map(|(board, _)| board)
+}
+
+/// The board of a read design, ready for checking (see [`load_design`]), and
+/// the read's warnings.
+fn board_of_read(result: BoardReadResult) -> Result<(RoutingBoard, Vec<String>), String> {
+    let (mut board, warnings) = match result {
+        BoardReadResult::Success { board, warnings }
         | BoardReadResult::OutlineMissing {
-            board: Some(board), ..
-        } => *board,
+            board: Some(board),
+            warnings,
+        } => (*board, warnings),
         BoardReadResult::OutlineMissing { board: None, .. } => {
             return Err("The board file has no usable outline".into());
         }
@@ -69,7 +77,7 @@ pub fn load_design(bytes: &[u8]) -> Result<RoutingBoard, String> {
     };
     board.expand_bounding_box_to_include_all_items();
     board.reduce_nets_of_route_items();
-    Ok(board)
+    Ok((board, warnings))
 }
 
 /// `DrcRunner.initializeDrc`'s rules step. Java ignores the result of the
@@ -119,11 +127,21 @@ fn design_name(design: &Path) -> String {
 pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
     let mut messages = Vec::new();
     let design = &options.design_file;
-    messages.push(format!("Loading DSN file for DRC: {}", design.display()));
-    let bytes = std::fs::read(design)
-        .map_err(|e| format!("Couldn't load the input file '{}': {e}", design.display()))?;
-    let mut board =
-        load_design(&bytes).map_err(|e| format!("Failed to load board for DRC check: {e}"))?;
+    // `read_design` picks the reader by extension: `.kicad_pcb` is read
+    // directly (K07.1), everything else as a DSN.
+    let kicad = design_kind(design) == DesignKind::KicadPcb;
+    messages.push(format!(
+        "Loading {} file for DRC: {}",
+        if kicad { "KiCad board" } else { "DSN" },
+        design.display()
+    ));
+    let read = read_design(design)?;
+    if let Some(input) = &read.kicad {
+        messages.extend(input.report_lines());
+        messages.extend(input.warnings.iter().map(|w| format!("KiCad reader: {w}")));
+    }
+    let (mut board, _) = board_of_read(read.result)
+        .map_err(|e| format!("Failed to load board for DRC check: {e}"))?;
 
     if let Some(rules) = &options.rules_file {
         board = apply_rules(board, rules, design, &mut messages);

@@ -67,3 +67,21 @@ python3 -I tools/kicad-reader/manifest.py write
 `--windows` uses Dan's KiCad 10.0.5 instead. On the seven boards the two
 exports differ only in the `(host_version ...)` line (Windows KiCad writes CRLF;
 `export.sh` converts it to LF).
+
+## K07 additions
+
+- `Issue558-dev-board-autoroute-demo/dev-board.kicad10.java.ses`: the session Java (`a773a70ec`) writes for
+  `dev-board.kicad10.dsn` (the export copied to `dev-board.dsn`, `-mp 100`, optimizer off: 0 unrouted, 231
+  wires, 35 vias, 7.5 s). Not a reference output: it feeds the coordinate-frame test
+  (`crates/freerouting/tests/kicad_frame.rs`) and `tools/kicad-reader/frame-check.sh`. Regenerate with the Java
+  CLI of a detached pin worktree:
+  `java -cp <classes>:<resources>:<deps> app.freerouting.Freerouting --user_data_path=<tmp>/userdata -da
+  --gui.enabled=false --api_server.enabled=false --mcp_server.enabled=false -de dev-board.dsn -do java.ses
+  --router.optimizer.enabled=false -mp 100`.
+- `synthetic/rules.kicad_dru`: three rules for the `classes` board (K07.5): a class-pair clearance, a class track
+  width and an `intersectsArea` rule the DSN cannot say.
+- Frame check (K07.4): `tools/kicad-reader/frame-check.sh <board.kicad_pcb> <a.ses> <b.ses> [outdir]` imports the
+  two sessions into copies of the board with KiCad's `ImportSpecctraSES` and compares every track endpoint
+  (`frame_check.py`). Default interpreter: the WSL system python3 (KiCad 10.0.7).
+- `python3 -I tools/kicad-reader/manifest.py check` reports "manifest and files disagree on the board list" since
+  the synthetic boards (K05.8) were added; they are deliberately not in the manifest.

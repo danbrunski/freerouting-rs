@@ -1,0 +1,13 @@
+(version 1)
+# K07.5: one class-pair clearance, one class track width, one rule the DSN
+# cannot say. Read with the `classes` board (classes kicad_default,
+# "Fast,Wide", "Wide,Default" and Fast).
+(rule "fast to wide"
+	(constraint clearance (min 0.5mm))
+	(condition "A.NetClass == 'Fast' && B.NetClass == 'Wide,Default'"))
+(rule "fast tracks"
+	(constraint track_width (opt 0.3mm))
+	(condition "A.NetClass == 'Fast'"))
+(rule "keep away from the zone"
+	(constraint clearance (min 1mm))
+	(condition "A.intersectsArea('zone1')"))

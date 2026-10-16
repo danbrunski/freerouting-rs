@@ -16,7 +16,7 @@ pub struct FileDialog {
     error: Option<String>,
 }
 
-const EXTENSIONS: [&str; 2] = ["dsn", "ses"];
+const EXTENSIONS: [&str; 3] = ["dsn", "ses", "kicad_pcb"];
 
 impl FileDialog {
     pub fn new(dir: PathBuf) -> Self {
@@ -107,7 +107,7 @@ impl FileDialog {
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         if self.entries.is_empty() {
-                            ui.weak("No folders or .dsn/.ses files here.");
+                            ui.weak("No folders or .dsn/.ses/.kicad_pcb files here.");
                         }
                         for (name, path, is_dir) in &self.entries {
                             let label = if *is_dir {
@@ -136,4 +136,32 @@ impl FileDialog {
 fn display(path: &Path) -> String {
     let s = path.display().to_string();
     s.strip_prefix(r"\\?\").map(str::to_string).unwrap_or(s)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// K07.2: the built-in file browser lists `.kicad_pcb` boards beside
+    /// `.dsn` and `.ses` files, in any case, and hides other files.
+    #[test]
+    fn lists_kicad_boards() {
+        let dir = std::env::temp_dir().join(format!("fr-file-dialog-kicad-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        for name in [
+            "a.dsn",
+            "b.ses",
+            "c.kicad_pcb",
+            "D.KICAD_PCB",
+            "e.kicad_pro",
+            "f.txt",
+        ] {
+            std::fs::write(dir.join(name), "").unwrap();
+        }
+        let dialog = FileDialog::new(dir.clone());
+        let names: Vec<&str> = dialog.entries.iter().map(|e| e.0.as_str()).collect();
+        assert_eq!(names, ["a.dsn", "b.ses", "c.kicad_pcb", "D.KICAD_PCB"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

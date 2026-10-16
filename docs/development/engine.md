@@ -80,9 +80,13 @@ tools/java-reference/regenerate-dumps.sh <pin-worktree>
 outside the repo for the ignored full-set Rust tests. The modes, scenarios and the subset rule are
 in the README.
 
-`load` output is deterministic. `route` output is not: Java's maze search uses
-an unseeded `Random` and the run is time-limited, so routed results are a
-baseline for completion, vias, length and speed, not an exact target.
+`load` output is deterministic, and so is `route` output at a fixed JDK under
+work bounds (J01.4: identical sessions idle and under load). Java's maze search
+is reseeded with the ripup cost before each connection, the pass shuffle is
+seeded, and the router's cut-offs count work. Each route JSON records its
+`workLimitCutoffs`; the boards with none are the exact-parity set, the others
+are compared on aggregates until the B series proves search-tree shape parity
+(D5).
 
 ## What is done
 
@@ -97,6 +101,7 @@ baseline for completion, vias, length and speed, not an exact target.
 | Session writer | `freerouting::io::specctra::ses_writer` (`write_ses`, `write_ses_to`, `session_from_board`), `freerouting_dsn::write::java_style` | Byte-identical to Java's `SesWriter` (C01.3's `ses` dumps) on the 19 subset boards, unrouted and with Java's routed session imported; `Issue029-hw48na`'s `library_out` lacks the via padstacks of its adjacent rules file (C04) and `Issue676`'s routed dump differs because Java imports none of its wires. `tests/ses_writer.rs`, `tests/ses_round_trip.rs`, `freerouting-dsn/tests/java_style_ses.rs` (116 Java route sessions round-trip to their own bytes). |
 | Rules files | `freerouting::io::specctra::{rules_reader, rules_writer}` (`apply_rules_file`, `read_rules`, `rules_from_board`), `job::prepare` (discovery, second merge), `drc::runner` | `RulesReader.read` applied in file order through the DSN reader's own helpers. `tests/job_prepare_reference.rs` compares the six boards with an adjacent rules file in all four settings scenarios (clearance matrix, via infos, via rules, snap angle, padstacks, settings); `tests/reference_drc.rs` the DRC with `-dr` (C01.6 rows 7 and 8, digests from a Java run in `tests/data/java_drc_rules_digest.tsv`); `tests/rules_writer.rs` the written tree against all 164 Java `rules` dumps (5 listed differences). Java's format is lossy, see DIVERGENCES, "Rules files". |
 | Design file writer | `freerouting::io::specctra::dsn_writer` (`pcb_from_board`, `write_dsn`, `write_dsn_to`) | Board to `Pcb` syntax tree (the plain layout of `Pcb::to_dsn`). Compared as parsed trees with Java's `DsnWriter` on the 19 boards of `fixtures/reference/dsn` (`tests/dsn_round_trip.rs`, every difference explained); the real check is the round trip on every loaded fixture: layers, outline, clearance matrix, areas, components, library, nets, net classes, via types and rules, traces and vias equal (`tests/dsn_writer.rs`), and the same statistics and DRC result (`tests/dsn_round_trip.rs`). Java's writer loses several things its reader needs (`docs/DIVERGENCES.md`, "Writing a design file"); `-do out.dsn` is registered by C07.4. |
+| KiCad boards | `crates/freerouting-kicad` (the `.kicad_pcb` reader), `freerouting::io::{kicad, read_design}` | `read_design(path)` picks the reader by extension (`.dsn` or `.kicad_pcb`; a board reads its `.kicad_pro` and `.kicad_dru` too); the CLI (`-de board.kicad_pcb`), the DRC runner and the GUI session call it. The reader's board is compared with the board of KiCad 10.0.7's own DSN export of it, every difference listed with its reason (`tests/kicad_parity.rs`, 15 committed boards; `--ignored` runs the 57-board corpus); the frame against KiCad's session import is `tests/kicad_frame.rs`. See kicad-plugin.md, "Direct `.kicad_pcb` input". |
 | `freerouting -de board.dsn [board.ses] -drc [report.json]` | `freerouting-cli` | Same JSON report as Java's DRC command. Routing isn't implemented yet. |
 | `freerouting -de board.dsn -do out.ses [flags]` (the job flow) | `freerouting-cli` (`args`, `cli`, `log`, `help.txt`), `freerouting::job::{run, outputs, deadline, log}` | Java's flags (one parser for `GlobalSettings` and `CliSettings`), exit codes, outputs and log lines. `tests/args_java.rs` ports Java's argument tests and compares every `fixtures/reference/argv.json` entry; `tests/cli_outputs.rs` runs the binary against the `clirun` rows (SES byte-identical to Java's; `.dsn`, `.rules`, `.drc.json` written; `.frb`, `.scr`, `.json`, `.kicad_pcb`, `.xyz` refused before any work); `tests/settings_parity.rs` holds the KRT gates. Outputs are atomic and never 0 bytes, deadlines only stop work. **The pipeline is a stub until C07.8 (A13): the board is written as loaded.** `main.rs` only calls `freerouting_cli::cli::run`; the flow is `job::run::run_job`. Differences: DIVERGENCES, "Command line and job outputs". |
 

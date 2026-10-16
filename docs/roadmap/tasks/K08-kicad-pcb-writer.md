@@ -4,7 +4,7 @@ Opened 2026-10-15. **Optional: start only on Dan's go-ahead** (K00 question
 5). Today the routed result goes back to KiCad as a SES file through
 `pcbnew.ImportSpecctraSES`, a SWIG call. If KiCad 11 drops SWIG, as KRT's
 docstring says master did in 2026-03 (unverified), the plugin can no longer
-call it. With [K07](K07-kicad-pcb-entry-points-and-parity.md) the router
+call it. With [K07](archive/K07-kicad-pcb-entry-points-and-parity.md) the router
 already reads `.kicad_pcb` directly; this checklist writes the routed copper
 back into a copy of the `.kicad_pcb`, so neither direction needs KiCad's
 Specctra code.

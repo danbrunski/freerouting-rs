@@ -476,6 +476,18 @@ it (use `vertical`, or `scroll_source` without `drag`); a click needs a second f
 effect, so the tests step at least twice; a drop-down is found by its accessible name
 (`name_drop_down`). `docs/DIVERGENCES.md` has the "Rules dialogs" list.
 
+## Opening `.kicad_pcb` (K07.2)
+
+File > Open, drag and drop and the command line accept a `.kicad_pcb`. `session::load` reads it through
+`freerouting::io::kicad::read_kicad_input` (the direct reader of `crates/freerouting-kicad`, with the
+`.kicad_pro` and `.kicad_dru` next to it) and builds the board from the tree like a DSN's; the reader's
+warnings (`wire_keepout` areas, kept footprint zones, renamed references) and its read report (rule areas
+with their flags and the keepouts emitted, planes, arcs followed, `.kicad_dru` rules and their outcome) go
+into `Session::warnings` as "KiCad reader: ..." and "KiCad read report: ..." lines, for the warnings window.
+`find_design` also looks for `<base_design>.kicad_pcb` when a `.ses` is opened alone. The file browser lists
+`.kicad_pcb`. Tests: `tests/ui_kicad.rs` (Issue368 opens, its item count equals `build_board` of the reader's
+tree) and `file_dialog::tests::lists_kicad_boards`. No Save yet writes a `.kicad_pcb` (K08).
+
 ## What's next
 
 In plan order. Each item needs engine work first, so check what has landed in

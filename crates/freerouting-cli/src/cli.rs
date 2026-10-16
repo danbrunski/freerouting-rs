@@ -19,7 +19,9 @@ use std::process::ExitCode;
 
 use freerouting::drc::{DrcRunOptions, run_drc};
 use freerouting::job::outputs::{self, OutputFormat};
-use freerouting::job::prepare::{JobInput, RulesChoice};
+use freerouting::job::prepare::{
+    DesignKind, JobInput, KicadReadError, ReadOptions, RulesChoice, design_kind, read_kicad_input,
+};
 use freerouting::job::run::{JobContext, run_job};
 use freerouting::job::{LogLevel, LogLine};
 use freerouting::settings::ResolveContext;
@@ -169,28 +171,43 @@ fn run_route_mode(parsed: &Args, level: ConsoleLevel) -> u8 {
             return fail(level, e);
         }
     };
-    let dsn = match std::fs::read(design) {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            log::print(&log_lines, level);
-            log::print(
-                &[
-                    line(
-                        LogLevel::Error,
-                        format!("Couldn't load the input file '{design}': {e}"),
+    let kicad = design_kind(Path::new(design)) == DesignKind::KicadPcb;
+    let (dsn, kicad_input) = if kicad {
+        match read_kicad_input(Path::new(design), ReadOptions::default()) {
+            Ok(input) => (Vec::new(), Some(input)),
+            Err(KicadReadError::Io(e)) => {
+                log::print(&log_lines, level);
+                return unreadable_input(design, &e, level);
+            }
+            Err(KicadReadError::Refused(message)) => {
+                log::print(&log_lines, level);
+                let name = Path::new(design)
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                return fail(
+                    level,
+                    format!(
+                        "There was a parse error while reading board file at '{name}': {message}"
                     ),
-                    line(
-                        LogLevel::Warn,
-                        format!("Couldn't read the input file '{design}', aborting."),
-                    ),
-                ],
-                level,
-            );
-            return 1;
+                );
+            }
+        }
+    } else {
+        match std::fs::read(design) {
+            Ok(bytes) => (bytes, None),
+            Err(e) => {
+                log::print(&log_lines, level);
+                let message = format!("Couldn't load the input file '{design}': {e}");
+                return unreadable_input(design, &message, level);
+            }
         }
     };
     let session = read_session_file(parsed, &mut log_lines);
     let mut input = build_job_input(parsed, design, dsn, session);
+    if let Some(read) = kicad_input {
+        input.set_kicad(read);
+    }
     input.config_file = config;
     input.environment = environment;
 
@@ -202,6 +219,21 @@ fn run_route_mode(parsed: &Args, level: ConsoleLevel) -> u8 {
     log_lines.extend(outcome.log.iter().cloned());
     log::print(&log_lines, level);
     outcome.exit_code() as u8
+}
+
+/// `Couldn't load the input file`, as Java logs an unreadable design.
+fn unreadable_input(design: &str, message: &str, level: ConsoleLevel) -> u8 {
+    log::print(
+        &[
+            line(LogLevel::Error, message),
+            line(
+                LogLevel::Warn,
+                format!("Couldn't read the input file '{design}', aborting."),
+            ),
+        ],
+        level,
+    );
+    1
 }
 
 /// The settings file and the environment as sources, with their warnings

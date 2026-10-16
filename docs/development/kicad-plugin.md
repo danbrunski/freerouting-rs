@@ -151,3 +151,72 @@ Checked 2026-10-15 against KiCad's GitLab (`gitlab.com/kicad/code/kicad`).
   on a real routed board, and consider passing options (passes, threads) through.
 - Real silkscreen in the viewer would need the plugin to export extra data from the board
   alongside the DSN (offered to Dan, not requested).
+
+## Direct `.kicad_pcb` input (K07)
+
+`freerouting -de board.kicad_pcb`, the GUI's File > Open and `freerouting::io::read_design` read a KiCad
+board without `ExportSpecctraDSN`, so a plugin can hand the CLI the board file. KiCad 11 (K00 question 5;
+SWIG removal in KiCad master is unverified here) drops `ExportSpecctraDSN`; a master that exports pours as
+`(wire (polygon ...))` instead of planes (GUI report 6.2, unverified) would not matter either. Bringing the
+result back still needs `ImportSpecctraSES` or the optional writer (K08).
+
+**What is read** (`crates/freerouting-kicad`, tests in its `tests/` and in `crates/freerouting/tests/kicad_*.rs`):
+the board file (KiCad 6 to 10; older files are refused with a one-line message, `a_kicad_5_file_exits_1`), the
+`<stem>.kicad_pro` next to it (net classes; KiCad's defaults when missing, `a_missing_project_file_is_not_an_error`)
+and the `<stem>.kicad_dru` (K07.5, below). Layers, nets, net classes, the outline, footprints and pads, rule
+areas, copper zones as planes, tracks and arcs, vias.
+
+**Rule areas map by their flags** (K06.2, `rule_areas_map_by_flags`), where KiCad's export makes a full
+`keepout` of any area that bans neither tracks nor vias:
+
+| Area bans | Emitted |
+|---|---|
+| tracks and vias | `keepout` |
+| vias only | `via_keepout` |
+| tracks only | `wire_keepout`, built as a keepout that also blocks vias (as Java does, K00 question 1), one warning per area |
+| footprints (any other flags) | the above plus a `place_keepout` |
+| only pads, only copper pour, or nothing | nothing; a warning says so |
+
+`canary-pwr`'s fan inlet bans pads and footprints, not tracks: the export makes it a full keepout (5 traces and
+15 vias of the board then violate it), the reader a `place_keepout` (0 violations; `canary-pwr` row of the
+corpus run, `canary_pwr_fan_inlet`).
+
+**Expected differences from KiCad's export** (`crates/freerouting/tests/kicad_parity.rs`, `EXPECTED_DIFFERENCES`;
+the test fails on any other difference, and on a listed one that no longer occurs):
+
+- rule-area kinds as above (K06.2): the reader has `place_keepout`s and fewer full keepouts;
+- track arcs are followed as polylines, the export writes one chord (K06.5);
+- copper zones that footprints own stay planes, the export drops them (K06.4, K00 question 6);
+- the order of the non-default net classes (project order against `std::unordered_map` order) and of the
+  outline's holes (`tastexx-pcb`);
+- coordinates keep KiCad's nanometres where the export prints `%.6g` (K00 question 2): areas, lengths and
+  extents differ by under 2e-4 of themselves, and on routed boards the export's rounding leaves pads and
+  tracks a micrometre apart, so its DRC sees more incomplete connections and dangling tracks than the
+  reader's (`export_rounding_explains_connectivity`: round the reader's wires like the export and the counts
+  are equal on `bm1`, `bm4`, `bm10`).
+
+**`.kicad_dru`** (`dru.rs`): every rule is read and reported (`KicadInput::report_lines`, printed by the CLI and
+shown in the GUI's warnings window). `ReadOptions::apply_design_rules` (default off, K00 question 7) applies
+the class-pair clearance (`class_class`) and class track width (`opt`) rules; a condition term the module
+cannot evaluate (`insideCourtyard`, `intersectsArea`, `inDiffPair`, item types) makes the rule UNSUPPORTED and
+is named in both modes. `canary-pwr`'s ten `insideCourtyard` rules are all UNSUPPORTED
+(`canary_pwr_rules_are_unsupported_by_name`). Board minimums of the `.kicad_pro` (track 0.15, annular 0.15, edge
+clearance 0.3 for `canary-pwr`) and pad-local clearances are not carried into the DSN model yet.
+
+**Regenerating the reference exports and running the corpus.** `tools/kicad-reader/export.sh <board> <out.dsn>`
+exports a board with KiCad 10.0.7 (WSL; `--windows` for 10.0.5), `fetch-corpus.sh target/kicad-corpus` and
+`export-corpus.sh` make the out-of-repo corpus (K04.7/K04.8, `fixtures/kicad/README.md`). Then
+`cargo test --release -p freerouting --test kicad_parity -- --ignored --nocapture corpus_summary` prints one
+row per board (`FR_KICAD_ONLY=stem,stem` limits it) and `corpus_timing` the read times
+(`FR_KICAD_TIME`); `tools/kicad-reader/frame-check.sh` imports two sessions into KiCad and compares the tracks
+(K07.4).
+
+**Coordinate frame** (K00 question 2, K07.4; `crates/freerouting/tests/kicad_frame.rs`): the export declares
+`(resolution um 10)` and writes micrometres; the session import computes `nm = KiROUND(1000 * v / resolution)`.
+Java's session for `Issue558-dev-board` (`dev-board.kicad10.java.ses`, 231 wires, 35 vias) lands at identical
+board coordinates on the board built from the reader and on the one built from the export, with no
+incomplete connection left on either; KiCad 10.0.7 imports it and the session the Rust writer produces from the
+reader's board to the same 494 tracks, vias and arcs, largest endpoint distance 0.0 nm. Loss: KiCad's
+nanometres round to 0.1 um board units, at most 50 nm per coordinate; on this board every pad centre is on
+the grid and the largest distance of a track end to its pad centre is 0 nm (171 ends). A finer resolution is
+not worth a change until a board shows a connection lost to it.

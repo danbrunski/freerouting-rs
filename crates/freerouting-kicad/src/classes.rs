@@ -58,9 +58,13 @@ impl Matcher {
         if !pattern.ends_with('$') {
             r.push('$');
         }
+        // wx's regular expressions refuse a quantifier with nothing to repeat, also
+        // behind the added `^`; the `regex` crate accepts `^*` and would then match
+        // anywhere in the name (`*VMEPX.*` of vme-wren, K07.6).
+        let dangling = pattern.starts_with(['*', '+', '?']);
         Matcher {
             wildcard: pattern.to_owned(),
-            regex: Regex::new(&r).ok(),
+            regex: if dangling { None } else { Regex::new(&r).ok() },
         }
     }
 
@@ -287,5 +291,31 @@ impl Have {
             && self.dp_gap
             && self.wire
             && self.bus
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// K07.6: `*VMEPX.*` is a wildcard (`*` any text, `.` a dot). The `regex` crate
+    /// takes `^*VMEPX.*$` as a regular expression without a start anchor, which
+    /// wx refuses, so `/bus/VMEPX_IO0` wrongly got the class in vme-wren.
+    #[test]
+    fn leading_star_pattern_is_a_wildcard_only() {
+        let project = Project::parse(
+            r#"{"net_settings": {"classes": [
+                {"name": "Default", "clearance": 0.2, "track_width": 0.2},
+                {"name": "VMEPX", "clearance": 0.1, "track_width": 0.1, "priority": 0,
+                 "via_diameter": 0.6, "via_drill": 0.3, "microvia_diameter": 0.3,
+                 "microvia_drill": 0.1, "diff_pair_width": 0.2, "diff_pair_gap": 0.2,
+                 "wire_width": 6, "bus_width": 12}],
+              "netclass_patterns": [{"netclass": "VMEPX", "pattern": "*VMEPX.*"}]}}"#,
+        )
+        .unwrap();
+        let table = ClassTable::new(&project);
+        assert_eq!(table.effective("/bus/VMEPX.IO0").name, "VMEPX");
+        assert_eq!(table.effective("/bus/VMEPX_USERIO_A.IO0").name, "Default");
+        assert_eq!(table.effective("VMEPX.A").name, "VMEPX");
     }
 }

@@ -433,8 +433,8 @@ pub fn is_multi_file_concatenation(raw: &str, valid_extensions: &[&str]) -> bool
     })
 }
 
-/// `DE_VALID_EXTENSIONS`.
-pub const DE_VALID_EXTENSIONS: &[&str] = &[".dsn", ".json", ".ses", ".rules"];
+/// `DE_VALID_EXTENSIONS`, and `.kicad_pcb` (K07.2: a KiCad board read directly; Java refuses it).
+pub const DE_VALID_EXTENSIONS: &[&str] = &[".dsn", ".json", ".ses", ".rules", ".kicad_pcb"];
 /// `DO_VALID_EXTENSIONS`.
 pub const DO_VALID_EXTENSIONS: &[&str] = &[
     ".ses",
@@ -495,7 +495,7 @@ fn parse_design_files(argv: &[String], i: usize, out: &mut Args) -> usize {
             continue;
         }
         let lower = file.to_lowercase();
-        if lower.ends_with(".dsn") {
+        if lower.ends_with(".dsn") || lower.ends_with(".kicad_pcb") {
             if has_dsn {
                 out.note(
                     LogLevel::Warn,

@@ -19,7 +19,7 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 | [K04](archive/K04-kicad-pcb-syntax.md) ✅ | `crates/freerouting-kicad`: s-expression lexer and tree, version gates, net-dialect detection, the test corpus | M / low | none |
 | [K05](archive/K05-kicad-pcb-board-structure.md) ✅ | Layers, nets and net classes (`.kicad_pro`), board outline, footprints and pads, as a DSN syntax tree | L / medium | K04 |
 | [K06](archive/K06-kicad-pcb-rule-areas-and-copper.md) ✅ | Rule areas to keepout kinds, zones, tracks and arcs, vias | M / medium | K05 |
-| [K07](K07-kicad-pcb-entry-points-and-parity.md) | `.kicad_pcb` opens in the CLI and the GUI; parity against KiCad's DSN export on the corpus; `.kicad_dru` subset; the coordinate-frame check | M / medium | K06; C07 (CLI `-de`); G01 (GUI `Session`) |
+| [K07](archive/K07-kicad-pcb-entry-points-and-parity.md) ✅ | `.kicad_pcb` opens in the CLI and the GUI; parity against KiCad's DSN export on the corpus; `.kicad_dru` subset; the coordinate-frame check | M / medium | K06; C07 (CLI `-de`); G01 (GUI `Session`) |
 | [K08](K08-kicad-pcb-writer.md) | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG | M / medium | K07, C05; Dan's go-ahead (question 5) |
 
 The report's PLG-1 is K01, PLG-2 is K02, PLG-1.5 (PCM) grew into K03, and

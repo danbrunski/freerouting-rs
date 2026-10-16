@@ -101,7 +101,8 @@ impl App {
         }
         let message = match &self.loading {
             Some((paths, _)) => format!("Reading {}…", paths[0].display()),
-            None => "Open a .dsn board with File > Open, or drop one on the window.".into(),
+            None => "Open a .dsn or .kicad_pcb board with File > Open, or drop one on the window."
+                .into(),
         };
         self.scripted
             .before_canvas(&mut self.view, self.loaded.as_ref());

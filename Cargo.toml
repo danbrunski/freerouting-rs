@@ -12,6 +12,7 @@ rust-version = "1.85"
 [workspace.dependencies]
 freerouting-geometry = { path = "crates/freerouting-geometry" }
 freerouting-dsn = { path = "crates/freerouting-dsn" }
+freerouting-kicad = { path = "crates/freerouting-kicad" }
 freerouting = { path = "crates/freerouting" }
 
 # Opt-level 1: `cargo test --workspace` warm takes 26 s instead of 181 s; overflow checks and debug assertions stay on.

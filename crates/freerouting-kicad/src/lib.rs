@@ -24,6 +24,9 @@
 //!   board outline), [`footprints`] and [`pads`] (images, padstacks, pins),
 //!   [`image_outlines`] (courtyards and graphics) and [`arc`] (KiCad's
 //!   arc-to-polyline arithmetic).
+//! - K07 adds [`dru`]: the board's `.kicad_dru` rules, read and reported, and
+//!   applied (the class-pair clearances and class track widths) with
+//!   `ReadOptions::apply_design_rules`.
 //! - K06 adds the copper: [`zones`] reads `(zone ...)`; [`rule_areas`] maps rule
 //!   areas to keepouts by their flags; copper zones become planes
 //!   ([`zones::make_plane`]); [`tracks`] merges segments and arcs into wires;
@@ -78,6 +81,7 @@
 
 pub mod arc;
 pub mod classes;
+pub mod dru;
 pub mod error;
 pub mod fmt6g;
 pub mod footprints;
@@ -100,5 +104,7 @@ pub mod vias;
 pub mod zones;
 
 pub use error::{ErrorKind, KicadError, Warning};
-pub use read::{DieLength, Extras, KicadRead, ReadOptions, read, read_named, read_with};
+pub use read::{
+    DieLength, Extras, KicadRead, ReadOptions, read, read_named, read_with, read_with_rules,
+};
 pub use report::ReadReport;

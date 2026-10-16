@@ -10,7 +10,9 @@ them; the names are the JSON paths of the settings table.
 PARAMETERS
   -de <design.dsn>[+<session.ses>][+<design.rules>]
       Load the Specctra design file. The files may also be separate
-      arguments, in any order; the last .dsn wins.
+      arguments, in any order; the last .dsn wins. A KiCad board
+      (<design>.kicad_pcb) is read directly, with the <design>.kicad_pro and
+      <design>.kicad_dru next to it; the read report is printed.
   -di <design_directory>
       Accepted and ignored (the folder of the GUI's open dialogs).
   -dr <design_rules_file>

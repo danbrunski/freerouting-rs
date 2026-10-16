@@ -35,6 +35,7 @@
 //! `tests/job_prepare_reference.rs` compares the result with Java's dumps,
 //! which run the real second merge, on every fixture and scenario.
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::PathBuf;
@@ -43,6 +44,9 @@ use super::overrides::{self, OverrideState};
 use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
 use crate::dsn::ast::{Pcb, RulesFile};
+pub use crate::io::kicad::{
+    DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input,
+};
 use crate::io::specctra::{
     BoardReadResult, SesImportSummary, apply_rules_file, build_board, read_board_from_str,
 };
@@ -71,8 +75,16 @@ pub enum RulesChoice {
 /// What a job loads.
 #[derive(Clone, Debug)]
 pub struct JobInput {
-    /// The bytes of the DSN file.
+    /// The bytes of the DSN file. Empty when [`pcb`](Self::pcb) is set.
     pub dsn: Vec<u8>,
+    /// A design that was read already, in place of `dsn`: the tree of a
+    /// `.kicad_pcb` (K07.2, [`crate::io::kicad::read_kicad_input`]). The
+    /// settings come from its `autoroute_settings` (none for a KiCad tree)
+    /// like those of a parsed DSN.
+    pub pcb: Option<Pcb>,
+    /// Log lines to put in front of the job's own: the reader's warnings and
+    /// report for a design read by the caller.
+    pub read_log: Vec<LogLine>,
     /// The design name: the file name without its last extension.
     pub design_name: String,
     /// The directory of the DSN file, where [`RulesChoice::Adjacent`] looks.
@@ -98,6 +110,8 @@ impl JobInput {
     pub fn new(dsn: Vec<u8>, design_name: impl Into<String>) -> JobInput {
         JobInput {
             dsn,
+            pcb: None,
+            read_log: Vec::new(),
             design_name: design_name.into(),
             dsn_dir: None,
             ses: None,
@@ -108,6 +122,24 @@ impl JobInput {
             cli: None,
             extra_sources: Vec::new(),
         }
+    }
+
+    /// Uses a `.kicad_pcb` that the caller read ([`read_kicad_input`], K07.2)
+    /// in place of the DSN bytes: its tree is built into the board, and its
+    /// warnings (each with its board line, `wire_keepout` areas included),
+    /// then the read report and the `.kicad_dru` outcome, lead the job's log
+    /// as warning and info lines.
+    pub fn set_kicad(&mut self, read: KicadInput) {
+        let warnings = read.warnings.iter().map(|w| LogLine {
+            level: LogLevel::Warn,
+            text: format!("KiCad reader: {w}"),
+        });
+        let report = read.report_lines().into_iter().map(|text| LogLine {
+            level: LogLevel::Info,
+            text,
+        });
+        self.read_log = warnings.chain(report).collect();
+        self.pcb = Some(read.pcb);
     }
 
     /// The design name of a file name: `getFilenameWithoutExtension`, the
@@ -224,9 +256,12 @@ fn read_rules_file(path: &std::path::Path, log: &mut Vec<LogLine>) -> Option<Rul
 /// Loads a job the way Java does before it routes. See the module docs for
 /// the sequence.
 pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob, JobError> {
-    let mut log = Vec::new();
+    let mut log = input.read_log.clone();
     let text = freerouting_dsn::decode(&input.dsn);
-    let pcb = Pcb::parse(&text).ok();
+    let pcb: Option<Cow<'_, Pcb>> = match &input.pcb {
+        Some(pcb) => Some(Cow::Borrowed(pcb)),
+        None => Pcb::parse(&text).ok().map(Cow::Owned),
+    };
 
     // 1. The first merge.
     let mut sources = vec![(Source::Defaults, defaults(ctx))];

@@ -1,5 +1,6 @@
 //! The open design: the engine board, the design it was built from, and the
-//! files it came from. Loading reads a `.dsn` (and optionally a `.ses` on top
+//! files it came from. Loading reads a `.dsn` or a `.kicad_pcb` (K07.2; and
+//! optionally a `.ses` on top
 //! of it) and flattens the board into a [`Scene`] for drawing.
 //!
 //! The session keeps the board, which ratsnest, DRC, item info, editing,
@@ -15,6 +16,7 @@ use std::time::Instant;
 use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
 use freerouting::dsn::{self, Pcb, Session as SesFile};
+use freerouting::io::kicad::{DesignKind, ReadOptions, design_kind, read_kicad_input};
 use freerouting::io::specctra::{BoardReadResult, SesImportSummary, build_board, import_session};
 
 use crate::scene::{Flattener, Scene};
@@ -178,7 +180,29 @@ fn read_design(path: &Path) -> Result<(Pcb, Vec<String>), String> {
     read_design_timed(path, &mut LoadTimings::default())
 }
 
+/// Reads a design file into its syntax tree: a `.kicad_pcb` through the
+/// engine's direct reader (K07.2; its warnings and its read report, rule areas
+/// and `.kicad_dru` rules included, come back as warnings), anything else as
+/// a DSN.
 fn read_design_timed(path: &Path, timings: &mut LoadTimings) -> Result<(Pcb, Vec<String>), String> {
+    if design_kind(path) == DesignKind::KicadPcb {
+        let started = Instant::now();
+        let input = read_kicad_input(path, ReadOptions::default())
+            .map_err(|e| format!("{}: {e}", path.display()))?;
+        timings.parse_ms += started.elapsed().as_secs_f64() * 1000.0;
+        let mut warnings: Vec<String> = input
+            .warnings
+            .iter()
+            .map(|w| format!("KiCad reader: {w}"))
+            .collect();
+        warnings.extend(
+            input
+                .report_lines()
+                .into_iter()
+                .map(|l| format!("KiCad read report: {l}")),
+        );
+        return Ok((input.pcb, warnings));
+    }
     let started = Instant::now();
     let text = read_text(path)?;
     timings.read_ms += started.elapsed().as_secs_f64() * 1000.0;
@@ -212,9 +236,12 @@ pub fn find_design(session_path: &Path, session: &SesFile) -> Option<PathBuf> {
         names.push(stem.to_string_lossy().into_owned());
     }
     names.push(session.name.clone());
+    // a DSN first, then the KiCad board a session of the direct reader names
     names.iter().find_map(|n| {
-        let p = dir.join(format!("{}.dsn", design_stem(n)));
-        p.is_file().then_some(p)
+        ["dsn", "kicad_pcb"].iter().find_map(|ext| {
+            let p = dir.join(format!("{}.{ext}", design_stem(n)));
+            p.is_file().then_some(p)
+        })
     })
 }
 

@@ -537,6 +537,17 @@ compare them on 12 committed boards and the 56-board corpus).
   gives KiCad's behaviour (`planes_and_netless_zones`).
 - The vias of net classes are listed in project-file order, KiCad's in `std::unordered_map`
   order; the Default class's via is first in both (`copper::via_lists` compares the rest as a set).
+- The board's `<stem>.kicad_dru` is read and every rule reported (applied, ignored or UNSUPPORTED
+  with the first unsupported term); KiCad's export ignores the file, so Java has never seen these
+  rules. The expressible ones (class-pair clearance, class track width) change the board only with
+  `ReadOptions::apply_design_rules`, off by default (K00 question 7; `supported_rules_change_the_tree_exactly`,
+  `option_off_leaves_the_tree_alone`, `design_rules_reach_the_board`). `canary-pwr`'s ten
+  `insideCourtyard` rules are all UNSUPPORTED (`canary_pwr_rules_are_unsupported_by_name`).
+- Against the export's board the reader's differences are exactly the ones above and nothing
+  else: `crates/freerouting/tests/kicad_parity.rs` lists each with its reason and fails on any
+  other, and on a listed one that no longer occurs; the item order is the export's except for
+  the class order, the order of the outline's holes (`tastexx-pcb`) and what the area and arc
+  differences shift.
 
 ## freerouting-cli
 
@@ -573,6 +584,11 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
   error with exit 1 (Java opens the GUI), and `-de x.json` (KiCad JSON) is refused.
 - Until C07.8 the pipeline is a stub: with the router enabled the job warns that routing is not
   implemented and writes the board as loaded.
+- `-de board.kicad_pcb` is accepted (Java: "Unknown file type"). The board is read directly with
+  its `.kicad_pro` and `.kicad_dru` (`io::read_design`), the reader's warnings and read report are
+  printed before the job's own log, and a file the reader refuses (KiCad 5 or older) exits 1 with
+  its one-line message (`crates/freerouting-cli/tests/cli_kicad.rs`). The session names the board
+  by its file stem, as for a DSN.
 
 ## freerouting-gui
 
