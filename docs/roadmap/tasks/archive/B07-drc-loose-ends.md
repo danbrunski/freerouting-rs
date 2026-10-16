@@ -1,7 +1,7 @@
 # B07 — DRC loose ends
 
 Opened 2026-10-15. The DRC stage is ported and matches Java's reports on every
-fixture (`tests/reference_drc.rs`). [port-completion.md](../port-completion.md)
+fixture (`tests/reference_drc.rs`). [port-completion.md](../../port-completion.md)
 lists two loose ends: some Java DRC unit tests are not ported, or are ported
 with weaker assertions; and copper islands are neither compared with Java nor
 computed in the reference test. This checklist closes both, plus two
@@ -47,7 +47,7 @@ AWT path order, and measures dead copper by bounding box.
 
 ## Checklist
 
-- [ ] **B07.1 — The `ClearanceViolationTest` cases.**
+- [x] **B07.1 — The `ClearanceViolationTest` cases.**
   - Java: `drc/ClearanceViolationTest.java:21-131`; the logic is
     `ClearanceViolation.isUnfixable` and `getCategory` (`drc/ClearanceViolation.java`),
     ported as `is_unfixable` and `category` (`src/drc/clearance.rs:61-100`).
@@ -59,8 +59,27 @@ AWT path order, and measures dead copper by bounding box.
   - **Accept:** 8 tests, one per Java test name (snake case), each asserting
     `is_unfixable` and `category` exactly as Java does. The old aggregate test
     stays.
+  - *Done 2026-10-15:* 8 tests appended to `tests/drc.rs` on `CATEGORY_DSN`, a
+    two-layer board read with `read_board`, plus traces and a via inserted through
+    the board API. Each asserts `is_unfixable` and `category` as Java does, on the
+    violation `clearance_violations(first)` finds with `second`:
+    `test_pin_to_pin_is_unfixable_and_categorized_correctly` (two overlapping
+    pins, nets A/B), `test_pin_to_outline_…` (pin E1 on the outline),
+    `test_pin_to_keepout_…` (keepout first, as in Java: a net-less keepout is no
+    obstacle for a pin, so the keepout is the GND plane after
+    `set_conduction_is_obstacle`, a Java `ObstacleArea` subclass; the test checks it
+    reports nothing before), `test_pin_to_component_outline_…` (a component outline
+    has no tree shapes, so the test asserts `tile_shape_count == 0` and builds the
+    `ClearanceViolation` from the real pin and its real outline, as Java builds it),
+    `test_fixed_route_…` (`UserFixed` trace over a foreign pin, then a `UserFixed`
+    via of another net on that trace, Java's second pair),
+    `test_routable_trace_is_potentially_fixable`,
+    `test_two_routable_traces_are_potentially_fixable`,
+    `test_other_unfixable_items_categorized_correctly` (two overlapping obstacle
+    planes of different nets: no pin, no route). `clearance_violation_categories`
+    stays. `cargo test -p freerouting --test drc`: `30 passed; 0 failed`.
 
-- [ ] **B07.2 — Exact counts for Issue575.**
+- [x] **B07.2 — Exact counts for Issue575.**
   - Java: `UnconnectedItemsReproductionTest.java:52-130`.
   - Rust: replace the lower bounds with Java's exact values: items 2402 and 2411
     are dangling traces; 9 unconnected groups; 24 dangling tracks; 4 dangling vias;
@@ -70,8 +89,26 @@ AWT path order, and measures dead copper by bounding box.
     representative's id.
   - **Accept:** exact assertions green; any number that differs from Java's names
     the representative item that explains it.
+  - *Done 2026-10-15:* `tests/drc.rs` `issue575_unconnected_items` now asserts exact
+    values. The checklist's 9 / 24 / 4 are the lower bounds Java's test takes from a
+    KiCad report; Java's own DRC at `cda540f` finds **44 groups, 110 dangling tracks,
+    4 dangling vias** (`java_drc_digest.tsv` `load` line, and a Java probe of the
+    test's steps — `BoardLoader.loadBoardIfNeeded`, `getAllUnconnectedItems`,
+    `generateReport` — run with the `target/java-reference/classes` cache, whose
+    `DesignRulesChecker.class`/`UnconnectedItems.class` are byte-identical to ECJ
+    output of the `cda540f` sources: `PROBE tracks 110 vias 4 groups 44`,
+    `PROBE report tracks 110 vias 4 unconnected 44`, `viaIds [2484, 2493, 2494, 2518]`,
+    `via2522 layers 0 1 tail false contacts 2`, items 2402/2411 `PolylineTrace net 1
+    tail true contacts 1`, item 321 a `Pin` not in 2402's contacts). Rust asserts
+    groups 44, via ids [2484, 2493, 2494, 2518], via 2522 (layers 0..1, not a tail,
+    2 contacts), 2402/2411 (net 1, tails, 1 contact), pin 321 not a contact, and the
+    spot ids 2340, 1869, 2372, 1802, 2402, 2411 dangling. The one difference:
+    **109** dangling tracks, because trace **1919** is the representative
+    (`first_item`) of its group in Rust and Java reports it dangling; the test
+    asserts that 1919 is a tail, not reported, and a group's `first_item`.
+    `cargo test -p freerouting --test drc issue575`: `1 passed`.
 
-- [ ] **B07.3 — Copper islands compared with Java.**
+- [x] **B07.3 — Copper islands compared with Java.**
   - Java `IslandsProbe.java`: for every `fixtures.tsv` row with a conduction area,
     load (and import the session), call `getZoneIslandViolations()`, and write each
     finding: conduction area id, type (`isolated_island_unconnected` or
@@ -92,8 +129,33 @@ AWT path order, and measures dead copper by bounding box.
     - The done note gives the number of fixtures compared, findings matched and
       boards allowlisted.
     - The DIVERGENCES copper-island entry points to the test.
+  - *Done 2026-10-16:* Java at `a773a70ec` (the current pin, J01). New
+    `tools/java-reference/probes/board/IslandsProbe.java` (Boards block verbatim) writes,
+    after load and session import, per conduction area an `area` line (island count,
+    Java's `primary` island, uncovered fill), one `island` line per island of Java's
+    decomposition (bounds, shoelace `awtArea`, `extra` = area outside the fill,
+    `xorMerges`, `holeOutside`), one `finding` line per `getZoneIslandViolations()`
+    result (area, type, layer, net, bounds, `awtArea`, sorted item ids), and the same check
+    with the hole pairing fixed (`fixedIsland`, `fixed` lines). `generate.sh … islands`:
+    `generate.sh: islands: 42 boards` (122 of 164 rows skipped: no conduction areas), 13 MB, all
+    below 1 MiB; a rerun of Issue367-Charger is byte-identical. New
+    `crates/freerouting/tests/reference_islands.rs`;
+    `CARGO_TARGET_DIR=<scratch>/target-o1 cargo test -p freerouting --test reference_islands`:
+    `test result: ok. 2 passed`, printing `zone islands: 42 fixtures compared; matched 2727
+    islands, 1743 fixed findings, 1400 Java findings; 41 boards allowlisted; Java islands only
+    in Java: 630 below SLIVER, 102 below SPECK, 0 merged into a neighbour`. Fixed findings
+    equal Rust's on all 42 boards; 41 boards allowlisted (40 `MisplacedHole` with the
+    evidence island re-checked, 1 `IslandOrder`: Issue754-avionics_hub, a primary tie), each
+    Java-only finding proven to sit on or be judged against a misplaced-hole island or to be
+    the tie's swap. Tolerances: bounds 1% of the fill's side, area 1%, with floors 1e5 units²
+    and perimeter × 5 µm (16-step flattening; Issue230 CNH islands differ by 1.05%). Java
+    islands the port lacks are all < 1e6 units² (AWT leaves spoke pieces outside the
+    clearance circle; checked with a Java probe on Issue756-tomu-fpga, 1457 × 296 units).
+    One expected mismatch, Issue367-Charger area 19: Java's `Area.intersect` leaves a spoke
+    end unclipped (Java probe: clipped bounds start at the spoke corner 492703.94,
+    -283863.06). `docs/DIVERGENCES.md` ("Design rule check") has a line pointing to the test.
 
-- [ ] **B07.4 — Plane owner rules as tests.**
+- [x] **B07.4 — Plane owner rules as tests.**
   - Java: `io/specctra/PlanePinClearanceTest.java` (2 tests, inline DSN) and
     `io/specctra/SignalLayerPourTest.java` (2 tests, inline DSN). Both are owner
     rules (D8: plane-net pads, signal-layer pours ignored when the net has a
@@ -103,3 +165,14 @@ AWT path order, and measures dead copper by bounding box.
     with `BasicBoard::clearance_violations(id)` (`src/drc/clearance.rs:157`) and the
     conduction areas by net and layer.
   - **Accept:** 4 tests green, named after the Java tests.
+  - *Done 2026-10-15:* `crates/freerouting/tests/plane_owner_rules.rs`, inline DSN
+    copied from the Java tests at `cda540f`, loaded with
+    `freerouting::io::specctra::read_board`.
+    `CARGO_TARGET_DIR=<scratch>/target-o1 cargo test -p freerouting --test plane_owner_rules`:
+    `test result: ok. 4 passed; 0 failed` —
+    `foreign_pin_inside_plane_is_not_a_violation` (`clearance_violations` of plane and
+    pin both empty), `foreign_pin_inside_obstacle_plane_is_still_a_violation`
+    (after `set_conduction_is_obstacle(plane, true)`: non-empty, every `second_item`
+    is the pin), `signal_layer_pour_is_ignored_when_net_has_power_layer_plane`
+    (areas by net and layer = {GND: Gnd.Cu, VCC: Pwr.Cu, SIG: B.Cu}),
+    `signal_layer_pour_is_kept_on_two_layer_board` ({GND: B.Cu}, GND `contains_plane`).

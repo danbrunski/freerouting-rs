@@ -33,7 +33,7 @@ the new pin by J01.5.
 | [B04](archive/B04-checks-and-picks.md) ✅ | `ItemFilter` and filtered picks, `check_shape`, `check_trace_shape`, `check_polyline_trace` (burns an id), `check_trace_segment`, nearest-item pick, move and net-change checks, item helpers; the `board-queries` probe equal | M / medium | B01.1, B01.2; B02.6 for B04.7 |
 | [B05](B05-item-operations.md) | Item moves and transforms, copies, pin exit restrictions and widths, the three pin-connection fixes, `connect_to_trace`, pin swap, placement tests | L / medium | B01.2, B02.4, B04.4 |
 | [B06](archive/B06-scores.md) ✅ | Router and optimizer scores dispatched on `RouterSettings`, the legacy score with Java's float/double split; optional benchmark classes | S–M / low | C02; B01.6 |
-| [B07](B07-drc-loose-ends.md) | The unported Java DRC tests, exact Issue575 counts, copper islands compared with Java, plane owner-rule tests | M / low | B01.1 for B07.3 |
+| [B07](archive/B07-drc-loose-ends.md) ✅ | The unported Java DRC tests, exact Issue575 counts, copper islands compared with Java, plane owner-rule tests | M / low | B01.1 for B07.3 |
 | [B08](B08-gui-engine-api.md) | `ItemGeometry`, `ItemInfo`, route stubs, the rules-edit facade, interactive leftovers, rule-dialog queries | M / low | B02.5 for B08.4; none for the rest |
 | [B09](B09-stage-services.md) | Services for algorithm stages: insert-check-revert transaction, per-net obstacle view, fill model and connectivity, conduction-area obstacle hook | M / medium | B01.3, B01.5, B02.1, B04.3; runs when X or Q needs it |
 

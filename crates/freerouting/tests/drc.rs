@@ -4,8 +4,9 @@
 //! `io/specctra/SesRoundTripTest`), and a test of the drawable DRC data a
 //! viewer uses.
 //!
-//! Not ported: `ClearanceViolationTest` mocks items (the categories are
-//! checked on real boards below), the SES writer tests (no SES writer
+//! `ClearanceViolationTest`'s mocks are real items of a small board.
+//!
+//! Not ported: the SES writer tests (no SES writer
 //! yet), `NetRoutingLedgerTest`'s incremental ledger (only its full-scan
 //! counts, which the ledger must match, are checked), the KiCad JSON
 //! constructor of `BoardStatisticsTest` and the GUI tests.
@@ -13,11 +14,11 @@
 use std::path::{Path, PathBuf};
 
 use freerouting::board::RoutingBoard;
-use freerouting::board::items::ItemId;
+use freerouting::board::items::{ItemId, ItemKind};
 use freerouting::board::structure::{FixedState, Layer, LayerStructure};
 use freerouting::drc::{
-    ClearanceViolationCategory, DesignRulesChecker, UnconnectedKind, ZoneIslandKind,
-    aggregate_sorted_by_severity, load_design,
+    ClearanceViolation, ClearanceViolationCategory, DesignRulesChecker, UnconnectedKind,
+    ZoneIslandKind, aggregate_sorted_by_severity, load_design,
 };
 use freerouting::geometry::{
     Area, Circle, ConvexShape, IntBox, IntPoint, Point, Polyline, PolylineShape, PolylineShapeOps,
@@ -193,31 +194,68 @@ fn clearance_violation_categories() {
 // ---------------------------------------------------------------------------
 // drc.UnconnectedItemsReproductionTest
 
+/// Java's test asserts lower bounds taken from a KiCad report (9 groups,
+/// 24 dangling tracks, 4 dangling vias). The values here are what Java's
+/// DRC finds on this board at `cda540f`: the DRC command line
+/// (`tests/data/java_drc_digest.tsv`, `load` mode) and an in-process probe of
+/// `UnconnectedItemsReproductionTest`'s steps (`getAllUnconnectedItems` and
+/// `generateReport` on `BoardLoader.loadBoardIfNeeded`) both give 44 groups,
+/// 110 dangling tracks and 4 dangling vias (2484, 2493, 2494, 2518), with
+/// trace 2402 and 2411 tails of net 1 with one contact each and via 2522 on
+/// layers 0 to 1, not a tail, with two contacts.
 #[test]
 fn issue575_unconnected_items() {
     let board = load_fixture(UNCONNECTED_FIXTURE);
     let trace1 = board.get_item(2402).expect("item 2402");
     let trace2 = board.get_item(2411).expect("item 2411");
     assert!(trace1.is_trace() && trace2.is_trace());
-    assert_eq!(trace1.net_number(0), trace2.net_number(0));
-    assert!(board.is_tail(trace1.id()));
-    if let Some(pin) = board.get_item(321) {
-        assert!(!board.normal_contacts(trace1.id()).contains(&pin.id()));
+    assert_eq!(trace1.net_number(0), 1);
+    assert_eq!(trace2.net_number(0), 1);
+    for trace in [trace1, trace2] {
+        assert!(board.is_tail(trace.id()));
+        assert_eq!(board.normal_contacts(trace.id()).len(), 1);
     }
-    assert!(board.get_item(2522).is_some_and(|i| i.is_via()));
+    let pin = board.get_item(321).expect("item 321");
+    assert!(pin.is_pin());
+    assert!(!board.normal_contacts(trace1.id()).contains(&pin.id()));
+    let via = board.get_item(2522).expect("item 2522");
+    assert!(via.is_via());
+    assert_eq!((via.first_layer(), via.last_layer()), (0, 1));
+    assert!(!board.is_tail(via.id()));
+    assert_eq!(board.normal_contacts(via.id()).len(), 2);
 
     let mut drc = DesignRulesChecker::new(&board);
     let all = drc.all_unconnected_items();
-    let count = |kind| all.iter().filter(|u| u.kind == kind).count();
-    assert!(count(UnconnectedKind::TrackDangling) >= 24);
-    assert!(count(UnconnectedKind::ViaDangling) >= 4);
-    assert!(count(UnconnectedKind::UnconnectedItems) >= 9);
-    let dangling: Vec<i32> = all
+    let ids = |kind| -> Vec<i32> {
+        let mut ids: Vec<i32> = all
+            .iter()
+            .filter(|u| u.kind == kind)
+            .map(|u| u.first_item.0)
+            .collect();
+        ids.sort_unstable();
+        ids
+    };
+    let groups = all
         .iter()
-        .filter(|u| u.kind == UnconnectedKind::TrackDangling)
-        .map(|u| u.first_item.0)
-        .collect();
-    for id in [2340, 1869, 2372, 1802] {
+        .filter(|u| u.kind == UnconnectedKind::UnconnectedItems)
+        .count();
+    assert_eq!(groups, 44);
+    assert_eq!(ids(UnconnectedKind::ViaDangling), [2484, 2493, 2494, 2518]);
+    // Java reports 110 dangling tracks. Here trace 1919 represents its
+    // group (the first trace of a group without a pin, see
+    // docs/DIVERGENCES.md) and is not reported, so 109. Java's
+    // representative of that group is another item, so 1919 is dangling
+    // there (in both Java runs). Java's choice in the group of trace 1706
+    // varies from run to run with the identity hash codes.
+    let dangling = ids(UnconnectedKind::TrackDangling);
+    assert_eq!(dangling.len(), 109);
+    assert!(!dangling.contains(&1919));
+    assert!(board.is_tail(board.get_item(1919).unwrap().id()));
+    assert!(
+        all.iter()
+            .any(|u| u.kind == UnconnectedKind::UnconnectedItems && u.first_item.0 == 1919)
+    );
+    for id in [2340, 1869, 2372, 1802, 2402, 2411] {
         let item = board.get_item(id).expect("dangling track exists");
         assert!(item.is_trace());
         assert!(board.is_tail(item.id()));
@@ -232,9 +270,10 @@ fn issue575_unconnected_items() {
             .filter(|v| v.violation_type == t)
             .count()
     };
-    assert!(report_count("track_dangling") >= 24);
-    assert!(report_count("via_dangling") >= 4);
-    assert!(report.unconnected_items.len() >= 9);
+    // Java: 110, 4 and 44 (the 1919 difference above).
+    assert_eq!(report_count("track_dangling"), 109);
+    assert_eq!(report_count("via_dangling"), 4);
+    assert_eq!(report.unconnected_items.len(), 44);
 }
 
 // ---------------------------------------------------------------------------
@@ -595,4 +634,280 @@ fn ses_import_reads_wires_without_errors() {
 fn invalid_ses_is_an_error() {
     let mut board = load_fixture("Issue143-rpi_splitter.dsn");
     assert!(read_session(&mut board, "garbage").is_err());
+}
+
+// ---------------------------------------------------------------------------
+// drc.ClearanceViolationTest, one test per Java test, on real items.
+//
+// Java builds each violation from two mocked items. Here the items are
+// real items of a small board, and the violation is the one the clearance
+// check finds between them, except where the check never reports such a
+// pair (a component outline has no search-tree shapes): then the violation
+// is built from the two real items as Java builds it.
+
+/// A two-layer board with every pair the Java tests name. Units are um,
+/// 10 board units per um. Each pin has a net of its own.
+const CATEGORY_DSN: &str = r#"
+(pcb categories.dsn (parser (string_quote ") (space_in_quoted_tokens on))
+  (resolution um 10) (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary (path pcb 0  0 0  40000 0  40000 -20000  0 -20000  0 0))
+    (plane GND (polygon B.Cu 0  20000 -1000  30000 -1000  30000 -9000  20000 -9000))
+    (plane VCC (polygon B.Cu 0  25000 -5000  35000 -5000  35000 -15000  25000 -15000))
+    (rule (width 250) (clearance 200)))
+  (placement
+    (component TP
+      (place P1 5000 -5000 front 0)
+      (place P2 5800 -5000 front 0)
+      (place E1 0 -10000 front 0)
+      (place K1 22000 -3000 front 0)
+      (place F1 10000 -15000 front 0)
+      (place R1 15000 -8000 front 0)))
+  (library
+    (image TP
+      (outline (path signal 100  -1000 -1000  1000 -1000  1000 1000  -1000 1000  -1000 -1000))
+      (pin THT 1 0 0))
+    (padstack THT (shape (circle F.Cu 1500)) (shape (circle B.Cu 1500)) (attach off))
+    (padstack VIA (shape (circle F.Cu 600)) (shape (circle B.Cu 600)) (attach off)))
+  (network
+    (net A (pins P1-1)) (net B (pins P2-1)) (net C (pins E1-1)) (net D (pins K1-1))
+    (net E (pins F1-1)) (net H (pins R1-1))
+    (net T (pins)) (net V (pins)) (net X (pins)) (net Y (pins)) (net Z (pins))
+    (net GND) (net VCC)))
+"#;
+
+fn category_board() -> RoutingBoard {
+    match read_board(CATEGORY_DSN.as_bytes()) {
+        BoardReadResult::Success { board, .. } => *board,
+        _ => panic!("the category board must load"),
+    }
+}
+
+fn net(board: &RoutingBoard, name: &str) -> i32 {
+    board.rules.nets.get_by_name(name, 1).unwrap().net_number
+}
+
+/// The pin of net `name`.
+fn pin_of(board: &RoutingBoard, name: &str) -> ItemId {
+    let net = net(board, name);
+    board
+        .pins()
+        .into_iter()
+        .find(|id| board.item(*id).unwrap().net_number(0) == net)
+        .unwrap()
+}
+
+/// The conduction area of net `name`.
+fn plane_of(board: &RoutingBoard, name: &str) -> ItemId {
+    let net = net(board, name);
+    board
+        .conduction_areas()
+        .into_iter()
+        .find(|id| board.item(*id).unwrap().net_number(0) == net)
+        .unwrap()
+}
+
+/// Inserts a trace of net `name` on F.Cu between two points in um.
+fn trace_of(
+    board: &mut RoutingBoard,
+    name: &str,
+    from: (i32, i32),
+    to: (i32, i32),
+    fixed_state: FixedState,
+) -> ItemId {
+    let net = net(board, name);
+    let class = board.rules.net_class_of(net).unwrap();
+    let (half_width, clearance_class) = (class.trace_half_width(0), class.trace_clearance_class());
+    let point = |(x, y): (i32, i32)| Point::Int(IntPoint::new(10 * x, 10 * y));
+    board
+        .insert_trace_without_cleaning(
+            Polyline::from_corners(&point(from), &point(to)),
+            0,
+            half_width,
+            &[net],
+            clearance_class,
+            fixed_state,
+        )
+        .unwrap()
+}
+
+/// The violation the clearance check of `first` finds with `second`.
+fn violation_between(board: &RoutingBoard, first: ItemId, second: ItemId) -> ClearanceViolation {
+    board
+        .clearance_violations(first)
+        .into_iter()
+        .find(|v| v.second_item == second)
+        .unwrap_or_else(|| panic!("no violation between {first:?} and {second:?}"))
+}
+
+fn assert_category(
+    board: &RoutingBoard,
+    v: &ClearanceViolation,
+    unfixable: bool,
+    category: ClearanceViolationCategory,
+) {
+    assert_eq!(v.is_unfixable(board), unfixable);
+    assert_eq!(v.category(board), category);
+}
+
+#[test]
+fn test_pin_to_pin_is_unfixable_and_categorized_correctly() {
+    let board = category_board();
+    let (pin1, pin2) = (pin_of(&board, "A"), pin_of(&board, "B"));
+    let v = violation_between(&board, pin1, pin2);
+    assert_category(&board, &v, true, ClearanceViolationCategory::PinToPin);
+}
+
+#[test]
+fn test_pin_to_outline_is_unfixable_and_categorized_correctly() {
+    let board = category_board();
+    let pin = pin_of(&board, "C");
+    let outline = board.outline().unwrap().id();
+    let v = violation_between(&board, pin, outline);
+    assert_category(
+        &board,
+        &v,
+        true,
+        ClearanceViolationCategory::PinToOutlineOrKeepout,
+    );
+}
+
+/// A keepout without a net is no obstacle for a pin (in Java too), so the
+/// keepout is a plane that is an obstacle (a Java `ConductionArea` is an
+/// `ObstacleArea`). The keepout comes first, as in the Java test.
+#[test]
+fn test_pin_to_keepout_is_unfixable_and_categorized_correctly() {
+    let mut board = category_board();
+    let pin = pin_of(&board, "D");
+    let keepout = plane_of(&board, "GND");
+    assert!(board.clearance_violations(keepout).is_empty());
+    board.set_conduction_is_obstacle(keepout, true);
+    let v = violation_between(&board, keepout, pin);
+    assert_category(
+        &board,
+        &v,
+        true,
+        ClearanceViolationCategory::PinToOutlineOrKeepout,
+    );
+}
+
+/// A component outline has no shapes in the search tree, so no clearance
+/// check reports it; the violation is built from the pin and its
+/// component's outline, as Java builds it from mocks.
+#[test]
+fn test_pin_to_component_outline_is_unfixable_and_categorized_correctly() {
+    let board = category_board();
+    let pin = pin_of(&board, "A");
+    let component = board.item(pin).unwrap().component_id();
+    let outline = board
+        .items()
+        .find(|i| matches!(i.kind, ItemKind::ComponentOutline(_)) && i.component_id() == component)
+        .expect("the pin's component has an outline")
+        .id();
+    assert!(board.tile_shape_count(board.item(outline).unwrap()) == 0);
+    let v = ClearanceViolation {
+        first_item: pin,
+        second_item: outline,
+        shape: TileShape::from(board.item(pin).unwrap().bounding_box()),
+        layer: 0,
+        expected_clearance: 100.0,
+        actual_clearance: 50.0,
+    };
+    assert_category(
+        &board,
+        &v,
+        true,
+        ClearanceViolationCategory::PinToOutlineOrKeepout,
+    );
+}
+
+#[test]
+fn test_fixed_route_is_unfixable_and_categorized_correctly() {
+    let mut board = category_board();
+    let pin = pin_of(&board, "E");
+    let fixed_trace = trace_of(
+        &mut board,
+        "T",
+        (8000, -15000),
+        (14000, -15000),
+        FixedState::UserFixed,
+    );
+    let v = violation_between(&board, pin, fixed_trace);
+    assert_category(&board, &v, true, ClearanceViolationCategory::FixedRoute);
+
+    let padstack = board.library.padstacks.get_by_name("VIA").unwrap().id;
+    let via_net = net(&board, "V");
+    let via_class = board.item(fixed_trace).unwrap().clearance_class();
+    let fixed_via = board.insert_via(
+        padstack,
+        IntPoint::new(130_000, -150_000),
+        &[via_net],
+        via_class,
+        FixedState::UserFixed,
+        false,
+    );
+    let v = violation_between(&board, fixed_via, fixed_trace);
+    assert_category(&board, &v, true, ClearanceViolationCategory::FixedRoute);
+}
+
+#[test]
+fn test_routable_trace_is_potentially_fixable() {
+    let mut board = category_board();
+    let pin = pin_of(&board, "H");
+    let trace = trace_of(
+        &mut board,
+        "X",
+        (14000, -8000),
+        (16000, -8000),
+        FixedState::Unfixed,
+    );
+    let v = violation_between(&board, pin, trace);
+    assert_category(
+        &board,
+        &v,
+        false,
+        ClearanceViolationCategory::PotentiallyFixable,
+    );
+}
+
+#[test]
+fn test_two_routable_traces_are_potentially_fixable() {
+    let mut board = category_board();
+    let trace1 = trace_of(
+        &mut board,
+        "Y",
+        (3000, -15000),
+        (7000, -15000),
+        FixedState::Unfixed,
+    );
+    let trace2 = trace_of(
+        &mut board,
+        "Z",
+        (5000, -13000),
+        (5000, -17000),
+        FixedState::Unfixed,
+    );
+    let v = violation_between(&board, trace1, trace2);
+    assert_category(
+        &board,
+        &v,
+        false,
+        ClearanceViolationCategory::PotentiallyFixable,
+    );
+}
+
+/// Java's two mocks are neither pins, outlines, keepouts, traces nor vias.
+/// Every real item that is no pin and no route is an outline or an area,
+/// so the pair is two overlapping planes of different nets that are
+/// obstacles: no pin, so not pin-to-outline, and no route.
+#[test]
+fn test_other_unfixable_items_categorized_correctly() {
+    let mut board = category_board();
+    let (gnd, vcc) = (plane_of(&board, "GND"), plane_of(&board, "VCC"));
+    board.set_conduction_is_obstacle(gnd, true);
+    board.set_conduction_is_obstacle(vcc, true);
+    let v = violation_between(&board, gnd, vcc);
+    assert_category(&board, &v, true, ClearanceViolationCategory::OtherUnfixable);
 }

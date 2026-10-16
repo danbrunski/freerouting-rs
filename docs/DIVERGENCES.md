@@ -138,6 +138,18 @@ branch 3 in IntOctagon's box cutout.
   flattening AWT's Bézier circles with 16 steps per quarter. Island boundaries match
   the AWT area except for slivers below 1e5 board units² without items. The islands
   are ordered by lowest y, then lowest x; Java lists them in AWT path order.
+- The copper islands are compared with Java in `tests/reference_islands.rs` (B07.3,
+  probe `IslandsProbe.java`): the port's islands and findings against Java's fill with
+  the hole pairing fixed (equal on all 42 boards with conduction areas), and against
+  Java's own findings on an allowlist of the boards whose hole pairing (40) or island
+  order (1) changes them (`ALLOWLIST`, with the evidence the test re-checks). The
+  16-step flattening makes clearance circles smaller than AWT's, so island areas differ
+  by up to their perimeter times 5 µm. Java has islands the port lacks, all below 1e6
+  board units² and without items: where a round pad's thermal spoke ends on its
+  clearance circle, AWT's `Area.intersect` leaves pieces of the spoke outside the
+  circle (Issue756-tomu-fpga: 1457 by 296 units). On Issue367-Charger (area 19) it
+  leaves a whole spoke end unclipped, so Java's island reaches 297 units further
+  (`EXPECTED_ISLAND_MISMATCHES`).
 - `DesignRulesChecker::set_check_zone_islands` is a Rust addition. It turns the island
   check off, and the reference tests use it.
 - The clearance violations and island fills are computed on all cores. The results are
