@@ -17,7 +17,7 @@ back still needs `ImportSpecctraSES` or the optional writer
 
 Prerequisites: [K06](K06-kicad-pcb-rule-areas-and-copper.md). K07.2 needs
 [C07](C00-cli-settings-io-README.md) (CLI argument handling, which owns
-`crates/freerouting-cli`) and [G01](G01-session-and-test-harness.md) (the
+`crates/freerouting-cli`) and [G01](archive/G01-session-and-test-harness.md) (the
 GUI's `Session`); without them it is partial. K07.4 needs
 [C05](C00-cli-settings-io-README.md) (SES writer) for its last step and
 [F02.6](F02-parity-and-benchmark-harness.md) for KiCad DRC grading.

@@ -6,13 +6,18 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[lib]
+path = "src/lib.rs"
+
 [[bin]]
 name = "freerouting-gui"
 path = "src/main.rs"
 
 [dependencies]
 freerouting.workspace = true
-eframe = { version = "0.32", default-features = false, features = ["default_fonts", "wgpu", "wayland", "x11"] }
+eframe = { version = "0.32", default-features = false, features = ["default_fonts", "wgpu", "wayland", "x11", "persistence", "accesskit"] }
+serde = { version = "1", features = ["derive"] }
+png = "0.18"
 # eframe's `wgpu` feature turns on no wgpu backend by itself; without these the app
 # panics at startup with "No wgpu backend feature ... was enabled". GL (`gles`) is the
 # fallback for machines and VMs without a working Vulkan/Metal/DX12 driver, WSLg included.
@@ -22,3 +27,6 @@ earcutr = "0.5"
 [target.'cfg(target_os = "linux")'.dependencies]
 # Same winit as eframe; used to pick X11 under WSL (see `window_system` in main.rs).
 winit = { version = "0.30", default-features = false, features = ["x11"] }
+
+[dev-dependencies]
+egui_kittest = { version = "=0.32.3", features = ["eframe", "wgpu", "snapshot"] }

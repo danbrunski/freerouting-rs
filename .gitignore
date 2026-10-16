@@ -26,3 +26,7 @@ rustc-ice-*.txt
 # KiCad plugin: Python bytecode and per-install settings
 __pycache__/
 kicad-plugin/freerouting_rs/settings.json
+
+# GUI snapshot tests: failed-run outputs (the committed PNGs stay)
+crates/freerouting-gui/tests/snapshots/*.new.png
+crates/freerouting-gui/tests/snapshots/*.diff.png

@@ -11,9 +11,7 @@ use std::collections::HashMap;
 use freerouting::board::RoutingBoard;
 use freerouting::board::items::{AreaKind, ItemKind};
 use freerouting::board::structure::ComponentId;
-use freerouting::dsn::ast::{
-    self, Padstack, Pcb, Resolution, Session, Side, Unit, Wire, Wiring, WiringItem,
-};
+use freerouting::dsn::ast::Side;
 use freerouting::geometry::{Area, FloatPoint, PolylineShapeOps, Shape};
 /// A point in millimetres, Y up (board coordinates, as in the file).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -264,8 +262,6 @@ pub struct Scene {
     /// Reference designators, one per placed component.
     pub labels: Vec<Label>,
     pub bounds: Bounds,
-    /// What the reader skipped or did not understand, as text.
-    pub warnings: Vec<String>,
 }
 
 /// A component's reference designator. DSN files carry no silkscreen text,
@@ -303,158 +299,6 @@ impl Default for Bounds {
     fn default() -> Self {
         Bounds::EMPTY
     }
-}
-
-// ---------------------------------------------------------------------------
-// Sessions
-// ---------------------------------------------------------------------------
-
-/// Micrometres per file unit.
-fn unit_um(unit: Unit) -> f64 {
-    match unit {
-        Unit::Mil => 25.4,
-        Unit::Inch => 25_400.0,
-        Unit::Mm => 1000.0,
-        Unit::Um => 1.0,
-    }
-}
-
-fn scale_point(p: ast::Point, k: f64) -> ast::Point {
-    ast::Point::new(p.x * k, p.y * k)
-}
-
-fn scale_shape(shape: &ast::Shape, k: f64) -> ast::Shape {
-    let pts = |v: &[ast::Point]| v.iter().map(|&p| scale_point(p, k)).collect();
-    match shape {
-        ast::Shape::Rect {
-            layer,
-            x1,
-            y1,
-            x2,
-            y2,
-        } => ast::Shape::Rect {
-            layer: layer.clone(),
-            x1: x1 * k,
-            y1: y1 * k,
-            x2: x2 * k,
-            y2: y2 * k,
-        },
-        ast::Shape::Circle {
-            layer,
-            diameter,
-            center,
-        } => ast::Shape::Circle {
-            layer: layer.clone(),
-            diameter: diameter * k,
-            center: scale_point(*center, k),
-        },
-        ast::Shape::Polygon {
-            layer,
-            aperture_width,
-            points,
-        } => ast::Shape::Polygon {
-            layer: layer.clone(),
-            aperture_width: aperture_width * k,
-            points: pts(points),
-        },
-        ast::Shape::Path {
-            layer,
-            width,
-            points,
-        } => ast::Shape::Path {
-            layer: layer.clone(),
-            width: width * k,
-            points: pts(points),
-        },
-        ast::Shape::PolylinePath {
-            layer,
-            width,
-            points,
-        } => ast::Shape::PolylinePath {
-            layer: layer.clone(),
-            width: width * k,
-            points: pts(points),
-        },
-    }
-}
-
-/// The design with a session's placement and routes in place of its own.
-///
-/// Session coordinates count in steps of `1/value` of the resolution unit
-/// (`(resolution um 10)` means tenths of a micrometre), design coordinates
-/// in whole resolution units, so everything from the session is rescaled.
-/// The routes replace the design's wiring: Freerouting writes every wire and
-/// via of the board to the session, the fixed ones included.
-pub fn apply_session(pcb: &Pcb, session: &Session) -> Pcb {
-    let mut pcb = pcb.clone();
-    let design_res = pcb
-        .resolution
-        .or(pcb.placement.as_ref().and_then(|p| p.resolution))
-        .unwrap_or(Resolution {
-            unit: Unit::Mil,
-            value: 1,
-        });
-    let factor = |r: Option<Resolution>| {
-        let r = r.unwrap_or(design_res);
-        unit_um(r.unit) / f64::from(r.value.max(1)) / unit_um(design_res.unit)
-    };
-
-    if let (Some(ses), Some(placement)) = (&session.placement, pcb.placement.as_mut()) {
-        let k = factor(ses.resolution);
-        let moved: HashMap<&str, ast::PlaceLocation> = ses
-            .components
-            .iter()
-            .flat_map(|c| &c.places)
-            .filter_map(|p| Some((p.name.as_str(), p.location?)))
-            .collect();
-        for place in placement.components.iter_mut().flat_map(|c| &mut c.places) {
-            if let Some(loc) = moved.get(place.name.as_str()) {
-                place.location = Some(ast::PlaceLocation {
-                    at: scale_point(loc.at, k),
-                    ..*loc
-                });
-            }
-        }
-    }
-
-    if let Some(routes) = &session.routes {
-        let k = factor(routes.resolution);
-        let library = pcb.library.get_or_insert_with(Default::default);
-        for padstack in &routes.library_out {
-            if !library.padstacks.iter().any(|p| p.name == padstack.name) {
-                library.padstacks.push(Padstack {
-                    shapes: padstack.shapes.iter().map(|s| scale_shape(s, k)).collect(),
-                    ..padstack.clone()
-                });
-            }
-        }
-        let net_id = |name: &str| {
-            Some(ast::NetId {
-                name: name.to_string(),
-                subnet: None,
-            })
-        };
-        let mut items = Vec::new();
-        for net in &routes.network_out {
-            for item in &net.items {
-                items.push(match item {
-                    WiringItem::Wire(w) => WiringItem::Wire(Wire {
-                        shapes: w.shapes.iter().map(|s| scale_shape(s, k)).collect(),
-                        windows: w.windows.iter().map(|s| scale_shape(s, k)).collect(),
-                        net: net_id(&net.name),
-                        ..w.clone()
-                    }),
-                    WiringItem::Via(v) => WiringItem::Via(ast::Via {
-                        at: scale_point(v.at, k),
-                        net: net_id(&net.name),
-                        ..v.clone()
-                    }),
-                });
-            }
-        }
-        pcb.wiring = Some(Wiring { items });
-    }
-    pcb
 }
 
 // ---------------------------------------------------------------------------
@@ -742,6 +586,7 @@ impl Scene {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use freerouting::dsn::Pcb;
     use freerouting::io::specctra::build_board;
 
     fn close(a: P, b: P) -> bool {
@@ -814,43 +659,6 @@ mod tests {
 
         assert!(close(s.bounds.min, P::new(0.0, 0.0)), "{:?}", s.bounds);
         assert!(close(s.bounds.max, P::new(10.0, 5.0)), "{:?}", s.bounds);
-    }
-
-    #[test]
-    fn session_placement_and_routes_replace_the_design() {
-        let pcb = Pcb::parse(DESIGN).unwrap();
-        let ses = Session::parse(
-            r#"(session t (placement (resolution um 10) (component fp (place U1 60000 0 front 0)))
-              (routes (resolution um 10)
-                (library_out (padstack v2 (shape (circle F.Cu 1000)) (shape (circle B.Cu 1000))))
-                (network_out (net N1
-                  (wire (path F.Cu 200 0 0 0 10000))
-                  (via v2 20000 20000)))))"#,
-        )
-        .unwrap();
-        let merged = apply_session(&pcb, &ses);
-        let s = scene(&merged);
-        let u1 = centers(&s, Kind::Pad, Some("U1-1"));
-        assert!(close(u1[0].1, P::new(6.1, 0.0)), "{:?}", u1[0].1);
-        let traces: Vec<_> = s.items.iter().filter(|i| i.kind == Kind::Trace).collect();
-        assert_eq!(traces.len(), 1);
-        assert_eq!(traces[0].slot, Slot::Layer(0));
-        assert_eq!(
-            traces[0].geom.bounds().max.y.round(),
-            1.0,
-            "{:?}",
-            traces[0].geom
-        );
-        let vias: Vec<_> = s.items.iter().filter(|i| i.kind == Kind::Via).collect();
-        assert_eq!(vias.len(), 2);
-        assert_eq!(s.nets[vias[0].net.unwrap()], "N1");
-        assert_eq!(
-            vias[0].geom,
-            Geom::Circle {
-                center: P::new(2.0, 2.0),
-                radius: 0.05
-            }
-        );
     }
 
     #[test]

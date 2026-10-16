@@ -1,16 +1,13 @@
 //! `freerouting-gui` desktop app.
 //!
-//! Usage: `freerouting-gui [board.dsn [board.ses]]`
+//! Usage: `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom]
+//! [--frames N] [--screenshot out.png] [--exit]`
 
 // No console window on Windows release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod app;
-mod file_dialog;
-mod scene;
-mod view;
-
-use std::path::PathBuf;
+use freerouting_gui::App;
+use freerouting_gui::args::Args;
 
 /// Under WSL, use X11 instead of Wayland. WSLg gives X11 windows the
 /// standard Windows title bar and buttons, while a Wayland window has to draw
@@ -30,18 +27,34 @@ fn window_system(builder: &mut eframe::EventLoopBuilder<eframe::UserEvent>) {
 fn window_system(_builder: &mut eframe::EventLoopBuilder<eframe::UserEvent>) {}
 
 fn main() -> eframe::Result {
-    let open: Vec<PathBuf> = std::env::args_os().skip(1).map(PathBuf::from).collect();
+    let args = Args::parse(std::env::args_os().skip(1)).unwrap_or_else(|e| {
+        eprintln!("freerouting-gui: {e}");
+        std::process::exit(2);
+    });
+    // A scripted run (bench, screenshot) neither reads nor writes the user's
+    // saved settings: it starts from a throwaway file.
+    let persistence_path = args.scripted().then(|| {
+        let path = std::env::temp_dir().join(format!("freerouting-gui-{}.ron", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        path
+    });
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_title("Freerouting")
             .with_inner_size([1280.0, 800.0])
             .with_drag_and_drop(true),
         event_loop_builder: Some(Box::new(window_system)),
+        persist_window: !args.scripted(),
+        persistence_path: persistence_path.clone(),
         ..Default::default()
     };
-    eframe::run_native(
+    let result = eframe::run_native(
         "Freerouting",
         options,
-        Box::new(|cc| Ok(Box::new(app::App::new(cc, open)))),
-    )
+        Box::new(|cc| Ok(Box::new(App::build(&cc.egui_ctx, cc.storage, args)))),
+    );
+    if let Some(path) = persistence_path {
+        let _ = std::fs::remove_file(path);
+    }
+    result
 }

@@ -5,6 +5,7 @@ use eframe::egui::{self, Color32, Mesh, Painter, Pos2, Rect, Shape, Stroke, epai
 use freerouting::dsn::ast::Side;
 
 use crate::scene::{Geom, Kind, Label, P, Scene, Slot};
+use crate::stats::PaintStats;
 
 /// Segments used for a full circle.
 const CIRCLE_SEGMENTS: usize = 24;
@@ -236,6 +237,16 @@ impl Camera {
         self.center.x -= f64::from(delta.x) / self.zoom;
         self.center.y += f64::from(delta.y) / self.zoom;
     }
+
+    /// Centres the view on the rectangle with corners `a` and `b` and zooms
+    /// so that it just fits in `rect` (Java: `BoardPanel.zoomFrame`).
+    pub fn zoom_to_rect(&mut self, rect: Rect, a: P, b: P) {
+        let w = (a.x - b.x).abs().max(1e-9);
+        let h = (a.y - b.y).abs().max(1e-9);
+        let zoom = (f64::from(rect.width()) / w).min(f64::from(rect.height()) / h);
+        self.zoom = zoom.clamp(1e-3, 1e6);
+        self.center = P::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+    }
 }
 
 /// What to draw.
@@ -305,7 +316,7 @@ fn kind_color(kind: Kind, slot: Slot, layer_count: usize) -> Color32 {
 
 pub const BACKGROUND: Color32 = Color32::from_rgb(12, 14, 18);
 
-/// Draws the board.
+/// Draws the board and reports what it drew.
 pub fn paint(
     painter: &Painter,
     rect: Rect,
@@ -314,7 +325,8 @@ pub fn paint(
     layer_count: usize,
     labels: &[Label],
     vis: &Visibility,
-) {
+) -> PaintStats {
+    let mut stats = PaintStats::default();
     painter.rect_filled(rect, 0.0, BACKGROUND);
 
     // Bottom layer first, the active layer last, everything off the copper
@@ -369,6 +381,10 @@ pub fn paint(
                         color,
                     })
                     .collect();
+                stats.triangles += (mesh.indices.len() / 3) as u64;
+                stats.uploaded_bytes += (mesh.vertices.len() * 20 + mesh.indices.len() * 4) as u64;
+                stats.draws += 1;
+                stats.chunks_drawn += 1;
                 painter.add(Shape::mesh(mesh));
             }
             for line in tess
@@ -377,6 +393,7 @@ pub fn paint(
                 .filter(|l| l.slot == slot && l.kind == kind)
             {
                 let width = (line.width * z).max(1.0);
+                stats.draws += 1;
                 let points: Vec<Pos2> = line.points.iter().map(|&v| to_screen(v)).collect();
                 if points.len() == 1 {
                     painter.circle_filled(points[0], width / 2.0, color);
@@ -390,6 +407,7 @@ pub fn paint(
     if vis.labels {
         paint_labels(painter, rect, camera, labels);
     }
+    stats
 }
 
 /// Draws reference designators, back side first and dimmer. Labels smaller

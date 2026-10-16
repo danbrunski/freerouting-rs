@@ -14,7 +14,7 @@ the research behind it is the GUI, plugin and packaging report of
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [G01](G01-session-and-test-harness.md) | The app keeps the board in a `Session`; `lib.rs`; SES through the engine; egui_kittest harness; `--bench`, `--screenshot`; Xvfb smoke script; Java input model; persistence and AccessKit | M / low | none |
+| [G01](archive/G01-session-and-test-harness.md) ✅ | The app keeps the board in a `Session`; `lib.rs`; SES through the engine; egui_kittest harness; `--bench`, `--screenshot`; Xvfb smoke script; Java input model; persistence and AccessKit | M / low | none |
 | [G02](G02-gpu-board-renderer.md) | GPU-resident board geometry: wgpu paint callback, shader hairlines, chunked and culled batches, patching by `ItemId`, synthetic 16× board, faster load, CPU fallback | L / high: the GUI's speed critical path | G01 |
 | [G03](G03-ratsnest-drc-and-info-lists.md) | Selection model, ratsnest, DRC markers, the violation and incomplete lists, delete all traces with undo, DRC report export | M / low | G01; B08 for G03.7's unfill only |
 | [G04](G04-board-windows-and-display.md) | Nets, components and library windows, item info, visibility sliders, virtual layers, units, rotation and mirroring, colours, status bar, log, About | M / low | G03; B08 (item info) for G04.3 only |
