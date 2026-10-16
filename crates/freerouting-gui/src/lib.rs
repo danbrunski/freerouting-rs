@@ -9,6 +9,7 @@
 //! | [`app`] | `App`: eframe state, `execute(Command)`, the frame loop |
 //! | [`analysis`], [`overlays`], [`selection`], [`lists`] | background ratsnest and DRC, the overlays drawn on the canvas, the selection, the Info lists |
 //! | [`commands`] | `Command`, every user action |
+//! | [`dialogs`] | the rules dialogs: net classes, clearance matrix, vias, via rules, routing settings (G06) |
 //! | [`input`] | the key table (Java's keys) |
 //! | [`viewport`] | camera, visibility, mouse model, hover status |
 //! | [`look`], [`windows`] | colours, visibility levels and the virtual layers; the display, colour, log and About windows (G04) |
@@ -17,6 +18,7 @@
 //! | [`canvas`] | the board's geometry in chunks, the wgpu pipeline that draws it |
 //! | [`bench_synthetic`] | the tiled stress board for `--bench-synthetic` |
 //! | [`panels`], [`menu`] | side panel sections, warnings window, menu bar |
+//! | [`tools`] | inspect mode, selection operations, safe edits, context menus, keepout construction (G05) |
 //! | [`settings`] | persisted preferences |
 //! | [`stats`], [`bench`], [`capture`], [`args`] | frame statistics, `--bench`, `--screenshot` |
 
@@ -29,6 +31,7 @@ pub mod bench_synthetic;
 pub mod canvas;
 pub mod capture;
 pub mod commands;
+pub mod dialogs;
 pub mod drc_export;
 pub mod file_dialog;
 pub mod input;
@@ -45,6 +48,7 @@ pub mod settings;
 pub mod stats;
 pub mod text;
 pub mod toolbar;
+pub mod tools;
 pub mod view;
 pub mod viewport;
 pub mod windows;

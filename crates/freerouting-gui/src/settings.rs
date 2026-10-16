@@ -48,6 +48,11 @@ pub struct PersistedSettings {
     pub unit: Option<String>,
     /// The large crosshair.
     pub crosshair: bool,
+    // G05.2: what a click selects (`None` is Java's default).
+    /// "all_visible" or "current_only".
+    pub selection_layers: Option<String>,
+    /// The selectable choices by Java's constant name (`TRACES`, ...).
+    pub selectable_items: Option<Vec<String>>,
 }
 
 impl Default for PersistedSettings {
@@ -67,6 +72,8 @@ impl Default for PersistedSettings {
             colors: BTreeMap::new(),
             unit: None,
             crosshair: false,
+            selection_layers: None,
+            selectable_items: None,
         }
     }
 }

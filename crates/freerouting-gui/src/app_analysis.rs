@@ -22,7 +22,10 @@ impl App {
     pub(crate) fn execute_analysis(&mut self, ctx: &egui::Context, command: Command) {
         match command {
             Command::Select(ids) => self.selection.set(ids),
-            Command::ClearSelection => self.selection.clear(),
+            Command::ClearSelection => {
+                self.selection.clear();
+                self.tools.violations = None;
+            }
             Command::ZoomSelection => self.zoom_selection(),
             Command::ToggleRatsnest => self.overlay.show_ratsnest = !self.overlay.show_ratsnest,
             Command::ToggleViolations => {
@@ -86,11 +89,9 @@ impl App {
     }
 
     /// Other > Delete All Traces and Vias after the confirmation: a snapshot
-    /// first, so that Undo restores the wiring.
-    ///
-    /// Java also unfills the conduction areas and sets "ignore conduction"
-    /// (`BasicBoard.unfillConductionAreas`); that engine function is not
-    /// ported yet (B08), so only the traces and vias go.
+    /// first, so that Undo restores the wiring. Like Java it also unfills the
+    /// conduction areas and sets "ignore conduction"
+    /// (`BasicBoard.unfillConductionAreas`).
     fn delete_all(&mut self) {
         let Some(b) = self.loaded.as_mut() else {
             return;
@@ -98,37 +99,65 @@ impl App {
         b.session.edit(|board| {
             board.generate_snapshot();
             board.delete_all_traces_and_vias();
+            board.unfill_conduction_areas();
             true
         });
         self.after_board_edit();
     }
 
-    /// Undo (`undo == true`) or redo of the board's last snapshot step.
+    /// Undo (`undo == true`) or redo of the board's last snapshot step
+    /// (Java `GuiBoardHistoryController.undo/redo`): the scene is patched
+    /// from the board's change journal, the status line says what happened,
+    /// and the changed nets are kept for the ratsnest. Refused while a
+    /// keepout is under construction (Java allows history in a menu state
+    /// only).
     fn undo_redo(&mut self, undo: bool) {
+        if self.tools.keepout.is_some() {
+            return;
+        }
         let Some(b) = self.loaded.as_mut() else {
             return;
         };
+        let mut nets = std::collections::BTreeSet::new();
         let changed = b.session.edit(|board| {
             if undo {
-                board.undo(None)
+                board.undo(Some(&mut nets))
             } else {
-                board.redo(None)
+                board.redo(Some(&mut nets))
             }
         });
+        self.notice = Some(
+            match (changed, undo) {
+                (true, true) => text::UNDO_DONE,
+                (true, false) => text::REDO_DONE,
+                (false, true) => text::NO_MORE_UNDO,
+                (false, false) => text::NO_MORE_REDO,
+            }
+            .to_string(),
+        );
         if changed {
+            self.tools.changed_nets = nets;
             self.after_board_edit();
         }
     }
 
-    /// The scene is rebuilt in full after an edit here; G05.5 replaces that
-    /// with patching.
-    fn after_board_edit(&mut self) {
+    /// Brings the drawing up to date after an edit: the chunks that own a
+    /// removed or changed item and the ones that receive an added item are
+    /// patched from the board's change journal (G05.5); only a journal that
+    /// overflowed makes a full rebuild.
+    pub(crate) fn after_board_edit(&mut self) {
         let Some(b) = self.loaded.as_mut() else {
             return;
         };
-        b.rebuild_scene();
+        let sync = b.sync_scene();
+        if !sync.rebuilt && (sync.removed > 0 || sync.added > 0) {
+            self.stats.patches += 1;
+        }
+        self.tools.last_sync = sync;
         self.selection.retain_existing(b.session.board.basic());
-        self.stats.full_rebuilds += 1;
+        if self.selection.is_empty() {
+            self.tools.violations = None;
+        }
     }
 
     /// The confirmation window of Delete All.

@@ -76,7 +76,7 @@ Paths are under `crates/freerouting-gui/`.
 
 ## Checklist
 
-- [ ] **G06.1 — Net classes table.**
+- [x] **G06.1 — Net classes table.**
   - Java: `WindowNetClasses`: columns `NAME`, `VIA_RULE`,
     `CLEARANCE_CLASS`, `TRACE_WIDTH`, `ON_LAYER` (summarised as
     `layers_all`, `layers_inner`, `layers_outer`, `layers_none`,
@@ -110,8 +110,23 @@ Paths are under `crates/freerouting-gui/`.
     - `remove_default_class_refused` and `remove_used_class_refused` show
       Java's messages; `add_then_remove_unused_class` restores the class
       count.
+  *Done 2026-10-16:* `dialogs/net_classes.rs`. The three `WindowNetClassesTest` tests are ported in
+  `dialogs/input.rs` (`parse_trace_width_value_handles_numeric_and_string_inputs`,
+  `apply_trace_width_applies_the_half_width`, `apply_trace_width_refuses_invalid_input`), with
+  `DialogInteractionHandlersTest`'s `canRemoveNetClass`, `isLegalClassName`, `parseClearanceTableValue`
+  and number normalizers (same file) and the autorouter checkbox handlers
+  (`dialogs/autoroute_handlers.rs`). `tests/ui_rules.rs` (`cargo test -p freerouting-gui --test
+  ui_rules`: 29 passed): `edit_width_changes_engine_value` (Issue754, typed `0.3` mm, half width =
+  `round_to_i32(dsn_to_board(0.5 * 0.3 mm in design units))` on every signal layer; the shown DRC count
+  equals `DesignRulesChecker::check()`), `remove_default_class_refused` (one-class board
+  `tests/data/rules_small.dsn`), `remove_used_class_refused`, `add_then_remove_unused_class`, plus
+  `net_class_cells_send_their_edits`, `select_takes_the_items_of_all_chosen_classes`,
+  `layer_rules_dialog_sets_the_active_layers`, `filter_incompletes_keeps_the_airlines_of_the_chosen_classes`.
+  The in-use loop does skip the last net in Java (`maxNetNumber()` is the net count), so the port
+  checks every net (DIVERGENCES "Rules dialogs"; pinned with net N3, the last). Show Nets opens a
+  "Contained Nets" window as Java does, not G04.1's nets window.
 
-- [ ] **G06.2 — Assign net class.**
+- [x] **G06.2 — Assign net class.**
   - Java: `WindowAssignNetClass` (columns `net_name`, `class_name`), opened
     from the net classes dialog's `assign` button.
   - Rust: `dialogs::assign_net_class` lists nets in net-number order with a
@@ -122,8 +137,13 @@ Paths are under `crates/freerouting-gui/`.
     net `GND` of Issue754 to a newly added class changes
     `Net::net_class()` to that class id, and the ratsnest job re-runs (its
     result tag carries the new `edit_generation`).
+  *Done 2026-10-16:* `dialogs/assign_net_class.rs`. `assign_net_class_changes_net` (small board, the
+  Assign button opens the window, a combo choice changes `Net::net_class()`, the analysis ran again and
+  its ratsnest tag is `session.edit_generation`) and `assign_net_class_on_the_avionics_hub` (Issue754 has
+  no net named `GND`; `GTN1_GND` is used). Rows are in net-name order, ignoring case, as Java's
+  `Arrays.sort` does, not net-number order.
 
-- [ ] **G06.3 — Clearance matrix.**
+- [x] **G06.3 — Clearance matrix.**
   - Java: `WindowClearanceMatrix`: a layer combo (all layers, inner layers,
     or one layer); a cell edit is applied symmetrically by
     `applyClearanceValue` (`set_value` both ways, `set_inner_value` both
@@ -148,8 +168,14 @@ Paths are under `crates/freerouting-gui/`.
       class equal to `default`, Prune (auto-confirmed in the test) drops
       the class count by one, and the DRC finding count is unchanged.
     - `add_class_turns_off_compensation`.
+  *Done 2026-10-16:* `dialogs/clearance_matrix.rs`. `clearance_edit_is_symmetric`,
+  `prune_merges_equal_classes` (class count -1, the DRC findings unchanged), `prune_asked_no_keeps_the_class`,
+  `add_class_turns_off_compensation` (also the illegal-name reprompt), `clearance_cell_asks_when_items_use_both_classes`,
+  and `prune_candidates_equal_the_engines_prune`: the dialog's one-candidate walk plus
+  `MergeClearanceClass` ends with the same removed classes, in the same order, as B08's
+  `prune_clearance_matrix` answering Yes (Issue754 and Issue159 with two added twin classes).
 
-- [ ] **G06.4 — Vias list.**
+- [x] **G06.4 — Vias list.**
   - Java: `WindowEditVias`: columns `NAME`, `PADSTACK`, `CLEARANCE_CLASS`,
     `ATTACH_SMD`. `AddViaListener` names the new via `new_via_<n>` with the
     smallest `n ≥ 1` not in use, padstack = via padstack 0, clearance class
@@ -165,8 +191,13 @@ Paths are under `crates/freerouting-gui/`.
       give `new_via_1` and `new_via_2`.
     - `remove_via_used_by_rule_refused`: the status line names the rule.
     - `remove_last_via_refused`.
+  *Done 2026-10-16:* `dialogs/vias.rs`. `add_via_names_follow_java` (`new_via_1`, `new_via_2`, smallest free
+  number), `remove_via_used_by_rule_refused` (names the rule), `remove_last_via_refused`,
+  `via_cells_send_their_edits`. B08's `add_via_info` names the via `newVia<n>`, but Java's
+  `getText("newVia")` snake-cases to the bundle key `new_via` = `new_via_`, so `rules_edit::add_via_info`
+  renames the new via (see the report: the B08 name is wrong).
 
-- [ ] **G06.5 — Via padstacks and via rules.**
+- [x] **G06.5 — Via padstacks and via rules.**
   - Java: `WindowVia` (`create` padstack: prompts
     `prompt_new_padstack_name`, refuses an existing name with
     `padstack_name_exists`, asks `select_start_layer` and
@@ -188,8 +219,12 @@ Paths are under `crates/freerouting-gui/`.
       message naming the via.
     - `via_rule_order`: append three vias, move the last one up twice;
       `ViaRule::vias()` returns them in the shown order.
+  *Done 2026-10-16:* `dialogs/via_rules.rs`. `padstack_create_use_remove` (create through the form,
+  a via uses it, Remove is refused naming `new_via_1`, then works), `existing_padstack_name_is_refused_by_the_form`,
+  `via_rule_order` (three vias appended, the last moved up twice, then down, `ViaRule::vias()` equals the
+  shown order; Remove asks first), `via_rule_create_and_remove`.
 
-- [ ] **G06.6 — Routing settings: the board-rule part.**
+- [~] **G06.6 — Routing settings: the board-rule part.**
   - Java: `WindowRouteParameter` (`WindowRouteParameter_en.properties`):
     `snap_angle` (`90_degree`, `45_degree`, `none`; changing it asks
     `change_snap_angle_45` or `change_snap_angle_90` first),
@@ -209,9 +244,21 @@ Paths are under `crates/freerouting-gui/`.
     - `keepout_outside_outline_toggles_item`: turning it on and off changes
       the board outline's `keepout_outside_outline_generated()` and the DRC
       result equals a fresh `check()` on the same board.
+  *Partial 2026-10-16:* `dialogs/route_settings.rs` (`static_section`). `route_settings_change_engine_values`
+  (snap angle, ignore conduction, restrict pin exits and the typed pad-to-turn gap, clearance compensation),
+  `snap_angle_change_asks_first` (Java's text, Cancel leaves 45 degrees, Yes sets 90),
+  `keepout_outside_outline_toggles_item` (the outline's `keepout_outside_outline_generated()` toggles and the shown DRC
+  equals a fresh `check()`) pass. **Remaining: "and U undoes it".** The engine's board history
+  (`generate_snapshot`/`undo`) holds items and components only, so no rule is restored, and the edits that do
+  change items (outline keepout, conduction obstacle flags, fixed state of pin traces) change them in place
+  without a saved version, so an undo restores nothing (as in Java). Needs engine work: rules (and these
+  item changes) in the snapshot; then `execute_rules_edit` takes a snapshot first. Owner: B08 follow-up
+  (operator decision, see the report).
 
-- [ ] **G06.7 — Document the dialogs.**
+- [x] **G06.7 — Document the dialogs.**
   - `docs/development/gui.md` gains a "Rules dialogs" section: each dialog,
     the Java class it follows, and the B08 call each control makes.
   - **Accept:** the section lists every dialog in this checklist and every
     `RulesEdit` variant the GUI sends.
+  *Done 2026-10-16:* `docs/development/gui.md` "Rules dialogs (G06)": every dialog, its Java class and the B08 call
+  of each `RulesEdit` variant (all variants listed).

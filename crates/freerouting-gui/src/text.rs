@@ -427,6 +427,312 @@ pub fn format_point(x: f64, y: f64) -> String {
     format!("({} , {})", format_number(x), format_number(y))
 }
 
+// ---------------------------------------------------------------------------
+// G06: rules dialogs. Texts follow the English bundles of
+// `gui/windows/routing/` at the pin; keys are in the comments.
+// ---------------------------------------------------------------------------
+
+pub const MENU_RULES: &str = "Rules"; // BoardMenuRules_en: rules
+pub const MENU_CLEARANCE_MATRIX: &str = "Clearance Matrix";
+pub const MENU_VIAS: &str = "Vias";
+pub const MENU_NET_CLASSES: &str = "Net Classes";
+/// BoardMenuParameter_en: parameter, route.
+pub const MENU_PARAMETER: &str = "Settings";
+pub const MENU_ROUTING: &str = "Routing";
+pub const OK: &str = "OK";
+pub const CANCEL: &str = "Cancel";
+pub const YES: &str = "Yes";
+pub const NO: &str = "No";
+
+// WindowNetClasses_en.properties
+pub const NC_TITLE: &str = "Net Classes";
+pub const NC_ADD: &str = "Add";
+pub const NC_ADD_TIP: &str = "Add a new net class.";
+pub const NC_REMOVE: &str = "Remove";
+pub const NC_REMOVE_TIP: &str = "Remove the selected net class.";
+pub const NC_ASSIGN: &str = "Assign";
+pub const NC_ASSIGN_TIP: &str = "Assign net classes to nets.";
+pub const NC_SELECT: &str = "Select";
+pub const NC_SELECT_TIP: &str = "Select the items belonging to the chosen net classes on the board.";
+pub const NC_SHOW_NETS: &str = "Show Nets";
+pub const NC_SHOW_NETS_TIP: &str = "Display a list of all nets in the selected classes.";
+pub const NC_FILTER_INCOMPLETES: &str = "Filter Incomplete Connections";
+pub const NC_FILTER_INCOMPLETES_TIP: &str =
+    "Display only incomplete connections for the selected net classes.";
+/// The `NAME` .. `IGNORED_BY_AUTOROUTER` columns, in Java's order.
+pub const NC_COLUMNS: [&str; 10] = [
+    "Name",
+    "Via Rule",
+    "Clearance Class",
+    "Trace Width",
+    "Active Layers",
+    "Shove Fixed",
+    "Ignore Cycles with Areas",
+    "Min. Trace Length",
+    "Max. Trace Length",
+    "Ignored by Autorouter",
+];
+/// `column_tooltip_1` .. `column_tooltip_9` (the name column has none).
+pub const NC_COLUMN_TIPS: [&str; 9] = [
+    "The via rule assigned to this net class.",
+    "The clearance class used by traces in this net class.",
+    "The trace width for this net class.",
+    "The layers on which this trace width applies.",
+    "When enabled, traces and vias in this net class cannot be displaced during push-and-shove routing and are excluded from pull-tight optimization.",
+    "Whether the cycle-removal algorithm ignores cycles involving conduction areas.",
+    "Minimum cumulative trace length for this net class. 0 means no minimum.",
+    "Maximum cumulative trace length for this net class. 0 means no maximum.",
+    "Whether this net class is ignored by the Autorouter.",
+];
+pub const NC_LAYERS_ALL: &str = "All Layers";
+pub const NC_LAYERS_INNER: &str = "Inner Layers";
+pub const NC_LAYERS_OUTER: &str = "Outer Layers";
+pub const NC_LAYERS_NONE: &str = "None";
+pub const NC_LAYERS_CUSTOM: &str = "Custom ({{layer_count}} layers)";
+pub const NC_WIDTH_MULTIPLE: &str = "Multiple widths...";
+pub const NC_DEFAULT_NOT_REMOVED: &str = "The default net class cannot be removed.";
+pub const NC_IN_USE: &str = "Net class not removed because it is still used by net {{name}}.";
+pub const NC_REMOVED: &str = "Net class {{name}} removed.";
+pub const NC_LAYER_TITLE: &str = "Layer Routing Rules";
+pub const NC_ALL: &str = "Select All";
+pub const NC_OUTER: &str = "Outer";
+pub const NC_INNER: &str = "Inner";
+pub const NC_CLEAR: &str = "Clear All";
+pub const NC_CONTAINED_NETS: &str = "Contained Nets";
+
+// WindowAssignNetClass_en.properties
+pub const ASSIGN_TITLE: &str = "Assign Net Class";
+pub const ASSIGN_NET_NAME: &str = "Net name";
+pub const ASSIGN_CLASS_NAME: &str = "Class name";
+pub const ASSIGN_NET_NAME_TIP: &str = "The net name.";
+pub const ASSIGN_CLASS_NAME_TIP: &str = "The assigned net class.";
+
+// WindowClearanceMatrix_en.properties
+pub const CM_TITLE: &str = "Clearance Matrix";
+pub const CM_LAYER: &str = "Layer:";
+pub const CM_LAYER_TIP: &str = "Select the layer whose clearance matrix you want to edit.";
+pub const CM_ADD_CLASS: &str = "Add Class";
+pub const CM_ADD_CLASS_TIP: &str = "Add a new clearance class.";
+pub const CM_PRUNE: &str = "Prune";
+pub const CM_PRUNE_TIP: &str = "Remove redundant clearance classes.";
+pub const CM_NEW_NAME: &str = "Enter a name for the new class.";
+pub const CM_CONFIRM_REMOVE: &str = "Remove clearance class {{name}}?";
+pub const CM_ASSIGNED_SINGLE: &str = "The selected items are already assigned to clearance class {{class_name}}. Change the clearance anyway?";
+pub const CM_ASSIGNED_PAIR: &str = "The selected items are already assigned to clearance classes {{class_a}} and {{class_b}}. Change the clearance anyway?";
+pub const CM_CLASS: &str = "Class";
+/// Common_en.properties: all, inner (the layer combo box).
+pub const LAYER_ALL: &str = "all";
+pub const LAYER_INNER: &str = "inner";
+
+// WindowEditVias_en.properties
+pub const EV_TITLE: &str = "Edit Vias";
+pub const EV_COLUMNS: [&str; 4] = ["Name", "Padstack", "Clearance class", "Attach SMD"];
+pub const EV_ADD: &str = "Add";
+pub const EV_ADD_TIP: &str = "Add a new via.";
+pub const EV_REMOVE: &str = "Remove";
+pub const EV_REMOVE_TIP: &str = "Remove the selected via.";
+pub const EV_NEW_VIA: &str = "new_via_";
+pub const EV_LAST_NOT_REMOVED: &str = "The last via cannot be removed.";
+pub const EV_IN_RULE: &str = "The via was not removed because it is still used by via rule {{name}}.";
+pub const EV_REMOVED: &str = "Via {{name}} removed.";
+
+// WindowVia_en.properties
+pub const VIA_TITLE: &str = "Via Rules";
+pub const VIA_PADSTACKS: &str = "Available Via Padstacks";
+pub const VIA_VIAS: &str = "Available Vias";
+pub const VIA_RULES: &str = "Via Rules";
+pub const VIA_INFO: &str = "Info";
+pub const VIA_INFO_TIP_PADSTACKS: &str = "Show the available via padstacks.";
+pub const VIA_INFO_TIP_VIAS: &str = "Show the vias allowed by a via rule.";
+pub const VIA_INFO_TIP_RULE: &str = "Show information about the selected via rule.";
+pub const VIA_CREATE: &str = "Create";
+pub const VIA_CREATE_TIP_PADSTACK: &str = "Create a new via padstack.";
+pub const VIA_CREATE_TIP_RULE: &str = "Create a new empty via rule.";
+pub const VIA_EDIT: &str = "Edit";
+pub const VIA_EDIT_TIP_VIAS: &str = "Edit the vias allowed by a via rule.";
+pub const VIA_EDIT_TIP_RULE: &str = "Edit the selected via rule.";
+pub const VIA_REMOVE: &str = "Remove";
+pub const VIA_REMOVE_TIP_PADSTACK: &str = "Remove an existing via padstack.";
+pub const VIA_REMOVE_TIP_RULE: &str = "Remove the selected via rule.";
+pub const VIA_ADJUST_CIRCLES: &str = "Adjust Circles";
+pub const VIA_CHOOSE_TO_REMOVE: &str = "Choose a padstack to remove.";
+pub const VIA_REMOVE_PADSTACK: &str = "Remove Via Padstack";
+pub const VIA_NAME_EXISTS: &str = "A name already exists. Choose another name.";
+pub const VIA_PADSTACK_IN_USE: &str =
+    "The via padstack was not removed because it is still used by the via {{name}}.";
+pub const VIA_PROMPT_RADIUS: &str = "Enter the default radius.";
+pub const VIA_PROMPT_PADSTACK_NAME: &str = "Enter the name of the new padstack.";
+pub const VIA_PROMPT_RULE_NAME: &str = "Enter the name of the new via rule.";
+pub const VIA_RADIUS_ON_LAYER: &str = "Radius on layer {{layer}}:";
+pub const VIA_REMOVE_RULE_CONFIRM: &str = "Remove via rule {{name}}?";
+pub const VIA_SELECT_END_LAYER: &str = "Select the end layer";
+pub const VIA_SELECT_START_LAYER: &str = "Select the start layer";
+pub const VIA_SELECTED_RULE: &str = "Selected Rule";
+
+// WindowViaRule_en.properties
+pub const VR_TITLE: &str = "Via Rule";
+pub const VR_APPEND: &str = "Append";
+pub const VR_APPEND_TIP: &str = "Add a via to the rule.";
+pub const VR_REMOVE: &str = "Remove";
+pub const VR_REMOVE_TIP: &str = "Remove the selected via from the rule.";
+pub const VR_MOVE_UP: &str = "Move Up";
+pub const VR_MOVE_UP_TIP: &str = "Increase the priority of the selected via in the rule.";
+pub const VR_MOVE_DOWN: &str = "Move Down";
+pub const VR_MOVE_DOWN_TIP: &str = "Decrease the priority of the selected via in the rule.";
+pub const VR_CHOOSE_TO_APPEND: &str = "Choose a via to add.";
+pub const VR_APPEND_TITLE: &str = "Add Via to Rule";
+pub const VR_REMOVE_CONFIRM: &str = "Remove {{via}} from the rule {{rule}}?";
+
+// WindowRouteParameter_en.properties (the board-rule part)
+pub const RP_TITLE: &str = "Routing Settings";
+pub const RP_SNAP_ANGLE: &str = "Snap angle:";
+pub const RP_SNAP_ANGLE_TIP: &str = "Restrict trace angles during interactive routing.";
+pub const RP_90: &str = "90 degrees";
+pub const RP_90_TIP: &str = "Constrain interactive trace corners to 90-degree angles.";
+pub const RP_45: &str = "45 degrees";
+pub const RP_45_TIP: &str = "Constrain interactive trace corners to 45-degree angles.";
+pub const RP_NONE: &str = "None";
+pub const RP_NONE_TIP: &str = "Allow arbitrary trace angles during interactive routing.";
+pub const RP_CHANGE_SNAP_45: &str = "Existing traces with arbitrary angles are not fully supported with a 45° snap angle. Change the snap angle anyway?";
+pub const RP_CHANGE_SNAP_90: &str = "Only orthogonal traces are fully supported with a 90° snap angle. Change the snap angle anyway?";
+pub const RP_IGNORE_CONDUCTION: &str = "Ignore conduction areas";
+pub const RP_IGNORE_CONDUCTION_TIP: &str =
+    "When enabled, conduction areas are treated as non-obstacles during routing.";
+pub const RP_RESTRICT_PIN_EXITS: &str = "Restrict pin exit directions";
+pub const RP_RESTRICT_PIN_EXITS_TIP: &str = "When enabled, trace exits from rectangular pins are restricted to their shorter sides.";
+pub const RP_PAD_TO_TURN: &str = "Pad-to-turn gap:";
+pub const RP_PAD_TO_TURN_TIP: &str = "Minimum distance a trace must travel after leaving a pad before it can turn. Higher values are more restrictive.";
+pub const RP_COMPENSATION: &str = "Clearance compensation";
+pub const RP_COMPENSATION_TIP: &str = "Apply extra clearance compensation during routing.";
+pub const RP_COMPENSATION_TIP_CURRENT: &str =
+    "Apply extra clearance compensation during routing. Current compensation: {{value}}.";
+pub const RP_ON: &str = "on";
+pub const RP_OFF: &str = "off";
+pub const RP_KEEPOUT_OUTSIDE: &str = "Keepout outside board outline";
+pub const RP_KEEPOUT_OUTSIDE_TIP: &str =
+    "When enabled, the entire area outside the board outline is treated as a keepout.";
+
+// G05: inspect mode, selection settings, the selection toolbar, popups, history,
+// keepouts and the item info window. Sources: `InteractiveState_en.properties`,
+// `BoardToolbarInspectedItem_en.properties`, `PopupMenuMain_en.properties`,
+// `WindowSelectParameter_en.properties`, `GuiBoardManager_en.properties`,
+// `WindowObjectInfo_en.properties` and `Common_en.properties`.
+pub const IN_INSPECT_MODE: &str = "In inspection mode";
+pub const IN_INSPECT_MENU: &str = "In the inspection menu";
+pub const IN_INSPECT_ITEM_MODE: &str = "In item inspection mode";
+pub const DRAG_TO_SELECT_REGION: &str =
+    "Drag with the left mouse button to select items in a region.";
+pub const NOTHING_SELECTED: &str = "Nothing selected.";
+pub const CLEARANCE_VIOLATIONS_FOUND: &str = "clearance violations found";
+pub const UNDO_DONE: &str = "Undo";
+pub const REDO_DONE: &str = "Redo";
+pub const NO_MORE_UNDO: &str = "Nothing more to undo.";
+pub const NO_MORE_REDO: &str = "Nothing more to redo.";
+pub const SOME_ITEMS_FIXED: &str = "Some items are fixed and therefore could not be removed.";
+pub const CREATING_TILE: &str = "Creating a tile-shaped keepout";
+pub const CREATING_CIRCLE: &str = "Creating a circular keepout";
+pub const CREATING_POLYGON: &str = "Creating a polygon keepout";
+pub const KEEPOUT_DONE: &str = "Keepout created successfully.";
+pub const KEEPOUT_OVERLAPS: &str = "Keepout canceled because it overlaps existing items.";
+
+// WindowSelectParameter_en.properties
+pub const SELECT_TITLE: &str = "General Settings";
+pub const SELECT_LAYERS: &str = "Selection Layers:";
+pub const SELECT_ALL_VISIBLE: &str = "All visible";
+pub const SELECT_ALL_VISIBLE_TIP: &str =
+    "Select on all visible layers; the current layer is preferred.";
+pub const SELECT_CURRENT_ONLY: &str = "Current layer only";
+pub const SELECT_CURRENT_ONLY_TIP: &str = "Select only on the current layer.";
+pub const SELECT_ITEMS: &str = "Selectable Items:";
+pub const SELECT_TRACES: &str = "traces";
+pub const SELECT_VIAS: &str = "vias";
+pub const SELECT_PINS: &str = "pins";
+pub const SELECT_CONDUCTION: &str = "conduction areas";
+pub const SELECT_CONDUCTION_TIP: &str = "Allow conduction areas (copper pours) to be selected.";
+pub const SELECT_KEEPOUT: &str = "keepout";
+pub const SELECT_KEEPOUT_TIP: &str = "Allow keepouts to be selected.";
+pub const SELECT_VIA_KEEPOUT: &str = "via keepout";
+pub const SELECT_VIA_KEEPOUT_TIP: &str = "Allow via keepout areas to be selected.";
+pub const SELECT_COMPONENT_KEEPOUT: &str = "Component keepout";
+pub const SELECT_COMPONENT_KEEPOUT_TIP: &str = "Allow component keepout areas to be selected.";
+pub const SELECT_BOARD_OUTLINE: &str = "board outline";
+pub const SELECT_BOARD_OUTLINE_TIP: &str = "Allow the board outline to be selected.";
+pub const SELECT_FIXED: &str = "fixed";
+pub const SELECT_FIXED_TIP: &str = "Allow fixed items to be selected.";
+pub const SELECT_UNFIXED: &str = "unfixed";
+pub const SELECT_UNFIXED_TIP: &str = "Allow unfixed items to be selected.";
+pub const SELECT_CURRENT_LAYER: &str = "Current layer:";
+pub const SELECT_CURRENT_LAYER_TIP: &str =
+    "You can also change it with the number keys or '+' and '-'.";
+pub const MENU_SETTINGS: &str = "Settings";
+pub const MENU_SELECT_SETTINGS: &str = "Select";
+
+// BoardToolbarInspectedItem_en.properties: the labels and tooltips of the
+// ten buttons Java's inspect toolbar has, then the three added by decision
+// (G00 question 6: Delete, Fix, Unfix).
+pub const TB_CANCEL: &str = "Cancel";
+pub const TB_CANCEL_TIP: &str = "Cancel the current selection (Esc).";
+pub const TB_INFO: &str = "Info";
+pub const TB_INFO_TIP: &str = "Display information about the selected items (I).";
+pub const TB_NETS: &str = "Nets";
+pub const TB_NETS_TIP: &str = "Extend the selection to whole nets (N).";
+pub const TB_CONN_SETS: &str = "Connected Sets";
+pub const TB_CONN_SETS_TIP: &str = "Extend the selection to entire connected sets (S).";
+pub const TB_CONNECTIONS: &str = "Connections";
+pub const TB_CONNECTIONS_TIP: &str =
+    "Extend the selection to the next fork or terminal item (E).";
+pub const TB_COMPONENTS: &str = "Components";
+pub const TB_COMPONENTS_TIP: &str = "Extend the selection to entire components.";
+pub const TB_VIOLATIONS: &str = "Violations";
+pub const TB_VIOLATIONS_TIP: &str =
+    "Show or hide clearance violations for the selected items (V).";
+pub const TB_ZOOM_SELECTION: &str = "Zoom Selection";
+pub const TB_ZOOM_SELECTION_TIP: &str = "Zoom to show the selected items (W).";
+pub const TB_ZOOM_ALL: &str = "Zoom All";
+pub const TB_ZOOM_ALL_TIP: &str = "Zoom to show the entire board (A).";
+pub const TB_ZOOM_REGION: &str = "Zoom Region";
+pub const TB_ZOOM_REGION_TIP: &str = "Zoom to a selected region of the board (R).";
+pub const TB_DELETE: &str = "Delete";
+pub const TB_DELETE_TIP: &str = "Delete the selected unfixed items (Del).";
+pub const TB_FIX: &str = "Fix";
+pub const TB_FIX_TIP: &str = "Fix the selected items.";
+pub const TB_UNFIX: &str = "Unfix";
+pub const TB_UNFIX_TIP: &str = "Unfix the selected items.";
+pub const TB_ACCESSIBLE_NAME: &str = "Inspect Toolbar";
+
+// PopupMenuMain_en.properties, PopupMenuInspectedItems (the extend items reuse
+// the toolbar texts) and Common_en.properties (the display rows).
+pub const POPUP_SELECT_ITEM: &str = "Select item (I)";
+pub const POPUP_START_ROUTE: &str = "Start route (T)";
+pub const POPUP_SWAP_PIN: &str = "Swap pin (W)";
+pub const POPUP_CREATE_KEEPOUT: &str = "Create keepout";
+pub const POPUP_TILE: &str = "Tile";
+pub const POPUP_CIRCLE: &str = "Circle";
+pub const POPUP_POLYGON: &str = "Polygon";
+pub const POPUP_HOLE: &str = "Hole";
+pub const POPUP_EXTEND_SELECTION: &str = "Extend selection to:";
+pub const POPUP_DONE: &str = "Done (Enter)";
+pub const POPUP_INSERT: &str = "Insert (left mouse button)";
+pub const POPUP_CANCEL: &str = "Cancel (Esc)";
+pub const POPUP_CENTER_DISPLAY: &str = "Center display (C)";
+pub const POPUP_ZOOM_IN: &str = "Zoom in (Z)";
+pub const POPUP_ZOOM_OUT: &str = "Zoom out (O)";
+pub const POPUP_NEEDS_ROUTE: &str = "Needs the interactive route session (I01).";
+pub const POPUP_NEEDS_SWAP: &str = "Needs pin swapping in the editor (I03.3).";
+pub const POPUP_NEEDS_HOLE: &str = "Needs the editor's hole command (I03.4).";
+
+// WindowObjectInfo_en.properties and the words of Common_en.properties that
+// `Item.printInfo` puts between the values.
+pub const INFO_TITLE: &str = "Selected Items";
+pub const INFO_SUMMARY: &str = "Summary:";
+pub const INFO_PIN: &str = "pin";
+pub const INFO_PINS: &str = "pins";
+pub const INFO_VIA: &str = "via";
+pub const INFO_VIAS: &str = "vias";
+pub const INFO_TRACE: &str = "trace, cumulative length";
+pub const INFO_TRACES: &str = "traces, cumulative length";
+pub const INFO_EMPTY: &str = "The list is empty.";
+
 #[cfg(test)]
 mod tests {
     use super::*;

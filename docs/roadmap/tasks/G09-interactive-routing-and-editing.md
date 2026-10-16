@@ -9,7 +9,7 @@ It is the report's GUI-9 (GUI, plugin and packaging report §1.7, §4) and
 where frame target FT7 is met.
 
 **Prerequisites:**
-- [G05](G05-inspect-and-safe-edits.md): tools framework, context menus,
+- [G05](archive/G05-inspect-and-safe-edits.md): tools framework, context menus,
   undo/redo with patching.
 - I01: the route session (Java `Route`/`RouteState` logic as an engine
   `RouteSession`).

@@ -520,8 +520,9 @@ users would notice is listed. Texts follow the English Java bundles.)
   the DRC report. Info > Run DRC is new too: the check runs in the background after
   every edit, and Run DRC forces a run.
 - Delete All Traces and Vias asks for confirmation and can be undone (U, Ctrl+Z, B,
-  Ctrl+Y); Java does neither. Until the engine ports `unfillConductionAreas` the
-  conduction areas are not unfilled and "ignore conduction" is not set, as Java does.
+  Ctrl+Y); Java does neither. Like Java it unfills the conduction areas and sets "ignore
+  conduction" (`unfillConductionAreas`, B08.5); an undo restores the areas, which Java's
+  does not (`tests/ui_edit.rs::delete_all_unfills_conduction_areas`).
 - Zoom to the selection (W) fits the box of the selection plus 10 %; Java offsets the
   box by the largest trace half width.
 
@@ -559,6 +560,65 @@ users would notice is listed. Texts follow the English Java bundles.)
   The unit label is Java's `Unit.toString`: `mil`, `inch`, `mm`, `um`.
 - About has no donate, sponsor or telemetry line; it shows the version, the git commit
   (`FREEROUTING_GIT_COMMIT` at build time, `unknown` until R01.2 sets it), the license and links.
+
+**Inspect mode, selection and safe edits** (G05, `tools/`, `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs`; tests `tests/ui_edit.rs`)
+- **Delete, Fix and Unfix of the selection** (decision G00 question 6, accepted by Dan
+  2026-10-16). Java's inspect toolbar has no such buttons at the pin: the edits it has texts
+  for call the empty methods of `GuiBoardLegacyEditActions`. Delete removes the unfixed items
+  after one snapshot and keeps the ones whose deletion is forbidden (items of components, user
+  fixed items, power planes), saying `Some items are fixed and therefore could not be removed.`;
+  Fix and Unfix set the fixed state. New Net, New Component, Cutout, Assign Clearance Class,
+  Autoroute and Pull Tight stay out. Pinned by `delete_keeps_fixed_items_and_undo_restores`,
+  `fix_and_unfix_set_the_fixed_state`, `toolbar_buttons_match_java_set`.
+- Ctrl+click toggles the item under the cursor also when nothing is selected (Java toggles only
+  while items are selected, where a plain click does it too, as here). Pinned by `ctrl_click_toggles`.
+- Undo and redo work while items are selected (Java allows history in a menu state only, and
+  an inspected selection is not one; its inspect toolbar has no undo). They are refused while a
+  keepout is under construction, as in Java. Pinned by `undo_with_a_selection_works` and
+  `undo_is_refused_while_a_keepout_is_drawn`.
+- The selection toolbar floats over the top of the canvas while items are selected, so the
+  canvas keeps its size (Java swaps the whole toolbar). A region starts where the button went
+  down (Java: at the first drag event). Keepouts are completed with Enter (Java also uses Space,
+  which pans here); Esc closes a menu first, then cancels a keepout or a pending zoom rectangle,
+  then clears the selection.
+- The Components button and menu entry have no (B) in their tooltip: B is redo, as in Java's key
+  handler, whose tooltip is wrong. The item info window shows lengths and points in the unit of
+  the toolbar's selector (Java: the design file's unit), puts a space after `padstack` in the line
+  of a via, and shows the names of components, nets and padstacks as text, not as buttons that
+  open their own info window. Pinned by `item_info_fields`.
+- Start route, Swap pin and the Hole keepout are listed in the context menu but disabled until the
+  interactive route session (I01) and the editor commands (I03.3, I03.4) land. Keepouts are inserted
+  with the engine's `check_shape` and `insert_obstacle` called from the GUI (`tools/keepout.rs`),
+  because the editor command I03.4 owns does not exist yet.
+
+**Rules dialogs** (G06, `dialogs/`; tests `tests/ui_rules.rs`)
+- Net Classes > Remove checks every net for the class. Java's loop (`for i = 1; i < maxNetNumber`,
+  and `maxNetNumber()` is the net count) stops one net short, so a class that only the last net
+  uses can be removed and the net is left with a class that is not in the list. No routing effect.
+  Pinned by `remove_used_class_refused`.
+- Net Classes > Select selects the items of the nets of any chosen class. Java compares the item's
+  net class with `selectedClassArr[i]`, where `i` is the item's net index (a Java typo for `j`), so
+  it only ever matches the first chosen class and throws for an item with more nets than chosen
+  classes. Pinned by `select_takes_the_items_of_all_chosen_classes`.
+- Lengths in the dialogs (trace width, minimum and maximum trace length, clearances, pad-to-turn
+  gap, via radii) are shown and typed in the display unit of the toolbar (G04.6); Java uses the
+  design file's unit. The conversion to board units is Java's: `Math.round(userToBoard(..))`, a trace
+  width becomes `round(userToBoard(0.5 * width))`.
+- The Net Classes table has no row selection model of its own: a click on a class name chooses the
+  row (Ctrl or Cmd adds), a double click renames it. Show Nets opens a "Contained Nets" window with
+  the net info lines of the chosen classes (Java's `WindowObjectInfo`). Filter Incomplete
+  Connections shows the airlines of the chosen classes' nets only, until "Show all connections".
+- Create Via Padstack is one form (name, start and end layer, default radius and a radius per layer)
+  where Java asks in a sequence of prompts; a name that exists is refused in the form, as Java asks
+  again, and an empty name is refused, which Java accepts.
+- The Via Rules window's Info buttons list the padstacks, vias or the rule as text lines, not Java's
+  `printInfo` texts of padstack shapes.
+- The clearance matrix shows `-1` for a layer-dependent cell on "all layers" or "inner" and the
+  value as a Java `float` otherwise (Java's table renderer rounds to three fraction digits).
+- Rule edits are not part of the board history: U and B restore items and components only, as in
+  Java (rules are not in `UndoableObjects`, and the outline keepout, the conduction obstacle flags
+  and the fixed state of traces that these edits change are changed in place without a saved
+  version). G06's decision that "U undoes a rule edit" can't be met without engine work.
 
 **Dropped Java features** (G00 question 2, accepted by Dan 2026-10-15; recorded 2026-10-16)
 - `.frb` snapshots (Java serialization, `BoardSnapshotManager`, `SafeObjectInputStream`):

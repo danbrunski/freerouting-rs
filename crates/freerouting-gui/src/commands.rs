@@ -4,11 +4,14 @@
 
 use std::path::PathBuf;
 
+use freerouting::board::SelectableChoice;
 use freerouting::board::items::ItemId;
 use freerouting::board::structure::Unit;
 
+use crate::dialogs::{RulesDialog, RulesEdit};
 use crate::look::{ItemColor, Object, OtherColor};
-use crate::scene::Kind;
+use crate::panels::select_settings::SelectionLayers;
+use crate::scene::{Kind, P};
 use crate::view::Mirror;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -97,6 +100,86 @@ pub enum Command {
     SetItemColor(usize, ItemColor, [u8; 3]),
     SetOtherColor(OtherColor, [u8; 3]),
     ResetColors,
+    // G06: rules dialogs (the dialogs are in `dialogs/`).
+    /// Opens a rules dialog.
+    ShowRulesDialog(RulesDialog),
+    CloseRulesDialog(RulesDialog),
+    /// One user change to the board rules, run through B08's facade.
+    EditRules(RulesEdit),
+    /// A text for the status line (a dialog's refusal).
+    Notice(String),
+    // G05: inspect mode, selection settings, safe edits, context menus and
+    // keepout construction. Points are in the millimetres of the design
+    // file's frame, as the camera and the scene use them.
+    /// A left click on the canvas (Java `leftButtonClicked`). `toggle` is
+    /// the Ctrl modifier.
+    CanvasClick {
+        at: P,
+        toggle: bool,
+    },
+    /// A left drag that ended: select the items in the box (Java
+    /// `InspectItemsInRegionState`).
+    SelectRegion {
+        from: P,
+        to: P,
+    },
+    /// Key `I` without a selection, and the popup's "Select item": picks
+    /// at the point (Java `MenuState.selectItems(location)`).
+    SelectAt(P),
+    /// Extends the selection (Java `InspectedItemState.extentTo...`).
+    ExtendSelection(ExtendKind),
+    /// Shows or hides the clearance violations of the selected items (key
+    /// `V` while items are selected).
+    ToggleSelectionViolations,
+    /// Opens the item info window for these items (Java
+    /// `WindowObjectInfo.display`); key `I` and the Info buttons.
+    ShowItemInfo(Vec<ItemId>),
+    /// Opens the "General Settings" window of the selection.
+    ShowSelectionSettings,
+    /// Which layers a click selects on.
+    SetSelectionLayers(SelectionLayers),
+    /// Turns one selectable item class (or fixed state) on or off.
+    SetSelectable(SelectableChoice, bool),
+    /// Deletes the unfixed selected items (decision G00 question 6).
+    DeleteSelection,
+    FixSelection,
+    UnfixSelection,
+    /// Right click: the context menu of the mode.
+    OpenPopup {
+        at: P,
+    },
+    ClosePopup,
+    /// The popup's display rows act on the click location.
+    CenterAt(P),
+    ZoomInAt(P),
+    ZoomOutAt(P),
+    /// Starts constructing a keepout at the point (the popup's "Create
+    /// keepout" entries).
+    StartKeepout {
+        kind: KeepoutKind,
+        at: P,
+    },
+    /// Completes the tool under way (Java `complete`): `Enter`.
+    Complete,
+}
+
+/// What an "extend selection" action extends to (the toolbar buttons and
+/// the keys `N`, `S`, `E`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ExtendKind {
+    Nets,
+    ConnectedSets,
+    Connections,
+    Components,
+}
+
+/// The shapes of the keepout popup (Java `PopupMenuMain`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum KeepoutKind {
+    Tile,
+    Circle,
+    Polygon,
+    Hole,
 }
 
 /// The windows of the Info, Display and Help menus that are plain flags.

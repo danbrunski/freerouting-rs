@@ -11,7 +11,10 @@
 //! | `1`-`9` | active layer |
 //! | `+` / `-` | next / previous signal layer |
 //! | `,` | crosshair cursor on or off |
-//! | `Esc` | cancel |
+//! | `Esc` | cancel (menu, keepout, zoom rectangle, selection) |
+//! | `Enter` | complete a keepout under construction |
+//! | `N` `S` `E` `I` `R` `Delete` | with items selected: extend to nets, connected sets, connections; info; zoom region; delete |
+//! | `I` | without a selection: select at the cursor |
 //! | `G` | ratsnest on or off |
 //! | `V` | clearance violation markers on or off |
 //! | `W` | zoom to the selection |
@@ -24,8 +27,9 @@ use eframe::egui::{InputState, Key};
 use crate::commands::Command;
 
 /// Java's tool keys, kept free for the checklists that add them: S, R and D
-/// (inspect, route and drag modes). G, V, U, B and W are used since G03.
-pub const RESERVED: [Key; 3] = [Key::S, Key::R, Key::D];
+/// (route and drag modes). G, V, U, B and W are used since G03, S (extend to
+/// connected sets while items are selected) since G05.
+pub const RESERVED: [Key; 2] = [Key::R, Key::D];
 
 const DIGITS: [Key; 9] = [
     Key::Num1,
@@ -66,6 +70,7 @@ pub fn key_commands(input: &InputState, typing: bool) -> Vec<Command> {
         (Key::F, Command::ZoomToRectangle),
         (Key::Comma, Command::ToggleCrosshair),
         (Key::Escape, Command::Cancel),
+        (Key::Enter, Command::Complete),
         (Key::Plus, Command::StepActiveLayer(1)),
         (Key::Equals, Command::StepActiveLayer(1)),
         (Key::Minus, Command::StepActiveLayer(-1)),

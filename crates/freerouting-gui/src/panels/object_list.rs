@@ -279,10 +279,15 @@ impl ListWindow {
         }
         ui.separator();
         ui.horizontal(|ui| {
-            if spec.show_info {
-                // Info shows the item info window, which G04.3 adds.
-                ui.add_enabled(false, egui::Button::new(text::INFO))
-                    .on_disabled_hover_text(text::INFO_TOOLTIP);
+            if spec.show_info
+                && ui
+                    .button(text::INFO)
+                    .on_hover_text(text::INFO_TOOLTIP)
+                    .clicked()
+            {
+                // The item info window of the chosen rows (Java
+                // `WindowObjectList.info`).
+                out.push(Command::ShowItemInfo(self.chosen_items(rows)));
             }
             if ui
                 .button(spec.select_label)

@@ -51,6 +51,9 @@ pub struct OverlayCounts {
     pub markers: usize,
     /// Shapes of the selection highlight.
     pub highlighted: usize,
+    /// Markers of the selected items' clearance violations and the points
+    /// of a keepout's rubber band (G05).
+    pub tools: usize,
 }
 
 /// One frame's CPU time on the GUI thread, by the two definitions.
@@ -213,6 +216,9 @@ pub struct FrameStats {
     pub builds: u64,
     /// Full builds after the first: a patch never counts here.
     pub full_rebuilds: u64,
+    /// Edits that were patched into the chunks instead of rebuilding them
+    /// (G05.5).
+    pub patches: u64,
     /// What the overlays drew in the last frame.
     pub overlay: OverlayCounts,
 }

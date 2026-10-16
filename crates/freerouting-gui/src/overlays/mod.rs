@@ -6,6 +6,7 @@
 //! the GPU pipeline (G00 lanes). [`draw`] returns what it drew so tests can
 //! assert it (`stats.rs`).
 
+pub mod construction;
 pub mod highlight;
 pub mod ratsnest;
 pub mod violations;

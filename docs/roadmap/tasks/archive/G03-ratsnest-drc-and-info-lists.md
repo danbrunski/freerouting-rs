@@ -252,7 +252,7 @@ Paths are under `crates/freerouting-gui/`.
   islands found." on a clean board, "No length violations found." on Issue143.
   Route stubs: the menu entry is absent, `route_stubs` (B08.3) has not landed.
 
-- [~] **G03.7 — Delete all traces and vias, with undo.**
+- [x] **G03.7 — Delete all traces and vias, with undo.**
   - Other > Delete All Traces and Vias (Java label) and a toolbar button.
     A confirmation dialog says that conduction areas are unfilled too and
     that later routing ignores them, as in Java.
@@ -286,6 +286,16 @@ Paths are under `crates/freerouting-gui/`.
   When B08.5 lands: call `unfill_conduction_areas()` inside `App::delete_all`
   (`app_analysis.rs`) after `delete_all_traces_and_vias()`, and add a conduction
   area board to the test.
+  *Done 2026-10-16:* B08.5 landed (commit 0597f09). `App::delete_all` now calls
+  `board.unfill_conduction_areas()` inside the same `session.edit` closure, after the
+  snapshot and `delete_all_traces_and_vias()`. `tests/ui_edit.rs::delete_all_unfills_conduction_areas`
+  (G05 owns the file) loads `Issue163-pic_programmer.dsn`, which has 1 filled conduction
+  area: after Delete All the filled count is 0 and `rules.ignore_conduction()` is set; U
+  restores the area (count 1 again). The scene is patched from the change journal now
+  (G05.5), so the scene and chunks equal a fresh build after the delete, the undo and the redo
+  (`delete_all_and_undo_patch_the_scene` on `Issue026-J2_reference` with its session; the
+  journal saw every trace and via, `last_sync.removed == wiring`, 0 full rebuilds).
+  `ui_drc::delete_all_and_undo` and `delete_all_and_undo_with_wiring` still pass.
 
 - [x] **G03.8 — File > Export DRC report.**
   - Writes `generate_report(source, "mm")` as JSON through the same

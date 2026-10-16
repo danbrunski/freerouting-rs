@@ -24,14 +24,15 @@ The app is a board viewer for now. Nothing in it edits or routes.
   reference designator for every placed component.
 - Mouse and keys follow Java (`gui.board.BoardPanel`, `InteractiveState`,
   `MenuState`). The wheel or a pinch zooms around the cursor. The middle
-  button, or Space and the left button, pans. The left button is reserved for
-  tools (inspect and region select come later); the right button is reserved
-  for context menus. `A` or `Home` fits the board, `Z` / `O` zoom in / out by
-  2 at the cursor, `C` centres on the cursor, `F` then a left-drag zooms to
-  the dragged rectangle, `,` toggles a crosshair, `Esc` cancels `F`. `G`
-  toggles the ratsnest, `V` the violation markers, `W` zooms to the selection,
-  `U`/`Ctrl+Z` undo and `B`/`Ctrl+Y` redo. `S R D` are reserved for the
-  checklists that add them (`input::RESERVED`).
+  button, or Space and the left button, pans. The left button is the inspect
+  tool (G05, below); the right button opens the context menu. `A` or `Home`
+  fits the board, `Z` / `O` zoom in / out by 2 at the cursor, `C` centres on
+  the cursor, `F` then a left-drag zooms to the dragged rectangle, `,` toggles
+  a crosshair, `Esc` cancels (a menu, a keepout, `F`, then the selection). `G`
+  toggles the ratsnest, `V` the violation markers (or, with items selected,
+  their clearance violations), `W` zooms to the selection, `U`/`Ctrl+Z` undo and
+  `B`/`Ctrl+Y` redo. `R D` are reserved for the checklists that add them
+  (`input::RESERVED`).
   The view fits again automatically when the window resizes, until the user
   pans or zooms. (Open question for Dan, G00 question 1: this is the
   recommended set; the change from "any button pans, `F` fits" awaits his
@@ -67,8 +68,7 @@ The app is a board viewer for now. Nothing in it edits or routes.
   part numbers are drawn on the fabrication layers). Help > About shows the version, the
   commit (`unknown` until R01.2), the license and the links. The levels, the colours, the
   virtual layers, the unit and the crosshair are persisted (`settings.rs`; layer levels and
-  layer colours by layer name). The item info window waits for B08.2 (G04.3): the Info
-  buttons stay disabled until then.
+  layer colours by layer name). The item info window (G04.3) is wired by G05.
 - **Ratsnest, DRC and the Info lists (G03).** After every load and every edit
   a worker thread (`analysis.rs`) runs the engine's `DesignRulesChecker` over
   an `Arc` clone of the session board: first the ratsnest (airlines, the
@@ -83,15 +83,41 @@ The app is a board viewer for now. Nothing in it edits or routes.
   as in Java) and the selection highlight. Info > Incomplete Connections,
   Length Violations, Clearance Violations, Unconnected traces and vias and
   Zone Islands open list windows (`panels/object_list.rs` is the generic one:
-  Select, Invert, Info (disabled until G04.3), Recalculate and a filter). Select
+  Select, Invert, Info (the item info window), Recalculate and a filter). Select
   sets the selection and zooms to it. Run DRC forces a new run. Other > Delete
   All Traces and Vias (also a toolbar button) asks first, takes a snapshot and
-  deletes; Undo/Redo (`U`/`B`, `Ctrl+Z`/`Ctrl+Y`, toolbar) restore the
-  snapshots, and the scene is rebuilt in full after each (G05.5 will patch it).
+  deletes (and unfills the conduction areas, as Java does); Undo/Redo
+  (`U`/`B`, `Ctrl+Z`/`Ctrl+Y`, toolbar) restore the snapshots, and the scene is
+  patched from the board's change journal (G05.5, below).
   File > Export DRC report writes the JSON report of the engine's
   `generate_report` (the same serializer as `-drc`, coordinates in mm). Row
   texts follow Java's bundles (`text.rs`); `docs/DIVERGENCES.md` lists where
   the lists differ from Java's.
+
+- **Inspect mode, selection and safe edits (G05, `tools/`).** The left button is Java's
+  `InspectMenuState`: a click selects what the engine's filtered pick finds at the cursor
+  (`pick_items_filtered`, on the active layer, then on the other visible layers when
+  Settings > Select says "All visible"), a click with items selected toggles one item (Ctrl+click
+  also with none), a left drag draws a rectangle and selects the filtered `overlapping_items`
+  of its box, added to the selection. Esc or the toolbar's Cancel clears it. A toolbar floats
+  over the top of the canvas while items are selected: Cancel, Info, the four "extend to"
+  buttons (Nets `N`, Connected Sets `S`, Connections `E`, Components), Violations (`V`), the
+  three zoom buttons, and Delete (`Delete`), Fix and Unfix (decision G00 question 6; Java's
+  toolbar has the first ten only). The right button opens the context menu of the mode (Select
+  item, Start route and Swap pin disabled until I01/I03, Create keepout > Tile, Circle, Polygon;
+  with items selected the extend entries; the display rows act on the click location). A keepout is
+  built from clicked corners (snapped to the board's angle restriction as in Java), a rubber band
+  follows the cursor, Enter completes, Esc cancels; an overlap says `Keepout canceled because it
+  overlaps existing items.` Settings > Select is `WindowSelectParameter` ("General Settings":
+  selection layers and the ten selectable classes, persisted). The item info window
+  (`panels/item_info.rs`, the toolbar's Info, `I`, the Info buttons of the lists) prints the
+  engine's `item_info` fields with Java's words. Every edit goes through
+  `Loaded::sync_scene`: it drains the board's change journal (`take_changes`) and calls
+  `Tessellation::patch`, so an edit, a delete all, an undo or a redo rebuilds only the chunks it
+  touches; only a journal overflow rebuilds in full (`stats.full_rebuilds` stays 0, `stats.patches`
+  counts the patches). FT4: a real undo of 200 removed plus 200 added items on Issue190 takes a
+  median of 1.35 ms (max 2.15 ms) in `Loaded::sync_scene` in a release build (load average 21,
+  not quiet; `tests/ui_edit.rs::ft4_undo_of_200_and_200_items`).
 
 Screenshots from the cloud sessions are in the project's shared folder under
 `freerouting-rs/gui/`.
@@ -119,6 +145,8 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `look.rs`, `windows.rs` | G04: `Look` (the palette, the visibility levels, the dimming and the six virtual layers; `draw_color` is the one place a colour is decided) and the display windows that are plain flags (visibility, display options, colours, log, About). |
 | `panels/{nets,components,library}.rs` | G04: the rows of the Nets, Placed Components, Library Packages and Library Padstacks lists. |
 | `panels/{display,colors,status,log,about}.rs`, `panels/layers.rs` | G04: the window contents (each a function that returns commands), the status bar, the log (`Log::entries` composes the loader warnings, the engine's messages and the events) and the visibility sliders. |
+| `tools/{inspect,popup,keepout,edit}.rs`, `tools/mod.rs` | G05: `Tools` (the selection settings, the keepout under construction, the context menu, the shown violations, the item info windows); `App::execute_tool` runs the canvas commands (`CanvasClick`, `SelectRegion`, `ExtendSelection`, `DeleteSelection`, `OpenPopup`, `StartKeepout`, ...). `inspect.rs` has the pick, region and extend rules on the engine's queries; `popup.rs` the menu rows by mode; `keepout.rs` the corner snapping and the insertion (interim: the editor command I03.4 will own it); `edit.rs` Delete, Fix and Unfix (interim: I03.6). |
+| `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs` | G05: Settings > Select ("General Settings", `SelectionSettings`), the toolbar over the canvas while items are selected, the item info window (G04.3), the keepout's rubber band. |
 | `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
 | `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`. |
 
@@ -326,8 +354,9 @@ is the fallback.
   patched chunk is bit-identical to one built fresh from the same items
   (`patch_equals_fresh_build`). `Scene::item(board, id)` (or
   `Flattener::item(id)` for many) makes the scene items of one engine item (B08's `ItemGeometry` replaces that in G07).
-  Nothing calls `patch` yet: `Loaded::rebuild_scene` (G03) still rebuilds in
-  full, and the checklists G05.5 and G07.4 switch to `patch`.
+  `Loaded::sync_scene` (G05.5) calls `patch` after every edit, undo and redo;
+  `Loaded::rebuild_scene` is the fallback for a journal overflow. G07.4 patches
+  from the router's deltas the same way.
 - **Fallback.** `FREEROUTING_GUI_RENDERER=cpu`, or no wgpu render state, draws the
   same plan as egui meshes (`view::paint_cpu`; hairlines become quads). Only the
   environment variable is read at start; `ViewState::renderer.force_cpu` does the
@@ -417,18 +446,49 @@ The new renderer (frame CPU, ms):
   on Issue190 and on the 4x4 board (DX12, and `WGPU_BACKEND=gl`). Dan runs it; the
   numbers go here.
 
+## Rules dialogs (G06)
+
+`src/dialogs/`. A dialog reads the board (`RuleView`), shows values in the display unit
+(`RuleUnits`: display unit, then the design file's unit, then `CoordinateTransform`), and returns one
+`Command::EditRules(RulesEdit)` per user change; `App::execute_rules_edit` runs it with
+`dialogs::rules_edit::apply` through B08's facade (`freerouting::rules::edit`) on
+`Session::edit`, which counts the edit, so the DRC and the ratsnest run again (the analysis tag
+carries `edit_generation`). A refusal goes to the status line (`Command::Notice`, `App::notice`).
+Rule edits are not in the board history: `U` restores items only, as in Java.
+Menus: Rules > Clearance Matrix, Vias, Net Classes; Settings > Routing.
+
+| Dialog (module) | Java class | Calls (`RulesEdit` variant: B08 call) |
+|---|---|---|
+| Net Classes (`net_classes`) | `WindowNetClasses` | `AddNetClass`: `add_net_class`; `RemoveNetClass`: `remove_net_class` after the all-nets check; `RenameNetClass`: `rename_net_class`; `SetNetClassViaRule`: `set_net_class_via_rule`; `SetNetClassClearanceClass`: `set_net_class_clearance_class`; `SetNetClassHalfWidth`: `set_net_class_trace_half_width`; `SetNetClassShoveFixed`; `SetNetClassIgnoreCyclesWithAreas`; `SetNetClassMinLength` / `MaxLength`; `SetNetClassIgnoredByAutorouter`; `SetNetClassLayers`: `NetClass::set_active_routing_layer`. Select sends `Select` + `ZoomSelection`; Show Nets and Filter Incomplete Connections are display only |
+| Assign Net Class (`assign_net_class`) | `WindowAssignNetClass` | `SetNetClass`: `assign_net_class` |
+| Clearance Matrix (`clearance_matrix`) | `WindowClearanceMatrix` | `SetClearance`: `apply_clearance_value`; `AddClearanceClass`: `add_clearance_class`; `MergeClearanceClass` (one confirmed prune step, in `pruneClearanceMatrix` order): `change_clearance_class_index`, `remove_clearance_class`, `clearance_class_removed` |
+| Edit Vias (`vias`) | `WindowEditVias` | `AddViaInfo`: `add_via_info` (renamed `new_via_<n>`); `RemoveViaInfo`: `remove_via_info`; `RenameViaInfo`; `SetViaInfoPadstack`; `SetViaInfoClearanceClass`; `SetViaInfoAttachSmd` |
+| Via Rules (`via_rules`) | `WindowVia`, `WindowViaRule` | `CreateViaPadstack`: `Padstacks::add` + `add_via_padstack`; `RemoveViaPadstack`: `remove_via_padstack`; `AddViaRule`: `add_via_rule`; `RemoveViaRule`: `remove_via_rule`; `AppendViaToRule`; `RemoveViaFromRule`; `SwapViasInRule`: `swap_vias_in_rule` (Move Up / Down) |
+| Routing Settings, board rules (`route_settings`) | `WindowRouteParameter` | `SetSnapAngle`: `set_trace_angle_restriction` (asks first when traces would not fit); `SetIgnoreConduction`: `change_plane_as_obstacle(!v)`; `SetPinEdgeToTurnDist`: `set_pin_edge_to_turn_dist`, with Java's unfixing of shove-fixed two-corner pin traces (done in `rules_edit`, no B08 facade); `SetClearanceCompensation`: `set_clearance_compensation_used`; `SetKeepoutOutsideOutline`: `generate_keepout_outside_outline` |
+
+`input` has Java's static helpers (`parseTraceWidthValue`, `applyTraceWidth`, `isLegalClassName`,
+`parseClearanceTableValue`, `canRemoveNetClass`, the autorouter number and timeout normalizers) and
+`autoroute_handlers` the autorouter checkbox handlers, for the G07 dialog to call.
+`route_settings::static_section` is where G09.2 adds the interactive fields. Tests:
+`tests/ui_rules.rs` (drives each dialog through egui_kittest, reads the engine board back) and the
+unit tests of `dialogs/input.rs`. Lessons: `ScrollArea::both()` swallows clicks of the cells under
+it (use `vertical`, or `scroll_source` without `drag`); a click needs a second frame to take
+effect, so the tests step at least twice; a drop-down is found by its accessible name
+(`name_drop_down`). `docs/DIVERGENCES.md` has the "Rules dialogs" list.
+
 ## What's next
 
 In plan order. Each item needs engine work first, so check what has landed in
 `crates/freerouting` before starting one.
 
-1. **Ratsnest and DRC panel:** done in G03 (see "What works"). Open: Delete All
-   does not unfill conduction areas until B08 ports `unfillConductionAreas`
-   (G03.7), the Info button of the lists waits for G04.3 (B08.2's `item_info`),
-   and Route Stubs waits for B08.3. G04 (windows, display options, colours,
-   status bar) is done except G04.3.
-2. **Selection by mouse** (inspect tool, G05): `Selection` and its highlight
-   exist; only the lists set it today.
+1. **Ratsnest and DRC panel:** done in G03 (see "What works"). Open: Route
+   Stubs waits for B08.3. G04 (windows, display options, colours, status bar) is
+   done, including the item info window.
+2. **Selection by mouse, safe edits and keepouts:** done in G05 (see "What works").
+   Open: Start route, Swap pin and the Hole keepout (I01, I03.3, I03.4), and moving
+   the interim keepout/Delete/Fix/Unfix code of `tools/{keepout,edit}.rs` into the
+   engine's editor commands (I03.4, I03.6). Fix and Unfix are not undoable until then
+   (`set_fixed_state` does not save the item for undo, as in Java).
 3. **Autorouter run:** start and stop the router from the GUI, with live
    progress. The board should redraw as routes land, which needs a way to
    rebuild or patch the `Scene`/`Tessellation` from engine change events

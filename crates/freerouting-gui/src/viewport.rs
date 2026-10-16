@@ -51,6 +51,8 @@ pub struct ViewState {
     pub cursor: Option<Pos2>,
     /// The corners of the rectangle being dragged for a zoom.
     zoom_rect_drag: Option<(Pos2, Pos2)>,
+    /// The corners of the rectangle being dragged to select items (G05.1).
+    pub tool_drag: Option<(Pos2, Pos2)>,
     pan_anchor: Option<Pos2>,
 }
 
@@ -73,6 +75,7 @@ impl Default for ViewState {
             renderer: view::Renderer::default(),
             cursor: None,
             zoom_rect_drag: None,
+            tool_drag: None,
             pan_anchor: None,
         }
     }
@@ -253,6 +256,9 @@ pub struct CanvasOut {
     /// The hover for the status bar.
     pub hover: Hover,
     pub paint: PaintStats,
+    /// What the pointer did for the tools this frame (G05): clicks, ended
+    /// drags and right clicks, as commands.
+    pub commands: Vec<Command>,
 }
 
 fn describe(scene: &Scene, item: &Item) -> String {
@@ -309,7 +315,7 @@ pub fn canvas(
         view.fit_requested = false;
         view.auto_fit = Some(rect.size());
     }
-    handle_mouse(ui, &response, view, rect);
+    let commands = handle_mouse(ui, &response, view, rect);
     let cam = *view.camera.as_ref().expect("camera set above");
     let paint = view::paint(
         &painter,
@@ -326,6 +332,7 @@ pub fn canvas(
     let mut out = CanvasOut {
         hover: Hover::default(),
         paint,
+        commands,
     };
     let Some(pos) = response.hover_pos() else {
         return out;
@@ -345,7 +352,13 @@ pub fn canvas(
     out
 }
 
-fn handle_mouse(ui: &egui::Ui, response: &egui::Response, view: &mut ViewState, rect: Rect) {
+fn handle_mouse(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    view: &mut ViewState,
+    rect: Rect,
+) -> Vec<Command> {
+    let mut commands = Vec::new();
     let space = ui.input(|i| i.key_down(egui::Key::Space));
     let panning = response.dragged_by(PointerButton::Middle)
         || (space && response.dragged_by(PointerButton::Primary));
@@ -379,6 +392,8 @@ fn handle_mouse(ui: &egui::Ui, response: &egui::Response, view: &mut ViewState, 
         view.zoom_rect_drag = None;
     }
 
+    tool_pointer(ui, response, view, rect, panning || space, &mut commands);
+
     if let Some(hover) = response.hover_pos() {
         let (scroll, pinch) = ui.input(|i| (i.smooth_scroll_delta, i.zoom_delta()));
         let factor = (f64::from(scroll.y) / 200.0).exp() * f64::from(pinch);
@@ -389,10 +404,67 @@ fn handle_mouse(ui: &egui::Ui, response: &egui::Response, view: &mut ViewState, 
             view.auto_fit = None;
         }
     }
+    commands
+}
+
+/// The left button's tool (G05): a click, a drag that selects a region, and
+/// the right button's menu. Panning (middle button, Space) and the zoom
+/// rectangle (after `F`) keep the left button for themselves.
+fn tool_pointer(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    view: &mut ViewState,
+    rect: Rect,
+    panning: bool,
+    commands: &mut Vec<Command>,
+) {
+    let Some(cam) = view.camera else { return };
+    if panning || view.zoom_rect_armed {
+        view.tool_drag = None;
+        return;
+    }
+    if response.dragged_by(PointerButton::Primary) {
+        let from = ui.input(|i| i.pointer.press_origin());
+        if let Some((from, to)) = from.zip(response.interact_pointer_pos()) {
+            view.tool_drag = Some((from, to));
+        }
+    } else if response.drag_stopped_by(PointerButton::Primary) {
+        if let Some((from, to)) = view.tool_drag.take() {
+            commands.push(Command::SelectRegion {
+                from: cam.to_board(rect, from),
+                to: cam.to_board(rect, to),
+            });
+        }
+    } else {
+        view.tool_drag = None;
+    }
+    if response.clicked_by(PointerButton::Primary)
+        && let Some(pos) = response.interact_pointer_pos()
+    {
+        commands.push(Command::CanvasClick {
+            at: cam.to_board(rect, pos),
+            toggle: ui.input(|i| i.modifiers.command),
+        });
+    }
+    if response.clicked_by(PointerButton::Secondary)
+        && let Some(pos) = response.interact_pointer_pos()
+    {
+        commands.push(Command::OpenPopup {
+            at: cam.to_board(rect, pos),
+        });
+    }
 }
 
 fn draw_overlays(painter: &egui::Painter, view: &ViewState, rect: Rect) {
     let stroke = Stroke::new(1.0, Color32::from_white_alpha(140));
+    if let Some((a, b)) = view.tool_drag {
+        painter.rect_stroke(
+            Rect::from_two_pos(a, b),
+            0.0,
+            stroke,
+            egui::StrokeKind::Inside,
+        );
+    }
     if let Some((a, b)) = view.zoom_rect_drag {
         painter.rect_stroke(
             Rect::from_two_pos(a, b),

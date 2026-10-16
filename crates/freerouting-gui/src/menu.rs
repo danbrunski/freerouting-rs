@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use eframe::egui::{self, RichText};
 
 use crate::commands::{Command, ListKind, WindowKind};
+use crate::dialogs::RulesDialog;
 use crate::session::Loaded;
 use crate::text;
 
@@ -87,6 +88,7 @@ pub fn ui(ui: &mut egui::Ui, loaded: Option<&Loaded>, recent: &[PathBuf]) -> Vec
             );
         });
         analysis_menus(ui, &mut out, loaded.is_some());
+        rules_menus(ui, &mut out, loaded.is_some());
         display_menu(ui, &mut out, loaded.is_some());
         ui.menu_button(text::MENU_HELP, |ui| {
             item(
@@ -169,6 +171,37 @@ fn display_menu(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
             ] {
                 item(ui, out, label, Command::ShowWindow(window));
             }
+        });
+    });
+}
+
+/// The Rules and Settings menus of Java's board menu bar (`BoardMenuRules`,
+/// `BoardMenuParameter`): the rules dialogs of G06.
+fn rules_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
+    ui.add_enabled_ui(board_open, |ui| {
+        ui.menu_button(text::MENU_RULES, |ui| {
+            for (label, dialog) in [
+                (text::MENU_CLEARANCE_MATRIX, RulesDialog::ClearanceMatrix),
+                (text::MENU_VIAS, RulesDialog::ViaRules),
+                (text::MENU_NET_CLASSES, RulesDialog::NetClasses),
+            ] {
+                item(ui, out, label, Command::ShowRulesDialog(dialog));
+            }
+        });
+        ui.menu_button(text::MENU_PARAMETER, |ui| {
+            item(
+                ui,
+                out,
+                text::MENU_ROUTING,
+                Command::ShowRulesDialog(RulesDialog::RouteSettings),
+            );
+            // G05.2: the selection's "General Settings".
+            item(
+                ui,
+                out,
+                text::MENU_SELECT_SETTINGS,
+                Command::ShowSelectionSettings,
+            );
         });
     });
 }

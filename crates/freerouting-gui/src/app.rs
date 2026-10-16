@@ -20,12 +20,14 @@ use crate::lists::Lists;
 use crate::look::{Object, VIRTUAL_LAYERS, virtual_name};
 use crate::overlays::OverlayState;
 use crate::panels::log::{Level, Log};
+use crate::panels::select_settings::SelectionSettings;
 use crate::panels::warnings;
 use crate::scene::Kind;
 use crate::selection::Selection;
 use crate::session::{self, CurrentDesign, Loaded};
 use crate::settings::PersistedSettings;
 use crate::stats::{FrameStats, OverlayCounts, PaintStats};
+use crate::tools::Tools;
 use crate::viewport::ViewState;
 use crate::windows::Windows;
 
@@ -58,6 +60,10 @@ pub struct App {
     // G04: the display windows and the log.
     pub(crate) windows: Windows,
     pub(crate) log: Log,
+    // G05: the tools of the left button, context menus and keepouts.
+    pub(crate) tools: Tools,
+    // G06: the rules dialogs.
+    pub(crate) dialogs: crate::dialogs::Dialogs,
     /// The analysis state a "design rules check finished" line was logged
     /// for, so each result is logged once.
     logged_drc: Option<crate::analysis::Tag>,
@@ -105,6 +111,8 @@ impl App {
             }
         }
         restore_look(&mut view, &settings);
+        let settings_selection_layers = settings.selection_layers.clone();
+        let settings_selectable = settings.selectable_items.clone();
         let mut app = App {
             loaded: None,
             view,
@@ -128,6 +136,14 @@ impl App {
             notice: None,
             windows: Windows::default(),
             log: Log::default(),
+            tools: Tools {
+                select: SelectionSettings::from_stored(
+                    settings_selection_layers.as_deref(),
+                    settings_selectable.as_deref(),
+                ),
+                ..Tools::default()
+            },
+            dialogs: crate::dialogs::Dialogs::default(),
             logged_drc: None,
             synthetic: args.synthetic,
             load_started: None,
@@ -202,6 +218,11 @@ impl App {
         self.log.entries(self.loaded.as_ref().map(|b| &b.session))
     }
 
+    /// Whether a rules dialog is open (G06).
+    pub fn dialogs_open(&self, dialog: crate::dialogs::RulesDialog) -> bool {
+        self.dialogs.is_open(dialog)
+    }
+
     /// The last message that is not an error (an export result).
     pub fn notice(&self) -> Option<&str> {
         self.notice.as_deref()
@@ -239,6 +260,12 @@ impl App {
         }
         s.unit = Some(self.view.unit.name().to_string());
         s.crosshair = self.view.crosshair;
+        // G05.2: what a click selects. The defaults are stored as `None`.
+        let select = &self.tools.select;
+        let default = SelectionSettings::default();
+        s.selection_layers = (select.layers != default.layers).then(|| select.layers.name().into());
+        s.selectable_items =
+            (select.selectable != default.selectable).then(|| select.stored_choices());
         // The "other" colours belong to the user, the layer colours to the
         // layers of the board that is open, by name.
         s.colors.retain(|key, _| !key.starts_with("other/"));
@@ -284,6 +311,30 @@ impl App {
             Command::ShowWindow(kind) => self.windows.set(kind, true),
             Command::CloseWindow(kind) => self.windows.set(kind, false),
             Command::RecalculateList(kind) => self.lists.window(kind).invalidate(),
+            Command::Cancel => self.cancel(),
+            Command::ShowRulesDialog(dialog) => self.dialogs.open(dialog, true),
+            Command::CloseRulesDialog(dialog) => self.dialogs.open(dialog, false),
+            Command::EditRules(edit) => self.execute_rules_edit(edit),
+            Command::Notice(message) => self.notice = Some(message),
+            command @ (Command::CanvasClick { .. }
+            | Command::SelectRegion { .. }
+            | Command::SelectAt(_)
+            | Command::ExtendSelection(_)
+            | Command::ToggleSelectionViolations
+            | Command::ShowItemInfo(_)
+            | Command::ShowSelectionSettings
+            | Command::SetSelectionLayers(_)
+            | Command::SetSelectable(..)
+            | Command::DeleteSelection
+            | Command::FixSelection
+            | Command::UnfixSelection
+            | Command::OpenPopup { .. }
+            | Command::ClosePopup
+            | Command::CenterAt(_)
+            | Command::ZoomInAt(_)
+            | Command::ZoomOutAt(_)
+            | Command::StartKeepout { .. }
+            | Command::Complete) => self.execute_tool(ctx, command),
             command @ (Command::Select(_)
             | Command::ClearSelection
             | Command::ZoomSelection
@@ -415,6 +466,12 @@ impl App {
         self.analysis.reset();
         self.selection.clear();
         self.notice = None;
+        self.dialogs.reset();
+        let select = std::mem::take(&mut self.tools.select);
+        self.tools = Tools {
+            select,
+            ..Tools::default()
+        };
     }
 
     fn commands_this_frame(&mut self, ctx: &egui::Context) -> Vec<Command> {
@@ -423,6 +480,23 @@ impl App {
         out.extend(self.dialog.ui(ctx).map(Command::Open));
         let typing = ctx.wants_keyboard_input();
         out.extend(ctx.input(|i| input::key_commands(i, typing)));
+        // Java's `V` shows the clearance violations of the selected items
+        // while items are selected, and all of them otherwise.
+        if !self.selection.is_empty() {
+            for command in &mut out {
+                if *command == Command::ToggleViolations {
+                    *command = Command::ToggleSelectionViolations;
+                }
+            }
+        }
+        let cursor = self
+            .view
+            .camera
+            .zip(self.view.cursor)
+            .map(|(camera, pos)| camera.to_board(self.view.canvas, pos));
+        out.extend(
+            ctx.input(|i| crate::tools::inspect::key_commands(i, typing, &self.selection, cursor)),
+        );
         out
     }
 }
@@ -461,6 +535,11 @@ impl eframe::App for App {
         let entries = self.log.entries(self.loaded.as_ref().map(|b| &b.session));
         commands.extend(self.windows.show(ctx, &self.view, &layer_names, &entries));
         commands.extend(self.confirm_delete_ui(ctx));
+        commands.extend(self.tools_ui(ctx));
+        if let Some(b) = &self.loaded {
+            let view = crate::dialogs::RuleView::new(&b.session, self.view.unit);
+            commands.extend(self.dialogs.show(ctx, &view));
+        }
         commands.extend(self.export_dialog.ui(ctx).map(Command::ExportDrcReport));
         for command in commands {
             self.execute(ctx, command);

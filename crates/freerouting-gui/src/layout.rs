@@ -7,7 +7,7 @@ use crate::app::App;
 use crate::commands::Command;
 use crate::menu;
 use crate::overlays;
-use crate::panels::{board_stats, layers, status};
+use crate::panels::{board_stats, layers, selection_toolbar, status};
 use crate::toolbar;
 use crate::viewport::{self, CanvasOut};
 
@@ -53,7 +53,12 @@ impl App {
                         .loading
                         .as_ref()
                         .map(|(paths, _)| format!("Reading {}", paths[0].display())),
-                    notice: self.notice.as_deref(),
+                    // While a region is dragged, Java says how it ends.
+                    notice: if self.view.tool_drag.is_some() {
+                        Some(crate::text::DRAG_TO_SELECT_REGION)
+                    } else {
+                        self.notice.as_deref()
+                    },
                     hover: &hover,
                     layer,
                     unit: self.view.unit,
@@ -101,16 +106,24 @@ impl App {
         self.scripted
             .before_canvas(&mut self.view, self.loaded.as_ref());
         let mut out = CanvasOut::default();
-        egui::CentralPanel::default()
+        let central = egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ctx, |ui| {
                 out = viewport::canvas(ui, &mut self.view, self.loaded.as_ref(), &message);
                 self.overlay_counts = Default::default();
                 if let (Some(b), Some(camera)) = (&self.loaded, self.view.camera) {
+                    // The Net Classes window's "Filter Incomplete Connections"
+                    // keeps the airlines of some nets only.
+                    let filtered = self.dialogs.incompletes_filter().and_then(|keep| {
+                        let all = self.analysis.ratsnest(&b.session)?;
+                        Some(crate::dialogs::net_classes::filter_ratsnest(all, keep))
+                    });
                     let inputs = overlays::Inputs {
                         look: &self.view.look,
                         board: &b.session.board,
-                        ratsnest: self.analysis.ratsnest(&b.session).map(|r| &**r),
+                        ratsnest: filtered
+                            .as_ref()
+                            .or(self.analysis.ratsnest(&b.session).map(|r| &**r)),
                         drc: self.analysis.drc(&b.session).map(|d| &**d),
                         selection: &self.selection,
                         state: self.overlay,
@@ -124,6 +137,20 @@ impl App {
                     ctx.request_repaint();
                 }
             });
+        // G05: what the tools draw on the canvas, and the selection toolbar
+        // over its top edge.
+        if let Some(camera) = self.view.camera {
+            let painter = ctx
+                .layer_painter(central.response.layer_id)
+                .with_clip_rect(self.view.canvas);
+            self.overlay_counts.tools = self.draw_tools(&painter, &camera);
+        }
+        commands.extend(std::mem::take(&mut out.commands));
+        commands.extend(selection_toolbar::show(
+            ctx,
+            self.view.canvas,
+            &self.selection.ids(),
+        ));
         (commands, out)
     }
 }

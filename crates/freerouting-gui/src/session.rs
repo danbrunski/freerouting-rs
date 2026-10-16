@@ -7,15 +7,17 @@
 //! (free); an edit goes through [`Session::board_mut`], which copies the
 //! board only while a job still holds the old one.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
 use freerouting::board::RoutingBoard;
+use freerouting::board::items::ItemId;
 use freerouting::dsn::{self, Pcb, Session as SesFile};
 use freerouting::io::specctra::{BoardReadResult, SesImportSummary, build_board, import_session};
 
-use crate::scene::Scene;
+use crate::scene::{Flattener, Scene};
 use crate::stats::LoadTimings;
 use crate::view::Tessellation;
 
@@ -79,10 +81,87 @@ pub struct Loaded {
 
 impl Loaded {
     /// Builds the scene and its tessellation again from the session board,
-    /// after an edit (G03; G05.5 patches instead).
+    /// in full. After an edit use [`sync_scene`](Self::sync_scene), which
+    /// patches; this is the fallback for a journal that overflowed.
     pub fn rebuild_scene(&mut self) {
         self.scene = Scene::from_board(&self.session.design.name, &self.session.board);
         self.tess = Tessellation::new(&self.scene);
+    }
+}
+
+/// How [`Loaded::sync_scene`] brought the drawing up to date (G05.5).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct SceneSync {
+    /// Engine items the journal reported as gone or changed.
+    pub removed: usize,
+    /// Engine items flattened again (new or changed).
+    pub added: usize,
+    /// True if the journal overflowed (or was off) and the scene was built
+    /// again in full.
+    pub rebuilt: bool,
+    /// The chunks the patch rebuilt, ascending; empty after a rebuild or
+    /// when nothing changed.
+    pub dirty_chunks: Vec<u32>,
+}
+
+impl Loaded {
+    /// Brings the scene and the chunks up to date with the board after an
+    /// edit, from the board's change journal (B01.7): the chunks that own a
+    /// removed or changed item and the ones that receive an added item are
+    /// rebuilt (`Tessellation::patch`, G02.4), nothing else. Only a journal
+    /// that overflowed, or one that was off, makes a full rebuild.
+    pub fn sync_scene(&mut self) -> SceneSync {
+        let board = Arc::make_mut(&mut self.session.board);
+        if !board.is_journaling() {
+            board.set_journaling(true);
+            self.rebuild_scene();
+            return SceneSync {
+                rebuilt: true,
+                ..SceneSync::default()
+            };
+        }
+        let changes = board.take_changes();
+        if changes.overflow {
+            self.rebuild_scene();
+            return SceneSync {
+                rebuilt: true,
+                ..SceneSync::default()
+            };
+        }
+        // A changed item is flattened again: its shape may differ.
+        let gone: Vec<ItemId> = changes
+            .removed
+            .iter()
+            .chain(&changes.changed)
+            .copied()
+            .collect();
+        let fresh: Vec<ItemId> = changes
+            .inserted
+            .iter()
+            .chain(&changes.changed)
+            .copied()
+            .collect();
+        if gone.is_empty() && fresh.is_empty() {
+            return SceneSync::default();
+        }
+        let flattener = Flattener::new(&self.session.board);
+        let mut added = Vec::new();
+        for id in &fresh {
+            if let Some(item) = self.session.board.basic().item(*id) {
+                flattener.flatten(item, &mut added);
+            }
+        }
+        let report = self.tess.patch(&gone, &added);
+        let gone_set: HashSet<ItemId> = gone.iter().copied().collect();
+        self.scene.items.retain(|i| !gone_set.contains(&i.id));
+        self.scene.items.extend(added);
+        self.scene.build_index();
+        SceneSync {
+            removed: gone.len(),
+            added: fresh.len(),
+            rebuilt: false,
+            dirty_chunks: report.dirty_chunks,
+        }
     }
 }
 
@@ -210,6 +289,9 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
     let phase = Instant::now();
     let mut board = build(&pcb, &design_path, &mut warnings)?;
     let ses_summary = ses.map(|file| import_session(&mut board, &file));
+    // From here on the board records what changes, so an edit patches the
+    // drawing instead of rebuilding it (G05.5).
+    board.set_journaling(true);
     timings.board_ms = phase.elapsed().as_secs_f64() * 1000.0;
     let board = Arc::new(board);
     let phase = Instant::now();
