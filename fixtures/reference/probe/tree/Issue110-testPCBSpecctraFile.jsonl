@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue110-testPCBSpecctraFile","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue110-testPCBSpecctraFile","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":931,"leaves":466,"maxDepth":25,"shapeHash":"a11b6b466ca4411b","contentDigest":"03746ffdd25a9d86"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":931,"leaves":466,"maxDepth":20,"shapeHash":"9be46d3bd785de38","contentDigest":"b7455fc16a753611"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":931,"leaves":466,"maxDepth":20,"shapeHash":"3e2fb38e633b2101","contentDigest":"307b2b9ab4127ff8"}

@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue102-Mars-64-revE-rot00","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue102-Mars-64-revE-rot00","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":1396,"inserted":true}
 {"stage":"insert-via","via":1,"trace":1086,"inserted":true}
 {"stage":"insert-via","via":2,"trace":1283,"inserted":true}

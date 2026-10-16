@@ -3,7 +3,8 @@
 **Goal:** a full port of Freerouting to Rust: a fast, correct routing engine plus a
 cross-platform desktop GUI that runs on Windows, macOS, Linux and WSL (through WSLg).
 
-Source: `danbrunski/freerouting` at `cda540f` (Java 25, Gradle). About 140k lines of
+Source: `danbrunski/freerouting` at `a773a70ec` (Java 25, Gradle; pinned at `cda540f`
+until J01 moved it on 2026-10-15). About 140k lines of
 production Java across ~60 packages: ~75k of routing core, ~25k of Swing GUI and
 interactive editing, and the rest API, job management, analytics and settings.
 
@@ -109,16 +110,23 @@ the compiler enforces it.
   `RationalPoint`, `BigIntDirection` and friends. Use `i128` and fall back to
   `num-bigint` only where the bound can't be proven; each such site gets a test at the
   coordinate limits.
-- **Determinism.** `MazeSearchEngine` uses an unseeded `new Random()`, which makes Java
-  runs unrepeatable. The Rust engine takes an explicit seed everywhere and avoids
+- **Determinism.** Java routing at the pin is reproducible: with the same JDK, input and
+  settings it writes a byte-identical session at any machine load (J01.4). Its randomness
+  is seeded: `MazeSearchEngine` reseeds its `Random` with the ripup cost before each
+  connection (and its random factor never fires, because `ripupPassNo` never exceeds 1),
+  the pass shuffle is seeded with `passNo * 1000003 + maxNetNumber`, and the polygon split
+  and the Delaunay triangulation use a fresh seed-99 generator per call. Its cut-offs are
+  work budgets (`WorkLimit`: 64,000 search-tree node visits per nominal millisecond), not
+  wall-clock time; only the job timeout is wall-clock, and it only stops work. The Rust
+  engine takes the same seeds, counts the same work units (B02.7, B03.7) and avoids
   hash-order-dependent iteration (`IndexMap` or sorted collections), so the same input
   and seed always give the same output.
 - **Speed.** Profile against the Java benchmark set (`scripts/benchmark`) from the first
   routing milestone. Parallelism candidates: per-net maze searches on disjoint regions,
   optimizer passes, and DRC. Start single-threaded and correct, then parallelize with
   rayon where profiles say it pays.
-- **Cancellation and progress.** Java's `Stoppable`/`TimeLimit` become a cancel token
-  plus deadline, and routing emits progress events over a channel that both the CLI and
+- **Cancellation and progress.** Java's `Stoppable` and job timeout become a cancel token
+  plus deadline (its `WorkLimit` budgets become work counters, never time), and routing emits progress events over a channel that both the CLI and
   GUI consume.
 
 ## Porting order and milestones

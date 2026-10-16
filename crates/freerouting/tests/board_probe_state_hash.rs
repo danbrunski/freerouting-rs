@@ -22,7 +22,13 @@ const BOARDS: &[&str] = &[
 /// Steps where the equality differs from Java's only through
 /// `Item.smallestClearance`, the DRC cache Java's hash includes and the port
 /// does not have (`docs/DIVERGENCES.md`).
-const EXPECTED_MISMATCHES: &[(&str, &str, &str)] = &[];
+const EXPECTED_MISMATCHES: &[(&str, &str, &str)] = &[(
+    "Issue413-test",
+    "h7",
+    "BoardStatistics on the deep copy runs Java's clearanceViolations(), which writes \
+     Item.smallestClearance; with the a773a70ec session that changes Java's hash (h7 no \
+     longer equals h5/h6), while the port's hash has no such cache",
+)];
 
 fn step(lines: &mut Vec<String>, hashes: &mut Vec<u128>, name: &str, board: &RoutingBoard) {
     let hash = board.state_hash();

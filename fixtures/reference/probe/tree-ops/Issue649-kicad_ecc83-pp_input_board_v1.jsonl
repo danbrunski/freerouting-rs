@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue649-kicad_ecc83-pp_input_board_v1","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue649-kicad_ecc83-pp_input_board_v1","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":368,"inserted":true}
 {"stage":"insert-via","via":1,"trace":370,"inserted":true}
 {"stage":"insert-via","via":2,"trace":357,"inserted":true}

@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue269-min_fr_test/min_fr_test_no_quotes","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue269-min_fr_test/min_fr_test_no_quotes","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":45,"inserted":true}
 {"stage":"insert-via","via":1,"trace":47,"inserted":true}
 {"stage":"insert-via","via":2,"trace":42,"inserted":true}

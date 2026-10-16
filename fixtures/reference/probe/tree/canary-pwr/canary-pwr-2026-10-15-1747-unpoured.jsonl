@@ -1,4 +1,4 @@
-{"kind":"tree","board":"canary-pwr/canary-pwr-2026-10-15-1747-unpoured","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"canary-pwr/canary-pwr-2026-10-15-1747-unpoured","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":5233,"leaves":2617,"maxDepth":102,"shapeHash":"dee6d5c4af3c1ac6","contentDigest":"a8e5b1d661a56a95"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":5281,"leaves":2641,"maxDepth":69,"shapeHash":"9bef0800b178d362","contentDigest":"8552d7a31c26ebd1"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":5281,"leaves":2641,"maxDepth":71,"shapeHash":"4d7ff3225b4bbf51","contentDigest":"228ab737548cce82"}

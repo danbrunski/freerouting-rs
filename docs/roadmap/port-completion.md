@@ -111,7 +111,7 @@ it depends on.
   - Every routing checklist proves this by routing the same board twice, once
     idle and once under load, and diffing the SES.
 - **D3 — Re-pin before the router.** Dan's Java fork is replacing its
-  wall-clock limits with work-count limits ([J01](tasks/J01-repin-deterministic-java.md)).
+  wall-clock limits with work-count limits ([J01](tasks/archive/J01-repin-deterministic-java.md)).
   That covers the fanout per-pin limit, the pull-tight guard, the maze search,
   the shover and the drill mover. After that commit, Java routing is
   reproducible, and its route outputs become exact targets instead of a
@@ -243,7 +243,7 @@ Each rung uses the reference data and harness in
 | Series | Roadmap | Checklists | Starts |
 |---|---|---|---|
 | **F** Foundations: dev loop, CI, benchmark and parity harness | this file | [F00](tasks/F00-foundations-README.md) | now |
-| **J** Java reference tracking: re-pin, deterministic references, ledger | this file | [J01](tasks/J01-repin-deterministic-java.md) | when the Java determinism commit lands |
+| **J** Java reference tracking: re-pin, deterministic references, ledger | this file | [J01](tasks/archive/J01-repin-deterministic-java.md) | when the Java determinism commit lands |
 | **B** Board model gaps the router and editor need | [autorouter.md](autorouter.md) | [B00](tasks/B00-board-gaps-README.md) | now |
 | **C** Settings, CLI and writers | [cli-settings-io.md](cli-settings-io.md) | [C00](tasks/C00-cli-settings-io-README.md) | now (settings, writers); routing flags after A |
 | **O** Board operations and optimizer | [optimizer-and-editing.md](optimizer-and-editing.md) | [O00](tasks/O00-optimizer-README.md) | shared operations before A; optimizer after A |

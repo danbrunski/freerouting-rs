@@ -30,6 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import app.freerouting.board.facade.RoutingBoard;
 import app.freerouting.board.model.structure.BoardOutline;
@@ -75,12 +77,17 @@ import java.util.TreeSet;
  *
  * <pre>
  * ReferenceDump load  FIXTURES_DIR OUT_DIR
- * ReferenceDump route FIXTURES_DIR OUT_DIR [MAX_PASSES] [TIMEOUT hh:mm:ss] [NAME_FILTER]
+ * ReferenceDump route FIXTURES_DIR OUT_DIR [BOUNDS|-] [SAFETY_TIMEOUT hh:mm:ss|-] [NAME_FILTER]
  * </pre>
  *
  * <p>{@code load} parses each board with {@code DsnReader} and writes its {@code BoardStatistics}
  * (item counts, nets, incompletes, clearance violations). {@code route} runs the batch autorouter
- * the way the CLI does and writes the SES output plus statistics and score after routing.
+ * the way the CLI does, with the optimizer off and bounded by work (BOUNDS: a route-bounds.tsv, a
+ * pass limit for every board, or {@code -} for the file in {@code -Dreference.routeBounds}), and
+ * writes the SES output plus statistics, score, per-pass scores and work-limit cut-offs. A board
+ * whose safety timeout (default 30 min) fires gets no reference and makes the run exit with 1.
+ * {@code REFERENCE_SHARD=k/n} routes every n-th board starting at the k-th. NAME_FILTER keeps the
+ * boards whose path contains it, or any of its {@code |}-separated parts.
  */
 public final class ReferenceDump {
 
@@ -107,16 +114,31 @@ public final class ReferenceDump {
       boards =
           files
               .filter(p -> p.getFileName().toString().toLowerCase().endsWith(".dsn"))
-              // fixtures/reference holds dumps (dsn/*.dsn), not input boards
+              // fixtures/reference holds dumps (dsn/*.dsn), not input boards; fixtures/kicad
+              // holds KiCad boards and their exports, which K07 compares itself
               .filter(p -> !fixtures.relativize(p).startsWith("reference"))
+              .filter(p -> !fixtures.relativize(p).startsWith("kicad"))
               .sorted()
               .toList();
     }
     String filter = args.length > 5 ? args[5] : null;
+    RouteBounds bounds = null;
+    String safetyTimeout = null;
+    int[] shard = parseShard(System.getenv("REFERENCE_SHARD"));
+    if (mode.equals("route")) {
+      bounds = RouteBounds.parse(args.length > 3 ? args[3] : "-");
+      safetyTimeout = args.length > 4 && !args[4].equals("-") ? args[4] : DEFAULT_SAFETY_TIMEOUT;
+    }
 
+    int index = -1;
+    List<String> failures = new ArrayList<>();
     for (Path board : boards) {
       String rel = fixtures.relativize(board).toString().replace('\\', '/');
-      if (filter != null && !rel.contains(filter)) {
+      if (filter != null && Arrays.stream(filter.split("\\|")).noneMatch(rel::contains)) {
+        continue;
+      }
+      index++;
+      if (index % shard[1] != shard[0]) {
         continue;
       }
       Path target = out.resolve(mode).resolve(rel.replaceAll("\\.dsn$", ".json"));
@@ -125,18 +147,21 @@ public final class ReferenceDump {
       }
       System.out.println(mode + ": " + rel);
       JsonObject result;
+      Path sesOut = out.resolve("route").resolve(rel.replaceAll("\\.dsn$", ".ses"));
       try {
         result =
             switch (mode) {
               case "load" -> load(board);
-              case "route" ->
-                  route(
-                      board,
-                      out.resolve("route").resolve(rel.replaceAll("\\.dsn$", ".ses")),
-                      args.length > 3 ? Integer.parseInt(args[3]) : 100,
-                      args.length > 4 ? args[4] : "00:02:00");
+              case "route" -> route(board, rel, sesOut, bounds, safetyTimeout);
               default -> throw new IllegalArgumentException("unknown mode " + mode);
             };
+      } catch (HarnessFailure f) {
+        // No reference for this board: a stale one would pass for a current one.
+        Files.deleteIfExists(target);
+        Files.deleteIfExists(sesOut);
+        System.err.println("route FAILED: " + rel + ": " + f.getMessage());
+        failures.add(rel + ": " + f.getMessage());
+        continue;
       } catch (Throwable t) {
         result = new JsonObject();
         result.addProperty("result", "exception");
@@ -146,7 +171,26 @@ public final class ReferenceDump {
       Files.createDirectories(target.getParent());
       Files.writeString(target, GSON.toJson(result) + "\n", StandardCharsets.UTF_8);
     }
+    if (!failures.isEmpty()) {
+      System.err.println(failures.size() + " board(s) failed, no reference written:");
+      failures.forEach(f -> System.err.println("  " + f));
+      System.exit(1);
+    }
     System.exit(0);
+  }
+
+  /** {@code REFERENCE_SHARD=k/n} routes only the boards whose index modulo n is k. */
+  private static int[] parseShard(String value) {
+    if (value == null || value.isEmpty()) {
+      return new int[] {0, 1};
+    }
+    String[] parts = value.split("/");
+    int k = Integer.parseInt(parts[0]);
+    int n = Integer.parseInt(parts[1]);
+    if (n < 1 || k < 0 || k >= n) {
+      throw new IllegalArgumentException("REFERENCE_SHARD must be k/n with 0 <= k < n: " + value);
+    }
+    return new int[] {k, n};
   }
 
   private static JsonObject load(Path board) throws IOException {
@@ -186,8 +230,90 @@ public final class ReferenceDump {
     return result;
   }
 
-  private static JsonObject route(Path board, Path sesOut, int maxPasses, String timeout)
+  /** Safety stop for one board's route run; a board that reaches it gets no reference. */
+  private static final String DEFAULT_SAFETY_TIMEOUT = "00:30:00";
+
+  /** At most this many WORK_LIMIT_CUTOFF lines are stored per board (the count is complete). */
+  private static final int MAX_CUTOFF_LINES = 50;
+
+  /** The machine-readable line a firing WorkLimit logs (WorkLimit.reportCutoff). */
+  private static final Pattern CUTOFF =
+      Pattern.compile("WORK_LIMIT_CUTOFF site=(\\S+) nominal_ms=(-?\\d+) units=(\\d+)(?: (.*))?$");
+
+  /** One key=value pair of a cut-off line's context; values such as nets=[a, b] hold spaces. */
+  private static final Pattern CONTEXT_PAIR = Pattern.compile("(\\w+)=(.*?)(?= \\w+=|$)");
+
+  /** AutorouteBatchLoop's line at the end of each batch pass (the timing part is dropped). */
+  private static final Pattern PASS_DONE =
+      Pattern.compile(
+          "Auto-routing pass #(\\d+) on board '([^']*)' was completed in \\S+ seconds with score"
+              + " (.*?)(?:, using .*|\\.)$");
+
+  /** A board run the harness could not turn into a reference (the safety timeout fired). */
+  private static final class HarnessFailure extends Exception {
+    HarnessFailure(String message) {
+      super(message);
+    }
+  }
+
+  /** One row of route-bounds.tsv: the work bounds a board routes with. */
+  private record Bound(int maxPasses, Integer maxItems) {}
+
+  /**
+   * The per-board route bounds: either a route-bounds.tsv (tab separated, # comments, header
+   * {@code board max_passes [max_items]}, board = file stem or path relative to the fixtures
+   * directory) or one pass limit for every board.
+   */
+  private record RouteBounds(Map<String, Bound> rows, Bound uniform) {
+    static RouteBounds parse(String arg) throws IOException {
+      String spec = arg.equals("-") ? System.getProperty("reference.routeBounds") : arg;
+      if (spec == null) {
+        throw new IllegalArgumentException("route needs a bounds file or a pass limit");
+      }
+      if (spec.matches("\\d+")) {
+        return new RouteBounds(Map.of(), new Bound(Integer.parseInt(spec), null));
+      }
+      Map<String, Bound> rows = new TreeMap<>();
+      List<String> lines =
+          Files.readAllLines(Path.of(spec)).stream()
+              .filter(l -> !l.isBlank() && !l.startsWith("#"))
+              .toList();
+      List<String> header = Arrays.asList(lines.get(0).split("\t"));
+      int board = header.indexOf("board");
+      int passes = header.indexOf("max_passes");
+      int items = header.indexOf("max_items");
+      if (board < 0 || passes < 0) {
+        throw new IllegalArgumentException(spec + " needs 'board' and 'max_passes' columns");
+      }
+      for (String line : lines.subList(1, lines.size())) {
+        String[] cells = line.split("\t");
+        String itemCell = items >= 0 && items < cells.length ? cells[items].trim() : "";
+        Integer maxItems =
+            itemCell.isEmpty() || itemCell.equals("-") ? null : Integer.valueOf(itemCell);
+        rows.put(cells[board].trim(), new Bound(Integer.parseInt(cells[passes].trim()), maxItems));
+      }
+      return new RouteBounds(rows, null);
+    }
+
+    Bound forBoard(String rel) throws HarnessFailure {
+      if (uniform != null) {
+        return uniform;
+      }
+      String stem = Path.of(rel).getFileName().toString().replaceAll("\\.dsn$", "");
+      for (String key : List.of(rel, rel.replaceAll("\\.dsn$", ""), stem)) {
+        Bound b = rows.get(key);
+        if (b != null) {
+          return b;
+        }
+      }
+      throw new HarnessFailure("no row in the route bounds");
+    }
+  }
+
+  private static JsonObject route(
+      Path board, String rel, Path sesOut, RouteBounds bounds, String safetyTimeout)
       throws Exception {
+    Bound bound = bounds.forBoard(rel);
     JsonObject result = new JsonObject();
     Session session =
         SessionManager.getInstance()
@@ -199,9 +325,10 @@ public final class ReferenceDump {
         new SettingsMerger(
             new DefaultSettings(),
             new DsnFileSettings(job.input.getData(), job.input.getFilename()));
-    merger.addOrReplaceSources(new Overrides(maxPasses, timeout));
+    merger.addOrReplaceSources(new Overrides(bound, safetyTimeout));
     job.routerSettings = merger.merge();
 
+    FRLogger.getLogEntries().clear();
     RoutingJobScheduler scheduler = RoutingJobScheduler.getInstance();
     long start = System.nanoTime();
     scheduler.enqueueJob(job);
@@ -212,10 +339,28 @@ public final class ReferenceDump {
         && job.state != RoutingJobState.TIMED_OUT) {
       Thread.sleep(50);
     }
-    result.addProperty("routeMillis", (System.nanoTime() - start) / 1_000_000);
+    long routeMillis = (System.nanoTime() - start) / 1_000_000;
+    synchronized (scheduler.jobs) {
+      scheduler.jobs.clear();
+    }
+    if (job.state == RoutingJobState.TIMED_OUT) {
+      throw new HarnessFailure(
+          "the safety timeout of " + safetyTimeout + " fired after " + routeMillis + " ms");
+    }
     result.addProperty("result", job.state.toString().toLowerCase());
-    result.addProperty("maxPasses", maxPasses);
-    result.addProperty("timeout", timeout);
+    result.addProperty("routeMillis", routeMillis);
+    result.addProperty("freeroutingVersion", app.freerouting.constants.Constants.FREEROUTING_VERSION);
+    result.addProperty(
+        "javaRuntime",
+        System.getProperty("java.vm.name") + " " + System.getProperty("java.runtime.version"));
+    result.addProperty("maxPasses", bound.maxPasses());
+    result.addProperty("maxItems", bound.maxItems());
+    result.addProperty("safetyTimeout", safetyTimeout);
+    result.add("settings", ExtraModes.settingsTree(job.routerSettings));
+    if (job.board != null) {
+      result.add("effective", ExtraModes.effective(job.routerSettings, job.board));
+    }
+    addLogFields(result);
     if (job.board != null) {
       BoardStatistics stats = job.board.getStatistics();
       result.add("statistics", statistics(stats));
@@ -227,25 +372,83 @@ public final class ReferenceDump {
         Files.write(sesOut, ses.readAllBytes());
       }
     }
-    synchronized (scheduler.jobs) {
-      scheduler.jobs.clear();
-    }
     return result;
+  }
+
+  /**
+   * Adds the per-pass score lines and the work-limit cut-offs from the job's log. A cut-off line
+   * belongs to the pass whose "was completed" line follows it.
+   */
+  private static void addLogFields(JsonObject result) {
+    JsonArray passes = new JsonArray();
+    JsonArray lines = new JsonArray();
+    int cutoffs = 0;
+    int completedPasses = 0;
+    for (LogEntry le : FRLogger.getLogEntries().getEntries(null, null)) {
+      String message = le.getMessage();
+      if (message == null) {
+        continue;
+      }
+      Matcher pass = PASS_DONE.matcher(message);
+      if (pass.find()) {
+        completedPasses++;
+        JsonObject p = new JsonObject();
+        p.addProperty("pass", Integer.parseInt(pass.group(1)));
+        p.addProperty("boardHash", pass.group(2));
+        p.addProperty("score", pass.group(3));
+        passes.add(p);
+        continue;
+      }
+      Matcher cut = CUTOFF.matcher(message);
+      if (!cut.find()) {
+        continue;
+      }
+      cutoffs++;
+      if (lines.size() >= MAX_CUTOFF_LINES) {
+        continue;
+      }
+      JsonObject c = new JsonObject();
+      c.addProperty("pass", completedPasses + 1);
+      c.addProperty("site", cut.group(1));
+      c.addProperty("nominalMs", Long.parseLong(cut.group(2)));
+      c.addProperty("units", Long.parseLong(cut.group(3)));
+      JsonObject context = new JsonObject();
+      if (cut.group(4) != null) {
+        Matcher kv = CONTEXT_PAIR.matcher(cut.group(4));
+        while (kv.find()) {
+          context.addProperty(kv.group(1), kv.group(2));
+        }
+      }
+      c.add("context", context);
+      c.addProperty("line", message.substring(cut.start()));
+      lines.add(c);
+    }
+    result.add("passes", passes);
+    JsonObject w = new JsonObject();
+    w.addProperty("count", cutoffs);
+    w.add("lines", lines);
+    result.add("workLimitCutoffs", w);
   }
 
   private static JsonElement statistics(BoardStatistics stats) {
     return JsonParser.parseString(stats.toString());
   }
 
-  /** Highest-priority settings source carrying the harness's pass and time limits. */
+  /**
+   * Highest-priority settings source carrying the harness's work bounds: the autorouter only (the
+   * optimizer off), max_passes and max_items from the bounds, and the safety timeout.
+   */
   private static final class Overrides implements SettingsSource {
     private final RouterSettings settings = new RouterSettings();
 
-    Overrides(int maxPasses, String timeout) {
-      settings.optimizer = null;
+    Overrides(Bound bound, String safetyTimeout) {
+      settings.optimizer.enabled = false;
       settings.scoring = null;
-      settings.autorouter.maxPasses = maxPasses;
-      settings.jobTimeoutString = timeout;
+      settings.autorouter.maxPasses = bound.maxPasses();
+      if (bound.maxItems() != null) {
+        settings.autorouter.maxItems = bound.maxItems();
+      }
+      settings.jobTimeoutString = safetyTimeout;
     }
 
     @Override

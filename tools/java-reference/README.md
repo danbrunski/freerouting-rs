@@ -5,38 +5,74 @@ produced in `fixtures/reference/`, so the Rust port has something concrete to co
 against.
 
 ```sh
-tools/java-reference/run.sh ../freerouting load
-tools/java-reference/run.sh ../freerouting route 100 00:00:45
+git -C ../freerouting worktree add --detach <scratch>/java-pin a773a70ec
+tools/java-reference/run.sh <scratch>/java-pin load
+tools/java-reference/run.sh <scratch>/java-pin route          # bounds from route-bounds.tsv
 ```
 
-The first argument is a checkout of `danbrunski/freerouting` (the port is pinned to
-`cda540f`). The script needs `python3`, `pip`, `curl` and the Gradle wrapper in that
+The first argument is a checkout of `danbrunski/freerouting` at the pin, `a773a70ec`
+(J01 moved it there from `cda540f` on 2026-10-15). Use a detached worktree, never
+`../freerouting` itself: another session edits it, and the script compiles whatever is
+checked out. The script needs `python3`, `pip`, `curl` and the Gradle wrapper in that
 checkout, which it only uses to resolve dependencies. You don't need a JDK 25 install:
 the script takes a Java 25 runtime from the `jdk4py` wheel and compiles with the Eclipse
 compiler (ECJ). Set `JAVA=/path/to/java` to use your own Java 25+ instead. Build
-products go to `target/java-reference/`.
+products go to `target/java-reference/` (`REFERENCE_WORK_DIR` moves them); the compiled
+Java classes are reused, so delete `target/java-reference/classes` after moving the pin.
+`REFERENCE_FIXTURES_DIR` and `REFERENCE_OUT_DIR` default to `fixtures` and
+`fixtures/reference`; regenerate into a scratch `REFERENCE_OUT_DIR` and copy the finished
+set over, so nobody runs the tests against a half-written tree.
 
 ## Outputs
 
 | Path | Contents |
 | --- | --- |
 | `fixtures/reference/load/<board>.json` | Result of `DsnReader.readBoard` (`success`, `outline_missing`, `parse_error`, or `exception`) and the board's `BoardStatistics`: layers, item counts by type, components, pads, nets, incomplete connections, clearance violations, bounds. |
-| `fixtures/reference/route/<board>.json` | Final job state, wall-clock routing time, router score and `BoardStatistics` after the batch autorouter and optimizer ran with the given pass and time limits. |
+| `fixtures/reference/route/<board>.json` | The batch autorouter's result with the optimizer off, bounded by work (below): `result` (the job state), `routeMillis`, `freeroutingVersion`, `javaRuntime`, `maxPasses`, `maxItems`, `safetyTimeout`, `settings` (the merged `RouterSettings`) and `effective` (per-layer costs, via and ripup costs), `passes` (each pass's board hash and score line), `workLimitCutoffs`, the `BoardStatistics` after routing and the router score. |
 | `fixtures/reference/route/<board>.ses` | The SES session file the Java router wrote. |
 
-`load` output is deterministic and should be byte-identical on every run. `route`
-output isn't: Java's maze search uses an unseeded `java.util.Random` and the router
-runs against a wall-clock timeout, so treat routed results as a baseline for completion
-rate, via count, length, score and speed, not as an exact target.
+### Route bounds
+
+`route` runs the autorouter only (`optimizer.enabled = false`), the way the CLI does, and
+bounds each board by work, never by time: `max_passes` and an optional `max_items` per board
+come from `route-bounds.tsv` (tab separated, `#` comments, header `board max_passes
+max_items`, board = path relative to `fixtures/` without `.dsn`, or the file stem;
+`freerouting-dev bench` reads the same file). Every fixture needs a row; a board without one
+fails. The run's third argument can instead be a number (that `max_passes` for every
+board) or another bounds file, and the fourth a safety timeout (`hh:mm:ss`, default
+`00:30:00`; `-` keeps the default), and the fifth a name filter (boards whose path contains
+it, or any of its `|`-separated parts). The safety timeout only stops a runaway board: a board
+it stops gets no reference (any old `route/<board>.*` is deleted), and the run exits with 1
+after listing the failed boards. `REFERENCE_SHARD=k/n` routes every n-th board starting at
+the k-th, so n runs with `k = 0..n-1` into the same output dir cover the set in parallel.
+The output does not depend on the machine load or on parallel runs, only the timings do.
+
+`workLimitCutoffs` holds `count` (every `WORK_LIMIT_CUTOFF` line Java logged for the board)
+and up to 50 `lines`, each parsed into `site`, `nominalMs`, `units`, `context` (the
+key=value pairs) and `pass` (the batch pass it happened in, from the "Auto-routing pass #N
+... was completed" lines that follow it). A board with `count` 0 is an exact-parity target;
+one with cut-offs is compared on aggregates until the B series proves search-tree shape
+parity (decision D5).
+
+`route` output is reproducible at a fixed JDK under these bounds: Java's maze search
+reseeds its `Random` with the ripup cost before each connection, the pass shuffle is
+seeded, and every cut-off inside the router counts work units (search-tree nodes
+visited), not time. J01.4 checked this with `tools/determinism-check.sh` (one run idle,
+one beside a busy loop per core; byte-identical SES and JSON except `routeMillis`).
+
+`load` and `route` leave out `fixtures/kicad/` (KiCad boards and their DSN exports, which
+K07 compares itself; `reference_load` skips them too).
 
 `route` skips boards that already have a `route/<board>.json`, so an interrupted run
 picks up where it stopped. Set `REFERENCE_REDO=1` to rerun everything.
 
 ## Known Java failures
 
-- `Issue006-LPC18XX_43XX_SCH.dsn` is not a PCB file (`parse_error`).
+- `Issue006-LPC18XX_43XX_SCH.dsn` is not a PCB file (`parse_error` in `load`; its `route`
+  job ends `terminated`).
 - `Issue179-Autorouter_PCB1_2023-3-24.dsn` throws a `NullPointerException` in Java
-  (`exception`).
+  (`exception`; at `a773a70ec`: `Cannot read field "edgeLines"`, in the Delaunay
+  triangulation of the incomplete connections).
 
 ## Probes
 

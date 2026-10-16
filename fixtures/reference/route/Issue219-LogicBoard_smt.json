@@ -1,8 +1,706 @@
 {
-  "routeMillis": 51934,
-  "result": "timed_out",
-  "maxPasses": 100,
-  "timeout": "00:00:45",
+  "result": "completed",
+  "routeMillis": 1556170,
+  "freeroutingVersion": "a773a70ec",
+  "javaRuntime": "OpenJDK 64-Bit Server VM 25.0.2+10-LTS",
+  "maxPasses": 1,
+  "maxItems": null,
+  "safetyTimeout": "02:00:00",
+  "settings": {
+    "autorouter": {
+      "enabled": true,
+      "algorithm": "freerouting-router",
+      "max_passes": 1,
+      "max_items": 2147483647,
+      "max_threads": "\u003ccores-1\u003e",
+      "save_intermediate_stages": false,
+      "ignore_net_classes": []
+    },
+    "fanout": {
+      "enabled": true,
+      "max_passes": 20,
+      "max_items": 2147483647,
+      "max_milliseconds_per_pin": 10000,
+      "ripup_allowed": true,
+      "min_escape_length_mm": 2.5,
+      "max_escape_length_mm": 4.5,
+      "start_via_diameter_mm": 0.25,
+      "end_via_diameter_mm": 0.25,
+      "pin_sorting_order": "outer_first",
+      "fallback_to_board_vias": true,
+      "timeout": null
+    },
+    "copper_to_edge_clearance_um": 250.0,
+    "hole_clearance_um": 0.0,
+    "clearance_tolerance_um": 1.0,
+    "plane_nets": [],
+    "plane_as_obstacle": false,
+    "neck_width_um": 0.0,
+    "strict_drc": false,
+    "job_timeout": "02:00:00",
+    "validation_warnings": [],
+    "trace_pull_tight_accuracy": 500,
+    "allowed_via_types": true,
+    "automatic_neckdown": true,
+    "optimizer": {
+      "enabled": false,
+      "algorithm": "freerouting-optimizer",
+      "max_passes": 100,
+      "max_items": 2147483647,
+      "max_threads": "\u003ccores-1\u003e",
+      "improvement_threshold": 2.5,
+      "enable_preflight_guards": true,
+      "max_consecutive_failures": 50,
+      "max_consecutive_failures_pass1": 12,
+      "additional_ripup_cost_factor_at_start": 10,
+      "trace_ripup_cost_factor": 0.6,
+      "max_autoroute_passes": 6,
+      "timeout": null,
+      "board_update_strategy": "GLOBAL_OPTIMAL",
+      "item_selection_strategy": "SEQUENTIAL"
+    },
+    "scoring": {
+      "default_preferred_direction_trace_cost": 1.0,
+      "default_undesired_direction_trace_cost": 1.0,
+      "via_costs": 50,
+      "plane_via_costs": 5,
+      "start_ripup_costs": 100,
+      "default_bend_cost": 0.0,
+      "unrouted_net_penalty": 5000000.0,
+      "clearance_violation_penalty": 1000000.0,
+      "bend_penalty": 10.0,
+      "preferred_direction_trace_cost": [
+        1.8,
+        1.0,
+        1.0,
+        1.8
+      ],
+      "undesired_direction_trace_cost": [
+        3.0,
+        1.9,
+        2.2,
+        2.7
+      ]
+    },
+    "router_scoring": {
+      "version": "V2_CONTINUOUS",
+      "unrouted_connection_weight": 1000.0,
+      "unrouted_free_fraction": 0.5,
+      "unrouted_first_half_weight": 333.33334,
+      "unrouted_second_half_weight": 666.6667,
+      "clearance_violation_count_weight": 25.0,
+      "clearance_violation_depth_weight": 300.0,
+      "clearance_violation_depth_scale": 1000.0
+    },
+    "optimizer_scoring": {
+      "version": "V2_LOWER_BOUND",
+      "excess_wire_length_weight": 1000.0,
+      "excess_via_weight": 2000.0,
+      "excess_bend_weight": 500.0,
+      "length_floor": 1.0,
+      "difficulty_scale_floor": 1.0
+    },
+    "max_threads": "\u003ccores-1\u003e",
+    "result_json": null,
+    "layers": [
+      {
+        "routable": true,
+        "preferred_direction_horizontal": true,
+        "bend_cost": 0.0,
+        "preferred_direction_trace_cost": null,
+        "undesired_direction_trace_cost": null
+      },
+      {
+        "routable": true,
+        "preferred_direction_horizontal": false,
+        "bend_cost": 0.0,
+        "preferred_direction_trace_cost": null,
+        "undesired_direction_trace_cost": null
+      },
+      {
+        "routable": true,
+        "preferred_direction_horizontal": true,
+        "bend_cost": 0.0,
+        "preferred_direction_trace_cost": null,
+        "undesired_direction_trace_cost": null
+      },
+      {
+        "routable": true,
+        "preferred_direction_horizontal": false,
+        "bend_cost": 0.0,
+        "preferred_direction_trace_cost": null,
+        "undesired_direction_trace_cost": null
+      }
+    ]
+  },
+  "effective": {
+    "layers": [
+      {
+        "name": "F.Cu",
+        "isSignal": true,
+        "active": true,
+        "preferredHorizontal": true,
+        "bendCost": 0.0,
+        "preferredCost": 1.8,
+        "againstCost": 3.0,
+        "horizontalCost": 1.8,
+        "verticalCost": 3.0
+      },
+      {
+        "name": "In1.Cu",
+        "isSignal": true,
+        "active": true,
+        "preferredHorizontal": false,
+        "bendCost": 0.0,
+        "preferredCost": 1.0,
+        "againstCost": 1.9,
+        "horizontalCost": 1.9,
+        "verticalCost": 1.0
+      },
+      {
+        "name": "In2.Cu",
+        "isSignal": true,
+        "active": true,
+        "preferredHorizontal": true,
+        "bendCost": 0.0,
+        "preferredCost": 1.0,
+        "againstCost": 2.2,
+        "horizontalCost": 1.0,
+        "verticalCost": 2.2
+      },
+      {
+        "name": "B.Cu",
+        "isSignal": true,
+        "active": true,
+        "preferredHorizontal": false,
+        "bendCost": 0.0,
+        "preferredCost": 1.8,
+        "againstCost": 2.7,
+        "horizontalCost": 2.7,
+        "verticalCost": 1.8
+      }
+    ],
+    "boardSpecificTraceCostsApplied": true,
+    "viaCosts": 50,
+    "planeViaCosts": 5,
+    "startRipupCosts": 100,
+    "runRouter": true,
+    "runOptimizer": false,
+    "runFanout": true,
+    "validationWarnings": []
+  },
+  "passes": [
+    {
+      "pass": 1,
+      "boardHash": "b2f7d3a384b235efc714c5a69f263482",
+      "score": "617.32 (285 unrouted and 0 violations)"
+    }
+  ],
+  "workLimitCutoffs": {
+    "count": 74,
+    "lines": [
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 72621161,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d72621161 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 852847736,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d852847736 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 247110936,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d247110936 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 129172914,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d129172914 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 67565089,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d67565089 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 74179558,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d74179558 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 76486345,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d76486345 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 82574782,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d82574782 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 172888891,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d172888891 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 89705075,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d89705075 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 98118318,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d98118318 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 111721984,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d111721984 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 239632303,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d239632303 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 125358271,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d125358271 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 195608279,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d195608279 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 279849548,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d279849548 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 143993905,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d143993905 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 215150764,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d215150764 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 277822670,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d277822670 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 101797879,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d101797879 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 155510783,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d155510783 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 113099615,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d113099615 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 166332508,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d166332508 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 173891494,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d173891494 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 124206781,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d124206781 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 175531194,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d175531194 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 125747403,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d125747403 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 290923538,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d290923538 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 371043443,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d371043443 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 413118214,
+        "context": {
+          "nets": "[1]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d413118214 nets\u003d[1]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 386080889,
+        "context": {
+          "nets": "[2]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d386080889 nets\u003d[2]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 378650865,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d378650865 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 193069142,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d193069142 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 136616150,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d136616150 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 188057051,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d188057051 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 183185463,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d183185463 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 90913212,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d90913212 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 92578060,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d92578060 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 367717945,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d367717945 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 67904375,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d67904375 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 176428279,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d176428279 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 344286840,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d344286840 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 340215047,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d340215047 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 169282249,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d169282249 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 344360958,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d344360958 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 171183804,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d171183804 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 170851523,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d170851523 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 129907060,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d129907060 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 168410784,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d168410784 nets\u003d[]"
+      },
+      {
+        "pass": 1,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 255607435,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d255607435 nets\u003d[]"
+      }
+    ]
+  },
   "statistics": {
     "host": "KiCad\u0027s Pcbnew,7.0.5",
     "unit": "mm",
@@ -26,9 +724,9 @@
       "signal_count": 4
     },
     "items": {
-      "total_count": 4774,
-      "trace_count": 985,
-      "via_count": 582,
+      "total_count": 5937,
+      "trace_count": 1792,
+      "via_count": 938,
       "conduction_area_count": 2,
       "drill_item_count": 0,
       "pin_count": 1360,
@@ -47,28 +745,28 @@
     },
     "connections": {
       "maximum_count": 993,
-      "incomplete_count": 803
+      "incomplete_count": 285
     },
     "traces": {
-      "total_count": 985,
-      "total_segment_count": 1693,
-      "total_length": 16215.14,
-      "total_length_mm": 1621.51,
-      "total_weighted_length": 35387256.00,
-      "average_length": 16.46,
-      "total_vertical_length": 1678.63,
-      "total_horizontal_length": 16730.34,
-      "total_angled_length": 4665.02
+      "total_count": 1792,
+      "total_segment_count": 3819,
+      "total_length": 99406.91,
+      "total_length_mm": 9940.69,
+      "total_weighted_length": 226413024.00,
+      "average_length": 55.47,
+      "total_vertical_length": 25104.33,
+      "total_horizontal_length": 33659.50,
+      "total_angled_length": 31075.72
     },
     "bends": {
-      "total_count": 708,
-      "90_degree_count": 22,
-      "45_degree_count": 686,
+      "total_count": 2027,
+      "90_degree_count": 35,
+      "45_degree_count": 1992,
       "other_angle_count": 0
     },
     "vias": {
-      "total_count": 582,
-      "through_hole_count": 582,
+      "total_count": 938,
+      "through_hole_count": 938,
       "blind_count": 0,
       "buried_count": 0
     },
@@ -96,10 +794,10 @@
     },
     "fanout": {
       "total_smd_pins": 1260,
-      "pins_to_escape": 1218,
-      "escaped_count": 812
+      "pins_to_escape": 900,
+      "escaped_count": 1199
     }
   },
-  "routerScore": 127.559555,
+  "routerScore": 617.3212,
   "fixture": "Issue219-LogicBoard_smt.dsn"
 }

@@ -25,30 +25,46 @@ before every push, keep each commit green (fmt, clippy, tests).
 
 The port follows Dan's Java repository, `danbrunski/freerouting`, and tracks its
 latest `main` rather than a fixed upstream release. It is currently pinned to
-`cda540f`, which includes Dan's plane, via-attach, signal-layer pour and cost
-setting fixes. When that repository moves on:
+`a773a70ec` (J01, 2026-10-15; before that `cda540f`), where routing is
+deterministic: every cut-off inside the router is a work budget (`WorkLimit`,
+search-tree nodes visited), not wall-clock time, and each one that fires logs a
+`WORK_LIMIT_CUTOFF` line. Java commits after the pin and whether the port takes
+them are in the Java side's ledger
+(`git -C ../freerouting show main:docs/development/PORT_LEDGER.md`). When that
+repository moves on (only in a J-series checklist):
 
-1. Check what changed: `git log -p <old>..<new> -- src/main`.
+1. Check what changed: `git log -p <old>..<new> -- src/main`, read through git,
+   never the working tree.
 2. Port the changes that touch already-ported code (geometry, DSN, board, rules,
    DRC) and note anything still to port for the router.
-3. Regenerate the reference (below) and update the pin in `PORT_PLAN.md`,
-   `DIVERGENCES.md`, `tools/java-reference/README.md` and `run.sh`.
+3. Regenerate the reference (below) from a detached worktree of the new pin into
+   a scratch `REFERENCE_OUT_DIR`, then copy it over `fixtures/reference/`.
+   Regenerate `crates/freerouting/tests/data/java_drc_digest.tsv` too
+   (`java_drc_digest.py`), and update the pin in `PORT_PLAN.md`,
+   `DIVERGENCES.md`, `tools/java-reference/README.md`, `run.sh`, this file and
+   `.claude/agents/implementer.md`. The board probes
+   (`tools/java-reference/probes/board/generate.sh`) need a rerun at the new pin.
 
-Java is the regression baseline, not a bit-exact target. A difference from Java
-is either a bug in the port or a deliberate fix, and every deliberate one is
-listed in `DIVERGENCES.md`.
+Java is the regression baseline. On routes without a work-limit cut-off it is an
+exact target (D4). A difference from Java is either a bug in the port or a
+deliberate fix, and every deliberate one is listed in `DIVERGENCES.md`.
 
 ### Regenerating the reference
 
 ```sh
-tools/java-reference/run.sh ../freerouting load          # ~3 min
-tools/java-reference/run.sh ../freerouting route 100 00:00:45   # ~1.5 h
+git -C ../freerouting worktree add --detach <scratch>/java-pin a773a70ec
+tools/java-reference/run.sh <scratch>/java-pin load       # ~3 min
+tools/java-reference/run.sh <scratch>/java-pin route      # bounds from route-bounds.tsv
 ```
 
 No JDK 25 install is needed: the script uses a Java 25 runtime from the
 `jdk4py` wheel and compiles with the Eclipse compiler. Gradle is only used to
 resolve dependencies; Maven Central sometimes answers 429, and the script
-retries. `route` resumes an interrupted run; `REFERENCE_REDO=1` reruns all.
+retries. `route` runs the autorouter with the optimizer off, bounded by
+`max_passes`/`max_items` per board (`tools/java-reference/route-bounds.tsv`);
+its 30-minute timeout is only a safety stop, and a board it stops gets no
+reference. `REFERENCE_SHARD=k/n` splits the set over parallel runs. `route`
+resumes an interrupted run; `REFERENCE_REDO=1` reruns all.
 Details in [tools/java-reference/README.md](../../tools/java-reference/README.md).
 
 Besides `load` and `route`, six deterministic modes dump what the settings, writer and CLI work
@@ -122,7 +138,7 @@ put board logic in the GUI.
    completion, vias, length, score and time with `fixtures/reference/route`.
    Use a fixed seed everywhere (`freerouting_geometry::jmath` has a bit-exact
    `java.util.Random`), and take the router changes in Dan's commits since
-   `fc35bbd0` (`git log fc35bbd0..cda540f -- src/main/java/app/freerouting/autoroute`).
+   `fc35bbd0` (`git log fc35bbd0..a773a70ec -- src/main/java/app/freerouting/autoroute`).
 2. **Optimizer** (`board.optimize`, `BatchOptimizer`): pull-tight, shove, via
    optimization.
 3. **Interactive editing** (`gui.interactive` logic, as engine code the GUI calls).
@@ -169,7 +185,8 @@ Two findings from building them:
 - Java's route statistics in `fixtures/reference/route/*.json` are taken on
   the routed board in memory. Importing the SES Java wrote gives the same
   incomplete count, violations, vias and length, but bends can differ: on
-  `Issue508-DAC2020_bm01`, 841 in the JSON and 839 after an import, in Java
+  `Issue508-DAC2020_bm01`, 705 in the JSON and 704 after an import (841 and 839
+  with the `cda540f` session), in Java
   (`probes/SesImportStats.java`) as in Rust.
 - KiCad's `ImportSpecctraSES` gives a via or wire that touches only a pad the
   pad's net, whatever net the session names, so KiCad's DRC can't see a lone

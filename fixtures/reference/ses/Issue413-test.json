@@ -3,9 +3,9 @@
   "designName": "Issue413-test",
   "unroutedBytes": 2908,
   "import": {
-    "wiresImported": 10,
-    "viasImported": 0,
+    "wiresImported": 14,
+    "viasImported": 4,
     "errorsEncountered": 0,
-    "routedBytes": 4285
+    "routedBytes": 4536
   }
 }

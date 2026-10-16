@@ -1,0 +1,195 @@
+# Work bounds for tools/java-reference/run.sh route (J01.3), one row per fixture DSN.
+#
+# board       path under fixtures/ without .dsn (freerouting-dev bench also accepts the stem)
+# max_passes  the batch autorouter's pass limit (autorouter.max_passes)
+# max_items   optional autorouter.max_items (items routed over all passes); empty = no limit
+# note        why the bound is what it is
+#
+# Route references run the autorouter only (optimizer off) and are bounded by work, never by
+# time, so they are reproducible. The bounds were chosen on 2026-10-15/16 from one exploration
+# run of every fixture at a773a70ec with max_passes 100 and a 60 s safety timeout (4 boards in
+# parallel, on a machine at load 15-30 from other sessions, so the times are 2-5x a quiet run),
+# plus a max_passes 1 run of the boards that did not finish pass 1 in 60 s:
+# - a board that stopped on its own (all routed, or Java's stop rules) within 90 s keeps Java's
+#   default of 100 passes: the bound never fires, and the reference is Java's natural result;
+# - any other board gets the passes that fit in 45 s of measured pass time, but at least 3, so
+#   the ripup and restore paths run on every board;
+# - boards whose first pass alone took over a minute get 3 (pass 1 took 2-7 min there).
+# - four boards that hit the 30 min safety timeout at load 25-30 got fewer passes (see their
+#   notes); they were routed with a 2 h safety timeout, which their JSONs record.
+# No board needs max_items at these pass limits. Measured 2026-10-16 at load 20-35 from other
+# sessions: 18,223 s of routing summed over the 170 boards, 2 h 15 min wall in 3 parallel runs
+# plus 26 min for the reruns. Expect a fraction of that on a quiet machine (the exploration's
+# pass times were 2-5x those of a quiet run).
+# A new fixture needs a row here before run.sh route will route it.
+board	max_passes	max_items	note
+Issue006-LPC18XX_43XX_SCH	100		natural stop at pass 0 (terminated, 0 s)
+Issue015-StackOverflow	4		passes seen 15 in 134 s, 4 fit 45 s
+Issue022-AutoRouter_interrupted	3		passes seen 14 in 129 s, 3 fit 45 s
+Issue026-J2_reference	100		natural stop at pass 2 (completed, 3 s)
+Issue027-zMRETestFixture	3		passes seen 8 in 122 s, 0 fit 45 s
+Issue029-hw48na	3		passes seen 4 in 124 s, 0 fit 45 s
+Issue034-Green14SegLED	100		natural stop at pass 10 (completed, 11 s)
+Issue035-ReadPlaceScope	100		natural stop at pass 21 (completed, 32 s)
+Issue039-bug-design	3		passes seen 5 in 49 s, 3 fit 45 s
+Issue054-tairakb	100		natural stop at pass 18 (completed, 59 s)
+Issue066-Project_GP8B	3		passes seen 1 in 24 s, 1 fit 45 s
+Issue069-TestSensel/TestSensel-KiCad6	100		natural stop at pass 18 (completed, 6 s)
+Issue069-TestSensel/TestSensel	100		natural stop at pass 18 (completed, 1 s)
+Issue070-Autorouter_FQ101_PCB_2022-05-13	3		pass 1 did not finish in 60 s; 3 passes
+Issue093-interf_u	100		natural stop at pass 18 (completed, 4 s)
+Issue102-Mars-64-revE-rot00	100		natural stop at pass 15 (completed, 50 s)
+Issue103-Board-Routed	100		natural stop at pass 1 (completed, 3 s)
+Issue103-Board-Unrouted	3		passes seen 1 in 59 s, 0 fit 45 s
+Issue107-freq_teiler_200kHz_kicad	100		natural stop at pass 30 (completed, 57 s)
+Issue107-freq_teiler_200kHz_kicad_bad	100		natural stop at pass 18 (completed, 38 s)
+Issue110-Pajalnaja_stancija	100		natural stop at pass 18 (completed, 43 s)
+Issue110-RelayModule	100		natural stop at pass 17 (completed, 33 s)
+Issue110-testPCBSpecctraFile	100		natural stop at pass 18 (completed, 54 s)
+Issue110-testProjectFromFreeroutingBugTest	100		natural stop at pass 2 (completed, 0 s)
+Issue110-testProjectFromFreeroutingBugTest01	100		natural stop at pass 2 (completed, 0 s)
+Issue110-Паяльная станция	100		natural stop at pass 18 (completed, 58 s)
+Issue113-Protein	3		passes seen 1 in 31 s, 1 fit 45 s
+Issue143-rpi_splitter	100		natural stop at pass 2 (completed, 0 s)
+Issue143-rpi_splitter_mod	100		natural stop at pass 2 (completed, 0 s)
+Issue145-smoothieboard	3		pass 1 did not finish in 60 s; 3 passes
+Issue153-wavefolder	100		natural stop at pass 18 (completed, 4 s)
+Issue155-CH376_MCP795_Module	100		natural stop at pass 4 (completed, 1 s)
+Issue157-TeamAdapt-LinePCB	8		passes seen 8 in 40 s, 8 fit 45 s
+Issue159-setonix_2hp-pcb	100		natural stop at pass 4 (completed, 1 s)
+Issue163-pic_programmer	100		natural stop at pass 18 (completed, 4 s)
+Issue178-KeebMaker_Sofle_Choc	3		passes seen 2 in 52 s, 0 fit 45 s
+Issue179-Autorouter_PCB1_2023-3-24	100		natural stop at pass 0 (exception, 0 s)
+Issue187-processor.Z80	100		natural stop at pass 1 (completed, 3 s)
+Issue190-processor.Z80	4		passes seen 6 in 58 s, 4 fit 45 s
+Issue191-processor.Z80/processor.Z80	100		natural stop at pass 1 (completed, 5 s)
+Issue199-StackOverflow/Signale_Vor+Block	8		passes seen 10 in 55 s, 8 fit 45 s
+Issue208-freerouting	1		fanout 166 s, then pass 1 did not finish in 27 min under load 30; routed with a 2 h safety timeout
+Issue209-split05	3		passes seen 4 in 117 s, 1 fit 45 s
+Issue209-split10	100		natural stop at pass 4 (completed, 10 s)
+Issue214-freerouting	3		pass 1 did not finish in 60 s; 3 passes
+Issue217-8088sbc	100		natural stop at pass 6 (completed, 8 s)
+Issue219-LogicBoard_smt	1		the fanout stage alone ran over 17 min under load 30 (8+ fanout passes); routed with a 2 h safety timeout
+Issue229-display-8-digit-hc595	100		natural stop at pass 18 (completed, 4 s)
+Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1	100		natural stop at pass 18 (completed, 26 s)
+Issue230-CNH_Functional_Tester_1	100		natural stop at pass 18 (completed, 38 s)
+Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes	100		natural stop at pass 2 (completed, 0 s)
+Issue269-caniot-tiny-arm	3		passes seen 3 in 36 s, 3 fit 45 s
+Issue269-min_fr_test/min_fr_test	100		natural stop at pass 2 (completed, 0 s)
+Issue269-min_fr_test/min_fr_test_no_quotes	100		natural stop at pass 2 (completed, 0 s)
+Issue269-z10_module	3		pass 1 did not finish in 60 s; 3 passes
+Issue270-non-ansi_bracket	100		natural stop at pass 2 (completed, 1 s)
+Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp	5		passes seen 6 in 45 s, 5 fit 45 s
+Issue289-Autorouter_PCB_FHT-8086_2024-03-08	2		3 passes hit the 30 min safety timeout under load 30 (pass 1 386 s, pass 2 790 s); routed with a 2 h safety timeout
+Issue289-Autorouter_PCB_FHT-VGA_2024-03-25	2		3 passes hit the 30 min safety timeout under load 25 (pass 1 791 s, pass 2 754 s); routed with a 2 h safety timeout
+Issue297-myboard	12		passes seen 18 in 53 s, 12 fit 45 s
+Issue313-FastTest	100		natural stop at pass 18 (completed, 2 s)
+Issue326-Mars-64-revE	100		natural stop at pass 15 (completed, 48 s)
+Issue367-Charger	100		natural stop at pass 18 (completed, 10 s)
+Issue367-UltraFlactyl/UltraFlactyl	100		natural stop at pass 18 (completed, 32 s)
+Issue368-CorneyIslandWireless/corney_island_wireless	100		natural stop at pass 1 (completed, 0 s)
+Issue368-CorneyIslandWireless_input_design	100		natural stop at pass 1 (completed, 0 s)
+Issue413-test	100		natural stop at pass 2 (completed, 0 s)
+Issue420-contribution-board	3		pass 1 did not finish in 60 s; 3 passes
+Issue433-my-board	100		natural stop at pass 3 (completed, 0 s)
+Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted	5		passes seen 7 in 59 s, 5 fit 45 s
+Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted	3		passes seen 4 in 56 s, 2 fit 45 s
+Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted	3		passes seen 5 in 58 s, 3 fit 45 s
+Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted	100		natural stop at pass 2 (completed, 1 s)
+Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted	100		natural stop at pass 2 (completed, 1 s)
+Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted	100		natural stop at pass 2 (completed, 1 s)
+Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted	4		passes seen 6 in 46 s, 4 fit 45 s
+Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted	5		passes seen 5 in 40 s, 5 fit 45 s
+Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted	6		passes seen 6 in 43 s, 6 fit 45 s
+Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted	100		natural stop at pass 19 (completed, 50 s)
+Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted	8		passes seen 16 in 56 s, 8 fit 45 s
+Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted	8		passes seen 11 in 52 s, 8 fit 45 s
+Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted	100		natural stop at pass 17 (completed, 3 s)
+Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted	100		natural stop at pass 17 (completed, 3 s)
+Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted	100		natural stop at pass 17 (completed, 10 s)
+Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted	100		natural stop at pass 3 (completed, 3 s)
+Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted	100		natural stop at pass 3 (completed, 1 s)
+Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted	100		natural stop at pass 3 (completed, 1 s)
+Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted	100		natural stop at pass 2 (completed, 0 s)
+Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted	100		natural stop at pass 2 (completed, 0 s)
+Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted	100		natural stop at pass 2 (completed, 0 s)
+Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted	100		natural stop at pass 2 (completed, 2 s)
+Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted	100		natural stop at pass 2 (completed, 6 s)
+Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted	100		natural stop at pass 2 (completed, 6 s)
+Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted	100		natural stop at pass 5 (completed, 8 s)
+Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted	100		natural stop at pass 5 (completed, 20 s)
+Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted	100		natural stop at pass 5 (completed, 21 s)
+Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted	100		natural stop at pass 4 (completed, 10 s)
+Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted	100		natural stop at pass 4 (completed, 3 s)
+Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted	100		natural stop at pass 4 (completed, 4 s)
+Issue508-DAC2020_bm01	3		passes seen 4 in 58 s, 3 fit 45 s
+Issue508-DAC2020_bm02	100		natural stop at pass 2 (completed, 1 s)
+Issue508-DAC2020_bm04	5		passes seen 7 in 56 s, 5 fit 45 s
+Issue508-DAC2020_bm05	16		passes seen 19 in 51 s, 16 fit 45 s
+Issue508-DAC2020_bm06	100		natural stop at pass 17 (completed, 11 s)
+Issue508-DAC2020_bm07	100		natural stop at pass 3 (completed, 2 s)
+Issue508-DAC2020_bm08	100		natural stop at pass 2 (completed, 0 s)
+Issue508-DAC2020_bm09	100		natural stop at pass 2 (completed, 2 s)
+Issue508-DAC2020_bm10	100		natural stop at pass 5 (completed, 14 s)
+Issue508-DAC2020_bm11	100		natural stop at pass 4 (completed, 10 s)
+Issue508-SMD-routing-issue-demo	100		natural stop at pass 3 (completed, 0 s)
+Issue555-BBD_Mars-64	9		passes seen 12 in 56 s, 9 fit 45 s
+Issue555-CNH_Functional_Tester_1	100		natural stop at pass 18 (completed, 19 s)
+Issue558-dev-board	100		natural stop at pass 8 (completed, 11 s)
+Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations	100		natural stop at pass 18 (completed, 3 s)
+Issue575-drc_Natural_Tone_Preamp_7_unconnected_items	16		passes seen 17 in 47 s, 16 fit 45 s
+Issue575-drc_dev-board_4_hole_clearance_violations	100		natural stop at pass 18 (completed, 8 s)
+Issue593-BBD_Mars-64	6		passes seen 9 in 56 s, 6 fit 45 s
+Issue632-MiniAutoPilot/Mini Auto Pilot	100		natural stop at pass 9 (completed, 10 s)
+Issue649-kicad_ecc83-pp_input_board_v1	100		natural stop at pass 2 (completed, 0 s)
+Issue649-kicad_ecc83-pp_input_board_v2	100		natural stop at pass 18 (completed, 1 s)
+Issue676-ch32v-tx118s	100		natural stop at pass 1 (completed, 1 s)
+Issue684-Autorouter_PCB1_2026-5-8	100		natural stop at pass 18 (completed, 24 s)
+Issue689-BBD_Mars-64	7		passes seen 9 in 54 s, 7 fit 45 s
+Issue690-ecc83	100		natural stop at pass 18 (completed, 1 s)
+Issue690-kit-dev-coldfire-xilinx_5213	3		pass 1 did not finish in 60 s; 3 passes
+Issue690-sonde_xilinx	100		natural stop at pass 18 (completed, 1 s)
+Issue721-Autorouter_CE2632_HarryMu_2026-6-15	100		natural stop at pass 18 (completed, 21 s)
+Issue723-CombineStackOverflow	100		natural stop at pass 1 (completed, 0 s)
+Issue730-DAC2020_bm11	100		natural stop at pass 4 (completed, 5 s)
+Issue732-CM5_MINIMA_3	3		pass 1 did not finish in 60 s; 3 passes
+Issue732-DAC2020_bm10	100		natural stop at pass 5 (completed, 12 s)
+Issue732-RoyalBlue54L-Feather	3		pass 1 did not finish in 60 s; 3 passes
+Issue733-kicad_complex_hierarchy_input_design	100		natural stop at pass 2 (completed, 1 s)
+Issue733-kicad_interf_u_input_design	100		natural stop at pass 18 (completed, 6 s)
+Issue742-tastexx-pcb	100		natural stop at pass 3 (completed, 1 s)
+Issue742-tastexx-pcb/tastexx-pcb	100		natural stop at pass 3 (completed, 1 s)
+Issue753-CPU-85_r104	3		passes seen 3 in 58 s, 1 fit 45 s
+Issue754-avionics_hub	3		passes seen 3 in 59 s, 1 fit 45 s
+Issue756-minimal-hang	100		natural stop at pass 1 (completed, 0 s)
+Issue756-minimal-ok	100		natural stop at pass 1 (completed, 0 s)
+Issue756-tomu-fpga	100		natural stop at pass 18 (completed, 35 s)
+Issue756-tomu-fpga11	100		natural stop at pass 18 (completed, 32 s)
+Issue756-tomu-fpga7	3		pass 1 did not finish in 60 s; 3 passes
+Issue756-tomu-fpga8	3		pass 1 did not finish in 60 s; 3 passes
+Issue756-tomu-fpga9	3		pass 1 did not finish in 60 s; 3 passes
+Issue757-minimal-soe-ok	100		natural stop at pass 1 (completed, 0 s)
+Issue757-minimal-soe	100		natural stop at pass 1 (completed, 0 s)
+Issue872-single-layer-repro	100		natural stop at pass 2 (completed, 0 s)
+Issue951-corney_island_wireless	14		passes seen 19 in 52 s, 14 fit 45 s
+Issue954-circle	100		natural stop at pass 2 (completed, 0 s)
+Issue954-invalid-polygon64	100		natural stop at pass 2 (completed, 0 s)
+Issue954-polygon64	100		natural stop at pass 2 (completed, 0 s)
+Issue955-rotated-pad-contacts	100		natural stop at pass 25 (completed, 16 s)
+Issue957-smoke-ldo-led	100		natural stop at pass 18 (completed, 1 s)
+PCBench-Box0-hv-analog-breakout	100		natural stop at pass 3 (completed, 2 s)
+PCBench-retroreflectors-CONGFLOCK	100		natural stop at pass 30 (completed, 0 s)
+canary-pwr/canary-pwr-2026-10-15-1747-unpoured	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-9511d9a-addonly	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-9511d9a-in2-open	3		passes seen 1 in 36 s, 1 fit 45 s
+canary-pwr/canary-pwr-9511d9a	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-pours-as-planes	3		passes seen 1 in 72 s, 0 fit 45 s
+canary-pwr/canary-pwr-pours1	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-pours2	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-pours3	3		pass 1 did not finish in 60 s; 3 passes
+empty_board	100		natural stop at pass 1 (completed, 0 s)
+scoring-empty-net	100		natural stop at pass 1 (completed, 0 s)
+scoring-mixed-layer	100		natural stop at pass 2 (completed, 0 s)
+scoring-perfect-two-pin	100		natural stop at pass 18 (completed, 0 s)
+scoring-zero-length	100		natural stop at pass 1 (completed, 0 s)

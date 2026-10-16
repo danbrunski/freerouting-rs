@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue508-SMD-routing-issue-demo","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue508-SMD-routing-issue-demo","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":43,"leaves":22,"maxDepth":10,"shapeHash":"03e07401398a902d","contentDigest":"afa380a0436f73c0"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":43,"leaves":22,"maxDepth":6,"shapeHash":"6e761a90239b6020","contentDigest":"e8a8126aa2bff054"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":101,"leaves":51,"maxDepth":14,"shapeHash":"b525b97c4874f4dd","contentDigest":"818c3f276ac5b9a7"}

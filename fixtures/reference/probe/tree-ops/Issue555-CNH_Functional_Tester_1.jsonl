@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue555-CNH_Functional_Tester_1","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue555-CNH_Functional_Tester_1","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":2328,"inserted":true}
 {"stage":"insert-via","via":1,"trace":2271,"inserted":true}
 {"stage":"insert-via","via":2,"trace":2309,"inserted":true}

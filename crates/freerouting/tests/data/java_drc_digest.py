@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Writes java_drc_digest.tsv from Java DRC reports.
 
-The reports come from Java Freerouting (cda540f) run on every fixture:
+The reports come from Java Freerouting (a773a70ec; cda540f before J01) run on
+every fixture:
 
-    FreeroutingCli -de fixtures/<board>.dsn -drc <reports>/load/<board>.json
-    FreeroutingCli -de fixtures/<board>.dsn fixtures/reference/route/<board>.ses \\
-        -drc <reports>/route/<board>.json
+    FreeroutingCli --user_data_path=<tmp> -da -de fixtures/<board>.dsn \\
+        -drc <reports>/load/<board>.json
+    FreeroutingCli --user_data_path=<tmp> -da -de fixtures/<board>.dsn \\
+        fixtures/reference/route/<board>.ses -drc <reports>/route/<board>.json
 
-(the classpath is the one tools/java-reference/run.sh builds). Usage:
+(class app.freerouting.cli.FreeroutingCli, with the classpath that
+tools/java-reference/run.sh builds; a fresh --user_data_path per run lets
+several run at once). Usage:
 
     java_drc_digest.py <reports> > java_drc_digest.tsv
 

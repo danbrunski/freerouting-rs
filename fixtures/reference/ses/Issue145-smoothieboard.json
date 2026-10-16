@@ -3,9 +3,9 @@
   "designName": "Issue145-smoothieboard",
   "unroutedBytes": 22476,
   "import": {
-    "wiresImported": 1042,
-    "viasImported": 369,
+    "wiresImported": 1863,
+    "viasImported": 488,
     "errorsEncountered": 0,
-    "routedBytes": 225046
+    "routedBytes": 387981
   }
 }

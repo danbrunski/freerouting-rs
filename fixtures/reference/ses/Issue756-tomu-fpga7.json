@@ -3,9 +3,9 @@
   "designName": "Issue756-tomu-fpga7",
   "unroutedBytes": 430289,
   "import": {
-    "wiresImported": 868,
+    "wiresImported": 872,
     "viasImported": 162,
     "errorsEncountered": 0,
-    "routedBytes": 569163
+    "routedBytes": 569733
   }
 }

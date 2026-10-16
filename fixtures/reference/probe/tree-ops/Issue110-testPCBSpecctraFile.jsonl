@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue110-testPCBSpecctraFile","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue110-testPCBSpecctraFile","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":1462,"inserted":true}
 {"stage":"insert-via","via":1,"trace":1568,"inserted":true}
 {"stage":"insert-via","via":2,"trace":1617,"inserted":true}

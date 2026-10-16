@@ -41,7 +41,7 @@ fn java_session_is_equivalent_to_itself() {
     assert!(d.equivalent(), "{}", d.to_text(10));
     assert!(d.nets.is_empty());
     assert!(d.to_text(10).starts_with("equivalent\n"));
-    assert_eq!(d.a.import.wires_imported, 546);
+    assert_eq!(d.a.import.wires_imported, 528);
     assert_eq!(d.a.import.vias_imported, 126);
 }
 
@@ -147,11 +147,11 @@ fn via_moved_by_one_unit_is_reported_with_net_and_position() {
 
 /// The net whose only wire is removed, and Java's incomplete count after
 /// importing the session without it:
-/// `tools/java-reference/probes/SesImportStats.java` at `cda540f` on the SES
-/// with that wire cut out prints `incomplete 19` (18 with the wire). The
-/// same holds for the other one-wire nets `N$2`, `N$3`, `PG2` and `PL6`.
+/// `tools/java-reference/probes/SesImportStats.java` at `a773a70ec` on J01's
+/// route session with that wire cut out prints `incomplete 25` (24 with the
+/// wire). The one-wire nets of that session are `N$2`, `N$3`, `PG2` and `PL6`.
 const REMOVED_WIRE_NET: &str = "N$2";
-const JAVA_INCOMPLETE_WITHOUT_WIRE: usize = 19;
+const JAVA_INCOMPLETE_WITHOUT_WIRE: usize = 25;
 
 #[test]
 fn removed_wire_is_reported_and_incomplete_count_rises() {
@@ -176,7 +176,7 @@ fn removed_wire_is_reported_and_incomplete_count_rises() {
     assert_eq!(d.nets[0].net, REMOVED_WIRE_NET);
     assert_eq!(d.nets[0].wires_only_in_a.len(), 1);
     assert!(d.nets[0].wires_only_in_b.is_empty());
-    assert_eq!(d.a.statistics.incomplete_connections, 18);
+    assert_eq!(d.a.statistics.incomplete_connections, 24);
     assert_eq!(
         d.b.statistics.incomplete_connections,
         JAVA_INCOMPLETE_WITHOUT_WIRE
@@ -184,7 +184,7 @@ fn removed_wire_is_reported_and_incomplete_count_rises() {
     assert_eq!(d.a.incomplete_of(REMOVED_WIRE_NET), 0);
     assert_eq!(d.b.incomplete_of(REMOVED_WIRE_NET), 1);
     let deltas = d.statistics_deltas();
-    assert!(deltas.contains(&("connections.incomplete_count", 18.0, 19.0)));
+    assert!(deltas.contains(&("connections.incomplete_count", 24.0, 25.0)));
     let text = d.to_text(10);
     assert!(
         text.contains(&format!("net {REMOVED_WIRE_NET}: incomplete 0 -> 1")),
@@ -195,12 +195,13 @@ fn removed_wire_is_reported_and_incomplete_count_rises() {
 
 /// Java's route statistics come from the board in memory after routing,
 /// Rust's from importing the session Java wrote. They agree on every
-/// compared field except bends: Java counts 841 on its routed board, and
-/// Java itself counts 839 after importing the same SES into the loaded
-/// board (`tools/java-reference/probes/SesImportStats.java` at `cda540f`:
-/// incomplete 18, violations 0, vias 126, length_mm 3778.7405, bends 839).
+/// compared field except bends: Java counts 705 on its routed board (J01's
+/// 3-pass route session at `a773a70ec`), and Java itself counts 704 after
+/// importing the same SES into the loaded board
+/// (`tools/java-reference/probes/SesImportStats.java` at `a773a70ec`:
+/// incomplete 24, violations 0, vias 126, length_mm 3570.9983, bends 704).
 /// So the import is compared with Java's import for bends.
-const JAVA_IMPORT_BENDS: f64 = 839.0;
+const JAVA_IMPORT_BENDS: f64 = 704.0;
 
 #[test]
 fn imported_java_session_matches_java_route_statistics() {
@@ -228,7 +229,7 @@ fn imported_java_session_matches_java_route_statistics() {
         "{}",
         s.trace_length_mm
     );
-    assert_eq!(java("bends.total_count"), 841.0);
+    assert_eq!(java("bends.total_count"), 705.0);
     assert_eq!(s.bends as f64, JAVA_IMPORT_BENDS);
 }
 
@@ -256,5 +257,5 @@ fn json_output_lists_differing_nets() {
         .path("b.statistics")
         .and_then(|s| s.get("connections.incomplete_count"))
         .and_then(Json::as_f64);
-    assert_eq!(incomplete, Some(19.0));
+    assert_eq!(incomplete, Some(25.0));
 }

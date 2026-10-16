@@ -30,7 +30,7 @@ analysis tools are in `docs/development/tools/` (Q06, X01).
 | Series | README | Checklists | Items | Delivers |
 |---|---|---:|---:|---|
 | **F** Foundations | [F00](F00-foundations-README.md) | 4 | 14 | Fast test loop and CI; Java probes, `ses-diff`, `bench`, the determinism check, the KiCad oracle; the measurement gate and corpus; provenance for ported code |
-| **J** Java reference | [J01](J01-repin-deterministic-java.md) | 1 | 6 | Re-pin to the deterministic Java (`30baad7e2` or later) and regenerate exact references |
+| **J** Java reference | [J01](archive/J01-repin-deterministic-java.md) | 1 | 6 | Re-pin to the deterministic Java (`30baad7e2` or later) and regenerate exact references |
 | **B** Board model | [B00](B00-board-gaps-README.md) | 9 | 58 | Ids, snapshots and hashes like Java; a search tree whose shape matches Java's (D5); room completion; board checks, item operations, scores; the engine API the GUI and stages need |
 | **C** Settings, CLI, writers | [C00](C00-cli-settings-io-README.md) | 8 | 56 | Java reference dumps; the settings model and its board effects; rules files; SES and DSN writers; Java CLI parity and plugin-facing CLI extras |
 | **O** Board operations and optimizer | [O00](O00-optimizer-README.md) | 6 | 43 | Pull-tight, shove checks and inserts, the via optimizer, a deterministic parallel batch optimizer |

@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue367-UltraFlactyl/UltraFlactyl","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue367-UltraFlactyl/UltraFlactyl","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":2471,"leaves":1236,"maxDepth":56,"shapeHash":"42e44640bcbb0ddb","contentDigest":"ec6482a64236bfd4"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":2471,"leaves":1236,"maxDepth":34,"shapeHash":"ec0991728ca59ae3","contentDigest":"d1bea87264ff5e92"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":3453,"leaves":1727,"maxDepth":57,"shapeHash":"1dc2b711aa69398d","contentDigest":"c48d3263e16aea9e"}

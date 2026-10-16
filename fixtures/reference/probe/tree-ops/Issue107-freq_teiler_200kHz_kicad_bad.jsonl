@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue107-freq_teiler_200kHz_kicad_bad","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue107-freq_teiler_200kHz_kicad_bad","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":2030,"inserted":true}
 {"stage":"insert-via","via":1,"trace":1982,"inserted":true}
 {"stage":"insert-via","via":2,"trace":1895,"inserted":true}

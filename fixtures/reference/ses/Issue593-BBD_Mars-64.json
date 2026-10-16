@@ -3,9 +3,9 @@
   "designName": "Issue593-BBD_Mars-64",
   "unroutedBytes": 5265,
   "import": {
-    "wiresImported": 358,
-    "viasImported": 134,
+    "wiresImported": 340,
+    "viasImported": 131,
     "errorsEncountered": 0,
-    "routedBytes": 82656
+    "routedBytes": 78579
   }
 }

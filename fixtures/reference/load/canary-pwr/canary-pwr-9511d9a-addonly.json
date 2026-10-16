@@ -1,0 +1,104 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.5",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1651.00,
+        "y": -439.00,
+        "width": 999.00,
+        "height": -1001.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 652.00,
+        "height": 562.00
+      },
+      "area_cm2": 36.64
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2873,
+      "trace_count": 1176,
+      "via_count": 168,
+      "conduction_area_count": 4,
+      "drill_item_count": 0,
+      "pin_count": 443,
+      "component_count": 1039,
+      "other_count": 43
+    },
+    "components": {
+      "total_count": 130
+    },
+    "pads": {
+      "total_count": 443
+    },
+    "nets": {
+      "total_count": 128,
+      "class_count": 6
+    },
+    "connections": {
+      "maximum_count": 313,
+      "incomplete_count": 147
+    },
+    "traces": {
+      "total_count": 1176,
+      "total_segment_count": 1225,
+      "total_length": 22366.70,
+      "total_length_mm": 2236.67,
+      "total_weighted_length": 0.00,
+      "average_length": 19.02,
+      "total_vertical_length": 9974.52,
+      "total_horizontal_length": 6450.06,
+      "total_angled_length": 10963.84
+    },
+    "bends": {
+      "total_count": 49,
+      "90_degree_count": 9,
+      "45_degree_count": 39,
+      "other_angle_count": 1
+    },
+    "vias": {
+      "total_count": 168,
+      "through_hole_count": 168,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 40,
+      "pre_existing_count": 0,
+      "unfixable_count": 40,
+      "router_introduced_count": 40,
+      "total_violation_um": 2995.88,
+      "min_violation_um": 10.50,
+      "max_violation_um": 145.90,
+      "avg_violation_um": 74.90
+    },
+    "difficulty": {
+      "pin_count": 443,
+      "signal_layer_count": 2,
+      "complexity_c": 886,
+      "difficulty_d": 886.00,
+      "board_area_cm2": 36.64
+    },
+    "bounds": {
+      "min_trace_length_mm": 2066.57,
+      "min_via_count": 18,
+      "min_bend_count": 247
+    },
+    "fanout": {
+      "total_smd_pins": 367,
+      "pins_to_escape": 307,
+      "escaped_count": 242
+    }
+  },
+  "fixture": "canary-pwr/canary-pwr-9511d9a-addonly.dsn"
+}

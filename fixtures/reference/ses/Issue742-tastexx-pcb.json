@@ -3,9 +3,9 @@
   "designName": "Issue742-tastexx-pcb",
   "unroutedBytes": 1481,
   "import": {
-    "wiresImported": 51,
-    "viasImported": 2,
+    "wiresImported": 55,
+    "viasImported": 6,
     "errorsEncountered": 0,
-    "routedBytes": 11116
+    "routedBytes": 11847
   }
 }

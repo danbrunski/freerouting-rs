@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue069-TestSensel/TestSensel-KiCad6","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue069-TestSensel/TestSensel-KiCad6","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":45,"inserted":true}
 {"stage":"insert-via","via":1,"trace":35,"inserted":true}
 {"stage":"insert-via","via":2,"trace":49,"inserted":true}

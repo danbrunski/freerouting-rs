@@ -3,9 +3,9 @@
   "designName": "Issue508-DAC2020_bm06",
   "unroutedBytes": 2727,
   "import": {
-    "wiresImported": 239,
-    "viasImported": 20,
+    "wiresImported": 241,
+    "viasImported": 23,
     "errorsEncountered": 0,
-    "routedBytes": 43503
+    "routedBytes": 44067
   }
 }

@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue721-Autorouter_CE2632_HarryMu_2026-6-15","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue721-Autorouter_CE2632_HarryMu_2026-6-15","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1535,"leaves":768,"maxDepth":33,"shapeHash":"167c9960f2f0a4a4","contentDigest":"171720bc197c0513"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":1535,"leaves":768,"maxDepth":29,"shapeHash":"da6f5ac78de0647f","contentDigest":"c177bbf39dcb6382"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":1535,"leaves":768,"maxDepth":29,"shapeHash":"bc5fd6369ac75b1b","contentDigest":"57db885676cb3f34"}

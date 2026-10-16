@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue757-minimal-soe","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue757-minimal-soe","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":21,"leaves":11,"maxDepth":7,"shapeHash":"053d6181815cb18e","contentDigest":"ee994fce88ce1ea2"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":21,"leaves":11,"maxDepth":6,"shapeHash":"58a5f24c2b557958","contentDigest":"65403cd6b1dc70ae"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":27,"leaves":14,"maxDepth":8,"shapeHash":"9f9de12a78bed1df","contentDigest":"df1ff164a026042e"}

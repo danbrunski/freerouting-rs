@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue575-drc_dev-board_4_hole_clearance_violations","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue575-drc_dev-board_4_hole_clearance_violations","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":1161,"inserted":true}
 {"stage":"insert-via","via":1,"trace":579,"inserted":true}
 {"stage":"insert-via","via":2,"trace":976,"inserted":true}

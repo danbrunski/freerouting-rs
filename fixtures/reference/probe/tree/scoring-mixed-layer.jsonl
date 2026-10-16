@@ -1,4 +1,4 @@
-{"kind":"tree","board":"scoring-mixed-layer","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"scoring-mixed-layer","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":19,"leaves":10,"maxDepth":5,"shapeHash":"a07cf42acbaab60a","contentDigest":"d7653ae0e2ba807c"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":19,"leaves":10,"maxDepth":4,"shapeHash":"4d7a9917303f84a1","contentDigest":"34071079d490b450"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":29,"leaves":15,"maxDepth":9,"shapeHash":"e7e03c986ba89078","contentDigest":"d4dc3544951dacab"}

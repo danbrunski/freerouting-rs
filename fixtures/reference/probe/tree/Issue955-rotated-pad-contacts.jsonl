@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue955-rotated-pad-contacts","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue955-rotated-pad-contacts","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":2391,"leaves":1196,"maxDepth":82,"shapeHash":"a57b07d643d371f5","contentDigest":"0816e002ea7135cf"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":2643,"leaves":1322,"maxDepth":34,"shapeHash":"aa1d0d2f0053f7c5","contentDigest":"52a9d78c86e8dfc8"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":4193,"leaves":2097,"maxDepth":82,"shapeHash":"3738843c959c018f","contentDigest":"e062404d4ec1c44d"}

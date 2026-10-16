@@ -1,8 +1,235 @@
 {
-  "routeMillis": 45446,
-  "result": "timed_out",
+  "result": "completed",
+  "routeMillis": 97648,
+  "freeroutingVersion": "a773a70ec",
+  "javaRuntime": "OpenJDK 64-Bit Server VM 25.0.2+10-LTS",
   "maxPasses": 100,
-  "timeout": "00:00:45",
+  "maxItems": null,
+  "safetyTimeout": "00:30:00",
+  "settings": {
+    "autorouter": {
+      "enabled": true,
+      "algorithm": "freerouting-router",
+      "max_passes": 100,
+      "max_items": 2147483647,
+      "max_threads": "\u003ccores-1\u003e",
+      "save_intermediate_stages": false,
+      "ignore_net_classes": []
+    },
+    "fanout": {
+      "enabled": true,
+      "max_passes": 20,
+      "max_items": 2147483647,
+      "max_milliseconds_per_pin": 10000,
+      "ripup_allowed": true,
+      "min_escape_length_mm": 2.5,
+      "max_escape_length_mm": 4.5,
+      "start_via_diameter_mm": 0.25,
+      "end_via_diameter_mm": 0.25,
+      "pin_sorting_order": "outer_first",
+      "fallback_to_board_vias": true,
+      "timeout": null
+    },
+    "copper_to_edge_clearance_um": 250.0,
+    "hole_clearance_um": 0.0,
+    "clearance_tolerance_um": 1.0,
+    "plane_nets": [],
+    "plane_as_obstacle": false,
+    "neck_width_um": 0.0,
+    "strict_drc": false,
+    "job_timeout": "00:30:00",
+    "validation_warnings": [],
+    "trace_pull_tight_accuracy": 500,
+    "allowed_via_types": true,
+    "automatic_neckdown": true,
+    "optimizer": {
+      "enabled": false,
+      "algorithm": "freerouting-optimizer",
+      "max_passes": 100,
+      "max_items": 2147483647,
+      "max_threads": "\u003ccores-1\u003e",
+      "improvement_threshold": 2.5,
+      "enable_preflight_guards": true,
+      "max_consecutive_failures": 50,
+      "max_consecutive_failures_pass1": 12,
+      "additional_ripup_cost_factor_at_start": 10,
+      "trace_ripup_cost_factor": 0.6,
+      "max_autoroute_passes": 6,
+      "timeout": null,
+      "board_update_strategy": "GLOBAL_OPTIMAL",
+      "item_selection_strategy": "SEQUENTIAL"
+    },
+    "scoring": {
+      "default_preferred_direction_trace_cost": 1.0,
+      "default_undesired_direction_trace_cost": 1.0,
+      "via_costs": 50,
+      "plane_via_costs": 5,
+      "start_ripup_costs": 100,
+      "default_bend_cost": 0.0,
+      "unrouted_net_penalty": 5000000.0,
+      "clearance_violation_penalty": 1000000.0,
+      "bend_penalty": 10.0,
+      "preferred_direction_trace_cost": [
+        1.0,
+        1.0
+      ],
+      "undesired_direction_trace_cost": [
+        3.2,
+        1.5
+      ]
+    },
+    "router_scoring": {
+      "version": "V2_CONTINUOUS",
+      "unrouted_connection_weight": 1000.0,
+      "unrouted_free_fraction": 0.5,
+      "unrouted_first_half_weight": 333.33334,
+      "unrouted_second_half_weight": 666.6667,
+      "clearance_violation_count_weight": 25.0,
+      "clearance_violation_depth_weight": 300.0,
+      "clearance_violation_depth_scale": 1000.0
+    },
+    "optimizer_scoring": {
+      "version": "V2_LOWER_BOUND",
+      "excess_wire_length_weight": 1000.0,
+      "excess_via_weight": 2000.0,
+      "excess_bend_weight": 500.0,
+      "length_floor": 1.0,
+      "difficulty_scale_floor": 1.0
+    },
+    "max_threads": "\u003ccores-1\u003e",
+    "result_json": null,
+    "layers": [
+      {
+        "routable": true,
+        "preferred_direction_horizontal": false,
+        "bend_cost": 0.0,
+        "preferred_direction_trace_cost": null,
+        "undesired_direction_trace_cost": null
+      },
+      {
+        "routable": true,
+        "preferred_direction_horizontal": true,
+        "bend_cost": 0.0,
+        "preferred_direction_trace_cost": null,
+        "undesired_direction_trace_cost": null
+      }
+    ]
+  },
+  "effective": {
+    "layers": [
+      {
+        "name": "F.Cu",
+        "isSignal": true,
+        "active": true,
+        "preferredHorizontal": false,
+        "bendCost": 0.0,
+        "preferredCost": 1.0,
+        "againstCost": 3.2,
+        "horizontalCost": 3.2,
+        "verticalCost": 1.0
+      },
+      {
+        "name": "B.Cu",
+        "isSignal": true,
+        "active": true,
+        "preferredHorizontal": true,
+        "bendCost": 0.0,
+        "preferredCost": 1.0,
+        "againstCost": 1.5,
+        "horizontalCost": 1.0,
+        "verticalCost": 1.5
+      }
+    ],
+    "boardSpecificTraceCostsApplied": true,
+    "viaCosts": 50,
+    "planeViaCosts": 5,
+    "startRipupCosts": 100,
+    "runRouter": true,
+    "runOptimizer": false,
+    "runFanout": true,
+    "validationWarnings": []
+  },
+  "passes": [
+    {
+      "pass": 1,
+      "boardHash": "aaaf2a55f564e7c5a2dc5c5c0d56f10b",
+      "score": "470.67 (41 unrouted and 64 violations)"
+    },
+    {
+      "pass": 2,
+      "boardHash": "a67a35c874cf382095309b8611d7e3cd",
+      "score": "621.61 (29 unrouted and 64 violations)"
+    },
+    {
+      "pass": 3,
+      "boardHash": "5e7da259659614c06d893dd10bc9ce75",
+      "score": "671.92 (25 unrouted and 64 violations)"
+    },
+    {
+      "pass": 4,
+      "boardHash": "aad651a1c78538220f9b53d6a25388bb",
+      "score": "709.66 (22 unrouted and 64 violations)"
+    },
+    {
+      "pass": 5,
+      "boardHash": "563b2e38cbf56bbafeac3717f4f77ff0",
+      "score": "835.45 (12 unrouted and 64 violations)"
+    },
+    {
+      "pass": 6,
+      "boardHash": "9588e9a1db6009a8067efd97a80b8c92",
+      "score": "873.18 (9 unrouted and 64 violations)"
+    },
+    {
+      "pass": 7,
+      "boardHash": "df5933a6962e706fb4b82c225f2d9e7c",
+      "score": "923.50 (5 unrouted and 64 violations)"
+    },
+    {
+      "pass": 8,
+      "boardHash": "341dae5892499f607668123c8900d474",
+      "score": "948.65 (3 unrouted and 64 violations)"
+    },
+    {
+      "pass": 9,
+      "boardHash": "c4a30cb2c41ee83c2a453960b580f036",
+      "score": "936.08 (4 unrouted and 64 violations)"
+    },
+    {
+      "pass": 10,
+      "boardHash": "2d3794b4c84077a86004a579ca95e855",
+      "score": "923.50 (5 unrouted and 64 violations)"
+    },
+    {
+      "pass": 11,
+      "boardHash": "1bb286b15681e930009a7f6bff21ba02",
+      "score": "961.23 (2 unrouted and 64 violations)"
+    },
+    {
+      "pass": 12,
+      "boardHash": "0db66b9d832bc605457a2e575f7fdea5",
+      "score": "961.23 (2 unrouted and 64 violations)"
+    },
+    {
+      "pass": 13,
+      "boardHash": "7f6bab297247db21c420a39f334ff2b1",
+      "score": "973.81 (1 unrouted and 64 violations)"
+    },
+    {
+      "pass": 14,
+      "boardHash": "ba250c20fc831fa7512c3e0268b99a62",
+      "score": "986.39 (0 unrouted and 64 violations)"
+    },
+    {
+      "pass": 15,
+      "boardHash": "11f8813d69582483d809de53c3dde6ec",
+      "score": "986.39 (0 unrouted and 64 violations)"
+    }
+  ],
+  "workLimitCutoffs": {
+    "count": 0,
+    "lines": []
+  },
   "statistics": {
     "host": "KiCad\u0027s Pcbnew,(5.1.5)-3",
     "unit": "mm",

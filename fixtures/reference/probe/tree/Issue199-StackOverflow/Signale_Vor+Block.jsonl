@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue199-StackOverflow/Signale_Vor+Block","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue199-StackOverflow/Signale_Vor+Block","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":131487,"leaves":65744,"maxDepth":249,"shapeHash":"0fd1fd621591f3c0","contentDigest":"70ee63d1962c5233"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":131487,"leaves":65744,"maxDepth":216,"shapeHash":"e3110f3fb81d70c6","contentDigest":"b93496ba79179777"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":131487,"leaves":65744,"maxDepth":249,"shapeHash":"0fd1fd621591f3c0","contentDigest":"70ee63d1962c5233"}

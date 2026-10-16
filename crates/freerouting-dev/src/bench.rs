@@ -78,7 +78,9 @@ pub struct Bounds {
 
 /// Reads `route-bounds.tsv`: a header row naming the columns `board`,
 /// `max_passes` and optionally `max_items`, then one row per board. `board`
-/// is matched against a set entry's file stem or its path as written.
+/// is matched against a set entry's file stem, its path as written, or that
+/// path without a leading `fixtures/` and the `.dsn` extension (the form
+/// `tools/java-reference/route-bounds.tsv` uses).
 pub fn read_bounds(text: &str) -> Result<Vec<(String, Bounds)>, String> {
     let mut lines = text
         .lines()
@@ -121,9 +123,15 @@ pub fn bounds_for(table: &[(String, Bounds)], entry: &SetEntry, default: Bounds)
         .file_stem()
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
+    let under_fixtures = entry
+        .written
+        .strip_prefix("fixtures/")
+        .map(|rest| rest.strip_suffix(".dsn").unwrap_or(rest));
     table
         .iter()
-        .find(|(name, _)| *name == stem || *name == entry.written)
+        .find(|(name, _)| {
+            *name == stem || *name == entry.written || Some(name.as_str()) == under_fixtures
+        })
         .map_or(default, |(_, b)| *b)
 }
 

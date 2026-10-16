@@ -3,9 +3,9 @@
   "designName": "Issue029-hw48na",
   "unroutedBytes": 110044,
   "import": {
-    "wiresImported": 779,
-    "viasImported": 53,
+    "wiresImported": 816,
+    "viasImported": 65,
     "errorsEncountered": 0,
-    "routedBytes": 240032
+    "routedBytes": 248737
   }
 }

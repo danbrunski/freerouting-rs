@@ -3,9 +3,9 @@
   "designName": "Issue143-rpi_splitter",
   "unroutedBytes": 816,
   "import": {
-    "wiresImported": 16,
-    "viasImported": 4,
+    "wiresImported": 18,
+    "viasImported": 9,
     "errorsEncountered": 0,
-    "routedBytes": 3986
+    "routedBytes": 4820
   }
 }

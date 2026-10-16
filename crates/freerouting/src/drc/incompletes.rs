@@ -55,6 +55,7 @@ pub struct NetIncompletes {
 }
 
 /// A net item with its group (Java `NetItem` with its connected set).
+#[derive(Debug)]
 struct NetItem {
     id: ItemId,
     group: usize,
@@ -249,10 +250,12 @@ fn layer_range(board: &BasicBoard, id: ItemId) -> [i32; 2] {
 /// Java `NetIncompletes.calculateNetItems`: groups the items by connected
 /// set.
 ///
-/// Java takes the start item of each group from a `HashSet` of items, whose
-/// order depends on identity hash codes; here the first remaining item in
-/// `items` order starts the next group. The groups are the same unless the
-/// contact relation is asymmetric.
+/// The first remaining item in `items` order starts the next group, as in
+/// Java's `LinkedHashSet` since `30baad7e2` (at `cda540f` Java took it from
+/// a `HashSet` in identity-hash order). Within a group the items follow the
+/// connected set, a `TreeSet` in Java and a `BTreeSet` here, both ordered
+/// by descending id. The order matters: it is the corner order of the
+/// Delaunay triangulation, which decides ties between airlines.
 fn calculate_net_items(
     board: &BasicBoard,
     net_number: i32,
@@ -269,15 +272,14 @@ fn calculate_net_items(
     let mut group = 0;
     while let Some(&start) = remaining.first() {
         let connected = board.connected_set_cached(start, net_number, false, contacts);
-        let mut in_component: Vec<ItemId> = Vec::new();
-        remaining.retain(|id| {
-            if connected.contains(id) {
-                in_component.push(*id);
-                false
-            } else {
-                true
-            }
-        });
+        let still_remaining: std::collections::HashSet<ItemId> =
+            remaining.iter().copied().collect();
+        let mut in_component: Vec<ItemId> = connected
+            .iter()
+            .copied()
+            .filter(|id| still_remaining.contains(id))
+            .collect();
+        remaining.retain(|id| !connected.contains(id));
         if in_component.is_empty() {
             // The start item is not in its own connected set (wrong net);
             // Java would loop forever, here it forms its own group.
@@ -355,4 +357,64 @@ pub(crate) fn max_connections(board: &BasicBoard, lists: &[Vec<ItemId>]) -> usiz
             endpoints.saturating_sub(1)
         })
         .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::io::{BoardReadResult, read_board};
+
+    /// Java's `calculateNetItems` at `a773a70ec`: groups start in input
+    /// order (`LinkedHashSet`), and the items of a group follow the
+    /// connected set's `TreeSet` order, highest id first.
+    #[test]
+    fn net_items_group_in_input_order_and_list_by_descending_id() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn"
+        );
+        let board = match read_board(&std::fs::read(path).unwrap()) {
+            BoardReadResult::Success { board, .. } => *board,
+            _ => panic!("fixture must load"),
+        };
+        let mut checked_groups = 0;
+        for net_number in 1..=board.rules.nets.max_net_number() {
+            // Ascending ids: the reverse of the connected-set order.
+            let mut items = board.connectable_items(net_number);
+            items.sort_by_key(|id| id.0);
+            let mut contacts = HashMap::new();
+            let net_items = calculate_net_items(&board, net_number, &items, &mut contacts);
+            assert_eq!(net_items.len(), items.len());
+            let mut first_of_group: Vec<ItemId> = Vec::new();
+            for pair in net_items.windows(2) {
+                if pair[0].group == pair[1].group {
+                    assert!(pair[0].id.0 > pair[1].id.0, "net {net_number}: {pair:?}");
+                    checked_groups += 1;
+                }
+            }
+            for (i, n) in net_items.iter().enumerate() {
+                if i == 0 || net_items[i - 1].group != n.group {
+                    first_of_group.push(n.id);
+                }
+            }
+            // Each group holds the first item, in input order, not taken by
+            // an earlier group.
+            let mut taken: std::collections::HashSet<ItemId> = std::collections::HashSet::new();
+            let mut group_no = 0;
+            for id in &items {
+                if taken.contains(id) {
+                    continue;
+                }
+                let group = net_items.iter().find(|n| n.id == *id).unwrap().group;
+                assert_eq!(group, group_no, "net {net_number}: group of {id:?}");
+                taken.extend(net_items.iter().filter(|n| n.group == group).map(|n| n.id));
+                group_no += 1;
+            }
+            assert_eq!(first_of_group.len(), group_no);
+        }
+        assert!(
+            checked_groups > 0,
+            "the fixture must have multi-item groups"
+        );
+    }
 }

@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue954-polygon64","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue954-polygon64","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":37,"leaves":19,"maxDepth":11,"shapeHash":"9a5dc29657e29e21","contentDigest":"56f25eea6ff36484"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":37,"leaves":19,"maxDepth":8,"shapeHash":"d4144a2efb0eef1f","contentDigest":"d58d94850b9df4be"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":53,"leaves":27,"maxDepth":14,"shapeHash":"7518d7d9f96d4363","contentDigest":"238dfa6abe366f08"}

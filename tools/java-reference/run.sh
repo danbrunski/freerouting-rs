@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 # Builds the Java Freerouting engine and dumps reference outputs for every fixture.
 #
-#   tools/java-reference/run.sh JAVA_REPO MODE [MAX_PASSES] [TIMEOUT] [NAME_FILTER]
+#   tools/java-reference/run.sh JAVA_REPO load  [- - NAME_FILTER]
+#   tools/java-reference/run.sh JAVA_REPO route [BOUNDS|-] [SAFETY_TIMEOUT|-] [NAME_FILTER]
 #
-# JAVA_REPO  checkout of danbrunski/freerouting (the port is pinned to cda540f)
+# JAVA_REPO  detached worktree of danbrunski/freerouting at the pin (a773a70ec); never
+#            ../freerouting itself, which another session edits
 # MODE       load  -> fixtures/reference/load/*.json  (parse + board statistics)
-#            route -> fixtures/reference/route/*.json and *.ses (batch autorouter)
+#            route -> fixtures/reference/route/*.json and *.ses (batch autorouter, optimizer
+#                     off, bounded by work: BOUNDS is a route-bounds.tsv, one max_passes for
+#                     every board, or - for tools/java-reference/route-bounds.tsv; the safety
+#                     timeout, default 00:30:00, only stops a runaway board, which then gets no
+#                     reference and makes the run exit with 1). REFERENCE_SHARD=k/n routes every
+#                     n-th board from the k-th, for parallel runs into the same output.
+#                     NAME_FILTER keeps boards whose path contains it or one of its |-parts.
+#            settings, rules, ses, dsn, argv, clirun -> see README.md (C01)
 #
 # Needs: python3 + pip (for a Java 25 runtime from the jdk4py wheel), curl, and the
 # Gradle wrapper in JAVA_REPO (only used to resolve dependencies). No JDK 25 install is
@@ -67,10 +76,17 @@ JAVA
 fi
 
 CP="$CLASSES:$JAVA_REPO/src/main/resources:$DEPS"
-JAVA_TOOL_OPTIONS= "$JAVA" -jar "$ECJ" --release 25 -nowarn -encoding UTF-8 -cp "$CP" \
-  -d "$WORK/harness" "$HERE/src/reference/ReferenceDump.java"
+# Recompile the harness only when it is older than its source or the Java classes, so parallel
+# runs (REFERENCE_SHARD) started after a first run never write the same class files at once.
+HARNESS_CLASS="$WORK/harness/reference/ReferenceDump.class"
+if [[ ! "$HARNESS_CLASS" -nt "$HERE/src/reference/ReferenceDump.java" \
+  || ! "$HARNESS_CLASS" -nt "$CLASSES/app" ]]; then
+  JAVA_TOOL_OPTIONS= "$JAVA" -jar "$ECJ" --release 25 -nowarn -encoding UTF-8 -cp "$CP" \
+    -d "$WORK/harness" "$HERE/src/reference/ReferenceDump.java"
+fi
 
 JAVA_TOOL_OPTIONS= "$JAVA" -Xmx6g -Djava.awt.headless=true -Dsun.jnu.encoding=UTF-8 \
-  -Dfile.encoding=UTF-8 -Dreference.casesDir="$HERE/cases" -cp "$WORK/harness:$CP" \
+  -Dfile.encoding=UTF-8 -Dreference.casesDir="$HERE/cases" \
+  -Dreference.routeBounds="$HERE/route-bounds.tsv" -cp "$WORK/harness:$CP" \
   reference.ReferenceDump "$MODE" "${REFERENCE_FIXTURES_DIR:-$ROOT/fixtures}" \
   "${REFERENCE_OUT_DIR:-$ROOT/fixtures/reference}" "$@"

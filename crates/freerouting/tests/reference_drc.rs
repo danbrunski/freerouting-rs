@@ -33,11 +33,6 @@ const ISSUE676: &str = "Issue676-ch32v-tx118s.dsn";
 const ISSUE676_WHY: &str = "Java's SesReader fails on all 48 wires with a \
     ClassCastException (RationalVector to IntVector) while normalizing the traces of this \
     1 000 000-per-mm board and imports none; the port imports them";
-const ISSUE289: &str = "Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn";
-const ISSUE289_WHY: &str = "Java's DRC command line imports the session while the \
-    post-load DRC still runs in a background thread; the race leaves net +5V in the \
-    outline's edge-pin-net cache, which hides 6 trace-to-outline violations. Run without \
-    the race (post-load processing finished first), Java reports the 12 the port reports";
 
 /// Differences from the Java reports that are expected, as
 /// `(mode, fixture, type, reason)`.
@@ -54,8 +49,6 @@ const EXPECTED_MISMATCHES: &[(&str, &str, &str, &str)] = &[
     ("load", ISSUE721, "scores", ISSUE721_WHY),
     ("route", ISSUE721, "holeClearance", ISSUE721_WHY),
     ("route", ISSUE721, "scores", ISSUE721_WHY),
-    ("route", ISSUE289, "clearance", ISSUE289_WHY),
-    ("route", ISSUE289, "scores", ISSUE289_WHY),
     ("route", ISSUE676, "holeClearance", ISSUE676_WHY),
     ("route", ISSUE676, "via_dangling", ISSUE676_WHY),
     ("route", ISSUE676, "unconnectedItems", ISSUE676_WHY),

@@ -1,4 +1,4 @@
-{"kind":"ledger","board":"Issue508-DAC2020_bm08","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"ledger","board":"Issue508-DAC2020_bm08","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","maxGeneratedId":41,"items":41,"ledger":25,"fresh":25,"stale":false}
 {"stage":"ses","maxGeneratedId":106,"items":106,"ledger":0,"fresh":0,"stale":false}
 {"stage":"remove-10-traces","maxGeneratedId":106,"items":96,"ledger":4,"fresh":4,"stale":false}

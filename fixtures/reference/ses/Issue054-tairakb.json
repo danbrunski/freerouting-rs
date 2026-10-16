@@ -3,9 +3,9 @@
   "designName": "Issue054-tairakb",
   "unroutedBytes": 4822,
   "import": {
-    "wiresImported": 693,
-    "viasImported": 154,
+    "wiresImported": 694,
+    "viasImported": 147,
     "errorsEncountered": 0,
-    "routedBytes": 138690
+    "routedBytes": 138141
   }
 }

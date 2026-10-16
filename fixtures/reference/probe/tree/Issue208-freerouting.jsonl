@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue208-freerouting","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue208-freerouting","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":796571,"leaves":398286,"maxDepth":230,"shapeHash":"529b720a28a74a46","contentDigest":"ba67b2d251c9174c"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":796571,"leaves":398286,"maxDepth":304,"shapeHash":"c4560456b487e9bd","contentDigest":"2c0f9d1c615e4995"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":796571,"leaves":398286,"maxDepth":304,"shapeHash":"c4560456b487e9bd","contentDigest":"2c0f9d1c615e4995"}

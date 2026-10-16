@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue756-minimal-hang","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue756-minimal-hang","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","step":"insert-via","maxGeneratedId":5,"items":5}
 {"stage":"insert-via","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":23,"leaves":12,"maxDepth":7,"shapeHash":"a397270806970e28","contentDigest":"d313eb919a4dbe71"}
 {"stage":"insert-via","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":23,"leaves":12,"maxDepth":11,"shapeHash":"1489e59470d5ba83","contentDigest":"91cf9eae1cf78891"}

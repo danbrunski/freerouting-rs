@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue575-drc_dev-board_4_hole_clearance_violations","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue575-drc_dev-board_4_hole_clearance_violations","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":1341,"leaves":671,"maxDepth":46,"shapeHash":"a9020f39fc0bbb13","contentDigest":"418bcda0b8848aab"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":1341,"leaves":671,"maxDepth":33,"shapeHash":"702cf8a01b74f521","contentDigest":"9e3a57b38d8ced25"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":1341,"leaves":671,"maxDepth":33,"shapeHash":"702cf8a01b74f521","contentDigest":"9e3a57b38d8ced25"}

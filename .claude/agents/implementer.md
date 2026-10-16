@@ -59,21 +59,21 @@ and there is no measured history for this repo yet, so pace by progress:
 
 ## The Java reference
 
-- The port is pinned to `danbrunski/freerouting` at **`cda540f`**, which
+- The port is pinned to `danbrunski/freerouting` at **`a773a70ec`**, which
   is checked out at `../freerouting`. Read Java only at the pin:
-  `git -C ../freerouting show cda540f:<path>`, or
-  `git -C ../freerouting grep -n <pattern> cda540f -- src/main/java src/test/java`.
+  `git -C ../freerouting show a773a70ec:<path>`, or
+  `git -C ../freerouting grep -n <pattern> a773a70ec -- src/main/java src/test/java`.
   Never read its working tree, because another session edits it and
   `main` is already past the pin. Never write anything in `../freerouting`.
 - Re-pin only in a J-series checklist. Otherwise, if a Java commit
-  after the pin (`git -C ../freerouting log --oneline cda540f..main`)
+  after the pin (`git -C ../freerouting log --oneline a773a70ec..main`)
   bears on your task, put it under *Operator decisions needed* rather
   than porting it silently. The Java side keeps a ledger of those
   commits, with their measurements and a "Port: yes/no/later" verdict,
   at `git -C ../freerouting show main:docs/development/PORT_LEDGER.md`
-  (once it exists). Check it before porting a behaviour that Java has
-  since changed. For example, routing determinism is moving from
-  wall-clock cuts to work-count budgets.
+  Check it before porting a behaviour that Java has since changed. At
+  the pin, routing is deterministic: every former wall-clock cut is a
+  work-count budget (`WorkLimit`, search-tree nodes visited).
 - A re-pin follows "The Java reference" in `engine.md`, with two
   changes:
   - Run `run.sh` against a detached worktree of the new pin, never
@@ -99,7 +99,7 @@ and there is no measured history for this repo yet, so pace by progress:
 - Expected values in differential tests come from running Java at the
   pin, never from reasoning about what Java would do (see
   `crates/freerouting-geometry/tests/java_reference.rs`). To run a probe:
-  1. `git -C ../freerouting worktree add --detach <scratchpad>/java-pin cda540f`
+  1. `git -C ../freerouting worktree add --detach <scratchpad>/java-pin a773a70ec`
   2. Put `Probe.java` in the scratchpad (a class with a `main`), then run
      `TMPDIR=<scratchpad> tools/java-reference/probe.sh <scratchpad>/java-pin <scratchpad>/Probe.java [args...]`.
      It builds the Java classes into `target/java-reference/` through
@@ -152,10 +152,15 @@ shape everyday code:
   `HashMap`/`HashSet` may reach the output (use sorted collections).
   Where Java's hash order decides a result, simulate it the way
   `normalize_traces` does. A deadline or cancel token may only stop
-  work, never change how the work is done. Where Java's behaviour depends
-  on wall-clock time or an unseeded `Random` (the maze search, the
-  fanout's per-pin time budget), don't copy it. Raise it under
-  *Operator decisions needed* with a recommendation.
+  work, never change how the work is done. At the pin Java's router
+  cuts off by work, not time: its `WorkLimit`s (the maze search, the
+  fanout's per-pin budget, the pull-tight guard, the shover) count
+  search-tree nodes visited, 64,000 per nominal millisecond, and the
+  port counts the same units (B02.7, B03.7). Its maze search is
+  reseeded with the ripup cost before each connection. Where Java still
+  depends on wall-clock time or thread scheduling (the optimizer's
+  reused worker boards), don't copy it. Raise it under *Operator
+  decisions needed* with a recommendation.
 - Crate dependencies: `geometry` and `dsn` depend on nothing in the
   workspace, `freerouting` depends on both, and `cli` and `gui` depend
   only on `freerouting`. The GUI only draws and maps input. Board logic,
@@ -315,7 +320,7 @@ this repo a speed-up must still produce identical results:
      left `[ ]` marked "not attempted" (budget) so the orchestrator can
      re-dispatch them.
    - **Java parity**: the Java classes and methods ported (at
-     `cda540f`), the Java tests ported and not ported, the differential
+     `a773a70ec`), the Java tests ported and not ported, the differential
      or reference checks you ran, and each divergence you added (quote
      the `DIVERGENCES.md` line).
    - **Gate**: the commands you ran and their summary lines.

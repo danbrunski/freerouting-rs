@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue690-sonde_xilinx","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue690-sonde_xilinx","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","via":0,"trace":806,"inserted":true}
 {"stage":"insert-via","via":1,"trace":692,"inserted":true}
 {"stage":"insert-via","via":2,"trace":807,"inserted":true}

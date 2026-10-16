@@ -57,6 +57,52 @@ fn route_bounds_by_board_name() {
     assert!(read_bounds("board\tmax_passes\nx\tmany\n").is_err());
 }
 
+/// `tools/java-reference/route-bounds.tsv` (J01.3) has a row for every fixture
+/// DSN outside `fixtures/kicad`, and the bench finds the rows of boards in
+/// sub-directories too.
+#[test]
+fn committed_route_bounds_cover_every_fixture() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let text = std::fs::read_to_string(root.join("tools/java-reference/route-bounds.tsv")).unwrap();
+    let table = read_bounds(&text).unwrap();
+    let unset = Bounds {
+        max_passes: 0,
+        max_items: None,
+    };
+    let mut dirs = vec![root.join("fixtures")];
+    let mut boards = 0;
+    while let Some(dir) = dirs.pop() {
+        for e in std::fs::read_dir(&dir).unwrap() {
+            let path = e.unwrap().path();
+            // fixtures/kicad holds KiCad boards that K07 compares itself;
+            // like reference_load, the route references leave them out.
+            if path.ends_with("fixtures/reference") || path.ends_with("fixtures/kicad") {
+                continue;
+            }
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path
+                .extension()
+                .is_some_and(|x| x.eq_ignore_ascii_case("dsn"))
+            {
+                let written = path
+                    .strip_prefix(&root)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                let entry = SetEntry {
+                    written: written.clone(),
+                    path: path.clone(),
+                };
+                let bounds = bounds_for(&table, &entry, unset);
+                assert!(bounds.max_passes > 0, "{written} has no route bounds row");
+                boards += 1;
+            }
+        }
+    }
+    assert!(boards > 100, "only {boards} fixture boards found");
+}
+
 #[test]
 fn busy_machine_waits_then_refuses_without_timing() {
     let reads = Cell::new(0);

@@ -1,4 +1,4 @@
-{"kind":"tree","board":"Issue649-kicad_ecc83-pp_input_board_v1","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue649-kicad_ecc83-pp_input_board_v1","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":327,"leaves":164,"maxDepth":25,"shapeHash":"ec6cb27f6340f736","contentDigest":"37c890c532de8ff7"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":327,"leaves":164,"maxDepth":17,"shapeHash":"3616e44f21c812e6","contentDigest":"b5fffa22274a563c"}
 {"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":393,"leaves":197,"maxDepth":26,"shapeHash":"d6abcda7e960b948","contentDigest":"1fd0d4ca96bf9f49"}

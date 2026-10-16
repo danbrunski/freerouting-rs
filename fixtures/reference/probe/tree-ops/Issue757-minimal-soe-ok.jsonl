@@ -1,4 +1,4 @@
-{"kind":"tree-ops","board":"Issue757-minimal-soe-ok","javaCommit":"cda540f84","jdk":"25.0.2","format":1}
+{"kind":"tree-ops","board":"Issue757-minimal-soe-ok","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
 {"stage":"insert-via","step":"insert-via","maxGeneratedId":3,"items":3}
 {"stage":"insert-via","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":23,"leaves":12,"maxDepth":7,"shapeHash":"8a374b84bd2b77a5","contentDigest":"7409c66adc289af5"}
 {"stage":"insert-via","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":23,"leaves":12,"maxDepth":6,"shapeHash":"b8268f0398768273","contentDigest":"4a84397a9e13ad73"}

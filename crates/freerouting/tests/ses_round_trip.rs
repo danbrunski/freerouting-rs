@@ -326,6 +326,15 @@ fn statistics_differences(a: &BoardStatistics, b: &BoardStatistics) -> Vec<Strin
     diff
 }
 
+/// Boards whose written session re-imports fewer wires than the reference session, as in Java,
+/// with the reason. The statistics after both imports must still be equal.
+const REIMPORT_FEWER_WIRES: &[(&str, &str)] = &[(
+    "Issue420-contribution-board",
+    "the first import of Java's a773a70ec session makes 3933 traces of its 3934 wires, so the \
+     written session has 3933; Java does the same (SesImportStats at a773a70ec: 3934 wires, \
+     3933 traces, and 3933 wires when its own SesWriter output is imported again)",
+)];
+
 /// Load, import the reference session, write it, re-import into a fresh load: the statistics
 /// of both imports are equal.
 ///
@@ -350,7 +359,14 @@ fn written_session_reimports_to_the_same_statistics() {
         let mut second = (*load_design(&std::fs::read(path).unwrap()).unwrap()).clone();
         second.delete_all_traces_and_vias();
         let second_summary = read_session(&mut second, &written).unwrap();
-        if first_summary != second_summary {
+        let fewer_wires = REIMPORT_FEWER_WIRES.iter().any(|(board, _)| *board == name);
+        if fewer_wires && first_summary == second_summary {
+            return Some(Some(format!(
+                "{name}: the re-import counts the same wires now; remove it from \
+                 REIMPORT_FEWER_WIRES"
+            )));
+        }
+        if first_summary != second_summary && !fewer_wires {
             return Some(Some(format!(
                 "{name}: import {first_summary:?} / re-import {second_summary:?}"
             )));

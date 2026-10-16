@@ -1,7 +1,8 @@
 # Divergences from Java Freerouting
 
 Places where the Rust port deliberately behaves differently from the Java reference
-(`danbrunski/freerouting` at `cda540f`). Anything not listed here is meant to match
+(`danbrunski/freerouting` at `a773a70ec`; entries that name `cda540f` describe Java at
+the previous pin). Anything not listed here is meant to match
 Java; a difference that isn't listed is a bug in the port.
 
 Each crate's docs carry the full detail; this file is the index.
@@ -92,8 +93,10 @@ branch 3 in IntOctagon's box cutout.
   order, as `readObject` does. `Clone` on the boards is not a Java copy.
 - `state_hash` (Java `getHash`) has Java's equality but leaves out the DRC cache
   `Item.smallestClearance`, which Java's `clearanceViolations()` writes as a side
-  effect; the port has no such cache. The `state-hash` probe found no step where this
-  changes an equality (`tests/board_probe_state_hash.rs`).
+  effect; the port has no such cache. The `state-hash` probe shows one step where this
+  changes an equality: on Issue413 with the `a773a70ec` session, stage h7 (after
+  `BoardStatistics` on a deep copy) no longer equals h5/h6 in Java
+  (`EXPECTED_MISMATCHES` in `tests/board_probe_state_hash.rs`).
 - The routing ledger (`drc::RoutingLedger`) counts exactly: undo, redo, in-place trace
   changes and net changes mark the nets they touch. Java's `NetRoutingLedger` hears only
   inserts and removals and goes stale after them; the `ledger` probe
@@ -129,8 +132,9 @@ branch 3 in IntOctagon's box cutout.
   its representative is the first pin, else the first trace, else the first item. Java
   picks a different representative, and the representative tail traces are not
   reported as `track_dangling`, so those two findings can differ by representatives
-  while the groups are the same. `NetIncompletes` starts each connected group from the
-  first remaining item in board order.
+  while the groups are the same. `NetIncompletes` groups its items as Java does since
+  `30baad7e2` (input order, then connected-set order); at `cda540f` Java started each
+  group from a `HashSet` in identity-hash order.
 - Copper islands (`zone_islands`): Java builds the fill with `java.awt.geom.Area` and
   takes its subpaths as islands, which assigns holes to the wrong outer subpath. The
   port computes the same fill (border minus holes, foreign and same-net clearance areas,
@@ -157,8 +161,9 @@ branch 3 in IntOctagon's box cutout.
 - The DRC command line (`freerouting -de board.dsn [board.ses] -drc [report.json]`)
   does the post-load processing before importing the session. Java runs the post-load
   DRC in a background thread while it imports the session. On
-  `Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn` that race leaves net +5V in the
-  outline's edge-pin-net cache and hides 6 trace-to-outline violations.
+  `Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn` with the `cda540f` route session that
+  race left net +5V in the outline's edge-pin-net cache and hid 6 trace-to-outline
+  violations; with the `a773a70ec` session Java and the port report the same.
 - The session reader imports the wires of `Issue676-ch32v-tx118s.dsn` (1 000 000 units
   per mm). Java's `SesReader` fails on all 48 with a ClassCastException
   (RationalVector to IntVector) and imports none.

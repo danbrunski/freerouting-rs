@@ -19,7 +19,7 @@ SES comparison, benchmarking and the determinism check.
 
 - F01 and F02 are independent and touch disjoint files, so they can run in
   parallel.
-- [J01](J01-repin-deterministic-java.md) (the re-pin) needs F02.4's
+- [J01](archive/J01-repin-deterministic-java.md) (the re-pin) needs F02.4's
   determinism script.
 - The A series needs F02.1–F02.3 for its parity checks.
 - F03 is needed before the first Q, X or P04 measurement.
