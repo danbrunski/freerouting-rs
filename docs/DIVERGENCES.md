@@ -396,6 +396,44 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   calculated. The orders differ only for a full tie of both doubles with an element of such a
   page; no `maze-log` or `maze-routed` board has one.
 
+**Path location** (`autoroute::path`, A05; tests `tests/autoroute_probe_locate.rs` and
+`autoroute::path::tests`)
+- Where `FoundConnectionLocator45Degree.calculateNextTraceCorners` warns ("ExpansionDoor
+  expected", "lineSections inconsistent") after it has found corners, it returns them without
+  advancing, and Java calls it again with the same state until it runs out of memory (an
+  `OutOfMemoryError`, which `autorouteConnection` does not catch); the port returns
+  `LocateError::EndlessLoop` (`a_warning_branch_without_corners_ends_the_trace_and_with_corners_loops`).
+  No `locate` or `locate-routed` board reaches either branch.
+- The any-angle locator (`FoundConnectionLocatorAnyAngle`) is not ported: `locate` returns
+  `LocateError::UnsupportedAngle` (`any_angle_routing_is_unsupported_until_a07`). A07 ports it.
+
+## freerouting-kicad
+
+Differences from KiCad's own DSN export, which is what Java reads. The reader builds the same
+tree as the export everywhere else (`crates/freerouting-kicad/tests/{structure,copper}.rs`
+compare them on 12 committed boards and the 56-board corpus).
+
+- Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
+  area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
+  footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
+  (`rule_areas_map_by_flags`, `canary_pwr_fan_inlet`, `rule_area_flag_defaults_follow_kicad`).
+- A tracks-only area is read as `wire_keepout`, which the board builds as a full keepout that
+  also blocks vias, as Java does (K00 question 1), with one warning per area
+  (`rule_areas_map_by_flags`).
+- Track arcs are followed as polylines (chords of at most 0.1 rad and 1 um from the curve);
+  KiCad's export writes one chord from start to end (`arcs_follow_the_curve`,
+  `cm5_trace_length_matches_kicad`).
+- Coordinates keep KiCad's nanometres instead of `%.6g` (K00 question 2): exported values
+  agree within half a `%.6g` step (`copper_equals_the_export`).
+- A footprint rule area's holes are written on the zone's first layer, as the export does
+  (`makeIMAGE` uses `zone->GetLayer()`), whichever layer its keepout is on
+  (`copper_equals_the_export`, the `rule-areas` board).
+- Copper zones owned by footprints are kept as planes, after the board's own zones, with one
+  warning each (K00 question 6); KiCad's export drops them. `ReadOptions::drop_footprint_zones`
+  gives KiCad's behaviour (`planes_and_netless_zones`).
+- The vias of net classes are listed in project-file order, KiCad's in `std::unordered_map`
+  order; the Default class's via is first in both (`copper::via_lists` compares the rest as a set).
+
 ## freerouting-cli
 
 **Command line and job outputs** (`freerouting-cli`; `freerouting::job::{run, outputs, deadline,

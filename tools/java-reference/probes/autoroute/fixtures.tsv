@@ -16,3 +16,5 @@ door-sections	fixtures/Issue026-J2_reference.dsn
 drills	fixtures/scoring-mixed-layer.dsn	fixtures/Issue508-SMD-routing-issue-demo.dsn	fixtures/Issue143-rpi_splitter.dsn	fixtures/Issue143-rpi_splitter_mod.dsn	fixtures/Issue508-DAC2020_bm08.dsn	fixtures/Issue026-J2_reference.dsn
 maze-log	@ladder
 maze-routed	fixtures/Issue413-test.dsn	fixtures/Issue957-smoke-ldo-led.dsn	fixtures/Issue676-ch32v-tx118s.dsn	fixtures/Issue069-TestSensel/TestSensel.dsn	fixtures/Issue027-zMRETestFixture.dsn	fixtures/Issue313-FastTest.dsn	fixtures/Issue229-display-8-digit-hc595.dsn
+locate	@ladder
+locate-routed	fixtures/Issue413-test.dsn	fixtures/Issue957-smoke-ldo-led.dsn	fixtures/Issue676-ch32v-tx118s.dsn	fixtures/Issue069-TestSensel/TestSensel.dsn	fixtures/Issue027-zMRETestFixture.dsn	fixtures/Issue313-FastTest.dsn	fixtures/Issue229-display-8-digit-hc595.dsn

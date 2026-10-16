@@ -12,7 +12,8 @@
 //!   one `step()` at a time with `ProgressEvents`, reading the GUI
 //!   accessors between steps as `ExpandTestState` does, gives the same
 //!   pops, destination and backtrack chain as `find_connection` with
-//!   `NoopSink`.
+//!   `NoopSink`; and both locate the same corners (A05.5): the located
+//!   trace items of the stepped search equal those of `find_connection`.
 //! - `hook_cost_timing` (`#[ignore]`, release): ten runs of every sampled
 //!   connection of `connection-parity.txt` with `NoopSink`; compare its
 //!   time with the same test built with `--cfg freerouting_no_search_hooks`.
@@ -26,7 +27,8 @@ use std::time::Instant;
 
 use autoroute_common::{Conn, Loaded, board_name, load, repo_root, router_control, sample};
 use autoroute_maze::{Mode, maze_lines};
-use freerouting::autoroute::session::search::{MazeSearch, SearchSettings};
+use freerouting::autoroute::path::{ResultItem, locate};
+use freerouting::autoroute::session::search::{MazeSearch, SearchResult, SearchSettings};
 use freerouting::autoroute::session::sink::{
     NoExtraCost, NoopSink, ProgressEvents, SearchSink, Step, WorkCounters,
 };
@@ -164,6 +166,20 @@ fn noop_and_counter_sinks_agree() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+/// The located trace items of a search that reached `destination`, or the
+/// locator's error (A05.5); `None` without a destination.
+fn located_items(
+    session: &mut Session<'_>,
+    destination: Option<(ExpandableRef, usize)>,
+) -> Option<Result<Vec<ResultItem>, String>> {
+    let result = SearchResult {
+        destination: destination?,
+    };
+    let angle = session.board().rules.trace_angle_restriction();
+    let located = locate(session, &result, angle, &mut BTreeSet::new(), None);
+    Some(located.map(|l| l.items).map_err(|e| e.to_string()))
+}
+
 #[test]
 fn stepped_search_matches_find_connection() {
     let boards = [
@@ -173,10 +189,13 @@ fn stepped_search_matches_find_connection() {
     ];
     let mut failures = Vec::new();
     let mut found = 0;
+    let mut located = 0;
     for dsn in boards {
         let mut whole = Vec::new();
         for_each_search(dsn, |label, session, conn, settings| {
-            whole.push((label.to_string(), run_plain(session, conn, settings)));
+            let outcome = run_plain(session, conn, settings);
+            let items = located_items(session, outcome.destination);
+            whole.push((label.to_string(), outcome, items));
         });
         let mut stepped = Vec::new();
         let mut events = 0usize;
@@ -208,20 +227,33 @@ fn stepped_search_matches_find_connection() {
                 ));
             }
             events += received.len();
-            stepped.push((label.to_string(), outcome));
+            let items = located_items(session, outcome.destination);
+            stepped.push((label.to_string(), outcome, items));
         });
-        for ((label, a), (_, b)) in whole.iter().zip(&stepped) {
+        for ((label, a, a_items), (_, b, b_items)) in whole.iter().zip(&stepped) {
             if a.destination.is_some() {
                 found += 1;
             }
             if a != b {
                 failures.push(format!("{label}: find_connection {a:?}\n  stepped {b:?}"));
             }
+            if a_items
+                .as_ref()
+                .is_some_and(|r| r.as_ref().is_ok_and(|i| !i.is_empty()))
+            {
+                located += 1;
+            }
+            if a_items != b_items {
+                failures.push(format!(
+                    "{label}: located after find_connection {a_items:?}\n  after stepping {b_items:?}"
+                ));
+            }
         }
         assert_eq!(whole.len(), stepped.len());
         let _ = events;
     }
     assert!(found > 0, "no search reached a destination");
+    assert!(located > 0, "no connection was located");
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 

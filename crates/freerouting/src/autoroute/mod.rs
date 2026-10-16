@@ -43,6 +43,12 @@
 //! - [`session`]: the rooms, doors and maze queue of one search, the room
 //!   database, the 45 degree neighbour calculation and the search
 //!   initialisation (`MazeSearchEngine.getInstance`).
+//!
+//! Path location (A05):
+//!
+//! - [`path`]: the backtrack chain of a found connection, its ripped items
+//!   and costs, and the 45 degree trace corners (`FoundConnectionLocator`,
+//!   `FoundConnectionLocator45Degree`).
 
 pub mod batch;
 pub mod control;
@@ -52,6 +58,7 @@ pub mod failure_log;
 pub mod history;
 pub mod item_route_result;
 pub mod java_ids;
+pub mod path;
 pub mod probe;
 pub mod session;
 pub mod stages;

@@ -83,6 +83,13 @@ import java.util.UUID;
  *   <li>maze-routed (A04.8): maze-log through pre-routed traces. The board's traces and vias
  *       are unfixed; then, for up to 12 nets with route items, the net's route items are
  *       removed and its sampled connection is searched as in maze-log (see mazeRouted).
+ *   <li>locate (A05.5): per sampled connection and variant, findConnection, then
+ *       FoundConnectionLocator.getInstance as autorouteConnection calls it: the backtrack array
+ *       (door kind and id, section, next room), the result items (corners, layer), the ripped
+ *       ids in TreeSet order with their costs in LinkedHashMap order, the start and target items
+ *       and layers; {"result":"none"} when the search fails. Then the tree's walk hash after
+ *       clear().
+ *   <li>locate-routed (A05.5): locate through pre-routed traces, as maze-routed walks them.
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -114,6 +121,8 @@ public class AutorouteProbe {
         case "drills" -> drills(out, Loaded.load(dsn));
         case "maze-log" -> mazeLog(out, Loaded.load(dsn));
         case "maze-routed" -> mazeRouted(out, Loaded.load(dsn));
+        case "locate" -> locate(out, Loaded.load(dsn));
+        case "locate-routed" -> locateRouted(out, Loaded.load(dsn));
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -1077,6 +1086,185 @@ public class AutorouteProbe {
       done++;
       for (String variant : new String[] {"off", "on"}) {
         mazeConnection(out, l, conn, variant);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // locate (A05.5)
+  // ------------------------------------------------------------------------------------------
+
+  /** [kind, id, layer] of a room, [] for null. */
+  static String roomJson(app.freerouting.autoroute.expansion.ExpansionRoom room) {
+    if (room == null) {
+      return "[]";
+    }
+    return "[" + quoted(room.getClass().getSimpleName()) + "," + room.getId() + ","
+        + room.getLayer() + "]";
+  }
+
+  static String cornersJson(app.freerouting.geometry.planar.IntPoint[] corners) {
+    StringBuilder text = new StringBuilder("[");
+    for (int i = 0; i < corners.length; i++) {
+      if (i > 0) {
+        text.append(',');
+      }
+      text.append('[').append(corners[i].x).append(',').append(corners[i].y).append(']');
+    }
+    return text.append(']').toString();
+  }
+
+  static String costsJson(java.util.Map<Item, Integer> costs) {
+    StringBuilder text = new StringBuilder("[");
+    for (java.util.Map.Entry<Item, Integer> entry : costs.entrySet()) {
+      if (text.length() > 1) {
+        text.append(',');
+      }
+      text.append('[').append(entry.getKey().getId()).append(',').append(entry.getValue())
+          .append(']');
+    }
+    return text.append(']').toString();
+  }
+
+  /**
+   * locate: findConnection, then FoundConnectionLocator.getInstance with a TreeSet of ripped items
+   * and a LinkedHashMap of costs, as AutorouteEngine.autorouteConnection calls it. Prints the
+   * backtrack array, the result items, the ripped ids in set order with the costs in map order,
+   * and the start and target items and layers; one {"result":"none"} line if the search failed.
+   */
+  static void locateLines(Out out, Loaded l, AutorouteEngine engine, AutorouteControl c,
+      MazeSearchEngine search) throws Exception {
+    MazeSearchEngine.Result result = search.findConnection();
+    if (result == null) {
+      out.line(new Line().str("result", "none").end());
+      return;
+    }
+    java.util.SortedSet<Item> ripped = new java.util.TreeSet<>();
+    java.util.Map<Item, Integer> costs = new java.util.LinkedHashMap<>();
+    app.freerouting.autoroute.path.FoundConnectionLocator located;
+    try {
+      located = app.freerouting.autoroute.path.FoundConnectionLocator.getInstance(result, c,
+          engine.autorouteSearchTree, l.board.rules.getTraceAngleRestriction(), ripped, costs);
+    } catch (Exception e) {
+      out.line(new Line().str("exception", e.getClass().getSimpleName()).raw("ripped", ids(ripped))
+          .raw("costs", costsJson(costs)).end());
+      return;
+    }
+    Object[] chain = privateField(located, "backtrackArray");
+    for (int i = 0; i < chain.length; i++) {
+      app.freerouting.autoroute.expansion.ExpandableObject door = privateField(chain[i], "door");
+      int section = privateField(chain[i], "sectionNoOfDoor");
+      app.freerouting.autoroute.expansion.CompleteExpansionRoom room =
+          privateField(chain[i], "nextRoom");
+      out.line(new Line().num("back", i).str("kind", expandableKind(door)).num("door", door.getId())
+          .num("section", section).raw("room", roomJson(room)).end());
+    }
+    int index = 0;
+    for (Object item : located.connectionItems) {
+      app.freerouting.geometry.planar.IntPoint[] corners = privateField(item, "corners");
+      int layer = privateField(item, "layer");
+      out.line(new Line().num("item", index).num("layer", layer).raw("corners", cornersJson(corners))
+          .end());
+      index++;
+    }
+    out.line(new Line().raw("ripped", ids(ripped)).raw("costs", costsJson(costs)).end());
+    out.line(new Line()
+        .num("start", located.startItem == null ? -1 : located.startItem.getId())
+        .num("target", located.targetItem == null ? -1 : located.targetItem.getId())
+        .num("startLayer", located.startLayer).num("targetLayer", located.targetLayer).end());
+  }
+
+  /** One connection of locate and locate-routed in one variant (ripup off or on). */
+  static void locateConnection(Out out, Loaded l, Conn conn, String variant) throws Exception {
+    RoutingBoard board = l.board;
+    boolean ripup = variant.equals("on");
+    String stage = variant + ":" + conn.net;
+    if (!conn.state.isEmpty()) {
+      out.line(new Line().str("stage", stage).num("net", conn.net).str("state", conn.state)
+          .end());
+      return;
+    }
+    AutorouteControl c;
+    try {
+      c = routerControl(l, conn.net, ripup);
+    } catch (RuntimeException e) {
+      out.line(new Line().str("stage", stage).num("net", conn.net)
+          .str("exception", e.getClass().getSimpleName()).end());
+      return;
+    }
+    AutorouteEngine engine = new AutorouteEngine(board, c.traceClearanceClassIndex, false);
+    engine.initConnection(conn.net, null, null);
+    try {
+      MazeSearchEngine search = MazeSearchEngine.getInstance(conn.start, conn.dest, engine, c);
+      out.line(new Line().str("stage", stage).num("net", conn.net).bool("ok", search != null)
+          .end());
+      if (search != null) {
+        locateLines(out, l, engine, c, search);
+      }
+    } catch (Exception e) {
+      out.line(new Line().str("exception", e.getClass().getSimpleName()).end());
+    }
+    engine.clear();
+    out.line(treeLine("cleared", engine.autorouteSearchTree));
+  }
+
+  static void locate(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Conn> conns = sample(board);
+    sampleLine(out, board, conns);
+    for (String variant : new String[] {"off", "on"}) {
+      for (Conn conn : conns) {
+        locateConnection(out, l, conn, variant);
+      }
+    }
+  }
+
+  /**
+   * locate-routed (A05.5 for the ripped items of A05.1): mazeRouted's walk (traces and vias
+   * unfixed, then for up to 12 nets with route items the net's route items removed and its
+   * sampled connection searched through the others' routes), with locateConnection per variant.
+   */
+  static void locateRouted(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Integer> unfixed = new ArrayList<>();
+    for (Item item : board.getItems()) {
+      if (isRouteItem(item)) {
+        item.unfix();
+        unfixed.add(item.getId());
+      }
+    }
+    out.line(new Line().str("stage", "unfix").raw("items", ints(unfixed)).end());
+    int done = 0;
+    int maxNet = board.rules.nets.maxNetNumber();
+    for (int net = 1; net <= maxNet && done < MAZE_ROUTED_NETS; net++) {
+      List<Item> routed = new ArrayList<>();
+      for (Item item : board.getItems()) {
+        if (isRouteItem(item) && item.containsNet(net)) {
+          routed.add(item);
+        }
+      }
+      if (routed.isEmpty()) {
+        continue;
+      }
+      List<Integer> removed = new ArrayList<>();
+      for (Item item : routed) {
+        board.removeItem(item);
+        removed.add(item.getId());
+      }
+      Conn conn = null;
+      for (Conn candidate : sample(board)) {
+        if (candidate.net == net) {
+          conn = candidate;
+        }
+      }
+      out.line(new Line().str("stage", "cut:" + net).raw("removed", ints(removed))
+          .bool("connection", conn != null).end());
+      if (conn == null) {
+        continue;
+      }
+      done++;
+      for (String variant : new String[] {"off", "on"}) {
+        locateConnection(out, l, conn, variant);
       }
     }
   }
