@@ -1,0 +1,161 @@
+
+(rules PCB Issue732-CM5_MINIMA_3
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 2.2)
+      (against_preferred_direction_trace_costs 3.2)
+    )
+    (layer_rule In1.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule In2.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule In3.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule In4.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 2.2)
+      (against_preferred_direction_trace_costs 3.2)
+    )
+  )
+  (rule
+    (width 150.0)
+    (clearance 130.0)
+    (clearance 75.0 (type smd_to_turn_gap))
+    (clearance 32.6 (type smd))
+    (clearance 200.0 (type "90ohm"))
+    (clearance 200.0 (type "100ohm"))
+    (clearance 0.0 (type "board_edge"))
+  )
+  (padstack "Via[0-5]_450:300_um"
+    (shape
+      (circle F.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In3.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In4.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 450.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-5]_450:300_um" "Via[0-5]_450:300_um" default
+  )
+  (via 
+    "Via[0-5]_450:300_um-90ohm" "Via[0-5]_450:300_um" "90ohm"
+  )
+  (via 
+    "Via[0-5]_450:300_um-100ohm" "Via[0-5]_450:300_um" "100ohm"
+  )
+  (viaRule
+    default "Via[0-5]_450:300_um"
+  )
+  (viaRule
+    default "Via[0-5]_450:300_um"
+  )
+  (viaRule
+    "90ohm" "Via[0-5]_450:300_um-90ohm"
+  )
+  (viaRule
+    "100ohm" "Via[0-5]_450:300_um-100ohm"
+  )
+  (class default
+    +5V "M2_3V3" "+3V3_PI" "/PCIe-M2/M2_LX" GND "Net-(J1-VCC)" "Net-(J1-K_GREEN)" "Net-(J1-K_YELLOW)"
+    "Net-(J1-MP1)" "HDMI_+5V" "/CM5/BT_nDis" "/CM5/WL_nDis" "Net-(D605-K)" "Net-(D606-K)" "unconnected-(J501-UTILITY{slash}HEAC+-Pad14)" /CM5/GPIO6
+    "/CM5/nLED_ACTIVITY" /CM5/nRPIBOOT /CM5/GPIO10 "/CM5/SYNC_OUT" /CM5/GPIO12 "/CM5/SD_CLK" /CM5/GPIO8 "/CM5/GPIO_VREF"
+    /CM5/GPIO26 "/CM5/EEPROM_nWP" "/CM5/PI_nLED_PWR" "/CM5/GLOBAL_EN" "/CM5/SD_DAT2" /CM5/GPIO9 /CM5/GPIO7 "/CM5/SD_CMD"
+    /CM5/GPIO13 "/CM5/SD_PWR_ON" "/CM5/SD_DAT1" "/CM5/SD_DAT0" "/CM5/nLED_SPEED_100_1000" /IO/SCL "/CM5/SD_DAT3" /CM5/GPIO22
+    /CM5/GPIO23 /CM5/GPIO15 /CM5/GPIO11 /IO/SDA /CM5/GPIO5 "/CM5/HDMI1_D2_N" "/CM5/HDMI1_D1_P" "/CM5/USBOTG_ID"
+    "/CM5/HDMI1_D2_P" "/PCIe-M2/FB" "/CM5/HDMI1_SCL" "/CM5/HDMI1_SDA" "/CM5/HDMI1_D0_N" "Net-(D702-K)" "/CM5/HDMI1_CK_N" "/CM5/HDMI1_D1_N"
+    "/CM5/HDMI1_HOTPLUG" "/CM5/HDMI1_CEC" "/CM5/HDMI1_CK_P" "unconnected-(J701-NC-Pad48)" "/CM5/HDMI1_D0_P" "unconnected-(J701-NC-Pad30)" "/CM5/USB3-0-TX_P" "Net-(R605-Pad2)"
+    "/CM5/USB3-1-RX_P" "/CM5/CAM_GPIO0" "unconnected-(J701-NC-Pad26)" "/CM5/USB3-0-TX_N" "/CM5/USB3-0-RX_P" "/CM5/USB3-1-D_P" "/CM5/USB3-1-RX_N" "unconnected-(U602-Pad1)"
+    "/CM5/PWR_BUT" "unconnected-(J701-NC-Pad58)" "/CM5/VBUS_EN" /CM5/PWM /CM5/TACHO "/CM5/USB3-1-TX_N" "/CM5/USB3-0-RX_N" "/CM5/ID_SC"
+    "/CM5/CAM_GPIO1" "/CM5/USB3-1-TX_P" "/CM5/USB3-1-D_N" "/CM5/ID_SD" "unconnected-(Module301-SD_DAT4-Pad68)" "unconnected-(Module301-SD_VDD_Override-Pad73)" "unconnected-(Module301-SD_DAT7-Pad70)" "unconnected-(Module301-SD_DAT5-Pad64)"
+    "unconnected-(Module301-SD_DAT6-Pad72)" "unconnected-(J101-SBU2-PadB8)" /CC2 "unconnected-(J101-SBU1-PadA8)" /CC1 "VBUS_USB2.0" +1V8 "/CM5/ETH_nLED_ACTIVITY"
+    "unconnected-(J701-NC-Pad46)" "unconnected-(J701-NC-Pad42)" "unconnected-(J701-DEVSLP-Pad38)" "Net-(J701-SUSCLK)" "unconnected-(J701-PERp2-Pad25)" "unconnected-(J701-PETn2-Pad17)" "Net-(J701-DAS{slash}~{DSS}{slash}~{LED1})" "unconnected-(J701-PETn1-Pad29)"
+    "unconnected-(J701-PETp2-Pad19)" "unconnected-(J701-NC-Pad67)" "unconnected-(J701-NC-Pad36)" "unconnected-(J701-PEDET-Pad69)" "unconnected-(J701-PERp1-Pad37)" "unconnected-(J701-NC-Pad34)" "unconnected-(J701-NC-Pad28)" "unconnected-(J701-NC-Pad24)"
+    "unconnected-(J701-NC-Pad44)" "unconnected-(J701-NC-Pad56)" "unconnected-(J701-PERn3-Pad11)" "unconnected-(J701-PETp1-Pad31)" "unconnected-(J701-NC-Pad32)" "unconnected-(J502-MountPin-PadMP)" "unconnected-(J502-MountPin-PadMP)_1" "unconnected-(J701-PETn3-Pad5)"
+    "unconnected-(J701-PERp3-Pad13)" "Net-(U701-ILIM)" /USB/CC2 /USB/CC1 "unconnected-(U701-nFault-Pad4)" "unconnected-(USB701-SUB2-PadB8)" "unconnected-(USB701-SUB1-PadA8)" "unconnected-(U405-FAULT-Pad3)"
+    "unconnected-(J701-PERn2-Pad23)" "unconnected-(J701-PETp3-Pad7)" "unconnected-(J701-NC-Pad40)" "unconnected-(J701-PERn1-Pad35)" /CM5/SCL0 /CM5/SDA0 "unconnected-(U702-nc-Pad5)" "unconnected-(U702-PG-Pad2)"
+    "/CM5/DPHY1_P.D3_N" "/CM5/DPHY1_P.D3_P" "/CM5/DPHY1_P.C_N" "/CM5/DPHY1_P.D2_N" "/CM5/DPHY1_P.D0_P" "/CM5/DPHY1_P.D0_N" "/CM5/DPHY1_P.C_P" "/CM5/DPHY1_P.D1_P"
+    "/CM5/DPHY1_P.D2_P" "/CM5/DPHY1_P.D1_N" "/CM5/HDMI_PI.SCL" "/CM5/HDMI_PI.HOTPLUG" "/CM5/HDMI_PI.SDA" "/CM5/HDMI_PI.CEC" "unconnected-(J701-NC-Pad6)" "unconnected-(J701-NC-Pad8)"
+    "/CM5/MOSI_GPIO20" "/CM5/MISO_GPIO19" "unconnected-(J503-MountPin-PadMP)" "unconnected-(J503-MountPin-PadMP)_1" "/CM5/SCLK_GPIO21" /CM5/GPIO14 "/CM5/BL_GPIO24" "/CM5/RST_GPIO27"
+    /CM5/GPIO17 "/CM5/DC_GPI25" /CM5/GPIO4 "/CM5/CS_GPIO18" /CM5/GPIO16 "unconnected-(SW101-Pad2)" "Net-(U1-CS)" "Net-(U1-SDO)"
+    "unconnected-(U1-INT1-Pad11)" "unconnected-(U1-ADC2-Pad15)" "unconnected-(U1-ADC1-Pad16)" "unconnected-(U1-ADC3-Pad13)" "unconnected-(U1-NC-Pad3)" "unconnected-(U1-INT2-Pad9)" "unconnected-(U1-NC-Pad2)" "unconnected-(J701-NC-Pad22)"
+    "unconnected-(J701-NC-Pad20)" "unconnected-(CN1-Pad4)" "unconnected-(CN1-Pad3)" +BATT
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 150.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "90ohm"
+    "/USB_C.D_P" "/USB_C.D_N" "/CM5/USB2P.D_P" "/CM5/USB2P.D_N" "/CM5/PCIE_PI.TX_N" "/CM5/PCIE_PI.nWAKE" "/CM5/PCIE_PI.nCLKREQ" "/CM5/PCIE_PI.PWR_EN"
+    "/CM5/PCIE_PI.RX_N" "/CM5/PCIE_PI.CLK_P" "/CM5/PCIE_PI.RX_P" "/CM5/PCIE_PI.TX_P" "/CM5/PCIE_PI.CLK_N" "/CM5/PCIE_PI.nRST"
+    (clearance_class "90ohm")
+    (via_rule "90ohm")
+    (rule
+      (width 147.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "100ohm"
+    "/CM5/ETH_PI.TRD3_P" "/CM5/ETH_PI.TRD0_P" "/CM5/ETH_PI.TRD1_P" "/CM5/ETH_PI.TRD2_P" "/CM5/ETH_PI.TRD0_N" "/CM5/ETH_PI.TRD2_N" "/CM5/ETH_PI.TRD1_N" "/CM5/ETH_PI.TRD3_N"
+    "/CM5/DPHY0_P.D0_P" "/CM5/DPHY0_P.C_P" "/CM5/DPHY0_P.D1_P" "/CM5/DPHY0_P.D2_P" "/CM5/DPHY0_P.D3_N" "/CM5/DPHY0_P.D3_P" "/CM5/DPHY0_P.D0_N" "/CM5/DPHY0_P.D2_N"
+    "/CM5/DPHY0_P.C_N" "/CM5/DPHY0_P.D1_N" "/CM5/HDMI_PI.CK_P" "/CM5/HDMI_PI.CK_N" "/CM5/HDMI_PI.D0_N" "/CM5/HDMI_PI.D2_P" "/CM5/HDMI_PI.D0_P" "/CM5/HDMI_PI.D1_N"
+    "/CM5/HDMI_PI.D1_P" "/CM5/HDMI_PI.D2_N"
+    (clearance_class "100ohm")
+    (via_rule "100ohm")
+    (rule
+      (width 127.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+)

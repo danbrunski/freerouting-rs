@@ -1,0 +1,63 @@
+
+(rules PCB Issue676-ch32v-tx118s
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "top_cu"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule "bot_cu"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 0.2)
+    (clearance 0.2)
+    (clearance 0.1 (type smd_to_turn_gap))
+    (clearance 0.2 (type smd))
+    (clearance 0.2 (type "via_same_net"))
+    (clearance 0.2 (type via))
+    (clearance 1.28 (type "board_edge"))
+  )
+  (padstack "via-0.5:auto-1.0:auto-tht"
+    (shape
+      (circle "top_cu" 1.0 0.0 0.0)
+    )
+    (shape
+      (circle "bot_cu" 1.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "via-0.5:auto-1.0:auto-tht" "via-0.5:auto-1.0:auto-tht" via
+  )
+  (viaRule
+    default "via-0.5:auto-1.0:auto-tht"
+  )
+  (class default
+    GND K2 LED/SWIO N1 K1 REED K4 VCC
+    K3
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 0.2)
+    )
+    (circuit 
+      (use_layer top_cu bot_cu)
+    )
+  )
+)

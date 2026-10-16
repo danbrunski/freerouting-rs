@@ -1,0 +1,71 @@
+
+(rules PCB Issue756-tomu-fpga9
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.8)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+  )
+  (rule
+    (width 152.4)
+    (clearance 152.4)
+    (clearance 76.2 (type smd_to_turn_gap))
+    (clearance 38.2 (type smd))
+    (clearance 207.8 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_685.8:330.2_um"
+    (shape
+      (circle F.Cu 685.8 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 685.8 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um" "Via[0-1]_685.8:330.2_um" default
+  )
+  (viaRule
+    default "Via[0-1]_685.8:330.2_um"
+  )
+  (viaRule
+    default "Via[0-1]_685.8:330.2_um"
+  )
+  (class default
+    +5V "Net-(D7-Pad1)" "Net-(D8-Pad1)" GND "Net-(SW3-Pad1)" /CRESET "Net-(SW4-Pad1)" +3V3
+    "Net-(U3-Pad4)" +2V5 "Net-(U1-Pad4)" +1V2 "/SPI_CS" "/SPI_MISO" "/SPI_IO2" "/SPI_MOSI"
+    "/SPI_CLK" "/SPI_IO3" "Net-(D1-Pad1)" /CDONE /VCCPLL "Net-(U5-Pad2)" "Net-(U5-Pad3)" "Net-(U5-Pad4)"
+    "Net-(U5-Pad6)" "/DBG_6" "/DBG_5" "/DBG_3" "/DBG_2" "/UART_RX" "/DBG_1" "/UART_TX"
+    "/PMODa_4" "/DBG_4" "/PMODa_3" "/PMODa_2" "/PMODa_1" "Net-(U5-Pad31)" "Net-(U5-Pad32)" "/ICE_USBP"
+    "/PU_CTRL_USBP" "/PU_CTRL_USBN" "/ICE_USBN" "/LED_R" "/LED_B" "/LED_G" "Net-(U5-Pad43)" "/OSC_IN"
+    "/PMODb_4" "/PMODb_3" "/PMODb_2" "/PMODb_1" "Net-(J1-Pad1)" "Net-(J1-Pad16)" "Net-(J1-Pad17)" "Net-(J1-Pad27)"
+    "Net-(J1-Pad28)" "Net-(J1-Pad29)" "Net-(J1-Pad31)" "Net-(J1-Pad32)" "Net-(J1-Pad33)" "Net-(J1-Pad35)" "Net-(J1-Pad36)" "Net-(J1-Pad37)"
+    "Net-(J1-Pad38)" "Net-(J1-Pad40)" "Net-(U7-Pad1)" "Net-(U2-Pad4)" "Net-(U8-Pad4)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 152.4)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

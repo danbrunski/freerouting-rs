@@ -1,0 +1,217 @@
+
+(rules PCB Issue690-kit-dev-coldfire-xilinx_5213
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "Top_layer"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 3.5)
+    )
+    (layer_rule In1.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+    (layer_rule In2.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.7)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 2.4)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 150.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 37.6 (type smd))
+    (clearance 150.0 (type POWER))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_600:400_um"
+    (shape
+      (circle "Top_layer" 600.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_800:400_um"
+    (shape
+      (circle "Top_layer" 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_635:400_um"
+    (shape
+      (circle "Top_layer" 635.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 635.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 635.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 635.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_889:400_um"
+    (shape
+      (circle "Top_layer" 889.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 889.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 889.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 889.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_1143:400_um"
+    (shape
+      (circle "Top_layer" 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1143.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_600:400_um" "Via[0-3]_600:400_um" default
+  )
+  (via 
+    "Via[0-3]_800:400_um" "Via[0-3]_800:400_um" default
+  )
+  (via 
+    "Via[0-3]_635:400_um" "Via[0-3]_635:400_um" default
+  )
+  (via 
+    "Via[0-3]_889:400_um" "Via[0-3]_889:400_um" default
+  )
+  (via 
+    "Via[0-3]_1143:400_um" "Via[0-3]_1143:400_um" default
+  )
+  (via 
+    "Via[0-3]_600:400_um-POWER" "Via[0-3]_600:400_um" POWER
+  )
+  (via 
+    "Via[0-3]_800:400_um-POWER" "Via[0-3]_800:400_um" POWER
+  )
+  (via 
+    "Via[0-3]_635:400_um-POWER" "Via[0-3]_635:400_um" POWER
+  )
+  (via 
+    "Via[0-3]_889:400_um-POWER" "Via[0-3]_889:400_um" POWER
+  )
+  (via 
+    "Via[0-3]_1143:400_um-POWER" "Via[0-3]_1143:400_um" POWER
+  )
+  (viaRule
+    default "Via[0-3]_600:400_um"
+  )
+  (viaRule
+    default "Via[0-3]_600:400_um"
+  )
+  (viaRule
+    POWER "Via[0-3]_800:400_um-POWER"
+  )
+  (class default
+    /ALLPST /AN2 /AN3 /AN4 /AN6 "/BKPT-" "Net-(BDM_PORT101-P22-Pad26)" /CLKMOD0
+    /CLKMOD1 /DDAT0 /DDAT1 /DDAT2 /DDAT3 /DSCLK /DSI /DSO
+    /DTIN1 /GPT1 /GPT3 "/IRQ-5" "/IRQ-6" "/IRQ-7" "/JTAG_EN" /PST0
+    /PST1 /PST2 /PST3 "/QSPI_CS3" /TCLK /VDDPLL "/inout_user/CAN_H" "/inout_user/CAN_L"
+    "/inout_user/CTS0" "/inout_user/CTS1" "Net-(BDM_PORT101-P6)" "/inout_user/RTS0" "/inout_user/RTS1" "/inout_user/RTS2" "/inout_user/RXD0" "/inout_user/RXD1"
+    "/inout_user/RXD2" "/inout_user/RxD_CAN" "/inout_user/TXD0" "/inout_user/TXD1" "unconnected-(BDM_PORT101-P22-Pad22)" "/inout_user/TxD_CAN" "/xilinx/+3,3V_OUT" "/xilinx/LED_TEST1"
+    "/xilinx/LED_TEST2" /xilinx/TCK /xilinx/TDI /xilinx/TDO /xilinx/TMS "/xilinx/XIL_D0" "/xilinx/XIL_D1" "/xilinx/XIL_D10"
+    "/xilinx/XIL_D11" "/xilinx/XIL_D12" "/xilinx/XIL_D13" "/xilinx/XIL_D14" "/xilinx/XIL_D15" "/xilinx/XIL_D16" "/xilinx/XIL_D17" "/xilinx/XIL_D18"
+    "/xilinx/XIL_D19" "/xilinx/XIL_D2" "/xilinx/XIL_D20" "/xilinx/XIL_D21" "/xilinx/XIL_D22" "/xilinx/XIL_D23" "/xilinx/XIL_D24" "/xilinx/XIL_D25"
+    "/xilinx/XIL_D26" "/xilinx/XIL_D27" "/xilinx/XIL_D28" "/xilinx/XIL_D29" "/xilinx/XIL_D3" "/xilinx/XIL_D30" "/xilinx/XIL_D31" "/xilinx/XIL_D32"
+    "/xilinx/XIL_D33" "/xilinx/XIL_D34" "/xilinx/XIL_D35" "/xilinx/XIL_D36" "/xilinx/XIL_D4" "/xilinx/XIL_D5" "/xilinx/XIL_D6" "/xilinx/XIL_D7"
+    "/xilinx/XIL_D8" "/xilinx/XIL_D9" /AN0 /AN1 "/QSPI_CS0" /AN5 /AN7 "/IRQ-4"
+    /DTIN0 /DTIN2 /DTIN3 /GPT0 /GPT2 /VCCA "/IRQ-1" "/IRQ-2"
+    "/IRQ-3" /XTAL "/RCON-" "/RSTO-" "/RSTI-" "/QSPI_CS1" /URTS1 /UCTS1
+    "/QSPI_CLK" "/DSPI_DOUT" "/QSPI_DIN" "/QSPI_CS2" /URXD1 /UTXD1 /PWM7 /PWM5
+    /PWM1 /PWM3 /URTS2 /UTXD2 /URXD2 /UCTS2 /CANRX /CANTX
+    /URTS0 /UTXD0 /URXD0 /UCTS0 "Net-(ABRT_SW101-Pad1)" "unconnected-(BDM_PORT101-P21-Pad21)" "unconnected-(BDM_PORT101-P1-Pad1)" "Net-(C104-Pad1)"
+    "Net-(D102-K)" "Net-(MCU_PORT201-P1)" "Net-(U202-V+)" "Net-(U202-C1+)" "Net-(U202-C1-)" "Net-(U202-C2+)" "Net-(U202-C2-)" "Net-(U202-V-)"
+    "Net-(U203-V+)" "Net-(U203-C1+)" "Net-(U203-C1-)" "Net-(U203-C2+)" "Net-(U203-C2-)" "Net-(D201-K)" "Net-(U203-V-)" "Net-(U204-V+)"
+    "Net-(U204-C1+)" "Net-(U204-C1-)" "Net-(U204-C2+)" "Net-(U204-C2-)" "Net-(U204-V-)" "Net-(CAN_TERM201-Pad2)" "Net-(COM_SEL201-P3)" "Net-(COM_SEL202-P3)"
+    "Net-(COM_SEL203-P3)" "Net-(D101-K)" "Net-(D301-A)" "Net-(D302-A)" "Net-(F201-Pad1)" "Net-(TB201-P1)" "Net-(L102-Pad1)" "Net-(U201A-E)"
+    "Net-(LED201-A)" "Net-(LED202-A)" "Net-(LED203-A)" "Net-(LED204-A)" "Net-(LED205-A)" "Net-(LEDABRT101-K)" "Net-(LED_RST101-A)" "Net-(PULUPEN201-Pad8)"
+    "Net-(PULUPEN201-Pad6)" "Net-(PULUPEN201-Pad4)" "Net-(PULUPEN201-Pad2)" "Net-(U301-P11)" "Net-(U301-P4)" "Net-(Q101-B)" "Net-(Q101-C)" "Net-(U102-TEST)"
+    "Net-(U102-TCLK{slash}PSTCLK{slash}CLKOUT)" "Net-(U201A-O)" "Net-(U201B-O)" "Net-(U201D-O)" "Net-(U202-T2IN)" "Net-(U201C-O)" "Net-(U203-T2IN)" "Net-(U205-Rsl)"
+    "Net-(U204-T1IN)" "Net-(U202-R2OUT)" "Net-(U202-T1IN)" "Net-(U202-R1OUT)" "Net-(U203-R2OUT)" "Net-(U203-T1IN)" "Net-(U203-R1OUT)" "Net-(U204-R2OUT)"
+    "Net-(U204-T2IN)" "Net-(U204-R1OUT)" "Net-(U205-Vref)" "unconnected-(U301-H3-Pad69)" "unconnected-(U301-A0-Pad106)" "unconnected-(U301-N3-Pad22)" /CLKIN{slash}EXTAL "/inout_user/TXD2{slash}CANL"
+    "/inout_user/CTS2{slash}CANH" "unconnected-(SW_ONOFF201-Pad1)" "unconnected-(U301-E2-Pad88)" "unconnected-(U301-B11-Pad110)" "unconnected-(U301-F4-Pad60)" "unconnected-(U301-E13-Pad83)" "unconnected-(U301-F12-Pad62)" "unconnected-(U301-G3-Pad79)"
+    "unconnected-(U301-J13-Pad9)" "unconnected-(U301-E11-Pad84)" "unconnected-(U301-E4-Pad86)" "unconnected-(U301-C13-Pad91)" "unconnected-(U301-K13-Pad133)" "unconnected-(U301-G2-Pad80)" "unconnected-(U301-F2-Pad56)" "unconnected-(U301-N13-Pad26)"
+    "unconnected-(U301-L3-Pad14)" "unconnected-(U301-O15-Pad37)" "unconnected-(U301-N11-Pad25)" "unconnected-(U301-E14-Pad82)" "unconnected-(U301-H13-Pad71)" "unconnected-(U301-H2-Pad68)" "unconnected-(U301-F13-Pad63)" "unconnected-(U301-D12-Pad120)"
+    "unconnected-(U301-O4-Pad40)" "unconnected-(U301-I13-Pad141)" "unconnected-(U301-A3-Pad103)" "unconnected-(U301-F15-Pad65)" "unconnected-(U301-N4-Pad23)" "unconnected-(U301-D13-Pad121)" "unconnected-(U301-C3-Pad94)" "unconnected-(U301-P15-Pad36)"
+    "unconnected-(U301-G13-Pad75)" "unconnected-(U301-A4-Pad102)" "unconnected-(U301-O3-Pad41)" "unconnected-(U301-E3-Pad87)" "unconnected-(U301-G11-Pad77)" "unconnected-(U301-L14-Pad19)" "unconnected-(U301-O13-Pad38)" "unconnected-(U301-P14-Pad35)"
+    "unconnected-(U301-P2-Pad29)" "unconnected-(U301-L11-Pad16)" "unconnected-(U301-G4-Pad78)" "unconnected-(U301-L13-Pad18)" "unconnected-(U301-P13-Pad34)" "unconnected-(U301-G0-Pad81)" "unconnected-(U301-G14-Pad74)" "unconnected-(U301-C4-Pad93)"
+    "unconnected-(U301-C14-Pad90)" "unconnected-(U301-O12-Pad39)" "unconnected-(U301-N2-Pad21)" "unconnected-(U301-P3-Pad30)" "unconnected-(U301-F11-Pad61)" "unconnected-(U301-F1-Pad55)" "unconnected-(U301-H0-Pad66)" "unconnected-(U301-H1-Pad67)"
+    "unconnected-(U301-H15-Pad72)" "unconnected-(U301-C11-Pad92)" "unconnected-(U301-L4-Pad15)" "unconnected-(U301-H11-Pad70)" "Net-(UARTCAN201-P6)" "unconnected-(UARTCAN201-P9-Pad9)" "Net-(UARTCAN202-P6)" "unconnected-(UARTCAN202-P9-Pad9)"
+    "Net-(UARTCAN203-P6)" "unconnected-(UARTCAN203-P9-Pad9)" "unconnected-(VR201-SHDN-Pad4)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top_layer In1.Cu In2.Cu B.Cu)
+    )
+  )
+  (class POWER
+    GND +3.3V GNDA
+    (clearance_class POWER)
+    (via_rule POWER)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer Top_layer In1.Cu In2.Cu B.Cu)
+    )
+  )
+)

@@ -1,0 +1,64 @@
+
+(rules PCB Issue649-kicad_ecc83-pp_input_board_v2
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "top_cu"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule "bottom_cu"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 800.0)
+    (clearance 400.0)
+    (clearance 400.0 (type smd_to_turn_gap))
+    (clearance 100.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_1200:600_um"
+    (shape
+      (circle "top_cu" 1200.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_cu" 1200.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_1200:600_um" "Via[0-1]_1200:600_um" default
+  )
+  (viaRule
+    default "Via[0-1]_1200:600_um"
+  )
+  (viaRule
+    default "Via[0-1]_1200:600_um"
+  )
+  (class default
+    GND "Net-(P3-P1)" "Net-(P2-P1)" "Net-(U1A-K)" "Net-(P1-PM)" "Net-(P4-P1)" "Net-(P4-PM)" "unconnected-(P5-Pad1)"
+    "unconnected-(P6-Pad1)" "unconnected-(P7-Pad1)" "unconnected-(P8-Pad1)" "Net-(U1A-G)" "Net-(U1B-K)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 800.0)
+    )
+    (circuit 
+      (use_layer top_cu bottom_cu)
+    )
+  )
+)

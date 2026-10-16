@@ -1,0 +1,148 @@
+
+(rules PCB Issue208-freerouting
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.4)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.4)
+    )
+  )
+  (rule
+    (width 127.0)
+    (clearance 127.2)
+    (clearance 63.5 (type smd_to_turn_gap))
+    (clearance 31.8 (type smd))
+    (clearance 127.2 (type BusVolt))
+    (clearance 254.2 (type VeelVolt))
+    (clearance 241.2 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_685.8:330.2_um"
+    (shape
+      (circle F.Cu 685.8 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 685.8 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um" "Via[0-1]_685.8:330.2_um" default
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-BusVolt" "Via[0-1]_685.8:330.2_um" BusVolt
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-VeelVolt" "Via[0-1]_685.8:330.2_um" VeelVolt
+  )
+  (viaRule
+    default "Via[0-1]_685.8:330.2_um"
+  )
+  (viaRule
+    default "Via[0-1]_685.8:330.2_um"
+  )
+  (viaRule
+    BusVolt "Via[0-1]_685.8:330.2_um-BusVolt"
+  )
+  (viaRule
+    VeelVolt "Via[0-1]_685.8:330.2_um-VeelVolt"
+  )
+  (class default
+    GND +5V IO13 IO4 IO5 IO6 IO7 IO15
+    IO16 IO9 IO10 IO11 IO21 IO36 IO37 IO38
+    IO42 IO39 +3.3V IO40 IO41 "Net-(J7-P1)" "Net-(J7-P3)" "Net-(J7-P5)"
+    "Net-(J7-P7)" IO8 IO18 IO17 IO14 IO47 IO43 IO2
+    IO1 "Net-(J7-P9)" "Net-(J7-P11)" "Net-(J7-P13)" "Net-(J7-P15)" "Net-(J7-P17)" "Net-(J7-P19)" "Net-(J7-P21)"
+    "Net-(J7-P23)" "Net-(J7-P25)" "Net-(J7-P27)" "Net-(J7-P29)" "Net-(J7-P31)" "Net-(J7-P33)" "Net-(J7-P35)" "Net-(J7-P37)"
+    "Net-(J7-P39)" "Net-(J7-P41)" "Net-(J7-P43)" "Net-(J7-P45)" "Net-(J7-P47)" "Net-(J7-P49)" "Net-(J7-P51)" "Net-(J7-P53)"
+    "Net-(J7-P55)" "Net-(J7-P57)" O1 O2 O3 "Net-(J1-P1)" "Net-(J1-P3)" "Net-(J1-P5)"
+    "Net-(J1-P7)" "Net-(J1-P9)" "Net-(J1-P11)" "Net-(J1-P13)" "Net-(J1-P15)" "Net-(J1-P17)" "Net-(J1-P19)" "Net-(J1-P21)"
+    "Net-(J1-P23)" "Net-(J1-P25)" "Net-(J1-P27)" "Net-(J1-P29)" "Net-(J1-P31)" "Net-(J1-P33)" "Net-(J1-P35)" "Net-(J1-P37)"
+    "Net-(J1-P39)" "Net-(J1-P41)" "Net-(J1-P43)" "Net-(J1-P45)" "Net-(J1-P47)" "Net-(J1-P49)" "Net-(J1-P51)" "Net-(J1-P53)"
+    "Net-(J1-P55)" "Net-(J1-P57)" ID2 ID3 ID4 ID5 ID6 ID1
+    "Net-(J2-P1)" "Net-(J2-P3)" "Net-(J2-P5)" "Net-(J2-P7)" "Net-(J2-P9)" "Net-(J2-P11)" "Net-(J2-P13)" "Net-(J2-P15)"
+    "Net-(J2-P17)" "Net-(J2-P19)" "Net-(J2-P21)" "Net-(J2-P23)" "Net-(J2-P25)" "Net-(J2-P27)" "Net-(J2-P29)" "Net-(J2-P31)"
+    "Net-(J2-P33)" "Net-(J2-P35)" "Net-(J2-P37)" "Net-(J2-P39)" "Net-(J2-P41)" "Net-(J2-P43)" "Net-(J2-P45)" "Net-(J2-P47)"
+    "Net-(J2-P49)" "Net-(J2-P51)" "Net-(J2-P53)" "Net-(J2-P55)" "Net-(J2-P57)" "Net-(J3-P1)" "Net-(J3-P3)" "Net-(J3-P5)"
+    "Net-(J3-P7)" "Net-(J3-P9)" "Net-(J3-P11)" "Net-(J3-P13)" "Net-(J3-P15)" "Net-(J3-P17)" "Net-(J3-P19)" "Net-(J3-P21)"
+    "Net-(J3-P23)" "Net-(J3-P25)" "Net-(J3-P27)" "Net-(J3-P29)" "Net-(J3-P31)" "Net-(J3-P33)" "Net-(J3-P35)" "Net-(J3-P37)"
+    "Net-(J3-P39)" "Net-(J3-P41)" "Net-(J3-P43)" "Net-(J3-P45)" "Net-(J3-P47)" "Net-(J3-P49)" "Net-(J3-P51)" "Net-(J3-P53)"
+    "Net-(J3-P55)" "Net-(J3-P57)" "Net-(J4-P1)" "Net-(J4-P3)" "Net-(J4-P5)" "Net-(J4-P7)" "Net-(J4-P9)" "Net-(J4-P11)"
+    "Net-(J4-P13)" "Net-(J4-P15)" "Net-(J4-P17)" "Net-(J4-P19)" "Net-(J4-P21)" "Net-(J4-P23)" "Net-(J4-P25)" "Net-(J4-P27)"
+    "Net-(J4-P29)" "Net-(J4-P31)" "Net-(J4-P33)" "Net-(J4-P35)" "Net-(J4-P37)" "Net-(J4-P39)" "Net-(J4-P41)" "Net-(J4-P43)"
+    "Net-(J4-P45)" "Net-(J4-P47)" "Net-(J4-P49)" "Net-(J4-P51)" "Net-(J4-P53)" "Net-(J4-P55)" "Net-(J4-P57)" "Net-(J5-P1)"
+    "Net-(J5-P3)" "Net-(J5-P5)" "Net-(J5-P7)" "Net-(J5-P9)" "Net-(J5-P11)" "Net-(J5-P13)" "Net-(J5-P15)" "Net-(J5-P17)"
+    "Net-(J5-P19)" "Net-(J5-P21)" "Net-(J5-P23)" "Net-(J5-P25)" "Net-(J5-P27)" "Net-(J5-P29)" "Net-(J5-P31)" "Net-(J5-P33)"
+    "Net-(J5-P35)" "Net-(J5-P37)" "Net-(J5-P39)" "Net-(J5-P41)" "Net-(J5-P43)" "Net-(J5-P45)" "Net-(J5-P47)" "Net-(J5-P49)"
+    "Net-(J5-P51)" "Net-(J5-P53)" "Net-(J5-P55)" "Net-(J5-P57)" "unconnected-(J6-P1-Pad1)" "unconnected-(J6-P3-Pad3)" "unconnected-(J6-P5-Pad5)" "unconnected-(J6-P7-Pad7)"
+    "unconnected-(J6-P9-Pad9)" "unconnected-(J6-P11-Pad11)" "unconnected-(J6-P13-Pad13)" "unconnected-(J6-P15-Pad15)" "unconnected-(J6-P17-Pad17)" "unconnected-(J6-P19-Pad19)" "unconnected-(J6-P21-Pad21)" "unconnected-(J6-P23-Pad23)"
+    "unconnected-(J6-P25-Pad25)" "unconnected-(J6-P27-Pad27)" "unconnected-(J6-P29-Pad29)" "unconnected-(J6-P31-Pad31)" "unconnected-(J6-P33-Pad33)" "unconnected-(J6-P35-Pad35)" "unconnected-(J6-P37-Pad37)" "unconnected-(J6-P39-Pad39)"
+    "unconnected-(J6-P41-Pad41)" "unconnected-(J6-P43-Pad43)" "unconnected-(J6-P45-Pad45)" "unconnected-(J6-P47-Pad47)" "unconnected-(J6-P49-Pad49)" "unconnected-(J6-P51-Pad51)" "unconnected-(J6-P53-Pad53)" "unconnected-(J6-P55-Pad55)"
+    "unconnected-(J6-P57-Pad57)" IO44 IO35 IO48 O4 O5 O6 O7
+    O8 O9 O10 O11 O12 O13 O14 O15
+    O16 O17 O18 O19 O20 O21 O22 O23
+    O24 O25 O26 O27 O28 O29 "Net-(J8-P1)" "Net-(J8-P3)"
+    "Net-(J8-P5)" "Net-(J8-P7)" "Net-(J8-P9)" "Net-(J8-P11)" "Net-(J8-P13)" "Net-(J8-P15)" "Net-(J8-P17)" "Net-(J8-P19)"
+    "Net-(J8-P21)" "Net-(J8-P23)" "Net-(J8-P25)" "Net-(J8-P27)" "Net-(J8-P29)" "Net-(J8-P31)" "Net-(J8-P33)" "Net-(J8-P35)"
+    "Net-(J8-P37)" "Net-(J8-P39)" "Net-(J8-P41)" "Net-(J8-P43)" "Net-(J8-P45)" "Net-(J8-P47)" "Net-(J8-P49)" "Net-(J8-P51)"
+    "Net-(J8-P53)" "Net-(J8-P55)" "Net-(J8-P57)" "Net-(J10-P2)" "Net-(J10-P4)" "Net-(J10-P6)" "Net-(J10-P8)" "Net-(J10-P10)"
+    "Net-(J10-P12)" "Net-(J10-P14)" "Net-(J10-P16)" "Net-(J10-P18)" "Net-(J10-P20)" "Net-(J10-P22)" "Net-(J10-P24)" "Net-(J10-P26)"
+    "Net-(J10-P28)" "Net-(J10-P30)" "Net-(J10-P32)" "Net-(J10-P34)" "Net-(J10-P36)" "Net-(J10-P38)" "Net-(J10-P40)" "Net-(J10-P42)"
+    "Net-(J10-P44)" "Net-(J10-P46)" "Net-(J10-P48)" "Net-(J10-P50)" "Net-(J10-P52)" "Net-(J10-P54)" "Net-(J10-P56)" "Net-(J10-P58)"
+    "Net-(J10-P1)" "Net-(J10-P3)" "Net-(J10-P5)" "Net-(J10-P7)" "Net-(J10-P9)" "Net-(J10-P11)" "Net-(J10-P13)" "Net-(J10-P15)"
+    "Net-(J10-P17)" "Net-(J10-P19)" "Net-(J10-P21)" "Net-(J10-P23)" "Net-(J10-P25)" "Net-(J10-P27)" "Net-(J10-P29)" "Net-(J10-P31)"
+    "Net-(J10-P33)" "Net-(J10-P35)" "Net-(J10-P37)" "Net-(J10-P39)" "Net-(J10-P41)" "Net-(J10-P43)" "Net-(J10-P45)" "Net-(J10-P47)"
+    "Net-(J10-P49)" "Net-(J10-P51)" "Net-(J10-P53)" "Net-(J10-P55)" "Net-(J10-P57)" "Net-(J11-P1)" "Net-(J11-P3)" "Net-(J11-P5)"
+    "Net-(J11-P7)" "Net-(J11-P9)" "Net-(J11-P11)" "Net-(J11-P13)" "Net-(J11-P15)" "Net-(J11-P17)" "Net-(J11-P19)" "Net-(J11-P21)"
+    "Net-(J11-P23)" "Net-(J11-P25)" "Net-(J11-P27)" "Net-(J11-P29)" "Net-(J11-P31)" "Net-(J11-P33)" "Net-(J11-P35)" "Net-(J11-P37)"
+    "Net-(J11-P39)" "Net-(J11-P41)" "Net-(J11-P43)" "Net-(J11-P45)" "Net-(J11-P47)" "Net-(J11-P49)" "Net-(J11-P51)" "Net-(J11-P53)"
+    "Net-(J11-P55)" "Net-(J11-P57)" "unconnected-(J13-P1-Pad1)" "unconnected-(J13-P3-Pad3)" "unconnected-(J13-P5-Pad5)" "unconnected-(J13-P7-Pad7)" "unconnected-(J13-P9-Pad9)" "unconnected-(J13-P11-Pad11)"
+    "unconnected-(J13-P13-Pad13)" "unconnected-(J13-P15-Pad15)" "unconnected-(J13-P17-Pad17)" "unconnected-(J13-P19-Pad19)" "unconnected-(J13-P21-Pad21)" "unconnected-(J13-P23-Pad23)" "unconnected-(J13-P25-Pad25)" "unconnected-(J13-P27-Pad27)"
+    "unconnected-(J13-P29-Pad29)" "unconnected-(J13-P31-Pad31)" "unconnected-(J13-P33-Pad33)" "unconnected-(J13-P35-Pad35)" "unconnected-(J13-P37-Pad37)" "unconnected-(J13-P39-Pad39)" "unconnected-(J13-P41-Pad41)" "unconnected-(J13-P43-Pad43)"
+    "unconnected-(J13-P45-Pad45)" "unconnected-(J13-P47-Pad47)" "unconnected-(J13-P49-Pad49)" "unconnected-(J13-P51-Pad51)" "unconnected-(J13-P53-Pad53)" "unconnected-(J13-P55-Pad55)" "unconnected-(J13-P57-Pad57)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 127.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class BusVolt
+    (clearance_class BusVolt)
+    (via_rule BusVolt)
+    (rule
+      (width 254.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class VeelVolt
+    (clearance_class VeelVolt)
+    (via_rule VeelVolt)
+    (rule
+      (width 504.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

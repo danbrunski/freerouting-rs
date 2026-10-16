@@ -1,0 +1,84 @@
+
+(rules PCB Issue367-Charger
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.5)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 100.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 25.0 (type smd))
+    (clearance 100.0 (type Power))
+    (clearance 0.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (via 
+    "Via[0-1]_800:400_um-Power" "Via[0-1]_800:400_um" Power
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (viaRule
+    Power "Via[0-1]_800:400_um-Power"
+  )
+  (class default
+    ISET OD ILIM CHG TMR GND PGOOD "Net-(U3-VDD)"
+    "Net-(D1-A)" "Net-(D2-A)" "unconnected-(Q1-D12-Pad1)" OC "Net-(U3-VM)" "unconnected-(Q1-D12-Pad8)" OUT+ "unconnected-(J3-CC1-PadA5)"
+    "unconnected-(J3-D+-PadA6)" "unconnected-(J3-D--PadA7)" "unconnected-(J3-SBU1-PadA8)" "unconnected-(J3-CC2-PadB5)" "unconnected-(J3-D+-PadB6)" "unconnected-(J3-D--PadB7)" "unconnected-(J3-SBU2-PadB8)" TS
+    "unconnected-(C3-Pad2)" "unconnected-(C3-Pad1)" "unconnected-(C4-Pad1)" "unconnected-(C4-Pad2)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Power
+    "BAT-" VIN BAT+
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 300.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

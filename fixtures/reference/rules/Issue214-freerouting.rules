@@ -1,0 +1,98 @@
+
+(rules PCB Issue214-freerouting
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 5.3)
+    )
+    (layer_rule In1.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.3)
+    )
+    (layer_rule In2.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 4.5)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_800:400_um" "Via[0-3]_800:400_um" default
+  )
+  (viaRule
+    default "Via[0-3]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-3]_800:400_um"
+  )
+  (class default
+    GND +3V3 +5V "/POWER_IN" "Net-(D201-K)" "Net-(D202-K)" "Net-(U203-+)" "Net-(D203-K)"
+    "Net-(D204-K)" "Net-(D201-A)" "Net-(D201-C)" "Net-(D202-A)" "Net-(D202-C)" "Net-(D203-A)" "Net-(D203-C)" "Net-(D204-A)"
+    "Net-(D204-C)" "/Motors/MOTOR1_N" "/Motors/MOTOR2_N" "/Motors/MOTOR3_N" "/Motors/MOTOR4_N" /Motors/CS1N /Motors/CS2N /Motors/CS3N
+    /Motors/CS4N "/Motors/CS_RESET" "/Motors/MOTOR1_PWM" /Motors/CS1P "/Motors/MOTOR2_PWM" /Motors/CS2P "/Motors/MOTOR3_PWM" /Motors/CS3P
+    "/Motors/MOTOR4_PWM" /Motors/CS4P "/Motors/CS2_PK" "/Motors/CS1_PK" "/Motors/CS4_PK" "/Motors/CS3_PK" /Motors/CS1 /Motors/CS2
+    "/Motors/CS_REF" /Motors/CS3 /Motors/CS4 "unconnected-(U206-NC-Pad10)" "unconnected-(U206-NC-Pad11)" /ESP32/GPIO8 /ESP32/GPIO18 /ESP32/GPIO17
+    /ESP32/GPIO16 /ESP32/GPIO15 /ESP32/GPIO7 /ESP32/GPIO6 /ESP32/GPIO5 /ESP32/GPIO4 "/ESP32/CHIP_PU" /ESP32/GPIO42
+    /ESP32/GPIO39 /ESP32/GPIO40 /ESP32/GPIO41 /ESP32/U0TXD /ESP32/U0RXD /ESP32/GPIO1 /ESP32/GPIO2 /ESP32/GPIO38
+    /ESP32/GPIO37 /ESP32/GPIO36 /ESP32/GPIO35 /ESP32/GPIO0 /ESP32/GPIO45 /ESP32/GPIO48 /ESP32/GPIO47 /ESP32/GPIO21
+    /ESP32/GPIO14 /ESP32/GPIO13 /ESP32/GPIO12 /ESP32/GPIO11 /ESP32/GPIO10 /ESP32/GPIO9 /ESP32/GPIO46 /ESP32/GPIO3
+    "/LED_DATA" "unconnected-(U101-GPIO20{slash}USB_D+-Pad26)" "unconnected-(U101-GPIO19{slash}USB_D--Pad25)" "unconnected-(J107-Pin_12-Pad12)" "unconnected-(J107-Pin_11-Pad11)" "/ESP32/BUF1_IN" "/ESP32/BUF1_OUT" "unconnected-(J104-Pin_20-Pad20)"
+    "unconnected-(J104-Pin_19-Pad19)" "unconnected-(J103-KEY-Pad7)" "Net-(D401-DO)" "Net-(D402-DO)" "Net-(D403-DO)" "Net-(D404-DO)" "Net-(D405-DO)" "Net-(D406-DO)"
+    "Net-(D407-DO)" "Net-(D408-DO)" "Net-(D409-DO)" "Net-(D410-DO)" "Net-(D411-DO)" "Net-(D412-DO)" "Net-(D413-DO)" "Net-(D414-DO)"
+    "Net-(D415-DO)" "Net-(D416-DO)" "Net-(D417-DO)" "Net-(D418-DO)" "Net-(D419-DO)" "Net-(D420-DO)" "Net-(D421-DO)" "Net-(D422-DO)"
+    "Net-(D423-DO)" "Net-(D424-DO)" "Net-(D425-DO)" "Net-(D426-DO)" "Net-(D427-DO)" "Net-(D428-DO)" "Net-(D429-DO)" "Net-(D430-DO)"
+    "Net-(D431-DO)" "/Numeric Display/DIGIT1" "/Numeric Display/SEG_A" "/Numeric Display/SEG_B" "/Numeric Display/SEG_C" "/Numeric Display/SEG_D" "/Numeric Display/SEG_E" "/Numeric Display/SEG_F"
+    "/Numeric Display/SEG_G" "/Numeric Display/DIGIT2" "/Numeric Display/DIGIT3" "/Numeric Display/DIGIT4" "/Numeric Display/DIGIT5" "/Numeric Display/SEG_COLON" "unconnected-(J101-Pad3)" "/Numeric Display/NUMBER_DATA_5V"
+    +6V "/NUMBER_DATA" "Net-(U102-ADJ)" "Net-(D432-DO)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu B.Cu)
+    )
+  )
+)

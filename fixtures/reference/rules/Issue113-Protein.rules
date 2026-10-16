@@ -1,0 +1,105 @@
+
+(rules PCB Issue113-Protein
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.8)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.2)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 200.2 (type pwr))
+    (clearance 85.4 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (via 
+    "Via[0-1]_600:300_um-pwr" "Via[0-1]_600:300_um" pwr
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    pwr "Via[0-1]_600:300_um-pwr"
+  )
+  (class default
+    "CHOICE_RESET" /DA7 /DA8 /DA6 /DA9 /DA5 /DA10 /DA4
+    /DA11 /DA3 /DA12 /DA2 /DA13 /DA1 /DA14 /DA0
+    /DA15 "unconnected-(CON1-Pad20)" "unconnected-(CON1-Pad21)" "IDE_IOW" "IDE_IOR" "unconnected-(CON1-Pad27)" "unconnected-(CON1-Pad28)" "unconnected-(CON1-Pad29)"
+    "IDE_IRQ" "unconnected-(CON1-Pad32)" /A3 "unconnected-(CON1-Pad34)" /A2 /A4 "IDE_CS0" "IDE_CS1"
+    "HDD_LED" "Net-(CON1-Pad44)" /D0 /D1 /D2 /D3 "unconnected-(CON2-Pad11)" "/B_DRA0"
+    "/B_DRA1" "/B_DRA2" "/B_DRA3" "/B_DRA4" "/B_DRA5" "/B_DRA6" "Net-(CON2-Pad19)" /D4
+    /D5 /D6 /D7 "/B_DRA7" "Net-(CON2-Pad29)" "/B_DRA8" "/B_DRA9" "/B_RAS3"
+    "/B_RAS2" "unconnected-(CON2-Pad35)" "unconnected-(CON2-Pad36)" "unconnected-(CON2-Pad37)" "unconnected-(CON2-Pad38)" "/B_LCAS{slash}CAS0" "/B_LCAS{slash}CAS1" "/B_UCAS{slash}CAS3"
+    "/B_UCAS{slash}CAS2" "/B_RAS0" "/B_RAS1" "unconnected-(CON2-Pad46)" "/B_RW" "unconnected-(CON2-Pad48)" /D8 /D9
+    /D10 /D11 /D12 /D13 /D14 /D15 "unconnected-(CON2-Pad66)" "unconnected-(CON2-Pad67)"
+    "unconnected-(CON2-Pad68)" "unconnected-(CON2-Pad69)" "unconnected-(CON2-Pad70)" "unconnected-(CON2-Pad71)" /A5 /A6 /A7 /A8
+    /A9 AS /A10 UDS /A11 LDS /A12 RW
+    /A13 "DTACK_SOCKET" /A14 BG /A15 BGACK /A16 BR
+    /A17 /A18 "CLK_SOCKET" /A19 /A20 HALT RESET /A21
+    "VMA_SOCKET" /A22 "E_SOCKET" /A23 "VPA_SOCKET" BERR IPL2 IPL1
+    IPL0 FC2 FC1 FC0 /A1 OVR INT2 INT6
+    CDAC "Net-(J2-Pad2)" "SP_CS" "unconnected-(J3-Pad5)" "unconnected-(J3-Pad6)" IORD IOWR "DRAM_EXP_ON"
+    "TURBO_ON" "IDE_RESET" /DRA7 /DRA8 /DRA9 RAS3 RAS2 LCAS
+    /DRA0 /DRA1 /DRA2 /DRA3 /DRA4 /DRA5 /DRA6 UCAS
+    RAS0 "DTACK_CPU" RAS1 "MUX_SW" "CLK_CPU" "VMA_CPU" "E_CPU" "VPA_CPU"
+    "unconnected-(U5-Pad4)" "Net-(U6-Pad35)" "Net-(U7-Pad35)" "CLOCK_OSZ" "IDE_ENABLE" "IDE_DIR" /DC15 /DC14
+    /DC13 /DC12 /DC11 /DC10 /DC9 /DC8 TMS TCK
+    /TDO /TDI "unconnected-(U5-Pad7)" "unconnected-(U7-Pad2)" "unconnected-(U7-Pad3)" "unconnected-(U7-Pad14)" "unconnected-(U7-Pad21)" "unconnected-(U7-Pad24)"
+    "unconnected-(U7-Pad25)" "unconnected-(U7-Pad27)" "unconnected-(U7-Pad36)" "unconnected-(U7-Pad37)" "unconnected-(U7-Pad38)" "unconnected-(U7-Pad39)" "unconnected-(U7-Pad40)" "unconnected-(U7-Pad41)"
+    "unconnected-(U7-Pad42)" "unconnected-(U7-Pad43)" "unconnected-(U8-Pad11)" "unconnected-(U8-Pad20)" "unconnected-(U8-Pad29)" "HDD_ON"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class pwr
+    GND +5V +3V3 "74XX_PWR" "CPLD_PWR"
+    (clearance_class pwr)
+    (via_rule pwr)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

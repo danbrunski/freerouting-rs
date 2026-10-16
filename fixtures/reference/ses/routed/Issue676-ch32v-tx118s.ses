@@ -1,0 +1,442 @@
+(session "Issue676-ch32v-tx118s"
+  (base_design "Issue676-ch32v-tx118s")
+  (placement
+    (resolution mm 1000000)
+    (component "J3:Soldered Wire Connector 1x01 ⌀1.0mm"
+      (place J3 2540000.0 1.7145E7 front 180)
+    )
+    (component "J1:Soldered Wire Connector 1x06 ⌀1.0mm"
+      (place J1 6985000.0 8890000.0 front 180)
+    )
+    (component "C1:CAPC2012 (0805)"
+      (place C1 1.9684999999999996E7 1.0795E7 front 270)
+    )
+    (component "U1:SOIC127P600X175-8"
+      (place U1 1.3335E7 1.0795E7 front 180)
+    )
+    (component "R1:RESC2012 (0805)"
+      (place R1 1.9684999999999996E7 6985000.0 front 270)
+    )
+    (component "J2:Soldered Wire Connector 1x02 ⌀1.0mm"
+      (place J2 2540000.0 3810000.0 front 180)
+    )
+    (component "J4:Pin Header 2.54mm 1x03 ⌀0.9mm"
+      (place J4 2540000.0 1.11125E7 back 180)
+    )
+    (component "LED1:OSRAM_CHIPLED0805_DIFFUSED"
+      (place LED1 1.8415E7 2540000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution mm 1000000)
+    (parser
+      (host_cad LibrePCB)
+      (host_version "2.0.0")
+    )
+    (library_out 
+      (padstack "via-0.5:auto-1.0:auto-tht"
+        (shape
+          (circle "top_cu" 1000000 0 0)
+        )
+        (shape
+          (circle "bot_cu" 1000000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (wire
+          (path "top_cu" 500000
+            19685000 9920000
+            16158000 9920000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15918000 10160000
+            16158000 9920000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            4445000 4445000
+            4445000 10160000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15240000 2540000
+            13970000 3810000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            13970000 8890000
+            13970000 3810000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            2540000 11112500
+            3492500 11112500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            17365000 2540000
+            15240000 2540000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            13970000 8890000
+            15240000 10160000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            3492500 11112500
+            4445000 10160000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            6985000 2540000
+            15240000 2540000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            6985000 2540000
+            2540000 2540000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            2540000 2540000
+            4445000 4445000
+          )
+          (type protect)
+        )
+      )
+      (net K2
+        (wire
+          (path "top_cu" 500000
+            6985000 10160000
+            8255000 10160000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            10752000 11430000
+            9525000 11430000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            9525000 11430000
+            8255000 10160000
+          )
+          (type protect)
+        )
+      )
+      (net "LED/SWIO"
+        (via "via-0.5:auto-1.0:auto-tht" 1.5875E9 6.985E8
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.016E9 6.985E8
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.016E7 6985000.0
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.5875E7 6985000.0
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            19685000 7960000
+            17780000 6985000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            8255000 11430000
+            8890000 10795000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            10752000 8890000
+            10160000 8255000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            10160000 6985000
+            10160000 8255000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            15875000 6985000
+            10160000 6985000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            10160000 6985000
+            8890000 8255000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            2540000 13652500
+            5080000 11430000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            8255000 11430000
+            5080000 11430000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15875000 6985000
+            17780000 6985000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            8890000 10795000
+            8890000 8255000
+          )
+          (type protect)
+        )
+      )
+      (net N1
+        (wire
+          (path "top_cu" 500000
+            19685000 6010000
+            19465000 6010000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            19465000 2540000
+            19465000 6010000
+          )
+          (type protect)
+        )
+      )
+      (net K1
+        (wire
+          (path "top_cu" 500000
+            10752000 10160000
+            9525000 10160000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            6985000 7620000
+            9525000 10160000
+          )
+          (type protect)
+        )
+      )
+      (net REED
+        (via "via-0.5:auto-1.0:auto-tht" 1.778E9 1.524E9
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.793875E9 1.143E9
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.793875E7 1.143E7
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.778E7 1.524E7
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            17780000 15240000
+            17938750 11430000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15918000 11430000
+            17938750 11430000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            17780000 15240000
+            15240000 17780000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15240000 17780000
+            3175000 17780000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            2540000 17145000
+            3175000 17780000
+          )
+          (type protect)
+        )
+      )
+      (net K4
+        (via "via-0.5:auto-1.0:auto-tht" 9.68375E8 1.524E9
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.762125E9 8.89E8
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 1.762125E7 8890000.0
+          (type protect)
+        )
+        (via "via-0.5:auto-1.0:auto-tht" 9683750.0 1.524E7
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            6985000 15240000
+            9683750 15240000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15918000 8890000
+            17621250 8890000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            17621250 8890000
+            11271250 15240000
+          )
+          (type protect)
+        )
+        (wire
+          (path "bot_cu" 500000
+            9683750 15240000
+            11271250 15240000
+          )
+          (type protect)
+        )
+      )
+      (net VCC
+        (wire
+          (path "top_cu" 500000
+            6985000 5080000
+            2540000 5080000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15918000 12700000
+            18655000 12700000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            14605000 12700000
+            12700000 10477500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            2540000 5080000
+            2540000 8572500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            15918000 12700000
+            14605000 12700000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            19685000 11670000
+            18655000 12700000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            6985000 5080000
+            11747500 5080000
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            11747500 5080000
+            12700000 6032500
+          )
+          (type protect)
+        )
+        (wire
+          (path "top_cu" 500000
+            12700000 6032500
+            12700000 10477500
+          )
+          (type protect)
+        )
+      )
+      (net K3
+        (wire
+          (path "top_cu" 500000
+            6985000 12700000
+            10752000 12700000
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

@@ -1,0 +1,75 @@
+(pcb "Issue757-minimal-soe-ok"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "minimal-soe")
+    (generated_by_freerouting)
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+    )
+    (layer B.Cu
+      (type signal)
+    )
+    (boundary
+      (rect pcb 28300.0 -65502.9 57129.4 -45600.0)
+    )
+    (boundary
+      (polygon signal 0
+        28400.0 -65402.9
+        57029.4 -65402.9
+        57029.4 -45700.0
+        28400.0 -45700.0
+      )
+    )
+    (via)
+    (rule
+      (width 152.4)
+      (clearance 152.4)
+      (clearance 76.2 (type smd_to_turn_gap))
+    )
+    (snapAngle 
+      fortyfive_degree
+    )
+    (control
+      (via_at_smd off)
+    )
+  )
+  (placement
+  )
+  (library
+  )
+  (network
+    (net /CRESET 1
+      (pins
+      )
+    )
+    (class default
+      /CRESET
+      (clearance_class default)
+      (rule
+        (width 152.4)
+      )
+      (circuit 
+        (use_layer F.Cu B.Cu)
+      )
+    )
+  )
+  (wiring
+    (wire
+      (polyline_path B.Cu 152.4
+        36400.0 -53700.0 36400.0 -53699.9 
+        36400.0 -53700.0 41141.8 -53700.0 
+        41141.8 -53700.0 44844.7 -57402.9 
+        44844.7 -57402.9 44844.6 -57403.0 
+      )
+      (net /CRESET 1)
+      (clearance_class default)
+      (type protect)
+    )
+  )
+)

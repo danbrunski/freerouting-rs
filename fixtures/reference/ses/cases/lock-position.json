@@ -1,0 +1,6 @@
+{
+  "fixture": "cases/lock-position.dsn",
+  "designName": "lock-position",
+  "unroutedBytes": 716,
+  "import": null
+}

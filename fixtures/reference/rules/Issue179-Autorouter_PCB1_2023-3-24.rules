@@ -1,0 +1,507 @@
+
+(rules PCB Issue179-Autorouter_PCB1_2023-3-24
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "1"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.6)
+    )
+    (layer_rule "2"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+  )
+  (rule
+    (width 1.01)
+    (clearance 0.41)
+    (clearance 0.505 (type smd_to_turn_gap))
+    (clearance 0.41 (type smd))
+    (clearance 0.4 (type ))
+    (clearance 0.4 (type $1N822))
+    (clearance 0.4 (type GND))
+    (clearance 0.4 (type $1N515))
+    (clearance 0.4 (type $1N518))
+    (clearance 0.4 (type +12V))
+    (clearance 0.4 (type $1N771))
+    (clearance 0.4 (type $1N3035))
+    (clearance 0.4 (type $1N3047))
+    (clearance 0.4 (type $1N1496))
+    (clearance 0.4 (type $1N1215))
+    (clearance 0.4 (type $1N1925))
+    (clearance 0.4 (type $1N1933))
+    (clearance 0.4 (type $1N11447))
+    (clearance 0.4 (type $1N10884))
+    (clearance 0.4 (type $1N12681))
+    (clearance 0.4 (type $1N12619))
+    (clearance 0.4 (type $1N13741))
+    (clearance 0.4 (type $1N13493))
+    (clearance 0.4 (type $1N13824))
+    (clearance 0.4 (type $1N13979))
+    (clearance 0.4 (type $1N14056))
+    (clearance 0.4 (type $1N14077))
+    (clearance 0.4 (type $1N14372))
+    (clearance 0.4 (type $1N14595))
+    (clearance 0.0 (type "board_edge"))
+  )
+  (padstack via0
+    (shape
+      (circle "1" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "2" 2.4 0.0 0.0)
+    )
+  )
+  (via 
+    via0 via0 default
+  )
+  (via 
+    "via0-" via0 
+  )
+  (via 
+    "via0-$1N822" via0 $1N822
+  )
+  (via 
+    "via0-GND" via0 GND
+  )
+  (via 
+    "via0-$1N515" via0 $1N515
+  )
+  (via 
+    "via0-$1N518" via0 $1N518
+  )
+  (via 
+    "via0-+12V" via0 +12V
+  )
+  (via 
+    "via0-$1N771" via0 $1N771
+  )
+  (via 
+    "via0-$1N3035" via0 $1N3035
+  )
+  (via 
+    "via0-$1N3047" via0 $1N3047
+  )
+  (via 
+    "via0-$1N1496" via0 $1N1496
+  )
+  (via 
+    "via0-$1N1215" via0 $1N1215
+  )
+  (via 
+    "via0-$1N1925" via0 $1N1925
+  )
+  (via 
+    "via0-$1N1933" via0 $1N1933
+  )
+  (via 
+    "via0-$1N11447" via0 $1N11447
+  )
+  (via 
+    "via0-$1N10884" via0 $1N10884
+  )
+  (via 
+    "via0-$1N12681" via0 $1N12681
+  )
+  (via 
+    "via0-$1N12619" via0 $1N12619
+  )
+  (via 
+    "via0-$1N13741" via0 $1N13741
+  )
+  (via 
+    "via0-$1N13493" via0 $1N13493
+  )
+  (via 
+    "via0-$1N13824" via0 $1N13824
+  )
+  (via 
+    "via0-$1N13979" via0 $1N13979
+  )
+  (via 
+    "via0-$1N14056" via0 $1N14056
+  )
+  (via 
+    "via0-$1N14077" via0 $1N14077
+  )
+  (via 
+    "via0-$1N14372" via0 $1N14372
+  )
+  (via 
+    "via0-$1N14595" via0 $1N14595
+  )
+  (viaRule
+    default via0
+  )
+  (viaRule
+     "via0-"
+  )
+  (viaRule
+    $1N822 "via0-$1N822"
+  )
+  (viaRule
+    GND "via0-GND"
+  )
+  (viaRule
+    $1N515 "via0-$1N515"
+  )
+  (viaRule
+    $1N518 "via0-$1N518"
+  )
+  (viaRule
+    +12V "via0-+12V"
+  )
+  (viaRule
+    $1N771 "via0-$1N771"
+  )
+  (viaRule
+    $1N3035 "via0-$1N3035"
+  )
+  (viaRule
+    $1N3047 "via0-$1N3047"
+  )
+  (viaRule
+    $1N1496 "via0-$1N1496"
+  )
+  (viaRule
+    $1N1215 "via0-$1N1215"
+  )
+  (viaRule
+    $1N1925 "via0-$1N1925"
+  )
+  (viaRule
+    $1N1933 "via0-$1N1933"
+  )
+  (viaRule
+    $1N11447 "via0-$1N11447"
+  )
+  (viaRule
+    $1N10884 "via0-$1N10884"
+  )
+  (viaRule
+    $1N12681 "via0-$1N12681"
+  )
+  (viaRule
+    $1N12619 "via0-$1N12619"
+  )
+  (viaRule
+    $1N13741 "via0-$1N13741"
+  )
+  (viaRule
+    $1N13493 "via0-$1N13493"
+  )
+  (viaRule
+    $1N13824 "via0-$1N13824"
+  )
+  (viaRule
+    $1N13979 "via0-$1N13979"
+  )
+  (viaRule
+    $1N14056 "via0-$1N14056"
+  )
+  (viaRule
+    $1N14077 "via0-$1N14077"
+  )
+  (viaRule
+    $1N14372 "via0-$1N14372"
+  )
+  (viaRule
+    $1N14595 "via0-$1N14595"
+  )
+  (class default
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 1.01)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class 
+    (clearance_class )
+    (via_rule )
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N822
+    $1N822
+    (clearance_class $1N822)
+    (via_rule $1N822)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class GND
+    GND
+    (clearance_class GND)
+    (via_rule GND)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N515
+    $1N515
+    (clearance_class $1N515)
+    (via_rule $1N515)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N518
+    $1N518
+    (clearance_class $1N518)
+    (via_rule $1N518)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class +12V
+    +12V
+    (clearance_class +12V)
+    (via_rule +12V)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N771
+    $1N771
+    (clearance_class $1N771)
+    (via_rule $1N771)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N3035
+    $1N3035
+    (clearance_class $1N3035)
+    (via_rule $1N3035)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N3047
+    $1N3047
+    (clearance_class $1N3047)
+    (via_rule $1N3047)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N1496
+    $1N1496
+    (clearance_class $1N1496)
+    (via_rule $1N1496)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N1215
+    $1N1215
+    (clearance_class $1N1215)
+    (via_rule $1N1215)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N1925
+    $1N1925
+    (clearance_class $1N1925)
+    (via_rule $1N1925)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N1933
+    $1N1933
+    (clearance_class $1N1933)
+    (via_rule $1N1933)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N11447
+    $1N11447
+    (clearance_class $1N11447)
+    (via_rule $1N11447)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N10884
+    $1N10884
+    (clearance_class $1N10884)
+    (via_rule $1N10884)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N12681
+    $1N12681
+    (clearance_class $1N12681)
+    (via_rule $1N12681)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N12619
+    $1N12619
+    (clearance_class $1N12619)
+    (via_rule $1N12619)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N13741
+    $1N13741
+    (clearance_class $1N13741)
+    (via_rule $1N13741)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N13493
+    $1N13493
+    (clearance_class $1N13493)
+    (via_rule $1N13493)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N13824
+    $1N13824
+    (clearance_class $1N13824)
+    (via_rule $1N13824)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N13979
+    $1N13979
+    (clearance_class $1N13979)
+    (via_rule $1N13979)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N14056
+    $1N14056
+    (clearance_class $1N14056)
+    (via_rule $1N14056)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N14077
+    $1N14077
+    (clearance_class $1N14077)
+    (via_rule $1N14077)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N14372
+    $1N14372
+    (clearance_class $1N14372)
+    (via_rule $1N14372)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class $1N14595
+    $1N14595
+    (clearance_class $1N14595)
+    (via_rule $1N14595)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+)

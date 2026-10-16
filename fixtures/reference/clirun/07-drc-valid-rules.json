@@ -1,0 +1,24 @@
+{
+  "id": "07-drc-valid-rules",
+  "args": ["-de", "Issue029-hw48na.dsn", "-dr", "Issue029-hw48na_valid.rules", "-drc", "out.json", "--router.enabled=false", "--router.fanout.enabled=false", "--router.optimizer.enabled=false"],
+  "exitCode": 0,
+  "files": [
+    {
+      "path": "Issue029-hw48na.dsn",
+      "size": 147099
+    },
+    {
+      "path": "Issue029-hw48na_valid.rules",
+      "size": 22847
+    },
+    {
+      "path": "out.json",
+      "timestampNormalized": true,
+      "size": 591767
+    }
+  ],
+  "texts": {},
+  "stageLines": [],
+  "logLines": ["WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "WARN   GUI is disabled and you don't have a console available, so the only feedback from Freerouting is in the log.", "WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "WARN   Structure.create_board: The DSN file was exported from an old KiCad version that has known compatibility issues. Please update KiCad to version 6 or newer.", "WARN   DSN file 'Issue029-hw48na.dsn' was loaded with 4 warning(s).", "WARN   RulesReader.read: designName not matching at '/J801_5V' (expected 'Issue029-hw48na', got 'hw48na')", "WARN   Design Warning: Board has 11 pre-existing clearance violation(s) in the loaded design (before routing):", "WARN   Structure.create_board: The DSN file was exported from an old KiCad version that has known compatibility issues. Please update KiCad to version 6 or newer."],
+  "plainOutput": ["  - 11 unfixable violation(s) (cannot be resolved by Freerouting):", "      * 11 fixed trace/via clearance violations (first 5 shown):", "          - FixedTrace#3136 [net Net-(JP24-Pad2)] <-> P1.1S [net Net-(JP23-Pad2)]", "          - FixedTrace#3130 [net Net-(JP22-Pad2)] <-> P1.1Q [net Net-(JP21-Pad2)]", "          - FixedTrace#3124 [net Net-(JP20-Pad2)] <-> P1.1O [net Net-(JP19-Pad2)]", "          - FixedTrace#3112 [net Net-(JP16-Pad2)] <-> P1.1K [net Net-(JP15-Pad2)]", "          - FixedTrace#3106 [net Net-(JP14-Pad2)] <-> P1.1I [net Net-(JP13-Pad2)]", "          ... and 6 more", "  - 0 potentially fixable violations", "Notice: Freerouting does not modify component placement, board outlines, or fixed items.", "Resolving these 11 unfixable violation(s) is the responsibility of the board author in their EDA tool (e.g. KiCad)."]
+}

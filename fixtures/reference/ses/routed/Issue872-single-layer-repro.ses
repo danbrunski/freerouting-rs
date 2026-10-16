@@ -1,0 +1,234 @@
+(session "Issue872-single-layer-repro"
+  (base_design "Issue872-single-layer-repro")
+  (placement
+    (resolution um 10)
+    (component "LED_D5.0mm"
+      (place D2 389350.0 -427450.0 front 0)
+    )
+    (component "D_DO-41_SOD81_P10.16mm_Horizontal"
+      (place D1 213950.0 -411350.0 front 0)
+    )
+    (component "R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      (place R2 287250.0 -510450.0 front 0)
+      (place R1 597550.0 -410350.0 front 0)
+    )
+    (component "TO-92_Inline_Wide"
+      (place Q1 485250.0 -422650.0 front 0)
+    )
+    (component "Relay_SPDT_SANYOU_SRD_Series_Form_C"
+      (place K1 215950.0 -279950.0 front 0)
+    )
+    (component "PinHeader_1x03_P2.54mm_Vertical"
+      (place J3 218150.0 -513150.0 front 0)
+    )
+    (component "TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+      (place J2 472750.0 -257550.0 front 0)
+    )
+    (component "PinHeader_1x02_P2.54mm_Vertical"
+      (place J1 432550.0 -513150.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.6-10.0.6~ubuntu24.04.1")
+    )
+    (library_out 
+      (padstack "Via[0-0]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net +5V
+        (wire
+          (path F.Cu 4000
+            213950 -411350
+            235450 -389850
+            235450 -340450
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            218150 -513150
+            233667 -513150
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            236367 -510450
+            236367 -433767
+            213950 -411350
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            287250 -510450
+            236367 -510450
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            236367 -510450
+            233667 -513150
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            417033 -513150
+            404885 -525298
+            302098 -525298
+            287250 -510450
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            432550 -513150
+            417033 -513150
+          )
+          (type protect)
+        )
+      )
+      (net GND
+        (wire
+          (path F.Cu 4000
+            432550 -538550
+            436425 -538550
+            485250 -489725
+            485250 -422650
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            218150 -538550
+            432550 -538550
+          )
+          (type protect)
+        )
+      )
+      (net "RELAY_CTL"
+        (wire
+          (path F.Cu 4000
+            218150 -563950
+            443950 -563950
+            597550 -410350
+          )
+          (type protect)
+        )
+      )
+      (net "Q1_BASE"
+        (wire
+          (path F.Cu 4000
+            510650 -422650
+            525512 -437512
+            541917 -437512
+            583914 -395515
+            658915 -395515
+            673750 -410350
+          )
+          (type protect)
+        )
+      )
+      (net "RELAY_DRV"
+        (wire
+          (path F.Cu 4000
+            389350 -427450
+            374333 -427450
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            235450 -220450
+            255452 -200448
+            306154 -200448
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 3000
+            306154 -200448
+            360741 -200448
+            363385 -197804
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            315550 -411350
+            358233 -411350
+            374333 -427450
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            536050 -407921
+            536050 -422650
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            363385 -197804
+            502208 -197804
+            550779 -246375
+            550779 -393192
+            536050 -407921
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 4000
+            536050 -407921
+            393862 -407921
+            374333 -427450
+          )
+          (type protect)
+        )
+      )
+      (net "LED_A"
+        (wire
+          (path F.Cu 4000
+            363450 -510450
+            414750 -459150
+            414750 -427450
+          )
+          (type protect)
+        )
+      )
+      (net "AC_COM"
+        (wire
+          (path F.Cu 6000
+            472750 -257550
+            450350 -279950
+            215950 -279950
+          )
+          (type protect)
+        )
+      )
+      (net "AC_NO"
+        (wire
+          (path F.Cu 6000
+            523550 -257550
+            440650 -340450
+            357450 -340450
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

@@ -1,0 +1,358 @@
+
+(rules PCB Issue754-avionics_hub
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 2.2)
+      (against_preferred_direction_trace_costs 3.5)
+    )
+    (layer_rule Ground
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule In2.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.3)
+    )
+    (layer_rule In3.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule In4.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.3)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 2.2)
+      (against_preferred_direction_trace_costs 2.9)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 250.0)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 62.6 (type smd))
+    (clearance 250.0 (type "4A gnd,Default"))
+    (clearance 250.0 (type "4A_pwr,Default"))
+    (clearance 250.0 (type "3A_pwr,Default"))
+    (clearance 250.0 (type "3A gnd,Default"))
+    (clearance 320.0 (type Diff,Default))
+    (clearance 250.0 (type "2A_pwr,Default"))
+    (clearance 250.0 (type "2A_gnd,Default"))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-5]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Ground 600.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle In3.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle In4.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-5]_650:300_um"
+    (shape
+      (circle F.Cu 650.0 0.0 0.0)
+    )
+    (shape
+      (circle Ground 650.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 650.0 0.0 0.0)
+    )
+    (shape
+      (circle In3.Cu 650.0 0.0 0.0)
+    )
+    (shape
+      (circle In4.Cu 650.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 650.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-5]_450:300_um"
+    (shape
+      (circle F.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle Ground 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In3.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In4.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 450.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-5]_600:300_um" "Via[0-5]_600:300_um" default
+  )
+  (via 
+    "Via[0-5]_650:300_um" "Via[0-5]_650:300_um" default
+  )
+  (via 
+    "Via[0-5]_450:300_um" "Via[0-5]_450:300_um" default
+  )
+  (via 
+    "Via[0-5]_600:300_um-4A gnd,Default" "Via[0-5]_600:300_um" "4A gnd,Default"
+  )
+  (via 
+    "Via[0-5]_650:300_um-4A gnd,Default" "Via[0-5]_650:300_um" "4A gnd,Default"
+  )
+  (via 
+    "Via[0-5]_450:300_um-4A gnd,Default" "Via[0-5]_450:300_um" "4A gnd,Default"
+  )
+  (via 
+    "Via[0-5]_600:300_um-4A_pwr,Default" "Via[0-5]_600:300_um" "4A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_650:300_um-4A_pwr,Default" "Via[0-5]_650:300_um" "4A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_450:300_um-4A_pwr,Default" "Via[0-5]_450:300_um" "4A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_600:300_um-3A_pwr,Default" "Via[0-5]_600:300_um" "3A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_650:300_um-3A_pwr,Default" "Via[0-5]_650:300_um" "3A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_450:300_um-3A_pwr,Default" "Via[0-5]_450:300_um" "3A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_600:300_um-3A gnd,Default" "Via[0-5]_600:300_um" "3A gnd,Default"
+  )
+  (via 
+    "Via[0-5]_650:300_um-3A gnd,Default" "Via[0-5]_650:300_um" "3A gnd,Default"
+  )
+  (via 
+    "Via[0-5]_450:300_um-3A gnd,Default" "Via[0-5]_450:300_um" "3A gnd,Default"
+  )
+  (via 
+    "Via[0-5]_600:300_um-Diff,Default" "Via[0-5]_600:300_um" Diff,Default
+  )
+  (via 
+    "Via[0-5]_650:300_um-Diff,Default" "Via[0-5]_650:300_um" Diff,Default
+  )
+  (via 
+    "Via[0-5]_450:300_um-Diff,Default" "Via[0-5]_450:300_um" Diff,Default
+  )
+  (via 
+    "Via[0-5]_600:300_um-2A_pwr,Default" "Via[0-5]_600:300_um" "2A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_650:300_um-2A_pwr,Default" "Via[0-5]_650:300_um" "2A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_450:300_um-2A_pwr,Default" "Via[0-5]_450:300_um" "2A_pwr,Default"
+  )
+  (via 
+    "Via[0-5]_600:300_um-2A_gnd,Default" "Via[0-5]_600:300_um" "2A_gnd,Default"
+  )
+  (via 
+    "Via[0-5]_650:300_um-2A_gnd,Default" "Via[0-5]_650:300_um" "2A_gnd,Default"
+  )
+  (via 
+    "Via[0-5]_450:300_um-2A_gnd,Default" "Via[0-5]_450:300_um" "2A_gnd,Default"
+  )
+  (viaRule
+    default "Via[0-5]_450:300_um"
+  )
+  (viaRule
+    default "Via[0-5]_600:300_um"
+  )
+  (viaRule
+    "4A gnd,Default" "Via[0-5]_650:300_um-4A gnd,Default"
+  )
+  (viaRule
+    "4A_pwr,Default" "Via[0-5]_650:300_um-4A_pwr,Default"
+  )
+  (viaRule
+    "3A_pwr,Default" "Via[0-5]_450:300_um-3A_pwr,Default"
+  )
+  (viaRule
+    "3A gnd,Default" "Via[0-5]_450:300_um-3A gnd,Default"
+  )
+  (viaRule
+    Diff,Default "Via[0-5]_600:300_um-Diff,Default"
+  )
+  (viaRule
+    "2A_pwr,Default" "Via[0-5]_600:300_um-2A_pwr,Default"
+  )
+  (viaRule
+    "2A_gnd,Default" "Via[0-5]_600:300_um-2A_gnd,Default"
+  )
+  (class default
+    "CHASSIS_GND" "unconnected-(J1-Pad23)" "/ENGINE/GEA_TIM_ADV1" "unconnected-(J1-Pad37)" "/ENGINE/GEA_TIM_ADV2" "unconnected-(J1-Pad24)" "/ENGINE/GEA_GP_PWR_1" "unconnected-(J1-Pad36)"
+    "unconnected-(J1-Pad34)" "TIM_ADV1" "TIM_ADV2" "unconnected-(J1-Pad27)" "unconnected-(J1-Pad26)" "unconnected-(J1-Pad29)" "unconnected-(J1-Pad28)" "unconnected-(J1-Pad39)"
+    "unconnected-(J1-Pad33)" "/ENGINE/GEA_GP_GND_1" "GTX_PFD_RS232_GND" "unconnected-(J1-Pad15)" "AUD_ALERT_LO" "unconnected-(J1-Pad25)" "LIGHTING_BUS_PFD" "GTN1_PFD_CONNEXT_GND"
+    "unconnected-(J1-Pad35)" "GMC_PFD_RS232_GND" "GSU1_PFD_RS232_GND" "PFD_GTN1_MAPMX_RS232" "AUD_ALERT_SHIELD" "PFD_GMC_RS232" "unconnected-(J1-Pad14)" "unconnected-(J1-Pad32)"
+    "unconnected-(J1-Pad38)" "GSU1_PFD_RS232" "PFD_GSU1_RS232" "PFD_GTN1_CONNEXT_RS232" "unconnected-(J2-Pad21)" "PFD_GTX_RS232" "GMC_PFD_RS232" "GTN1_PFD_MAPMX_RS232"
+    "GTN1_PFD_MAPMX_GND" "GTX_PFD_RS232" "AUD_ALERT_HI" "GTN1_PFD_CONNEXT_RS232" "GEA_MFD_RS232_GND" "unconnected-(J2-Pad20)" "GSU2_MFD_RS232" "GEA_MFD_RS232"
+    "GSU2_MFD_RS232_GND" "GTX_MFD_RS232_GND" "GTX_MFD_RS232" "MFD_GSU2_RS232" "MFD_GEA_RS232" "MFD_GTX_RS232" "LIGHTING_BUS_MFD" "GTN2_MFD_MAPMX_RS232"
+    "GTN2_MFD_MAPMX_GND" "MFD_GTN2_MAPMX_RS232" "GTN2_GAD_NAV_B" "GAD_GTN2_AIRDATA_A" "COM2_RAD_HI" "COM2_RAD_SHIELD" "LIGHTING_BUS_GTN2" "NAV2_SHIELD"
+    "NAV2_HI" "GTN2_GAD_GPS_A" "COM2_MIC_SHIELD" "COM2_LO" "GTN2_GAD_NAV_A" "GTN2_GAD_GPS_B" "COM2_TX" "GAD_GTN2_AIRDATA_B"
+    "COM2_MIC_HI" "NAV2_LO" "GAD_GTN1_AIRDATA_A" "GTN1_AUD_HI" "GTN1_GAD_GPS_A" "GTN1_AUD_LO" "NAV1_SHIELD" "GTN1_GAD_NAV_B"
+    "NAV1_HI" "GTN1_GAD_GPS_B" "COM1_TX" "COM1_LO" "GTN1_AUD_SHIELD" "GAD_GTN1_AIRDATA_B" "COM1_RAD_HI" "NAV1_LO"
+    "COM1_RAD_SHIELD" "LIGHTING_BUS_GTN1" "COM1_MIC_HI" "GTN1_GAD_NAV_A" "COM1_MIC_SHIELD" "GMC_GSA_RS232" "LIGHTING_BUS_GMC" "GSA_GMC_RS232"
+    "unconnected-(J4-Pad34)" "unconnected-(J6-Pad17)" "OAT_SENSE" "unconnected-(J4-Pad37)" "GSU1_GTX_RS232_GND" "OAT_PWR" "GTX_GSU1_RS232" "unconnected-(J6-Pad20)"
+    "unconnected-(J6-Pad16)" "unconnected-(J4-Pad48)" "unconnected-(J4-Pad20)" "OAT_GND" "GSU1_GTX_RS232" "unconnected-(J6-Pad19)" "unconnected-(J6-Pad18)" "unconnected-(J4-Pad46)"
+    "unconnected-(J6-Pad21)" "AP_DISC" "TRIM_GRAY" "unconnected-(J4-Pad21)" "TRIM_WHITE" "TRIM_SW2_UP" "TRIM_SW1_DN" "unconnected-(J4-Pad36)"
+    "unconnected-(J4-Pad35)" "OILP_GND" "BAT2_AMP_SENSE" "LS_RPM1" "BAT2_AMP_PWR" "MP_GND" "TRIM_POS_BLUE" "BAT1_AMP_PWR"
+    "ALT1_AMP_SENSE" "ALT1_AMP_PWR" "TRIM_POS_ORANGE" "BAT2_AMP_GND" "FLAP_SW" "MASTER_WARN_GEA" "OILT_LO" "BAT2_FAULT"
+    "unconnected-(J4-Pad47)" "FUELP_GND" "FUELF_GND" "FUELP_PWR" "unconnected-(J5-Pad9)" "TRIM_POS_GREEN" "unconnected-(J5-Pad12)" "BAT2_AMP_SENSE_BUF"
+    "GEA_RPM2_GND" "MP_PWR" "unconnected-(J5-Pad10)" "unconnected-(J5-Pad14)" "LS_RPM2" "unconnected-(J5-Pad13)" "OILP_SENSE" "OILP_PWR"
+    "MP_SENSE" "FUELP_SENSE" "MASTER_CAUT_GEA" "FUELF_PWR" "BAT1_AMP_SENSE_BUF" "unconnected-(J6-Pad15)" "unconnected-(J6-Pad8)" "OILT_HI"
+    "BAT1_FAULT" "BAT1_AMP_SENSE" "FUELF_SENSE" "ALT1_AMP_GND" "GEA_RPM1_GND" "BAT1_AMP_GND" "unconnected-(J6-Pad9)" "unconnected-(J6-Pad14)"
+    "unconnected-(J13-Pad21)" "unconnected-(J13-Pad8)" "unconnected-(J13-Pad17)" "unconnected-(J13-Pad16)" "unconnected-(J13-Pad20)" "unconnected-(J7-Pad6)" "unconnected-(J7-Pad10)" "unconnected-(J13-Pad18)"
+    "unconnected-(J7-Pad8)" "unconnected-(J7-Pad11)" "PASS_MIC_LO" "PASS_HS_LEFT" "unconnected-(J7-Pad12)" "unconnected-(J7-Pad5)" "unconnected-(J14-Pad54)" "unconnected-(J7-Pad9)"
+    "unconnected-(J7-Pad7)" "PILOT_MIC_SHIELD" "unconnected-(J14-Pad51)" "SAGA_AUDIO_LO" "PASS_PTT" "unconnected-(J14-Pad53)" "PASS_MIC_SHIELD" "unconnected-(J14-Pad52)"
+    "SAGA_AUDIO_HI" "unconnected-(J8-Pad8)" "PILOT_MIC_HI" "SAGA_AUDIO_SHIELD" "PASS_HS_RIGHT" "PILOT_HS_SHIELD" "PILOT_PTT" "PILOT_HS_RIGHT"
+    "PASS_MIC_HI" "PASS_HS_SHIELD" "PILOT_HS_LO" "PILOT_MIC_LO" "unconnected-(J14-Pad55)" "LIGHTING_BUS_GMA" "unconnected-(J8-Pad10)" "PILOT_HS_LEFT"
+    "unconnected-(J8-Pad5)" "PASS_HS_LO" "ELT_EXTERNAL_ON" "unconnected-(J8-Pad9)" "unconnected-(J8-Pad7)" "ELT_REMOTE_SW" "unconnected-(J9-Pad8)" "unconnected-(J11-Pad21)"
+    "unconnected-(J9-Pad10)" "unconnected-(J9-Pad9)" "unconnected-(J17-Pad13)" "unconnected-(J17-Pad8)" "unconnected-(J17-Pad9)" "RUDDER_POS_SENSE" "unconnected-(J17-Pad11)" "unconnected-(J17-Pad15)"
+    "unconnected-(J17-Pad12)" "unconnected-(J9-Pad7)" "RUDDER_POS_GND" "unconnected-(J10-Pad18)" "unconnected-(J10-Pad7)" "unconnected-(J10-Pad6)" "unconnected-(J17-Pad7)" "unconnected-(J10-Pad8)"
+    "unconnected-(J17-Pad14)" "unconnected-(J17-Pad10)" "RUDDER_POS_PWR" "LIGHTING_BUS_IN" "unconnected-(J10-Pad17)" "unconnected-(J18-Pad10)" "unconnected-(J18-Pad11)" "unconnected-(J18-Pad9)"
+    "unconnected-(J18-Pad12)" "unconnected-(J18-Pad14)" "unconnected-(J18-Pad15)" "unconnected-(J18-Pad13)" "unconnected-(J18-Pad8)" "unconnected-(J18-Pad7)" "unconnected-(J18-Pad6)" "unconnected-(J19-Pad7)"
+    "unconnected-(J10-Pad16)" "unconnected-(J19-Pad15)" "unconnected-(J19-Pad10)" "unconnected-(J19-Pad5)" "unconnected-(J19-Pad12)" "unconnected-(J10-Pad21)" "unconnected-(J19-Pad11)" "unconnected-(J15-Pad5)"
+    "ALT1_AMP_SENSE_BUF" "unconnected-(J19-Pad14)" "unconnected-(J19-Pad9)" "unconnected-(J19-Pad13)" "unconnected-(J19-Pad6)" "unconnected-(J19-Pad8)" "SAGA_FLOAT_RS232_GND" "FLOAT_SAGA_RS232"
+    "unconnected-(J11-Pad32)" "unconnected-(J20-Pad14)" "SAGA_FLOAT_RS232" "Net-(IC1-VINA-)" "Net-(IC1-VINB-)" "Net-(IC2-VIND-)" "unconnected-(J11-Pad57)" "unconnected-(J11-Pad20)"
+    "unconnected-(J11-Pad30)" "ALT2_SHUNT_LO" "unconnected-(J11-Pad56)" "unconnected-(J11-Pad31)" "unconnected-(J11-Pad55)" "unconnected-(J14-Pad31)" "unconnected-(J14-Pad30)" "unconnected-(J14-Pad32)"
+    "unconnected-(J15-Pad7)" "unconnected-(J3-Pad25)" "unconnected-(J4-Pad45)" "unconnected-(J3-Pad34)" "MFD_ELT_RS232" "MFD_SAGA_RS232" "MFD_SAGA_RS232_GND" "LOW_FUEL"
+    "SAGA_GEAR" "unconnected-(J11-Pad45)" "ALT2_SHUNT_HI" "unconnected-(J12-Pad39)" "unconnected-(J12-Pad34)" "unconnected-(J12-Pad28)" "unconnected-(J12-Pad38)" "unconnected-(J12-Pad40)"
+    "unconnected-(J12-Pad32)" "unconnected-(J12-Pad31)" "unconnected-(J12-Pad43)" "unconnected-(J12-Pad42)" "unconnected-(J12-Pad44)" "unconnected-(J12-Pad35)" "unconnected-(J12-Pad30)" "unconnected-(J12-Pad37)"
+    "unconnected-(J12-Pad29)" "unconnected-(J12-Pad41)" "unconnected-(J12-Pad36)" "unconnected-(J12-Pad33)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "4A gnd,Default"
+    "GTN2_GND" "GTN1_GND"
+    (clearance_class "4A gnd,Default")
+    (via_rule "4A gnd,Default")
+    (rule
+      (width 650.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "4A_pwr,Default"
+    "COM2_PWR" "COM1_PWR" "GPSNAV2_PWR" "GPSNAV1_PWR"
+    (clearance_class "4A_pwr,Default")
+    (via_rule "4A_pwr,Default")
+    (rule
+      (width 650.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "3A_pwr,Default"
+    "PITCH_TRIM_PWR1" "PITCH_TRIM_PWR" "PITCH_TRIM_PWR2" "AUD_PANEL_PWR2"
+    (clearance_class "3A_pwr,Default")
+    (via_rule "3A_pwr,Default")
+    (rule
+      (width 450.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "3A gnd,Default"
+    "AUD_PANEL_GND2" "PITCH_TRIM_GND"
+    (clearance_class "3A gnd,Default")
+    (via_rule "3A gnd,Default")
+    (rule
+      (width 450.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class Diff,Default
+    "GSAP_PFD_CAN_N" "PFD_GSU1_CAN_N" "PFD_GSU1_CAN_P" "GSAP_PFD_CAN_P" "GMA_MFD_CAN_P" "GMA_MFD_CAN_N" "MFD_GSU2_CAN_P" "MFD_GSU2_CAN_N"
+    "GTN2_GTN1_ETH_N" "GTN2_GTN1_ETH_P" "GTN1_GTN2_ETH_N" "GTN1_GTN2_ETH_P" "GTX_GTN1_ETH_N" "GTN1_GTX_ETH_P" "GTN1_GTX_ETH_N" "GTX_GTN1_ETH_P"
+    "GSU1_GAD_CAN_P" "GSU1_GAD_CAN_N" "GEA_GSAR_CAN_N" "GEA_GSAR_CAN_P" "GSU2_GEA_CAN_N" "GSU2_GEA_CAN_P" "GMU_GSAP_CAN_P" "GMU_GSAP_CAN_N"
+    "GAD_GMA_CAN_N" "GAD_GMA_CAN_P"
+    (clearance_class Diff,Default)
+    (via_rule Diff,Default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "2A_pwr,Default"
+    "AP_PWR1" "SERVO_PWR" "AP_PWR2" "PFD_PWR1" "PFD_PWR2" "MFD_PWR1" "MFD_PWR2" "XPNDR_PWR2"
+    "XPNDR_PWR1" "ENG_INST_PWR2" "ENG_INST_PWR1" "GEAR_PWR"
+    (clearance_class "2A_pwr,Default")
+    (via_rule "2A_pwr,Default")
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+  (class "2A_gnd,Default"
+    "PFD_GND1" "PFD_GND2" "MFD_GND1" "MFD_GND2" "AP_GND1" "AP_GND2" "XPNDR_GND1" "XPNDR_GND2"
+    "ENG_INST_GND1" "GEAR_GND"
+    (clearance_class "2A_gnd,Default")
+    (via_rule "2A_gnd,Default")
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu Ground In2.Cu In3.Cu In4.Cu B.Cu)
+    )
+  )
+)

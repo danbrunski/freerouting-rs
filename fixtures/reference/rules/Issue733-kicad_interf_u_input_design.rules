@@ -1,0 +1,177 @@
+
+(rules PCB Issue733-kicad_interf_u_input_design
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "top_copper"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule "bottom_copper"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 400.0)
+    (clearance 254.0)
+    (clearance 200.0 (type smd_to_turn_gap))
+    (clearance 63.6 (type smd))
+    (clearance 254.0 (type Power))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_1400:600_um"
+    (shape
+      (circle "top_copper" 1400.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1400.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1600:600_um"
+    (shape
+      (circle "top_copper" 1600.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1397:600_um"
+    (shape
+      (circle "top_copper" 1397.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1397.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1397:635_um"
+    (shape
+      (circle "top_copper" 1397.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1397.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1524:600_um"
+    (shape
+      (circle "top_copper" 1524.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1524.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1143:600_um"
+    (shape
+      (circle "top_copper" 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1143.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_1400:600_um" "Via[0-1]_1400:600_um" default
+  )
+  (via 
+    "Via[0-1]_1600:600_um" "Via[0-1]_1600:600_um" default
+  )
+  (via 
+    "Via[0-1]_1397:600_um" "Via[0-1]_1397:600_um" default
+  )
+  (via 
+    "Via[0-1]_1397:635_um" "Via[0-1]_1397:635_um" default
+  )
+  (via 
+    "Via[0-1]_1524:600_um" "Via[0-1]_1524:600_um" default
+  )
+  (via 
+    "Via[0-1]_1143:600_um" "Via[0-1]_1143:600_um" default
+  )
+  (via 
+    "Via[0-1]_1400:600_um-Power" "Via[0-1]_1400:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1600:600_um-Power" "Via[0-1]_1600:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1397:600_um-Power" "Via[0-1]_1397:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1397:635_um-Power" "Via[0-1]_1397:635_um" Power
+  )
+  (via 
+    "Via[0-1]_1524:600_um-Power" "Via[0-1]_1524:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1143:600_um-Power" "Via[0-1]_1143:600_um" Power
+  )
+  (viaRule
+    default "Via[0-1]_1143:600_um"
+  )
+  (viaRule
+    default "Via[0-1]_1400:600_um"
+  )
+  (viaRule
+    Power "Via[0-1]_1600:600_um-Power"
+  )
+  (class default
+    "/8MH-OUT" /ACK "/AUTOFD-" /BIT0 /BIT1 /BIT2 /BIT3 /BIT4
+    /BIT5 /BIT6 /BIT7 /BUST+ /CLKLCA "/CS1-" /D0 /D1
+    /D2 /D3 /D4 /D5 /D6 /D7 /DIR /DONE
+    /ENBBUF "/ERROR-" "/INIT-" /LED1 /LED2 /MA0 /MA1 /MA10
+    /MA11 /MA12 /MA13 /MA14 /MA15 /MA16 /MA2 /MA3
+    /MA4 /MA5 /MA6 /MA7 /MA8 /MA9 /MATCHL /MD0
+    /MD1 /MD2 /MD3 /MD4 /MD5 /MD6 /MD7 "/OE-"
+    "/PC-A0" "/PC-A1" "/PC-A10" "/PC-A11" "/PC-A2" "/PC-A3" "/PC-A4" "/PC-A5"
+    "/PC-A6" "/PC-A7" "/PC-A8" "/PC-A9" "/PC-AEN" "/PC-DB0" "/PC-DB1" "/PC-DB2"
+    "/PC-DB3" "/PC-DB4" "/PC-DB5" "/PC-DB6" "/PC-DB7" "/PC-IOR" "/PC-IOW" "/PC-RD"
+    "/PC-RST" "/PC-WR" /PE+ "/PROG-" /REF10 /REF11 /REF4 /REF5
+    /REF6 /REF7 /REF8 /REF9 /RSTL "/SEL_LPT" /SLCT+ "/SLCTIN-"
+    /STROBE "/WR-" "/WR_REG" "unconnected-(BUS1-INQ2-Pad4)" "Net-(C3-Pad1)" "unconnected-(BUS1--5V-Pad5)" "unconnected-(BUS1-DRQ2-Pad6)" "unconnected-(BUS1--12V-Pad7)"
+    "unconnected-(BUS1-UNUSED-Pad8)" "unconnected-(BUS1-+12V-Pad9)" "unconnected-(BUS1-GND-Pad10)" "unconnected-(BUS1-MEM-Pad11)" "unconnected-(BUS1-MEM-Pad12)" "unconnected-(BUS1-DACK3-Pad15)" "unconnected-(BUS1-DRQ3-Pad16)" "unconnected-(BUS1-DACK1-Pad17)"
+    "unconnected-(BUS1-DRQ1-Pad18)" "unconnected-(BUS1-DACK0-Pad19)" "unconnected-(BUS1-CLK-Pad20)" "unconnected-(BUS1-IRQ7-Pad21)" "unconnected-(BUS1-IRQ6-Pad22)" "unconnected-(BUS1-IRQ5-Pad23)" "unconnected-(BUS1-IRQ4-Pad24)" "unconnected-(BUS1-IRQ3-Pad25)"
+    "unconnected-(BUS1-DACK2-Pad26)" "unconnected-(BUS1-TC-Pad27)" "unconnected-(BUS1-ALE-Pad28)" "unconnected-(BUS1-OSC-Pad30)" "unconnected-(BUS1-IO-Pad32)" "unconnected-(BUS1-IO_READY-Pad41)" "unconnected-(BUS1-BA19-Pad43)" "unconnected-(BUS1-BA18-Pad44)"
+    "unconnected-(BUS1-BA17-Pad45)" "unconnected-(BUS1-BA16-Pad46)" "unconnected-(BUS1-BA15-Pad47)" "unconnected-(BUS1-BA14-Pad48)" "unconnected-(BUS1-BA13-Pad49)" "unconnected-(BUS1-BA12-Pad50)" "Net-(U9-P{slash}A3)" "Net-(D1-A)"
+    "Net-(D2-A)" "Net-(U5-CS2)" "unconnected-(RR1-Pad10)" "unconnected-(U3-Y7-Pad11)" "Net-(U3-Y3)" "Net-(U3-Y2)" "Net-(U3-Y1)" "Net-(U3-Y0)"
+    "unconnected-(U8-I{slash}O8-Pad8)" "unconnected-(U8-I{slash}O9-Pad9)" "unconnected-(U8-I{slash}O10-Pad10)" "unconnected-(U9-NC-PadA1)" "unconnected-(U9-NC-PadA2)" "unconnected-(U9-NC-PadA3)" "unconnected-(U9-NC-PadB1)" "unconnected-(U9-TCK-PadB4)"
+    "unconnected-(U9-TMS-PadB5)" "unconnected-(U9-NC-PadB10)" "unconnected-(U9-NC-PadB13)" "unconnected-(U9-TDI-PadC5)" "unconnected-(U9-NC-PadE2)" "unconnected-(U9-NC-PadE3)" "unconnected-(U9-NC-PadE11)" "unconnected-(U9-NC-PadJ3)"
+    "unconnected-(U9-NC-PadJ11)" "unconnected-(U9-NC-PadK12)" "unconnected-(U9-NC-PadL5)" "unconnected-(U9-P{slash}D2-PadL6)" "unconnected-(U9-NC-PadL9)" "unconnected-(U9-NC-PadM1)" "unconnected-(U9-TDO-PadM2)" "unconnected-(U9-PGCK4{slash}A1-PadN1)"
+    "unconnected-(U9-P{slash}RCLK{slash}BSY{slash}RDY-PadN3)" "unconnected-(U9-P-PadN5)" "unconnected-(U9-NC-PadN12)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+  (class Power
+    GND VCC
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 500.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+)

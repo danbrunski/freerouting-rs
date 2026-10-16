@@ -1,0 +1,14 @@
+(rules PCB explicit-cost-rules
+  (snap_angle
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (layer_rule In1.Cu
+      (preferred_direction_trace_costs 2.0)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clear 200.0)
+  )
+)

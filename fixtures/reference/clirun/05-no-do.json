@@ -1,0 +1,15 @@
+{
+  "id": "05-no-do",
+  "args": ["-de", "Issue413-test.dsn", "--router.enabled=false", "--router.fanout.enabled=false", "--router.optimizer.enabled=false"],
+  "exitCode": 1,
+  "files": [
+    {
+      "path": "Issue413-test.dsn",
+      "size": 8674
+    }
+  ],
+  "texts": {},
+  "stageLines": [],
+  "logLines": ["WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "WARN   GUI is disabled and you don't have a console available, so the only feedback from Freerouting is in the log.", "WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "ERROR  Both an input file and an output file must be specified with command line arguments if you are running in CLI mode.", "ERROR  Both an input file and an output file must be specified with command line arguments if you are running in CLI mode."],
+  "plainOutput": []
+}

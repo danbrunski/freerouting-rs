@@ -1,0 +1,70 @@
+
+(rules PCB Issue575-drc_Natural_Tone_Preamp_7_unconnected_items
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 4.0)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.3)
+    )
+  )
+  (rule
+    (width 152.4)
+    (clearance 152.4)
+    (clearance 76.2 (type smd_to_turn_gap))
+    (clearance 38.2 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_508:254_um"
+    (shape
+      (circle Top 508.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 508.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_508:254_um" "Via[0-1]_508:254_um" default
+  )
+  (viaRule
+    default "Via[0-1]_508:254_um"
+  )
+  (viaRule
+    default "Via[0-1]_508:254_um"
+  )
+  (class default
+    GND "Net-(C8-Pad1)" "Net-(C8-Pad2)" "Net-(C20-Pad1)" "Net-(C9-Pad2)" "Net-(C10-Pad1)" "Net-(C10-Pad2)" "Net-(C11-Pad1)"
+    "Net-(C12-Pad2)" "Net-(C15-Pad1)" "Net-(C16-Pad1)" "Net-(C17-Pad1)" "Net-(C18-Pad1)" "Net-(C20-Pad2)" "Net-(D5-Pad2)" +5V
+    "Net-(F1-Pad2)" "Net-(J1-Pad1)" "unconnected-(U3-Pad22)" "Net-(J3-Pad1)" "Net-(J4-Pad1)" "Net-(J5-Pad1)" "Net-(J6-Pad1)" "Net-(J7-Pad1)"
+    "Net-(J8-Pad1)" "Net-(J9-Pad1)" "Net-(J10-Pad1)" "Net-(J11-Pad1)" "Net-(J12-Pad1)" "Net-(J19-Pad1)" "Net-(J21-Pad1)" "Net-(J22-Pad1)"
+    "Net-(R2-Pad2)" "Net-(R3-Pad1)" "Net-(R4-Pad1)" "Net-(R5-Pad2)" "Net-(R16-Pad2)" "Net-(R17-Pad2)" "Net-(R19-Pad1)" "Net-(R19-Pad2)"
+    "Net-(R20-Pad1)" "Net-(R21-Pad1)" "Net-(R22-Pad1)" "Net-(U1-Pad1)" "Net-(D7-Pad1)" "Net-(U1-Pad22)" "Net-(U1-Pad24)" "Net-(U2-Pad22)"
+    "Net-(U4-Pad15)" "Net-(U4-Pad18)" "Net-(U4-Pad19)" "Net-(U4-Pad22)" "Net-(J13-Pad1)" "Net-(C19-Pad1)" "Net-(D8-Pad2)" "Net-(U1-Pad3)"
+    "Net-(U11-Pad6)" "Net-(U11-Pad4)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 152.4)
+    )
+    (circuit 
+      (use_layer Top Bottom)
+    )
+  )
+)

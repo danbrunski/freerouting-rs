@@ -1,0 +1,50 @@
+(pcb "explicit-cost-rules"
+  (parser (string_quote ") (space_in_quoted_tokens on) (host_cad "KiCad's Pcbnew")
+    (host_version "8.0.7") (generated_by_freerouting))
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal))
+    (layer In1.Cu (type signal))
+    (layer In2.Cu (type signal))
+    (layer B.Cu (type signal))
+    (boundary (path pcb 0  0.0 0.0  100000.0 0.0  100000.0 -50000.0  0.0 -50000.0  0.0 0.0))
+    (via "Via[0-3]_600:300_um" "Via[0-3]_600:300_um")
+    (rule (width 250.0) (clearance 200.0) (clearance 200.0 (type default_smd))
+      (clearance 50.0 (type smd_smd)))
+    (snap_angle fortyfive_degree)
+  )
+  (placement
+    (component "conn3"
+      (place J1 20000.0 -25000.0 front 0
+        (pin 1 (clearance_class default)) (pin 2 (clearance_class default))
+        (pin 3 (clearance_class default)))
+      (place J2 80000.0 -25000.0 front 0
+        (pin 1 (clearance_class default)) (pin 2 (clearance_class default))
+        (pin 3 (clearance_class default)))
+    )
+  )
+  (library
+    (image "conn3" (side front)
+      (pin "Rect[T]Pad_1000x1000_um" 1 0.0 2000.0)
+      (pin "Rect[T]Pad_1000x1000_um" 2 0.0 0.0)
+      (pin "Rect[T]Pad_1000x1000_um" 3 0.0 -2000.0))
+    (padstack "Rect[T]Pad_1000x1000_um"
+      (shape (rect F.Cu -500.0 -500.0 500.0 500.0)) (attach off))
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600.0 0.0 0.0)) (shape (circle In1.Cu 600.0 0.0 0.0))
+      (shape (circle In2.Cu 600.0 0.0 0.0)) (shape (circle B.Cu 600.0 0.0 0.0))
+      (attach off))
+  )
+  (network
+    (net N1 (pins J1-1 J2-1))
+    (net N2 (pins J1-2 J2-2))
+    (net N3 (pins J1-3 J2-3))
+    (via "Via[0-3]_600:300_um" "Via[0-3]_600:300_um" default)
+    (via_rule default "Via[0-3]_600:300_um")
+    (class default N1 N2 N3
+      (clearance_class default) (via_rule default) (rule (width 250.0))
+      (circuit (use_layer F.Cu In1.Cu In2.Cu B.Cu)))
+  )
+  (wiring)
+)

@@ -1,0 +1,177 @@
+
+(rules PCB Issue093-interf_u
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "top_copper"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule "bottom_copper"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 400.0)
+    (clearance 254.2)
+    (clearance 200.0 (type smd_to_turn_gap))
+    (clearance 63.6 (type smd))
+    (clearance 254.2 (type Power))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_1400:600_um"
+    (shape
+      (circle "top_copper" 1400.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1400.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1600:600_um"
+    (shape
+      (circle "top_copper" 1600.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1397:600_um"
+    (shape
+      (circle "top_copper" 1397.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1397.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1397:635_um"
+    (shape
+      (circle "top_copper" 1397.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1397.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1524:600_um"
+    (shape
+      (circle "top_copper" 1524.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1524.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1143:600_um"
+    (shape
+      (circle "top_copper" 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1143.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_1400:600_um" "Via[0-1]_1400:600_um" default
+  )
+  (via 
+    "Via[0-1]_1600:600_um" "Via[0-1]_1600:600_um" default
+  )
+  (via 
+    "Via[0-1]_1397:600_um" "Via[0-1]_1397:600_um" default
+  )
+  (via 
+    "Via[0-1]_1397:635_um" "Via[0-1]_1397:635_um" default
+  )
+  (via 
+    "Via[0-1]_1524:600_um" "Via[0-1]_1524:600_um" default
+  )
+  (via 
+    "Via[0-1]_1143:600_um" "Via[0-1]_1143:600_um" default
+  )
+  (via 
+    "Via[0-1]_1400:600_um-Power" "Via[0-1]_1400:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1600:600_um-Power" "Via[0-1]_1600:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1397:600_um-Power" "Via[0-1]_1397:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1397:635_um-Power" "Via[0-1]_1397:635_um" Power
+  )
+  (via 
+    "Via[0-1]_1524:600_um-Power" "Via[0-1]_1524:600_um" Power
+  )
+  (via 
+    "Via[0-1]_1143:600_um-Power" "Via[0-1]_1143:600_um" Power
+  )
+  (viaRule
+    default "Via[0-1]_1143:600_um"
+  )
+  (viaRule
+    default "Via[0-1]_1400:600_um"
+  )
+  (viaRule
+    Power "Via[0-1]_1600:600_um-Power"
+  )
+  (class default
+    "/8MH-OUT" /ACK "/AUTOFD-" /BIT0 /BIT1 /BIT2 /BIT3 /BIT4
+    /BIT5 /BIT6 /BIT7 /BUST+ /CLKLCA "/CS1-" /D0 /D1
+    /D2 /D3 /D4 /D5 /D6 /D7 /DIR /DONE
+    /ENBBUF "/ERROR-" "/INIT-" /LED1 /LED2 /MA0 /MA1 /MA10
+    /MA11 /MA12 /MA13 /MA14 /MA15 /MA16 /MA2 /MA3
+    /MA4 /MA5 /MA6 /MA7 /MA8 /MA9 /MATCHL /MD0
+    /MD1 /MD2 /MD3 /MD4 /MD5 /MD6 /MD7 "/OE-"
+    "/PC-A0" "/PC-A1" "/PC-A10" "/PC-A11" "/PC-A2" "/PC-A3" "/PC-A4" "/PC-A5"
+    "/PC-A6" "/PC-A7" "/PC-A8" "/PC-A9" "/PC-AEN" "/PC-DB0" "/PC-DB1" "/PC-DB2"
+    "/PC-DB3" "/PC-DB4" "/PC-DB5" "/PC-DB6" "/PC-DB7" "/PC-IOR" "/PC-IOW" "/PC-RD"
+    "/PC-RST" "/PC-WR" /PE+ "/PROG-" /REF10 /REF11 /REF4 /REF5
+    /REF6 /REF7 /REF8 /REF9 /RSTL "/SEL_LPT" /SLCT+ "/SLCTIN-"
+    /STROBE "/WR-" "/WR_REG" "Net-(C2-Pad1)" "Net-(C3-Pad1)" "Net-(R3-Pad1)" "Net-(U3-Pad15)" "Net-(U3-Pad16)"
+    "Net-(U3-Pad17)" "Net-(U3-Pad18)" "Net-(D1-Pad2)" "Net-(D2-Pad2)" "Net-(BUS1-Pad4)" "Net-(BUS1-Pad5)" "Net-(BUS1-Pad6)" "Net-(BUS1-Pad7)"
+    "Net-(BUS1-Pad8)" "Net-(BUS1-Pad9)" "Net-(BUS1-Pad10)" "Net-(BUS1-Pad11)" "Net-(BUS1-Pad12)" "Net-(BUS1-Pad15)" "Net-(BUS1-Pad16)" "Net-(BUS1-Pad17)"
+    "Net-(BUS1-Pad18)" "Net-(BUS1-Pad19)" "Net-(BUS1-Pad20)" "Net-(BUS1-Pad21)" "Net-(BUS1-Pad22)" "Net-(BUS1-Pad23)" "Net-(BUS1-Pad24)" "Net-(BUS1-Pad25)"
+    "Net-(BUS1-Pad26)" "Net-(BUS1-Pad27)" "Net-(BUS1-Pad28)" "Net-(BUS1-Pad30)" "Net-(BUS1-Pad32)" "Net-(BUS1-Pad41)" "Net-(BUS1-Pad43)" "Net-(BUS1-Pad44)"
+    "Net-(BUS1-Pad45)" "Net-(BUS1-Pad46)" "Net-(BUS1-Pad47)" "Net-(BUS1-Pad48)" "Net-(BUS1-Pad49)" "Net-(BUS1-Pad50)" "Net-(RR1-Pad10)" "Net-(U3-Pad11)"
+    "Net-(U9-PadN1)" "Net-(U9-PadN3)" "Net-(U9-PadM1)" "Net-(U9-PadM2)" "Net-(U9-PadJ3)" "Net-(U9-PadE2)" "Net-(U9-PadE3)" "Net-(U9-PadC5)"
+    "Net-(U9-PadB1)" "Net-(U9-PadB4)" "Net-(U9-PadB5)" "Net-(U9-PadB10)" "Net-(U9-PadB13)" "Net-(U9-PadA1)" "Net-(U9-PadA2)" "Net-(U9-PadA3)"
+    "Net-(U9-PadN5)" "Net-(U9-PadN12)" "Net-(U9-PadL5)" "Net-(U9-PadL6)" "Net-(U9-PadL9)" "Net-(U9-PadK12)" "Net-(U9-PadJ11)" "Net-(U9-PadE11)"
+    "Net-(U8-Pad8)" "Net-(U8-Pad9)" "Net-(U8-Pad10)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+  (class Power
+    GND VCC
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 500.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+)

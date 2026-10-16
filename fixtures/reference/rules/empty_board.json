@@ -1,0 +1,5 @@
+{
+  "result": "exception",
+  "error": "java.lang.NullPointerException: Cannot invoke \"app.freerouting.core.library.Padstacks.count()\" because \"<parameter1>.board.library.padstacks\" is null",
+  "fixture": "empty_board.dsn"
+}

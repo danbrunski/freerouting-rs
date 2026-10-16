@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue508-DAC2020_bm06.dsn",
+  "designName": "Issue508-DAC2020_bm06",
+  "unroutedBytes": 2727,
+  "import": {
+    "wiresImported": 239,
+    "viasImported": 20,
+    "errorsEncountered": 0,
+    "routedBytes": 43503
+  }
+}

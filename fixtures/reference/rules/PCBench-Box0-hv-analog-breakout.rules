@@ -1,0 +1,103 @@
+
+(rules PCB PCBench-Box0-hv-analog-breakout
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.4)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 200.0 (type power))
+    (clearance 200.0 (type GND))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_700:300_um"
+    (shape
+      (circle F.Cu 700.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 700.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_700:300_um" "Via[0-1]_700:300_um" default
+  )
+  (via 
+    "Via[0-1]_700:300_um-power" "Via[0-1]_700:300_um" power
+  )
+  (via 
+    "Via[0-1]_700:300_um-GND" "Via[0-1]_700:300_um" GND
+  )
+  (viaRule
+    default "Via[0-1]_700:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_700:300_um"
+  )
+  (viaRule
+    power "Via[0-1]_700:300_um-power"
+  )
+  (viaRule
+    GND "Via[0-1]_700:300_um-GND"
+  )
+  (class default
+    "VREF_EXT" "5V" "Net-(C6-Pad1)" +33V "Net-(C7-Pad1)" "-33V" "Net-(D1-Pad2)" "Net-(D2-Pad2)"
+    "Net-(IC1-Pad4)" "Net-(IC2-Pad4)" "Net-(IC3-Pad2)" "/Box0 Interface/AOUT0.1" "Net-(IC3-Pad6)" "Net-(IC3-Pad8)" "Net-(IC4-Pad2)" "/Box0 Interface/AOUT0.0"
+    "Net-(IC4-Pad6)" "Net-(IC4-Pad8)" "DIGITAL_EXT" "Net-(JP1-Pad2)" "/Box0 Interface/AIN0.0" "/Box0 Interface/AIN0.1" "/Box0 Interface/AIN0.2" "/Box0 Interface/AIN0.3"
+    "/Box0 Interface/I2C0.SCL" "/Box0 Interface/I2C0.SDA" "Net-(P4-Pad1)" "Net-(P4-Pad2)" "Net-(P8-Pad1)" "Net-(P8-Pad2)" "Net-(P8-Pad3)" "Net-(P8-Pad4)"
+    "Net-(F1-Pad2)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class power
+    "ANALOG_POS" "ANALOG_NEG"
+    (clearance_class power)
+    (via_rule power)
+    (rule
+      (width 500.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class GND
+    GND
+    (clearance_class GND)
+    (via_rule GND)
+    (rule
+      (width 300.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

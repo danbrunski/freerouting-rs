@@ -1,0 +1,72 @@
+
+(rules PCB UltraFlactyl
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    "Net-(D1-A)" R1 "Net-(D2-A)" "Net-(D3-A)" "Net-(D4-A)" "Net-(D5-A)" "Net-(D6-A)" "Net-(D7-A)"
+    "Net-(D8-A)" R2 "Net-(D9-A)" "Net-(D10-A)" "Net-(D11-A)" "Net-(D12-A)" "Net-(D13-A)" "Net-(D14-A)"
+    R3 "Net-(D15-A)" "Net-(D16-A)" "Net-(D17-A)" "Net-(D18-A)" "Net-(D19-A)" "Net-(D20-A)" "Net-(D21-A)"
+    R4 "Net-(D22-A)" "Net-(D23-A)" "Net-(D24-A)" "Net-(D25-A)" "Net-(D26-A)" "Net-(D27-A)" "unconnected-(U1-B1-Pad35)"
+    R5 "Net-(D29-A)" "Net-(D30-A)" "Net-(D31-A)" "Net-(D32-A)" "Net-(D33-A)" "Net-(D34-A)" C1
+    C2 C3 C4 C5 C6 C7 "unconnected-(U1-A11-Pad8)" "unconnected-(U1-B14-Pad3)"
+    "unconnected-(U1-A8-Pad5)" "unconnected-(U1-5V-Pad40)" "unconnected-(U1-B12-Pad1)" "unconnected-(U1-B4-Pad12)" "unconnected-(U1-A6-Pad32)" "unconnected-(U1-A4-Pad30)" "unconnected-(U1-NRST-Pad25)" "unconnected-(U1-A10-Pad7)"
+    "unconnected-(U1-VBat-Pad21)" "unconnected-(U1-3.3V-Pad38)" "unconnected-(U1-A9-Pad6)" "unconnected-(U1-3.3V-Pad20)" "unconnected-(U1-B6-Pad14)" "unconnected-(U1-G-Pad39)" "unconnected-(U1-B3-Pad11)" "unconnected-(U1-A5-Pad31)"
+    "unconnected-(U1-A15-Pad10)" "unconnected-(U1-B5-Pad13)" "unconnected-(U1-B13-Pad2)" "unconnected-(U1-B15-Pad4)" "unconnected-(U1-B2-Pad36)" "unconnected-(U1-A12-Pad9)" TX VCC
+    GND RX "Net-(D28-A)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

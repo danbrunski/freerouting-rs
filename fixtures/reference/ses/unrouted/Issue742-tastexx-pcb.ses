@@ -1,0 +1,52 @@
+(session "Issue742-tastexx-pcb"
+  (base_design "Issue742-tastexx-pcb")
+  (placement
+    (resolution um 10)
+    (component "isw-kbd:M2_ScrewHole_EdgeCuts"
+      (place H1 231196.57 -205080.59000000003 front 0)
+      (place H3 231196.57 -814580.59 front 0)
+      (place H4 1010696.5700000001 -814580.59 front 0)
+      (place H2 1010696.5700000001 -205080.59000000003 front 0)
+    )
+    (component "isw-kbd:Diode_SMD"
+      (place D3 337218.88 -580114.86 front 338.5)
+      (place D4 514463.42 -649933.3400000001 front 338.5)
+      (place D2 584281.91 -472688.8 front 338.5)
+      (place D1 407037.36 -402870.31000000006 front 338.5)
+    )
+    (component "isw-kbd:RP2040-Zero"
+      (place U1 884246.5700000001 -311030.59 front 0)
+    )
+    (component "isw-kbd:CherryMX_GLP3.0_Hotswap_1u"
+      (place SW4 532788.49 -603412.46 front 338.5)
+      (place SW2 602606.97 -426167.92000000004 front 338.5)
+      (place SW3 355543.94 -533593.98 front 338.5)
+      (place SW1 425362.42 -356349.43 front 338.5)
+    )
+    (component "isw-kbd:LED_WS2812B_UG"
+      (place LED1 719296.2699999999 -730887.84 front 338.5)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.4")
+    )
+    (library_out 
+      (padstack "Via[0-1]_800:400_um"
+        (shape
+          (circle F.Cu 8000 0 0)
+        )
+        (shape
+          (circle B.Cu 8000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

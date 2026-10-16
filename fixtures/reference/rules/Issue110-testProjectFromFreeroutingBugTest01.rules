@@ -1,0 +1,65 @@
+
+(rules PCB Issue110-testProjectFromFreeroutingBugTest01
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.3)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (class default
+    "unconnected-(Микросхема1-Pad3)" "unconnected-(Микросхема1-Pad4)" "unconnected-(Микросхема1-Pad5)" "unconnected-(Микросхема1-Pad6)" "/цепь1" "/цепь2" "unconnected-(Микросхема2-Pad1)" "unconnected-(Микросхема2-Pad2)"
+    "unconnected-(Микросхема2-Pad3)" "unconnected-(Микросхема2-Pad4)" "unconnected-(Микросхема2-Pad5)" "unconnected-(Микросхема2-Pad6)" "unconnected-(Микросхема2-Pad7)" "unconnected-(Микросхема2-Pad8)" "unconnected-(Микросхема2-Pad12)" "unconnected-(Микросхема2-Pad13)"
+    "unconnected-(Микросхема2-Pad14)" "unconnected-(Микросхема2-Pad15)" "/цеп" "/рус"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

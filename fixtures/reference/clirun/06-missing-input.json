@@ -1,0 +1,10 @@
+{
+  "id": "06-missing-input",
+  "args": ["-de", "missing.dsn", "-do", "out.ses", "--router.enabled=false", "--router.fanout.enabled=false", "--router.optimizer.enabled=false"],
+  "exitCode": 1,
+  "files": [],
+  "texts": {},
+  "stageLines": [],
+  "logLines": ["WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "WARN   GUI is disabled and you don't have a console available, so the only feedback from Freerouting is in the log.", "WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "ERROR  Couldn't load the input file 'missing.dsn'", "ERROR  Couldn't load the input file 'missing.dsn'", "WARN   Couldn't read the input file 'missing.dsn', aborting."],
+  "plainOutput": ["java.io.FileNotFoundException: missing.dsn (No such file or directory)", "java.io.FileNotFoundException: missing.dsn (No such file or directory)"]
+}

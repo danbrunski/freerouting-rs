@@ -1,0 +1,86 @@
+
+(rules PCB Issue733-kicad_complex_hierarchy_input_design
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "top_copper"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.3)
+    )
+    (layer_rule "bottom_copper"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+  )
+  (rule
+    (width 400.0)
+    (clearance 300.0)
+    (clearance 200.0 (type smd_to_turn_gap))
+    (clearance 75.0 (type smd))
+    (clearance 300.0 (type power))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_1651:600_um"
+    (shape
+      (circle "top_copper" 1651.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1651.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_1651:600_um" "Via[0-1]_1651:600_um" default
+  )
+  (via 
+    "Via[0-1]_1651:600_um-power" "Via[0-1]_1651:600_um" power
+  )
+  (viaRule
+    default "Via[0-1]_1651:600_um"
+  )
+  (viaRule
+    default "Via[0-1]_1651:600_um"
+  )
+  (viaRule
+    power "Via[0-1]_1651:600_um-power"
+  )
+  (class default
+    "/ampli_ht_horizontal/PIEZO_IN" "/ampli_ht_horizontal/PIEZO_OUT" "/ampli_ht_horizontal/S_OUT+" "/ampli_ht_horizontal/Vpil_0_3,3V" "/ampli_ht_vertical/PIEZO_IN" "/ampli_ht_vertical/PIEZO_OUT" "/ampli_ht_vertical/S_OUT+" "/ampli_ht_vertical/Vpil_0_3,3V"
+    "Net-(U102-CAP+)" "Net-(U102-CAP-)" "Net-(C201-Pad2)" "Net-(C202-Pad1)" "Net-(U201B-+)" "Net-(C204-Pad1)" "Net-(C301-Pad2)" "Net-(C302-Pad1)"
+    "Net-(U301B-+)" "Net-(C304-Pad1)" "Net-(D201-K)" "Net-(D202-K)" "Net-(D203-K)" "Net-(D203-A)" "Net-(D204-K)" "Net-(D301-K)"
+    "Net-(D302-K)" "Net-(D303-A)" "Net-(D303-K)" "Net-(D304-K)" "Net-(Q201-E)" "Net-(Q202-E)" "Net-(Q203-E)" "Net-(Q204-E)"
+    "Net-(Q204-B)" "Net-(Q301-E)" +12V "Net-(Q302-E)" "Net-(Q303-E)" "Net-(Q304-B)" "Net-(Q304-E)" "Net-(R212-Pad2)"
+    "Net-(R213-Pad1)" "Net-(R312-Pad2)" "Net-(R313-Pad1)" "Net-(U201A--)" "Net-(U301A--)" "unconnected-(U102-LV-Pad6)" "unconnected-(U102-OSC-Pad7)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+  (class power
+    "-VAA" /12Vext GND HT VCC
+    (clearance_class power)
+    (via_rule power)
+    (rule
+      (width 600.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+)

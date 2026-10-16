@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue145-smoothieboard.dsn",
+  "designName": "Issue145-smoothieboard",
+  "unroutedBytes": 22476,
+  "import": {
+    "wiresImported": 1042,
+    "viasImported": 369,
+    "errorsEncountered": 0,
+    "routedBytes": 225046
+  }
+}

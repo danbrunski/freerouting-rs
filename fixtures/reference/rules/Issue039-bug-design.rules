@@ -1,0 +1,104 @@
+
+(rules PCB Issue039-bug-design
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.2)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.2 (type Power))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_500:300_um"
+    (shape
+      (circle F.Cu 500.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 500.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_600:400_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_500:300_um" "Via[0-1]_500:300_um" default
+  )
+  (via 
+    "Via[0-1]_600:400_um" "Via[0-1]_600:400_um" default
+  )
+  (via 
+    "Via[0-1]_500:300_um-Power" "Via[0-1]_500:300_um" Power
+  )
+  (via 
+    "Via[0-1]_600:400_um-Power" "Via[0-1]_600:400_um" Power
+  )
+  (viaRule
+    default "Via[0-1]_500:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_500:300_um"
+  )
+  (viaRule
+    Power "Via[0-1]_600:400_um-Power"
+  )
+  (class default
+    /MSEL "/MD_SDA" "/MC_SCL" "/MS_ADR" /DATA4 /DATA3 /DATA2 /DATA1
+    /LRCK /BCK /SCK "/DATA4_R" "/DATA3_R" "/DATA2_R" "/DATA1_R" "/LRCK_R"
+    "/BCK_R" "/SCK_R" /ZR2 /ZR1 /VOUT1 /VOUT2 /VOUT3 /VOUT4
+    /VOUT5 /VOUT6 /VOUT7 /VOUT8 /VCOM "Net-(C7-Pad2)" "/VOUT1_DAC" "Net-(C8-Pad2)"
+    "/VOUT2_DAC" "Net-(C9-Pad2)" "/VOUT3_DAC" "Net-(C10-Pad2)" "/VOUT4_DAC" "Net-(C19-Pad2)" "/VOUT5_DAC" "Net-(C20-Pad2)"
+    "/VOUT6_DAC" "Net-(C21-Pad2)" "/VOUT7_DAC" "Net-(C22-Pad2)" "/VOUT8_DAC" "Net-(CA1-Pad4)" "Net-(CA1-Pad3)" "Net-(CA1-Pad2)"
+    "Net-(CA1-Pad1)" "Net-(CA2-Pad8)" "Net-(CA2-Pad7)" "Net-(CA2-Pad6)" "Net-(CA2-Pad5)" "Net-(CA2-Pad4)" "Net-(CA2-Pad3)" "Net-(CA2-Pad2)"
+    "Net-(CA2-Pad1)" "Net-(CA3-Pad4)" "Net-(CA3-Pad3)" "Net-(CA3-Pad2)" "Net-(CA3-Pad1)" "Net-(CA4-Pad8)" "Net-(CA4-Pad7)" "Net-(CA4-Pad6)"
+    "Net-(CA4-Pad5)" "Net-(CA4-Pad4)" "Net-(CA4-Pad3)" "Net-(CA4-Pad2)" "Net-(CA4-Pad1)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Power
+    GND +3V3 +5V GNDA VDDA
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

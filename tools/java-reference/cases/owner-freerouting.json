@@ -1,0 +1,12 @@
+{
+  "router": {
+    "autorouter": {},
+    "fanout": {},
+    "optimizer": {},
+    "scoring": {
+      "start_ripup_costs": 1500
+    },
+    "router_scoring": {},
+    "optimizer_scoring": {}
+  }
+}

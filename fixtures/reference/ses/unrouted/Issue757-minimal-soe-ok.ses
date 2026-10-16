@@ -1,0 +1,29 @@
+(session "Issue757-minimal-soe-ok"
+  (base_design "Issue757-minimal-soe-ok")
+  (placement
+    (resolution um 10)
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "minimal-soe")
+    )
+    (library_out 
+    )
+    (network_out 
+      (net "/CRESET"
+        (wire
+          (path B.Cu 1524
+            364000 -537000
+            411418 -537000
+            448447 -574029
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

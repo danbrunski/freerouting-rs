@@ -1,0 +1,64 @@
+
+(rules PCB DAC2020_bm08.unrouted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    GND VDD /SDA /SCL "Net-(R2-Pad1)" "Net-(R1-Pad1)" "Net-(U1-Pad14)" "Net-(U1-Pad13)"
+    "Net-(U1-Pad12)" "Net-(U1-Pad11)" "Net-(U1-Pad10)" "Net-(C1-Pad1)" "Net-(C1-Pad2)" "Net-(C2-Pad2)" "Net-(U1-Pad1)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Bottom)
+    )
+  )
+)

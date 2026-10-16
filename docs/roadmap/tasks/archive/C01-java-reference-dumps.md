@@ -111,7 +111,7 @@ What this adds:
 
 ## Checklist
 
-- [ ] **C01.1 — `settings` mode.**
+- [x] **C01.1 — `settings` mode.**
   For every fixture DSN, and for every DSN in `tools/java-reference/cases/`,
   run `prepareLikeScheduler` once per scenario. Write one JSON per board, under
   `settings/` or `cases/settings/`. Each scenario object holds:
@@ -155,8 +155,28 @@ What this adds:
     - Every `max_threads` value is normalized. `grep -r` for the
       machine's core count finds nothing.
     - Board totals and run time are in the done note.
+  *Done 2026-10-15:* `ExtraModes` (nested class appended to `ReferenceDump.java`; one `if` in
+  `main` dispatches the six modes) with `prepare` = `prepareLikeScheduler`: `CliRunner`'s first merge,
+  then `RoutingJobScheduler.java:92-191` call for call, with `awaitPostLoad()` after the load.
+  Cases in `tools/java-reference/cases/`: `aspect-4layer.dsn` (50 lines), `explicit-one-layer-cost.dsn`
+  (51), `explicit-cost-rules.dsn` (50) + `.rules` (14), `owner-freerouting.json`, and
+  `lock-position.dsn` (51, added for C01.3).
+  - `run.sh <pin> settings`: 170 JSON (166 fixtures + 4 cases), 680 scenario objects, 19.7 MB, 231-402 s
+    on 8 cores (313 s and 317 s for the two concurrent runs compared). 676 scenarios hold the full
+    dump; the 4 of `Issue006` (not a PCB file) hold `parse_error`. 6 boards (24 scenarios) pick up an
+    adjacent rules file. `empty_board.dsn` loads and dumps (its `library.padstacks` is null, so the dump has
+    `"padstacks": null`).
+  - Two runs: `diff -r gen1 gen2` empty (full `regenerate-dumps.sh` twice); earlier `settings`
+    runs a/b and c/d also identical.
+  - Edge clearance: a script over all 676 scenarios found `copper_to_edge_clearance_um` 0.0 in every
+    `fixture` and 250.0 in every `default` scenario (0 mismatches).
+  - Threads: `grep -rE '"max_threads": [0-9]+'` finds only the `cli` scenario's `3` (the harness
+    box has 8 cores, so `7` and `8` would be the leaks); all machine values read `"<cores-1>"`.
+  - Observed (not explained): in `explicit-cost-rules` (layer rule in the rules file) the
+    preferred cost 2.0 lands on both F.Cu and In1.Cu; in `explicit-one-layer-cost` (same rule in
+    the DSN scope) only on In1.Cu. `aspect-4layer` gives preferred `[1.8, 1.0, 1.0, 1.8]`.
 
-- [ ] **C01.2 — `argv` mode.**
+- [x] **C01.2 — `argv` mode.**
   `run.sh <pin> argv tools/java-reference/cases/argv.txt` reads one command line
   per line (`#` comments; arguments separated by tabs, so names with spaces
   survive). For each line:
@@ -186,8 +206,21 @@ What this adds:
     - Two runs are byte-identical.
     - The `-mp 10` entry shows exactly 1 warning, as `GlobalSettingsTest`
       asserts. That is the harness's self-check.
+  *Done 2026-10-15:* `argv` mode and `cases/argv.txt` (126 command lines in 9 groups: every
+  `GlobalSettingsTest` argv case, every `GlobalSettingsCommandLineTest` case, the Java plugin's
+  `_build_command` line with `--gui.enabled=false` and `=true`, `-mp 10000`/`-mt 3`/`-oit 0.035`/`-oit 4.0`,
+  `-inc` lists, `--router.via_costs`/`--router.scoring.via_costs`, `--scoring-version`,
+  `--router-scoring-version`, `--router.layers.routable=false,true`, `-de/-do` with and without
+  `--router.enabled=false`, `-dex`, `-unknownFlag`, `--someflag`, bare `-de`).
+  - `fixtures/reference/argv.json`: 126 entries in file order (`grep -c '"line"'`).
+  - Two runs identical (`diff -r gen1 gen2`).
+  - Self-check: the `-mp 10` entry (line 8) has `globalSettings.log.warnings == 1` (the
+    deprecation warning), as does `GlobalSettingsTest`'s `-mp 10 -di /tmp -dl` (line 7).
+    `-mp 10 extraValue` shows 2.
+  - Not argv: `GlobalSettingsTest.setUnknownProperty` (a `setValue` call), the TextManager text
+    checks of `newLanguagesViaCommandLineArgument` (the `-l` locale is dumped, not the text).
 
-- [ ] **C01.3 — `ses` mode.**
+- [x] **C01.3 — `ses` mode.**
   For each board in `dump-subset.txt`, or every board under `REFERENCE_FULL=1`:
   - load with `prepareLikeScheduler` (`default` scenario);
   - write `ses/unrouted/<b>.ses` with `SesWriter.write(board, out, designName)`;
@@ -215,8 +248,22 @@ What this adds:
     - Two runs are byte-identical.
     - The done note gives the size of the committed subset and of a full
       run, and lists which subset entry exercises each listed feature.
+  *Done 2026-10-15:* `ses` mode; `tools/java-reference/dump-subset.txt` (19 boards, each with a reason).
+  - Committed subset: `ses/` 4.9 MB (19 unrouted + 18 routed SES + 19 JSON), `dsn/` 5.2 MB. Full run
+    (`REFERENCE_FULL=1`, 170 boards, 123 s): `ses/` 25.5 MB (169 unrouted + 159 routed SES + JSON), `dsn/` 34.0 MB.
+  - Two runs identical (`diff -r gen1 gen2`).
+  - Feature -> entry: KiCad host + adjacent rules `Issue029-hw48na`; `(attach off)`
+    `Issue593-BBD_Mars-64`, `Issue508-DAC2020_bm06`, `Issue872-single-layer-repro`, `Issue742-tastexx-pcb`
+    (rotation 338.5 appears 9 times in its SES); LibrePCB + exponent form `Issue676-ch32v-tx118s`
+    (the routed SES uses `1.7145E7`; import gives 0 wires, 6 vias, 48 errors); Cyrillic
+    `Issue110-Pajalnaja_stancija`; CadSoft `Issue143-rpi_splitter`; timing `Issue190-processor.Z80`
+    (unrouted 916 KB, routed 1.8 MB); signal-layer conduction areas (`(wire (polygon ...)` in
+    `network_out`) `Issue756-tomu-fpga7` (14 of them, with 1023 `(type protect)` wires; only the
+    `tomu-fpga7/8/9` boards have any); USER_FIXED `(type protect)` `Issue757-minimal-soe-ok` (smallest).
+  - `(lock_type position)`: no fixture produces it (no fixture DSN contains `lock_type`, and Java omits it
+    for KiCad hosts), so the entry is the synthetic `cases/lock-position` (host `Allegro`, J1 locked).
 
-- [ ] **C01.4 — `dsn` mode.**
+- [x] **C01.4 — `dsn` mode.**
   `DsnWriter.write(board, out, designName, false)` on the plain `DsnReader`
   load. This mode uses no overrides, so the dump tests the writer and not the
   settings. Output: `dsn/<b>.dsn` for the subset (or all under
@@ -228,8 +275,12 @@ What this adds:
     - Two runs are byte-identical.
     - Every committed file starts with `(pcb` and contains `(structure`,
       as `DsnWriterTest` asserts.
+  *Done 2026-10-15:* `dsn` mode (`DsnWriter.write(board, out, designName, false)` on the plain
+  `DsnReader` load). 19 files in `dsn/` (5.2 MB), plus a JSON per board with the byte count. A
+  script over all committed files confirms each starts with `(pcb` and contains `(structure`.
+  Two runs identical. Full run: 169 DSN, 34.0 MB.
 
-- [ ] **C01.5 — `rules` mode.**
+- [x] **C01.5 — `rules` mode.**
   `RulesWriter.write(board, settings, out, designName)` with the board and
   settings from the `default` scenario. Write `rules/<b>.rules` for every
   fixture. Rules files are small.
@@ -237,8 +288,12 @@ What this adds:
     - Two runs are byte-identical.
     - Every file contains `(rules PCB` and `(autoroute_settings`.
     - The total size is in the done note.
+  *Done 2026-10-15:* `rules` mode: 164 `.rules` files (809 KB). Two boards write a JSON failure record
+  instead: `Issue006` (parse error) and `empty_board` (Java's `RulesWriter` throws a
+  `NullPointerException` on `library.padstacks`). A script confirms every `.rules` contains
+  `(rules PCB` and `(autoroute_settings`. Two runs identical.
 
-- [ ] **C01.6 — `clirun` mode.**
+- [x] **C01.6 — `clirun` mode.**
   `run.sh <pin> clirun tools/java-reference/cases/clirun.tsv` starts the real
   Java CLI once per row. It uses `ProcessBuilder` with the running JVM's
   binary (`ProcessHandle.current().info().command()`), the harness classpath
@@ -271,8 +326,20 @@ What this adds:
     - The done note states Java's exit code and output size for rows 1, 2
       and 4. Reading `CliRunner.computeCliExitCode` says row 2 writes a
       0-byte file, logs no error and exits 1; this run settles it.
+  *Done 2026-10-15:* `clirun` mode and `cases/clirun.tsv` (9 rows). Two runs identical (`diff -r`).
+  A timestamp in a DRC report varies in length, so file sizes are taken with it replaced by `<t>`
+  (`timestampNormalized`). The jdk4py runtime lacks the execute bit on `lib/jspawnhelper`, which
+  breaks `ProcessBuilder`; the harness sets it on the runtime under `target/`.
+  - Row 1 `-do out.ses`: exit 0, `out.ses` 2908 bytes.
+  - Row 2 `-do out.dsn`: exit 1, `out.dsn` 0 bytes, no error logged (the last relevant log line is
+    `Saving output file`). This settles it, as `CliRunner.computeCliExitCode` predicts.
+  - Row 3 `out.ses+out.drc.json`: exit 0, 2908-byte SES and a DRC JSON.
+  - Row 4 `-do out.xyz`: exit 0, `out.xyz` 2908 bytes (SES content).
+  - Row 5 (no `-do`): exit 1, the "Both an input file and an output file" error. Row 6 (missing input):
+    exit 1, no files. Rows 7 and 8 (`-drc`): exit 0, `out.json` 591767 bytes (normalized) for the valid
+    and the invalid rules file alike. Row 9 `-help`: exit 0, usage text in `plainOutput`.
 
-- [ ] **C01.7 — Docs, run script, regeneration.**
+- [x] **C01.7 — Docs, run script, regeneration.**
   - Add a section per mode to `tools/java-reference/README.md`: the command,
     the output paths, the scenarios, the subset rule and the full-run
     recipe.
@@ -287,3 +354,17 @@ What this adds:
     - A fresh clone can regenerate every committed dump with the README's
       commands, and `git status` is clean afterwards.
     - The full-set recipe writes nothing under `fixtures/`.
+  *Done 2026-10-15:* `tools/java-reference/README.md` section "Settings, writer and CLI dumps (C01)"
+  (command, outputs, scenarios, subset rule, full recipe per mode); `run.sh` final command line now
+  uses `${REFERENCE_FIXTURES_DIR:-$ROOT/fixtures}` and `${REFERENCE_OUT_DIR:-$ROOT/fixtures/reference}`
+  and passes `-Dreference.casesDir`; `docs/development/engine.md` "Regenerating the reference" lists the
+  modes and says `ses` is rerun after every `route` regeneration. One command regenerates
+  everything: new `tools/java-reference/regenerate-dumps.sh <pin-worktree>` (six `run.sh` calls).
+  - Run from a detached worktree of the pin with a private `REFERENCE_WORK_DIR`: about 5 min, the
+    output equals the committed tree (`diff -r` per directory) and `git status` shows no change to a
+    tracked file. A literal fresh clone was not tried (the Gradle classpath step needs the network).
+  - Full recipe (`REFERENCE_FULL=1 REFERENCE_OUT_DIR=<outside fixtures>`) ran in about 10 min and left
+    `git status --short fixtures` unchanged.
+  - Fix found on the way: `ReferenceDump` walked `fixtures/` for `*.dsn` and so picked up the new
+    `fixtures/reference/dsn/*.dsn`; the board walk (and the Rust walkers already) now skip
+    `fixtures/reference/`.

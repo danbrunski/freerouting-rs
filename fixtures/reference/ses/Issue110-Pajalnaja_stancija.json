@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue110-Pajalnaja_stancija.dsn",
+  "designName": "Issue110-Pajalnaja_stancija",
+  "unroutedBytes": 4004,
+  "import": {
+    "wiresImported": 257,
+    "viasImported": 12,
+    "errorsEncountered": 0,
+    "routedBytes": 60065
+  }
+}

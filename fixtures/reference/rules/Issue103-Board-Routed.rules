@@ -1,0 +1,101 @@
+
+(rules PCB Issue103-Board-Routed
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute off)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (via 
+    "Via[0-1]_800:400_um-kicad_default" "Via[0-1]_800:400_um" default
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (viaRule
+    "kicad_default" "Via[0-1]_800:400_um-kicad_default"
+  )
+  (class default
+    /pcIU16 /pcIU15 /pcIU14 /pcIU13 /pcIU12 /pcIU11 /pcIU10 /pcIU9
+    /pcIU8 /pcIU7 /pcIU6 /pcIU5 /pcIU4 /pcIU3 /pcIU2 /pcIU1
+    +5V GND /dmaEx /inIntEx /intEx /strEx /rstEx /rwEx
+    /clkEx /datEx16 /adrEx16 /datEx15 /adrEx15 /datEx14 /adrEx14 /datEx13
+    /adrEx13 /datEx12 /adrEx12 /datEx11 /adrEx11 /datEx10 /adrEx10 /datEx9
+    /adrEx9 /datEx8 /adrEx8 /datEx7 /adrEx7 /datEx6 /adrEx6 /datEx5
+    /adrEx5 /datEx4 /adrEx4 /datEx3 /adrEx3 /datEx2 /adrEx2 /datEx1
+    /adrEx1 /pcD1 /pcD2 /pcD3 /pcD4 /pcD5 /pcD6 /pcD7
+    /pcD8 /pcD9 /pcD10 /pcD11 /pcD12 /pcD13 /pcD14 /pcD15
+    /pcD16 /pcOut /pcO8 /pcO7 /pcO6 /pcO5 /pcO4 /pcO3
+    /pcO2 /pcO1 /pcO16 /pcO15 /pcO14 /pcO13 /pcO12 /pcO11
+    /pcO10 /pcO9 /pcIS3 /pcIS6 /pcIS2 /pcIS5 /pcIS1 /pcIS4
+    "Net-(U6-Pad19)" "Net-(U7-Pad19)" /pcIS9 /pcIS12 /pcIS8 /pcIS11 /pcIS7 /pcIS10
+    /pcAdrSel "Net-(U10-Pad10)" /pcRw "Net-(U20-Pad5)" /pcStr /LPC /pcIS15 "Net-(U10-Pad12)"
+    /pcIS14 /pcIS13 /pcIS16 "Net-(U11-Pad15)" /pcN1 /pcN2 /pcN3 /pcN4
+    "Net-(U11-Pad10)" /MPcClk /rst /pcN5 /pcN6 /pcN7 /pcN8 "Net-(U12-Pad10)"
+    /pcN9 /pcN10 /pcN11 /pcN12 "Net-(U13-Pad10)" /pcN13 /pcN14 /pcN15
+    /pcN16 /dma "Net-(U15-Pad6)" /!dma "Net-(U15-Pad5)" /inInt "Net-(U15-Pad4)" /!inInt
+    "Net-(U15-Pad3)" /clk "Net-(U15-Pad2)" "Net-(U15-Pad8)" "Net-(U15-Pad1)" "Net-(U16-Pad7)" "Net-(U16-Pad13)" "Net-(U16-Pad4)"
+    "Net-(U16-Pad10)" "Net-(U16-Pad9)" "Net-(U16-Pad1)" "Net-(U17-Pad7)" "Net-(U17-Pad13)" "Net-(U17-Pad4)" "Net-(U17-Pad10)" "Net-(U17-Pad1)"
+    "Net-(U18-Pad7)" "Net-(U18-Pad13)" "Net-(U18-Pad4)" "Net-(U18-Pad10)" "Net-(U18-Pad1)" "Net-(U19-Pad13)" "Net-(U19-Pad4)" "Net-(U19-Pad10)"
+    "Net-(U19-Pad1)" "Net-(U20-Pad6)" "Net-(U20-Pad11)" /IncPC "Net-(U20-Pad3)" "Net-(U20-Pad2)" /rstIPC "Net-(U20-Pad1)"
+    "Net-(U21-Pad13)" /IPcClk /ValRegCP "Net-(U21-Pad3)" /clkRaw "Net-(U22-Pad15)" "Net-(U22-Pad14)" "Net-(U22-Pad13)"
+    "Net-(U22-Pad12)" "Net-(U22-Pad11)" "Net-(U22-Pad10)" "Net-(U23-Pad14)" "Net-(U23-Pad13)" "Net-(U23-Pad12)" "Net-(U23-Pad11)" "Net-(U23-Pad10)"
+    "Net-(U24-Pad14)" "Net-(U24-Pad13)" "Net-(U24-Pad12)" "Net-(U24-Pad11)" "Net-(U24-Pad10)" "Net-(U25-Pad14)" "Net-(U25-Pad13)" "Net-(U25-Pad12)"
+    "Net-(U25-Pad11)" "Net-(U26-Pad7)" /pcI3 /pcI1 /pcI4 "Net-(U26-Pad9)" /pcI2 "Net-(U27-Pad7)"
+    /pcI7 /pcI5 /pcI8 /pcI6 "Net-(U28-Pad7)" /pcI11 /pcI9 /pcI12
+    /pcI10 /pcI15 /pcI13 /pcI16 /pcI14 "Net-(U34-Pad19)" "Net-(U34-Pad9)" /iBus8
+    /iBus4 /iBus7 /iBus3 "Net-(U34-Pad16)" "Net-(U34-Pad6)" "Net-(U34-Pad15)" "Net-(U34-Pad5)" /iBus6
+    /iBus2 /iBus5 /iBus1 "Net-(U34-Pad12)" "Net-(U34-Pad2)" /adrRL "Net-(U35-Pad19)" "Net-(U35-Pad9)"
+    /iBus16 /iBus12 /iBus15 /iBus11 "Net-(U35-Pad16)" "Net-(U35-Pad6)" "Net-(U35-Pad15)" "Net-(U35-Pad5)"
+    /iBus14 /iBus10 /iBus13 /iBus9 "Net-(U35-Pad12)" "Net-(U35-Pad2)" /ReadPC "Net-(U36-Pad12)"
+    "Net-(U36-Pad5)" "Net-(U36-Pad11)" "Net-(U36-Pad10)" "Net-(U36-Pad2)" "Net-(U36-Pad8)" "Net-(U36-Pad1)" "Net-(U37-Pad15)" "Net-(U37-Pad11)"
+    /checkInt "Net-(U38-Pad8)" "Net-(U41-Pad6)" "Net-(U41-Pad12)" /int /busInterfaceE /WriteBack "Net-(U45-Pad1)"
+    "Net-(U45-Pad2)" "Net-(U45-Pad8)" "Net-(U47-Pad15)" "Net-(U47-Pad14)" "Net-(U47-Pad13)" /str "Net-(U47-Pad12)" "Net-(U47-Pad11)"
+    "Net-(U48-Pad12)" "Net-(U48-Pad11)"
+    (clearance_class default)
+    (via_rule "kicad_default")
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

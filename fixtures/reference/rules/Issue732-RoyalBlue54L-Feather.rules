@@ -1,0 +1,146 @@
+
+(rules PCB Issue732-RoyalBlue54L-Feather
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 2.6)
+      (against_preferred_direction_trace_costs 5.1)
+    )
+    (layer_rule In1.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.4)
+    )
+    (layer_rule In2.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.5)
+    )
+    (layer_rule In3.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.4)
+    )
+    (layer_rule In4.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.5)
+    )
+    (layer_rule In5.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.4)
+    )
+    (layer_rule In6.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.5)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 2.6)
+      (against_preferred_direction_trace_costs 3.0)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 150.0)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 37.6 (type smd))
+    (clearance 203.2 (type "USB_DIFF"))
+    (clearance 0.0 (type "board_edge"))
+  )
+  (padstack "Via[0-7]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In3.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In4.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In5.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In6.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-7]_800:400_um" "Via[0-7]_800:400_um" default
+  )
+  (via 
+    "Via[0-7]_800:400_um-USB_DIFF" "Via[0-7]_800:400_um" "USB_DIFF"
+  )
+  (viaRule
+    default "Via[0-7]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-7]_800:400_um"
+  )
+  (viaRule
+    "USB_DIFF" "Via[0-7]_800:400_um-USB_DIFF"
+  )
+  (class default
+    GND VSYS +BATT VDD "unconnected-(J3-SBU1-PadA8)" "unconnected-(J3-SBU2-PadB8)" /Debugger/USB.VBUS "/Debugger/nRF52_VDD"
+    /Connectors/ANALOG.A3 /Connectors/SPI.SCK /Connectors/ANALOG.A1 /Connectors/SPI.MISO /Connectors/UART.RX /Connectors/ANALOG.A2 /Connectors/SHPHLD /Connectors/ANALOG.A4
+    /Connectors/SPI.MOSI /Connectors/ANALOG.A5 /Connectors/ANALOG.A0 /Connectors/UART.TX /Connectors/ENABLE /Connectors/DIG.D11 /Connectors/DIG.D9 /Connectors/I2C.SDA
+    /Connectors/I2C.SCL /Connectors/DIG.D12 /Connectors/DIG.D6 /Connectors/DIG.D13 /Connectors/DIG.D5 "Net-(U2-SW2)" /Connectors/DIG.D10 /Debugger/USB.CC2
+    "unconnected-(U2-SW1-Pad3)" /Debugger/USB.CC1 VBUS /nPM1300/NPM1300.SCL "Net-(U1-P1.01{slash}XL2)" /nPM1300/NPM1300.SDA "Net-(U1-P1.00{slash}XL1)" "/Debugger/SWD_TRG.~{RESET}"
+    "unconnected-(U2-GPIO4-Pad11)" "Net-(U2-VSET2)" "unconnected-(U2-GPIO3-Pad10)" "unconnected-(U2-GPIO2-Pad9)" "Net-(D1-A)" "Net-(D1-K)" "unconnected-(J8-SWO-Pad6)" "unconnected-(U3-IO1-Pad1)"
+    "Net-(U5-XC1)" "Net-(U5-DEC1)" "Net-(U5-XC2)" "Net-(U5-DEC3)" "Net-(U5-DEC4)" "Net-(J8-SWDIO)" "unconnected-(U5-P0.11-Pad7)" "unconnected-(U5-P0.05{slash}AIN3-Pad5)"
+    "unconnected-(U5-P1.09-Pad6)" "unconnected-(U5-P0.10{slash}NFC2-Pad23)" "unconnected-(U5-P0.09{slash}NFC1-Pad22)" "Net-(U5-DECUSB)" "unconnected-(U5-P0.17-Pad15)" "/Debugger/SWD_TRG.SWDIO" "unconnected-(U5-DEC5{slash}NC-Pad21)" "unconnected-(U5-P0.20-Pad17)"
+    "unconnected-(U5-P0.03{slash}AIN1-Pad31)" "unconnected-(U5-P0.15-Pad14)" "unconnected-(U5-DCC-Pad39)" "unconnected-(U5-ANT-Pad24)" "unconnected-(U5-P0.00{slash}XL1-Pad2)" "unconnected-(U5-P0.04{slash}AIN2-Pad4)" "Net-(J8-~{RESET})" "Net-(J8-SWCLK)"
+    "unconnected-(U5-P0.01{slash}XL2-Pad3)" "/nRF54L15/D3_FLASH" /nPM1300/NPM1300.INT "/nRF54L15/~{CS}_FLASH" "Net-(D3-BK)" "Net-(D3-RK)" "Net-(D3-GK)" "Net-(JP1-A)"
+    "Net-(J6-Pin_4)" "Net-(J6-Pin_2)" "unconnected-(J6-Pin_1-Pad1)" "unconnected-(J6-Pin_5-Pad5)" "unconnected-(J6-Pin_3-Pad3)" "/nRF54L15/D2_FLASH" "/Debugger/TRG_SWDCLK_NRF52" "/Debugger/UART_TX_NRF52"
+    "/Debugger/TRG_SWDIO_NRF52" "/Debugger/UART_RX_NRF52" "/Debugger/TRG_~{RESET}_NRF52" "/Debugger/SWD_TRG.SWDCLK" "unconnected-(J1-Pin_3-Pad3)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu In3.Cu In4.Cu In5.Cu In6.Cu B.Cu)
+    )
+  )
+  (class "USB_DIFF"
+    "/Debugger/D-" /Debugger/D+
+    (clearance_class "USB_DIFF")
+    (via_rule "USB_DIFF")
+    (rule
+      (width 125.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu In3.Cu In4.Cu In5.Cu In6.Cu B.Cu)
+    )
+  )
+)

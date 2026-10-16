@@ -1,0 +1,143 @@
+# One command line per line; arguments are separated by TABs so names with spaces survive.
+# Lines starting with '#' and blank lines are skipped. 'argv.json' has one entry per command line, in file order.
+# Sources: GlobalSettingsCommandLineTest and GlobalSettingsTest at cda540f, the Java KiCad plugin,
+# and the cases listed in docs/roadmap/tasks/C01-java-reference-dumps.md (C01.2).
+# 
+# --- GlobalSettingsTest ---
+-mp	10	-di	/tmp	-dl
+-mp	10
+-ll	DEBUG
+-unknownFlag
+-mp	10	extraValue
+--router.max_passes=20
+--router.autorouter.max_threads=1	--router.optimizer.max_threads=4
+--someflag
+# --- GlobalSettingsCommandLineTest: -de ---
+-de	myboard.dsn
+-de	myboard.dsn+myboard.ses
+-de	myboard.dsn+myboard.rules
+-de	myboard.dsn+myboard.ses+myboard.rules
+-de	myboard.rules+myboard.dsn+myboard.ses
+-de	myboard.dsn	myboard.ses	myboard.rules
+-de	sonde xilinx.dsn
+-de	myboard.dsn+myboard.ses	myboard.rules
+-de	/path/to/myboard.dsn+/path/to/myboard.ses
+-de	myboard.DSN+myboard.SES+myboard.RULES
+-de	board1.dsn+board2.dsn
+-de	myboard.ses
+-de	myboard.rules
+-de
+-de	myboard.dsn+myboard.ses	-do	output.ses	-mp	10
+-de	board.v1+final.dsn
+# --- GlobalSettingsCommandLineTest: -do ---
+-do	scripts/benchmark/outputs/mechkeys_MF68+10--unrouted--2.5.0-RC5.ses
+-do	scripts/benchmark/outputs/perfplusplus_Ard-perf++--unrouted--2.5.0-RC5.ses
+-do	output.ses+output.kicad_pcb
+-do	board.v1+final.dsn
+# --- GlobalSettingsCommandLineTest: general --name=value settings ---
+--api_server-endpoints=http://0.0.0.0:37864
+--api_server-endpoints=http://0.0.0.0:37864,http://127.0.0.1:37865
+--api_server.endpoints=http://0.0.0.0:37864
+--api_server-endpoints=http://0.0.0.0:37864 , http://127.0.0.1:37865
+--api_server.corsOrigins=https://example.com?foo=bar
+--api_server.rate_limit.enabled=true	--api_server.rate_limit.requests_per_window=15	--api_server.rate_limit.window_seconds=20	--mcp_server.rate_limit.enabled=true	--mcp_server.rate_limit.requests_per_window=5	--mcp_server.rate_limit.window_seconds=12
+--api_server.max_parallel_jobs=8
+# --- GlobalSettingsCommandLineTest: -l ---
+-l	sk
+-l	da
+-l	hr
+-l	nb
+-l	fi
+-l	sl
+-l	el
+-l	he
+-l	ca
+-l	lt
+-l	en
+-l	de
+-l	zh-tw
+-l	zh
+-l	pt-br
+-l	xx
+# --- Java KiCad plugin (integrations/KiCad/kicad-freerouting/plugins/router_dsn.py _build_command at cda540f) ---
+-de	in.dsn	-do	out.ses	-host	KiCad 9.0.0	--gui.enabled=false	--api_server.enabled=false	--mcp_server.enabled=false	--logging.file.location=/tmp/fr-logs
+-de	in.dsn	-do	out.ses	-host	KiCad 9.0.0	--gui.enabled=true	--api_server.enabled=false	--mcp_server.enabled=false	--logging.file.location=/tmp/fr-logs
+# --- numeric flags ---
+-mp	10000
+-mp	-5
+-mp	0x10
+-mp	abc
+-mt	3
+-mt	5000
+-mt	-1
+-oit	0.035
+-oit	4.0
+-oit	abc
+-us	global
+-is	prioritized
+-is	seq
+# --- -inc ---
+-inc	Power,Default
+-inc	POWER,GND
+-inc	GND
+# --- --name=value router settings ---
+--router.via_costs=25
+--router.scoring.via_costs=30
+--router.scoring.plane_via_costs=7
+--router.autorouter.max_passes=33
+--router.max_passes=33
+--router.layers.routable=false,true
+--router.enabled=false
+--router.autorouter.enabled=false
+--router.fanout.enabled=false
+--router.optimizer.enabled=false
+--router.optimizer.improvement_threshold=0.05
+--router.default_undesired_direction_trace_cost=1.5
+--router.copper_to_edge_clearance_um=100
+--router.hole_clearance_um=50
+--router.plane_nets=GND,VCC
+--router.job_timeout=00:10:00
+--router.unknown_thing=1
+# --- scoring versions ---
+--scoring-version=v1
+--scoring-version=v2
+--router-scoring-version=v2
+--router-scoring-version=v1
+--optimizer-scoring-version=lower_bound
+--optimizer-scoring-version=v2
+--router.scoring.version=legacy
+-router-scoring-version	v2
+# --- -de / -do with and without --router.enabled=false ---
+-de	a.dsn	-do	b.ses
+-de	a.dsn	-do	b.ses	--router.enabled=false
+-de	a.dsn	-do	b.ses	--router.autorouter.enabled=false
+-de	a.dsn	-do	b.ses	--router.enabled=true
+-de	a.dsn
+-do	b.ses
+-de	a.dsn	-dr	a.rules	-do	b.ses
+-de	a.dsn	-drc	out.json
+-drc
+-dr
+-di	/some/dir
+-host	KiCad 9.0.0
+-dl	-da
+-dct	7
+-dct	-3
+-ll	trace
+# --- unknown / malformed ---
+-dex
+-unknownFlag
+--someflag
+--
+--=x
+--a=b=c
+-help
+--help
+-h
+--calculate-benchmark-scores
+--compare-boards=a.dsn,b.dsn
+--user_data_path=/tmp/fr-user
+--gui.enabled=false
+--logging.file.location=/tmp/fr-logs
+--debug.enable_detailed_logging=true
+--debug.filter_by_net=GND,VCC

@@ -1,0 +1,984 @@
+
+(rules PCB Issue684-Autorouter_PCB1_2026-5-8
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "1"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 3.0)
+    )
+    (layer_rule "2"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+    (layer_rule "15"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule "16"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 2.6)
+    )
+  )
+  (rule
+    (width 15.75)
+    (clearance 0.8)
+    (clearance 7.875 (type smd_to_turn_gap))
+    (clearance 0.8 (type smd))
+    (clearance 0.8 (type ''))
+    (clearance 0.8 (type $1N4396))
+    (clearance 0.8 (type $1N4392))
+    (clearance 0.8 (type $1N3355))
+    (clearance 0.8 (type $1N3330))
+    (clearance 0.8 (type "SIGNAL_1_IN"))
+    (clearance 0.8 (type $1N2152))
+    (clearance 0.8 (type $1N2191))
+    (clearance 0.8 (type $1N2796))
+    (clearance 0.8 (type $1N2606))
+    (clearance 0.8 (type $1N2614))
+    (clearance 0.8 (type $1N2567))
+    (clearance 0.8 (type $1N4406))
+    (clearance 0.8 (type $1N4589))
+    (clearance 0.8 (type $1N4584))
+    (clearance 0.8 (type $1N4807))
+    (clearance 0.8 (type $1N4819))
+    (clearance 0.8 (type VCC1))
+    (clearance 0.8 (type "BOOST_OUT1"))
+    (clearance 0.8 (type $1N7115))
+    (clearance 0.8 (type $1N6879))
+    (clearance 0.8 (type $1N6667))
+    (clearance 0.8 (type $1N7367))
+    (clearance 0.8 (type $1N7529))
+    (clearance 0.8 (type $1N7662))
+    (clearance 0.8 (type $1N7594))
+    (clearance 0.8 (type GND1))
+    (clearance 0.8 (type "47500_OHM_1"))
+    (clearance 0.8 (type "42750_OHM_1"))
+    (clearance 0.8 (type "52250_OHM_1"))
+    (clearance 0.8 (type "+4V_1"))
+    (clearance 0.8 (type "GND1_SMOOTHING"))
+    (clearance 0.8 (type "GND1_BOOST"))
+    (clearance 0.8 (type NET1))
+    (clearance 0.8 (type NET2))
+    (clearance 0.8 (type NET3))
+    (clearance 0.8 (type NET4))
+    (clearance 0.8 (type NET5))
+    (clearance 0.8 (type NET6))
+    (clearance 0.8 (type NET7))
+    (clearance 0.8 (type NET8))
+    (clearance 0.8 (type NET9))
+    (clearance 0.8 (type NET10))
+    (clearance 0.8 (type NET11))
+    (clearance 0.8 (type "U9_OC"))
+    (clearance 0.8 (type "U9_VIN"))
+    (clearance 0.8 (type "U9_EN"))
+    (clearance 0.8 (type "U9_FB"))
+    (clearance 0.8 (type "U9_GND"))
+    (clearance 0.8 (type "U9_SW"))
+    (clearance 0.8 (type $1N13851))
+    (clearance 0.8 (type $1N4794))
+    (clearance 0.8 (type $1N4780))
+    (clearance 9.844 (type "board_edge"))
+  )
+  (padstack via0
+    (shape
+      (circle "1" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "2" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "15" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "16" 2.4 0.0 0.0)
+    )
+  )
+  (via 
+    via0 via0 default
+  )
+  (via 
+    "via0-''" via0 ''
+  )
+  (via 
+    "via0-$1N4396" via0 $1N4396
+  )
+  (via 
+    "via0-$1N4392" via0 $1N4392
+  )
+  (via 
+    "via0-$1N3355" via0 $1N3355
+  )
+  (via 
+    "via0-$1N3330" via0 $1N3330
+  )
+  (via 
+    "via0-SIGNAL_1_IN" via0 "SIGNAL_1_IN"
+  )
+  (via 
+    "via0-$1N2152" via0 $1N2152
+  )
+  (via 
+    "via0-$1N2191" via0 $1N2191
+  )
+  (via 
+    "via0-$1N2796" via0 $1N2796
+  )
+  (via 
+    "via0-$1N2606" via0 $1N2606
+  )
+  (via 
+    "via0-$1N2614" via0 $1N2614
+  )
+  (via 
+    "via0-$1N2567" via0 $1N2567
+  )
+  (via 
+    "via0-$1N4406" via0 $1N4406
+  )
+  (via 
+    "via0-$1N4589" via0 $1N4589
+  )
+  (via 
+    "via0-$1N4584" via0 $1N4584
+  )
+  (via 
+    "via0-$1N4807" via0 $1N4807
+  )
+  (via 
+    "via0-$1N4819" via0 $1N4819
+  )
+  (via 
+    "via0-VCC1" via0 VCC1
+  )
+  (via 
+    "via0-BOOST_OUT1" via0 "BOOST_OUT1"
+  )
+  (via 
+    "via0-$1N7115" via0 $1N7115
+  )
+  (via 
+    "via0-$1N6879" via0 $1N6879
+  )
+  (via 
+    "via0-$1N6667" via0 $1N6667
+  )
+  (via 
+    "via0-$1N7367" via0 $1N7367
+  )
+  (via 
+    "via0-$1N7529" via0 $1N7529
+  )
+  (via 
+    "via0-$1N7662" via0 $1N7662
+  )
+  (via 
+    "via0-$1N7594" via0 $1N7594
+  )
+  (via 
+    "via0-GND1" via0 GND1
+  )
+  (via 
+    "via0-47500_OHM_1" via0 "47500_OHM_1"
+  )
+  (via 
+    "via0-42750_OHM_1" via0 "42750_OHM_1"
+  )
+  (via 
+    "via0-52250_OHM_1" via0 "52250_OHM_1"
+  )
+  (via 
+    "via0-+4V_1" via0 "+4V_1"
+  )
+  (via 
+    "via0-GND1_SMOOTHING" via0 "GND1_SMOOTHING"
+  )
+  (via 
+    "via0-GND1_BOOST" via0 "GND1_BOOST"
+  )
+  (via 
+    "via0-NET1" via0 NET1
+  )
+  (via 
+    "via0-NET2" via0 NET2
+  )
+  (via 
+    "via0-NET3" via0 NET3
+  )
+  (via 
+    "via0-NET4" via0 NET4
+  )
+  (via 
+    "via0-NET5" via0 NET5
+  )
+  (via 
+    "via0-NET6" via0 NET6
+  )
+  (via 
+    "via0-NET7" via0 NET7
+  )
+  (via 
+    "via0-NET8" via0 NET8
+  )
+  (via 
+    "via0-NET9" via0 NET9
+  )
+  (via 
+    "via0-NET10" via0 NET10
+  )
+  (via 
+    "via0-NET11" via0 NET11
+  )
+  (via 
+    "via0-U9_OC" via0 "U9_OC"
+  )
+  (via 
+    "via0-U9_VIN" via0 "U9_VIN"
+  )
+  (via 
+    "via0-U9_EN" via0 "U9_EN"
+  )
+  (via 
+    "via0-U9_FB" via0 "U9_FB"
+  )
+  (via 
+    "via0-U9_GND" via0 "U9_GND"
+  )
+  (via 
+    "via0-U9_SW" via0 "U9_SW"
+  )
+  (via 
+    "via0-$1N13851" via0 $1N13851
+  )
+  (via 
+    "via0-$1N4794" via0 $1N4794
+  )
+  (via 
+    "via0-$1N4780" via0 $1N4780
+  )
+  (viaRule
+    default via0
+  )
+  (viaRule
+    '' "via0-''"
+  )
+  (viaRule
+    $1N4396 "via0-$1N4396"
+  )
+  (viaRule
+    $1N4392 "via0-$1N4392"
+  )
+  (viaRule
+    $1N3355 "via0-$1N3355"
+  )
+  (viaRule
+    $1N3330 "via0-$1N3330"
+  )
+  (viaRule
+    "SIGNAL_1_IN" "via0-SIGNAL_1_IN"
+  )
+  (viaRule
+    $1N2152 "via0-$1N2152"
+  )
+  (viaRule
+    $1N2191 "via0-$1N2191"
+  )
+  (viaRule
+    $1N2796 "via0-$1N2796"
+  )
+  (viaRule
+    $1N2606 "via0-$1N2606"
+  )
+  (viaRule
+    $1N2614 "via0-$1N2614"
+  )
+  (viaRule
+    $1N2567 "via0-$1N2567"
+  )
+  (viaRule
+    $1N4406 "via0-$1N4406"
+  )
+  (viaRule
+    $1N4589 "via0-$1N4589"
+  )
+  (viaRule
+    $1N4584 "via0-$1N4584"
+  )
+  (viaRule
+    $1N4807 "via0-$1N4807"
+  )
+  (viaRule
+    $1N4819 "via0-$1N4819"
+  )
+  (viaRule
+    VCC1 "via0-VCC1"
+  )
+  (viaRule
+    "BOOST_OUT1" "via0-BOOST_OUT1"
+  )
+  (viaRule
+    $1N7115 "via0-$1N7115"
+  )
+  (viaRule
+    $1N6879 "via0-$1N6879"
+  )
+  (viaRule
+    $1N6667 "via0-$1N6667"
+  )
+  (viaRule
+    $1N7367 "via0-$1N7367"
+  )
+  (viaRule
+    $1N7529 "via0-$1N7529"
+  )
+  (viaRule
+    $1N7662 "via0-$1N7662"
+  )
+  (viaRule
+    $1N7594 "via0-$1N7594"
+  )
+  (viaRule
+    GND1 "via0-GND1"
+  )
+  (viaRule
+    "47500_OHM_1" "via0-47500_OHM_1"
+  )
+  (viaRule
+    "42750_OHM_1" "via0-42750_OHM_1"
+  )
+  (viaRule
+    "52250_OHM_1" "via0-52250_OHM_1"
+  )
+  (viaRule
+    "+4V_1" "via0-+4V_1"
+  )
+  (viaRule
+    "GND1_SMOOTHING" "via0-GND1_SMOOTHING"
+  )
+  (viaRule
+    "GND1_BOOST" "via0-GND1_BOOST"
+  )
+  (viaRule
+    NET1 "via0-NET1"
+  )
+  (viaRule
+    NET2 "via0-NET2"
+  )
+  (viaRule
+    NET3 "via0-NET3"
+  )
+  (viaRule
+    NET4 "via0-NET4"
+  )
+  (viaRule
+    NET5 "via0-NET5"
+  )
+  (viaRule
+    NET6 "via0-NET6"
+  )
+  (viaRule
+    NET7 "via0-NET7"
+  )
+  (viaRule
+    NET8 "via0-NET8"
+  )
+  (viaRule
+    NET9 "via0-NET9"
+  )
+  (viaRule
+    NET10 "via0-NET10"
+  )
+  (viaRule
+    NET11 "via0-NET11"
+  )
+  (viaRule
+    "U9_OC" "via0-U9_OC"
+  )
+  (viaRule
+    "U9_VIN" "via0-U9_VIN"
+  )
+  (viaRule
+    "U9_EN" "via0-U9_EN"
+  )
+  (viaRule
+    "U9_FB" "via0-U9_FB"
+  )
+  (viaRule
+    "U9_GND" "via0-U9_GND"
+  )
+  (viaRule
+    "U9_SW" "via0-U9_SW"
+  )
+  (viaRule
+    $1N13851 "via0-$1N13851"
+  )
+  (viaRule
+    $1N4794 "via0-$1N4794"
+  )
+  (viaRule
+    $1N4780 "via0-$1N4780"
+  )
+  (class default
+    $1N4807 $1N2152 $1N2191 $1N4392 $1N4396 $1N2567 $1N2606 $1N2614
+    $1N2796 $1N3330 $1N3355 "42750_OHM_1" "47500_OHM_1" "52250_OHM_1" "SIGNAL_1_IN" $1N7594
+    $1N7662 $1N7367 $1N7529 $1N7115 GND1 "+4V_1" $1N6879 $1N6667
+    "BOOST_OUT1" VCC1 $1N4819 $1N4584 $1N4589 $1N4406 "GND1_SMOOTHING" "GND1_BOOST"
+    NET1 NET2 NET3 NET4 NET5 NET6 NET7 NET8
+    NET9 NET10 NET11 "U9_OC" "U9_VIN" "U9_EN" "U9_FB" "U9_GND"
+    "U9_SW" $1N13851 $1N4794 $1N4780
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ''
+    (clearance_class '')
+    (via_rule '')
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4396
+    (clearance_class $1N4396)
+    (via_rule $1N4396)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4392
+    (clearance_class $1N4392)
+    (via_rule $1N4392)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N3355
+    (clearance_class $1N3355)
+    (via_rule $1N3355)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N3330
+    (clearance_class $1N3330)
+    (via_rule $1N3330)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "SIGNAL_1_IN"
+    (clearance_class "SIGNAL_1_IN")
+    (via_rule "SIGNAL_1_IN")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2152
+    (clearance_class $1N2152)
+    (via_rule $1N2152)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2191
+    (clearance_class $1N2191)
+    (via_rule $1N2191)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2796
+    (clearance_class $1N2796)
+    (via_rule $1N2796)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2606
+    (clearance_class $1N2606)
+    (via_rule $1N2606)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2614
+    (clearance_class $1N2614)
+    (via_rule $1N2614)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2567
+    (clearance_class $1N2567)
+    (via_rule $1N2567)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4406
+    (clearance_class $1N4406)
+    (via_rule $1N4406)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4589
+    (clearance_class $1N4589)
+    (via_rule $1N4589)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4584
+    (clearance_class $1N4584)
+    (via_rule $1N4584)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4807
+    (clearance_class $1N4807)
+    (via_rule $1N4807)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4819
+    (clearance_class $1N4819)
+    (via_rule $1N4819)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class VCC1
+    (clearance_class VCC1)
+    (via_rule VCC1)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "BOOST_OUT1"
+    (clearance_class "BOOST_OUT1")
+    (via_rule "BOOST_OUT1")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N7115
+    (clearance_class $1N7115)
+    (via_rule $1N7115)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N6879
+    (clearance_class $1N6879)
+    (via_rule $1N6879)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N6667
+    (clearance_class $1N6667)
+    (via_rule $1N6667)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N7367
+    (clearance_class $1N7367)
+    (via_rule $1N7367)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N7529
+    (clearance_class $1N7529)
+    (via_rule $1N7529)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N7662
+    (clearance_class $1N7662)
+    (via_rule $1N7662)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N7594
+    (clearance_class $1N7594)
+    (via_rule $1N7594)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class GND1
+    (clearance_class GND1)
+    (via_rule GND1)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "47500_OHM_1"
+    (clearance_class "47500_OHM_1")
+    (via_rule "47500_OHM_1")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "42750_OHM_1"
+    (clearance_class "42750_OHM_1")
+    (via_rule "42750_OHM_1")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "52250_OHM_1"
+    (clearance_class "52250_OHM_1")
+    (via_rule "52250_OHM_1")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "+4V_1"
+    (clearance_class "+4V_1")
+    (via_rule "+4V_1")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "GND1_SMOOTHING"
+    (clearance_class "GND1_SMOOTHING")
+    (via_rule "GND1_SMOOTHING")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "GND1_BOOST"
+    (clearance_class "GND1_BOOST")
+    (via_rule "GND1_BOOST")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET1
+    (clearance_class NET1)
+    (via_rule NET1)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET2
+    (clearance_class NET2)
+    (via_rule NET2)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET3
+    (clearance_class NET3)
+    (via_rule NET3)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET4
+    (clearance_class NET4)
+    (via_rule NET4)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET5
+    (clearance_class NET5)
+    (via_rule NET5)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET6
+    (clearance_class NET6)
+    (via_rule NET6)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET7
+    (clearance_class NET7)
+    (via_rule NET7)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET8
+    (clearance_class NET8)
+    (via_rule NET8)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET9
+    (clearance_class NET9)
+    (via_rule NET9)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET10
+    (clearance_class NET10)
+    (via_rule NET10)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class NET11
+    (clearance_class NET11)
+    (via_rule NET11)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "U9_OC"
+    (clearance_class "U9_OC")
+    (via_rule "U9_OC")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "U9_VIN"
+    (clearance_class "U9_VIN")
+    (via_rule "U9_VIN")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "U9_EN"
+    (clearance_class "U9_EN")
+    (via_rule "U9_EN")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "U9_FB"
+    (clearance_class "U9_FB")
+    (via_rule "U9_FB")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "U9_GND"
+    (clearance_class "U9_GND")
+    (via_rule "U9_GND")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "U9_SW"
+    (clearance_class "U9_SW")
+    (via_rule "U9_SW")
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N13851
+    (clearance_class $1N13851)
+    (via_rule $1N13851)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4794
+    (clearance_class $1N4794)
+    (via_rule $1N4794)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N4780
+    (clearance_class $1N4780)
+    (via_rule $1N4780)
+    (rule
+      (width 15.75)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+)

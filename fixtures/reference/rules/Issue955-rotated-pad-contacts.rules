@@ -1,0 +1,84 @@
+
+(rules PCB Issue955-rotated-pad-contacts
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+  )
+  (rule
+    (width 150.0)
+    (clearance 200.0)
+    (clearance 75.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_560:300_um"
+    (shape
+      (circle F.Cu 560.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 560.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_560:300_um" "Via[0-1]_560:300_um" default
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_560:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_560:300_um"
+  )
+  (class default
+    C0 "outer_bottom_B" GND "outer_home_B" "outer_top_B" C1 "pinky_bottom_B" "pinky_home_B"
+    "pinky_top_B" C2 "ring_bottom_B" "ring_home_B" "ring_top_B" C3 "middle_bottom_B" "middle_home_B"
+    "middle_top_B" C4 "index_bottom_B" "index_home_B" "index_top_B" C5 "inner_bottom_B" "inner_home_B"
+    "inner_top_B" "near_home_B" "mid_home_B" "far_home_B" R2 R1 R0 R3
+    "outer_bottom_F" "outer_home_F" "outer_top_F" "pinky_bottom_F" "pinky_home_F" "pinky_top_F" "ring_bottom_F" "ring_home_F"
+    "ring_top_F" "middle_bottom_F" "middle_home_F" "middle_top_F" "index_bottom_F" "index_home_F" "index_top_F" "inner_bottom_F"
+    "inner_home_F" "inner_top_F" "near_home_F" "mid_home_F" "far_home_F" RAW RST VCC
+    P16 P10 LED DAT SDA SCL CS P9
+    "MCU1_24" "MCU1_1" "MCU1_23" "MCU1_2" "MCU1_22" "MCU1_3" "MCU1_21" "MCU1_4"
+    "DISP1_1" "DISP1_2" "DISP1_4" "DISP1_5" "BAT_P" "JST1_1" "JST1_2"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 150.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

@@ -1,0 +1,152 @@
+
+(rules PCB Issue066-Project_GP8B
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 3.2)
+    )
+    (layer_rule In1.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule In2.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.4)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+  )
+  (rule
+    (width 180.0)
+    (clearance 180.2)
+    (clearance 90.0 (type smd_to_turn_gap))
+    (clearance 45.0 (type smd))
+    (clearance 200.2 (type Volt))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_450:200_um"
+    (shape
+      (circle F.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 450.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 450.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_550:300_um"
+    (shape
+      (circle F.Cu 550.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 550.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 550.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 550.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_450:200_um" "Via[0-3]_450:200_um" default
+  )
+  (via 
+    "Via[0-3]_550:300_um" "Via[0-3]_550:300_um" default
+  )
+  (via 
+    "Via[0-3]_450:200_um-Volt" "Via[0-3]_450:200_um" Volt
+  )
+  (via 
+    "Via[0-3]_550:300_um-Volt" "Via[0-3]_550:300_um" Volt
+  )
+  (viaRule
+    default "Via[0-3]_450:200_um"
+  )
+  (viaRule
+    default "Via[0-3]_450:200_um"
+  )
+  (viaRule
+    Volt "Via[0-3]_550:300_um-Volt"
+  )
+  (class default
+    "Net-(D1-Pad2)" "/GLOBAL_CLK" "/RESET_CLK" "/RAM/RAMADDRESS_0" "/RAM/RAMADDRESS_1" "/RAM/RAMADDRESS_2" "/RAM/RAMADDRESS_3" "/RAM/RAMADDRESS_4"
+    "/RAM/RAMADDRESS_5" "/RAM/RAMADDRESS_6" "/RAM/RAMADDRESS_7" "/RAM/RAMADDRESS_8" "/RAM/RAMADDRESS_9" "/RAM/RAMADDRESS_10" "/RAM/RAMADDRESS_11" "/RAM/RAMADDRESS_12"
+    "/RAM/RAMADDRESS_13" "/RAM/RAMADDRESS_14" "/RAM/RAMADDRESS_15" "/RAM/RAM_~WE" "/RAM_OE_CONTROL" "/~IF_RESULT" "/IF_RESULT" "/NUM_SELECT_0"
+    "/NUM_SELECT_1" "/Instruction/COUNTER_OUT_0" "/Instruction/COUNTER_OUT_1" "Net-(U8-Pad11)" "Net-(U8-Pad15)" "/Instruction/COUNTER_2" "/Instruction/I_IF" "/Instruction/I_IFNOT"
+    "Net-(U15-Pad7)" "/Instruction/IF_VALID" "/Instruction/IFNOT_VALID" "Net-(D2-Pad2)" "/~COUNTER_RESET" "/Instruction/INSTRUCTION_B1" "/Instruction/INSTRUCTION_B2" "/Instruction/INSTRUCTION_B3"
+    "/Instruction/INSTRUCTION_B4" "/Instruction/INSTRUCTION_B5" "/NUM_SELECT_2" "Net-(U9-Pad12)" "Net-(U9-Pad11)" "Net-(U9-Pad10)" "Net-(U9-Pad9)" "Net-(U9-Pad7)"
+    "/Instruction/~COUNTER_2" "/Instruction/~INSTRUCTION_B5" "Net-(U15-Pad12)" "Net-(U15-Pad11)" "Net-(U15-Pad10)" "Net-(U15-Pad9)" "/NUMBER_0" "/NUMBER_1"
+    "/NUMBER_2" "/NUMBER_3" "/NUMBER_4" "/NUMBER_5" "/NUMBER_6" "/NUMBER_7" "/SYNC_BIT" "/NumberSelect/RAMDATA_0"
+    "/NumberSelect/RAMDATA_1" "/NumberSelect/RAMDATA_2" "/NumberSelect/RAMDATA_3" "/NumberSelect/RAMDATA_4" "/NumberSelect/RAMDATA_5" "/NumberSelect/RAMDATA_6" "/NumberSelect/RAMDATA_7" "/NumberSelect/BOPRESULT_0"
+    "/NumberSelect/BOPRESULT_1" "/NumberSelect/BOPRESULT_2" "/NumberSelect/BOPRESULT_3" "/NumberSelect/BOPRESULT_4" "/NumberSelect/BOPRESULT_5" "/NumberSelect/BOPRESULT_6" "/NumberSelect/BOPRESULT_7" "Net-(U33-Pad16)"
+    "Net-(U33-Pad19)" "/OPLEFT_CLK" "/OPRIGHT_CLK" "Net-(IC1-Pad39)" "Net-(IC1-Pad61)" /Operation/TDI "Net-(IC1-Pad64)" /Operation/TMS
+    /Operation/TCK "Net-(IC1-Pad91)" "Net-(IC1-Pad92)" "Net-(IC1-Pad94)" "Net-(IC1-Pad95)" "Net-(IC1-Pad96)" /Operation/TDO "/PROCESSOR_PAUSE"
+    "/SPI_MOSI" "/SPI_MISO" "/SPI_SCLK" "/SPI_CS" "/~SELECTING_RBEXT1" "/~SELECTING_RBEXT2" "/ADDSRC_CLK" "/JMPSRC_CLK"
+    "/PERIPHERAL_CLK" "/END_ISIMPLE" "/END_MAXCOUNT" "/NEXT_AFTERSET" "/NEXT_IF" "/NEXT_IFNOT" "/SPI/SPI_CFG_RCLK" "/SPI/SPI_CFG_~PL"
+    "/BJMPSRC1_CLK" "/BPCS_CLK" "/BWRITE2_CLK" "/BWRITE1_CLK" "/BJMPSRC2_CLK" "/BJMPSRC3_CLK" "/BRAMADD1_CLK" "/BRAMADD2_CLK"
+    "/SPI_CLK" "Net-(U13-Pad7)" "/BRAMDATA_CLK" "/RAMWRITE_CLK" "/~SELECTING_SPI" "/NumberSelect/~SELECTING_RAM" "/NumberSelect/~SELECTING_OPRESULT" "/NumberSelect/~SELECTING_BREAD2"
+    "/NumberSelect/~SELECTING_BREAD1" "Net-(U25-Pad9)" "Net-(U38-Pad1)" "Net-(IC1-Pad15)" "Net-(IC1-Pad16)" "Net-(IC1-Pad17)" "/Operation/UNUSED_A0" "/Operation/UNUSED_A1"
+    "/Operation/UNUSED_A2" "/Operation/UNUSED_A3" "/Operation/UNUSED_A4" "/Operation/UNUSED_A5" "/Operation/UNUSED_A6" "/Operation/UNUSED_A7" "/Operation/UNUSED_B0" "/Operation/UNUSED_B1"
+    "/Operation/UNUSED_B2" "/Operation/UNUSED_B3" "/Operation/UNUSED_B4" "/Operation/UNUSED_B5" "/Operation/UNUSED_B6" "/Operation/UNUSED_B7" "/Operation/UNUSED_D3" "/Operation/UNUSED_D2"
+    "/Operation/UNUSED_D1" "/Operation/UNUSED_D0" "/Operation/UNUSED_C7" "/Operation/UNUSED_C6" "/Operation/UNUSED_C5" "/Operation/UNUSED_C4" "/Operation/UNUSED_C3" "/Operation/UNUSED_C2"
+    "/Operation/UNUSED_C1" "/Operation/UNUSED_C0" +1V8 "/Operation/DLEFT_0" "/Operation/DLEFT_1" "/Operation/DLEFT_2" "/Operation/DLEFT_3" "/Operation/DLEFT_4"
+    "/Operation/DLEFT_5" "/Operation/DLEFT_6" "/Operation/DLEFT_7" "Net-(IC1-Pad14)" "Net-(IC1-Pad18)" "/Operation/CPLD_OPCHOOSE_CLK" "/Operation/CPLD_OPRIGHT_CLK" "/Operation/CPLD_OPLEFT_CLK"
+    "Net-(IC1-Pad63)" "Net-(IC1-Pad65)" "Net-(IC1-Pad76)" "Net-(IC1-Pad90)" "/Connector/BPCS_5" "/Connector/BPCS_4" "/Connector/BPCS_3" "/Connector/BPCS_2"
+    "/Connector/BPCS_1" "/Connector/BPCS_0" "/Connector/BDATASRC_7" "/Connector/BDATASRC_6" "/Connector/BDATASRC_5" "/Connector/BDATASRC_4" "/Connector/BDATASRC_3" "/Connector/BDATASRC_2"
+    "/Connector/BDATASRC_1" "/Connector/BDATASRC_0" "/Connector/BREAD2_7" "/Connector/BREAD2_6" "/Connector/BREAD2_5" "/Connector/BREAD2_4" "/Connector/BREAD2_3" "/Connector/BREAD2_2"
+    "/Connector/BREAD2_1" "/Connector/BREAD2_0" "/Connector/BREAD1_7" "/Connector/BREAD1_6" "/Connector/BREAD1_5" "/Connector/BREAD1_4" "/Connector/BREAD1_3" "/Connector/BREAD1_2"
+    "/Connector/BREAD1_1" "/Connector/BREAD1_0" "/Connector/BWRITE2_7" "/Connector/BWRITE2_6" "/Connector/BWRITE2_5" "/Connector/BWRITE2_4" "/Connector/BWRITE2_3" "/Connector/BWRITE2_2"
+    "/Connector/BWRITE2_1" "/Connector/BWRITE2_0" "/Connector/BWRITE1_7" "/Connector/BWRITE1_6" "/Connector/BWRITE1_5" "/Connector/BWRITE1_4" "/Connector/BWRITE1_3" "/Connector/BWRITE1_2"
+    "/Connector/BWRITE1_1" "/Connector/BWRITE1_0" "/Connector/BJMPSRC_23" "/Connector/BJMPSRC_22" "/Connector/BJMPSRC_21" "/Connector/BJMPSRC_20" "/Connector/BJMPSRC_19" "/Connector/BJMPSRC_18"
+    "/Connector/BJMPSRC_17" "/Connector/BJMPSRC_16" "/Connector/BJMPSRC_15" "/Connector/BJMPSRC_14" "/Connector/BJMPSRC_13" "/Connector/BJMPSRC_12" "/Connector/BJMPSRC_11" "/Connector/BJMPSRC_10"
+    "/Connector/BJMPSRC_9" "/Connector/BJMPSRC_8" "/Connector/BJMPSRC_7" "/Connector/BJMPSRC_6" "/Connector/BJMPSRC_5" "/Connector/BJMPSRC_4" "/Connector/BJMPSRC_3" "/Connector/BJMPSRC_2"
+    "/Connector/BJMPSRC_1" "/Connector/BJMPSRC_0" "/BCFG_SPI_CLK" "/OPCHOOSE_CLK" "Net-(U32-Pad10)" "/RAM/B_RAM_~OE" "/~NEXT_CLK" "/SELECTING_SRC"
+    "/NEXT_MAXCOUNT" "/NEXT_ISIMPLE" "/~SELECTING_SRC" "Net-(U6-Pad19)" "Net-(U6-Pad16)" "Net-(U6-Pad15)" "/SPI/SPI_CFG_DS"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 180.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu B.Cu)
+    )
+  )
+  (class Volt
+    GND +5V +3V3
+    (clearance_class Volt)
+    (via_rule Volt)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu In1.Cu In2.Cu B.Cu)
+    )
+  )
+)

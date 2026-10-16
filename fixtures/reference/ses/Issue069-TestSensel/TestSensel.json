@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue069-TestSensel/TestSensel.dsn",
+  "designName": "TestSensel",
+  "unroutedBytes": 2157,
+  "import": {
+    "wiresImported": 15,
+    "viasImported": 3,
+    "errorsEncountered": 0,
+    "routedBytes": 4824
+  }
+}

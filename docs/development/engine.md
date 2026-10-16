@@ -51,6 +51,19 @@ resolve dependencies; Maven Central sometimes answers 429, and the script
 retries. `route` resumes an interrupted run; `REFERENCE_REDO=1` reruns all.
 Details in [tools/java-reference/README.md](../../tools/java-reference/README.md).
 
+Besides `load` and `route`, six deterministic modes dump what the settings, writer and CLI work
+(C01) compares against: `settings`, `rules`, `ses`, `dsn`, `argv` and `clirun`. One command
+regenerates all of them (about 7 minutes) from a detached worktree of the pin:
+
+```sh
+tools/java-reference/regenerate-dumps.sh <pin-worktree>
+```
+
+`ses` imports `fixtures/reference/route/*.ses`, so **rerun it after every `route` regeneration**
+(J01.5). `REFERENCE_FULL=1 REFERENCE_OUT_DIR=target/java-reference/full` dumps every board
+outside the repo for the ignored full-set Rust tests. The modes, scenarios and the subset rule are
+in the README.
+
 `load` output is deterministic. `route` output is not: Java's maze search uses
 an unseeded `Random` and the run is time-limited, so routed results are a
 baseline for completion, vias, length and speed, not an exact target.

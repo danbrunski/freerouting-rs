@@ -1,0 +1,88 @@
+(session "Issue508-DAC2020_bm06"
+  (base_design "Issue508-DAC2020_bm06")
+  (placement
+    (resolution um 10)
+    (component batteryCharger:0603
+      (place U2 1600511.0 -990436.0 front 90)
+      (place U3 1517511.0 -1018536.0 front 270)
+      (place U4 1422611.0 -992536.0 front 180)
+      (place U5 1418511.0 -961836.0 front 90)
+      (place U6 1560011.0 -964536.0 front 0)
+      (place U7 1441511.0 -1082936.0 front 270)
+      (place U18 1285811.0 -1080536.0 front 0)
+      (place U19 1328911.0 -1031436.0 front 0)
+      (place U20 1285811.0 -1108436.0 front 0)
+      (place U21 1285611.0 -1137336.0 front 0)
+      (place U22 1285511.0 -1166336.0 front 0)
+      (place U23 1592711.0 -935736.0 front 180)
+      (place U24 1394411.0 -973536.0 front 90)
+      (place U25 1389411.0 -1082636.0 front 90)
+      (place U26 1412411.0 -1082736.0 front 90)
+      (place U27 1402811.0 -927636.0 front 180)
+      (place U1 1467011.0 -931036.0 front 90)
+      (place U29 1496011.0 -931036.0 front 90)
+      (place U30 1524011.0 -931036.0 front 90)
+      (place U32 1443011.0 -1120036.0 front 0)
+      (place U33 1505011.0 -969036.0 front 270)
+      (place U34 1336011.0 -1169036.0 front 90)
+    )
+    (component "batteryCharger:LED-0603"
+      (place U8 1298311.0 -1040936.0 front 90)
+    )
+    (component "batteryCharger:QFN50P400X400X100-25N"
+      (place U9 1391811.0 -1029136.0 front 0)
+    )
+    (component batteryCharger:BQ27441DRZRG1A
+      (place U10 1389211.0 -1145436.0 front 270)
+    )
+    (component "batteryCharger:SON50P300X300X100-11N"
+      (place U11 1565611.0 -1000736.0 front 180)
+    )
+    (component "batteryCharger:10118193-0001LF"
+      (place U12 1226111.0 -979236.0 front 270)
+    )
+    (component batteryCharger:UE27AC54100
+      (place U13 1626311.0 -1001936.0 front 90)
+    )
+    (component "batteryCharger:JST-2-SMD"
+      (place U14 1505611.0 -1153536.0 front 180)
+    )
+    (component batteryCharger:1X06
+      (place U15 1234311.0 -1166936.0 front 90)
+    )
+    (component batteryCharger:INDPM3630X200N
+      (place U16 1467711.0 -1009336.0 front 0)
+    )
+    (component batteryCharger:INDPM5552X200N
+      (place U17 1562711.0 -1058636.0 front 0)
+    )
+    (component batteryCharger:1206
+      (place U28 1481311.0 -1074836.0 front 0)
+    )
+    (component "batteryCharger:DSN2_1"
+      (place U31 1452011.0 -964036.0 front 270)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "9.0.6")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle Top 6000 0 0)
+        )
+        (shape
+          (circle Bottom 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

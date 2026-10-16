@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue413-test.dsn",
+  "designName": "Issue413-test",
+  "unroutedBytes": 2908,
+  "import": {
+    "wiresImported": 10,
+    "viasImported": 0,
+    "errorsEncountered": 0,
+    "routedBytes": 4285
+  }
+}

@@ -1,0 +1,1526 @@
+{
+  "fixture": "Issue732-CM5_MINIMA_3.dsn",
+  "scenarios": {
+    "default": {
+      "adjacentRules": null,
+      "settings": {
+        "autorouter": {
+          "enabled": true,
+          "algorithm": "freerouting-router",
+          "max_passes": 0,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "save_intermediate_stages": false,
+          "ignore_net_classes": []
+        },
+        "fanout": {
+          "enabled": true,
+          "max_passes": 20,
+          "max_items": 2147483647,
+          "max_milliseconds_per_pin": 10000,
+          "ripup_allowed": true,
+          "min_escape_length_mm": 2.5,
+          "max_escape_length_mm": 4.5,
+          "start_via_diameter_mm": 0.25,
+          "end_via_diameter_mm": 0.25,
+          "pin_sorting_order": "outer_first",
+          "fallback_to_board_vias": true,
+          "timeout": null
+        },
+        "copper_to_edge_clearance_um": 250.0,
+        "hole_clearance_um": 0.0,
+        "clearance_tolerance_um": 1.0,
+        "plane_nets": [],
+        "plane_as_obstacle": false,
+        "neck_width_um": 0.0,
+        "strict_drc": false,
+        "job_timeout": "12:00:00",
+        "validation_warnings": [],
+        "trace_pull_tight_accuracy": 500,
+        "allowed_via_types": true,
+        "automatic_neckdown": true,
+        "optimizer": {
+          "enabled": true,
+          "algorithm": "freerouting-optimizer",
+          "max_passes": 100,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "improvement_threshold": 2.5,
+          "enable_preflight_guards": true,
+          "max_consecutive_failures": 50,
+          "max_consecutive_failures_pass1": 12,
+          "additional_ripup_cost_factor_at_start": 10,
+          "trace_ripup_cost_factor": 0.6,
+          "max_autoroute_passes": 6,
+          "timeout": null,
+          "board_update_strategy": "GLOBAL_OPTIMAL",
+          "item_selection_strategy": "SEQUENTIAL"
+        },
+        "scoring": {
+          "default_preferred_direction_trace_cost": 1.0,
+          "default_undesired_direction_trace_cost": 1.0,
+          "via_costs": 50,
+          "plane_via_costs": 5,
+          "start_ripup_costs": 100,
+          "default_bend_cost": 0.0,
+          "unrouted_net_penalty": 5000000.0,
+          "clearance_violation_penalty": 1000000.0,
+          "bend_penalty": 10.0,
+          "preferred_direction_trace_cost": [2.2, 1.0, 1.0, 1.0, 1.0, 2.2],
+          "undesired_direction_trace_cost": [3.2, 2.0, 2.0, 2.0, 2.0, 3.2]
+        },
+        "router_scoring": {
+          "version": "V2_CONTINUOUS",
+          "unrouted_connection_weight": 1000.0,
+          "unrouted_free_fraction": 0.5,
+          "unrouted_first_half_weight": 333.33334,
+          "unrouted_second_half_weight": 666.6667,
+          "clearance_violation_count_weight": 25.0,
+          "clearance_violation_depth_weight": 300.0,
+          "clearance_violation_depth_scale": 1000.0
+        },
+        "optimizer_scoring": {
+          "version": "V2_LOWER_BOUND",
+          "excess_wire_length_weight": 1000.0,
+          "excess_via_weight": 2000.0,
+          "excess_bend_weight": 500.0,
+          "length_floor": 1.0,
+          "difficulty_scale_floor": 1.0
+        },
+        "max_threads": "<cores-1>",
+        "result_json": null,
+        "layers": [
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          }
+        ]
+      },
+      "effective": {
+        "layers": [
+          {
+            "name": "F.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.2,
+            "horizontalCost": 3.2,
+            "verticalCost": 2.2
+          },
+          {
+            "name": "In1.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.0
+          },
+          {
+            "name": "In2.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 2.0,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "In3.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.0
+          },
+          {
+            "name": "In4.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 2.0,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "B.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.2,
+            "horizontalCost": 2.2,
+            "verticalCost": 3.2
+          }
+        ],
+        "boardSpecificTraceCostsApplied": true,
+        "viaCosts": 50,
+        "planeViaCosts": 5,
+        "startRipupCosts": 100,
+        "runRouter": true,
+        "runOptimizer": true,
+        "runFanout": true,
+        "validationWarnings": []
+      },
+      "board": {
+        "clearanceMatrix": {
+          "classNames": ["null", "default", "smd", "90ohm", "100ohm", "board_edge"],
+          "valuesByLayerRowCol": [
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ]
+          ]
+        },
+        "outlineClearanceClass": "board_edge",
+        "minimumPinGap": "0.0",
+        "holeClearance": 0,
+        "clearanceToleranceUm": 1.0,
+        "ignoreConduction": true,
+        "planeNets": ["+5V", "M2_3V3", "+3V3_PI", "/PCIe-M2/M2_LX", "GND"],
+        "netClasses": [
+          {
+            "name": "default",
+            "viaRule": "default",
+            "traceClearanceClass": "default",
+            "traceHalfWidth": [750, 750, 750, 750, 750, 750],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "default",
+              "VIA": "default",
+              "PIN": "default",
+              "SMD": "smd",
+              "AREA": "default"
+            }
+          },
+          {
+            "name": "90ohm",
+            "viaRule": "90ohm",
+            "traceClearanceClass": "90ohm",
+            "traceHalfWidth": [735, 735, 735, 735, 735, 735],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "90ohm",
+              "VIA": "90ohm",
+              "PIN": "90ohm",
+              "SMD": "90ohm",
+              "AREA": "90ohm"
+            }
+          },
+          {
+            "name": "100ohm",
+            "viaRule": "100ohm",
+            "traceClearanceClass": "100ohm",
+            "traceHalfWidth": [635, 635, 635, 635, 635, 635],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "100ohm",
+              "VIA": "100ohm",
+              "PIN": "100ohm",
+              "SMD": "100ohm",
+              "AREA": "100ohm"
+            }
+          }
+        ],
+        "viaInfos": [
+          {
+            "name": "Via[0-5]_450:300_um",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "default",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-90ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "90ohm",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-100ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "100ohm",
+            "attachSmd": false
+          }
+        ],
+        "viaRules": [
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "90ohm",
+            "vias": ["Via[0-5]_450:300_um-90ohm"]
+          },
+          {
+            "name": "100ohm",
+            "vias": ["Via[0-5]_450:300_um-100ohm"]
+          }
+        ],
+        "snapAngle": "FORTYFIVE_DEGREE",
+        "padstacks": ["Round[B]Pad_3800.000000_um", "Round[T]Pad_1000.000000_um", "Round[A]Pad_1000.000000_um", "Round[A]Pad_1200.000000_um", "Round[A]Pad_2600.000000_um", "Round[T]Pad_3800.000000_um", "Round[A]Pad_4500.000000_um", "Round[A]Pad_5400.000000_um", "Oval[A]Pad_1500.000000x2300.000000_um", "Oval[A]Pad_1500.000000x3300.000000_um", "Oval[A]Pad_860.000000x1800.000000_um", "RoundRect[T]Pad_300.000000x550.000000_75.285000_um_0.000000_0", "RoundRect[T]Pad_350.000000x550.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_500.000000x1100.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_540.000000x640.000000_135.514000_um_0.000000_0", "RoundRect[T]Pad_550.000000x350.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_560.000000x620.000000_140.533000_um_0.000000_0", "RoundRect[T]Pad_600.000000x500.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_600.000000x1550.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_650.000000x400.000000_100.381000_um_0.000000_0", "RoundRect[T]Pad_1000.000000x1450.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1180.000000x4700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1800.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x600.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x2350.000000_250.951000_um_0.000000_0", "Rect[T]Pad_200.000000x700.000000_um", "Rect[T]Pad_2100.000000x3100.000000_um", "Rect[T]Pad_250.000000x680.000000_um", "Rect[T]Pad_2600.000000x300.000000_um", "Rect[T]Pad_300.000000x1300.000000_um", "Rect[T]Pad_300.000000x1550.000000_um", "Rect[T]Pad_400.000000x1100.000000_um", "Rect[T]Pad_500.000000x300.000000_um", "Rect[T]Pad_600.000000x1550.000000_um", "Rect[T]Pad_700.000000x2030.000000_um", "Rect[T]Pad_700.000000x600.000000_um", "Rect[T]Pad_800.000000x700.000000_um", "Rect[T]Pad_900.000000x700.000000_um", "Rect[T]Pad_950.000000x1300.000000_um", "Rect[T]Pad_1000.000000x1500.000000_um", "Rect[T]Pad_1050.000000x1750.000000_um", "Rect[T]Pad_1200.000000x2750.000000_um", "Rect[T]Pad_1200.000000x700.000000_um", "Rect[T]Pad_1200.000000x1800.000000_um", "Rect[T]Pad_1400.000000x1200.000000_um", "Rect[T]Pad_1800.000000x2200.000000_um", "Via[0-5]_450:300_um"],
+        "viaPadstacks": ["Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um"]
+      },
+      "postLoadViolations": 1
+    },
+    "fixture": {
+      "adjacentRules": null,
+      "settings": {
+        "autorouter": {
+          "enabled": true,
+          "algorithm": "freerouting-router",
+          "max_passes": 0,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "save_intermediate_stages": false,
+          "ignore_net_classes": []
+        },
+        "fanout": {
+          "enabled": true,
+          "max_passes": 20,
+          "max_items": 2147483647,
+          "max_milliseconds_per_pin": 10000,
+          "ripup_allowed": true,
+          "min_escape_length_mm": 2.5,
+          "max_escape_length_mm": 4.5,
+          "start_via_diameter_mm": 0.25,
+          "end_via_diameter_mm": 0.25,
+          "pin_sorting_order": "outer_first",
+          "fallback_to_board_vias": true,
+          "timeout": null
+        },
+        "copper_to_edge_clearance_um": 0.0,
+        "hole_clearance_um": 0.0,
+        "clearance_tolerance_um": 1.0,
+        "plane_nets": [],
+        "plane_as_obstacle": false,
+        "neck_width_um": 0.0,
+        "strict_drc": false,
+        "job_timeout": "12:00:00",
+        "validation_warnings": [],
+        "trace_pull_tight_accuracy": 500,
+        "allowed_via_types": true,
+        "automatic_neckdown": true,
+        "optimizer": {
+          "enabled": true,
+          "algorithm": "freerouting-optimizer",
+          "max_passes": 100,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "improvement_threshold": 2.5,
+          "enable_preflight_guards": true,
+          "max_consecutive_failures": 50,
+          "max_consecutive_failures_pass1": 12,
+          "additional_ripup_cost_factor_at_start": 10,
+          "trace_ripup_cost_factor": 0.6,
+          "max_autoroute_passes": 6,
+          "timeout": null,
+          "board_update_strategy": "GLOBAL_OPTIMAL",
+          "item_selection_strategy": "SEQUENTIAL"
+        },
+        "scoring": {
+          "default_preferred_direction_trace_cost": 1.0,
+          "default_undesired_direction_trace_cost": 1.0,
+          "via_costs": 50,
+          "plane_via_costs": 5,
+          "start_ripup_costs": 100,
+          "default_bend_cost": 0.0,
+          "unrouted_net_penalty": 5000000.0,
+          "clearance_violation_penalty": 1000000.0,
+          "bend_penalty": 10.0,
+          "preferred_direction_trace_cost": [2.2, 1.0, 1.0, 1.0, 1.0, 2.2],
+          "undesired_direction_trace_cost": [3.2, 2.0, 2.0, 2.0, 2.0, 3.2]
+        },
+        "router_scoring": {
+          "version": "V2_CONTINUOUS",
+          "unrouted_connection_weight": 1000.0,
+          "unrouted_free_fraction": 0.5,
+          "unrouted_first_half_weight": 333.33334,
+          "unrouted_second_half_weight": 666.6667,
+          "clearance_violation_count_weight": 25.0,
+          "clearance_violation_depth_weight": 300.0,
+          "clearance_violation_depth_scale": 1000.0
+        },
+        "optimizer_scoring": {
+          "version": "V2_LOWER_BOUND",
+          "excess_wire_length_weight": 1000.0,
+          "excess_via_weight": 2000.0,
+          "excess_bend_weight": 500.0,
+          "length_floor": 1.0,
+          "difficulty_scale_floor": 1.0
+        },
+        "max_threads": "<cores-1>",
+        "result_json": null,
+        "layers": [
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          }
+        ]
+      },
+      "effective": {
+        "layers": [
+          {
+            "name": "F.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.2,
+            "horizontalCost": 3.2,
+            "verticalCost": 2.2
+          },
+          {
+            "name": "In1.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.0
+          },
+          {
+            "name": "In2.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 2.0,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "In3.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.0
+          },
+          {
+            "name": "In4.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 2.0,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "B.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.2,
+            "horizontalCost": 2.2,
+            "verticalCost": 3.2
+          }
+        ],
+        "boardSpecificTraceCostsApplied": true,
+        "viaCosts": 50,
+        "planeViaCosts": 5,
+        "startRipupCosts": 100,
+        "runRouter": true,
+        "runOptimizer": true,
+        "runFanout": true,
+        "validationWarnings": []
+      },
+      "board": {
+        "clearanceMatrix": {
+          "classNames": ["null", "default", "smd", "90ohm", "100ohm", "board_edge"],
+          "valuesByLayerRowCol": [
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ]
+          ]
+        },
+        "outlineClearanceClass": "board_edge",
+        "minimumPinGap": "0.0",
+        "holeClearance": 0,
+        "clearanceToleranceUm": 1.0,
+        "ignoreConduction": true,
+        "planeNets": ["+5V", "M2_3V3", "+3V3_PI", "/PCIe-M2/M2_LX", "GND"],
+        "netClasses": [
+          {
+            "name": "default",
+            "viaRule": "default",
+            "traceClearanceClass": "default",
+            "traceHalfWidth": [750, 750, 750, 750, 750, 750],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "default",
+              "VIA": "default",
+              "PIN": "default",
+              "SMD": "smd",
+              "AREA": "default"
+            }
+          },
+          {
+            "name": "90ohm",
+            "viaRule": "90ohm",
+            "traceClearanceClass": "90ohm",
+            "traceHalfWidth": [735, 735, 735, 735, 735, 735],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "90ohm",
+              "VIA": "90ohm",
+              "PIN": "90ohm",
+              "SMD": "90ohm",
+              "AREA": "90ohm"
+            }
+          },
+          {
+            "name": "100ohm",
+            "viaRule": "100ohm",
+            "traceClearanceClass": "100ohm",
+            "traceHalfWidth": [635, 635, 635, 635, 635, 635],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "100ohm",
+              "VIA": "100ohm",
+              "PIN": "100ohm",
+              "SMD": "100ohm",
+              "AREA": "100ohm"
+            }
+          }
+        ],
+        "viaInfos": [
+          {
+            "name": "Via[0-5]_450:300_um",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "default",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-90ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "90ohm",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-100ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "100ohm",
+            "attachSmd": false
+          }
+        ],
+        "viaRules": [
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "90ohm",
+            "vias": ["Via[0-5]_450:300_um-90ohm"]
+          },
+          {
+            "name": "100ohm",
+            "vias": ["Via[0-5]_450:300_um-100ohm"]
+          }
+        ],
+        "snapAngle": "FORTYFIVE_DEGREE",
+        "padstacks": ["Round[B]Pad_3800.000000_um", "Round[T]Pad_1000.000000_um", "Round[A]Pad_1000.000000_um", "Round[A]Pad_1200.000000_um", "Round[A]Pad_2600.000000_um", "Round[T]Pad_3800.000000_um", "Round[A]Pad_4500.000000_um", "Round[A]Pad_5400.000000_um", "Oval[A]Pad_1500.000000x2300.000000_um", "Oval[A]Pad_1500.000000x3300.000000_um", "Oval[A]Pad_860.000000x1800.000000_um", "RoundRect[T]Pad_300.000000x550.000000_75.285000_um_0.000000_0", "RoundRect[T]Pad_350.000000x550.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_500.000000x1100.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_540.000000x640.000000_135.514000_um_0.000000_0", "RoundRect[T]Pad_550.000000x350.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_560.000000x620.000000_140.533000_um_0.000000_0", "RoundRect[T]Pad_600.000000x500.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_600.000000x1550.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_650.000000x400.000000_100.381000_um_0.000000_0", "RoundRect[T]Pad_1000.000000x1450.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1180.000000x4700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1800.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x600.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x2350.000000_250.951000_um_0.000000_0", "Rect[T]Pad_200.000000x700.000000_um", "Rect[T]Pad_2100.000000x3100.000000_um", "Rect[T]Pad_250.000000x680.000000_um", "Rect[T]Pad_2600.000000x300.000000_um", "Rect[T]Pad_300.000000x1300.000000_um", "Rect[T]Pad_300.000000x1550.000000_um", "Rect[T]Pad_400.000000x1100.000000_um", "Rect[T]Pad_500.000000x300.000000_um", "Rect[T]Pad_600.000000x1550.000000_um", "Rect[T]Pad_700.000000x2030.000000_um", "Rect[T]Pad_700.000000x600.000000_um", "Rect[T]Pad_800.000000x700.000000_um", "Rect[T]Pad_900.000000x700.000000_um", "Rect[T]Pad_950.000000x1300.000000_um", "Rect[T]Pad_1000.000000x1500.000000_um", "Rect[T]Pad_1050.000000x1750.000000_um", "Rect[T]Pad_1200.000000x2750.000000_um", "Rect[T]Pad_1200.000000x700.000000_um", "Rect[T]Pad_1200.000000x1800.000000_um", "Rect[T]Pad_1400.000000x1200.000000_um", "Rect[T]Pad_1800.000000x2200.000000_um", "Via[0-5]_450:300_um"],
+        "viaPadstacks": ["Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um"]
+      },
+      "postLoadViolations": 1
+    },
+    "cli": {
+      "incClass": "90ohm",
+      "adjacentRules": null,
+      "settings": {
+        "autorouter": {
+          "enabled": true,
+          "algorithm": "freerouting-router",
+          "max_passes": 7,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "save_intermediate_stages": false,
+          "ignore_net_classes": ["90ohm"]
+        },
+        "fanout": {
+          "enabled": true,
+          "max_passes": 20,
+          "max_items": 2147483647,
+          "max_milliseconds_per_pin": 10000,
+          "ripup_allowed": true,
+          "min_escape_length_mm": 2.5,
+          "max_escape_length_mm": 4.5,
+          "start_via_diameter_mm": 0.25,
+          "end_via_diameter_mm": 0.25,
+          "pin_sorting_order": "outer_first",
+          "fallback_to_board_vias": true,
+          "timeout": null
+        },
+        "copper_to_edge_clearance_um": 250.0,
+        "hole_clearance_um": 0.0,
+        "clearance_tolerance_um": 1.0,
+        "plane_nets": [],
+        "plane_as_obstacle": false,
+        "neck_width_um": 0.0,
+        "strict_drc": false,
+        "job_timeout": "12:00:00",
+        "validation_warnings": [],
+        "trace_pull_tight_accuracy": 500,
+        "allowed_via_types": true,
+        "automatic_neckdown": true,
+        "optimizer": {
+          "enabled": false,
+          "algorithm": "freerouting-optimizer",
+          "max_passes": 100,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "improvement_threshold": 3.5,
+          "enable_preflight_guards": true,
+          "max_consecutive_failures": 50,
+          "max_consecutive_failures_pass1": 12,
+          "additional_ripup_cost_factor_at_start": 10,
+          "trace_ripup_cost_factor": 0.6,
+          "max_autoroute_passes": 6,
+          "timeout": null,
+          "board_update_strategy": "GLOBAL_OPTIMAL",
+          "item_selection_strategy": "SEQUENTIAL"
+        },
+        "scoring": {
+          "default_preferred_direction_trace_cost": 1.0,
+          "default_undesired_direction_trace_cost": 1.5,
+          "via_costs": 77,
+          "plane_via_costs": 7,
+          "start_ripup_costs": 100,
+          "default_bend_cost": 0.0,
+          "unrouted_net_penalty": 5000000.0,
+          "clearance_violation_penalty": 1000000.0,
+          "bend_penalty": 10.0,
+          "preferred_direction_trace_cost": [2.2, 1.0, 1.0, 1.0, 1.0, 2.2],
+          "undesired_direction_trace_cost": [3.7, 2.5, 2.5, 2.5, 2.5, 3.7]
+        },
+        "router_scoring": {
+          "version": "V2_CONTINUOUS",
+          "unrouted_connection_weight": 1000.0,
+          "unrouted_free_fraction": 0.5,
+          "unrouted_first_half_weight": 333.33334,
+          "unrouted_second_half_weight": 666.6667,
+          "clearance_violation_count_weight": 25.0,
+          "clearance_violation_depth_weight": 300.0,
+          "clearance_violation_depth_scale": 1000.0
+        },
+        "optimizer_scoring": {
+          "version": "V2_LOWER_BOUND",
+          "excess_wire_length_weight": 1000.0,
+          "excess_via_weight": 2000.0,
+          "excess_bend_weight": 500.0,
+          "length_floor": 1.0,
+          "difficulty_scale_floor": 1.0
+        },
+        "max_threads": 3,
+        "result_json": null,
+        "layers": [
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          }
+        ]
+      },
+      "effective": {
+        "layers": [
+          {
+            "name": "F.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.7,
+            "horizontalCost": 3.7,
+            "verticalCost": 2.2
+          },
+          {
+            "name": "In1.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.5,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.5
+          },
+          {
+            "name": "In2.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.5,
+            "horizontalCost": 2.5,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "In3.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.5,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.5
+          },
+          {
+            "name": "In4.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.5,
+            "horizontalCost": 2.5,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "B.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.7,
+            "horizontalCost": 2.2,
+            "verticalCost": 3.7
+          }
+        ],
+        "boardSpecificTraceCostsApplied": true,
+        "viaCosts": 77,
+        "planeViaCosts": 7,
+        "startRipupCosts": 100,
+        "runRouter": true,
+        "runOptimizer": false,
+        "runFanout": true,
+        "validationWarnings": []
+      },
+      "board": {
+        "clearanceMatrix": {
+          "classNames": ["null", "default", "smd", "90ohm", "100ohm", "board_edge"],
+          "valuesByLayerRowCol": [
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ]
+          ]
+        },
+        "outlineClearanceClass": "board_edge",
+        "minimumPinGap": "0.0",
+        "holeClearance": 0,
+        "clearanceToleranceUm": 1.0,
+        "ignoreConduction": true,
+        "planeNets": ["+5V", "M2_3V3", "+3V3_PI", "/PCIe-M2/M2_LX", "GND"],
+        "netClasses": [
+          {
+            "name": "default",
+            "viaRule": "default",
+            "traceClearanceClass": "default",
+            "traceHalfWidth": [750, 750, 750, 750, 750, 750],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "default",
+              "VIA": "default",
+              "PIN": "default",
+              "SMD": "smd",
+              "AREA": "default"
+            }
+          },
+          {
+            "name": "90ohm",
+            "viaRule": "90ohm",
+            "traceClearanceClass": "90ohm",
+            "traceHalfWidth": [735, 735, 735, 735, 735, 735],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": true,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "90ohm",
+              "VIA": "90ohm",
+              "PIN": "90ohm",
+              "SMD": "90ohm",
+              "AREA": "90ohm"
+            }
+          },
+          {
+            "name": "100ohm",
+            "viaRule": "100ohm",
+            "traceClearanceClass": "100ohm",
+            "traceHalfWidth": [635, 635, 635, 635, 635, 635],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "100ohm",
+              "VIA": "100ohm",
+              "PIN": "100ohm",
+              "SMD": "100ohm",
+              "AREA": "100ohm"
+            }
+          }
+        ],
+        "viaInfos": [
+          {
+            "name": "Via[0-5]_450:300_um",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "default",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-90ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "90ohm",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-100ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "100ohm",
+            "attachSmd": false
+          }
+        ],
+        "viaRules": [
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "90ohm",
+            "vias": ["Via[0-5]_450:300_um-90ohm"]
+          },
+          {
+            "name": "100ohm",
+            "vias": ["Via[0-5]_450:300_um-100ohm"]
+          }
+        ],
+        "snapAngle": "FORTYFIVE_DEGREE",
+        "padstacks": ["Round[B]Pad_3800.000000_um", "Round[T]Pad_1000.000000_um", "Round[A]Pad_1000.000000_um", "Round[A]Pad_1200.000000_um", "Round[A]Pad_2600.000000_um", "Round[T]Pad_3800.000000_um", "Round[A]Pad_4500.000000_um", "Round[A]Pad_5400.000000_um", "Oval[A]Pad_1500.000000x2300.000000_um", "Oval[A]Pad_1500.000000x3300.000000_um", "Oval[A]Pad_860.000000x1800.000000_um", "RoundRect[T]Pad_300.000000x550.000000_75.285000_um_0.000000_0", "RoundRect[T]Pad_350.000000x550.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_500.000000x1100.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_540.000000x640.000000_135.514000_um_0.000000_0", "RoundRect[T]Pad_550.000000x350.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_560.000000x620.000000_140.533000_um_0.000000_0", "RoundRect[T]Pad_600.000000x500.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_600.000000x1550.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_650.000000x400.000000_100.381000_um_0.000000_0", "RoundRect[T]Pad_1000.000000x1450.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1180.000000x4700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1800.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x600.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x2350.000000_250.951000_um_0.000000_0", "Rect[T]Pad_200.000000x700.000000_um", "Rect[T]Pad_2100.000000x3100.000000_um", "Rect[T]Pad_250.000000x680.000000_um", "Rect[T]Pad_2600.000000x300.000000_um", "Rect[T]Pad_300.000000x1300.000000_um", "Rect[T]Pad_300.000000x1550.000000_um", "Rect[T]Pad_400.000000x1100.000000_um", "Rect[T]Pad_500.000000x300.000000_um", "Rect[T]Pad_600.000000x1550.000000_um", "Rect[T]Pad_700.000000x2030.000000_um", "Rect[T]Pad_700.000000x600.000000_um", "Rect[T]Pad_800.000000x700.000000_um", "Rect[T]Pad_900.000000x700.000000_um", "Rect[T]Pad_950.000000x1300.000000_um", "Rect[T]Pad_1000.000000x1500.000000_um", "Rect[T]Pad_1050.000000x1750.000000_um", "Rect[T]Pad_1200.000000x2750.000000_um", "Rect[T]Pad_1200.000000x700.000000_um", "Rect[T]Pad_1200.000000x1800.000000_um", "Rect[T]Pad_1400.000000x1200.000000_um", "Rect[T]Pad_1800.000000x2200.000000_um", "Via[0-5]_450:300_um"],
+        "viaPadstacks": ["Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um"]
+      },
+      "postLoadViolations": 1
+    },
+    "owner-config": {
+      "adjacentRules": null,
+      "settings": {
+        "autorouter": {
+          "enabled": true,
+          "algorithm": "freerouting-router",
+          "max_passes": 0,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "save_intermediate_stages": false,
+          "ignore_net_classes": []
+        },
+        "fanout": {
+          "enabled": true,
+          "max_passes": 20,
+          "max_items": 2147483647,
+          "max_milliseconds_per_pin": 10000,
+          "ripup_allowed": true,
+          "min_escape_length_mm": 2.5,
+          "max_escape_length_mm": 4.5,
+          "start_via_diameter_mm": 0.25,
+          "end_via_diameter_mm": 0.25,
+          "pin_sorting_order": "outer_first",
+          "fallback_to_board_vias": true,
+          "timeout": null
+        },
+        "copper_to_edge_clearance_um": 250.0,
+        "hole_clearance_um": 0.0,
+        "clearance_tolerance_um": 1.0,
+        "plane_nets": [],
+        "plane_as_obstacle": false,
+        "neck_width_um": 0.0,
+        "strict_drc": false,
+        "job_timeout": "12:00:00",
+        "validation_warnings": [],
+        "trace_pull_tight_accuracy": 500,
+        "allowed_via_types": true,
+        "automatic_neckdown": true,
+        "optimizer": {
+          "enabled": true,
+          "algorithm": "freerouting-optimizer",
+          "max_passes": 100,
+          "max_items": 2147483647,
+          "max_threads": "<cores-1>",
+          "improvement_threshold": 2.5,
+          "enable_preflight_guards": true,
+          "max_consecutive_failures": 50,
+          "max_consecutive_failures_pass1": 12,
+          "additional_ripup_cost_factor_at_start": 10,
+          "trace_ripup_cost_factor": 0.6,
+          "max_autoroute_passes": 6,
+          "timeout": null,
+          "board_update_strategy": "GLOBAL_OPTIMAL",
+          "item_selection_strategy": "SEQUENTIAL"
+        },
+        "scoring": {
+          "default_preferred_direction_trace_cost": 1.0,
+          "default_undesired_direction_trace_cost": 1.0,
+          "via_costs": 50,
+          "plane_via_costs": 5,
+          "start_ripup_costs": 1500,
+          "default_bend_cost": 0.0,
+          "unrouted_net_penalty": 5000000.0,
+          "clearance_violation_penalty": 1000000.0,
+          "bend_penalty": 10.0,
+          "preferred_direction_trace_cost": [2.2, 1.0, 1.0, 1.0, 1.0, 2.2],
+          "undesired_direction_trace_cost": [3.2, 2.0, 2.0, 2.0, 2.0, 3.2]
+        },
+        "router_scoring": {
+          "version": "V2_CONTINUOUS",
+          "unrouted_connection_weight": 1000.0,
+          "unrouted_free_fraction": 0.5,
+          "unrouted_first_half_weight": 333.33334,
+          "unrouted_second_half_weight": 666.6667,
+          "clearance_violation_count_weight": 25.0,
+          "clearance_violation_depth_weight": 300.0,
+          "clearance_violation_depth_scale": 1000.0
+        },
+        "optimizer_scoring": {
+          "version": "V2_LOWER_BOUND",
+          "excess_wire_length_weight": 1000.0,
+          "excess_via_weight": 2000.0,
+          "excess_bend_weight": 500.0,
+          "length_floor": 1.0,
+          "difficulty_scale_floor": 1.0
+        },
+        "max_threads": "<cores-1>",
+        "result_json": null,
+        "layers": [
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": false,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          },
+          {
+            "routable": true,
+            "preferred_direction_horizontal": true,
+            "bend_cost": 0.0,
+            "preferred_direction_trace_cost": null,
+            "undesired_direction_trace_cost": null
+          }
+        ]
+      },
+      "effective": {
+        "layers": [
+          {
+            "name": "F.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.2,
+            "horizontalCost": 3.2,
+            "verticalCost": 2.2
+          },
+          {
+            "name": "In1.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.0
+          },
+          {
+            "name": "In2.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 2.0,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "In3.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 1.0,
+            "verticalCost": 2.0
+          },
+          {
+            "name": "In4.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": false,
+            "bendCost": 0.0,
+            "preferredCost": 1.0,
+            "againstCost": 2.0,
+            "horizontalCost": 2.0,
+            "verticalCost": 1.0
+          },
+          {
+            "name": "B.Cu",
+            "isSignal": true,
+            "active": true,
+            "preferredHorizontal": true,
+            "bendCost": 0.0,
+            "preferredCost": 2.2,
+            "againstCost": 3.2,
+            "horizontalCost": 2.2,
+            "verticalCost": 3.2
+          }
+        ],
+        "boardSpecificTraceCostsApplied": true,
+        "viaCosts": 50,
+        "planeViaCosts": 5,
+        "startRipupCosts": 1500,
+        "runRouter": true,
+        "runOptimizer": true,
+        "runFanout": true,
+        "validationWarnings": []
+      },
+      "board": {
+        "clearanceMatrix": {
+          "classNames": ["null", "default", "smd", "90ohm", "100ohm", "board_edge"],
+          "valuesByLayerRowCol": [
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ],
+            [
+              [0, 0, 0, 0, 0, 0],
+              [0, 1300, 1300, 2000, 2000, 0],
+              [0, 1300, 326, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 2000, 2000, 2000, 2000, 0],
+              [0, 0, 0, 0, 0, 0]
+            ]
+          ]
+        },
+        "outlineClearanceClass": "board_edge",
+        "minimumPinGap": "0.0",
+        "holeClearance": 0,
+        "clearanceToleranceUm": 1.0,
+        "ignoreConduction": true,
+        "planeNets": ["+5V", "M2_3V3", "+3V3_PI", "/PCIe-M2/M2_LX", "GND"],
+        "netClasses": [
+          {
+            "name": "default",
+            "viaRule": "default",
+            "traceClearanceClass": "default",
+            "traceHalfWidth": [750, 750, 750, 750, 750, 750],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "default",
+              "VIA": "default",
+              "PIN": "default",
+              "SMD": "smd",
+              "AREA": "default"
+            }
+          },
+          {
+            "name": "90ohm",
+            "viaRule": "90ohm",
+            "traceClearanceClass": "90ohm",
+            "traceHalfWidth": [735, 735, 735, 735, 735, 735],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "90ohm",
+              "VIA": "90ohm",
+              "PIN": "90ohm",
+              "SMD": "90ohm",
+              "AREA": "90ohm"
+            }
+          },
+          {
+            "name": "100ohm",
+            "viaRule": "100ohm",
+            "traceClearanceClass": "100ohm",
+            "traceHalfWidth": [635, 635, 635, 635, 635, 635],
+            "activeRoutingLayer": [true, true, true, true, true, true],
+            "isIgnoredByAutorouter": false,
+            "shoveFixed": false,
+            "pullTight": true,
+            "ignoreCyclesWithAreas": false,
+            "minimumTraceLength": 0.0,
+            "maximumTraceLength": 0.0,
+            "defaultItemClearanceClasses": {
+              "NONE": "null",
+              "TRACE": "100ohm",
+              "VIA": "100ohm",
+              "PIN": "100ohm",
+              "SMD": "100ohm",
+              "AREA": "100ohm"
+            }
+          }
+        ],
+        "viaInfos": [
+          {
+            "name": "Via[0-5]_450:300_um",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "default",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-90ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "90ohm",
+            "attachSmd": false
+          },
+          {
+            "name": "Via[0-5]_450:300_um-100ohm",
+            "padstack": "Via[0-5]_450:300_um",
+            "clearanceClass": "100ohm",
+            "attachSmd": false
+          }
+        ],
+        "viaRules": [
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "default",
+            "vias": ["Via[0-5]_450:300_um"]
+          },
+          {
+            "name": "90ohm",
+            "vias": ["Via[0-5]_450:300_um-90ohm"]
+          },
+          {
+            "name": "100ohm",
+            "vias": ["Via[0-5]_450:300_um-100ohm"]
+          }
+        ],
+        "snapAngle": "FORTYFIVE_DEGREE",
+        "padstacks": ["Round[B]Pad_3800.000000_um", "Round[T]Pad_1000.000000_um", "Round[A]Pad_1000.000000_um", "Round[A]Pad_1200.000000_um", "Round[A]Pad_2600.000000_um", "Round[T]Pad_3800.000000_um", "Round[A]Pad_4500.000000_um", "Round[A]Pad_5400.000000_um", "Oval[A]Pad_1500.000000x2300.000000_um", "Oval[A]Pad_1500.000000x3300.000000_um", "Oval[A]Pad_860.000000x1800.000000_um", "RoundRect[T]Pad_300.000000x550.000000_75.285000_um_0.000000_0", "RoundRect[T]Pad_350.000000x550.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_500.000000x1100.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_540.000000x640.000000_135.514000_um_0.000000_0", "RoundRect[T]Pad_550.000000x350.000000_87.833000_um_0.000000_0", "RoundRect[T]Pad_560.000000x620.000000_140.533000_um_0.000000_0", "RoundRect[T]Pad_600.000000x500.000000_125.476000_um_0.000000_0", "RoundRect[T]Pad_600.000000x1550.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_650.000000x400.000000_100.381000_um_0.000000_0", "RoundRect[T]Pad_1000.000000x1450.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1180.000000x4700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1700.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1200.000000x1800.000000_250.951000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x600.000000_150.571000_um_0.000000_0", "RoundRect[T]Pad_1325.000000x2350.000000_250.951000_um_0.000000_0", "Rect[T]Pad_200.000000x700.000000_um", "Rect[T]Pad_2100.000000x3100.000000_um", "Rect[T]Pad_250.000000x680.000000_um", "Rect[T]Pad_2600.000000x300.000000_um", "Rect[T]Pad_300.000000x1300.000000_um", "Rect[T]Pad_300.000000x1550.000000_um", "Rect[T]Pad_400.000000x1100.000000_um", "Rect[T]Pad_500.000000x300.000000_um", "Rect[T]Pad_600.000000x1550.000000_um", "Rect[T]Pad_700.000000x2030.000000_um", "Rect[T]Pad_700.000000x600.000000_um", "Rect[T]Pad_800.000000x700.000000_um", "Rect[T]Pad_900.000000x700.000000_um", "Rect[T]Pad_950.000000x1300.000000_um", "Rect[T]Pad_1000.000000x1500.000000_um", "Rect[T]Pad_1050.000000x1750.000000_um", "Rect[T]Pad_1200.000000x2750.000000_um", "Rect[T]Pad_1200.000000x700.000000_um", "Rect[T]Pad_1200.000000x1800.000000_um", "Rect[T]Pad_1400.000000x1200.000000_um", "Rect[T]Pad_1800.000000x2200.000000_um", "Via[0-5]_450:300_um"],
+        "viaPadstacks": ["Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um", "Via[0-5]_450:300_um"]
+      },
+      "postLoadViolations": 1
+    }
+  }
+}

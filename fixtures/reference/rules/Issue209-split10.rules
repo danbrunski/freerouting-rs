@@ -1,0 +1,68 @@
+
+(rules PCB Issue209-split10
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (class default
+    GP11 "board_pinky_bottom" GP12 "board_pinky_home" GP13 "board_pinky_top" "board_ring_bottom" "board_ring_home"
+    "board_ring_top" "board_middle_bottom" "board_middle_home" "board_middle_top" "board_index_bottom" "board_index_home" "board_index_top" "board_index_far_bottom"
+    "board_index_far_home" "board_index_far_top" "index_extra_extraC_etop" "index_extra_extraC_ebottom" GP8 "thumb_near_thumbR" "thumb_home_thumbR" "thumb_near_right_thumbR"
+    "thumb_far_thumbR" "thumb_far_up_thumbR" GND GP1 P3V3 GP29 GP28 GP27
+    GP26 GP15 GP14 GP6 GP5 GP4 GP3 GP7
+    P5V GP10 GP9 GP2 GP0
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

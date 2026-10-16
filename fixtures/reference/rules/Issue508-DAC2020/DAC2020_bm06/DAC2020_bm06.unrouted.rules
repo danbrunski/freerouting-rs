@@ -1,0 +1,67 @@
+
+(rules PCB DAC2020_bm06.unrouted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.0)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.5)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    GND "3.3V" "5V" "Net-(IC1-Pad24)" "Net-(C4-Pad1)" /REG "Net-(C3-Pad2)" "Net-(C3-Pad1)"
+    "/VBAT_MAIN" "/VBAT_CELL" "Net-(IC1-Pad12)" "Net-(IC1-Pad11)" "Net-(IC1-Pad10)" "Net-(IC1-Pad9)" "/CHG_INT" /SDA
+    /SCL "Net-(IC1-Pad4)" "Net-(IC1-Pad3)" "Net-(IC1-Pad2)" "Net-(IC1-Pad1)" "/FUEL_INT" "Net-(IC2-Pad11)" "Net-(IC2-Pad10)"
+    "Net-(IC2-Pad9)" "Net-(IC2-Pad6)" "Net-(C10-Pad1)" "Net-(IC2-Pad4)" "Net-(J1-PadID)" "Net-(J2-Pad3)" "Net-(J2-Pad2)" "Net-(J3-PadNC2)"
+    "Net-(J3-PadNC1)" "Net-(D2-PadC)" "Net-(IC3-Pad8)" "Net-(C7-Pad1)" "Net-(IC3-Pad5)" "Net-(IC3-Pad1)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Bottom)
+    )
+  )
+)

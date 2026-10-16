@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue954-polygon64.dsn",
+  "designName": "Issue954-polygon64",
+  "unroutedBytes": 573,
+  "import": {
+    "wiresImported": 2,
+    "viasImported": 2,
+    "errorsEncountered": 0,
+    "routedBytes": 1052
+  }
+}

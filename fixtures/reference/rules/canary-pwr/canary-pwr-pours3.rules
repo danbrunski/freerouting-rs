@@ -1,0 +1,218 @@
+
+(rules PCB canary-pwr-pours3
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule Gnd.Cu
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule Power.Cu
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "Power_High"))
+    (clearance 200.0 (type Power))
+    (clearance 200.0 (type GND))
+    (clearance 250.0 (type "Switch_Node"))
+    (clearance 200.0 (type CAN))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Gnd.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Power.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle Gnd.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle Power.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_600:300_um" "Via[0-3]_600:300_um" default
+  )
+  (via 
+    "Via[0-3]_800:400_um" "Via[0-3]_800:400_um" default
+  )
+  (via 
+    "Via[0-3]_600:300_um-Power_High" "Via[0-3]_600:300_um" "Power_High"
+  )
+  (via 
+    "Via[0-3]_800:400_um-Power_High" "Via[0-3]_800:400_um" "Power_High"
+  )
+  (via 
+    "Via[0-3]_600:300_um-Power" "Via[0-3]_600:300_um" Power
+  )
+  (via 
+    "Via[0-3]_800:400_um-Power" "Via[0-3]_800:400_um" Power
+  )
+  (via 
+    "Via[0-3]_600:300_um-GND" "Via[0-3]_600:300_um" GND
+  )
+  (via 
+    "Via[0-3]_800:400_um-GND" "Via[0-3]_800:400_um" GND
+  )
+  (via 
+    "Via[0-3]_600:300_um-Switch_Node" "Via[0-3]_600:300_um" "Switch_Node"
+  )
+  (via 
+    "Via[0-3]_800:400_um-Switch_Node" "Via[0-3]_800:400_um" "Switch_Node"
+  )
+  (via 
+    "Via[0-3]_600:300_um-CAN" "Via[0-3]_600:300_um" CAN
+  )
+  (via 
+    "Via[0-3]_800:400_um-CAN" "Via[0-3]_800:400_um" CAN
+  )
+  (viaRule
+    default "Via[0-3]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-3]_600:300_um"
+  )
+  (viaRule
+    "Power_High" "Via[0-3]_800:400_um-Power_High"
+  )
+  (viaRule
+    Power "Via[0-3]_600:300_um-Power"
+  )
+  (viaRule
+    GND "Via[0-3]_600:300_um-GND"
+  )
+  (viaRule
+    "Switch_Node" "Via[0-3]_600:300_um-Switch_Node"
+  )
+  (viaRule
+    CAN "Via[0-3]_600:300_um-CAN"
+  )
+  (class default
+    "PI_5V_OFF" "/Pi_Supply/BUCK_EN" "/Holdup/LTC_GPI" "/Holdup/LTC_PFI" "/Holdup/LTC_OUTFB" "/Supervisor/LED2_A" "/Holdup/LTC_ITST" "/Holdup/LTC_CFP"
+    "/Holdup/LTC_CFN" "/Input/Q_REV_G" /Supervisor/BUTTON "/Holdup/LTC_TG" "/Pi_Supply/OR_VCAP" "/Pi_Supply/OR_GATE" "/Supervisor/LED1_A" "/Pi_Supply/LM_VCC"
+    "/Pi_Supply/LM_FB" "BUCK_PG" "/Pi_Supply/LM_RT" "/Pi_Supply/LM_CBOOT" "/Holdup/LTC_VC" "PRIV_SCL" "PRIV_SDA" "LTC_SMBALERT"
+    "unconnected-(U1-CAPGD-Pad4)" "/Holdup/LTC_RT" "/Holdup/LTC_VCAPP5" "/Holdup/LTC_OUTFET" "/Holdup/LTC_VCC2P5" "/Holdup/LTC_BST" "/Holdup/LTC_BG" "/Holdup/LTC_VOUTM5"
+    "/Holdup/LTC_INFET" "LTC_PFO" /Supervisor/SWDIO "SWCLK_BOOT0" "unconnected-(J5-SWO{slash}TDO-Pad6)" "unconnected-(J5-KEY-Pad7)" "unconnected-(J5-NC{slash}TDI-Pad8)" "MCU_NRST"
+    "unconnected-(U3-~{Alert}-Pad3)" "/Input/V_BCKP_AON" "/Pi_Supply/LM_FF" "/Pi_Interface/NRST_GATE" "VIN_SENSE" "/Supervisor/LED_BANK" "/Pi_Interface/PI_NRST" "MCU_SDA"
+    "/Supervisor/LED_STATUS" "/Pi_Interface/PI_BOOT0" "unconnected-(U6-PG-Pad3)" "unconnected-(U6-NC-Pad6)" "unconnected-(U6-DELAY-Pad7)" "MCU_SCL" "/Pi_Interface/PI_SDA" "/Pi_Interface/PI_SCL"
+    "unconnected-(J1-Pin_7-Pad7)" "unconnected-(J1-Pin_8-Pad8)" "unconnected-(J1-Pin_10-Pad10)" "unconnected-(J1-Pin_11-Pad11)" "unconnected-(J1-Pin_12-Pad12)" "unconnected-(J1-Pin_15-Pad15)" "unconnected-(J1-Pin_16-Pad16)" "unconnected-(J1-Pin_19-Pad19)"
+    "unconnected-(J1-Pin_21-Pad21)" "unconnected-(J1-Pin_22-Pad22)" "unconnected-(J1-Pin_23-Pad23)" "unconnected-(J1-Pin_24-Pad24)" "unconnected-(J1-Pin_26-Pad26)" "unconnected-(J1-Pin_27-Pad27)" "unconnected-(J1-Pin_28-Pad28)" "unconnected-(J1-Pin_29-Pad29)"
+    "~{PWR_FAIL}" "unconnected-(J1-Pin_32-Pad32)" "unconnected-(J1-Pin_33-Pad33)" "unconnected-(J1-Pin_35-Pad35)" "unconnected-(J1-Pin_36-Pad36)" "unconnected-(J1-Pin_37-Pad37)" "unconnected-(J1-Pin_38-Pad38)" "unconnected-(J1-Pin_40-Pad40)"
+    "/Supervisor/CAN_WAKE" "/Supervisor/CAN_RXD" "/Supervisor/CAN_EN" "unconnected-(U7-INH-Pad7)" "/Supervisor/CAN_FAULT_N" "unconnected-(U7-NC-Pad11)" "/Supervisor/CAN_STB_N" "PI_3V3_SENSE"
+    "unconnected-(U5-PC15-Pad3)" "unconnected-(U5-PA1-Pad8)" "unconnected-(U5-PA2-Pad9)" "unconnected-(U5-PA3-Pad10)" "unconnected-(U5-PB1-Pad16)" "unconnected-(U5-PB2-Pad17)" "unconnected-(U5-NC{slash}PA9-Pad19)" "unconnected-(U5-PC6-Pad20)"
+    "unconnected-(U5-NC{slash}PA10-Pad21)" "/Pi_Interface/I2C_READY"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "Power_High"
+    "+5V_PI" "+12V_BUS" /Holdup/VCAP "/Input/+12V_RAW" "+12V_PROT" "+5V_BUCK" "/Pi_Supply/+5V_SHUNT" "/Holdup/LTC_ICAP"
+    "/Holdup/LTC_VOUTSP"
+    (clearance_class "Power_High")
+    (via_rule "Power_High")
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Power
+    "/Holdup/BANK_POS_S" "/Holdup/BANK_NEG_S" "/Holdup/BANK_TAP3" "/Holdup/BANK_TAP2" "/Holdup/BANK_TAP1" "/Holdup/LTC_INTVCC" "/Holdup/LTC_CAPFB" "/Holdup/LTC_CAPRTN"
+    "/Holdup/LTC_CAP1" "/Holdup/LTC_CAP2" "/Holdup/LTC_CAP3" "/Holdup/LTC_CAP4" "+3V3_AON" "/Input/+12V_HAT" "/Supervisor/AON_IN" "/Pi_Interface/PI_3V3"
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class GND
+    GND
+    (clearance_class GND)
+    (via_rule GND)
+    (rule
+      (width 300.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "Switch_Node"
+    "/Holdup/LTC_SW" "/Pi_Supply/LM_SW"
+    (clearance_class "Switch_Node")
+    (via_rule "Switch_Node")
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class CAN
+    CANH CANL
+    (clearance_class CAN)
+    (via_rule CAN)
+    (rule
+      (width 300.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

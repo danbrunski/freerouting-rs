@@ -1,0 +1,59 @@
+
+(rules PCB Issue954-invalid-polygon64
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+  )
+  (rule
+    (width 150.0)
+    (clearance 200.0)
+    (clearance 75.0 (type smd_to_turn_gap))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack Via560
+    (shape
+      (circle F.Cu 560.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 560.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    Via560 Via560 default
+  )
+  (viaRule
+    default Via560
+  )
+  (class default
+    TEST
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 150.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

@@ -1,0 +1,78 @@
+
+(rules PCB Issue229-display-8-digit-hc595
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:400_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1016:485.7_um"
+    (shape
+      (circle F.Cu 1016.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1016.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:400_um" "Via[0-1]_600:400_um" default
+  )
+  (via 
+    "Via[0-1]_1016:485.7_um" "Via[0-1]_1016:485.7_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:400_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:400_um"
+  )
+  (class default
+    GND VCC /E /D /K1 /C /P /B
+    /A /F /G /K2 /K3 /K4 /K5 /K6
+    /K7 /K8 "Net-(K1-Pad3)" "Net-(K1-Pad4)" "Net-(K1-Pad5)" "Net-(R1-Pad1)" "Net-(R2-Pad1)" "Net-(R3-Pad1)"
+    "Net-(R4-Pad1)" "Net-(R5-Pad1)" "Net-(R6-Pad1)" "Net-(R7-Pad1)" "Net-(R8-Pad1)" "Net-(U1-Pad9)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

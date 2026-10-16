@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue756-tomu-fpga7.dsn",
+  "designName": "Issue756-tomu-fpga7",
+  "unroutedBytes": 430289,
+  "import": {
+    "wiresImported": 868,
+    "viasImported": 162,
+    "errorsEncountered": 0,
+    "routedBytes": 569163
+  }
+}

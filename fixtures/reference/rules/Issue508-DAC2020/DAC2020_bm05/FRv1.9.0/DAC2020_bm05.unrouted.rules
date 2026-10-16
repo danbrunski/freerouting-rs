@@ -1,0 +1,69 @@
+
+(rules PCB DAC2020_bm05.unrouted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    GND "3.3V" "5V" /SPKVDD /SPOLN "Net-(C20-Pad2)" /SPORP /SPORN
+    "Net-(IC1-Pad42)" "/XAUDIO_IRQ" "/XAUDIO_SDA" "/XADUIO_SCL" "/XAUDIO_I2S0_MCLK" "/XADUIO_I2S0_BCLK" "/XADUIO_I2S0_LRCKL" "/XAUDIO_I2S0_DIN"
+    "/XAUDIO_I2S0_DOUT" "Net-(IC1-Pad33)" "Net-(IC1-Pad32)" "Net-(IC1-Pad31)" "Net-(IC1-Pad30)" /3.3VDD "Net-(C22-Pad2)" "Net-(C14-Pad1)"
+    "Net-(C16-Pad2)" "Net-(C16-Pad1)" "Net-(C15-Pad1)" "Net-(C15-Pad2)" /1.8VDD "Net-(C2-Pad1)" /HPOR /HPOL
+    /CPVREF "Net-(C17-Pad2)" /LOUTR /LOUTL "Net-(C24-Pad2)" "Net-(C19-Pad2)" "Net-(C18-Pad2)" "Net-(C6-Pad2)"
+    /IN1P "Net-(C21-Pad2)" /MICBIAS1 /SPOLP /IN2P "Net-(U1-Pad6)" "Net-(R10-Pad2)" "Net-(C8-Pad2)"
+    "Net-(C7-Pad2)" "Net-(J4-Pad9)" "Net-(C7-Pad1)" "Net-(C8-Pad1)" "Net-(IC2-Pad5)" "Net-(IC2-Pad3)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Bottom)
+    )
+  )
+)

@@ -1,0 +1,21 @@
+{
+  "id": "04-out-xyz",
+  "args": ["-de", "Issue413-test.dsn", "-do", "out.xyz", "--router.enabled=false", "--router.fanout.enabled=false", "--router.optimizer.enabled=false"],
+  "exitCode": 0,
+  "files": [
+    {
+      "path": "Issue413-test.dsn",
+      "size": 8674
+    },
+    {
+      "path": "out.xyz",
+      "size": 2908
+    }
+  ],
+  "texts": {
+    "out.xyz": "(session \"Issue413-test\"\n  (base_design \"Issue413-test\")\n  (placement\n    (resolution um 10)\n    (component \"endpoint_footprint\"\n      (place X8 5600000.0 -3200000.0 front 0)\n      (place X3 3000000.0 -2500000.0 front 0)\n      (place X7 3600000.0 -1200000.0 front 0)\n      (place X2 4800000.0 -4400000.0 front 0)\n      (place X1 5000000.0 -300000.0 front 0)\n      (place X9 3600000.0 -3000000.0 front 0)\n      (place X5 1900000.0 -5300000.0 front 0)\n      (place X10 4300000.0 -2900000.0 front 0)\n      (place X4 500000.0 -3800000.0 front 0)\n      (place X6 200000.0 -200000.0 front 0)\n    )\n  )\n  (was_is\n  )\n  (routes \n    (resolution um 10)\n    (parser\n      (host_cad \"KiCad's Pcbnew\")\n      (host_version \"8.0.7-8.0.7-0~ubuntu24.04.1\")\n    )\n    (library_out \n      (padstack \"Via[0-1]_600:300_um\"\n        (shape\n          (circle F.Cu 6000 0 0)\n        )\n        (shape\n          (circle B.Cu 6000 0 0)\n        )\n        (attach off)\n      )\n    )\n    (network_out \n      (net N0\n        (via \"Via[0-1]_600:300_um\" 3776417.0 -4403436.0\n        )\n        (via \"Via[0-1]_600:300_um\" 3119475.0 -372201.0\n        )\n        (wire\n          (path F.Cu 49000\n            4825000 -4425000\n            4751000 -4425000\n          )\n        )\n        (wire\n          (path F.Cu 49000\n            3776417 -4403436\n            4729436 -4403436\n            4751000 -4425000\n          )\n        )\n        (wire\n          (path B.Cu 49000\n            3119475 -372201\n            3119475 -3746494\n            3776417 -4403436\n          )\n        )\n        (wire\n          (path F.Cu 49000\n            5025000 -325000\n            3166676 -325000\n            3119475 -372201\n          )\n        )\n      )\n      (net N3\n        (wire\n          (path F.Cu 49000\n            5625000 -3225000\n            5625000 -3112041\n            3737959 -1225000\n            3625000 -1225000\n          )\n        )\n      )\n      (net N2\n        (via \"Via[0-1]_600:300_um\" 252819.0 -5149961.0\n        )\n        (via \"Via[0-1]_600:300_um\" 222958.0 -282618.0\n        )\n        (wire\n          (path F.Cu 49000\n            1925000 -5325000\n            1851000 -5325000\n          )\n        )\n        (wire\n          (path F.Cu 49000\n            252819 -5149961\n            1675961 -5149961\n            1851000 -5325000\n          )\n        )\n        (wire\n          (path B.Cu 49000\n            222958 -282618\n            222958 -5120100\n            252819 -5149961\n          )\n        )\n        (wire\n          (path F.Cu 49000\n            225000 -225000\n            222958 -227042\n            222958 -282618\n          )\n        )\n      )\n      (net N4\n        (wire\n          (path F.Cu 49000\n            3625000 -3025000\n            3699000 -3025000\n          )\n        )\n        (wire\n          (path F.Cu 49000\n            4325000 -2925000\n            3799000 -2925000\n            3699000 -3025000\n          )\n        )\n      )\n    )\n  )\n)"
+  },
+  "stageLines": [],
+  "logLines": ["WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "WARN   GUI is disabled and you don't have a console available, so the only feedback from Freerouting is in the log.", "WARN   Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release.", "INFO   Saving output file '<tmp>/out.xyz' (SES)...", "INFO   Successfully saved output file '<tmp>/out.xyz' (2908 bytes)."],
+  "plainOutput": []
+}

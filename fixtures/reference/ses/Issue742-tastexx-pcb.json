@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue742-tastexx-pcb.dsn",
+  "designName": "Issue742-tastexx-pcb",
+  "unroutedBytes": 1481,
+  "import": {
+    "wiresImported": 51,
+    "viasImported": 2,
+    "errorsEncountered": 0,
+    "routedBytes": 11116
+  }
+}

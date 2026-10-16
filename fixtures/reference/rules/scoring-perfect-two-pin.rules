@@ -1,0 +1,37 @@
+
+(rules PCB scoring-perfect-two-pin
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.0)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (class default
+    PERFECT
+    (clearance_class default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu)
+    )
+  )
+)

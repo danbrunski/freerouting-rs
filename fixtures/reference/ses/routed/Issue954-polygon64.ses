@@ -1,0 +1,56 @@
+(session "Issue954-polygon64"
+  (base_design "Issue954-polygon64")
+  (placement
+    (resolution um 10)
+    (component "physical_hole"
+      (place P0 100000.0 -100000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+      (padstack Via560
+        (shape
+          (circle F.Cu 5600 0 0)
+        )
+        (shape
+          (circle B.Cu 5600 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net TEST
+        (via Via560 111768.0 -128409.0
+          (type protect)
+        )
+        (via Via560 127799.0 -37013.0
+          (type protect)
+        )
+        (wire
+          (path B.Cu 1500
+            111768 -128409
+            127799 -112378
+            127799 -37013
+          )
+          (type protect)
+        )
+        (wire
+          (path F.Cu 1500
+            100000 -29250
+            107763 -37013
+            127799 -37013
+          )
+          (type protect)
+        )
+        (via Via560 111768.0 -128409.0
+          (type protect)
+        )
+      )
+    )
+  )
+)

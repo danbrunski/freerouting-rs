@@ -1,0 +1,476 @@
+
+(rules PCB Issue022-AutoRouter_interrupted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+  )
+  (rule
+    (width 203.2)
+    (clearance 152.6)
+    (clearance 101.6 (type smd_to_turn_gap))
+    (clearance 38.2 (type smd))
+    (clearance 190.6 (type "1A EXTERNAL 1oz"))
+    (clearance 190.6 (type "2.5A EXTERNAL"))
+    (clearance 1016.2 (type "3,5A EXT HIGH VOLTAGE"))
+    (clearance 190.6 (type "3.5A EXTERNAL 1oz"))
+    (clearance 190.6 (type "5A EXTERNAL 1oz"))
+    (clearance 152.6 (type CUSTOM))
+    (clearance 152.6 (type "CUSTOM 0.6"))
+    (clearance 152.6 (type "MIN_EXTERN_188A"))
+    (clearance 152.6 (type "MIN_EXTERN_241A"))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_685.8:330.2_um"
+    (shape
+      (circle F.Cu 685.8 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 685.8 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1092.2:685.8_um"
+    (shape
+      (circle F.Cu 1092.2 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1092.2 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1541.78:1186.18_um"
+    (shape
+      (circle F.Cu 1541.8 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1541.8 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1000:400_um"
+    (shape
+      (circle F.Cu 1000.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1000.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_600:330.2_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1541.8:1186.18_um"
+    (shape
+      (circle F.Cu 1541.8 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1541.8 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um" "Via[0-1]_685.8:330.2_um" default
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um" "Via[0-1]_1092.2:685.8_um" default
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um" "Via[0-1]_1541.78:1186.18_um" default
+  )
+  (via 
+    "Via[0-1]_1000:400_um" "Via[0-1]_1000:400_um" default
+  )
+  (via 
+    "Via[0-1]_600:330.2_um" "Via[0-1]_600:330.2_um" default
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um" "Via[0-1]_1541.8:1186.18_um" default
+  )
+  (via 
+    "Via[0-1]_600:300_um-1A EXTERNAL 1oz" "Via[0-1]_600:300_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-1A EXTERNAL 1oz" "Via[0-1]_685.8:330.2_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-1A EXTERNAL 1oz" "Via[0-1]_1092.2:685.8_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-1A EXTERNAL 1oz" "Via[0-1]_1541.78:1186.18_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-1A EXTERNAL 1oz" "Via[0-1]_1000:400_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-1A EXTERNAL 1oz" "Via[0-1]_600:330.2_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-1A EXTERNAL 1oz" "Via[0-1]_1541.8:1186.18_um" "1A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_600:300_um-2.5A EXTERNAL" "Via[0-1]_600:300_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-2.5A EXTERNAL" "Via[0-1]_685.8:330.2_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-2.5A EXTERNAL" "Via[0-1]_1092.2:685.8_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-2.5A EXTERNAL" "Via[0-1]_1541.78:1186.18_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-2.5A EXTERNAL" "Via[0-1]_1000:400_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-2.5A EXTERNAL" "Via[0-1]_600:330.2_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-2.5A EXTERNAL" "Via[0-1]_1541.8:1186.18_um" "2.5A EXTERNAL"
+  )
+  (via 
+    "Via[0-1]_600:300_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_600:300_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_685.8:330.2_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_1092.2:685.8_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_1541.78:1186.18_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_1000:400_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_600:330.2_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-3,5A EXT HIGH VOLTAGE" "Via[0-1]_1541.8:1186.18_um" "3,5A EXT HIGH VOLTAGE"
+  )
+  (via 
+    "Via[0-1]_600:300_um-3.5A EXTERNAL 1oz" "Via[0-1]_600:300_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-3.5A EXTERNAL 1oz" "Via[0-1]_685.8:330.2_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-3.5A EXTERNAL 1oz" "Via[0-1]_1092.2:685.8_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-3.5A EXTERNAL 1oz" "Via[0-1]_1541.78:1186.18_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-3.5A EXTERNAL 1oz" "Via[0-1]_1000:400_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-3.5A EXTERNAL 1oz" "Via[0-1]_600:330.2_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-3.5A EXTERNAL 1oz" "Via[0-1]_1541.8:1186.18_um" "3.5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_600:300_um-5A EXTERNAL 1oz" "Via[0-1]_600:300_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-5A EXTERNAL 1oz" "Via[0-1]_685.8:330.2_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-5A EXTERNAL 1oz" "Via[0-1]_1092.2:685.8_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-5A EXTERNAL 1oz" "Via[0-1]_1541.78:1186.18_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-5A EXTERNAL 1oz" "Via[0-1]_1000:400_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-5A EXTERNAL 1oz" "Via[0-1]_600:330.2_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-5A EXTERNAL 1oz" "Via[0-1]_1541.8:1186.18_um" "5A EXTERNAL 1oz"
+  )
+  (via 
+    "Via[0-1]_600:300_um-CUSTOM" "Via[0-1]_600:300_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-CUSTOM" "Via[0-1]_685.8:330.2_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-CUSTOM" "Via[0-1]_1092.2:685.8_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-CUSTOM" "Via[0-1]_1541.78:1186.18_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_1000:400_um-CUSTOM" "Via[0-1]_1000:400_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-CUSTOM" "Via[0-1]_600:330.2_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-CUSTOM" "Via[0-1]_1541.8:1186.18_um" CUSTOM
+  )
+  (via 
+    "Via[0-1]_600:300_um-CUSTOM 0.6" "Via[0-1]_600:300_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-CUSTOM 0.6" "Via[0-1]_685.8:330.2_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-CUSTOM 0.6" "Via[0-1]_1092.2:685.8_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-CUSTOM 0.6" "Via[0-1]_1541.78:1186.18_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-CUSTOM 0.6" "Via[0-1]_1000:400_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-CUSTOM 0.6" "Via[0-1]_600:330.2_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-CUSTOM 0.6" "Via[0-1]_1541.8:1186.18_um" "CUSTOM 0.6"
+  )
+  (via 
+    "Via[0-1]_600:300_um-MIN_EXTERN_188A" "Via[0-1]_600:300_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-MIN_EXTERN_188A" "Via[0-1]_685.8:330.2_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-MIN_EXTERN_188A" "Via[0-1]_1092.2:685.8_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-MIN_EXTERN_188A" "Via[0-1]_1541.78:1186.18_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-MIN_EXTERN_188A" "Via[0-1]_1000:400_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-MIN_EXTERN_188A" "Via[0-1]_600:330.2_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-MIN_EXTERN_188A" "Via[0-1]_1541.8:1186.18_um" "MIN_EXTERN_188A"
+  )
+  (via 
+    "Via[0-1]_600:300_um-MIN_EXTERN_241A" "Via[0-1]_600:300_um" "MIN_EXTERN_241A"
+  )
+  (via 
+    "Via[0-1]_685.8:330.2_um-MIN_EXTERN_241A" "Via[0-1]_685.8:330.2_um" "MIN_EXTERN_241A"
+  )
+  (via 
+    "Via[0-1]_1092.2:685.8_um-MIN_EXTERN_241A" "Via[0-1]_1092.2:685.8_um" "MIN_EXTERN_241A"
+  )
+  (via 
+    "Via[0-1]_1541.78:1186.18_um-MIN_EXTERN_241A" "Via[0-1]_1541.78:1186.18_um" "MIN_EXTERN_241A"
+  )
+  (via 
+    "Via[0-1]_1000:400_um-MIN_EXTERN_241A" "Via[0-1]_1000:400_um" "MIN_EXTERN_241A"
+  )
+  (via 
+    "Via[0-1]_600:330.2_um-MIN_EXTERN_241A" "Via[0-1]_600:330.2_um" "MIN_EXTERN_241A"
+  )
+  (via 
+    "Via[0-1]_1541.8:1186.18_um-MIN_EXTERN_241A" "Via[0-1]_1541.8:1186.18_um" "MIN_EXTERN_241A"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    "1A EXTERNAL 1oz" "Via[0-1]_685.8:330.2_um-1A EXTERNAL 1oz"
+  )
+  (viaRule
+    "2.5A EXTERNAL" "Via[0-1]_685.8:330.2_um-2.5A EXTERNAL"
+  )
+  (viaRule
+    "3,5A EXT HIGH VOLTAGE" "Via[0-1]_685.8:330.2_um-3,5A EXT HIGH VOLTAGE"
+  )
+  (viaRule
+    "3.5A EXTERNAL 1oz" "Via[0-1]_1092.2:685.8_um-3.5A EXTERNAL 1oz"
+  )
+  (viaRule
+    "5A EXTERNAL 1oz" "Via[0-1]_1541.78:1186.18_um-5A EXTERNAL 1oz"
+  )
+  (viaRule
+    CUSTOM "Via[0-1]_600:300_um-CUSTOM"
+  )
+  (viaRule
+    "CUSTOM 0.6" "Via[0-1]_1000:400_um-CUSTOM 0.6"
+  )
+  (viaRule
+    "MIN_EXTERN_188A" "Via[0-1]_685.8:330.2_um-MIN_EXTERN_188A"
+  )
+  (viaRule
+    "MIN_EXTERN_241A" "Via[0-1]_600:300_um-MIN_EXTERN_241A"
+  )
+  (class default
+    /3H "/J804_3.3V" "Net-(D3-Pad1)" "Net-(D10-Pad2)" "Net-(D11-Pad2)" "Net-(D12-Pad2)" "/AV8_UNUSED" "/HI2_UNUSED"
+    "/HI4_UNUSED" "Net-(D13-Pad2)" "Net-(D15-Pad2)" "Net-(D17-Pad2)" "Net-(D19-Pad2)" "Net-(D21-Pad2)" "Net-(D23-Pad2)" "Net-(D25-Pad2)"
+    "Net-(D27-Pad2)" "/J801_5V" "/J802_12V" "Net-(D14-Pad2)" "Net-(D16-Pad2)" "Net-(D18-Pad2)" "Net-(D20-Pad2)" "Net-(D22-Pad2)"
+    "Net-(D24-Pad2)" "Net-(D26-Pad2)" "Net-(D28-Pad2)" "Net-(D32-Pad2)" "/UNSUED_HALL_REF_2.5V" "/AV9_UNUSED" "/AV7_UNUSED" "/AV10_UNUSED"
+    "/AT4_UNUSED" "/AV5_UNUSED" "/AV4_UNUSED" /ETB2 /ETB1 "/AT3_UNUSED" "/AV3_UNUSED"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 203.2)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "1A EXTERNAL 1oz"
+    GND "Net-(P1-Pad15)" "Net-(P1-Pad16)" "Net-(P1-Pad17)" "Net-(P1-Pad18)" "Net-(P1-Pad19)" "Net-(P1-Pad20)" "Net-(P1-Pad21)"
+    "Net-(P1-Pad22)" "Net-(P1-Pad23)" "Net-(P1-Pad24)" "Net-(P1-Pad25)" "Net-(P1-Pad26)" "Net-(P1-Pad27)" "Net-(P1-Pad28)" "Net-(P1-Pad29)"
+    "Net-(P1-Pad30)" "Net-(P1-Pad31)" "Net-(P1-Pad32)" "Net-(P1-Pad33)" "Net-(P1-Pad34)" "Net-(P1-Pad35)" "Net-(P1-Pad36)" "Net-(P1-Pad37)"
+    "Net-(P1-Pad38)" "Net-(P1-Pad39)" "Net-(P1-Pad40)" "Net-(P1-Pad41)" "Net-(P1-Pad42)" "Net-(P1-Pad43)" "Net-(P1-Pad44)" "Net-(P1-Pad45)"
+    "Net-(P1-Pad46)" "Net-(P1-Pad47)" "Net-(P1-Pad48)" "Net-(P1-Pad49)" "Net-(P1-Pad50)" "Net-(P1-Pad57)" "Net-(P1-Pad58)" "Net-(P1-Pad59)"
+    "Net-(P1-Pad60)" "Net-(P1-Pad61)" "Net-(P1-Pad62)" "Net-(P1-Pad63)" "Net-(P1-Pad64)" "Net-(P1-Pad65)" "Net-(P1-Pad66)" "Net-(P1-Pad67)"
+    "Net-(P1-Pad68)" "Net-(P1-Pad69)" "Net-(P1-Pad70)" "Net-(P1-Pad71)" "Net-(P1-Pad72)" /2C /2F /2I
+    /2O /2R /3C /3F /4 /2A /2D /2G
+    /2J /2M /LowSide1/OUT2 /LowSide2/OUT1 /LowSide2/OUT2 "Net-(D3-Pad2)" "Net-(D4-Pad2)" "Net-(D7-Pad2)"
+    "Net-(D8-Pad2)" "Net-(R1-Pad1)" "Net-(R2-Pad1)" "Net-(R7-Pad1)" "Net-(R10-Pad1)" /2Q /4R /2B
+    /3I /3M /3O /4L /4U /4N /4P /4V
+    /3V /3Y /3L /3N /3W /3X /3Z /VBAT
+    /3U "Net-(J5-Pad1)" "Net-(J6-Pad1)" "Net-(J6-Pad2)" "Net-(J6-Pad3)" "Net-(J6-Pad4)" "Net-(J7-Pad1)" "Net-(J7-Pad2)"
+    "Net-(J7-Pad3)" "Net-(J7-Pad4)" "Net-(J7-Pad5)" "Net-(P1-Pad1)" "Net-(P1-Pad2)" "Net-(P1-Pad3)" "Net-(P1-Pad4)" "Net-(P1-Pad5)"
+    "Net-(P1-Pad6)" "Net-(P1-Pad7)" "Net-(P1-Pad8)" "Net-(P1-Pad9)" "Net-(P1-Pad10)" "Net-(P1-Pad11)" "Net-(P1-Pad12)" "Net-(P1-Pad13)"
+    "Net-(P1-Pad51)" "Net-(P1-Pad52)" "Net-(P1-Pad53)" "Net-(P1-Pad54)" "Net-(P1-Pad55)" /4K /4AH "/J808_PC10"
+    "/J805_PC11" /2E /2H /2K /2N /3D /3E /3J
+    /3K /3P /3Q /3S /3T /4AA /4AB /4AC
+    /4AD /4AE /4AG /4B /4C /4E /4F /4H
+    /4I /4J /4M /4T /4W /4X /4Z "/J807_PA15"
+    "/J803_PB8" "/J806_PB9" "/J810_PC12"
+    (clearance_class "1A EXTERNAL 1oz")
+    (via_rule "1A EXTERNAL 1oz")
+    (rule
+      (width 304.8)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "2.5A EXTERNAL"
+    (clearance_class "2.5A EXTERNAL")
+    (via_rule "2.5A EXTERNAL")
+    (rule
+      (width 1066.8)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "3,5A EXT HIGH VOLTAGE"
+    (clearance_class "3,5A EXT HIGH VOLTAGE")
+    (via_rule "3,5A EXT HIGH VOLTAGE")
+    (rule
+      (width 1676.4)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "3.5A EXTERNAL 1oz"
+    +12V "/12_IGN_KEY" "Net-(P1-Pad56)"
+    (clearance_class "3.5A EXTERNAL 1oz")
+    (via_rule "3.5A EXTERNAL 1oz")
+    (rule
+      (width 1651.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "5A EXTERNAL 1oz"
+    (clearance_class "5A EXTERNAL 1oz")
+    (via_rule "5A EXTERNAL 1oz")
+    (rule
+      (width 2667.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class CUSTOM
+    (clearance_class CUSTOM)
+    (via_rule CUSTOM)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "CUSTOM 0.6"
+    (clearance_class "CUSTOM 0.6")
+    (via_rule "CUSTOM 0.6")
+    (rule
+      (width 600.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "MIN_EXTERN_188A"
+    (clearance_class "MIN_EXTERN_188A")
+    (via_rule "MIN_EXTERN_188A")
+    (rule
+      (width 203.2)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "MIN_EXTERN_241A"
+    (clearance_class "MIN_EXTERN_241A")
+    (via_rule "MIN_EXTERN_241A")
+    (rule
+      (width 216.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

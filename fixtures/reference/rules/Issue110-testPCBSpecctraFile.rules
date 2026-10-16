@@ -1,0 +1,83 @@
+
+(rules PCB Issue110-testPCBSpecctraFile
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.4)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+  )
+  (rule
+    (width 400.0)
+    (clearance 400.2)
+    (clearance 200.0 (type smd_to_turn_gap))
+    (clearance 100.0 (type smd))
+    (clearance 450.2 (type POWER))
+    (clearance 0.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_1600:800_um"
+    (shape
+      (circle F.Cu 1600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_1600:800_um" "Via[0-1]_1600:800_um" default
+  )
+  (via 
+    "Via[0-1]_1600:800_um-POWER" "Via[0-1]_1600:800_um" POWER
+  )
+  (viaRule
+    default "Via[0-1]_1600:800_um"
+  )
+  (viaRule
+    default "Via[0-1]_1600:800_um"
+  )
+  (viaRule
+    POWER "Via[0-1]_1600:800_um-POWER"
+  )
+  (class default
+    "Net-(C1-Pad1)" "Net-(C2-Pad1)" "Net-(C3-Pad1)" "Net-(C4-Pad1)" "Net-(C5-Pad2)" "Net-(C5-Pad1)" "Net-(C6-Pad2)" "Net-(C6-Pad1)"
+    "Net-(C7-Pad1)" "Net-(C8-Pad1)" "Net-(C9-Pad1)" "Net-(C10-Pad1)" "Net-(C11-Pad2)" "Net-(C11-Pad1)" "Net-(C12-Pad2)" "Net-(C12-Pad1)"
+    "Net-(D2-Pad2)" "Net-(D2-Pad1)" "Net-(D3-Pad2)" "Net-(D3-Pad1)" "Net-(Q1-Pad1)" GND VCC /InSig1
+    /InSig2
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class POWER
+    (clearance_class POWER)
+    (via_rule POWER)
+    (rule
+      (width 600.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

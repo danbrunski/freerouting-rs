@@ -1,0 +1,5293 @@
+{
+  "source": "argv.txt",
+  "entries": [
+    {
+      "line": 7,
+      "args": ["-mp", "10", "-di", "/tmp", "-dl"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 10,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "gui.input_directory": "/tmp",
+          "router.autorouter.max_passes": 10,
+          "logging.file.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 10
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "10"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 8,
+      "args": ["-mp", "10"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 10,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 10
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 10
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "10"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 9,
+      "args": ["-ll", "DEBUG"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "logging.console.level": "DEBUG"
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 10,
+      "args": ["-unknownFlag"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: -unknownFlag"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 11,
+      "args": ["-mp", "10", "extraValue"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 10,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 2,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release.", "WARNING Unknown command line argument: extraValue"]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 10
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 10
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "10"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 12,
+      "args": ["--router.max_passes=20"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 20,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 20
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 20
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "20"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 13,
+      "args": ["--router.autorouter.max_threads=1", "--router.optimizer.max_threads=4"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": 4,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.autorouter.max_threads": 1,
+          "router.optimizer.max_threads": 4
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_threads": 1
+          },
+          "optimizer": {
+            "max_threads": 4
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.max_threads": "1",
+          "router.optimizer.max_threads": "4"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 14,
+      "args": ["--someflag"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: --someflag"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 16,
+      "args": ["-de", "myboard.dsn"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 17,
+      "args": ["-de", "myboard.dsn+myboard.ses"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 18,
+      "args": ["-de", "myboard.dsn+myboard.rules"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": "myboard.rules",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 19,
+      "args": ["-de", "myboard.dsn+myboard.ses+myboard.rules"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": "myboard.rules",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 20,
+      "args": ["-de", "myboard.rules+myboard.dsn+myboard.ses"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": "myboard.rules",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 21,
+      "args": ["-de", "myboard.dsn", "myboard.ses", "myboard.rules"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": "myboard.rules",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 22,
+      "args": ["-de", "sonde xilinx.dsn"],
+      "globalSettings": {
+        "initialInputFile": "sonde xilinx.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 23,
+      "args": ["-de", "myboard.dsn+myboard.ses", "myboard.rules"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": "myboard.rules",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 24,
+      "args": ["-de", "/path/to/myboard.dsn+/path/to/myboard.ses"],
+      "globalSettings": {
+        "initialInputFile": "/path/to/myboard.dsn",
+        "designSessionFilename": "/path/to/myboard.ses",
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 25,
+      "args": ["-de", "myboard.DSN+myboard.SES+myboard.RULES"],
+      "globalSettings": {
+        "initialInputFile": "myboard.DSN",
+        "designSessionFilename": "myboard.SES",
+        "initialRulesFile": "myboard.RULES",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 26,
+      "args": ["-de", "board1.dsn+board2.dsn"],
+      "globalSettings": {
+        "initialInputFile": "board2.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Multiple DSN files provided in -de argument. Only the last one will be used."]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 27,
+      "args": ["-de", "myboard.ses"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 28,
+      "args": ["-de", "myboard.rules"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": "myboard.rules",
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 29,
+      "args": ["-de"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 30,
+      "args": ["-de", "myboard.dsn+myboard.ses", "-do", "output.ses", "-mp", "10"],
+      "globalSettings": {
+        "initialInputFile": "myboard.dsn",
+        "designSessionFilename": "myboard.ses",
+        "initialRulesFile": null,
+        "initialOutputFile": "output.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 10,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 10
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": true,
+            "max_passes": 10
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "10"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 31,
+      "args": ["-de", "board.v1+final.dsn"],
+      "globalSettings": {
+        "initialInputFile": "board.v1+final.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 33,
+      "args": ["-do", "scripts/benchmark/outputs/mechkeys_MF68+10--unrouted--2.5.0-RC5.ses"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "scripts/benchmark/outputs/mechkeys_MF68+10--unrouted--2.5.0-RC5.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 34,
+      "args": ["-do", "scripts/benchmark/outputs/perfplusplus_Ard-perf++--unrouted--2.5.0-RC5.ses"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "scripts/benchmark/outputs/perfplusplus_Ard-perf++--unrouted--2.5.0-RC5.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 35,
+      "args": ["-do", "output.ses+output.kicad_pcb"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "output.ses",
+        "additionalOutputFiles": ["output.kicad_pcb"],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 36,
+      "args": ["-do", "board.v1+final.dsn"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "board.v1+final.dsn",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 38,
+      "args": ["--api_server-endpoints=http://0.0.0.0:37864"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.endpoints": ["http://0.0.0.0:37864"]
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 39,
+      "args": ["--api_server-endpoints=http://0.0.0.0:37864,http://127.0.0.1:37865"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.endpoints": ["http://0.0.0.0:37864", "http://127.0.0.1:37865"]
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 40,
+      "args": ["--api_server.endpoints=http://0.0.0.0:37864"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.endpoints": ["http://0.0.0.0:37864"]
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 41,
+      "args": ["--api_server-endpoints=http://0.0.0.0:37864 , http://127.0.0.1:37865"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.endpoints": ["http://0.0.0.0:37864", "http://127.0.0.1:37865"]
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 42,
+      "args": ["--api_server.corsOrigins=https://example.com?foo=bar"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.cors_origins": "https://example.com?foo=bar"
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 43,
+      "args": ["--api_server.rate_limit.enabled=true", "--api_server.rate_limit.requests_per_window=15", "--api_server.rate_limit.window_seconds=20", "--mcp_server.rate_limit.enabled=true", "--mcp_server.rate_limit.requests_per_window=5", "--mcp_server.rate_limit.window_seconds=12"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.rate_limit.enabled": true,
+          "api_server.rate_limit.requests_per_window": 15,
+          "api_server.rate_limit.window_seconds": 20,
+          "mcp_server.rate_limit.enabled": true,
+          "mcp_server.rate_limit.requests_per_window": 5,
+          "mcp_server.rate_limit.window_seconds": 12
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 44,
+      "args": ["--api_server.max_parallel_jobs=8"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "api_server.max_parallel_jobs": 8
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 46,
+      "args": ["-l", "sk"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "sk-SK",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 47,
+      "args": ["-l", "da"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "da-DK",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 48,
+      "args": ["-l", "hr"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "hr-HR",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 49,
+      "args": ["-l", "nb"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "nb-NO",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 50,
+      "args": ["-l", "fi"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "fi-FI",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 51,
+      "args": ["-l", "sl"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "sl-SI",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 52,
+      "args": ["-l", "el"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "el-GR",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 53,
+      "args": ["-l", "he"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "he-IL",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 54,
+      "args": ["-l", "ca"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "ca-ES",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 55,
+      "args": ["-l", "lt"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "lt-LT",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 56,
+      "args": ["-l", "en"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 57,
+      "args": ["-l", "de"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "de",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 58,
+      "args": ["-l", "zh-tw"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "zh-TW",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 59,
+      "args": ["-l", "zh"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "zh-CN",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 60,
+      "args": ["-l", "pt-br"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "pt-BR",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 61,
+      "args": ["-l", "xx"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 63,
+      "args": ["-de", "in.dsn", "-do", "out.ses", "-host", "KiCad 9.0.0", "--gui.enabled=false", "--api_server.enabled=false", "--mcp_server.enabled=false", "--logging.file.location=/tmp/fr-logs"],
+      "globalSettings": {
+        "initialInputFile": "in.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "out.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "gui.enabled": false,
+          "logging.file.location": "/tmp/fr-logs"
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": true
+          }
+        },
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 64,
+      "args": ["-de", "in.dsn", "-do", "out.ses", "-host", "KiCad 9.0.0", "--gui.enabled=true", "--api_server.enabled=false", "--mcp_server.enabled=false", "--logging.file.location=/tmp/fr-logs"],
+      "globalSettings": {
+        "initialInputFile": "in.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "out.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "logging.file.location": "/tmp/fr-logs"
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": true
+          }
+        },
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 66,
+      "args": ["-mp", "10000"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 9999,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 9999
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 10000
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "10000"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 67,
+      "args": ["-mp", "-5"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: -5"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 2,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release.", "WARNING Failed to apply CLI router setting: router.max_passes: For input string: \"\""]
+        }
+      }
+    },
+    {
+      "line": 68,
+      "args": ["-mp", "0x10"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 16,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 16
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 2,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release.", "WARNING Failed to apply CLI router setting: router.max_passes: For input string: \"0x10\""]
+        }
+      }
+    },
+    {
+      "line": 69,
+      "args": ["-mp", "abc"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 2,
+          "errors": 1,
+          "texts": ["WARNING Deprecated settings path '-mp / --router.max_passes'; use '--router.autorouter.max_passes' instead. The old path will be removed in a future release.", "ERROR There was a problem parsing the '-mp' parameter", "WARNING Unknown command line argument: abc"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 2,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release.", "WARNING Failed to apply CLI router setting: router.max_passes: For input string: \"abc\""]
+        }
+      }
+    },
+    {
+      "line": 70,
+      "args": ["-mt", "3"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": 3,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.optimizer.max_threads": 3
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "max_threads": 3
+        },
+        "parsedArguments": {
+          "router.max_threads": "3"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 71,
+      "args": ["-mt", "5000"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": 1024,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.optimizer.max_threads": 1024
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "max_threads": 5000
+        },
+        "parsedArguments": {
+          "router.max_threads": "5000"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 72,
+      "args": ["-mt", "-1"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: -1"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Failed to apply CLI router setting: router.max_threads: For input string: \"\""]
+        }
+      }
+    },
+    {
+      "line": 73,
+      "args": ["-oit", "0.035"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.optimizer.improvement_threshold": 3.5
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "optimizer": {
+            "improvement_threshold": 3.5
+          }
+        },
+        "parsedArguments": {
+          "router.optimizer.improvement_threshold": "3.5"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING The '-oit' command-line flag is deprecated; use '--router.optimizer.improvement_threshold' instead."]
+        }
+      }
+    },
+    {
+      "line": 74,
+      "args": ["-oit", "4.0"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.optimizer.improvement_threshold": 4.0
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "optimizer": {
+            "improvement_threshold": 4.0
+          }
+        },
+        "parsedArguments": {
+          "router.optimizer.improvement_threshold": "4.0"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING The '-oit' command-line flag is deprecated; use '--router.optimizer.improvement_threshold' instead."]
+        }
+      }
+    },
+    {
+      "line": 75,
+      "args": ["-oit", "abc"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 2,
+          "errors": 0,
+          "texts": ["WARNING The '-oit' command-line flag is deprecated; use '--router.optimizer.improvement_threshold' instead.", "WARNING Failed to apply CLI router setting: router.optimizer.improvement_threshold: For input string: \"abc\""]
+        }
+      }
+    },
+    {
+      "line": 76,
+      "args": ["-us", "global"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "GLOBAL_OPTIMAL",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 77,
+      "args": ["-is", "prioritized"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "PRIORITIZED",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 78,
+      "args": ["-is", "seq"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "SEQUENTIAL",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 80,
+      "args": ["-inc", "Power,Default"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-inc / --router.ignore_net_classes'; use '--router.autorouter.ignore_net_classes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.ignore_net_classes": ["Power", "Default"]
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "ignore_net_classes": ["Power", "Default"]
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.ignore_net_classes": "Power,Default"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING The '-inc' command-line flag is deprecated; use '--router.autorouter.ignore_net_classes' instead."]
+        }
+      }
+    },
+    {
+      "line": 81,
+      "args": ["-inc", "POWER,GND"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-inc / --router.ignore_net_classes'; use '--router.autorouter.ignore_net_classes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.ignore_net_classes": ["POWER", "GND"]
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "ignore_net_classes": ["POWER", "GND"]
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.ignore_net_classes": "POWER,GND"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING The '-inc' command-line flag is deprecated; use '--router.autorouter.ignore_net_classes' instead."]
+        }
+      }
+    },
+    {
+      "line": 82,
+      "args": ["-inc", "GND"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path '-inc / --router.ignore_net_classes'; use '--router.autorouter.ignore_net_classes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.ignore_net_classes": ["GND"]
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "ignore_net_classes": ["GND"]
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.ignore_net_classes": "GND"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING The '-inc' command-line flag is deprecated; use '--router.autorouter.ignore_net_classes' instead."]
+        }
+      }
+    },
+    {
+      "line": 84,
+      "args": ["--router.via_costs=25"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.scoring.via_costs": 25
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "scoring": {
+            "via_costs": 25
+          }
+        },
+        "parsedArguments": {
+          "router.via_costs": "25"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 85,
+      "args": ["--router.scoring.via_costs=30"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.scoring.via_costs": 30
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "scoring": {
+            "via_costs": 30
+          }
+        },
+        "parsedArguments": {
+          "router.scoring.via_costs": "30"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 86,
+      "args": ["--router.scoring.plane_via_costs=7"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.scoring.plane_via_costs": 7
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "scoring": {
+            "plane_via_costs": 7
+          }
+        },
+        "parsedArguments": {
+          "router.scoring.plane_via_costs": "7"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 87,
+      "args": ["--router.autorouter.max_passes=33"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 33,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 33
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 33
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.max_passes": "33"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 88,
+      "args": ["--router.max_passes=33"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 33,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.max_passes": 33
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "max_passes": 33
+          }
+        },
+        "parsedArguments": {
+          "router.max_passes": "33"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 89,
+      "args": ["--router.layers.routable=false,true"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {
+          "router.layers.routable": "false,true"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 90,
+      "args": ["--router.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": false
+          }
+        },
+        "parsedArguments": {
+          "router.enabled": "false"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 91,
+      "args": ["--router.autorouter.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.autorouter.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": false
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.enabled": "false"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 92,
+      "args": ["--router.fanout.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.fanout.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "fanout": {
+            "enabled": false
+          }
+        },
+        "parsedArguments": {
+          "router.fanout.enabled": "false"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 93,
+      "args": ["--router.optimizer.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.optimizer.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "optimizer": {
+            "enabled": false
+          }
+        },
+        "parsedArguments": {
+          "router.optimizer.enabled": "false"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 94,
+      "args": ["--router.optimizer.improvement_threshold=0.05"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.optimizer.improvement_threshold": 0.05
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "optimizer": {
+            "improvement_threshold": 5.0
+          }
+        },
+        "parsedArguments": {
+          "router.optimizer.improvement_threshold": "5.0"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 95,
+      "args": ["--router.default_undesired_direction_trace_cost=1.5"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.scoring.default_undesired_direction_trace_cost": 1.5
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "scoring": {
+            "default_undesired_direction_trace_cost": 1.5
+          }
+        },
+        "parsedArguments": {
+          "router.default_undesired_direction_trace_cost": "1.5"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 96,
+      "args": ["--router.copper_to_edge_clearance_um=100"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.copper_to_edge_clearance_um": 100.0
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "copper_to_edge_clearance_um": 100.0
+        },
+        "parsedArguments": {
+          "router.copper_to_edge_clearance_um": "100"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 97,
+      "args": ["--router.hole_clearance_um=50"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.hole_clearance_um": 50.0
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "hole_clearance_um": 50.0
+        },
+        "parsedArguments": {
+          "router.hole_clearance_um": "50"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 98,
+      "args": ["--router.plane_nets=GND,VCC"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.plane_nets": ["GND", "VCC"]
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "plane_nets": ["GND", "VCC"]
+        },
+        "parsedArguments": {
+          "router.plane_nets": "GND,VCC"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 99,
+      "args": ["--router.job_timeout=00:10:00"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.job_timeout": "00:10:00"
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "job_timeout": "00:10:00"
+        },
+        "parsedArguments": {
+          "router.job_timeout": "00:10:00"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 100,
+      "args": ["--router.unknown_thing=1"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: router.unknown_thing"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Failed to apply CLI router setting: router.unknown_thing: No field found with name or SerializedName: unknown_thing"]
+        }
+      }
+    },
+    {
+      "line": 102,
+      "args": ["--scoring-version=v1"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: scoring-version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "router_scoring": {
+            "version": "V1_LEGACY"
+          },
+          "optimizer_scoring": {
+            "version": "V1_LEGACY"
+          }
+        },
+        "parsedArguments": {
+          "optimizer.scoring.version": "V1_LEGACY",
+          "router.scoring.version": "V1_LEGACY"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 103,
+      "args": ["--scoring-version=v2"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: scoring-version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "router_scoring": {
+            "version": "V2_CONTINUOUS"
+          },
+          "optimizer_scoring": {
+            "version": "V2_LOWER_BOUND"
+          }
+        },
+        "parsedArguments": {
+          "optimizer.scoring.version": "V2_LOWER_BOUND",
+          "router.scoring.version": "V2_CONTINUOUS"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 104,
+      "args": ["--router-scoring-version=v2"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: router-scoring-version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "router_scoring": {
+            "version": "V2_CONTINUOUS"
+          }
+        },
+        "parsedArguments": {
+          "router.scoring.version": "V2_CONTINUOUS"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 105,
+      "args": ["--router-scoring-version=v1"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: router-scoring-version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "router_scoring": {
+            "version": "V1_LEGACY"
+          }
+        },
+        "parsedArguments": {
+          "router.scoring.version": "V1_LEGACY"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 106,
+      "args": ["--optimizer-scoring-version=lower_bound"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: optimizer-scoring-version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "optimizer_scoring": {
+            "version": "V2_LOWER_BOUND"
+          }
+        },
+        "parsedArguments": {
+          "optimizer.scoring.version": "V2_LOWER_BOUND"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 107,
+      "args": ["--optimizer-scoring-version=v2"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: optimizer-scoring-version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "optimizer_scoring": {
+            "version": "V2_LOWER_BOUND"
+          }
+        },
+        "parsedArguments": {
+          "optimizer.scoring.version": "V2_LOWER_BOUND"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 108,
+      "args": ["--router.scoring.version=legacy"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: router.scoring.version"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "router_scoring": {
+            "version": "V1_LEGACY"
+          }
+        },
+        "parsedArguments": {
+          "router.scoring.version": "V1_LEGACY"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 109,
+      "args": ["-router-scoring-version", "v2"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 2,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: -router-scoring-version", "WARNING Unknown command line argument: v2"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "router_scoring": {
+            "version": "V2_CONTINUOUS"
+          }
+        },
+        "parsedArguments": {
+          "router.scoring.version": "V2_CONTINUOUS"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 111,
+      "args": ["-de", "a.dsn", "-do", "b.ses"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "b.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": true
+          }
+        },
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 112,
+      "args": ["-de", "a.dsn", "-do", "b.ses", "--router.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "b.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": false
+          }
+        },
+        "parsedArguments": {
+          "router.enabled": "false"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 113,
+      "args": ["-de", "a.dsn", "-do", "b.ses", "--router.autorouter.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "b.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.autorouter.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": false
+          }
+        },
+        "parsedArguments": {
+          "router.autorouter.enabled": "false"
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 114,
+      "args": ["-de", "a.dsn", "-do", "b.ses", "--router.enabled=true"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "b.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release."]
+        },
+        "changedFields": {
+          "router.autorouter.enabled": true
+        }
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": true
+          }
+        },
+        "parsedArguments": {
+          "router.enabled": "true"
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Deprecated settings path 'router.enabled'; use 'router.autorouter.enabled' instead. The old path will be removed in a future release."]
+        }
+      }
+    },
+    {
+      "line": 115,
+      "args": ["-de", "a.dsn"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 116,
+      "args": ["-do", "b.ses"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": "b.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 117,
+      "args": ["-de", "a.dsn", "-dr", "a.rules", "-do", "b.ses"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": "a.rules",
+        "initialOutputFile": "b.ses",
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {
+          "autorouter": {
+            "enabled": true
+          }
+        },
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 118,
+      "args": ["-de", "a.dsn", "-drc", "out.json"],
+      "globalSettings": {
+        "initialInputFile": "a.dsn",
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": {
+          "filename": "out.json",
+          "format": "DRC_JSON"
+        },
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.autorouter.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 119,
+      "args": ["-drc"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "router.autorouter.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 120,
+      "args": ["-dr"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 121,
+      "args": ["-di", "/some/dir"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "gui.input_directory": "/some/dir"
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 122,
+      "args": ["-host", "KiCad 9.0.0"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 123,
+      "args": ["-dl", "-da"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "usage_and_diagnostic_data.disable_analytics": true,
+          "logging.file.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 124,
+      "args": ["-dct", "7"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "gui.dialog_confirmation_timeout": 7
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 125,
+      "args": ["-dct", "-3"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: -3"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 126,
+      "args": ["-ll", "trace"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "logging.console.level": "TRACE"
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 128,
+      "args": ["-dex"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 129,
+      "args": ["-unknownFlag"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: -unknownFlag"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 130,
+      "args": ["--someflag"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: --someflag"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 131,
+      "args": ["--"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown command line argument: --"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 132,
+      "args": ["--=x"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: "]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 133,
+      "args": ["--a=b=c"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 1,
+          "errors": 0,
+          "texts": ["WARNING Unknown settings property: a"]
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 134,
+      "args": ["-help"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": true,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 135,
+      "args": ["--help"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": true,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 136,
+      "args": ["-h"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": true,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 137,
+      "args": ["--calculate-benchmark-scores"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 138,
+      "args": ["--compare-boards=a.dsn,b.dsn"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 139,
+      "args": ["--user_data_path=/tmp/fr-user"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 140,
+      "args": ["--gui.enabled=false"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "gui.enabled": false
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 141,
+      "args": ["--logging.file.location=/tmp/fr-logs"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {
+          "logging.file.location": "/tmp/fr-logs"
+        }
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 142,
+      "args": ["--debug.enable_detailed_logging=true"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": true,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": []
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    },
+    {
+      "line": 143,
+      "args": ["--debug.filter_by_net=GND,VCC"],
+      "globalSettings": {
+        "initialInputFile": null,
+        "designSessionFilename": null,
+        "initialRulesFile": null,
+        "initialOutputFile": null,
+        "additionalOutputFiles": [],
+        "drcReportFile": null,
+        "showHelpOption": false,
+        "locale": "en",
+        "maxPasses": 0,
+        "optimizerMaxThreads": null,
+        "boardUpdateStrategy": "null",
+        "itemSelectionStrategy": "null",
+        "debug": {
+          "enableDetailedLogging": false,
+          "singleStepExecution": false,
+          "traceInsertionDelay": 0,
+          "filterByNet": ["gnd", "vcc"]
+        },
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        },
+        "changedFields": {}
+      },
+      "cliSettings": {
+        "settings": {},
+        "parsedArguments": {},
+        "log": {
+          "warnings": 0,
+          "errors": 0,
+          "texts": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+
+(rules PCB Issue508-DAC2020_bm09
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 4.2)
+      (against_preferred_direction_trace_costs 5.7)
+    )
+    (layer_rule Route2
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route3
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Route4
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route5
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Route6
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route7
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Route8
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route9
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Route10
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route11
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Route12
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route13
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Route14
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+    (layer_rule Route15
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.5)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 4.2)
+      (against_preferred_direction_trace_costs 4.9)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-15]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route2 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route3 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route4 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route5 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route6 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route7 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route8 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route9 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route10 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route11 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route12 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route13 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route14 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route15 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-15]_600:300_um" "Via[0-15]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-15]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-15]_600:300_um"
+  )
+  (class default
+    "Net-(IC3-Pad40)" "Net-(IC3-Pad39)" "Net-(IC3-Pad38)" "Net-(IC3-Pad37)" "Net-(IC3-Pad36)" "Net-(IC3-Pad35)" "/MRF_INT" "Net-(IC3-Pad33)"
+    "/3.3V_SRC" GND "Net-(IC3-Pad30)" "Net-(IC3-Pad29)" "Net-(IC3-Pad28)" "Net-(IC3-Pad27)" /N$17 /N$21
+    "/MRF_SDO" "/MRF_SDI" "Net-(IC3-Pad22)" "Net-(IC3-Pad21)" "Net-(IC3-Pad20)" "Net-(IC3-Pad19)" "/MRF_SCK" "/MRF_CS"
+    "/MRF_WAKE" "/MRF_RESET" /OSC2 /OS1 "Net-(IC3-Pad10)" "Net-(IC3-Pad9)" "Net-(IC3-Pad8)" "Net-(IC3-Pad7)"
+    "Net-(IC3-Pad6)" "Net-(IC3-Pad5)" "Net-(IC3-Pad4)" "Net-(IC3-Pad3)" "Net-(IC3-Pad2)" "Net-(IC3-Pad1)" "Net-(S1-Pad4)" "Net-(S1-Pad2)"
+    "Net-(C6-Pad1)" "Net-(LED3-PadA)" "Net-(R5-Pad1)" "Net-(JP3-Pad6)" "Net-(IC2-Pad14)" "Net-(IC2-Pad13)" "Net-(IC2-Pad12)" "Net-(IC2-Pad11)"
+    "Net-(C5-Pad2)" "Net-(C2-Pad2)" "Net-(C5-Pad1)" "Net-(C4-Pad2)" "Net-(IC2-Pad8)" "Net-(IC2-Pad7)" "Net-(C1-Pad1)" "Net-(C4-Pad1)"
+    "Net-(X1-Pad9)" "Net-(X1-Pad7)" "Net-(X1-Pad1)" "Net-(IC4-Pad1)" "Net-(R8-Pad1)" "Net-(JP4-Pad4)" "Net-(X3-Pad3)" "Net-(LED1-PadA)"
+    "Net-(R2-Pad1)" "Net-(R6-Pad1)" "Net-(LED2-PadA)" "Net-(R1-Pad1)" "Net-(S2-Pad4)" "Net-(S2-Pad2)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Route2 Route3 Route4 Route5 Route6 Route7 Route8 Route9 Route10 Route11 Route12 Route13 Route14 Route15 Bottom)
+    )
+  )
+)

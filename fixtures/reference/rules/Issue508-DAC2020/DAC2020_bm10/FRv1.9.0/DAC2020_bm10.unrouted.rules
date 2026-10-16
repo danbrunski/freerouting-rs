@@ -1,0 +1,88 @@
+
+(rules PCB DAC2020_bm10.unrouted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 3.0)
+    )
+    (layer_rule Route2
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+    (layer_rule Route15
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 2.6)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route2 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Route15 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_600:300_um" "Via[0-3]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-3]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-3]_600:300_um"
+  )
+  (class default
+    GND "3V3" VBAT "Net-(B2-Pad4)" "Net-(B2-Pad3)" "Net-(B2-Pad2)" "Net-(A1-PadFEED)" "Net-(C14-Pad1)"
+    "Net-(C15-Pad1)" "Net-(C11-Pad1)" "Net-(C13-Pad1)" "Net-(D6-PadC1)" /RESET /THROTTLE /YAW "/BTN_CENTER"
+    "/BTN_RIGHT" "/BTN_LEFT" "/BTN_UP" "/RXI-0" "/TXO-0" "/E1-B" "/E1-A" /MISO
+    /MOSI /SCK "/BTN_DOWN" "/E1-BUT" /BTN2/SDA /BTN1/SCL /PITCH /RF
+    "Net-(D6-PadA1)" "Net-(D6-PadA2)" /ROLL "/DTR-0" "/VREG_IN" /RXI "/FTDI_OUT" /TXLED
+    /RXLED /DTR "/USB_D_N" "/USB_D_P" /CTS /TXO "Net-(R7-Pad1)" /VBUS
+    "Net-(B3-Pad1A)" "Net-(R1-Pad2)" "Net-(D1-PadC2)" "Net-(D4-PadC1)" "/RXI-1" "/TXO-1" "Net-(S2-Pad2)" "/DTR-1"
+    "/CTS-1" /GREF "Net-(D6-PadC2)" "Net-(D5-PadA2)" "Net-(D5-PadA1)" "Net-(D1-PadA1)" "Net-(D4-PadC2)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Route2 Route15 Bottom)
+    )
+  )
+)

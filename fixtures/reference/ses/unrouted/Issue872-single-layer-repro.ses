@@ -1,0 +1,50 @@
+(session "Issue872-single-layer-repro"
+  (base_design "Issue872-single-layer-repro")
+  (placement
+    (resolution um 10)
+    (component "LED_D5.0mm"
+      (place D2 389350.0 -427450.0 front 0)
+    )
+    (component "D_DO-41_SOD81_P10.16mm_Horizontal"
+      (place D1 213950.0 -411350.0 front 0)
+    )
+    (component "R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+      (place R2 287250.0 -510450.0 front 0)
+      (place R1 597550.0 -410350.0 front 0)
+    )
+    (component "TO-92_Inline_Wide"
+      (place Q1 485250.0 -422650.0 front 0)
+    )
+    (component "Relay_SPDT_SANYOU_SRD_Series_Form_C"
+      (place K1 215950.0 -279950.0 front 0)
+    )
+    (component "PinHeader_1x03_P2.54mm_Vertical"
+      (place J3 218150.0 -513150.0 front 0)
+    )
+    (component "TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+      (place J2 472750.0 -257550.0 front 0)
+    )
+    (component "PinHeader_1x02_P2.54mm_Vertical"
+      (place J1 432550.0 -513150.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.6-10.0.6~ubuntu24.04.1")
+    )
+    (library_out 
+      (padstack "Via[0-0]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

@@ -1,0 +1,111 @@
+
+(rules PCB Issue145-smoothieboard
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.6)
+      (against_preferred_direction_trace_costs 2.8)
+    )
+    (layer_rule Route2
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule Route15
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.6)
+      (against_preferred_direction_trace_costs 2.8)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_800:400_um"
+    (shape
+      (circle Top 800.0 0.0 0.0)
+    )
+    (shape
+      (circle Route2 800.0 0.0 0.0)
+    )
+    (shape
+      (circle Route15 800.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_800:400_um" "Via[0-3]_800:400_um" default
+  )
+  (viaRule
+    default "Via[0-3]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-3]_800:400_um"
+  )
+  (class default
+    AGND "3.3V" AVCC "ENET_TXD0" "ENET_TXD1" "ENET_TX_EN" "ENET_CRS" "ENET_RXD0"
+    "ENET_RXD1" "ENET_RX_ER" "ENET_REF_CLK" "ENET_MDC" "ENET_MDIO" EN1 DIR1 STP1
+    STP2 STP3 EN4 DIR4 STP4 TH1 TH2 TH3
+    RSTOUT TH4 P2.6 P2.7 EN2 DIR2 EN3 DIR3
+    PWM0 PWM1 "POT_SCL" "POT_SDA" "P1_22" "P1_23" VBB MS2
+    MS1 "5V" "12VREG" EN5 STP5 DIR5 MS3 "/smoothieboard-5driver_1/JTAG-RTCK"
+    "/smoothieboard-5driver_1/RX_0" "/smoothieboard-5driver_1/TX_0" "/smoothieboard-5driver_1/PLAY_LED" "/smoothieboard-5driver_1/SD_CS" "/smoothieboard-5driver_1/SD_SCK" "/smoothieboard-5driver_1/SD_MISO" "/smoothieboard-5driver_1/SD_MOSI" "/smoothieboard-5driver_1/Z_MAX"
+    "/smoothieboard-5driver_1/Z_MIN" "/smoothieboard-5driver_1/Y_MAX" "/smoothieboard-5driver_1/Y_MIN" "/smoothieboard-5driver_1/X_MAX" "/smoothieboard-5driver_1/X_MIN" "/smoothieboard-5driver_1/LED4" "/smoothieboard-5driver_1/LED3" "/smoothieboard-5driver_1/LED2"
+    "/smoothieboard-5driver_1/LED1" "/smoothieboard-5driver_1/USB_D-" "/smoothieboard-5driver_1/USB_D+" "/smoothieboard-5driver_1/SD_IRQ" "/smoothieboard-5driver_1/SD_WP" "/smoothieboard-5driver_1/SDA" "/smoothieboard-5driver_1/SCL" "Net-(C3-Pad1)"
+    "Net-(C2-Pad1)" "/smoothieboard-5driver_1/P1_30" "/smoothieboard-5driver_1/P1_31" "Net-(IC1-Pad18)" "/smoothieboard-5driver_1/RESET" "Net-(IC1-Pad16)" "Net-(IC1-Pad13)" "/smoothieboard-5driver_1/JTAG-TCK"
+    "/smoothieboard-5driver_1/JTAG-TRST" "/smoothieboard-5driver_1/JTAG-TMS" "/smoothieboard-5driver_1/JTAG-TDI" "/smoothieboard-5driver_1/JTAG-TDO" "/smoothieboard-5driver_1/PLAY" "/smoothieboard-5driver_1/SD_CD" "/smoothieboard-5driver_1/ISP_BOOT" "/smoothieboard-5driver_1/MOSI1"
+    "/smoothieboard-5driver_1/MISO1" "/smoothieboard-5driver_1/SCK1" "/smoothieboard-5driver_1/SSEL1" "/smoothieboard-5driver_1/P2.9" "Net-(R8-Pad1)" "Net-(R9-Pad1)" "Net-(R5-Pad2)" "Net-(LED1-PadA)"
+    "Net-(LED2-PadA)" "Net-(LED3-PadA)" "Net-(LED4-PadA)" "/smoothieboard-5driver_1/RTS" "Net-(JP5-Pad3)" "/smoothieboard-5driver_1/CTS" "Net-(JP24-Pad1)" "Net-(JP26-Pad3)"
+    "Net-(JP14-Pad1)" "Net-(JP14-Pad3)" "Net-(JP16-Pad3)" "Net-(JP19-Pad3)" "Net-(JP21-Pad3)" "Net-(JP22-Pad3)" "Net-(U1-Pad8)" "Net-(U1-Pad1)"
+    "Net-(U1-PadGND3)" "Net-(U1-PadCD1)" "Net-(Q1-Pad1)" "Net-(IC4-Pad15)" "/smoothieboard-5driver_2/P0W" "Net-(IC2-PadP09)" "Net-(IC2-PadP08)" "Net-(IC2-PadP07)"
+    "Net-(C15-Pad2)" "Net-(C17-Pad2)" "Net-(C19-Pad1)" "Net-(C19-Pad2)" "Net-(IC2-PadP15)" "Net-(IC2-PadP17)" "Net-(IC2-PadP18)" "Net-(IC2-PadP19)"
+    "Net-(IC2-PadP20)" "Net-(IC2-PadP22)" "/smoothieboard-5driver_2/P1W" "Net-(IC3-PadP09)" "Net-(IC3-PadP08)" "Net-(IC3-PadP07)" "Net-(C16-Pad2)" "Net-(C18-Pad2)"
+    "Net-(C20-Pad1)" "Net-(C20-Pad2)" "Net-(IC3-PadP15)" "Net-(IC3-PadP17)" "Net-(IC3-PadP18)" "Net-(IC3-PadP19)" "Net-(IC3-PadP20)" "Net-(IC3-PadP22)"
+    "/smoothieboard-5driver_2/P2W" "Net-(IC5-PadP09)" "Net-(IC5-PadP08)" "Net-(IC5-PadP07)" "Net-(C32-Pad2)" "Net-(C34-Pad2)" "Net-(C36-Pad1)" "Net-(C36-Pad2)"
+    "Net-(IC5-PadP15)" "Net-(IC5-PadP17)" "Net-(IC5-PadP18)" "Net-(IC5-PadP19)" "Net-(IC5-PadP20)" "Net-(IC5-PadP22)" "/smoothieboard-5driver_2/P3W" "Net-(IC6-PadP09)"
+    "Net-(IC6-PadP08)" "Net-(IC6-PadP07)" "Net-(C33-Pad2)" "Net-(C35-Pad2)" "Net-(C37-Pad1)" "Net-(C37-Pad2)" "Net-(IC6-PadP15)" "Net-(IC6-PadP17)"
+    "Net-(IC6-PadP18)" "Net-(IC6-PadP19)" "Net-(IC6-PadP20)" "Net-(IC6-PadP22)" "/smoothieboard-5driver_2/TH4_P" "Net-(IC4-Pad1)" "Net-(IC4-Pad14)" "Net-(IC8-Pad24)"
+    "/smoothieboard-5driver_3/RD+" "/smoothieboard-5driver_3/RD-" "/smoothieboard-5driver_3/TD+" "/smoothieboard-5driver_3/TD-" "Net-(C45-PadA)" "Net-(IC7-Pad2)" "Net-(IC8-Pad11)" "Net-(IC8-Pad8)"
+    "Net-(IC8-Pad7)" "Net-(C48-PadA)" "Net-(C58-Pad1)" "Net-(C59-Pad1)" "/smoothieboard-5driver_3/LED1/REGOFF" "/smoothieboard-5driver_3/LED2/NINTSEL" "Net-(R50-Pad2)" "Net-(R61-Pad2)"
+    "Net-(IC7-Pad4)" "Net-(IC7-Pad1)" "/smoothieboard-5driver_3/+5V" "Net-(LED9-PadA)" "Net-(J9-Pad1)" "/smoothieboard-5driver_3/PWM1_FET" "Net-(J11-Pad1)" "/smoothieboard-5driver_3/GPIO_FET"
+    "Net-(Q8-Pad1)" "Net-(Q9-Pad1)" "Net-(IC14-Pad7)" "Net-(IC14-Pad5)" "/smoothieboard-5driver_3/MOSFET_DRIVE" "/smoothieboard-5driver_3/VBB_IN" "Net-(LED10-PadA)" "Net-(D7-PadA)"
+    "Net-(D8-PadA)" "/smoothieboard-5driver_3/SMALL_MOSFET_POWER" "Net-(J10-PadGND)" "Net-(LED5-PadA)" "Net-(LED6-PadA)" "Net-(LED7-PadA)" "Net-(LED8-PadA)" "Net-(RJ1-PadNC)"
+    "Net-(D5-PadA)" "Net-(IC9-Pad15)" "Net-(IC9-Pad1)" "/smoothieboard-5driver_4/THETA_CURRENT" "Net-(IC9-Pad14)" "/smoothieboard-5driver_4/PW5" "/smoothieboard-5driver_4/ZETA_CURRENT" "/smoothieboard-5driver_4/ETA_CURRENT"
+    "Net-(IC12-PadP09)" "Net-(IC12-PadP08)" "Net-(IC12-PadP07)" "Net-(C72-Pad2)" "Net-(C70-Pad2)" "Net-(C69-Pad1)" "Net-(C69-Pad2)" "Net-(IC12-PadP15)"
+    "Net-(IC12-PadP17)" "Net-(IC12-PadP18)" "Net-(IC12-PadP19)" "Net-(IC12-PadP20)" "Net-(IC12-PadP22)" "Net-(Q4-Pad1)" "Net-(D9-PadA)" "Net-(LED11-PadA)"
+    "Net-(J13-Pad2)" "Net-(Q5-PadG)" "Net-(LED12-PadA)" "Net-(IC15-Pad7)" "/smoothieboard-5driver_4/VBBREG"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer Top Route15 Bottom)
+    )
+  )
+)

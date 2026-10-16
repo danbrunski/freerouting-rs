@@ -1,0 +1,22 @@
+# Boards whose `ses` and `dsn` dumps are committed (REFERENCE_FULL=1 dumps every board).
+# One board per line: <path relative to fixtures/, without .dsn><TAB><reason>. A name starting with cases/ is a
+# synthetic board under tools/java-reference/cases/. Lines starting with # are comments.
+Issue029-hw48na	KiCad host, adjacent rules files (_valid/_invalid/plain), net classes with many clearance pairs
+Issue593-BBD_Mars-64	SesRoundTripTest's board; (attach off) padstacks; adjacent rules file
+Issue742-tastexx-pcb	component rotation 338.5; (attach off) padstacks
+Issue676-ch32v-tx118s	LibrePCB host; coordinates written in exponent form; Java's SesReader imports none of its wires
+Issue508-DAC2020_bm06	(attach off) padstacks; large routed SES import
+Issue872-single-layer-repro	one signal layer; (attach off) padstacks
+Issue110-Pajalnaja_stancija	Cyrillic net and component names
+Issue143-rpi_splitter	CadSoft host
+Issue190-processor.Z80	largest fixture by item count (timing)
+cases/lock-position	synthetic (tools/java-reference/cases): the only board with (lock_type position) in its SES - no fixture has a locked component
+Issue756-tomu-fpga7	signal-layer conduction areas (wire polygons) in network_out, and (type protect) wires
+Issue757-minimal-soe-ok	smallest board with a USER_FIXED wire, (type protect), 502-byte unrouted SES
+Issue413-test	CLI test board (clirun rows 1-6); shove_fixed wires
+Issue107-freq_teiler_200kHz_kicad	adjacent rules file; 9 USER_FIXED wires
+Issue069-TestSensel/TestSensel	board in a subdirectory; 9 USER_FIXED wires
+Issue054-tairakb	5 USER_FIXED wires; routed SES import with a large number of wires (138 KB)
+Issue102-Mars-64-revE-rot00	65 USER_FIXED wires
+Issue954-polygon64	tiny board; 1 USER_FIXED wire
+Issue145-smoothieboard	42 USER_FIXED wires; routed SES import (225 KB)

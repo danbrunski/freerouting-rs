@@ -1,0 +1,377 @@
+
+(rules PCB CNH_Functional_Tester_1
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule In1.Cu
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule In2.Cu
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+  )
+  (rule
+    (width 254.0)
+    (clearance 228.8)
+    (clearance 127.0 (type smd_to_turn_gap))
+    (clearance 57.2 (type smd))
+    (clearance 635.2 (type +12V))
+    (clearance 635.2 (type +5V))
+    (clearance 635.2 (type +5VP))
+    (clearance 635.2 (type +9V))
+    (clearance 381.2 (type LOAD))
+    (clearance 381.2 (type "UUT_LOAD"))
+    (clearance 381.2 (type "UUT_PWR"))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_635:304.8_um"
+    (shape
+      (circle F.Cu 635.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 635.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 635.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 635.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_1143:381_um"
+    (shape
+      (circle F.Cu 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 1143.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1143.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-3]_1066.8:304.8_um"
+    (shape
+      (circle F.Cu 1066.8 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 1066.8 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 1066.8 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1066.8 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_635:304.8_um" "Via[0-3]_635:304.8_um" default
+  )
+  (via 
+    "Via[0-3]_1143:381_um" "Via[0-3]_1143:381_um" default
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um" "Via[0-3]_1066.8:304.8_um" default
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-+12V" "Via[0-3]_635:304.8_um" +12V
+  )
+  (via 
+    "Via[0-3]_1143:381_um-+12V" "Via[0-3]_1143:381_um" +12V
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-+12V" "Via[0-3]_1066.8:304.8_um" +12V
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-+5V" "Via[0-3]_635:304.8_um" +5V
+  )
+  (via 
+    "Via[0-3]_1143:381_um-+5V" "Via[0-3]_1143:381_um" +5V
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-+5V" "Via[0-3]_1066.8:304.8_um" +5V
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-+5VP" "Via[0-3]_635:304.8_um" +5VP
+  )
+  (via 
+    "Via[0-3]_1143:381_um-+5VP" "Via[0-3]_1143:381_um" +5VP
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-+5VP" "Via[0-3]_1066.8:304.8_um" +5VP
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-+9V" "Via[0-3]_635:304.8_um" +9V
+  )
+  (via 
+    "Via[0-3]_1143:381_um-+9V" "Via[0-3]_1143:381_um" +9V
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-+9V" "Via[0-3]_1066.8:304.8_um" +9V
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-LOAD" "Via[0-3]_635:304.8_um" LOAD
+  )
+  (via 
+    "Via[0-3]_1143:381_um-LOAD" "Via[0-3]_1143:381_um" LOAD
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-LOAD" "Via[0-3]_1066.8:304.8_um" LOAD
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-UUT_LOAD" "Via[0-3]_635:304.8_um" "UUT_LOAD"
+  )
+  (via 
+    "Via[0-3]_1143:381_um-UUT_LOAD" "Via[0-3]_1143:381_um" "UUT_LOAD"
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-UUT_LOAD" "Via[0-3]_1066.8:304.8_um" "UUT_LOAD"
+  )
+  (via 
+    "Via[0-3]_635:304.8_um-UUT_PWR" "Via[0-3]_635:304.8_um" "UUT_PWR"
+  )
+  (via 
+    "Via[0-3]_1143:381_um-UUT_PWR" "Via[0-3]_1143:381_um" "UUT_PWR"
+  )
+  (via 
+    "Via[0-3]_1066.8:304.8_um-UUT_PWR" "Via[0-3]_1066.8:304.8_um" "UUT_PWR"
+  )
+  (viaRule
+    default "Via[0-3]_635:304.8_um"
+  )
+  (viaRule
+    default "Via[0-3]_635:304.8_um"
+  )
+  (viaRule
+    +12V "Via[0-3]_1143:381_um-+12V"
+  )
+  (viaRule
+    +5V "Via[0-3]_1143:381_um-+5V"
+  )
+  (viaRule
+    +5VP "Via[0-3]_1143:381_um-+5VP"
+  )
+  (viaRule
+    +9V "Via[0-3]_1143:381_um-+9V"
+  )
+  (viaRule
+    LOAD "Via[0-3]_1066.8:304.8_um-LOAD"
+  )
+  (viaRule
+    "UUT_LOAD" "Via[0-3]_1066.8:304.8_um-UUT_LOAD"
+  )
+  (viaRule
+    "UUT_PWR" "Via[0-3]_1066.8:304.8_um-UUT_PWR"
+  )
+  (class default
+    GND "/-SCOPE_CH1" "/+SCOPE_CH1" "/CAN_L" "/CAN_H" "/ENA-" "/DIR-" "/PUL-"
+    "unconnected-(J3-Pad5)" "unconnected-(J3-Pad6)" "unconnected-(J3-Pad7)" "unconnected-(J3-Pad8)" "unconnected-(PR1-Pin_2-Pad2)" "unconnected-(PR1-Pin_3-Pad3)" "unconnected-(PR1-Pin_4-Pad4)" "unconnected-(PR1-Pin_5-Pad5)"
+    "unconnected-(PR1-Pin_6-Pad6)" "unconnected-(PR1-Pin_7-Pad7)" "unconnected-(PR1-Pin_8-Pad8)" "unconnected-(PR1-Pin_9-Pad9)" "unconnected-(PR1-Pin_10-Pad10)" "unconnected-(PR1-Pin_11-Pad11)" "unconnected-(PR1-Pin_12-Pad12)" "unconnected-(PR1-Pin_13-Pad13)"
+    "unconnected-(PR1-Pin_14-Pad14)" "unconnected-(PR1-Pin_15-Pad15)" "unconnected-(PR1-Pin_16-Pad16)" "unconnected-(PR1-Pin_17-Pad17)" "unconnected-(PR1-Pin_18-Pad18)" "unconnected-(PR2-Pin_2-Pad2)" "unconnected-(PR2-Pin_3-Pad3)" "unconnected-(PR2-Pin_4-Pad4)"
+    "unconnected-(PR2-Pin_5-Pad5)" "unconnected-(PR2-Pin_6-Pad6)" "unconnected-(PR2-Pin_7-Pad7)" "unconnected-(PR2-Pin_8-Pad8)" "unconnected-(PR2-Pin_9-Pad9)" "unconnected-(PR2-Pin_10-Pad10)" "unconnected-(PR2-Pin_11-Pad11)" "unconnected-(PR2-Pin_12-Pad12)"
+    "unconnected-(PR2-Pin_13-Pad13)" "unconnected-(PR2-Pin_14-Pad14)" "unconnected-(PR2-Pin_15-Pad15)" "unconnected-(PR2-Pin_16-Pad16)" "unconnected-(PR2-Pin_17-Pad17)" "unconnected-(PR2-Pin_18-Pad18)" "unconnected-(PR3-Pin_2-Pad2)" "unconnected-(PR3-Pin_3-Pad3)"
+    "unconnected-(PR3-Pin_4-Pad4)" "unconnected-(PR3-Pin_5-Pad5)" "unconnected-(PR3-Pin_6-Pad6)" "unconnected-(PR3-Pin_7-Pad7)" "unconnected-(PR3-Pin_8-Pad8)" "unconnected-(PR3-Pin_9-Pad9)" "unconnected-(PR3-Pin_10-Pad10)" "unconnected-(PR3-Pin_11-Pad11)"
+    "unconnected-(PR3-Pin_12-Pad12)" "unconnected-(PR3-Pin_13-Pad13)" "unconnected-(PR3-Pin_14-Pad14)" "unconnected-(PR3-Pin_15-Pad15)" "unconnected-(PR3-Pin_16-Pad16)" "unconnected-(PR3-Pin_17-Pad17)" "unconnected-(PR3-Pin_18-Pad18)" "unconnected-(PR4-Pin_2-Pad2)"
+    "unconnected-(PR4-Pin_3-Pad3)" "unconnected-(PR4-Pin_4-Pad4)" "unconnected-(PR4-Pin_5-Pad5)" "unconnected-(PR4-Pin_6-Pad6)" "unconnected-(PR4-Pin_7-Pad7)" "unconnected-(PR4-Pin_8-Pad8)" "unconnected-(PR4-Pin_9-Pad9)" "unconnected-(PR4-Pin_10-Pad10)"
+    "unconnected-(PR4-Pin_11-Pad11)" "unconnected-(PR4-Pin_12-Pad12)" "unconnected-(PR4-Pin_13-Pad13)" "unconnected-(PR4-Pin_14-Pad14)" "unconnected-(PR4-Pin_15-Pad15)" "unconnected-(PR4-Pin_16-Pad16)" "unconnected-(PR4-Pin_17-Pad17)" "unconnected-(PR4-Pin_18-Pad18)"
+    "unconnected-(PR5-Pin_2-Pad2)" "unconnected-(PR5-Pin_3-Pad3)" "unconnected-(PR5-Pin_4-Pad4)" "unconnected-(PR5-Pin_5-Pad5)" "unconnected-(PR5-Pin_6-Pad6)" "unconnected-(PR5-Pin_7-Pad7)" "unconnected-(PR5-Pin_8-Pad8)" "unconnected-(PR5-Pin_9-Pad9)"
+    "unconnected-(PR5-Pin_10-Pad10)" "unconnected-(PR5-Pin_11-Pad11)" "unconnected-(PR5-Pin_12-Pad12)" "unconnected-(PR5-Pin_13-Pad13)" "unconnected-(PR5-Pin_14-Pad14)" "unconnected-(PR5-Pin_15-Pad15)" "unconnected-(PR5-Pin_16-Pad16)" "unconnected-(PR5-Pin_17-Pad17)"
+    "unconnected-(PR5-Pin_18-Pad18)" "unconnected-(PR6-Pin_2-Pad2)" "unconnected-(PR6-Pin_3-Pad3)" "unconnected-(PR6-Pin_4-Pad4)" "unconnected-(PR6-Pin_5-Pad5)" "unconnected-(PR6-Pin_6-Pad6)" "unconnected-(PR6-Pin_7-Pad7)" "unconnected-(PR6-Pin_8-Pad8)"
+    "unconnected-(PR6-Pin_9-Pad9)" "unconnected-(PR6-Pin_10-Pad10)" "unconnected-(PR6-Pin_11-Pad11)" "unconnected-(PR6-Pin_12-Pad12)" "unconnected-(PR6-Pin_13-Pad13)" "unconnected-(PR6-Pin_14-Pad14)" "unconnected-(PR6-Pin_15-Pad15)" "unconnected-(PR6-Pin_16-Pad16)"
+    "unconnected-(PR6-Pin_17-Pad17)" "unconnected-(PR6-Pin_18-Pad18)" "unconnected-(PR7-Pin_2-Pad2)" "unconnected-(PR7-Pin_3-Pad3)" "unconnected-(PR7-Pin_4-Pad4)" "unconnected-(PR7-Pin_5-Pad5)" "unconnected-(PR7-Pin_6-Pad6)" "unconnected-(PR7-Pin_7-Pad7)"
+    "unconnected-(PR7-Pin_8-Pad8)" "unconnected-(PR7-Pin_9-Pad9)" "unconnected-(PR7-Pin_10-Pad10)" "unconnected-(PR7-Pin_11-Pad11)" "unconnected-(PR7-Pin_12-Pad12)" "unconnected-(PR7-Pin_13-Pad13)" "unconnected-(PR7-Pin_14-Pad14)" "unconnected-(PR7-Pin_15-Pad15)"
+    "unconnected-(PR7-Pin_16-Pad16)" "unconnected-(PR7-Pin_17-Pad17)" "unconnected-(PR7-Pin_18-Pad18)" "unconnected-(PR8-Pin_2-Pad2)" "unconnected-(PR8-Pin_3-Pad3)" "unconnected-(PR8-Pin_4-Pad4)" "unconnected-(PR8-Pin_5-Pad5)" "unconnected-(PR8-Pin_6-Pad6)"
+    "unconnected-(PR8-Pin_7-Pad7)" "unconnected-(PR8-Pin_8-Pad8)" "unconnected-(PR8-Pin_9-Pad9)" "unconnected-(PR8-Pin_10-Pad10)" "unconnected-(PR8-Pin_11-Pad11)" "unconnected-(PR8-Pin_12-Pad12)" "unconnected-(PR8-Pin_13-Pad13)" "unconnected-(PR8-Pin_14-Pad14)"
+    "unconnected-(PR8-Pin_15-Pad15)" "unconnected-(PR8-Pin_16-Pad16)" "unconnected-(PR8-Pin_17-Pad17)" "unconnected-(PR8-Pin_18-Pad18)" "unconnected-(PR9-Pin_2-Pad2)" "unconnected-(PR9-Pin_3-Pad3)" "unconnected-(PR9-Pin_4-Pad4)" "unconnected-(PR9-Pin_5-Pad5)"
+    "unconnected-(PR9-Pin_6-Pad6)" "unconnected-(PR9-Pin_7-Pad7)" "unconnected-(PR9-Pin_8-Pad8)" "unconnected-(PR9-Pin_9-Pad9)" "unconnected-(PR9-Pin_10-Pad10)" "unconnected-(PR9-Pin_11-Pad11)" "unconnected-(PR9-Pin_12-Pad12)" "unconnected-(PR9-Pin_13-Pad13)"
+    "unconnected-(PR9-Pin_14-Pad14)" "unconnected-(PR9-Pin_15-Pad15)" "unconnected-(PR9-Pin_16-Pad16)" "unconnected-(PR9-Pin_17-Pad17)" "unconnected-(PR9-Pin_18-Pad18)" "unconnected-(PR10-Pin_2-Pad2)" "unconnected-(PR10-Pin_3-Pad3)" "unconnected-(PR10-Pin_4-Pad4)"
+    "unconnected-(PR10-Pin_5-Pad5)" "unconnected-(PR10-Pin_6-Pad6)" "unconnected-(PR10-Pin_7-Pad7)" "unconnected-(PR10-Pin_8-Pad8)" "unconnected-(PR10-Pin_9-Pad9)" "unconnected-(PR10-Pin_10-Pad10)" "unconnected-(PR10-Pin_11-Pad11)" "unconnected-(PR10-Pin_12-Pad12)"
+    "unconnected-(PR10-Pin_13-Pad13)" "unconnected-(PR10-Pin_14-Pad14)" "unconnected-(PR10-Pin_15-Pad15)" "unconnected-(PR10-Pin_16-Pad16)" "unconnected-(PR10-Pin_17-Pad17)" "unconnected-(PR10-Pin_18-Pad18)" "unconnected-(PR11-Pin_2-Pad2)" "unconnected-(PR11-Pin_3-Pad3)"
+    "unconnected-(PR11-Pin_4-Pad4)" "unconnected-(PR11-Pin_5-Pad5)" "unconnected-(PR11-Pin_6-Pad6)" "unconnected-(PR11-Pin_7-Pad7)" "unconnected-(PR11-Pin_8-Pad8)" "unconnected-(PR11-Pin_9-Pad9)" "unconnected-(PR11-Pin_10-Pad10)" "unconnected-(PR11-Pin_11-Pad11)"
+    "unconnected-(PR11-Pin_12-Pad12)" "unconnected-(PR11-Pin_13-Pad13)" "unconnected-(PR11-Pin_14-Pad14)" "unconnected-(PR11-Pin_15-Pad15)" "unconnected-(PR11-Pin_16-Pad16)" "unconnected-(PR11-Pin_17-Pad17)" "unconnected-(PR11-Pin_18-Pad18)" "unconnected-(PR12-Pin_2-Pad2)"
+    "unconnected-(PR12-Pin_3-Pad3)" "unconnected-(PR12-Pin_4-Pad4)" "unconnected-(PR12-Pin_5-Pad5)" "unconnected-(PR12-Pin_6-Pad6)" "unconnected-(PR12-Pin_7-Pad7)" "unconnected-(PR12-Pin_8-Pad8)" "unconnected-(PR12-Pin_9-Pad9)" "unconnected-(PR12-Pin_10-Pad10)"
+    "unconnected-(PR12-Pin_11-Pad11)" "unconnected-(PR12-Pin_12-Pad12)" "unconnected-(PR12-Pin_13-Pad13)" "unconnected-(PR12-Pin_14-Pad14)" "unconnected-(PR12-Pin_15-Pad15)" "unconnected-(PR12-Pin_16-Pad16)" "unconnected-(PR12-Pin_17-Pad17)" "unconnected-(PR12-Pin_18-Pad18)"
+    "unconnected-(PR13-Pin_2-Pad2)" "unconnected-(PR13-Pin_3-Pad3)" "unconnected-(PR13-Pin_4-Pad4)" "unconnected-(PR13-Pin_5-Pad5)" "unconnected-(PR13-Pin_6-Pad6)" "unconnected-(PR13-Pin_7-Pad7)" "unconnected-(PR13-Pin_8-Pad8)" "unconnected-(PR13-Pin_9-Pad9)"
+    "unconnected-(PR13-Pin_10-Pad10)" "unconnected-(PR13-Pin_11-Pad11)" "unconnected-(PR13-Pin_12-Pad12)" "unconnected-(PR13-Pin_13-Pad13)" "unconnected-(PR13-Pin_14-Pad14)" "unconnected-(PR13-Pin_15-Pad15)" "unconnected-(PR13-Pin_16-Pad16)" "unconnected-(PR13-Pin_17-Pad17)"
+    "unconnected-(PR13-Pin_18-Pad18)" "unconnected-(PR14-Pin_2-Pad2)" "unconnected-(PR14-Pin_3-Pad3)" "unconnected-(PR14-Pin_4-Pad4)" "unconnected-(PR14-Pin_5-Pad5)" "unconnected-(PR14-Pin_6-Pad6)" "unconnected-(PR14-Pin_7-Pad7)" "unconnected-(PR14-Pin_8-Pad8)"
+    "unconnected-(PR14-Pin_9-Pad9)" "unconnected-(PR14-Pin_10-Pad10)" "unconnected-(PR14-Pin_11-Pad11)" "unconnected-(PR14-Pin_12-Pad12)" "unconnected-(PR14-Pin_13-Pad13)" "unconnected-(PR14-Pin_14-Pad14)" "unconnected-(PR14-Pin_15-Pad15)" "unconnected-(PR14-Pin_16-Pad16)"
+    "unconnected-(PR14-Pin_17-Pad17)" "unconnected-(PR14-Pin_18-Pad18)" "unconnected-(PR15-Pin_2-Pad2)" "unconnected-(PR15-Pin_3-Pad3)" "unconnected-(PR15-Pin_4-Pad4)" "unconnected-(PR15-Pin_5-Pad5)" "unconnected-(PR15-Pin_6-Pad6)" "unconnected-(PR15-Pin_7-Pad7)"
+    "unconnected-(PR15-Pin_8-Pad8)" "unconnected-(PR15-Pin_9-Pad9)" "unconnected-(PR15-Pin_10-Pad10)" "unconnected-(PR15-Pin_11-Pad11)" "unconnected-(PR15-Pin_12-Pad12)" "unconnected-(PR15-Pin_13-Pad13)" "unconnected-(PR15-Pin_14-Pad14)" "unconnected-(PR15-Pin_15-Pad15)"
+    "unconnected-(PR15-Pin_16-Pad16)" "unconnected-(PR15-Pin_17-Pad17)" "unconnected-(PR15-Pin_18-Pad18)" "unconnected-(PR16-Pin_2-Pad2)" "unconnected-(PR16-Pin_3-Pad3)" "unconnected-(PR16-Pin_4-Pad4)" "unconnected-(PR16-Pin_5-Pad5)" "unconnected-(PR16-Pin_6-Pad6)"
+    "unconnected-(PR16-Pin_7-Pad7)" "unconnected-(PR16-Pin_8-Pad8)" "unconnected-(PR16-Pin_9-Pad9)" "unconnected-(PR16-Pin_10-Pad10)" "unconnected-(PR16-Pin_11-Pad11)" "unconnected-(PR16-Pin_12-Pad12)" "unconnected-(PR16-Pin_13-Pad13)" "unconnected-(PR16-Pin_14-Pad14)"
+    "unconnected-(PR16-Pin_15-Pad15)" "unconnected-(PR16-Pin_16-Pad16)" "unconnected-(PR16-Pin_17-Pad17)" "unconnected-(PR16-Pin_18-Pad18)" "unconnected-(PR17-Pin_2-Pad2)" "unconnected-(PR17-Pin_3-Pad3)" "unconnected-(PR17-Pin_4-Pad4)" "unconnected-(PR17-Pin_5-Pad5)"
+    "unconnected-(PR17-Pin_6-Pad6)" "unconnected-(PR17-Pin_7-Pad7)" "unconnected-(PR17-Pin_8-Pad8)" "unconnected-(PR17-Pin_9-Pad9)" "unconnected-(PR17-Pin_10-Pad10)" "unconnected-(PR17-Pin_11-Pad11)" "unconnected-(PR17-Pin_12-Pad12)" "unconnected-(PR17-Pin_13-Pad13)"
+    "unconnected-(PR17-Pin_14-Pad14)" "unconnected-(PR17-Pin_15-Pad15)" "unconnected-(PR17-Pin_16-Pad16)" "unconnected-(PR17-Pin_17-Pad17)" "unconnected-(PR17-Pin_18-Pad18)" "unconnected-(PR18-Pin_2-Pad2)" "unconnected-(PR18-Pin_3-Pad3)" "unconnected-(PR18-Pin_4-Pad4)"
+    "unconnected-(PR18-Pin_5-Pad5)" "unconnected-(PR18-Pin_6-Pad6)" "unconnected-(PR18-Pin_7-Pad7)" "unconnected-(PR18-Pin_8-Pad8)" "unconnected-(PR18-Pin_9-Pad9)" "unconnected-(PR18-Pin_10-Pad10)" "unconnected-(PR18-Pin_11-Pad11)" "unconnected-(PR18-Pin_12-Pad12)"
+    "unconnected-(PR18-Pin_13-Pad13)" "unconnected-(PR18-Pin_14-Pad14)" "unconnected-(PR18-Pin_15-Pad15)" "unconnected-(PR18-Pin_16-Pad16)" "unconnected-(PR18-Pin_17-Pad17)" "unconnected-(PR18-Pin_18-Pad18)" "unconnected-(PR19-Pin_2-Pad2)" "unconnected-(PR19-Pin_3-Pad3)"
+    "unconnected-(PR19-Pin_4-Pad4)" "unconnected-(PR19-Pin_5-Pad5)" "unconnected-(PR19-Pin_6-Pad6)" "unconnected-(PR19-Pin_7-Pad7)" "unconnected-(PR19-Pin_8-Pad8)" "unconnected-(PR19-Pin_9-Pad9)" "unconnected-(PR19-Pin_10-Pad10)" "unconnected-(PR19-Pin_11-Pad11)"
+    "unconnected-(PR19-Pin_12-Pad12)" "unconnected-(PR19-Pin_13-Pad13)" "unconnected-(PR19-Pin_14-Pad14)" "unconnected-(PR19-Pin_15-Pad15)" "unconnected-(PR19-Pin_16-Pad16)" "unconnected-(PR19-Pin_17-Pad17)" "unconnected-(PR19-Pin_18-Pad18)" "unconnected-(PR20-Pin_2-Pad2)"
+    "unconnected-(PR20-Pin_3-Pad3)" "unconnected-(PR20-Pin_4-Pad4)" "unconnected-(PR20-Pin_5-Pad5)" "unconnected-(PR20-Pin_6-Pad6)" "unconnected-(PR20-Pin_7-Pad7)" "unconnected-(PR20-Pin_8-Pad8)" "unconnected-(PR20-Pin_9-Pad9)" "unconnected-(PR20-Pin_10-Pad10)"
+    "unconnected-(PR20-Pin_11-Pad11)" "unconnected-(PR20-Pin_12-Pad12)" "unconnected-(PR20-Pin_13-Pad13)" "unconnected-(PR20-Pin_14-Pad14)" "unconnected-(PR20-Pin_15-Pad15)" "unconnected-(PR20-Pin_16-Pad16)" "unconnected-(PR20-Pin_17-Pad17)" "unconnected-(PR20-Pin_18-Pad18)"
+    "unconnected-(PR21-Pin_2-Pad2)" "unconnected-(PR21-Pin_3-Pad3)" "unconnected-(PR21-Pin_4-Pad4)" "unconnected-(PR21-Pin_5-Pad5)" "unconnected-(PR21-Pin_6-Pad6)" "unconnected-(PR21-Pin_7-Pad7)" "unconnected-(PR21-Pin_8-Pad8)" "unconnected-(PR21-Pin_9-Pad9)"
+    "unconnected-(PR21-Pin_10-Pad10)" "unconnected-(PR21-Pin_11-Pad11)" "unconnected-(PR21-Pin_12-Pad12)" "unconnected-(PR21-Pin_13-Pad13)" "unconnected-(PR21-Pin_14-Pad14)" "unconnected-(PR21-Pin_15-Pad15)" "unconnected-(PR21-Pin_16-Pad16)" "unconnected-(PR21-Pin_17-Pad17)"
+    "unconnected-(PR21-Pin_18-Pad18)" "unconnected-(PR22-Pin_2-Pad2)" "unconnected-(PR22-Pin_3-Pad3)" "unconnected-(PR22-Pin_4-Pad4)" "unconnected-(PR22-Pin_5-Pad5)" "unconnected-(PR22-Pin_6-Pad6)" "unconnected-(PR22-Pin_7-Pad7)" "unconnected-(PR22-Pin_8-Pad8)"
+    "unconnected-(PR22-Pin_9-Pad9)" "unconnected-(PR22-Pin_10-Pad10)" "unconnected-(PR22-Pin_11-Pad11)" "unconnected-(PR22-Pin_12-Pad12)" "unconnected-(PR22-Pin_13-Pad13)" "unconnected-(PR22-Pin_14-Pad14)" "unconnected-(PR22-Pin_15-Pad15)" "unconnected-(PR22-Pin_16-Pad16)"
+    "unconnected-(PR22-Pin_17-Pad17)" "unconnected-(PR22-Pin_18-Pad18)" "unconnected-(PR23-Pin_2-Pad2)" "unconnected-(PR23-Pin_3-Pad3)" "unconnected-(PR23-Pin_4-Pad4)" "unconnected-(PR23-Pin_5-Pad5)" "unconnected-(PR23-Pin_6-Pad6)" "unconnected-(PR23-Pin_7-Pad7)"
+    "unconnected-(PR23-Pin_8-Pad8)" "unconnected-(PR23-Pin_9-Pad9)" "unconnected-(PR23-Pin_10-Pad10)" "unconnected-(PR23-Pin_11-Pad11)" "unconnected-(PR23-Pin_12-Pad12)" "unconnected-(PR23-Pin_13-Pad13)" "unconnected-(PR23-Pin_14-Pad14)" "unconnected-(PR23-Pin_15-Pad15)"
+    "unconnected-(PR23-Pin_16-Pad16)" "unconnected-(PR23-Pin_17-Pad17)" "unconnected-(PR23-Pin_18-Pad18)" "Net-(R3-Pad1)" "Net-(U3A--)" "/PULSE_COUNT" "Net-(U3A-+)" "/PWR_ON"
+    /RLY1 "unconnected-(RLY1-Pad11)" /RLY2 "unconnected-(RLY2-Pad6)" "unconnected-(RLY2-Pad11)" /RLY3 "unconnected-(RLY3-Pad6)" "unconnected-(RLY3-Pad11)"
+    /RLY4 /RLY5 /RLY6 /RLY7 "unconnected-(RLY7-Pad6)" "unconnected-(RLY7-Pad11)" /RLY8 "unconnected-(RLY8-Pad6)"
+    "unconnected-(RLY8-Pad11)" /RLY9 "unconnected-(RLY9-Pad6)" "unconnected-(RLY9-Pad11)" /RLY10 "unconnected-(RLY10-Pad6)" "unconnected-(RLY10-Pad11)" /RLY11
+    "unconnected-(RLY11-Pad6)" "unconnected-(RLY11-Pad9)" "unconnected-(RLY11-Pad11)" "unconnected-(RLY11-Pad13)" /SCL /SDA "unconnected-(SENSOR_1-Vin--Pad5)" "unconnected-(SENSOR_1-Vin+-Pad6)"
+    "unconnected-(SENSOR_2-Vin--Pad5)" "unconnected-(SENSOR_2-Vin+-Pad6)" "Net-(U1-I1)" "Net-(U1-I2)" "Net-(U1-I3)" "Net-(U1-I4)" "Net-(U1-I5)" "Net-(U1-I6)"
+    "Net-(U1-I7)" "Net-(U2-I1)" "Net-(U2-I2)" "Net-(U2-I3)" "Net-(U2-I4)" "unconnected-(U2-I5-Pad5)" "unconnected-(U2-I6-Pad6)" "unconnected-(U2-I7-Pad7)"
+    "unconnected-(U2-O7-Pad10)" "unconnected-(U2-O6-Pad11)" "unconnected-(U2-O5-Pad12)" "unconnected-(U3-Pad1)" "unconnected-(U3-Pad13)" "unconnected-(U3-Pad14)" "unconnected-(XA1-3.3V-Pad3V3)" "unconnected-(XA1-PadA1)"
+    "unconnected-(XA1-PadA2)" "unconnected-(XA1-PadA3)" "unconnected-(XA1-PadA4)" "unconnected-(XA1-PadA5)" "unconnected-(XA1-PadA6)" "unconnected-(XA1-PadA7)" "unconnected-(XA1-PadA8)" "unconnected-(XA1-PadA9)"
+    "unconnected-(XA1-PadA10)" "unconnected-(XA1-PadA11)" "unconnected-(XA1-PadA12)" "unconnected-(XA1-PadA13)" "unconnected-(XA1-PadA14)" "unconnected-(XA1-PadA15)" "unconnected-(XA1-PadAREF)" "unconnected-(XA1-D0_RX0-PadD0)"
+    "unconnected-(XA1-D1_TX0-PadD1)" "unconnected-(XA1-D2_INT0-PadD2)" "unconnected-(XA1-D3_INT1-PadD3)" "unconnected-(XA1-PadD4)" "unconnected-(XA1-PadD5)" "unconnected-(XA1-PadD7)" "unconnected-(XA1-PadD8)" "unconnected-(XA1-PadD11)"
+    "unconnected-(XA1-PadD12)" "unconnected-(XA1-PadD13)" "unconnected-(XA1-D14_TX3-PadD14)" "unconnected-(XA1-D15_RX3-PadD15)" "unconnected-(XA1-D16_TX2-PadD16)" "unconnected-(XA1-D17_RX2-PadD17)" "unconnected-(XA1-D19_RX1-PadD19)" "unconnected-(XA1-D20_SDA-PadD20)"
+    "unconnected-(XA1-D21_SCL-PadD21)" "unconnected-(XA1-PadD33)" "unconnected-(XA1-PadD34)" "unconnected-(XA1-PadD35)" "unconnected-(XA1-PadD36)" "unconnected-(XA1-PadD37)" "unconnected-(XA1-PadD38)" "unconnected-(XA1-PadD39)"
+    "unconnected-(XA1-PadD40)" "unconnected-(XA1-PadD41)" "unconnected-(XA1-PadD42)" "unconnected-(XA1-PadD43)" "unconnected-(XA1-PadD44)" "unconnected-(XA1-PadD45)" "unconnected-(XA1-PadD46)" "unconnected-(XA1-PadD47)"
+    "unconnected-(XA1-PadD48)" "Net-(XA1-RESET)" "unconnected-(XA1-PadD50)" "unconnected-(XA1-PadD51)" "unconnected-(XA1-PadD52)" "unconnected-(XA1-D53_SS-PadD53)" "unconnected-(XA1-IOREF-PadIORF)" "unconnected-(PR21-Pin_20-Pad20)"
+    "unconnected-(PR21-Pin_19-Pad19)" "unconnected-(PR21-Pin_1-Pad1)" "unconnected-(PR22-Pin_20-Pad20)" "unconnected-(PR22-Pin_19-Pad19)" "unconnected-(PR22-Pin_1-Pad1)" "unconnected-(PR23-Pin_20-Pad20)" "unconnected-(PR23-Pin_19-Pad19)" "unconnected-(PR23-Pin_1-Pad1)"
+    "unconnected-(PR24-Pin_1-Pad1)" "unconnected-(PR24-Pin_2-Pad2)" "unconnected-(PR24-Pin_3-Pad3)" "unconnected-(PR24-Pin_4-Pad4)" "unconnected-(PR24-Pin_5-Pad5)" "unconnected-(PR24-Pin_6-Pad6)" "unconnected-(PR24-Pin_7-Pad7)" "unconnected-(PR24-Pin_8-Pad8)"
+    "unconnected-(PR24-Pin_9-Pad9)" "unconnected-(PR24-Pin_10-Pad10)" "unconnected-(PR24-Pin_11-Pad11)" "unconnected-(PR24-Pin_12-Pad12)" "unconnected-(PR24-Pin_13-Pad13)" "unconnected-(PR24-Pin_14-Pad14)" "unconnected-(PR24-Pin_15-Pad15)" "unconnected-(PR24-Pin_16-Pad16)"
+    "unconnected-(PR24-Pin_17-Pad17)" "unconnected-(PR24-Pin_18-Pad18)" "unconnected-(PR24-Pin_19-Pad19)" "unconnected-(PR24-Pin_20-Pad20)" "unconnected-(PR25-Pin_1-Pad1)" "unconnected-(PR25-Pin_2-Pad2)" "unconnected-(PR25-Pin_3-Pad3)" "unconnected-(PR25-Pin_4-Pad4)"
+    "unconnected-(PR25-Pin_5-Pad5)" "unconnected-(PR25-Pin_6-Pad6)" "unconnected-(PR25-Pin_7-Pad7)" "unconnected-(PR25-Pin_8-Pad8)" "unconnected-(PR25-Pin_9-Pad9)" "unconnected-(PR25-Pin_10-Pad10)" "unconnected-(PR25-Pin_11-Pad11)" "unconnected-(PR25-Pin_12-Pad12)"
+    "unconnected-(PR25-Pin_13-Pad13)" "unconnected-(PR25-Pin_14-Pad14)" "unconnected-(PR25-Pin_15-Pad15)" "unconnected-(PR25-Pin_16-Pad16)" "unconnected-(PR25-Pin_17-Pad17)" "unconnected-(PR25-Pin_18-Pad18)" "unconnected-(PR25-Pin_19-Pad19)" "unconnected-(PR25-Pin_20-Pad20)"
+    "unconnected-(PR26-Pin_1-Pad1)" "unconnected-(PR26-Pin_2-Pad2)" "unconnected-(PR26-Pin_3-Pad3)" "unconnected-(PR26-Pin_4-Pad4)" "unconnected-(PR26-Pin_5-Pad5)" "unconnected-(PR26-Pin_6-Pad6)" "unconnected-(PR26-Pin_7-Pad7)" "unconnected-(PR26-Pin_8-Pad8)"
+    "unconnected-(PR26-Pin_9-Pad9)" "unconnected-(PR26-Pin_10-Pad10)" "unconnected-(PR26-Pin_11-Pad11)" "unconnected-(PR26-Pin_12-Pad12)" "unconnected-(PR26-Pin_13-Pad13)" "unconnected-(PR26-Pin_14-Pad14)" "unconnected-(PR26-Pin_15-Pad15)" "unconnected-(PR26-Pin_16-Pad16)"
+    "unconnected-(PR26-Pin_17-Pad17)" "unconnected-(PR26-Pin_18-Pad18)" "unconnected-(PR26-Pin_19-Pad19)" "unconnected-(PR26-Pin_20-Pad20)" "unconnected-(PR27-Pin_1-Pad1)" "unconnected-(PR27-Pin_2-Pad2)" "unconnected-(PR27-Pin_3-Pad3)" "unconnected-(PR27-Pin_4-Pad4)"
+    "unconnected-(PR27-Pin_5-Pad5)" "unconnected-(PR27-Pin_6-Pad6)" "unconnected-(PR27-Pin_7-Pad7)" "unconnected-(PR27-Pin_8-Pad8)" "unconnected-(PR27-Pin_9-Pad9)" "unconnected-(PR27-Pin_10-Pad10)" "unconnected-(PR27-Pin_11-Pad11)" "unconnected-(PR27-Pin_12-Pad12)"
+    "unconnected-(PR27-Pin_13-Pad13)" "unconnected-(PR27-Pin_14-Pad14)" "unconnected-(PR27-Pin_15-Pad15)" "unconnected-(PR27-Pin_16-Pad16)" "unconnected-(PR27-Pin_17-Pad17)" "unconnected-(PR27-Pin_18-Pad18)" "unconnected-(PR27-Pin_19-Pad19)" "unconnected-(PR27-Pin_20-Pad20)"
+    "unconnected-(PR28-Pin_1-Pad1)" "unconnected-(PR28-Pin_2-Pad2)" "unconnected-(PR28-Pin_3-Pad3)" "unconnected-(PR28-Pin_4-Pad4)" "unconnected-(PR28-Pin_5-Pad5)" "unconnected-(PR28-Pin_6-Pad6)" "unconnected-(PR28-Pin_7-Pad7)" "unconnected-(PR28-Pin_8-Pad8)"
+    "unconnected-(PR28-Pin_9-Pad9)" "unconnected-(PR28-Pin_10-Pad10)" "unconnected-(PR28-Pin_11-Pad11)" "unconnected-(PR28-Pin_12-Pad12)" "unconnected-(PR28-Pin_13-Pad13)" "unconnected-(PR28-Pin_14-Pad14)" "unconnected-(PR28-Pin_15-Pad15)" "unconnected-(PR28-Pin_16-Pad16)"
+    "unconnected-(PR28-Pin_17-Pad17)" "unconnected-(PR28-Pin_18-Pad18)" "unconnected-(PR28-Pin_19-Pad19)" "unconnected-(PR28-Pin_20-Pad20)" "unconnected-(PR29-Pin_1-Pad1)" "unconnected-(PR29-Pin_2-Pad2)" "unconnected-(PR29-Pin_3-Pad3)" "unconnected-(PR29-Pin_4-Pad4)"
+    "unconnected-(PR29-Pin_5-Pad5)" "unconnected-(PR29-Pin_6-Pad6)" "unconnected-(PR29-Pin_7-Pad7)" "unconnected-(PR29-Pin_8-Pad8)" "unconnected-(PR29-Pin_9-Pad9)" "unconnected-(PR29-Pin_10-Pad10)" "unconnected-(PR29-Pin_11-Pad11)" "unconnected-(PR29-Pin_12-Pad12)"
+    "unconnected-(PR29-Pin_13-Pad13)" "unconnected-(PR29-Pin_14-Pad14)" "unconnected-(PR29-Pin_15-Pad15)" "unconnected-(PR29-Pin_16-Pad16)" "unconnected-(PR29-Pin_17-Pad17)" "unconnected-(PR29-Pin_18-Pad18)" "unconnected-(PR29-Pin_19-Pad19)" "unconnected-(PR29-Pin_20-Pad20)"
+    "unconnected-(PR30-Pin_1-Pad1)" "unconnected-(PR30-Pin_2-Pad2)" "unconnected-(PR30-Pin_3-Pad3)" "unconnected-(PR30-Pin_4-Pad4)" "unconnected-(PR30-Pin_5-Pad5)" "unconnected-(PR30-Pin_6-Pad6)" "unconnected-(PR30-Pin_7-Pad7)" "unconnected-(PR30-Pin_8-Pad8)"
+    "unconnected-(PR30-Pin_9-Pad9)" "unconnected-(PR30-Pin_10-Pad10)" "unconnected-(PR30-Pin_11-Pad11)" "unconnected-(PR30-Pin_12-Pad12)" "unconnected-(PR30-Pin_13-Pad13)" "unconnected-(PR30-Pin_14-Pad14)" "unconnected-(PR30-Pin_15-Pad15)" "unconnected-(PR30-Pin_16-Pad16)"
+    "unconnected-(PR30-Pin_17-Pad17)" "unconnected-(PR30-Pin_18-Pad18)" "unconnected-(PR30-Pin_19-Pad19)" "unconnected-(PR30-Pin_20-Pad20)" "unconnected-(PR31-Pin_1-Pad1)" "unconnected-(PR31-Pin_2-Pad2)" "unconnected-(PR31-Pin_3-Pad3)" "unconnected-(PR31-Pin_4-Pad4)"
+    "unconnected-(PR31-Pin_5-Pad5)" "unconnected-(PR31-Pin_6-Pad6)" "unconnected-(PR31-Pin_7-Pad7)" "unconnected-(PR31-Pin_8-Pad8)" "unconnected-(PR31-Pin_9-Pad9)" "unconnected-(PR31-Pin_10-Pad10)" "unconnected-(PR31-Pin_11-Pad11)" "unconnected-(PR31-Pin_12-Pad12)"
+    "unconnected-(PR31-Pin_13-Pad13)" "unconnected-(PR31-Pin_14-Pad14)" "unconnected-(PR31-Pin_15-Pad15)" "unconnected-(PR31-Pin_16-Pad16)" "unconnected-(PR31-Pin_17-Pad17)" "unconnected-(PR31-Pin_18-Pad18)" "unconnected-(PR31-Pin_19-Pad19)" "unconnected-(PR31-Pin_20-Pad20)"
+    "unconnected-(PR32-Pin_1-Pad1)" "unconnected-(PR32-Pin_2-Pad2)" "unconnected-(PR32-Pin_3-Pad3)" "unconnected-(PR32-Pin_4-Pad4)" "unconnected-(PR32-Pin_5-Pad5)" "unconnected-(PR32-Pin_6-Pad6)" "unconnected-(PR32-Pin_7-Pad7)" "unconnected-(PR32-Pin_8-Pad8)"
+    "unconnected-(PR32-Pin_9-Pad9)" "unconnected-(PR32-Pin_10-Pad10)" "unconnected-(PR32-Pin_11-Pad11)" "unconnected-(PR32-Pin_12-Pad12)" "unconnected-(PR32-Pin_13-Pad13)" "unconnected-(PR32-Pin_14-Pad14)" "unconnected-(PR32-Pin_15-Pad15)" "unconnected-(PR32-Pin_16-Pad16)"
+    "unconnected-(PR32-Pin_17-Pad17)" "unconnected-(PR32-Pin_18-Pad18)" "unconnected-(PR32-Pin_19-Pad19)" "unconnected-(PR32-Pin_20-Pad20)" "unconnected-(PR33-Pin_1-Pad1)" "unconnected-(PR33-Pin_2-Pad2)" "unconnected-(PR33-Pin_3-Pad3)" "unconnected-(PR33-Pin_4-Pad4)"
+    "unconnected-(PR33-Pin_5-Pad5)" "unconnected-(PR33-Pin_6-Pad6)" "unconnected-(PR33-Pin_7-Pad7)" "unconnected-(PR33-Pin_8-Pad8)" "unconnected-(PR33-Pin_9-Pad9)" "unconnected-(PR33-Pin_10-Pad10)" "unconnected-(PR33-Pin_11-Pad11)" "unconnected-(PR33-Pin_12-Pad12)"
+    "unconnected-(PR33-Pin_13-Pad13)" "unconnected-(PR33-Pin_14-Pad14)" "unconnected-(PR33-Pin_15-Pad15)" "unconnected-(PR33-Pin_16-Pad16)" "unconnected-(PR33-Pin_17-Pad17)" "unconnected-(PR33-Pin_18-Pad18)" "unconnected-(PR33-Pin_19-Pad19)" "unconnected-(PR33-Pin_20-Pad20)"
+    "unconnected-(PR11-Pin_1-Pad1)" "unconnected-(PR12-Pin_1-Pad1)" "unconnected-(PR13-Pin_1-Pad1)" "unconnected-(PR14-Pin_1-Pad1)" "unconnected-(PR15-Pin_1-Pad1)" "unconnected-(PR16-Pin_1-Pad1)" "unconnected-(PR17-Pin_1-Pad1)" "unconnected-(PR18-Pin_1-Pad1)"
+    "unconnected-(PR19-Pin_1-Pad1)" "unconnected-(PR20-Pin_1-Pad1)" "Net-(TVS2-A1)" "Net-(PSENSE_2-Pad1)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 254.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class +12V
+    +12V /12IN
+    (clearance_class +12V)
+    (via_rule +12V)
+    (rule
+      (width 635.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class +5V
+    +5V
+    (clearance_class +5V)
+    (via_rule +5V)
+    (rule
+      (width 635.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class +5VP
+    +5VP
+    (clearance_class +5VP)
+    (via_rule +5VP)
+    (rule
+      (width 635.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class +9V
+    "/Vin_Atmega" /9DIO /9OUT
+    (clearance_class +9V)
+    (via_rule +9V)
+    (rule
+      (width 635.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class LOAD
+    "/CAN_BAT" "Net-(J2-Pad6)" "Net-(J2-Pad7)" "Net-(RLY3-Pad8)" "Net-(RLY3-Pad9)" "Net-(J2-Pad3)" "Net-(PSENSE_1-Pad1)" "Net-(TVS1-A2)"
+    (clearance_class LOAD)
+    (via_rule LOAD)
+    (rule
+      (width 508.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "UUT_LOAD"
+    "/+VDC_LOAD" "/-VDC_LOAD" "/CAN_GND" "/+VL_SW"
+    (clearance_class "UUT_LOAD")
+    (via_rule "UUT_LOAD")
+    (rule
+      (width 508.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "UUT_PWR"
+    "/+VDC_UUT_MAIN" "/-VDC_UUT_MAIN" "/SIG_GND" "/+VDC_UUT" "/UUT_IN+"
+    (clearance_class "UUT_PWR")
+    (via_rule "UUT_PWR")
+    (rule
+      (width 508.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

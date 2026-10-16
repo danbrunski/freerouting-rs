@@ -1,0 +1,75 @@
+
+(rules PCB Issue034-Green14SegLED
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.9)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-1]_800:400_um"
+  )
+  (class default
+    /C0 "Net-(D1-Pad1)" GND /SDA /SCL VCC "Net-(JP1-Pad2)" "/HTK_A0"
+    "Net-(JP2-Pad2)" "/HTK_A1" "Net-(JP3-Pad2)" "/HTK_A2" "Net-(JP4-Pad2)" "Net-(JP4-Pad1)" "Net-(JP5-Pad1)" "Net-(JP6-Pad2)"
+    "Net-(JP6-Pad1)" "Net-(JP8-Pad1)" "/CA1-1" "/CA1-2" /C1 "/CA1-3" /C2 "/CA1-4"
+    /C3 "/CA2-1" /C4 "/CA2-2" /C5 "/CA2-3" /C6 "/CA2-4"
+    /C7 "/HTK_A3" "/HTK_A4" "/HTK_A5" "/HTK_A6" "/HTK_A7" "/HTK_A8" "/HTK_A9"
+    "/HTK_A10" "/HTK_A11" "/HTK_A12" "/HTK_A13" "/HTK_A14" "/HTK_A15" "Net-(RN1-Pad7)" "Net-(RN2-Pad1)"
+    "Net-(RN2-Pad3)" "Net-(RN2-Pad5)" /A2 /G1 /D2 /H /C /J
+    /L /B /E /G2 /DP /F /M /A1
+    /N /K /D1 "Net-(JP9-Pad2)" "Net-(RN1-Pad5)" "Net-(RN3-Pad1)" "Net-(RN3-Pad3)" "Net-(RN3-Pad5)"
+    "Net-(RN3-Pad7)" "Net-(RN3-Pad9)" "Net-(RN4-Pad3)" "Net-(RN4-Pad1)" "/R-D2" "/R-G1" "/R-E" "/R-D1"
+    "/R-C" "/R-B" "/R-A2" "/R-A1" "/R-DP" "/R-N" "/R-M" "/R-L"
+    "/R-K" "/R-J" "/R-H" "/R-G2" "/D-VCC" "/D-C7" "/D-C5" "/D-C4"
+    "/D-C3" "/D-C2" "/D-C1" "/D-C0" "/R-F"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

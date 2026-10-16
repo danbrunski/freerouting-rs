@@ -1,0 +1,75 @@
+
+(rules PCB DAC2020_bm01.unrouted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.9)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.5)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    +5V GND N$6 N$7 AREF RESET VIN N$3
+    PWRIN M8RXD M8TXD ADC0 ADC2 ADC1 ADC3 ADC4
+    ADC5 ADC6 ADC7 +3V3 SDA SCL ADC9 ADC8
+    ADC10 ADC11 ADC12 ADC13 ADC14 ADC15 PB3 PB2
+    PB1 PB5 PB4 PE5 PE4 PE3 PE1 PE0
+    N$15 N$53 N$54 N$55 "D-" D+ N$60 DTR
+    USBVCC N$2 N$4 "GATE_CMD" CMP PB6 PH3 PH4
+    PH5 PH6 PG5 RXD1 TXD1 RXD2 RXD3 TXD2
+    TXD3 PC0 PC1 PC2 PC3 PC4 PC5 PC6
+    PC7 PB0 PG0 PG1 PG2 PD7 PA0 PA1
+    PA2 PA3 PA4 PA5 PA6 PA7 PL0 PL1
+    PL2 PL3 PL4 PL5 PL6 PL7 PB7 CTS
+    DSR DCD RI
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Bottom)
+    )
+  )
+)

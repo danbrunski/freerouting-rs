@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue190-processor.Z80.dsn",
+  "designName": "Issue190-processor.Z80",
+  "unroutedBytes": 915764,
+  "import": {
+    "wiresImported": 5987,
+    "viasImported": 223,
+    "errorsEncountered": 0,
+    "routedBytes": 1809165
+  }
+}

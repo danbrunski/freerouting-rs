@@ -1,0 +1,2006 @@
+(session "Issue508-DAC2020_bm06"
+  (base_design "Issue508-DAC2020_bm06")
+  (placement
+    (resolution um 10)
+    (component batteryCharger:0603
+      (place U2 1600511.0 -990436.0 front 90)
+      (place U3 1517511.0 -1018536.0 front 270)
+      (place U4 1422611.0 -992536.0 front 180)
+      (place U5 1418511.0 -961836.0 front 90)
+      (place U6 1560011.0 -964536.0 front 0)
+      (place U7 1441511.0 -1082936.0 front 270)
+      (place U18 1285811.0 -1080536.0 front 0)
+      (place U19 1328911.0 -1031436.0 front 0)
+      (place U20 1285811.0 -1108436.0 front 0)
+      (place U21 1285611.0 -1137336.0 front 0)
+      (place U22 1285511.0 -1166336.0 front 0)
+      (place U23 1592711.0 -935736.0 front 180)
+      (place U24 1394411.0 -973536.0 front 90)
+      (place U25 1389411.0 -1082636.0 front 90)
+      (place U26 1412411.0 -1082736.0 front 90)
+      (place U27 1402811.0 -927636.0 front 180)
+      (place U1 1467011.0 -931036.0 front 90)
+      (place U29 1496011.0 -931036.0 front 90)
+      (place U30 1524011.0 -931036.0 front 90)
+      (place U32 1443011.0 -1120036.0 front 0)
+      (place U33 1505011.0 -969036.0 front 270)
+      (place U34 1336011.0 -1169036.0 front 90)
+    )
+    (component "batteryCharger:LED-0603"
+      (place U8 1298311.0 -1040936.0 front 90)
+    )
+    (component "batteryCharger:QFN50P400X400X100-25N"
+      (place U9 1391811.0 -1029136.0 front 0)
+    )
+    (component batteryCharger:BQ27441DRZRG1A
+      (place U10 1389211.0 -1145436.0 front 270)
+    )
+    (component "batteryCharger:SON50P300X300X100-11N"
+      (place U11 1565611.0 -1000736.0 front 180)
+    )
+    (component "batteryCharger:10118193-0001LF"
+      (place U12 1226111.0 -979236.0 front 270)
+    )
+    (component batteryCharger:UE27AC54100
+      (place U13 1626311.0 -1001936.0 front 90)
+    )
+    (component "batteryCharger:JST-2-SMD"
+      (place U14 1505611.0 -1153536.0 front 180)
+    )
+    (component batteryCharger:1X06
+      (place U15 1234311.0 -1166936.0 front 90)
+    )
+    (component batteryCharger:INDPM3630X200N
+      (place U16 1467711.0 -1009336.0 front 0)
+    )
+    (component batteryCharger:INDPM5552X200N
+      (place U17 1562711.0 -1058636.0 front 0)
+    )
+    (component batteryCharger:1206
+      (place U28 1481311.0 -1074836.0 front 0)
+    )
+    (component "batteryCharger:DSN2_1"
+      (place U31 1452011.0 -964036.0 front 270)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "9.0.6")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle Top 6000 0 0)
+        )
+        (shape
+          (circle Bottom 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (wire
+          (path Top 2000
+            1418828 -1021636
+            1418828 -1016636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411811 -1021636
+            1418828 -1021636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411811 -1016636
+            1418828 -1016636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1391811 -1029136
+            1399311 -1021636
+            1411811 -1021636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1509494 -1027036
+            1504094 -1021636
+            1418828 -1021636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1517511 -1027036
+            1509494 -1027036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1567661 -993013
+            1571761 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1567661 -986186
+            1567661 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1571761 -986186
+            1571761 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1563561 -993013
+            1559461 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1563561 -986186
+            1563561 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1559461 -986186
+            1559461 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1567661 -1022063
+            1571761 -1022063
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1571761 -1015236
+            1571761 -1022063
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1563561 -1015236
+            1563561 -1022063
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1559461 -1015236
+            1559461 -1022063
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1565611 -1000696
+            1565611 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1563561 -993013
+            1565611 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1565611 -993013
+            1567661 -993013
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1567661 -1020014
+            1567661 -1022063
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1563561 -1022063
+            1565612 -1022063
+            1567661 -1020014
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1567661 -1020014
+            1567661 -1015236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1565611 -1014762
+            1567187 -1014762
+            1567661 -1015236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1565611 -1000696
+            1565611 -1014762
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1571761 -986186
+            1571761 -979359
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1389211 -1145436
+            1389211 -1132767
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1336011 -1160536
+            1344028 -1160536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1238628 -967236
+            1238628 -949202
+            1240594 -947236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1226111 -967236
+            1238628 -967236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1250611 -947236
+            1240594 -947236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1252861 -992236
+            1243094 -992236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1250611 -1011236
+            1250611 -1000219
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1226111 -991236
+            1226111 -967236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1243094 -992236
+            1243094 -995522
+            1247791 -1000219
+            1250611 -1000219
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1226111 -991236
+            1238628 -991236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1243094 -992236
+            1239628 -992236
+            1238628 -991236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1234311 -1039936
+            1250611 -1023636
+            1250611 -1011236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1449528 -1091436
+            1450445 -1090519
+            1515611 -1090519
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1441511 -1091436
+            1449528 -1091436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1568511 -972553
+            1571761 -975803
+            1571761 -979359
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1568511 -964536
+            1568511 -972553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1563561 -1022063
+            1559461 -1022063
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1559461 -1022063
+            1530501 -1022063
+            1525528 -1027036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1517511 -1027036
+            1525528 -1027036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411311 -927636
+            1411311 -937619
+            1418511 -944819
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1418511 -953336
+            1418511 -944819
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1626311 -966936
+            1623528 -966936
+            1608528 -981936
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1600511 -981936
+            1608528 -981936
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1441511 -1091436
+            1433494 -1091436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1412411 -1091236
+            1412411 -1099753
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1402488 -1107282
+            1394859 -1099653
+            1389411 -1099653
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1402488 -1107282
+            1410017 -1099753
+            1412411 -1099753
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1389411 -1091136
+            1389411 -1099653
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1402488 -1120036
+            1402488 -1107282
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1434511 -1120036
+            1402488 -1120036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1402488 -1120036
+            1401942 -1120036
+            1389211 -1132767
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1496011 -922536
+            1467011 -922536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1524011 -922536
+            1496011 -922536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411311 -927636
+            1453894 -927636
+            1458994 -922536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1467011 -922536
+            1458994 -922536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1412411 -1091236
+            1420428 -1091236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1420428 -1091236
+            1433294 -1091236
+            1433494 -1091436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1361054 -1143649
+            1361267 -1143436
+            1369461 -1143436
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1568511.0 -954477.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1568511 -954477
+            1568511 -964536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1260628 -947236
+            1288245 -919619
+            1411311 -919619
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1250611 -947236
+            1260628 -947236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411311 -927636
+            1411311 -919619
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1515611 -1116536
+            1515611 -1103527
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1515611 -1103527
+            1515611 -1090519
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1515611 -1103527
+            1617520 -1103527
+            1653411 -1067636
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1653411 -1067636
+            1653411 -994036
+            1626311 -966936
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1653411 -936236
+            1633048 -956599
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1633048 -956599
+            1626311 -963336
+            1626311 -966936
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1633048 -956599
+            1620530 -969117
+            1583151 -969117
+            1568511 -954477
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1568511 -954477
+            1563969 -954477
+            1532028 -922536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1524011 -922536
+            1532028 -922536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1359514 -1145050
+            1357899 -1143436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1344028 -1160536
+            1359514 -1145050
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1359514 -1145050
+            1360594 -1143970
+            1360733 -1143970
+            1361054 -1143649
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1234311 -1039936
+            1269066 -1039936
+            1330205 -1101075
+            1330205 -1124252
+            1349389 -1143436
+            1357899 -1143436
+          )
+          (type protect)
+        )
+      )
+      (net "3.3V"
+        (wire
+          (path Top 2000
+            1294311 -1108436
+            1294311 -1080536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1294111 -1137336
+            1294111 -1129319
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1294011 -1158319
+            1294111 -1158219
+            1294111 -1137336
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1294011 -1166336
+            1294011 -1158319
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1294111 -1129319
+            1294111 -1116653
+            1294311 -1116453
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1294311 -1080536
+            1294311 -1072519
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1294311 -1108436
+            1294311 -1116453
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1234311 -1065336
+            1287128 -1065336
+            1294311 -1072519
+          )
+          (type protect)
+        )
+      )
+      (net "5V"
+        (wire
+          (path Top 2000
+            1513028 -977536
+            1513028 -979972
+            1528278 -995222
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1528278 -995222
+            1543330 -995222
+            1543844 -995736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1550861 -995736
+            1543844 -995736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1505011 -977536
+            1513028 -977536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1580361 -1000736
+            1580361 -998936
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1580361 -998936
+            1580361 -995736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1626311 -1036936
+            1600511 -1011136
+            1600511 -998936
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1541295.0 -995736.0
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1626311 -1036936
+            1582495 -1036936
+            1541295 -995736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1543844 -995736
+            1541295 -995736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1601211 -935736
+            1601211 -943753
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1592020 -998936
+            1592020 -952944
+            1601211 -943753
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1600511 -998936
+            1592020 -998936
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1592020 -998936
+            1580361 -998936
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(C4-Pad1)"
+        (via "Via[0-1]_600:300_um" 1383960.0 -999553.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1384311 -1009136
+            1384311 -999904
+            1383960 -999553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1496011 -939536
+            1467011 -939536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1505011 -960536
+            1505011 -939536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1524011 -939536
+            1505011 -939536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1505011 -939536
+            1496011 -939536
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1467011.0 -950274.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1467011 -950274
+            1467011 -939536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1467011 -950274
+            1454906 -950274
+            1452011 -953169
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1452011 -958536
+            1452011 -953169
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1383960 -999553
+            1433239 -950274
+            1467011 -950274
+          )
+          (type protect)
+        )
+      )
+      (net "/REG"
+        (wire
+          (path Top 2000
+            1394411 -990553
+            1390409 -994555
+            1390409 -1001615
+            1389311 -1002713
+            1389311 -1009136
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1394411 -982036
+            1394411 -990553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1418511 -970336
+            1410494 -970336
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1402428 -982036
+            1402428 -978402
+            1410494 -970336
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1394411 -982036
+            1402428 -982036
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(C3-Pad2)"
+        (wire
+          (path Top 2000
+            1394311 -1009136
+            1394311 -1003393
+            1394839 -1002865
+            1394839 -1000150
+            1402453 -992536
+            1414111 -992536
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(C3-Pad1)"
+        (wire
+          (path Top 2000
+            1399311 -1002119
+            1404311 -1002119
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1399311 -1009136
+            1399311 -1002119
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1404311 -1009136
+            1404311 -1002119
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1431111 -1000553
+            1405877 -1000553
+            1404311 -1002119
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1431111 -992536
+            1431111 -1000553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1452211 -1009336
+            1439894 -1009336
+            1431111 -1000553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1452011 -975553
+            1440077 -975553
+            1431111 -984519
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1452011 -967786
+            1452011 -975553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1431111 -992536
+            1431111 -984519
+          )
+          (type protect)
+        )
+      )
+      (net "/VBAT_MAIN"
+        (via "Via[0-1]_600:300_um" 1384281.0 -1059936.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1418828 -1026636
+            1418828 -1031636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411811 -1026636
+            1418828 -1026636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411811 -1031636
+            1418828 -1031636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1550861 -1005736
+            1543594 -1005736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1550861 -1010736
+            1543594 -1010736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1517511 -1010036
+            1543594 -1010036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1543594 -1005736
+            1543594 -1010036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1543594 -1010036
+            1543594 -1010736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1483211 -1009336
+            1508794 -1009336
+            1509494 -1010036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1517511 -1010036
+            1509494 -1010036
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1481054.0 -1001162.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1483211 -1009336
+            1483211 -1003319
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1481054 -1001162
+            1483211 -1003319
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1478399.0 -1057435.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1478399 -1057435
+            1524743 -1057435
+            1525944 -1058636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1478399 -1057435
+            1452600 -1031636
+            1418828 -1031636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1539211 -1058636
+            1525944 -1058636
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1478399 -1057435
+            1481054 -1054780
+            1481054 -1001162
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1478399 -1057435
+            1471110 -1064724
+            1389069 -1064724
+            1384281 -1059936
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1333709.0 -1049706.0
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1384281 -1059936
+            1374051 -1049706
+            1333709 -1049706
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1298311 -1049706
+            1333709 -1049706
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1384281 -1059936
+            1384311 -1059906
+            1384311 -1049136
+          )
+          (type protect)
+        )
+      )
+      (net "/VBAT_CELL"
+        (wire
+          (path Top 2000
+            1418828 -1036636
+            1418828 -1041636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411811 -1036636
+            1418828 -1036636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1411811 -1041636
+            1418828 -1041636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1433494 -1074436
+            1433494 -1056302
+            1418828 -1041636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1441511 -1074436
+            1433494 -1074436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1467311 -1074836
+            1449928 -1074836
+            1449528 -1074436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1441511 -1074436
+            1449528 -1074436
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1431528.0 -1082206.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1431528 -1082206
+            1433494 -1080240
+            1433494 -1074436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1408961 -1155436
+            1408961 -1155438
+            1408132 -1156267
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1408374.0 -1161491.0
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1431528 -1082206
+            1431528 -1138337
+            1408374 -1161491
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1408132 -1156267
+            1408132 -1161249
+            1408374 -1161491
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad11)"
+        (via "Via[0-1]_600:300_um" 1401435.0 -1058277.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1399311 -1049136
+            1399311 -1056153
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1401435 -1058277
+            1399311 -1056153
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1394311 -927636
+            1394311 -935653
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1383298.0 -965036.0
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1401435 -1058277
+            1377862 -1034704
+            1377862 -970472
+            1383298 -965036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1394311 -965036
+            1394311 -935653
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1383298 -965036
+            1394311 -965036
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1394311 -965036
+            1394411 -965036
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad10)"
+        (wire
+          (path Top 2000
+            1397346 -1063293
+            1396599 -1062546
+            1395309 -1062546
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1395309 -1062546
+            1395309 -1057243
+            1394809 -1056743
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1394809 -1056743
+            1394809 -1056273
+            1394311 -1055775
+            1394311 -1049136
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1412411 -1074236
+            1404394 -1074236
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1404394 -1074236
+            1397346 -1067188
+            1397346 -1063293
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad9)"
+        (wire
+          (path Top 2000
+            1389411 -1074136
+            1389411 -1065619
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1389311 -1049136
+            1389311 -1056455
+            1390318 -1057462
+            1390318 -1064712
+            1389411 -1065619
+          )
+          (type protect)
+        )
+      )
+      (net "/CHG_INT"
+        (wire
+          (path Top 2000
+            1234311 -1141536
+            1264394 -1141536
+            1268594 -1137336
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1277111 -1137336
+            1268594 -1137336
+          )
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1344272.0 -1118444.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1379311 -1049136
+            1379311 -1056153
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1234311 -1141536
+            1257403 -1118444
+            1344272 -1118444
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1379311 -1056153
+            1344272 -1091192
+            1344272 -1118444
+          )
+          (type protect)
+        )
+      )
+      (net "/SDA"
+        (via "Via[0-1]_600:300_um" 1363295.0 -1129270.0
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1368194 -1134169
+            1369461 -1135436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1363295 -1129270
+            1368194 -1134169
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1234311 -1116136
+            1261094 -1116136
+            1268794 -1108436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1277311 -1108436
+            1268794 -1108436
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1363295 -1129270
+            1363295 -1128958
+            1346764 -1112427
+            1238020 -1112427
+            1234311 -1116136
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1364794 -1041636
+            1364794 -1058706
+            1338239 -1085261
+            1338239 -1120926
+            1344260 -1126947
+            1360972 -1126947
+            1363295 -1129270
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1371811 -1041636
+            1364794 -1041636
+          )
+          (type protect)
+        )
+      )
+      (net "/SCL"
+        (via "Via[0-1]_600:300_um" 1339749.0 -1064135.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1354377 -1039270
+            1355148 -1038499
+            1355148 -1037134
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1355148 -1037134
+            1364546 -1037134
+            1365044 -1036636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1371811 -1036636
+            1365044 -1036636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1339749 -1046343
+            1346822 -1039270
+            1354377 -1039270
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1339749 -1064135
+            1339749 -1046343
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1234311 -1090736
+            1275128 -1090736
+            1277311 -1088553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1277311 -1080536
+            1277311 -1088553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1362192 -1139436
+            1369461 -1139436
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1234311 -1090736
+            1313148 -1090736
+            1339749 -1064135
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1339749 -1064135
+            1334222 -1069662
+            1334222 -1122589
+            1342597 -1130964
+            1353720 -1130964
+            1362192 -1139436
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad4)"
+        (wire
+          (path Top 1500
+            1362983 -1032140
+            1364587 -1032140
+            1364593 -1032134
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1364593 -1032134
+            1365204 -1032134
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1365204 -1032134
+            1371313 -1032134
+            1371811 -1031636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1337411 -1031436
+            1341670 -1031436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1341670 -1031436
+            1343036 -1032802
+            1362321 -1032802
+            1362983 -1032140
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad3)"
+        (via "Via[0-1]_600:300_um" 1297926.0 -974163.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1349093.0 -1026785.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1349093 -1026785
+            1364645 -1026785
+            1364794 -1026636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1371811 -1026636
+            1364794 -1026636
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1349093 -1026785
+            1349093 -1025330
+            1297926 -974163
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1252861 -972736
+            1296499 -972736
+            1297926 -974163
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad2)"
+        (wire
+          (path Top 1500
+            1365755 -1022134
+            1371313 -1022134
+            1371811 -1021636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1262628 -979236
+            1263572 -980180
+            1310997 -980180
+            1352951 -1022134
+            1365755 -1022134
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1252861 -979236
+            1262628 -979236
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC1-Pad1)"
+        (wire
+          (path Top 2000
+            1252861 -966236
+            1314394 -966236
+            1364794 -1016636
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1371811 -1016636
+            1364794 -1016636
+          )
+          (type protect)
+        )
+      )
+      (net "/FUEL_INT"
+        (via "Via[0-1]_600:300_um" 1418251.0 -1135434.0
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1408961 -1135436
+            1415978 -1135436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1234311 -1166936
+            1267894 -1166936
+            1268494 -1166336
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1277011 -1166336
+            1268494 -1166336
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1415978 -1135436
+            1415980 -1135434
+            1418251 -1135434
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1234311 -1166936
+            1265813 -1135434
+            1418251 -1135434
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC2-Pad10)"
+        (wire
+          (path Top 1500
+            1408961 -1143436
+            1416213 -1143436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1416213 -1143436
+            1436128 -1143436
+            1451511 -1128053
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1451511 -1120036
+            1451511 -1128053
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC2-Pad6)"
+        (via "Via[0-1]_600:300_um" 1554638.0 -1075410.0
+          (type protect)
+        )
+        (via "Via[0-1]_600:300_um" 1486355.0 -1142553.0
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1495311 -1074836
+            1506328 -1074836
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1506328 -1074836
+            1506902 -1075410
+            1554638 -1075410
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1495611 -1116536
+            1495611 -1142553
+          )
+          (type protect)
+        )
+        (wire
+          (path Bottom 2000
+            1554638 -1075410
+            1554638 -1075411
+            1553497 -1075411
+            1486355 -1142553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1495611 -1142553
+            1486355 -1142553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1408961 -1151436
+            1414668 -1151436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1460013 -1148534
+            1480374 -1148534
+            1486355 -1142553
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1369461 -1158948
+            1369461 -1155436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1460013 -1148534
+            1457111 -1151436
+            1416299 -1151436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1416299 -1151436
+            1414668 -1151436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1369461 -1158948
+            1378105 -1167592
+            1411299 -1167592
+            1416299 -1162592
+            1416299 -1151436
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(C10-Pad1)"
+        (wire
+          (path Top 1500
+            1369461 -1151436
+            1362209 -1151436
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1362209 -1151436
+            1344028 -1169617
+            1344028 -1177536
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1336011 -1177536
+            1344028 -1177536
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(D2-PadC)"
+        (wire
+          (path Top 2000
+            1320411 -1031436
+            1299041 -1031436
+            1298311 -1032166
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(C7-Pad1)"
+        (wire
+          (path Top 2000
+            1551511 -972553
+            1550861 -973203
+            1550861 -990736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1551511 -964536
+            1551511 -972553
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC3-Pad5)"
+        (wire
+          (path Top 2000
+            1584211 -935736
+            1584211 -943753
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1584211 -943753
+            1577842 -950122
+            1577842 -964456
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 1500
+            1577842 -964456
+            1577842 -967287
+            1579467 -968912
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1579467 -968912
+            1579467 -989842
+            1580361 -990736
+          )
+          (type protect)
+        )
+      )
+      (net "Net-(IC3-Pad1)"
+        (wire
+          (path Top 2000
+            1580361 -1005736
+            1580361 -1010736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1586211 -1042119
+            1587628 -1040702
+            1587628 -1010736
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1586211 -1058636
+            1586211 -1042119
+          )
+          (type protect)
+        )
+        (wire
+          (path Top 2000
+            1580361 -1010736
+            1587628 -1010736
+          )
+          (type protect)
+        )
+      )
+    )
+  )
+)

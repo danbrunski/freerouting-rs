@@ -71,5 +71,6 @@ JAVA_TOOL_OPTIONS= "$JAVA" -jar "$ECJ" --release 25 -nowarn -encoding UTF-8 -cp 
   -d "$WORK/harness" "$HERE/src/reference/ReferenceDump.java"
 
 JAVA_TOOL_OPTIONS= "$JAVA" -Xmx6g -Djava.awt.headless=true -Dsun.jnu.encoding=UTF-8 \
-  -Dfile.encoding=UTF-8 -cp "$WORK/harness:$CP" reference.ReferenceDump \
-  "$MODE" "$ROOT/fixtures" "$ROOT/fixtures/reference" "$@"
+  -Dfile.encoding=UTF-8 -Dreference.casesDir="$HERE/cases" -cp "$WORK/harness:$CP" \
+  reference.ReferenceDump "$MODE" "${REFERENCE_FIXTURES_DIR:-$ROOT/fixtures}" \
+  "${REFERENCE_OUT_DIR:-$ROOT/fixtures/reference}" "$@"

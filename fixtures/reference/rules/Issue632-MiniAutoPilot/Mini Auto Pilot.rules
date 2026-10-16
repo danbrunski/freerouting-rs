@@ -1,0 +1,89 @@
+
+(rules PCB Mini Auto Pilot
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.8)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.5)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 250.0)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 62.6 (type smd))
+    (clearance 0.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    /Arduino/D21 /Arduino/D22 /Arduino/D23 /Arduino/D24 /Arduino/D25 /Arduino/D26 /Arduino/D27 /Arduino/D28
+    /Arduino/D29 /Arduino/D30 /Arduino/D31 /Arduino/D32 /Arduino/D33 /Arduino/D34 /Arduino/D35 /Arduino/D36
+    /Arduino/D37 /Arduino/D38 /Arduino/D39 /Arduino/D40 /D7 "unconnected-(S46-Pad2)" GND "unconnected-(S46-Pad4)"
+    "Net-(S22-Pad5)" /Arduino/D1 /Arduino/D2 /Arduino/D3 /Arduino/D4 /Arduino/D5 /Arduino/D6 /Arduino/D7
+    /Arduino/D8 /Arduino/D9 /Arduino/D10 /Arduino/D11 /Arduino/D12 /Arduino/D13 /Arduino/D14 /Arduino/D15
+    /Arduino/D16 /Arduino/D17 /Arduino/D18 /Arduino/D19 /Arduino/D20 "unconnected-(J4-Pad41)" "unconnected-(J4-Pad42)" "/6pin-3"
+    "/6pin-4" "unconnected-(J4-Pad45)" "unconnected-(J4-Pad46)" "unconnected-(J4-Pad47)" "unconnected-(J4-Pad48)" "unconnected-(J4-Pad49)" "unconnected-(J4-Pad50)" "unconnected-(J4-Pad51)"
+    "unconnected-(J4-Pad52)" "unconnected-(J4-Pad53)" "unconnected-(J4-Pad54)" "unconnected-(J4-Pad55)" "/6pin-5" "/6pin-6" "unconnected-(J4-Pad58)" "unconnected-(J4-Pad59)"
+    "unconnected-(J4-Pad60)" "/left buttons/6Pin-1" "unconnected-(S50-Pad2)" "/left buttons/6Pin-6" "unconnected-(S50-Pad4)" "/left buttons/6Pin-5" /D4 "unconnected-(S43-Pad2)"
+    "unconnected-(S43-Pad4)" /D26 "unconnected-(S32-Pad2)" "unconnected-(S32-Pad4)" "Net-(J9-Pad21)" /D22 /D23 /D24
+    /D25 /D27 "/6pin-1" /D29 /D30 /D31 /D32 /D33
+    "/6pin-2" /D35 /D36 /D37 /D38 /D39 /D40 "unconnected-(S35-Pad2)"
+    "unconnected-(S35-Pad4)" /D6 "unconnected-(S45-Pad2)" "unconnected-(S45-Pad4)" "unconnected-(S34-Pad2)" "unconnected-(S34-Pad4)" "unconnected-(S36-Pad2)" "unconnected-(S36-Pad4)"
+    /D8 "unconnected-(S47-Pad2)" "unconnected-(S47-Pad4)" "/left buttons/6Pin-2" "unconnected-(S51-Pad2)" "unconnected-(S51-Pad4)" "/left buttons/6Pin-3" "/left buttons/6Pin-4"
+    "unconnected-(S30-Pad2)" "unconnected-(S30-Pad4)" /D19 "unconnected-(S28-Pad2)" "unconnected-(S28-Pad4)" "unconnected-(S37-Pad2)" "unconnected-(S37-Pad4)" /D10
+    "unconnected-(S41-Pad2)" "unconnected-(S41-Pad4)" /Arduino/3.3V "unconnected-(A2-3.3V-Pad3V32)" /Arduino/5V "unconnected-(A2-SPI_5V-Pad5V2)" "unconnected-(A2-5V-Pad5V3)" "unconnected-(A2-PadA0)"
+    "unconnected-(A2-PadA1)" "unconnected-(A2-PadA2)" "unconnected-(A2-PadA3)" "unconnected-(A2-PadA4)" "unconnected-(A2-PadA5)" "unconnected-(A2-PadA6)" "unconnected-(A2-PadA7)" "unconnected-(A2-PadA8)"
+    "unconnected-(A2-PadA9)" "unconnected-(A2-PadA10)" "unconnected-(A2-PadA11)" "unconnected-(A2-PadA12)" "unconnected-(A2-PadA13)" "unconnected-(A2-PadA14)" "unconnected-(A2-PadA15)" "unconnected-(A2-PadAREF)"
+    "unconnected-(A2-D0{slash}RX0-PadD0)" /Arduino/D41 /Arduino/D42 /Arduino/D43 /Arduino/D44 /Arduino/D45 /Arduino/D46 /Arduino/D47
+    /Arduino/D48 /Arduino/D49 /Arduino/D50 /Arduino/D51 /Arduino/D52 /Arduino/D53 "unconnected-(A2-GND-PadGND1)" /Arduino/GND
+    "unconnected-(A2-SPI_GND-PadGND4)" "unconnected-(A2-SPI_MISO-PadMISO)" "unconnected-(A2-SPI_MOSI-PadMOSI)" "unconnected-(A2-RESET-PadRST1)" "unconnected-(A2-SPI_RESET-PadRST2)" "unconnected-(A2-SPI_SCK-PadSCK)" "unconnected-(A2-VIN-PadVIN1)" "unconnected-(A2-VIN-PadVIN2)"
+    "unconnected-(S52-Pad2)" "unconnected-(S52-Pad4)" /D20 /D5 "unconnected-(S44-Pad2)" "unconnected-(S44-Pad4)" "unconnected-(S38-Pad1)" "unconnected-(S38-Pad2)"
+    "unconnected-(S38-Pad4)" "unconnected-(S48-Pad2)" "unconnected-(S48-Pad4)" /D17 "unconnected-(S22-Pad2)" "unconnected-(S22-Pad4)" "unconnected-(S33-Pad2)" "unconnected-(S33-Pad4)"
+    /D11 "unconnected-(S39-Pad2)" "unconnected-(S39-Pad4)" "unconnected-(J7-Pad57)" "unconnected-(J7-Pad58)" "unconnected-(J7-Pad59)" "unconnected-(J7-Pad60)" /D14
+    "unconnected-(S42-Pad2)" "unconnected-(S42-Pad4)" /D16 "unconnected-(S23-Pad2)" "unconnected-(S23-Pad4)" /D1 /D2 /D3
+    /D9 /D12 /D13 /D15 /D18 "unconnected-(S27-Pad2)" "unconnected-(S27-Pad4)" "unconnected-(S29-Pad2)"
+    "unconnected-(S29-Pad4)" "unconnected-(S40-Pad2)" "unconnected-(S40-Pad4)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

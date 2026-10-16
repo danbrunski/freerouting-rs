@@ -1,0 +1,63 @@
+
+(rules PCB Issue143-rpi_splitter
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "1#Top"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.0)
+    )
+    (layer_rule "16#Bottom"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.5)
+    )
+  )
+  (rule
+    (width 16.0)
+    (clearance 12.0)
+    (clearance 8.0 (type smd_to_turn_gap))
+    (clearance 12.0 (type boundary))
+    (clearance 6.0 (type via))
+    (clearance 6.0 (type smd))
+    (clearance 6.0 (type pin))
+    (clearance 12.0 (type area))
+  )
+  (padstack Round1$13.779528
+    (shape
+      (circle "1#Top" 29.77952755905512 0.0 0.0)
+    )
+    (shape
+      (circle "16#Bottom" 29.77952755905512 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    Round1$13.779528 Round1$13.779528 via
+  )
+  (viaRule
+    default Round1$13.779528
+  )
+  (class default
+    D+ "D-" N$5 VBUS VCC
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 16.0)
+    )
+    (circuit 
+      (use_layer 1#Top 16#Bottom)
+    )
+  )
+)

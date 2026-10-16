@@ -1,0 +1,126 @@
+
+(rules PCB Issue269-z10_module
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule In1.Cu
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule In2.Cu
+      (active off)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+  )
+  (rule
+    (width 300.0)
+    (clearance 200.0)
+    (clearance 150.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 200.0 (type Power))
+    (clearance 1600.0 (type Unfused))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-3]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In1.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle In2.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-3]_800:400_um" "Via[0-3]_800:400_um" default
+  )
+  (via 
+    "Via[0-3]_800:400_um-Power" "Via[0-3]_800:400_um" Power
+  )
+  (via 
+    "Via[0-3]_800:400_um-Unfused" "Via[0-3]_800:400_um" Unfused
+  )
+  (viaRule
+    default "Via[0-3]_800:400_um"
+  )
+  (viaRule
+    default "Via[0-3]_800:400_um"
+  )
+  (viaRule
+    Power "Via[0-3]_800:400_um-Power"
+  )
+  (viaRule
+    Unfused "Via[0-3]_800:400_um-Unfused"
+  )
+  (class default
+    "Net-(D201-K)" "/0-10_interface/0-10_OUT_1" "/CONTROL_IN" "/CONTROL_IN_TO_ADC" "Net-(C202-Pad1)" "Net-(Q201B-D)" "Net-(C203-Pad1)" "Net-(D201-A)"
+    "+Vin_prot" +5V "Net-(U402-FEEDBACK)" "Net-(C405-Pad2)" "Net-(U403-CT)" "Net-(D405-K)" "Net-(U404-CB)" "/Power/LV2862_SW"
+    "Net-(D102-A)" "Net-(D103-A)" "Net-(U301-SDA)" "/I2C_SDA" "Net-(U302-SDA)" "Net-(U303-SDA)" "Net-(U304-SDA)" "Net-(D401-K)"
+    "Net-(D402-K)" "Net-(D402-A)" "Net-(D403-K)" "unconnected-(IC101-AIO1-Pad3)" "/ANALOG_~{PWM}_#1" /Motion "unconnected-(IC101-PIO16-Pad7)" "unconnected-(IC101-PIO31-Pad8)"
+    "Net-(IC101-PIO28)" /Button "unconnected-(IC101-PIO29-Pad12)" "unconnected-(IC101-PIO30-Pad13)" "/SPI_PIO" /SCLK "/SPI_CS#" "/SPI_MOSI"
+    "/SPI_MISO" "/FORCE_#1" "/0-10_interface/0-10V_PWM_OUT_#1" "unconnected-(IC101-PIO06-Pad23)" "/LEB_B" "/LED_R" "unconnected-(IC101-PIO18-Pad26)" "unconnected-(IC101-PIO19-Pad27)"
+    "unconnected-(IC101-PIO20-Pad29)" "/I2C_SCL" "/CSR_TX" "/CSR_RX" "Net-(IC101-PIO10)" "unconnected-(IC101-PIO23-Pad32)" "unconnected-(IC101-PIO13-Pad41)" "Net-(Q201A-D)"
+    "Net-(Q203-E)" "Net-(Q202-B)" "Net-(Q401A-D)" "Net-(U201A-+)" "Net-(U201A--)" "Net-(U404-FB)" "unconnected-(U402-SENSE-Pad2)" "unconnected-(U402-~{ERROR}-Pad5)"
+    "unconnected-(U402-VTAP-Pad6)" "unconnected-(U403-~{MR}-Pad3)" "unconnected-(IC101-PIO24-Pad33)" "unconnected-(IC101-PIO25-Pad34)" "unconnected-(IC101-PIO26-Pad35)" "/Light sensors/I2C_RESET*" "Net-(U301-SCL)" "Net-(U302-SCL)"
+    "Net-(U303-SCL)" "Net-(U304-SCL)" "unconnected-(U201-Pad7)" "Net-(D405-A)" "Net-(D406-A)" "Net-(D407-A)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 300.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Power
+    GND +3V3 +10.5V
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 450.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Unfused
+    +Vin "/0-10_interface/CONTROL_IN_UNFUSED"
+    (clearance_class Unfused)
+    (via_rule Unfused)
+    (rule
+      (width 450.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

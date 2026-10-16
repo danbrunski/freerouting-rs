@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue676-ch32v-tx118s.dsn",
+  "designName": "Issue676-ch32v-tx118s",
+  "unroutedBytes": 9359,
+  "import": {
+    "wiresImported": 0,
+    "viasImported": 6,
+    "errorsEncountered": 48,
+    "routedBytes": 9919
+  }
+}

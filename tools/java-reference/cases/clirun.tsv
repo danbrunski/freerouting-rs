@@ -1,0 +1,15 @@
+# clirun.tsv: one real Java CLI run per row (C01.6).
+# Columns, tab-separated: id, files to copy from fixtures/ into the fresh working directory (comma-separated, or -),
+# then one column per command-line argument. The harness always adds --user_data_path=<tmp>/userdata, -da,
+# --gui.enabled=false, --api_server.enabled=false and --mcp_server.enabled=false in front of these.
+# Rows 1-6 and 9 use Issue413-test.dsn (8.7 KB, no rules file); every routing row switches the router,
+# fanout and optimizer off so nothing routes.
+01-out-ses	Issue413-test.dsn	-de	Issue413-test.dsn	-do	out.ses	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+02-out-dsn	Issue413-test.dsn	-de	Issue413-test.dsn	-do	out.dsn	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+03-out-ses-and-drc	Issue413-test.dsn	-de	Issue413-test.dsn	-do	out.ses+out.drc.json	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+04-out-xyz	Issue413-test.dsn	-de	Issue413-test.dsn	-do	out.xyz	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+05-no-do	Issue413-test.dsn	-de	Issue413-test.dsn	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+06-missing-input	-	-de	missing.dsn	-do	out.ses	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+07-drc-valid-rules	Issue029-hw48na.dsn,Issue029-hw48na_valid.rules	-de	Issue029-hw48na.dsn	-dr	Issue029-hw48na_valid.rules	-drc	out.json	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+08-drc-invalid-rules	Issue029-hw48na.dsn,Issue029-hw48na_invalid.rules	-de	Issue029-hw48na.dsn	-dr	Issue029-hw48na_invalid.rules	-drc	out.json	--router.enabled=false	--router.fanout.enabled=false	--router.optimizer.enabled=false
+09-help	-	-help

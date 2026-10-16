@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue029-hw48na.dsn",
+  "designName": "Issue029-hw48na",
+  "unroutedBytes": 110044,
+  "import": {
+    "wiresImported": 779,
+    "viasImported": 53,
+    "errorsEncountered": 0,
+    "routedBytes": 240032
+  }
+}

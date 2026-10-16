@@ -1,0 +1,114 @@
+
+(rules PCB Issue420-contribution-board
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 7.1)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.2)
+    )
+  )
+  (rule
+    (width 100.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    "Net-(LED1_source_component_2-Pad1)" "Net-(LED1_source_component_2-Pad3)" "Net-(LED10_source_component_20-Pad1)" "Net-(LED100_source_component_200-Pad1)" "Net-(LED101_source_component_202-Pad1)" "Net-(LED102_source_component_204-Pad1)" "Net-(LED103_source_component_206-Pad1)" "Net-(LED104_source_component_208-Pad1)"
+    "Net-(LED105_source_component_210-Pad1)" "Net-(LED106_source_component_212-Pad1)" "Net-(LED107_source_component_214-Pad1)" "Net-(LED108_source_component_216-Pad1)" "Net-(LED109_source_component_218-Pad1)" "Net-(LED11_source_component_22-Pad1)" "Net-(LED110_source_component_220-Pad1)" "Net-(LED111_source_component_222-Pad1)"
+    "Net-(LED112_source_component_224-Pad1)" "Net-(LED113_source_component_226-Pad1)" "Net-(LED114_source_component_228-Pad1)" "Net-(LED115_source_component_230-Pad1)" "Net-(LED116_source_component_232-Pad1)" "Net-(LED117_source_component_234-Pad1)" "Net-(LED118_source_component_236-Pad1)" "Net-(LED119_source_component_238-Pad1)"
+    "Net-(LED12_source_component_24-Pad1)" "Net-(LED120_source_component_240-Pad1)" "Net-(LED121_source_component_242-Pad1)" "Net-(LED122_source_component_244-Pad1)" "Net-(LED123_source_component_246-Pad1)" "Net-(LED124_source_component_248-Pad1)" "Net-(LED125_source_component_250-Pad1)" "Net-(LED126_source_component_252-Pad1)"
+    "Net-(LED127_source_component_254-Pad1)" "Net-(LED128_source_component_256-Pad1)" "Net-(LED129_source_component_258-Pad1)" "Net-(LED13_source_component_26-Pad1)" "Net-(LED130_source_component_260-Pad1)" "Net-(LED131_source_component_262-Pad1)" "Net-(LED132_source_component_264-Pad1)" "Net-(LED133_source_component_266-Pad1)"
+    "Net-(LED134_source_component_268-Pad1)" "Net-(LED135_source_component_270-Pad1)" "Net-(LED136_source_component_272-Pad1)" "Net-(LED137_source_component_274-Pad1)" "Net-(LED138_source_component_276-Pad1)" "Net-(LED139_source_component_278-Pad1)" "Net-(LED14_source_component_28-Pad1)" "Net-(LED140_source_component_280-Pad1)"
+    "Net-(LED141_source_component_282-Pad1)" "Net-(LED142_source_component_284-Pad1)" "Net-(LED143_source_component_286-Pad1)" "Net-(LED144_source_component_288-Pad1)" "Net-(LED145_source_component_290-Pad1)" "Net-(LED146_source_component_292-Pad1)" "Net-(LED147_source_component_294-Pad1)" "Net-(LED148_source_component_296-Pad1)"
+    "Net-(LED149_source_component_298-Pad1)" "Net-(LED15_source_component_30-Pad1)" "Net-(LED150_source_component_300-Pad1)" "Net-(LED151_source_component_302-Pad1)" "Net-(LED152_source_component_304-Pad1)" "Net-(LED153_source_component_306-Pad1)" "Net-(LED154_source_component_308-Pad1)" "Net-(LED155_source_component_310-Pad1)"
+    "Net-(LED156_source_component_312-Pad1)" "Net-(LED157_source_component_314-Pad1)" "Net-(LED158_source_component_316-Pad1)" "Net-(LED159_source_component_318-Pad1)" "Net-(LED16_source_component_32-Pad1)" "Net-(LED160_source_component_320-Pad1)" "Net-(LED161_source_component_322-Pad1)" "Net-(LED162_source_component_324-Pad1)"
+    "Net-(LED163_source_component_326-Pad1)" "Net-(LED164_source_component_328-Pad1)" "Net-(LED165_source_component_330-Pad1)" "Net-(LED166_source_component_332-Pad1)" "Net-(LED167_source_component_334-Pad1)" "Net-(LED168_source_component_336-Pad1)" "Net-(LED169_source_component_338-Pad1)" "Net-(LED17_source_component_34-Pad1)"
+    "Net-(LED170_source_component_340-Pad1)" "Net-(LED171_source_component_342-Pad1)" "Net-(LED172_source_component_344-Pad1)" "Net-(LED173_source_component_346-Pad1)" "Net-(LED174_source_component_348-Pad1)" "Net-(LED175_source_component_350-Pad1)" "Net-(LED176_source_component_352-Pad1)" "Net-(LED177_source_component_354-Pad1)"
+    "Net-(LED178_source_component_356-Pad1)" "Net-(LED179_source_component_358-Pad1)" "Net-(LED18_source_component_36-Pad1)" "Net-(LED180_source_component_360-Pad1)" "Net-(LED181_source_component_362-Pad1)" "Net-(LED182_source_component_364-Pad1)" "Net-(LED183_source_component_366-Pad1)" "Net-(LED184_source_component_368-Pad1)"
+    "Net-(LED185_source_component_370-Pad1)" "Net-(LED186_source_component_372-Pad1)" "Net-(LED187_source_component_374-Pad1)" "Net-(LED188_source_component_376-Pad1)" "Net-(LED189_source_component_378-Pad1)" "Net-(LED19_source_component_38-Pad1)" "Net-(LED190_source_component_380-Pad1)" "Net-(LED191_source_component_382-Pad1)"
+    "Net-(LED192_source_component_384-Pad1)" "Net-(LED193_source_component_386-Pad1)" "Net-(LED194_source_component_388-Pad1)" "Net-(LED195_source_component_390-Pad1)" "Net-(LED196_source_component_392-Pad1)" "Net-(LED197_source_component_394-Pad1)" "Net-(LED198_source_component_396-Pad1)" "Net-(LED199_source_component_398-Pad1)"
+    "Net-(LED2_source_component_4-Pad1)" "Net-(LED20_source_component_40-Pad1)" "Net-(LED200_source_component_400-Pad1)" "Net-(LED201_source_component_402-Pad1)" "Net-(LED202_source_component_404-Pad1)" "Net-(LED203_source_component_406-Pad1)" "Net-(LED204_source_component_408-Pad1)" "Net-(LED205_source_component_410-Pad1)"
+    "Net-(LED206_source_component_412-Pad1)" "Net-(LED207_source_component_414-Pad1)" "Net-(LED208_source_component_416-Pad1)" "Net-(LED209_source_component_418-Pad1)" "Net-(LED21_source_component_42-Pad1)" "Net-(LED210_source_component_420-Pad1)" "Net-(LED211_source_component_422-Pad1)" "Net-(LED212_source_component_424-Pad1)"
+    "Net-(LED213_source_component_426-Pad1)" "Net-(LED214_source_component_428-Pad1)" "Net-(LED215_source_component_430-Pad1)" "Net-(LED216_source_component_432-Pad1)" "Net-(LED217_source_component_434-Pad1)" "Net-(LED218_source_component_436-Pad1)" "Net-(LED219_source_component_438-Pad1)" "Net-(LED22_source_component_44-Pad1)"
+    "Net-(LED220_source_component_440-Pad1)" "Net-(LED221_source_component_442-Pad1)" "Net-(LED222_source_component_444-Pad1)" "Net-(LED223_source_component_446-Pad1)" "Net-(LED224_source_component_448-Pad1)" "Net-(LED225_source_component_450-Pad1)" "Net-(LED226_source_component_452-Pad1)" "Net-(LED227_source_component_454-Pad1)"
+    "Net-(LED228_source_component_456-Pad1)" "Net-(LED229_source_component_458-Pad1)" "Net-(LED23_source_component_46-Pad1)" "Net-(LED230_source_component_460-Pad1)" "Net-(LED231_source_component_462-Pad1)" "Net-(LED232_source_component_464-Pad1)" "Net-(LED233_source_component_466-Pad1)" "Net-(LED234_source_component_468-Pad1)"
+    "Net-(LED235_source_component_470-Pad1)" "Net-(LED236_source_component_472-Pad1)" "Net-(LED237_source_component_474-Pad1)" "Net-(LED238_source_component_476-Pad1)" "Net-(LED239_source_component_478-Pad1)" "Net-(LED24_source_component_48-Pad1)" "Net-(LED240_source_component_480-Pad1)" "Net-(LED241_source_component_482-Pad1)"
+    "Net-(LED242_source_component_484-Pad1)" "Net-(LED243_source_component_486-Pad1)" "Net-(LED244_source_component_488-Pad1)" "Net-(LED245_source_component_490-Pad1)" "Net-(LED246_source_component_492-Pad1)" "Net-(LED247_source_component_494-Pad1)" "Net-(LED248_source_component_496-Pad1)" "Net-(LED249_source_component_498-Pad1)"
+    "Net-(LED25_source_component_50-Pad1)" "Net-(LED250_source_component_500-Pad1)" "Net-(LED251_source_component_502-Pad1)" "Net-(LED252_source_component_504-Pad1)" "Net-(LED253_source_component_506-Pad1)" "Net-(LED254_source_component_508-Pad1)" "Net-(LED255_source_component_510-Pad1)" "Net-(LED256_source_component_512-Pad1)"
+    "Net-(LED257_source_component_514-Pad1)" "Net-(LED258_source_component_516-Pad1)" "Net-(LED259_source_component_518-Pad1)" "Net-(LED26_source_component_52-Pad1)" "Net-(LED260_source_component_520-Pad1)" "Net-(LED261_source_component_522-Pad1)" "Net-(LED262_source_component_524-Pad1)" "Net-(LED263_source_component_526-Pad1)"
+    "Net-(LED264_source_component_528-Pad1)" "Net-(LED265_source_component_530-Pad1)" "Net-(LED266_source_component_532-Pad1)" "Net-(LED267_source_component_534-Pad1)" "Net-(LED268_source_component_536-Pad1)" "Net-(LED269_source_component_538-Pad1)" "Net-(LED27_source_component_54-Pad1)" "Net-(LED270_source_component_540-Pad1)"
+    "Net-(LED271_source_component_542-Pad1)" "Net-(LED272_source_component_544-Pad1)" "Net-(LED273_source_component_546-Pad1)" "Net-(LED274_source_component_548-Pad1)" "Net-(LED275_source_component_550-Pad1)" "Net-(LED276_source_component_552-Pad1)" "Net-(LED277_source_component_554-Pad1)" "Net-(LED278_source_component_556-Pad1)"
+    "Net-(LED279_source_component_558-Pad1)" "Net-(LED28_source_component_56-Pad1)" "Net-(LED280_source_component_560-Pad1)" "Net-(LED281_source_component_562-Pad1)" "Net-(LED282_source_component_564-Pad1)" "Net-(LED283_source_component_566-Pad1)" "Net-(LED284_source_component_568-Pad1)" "Net-(LED285_source_component_570-Pad1)"
+    "Net-(LED286_source_component_572-Pad1)" "Net-(LED287_source_component_574-Pad1)" "Net-(LED288_source_component_576-Pad1)" "Net-(LED289_source_component_578-Pad1)" "Net-(LED29_source_component_58-Pad1)" "Net-(LED290_source_component_580-Pad1)" "Net-(LED291_source_component_582-Pad1)" "Net-(LED292_source_component_584-Pad1)"
+    "Net-(LED293_source_component_586-Pad1)" "Net-(LED294_source_component_588-Pad1)" "Net-(LED295_source_component_590-Pad1)" "Net-(LED296_source_component_592-Pad1)" "Net-(LED297_source_component_594-Pad1)" "Net-(LED298_source_component_596-Pad1)" "Net-(LED299_source_component_598-Pad1)" "Net-(LED3_source_component_6-Pad1)"
+    "Net-(LED30_source_component_60-Pad1)" "Net-(LED300_source_component_600-Pad1)" "Net-(LED301_source_component_602-Pad1)" "Net-(LED302_source_component_604-Pad1)" "Net-(LED303_source_component_606-Pad1)" "Net-(LED304_source_component_608-Pad1)" "Net-(LED305_source_component_610-Pad1)" "Net-(LED306_source_component_612-Pad1)"
+    "Net-(LED307_source_component_614-Pad1)" "Net-(LED308_source_component_616-Pad1)" "Net-(LED309_source_component_618-Pad1)" "Net-(LED31_source_component_62-Pad1)" "Net-(LED310_source_component_620-Pad1)" "Net-(LED311_source_component_622-Pad1)" "Net-(LED312_source_component_624-Pad1)" "Net-(LED313_source_component_626-Pad1)"
+    "Net-(LED314_source_component_628-Pad1)" "Net-(LED315_source_component_630-Pad1)" "Net-(LED316_source_component_632-Pad1)" "Net-(LED317_source_component_634-Pad1)" "Net-(LED318_source_component_636-Pad1)" "Net-(LED319_source_component_638-Pad1)" "Net-(LED32_source_component_64-Pad1)" "Net-(LED320_source_component_640-Pad1)"
+    "Net-(LED321_source_component_642-Pad1)" "Net-(LED322_source_component_644-Pad1)" "Net-(LED323_source_component_646-Pad1)" "Net-(LED324_source_component_648-Pad1)" "Net-(LED325_source_component_650-Pad1)" "Net-(LED326_source_component_652-Pad1)" "Net-(LED327_source_component_654-Pad1)" "Net-(LED328_source_component_656-Pad1)"
+    "Net-(LED329_source_component_658-Pad1)" "Net-(LED33_source_component_66-Pad1)" "Net-(LED330_source_component_660-Pad1)" "Net-(LED331_source_component_662-Pad1)" "Net-(LED332_source_component_664-Pad1)" "Net-(LED333_source_component_666-Pad1)" "Net-(LED334_source_component_668-Pad1)" "Net-(LED335_source_component_670-Pad1)"
+    "Net-(LED336_source_component_672-Pad1)" "Net-(LED337_source_component_674-Pad1)" "Net-(LED338_source_component_676-Pad1)" "Net-(LED339_source_component_678-Pad1)" "Net-(LED34_source_component_68-Pad1)" "Net-(LED340_source_component_680-Pad1)" "Net-(LED341_source_component_682-Pad1)" "Net-(LED342_source_component_684-Pad1)"
+    "Net-(LED343_source_component_686-Pad1)" "Net-(LED344_source_component_688-Pad1)" "Net-(LED345_source_component_690-Pad1)" "Net-(LED346_source_component_692-Pad1)" "Net-(LED347_source_component_694-Pad1)" "Net-(LED348_source_component_696-Pad1)" "Net-(LED349_source_component_698-Pad1)" "Net-(LED35_source_component_70-Pad1)"
+    "Net-(LED350_source_component_700-Pad1)" "Net-(LED351_source_component_702-Pad1)" "Net-(LED352_source_component_704-Pad1)" "Net-(LED353_source_component_706-Pad1)" "Net-(LED354_source_component_708-Pad1)" "Net-(LED355_source_component_710-Pad1)" "Net-(LED356_source_component_712-Pad1)" "Net-(LED357_source_component_714-Pad1)"
+    "Net-(LED358_source_component_716-Pad1)" "Net-(LED359_source_component_718-Pad1)" "Net-(LED36_source_component_72-Pad1)" "Net-(LED360_source_component_720-Pad1)" "Net-(LED361_source_component_722-Pad1)" "Net-(LED362_source_component_724-Pad1)" "Net-(LED363_source_component_726-Pad1)" "Net-(LED364_source_component_728-Pad1)"
+    "Net-(LED365_source_component_730-Pad1)" "Net-(LED366_source_component_732-Pad1)" "Net-(LED367_source_component_734-Pad1)" "Net-(LED368_source_component_736-Pad1)" "Net-(LED369_source_component_738-Pad1)" "Net-(LED37_source_component_74-Pad1)" "Net-(LED370_source_component_740-Pad1)" "Net-(LED38_source_component_76-Pad1)"
+    "Net-(LED39_source_component_78-Pad1)" "Net-(LED4_source_component_8-Pad1)" "Net-(LED40_source_component_80-Pad1)" "Net-(LED41_source_component_82-Pad1)" "Net-(LED42_source_component_84-Pad1)" "Net-(LED43_source_component_86-Pad1)" "Net-(LED44_source_component_88-Pad1)" "Net-(LED45_source_component_90-Pad1)"
+    "Net-(LED46_source_component_92-Pad1)" "Net-(LED47_source_component_94-Pad1)" "Net-(LED48_source_component_96-Pad1)" "Net-(LED49_source_component_98-Pad1)" "Net-(LED5_source_component_10-Pad1)" "Net-(LED50_source_component_100-Pad1)" "Net-(LED51_source_component_102-Pad1)" "Net-(LED52_source_component_104-Pad1)"
+    "Net-(LED53_source_component_106-Pad1)" "Net-(LED54_source_component_108-Pad1)" "Net-(LED55_source_component_110-Pad1)" "Net-(LED56_source_component_112-Pad1)" "Net-(LED57_source_component_114-Pad1)" "Net-(LED58_source_component_116-Pad1)" "Net-(LED59_source_component_118-Pad1)" "Net-(LED6_source_component_12-Pad1)"
+    "Net-(LED60_source_component_120-Pad1)" "Net-(LED61_source_component_122-Pad1)" "Net-(LED62_source_component_124-Pad1)" "Net-(LED63_source_component_126-Pad1)" "Net-(LED64_source_component_128-Pad1)" "Net-(LED65_source_component_130-Pad1)" "Net-(LED66_source_component_132-Pad1)" "Net-(LED67_source_component_134-Pad1)"
+    "Net-(LED68_source_component_136-Pad1)" "Net-(LED69_source_component_138-Pad1)" "Net-(LED7_source_component_14-Pad1)" "Net-(LED70_source_component_140-Pad1)" "Net-(LED71_source_component_142-Pad1)" "Net-(LED72_source_component_144-Pad1)" "Net-(LED73_source_component_146-Pad1)" "Net-(LED74_source_component_148-Pad1)"
+    "Net-(LED75_source_component_150-Pad1)" "Net-(LED76_source_component_152-Pad1)" "Net-(LED77_source_component_154-Pad1)" "Net-(LED78_source_component_156-Pad1)" "Net-(LED79_source_component_158-Pad1)" "Net-(LED8_source_component_16-Pad1)" "Net-(LED80_source_component_160-Pad1)" "Net-(LED81_source_component_162-Pad1)"
+    "Net-(LED82_source_component_164-Pad1)" "Net-(LED83_source_component_166-Pad1)" "Net-(LED84_source_component_168-Pad1)" "Net-(LED85_source_component_170-Pad1)" "Net-(LED86_source_component_172-Pad1)" "Net-(LED87_source_component_174-Pad1)" "Net-(LED88_source_component_176-Pad1)" "Net-(LED89_source_component_178-Pad1)"
+    "Net-(LED9_source_component_18-Pad1)" "Net-(LED90_source_component_180-Pad1)" "Net-(LED91_source_component_182-Pad1)" "Net-(LED92_source_component_184-Pad1)" "Net-(LED93_source_component_186-Pad1)" "Net-(LED94_source_component_188-Pad1)" "Net-(LED95_source_component_190-Pad1)" "Net-(LED96_source_component_192-Pad1)"
+    "Net-(LED97_source_component_194-Pad1)" "Net-(LED98_source_component_196-Pad1)" "Net-(LED99_source_component_198-Pad1)" "Net-(U2_source_component_1-Pad3)" "Net-(U2_source_component_1-Pad4)" "GND_source_net_0" "unconnected-(LED371_source_component_742-Pad1)" "unconnected-(U1_source_component_0-Pad1)"
+    "unconnected-(U1_source_component_0-Pad10)" "unconnected-(U1_source_component_0-Pad11)" "unconnected-(U1_source_component_0-Pad12)" "unconnected-(U1_source_component_0-Pad14)" "unconnected-(U1_source_component_0-Pad16)" "unconnected-(U1_source_component_0-Pad17)" "unconnected-(U1_source_component_0-Pad19)" "unconnected-(U1_source_component_0-Pad2)"
+    "unconnected-(U1_source_component_0-Pad20)" "unconnected-(U1_source_component_0-Pad21)" "unconnected-(U1_source_component_0-Pad22)" "unconnected-(U1_source_component_0-Pad24)" "unconnected-(U1_source_component_0-Pad25)" "unconnected-(U1_source_component_0-Pad26)" "unconnected-(U1_source_component_0-Pad27)" "unconnected-(U1_source_component_0-Pad29)"
+    "unconnected-(U1_source_component_0-Pad30)" "unconnected-(U1_source_component_0-Pad33)" "unconnected-(U1_source_component_0-Pad34)" "unconnected-(U1_source_component_0-Pad35)" "unconnected-(U1_source_component_0-Pad36)" "unconnected-(U1_source_component_0-Pad37)" "unconnected-(U1_source_component_0-Pad39)" "unconnected-(U1_source_component_0-Pad4)"
+    "unconnected-(U1_source_component_0-Pad41)" "unconnected-(U1_source_component_0-Pad42)" "unconnected-(U1_source_component_0-Pad43)" "unconnected-(U1_source_component_0-Pad44)" "unconnected-(U1_source_component_0-Pad45)" "unconnected-(U1_source_component_0-Pad46)" "unconnected-(U1_source_component_0-Pad5)" "unconnected-(U1_source_component_0-Pad6)"
+    "unconnected-(U1_source_component_0-Pad7)" "unconnected-(U1_source_component_0-Pad9)" "V5_source_net_1"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 100.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

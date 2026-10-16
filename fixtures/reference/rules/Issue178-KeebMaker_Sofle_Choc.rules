@@ -1,0 +1,120 @@
+
+(rules PCB Issue178-KeebMaker_Sofle_Choc
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.3)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.4)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 200.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 200.2 (type GND))
+    (clearance 200.2 (type VCC))
+    (clearance 72.2 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_400:300_um"
+    (shape
+      (circle F.Cu 400.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 400.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_400:300_um" "Via[0-1]_400:300_um" default
+  )
+  (via 
+    "Via[0-1]_400:300_um-GND" "Via[0-1]_400:300_um" GND
+  )
+  (via 
+    "Via[0-1]_400:300_um-VCC" "Via[0-1]_400:300_um" VCC
+  )
+  (viaRule
+    default "Via[0-1]_400:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_400:300_um"
+  )
+  (viaRule
+    GND "Via[0-1]_400:300_um-GND"
+  )
+  (viaRule
+    VCC "Via[0-1]_400:300_um-VCC"
+  )
+  (class default
+    "Net-(D1-Pad2)" row4 "Net-(D2-Pad2)" "Net-(D3-Pad2)" row0 "Net-(D4-Pad2)" row1 "Net-(D5-Pad2)"
+    row2 "Net-(D6-Pad2)" row3 "Net-(D7-Pad2)" "Net-(D8-Pad2)" "Net-(D9-Pad2)" "Net-(D10-Pad2)" "Net-(D11-Pad2)"
+    "Net-(D12-Pad2)" "Net-(D13-Pad2)" "Net-(D14-Pad2)" "Net-(D15-Pad2)" "Net-(D16-Pad2)" "Net-(D17-Pad2)" "Net-(D18-Pad2)" "Net-(D19-Pad2)"
+    "Net-(D20-Pad2)" "Net-(D21-Pad2)" "Net-(D22-Pad2)" "Net-(D23-Pad2)" "Net-(D24-Pad2)" "Net-(D26-Pad2)" "Net-(D27-Pad2)" "Net-(D28-Pad2)"
+    col0 col1 col2 col3 col4 SDA LED SCL
+    RESET "Net-(D29-Pad2)" DATA "Net-(D30-Pad2)" ENCB ENCA "Net-(D31-Pad2)" "Net-(D32-Pad2)"
+    "Net-(D33-Pad2)" "Net-(D34-Pad2)" "Net-(D35-Pad2)" "Net-(D36-Pad2)" "Net-(D37-Pad2)" "Net-(D38-Pad2)" "Net-(D39-Pad2)" "Net-(D40-Pad2)"
+    "Net-(D41-Pad2)" "Net-(D42-Pad2)" "Net-(D43-Pad2)" "Net-(D44-Pad2)" "Net-(D45-Pad2)" "Net-(D46-Pad2)" "Net-(D47-Pad2)" "Net-(D48-Pad2)"
+    "Net-(D49-Pad2)" "Net-(D50-Pad2)" "Net-(D51-Pad2)" "Net-(D52-Pad2)" "Net-(D53-Pad2)" "Net-(D54-Pad2)" "Net-(D56-Pad2)" "Net-(D57-Pad2)"
+    "Net-(D58-Pad2)" "Net-(D59-Pad2)" "Net-(D60-Pad2)" "unconnected-(U1-Pad7)" "unconnected-(U1-Pad24)" row0r row1r row2r
+    row3r ENCSW1B row4r ENCSW2B "Net-(D61-Pad1)" LEDr "Net-(D62-Pad1)" "Net-(D63-Pad1)"
+    "Net-(D64-Pad1)" "Net-(D65-Pad1)" "Net-(D66-Pad1)" "Net-(D67-Pad2)" "Net-(D68-Pad2)" "Net-(D69-Pad2)" "Net-(D70-Pad2)" "Net-(D71-Pad2)"
+    "Net-(D72-Pad2)" "Net-(D73-Pad2)" "Net-(D73-Pad4)" "Net-(D74-Pad4)" "Net-(D75-Pad4)" "Net-(D76-Pad4)" "Net-(D77-Pad4)" "Net-(D79-Pad2)"
+    "Net-(D80-Pad2)" "Net-(D81-Pad2)" "Net-(D82-Pad2)" "Net-(D83-Pad2)" "Net-(D84-Pad2)" "Net-(D85-Pad2)" "Net-(D85-Pad4)" "Net-(D86-Pad4)"
+    "Net-(D87-Pad4)" "Net-(D88-Pad4)" VDD "Net-(D89-Pad4)" VSS "Net-(D91-Pad2)" "Net-(D92-Pad2)" "Net-(D93-Pad2)"
+    "Net-(D94-Pad2)" "unconnected-(D95-Pad2)" "Net-(D96-Pad1)" "Net-(D97-Pad1)" "Net-(D98-Pad1)" "Net-(D100-Pad3)" "Net-(D100-Pad1)" "Net-(D102-Pad2)"
+    "Net-(D103-Pad2)" "Net-(D104-Pad2)" "Net-(D105-Pad2)" "Net-(D106-Pad2)" "Net-(D107-Pad2)" "Net-(D108-Pad2)" "Net-(D108-Pad4)" "Net-(D109-Pad4)"
+    "Net-(D110-Pad4)" "Net-(D111-Pad4)" "Net-(D112-Pad4)" "Net-(D114-Pad2)" "Net-(D115-Pad2)" "Net-(D116-Pad2)" "Net-(D117-Pad2)" "Net-(D101-Pad1)"
+    DATAr "unconnected-(J1-Pad4)" SDAr SCLr RESETr ENCSW1A col4r col3r
+    col2r col1r col0r ENCSW2A ENCBr ENCAr "unconnected-(U2-Pad7)" "unconnected-(U2-Pad24)"
+    "unconnected-(J3-Pad4)" "Net-(D118-Pad2)" "Net-(D119-Pad2)" "Net-(D120-Pad2)" "Net-(D120-Pad4)" "Net-(D121-Pad4)" "Net-(D122-Pad4)" "Net-(D123-Pad4)"
+    "Net-(D124-Pad4)" "Net-(D126-Pad2)" "Net-(D127-Pad2)" "Net-(D128-Pad2)" "Net-(D129-Pad2)" "unconnected-(D130-Pad2)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class GND
+    GND
+    (clearance_class GND)
+    (via_rule GND)
+    (rule
+      (width 500.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class VCC
+    VCC
+    (clearance_class VCC)
+    (via_rule VCC)
+    (rule
+      (width 500.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

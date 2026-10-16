@@ -1,0 +1,2588 @@
+
+(rules PCB Issue070-Autorouter_FQ101_PCB_2022-05-13
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "1"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule "2"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+  )
+  (rule
+    (width 0.606)
+    (clearance 0.606)
+    (clearance 0.303 (type smd_to_turn_gap))
+    (clearance 0.606 (type smd))
+    (clearance 0.6 (type "ESP_MODEMRESET"))
+    (clearance 0.6 (type S$2671))
+    (clearance 0.6 (type STATUS))
+    (clearance 0.6 (type "1.8V"))
+    (clearance 0.6 (type "CN2_1"))
+    (clearance 0.6 (type VCC))
+    (clearance 0.6 (type VIN))
+    (clearance 0.6 (type GND))
+    (clearance 0.6 (type "D6_2"))
+    (clearance 0.6 (type "D4_2"))
+    (clearance 0.6 (type "ESP_AN_1"))
+    (clearance 0.6 (type "Q4_2"))
+    (clearance 0.6 (type "U1_75"))
+    (clearance 0.6 (type "BG_DTR"))
+    (clearance 0.6 (type "BG_TXD"))
+    (clearance 0.6 (type VCC33))
+    (clearance 0.6 (type "ESP_GNSS_RX"))
+    (clearance 0.6 (type "ESP_RXD"))
+    (clearance 0.6 (type "ESP_DTR"))
+    (clearance 0.6 (type "ESP_RTS"))
+    (clearance 0.6 (type "ESP_CTS"))
+    (clearance 0.6 (type "BG_GNSS_TX"))
+    (clearance 0.6 (type "ESP_DCD"))
+    (clearance 0.6 (type "ESP_RI"))
+    (clearance 0.6 (type "Q1_2"))
+    (clearance 0.6 (type "USIM_DATA"))
+    (clearance 0.6 (type "USIM_RST"))
+    (clearance 0.6 (type "USIM_CLK"))
+    (clearance 0.6 (type "USIM_VDD"))
+    (clearance 0.6 (type "P_COMP"))
+    (clearance 0.6 (type "USB_VBUS"))
+    (clearance 0.6 (type "Q2_2"))
+    (clearance 0.6 (type "R2_1"))
+    (clearance 0.6 (type "ESP_TXD"))
+    (clearance 0.6 (type "USB_DP"))
+    (clearance 0.6 (type "PSM_IND"))
+    (clearance 0.6 (type "R14_1"))
+    (clearance 0.6 (type "ESP_MODEMPWRKEY"))
+    (clearance 0.6 (type "BG_DEBUG_TX"))
+    (clearance 0.6 (type "USB_DM"))
+    (clearance 0.6 (type "LED1_2"))
+    (clearance 0.6 (type "Q2_3"))
+    (clearance 0.6 (type NETLIGHT))
+    (clearance 0.6 (type "R8_2"))
+    (clearance 0.6 (type "P_FEEDBACK"))
+    (clearance 0.6 (type "USIM_PRESENCE"))
+    (clearance 0.6 (type "CARD1_C3"))
+    (clearance 0.6 (type "CARD1_C2"))
+    (clearance 0.6 (type "CONN_AN1"))
+    (clearance 0.6 (type "CONN_IN2"))
+    (clearance 0.6 (type "CONN_IN1"))
+    (clearance 0.6 (type "CARD1_C7"))
+    (clearance 0.6 (type "ESP_IN_2"))
+    (clearance 0.6 (type "ESP_IN_1"))
+    (clearance 0.6 (type "LED1_1"))
+    (clearance 0.6 (type "BG_RI"))
+    (clearance 0.6 (type "BG_RTS"))
+    (clearance 0.6 (type "BG_DCD"))
+    (clearance 0.6 (type "BG_RXD"))
+    (clearance 0.6 (type "BG_CTS"))
+    (clearance 0.6 (type "Q4_3"))
+    (clearance 0.6 (type "ESP_IND"))
+    (clearance 0.6 (type "R20_1"))
+    (clearance 0.6 (type "R11_1"))
+    (clearance 0.6 (type "R19_1"))
+    (clearance 0.6 (type "Q3_2"))
+    (clearance 0.6 (type "Q3_3"))
+    (clearance 0.6 (type "P_OUT"))
+    (clearance 0.6 (type "GNSS-SIG"))
+    (clearance 0.6 (type "GSM-SIG"))
+    (clearance 0.6 (type "VREF_3.3V"))
+    (clearance 0.6 (type ADC0))
+    (clearance 0.6 (type GPIO26))
+    (clearance 0.6 (type ADC1))
+    (clearance 0.6 (type GPIO64))
+    (clearance 2.016 (type "board_edge"))
+  )
+  (padstack via4
+    (shape
+      (circle "1" 10.0 0.0 0.0)
+    )
+    (shape
+      (circle "2" 10.0 0.0 0.0)
+    )
+  )
+  (padstack via0
+    (shape
+      (circle "1" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "2" 2.4 0.0 0.0)
+    )
+  )
+  (padstack via1
+    (shape
+      (circle "1" 4.04 0.0 0.0)
+    )
+    (shape
+      (circle "2" 4.04 0.0 0.0)
+    )
+  )
+  (padstack via2
+    (shape
+      (circle "1" 4.54 0.0 0.0)
+    )
+    (shape
+      (circle "2" 4.54 0.0 0.0)
+    )
+  )
+  (padstack via3
+    (shape
+      (circle "1" 2.44 0.0 0.0)
+    )
+    (shape
+      (circle "2" 2.44 0.0 0.0)
+    )
+  )
+  (padstack via5
+    (shape
+      (circle "1" 2.362 0.0 0.0)
+    )
+    (shape
+      (circle "2" 2.362 0.0 0.0)
+    )
+  )
+  (via 
+    via4 via4 default
+  )
+  (via 
+    via0 via0 default
+  )
+  (via 
+    via1 via1 default
+  )
+  (via 
+    via2 via2 default
+  )
+  (via 
+    via3 via3 default
+  )
+  (via 
+    via5 via5 default
+  )
+  (via 
+    "via4-ESP_MODEMRESET" via4 "ESP_MODEMRESET"
+  )
+  (via 
+    "via0-ESP_MODEMRESET" via0 "ESP_MODEMRESET"
+  )
+  (via 
+    "via1-ESP_MODEMRESET" via1 "ESP_MODEMRESET"
+  )
+  (via 
+    "via2-ESP_MODEMRESET" via2 "ESP_MODEMRESET"
+  )
+  (via 
+    "via3-ESP_MODEMRESET" via3 "ESP_MODEMRESET"
+  )
+  (via 
+    "via5-ESP_MODEMRESET" via5 "ESP_MODEMRESET"
+  )
+  (via 
+    "via4-S$2671" via4 S$2671
+  )
+  (via 
+    "via0-S$2671" via0 S$2671
+  )
+  (via 
+    "via1-S$2671" via1 S$2671
+  )
+  (via 
+    "via2-S$2671" via2 S$2671
+  )
+  (via 
+    "via3-S$2671" via3 S$2671
+  )
+  (via 
+    "via5-S$2671" via5 S$2671
+  )
+  (via 
+    "via4-STATUS" via4 STATUS
+  )
+  (via 
+    "via0-STATUS" via0 STATUS
+  )
+  (via 
+    "via1-STATUS" via1 STATUS
+  )
+  (via 
+    "via2-STATUS" via2 STATUS
+  )
+  (via 
+    "via3-STATUS" via3 STATUS
+  )
+  (via 
+    "via5-STATUS" via5 STATUS
+  )
+  (via 
+    "via4-1.8V" via4 "1.8V"
+  )
+  (via 
+    "via0-1.8V" via0 "1.8V"
+  )
+  (via 
+    "via1-1.8V" via1 "1.8V"
+  )
+  (via 
+    "via2-1.8V" via2 "1.8V"
+  )
+  (via 
+    "via3-1.8V" via3 "1.8V"
+  )
+  (via 
+    "via5-1.8V" via5 "1.8V"
+  )
+  (via 
+    "via4-CN2_1" via4 "CN2_1"
+  )
+  (via 
+    "via0-CN2_1" via0 "CN2_1"
+  )
+  (via 
+    "via1-CN2_1" via1 "CN2_1"
+  )
+  (via 
+    "via2-CN2_1" via2 "CN2_1"
+  )
+  (via 
+    "via3-CN2_1" via3 "CN2_1"
+  )
+  (via 
+    "via5-CN2_1" via5 "CN2_1"
+  )
+  (via 
+    "via4-VCC" via4 VCC
+  )
+  (via 
+    "via0-VCC" via0 VCC
+  )
+  (via 
+    "via1-VCC" via1 VCC
+  )
+  (via 
+    "via2-VCC" via2 VCC
+  )
+  (via 
+    "via3-VCC" via3 VCC
+  )
+  (via 
+    "via5-VCC" via5 VCC
+  )
+  (via 
+    "via4-VIN" via4 VIN
+  )
+  (via 
+    "via0-VIN" via0 VIN
+  )
+  (via 
+    "via1-VIN" via1 VIN
+  )
+  (via 
+    "via2-VIN" via2 VIN
+  )
+  (via 
+    "via3-VIN" via3 VIN
+  )
+  (via 
+    "via5-VIN" via5 VIN
+  )
+  (via 
+    "via4-GND" via4 GND
+  )
+  (via 
+    "via0-GND" via0 GND
+  )
+  (via 
+    "via1-GND" via1 GND
+  )
+  (via 
+    "via2-GND" via2 GND
+  )
+  (via 
+    "via3-GND" via3 GND
+  )
+  (via 
+    "via5-GND" via5 GND
+  )
+  (via 
+    "via4-D6_2" via4 "D6_2"
+  )
+  (via 
+    "via0-D6_2" via0 "D6_2"
+  )
+  (via 
+    "via1-D6_2" via1 "D6_2"
+  )
+  (via 
+    "via2-D6_2" via2 "D6_2"
+  )
+  (via 
+    "via3-D6_2" via3 "D6_2"
+  )
+  (via 
+    "via5-D6_2" via5 "D6_2"
+  )
+  (via 
+    "via4-D4_2" via4 "D4_2"
+  )
+  (via 
+    "via0-D4_2" via0 "D4_2"
+  )
+  (via 
+    "via1-D4_2" via1 "D4_2"
+  )
+  (via 
+    "via2-D4_2" via2 "D4_2"
+  )
+  (via 
+    "via3-D4_2" via3 "D4_2"
+  )
+  (via 
+    "via5-D4_2" via5 "D4_2"
+  )
+  (via 
+    "via4-ESP_AN_1" via4 "ESP_AN_1"
+  )
+  (via 
+    "via0-ESP_AN_1" via0 "ESP_AN_1"
+  )
+  (via 
+    "via1-ESP_AN_1" via1 "ESP_AN_1"
+  )
+  (via 
+    "via2-ESP_AN_1" via2 "ESP_AN_1"
+  )
+  (via 
+    "via3-ESP_AN_1" via3 "ESP_AN_1"
+  )
+  (via 
+    "via5-ESP_AN_1" via5 "ESP_AN_1"
+  )
+  (via 
+    "via4-Q4_2" via4 "Q4_2"
+  )
+  (via 
+    "via0-Q4_2" via0 "Q4_2"
+  )
+  (via 
+    "via1-Q4_2" via1 "Q4_2"
+  )
+  (via 
+    "via2-Q4_2" via2 "Q4_2"
+  )
+  (via 
+    "via3-Q4_2" via3 "Q4_2"
+  )
+  (via 
+    "via5-Q4_2" via5 "Q4_2"
+  )
+  (via 
+    "via4-U1_75" via4 "U1_75"
+  )
+  (via 
+    "via0-U1_75" via0 "U1_75"
+  )
+  (via 
+    "via1-U1_75" via1 "U1_75"
+  )
+  (via 
+    "via2-U1_75" via2 "U1_75"
+  )
+  (via 
+    "via3-U1_75" via3 "U1_75"
+  )
+  (via 
+    "via5-U1_75" via5 "U1_75"
+  )
+  (via 
+    "via4-BG_DTR" via4 "BG_DTR"
+  )
+  (via 
+    "via0-BG_DTR" via0 "BG_DTR"
+  )
+  (via 
+    "via1-BG_DTR" via1 "BG_DTR"
+  )
+  (via 
+    "via2-BG_DTR" via2 "BG_DTR"
+  )
+  (via 
+    "via3-BG_DTR" via3 "BG_DTR"
+  )
+  (via 
+    "via5-BG_DTR" via5 "BG_DTR"
+  )
+  (via 
+    "via4-BG_TXD" via4 "BG_TXD"
+  )
+  (via 
+    "via0-BG_TXD" via0 "BG_TXD"
+  )
+  (via 
+    "via1-BG_TXD" via1 "BG_TXD"
+  )
+  (via 
+    "via2-BG_TXD" via2 "BG_TXD"
+  )
+  (via 
+    "via3-BG_TXD" via3 "BG_TXD"
+  )
+  (via 
+    "via5-BG_TXD" via5 "BG_TXD"
+  )
+  (via 
+    "via4-VCC33" via4 VCC33
+  )
+  (via 
+    "via0-VCC33" via0 VCC33
+  )
+  (via 
+    "via1-VCC33" via1 VCC33
+  )
+  (via 
+    "via2-VCC33" via2 VCC33
+  )
+  (via 
+    "via3-VCC33" via3 VCC33
+  )
+  (via 
+    "via5-VCC33" via5 VCC33
+  )
+  (via 
+    "via4-ESP_GNSS_RX" via4 "ESP_GNSS_RX"
+  )
+  (via 
+    "via0-ESP_GNSS_RX" via0 "ESP_GNSS_RX"
+  )
+  (via 
+    "via1-ESP_GNSS_RX" via1 "ESP_GNSS_RX"
+  )
+  (via 
+    "via2-ESP_GNSS_RX" via2 "ESP_GNSS_RX"
+  )
+  (via 
+    "via3-ESP_GNSS_RX" via3 "ESP_GNSS_RX"
+  )
+  (via 
+    "via5-ESP_GNSS_RX" via5 "ESP_GNSS_RX"
+  )
+  (via 
+    "via4-ESP_RXD" via4 "ESP_RXD"
+  )
+  (via 
+    "via0-ESP_RXD" via0 "ESP_RXD"
+  )
+  (via 
+    "via1-ESP_RXD" via1 "ESP_RXD"
+  )
+  (via 
+    "via2-ESP_RXD" via2 "ESP_RXD"
+  )
+  (via 
+    "via3-ESP_RXD" via3 "ESP_RXD"
+  )
+  (via 
+    "via5-ESP_RXD" via5 "ESP_RXD"
+  )
+  (via 
+    "via4-ESP_DTR" via4 "ESP_DTR"
+  )
+  (via 
+    "via0-ESP_DTR" via0 "ESP_DTR"
+  )
+  (via 
+    "via1-ESP_DTR" via1 "ESP_DTR"
+  )
+  (via 
+    "via2-ESP_DTR" via2 "ESP_DTR"
+  )
+  (via 
+    "via3-ESP_DTR" via3 "ESP_DTR"
+  )
+  (via 
+    "via5-ESP_DTR" via5 "ESP_DTR"
+  )
+  (via 
+    "via4-ESP_RTS" via4 "ESP_RTS"
+  )
+  (via 
+    "via0-ESP_RTS" via0 "ESP_RTS"
+  )
+  (via 
+    "via1-ESP_RTS" via1 "ESP_RTS"
+  )
+  (via 
+    "via2-ESP_RTS" via2 "ESP_RTS"
+  )
+  (via 
+    "via3-ESP_RTS" via3 "ESP_RTS"
+  )
+  (via 
+    "via5-ESP_RTS" via5 "ESP_RTS"
+  )
+  (via 
+    "via4-ESP_CTS" via4 "ESP_CTS"
+  )
+  (via 
+    "via0-ESP_CTS" via0 "ESP_CTS"
+  )
+  (via 
+    "via1-ESP_CTS" via1 "ESP_CTS"
+  )
+  (via 
+    "via2-ESP_CTS" via2 "ESP_CTS"
+  )
+  (via 
+    "via3-ESP_CTS" via3 "ESP_CTS"
+  )
+  (via 
+    "via5-ESP_CTS" via5 "ESP_CTS"
+  )
+  (via 
+    "via4-BG_GNSS_TX" via4 "BG_GNSS_TX"
+  )
+  (via 
+    "via0-BG_GNSS_TX" via0 "BG_GNSS_TX"
+  )
+  (via 
+    "via1-BG_GNSS_TX" via1 "BG_GNSS_TX"
+  )
+  (via 
+    "via2-BG_GNSS_TX" via2 "BG_GNSS_TX"
+  )
+  (via 
+    "via3-BG_GNSS_TX" via3 "BG_GNSS_TX"
+  )
+  (via 
+    "via5-BG_GNSS_TX" via5 "BG_GNSS_TX"
+  )
+  (via 
+    "via4-ESP_DCD" via4 "ESP_DCD"
+  )
+  (via 
+    "via0-ESP_DCD" via0 "ESP_DCD"
+  )
+  (via 
+    "via1-ESP_DCD" via1 "ESP_DCD"
+  )
+  (via 
+    "via2-ESP_DCD" via2 "ESP_DCD"
+  )
+  (via 
+    "via3-ESP_DCD" via3 "ESP_DCD"
+  )
+  (via 
+    "via5-ESP_DCD" via5 "ESP_DCD"
+  )
+  (via 
+    "via4-ESP_RI" via4 "ESP_RI"
+  )
+  (via 
+    "via0-ESP_RI" via0 "ESP_RI"
+  )
+  (via 
+    "via1-ESP_RI" via1 "ESP_RI"
+  )
+  (via 
+    "via2-ESP_RI" via2 "ESP_RI"
+  )
+  (via 
+    "via3-ESP_RI" via3 "ESP_RI"
+  )
+  (via 
+    "via5-ESP_RI" via5 "ESP_RI"
+  )
+  (via 
+    "via4-Q1_2" via4 "Q1_2"
+  )
+  (via 
+    "via0-Q1_2" via0 "Q1_2"
+  )
+  (via 
+    "via1-Q1_2" via1 "Q1_2"
+  )
+  (via 
+    "via2-Q1_2" via2 "Q1_2"
+  )
+  (via 
+    "via3-Q1_2" via3 "Q1_2"
+  )
+  (via 
+    "via5-Q1_2" via5 "Q1_2"
+  )
+  (via 
+    "via4-USIM_DATA" via4 "USIM_DATA"
+  )
+  (via 
+    "via0-USIM_DATA" via0 "USIM_DATA"
+  )
+  (via 
+    "via1-USIM_DATA" via1 "USIM_DATA"
+  )
+  (via 
+    "via2-USIM_DATA" via2 "USIM_DATA"
+  )
+  (via 
+    "via3-USIM_DATA" via3 "USIM_DATA"
+  )
+  (via 
+    "via5-USIM_DATA" via5 "USIM_DATA"
+  )
+  (via 
+    "via4-USIM_RST" via4 "USIM_RST"
+  )
+  (via 
+    "via0-USIM_RST" via0 "USIM_RST"
+  )
+  (via 
+    "via1-USIM_RST" via1 "USIM_RST"
+  )
+  (via 
+    "via2-USIM_RST" via2 "USIM_RST"
+  )
+  (via 
+    "via3-USIM_RST" via3 "USIM_RST"
+  )
+  (via 
+    "via5-USIM_RST" via5 "USIM_RST"
+  )
+  (via 
+    "via4-USIM_CLK" via4 "USIM_CLK"
+  )
+  (via 
+    "via0-USIM_CLK" via0 "USIM_CLK"
+  )
+  (via 
+    "via1-USIM_CLK" via1 "USIM_CLK"
+  )
+  (via 
+    "via2-USIM_CLK" via2 "USIM_CLK"
+  )
+  (via 
+    "via3-USIM_CLK" via3 "USIM_CLK"
+  )
+  (via 
+    "via5-USIM_CLK" via5 "USIM_CLK"
+  )
+  (via 
+    "via4-USIM_VDD" via4 "USIM_VDD"
+  )
+  (via 
+    "via0-USIM_VDD" via0 "USIM_VDD"
+  )
+  (via 
+    "via1-USIM_VDD" via1 "USIM_VDD"
+  )
+  (via 
+    "via2-USIM_VDD" via2 "USIM_VDD"
+  )
+  (via 
+    "via3-USIM_VDD" via3 "USIM_VDD"
+  )
+  (via 
+    "via5-USIM_VDD" via5 "USIM_VDD"
+  )
+  (via 
+    "via4-P_COMP" via4 "P_COMP"
+  )
+  (via 
+    "via0-P_COMP" via0 "P_COMP"
+  )
+  (via 
+    "via1-P_COMP" via1 "P_COMP"
+  )
+  (via 
+    "via2-P_COMP" via2 "P_COMP"
+  )
+  (via 
+    "via3-P_COMP" via3 "P_COMP"
+  )
+  (via 
+    "via5-P_COMP" via5 "P_COMP"
+  )
+  (via 
+    "via4-USB_VBUS" via4 "USB_VBUS"
+  )
+  (via 
+    "via0-USB_VBUS" via0 "USB_VBUS"
+  )
+  (via 
+    "via1-USB_VBUS" via1 "USB_VBUS"
+  )
+  (via 
+    "via2-USB_VBUS" via2 "USB_VBUS"
+  )
+  (via 
+    "via3-USB_VBUS" via3 "USB_VBUS"
+  )
+  (via 
+    "via5-USB_VBUS" via5 "USB_VBUS"
+  )
+  (via 
+    "via4-Q2_2" via4 "Q2_2"
+  )
+  (via 
+    "via0-Q2_2" via0 "Q2_2"
+  )
+  (via 
+    "via1-Q2_2" via1 "Q2_2"
+  )
+  (via 
+    "via2-Q2_2" via2 "Q2_2"
+  )
+  (via 
+    "via3-Q2_2" via3 "Q2_2"
+  )
+  (via 
+    "via5-Q2_2" via5 "Q2_2"
+  )
+  (via 
+    "via4-R2_1" via4 "R2_1"
+  )
+  (via 
+    "via0-R2_1" via0 "R2_1"
+  )
+  (via 
+    "via1-R2_1" via1 "R2_1"
+  )
+  (via 
+    "via2-R2_1" via2 "R2_1"
+  )
+  (via 
+    "via3-R2_1" via3 "R2_1"
+  )
+  (via 
+    "via5-R2_1" via5 "R2_1"
+  )
+  (via 
+    "via4-ESP_TXD" via4 "ESP_TXD"
+  )
+  (via 
+    "via0-ESP_TXD" via0 "ESP_TXD"
+  )
+  (via 
+    "via1-ESP_TXD" via1 "ESP_TXD"
+  )
+  (via 
+    "via2-ESP_TXD" via2 "ESP_TXD"
+  )
+  (via 
+    "via3-ESP_TXD" via3 "ESP_TXD"
+  )
+  (via 
+    "via5-ESP_TXD" via5 "ESP_TXD"
+  )
+  (via 
+    "via4-USB_DP" via4 "USB_DP"
+  )
+  (via 
+    "via0-USB_DP" via0 "USB_DP"
+  )
+  (via 
+    "via1-USB_DP" via1 "USB_DP"
+  )
+  (via 
+    "via2-USB_DP" via2 "USB_DP"
+  )
+  (via 
+    "via3-USB_DP" via3 "USB_DP"
+  )
+  (via 
+    "via5-USB_DP" via5 "USB_DP"
+  )
+  (via 
+    "via4-PSM_IND" via4 "PSM_IND"
+  )
+  (via 
+    "via0-PSM_IND" via0 "PSM_IND"
+  )
+  (via 
+    "via1-PSM_IND" via1 "PSM_IND"
+  )
+  (via 
+    "via2-PSM_IND" via2 "PSM_IND"
+  )
+  (via 
+    "via3-PSM_IND" via3 "PSM_IND"
+  )
+  (via 
+    "via5-PSM_IND" via5 "PSM_IND"
+  )
+  (via 
+    "via4-R14_1" via4 "R14_1"
+  )
+  (via 
+    "via0-R14_1" via0 "R14_1"
+  )
+  (via 
+    "via1-R14_1" via1 "R14_1"
+  )
+  (via 
+    "via2-R14_1" via2 "R14_1"
+  )
+  (via 
+    "via3-R14_1" via3 "R14_1"
+  )
+  (via 
+    "via5-R14_1" via5 "R14_1"
+  )
+  (via 
+    "via4-ESP_MODEMPWRKEY" via4 "ESP_MODEMPWRKEY"
+  )
+  (via 
+    "via0-ESP_MODEMPWRKEY" via0 "ESP_MODEMPWRKEY"
+  )
+  (via 
+    "via1-ESP_MODEMPWRKEY" via1 "ESP_MODEMPWRKEY"
+  )
+  (via 
+    "via2-ESP_MODEMPWRKEY" via2 "ESP_MODEMPWRKEY"
+  )
+  (via 
+    "via3-ESP_MODEMPWRKEY" via3 "ESP_MODEMPWRKEY"
+  )
+  (via 
+    "via5-ESP_MODEMPWRKEY" via5 "ESP_MODEMPWRKEY"
+  )
+  (via 
+    "via4-BG_DEBUG_TX" via4 "BG_DEBUG_TX"
+  )
+  (via 
+    "via0-BG_DEBUG_TX" via0 "BG_DEBUG_TX"
+  )
+  (via 
+    "via1-BG_DEBUG_TX" via1 "BG_DEBUG_TX"
+  )
+  (via 
+    "via2-BG_DEBUG_TX" via2 "BG_DEBUG_TX"
+  )
+  (via 
+    "via3-BG_DEBUG_TX" via3 "BG_DEBUG_TX"
+  )
+  (via 
+    "via5-BG_DEBUG_TX" via5 "BG_DEBUG_TX"
+  )
+  (via 
+    "via4-USB_DM" via4 "USB_DM"
+  )
+  (via 
+    "via0-USB_DM" via0 "USB_DM"
+  )
+  (via 
+    "via1-USB_DM" via1 "USB_DM"
+  )
+  (via 
+    "via2-USB_DM" via2 "USB_DM"
+  )
+  (via 
+    "via3-USB_DM" via3 "USB_DM"
+  )
+  (via 
+    "via5-USB_DM" via5 "USB_DM"
+  )
+  (via 
+    "via4-LED1_2" via4 "LED1_2"
+  )
+  (via 
+    "via0-LED1_2" via0 "LED1_2"
+  )
+  (via 
+    "via1-LED1_2" via1 "LED1_2"
+  )
+  (via 
+    "via2-LED1_2" via2 "LED1_2"
+  )
+  (via 
+    "via3-LED1_2" via3 "LED1_2"
+  )
+  (via 
+    "via5-LED1_2" via5 "LED1_2"
+  )
+  (via 
+    "via4-Q2_3" via4 "Q2_3"
+  )
+  (via 
+    "via0-Q2_3" via0 "Q2_3"
+  )
+  (via 
+    "via1-Q2_3" via1 "Q2_3"
+  )
+  (via 
+    "via2-Q2_3" via2 "Q2_3"
+  )
+  (via 
+    "via3-Q2_3" via3 "Q2_3"
+  )
+  (via 
+    "via5-Q2_3" via5 "Q2_3"
+  )
+  (via 
+    "via4-NETLIGHT" via4 NETLIGHT
+  )
+  (via 
+    "via0-NETLIGHT" via0 NETLIGHT
+  )
+  (via 
+    "via1-NETLIGHT" via1 NETLIGHT
+  )
+  (via 
+    "via2-NETLIGHT" via2 NETLIGHT
+  )
+  (via 
+    "via3-NETLIGHT" via3 NETLIGHT
+  )
+  (via 
+    "via5-NETLIGHT" via5 NETLIGHT
+  )
+  (via 
+    "via4-R8_2" via4 "R8_2"
+  )
+  (via 
+    "via0-R8_2" via0 "R8_2"
+  )
+  (via 
+    "via1-R8_2" via1 "R8_2"
+  )
+  (via 
+    "via2-R8_2" via2 "R8_2"
+  )
+  (via 
+    "via3-R8_2" via3 "R8_2"
+  )
+  (via 
+    "via5-R8_2" via5 "R8_2"
+  )
+  (via 
+    "via4-P_FEEDBACK" via4 "P_FEEDBACK"
+  )
+  (via 
+    "via0-P_FEEDBACK" via0 "P_FEEDBACK"
+  )
+  (via 
+    "via1-P_FEEDBACK" via1 "P_FEEDBACK"
+  )
+  (via 
+    "via2-P_FEEDBACK" via2 "P_FEEDBACK"
+  )
+  (via 
+    "via3-P_FEEDBACK" via3 "P_FEEDBACK"
+  )
+  (via 
+    "via5-P_FEEDBACK" via5 "P_FEEDBACK"
+  )
+  (via 
+    "via4-USIM_PRESENCE" via4 "USIM_PRESENCE"
+  )
+  (via 
+    "via0-USIM_PRESENCE" via0 "USIM_PRESENCE"
+  )
+  (via 
+    "via1-USIM_PRESENCE" via1 "USIM_PRESENCE"
+  )
+  (via 
+    "via2-USIM_PRESENCE" via2 "USIM_PRESENCE"
+  )
+  (via 
+    "via3-USIM_PRESENCE" via3 "USIM_PRESENCE"
+  )
+  (via 
+    "via5-USIM_PRESENCE" via5 "USIM_PRESENCE"
+  )
+  (via 
+    "via4-CARD1_C3" via4 "CARD1_C3"
+  )
+  (via 
+    "via0-CARD1_C3" via0 "CARD1_C3"
+  )
+  (via 
+    "via1-CARD1_C3" via1 "CARD1_C3"
+  )
+  (via 
+    "via2-CARD1_C3" via2 "CARD1_C3"
+  )
+  (via 
+    "via3-CARD1_C3" via3 "CARD1_C3"
+  )
+  (via 
+    "via5-CARD1_C3" via5 "CARD1_C3"
+  )
+  (via 
+    "via4-CARD1_C2" via4 "CARD1_C2"
+  )
+  (via 
+    "via0-CARD1_C2" via0 "CARD1_C2"
+  )
+  (via 
+    "via1-CARD1_C2" via1 "CARD1_C2"
+  )
+  (via 
+    "via2-CARD1_C2" via2 "CARD1_C2"
+  )
+  (via 
+    "via3-CARD1_C2" via3 "CARD1_C2"
+  )
+  (via 
+    "via5-CARD1_C2" via5 "CARD1_C2"
+  )
+  (via 
+    "via4-CONN_AN1" via4 "CONN_AN1"
+  )
+  (via 
+    "via0-CONN_AN1" via0 "CONN_AN1"
+  )
+  (via 
+    "via1-CONN_AN1" via1 "CONN_AN1"
+  )
+  (via 
+    "via2-CONN_AN1" via2 "CONN_AN1"
+  )
+  (via 
+    "via3-CONN_AN1" via3 "CONN_AN1"
+  )
+  (via 
+    "via5-CONN_AN1" via5 "CONN_AN1"
+  )
+  (via 
+    "via4-CONN_IN2" via4 "CONN_IN2"
+  )
+  (via 
+    "via0-CONN_IN2" via0 "CONN_IN2"
+  )
+  (via 
+    "via1-CONN_IN2" via1 "CONN_IN2"
+  )
+  (via 
+    "via2-CONN_IN2" via2 "CONN_IN2"
+  )
+  (via 
+    "via3-CONN_IN2" via3 "CONN_IN2"
+  )
+  (via 
+    "via5-CONN_IN2" via5 "CONN_IN2"
+  )
+  (via 
+    "via4-CONN_IN1" via4 "CONN_IN1"
+  )
+  (via 
+    "via0-CONN_IN1" via0 "CONN_IN1"
+  )
+  (via 
+    "via1-CONN_IN1" via1 "CONN_IN1"
+  )
+  (via 
+    "via2-CONN_IN1" via2 "CONN_IN1"
+  )
+  (via 
+    "via3-CONN_IN1" via3 "CONN_IN1"
+  )
+  (via 
+    "via5-CONN_IN1" via5 "CONN_IN1"
+  )
+  (via 
+    "via4-CARD1_C7" via4 "CARD1_C7"
+  )
+  (via 
+    "via0-CARD1_C7" via0 "CARD1_C7"
+  )
+  (via 
+    "via1-CARD1_C7" via1 "CARD1_C7"
+  )
+  (via 
+    "via2-CARD1_C7" via2 "CARD1_C7"
+  )
+  (via 
+    "via3-CARD1_C7" via3 "CARD1_C7"
+  )
+  (via 
+    "via5-CARD1_C7" via5 "CARD1_C7"
+  )
+  (via 
+    "via4-ESP_IN_2" via4 "ESP_IN_2"
+  )
+  (via 
+    "via0-ESP_IN_2" via0 "ESP_IN_2"
+  )
+  (via 
+    "via1-ESP_IN_2" via1 "ESP_IN_2"
+  )
+  (via 
+    "via2-ESP_IN_2" via2 "ESP_IN_2"
+  )
+  (via 
+    "via3-ESP_IN_2" via3 "ESP_IN_2"
+  )
+  (via 
+    "via5-ESP_IN_2" via5 "ESP_IN_2"
+  )
+  (via 
+    "via4-ESP_IN_1" via4 "ESP_IN_1"
+  )
+  (via 
+    "via0-ESP_IN_1" via0 "ESP_IN_1"
+  )
+  (via 
+    "via1-ESP_IN_1" via1 "ESP_IN_1"
+  )
+  (via 
+    "via2-ESP_IN_1" via2 "ESP_IN_1"
+  )
+  (via 
+    "via3-ESP_IN_1" via3 "ESP_IN_1"
+  )
+  (via 
+    "via5-ESP_IN_1" via5 "ESP_IN_1"
+  )
+  (via 
+    "via4-LED1_1" via4 "LED1_1"
+  )
+  (via 
+    "via0-LED1_1" via0 "LED1_1"
+  )
+  (via 
+    "via1-LED1_1" via1 "LED1_1"
+  )
+  (via 
+    "via2-LED1_1" via2 "LED1_1"
+  )
+  (via 
+    "via3-LED1_1" via3 "LED1_1"
+  )
+  (via 
+    "via5-LED1_1" via5 "LED1_1"
+  )
+  (via 
+    "via4-BG_RI" via4 "BG_RI"
+  )
+  (via 
+    "via0-BG_RI" via0 "BG_RI"
+  )
+  (via 
+    "via1-BG_RI" via1 "BG_RI"
+  )
+  (via 
+    "via2-BG_RI" via2 "BG_RI"
+  )
+  (via 
+    "via3-BG_RI" via3 "BG_RI"
+  )
+  (via 
+    "via5-BG_RI" via5 "BG_RI"
+  )
+  (via 
+    "via4-BG_RTS" via4 "BG_RTS"
+  )
+  (via 
+    "via0-BG_RTS" via0 "BG_RTS"
+  )
+  (via 
+    "via1-BG_RTS" via1 "BG_RTS"
+  )
+  (via 
+    "via2-BG_RTS" via2 "BG_RTS"
+  )
+  (via 
+    "via3-BG_RTS" via3 "BG_RTS"
+  )
+  (via 
+    "via5-BG_RTS" via5 "BG_RTS"
+  )
+  (via 
+    "via4-BG_DCD" via4 "BG_DCD"
+  )
+  (via 
+    "via0-BG_DCD" via0 "BG_DCD"
+  )
+  (via 
+    "via1-BG_DCD" via1 "BG_DCD"
+  )
+  (via 
+    "via2-BG_DCD" via2 "BG_DCD"
+  )
+  (via 
+    "via3-BG_DCD" via3 "BG_DCD"
+  )
+  (via 
+    "via5-BG_DCD" via5 "BG_DCD"
+  )
+  (via 
+    "via4-BG_RXD" via4 "BG_RXD"
+  )
+  (via 
+    "via0-BG_RXD" via0 "BG_RXD"
+  )
+  (via 
+    "via1-BG_RXD" via1 "BG_RXD"
+  )
+  (via 
+    "via2-BG_RXD" via2 "BG_RXD"
+  )
+  (via 
+    "via3-BG_RXD" via3 "BG_RXD"
+  )
+  (via 
+    "via5-BG_RXD" via5 "BG_RXD"
+  )
+  (via 
+    "via4-BG_CTS" via4 "BG_CTS"
+  )
+  (via 
+    "via0-BG_CTS" via0 "BG_CTS"
+  )
+  (via 
+    "via1-BG_CTS" via1 "BG_CTS"
+  )
+  (via 
+    "via2-BG_CTS" via2 "BG_CTS"
+  )
+  (via 
+    "via3-BG_CTS" via3 "BG_CTS"
+  )
+  (via 
+    "via5-BG_CTS" via5 "BG_CTS"
+  )
+  (via 
+    "via4-Q4_3" via4 "Q4_3"
+  )
+  (via 
+    "via0-Q4_3" via0 "Q4_3"
+  )
+  (via 
+    "via1-Q4_3" via1 "Q4_3"
+  )
+  (via 
+    "via2-Q4_3" via2 "Q4_3"
+  )
+  (via 
+    "via3-Q4_3" via3 "Q4_3"
+  )
+  (via 
+    "via5-Q4_3" via5 "Q4_3"
+  )
+  (via 
+    "via4-ESP_IND" via4 "ESP_IND"
+  )
+  (via 
+    "via0-ESP_IND" via0 "ESP_IND"
+  )
+  (via 
+    "via1-ESP_IND" via1 "ESP_IND"
+  )
+  (via 
+    "via2-ESP_IND" via2 "ESP_IND"
+  )
+  (via 
+    "via3-ESP_IND" via3 "ESP_IND"
+  )
+  (via 
+    "via5-ESP_IND" via5 "ESP_IND"
+  )
+  (via 
+    "via4-R20_1" via4 "R20_1"
+  )
+  (via 
+    "via0-R20_1" via0 "R20_1"
+  )
+  (via 
+    "via1-R20_1" via1 "R20_1"
+  )
+  (via 
+    "via2-R20_1" via2 "R20_1"
+  )
+  (via 
+    "via3-R20_1" via3 "R20_1"
+  )
+  (via 
+    "via5-R20_1" via5 "R20_1"
+  )
+  (via 
+    "via4-R11_1" via4 "R11_1"
+  )
+  (via 
+    "via0-R11_1" via0 "R11_1"
+  )
+  (via 
+    "via1-R11_1" via1 "R11_1"
+  )
+  (via 
+    "via2-R11_1" via2 "R11_1"
+  )
+  (via 
+    "via3-R11_1" via3 "R11_1"
+  )
+  (via 
+    "via5-R11_1" via5 "R11_1"
+  )
+  (via 
+    "via4-R19_1" via4 "R19_1"
+  )
+  (via 
+    "via0-R19_1" via0 "R19_1"
+  )
+  (via 
+    "via1-R19_1" via1 "R19_1"
+  )
+  (via 
+    "via2-R19_1" via2 "R19_1"
+  )
+  (via 
+    "via3-R19_1" via3 "R19_1"
+  )
+  (via 
+    "via5-R19_1" via5 "R19_1"
+  )
+  (via 
+    "via4-Q3_2" via4 "Q3_2"
+  )
+  (via 
+    "via0-Q3_2" via0 "Q3_2"
+  )
+  (via 
+    "via1-Q3_2" via1 "Q3_2"
+  )
+  (via 
+    "via2-Q3_2" via2 "Q3_2"
+  )
+  (via 
+    "via3-Q3_2" via3 "Q3_2"
+  )
+  (via 
+    "via5-Q3_2" via5 "Q3_2"
+  )
+  (via 
+    "via4-Q3_3" via4 "Q3_3"
+  )
+  (via 
+    "via0-Q3_3" via0 "Q3_3"
+  )
+  (via 
+    "via1-Q3_3" via1 "Q3_3"
+  )
+  (via 
+    "via2-Q3_3" via2 "Q3_3"
+  )
+  (via 
+    "via3-Q3_3" via3 "Q3_3"
+  )
+  (via 
+    "via5-Q3_3" via5 "Q3_3"
+  )
+  (via 
+    "via4-P_OUT" via4 "P_OUT"
+  )
+  (via 
+    "via0-P_OUT" via0 "P_OUT"
+  )
+  (via 
+    "via1-P_OUT" via1 "P_OUT"
+  )
+  (via 
+    "via2-P_OUT" via2 "P_OUT"
+  )
+  (via 
+    "via3-P_OUT" via3 "P_OUT"
+  )
+  (via 
+    "via5-P_OUT" via5 "P_OUT"
+  )
+  (via 
+    "via4-GNSS-SIG" via4 "GNSS-SIG"
+  )
+  (via 
+    "via0-GNSS-SIG" via0 "GNSS-SIG"
+  )
+  (via 
+    "via1-GNSS-SIG" via1 "GNSS-SIG"
+  )
+  (via 
+    "via2-GNSS-SIG" via2 "GNSS-SIG"
+  )
+  (via 
+    "via3-GNSS-SIG" via3 "GNSS-SIG"
+  )
+  (via 
+    "via5-GNSS-SIG" via5 "GNSS-SIG"
+  )
+  (via 
+    "via4-GSM-SIG" via4 "GSM-SIG"
+  )
+  (via 
+    "via0-GSM-SIG" via0 "GSM-SIG"
+  )
+  (via 
+    "via1-GSM-SIG" via1 "GSM-SIG"
+  )
+  (via 
+    "via2-GSM-SIG" via2 "GSM-SIG"
+  )
+  (via 
+    "via3-GSM-SIG" via3 "GSM-SIG"
+  )
+  (via 
+    "via5-GSM-SIG" via5 "GSM-SIG"
+  )
+  (via 
+    "via4-VREF_3.3V" via4 "VREF_3.3V"
+  )
+  (via 
+    "via0-VREF_3.3V" via0 "VREF_3.3V"
+  )
+  (via 
+    "via1-VREF_3.3V" via1 "VREF_3.3V"
+  )
+  (via 
+    "via2-VREF_3.3V" via2 "VREF_3.3V"
+  )
+  (via 
+    "via3-VREF_3.3V" via3 "VREF_3.3V"
+  )
+  (via 
+    "via5-VREF_3.3V" via5 "VREF_3.3V"
+  )
+  (via 
+    "via4-ADC0" via4 ADC0
+  )
+  (via 
+    "via0-ADC0" via0 ADC0
+  )
+  (via 
+    "via1-ADC0" via1 ADC0
+  )
+  (via 
+    "via2-ADC0" via2 ADC0
+  )
+  (via 
+    "via3-ADC0" via3 ADC0
+  )
+  (via 
+    "via5-ADC0" via5 ADC0
+  )
+  (via 
+    "via4-GPIO26" via4 GPIO26
+  )
+  (via 
+    "via0-GPIO26" via0 GPIO26
+  )
+  (via 
+    "via1-GPIO26" via1 GPIO26
+  )
+  (via 
+    "via2-GPIO26" via2 GPIO26
+  )
+  (via 
+    "via3-GPIO26" via3 GPIO26
+  )
+  (via 
+    "via5-GPIO26" via5 GPIO26
+  )
+  (via 
+    "via4-ADC1" via4 ADC1
+  )
+  (via 
+    "via0-ADC1" via0 ADC1
+  )
+  (via 
+    "via1-ADC1" via1 ADC1
+  )
+  (via 
+    "via2-ADC1" via2 ADC1
+  )
+  (via 
+    "via3-ADC1" via3 ADC1
+  )
+  (via 
+    "via5-ADC1" via5 ADC1
+  )
+  (via 
+    "via4-GPIO64" via4 GPIO64
+  )
+  (via 
+    "via0-GPIO64" via0 GPIO64
+  )
+  (via 
+    "via1-GPIO64" via1 GPIO64
+  )
+  (via 
+    "via2-GPIO64" via2 GPIO64
+  )
+  (via 
+    "via3-GPIO64" via3 GPIO64
+  )
+  (via 
+    "via5-GPIO64" via5 GPIO64
+  )
+  (viaRule
+    default via5
+  )
+  (viaRule
+    "ESP_MODEMRESET" "via0-ESP_MODEMRESET"
+  )
+  (viaRule
+    S$2671 "via0-S$2671"
+  )
+  (viaRule
+    STATUS "via0-STATUS"
+  )
+  (viaRule
+    "1.8V" "via0-1.8V"
+  )
+  (viaRule
+    "CN2_1" "via0-CN2_1"
+  )
+  (viaRule
+    VCC "via0-VCC"
+  )
+  (viaRule
+    VIN "via0-VIN"
+  )
+  (viaRule
+    GND "via0-GND"
+  )
+  (viaRule
+    "D6_2" "via0-D6_2"
+  )
+  (viaRule
+    "D4_2" "via0-D4_2"
+  )
+  (viaRule
+    "ESP_AN_1" "via0-ESP_AN_1"
+  )
+  (viaRule
+    "Q4_2" "via0-Q4_2"
+  )
+  (viaRule
+    "U1_75" "via0-U1_75"
+  )
+  (viaRule
+    "BG_DTR" "via0-BG_DTR"
+  )
+  (viaRule
+    "BG_TXD" "via0-BG_TXD"
+  )
+  (viaRule
+    VCC33 "via0-VCC33"
+  )
+  (viaRule
+    "ESP_GNSS_RX" "via0-ESP_GNSS_RX"
+  )
+  (viaRule
+    "ESP_RXD" "via0-ESP_RXD"
+  )
+  (viaRule
+    "ESP_DTR" "via0-ESP_DTR"
+  )
+  (viaRule
+    "ESP_RTS" "via0-ESP_RTS"
+  )
+  (viaRule
+    "ESP_CTS" "via0-ESP_CTS"
+  )
+  (viaRule
+    "BG_GNSS_TX" "via0-BG_GNSS_TX"
+  )
+  (viaRule
+    "ESP_DCD" "via0-ESP_DCD"
+  )
+  (viaRule
+    "ESP_RI" "via0-ESP_RI"
+  )
+  (viaRule
+    "Q1_2" "via0-Q1_2"
+  )
+  (viaRule
+    "USIM_DATA" "via0-USIM_DATA"
+  )
+  (viaRule
+    "USIM_RST" "via0-USIM_RST"
+  )
+  (viaRule
+    "USIM_CLK" "via0-USIM_CLK"
+  )
+  (viaRule
+    "USIM_VDD" "via0-USIM_VDD"
+  )
+  (viaRule
+    "P_COMP" "via0-P_COMP"
+  )
+  (viaRule
+    "USB_VBUS" "via0-USB_VBUS"
+  )
+  (viaRule
+    "Q2_2" "via0-Q2_2"
+  )
+  (viaRule
+    "R2_1" "via0-R2_1"
+  )
+  (viaRule
+    "ESP_TXD" "via0-ESP_TXD"
+  )
+  (viaRule
+    "USB_DP" "via0-USB_DP"
+  )
+  (viaRule
+    "PSM_IND" "via0-PSM_IND"
+  )
+  (viaRule
+    "R14_1" "via0-R14_1"
+  )
+  (viaRule
+    "ESP_MODEMPWRKEY" "via0-ESP_MODEMPWRKEY"
+  )
+  (viaRule
+    "BG_DEBUG_TX" "via0-BG_DEBUG_TX"
+  )
+  (viaRule
+    "USB_DM" "via0-USB_DM"
+  )
+  (viaRule
+    "LED1_2" "via0-LED1_2"
+  )
+  (viaRule
+    "Q2_3" "via0-Q2_3"
+  )
+  (viaRule
+    NETLIGHT "via0-NETLIGHT"
+  )
+  (viaRule
+    "R8_2" "via0-R8_2"
+  )
+  (viaRule
+    "P_FEEDBACK" "via0-P_FEEDBACK"
+  )
+  (viaRule
+    "USIM_PRESENCE" "via0-USIM_PRESENCE"
+  )
+  (viaRule
+    "CARD1_C3" "via0-CARD1_C3"
+  )
+  (viaRule
+    "CARD1_C2" "via0-CARD1_C2"
+  )
+  (viaRule
+    "CONN_AN1" "via0-CONN_AN1"
+  )
+  (viaRule
+    "CONN_IN2" "via0-CONN_IN2"
+  )
+  (viaRule
+    "CONN_IN1" "via0-CONN_IN1"
+  )
+  (viaRule
+    "CARD1_C7" "via0-CARD1_C7"
+  )
+  (viaRule
+    "ESP_IN_2" "via0-ESP_IN_2"
+  )
+  (viaRule
+    "ESP_IN_1" "via0-ESP_IN_1"
+  )
+  (viaRule
+    "LED1_1" "via0-LED1_1"
+  )
+  (viaRule
+    "BG_RI" "via0-BG_RI"
+  )
+  (viaRule
+    "BG_RTS" "via0-BG_RTS"
+  )
+  (viaRule
+    "BG_DCD" "via0-BG_DCD"
+  )
+  (viaRule
+    "BG_RXD" "via0-BG_RXD"
+  )
+  (viaRule
+    "BG_CTS" "via0-BG_CTS"
+  )
+  (viaRule
+    "Q4_3" "via0-Q4_3"
+  )
+  (viaRule
+    "ESP_IND" "via0-ESP_IND"
+  )
+  (viaRule
+    "R20_1" "via0-R20_1"
+  )
+  (viaRule
+    "R11_1" "via0-R11_1"
+  )
+  (viaRule
+    "R19_1" "via0-R19_1"
+  )
+  (viaRule
+    "Q3_2" "via0-Q3_2"
+  )
+  (viaRule
+    "Q3_3" "via0-Q3_3"
+  )
+  (viaRule
+    "P_OUT" "via0-P_OUT"
+  )
+  (viaRule
+    "GNSS-SIG" "via0-GNSS-SIG"
+  )
+  (viaRule
+    "GSM-SIG" "via0-GSM-SIG"
+  )
+  (viaRule
+    "VREF_3.3V" "via0-VREF_3.3V"
+  )
+  (viaRule
+    ADC0 "via0-ADC0"
+  )
+  (viaRule
+    GPIO26 "via0-GPIO26"
+  )
+  (viaRule
+    ADC1 "via0-ADC1"
+  )
+  (viaRule
+    GPIO64 "via0-GPIO64"
+  )
+  (class default
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 0.606)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_MODEMRESET"
+    "ESP_MODEMRESET"
+    (clearance_class "ESP_MODEMRESET")
+    (via_rule "ESP_MODEMRESET")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class S$2671
+    S$2671
+    (clearance_class S$2671)
+    (via_rule S$2671)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class STATUS
+    STATUS
+    (clearance_class STATUS)
+    (via_rule STATUS)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "1.8V"
+    "1.8V"
+    (clearance_class "1.8V")
+    (via_rule "1.8V")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CN2_1"
+    "CN2_1"
+    (clearance_class "CN2_1")
+    (via_rule "CN2_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class VCC
+    VCC
+    (clearance_class VCC)
+    (via_rule VCC)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class VIN
+    VIN
+    (clearance_class VIN)
+    (via_rule VIN)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class GND
+    GND
+    (clearance_class GND)
+    (via_rule GND)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "D6_2"
+    "D6_2"
+    (clearance_class "D6_2")
+    (via_rule "D6_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "D4_2"
+    "D4_2"
+    (clearance_class "D4_2")
+    (via_rule "D4_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_AN_1"
+    "ESP_AN_1"
+    (clearance_class "ESP_AN_1")
+    (via_rule "ESP_AN_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q4_2"
+    "Q4_2"
+    (clearance_class "Q4_2")
+    (via_rule "Q4_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "U1_75"
+    "U1_75"
+    (clearance_class "U1_75")
+    (via_rule "U1_75")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_DTR"
+    "BG_DTR"
+    (clearance_class "BG_DTR")
+    (via_rule "BG_DTR")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_TXD"
+    "BG_TXD"
+    (clearance_class "BG_TXD")
+    (via_rule "BG_TXD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class VCC33
+    VCC33
+    (clearance_class VCC33)
+    (via_rule VCC33)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_GNSS_RX"
+    "ESP_GNSS_RX"
+    (clearance_class "ESP_GNSS_RX")
+    (via_rule "ESP_GNSS_RX")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_RXD"
+    "ESP_RXD"
+    (clearance_class "ESP_RXD")
+    (via_rule "ESP_RXD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_DTR"
+    "ESP_DTR"
+    (clearance_class "ESP_DTR")
+    (via_rule "ESP_DTR")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_RTS"
+    "ESP_RTS"
+    (clearance_class "ESP_RTS")
+    (via_rule "ESP_RTS")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_CTS"
+    "ESP_CTS"
+    (clearance_class "ESP_CTS")
+    (via_rule "ESP_CTS")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_GNSS_TX"
+    "BG_GNSS_TX"
+    (clearance_class "BG_GNSS_TX")
+    (via_rule "BG_GNSS_TX")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_DCD"
+    "ESP_DCD"
+    (clearance_class "ESP_DCD")
+    (via_rule "ESP_DCD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_RI"
+    "ESP_RI"
+    (clearance_class "ESP_RI")
+    (via_rule "ESP_RI")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q1_2"
+    "Q1_2"
+    (clearance_class "Q1_2")
+    (via_rule "Q1_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USIM_DATA"
+    "USIM_DATA"
+    (clearance_class "USIM_DATA")
+    (via_rule "USIM_DATA")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USIM_RST"
+    "USIM_RST"
+    (clearance_class "USIM_RST")
+    (via_rule "USIM_RST")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USIM_CLK"
+    "USIM_CLK"
+    (clearance_class "USIM_CLK")
+    (via_rule "USIM_CLK")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USIM_VDD"
+    "USIM_VDD"
+    (clearance_class "USIM_VDD")
+    (via_rule "USIM_VDD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "P_COMP"
+    "P_COMP"
+    (clearance_class "P_COMP")
+    (via_rule "P_COMP")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USB_VBUS"
+    "USB_VBUS"
+    (clearance_class "USB_VBUS")
+    (via_rule "USB_VBUS")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q2_2"
+    "Q2_2"
+    (clearance_class "Q2_2")
+    (via_rule "Q2_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "R2_1"
+    "R2_1"
+    (clearance_class "R2_1")
+    (via_rule "R2_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_TXD"
+    "ESP_TXD"
+    (clearance_class "ESP_TXD")
+    (via_rule "ESP_TXD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USB_DP"
+    "USB_DP"
+    (clearance_class "USB_DP")
+    (via_rule "USB_DP")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "PSM_IND"
+    "PSM_IND"
+    (clearance_class "PSM_IND")
+    (via_rule "PSM_IND")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "R14_1"
+    "R14_1"
+    (clearance_class "R14_1")
+    (via_rule "R14_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_MODEMPWRKEY"
+    "ESP_MODEMPWRKEY"
+    (clearance_class "ESP_MODEMPWRKEY")
+    (via_rule "ESP_MODEMPWRKEY")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_DEBUG_TX"
+    "BG_DEBUG_TX"
+    (clearance_class "BG_DEBUG_TX")
+    (via_rule "BG_DEBUG_TX")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USB_DM"
+    "USB_DM"
+    (clearance_class "USB_DM")
+    (via_rule "USB_DM")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "LED1_2"
+    "LED1_2"
+    (clearance_class "LED1_2")
+    (via_rule "LED1_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q2_3"
+    "Q2_3"
+    (clearance_class "Q2_3")
+    (via_rule "Q2_3")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class NETLIGHT
+    NETLIGHT
+    (clearance_class NETLIGHT)
+    (via_rule NETLIGHT)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "R8_2"
+    "R8_2"
+    (clearance_class "R8_2")
+    (via_rule "R8_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "P_FEEDBACK"
+    "P_FEEDBACK"
+    (clearance_class "P_FEEDBACK")
+    (via_rule "P_FEEDBACK")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "USIM_PRESENCE"
+    "USIM_PRESENCE"
+    (clearance_class "USIM_PRESENCE")
+    (via_rule "USIM_PRESENCE")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CARD1_C3"
+    "CARD1_C3"
+    (clearance_class "CARD1_C3")
+    (via_rule "CARD1_C3")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CARD1_C2"
+    "CARD1_C2"
+    (clearance_class "CARD1_C2")
+    (via_rule "CARD1_C2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CONN_AN1"
+    "CONN_AN1"
+    (clearance_class "CONN_AN1")
+    (via_rule "CONN_AN1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CONN_IN2"
+    "CONN_IN2"
+    (clearance_class "CONN_IN2")
+    (via_rule "CONN_IN2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CONN_IN1"
+    "CONN_IN1"
+    (clearance_class "CONN_IN1")
+    (via_rule "CONN_IN1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "CARD1_C7"
+    "CARD1_C7"
+    (clearance_class "CARD1_C7")
+    (via_rule "CARD1_C7")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_IN_2"
+    "ESP_IN_2"
+    (clearance_class "ESP_IN_2")
+    (via_rule "ESP_IN_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_IN_1"
+    "ESP_IN_1"
+    (clearance_class "ESP_IN_1")
+    (via_rule "ESP_IN_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "LED1_1"
+    "LED1_1"
+    (clearance_class "LED1_1")
+    (via_rule "LED1_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_RI"
+    "BG_RI"
+    (clearance_class "BG_RI")
+    (via_rule "BG_RI")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_RTS"
+    "BG_RTS"
+    (clearance_class "BG_RTS")
+    (via_rule "BG_RTS")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_DCD"
+    "BG_DCD"
+    (clearance_class "BG_DCD")
+    (via_rule "BG_DCD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_RXD"
+    "BG_RXD"
+    (clearance_class "BG_RXD")
+    (via_rule "BG_RXD")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "BG_CTS"
+    "BG_CTS"
+    (clearance_class "BG_CTS")
+    (via_rule "BG_CTS")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q4_3"
+    "Q4_3"
+    (clearance_class "Q4_3")
+    (via_rule "Q4_3")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "ESP_IND"
+    "ESP_IND"
+    (clearance_class "ESP_IND")
+    (via_rule "ESP_IND")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "R20_1"
+    "R20_1"
+    (clearance_class "R20_1")
+    (via_rule "R20_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "R11_1"
+    "R11_1"
+    (clearance_class "R11_1")
+    (via_rule "R11_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "R19_1"
+    "R19_1"
+    (clearance_class "R19_1")
+    (via_rule "R19_1")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q3_2"
+    "Q3_2"
+    (clearance_class "Q3_2")
+    (via_rule "Q3_2")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "Q3_3"
+    "Q3_3"
+    (clearance_class "Q3_3")
+    (via_rule "Q3_3")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "P_OUT"
+    "P_OUT"
+    (clearance_class "P_OUT")
+    (via_rule "P_OUT")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "GNSS-SIG"
+    "GNSS-SIG"
+    (clearance_class "GNSS-SIG")
+    (via_rule "GNSS-SIG")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "GSM-SIG"
+    "GSM-SIG"
+    (clearance_class "GSM-SIG")
+    (via_rule "GSM-SIG")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class "VREF_3.3V"
+    "VREF_3.3V"
+    (clearance_class "VREF_3.3V")
+    (via_rule "VREF_3.3V")
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class ADC0
+    ADC0
+    (clearance_class ADC0)
+    (via_rule ADC0)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class GPIO26
+    GPIO26
+    (clearance_class GPIO26)
+    (via_rule GPIO26)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class ADC1
+    ADC1
+    (clearance_class ADC1)
+    (via_rule ADC1)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+  (class GPIO64
+    GPIO64
+    (clearance_class GPIO64)
+    (via_rule GPIO64)
+    (rule
+      (width 0.6)
+    )
+    (circuit 
+      (use_layer 1 2)
+    )
+  )
+)

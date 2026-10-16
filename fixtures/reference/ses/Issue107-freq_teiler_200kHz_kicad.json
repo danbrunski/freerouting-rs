@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue107-freq_teiler_200kHz_kicad.dsn",
+  "designName": "Issue107-freq_teiler_200kHz_kicad",
+  "unroutedBytes": 7821,
+  "import": {
+    "wiresImported": 373,
+    "viasImported": 0,
+    "errorsEncountered": 0,
+    "routedBytes": 73582
+  }
+}

@@ -1,0 +1,65 @@
+
+(rules PCB Issue433-my-board
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.2)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+  )
+  (rule
+    (width 100.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    "Net-(R1_source_component_2-Pad2)" "Net-(XI_source_component_3-Pad12)" "Net-(XI_source_component_3-Pad15)" "Net-(XI_source_component_3-Pad16)" "Net-(XI_source_component_3-Pad2)" "Net-(XI_source_component_3-Pad3)" "GND_source_net_0" "unconnected-(XI_source_component_3-Pad1)"
+    "unconnected-(XI_source_component_3-Pad10)" "unconnected-(XI_source_component_3-Pad11)" "unconnected-(XI_source_component_3-Pad14)" "unconnected-(XI_source_component_3-Pad17)" "unconnected-(XI_source_component_3-Pad18)" "unconnected-(XI_source_component_3-Pad19)" "unconnected-(XI_source_component_3-Pad21)" "unconnected-(XI_source_component_3-Pad22)"
+    "unconnected-(XI_source_component_3-Pad23)" "unconnected-(XI_source_component_3-Pad24)" "unconnected-(XI_source_component_3-Pad4)" "unconnected-(XI_source_component_3-Pad5)" "unconnected-(XI_source_component_3-Pad6)" "unconnected-(XI_source_component_3-Pad7)" "unconnected-(XI_source_component_3-Pad8)" "unconnected-(XI_source_component_3-Pad9)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 100.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

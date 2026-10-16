@@ -1,0 +1,39 @@
+(session "lock-position"
+  (base_design "lock-position")
+  (placement
+    (resolution um 10)
+    (component conn3
+      (place J1 200000.0 -250000.0 front 0
+       (lock_type position))
+      (place J2 800000.0 -250000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad Allegro)
+      (host_version "8.0.7")
+    )
+    (library_out 
+      (padstack "Via[0-3]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle In1.Cu 6000 0 0)
+        )
+        (shape
+          (circle In2.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

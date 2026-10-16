@@ -1,0 +1,80 @@
+
+(rules PCB Issue690-sonde_xilinx
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "top_copper"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.9)
+    )
+    (layer_rule "bottom_copper"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.5)
+    )
+  )
+  (rule
+    (width 635.0)
+    (clearance 254.0)
+    (clearance 317.5 (type smd_to_turn_gap))
+    (clearance 63.6 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_1651:635_um"
+    (shape
+      (circle "top_copper" 1651.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1651.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1778:635_um"
+    (shape
+      (circle "top_copper" 1778.0 0.0 0.0)
+    )
+    (shape
+      (circle "bottom_copper" 1778.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_1651:635_um" "Via[0-1]_1651:635_um" default
+  )
+  (via 
+    "Via[0-1]_1778:635_um" "Via[0-1]_1778:635_um" default
+  )
+  (viaRule
+    default "Via[0-1]_1651:635_um"
+  )
+  (viaRule
+    default "Via[0-1]_1651:635_um"
+  )
+  (class default
+    GND "/CLK-D1" "/CTRL-D3" "/DONE-SELECT*" "/PWR_3,3-5V" "/TCK-CCLK" "/TD0-DONE" "/TD0-PROG-D4"
+    "/TDI-DIN" "/TDI-DIN-D0" "/TMS-PROG" "/TMS-PROG-D2" "/VCC_SENSE-ERROR*" VCC "Net-(U1B-O)" "Net-(U1A-O)"
+    "unconnected-(J1-Pad1)" "unconnected-(J1-Pad7)" "unconnected-(J1-Pad9)" "Net-(U1D-O)" "Net-(U1C-O)" "Net-(D1-K)" "unconnected-(J1-P23-Pad23)" "unconnected-(J1-P18-Pad18)"
+    "unconnected-(J1-P17-Pad17)" "unconnected-(J1-P16-Pad16)" "unconnected-(J1-P24-Pad24)" "unconnected-(J1-P19-Pad19)" "Net-(J1-Pad11)" "unconnected-(J1-Pad10)" "unconnected-(J1-P22-Pad22)" "unconnected-(J1-P21-Pad21)"
+    "unconnected-(J1-P14-Pad14)" "Net-(U2A-O)" "Net-(U1A-E)" "Net-(U1B-D)" "Net-(U1B-E)" "Net-(U1D-D)" "Net-(U1C-D)" "unconnected-(U2B-O-Pad6)"
+    "unconnected-(U2D-O-Pad11)" "unconnected-(U2C-O-Pad8)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 635.0)
+    )
+    (circuit 
+      (use_layer top_copper bottom_copper)
+    )
+  )
+)

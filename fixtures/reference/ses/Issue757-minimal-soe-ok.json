@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue757-minimal-soe-ok.dsn",
+  "designName": "Issue757-minimal-soe-ok",
+  "unroutedBytes": 502,
+  "import": {
+    "wiresImported": 1,
+    "viasImported": 0,
+    "errorsEncountered": 0,
+    "routedBytes": 670
+  }
+}

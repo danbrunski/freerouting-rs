@@ -1,0 +1,8 @@
+{
+  "fixture": "Issue006-LPC18XX_43XX_SCH.dsn",
+  "load": {
+    "result": "parse_error",
+    "location": "(pcb",
+    "error": "Not a Specctra DSN file: expected '(pcb <name>' header"
+  }
+}

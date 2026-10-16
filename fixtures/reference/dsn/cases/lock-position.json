@@ -1,0 +1,6 @@
+{
+  "fixture": "cases/lock-position.dsn",
+  "result": "written",
+  "designName": "lock-position",
+  "bytes": 2550
+}

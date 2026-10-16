@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue872-single-layer-repro.dsn",
+  "designName": "Issue872-single-layer-repro",
+  "unroutedBytes": 1308,
+  "import": {
+    "wiresImported": 21,
+    "viasImported": 0,
+    "errorsEncountered": 0,
+    "routedBytes": 5055
+  }
+}

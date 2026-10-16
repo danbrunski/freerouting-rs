@@ -1,0 +1,25 @@
+{
+  "fixture": "Issue006-LPC18XX_43XX_SCH.dsn",
+  "scenarios": {
+    "default": {
+      "result": "parse_error",
+      "location": "(pcb",
+      "error": "Not a Specctra DSN file: expected '(pcb <name>' header"
+    },
+    "fixture": {
+      "result": "parse_error",
+      "location": "(pcb",
+      "error": "Not a Specctra DSN file: expected '(pcb <name>' header"
+    },
+    "cli": {
+      "result": "parse_error",
+      "location": "(pcb",
+      "error": "Not a Specctra DSN file: expected '(pcb <name>' header"
+    },
+    "owner-config": {
+      "result": "parse_error",
+      "location": "(pcb",
+      "error": "Not a Specctra DSN file: expected '(pcb <name>' header"
+    }
+  }
+}

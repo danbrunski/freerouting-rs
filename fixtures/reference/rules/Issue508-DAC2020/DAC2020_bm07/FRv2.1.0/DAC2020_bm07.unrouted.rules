@@ -1,0 +1,69 @@
+
+(rules PCB DAC2020_bm07.unrouted
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule Top
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 3.7)
+    )
+    (layer_rule Bottom
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.4)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle Top 600.0 0.0 0.0)
+    )
+    (shape
+      (circle Bottom 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    GND VCC /D2 /TXO /RXI /RST /A5 /A4
+    /A3 /A2 /A1 /A0 /A7 "Net-(C6-Pad1)" /A6 /SCK
+    /MISO /MOSI /D10 /D9 /D8 /D7 /D6 /D5
+    "Net-(U3-Pad8)" "Net-(U3-Pad7)" /D4 /D3 "Net-(D1-PadA)" /DTR "Net-(J1-PadCTS)" "Net-(F1-Pad1)"
+    /OUT1 "Net-(IC1-Pad10)" /OUT2 /OUT4 "Net-(IC1-Pad9)" /OUT3 "Net-(IC1-Pad11)" "Net-(IC1-Pad12)"
+    /GO "Net-(IC1-Pad13)" "Net-(J2-Pad5)" "Net-(J2-Pad4)" "Net-(J2-Pad3)" "Net-(J2-Pad2)" "Net-(J2-Pad1)" "Net-(J4-Pad1)"
+    "Net-(J4-Pad3)" "Net-(J4-Pad2)" "Net-(D2-PadA)" "Net-(D3-PadA)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer Top Bottom)
+    )
+  )
+)

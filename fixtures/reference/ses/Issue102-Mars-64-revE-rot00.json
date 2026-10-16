@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue102-Mars-64-revE-rot00.dsn",
+  "designName": "Issue102-Mars-64-revE-rot00",
+  "unroutedBytes": 13559,
+  "import": {
+    "wiresImported": 364,
+    "viasImported": 153,
+    "errorsEncountered": 0,
+    "routedBytes": 98227
+  }
+}

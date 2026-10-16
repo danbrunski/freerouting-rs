@@ -1,0 +1,71 @@
+
+(rules PCB Issue297-myboard
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.6)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clearance 200.0)
+    (clearance 100.0 (type smd_to_turn_gap))
+    (clearance 50.0 (type smd))
+    (clearance 250.0 (type "board_edge"))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (viaRule
+    default "Via[0-1]_600:300_um"
+  )
+  (class default
+    VCC "unconnected-(Q3-D1{slash}D2-Pad2)" "unconnected-(Q3-D1{slash}D2-Pad5)" "Net-(Q3-G2)" "Net-(U3-VM)" "NFC_SCL" "NFC_SDA" /LA
+    "NFC_FD" "unconnected-(U1-EP-Pad9)" "unconnected-(U3-TD-Pad4)" PD2 "Net-(JP1-A)" "Net-(JP2-A)" INT1 "Net-(U3-VCC)"
+    PC0 VDD "Net-(D4-C)" "Net-(U4-FB)" /LB "Net-(D4-A)" INT2 "Net-(Q3-G1)"
+    DPU "D-" "Net-(D2-A)" "Net-(D3-A)" "Net-(U4-SW)" "Net-(LED2-A)" +5V PC7
+    PC5 PA1 PD6 PC4 PA2 D+ PC6 PD7
+    "Net-(LED4-K)" PC3 PC2 "Net-(Q1-C)" "Net-(LED4-A)" "Net-(LED3-A)" "Net-(U2-FB)" "Net-(U2-SW)"
+    "Net-(L1-Pad1)" "Net-(U5-A)" "Net-(U8-+)" "Net-(D6-A)" "Net-(LED1-DO)" "Net-(U10-ANT{slash}NC)" "unconnected-(U10-NC-Pad7)" "unconnected-(U10-NC-Pad10)"
+    "unconnected-(U10-NC-Pad11)" "Net-(LED1-BO)" "unconnected-(LED5-DO-Pad3)" "unconnected-(LED5-BO-Pad1)" "unconnected-(LED5-VCC-Pad2)" "Net-(U4-PG)" "Net-(D5-C)" "Net-(U12-CC2)"
+    "Net-(U12-CC1)" "unconnected-(U12-SBU1-PadA8)" "unconnected-(U12-SBU2-PadB8)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)

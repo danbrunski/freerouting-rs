@@ -1,0 +1,607 @@
+
+(rules PCB Issue721-Autorouter_CE2632_HarryMu_2026-6-15
+  (snapAngle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    
+    (layer_rule "1"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 3.4)
+    )
+    (layer_rule "2"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+    (layer_rule "15"
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.6)
+    )
+    (layer_rule "16"
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.8)
+      (against_preferred_direction_trace_costs 2.4)
+    )
+  )
+  (rule
+    (width 1.01)
+    (clearance 0.41)
+    (clearance 0.505 (type smd_to_turn_gap))
+    (clearance 0.41 (type smd))
+    (clearance 0.4 (type GND))
+    (clearance 0.4 (type VCC))
+    (clearance 0.4 (type $2N1836))
+    (clearance 0.4 (type ED13))
+    (clearance 0.4 (type ED12))
+    (clearance 0.4 (type ED11))
+    (clearance 0.4 (type ED10))
+    (clearance 0.4 (type ED5/LED))
+    (clearance 0.4 (type I2CSEL))
+    (clearance 0.4 (type ED2))
+    (clearance 0.4 (type #WLRXD))
+    (clearance 0.4 (type #WLTXD))
+    (clearance 0.4 (type SCL))
+    (clearance 0.4 (type SDA))
+    (clearance 0.4 (type EA3/~WLSET))
+    (clearance 0.4 (type EA2))
+    (clearance 0.4 (type EA1))
+    (clearance 0.4 (type EA0))
+    (clearance 0.4 (type "3V3"))
+    (clearance 0.4 (type $3N1206))
+    (clearance 0.4 (type $3N1211))
+    (clearance 0.4 (type SCL2))
+    (clearance 0.4 (type SDA2))
+    (clearance 0.4 (type SDA1))
+    (clearance 0.4 (type SCL1))
+    (clearance 0.4 (type $1N2662))
+    (clearance 0.4 (type +24))
+    (clearance 0.4 (type $1N2915))
+    (clearance 0.4 (type $1N2919))
+    (clearance 0.4 (type ''))
+    (clearance 0.4 (type $1N6203))
+    (clearance 4.5 (type "board_edge"))
+  )
+  (padstack via0
+    (shape
+      (circle "1" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "2" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "15" 2.4 0.0 0.0)
+    )
+    (shape
+      (circle "16" 2.4 0.0 0.0)
+    )
+  )
+  (via 
+    via0 via0 default
+  )
+  (via 
+    "via0-GND" via0 GND
+  )
+  (via 
+    "via0-VCC" via0 VCC
+  )
+  (via 
+    "via0-$2N1836" via0 $2N1836
+  )
+  (via 
+    "via0-ED13" via0 ED13
+  )
+  (via 
+    "via0-ED12" via0 ED12
+  )
+  (via 
+    "via0-ED11" via0 ED11
+  )
+  (via 
+    "via0-ED10" via0 ED10
+  )
+  (via 
+    "via0-ED5/LED" via0 ED5/LED
+  )
+  (via 
+    "via0-I2CSEL" via0 I2CSEL
+  )
+  (via 
+    "via0-ED2" via0 ED2
+  )
+  (via 
+    "via0-#WLRXD" via0 #WLRXD
+  )
+  (via 
+    "via0-#WLTXD" via0 #WLTXD
+  )
+  (via 
+    "via0-SCL" via0 SCL
+  )
+  (via 
+    "via0-SDA" via0 SDA
+  )
+  (via 
+    "via0-EA3/~WLSET" via0 EA3/~WLSET
+  )
+  (via 
+    "via0-EA2" via0 EA2
+  )
+  (via 
+    "via0-EA1" via0 EA1
+  )
+  (via 
+    "via0-EA0" via0 EA0
+  )
+  (via 
+    "via0-3V3" via0 "3V3"
+  )
+  (via 
+    "via0-$3N1206" via0 $3N1206
+  )
+  (via 
+    "via0-$3N1211" via0 $3N1211
+  )
+  (via 
+    "via0-SCL2" via0 SCL2
+  )
+  (via 
+    "via0-SDA2" via0 SDA2
+  )
+  (via 
+    "via0-SDA1" via0 SDA1
+  )
+  (via 
+    "via0-SCL1" via0 SCL1
+  )
+  (via 
+    "via0-$1N2662" via0 $1N2662
+  )
+  (via 
+    "via0-+24" via0 +24
+  )
+  (via 
+    "via0-$1N2915" via0 $1N2915
+  )
+  (via 
+    "via0-$1N2919" via0 $1N2919
+  )
+  (via 
+    "via0-''" via0 ''
+  )
+  (via 
+    "via0-$1N6203" via0 $1N6203
+  )
+  (viaRule
+    default via0
+  )
+  (viaRule
+    GND "via0-GND"
+  )
+  (viaRule
+    VCC "via0-VCC"
+  )
+  (viaRule
+    $2N1836 "via0-$2N1836"
+  )
+  (viaRule
+    ED13 "via0-ED13"
+  )
+  (viaRule
+    ED12 "via0-ED12"
+  )
+  (viaRule
+    ED11 "via0-ED11"
+  )
+  (viaRule
+    ED10 "via0-ED10"
+  )
+  (viaRule
+    ED5/LED "via0-ED5/LED"
+  )
+  (viaRule
+    I2CSEL "via0-I2CSEL"
+  )
+  (viaRule
+    ED2 "via0-ED2"
+  )
+  (viaRule
+    #WLRXD "via0-#WLRXD"
+  )
+  (viaRule
+    #WLTXD "via0-#WLTXD"
+  )
+  (viaRule
+    SCL "via0-SCL"
+  )
+  (viaRule
+    SDA "via0-SDA"
+  )
+  (viaRule
+    EA3/~WLSET "via0-EA3/~WLSET"
+  )
+  (viaRule
+    EA2 "via0-EA2"
+  )
+  (viaRule
+    EA1 "via0-EA1"
+  )
+  (viaRule
+    EA0 "via0-EA0"
+  )
+  (viaRule
+    "3V3" "via0-3V3"
+  )
+  (viaRule
+    $3N1206 "via0-$3N1206"
+  )
+  (viaRule
+    $3N1211 "via0-$3N1211"
+  )
+  (viaRule
+    SCL2 "via0-SCL2"
+  )
+  (viaRule
+    SDA2 "via0-SDA2"
+  )
+  (viaRule
+    SDA1 "via0-SDA1"
+  )
+  (viaRule
+    SCL1 "via0-SCL1"
+  )
+  (viaRule
+    $1N2662 "via0-$1N2662"
+  )
+  (viaRule
+    +24 "via0-+24"
+  )
+  (viaRule
+    $1N2915 "via0-$1N2915"
+  )
+  (viaRule
+    $1N2919 "via0-$1N2919"
+  )
+  (viaRule
+    '' "via0-''"
+  )
+  (viaRule
+    $1N6203 "via0-$1N6203"
+  )
+  (class default
+    GND "3V3" VCC #WLRXD #WLTXD $3N1206 $3N1211 $1N2662
+    $1N2919 $1N2915 $2N1836 EA0 EA1 EA2 EA3/~WLSET ED10
+    ED12 ED13 ED2 ED5/LED I2CSEL SCL SCL1 SCL2
+    SDA SDA1 SDA2 ED11 $1N6203 +24
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 1.01)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class GND
+    (clearance_class GND)
+    (via_rule GND)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class VCC
+    (clearance_class VCC)
+    (via_rule VCC)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $2N1836
+    (clearance_class $2N1836)
+    (via_rule $2N1836)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ED13
+    (clearance_class ED13)
+    (via_rule ED13)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ED12
+    (clearance_class ED12)
+    (via_rule ED12)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ED11
+    (clearance_class ED11)
+    (via_rule ED11)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ED10
+    (clearance_class ED10)
+    (via_rule ED10)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ED5/LED
+    (clearance_class ED5/LED)
+    (via_rule ED5/LED)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class I2CSEL
+    (clearance_class I2CSEL)
+    (via_rule I2CSEL)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ED2
+    (clearance_class ED2)
+    (via_rule ED2)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class #WLRXD
+    (clearance_class #WLRXD)
+    (via_rule #WLRXD)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class #WLTXD
+    (clearance_class #WLTXD)
+    (via_rule #WLTXD)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class SCL
+    (clearance_class SCL)
+    (via_rule SCL)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class SDA
+    (clearance_class SDA)
+    (via_rule SDA)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class EA3/~WLSET
+    (clearance_class EA3/~WLSET)
+    (via_rule EA3/~WLSET)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class EA2
+    (clearance_class EA2)
+    (via_rule EA2)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class EA1
+    (clearance_class EA1)
+    (via_rule EA1)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class EA0
+    (clearance_class EA0)
+    (via_rule EA0)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class "3V3"
+    (clearance_class "3V3")
+    (via_rule "3V3")
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $3N1206
+    (clearance_class $3N1206)
+    (via_rule $3N1206)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $3N1211
+    (clearance_class $3N1211)
+    (via_rule $3N1211)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class SCL2
+    (clearance_class SCL2)
+    (via_rule SCL2)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class SDA2
+    (clearance_class SDA2)
+    (via_rule SDA2)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class SDA1
+    (clearance_class SDA1)
+    (via_rule SDA1)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class SCL1
+    (clearance_class SCL1)
+    (via_rule SCL1)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2662
+    (clearance_class $1N2662)
+    (via_rule $1N2662)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class +24
+    (clearance_class +24)
+    (via_rule +24)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2915
+    (clearance_class $1N2915)
+    (via_rule $1N2915)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N2919
+    (clearance_class $1N2919)
+    (via_rule $1N2919)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class ''
+    (clearance_class '')
+    (via_rule '')
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+  (class $1N6203
+    (clearance_class $1N6203)
+    (via_rule $1N6203)
+    (rule
+      (width 1.0)
+    )
+    (circuit 
+      (use_layer 1 2 15 16)
+    )
+  )
+)

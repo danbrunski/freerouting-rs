@@ -1,0 +1,11 @@
+{
+  "fixture": "Issue143-rpi_splitter.dsn",
+  "designName": "Issue143-rpi_splitter",
+  "unroutedBytes": 816,
+  "import": {
+    "wiresImported": 16,
+    "viasImported": 4,
+    "errorsEncountered": 0,
+    "routedBytes": 3986
+  }
+}

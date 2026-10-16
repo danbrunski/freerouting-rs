@@ -1,0 +1,112 @@
+(session "Issue110-Pajalnaja_stancija"
+  (base_design "Issue110-Pajalnaja_stancija")
+  (placement
+    (resolution um 10)
+    (component "Capacitors_ThroughHole:C_Disc_D3_P2.5"
+      (place C1 965200.0 -990600.0 front 0)
+      (place C2 1676400.0 -1549400.0 front 0)
+      (place C3 850900.0 -838200.0 front 0)
+      (place C4 1130300.0 -1549400.0 front 0)
+      (place C5 1739900.0 -1549400.0 front 0)
+      (place C7 965200.0 -1054100.0 front 0)
+    )
+    (component Discret:CP36V
+      (place C6 1790700.0 -1054100.0 front 0)
+      (place C8 1206500.0 -1054100.0 front 0)
+      (place C9 698500.0 -622300.0 front 0)
+    )
+    (component "Diodes_ThroughHole:Diode_DO-41_SOD81_Horizontal_RM10"
+      (place D1 1765300.0 -723900.0 front 0)
+      (place D2 1905000.0 -736600.0 front 0)
+      (place D3 1905000.0 -660400.0 front 0)
+      (place D4 1054100.0 -698500.0 front 0)
+    )
+    (component "Housings_DIP:DIP-6_W7.62mm"
+      (place IC1 1600200.0 -774700.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_1x02"
+      (place JP1 1612900.0 -1549400.0 front 0)
+      (place P1 1917700.0 -800100.0 front 0)
+      (place P3 711200.0 -838200.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_1x03"
+      (place JP2 1308100.0 -1371600.0 front 0)
+      (place JP3 1308100.0 -1270000.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_1x08"
+      (place P2 1422400.0 -685800.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_1x05"
+      (place P4 1346200.0 -736600.0 front 0)
+    )
+    (component "Resistors_ThroughHole:Resistor_Horizontal_RM10mm"
+      (place R1 1663700.0 -1397000.0 front 0)
+      (place R2 1739900.0 -1270000.0 front 0)
+      (place R3 1524000.0 -1409700.0 front 0)
+      (place R4 1193800.0 -1308100.0 front 0)
+      (place R5 1295400.0 -635000.0 front 0)
+      (place R6 1778000.0 -647700.0 front 0)
+      (place R7 1054100.0 -1346200.0 front 0)
+      (place R8 1524000.0 -1485900.0 front 0)
+      (place R9 965200.0 -838200.0 front 0)
+      (place R10 1054100.0 -1270000.0 front 0)
+      (place R11 1384300.0 -1549400.0 front 0)
+      (place R12 1193800.0 -1384300.0 front 0)
+      (place R13 1244600.0 -1473200.0 front 0)
+      (place R14 1104900.0 -1473200.0 front 0)
+      (place R15 1016000.0 -762000.0 front 0)
+      (place R16 1384300.0 -1473200.0 front 0)
+      (place R17 1104900.0 -838200.0 front 0)
+      (place R18 1244600.0 -1549400.0 front 0)
+      (place R19 1524000.0 -1562100.0 front 0)
+      (place R20 965200.0 -685800.0 front 0)
+      (place R21 939800.0 -914400.0 front 0)
+      (place R22 1663700.0 -1473200.0 front 0)
+    )
+    (component "Potentiometers:Potentiometer_VishaySpectrol-Econtrim-Type36X"
+      (place RV1 1104900.0 -774700.0 front 0)
+      (place RV2 1828800.0 -812800.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_1x04"
+      (place S1 1612900.0 -1270000.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_1x07"
+      (place S2 1384300.0 -1270000.0 front 0)
+    )
+    (component "Pin_Headers:Pin_Header_Straight_2x17"
+      (place U1 1498600.0 -952500.0 front 0)
+    )
+    (component "Housings_DIP:DIP-8_W7.62mm_LongPads"
+      (place U2 1485900.0 -774700.0 front 0)
+    )
+    (component "TO_SOT_Packages_THT:TO-220_Neutral123_Vertical_LargePads"
+      (place U3 1752600.0 -812800.0 front 0)
+      (place U4 1231900.0 -723900.0 front 0)
+      (place U5 1651000.0 -673100.0 front 0)
+      (place VT1 1536700.0 -673100.0 front 0)
+      (place VT2 1231900.0 -825500.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "4.0.1-2.201512121406+6195~38~ubuntu14.04.1-stable")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:400_um"
+        (shape
+          (circle "Верхний_сигнальный" 6000 0 0)
+        )
+        (shape
+          (circle "Нижний_сигнальный" 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)

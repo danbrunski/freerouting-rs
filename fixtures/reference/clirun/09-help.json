@@ -1,0 +1,10 @@
+{
+  "id": "09-help",
+  "args": ["-help"],
+  "exitCode": 0,
+  "files": [],
+  "texts": {},
+  "stageLines": [],
+  "logLines": ["WARN   GUI is disabled and you don't have a console available, so the only feedback from Freerouting is in the log."],
+  "plainOutput": ["USAGE", "  freerouting [PARAMETERS]", "PARAMETERS", "  -de <design.dsn>", "      Load the Specctra .dsn file", "  -di <design_directory>", "      Set the default folder used by open-design dialogs", "  -dr <design_rules_file>", "      Read routing rules from a .rules file", "  -do <output_file>", "      Save the board (.dsn), session (.ses), or", "      Autodesk Fusion script (.scr) at the end", "  -mp <number_of_passes>", "      Set the maximum number of auto-routing passes to perform", "  -l  <language>", "      \"en\" for English, \"de\" for German, or \"zh\" for Simplified Chinese; otherwise, use the system default. English is used by default for unsupported languages.", "  -mt <number_of_threads>", "      Set the thread-pool size for route optimization. The default is", "      one fewer than the number of logical processors in the system.", "  -is <selection_strategy>", "      Sequential or prioritized. Set the item-selection strategy for", "      route optimization. The default is sequential.", "  -h Display this help"]
+}
