@@ -21,8 +21,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:  # as part of the plugin package
+    from . import version
+except ImportError:  # top-level import, as the tests do
+    import version
+
 HERE = Path(__file__).resolve().parent
 SETTINGS_FILE = HERE / "settings.json"
+BOARD_SETTINGS_FILE = "plugin.json"
+PLUGIN_LOG = "plugin.log"
 
 ROUTER = "freerouting"
 VIEWER = "freerouting-gui"
@@ -39,6 +46,31 @@ def load_settings():
             return json.load(f)
     except (OSError, ValueError):
         return {}
+
+
+def load_board_settings(work_dir):
+    """Per-board plugin settings from `<work_dir>/plugin.json` ({} if absent)."""
+    try:
+        with open(Path(work_dir) / BOARD_SETTINGS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_board_settings(work_dir, settings):
+    work_dir = Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    with open(work_dir / BOARD_SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2)
+
+
+def log_line(work_dir, text):
+    """Appends one line to `<work_dir>/plugin.log`."""
+    work_dir = Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    with open(work_dir / PLUGIN_LOG, "a", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n")
 
 
 def windows_to_wsl_path(path):
@@ -128,6 +160,35 @@ def finish_route(tool, proc):
     if tool.via_wsl and "\x00" in out:
         out = raw.decode("utf-16-le", errors="replace")
     return proc.returncode, out.strip()
+
+
+def query_version(tool, timeout=10):
+    """Runs `<tool> --version` and returns the parsed version (see
+    `version.parse_router_version`), or None when the executable fails, times
+    out, cannot be started, or prints something else."""
+    try:
+        proc = subprocess.Popen(
+            tool.command(["--version"]),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            creationflags=NO_WINDOW,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    try:
+        raw, _ = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # Don't communicate() again after the kill: a grandchild (a wrapper
+        # script's child) can keep the pipe open.
+        proc.kill()
+        proc.wait()
+        if proc.stdout:
+            proc.stdout.close()
+        return None
+    if proc.returncode != 0:
+        return None
+    return version.parse_router_version(raw.decode("utf-8", errors="replace"))
 
 
 def open_viewer(tool, dsn, ses=None):

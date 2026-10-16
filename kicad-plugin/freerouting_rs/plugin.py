@@ -13,7 +13,7 @@ from pathlib import Path
 import pcbnew
 import wx
 
-from . import tools
+from . import kicad_areas, rule_areas, tools, version
 
 TITLE = "freerouting-rs"
 
@@ -39,6 +39,24 @@ def import_ses(board, ses):
     return bool(ok)
 
 
+def fix_rule_areas(board, dsn, work_dir):
+    """Rewrites the rule-area keepouts in the exported DSN (see rule_areas).
+    pcbnew is read here, on the UI thread. Returns the log lines; a failure is
+    logged and leaves the DSN as KiCad wrote it."""
+    try:
+        areas = kicad_areas.collect(board, pcbnew)
+        text = dsn.read_text(encoding="utf-8", newline="")
+        new_text, lines = rule_areas.rewrite(text, areas)
+        if new_text != text:
+            dsn.write_text(new_text, encoding="utf-8", newline="")
+    except Exception as e:  # never block routing on the fix-up
+        lines = [f"WARNING: rule-area fix-up skipped: {e!r}"]
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    for line in lines or ["no rule areas on the board"]:
+        tools.log_line(work_dir, f"{stamp} {dsn.name}: {line}")
+    return lines
+
+
 class Dialog(wx.Dialog):
     def __init__(self, parent, board):
         super().__init__(parent, title=TITLE, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
@@ -53,11 +71,21 @@ class Dialog(wx.Dialog):
         def found(tool):
             return tool.describe() if tool else "not found"
 
+        # Runs `freerouting --version` (up to 10 s) before the dialog shows.
+        self.router_version = tools.query_version(self.router) if self.router else None
+        if self.router:
+            self.version_status, self.version_message = version.check(self.router_version)
+        else:
+            self.version_status, self.version_message = version.UNKNOWN, ""
+        router_ver = version.format_router_version(self.router_version)
+        notice = f"\n{self.version_message}" if self.version_status != version.OK and self.router else ""
+
         info = wx.StaticText(
             self,
             label=(
                 f"Board files: {self.work_dir}\n"
                 f"Router: {found(self.router)}\n"
+                f"Router version: {router_ver}    Plugin version: {version.__version__}{notice}\n"
                 f"Viewer: {found(self.viewer)}\n\n"
                 "freerouting-rs does not route yet: Route will report that until\n"
                 "the autorouter is ported. Viewing and SES import work today."
@@ -67,7 +95,10 @@ class Dialog(wx.Dialog):
         view = wx.Button(self, label="Open in viewer")
         imp = wx.Button(self, label="Import SES...")
         close = wx.Button(self, wx.ID_CANCEL, "Close")
-        route.Enable(self.router is not None)
+        route.Enable(self.router is not None and self.version_status != version.MISMATCH)
+        self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
+        self.fix_areas.SetValue(tools.load_board_settings(self.work_dir).get("fix_rule_areas", True))
+        self.fix_areas.Bind(wx.EVT_CHECKBOX, self.on_fix_areas)
         view.Enable(self.viewer is not None)
         route.Bind(wx.EVT_BUTTON, self.on_route)
         view.Bind(wx.EVT_BUTTON, self.on_view)
@@ -80,6 +111,7 @@ class Dialog(wx.Dialog):
         buttons.Add(close)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(info, 1, wx.ALL | wx.EXPAND, 12)
+        sizer.Add(self.fix_areas, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
         self.CentreOnParent()
@@ -87,8 +119,15 @@ class Dialog(wx.Dialog):
     def error(self, msg):
         wx.MessageBox(msg, TITLE, wx.OK | wx.ICON_ERROR, self)
 
+    def on_fix_areas(self, _evt):
+        settings = tools.load_board_settings(self.work_dir)
+        settings["fix_rule_areas"] = self.fix_areas.GetValue()
+        tools.save_board_settings(self.work_dir, settings)
+
     def export(self):
         if export_dsn(self.board, self.dsn):
+            if self.fix_areas.GetValue():
+                fix_rule_areas(self.board, self.dsn, self.work_dir)
             return True
         self.error(f"KiCad could not export the board to\n{self.dsn}")
         return False

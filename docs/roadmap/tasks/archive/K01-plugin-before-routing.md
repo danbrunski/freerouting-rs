@@ -82,7 +82,7 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
 
 ## Checklist
 
-- [ ] **K01.1 — A headless test suite.**
+- [~] **K01.1 — A headless test suite.**
   - `test_tools.py`: lookup order (each source wins over the later ones,
     using temp dirs and a fake executable in `tests/fake_bin/`), WSL path
     translation (`C:\Users\me\b.dsn` → `/mnt/c/Users/me/b.dsn`, a UNC path
@@ -94,7 +94,18 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
     pcbnew or wx installed; the CI job is green on both OSes (partial with
     "needs F01.2" until the workflow exists).
 
-- [ ] **K01.2 — Rule-area fix-up of the exported DSN (owner lesson).**
+  *Partial 2026-10-15:* the suite exists and passes: `python3 -m pytest kicad-plugin/tests`
+  (pytest 9.1.1 in a scratchpad venv, no pcbnew or wx installed) gives 54 passed, 0 skipped
+  (the 54 include the other K01 items; `test_tools.py` has 16). It covers the lookup order (settings
+  `bin_dir` > `FREEROUTING_RS_BIN` > PATH > `~/.cargo/bin`, then WSL on Windows only, each source
+  removed in turn), `windows_to_wsl_path` (`C:\Users\me\b.dsn`, a UNC path raises `ValueError`),
+  `Tool.command` native and WSL, UTF-16 `wsl.exe` output in `finish_route`, and a
+  `start_route`/`finish_route` round trip through `tests/fake_bin/fake_freerouting.py`.
+  Remainder: the CI job. CI disabled by Dan 2026-10-15; job prepared in
+  `docs/development/ci-workflow.yml` (owner: F01.2; the orchestrator appends the plugin-test job, whose YAML is in the K01 report).
+  The Linux and Windows runs of the suite are unverified (only run on Linux/WSL here).
+
+- [~] **K01.2 — Rule-area fix-up of the exported DSN (owner lesson).**
   - First, a headless probe in KiCad's Python (Windows 10.0.5:
     `/mnt/c/Program Files/KiCad/10.0/bin/python.exe`; or WSL 10.0.7: system
     `python3`, which imports `pcbnew`), never importing `freerouting_rs`, on
@@ -132,7 +143,32 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
       and no longer under `keepout`; every other line is unchanged (a diff
       of the two texts shows only that scope).
 
-- [ ] **K01.3 — Version handshake.**
+  *Partial 2026-10-15:* implemented and tested headless; nothing has run inside KiCad.
+  - Probe (KiCad 10.0.7 in WSL, `pcbnew.LoadBoard` on a copy of `canary-pwr.kicad_pcb`, package
+    never imported): one rule area, "Fan inlet keep-out (ASSUMED position - verify on the Pi)", B.Cu,
+    tracks/vias/pour False, pads/footprints True, outline (136.5, 53)-(162.5, 79) mm, not
+    footprint-owned. `dir(zone)` has `GetDoNotAllowTracks/Vias/Pads/Footprints/ZoneFills`, and no
+    `GetDoNotAllowCopperPour` (`hasattr` False). Details in `kicad-plugin.md`. Windows 10.0.5 not probed.
+  - `rule_areas.py` (`rewrite`, quote-aware scanner with source spans), `kicad_areas.py` (`collect(board,
+    pcbnew)`, pcbnew passed in), `plugin.py` (`fix_rule_areas` after the export, checkbox saved in
+    `freerouting-rs/plugin.json`, log lines in `plugin.log`).
+  - `test_rule_areas.py` (13 tests) passes: `test_five_board_level_areas` (kept, kept, kept + one
+    warning, one `place_keepout`, last removed, diff shows only those lines);
+    `test_avionics_hub_wire_keepout_byte_identical_with_warning` (`fixtures/Issue754-avionics_hub.dsn`
+    unchanged, "blocks vias too"); `test_image_keepouts_are_never_changed`;
+    `test_canary_fan_inlet_in_committed_kicad_export` (the committed plain KiCad export
+    `fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn`: only the fan scope differs, 1 line
+    in, 1 line out); `test_canary_pwr_fresh_kicad_export` (a fresh 10.0.7 export of a copy, made by
+    `tests/kicad_dump.py`, DSN kept in `tmp_path`: ran, not skipped; the
+    `136500 -53000 ... 136500 -79000` polygon is under `place_keepout`, all other lines equal).
+    Also `test_kicad_areas.py` (3, fake pcbnew: nm to um with Y negated, KiCad 9 pour name fallback,
+    footprint-owned reference).
+  - A real bug found by the fresh export: `(string_quote ")` made a naive scanner treat the quote as a
+    string start; handled, and the committed export covers it.
+  Remainder: the rule-area log naming the fan inlet in the editor on `canary-pwr` (needs Dan, K01.6);
+  the Windows KiCad 10.0.5 probe (K02 or Dan).
+
+- [~] **K01.3 — Version handshake.**
   - `version.py`: `__version__` equal to the workspace version in
     `Cargo.toml` (R01.1's gate keeps them equal).
   - `tools.query_version(tool, timeout=10)` runs `freerouting --version`
@@ -148,7 +184,16 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
     timeout ("unknown"). The real check against C08's binary is added to the
     done note when C08 lands.
 
-- [ ] **K01.4 — UI-thread and shadow-install guards.**
+  *Partial 2026-10-15:* `version.py` (`__version__` = 0.1.0, `check`), `tools.query_version(tool,
+  timeout=10)`, and the dialog shows "Router version" and "Plugin version" and disables Route on a
+  mismatch (the dialog is unrun: needs KiCad). `test_version.py` (11 tests) passes with fake
+  executables: `freerouting 0.1.0 (abc1234)` accepted; `0.2.0` refused, message contains both
+  `0.2.0 (abc1234)` and `0.1.0` and the fix; garbage and exit 3 give "unknown" (allowed with a
+  warning); a sleeper hits the timeout (0.5 s) and gives "unknown"; `__version__` equals the
+  `Cargo.toml` workspace version (test reads it). Remainder: the real check against C08's binary
+  (add to this note when C08 lands), and the dialog inside KiCad (K01.6, Dan).
+
+- [x] **K01.4 — UI-thread and shadow-install guards.**
   - `test_threads.py`: parses `plugin.py` with `ast`, finds every function
     passed as `threading.Thread(target=…)` (including lambdas), follows the
     calls it makes inside the package, and fails if any reaches
@@ -167,7 +212,19 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
       with our identifier is moved and reported; the Java plugin's folder
       is left untouched (checksums before and after).
 
-- [ ] **K01.5 — SWIG, IPC and KiCad version notes.**
+  *Done 2026-10-15:* `test_threads.py` (4 tests) passes on the real `plugin.py` (finds 1 worker, the
+  lambda calling `tools.finish_route`); negative controls fail as they should:
+  `test_negative_control_lambda_worker_calling_pcbnew` (planted `pcbnew.Refresh()`, reported) and
+  `test_negative_control_reaches_through_helpers_and_tools` (`self.helper()` -> `tools.sneaky()` ->
+  `wx.Yield()`, reported); `wx.CallAfter` is allowed. `install.py` gained shadow detection
+  (`find_shadow_installs`, `disable_shadow`, `--keep-pcm`); `test_install.py` (7 tests) on a fake
+  KiCad tree: a 3rdparty copy with our identifier is moved to `disabled_pcm_plugins/10.0/` and
+  printed, the Java plugin folder's tree checksum is equal before and after (also when only the
+  Java identifier is present, and under our folder name), `--keep-pcm` refuses and changes nothing,
+  name collisions get a suffix, reinstalling over our own folder is not a shadow.
+  `OUR_IDENTIFIERS` is a placeholder until K03 fixes the PCM identifier.
+
+- [x] **K01.5 — SWIG, IPC and KiCad version notes.**
   - Add a section to `kicad-plugin.md`:
     - whether KiCad master removed SWIG and the Python bindings (KRT's
       `py_router/swig_compat.py` docstring says 2026-03, commit
@@ -180,7 +237,15 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
   - **Accept:** the section exists; each claim is marked verified (with a
     URL or a probe result) or unverified.
 
-- [ ] **K01.6 — Dan confirms the plugin in KiCad.** *Manual, Dan.*
+  *Done 2026-10-15:* section "SWIG, IPC API and KiCad versions (K01.5)" in `kicad-plugin.md`.
+  Verified on KiCad's GitLab: SWIG removal is commit `65a442b1` (2026-03-22, master only);
+  Specctra export/import exist in the IPC protos on master (`RunBoardJobExportSpecctraDsn`,
+  `ImportSpecctraSession`, both "Since: 11.0"), not in the `10.0` branch, and not wrapped by
+  `kipy` 0.8.0; the pour accessor is `GetDoNotAllowCopperPour` on 9.0 and `GetDoNotAllowZoneFills`
+  on 10.0/master (source) and on 10.0.7 (probe), with a `getattr` fallback in `kicad_areas`.
+  Unverified items are marked in the section.
+
+- [~] **K01.6 — Dan confirms the plugin in KiCad.** *Manual, Dan.*
   - After the orchestrator reinstalls the plugin on Windows
     (`install.py --bin-dir target\release`, then Tools > External Plugins >
     Refresh Plugins; never restarting KiCad), Dan checks: the toolbar
@@ -189,3 +254,7 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
   - **Accept:** Dan's confirmation, with the date and what he saw, in
     `kicad-plugin.md` "Verified". Until then the item is partial with
     "needs Dan".
+
+  *Partial 2026-10-15:* needs Dan (owner: K02, after the orchestrator reinstalls). Prepared: the steps and what to look for are in
+  `kicad-plugin.md` "What's left"; nothing was reinstalled or run in KiCad.
+

@@ -13,7 +13,7 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [K01](K01-plugin-before-routing.md) | Headless plugin tests, the rule-area DSN fix-up (the `canary-pwr` fan inlet), version handshake, UI-thread and shadow-install guards, the SWIG/IPC note, Dan's confirmation in KiCad | M / low | none |
+| [K01](archive/K01-plugin-before-routing.md) ✅ | Headless plugin tests, the rule-area DSN fix-up (the `canary-pwr` fan inlet), version handshake, UI-thread and shadow-install guards, the SWIG/IPC note, Dan's confirmation in KiCad | M / low | none |
 | [K02](K02-plugin-routing.md) | Route options persisted per board, live progress, Stop vs Abort, result summary, "Route in GUI", non-ASCII round trip, five demo boards routed and graded by KiCad | M / medium | A13, C05, C07, C08 (the CLI routes); F02.6; G08.4 for K02.5 |
 | [K03](K03-pcm-package.md) | One cross-platform PCM zip with a binary resolver, validated metadata, install from file on all three OSes | S / medium | K01, R01 |
 | [K04](K04-kicad-pcb-syntax.md) | `crates/freerouting-kicad`: s-expression lexer and tree, version gates, net-dialect detection, the test corpus | M / low | none |

@@ -40,3 +40,11 @@ python kicad-plugin/install.py --wsl-bin-dir /home/me/freerouting-rs/target/rele
 
 In the PCB editor, Tools > External Plugins > Refresh Plugins loads the plugin (or a
 reinstalled one) without restarting KiCad.
+
+## Tests
+
+```
+python3 -m pytest kicad-plugin/tests
+```
+
+No KiCad needed (plain Python 3 and pytest; `pcbnew` and `wx` are never imported).
