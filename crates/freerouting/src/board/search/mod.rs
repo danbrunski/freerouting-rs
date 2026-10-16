@@ -216,6 +216,28 @@ impl ShapeSearchTree {
         }
     }
 
+    /// Moves room `old` to the unused key below every room key in this
+    /// tree, in place: its leaf stays where it is (the tree's shape is
+    /// unchanged, D5) and only its key changes. Returns the new key, or
+    /// `None` if there is no room `old`.
+    ///
+    /// For rooms a failed connection leaves in the tree (A06.5): Java's
+    /// `autorouteConnection` returns before `clear()` when the search
+    /// cannot be initialised, so its rooms stay in the tree, and a later
+    /// connection's engine counts its room ids from 1 again. Java then has
+    /// two rooms with one id; this tree keys rooms by id, so the old room
+    /// moves aside before the new one is inserted.
+    pub fn rekey_room_aside(&mut self, old: RoomId) -> Option<RoomId> {
+        let entry = self.rooms.remove(&old)?;
+        let lowest = self.rooms.keys().next().map_or(0, |k| k.0.min(0));
+        let new = RoomId(lowest - 1);
+        if let Some(leaf) = entry.leaf {
+            self.tree.set_leaf(leaf, TreeObject::Room(new), 0);
+        }
+        self.rooms.insert(new, entry);
+        Some(new)
+    }
+
     /// The room `id`, if it is in this tree.
     pub fn room(&self, id: RoomId) -> Option<&RoomEntry> {
         self.rooms.get(&id)

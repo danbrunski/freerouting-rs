@@ -35,7 +35,7 @@ The optimizer stays aggregates-only until a later ledger line says otherwise.
 | [A03](archive/A03-drill-pages.md) ✅ | Drill pages and drills; `drills` probe equal | M / medium | A02 |
 | [A04](archive/A04-maze-search.md) ✅ | The maze search as one core generic over sinks: queue, expansion, layer changes, ripup, shove-room checks; `maze-log` probe equal pop for pop | L / high | A03, O03, B04, B05, B02.7, B03.7 |
 | [A05](archive/A05-path-location.md) ✅ | Backtrack and 45° corner location; `locate` probe equal | M / medium | A04 |
-| [A06](A06-connection-insertion.md) | `FoundConnectionInserter`, `route_connection`; `insert` probe equal on one connection (rung 2) | L / high | A05, O04, O01, B05, B04, B01 |
+| [A06](archive/A06-connection-insertion.md) ✅ | `FoundConnectionInserter`, `route_connection`; `insert` probe equal on one connection (rung 2) | L / high | A05, O04, O01, B05, B04, B01 |
 | [A07](A07-angle-variants.md) | 90° and any-angle room graphs and locator, with a `TreeMap`-faithful set; probes equal on synthetic fixtures | M–L / medium | A06, B03 (90°, plain), O02 |
 | [A08](archive/A08-support-classes.md) ✅ | `BoardHistory`, `RoutingFailureLog`, `ItemRouteResult`, router events, two-level cancel token | S / low | B01, B06 for the real-board tests; none for the rest |
 | [A10](archive/A10-stage-traits-and-batch-control.md) ✅ | D9 stage traits and registry; pure pass controller, item ordering and shuffle, ripup policy, fanout rules | M / medium | C02, C03.7, A08 |

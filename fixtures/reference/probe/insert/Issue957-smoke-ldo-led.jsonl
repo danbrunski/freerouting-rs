@@ -1,0 +1,12 @@
+{"kind":"insert","board":"Issue957-smoke-ldo-led","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":4,"connections":2}
+{"stage":"insert:2","net":2,"start":[55],"dest":[80,79,78,77,76,38,6,5]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":101,"incomplete":0,"vias":0,"lengthBefore":"0x407a90c880000000","lengthAfter":"0x407a90c880000000","units":5096}
+{"stage":"insert:4","net":4,"start":[45],"dest":[85,84,39]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":100,"incomplete":0,"vias":0,"lengthBefore":"0x407a90c880000000","lengthAfter":"0x407a90c880000000","units":2173}

@@ -121,6 +121,20 @@ impl BasicBoard {
         }
     }
 
+    /// Moves a room with key `id` left in the autoroute tree of
+    /// `tree_class` by an earlier connection aside, so that a new room can
+    /// take the id (see [`ShapeSearchTree::rekey_room_aside`]). The new key,
+    /// or `None` if no such room is in the tree.
+    pub fn rekey_room_aside(
+        &mut self,
+        tree_class: i32,
+        id: super::RoomId,
+    ) -> Option<super::RoomId> {
+        self.search_trees
+            .tree_by_class_mut(tree_class)?
+            .rekey_room_aside(id)
+    }
+
     /// Removes room `id` from the autoroute tree compensated for
     /// `tree_class` (Java `CompleteFreeSpaceExpansionRoom.removeFromTree`).
     /// False if there is no such tree.

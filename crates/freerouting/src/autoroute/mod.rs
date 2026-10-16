@@ -49,8 +49,17 @@
 //! - [`path`]: the backtrack chain of a found connection, its ripped items
 //!   and costs, and the 45 degree trace corners (`FoundConnectionLocator`,
 //!   `FoundConnectionLocator45Degree`).
+//!
+//! Connection insertion (A06):
+//!
+//! - [`path::insert`], the traces and vias of a located connection
+//!   (`FoundConnectionInserter`);
+//! - [`connection`], with [`route_connection`](connection::route_connection):
+//!   one connection searched, located, ripped and inserted
+//!   (`AutorouteEngine.autorouteConnection`, `ripConnections`).
 
 pub mod batch;
+pub mod connection;
 pub mod control;
 pub mod distance;
 pub mod events;

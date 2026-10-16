@@ -1,0 +1,8 @@
+{"kind":"insert","board":"Issue413-test","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":1}
+{"stage":"insert:4","net":4,"start":[14],"dest":[21]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":56,"kind":"trace","nets":[4],"layer":0,"halfWidth":24500,"class":1,"fixed":"UNFIXED","corners":[[525000,-3825000],[1725000,-3825000],[3025000,-2525000]]}
+{"removed":[]}
+{"maxGeneratedId":56,"incomplete":-1,"vias":0,"lengthBefore":"0x40d1313480000000","lengthAfter":"0x40d428d300000000","units":40600}

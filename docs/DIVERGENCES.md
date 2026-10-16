@@ -453,6 +453,64 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
 - The any-angle locator (`FoundConnectionLocatorAnyAngle`) is not ported: `locate` returns
   `LocateError::UnsupportedAngle` (`any_angle_routing_is_unsupported_until_a07`). A07 ports it.
 
+**Connection insertion** (`autoroute::path::insert`, `autoroute::connection`, A06; tests
+`tests/autoroute_probe_insert.rs`, `autoroute::connection::tests`)
+- Java bugs kept on purpose (to be fixed after rung 3): when `MazeSearchEngine.getInstance`
+  returns null or throws, `AutorouteEngine.autorouteConnection` returns `FAILED` before
+  `clear()` (`AutorouteEngine.java:142-150`), so the start rooms it completed stay in the
+  autoroute tree as obstacles for later connections of the same clearance class; the port keeps
+  them (`route_connection`, `// PARITY(quirk):`). A later session counts its room ids from 1
+  again; Java then holds two rooms with one id, and the port moves the leaked room to a free
+  negative key in place (`ShapeSearchTree::rekey_room_aside`, the tree's shape unchanged). A
+  leaked room is an obstacle in room completion but never a neighbour with a door, while Java
+  can build a door into it and reach its stale doors; not reproduced, and no probe board has an
+  init failure (`an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside`).
+- Java's eager trace-log strings are dropped, their tree visits kept: `insertTrace` asks a found
+  trace stub for its start and end contacts while building `compare_trace_stub_found`
+  (`FoundConnectionInserter.java:441-458`); the port runs both contact queries so the work
+  meter counts what Java counts (`insert_matches_java`, `Issue957-smoke-ldo-led`).
+- A connection without traces that changes the layer makes Java's `insertVia` dereference a null
+  `lastCorner`, a `NullPointerException` that reaches the batch router's catch (`FAILED`, no
+  details); the port returns `InsertError::NullCorner` and `Failed` with empty details
+  (`an_empty_located_path_across_layers_fails_like_javas_null_pointer`).
+- A board routed at 90 degrees or any angle gives `Failed` ("unsupported angle restriction") at
+  the start of `route_connection` until A07; no fixture routes at those angles.
+- The opt-in `router.min_trace_width_um` floor of Java `46bf9e2ef` (after the pin; ledger
+  "Port: yes") is ported: pin neck-downs in the maze search and the inserter use
+  `AutorouteControl::neckdown_half_width` and the micro-neck-down skips narrower candidates.
+  Unset (the default) it changes nothing, so the pin's behaviour is unchanged.
+
+**Interactive routing** (`interactive`, I01, port of `gui.interactive.Route`, `RouteState`,
+`DynamicRouteState`, `StitchRouteState` and `GuiBoardRoutingSettings`; tests
+`tests/interactive_route.rs`, `interactive::settings::tests`)
+- Java bug kept on purpose: when the via rule has no via spanning both layers,
+  `Route.changeLayer` returns true without a via and without changing the route's layer, and the
+  route state still switches the current layer and takes a snapshot
+  (`layer_change_without_spanning_via_quirk`).
+- Java bug kept on purpose: `Route.connect` leaves only the inner loop when a corner pair fails,
+  so with an added 45 or 90 degree corner the second pair is still tried from the added corner.
+- Java failures that became defined results: a route net number without a net (Java's
+  `NullPointerException` in `getTraceHalfWidth`, `getTraceClearanceClass`, `getViaRule`) gives half
+  width 0, the default clearance class and no via rule, and the start fails with
+  `StartError::UnknownNet`; a manual via-rule index out of range (Java's
+  `ArrayIndexOutOfBoundsException`) falls back to the net class's rule
+  (`a_net_without_a_net_class`, `manual_via_rule_index_out_of_range_falls_back_to_the_net_class`);
+  a neckdown try at the end of a target connection that damages the board (Java's
+  `NullPointerException` on `currentOkPoint.equals`) is undone and ends the connection as the
+  first insert's damage does.
+- The current layer of the route state lives in the session (`RouteSession::current_layer`);
+  Java keeps it in the workspace settings. Visible layers are input (`EditSettings::visible_layers`);
+  Java's `setLayer` also makes a hidden layer visible, which is left to the GUI.
+- Java's `Route` holds its target objects, so a target removed from the board keeps the shape
+  it had at its removal. The session keeps the shape of each trace and conduction-area target as
+  it last saw it (at the start and before each nearest-target search), which differs from Java's
+  only when a target changes in place and is removed within one step. A removed trace that is the
+  nearest target is not connected to (Java's `connectToTrace` on the removed object may succeed
+  when the corner lies on its old polyline). A trace start whose `connectToTrace` splits the
+  picked trace computes the targets from the removed trace's contacts at its end corners, as
+  Java's `getUnconnectedSet` on the removed object does. No `route-script` board shows a
+  difference.
+
 ## freerouting-kicad
 
 Differences from KiCad's own DSN export, which is what Java reads. The reader builds the same

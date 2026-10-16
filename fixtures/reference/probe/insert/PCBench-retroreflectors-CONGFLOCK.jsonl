@@ -1,0 +1,29 @@
+{"kind":"insert","board":"PCBench-retroreflectors-CONGFLOCK","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":5}
+{"stage":"insert:1","net":1,"start":[16,9],"dest":[21]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":42,"kind":"trace","nets":[1],"layer":1,"halfWidth":2540,"class":1,"fixed":"UNFIXED","corners":[[806450,-508000],[806450,-518414],[807466,-519430]]}
+{"removed":[]}
+{"maxGeneratedId":42,"incomplete":-1,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x4027b3a160000000","units":3524}
+{"stage":"insert:2","net":2,"start":[14,3],"dest":[24]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":42,"kind":"trace","nets":[2],"layer":0,"halfWidth":2540,"class":1,"fixed":"UNFIXED","corners":[[806450,-551180],[803656,-548386],[803656,-539750]]}
+{"removed":[]}
+{"maxGeneratedId":42,"incomplete":-1,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x40292cb440000000","units":3435}
+{"stage":"insert:3","net":3,"start":[15,2],"dest":[32]}
+{"state":"FAILED","details":"Failed to route connection between pin #1 of component #3, pin of component #1 and pin of component #7, because the new connection could not be inserted."}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":38,"incomplete":0,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x0000000000000000","units":2134}
+{"stage":"insert:4","net":4,"start":[26,22,8],"dest":[33]}
+{"state":"FAILED","details":"Failed to route connection between pin #1 of component #6, pin #1 of component #4, pin of component #2 and pin #1 of component #7, because the new connection could not be inserted."}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":38,"incomplete":0,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x0000000000000000","units":2212}
+{"stage":"insert:5","net":5,"start":[23],"dest":[25]}
+{"state":"FAILED","details":"Failed to route connection between pin of component #5 and pin of component #6, because the new connection could not be inserted."}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":38,"incomplete":0,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x0000000000000000","units":2047}

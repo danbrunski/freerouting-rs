@@ -224,6 +224,7 @@ pub struct BoardRouterSettings {
     fallback_to_board_vias: bool,
     trace_pull_tight_accuracy: i32,
     neck_width_um: f64,
+    min_trace_width_um: f64,
     strict_drc: bool,
 }
 
@@ -269,6 +270,10 @@ impl BoardRouterSettings {
             fallback_to_board_vias: settings.fanout.fallback_to_board_vias,
             trace_pull_tight_accuracy: settings.trace_pull_tight_accuracy,
             neck_width_um: settings.neck_width(),
+            min_trace_width_um: settings
+                .min_trace_width_um
+                .filter(|w| *w > 0.0)
+                .unwrap_or(0.0),
             strict_drc: settings.strict_drc,
         }
     }
@@ -372,6 +377,12 @@ impl BoardRouterSettings {
     /// `getNeckWidthUm`: the configured width, or 0 when off.
     pub fn neck_width_um(&self) -> f64 {
         self.neck_width_um
+    }
+
+    /// `getMinTraceWidthUm` (Java `46bf9e2ef`, after the pin): the narrowest
+    /// trace the router may create in micrometres, or 0 for no limit.
+    pub fn min_trace_width_um(&self) -> f64 {
+        self.min_trace_width_um
     }
 
     /// `strictDrc`.

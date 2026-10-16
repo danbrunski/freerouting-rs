@@ -397,7 +397,9 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             // A neck-down at a start pin.
             let item = self.s.target_door(door).item;
             if self.s.board.item(item).is_some_and(|i| i.is_pin()) {
-                let neck_down = f64::from(self.s.board.trace_neckdown_half_width(item, layer));
+                // `ctrl.neckdownHalfWidth` (46bf9e2ef): the pin's own width,
+                // floored by `router.min_trace_width_um` when set.
+                let neck_down = f64::from(control.neckdown_half_width(self.s.board, item, layer));
                 if neck_down > 0.0 {
                     half_width = min_f64(half_width, neck_down);
                 }
@@ -957,7 +959,11 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
         for &door in self.s.room(room).target_doors() {
             let item = self.s.target_door(door).item;
             if self.s.board.item(item).is_some_and(|i| i.is_pin()) {
-                return f64::from(self.s.board.trace_neckdown_half_width(item, layer));
+                return f64::from(
+                    self.s
+                        .control
+                        .neckdown_half_width(self.s.board, item, layer),
+                );
             }
         }
         0.0

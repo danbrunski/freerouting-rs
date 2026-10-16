@@ -1,0 +1,8 @@
+{"kind":"insert","board":"Issue954-circle","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":1,"connections":1}
+{"stage":"insert:1","net":1,"start":[2],"dest":[5]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":16,"kind":"trace","nets":[1],"layer":0,"halfWidth":750,"class":1,"fixed":"UNFIXED","corners":[[111768,-128409],[127799,-112378],[127799,-57049],[100000,-29250]]}
+{"removed":[]}
+{"maxGeneratedId":16,"incomplete":0,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x405d541840000000","units":6628}

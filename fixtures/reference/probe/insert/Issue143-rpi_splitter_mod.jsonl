@@ -1,0 +1,12 @@
+{"kind":"insert","board":"Issue143-rpi_splitter_mod","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":1}
+{"stage":"insert:5","net":5,"start":[7],"dest":[16]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":35,"kind":"trace","nets":[5],"layer":0,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[727900,1884700],[772198,1840402],[772198,1751594]]}
+{"added":36,"kind":"via","nets":[5],"padstack":"Round1$13.779528","center":[772198,1751594],"class":3,"fixed":"UNFIXED"}
+{"added":43,"kind":"trace","nets":[5],"layer":1,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[772198,1751594],[772198,1562099],[647997,1437898]]}
+{"added":44,"kind":"via","nets":[5],"padstack":"Round1$13.779528","center":[647997,1437898],"class":3,"fixed":"UNFIXED"}
+{"added":46,"kind":"trace","nets":[5],"layer":0,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[647997,1437898],[666000,1419895],[666000,802200]]}
+{"removed":[]}
+{"maxGeneratedId":46,"incomplete":-1,"vias":2,"lengthBefore":"0x0000000000000000","lengthAfter":"0x40dcc46c40000000","units":58708}

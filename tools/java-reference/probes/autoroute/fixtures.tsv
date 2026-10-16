@@ -18,3 +18,5 @@ maze-log	@ladder
 maze-routed	fixtures/Issue413-test.dsn	fixtures/Issue957-smoke-ldo-led.dsn	fixtures/Issue676-ch32v-tx118s.dsn	fixtures/Issue069-TestSensel/TestSensel.dsn	fixtures/Issue027-zMRETestFixture.dsn	fixtures/Issue313-FastTest.dsn	fixtures/Issue229-display-8-digit-hc595.dsn
 locate	@ladder
 locate-routed	fixtures/Issue413-test.dsn	fixtures/Issue957-smoke-ldo-led.dsn	fixtures/Issue676-ch32v-tx118s.dsn	fixtures/Issue069-TestSensel/TestSensel.dsn	fixtures/Issue027-zMRETestFixture.dsn	fixtures/Issue313-FastTest.dsn	fixtures/Issue229-display-8-digit-hc595.dsn
+insert	@ladder
+insert-routed	fixtures/Issue413-test.dsn	fixtures/Issue957-smoke-ldo-led.dsn	fixtures/Issue676-ch32v-tx118s.dsn	fixtures/Issue069-TestSensel/TestSensel.dsn	fixtures/Issue027-zMRETestFixture.dsn	fixtures/Issue313-FastTest.dsn	fixtures/Issue229-display-8-digit-hc595.dsn

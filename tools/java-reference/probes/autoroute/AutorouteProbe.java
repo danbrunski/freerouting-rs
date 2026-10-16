@@ -90,6 +90,17 @@ import java.util.UUID;
  *       and layers; {"result":"none"} when the search fails. Then the tree's walk hash after
  *       clear().
  *   <li>locate-routed (A05.5): locate through pre-routed traces, as maze-routed walks them.
+ *   <li>insert (A06.7): per sampled connection, on a fresh load of the board, the control as the
+ *       batch router builds it in pass 1 (ripup on, the start ripup costs) and
+ *       AutorouteEngine.autorouteConnection on a new engine with the router's maze-search
+ *       WorkLimit: the state and details, the ripped ids, every item added, changed (same id,
+ *       other geometry) and removed in id order, maxGeneratedId, the BoardStatistics deltas
+ *       (incomplete connections, vias, total trace length) and the thread's WorkMeter units the
+ *       call used.
+ *   <li>insert-routed (A06.7, for the rip of A06.5): maze-routed's walk (traces and vias unfixed,
+ *       then for up to 12 nets with route items the net's route items removed and its sampled
+ *       connection routed as in insert, through the other nets' routes, on the same board, which
+ *       keeps what each connection inserted and ripped).
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -123,6 +134,8 @@ public class AutorouteProbe {
         case "maze-routed" -> mazeRouted(out, Loaded.load(dsn));
         case "locate" -> locate(out, Loaded.load(dsn));
         case "locate-routed" -> locateRouted(out, Loaded.load(dsn));
+        case "insert" -> insert(out, dsn);
+        case "insert-routed" -> insertRouted(out, Loaded.load(dsn));
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -1266,6 +1279,186 @@ public class AutorouteProbe {
       for (String variant : new String[] {"off", "on"}) {
         locateConnection(out, l, conn, variant);
       }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // insert (A06.7)
+  // ------------------------------------------------------------------------------------------
+
+  /** A corner as [x,y] when integer, else ["r",xbits,ybits] of its float approximation. */
+  static String cornerJson(app.freerouting.geometry.planar.Point p) {
+    if (p instanceof app.freerouting.geometry.planar.IntPoint ip) {
+      return "[" + ip.x + "," + ip.y + "]";
+    }
+    FloatPoint f = p.toFloat();
+    return "[\"r\"," + quoted(bits(f.x)) + "," + quoted(bits(f.y)) + "]";
+  }
+
+  static String netsJson(Item item) {
+    List<Integer> nets = new ArrayList<>();
+    for (int i = 0; i < item.netCount(); i++) {
+      nets.add(item.getNetNumber(i));
+    }
+    return ints(nets);
+  }
+
+  /** The fields of an item the insert probe prints after its id and key. */
+  static String itemFields(Item item) {
+    Line line = new Line();
+    if (item instanceof app.freerouting.board.trace.PolylineTrace trace) {
+      StringBuilder corners = new StringBuilder("[");
+      app.freerouting.geometry.planar.Polyline polyline = trace.polyline();
+      for (int i = 0; i < polyline.cornerCount(); i++) {
+        if (i > 0) {
+          corners.append(',');
+        }
+        corners.append(cornerJson(polyline.corner(i)));
+      }
+      corners.append(']');
+      line.str("kind", "trace").raw("nets", netsJson(item)).num("layer", trace.getLayer())
+          .num("halfWidth", trace.getHalfWidth()).num("class", item.clearanceClassIndex())
+          .str("fixed", item.getFixedState().name()).raw("corners", corners.toString());
+    } else if (item instanceof app.freerouting.board.model.items.Via via) {
+      line.str("kind", "via").raw("nets", netsJson(item)).str("padstack", via.getPadstack().name)
+          .raw("center", cornerJson(via.getCenter())).num("class", item.clearanceClassIndex())
+          .str("fixed", item.getFixedState().name());
+    } else {
+      line.str("kind", item.getClass().getSimpleName()).raw("nets", netsJson(item));
+    }
+    String text = line.end();
+    // Drop the braces: the caller prefixes the id.
+    return text.substring(1, text.length() - 1);
+  }
+
+  /** One sampled connection of insert, on a fresh load (Java autorouteConnection). */
+  static void insertConnection(Out out, Loaded l, Conn conn) {
+    RoutingBoard board = l.board;
+    String stage = "insert:" + conn.net;
+    if (!conn.state.isEmpty()) {
+      out.line(new Line().str("stage", stage).num("net", conn.net).str("state", conn.state)
+          .end());
+      return;
+    }
+    AutorouteControl c;
+    try {
+      c = routerControl(l, conn.net, true);
+    } catch (RuntimeException e) {
+      out.line(new Line().str("stage", stage).num("net", conn.net)
+          .str("exception", e.getClass().getSimpleName()).end());
+      return;
+    }
+    out.line(new Line().str("stage", stage).num("net", conn.net).raw("start", ids(conn.start))
+        .raw("dest", ids(conn.dest)).end());
+    java.util.TreeMap<Integer, String> before = new java.util.TreeMap<>();
+    for (Item item : board.getItems()) {
+      before.put(item.getId(), itemFields(item));
+    }
+    app.freerouting.core.scoring.BoardStatistics statsBefore =
+        new app.freerouting.core.scoring.BoardStatistics(board);
+    java.util.SortedSet<Item> ripped = new java.util.TreeSet<>();
+    java.util.Map<Item, Integer> costs = new java.util.LinkedHashMap<>();
+    // AutorouteConnectionRouter.route at ripup pass 1: the maze search's WorkLimit.
+    int routeNet = conn.net;
+    app.freerouting.datastructures.WorkLimit limit = new app.freerouting.datastructures.WorkLimit(
+        100000L, "maze_search", () -> "net=" + routeNet);
+    long start = workUnits();
+    AutorouteEngine engine = board.initAutoroute(conn.net, c.traceClearanceClassIndex, null,
+        limit, false);
+    app.freerouting.autoroute.AutorouteAttemptResult result;
+    try {
+      result = engine.autorouteConnection(conn.start, conn.dest, c, ripped, costs);
+    } catch (Exception e) {
+      out.line(new Line().str("exception", e.getClass().getSimpleName()).end());
+      return;
+    }
+    long units = workUnits() - start;
+    out.line(new Line().str("state", result.state.name())
+        .str("details", result.details == null ? "" : result.details).end());
+    out.line(new Line().raw("ripped", ids(ripped)).raw("costs", costsJson(costs)).end());
+    java.util.TreeMap<Integer, String> after = new java.util.TreeMap<>();
+    for (Item item : board.getItems()) {
+      after.put(item.getId(), itemFields(item));
+    }
+    List<Integer> removed = new ArrayList<>();
+    for (var entry : before.entrySet()) {
+      String now = after.get(entry.getKey());
+      if (now == null) {
+        removed.add(entry.getKey());
+      } else if (!now.equals(entry.getValue())) {
+        out.line("{\"changed\":" + entry.getKey() + "," + now + "}");
+      }
+    }
+    for (var entry : after.entrySet()) {
+      if (!before.containsKey(entry.getKey())) {
+        out.line("{\"added\":" + entry.getKey() + "," + entry.getValue() + "}");
+      }
+    }
+    out.line(new Line().raw("removed", ints(removed)).end());
+    app.freerouting.core.scoring.BoardStatistics statsAfter =
+        new app.freerouting.core.scoring.BoardStatistics(board);
+    out.line(new Line().num("maxGeneratedId", board.communication.idGenerator.maxGeneratedId())
+        .num("incomplete", statsAfter.connections.incompleteCount
+            - statsBefore.connections.incompleteCount)
+        .num("vias", statsAfter.vias.totalCount - statsBefore.vias.totalCount)
+        .dbl("lengthBefore", statsBefore.traces.totalLength)
+        .dbl("lengthAfter", statsAfter.traces.totalLength)
+        .num("units", units).end());
+  }
+
+  /** insert-routed: insertConnection through pre-routed traces, as maze-routed walks them. */
+  static void insertRouted(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Integer> unfixed = new ArrayList<>();
+    for (Item item : board.getItems()) {
+      if (isRouteItem(item)) {
+        item.unfix();
+        unfixed.add(item.getId());
+      }
+    }
+    out.line(new Line().str("stage", "unfix").raw("items", ints(unfixed)).end());
+    int done = 0;
+    int maxNet = board.rules.nets.maxNetNumber();
+    for (int net = 1; net <= maxNet && done < MAZE_ROUTED_NETS; net++) {
+      List<Item> routed = new ArrayList<>();
+      for (Item item : board.getItems()) {
+        if (isRouteItem(item) && item.containsNet(net)) {
+          routed.add(item);
+        }
+      }
+      if (routed.isEmpty()) {
+        continue;
+      }
+      List<Integer> removed = new ArrayList<>();
+      for (Item item : routed) {
+        board.removeItem(item);
+        removed.add(item.getId());
+      }
+      Conn conn = null;
+      for (Conn candidate : sample(board)) {
+        if (candidate.net == net) {
+          conn = candidate;
+        }
+      }
+      out.line(new Line().str("stage", "cut:" + net).raw("removed", ints(removed))
+          .bool("connection", conn != null).end());
+      if (conn == null) {
+        continue;
+      }
+      done++;
+      insertConnection(out, l, conn);
+    }
+  }
+
+  /** insert: every sampled connection, each on a fresh load of the board. */
+  static void insert(Out out, String dsn) throws Exception {
+    Loaded first = Loaded.load(dsn);
+    List<Conn> conns = sample(first.board);
+    sampleLine(out, first.board, conns);
+    for (int i = 0; i < conns.size(); i++) {
+      Loaded l = i == 0 ? first : Loaded.load(dsn);
+      Conn conn = sample(l.board).get(i);
+      insertConnection(out, l, conn);
     }
   }
 

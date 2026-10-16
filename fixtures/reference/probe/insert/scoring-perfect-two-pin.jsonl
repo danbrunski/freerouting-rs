@@ -1,0 +1,3 @@
+{"kind":"insert","board":"scoring-perfect-two-pin","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":1,"connections":1}
+{"stage":"insert:1","net":1,"exception":"NullPointerException"}

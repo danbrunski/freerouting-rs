@@ -28,6 +28,8 @@
 use std::fmt;
 
 use crate::board::BasicBoard;
+use crate::board::items::ItemId;
+use crate::board::structure::Unit;
 use crate::geometry::Point;
 use crate::geometry::jmath::max_f64;
 use crate::rules::ViaRuleId;
@@ -105,6 +107,11 @@ pub struct AutorouteControl {
     pub trace_costs: Vec<ExpansionCostFactor>,
     pub bend_costs: Vec<f64>,
     pub with_neckdown: bool,
+    /// Half of the narrowest trace the router may create
+    /// (`router.min_trace_width_um`), in board units; 0 = no limit (Java
+    /// `minTraceHalfWidth`, `46bf9e2ef`, after the pin; unset changes
+    /// nothing).
+    pub min_trace_half_width: i32,
     /// Whether each layer may be used for routing.
     pub layer_active: Vec<bool>,
     pub layer_count: usize,
@@ -213,6 +220,7 @@ impl AutorouteControl {
             trace_costs,
             bend_costs,
             with_neckdown: settings.automatic_neckdown(),
+            min_trace_half_width: min_trace_half_width(board, settings),
             layer_active,
             layer_count,
             trace_half_width: vec![0; layer_count],
@@ -358,6 +366,33 @@ impl AutorouteControl {
         self.min_cheap_via_cost = 0.8 * self.min_normal_via_cost;
         Ok(())
     }
+
+    /// Java `neckdownHalfWidth(pin, layer)` (`46bf9e2ef`): the half width a
+    /// neck-down into `pin` on `layer` uses, the pin's own
+    /// `getTraceNeckdownHalfwidth`, but never less than
+    /// [`min_trace_half_width`](Self::min_trace_half_width).
+    pub fn neckdown_half_width(&self, board: &BasicBoard, pin: ItemId, layer: i32) -> i32 {
+        board
+            .trace_neckdown_half_width(pin, layer)
+            .max(self.min_trace_half_width)
+    }
+}
+
+/// Java `AutorouteControl.minTraceHalfWidth(board, settings)`
+/// (`46bf9e2ef`): `router.min_trace_width_um` in board units, halved and
+/// rounded up; 0 when the setting is unset or not positive.
+fn min_trace_half_width(board: &BasicBoard, settings: &BoardRouterSettings) -> i32 {
+    let min_width_um = settings.min_trace_width_um();
+    if min_width_um <= 0.0 {
+        return 0;
+    }
+    let resolution = board.communication.resolution.max(1);
+    let min_width = Unit::scale(
+        min_width_um * f64::from(resolution),
+        Unit::Um,
+        board.communication.unit,
+    );
+    crate::geometry::jmath::d2i((min_width / 2.0).ceil())
 }
 
 /// `isPureSmdNet` (`AutorouteControl.java:195-208`): the net has

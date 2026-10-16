@@ -13,7 +13,9 @@
 //!   constructor, `getInstance`, `calculateNextTrace`, `adjustStartCorner`),
 //!   the result and the errors;
 //! - `locate45.rs`: the 45 degree corner rules
-//!   (`FoundConnectionLocator45Degree`), also used at 90 degrees.
+//!   (`FoundConnectionLocator45Degree`), also used at 90 degrees;
+//! - [`insert`](mod@insert): the insertion of a located connection
+//!   (`FoundConnectionInserter`, A06).
 //!
 //! Decisions (A05):
 //! - Java's identity comparisons of points (`FoundConnectionLocator.java:415,
@@ -34,10 +36,12 @@
 //!   and for diagnostics (Java's `emitDiagnostics` reads the same array).
 
 pub mod backtrack;
+pub mod insert;
 pub mod locate;
 mod locate45;
 
 pub use backtrack::{BacktrackElement, RipupCosts, backtrack, put_cost};
+pub use insert::{InsertError, Inserted, insert_located, insert_segments};
 pub use locate::{Corner, LocateError, Located, ResultItem, locate};
 
 #[cfg(test)]
