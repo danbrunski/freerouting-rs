@@ -356,6 +356,54 @@ impl<K: Ord + Copy> ShapeTree<K> {
         }
         result
     }
+
+    /// Walks the tree as Java's room completion does
+    /// (`ShapeSearchTree45Degree.completeShape`, B03): pop a node, call
+    /// `visit` with its bounding shape and, for a leaf, its key and shape
+    /// index; if `visit` returns true for an inner node, push its first
+    /// child, then its second, so the second is visited first. `visit`
+    /// decides with the bound of the moment, which it may shrink at a
+    /// leaf. `stack` is reusable scratch (its contents are dropped first).
+    ///
+    /// Returns the number of nodes popped, Java's `WorkMeter.tick()` count;
+    /// the caller adds it to the meter. Unlike [`overlaps`](Self::overlaps)
+    /// this does not touch the meter.
+    pub fn depth_first(
+        &self,
+        stack: &mut Vec<usize>,
+        mut visit: impl FnMut(&RegularTileShape, Option<(K, usize)>) -> bool,
+    ) -> u64 {
+        stack.clear();
+        let Some(root) = self.root else {
+            return 0;
+        };
+        stack.push(root);
+        let mut popped = 0u64;
+        while let Some(current) = stack.pop() {
+            popped += 1;
+            let node = self.node(current);
+            match node.kind {
+                NodeKind::Leaf {
+                    object,
+                    shape_index,
+                } => {
+                    visit(&node.bounds, Some((object, shape_index)));
+                }
+                NodeKind::Inner { first, second } => {
+                    if visit(&node.bounds, None) {
+                        stack.push(first);
+                        stack.push(second);
+                    }
+                }
+            }
+        }
+        popped
+    }
+
+    /// True if the tree has no leaves (Java `root == null`).
+    pub fn is_empty(&self) -> bool {
+        self.root.is_none()
+    }
 }
 
 fn area(shape: &RegularTileShape) -> f64 {

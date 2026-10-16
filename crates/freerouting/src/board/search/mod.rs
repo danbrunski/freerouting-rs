@@ -21,6 +21,11 @@ pub mod fingerprint;
 pub mod tree_object;
 pub mod work;
 
+pub mod complete_shape;
+mod restrain45;
+mod restrain90;
+pub mod rooms;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
