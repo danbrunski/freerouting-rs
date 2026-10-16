@@ -1,0 +1,17 @@
+{"kind":"pull-tight","board":"Issue143-rpi_splitter_mod","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"board-45"}
+{"id":39,"kind":"via","nets":"5","padstack":"Round1$13.779528","center":"666000,1006663","fixed":0}
+{"id":38,"kind":"trace","nets":"5","layer":0,"halfWidth":20320,"class":1,"fixed":0,"corners":"666000,1006663 666000,802200"}
+{"id":37,"kind":"via","nets":"5","padstack":"Round1$13.779528","center":"547821,1124842","fixed":0}
+{"id":36,"kind":"trace","nets":"5","layer":0,"halfWidth":15240,"class":1,"fixed":0,"corners":"727900,1884700 557163,1884700"}
+{"id":35,"kind":"trace","nets":"5","layer":1,"halfWidth":20320,"class":1,"fixed":0,"corners":"547821,1124842 666000,1006663"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":15240,"class":1,"fixed":0,"corners":"557163,1884700 547821,1875358 547821,1124842"}
+{"maxGeneratedId":39,"items":39}
+{"stage":"board-90"}
+{"id":39,"kind":"via","nets":"5","padstack":"Round1$13.779528","center":"666000,1006663","fixed":0}
+{"id":38,"kind":"trace","nets":"5","layer":0,"halfWidth":20320,"class":1,"fixed":0,"corners":"666000,1006663 666000,802200"}
+{"id":37,"kind":"via","nets":"5","padstack":"Round1$13.779528","center":"547821,1124842","fixed":0}
+{"id":36,"kind":"trace","nets":"5","layer":0,"halfWidth":15240,"class":1,"fixed":0,"corners":"727900,1884700 557163,1884700"}
+{"id":35,"kind":"trace","nets":"5","layer":1,"halfWidth":20320,"class":1,"fixed":0,"corners":"547821,1124842 666000,1006663"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":15240,"class":1,"fixed":0,"corners":"557163,1884700 547821,1875358 547821,1124842"}
+{"maxGeneratedId":39,"items":39}

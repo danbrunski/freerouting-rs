@@ -1,0 +1,13 @@
+{"kind":"pull-tight","board":"Issue757-minimal-soe","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"board-45"}
+{"id":5,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"364000,-537000 411418,-537000 448447,-574029"}
+{"id":4,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"448447,-574029 490294,-574029"}
+{"id":3,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"448447,-574029 490294,-574029"}
+{"id":2,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"364000,-537000 411418,-537000 448447,-574029"}
+{"maxGeneratedId":5,"items":5}
+{"stage":"board-90"}
+{"id":5,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"364000,-537000 411418,-537000 448447,-574029"}
+{"id":4,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"448447,-574029 490294,-574029"}
+{"id":3,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"448447,-574029 490294,-574029"}
+{"id":2,"kind":"trace","nets":"1","layer":1,"halfWidth":762,"class":1,"fixed":0,"corners":"364000,-537000 411418,-537000 448447,-574029"}
+{"maxGeneratedId":5,"items":5}

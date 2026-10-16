@@ -7,7 +7,7 @@ through `ForcedViaInserter.insert` (`:785`). Interactive routing, drag and
 make-space use the same entry points. This checklist ports the insert half of
 push-and-shove on top of O03's checks and O01's pull-tight, so path insertion
 (A06) and interactive routing (I01) can start. It is the autoroute report's
-AR-8a; AR-8b (the tightener) is O01. See [O00](O00-optimizer-README.md) for
+AR-8a; AR-8b (the tightener) is O01. See [O00](../O00-optimizer-README.md) for
 the series rules.
 
 **Prerequisites:** O01, O03; B05 (`connect_to_trace` is ported there; this
@@ -82,7 +82,7 @@ cases of O04.6 only.
 
 ## Checklist
 
-- [ ] **O04.1 — Trace shove insert.**
+- [x] **O04.1 — Trace shove insert.**
   - Java: `TraceShover.insert` (`:417-590`).
   - Rust: `shove/insert.rs`, `TraceShover::insert(…) -> bool`.
   - Orders (exact):
@@ -105,8 +105,16 @@ cases of O04.6 only.
        new tails at both ends (`get_trace_tail`, connection items stopping at
        vias) and `combine_traces` per net.
   - **Accept:** O04.7.
+  - *Done 2026-10-16:* `crates/freerouting/src/shove/insert.rs` (`TraceShover::insert`; the
+    piece loop, shared with `forced_pad`, is `insert_substitute_pieces`). Orders as listed; the
+    pieces keep the id they burned. One port detail: `ShapeTraceEntries::next_substitute_trace_piece`
+    reads the obstacle traces from the board, and the cutout removes them (Java's entries keep
+    the objects), so `drain_pieces` builds all pieces before the cutout, rewinds the id
+    generator, and each piece takes its id where Java constructs it (after the cutout and the
+    previous pieces' inserts). Without that, Issue270's step 22 lost a substitute piece and 9
+    ids; with it the `shove-insert` probe (O04.7) is equal on all 10 boards, ids included (`cargo test -p freerouting --test reference_shove_insert`, 12 tests pass); 62 of the 470 segment inserts take more than 2 ids (shoves).
 
-- [ ] **O04.2 — Drill item moves and via shoving.**
+- [x] **O04.2 — Drill item moves and via shoving.**
   - Java: `DrillItemMover.insert` (`:110-170`), `shoveVias` (`:173-253`).
   - Rust: `shove/insert.rs`.
   - Orders: layers from first to last; per layer the tile shape is the
@@ -118,8 +126,13 @@ cases of O04.6 only.
     later ones only within `maxDist²`), checks each with a fresh copy of
     the ignore list and no limit, and inserts the first that passes.
   - **Accept:** O04.7.
+  - *Done 2026-10-16:* `TraceShover::insert_drill_item_move` (Java `DrillItemMover.insert`;
+    its tidy-region argument only grows the callee's copy, so it is not ported, see O04.5) and
+    `TraceShover::shove_vias` in `shove/insert.rs`; the move itself is B05's `move_item`. Stage
+    `move` of the probe (10 `moveDrillItem` per board, 39 of 100 succeed) and the vias in the
+    way of the segment and via stages: the `shove-insert` probe (O04.7) is equal on all 10 boards, ids included (`cargo test -p freerouting --test reference_shove_insert`, 12 tests pass).
 
-- [ ] **O04.3 — Forced pads and vias.**
+- [x] **O04.3 — Forced pads and vias.**
   - Java: `ForcedPadRouter.forcedPad` (`:346-470`),
     `ForcedViaInserter.insert` (`:249-362`).
   - Rust: `shove/insert.rs`.
@@ -128,8 +141,15 @@ cases of O04.6 only.
   - **Accept:** O04.7; `forced_via_respects_attach_off`: a forced via onto an
     own-net SMD pad with a via rule whose `ViaInfo` has attach off is
     refused, and the same call in the probe is refused in Java.
+  - *Done 2026-10-16:* `TraceShover::forced_pad` and `TraceShover::insert_forced_via` in
+    `shove/insert.rs`; `ViaInfo.attach_smd_allowed` is the copper-sharing flag of the pad
+    shoves and the via's attach flag, nothing more. Stage `via` (10 `forcedVia` per board, 37
+    of 100 succeed) and stage `attach`: the `shove-insert` probe (O04.7) is equal on all 10 boards, ids included (`cargo test -p freerouting --test reference_shove_insert`, 12 tests pass). `forced_via_respects_attach_off` passes: on
+    Issue742 (the probe's state after all stages) the via with attach off onto own-net SMD
+    pin 461 is refused with the pin as the shove-failing obstacle, in Rust and in Java's
+    output, and the same call with attach on succeeds; every probe board gives that pair.
 
-- [ ] **O04.4 — Forced trace insertion.**
+- [x] **O04.4 — Forced trace insertion.**
   - Java: `insertForcedTracePolyline` (`:456-880`),
     `insertForcedTraceSegment` (`:361-402`).
   - Rust: `RoutingBoard::insert_forced_trace_polyline(…) -> ForcedInsert`
@@ -157,8 +177,19 @@ cases of O04.6 only.
       normalized, `split_at_keep_point` and re-pick the trace at
       `newCorner` (highest id); pull-tight it when `tidy > 0`.
   - **Accept:** O04.6 and O04.7.
+  - *Done 2026-10-16:* `RoutingBoard::insert_forced_trace_polyline` and
+    `insert_forced_trace_segment` in `shove/forced.rs`, returning `ForcedInsert`
+    (`ForcedInsert::point` gives Java's result point), the arguments grouped as `ForcedTrace`
+    and `ForcedTraceParams`, plus the work limit. Java's two debug `pickItems` run as queries
+    without result. At the pin the normalization no longer throws (it returns false at its
+    depth limit), so no error value is needed; the Java exceptions left are `DatabaseDamaged`
+    (DIVERGENCES "Shove insert"). O04.7: the `shove-insert` probe (O04.7) is equal on all 10 boards, ids included (`cargo test -p freerouting --test reference_shove_insert`, 12 tests pass); of 470 segment inserts 203 reach the end,
+    262 are unchanged, 5 partial (the shortening retry), none damaged. O04.6: the 44 cases that
+    don't need O02 pass, and the insertion half of the 31 `NONE` cleanup cases passes too
+    (`cargo test -p freerouting --test issue954_keepout_insertion -- --ignored`: 6 pass); their
+    pull-tight is O02's.
 
-- [ ] **O04.5 — Forced via and drill-item move.**
+- [x] **O04.5 — Forced via and drill-item move.**
   - Java: `forcedVia` (`:312-355`), `moveDrillItem` (`:252-295`).
   - Rust: `RoutingBoard::forced_via(…) -> bool`, `move_drill_item(…) ->
     bool` in `shove/forced.rs`. Both take the pull-tight limit in nominal ms
@@ -172,8 +203,16 @@ cases of O04.6 only.
     the point octagon, not `Skip`), or `Unbounded` for `i32::MAX`.
   - **Accept:** O04.7; `move_drill_item_finite_tidy_skips_pull_tight`
     (the quirk, pinned, with a DIVERGENCES line).
+  - *Done 2026-10-16:* `RoutingBoard::forced_via` and `RoutingBoard::move_drill_item` in
+    `shove/forced.rs`, both taking the pull-tight limit in nominal ms (none if not positive).
+    Stages `via` and `move`: the `shove-insert` probe (O04.7) is equal on all 10 boards, ids included (`cargo test -p freerouting --test reference_shove_insert`, 12 tests pass). `move_drill_item_finite_tidy_skips_pull_tight` passes:
+    on Issue742 with its session (traces and vias unfixed) every successful move with tidy
+    width 1000 equals the same move without optimization, and some moves with `i32::MAX`
+    differ from it; `Clip::from_tidy_region(IntOctagon::EMPTY.enlarge(1000))` is `Skip`. Module
+    docs (`shove::insert`, `move_drill_item`) and DIVERGENCES ("Shove insert", "Java bugs kept
+    on purpose").
 
-- [ ] **O04.6 — Port `Issue954CircularKeepoutInsertionTest`.**
+- [x] **O04.6 — Port `Issue954CircularKeepoutInsertionTest`.**
   - All 10 methods: `insertsDetour` (60 cases), `invalidCircularKeepoutPlacementStillFailsDrc`,
     `endpointInsideKeepoutDoesNotInsertCopper`,
     `nonConvexKeepoutIsNotReplacedWithOneOfItsSections`,
@@ -190,8 +229,21 @@ cases of O04.6 only.
     `#[ignore = "needs O02"]` and this item is `[~]`.
   - **Accept:** all 75 cases pass (or the 45°/90° ones, with the remainder
     named).
+  - *Partial 2026-10-16:* `crates/freerouting/tests/issue954_keepout_insertion.rs`, all 10
+    methods ported. `cargo test -p freerouting --test issue954_keepout_insertion`: 6 tests
+    pass, 44 cases (`insertsDetour` 45° and 90°, 40; `invalidCircularKeepoutPlacementStillFailsDrc`;
+    `endpointInsideKeepoutDoesNotInsertCopper`; `nonConvexKeepoutIsNotReplacedWithOneOfItsSections`;
+    `holedKeepoutIsNotReplacedWithItsOuterBoundary`). Remainder, owner O02: the 31 cases whose
+    cleanup pull-tightens in angle mode `NONE` (`insertsDetour` `NONE` 20, oblique 3,
+    asymmetric 3, partitioned rectangle 1, successive circles 1, circular copper 3; Java's
+    `loadBoard` sets `NONE`), `#[ignore = "needs O02"]`. They pass with `--ignored` (6 tests)
+    against today's no-op any-angle tightener, so un-ignoring them once O02 lands is the check
+    that counts.
+  *Done 2026-10-16 (O02):* the `#[ignore = "needs O02"]` attributes removed (6 tests) with the
+  any-angle tightener in place; `cargo test -p freerouting --test issue954_keepout_insertion`:
+  12 passed, 0 ignored, all 75 cases.
 
-- [ ] **O04.7 — Probe `shove-insert`.**
+- [x] **O04.7 — Probe `shove-insert`.**
   - Java: `ShoveInsertProbe` on `Issue026-J2_reference`, `Issue413-test`,
     `Issue676-ch32v-tx118s`, `Issue957-smoke-ldo-led`,
     `Issue508-DAC2020_bm05`, `Issue508-DAC2020_bm08`,
@@ -214,10 +266,28 @@ cases of O04.6 only.
   - **Accept:** all 10 boards identical at every step, ids included; a
     board may be listed only with its first differing step bisected and the
     cause named, at most 1 of 10.
+  - *Done 2026-10-16:* `tools/java-reference/probes/board/ShoveInsertProbe.java` (at
+    `a773a70ec`; one `Random(20261016)`; the start sampler `insert_starts`/`draw_start` appended
+    to `tests/support/shove_sampler.rs`; the stages in `tests/support/shove_insert_stages.rs`),
+    run with `generate.sh <pin> shove-insert`. Besides the script it has stage `move` (10
+    `moveDrillItem`) and `attach` (O04.3). The tenth board is `Issue742-tastexx-pcb` (6 vias),
+    because `Issue270-non-ansi_bracket`, the smallest routed board with vias, gives output
+    identical to `Issue143-rpi_splitter`'s. `cargo test -p freerouting --test
+    reference_shove_insert`: every line of `fixtures/reference/probe/shove-insert/*.jsonl` is
+    equal on all 10 boards (J2 3492 lines for 200 steps; bm05 1787; the others 292-554), ids and
+    dumps included; no board listed. Steps that shove (more than 2 new ids): J2 21 of 200,
+    Issue413 8, SMD demo 9, Issue110 6, bm08 5, Issue742 4, the others 2-3 of 30; no step is `damaged`.
 
-- [ ] **O04.8 — Determinism and speed.**
+- [x] **O04.8 — Determinism and speed.**
   - `examples/shove_insert_dump.rs <dsn> <ses> <out>` runs the O04.7 script
     and writes the final dump.
   - **Accept:** `tools/determinism-check.sh` reports `identical` on J2 and
     bm08; a release `#[ignore]` timing test records the J2 script time
     beside the Java probe's own timing in the done note.
+  - *Done 2026-10-16:* `crates/freerouting/examples/shove_insert_dump.rs <dsn> <ses|-> <out>`.
+    `tools/determinism-check.sh --out <dir> -- target/.../examples/shove_insert_dump
+    fixtures/<board>.dsn fixtures/reference/route/<board>.ses {OUT}` prints `identical` for
+    `Issue026-J2_reference` and `Issue508-DAC2020_bm08`, and both outputs equal the Java
+    reference below the header. Timing (`shove_insert_j2_timing`, `#[ignore]`, release, the
+    script only, dumps included): Rust 90.9, 88.7, 89.4, 91.1, 92.0 ms; Java's probe, same
+    script, its own stderr timing in three fresh JVMs: 1176.8, 767.1, 535.9 ms.

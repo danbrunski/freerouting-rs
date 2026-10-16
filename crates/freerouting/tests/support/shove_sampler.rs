@@ -181,3 +181,62 @@ pub fn ints_text(values: &[i32]) -> String {
 pub fn trace_item(board: &RoutingBoard, sample: &Sample) -> Item {
     board.item(sample.trace).expect("sampled trace").clone()
 }
+
+// ----------------------------------------------------------------------
+// O04.7: the start points of the shove-insert probe
+// ----------------------------------------------------------------------
+
+/// A start of probe `shove-insert` (`ShoveInsertProbe.Start`): a pin centre
+/// on the pin's first layer, or a trace end on its layer.
+#[derive(Clone, Copy, Debug)]
+pub struct Start {
+    pub point: IntPoint,
+    pub layer: i32,
+    pub net: i32,
+}
+
+/// Java `ShoveInsertProbe.starts`: items highest id first; per pin with
+/// exactly one positive net, its centre on its first layer; per trace with
+/// exactly one positive net, its first and last corner (if integer).
+pub fn insert_starts(board: &RoutingBoard) -> Vec<Start> {
+    let mut items: Vec<&Item> = board.items().collect();
+    items.sort_by(|a, b| b.id().0.cmp(&a.id().0));
+    let mut result = Vec::new();
+    for item in items {
+        let nets = item.net_numbers();
+        if nets.len() != 1 || nets[0] <= 0 {
+            continue;
+        }
+        let net = nets[0];
+        if item.is_pin() {
+            if let Some(drill) = item.drill() {
+                result.push(Start {
+                    point: drill.center,
+                    layer: item.first_layer(),
+                    net,
+                });
+            }
+        } else if let Some(trace) = item.as_trace() {
+            for corner in [trace.polyline.first_corner(), trace.polyline.last_corner()] {
+                if let Point::Int(point) = corner {
+                    result.push(Start {
+                        point,
+                        layer: trace.layer,
+                        net,
+                    });
+                }
+            }
+        }
+    }
+    result
+}
+
+/// Java `ShoveInsertProbe.drawStart`: a net of the starts (ascending), then
+/// one of its starts in list order.
+pub fn draw_start(starts: &[Start], random: &mut JavaRandom) -> Start {
+    let nets: std::collections::BTreeSet<i32> = starts.iter().map(|s| s.net).collect();
+    let nets: Vec<i32> = nets.into_iter().collect();
+    let net = nets[random.next_int(nets.len() as i32) as usize];
+    let of_net: Vec<Start> = starts.iter().copied().filter(|s| s.net == net).collect();
+    of_net[random.next_int(of_net.len() as i32) as usize]
+}

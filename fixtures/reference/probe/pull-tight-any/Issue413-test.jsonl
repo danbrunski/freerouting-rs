@@ -1,0 +1,33 @@
+{"kind":"pull-tight-any","board":"Issue413-test","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"board-none"}
+{"id":81,"kind":"trace","nets":"4","layer":0,"halfWidth":24500,"class":1,"fixed":1,"corners":"3025000,-2525000 2951000,-2525000"}
+{"id":79,"kind":"trace","nets":"2","layer":0,"halfWidth":24500,"class":1,"fixed":1,"corners":"3625000,-1225000 3699000,-1225000"}
+{"id":77,"kind":"trace","nets":"4","layer":0,"halfWidth":24500,"class":1,"fixed":1,"corners":"525000,-3825000 599000,-3825000"}
+{"id":75,"kind":"trace","nets":"1","layer":0,"halfWidth":24500,"class":1,"fixed":1,"corners":"5025000,-325000 4951000,-325000"}
+{"id":73,"kind":"trace","nets":"2","layer":0,"halfWidth":24500,"class":1,"fixed":1,"corners":"5625000,-3225000 5625000,-3151000"}
+{"id":71,"kind":"trace","nets":"5","layer":0,"halfWidth":24500,"class":1,"fixed":1,"corners":"4325000,-2925000 4251000,-2925000"}
+{"id":67,"kind":"trace","nets":"5","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"4251000,-2925000 f0x414cf3193c5586bb,0xc146af7f872e02d6 f0x414ce7529d25d489,0xc146b4601d650241 3699000,-3025000"}
+{"id":66,"kind":"trace","nets":"5","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"3625000,-3025000 3699000,-3025000"}
+{"id":63,"kind":"trace","nets":"4","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"599000,-3825000 f0x413fe32791d52260,0xc145ef07ae5f8805 2951000,-2525000"}
+{"id":62,"kind":"trace","nets":"3","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"225000,-225000 222958,-282618"}
+{"id":59,"kind":"trace","nets":"3","layer":1,"halfWidth":24500,"class":1,"fixed":0,"corners":"222958,-282618 252819,-5149961"}
+{"id":56,"kind":"trace","nets":"3","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"252819,-5149961 1851000,-5325000"}
+{"id":55,"kind":"trace","nets":"3","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"1925000,-5325000 1851000,-5325000"}
+{"id":54,"kind":"via","nets":"3","padstack":"Via[0-1]_600:300_um","center":"222958,-282618","fixed":0}
+{"id":53,"kind":"via","nets":"3","padstack":"Via[0-1]_600:300_um","center":"252819,-5149961","fixed":0}
+{"id":50,"kind":"trace","nets":"2","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"5625000,-3151000 f0x41530ac08353069f,0xc142e962344c1feb f0x41511817010d5236,0xc13e4250186ec2be f0x41502f7d9d289890,0xc13add0d11811c30 3699000,-1225000"}
+{"id":47,"kind":"trace","nets":"1","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"4951000,-325000 3119475,-372201"}
+{"id":44,"kind":"trace","nets":"1","layer":1,"halfWidth":24500,"class":1,"fixed":0,"corners":"3119475,-372201 3776417,-4403436"}
+{"id":41,"kind":"trace","nets":"1","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"3776417,-4403436 4751000,-4425000"}
+{"id":40,"kind":"trace","nets":"1","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"4825000,-4425000 4751000,-4425000"}
+{"id":39,"kind":"via","nets":"1","padstack":"Via[0-1]_600:300_um","center":"3119475,-372201","fixed":0}
+{"id":38,"kind":"via","nets":"1","padstack":"Via[0-1]_600:300_um","center":"3776417,-4403436","fixed":0}
+{"id":37,"kind":"via","nets":"1","padstack":"Via[0-1]_600:300_um","center":"3776417,-4403436","fixed":0}
+{"id":36,"kind":"via","nets":"1","padstack":"Via[0-1]_600:300_um","center":"3119475,-372201","fixed":0}
+{"id":35,"kind":"via","nets":"3","padstack":"Via[0-1]_600:300_um","center":"252819,-5149961","fixed":0}
+{"id":34,"kind":"via","nets":"3","padstack":"Via[0-1]_600:300_um","center":"222958,-282618","fixed":0}
+{"id":32,"kind":"trace","nets":"1","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"4825000,-4425000 4751000,-4425000"}
+{"id":28,"kind":"trace","nets":"5","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"3625000,-3025000 3699000,-3025000"}
+{"id":26,"kind":"trace","nets":"3","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"1925000,-5325000 1851000,-5325000"}
+{"id":23,"kind":"trace","nets":"3","layer":0,"halfWidth":24500,"class":1,"fixed":0,"corners":"225000,-225000 222958,-282618"}
+{"maxGeneratedId":81,"items":52}

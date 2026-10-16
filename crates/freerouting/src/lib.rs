@@ -15,6 +15,7 @@ pub mod drc;
 pub mod io;
 pub mod job;
 pub mod library;
+pub mod optimize;
 pub mod quality;
 pub mod rules;
 pub mod scoring;

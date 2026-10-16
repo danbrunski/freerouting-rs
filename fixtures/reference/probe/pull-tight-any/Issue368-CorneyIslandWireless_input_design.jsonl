@@ -1,0 +1,10 @@
+{"kind":"pull-tight-any","board":"Issue368-CorneyIslandWireless_input_design","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"board-none"}
+{"id":58,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":1,"corners":"2024000,-946500 2014983,-946500"}
+{"id":56,"kind":"trace","nets":"3","layer":1,"halfWidth":1000,"class":1,"fixed":1,"corners":"2024000,-756500 2014983,-756500"}
+{"id":54,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":1,"corners":"2008420,-925450 2008420,-940967"}
+{"id":52,"kind":"trace","nets":"3","layer":1,"halfWidth":1000,"class":1,"fixed":1,"corners":"2008420,-735450 2008420,-750967"}
+{"id":50,"kind":"trace","nets":"3","layer":1,"halfWidth":1000,"class":1,"fixed":0,"corners":"2008420,-750967 2014983,-756500"}
+{"id":47,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":0,"corners":"2008420,-940967 2014983,-946500"}
+{"id":44,"kind":"trace","nets":"1","layer":1,"halfWidth":1000,"class":1,"fixed":0,"corners":"1879150,-950850 1879150,-760850"}
+{"maxGeneratedId":58,"items":50}

@@ -153,9 +153,9 @@ impl RoutingBoard {
         self.board.changed_area.as_ref()
     }
 
-    /// Stops marking the changed area.
-    // TODO(router): Java `optChangedArea` pull-tightens the traces in the
-    // changed area before dropping it.
+    /// Stops marking the changed area and drops it without optimizing.
+    /// Java's path, which pull-tightens the traces in the area first, is
+    /// [`opt_changed_area`](Self::opt_changed_area) (`crate::optimize`).
     pub fn clear_changed_area(&mut self) {
         self.board.changed_area = None;
     }

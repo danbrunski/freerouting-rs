@@ -101,6 +101,31 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
   temporary directory under `TMPDIR`.
 - `probes/` holds probes worth keeping. `JavaRandomProbe.java` prints the `java.util.Random`
   values `freerouting_geometry::jmath` is tested against.
+- `probes/board/` holds the board probes (B series): `generate.sh <pin-worktree> <kind|all>` runs
+  each `<Kind>Probe.java` on every `fixtures.tsv` row and writes
+  `fixtures/reference/probe/<kind>/<board>.jsonl`; see `probes/board/README.md`.
+  - `ids` (`IdsProbe.java`, B01.1): `maxGeneratedId`, item count and an id/type hash after load
+    and after the session import.
+  - `state-hash` (`StateHashProbe.java`, B01.5): which of eight board states `getHash` calls equal.
+  - `ledger` (`LedgerProbe.java`, B01.6): `NetRoutingLedger` against a fresh DRC count, step by step.
+  - `tree`, `tree-ops`, `tree-visits` (`TreeProbe.java`, `TreeOpsProbe.java`, `TreeVisitsProbe.java`,
+    B02): search-tree shape fingerprints after load, session, undo, copies and board operations, and
+    the work units of overlap queries.
+  - `pull-tight` (`PullTightProbe.java`, O01): the 45° and forced 90° pull-tight steps on seeded
+    polylines, `optChangedArea` of whole boards, `pullTight` with pin exits,
+    `removeItemsAndPullTight` and a work-limit cut-off. One command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> pull-tight`.
+  - `pull-tight-any` (`PullTightAnyProbe.java`, O02): the any-angle pull-tight (restriction forced
+    to `NONE`): each step alone and the fixpoint on the seeded polylines of `pull-tight`, both end
+    smoothings, `optChangedArea` of whole boards (without `Issue756-minimal-hang`, which never
+    returns), and a work-limit cut-off on a board built in the probe. One command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> pull-tight-any`.
+  - `shove-insert` (`ShoveInsertProbe.java`, O04): seeded forced trace segments, forced vias,
+    drill item moves and the `(attach off)` check, with undo after a failure and the canonical
+    item dump every 10th step. One command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> shove-insert`
+    (it leaves empty `fixtures/reference/probe/shove-insert/<dir>/` directories for nested
+    fixture names; `find fixtures/reference/probe/shove-insert -type d -empty -delete`).
 
 ## Settings, writer and CLI dumps (C01)
 

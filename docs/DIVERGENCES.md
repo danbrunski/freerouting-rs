@@ -381,6 +381,41 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   `calc_check_shape_skips_rational_centre`). Every caller passes an integer via location, so
   no probe query reaches it.
 
+**Shove insert** (`shove::insert`, `shove::forced`, O04; tests `tests/reference_shove_insert.rs`,
+`tests/issue954_keepout_insertion.rs`)
+- Java bugs kept on purpose: `RoutingBoard.moveDrillItem` with a finite tidy width never
+  pull-tightens. `DrillItemMover.insert` unions the moved shapes into its own copy of the tidy
+  region (`tidyRegion = tidyRegion.union(..)`, `DrillItemMover.java:145`), so the caller's region
+  stays `IntOctagon.EMPTY`, `EMPTY.enlarge(w)` is `EMPTY` again and `optChangedArea` skips the
+  tightener; only `Integer.MAX_VALUE` (no clip) pull-tightens after a move
+  (`RoutingBoard::move_drill_item`, test `move_drill_item_finite_tidy_skips_pull_tight`).
+- Where Java throws out of an insert (a substitute piece without a tree shape in
+  `ShapeAndEntrySide`; `insertTraceWithoutCleaning` rejecting the new trace, fewer than two
+  corners or zero length, so that `combine` throws a `NullPointerException`), the port reports
+  a failure instead: `TraceShover::insert` returns false and `insert_forced_trace_polyline`
+  `ForcedInsert::DatabaseDamaged`, after which callers undo. No `shove-insert` probe step
+  reaches either.
+
+**Pull-tight** (`optimize`, O01; tests `tests/reference_pull_tight.rs`)
+- The any-angle end smoothing (`TraceTightenerAnyAngle.smoothenEndCornerAtTrace`, O02) of a
+  trace with three corners whose non-integer end corner has a last segment shorter than
+  `SKIP_LENGTH`, at a bend with a contact trace: Java calls `repositionLine` with start index
+  `-1` and throws an `ArrayIndexOutOfBoundsException` that nothing catches; the port returns no
+  smoothing (`optimize::tighten::any_angle` module docs). No probe board reaches it.
+- Java behaviour kept on purpose: on `Issue756-minimal-hang` with its routed session and the
+  restriction forced to `None`, `opt_changed_area` never returns, in Java and in Rust, with or
+  without a work limit: after the first trace's end smoothing, `split_traces` (Java
+  `BasicBoard.splitTraces -> PolylineTrace.split -> removeIfCycle -> getConnectionItems`)
+  doesn't end, and it has no stop check. `board_none_matches_java` lists the board as an
+  expected mismatch with the stacks of both (`NONE_EXPECTED_MISMATCHES`).
+- Java bugs kept on purpose (`optimize::pull_tight` module docs): the end-corner smoothing
+  removes the trace before it inserts the smoothed copy and leaves it removed when the
+  insertion fails (fewer than two corners, or zero length and unfixed), then removes the old
+  trace a second time (a no-op); a keep-point split that ends the smoothing early leaves the
+  tightener's contact pins unrestored; `pull_tight_trace` reports a change when
+  `change_trace` finds every line reused and returns early. No probe board reaches the first
+  two; the `pull-tight` probe compares the paths around them.
+
 **Autoroute room graph** (`autoroute::session`, A02; tests `tests/autoroute_probe_start_rooms.rs` and
 `autoroute::session::tests`)
 - Only the 45 degree room graph is ported. On a 90 degree or any-angle autoroute tree, room
@@ -409,33 +444,6 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   No `locate` or `locate-routed` board reaches either branch.
 - The any-angle locator (`FoundConnectionLocatorAnyAngle`) is not ported: `locate` returns
   `LocateError::UnsupportedAngle` (`any_angle_routing_is_unsupported_until_a07`). A07 ports it.
-
-## freerouting-kicad
-
-Differences from KiCad's own DSN export, which is what Java reads. The reader builds the same
-tree as the export everywhere else (`crates/freerouting-kicad/tests/{structure,copper}.rs`
-compare them on 12 committed boards and the 56-board corpus).
-
-- Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
-  area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
-  footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
-  (`rule_areas_map_by_flags`, `canary_pwr_fan_inlet`, `rule_area_flag_defaults_follow_kicad`).
-- A tracks-only area is read as `wire_keepout`, which the board builds as a full keepout that
-  also blocks vias, as Java does (K00 question 1), with one warning per area
-  (`rule_areas_map_by_flags`).
-- Track arcs are followed as polylines (chords of at most 0.1 rad and 1 um from the curve);
-  KiCad's export writes one chord from start to end (`arcs_follow_the_curve`,
-  `cm5_trace_length_matches_kicad`).
-- Coordinates keep KiCad's nanometres instead of `%.6g` (K00 question 2): exported values
-  agree within half a `%.6g` step (`copper_equals_the_export`).
-- A footprint rule area's holes are written on the zone's first layer, as the export does
-  (`makeIMAGE` uses `zone->GetLayer()`), whichever layer its keepout is on
-  (`copper_equals_the_export`, the `rule-areas` board).
-- Copper zones owned by footprints are kept as planes, after the board's own zones, with one
-  warning each (K00 question 6); KiCad's export drops them. `ReadOptions::drop_footprint_zones`
-  gives KiCad's behaviour (`planes_and_netless_zones`).
-- The vias of net classes are listed in project-file order, KiCad's in `std::unordered_map`
-  order; the Default class's via is first in both (`copper::via_lists` compares the rest as a set).
 
 ## freerouting-kicad
 

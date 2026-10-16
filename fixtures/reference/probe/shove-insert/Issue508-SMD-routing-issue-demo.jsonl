@@ -1,0 +1,296 @@
+{"kind":"shove-insert","board":"Issue508-SMD-routing-issue-demo","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"insert","step":0,"net":5,"layer":0,"from":"1291500,-358017","to":"1291500,-375267","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":37}
+{"stage":"insert","step":1,"net":4,"layer":0,"from":"208500,-550000","to":"218250,-559750","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":38}
+{"stage":"insert","step":2,"net":5,"layer":0,"from":"787019,-450000","to":"785519,-451500","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"unchanged","failing":5,"failingLayer":-1,"maxGeneratedId":38}
+{"stage":"insert","step":3,"net":2,"layer":0,"from":"773233,-446000","to":"763483,-455750","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":39}
+{"stage":"insert","step":4,"net":4,"layer":0,"from":"218250,-559750","to":"216750,-558250","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":42}
+{"stage":"insert","step":5,"net":1,"layer":0,"from":"739090,-426910","to":"777340,-465160","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":46}
+{"stage":"insert","step":6,"net":4,"layer":0,"from":"208500,-558017","to":"245250,-594767","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":47}
+{"stage":"insert","step":7,"net":5,"layer":0,"from":"780000,-450000","to":"747000,-417000","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":47}
+{"stage":"insert","step":8,"net":2,"layer":0,"from":"641633,-341983","to":"641633,-298483","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":48}
+{"stage":"insert","step":9,"net":5,"layer":0,"from":"1291500,-358017","to":"1308750,-340767","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":48}
+{"id":48,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 641633,-298483"}
+{"id":47,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 245250,-594767"}
+{"id":46,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"739090,-426910 754413,-442233 750393,-442233 748143,-439983 743158,-439983 739633,-443508 739633,-448492 743158,-452017 748143,-452017 750393,-449767 761947,-449767 777340,-465160"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 f0x4127744500000000,0xc11b81fa00000000"}
+{"id":42,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-550000 208500,-558017"}
+{"id":40,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 216517,-558017 216750,-558250"}
+{"id":37,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1291500,-375267"}
+{"id":36,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-550000 876000,-550000 781267,-455267"}
+{"id":35,"kind":"trace","nets":"6","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"781267,-455267 780000,-454000"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-350000 1291500,-358017"}
+{"id":33,"kind":"trace","nets":"5","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"787019,-450000 780000,-450000"}
+{"id":32,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-358017 1199517,-450000 787019,-450000"}
+{"id":31,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-550000 624000,-550000 718733,-455267"}
+{"id":30,"kind":"trace","nets":"4","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"718733,-455267 720000,-454000"}
+{"id":29,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-350000 208500,-358017"}
+{"id":28,"kind":"trace","nets":"3","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"569653,-450000 720000,-450000"}
+{"id":27,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-358017 300483,-450000 569653,-450000"}
+{"id":26,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"745650,-446000","fixed":2}
+{"id":25,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"780000,-446000 773233,-446000"}
+{"id":24,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"191500,-350000 191500,-341983"}
+{"id":23,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"641633,-341983","fixed":2}
+{"id":22,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"641633,-341983 191500,-341983"}
+{"id":21,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":2,"corners":"745650,-446000 641633,-341983"}
+{"id":20,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"773233,-446000 745650,-446000"}
+{"id":19,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-350000 1308500,-341983"}
+{"id":18,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-341983 824017,-341983 739090,-426910"}
+{"id":17,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"739090,-426910 726767,-439233 726767,-446000"}
+{"id":16,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"720000,-446000 726767,-446000"}
+{"maxGeneratedId":48,"items":43}
+{"stage":"insert","step":10,"net":3,"layer":0,"from":"208500,-358017","to":"188250,-358017","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":49}
+{"stage":"insert","step":11,"net":6,"layer":0,"from":"781267,-455267","to":"791017,-445517","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":49}
+{"stage":"insert","step":12,"net":6,"layer":0,"from":"781267,-455267","to":"780517,-455267","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":50}
+{"stage":"insert","step":13,"net":4,"layer":0,"from":"720000,-454000","to":"696000,-478000","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":3,"failingLayer":-1,"maxGeneratedId":50}
+{"stage":"insert","step":14,"net":2,"layer":0,"from":"641633,-341983","to":"682883,-300733","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":51}
+{"stage":"insert","step":15,"net":5,"layer":0,"from":"1291500,-358017","to":"1291500,-383517","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":54}
+{"stage":"insert","step":16,"net":4,"layer":0,"from":"208500,-550000","to":"208500,-571000","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":57}
+{"stage":"insert","step":17,"net":3,"layer":0,"from":"208500,-358017","to":"168750,-397767","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":58}
+{"stage":"insert","step":18,"net":1,"layer":0,"from":"1308500,-350000","to":"1297250,-338750","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":129}
+{"stage":"insert","step":19,"net":6,"layer":0,"from":"780000,-454000","to":"760500,-434500","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":129}
+{"id":129,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"1308500,-350000 1308500,-341983"}
+{"id":127,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-341983 1300483,-341983 1297250,-338750"}
+{"id":58,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 168750,-397767"}
+{"id":57,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 208500,-571000"}
+{"id":53,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1291500,-383517"}
+{"id":51,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 682883,-300733"}
+{"id":50,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"781267,-455267 780517,-455267"}
+{"id":49,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 188250,-358017"}
+{"id":48,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 641633,-298483"}
+{"id":47,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 245250,-594767"}
+{"id":46,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"739090,-426910 754413,-442233 750393,-442233 748143,-439983 743158,-439983 739633,-443508 739633,-448492 743158,-452017 748143,-452017 750393,-449767 761947,-449767 777340,-465160"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 f0x4127744500000000,0xc11b81fa00000000"}
+{"id":42,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-550000 208500,-558017"}
+{"id":40,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 216517,-558017 216750,-558250"}
+{"id":36,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-550000 876000,-550000 781267,-455267"}
+{"id":35,"kind":"trace","nets":"6","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"781267,-455267 780000,-454000"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-350000 1291500,-358017"}
+{"id":33,"kind":"trace","nets":"5","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"787019,-450000 780000,-450000"}
+{"id":32,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-358017 1199517,-450000 787019,-450000"}
+{"id":31,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-550000 624000,-550000 718733,-455267"}
+{"id":30,"kind":"trace","nets":"4","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"718733,-455267 720000,-454000"}
+{"id":29,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-350000 208500,-358017"}
+{"id":28,"kind":"trace","nets":"3","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"569653,-450000 720000,-450000"}
+{"id":27,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-358017 300483,-450000 569653,-450000"}
+{"id":26,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"745650,-446000","fixed":2}
+{"id":25,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"780000,-446000 773233,-446000"}
+{"id":24,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"191500,-350000 191500,-341983"}
+{"id":23,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"641633,-341983","fixed":2}
+{"id":22,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"641633,-341983 191500,-341983"}
+{"id":21,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":2,"corners":"745650,-446000 641633,-341983"}
+{"id":20,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"773233,-446000 745650,-446000"}
+{"id":19,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-350000 1308500,-341983"}
+{"id":18,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-341983 824017,-341983 739090,-426910"}
+{"id":17,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"739090,-426910 726767,-439233 726767,-446000"}
+{"id":16,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"720000,-446000 726767,-446000"}
+{"maxGeneratedId":129,"items":50}
+{"stage":"insert","step":20,"net":4,"layer":0,"from":"208500,-550000","to":"208500,-567250","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":136}
+{"stage":"insert","step":21,"net":1,"layer":0,"from":"1308500,-341983","to":"1308500,-377983","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":139}
+{"stage":"insert","step":22,"net":5,"layer":0,"from":"1291500,-358017","to":"1329000,-395517","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":143}
+{"stage":"insert","step":23,"net":2,"layer":0,"from":"773233,-446000","to":"734983,-446000","halfWidth":1000,"class":1,"tidy":0,"outcome":"partial 771733,-446000","failing":26,"failingLayer":-1,"maxGeneratedId":145}
+{"stage":"insert","step":24,"net":6,"layer":0,"from":"781267,-455267","to":"796267,-440267","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":145}
+{"stage":"insert","step":25,"net":1,"layer":0,"from":"739090,-426910","to":"709090,-456910","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":145}
+{"stage":"insert","step":26,"net":3,"layer":0,"from":"188250,-358017","to":"144000,-402267","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":146}
+{"stage":"insert","step":27,"net":2,"layer":0,"from":"780000,-446000","to":"780000,-479750","halfWidth":1000,"class":1,"tidy":0,"outcome":"unchanged","failing":-1,"failingLayer":-1,"maxGeneratedId":146}
+{"stage":"insert","step":28,"net":5,"layer":0,"from":"1329000,-395517","to":"1353750,-420267","halfWidth":1000,"class":1,"tidy":2147483647,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":147}
+{"stage":"insert","step":29,"net":3,"layer":0,"from":"208500,-358017","to":"208500,-329517","halfWidth":1000,"class":1,"tidy":0,"outcome":"reached","failing":-1,"failingLayer":-1,"maxGeneratedId":158}
+{"id":158,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"188250,-358017 184750,-358017 182983,-356250 182983,-343750 184750,-341983 187483,-341983 187483,-340319 189836,-337966 208500,-337966 208500,-329517"}
+{"id":156,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"188250,-358017 144000,-402267"}
+{"id":153,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-350000 208500,-346000 200017,-346000 200017,-356250 198250,-358017 188250,-358017"}
+{"id":147,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1353750,-420267"}
+{"id":145,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 771733,-446000"}
+{"id":141,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-350000 1308500,-369337"}
+{"id":136,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-567250 208500,-571000"}
+{"id":135,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 208500,-567250"}
+{"id":127,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-341983 1300483,-341983 1297250,-338750"}
+{"id":58,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 168750,-397767"}
+{"id":53,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1291500,-383517"}
+{"id":51,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 682883,-300733"}
+{"id":50,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"781267,-455267 780517,-455267"}
+{"id":48,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 641633,-298483"}
+{"id":47,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 245250,-594767"}
+{"id":46,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"739090,-426910 754413,-442233 750393,-442233 748143,-439983 743158,-439983 739633,-443508 739633,-448492 743158,-452017 748143,-452017 750393,-449767 761947,-449767 777340,-465160"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 f0x4127744500000000,0xc11b81fa00000000"}
+{"id":42,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-550000 208500,-558017"}
+{"id":40,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 216517,-558017 216750,-558250"}
+{"id":36,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-550000 876000,-550000 781267,-455267"}
+{"id":35,"kind":"trace","nets":"6","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"781267,-455267 780000,-454000"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-350000 1291500,-358017"}
+{"id":33,"kind":"trace","nets":"5","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"787019,-450000 780000,-450000"}
+{"id":32,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-358017 1199517,-450000 787019,-450000"}
+{"id":31,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-550000 624000,-550000 718733,-455267"}
+{"id":30,"kind":"trace","nets":"4","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"718733,-455267 720000,-454000"}
+{"id":29,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-350000 208500,-358017"}
+{"id":28,"kind":"trace","nets":"3","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"569653,-450000 720000,-450000"}
+{"id":27,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-358017 300483,-450000 569653,-450000"}
+{"id":26,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"745650,-446000","fixed":2}
+{"id":25,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"780000,-446000 773233,-446000"}
+{"id":24,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"191500,-350000 191500,-341983"}
+{"id":23,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"641633,-341983","fixed":2}
+{"id":22,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"641633,-341983 191500,-341983"}
+{"id":21,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":2,"corners":"745650,-446000 641633,-341983"}
+{"id":20,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"773233,-446000 745650,-446000"}
+{"id":19,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-350000 1308500,-341983"}
+{"id":18,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-341983 824017,-341983 739090,-426910"}
+{"id":17,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"739090,-426910 726767,-439233 726767,-446000"}
+{"id":16,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"720000,-446000 726767,-446000"}
+{"maxGeneratedId":158,"items":55}
+{"id":158,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"188250,-358017 184750,-358017 182983,-356250 182983,-343750 184750,-341983 187483,-341983 187483,-340319 189836,-337966 208500,-337966 208500,-329517"}
+{"id":156,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"188250,-358017 144000,-402267"}
+{"id":153,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-350000 208500,-346000 200017,-346000 200017,-356250 198250,-358017 188250,-358017"}
+{"id":147,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1353750,-420267"}
+{"id":145,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 771733,-446000"}
+{"id":141,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-350000 1308500,-369337"}
+{"id":136,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-567250 208500,-571000"}
+{"id":135,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 208500,-567250"}
+{"id":127,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-341983 1300483,-341983 1297250,-338750"}
+{"id":58,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 168750,-397767"}
+{"id":53,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1291500,-383517"}
+{"id":51,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 682883,-300733"}
+{"id":50,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"781267,-455267 780517,-455267"}
+{"id":48,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 641633,-298483"}
+{"id":47,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 245250,-594767"}
+{"id":46,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"739090,-426910 754413,-442233 750393,-442233 748143,-439983 743158,-439983 739633,-443508 739633,-448492 743158,-452017 748143,-452017 750393,-449767 761947,-449767 777340,-465160"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 f0x4127744500000000,0xc11b81fa00000000"}
+{"id":42,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-550000 208500,-558017"}
+{"id":40,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 216517,-558017 216750,-558250"}
+{"id":36,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-550000 876000,-550000 781267,-455267"}
+{"id":35,"kind":"trace","nets":"6","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"781267,-455267 780000,-454000"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-350000 1291500,-358017"}
+{"id":33,"kind":"trace","nets":"5","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"787019,-450000 780000,-450000"}
+{"id":32,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-358017 1199517,-450000 787019,-450000"}
+{"id":31,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-550000 624000,-550000 718733,-455267"}
+{"id":30,"kind":"trace","nets":"4","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"718733,-455267 720000,-454000"}
+{"id":29,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-350000 208500,-358017"}
+{"id":28,"kind":"trace","nets":"3","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"569653,-450000 720000,-450000"}
+{"id":27,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-358017 300483,-450000 569653,-450000"}
+{"id":26,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"745650,-446000","fixed":2}
+{"id":25,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"780000,-446000 773233,-446000"}
+{"id":24,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"191500,-350000 191500,-341983"}
+{"id":23,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"641633,-341983","fixed":2}
+{"id":22,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"641633,-341983 191500,-341983"}
+{"id":21,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":2,"corners":"745650,-446000 641633,-341983"}
+{"id":20,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"773233,-446000 745650,-446000"}
+{"id":19,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-350000 1308500,-341983"}
+{"id":18,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-341983 824017,-341983 739090,-426910"}
+{"id":17,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"739090,-426910 726767,-439233 726767,-446000"}
+{"id":16,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"720000,-446000 726767,-446000"}
+{"maxGeneratedId":158,"items":55}
+{"stage":"via","step":0,"net":6,"location":"781267,-466517","via":"Via[0-1]_600:300_um","tidy":2147483647,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":169}
+{"stage":"via","step":1,"net":6,"location":"792000,-466000","via":"Via[0-1]_600:300_um","tidy":0,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":170}
+{"stage":"via","step":2,"net":3,"location":"210000,-358017","via":"Via[0-1]_600:300_um","tidy":2147483647,"ok":false,"failing":9,"failingLayer":0,"maxGeneratedId":170}
+{"stage":"via","step":3,"net":1,"location":"720000,-449750","via":"Via[0-1]_600:300_um","tidy":0,"ok":false,"failing":31,"failingLayer":0,"maxGeneratedId":170}
+{"stage":"via","step":4,"net":2,"location":"656633,-356983","via":"Via[0-1]_600:300_um","tidy":2147483647,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":171}
+{"stage":"via","step":5,"net":4,"location":"208500,-558017","via":"Via[0-1]_600:300_um","tidy":0,"ok":false,"failing":13,"failingLayer":0,"maxGeneratedId":171}
+{"stage":"via","step":6,"net":5,"location":"780000,-462750","via":"Via[0-1]_600:300_um","tidy":2147483647,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":174}
+{"stage":"via","step":7,"net":3,"location":"208500,-353517","via":"Via[0-1]_600:300_um","tidy":0,"ok":false,"failing":9,"failingLayer":0,"maxGeneratedId":174}
+{"stage":"via","step":8,"net":4,"location":"221250,-550000","via":"Via[0-1]_600:300_um","tidy":2147483647,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":175}
+{"stage":"via","step":9,"net":1,"location":"732750,-446000","via":"Via[0-1]_600:300_um","tidy":0,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"id":176,"kind":"via","nets":"1","padstack":"Via[0-1]_600:300_um","center":"732750,-446000","fixed":0}
+{"id":175,"kind":"via","nets":"4","padstack":"Via[0-1]_600:300_um","center":"221250,-550000","fixed":0}
+{"id":174,"kind":"via","nets":"5","padstack":"Via[0-1]_600:300_um","center":"780000,-462750","fixed":0}
+{"id":172,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"739090,-426910 739090,-447949 752944,-461803 773983,-461803"}
+{"id":171,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"656633,-356983","fixed":0}
+{"id":170,"kind":"via","nets":"6","padstack":"Via[0-1]_600:300_um","center":"792000,-466000","fixed":0}
+{"id":169,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-350000 208500,-358017"}
+{"id":167,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"184750,-358017 182983,-356250 182983,-343750 197215,-329518 208500,-329518 208500,-329517"}
+{"id":166,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 184750,-358017"}
+{"id":165,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"184750,-358017 184750,-361517 144000,-402267"}
+{"id":161,"kind":"via","nets":"6","padstack":"Via[0-1]_600:300_um","center":"781267,-470768","fixed":0}
+{"id":147,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1353750,-420267"}
+{"id":145,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 771733,-446000"}
+{"id":141,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-350000 1308500,-369337"}
+{"id":136,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-567250 208500,-571000"}
+{"id":135,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 208500,-567250"}
+{"id":127,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-341983 1300483,-341983 1297250,-338750"}
+{"id":58,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 168750,-397767"}
+{"id":53,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1291500,-383517"}
+{"id":51,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 682883,-300733"}
+{"id":50,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"781267,-455267 780517,-455267"}
+{"id":48,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 641633,-298483"}
+{"id":47,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 245250,-594767"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 f0x4127744500000000,0xc11b81fa00000000"}
+{"id":42,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-550000 208500,-558017"}
+{"id":40,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 216517,-558017 216750,-558250"}
+{"id":36,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-550000 876000,-550000 781267,-455267"}
+{"id":35,"kind":"trace","nets":"6","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"781267,-455267 780000,-454000"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-350000 1291500,-358017"}
+{"id":33,"kind":"trace","nets":"5","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"787019,-450000 780000,-450000"}
+{"id":32,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-358017 1199517,-450000 787019,-450000"}
+{"id":31,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-550000 624000,-550000 718733,-455267"}
+{"id":30,"kind":"trace","nets":"4","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"718733,-455267 720000,-454000"}
+{"id":29,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-350000 208500,-358017"}
+{"id":28,"kind":"trace","nets":"3","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"569653,-450000 720000,-450000"}
+{"id":27,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-358017 300483,-450000 569653,-450000"}
+{"id":26,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"745650,-446000","fixed":2}
+{"id":25,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"780000,-446000 773233,-446000"}
+{"id":24,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"191500,-350000 191500,-341983"}
+{"id":23,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"641633,-341983","fixed":2}
+{"id":22,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"641633,-341983 191500,-341983"}
+{"id":21,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":2,"corners":"745650,-446000 641633,-341983"}
+{"id":20,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"773233,-446000 745650,-446000"}
+{"id":19,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-350000 1308500,-341983"}
+{"id":18,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-341983 824017,-341983 739090,-426910"}
+{"id":17,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"739090,-426910 726767,-439233 726767,-446000"}
+{"id":16,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"720000,-446000 726767,-446000"}
+{"maxGeneratedId":176,"items":62}
+{"stage":"move","step":0,"via":174,"vector":"0,3750","tidy":2147483647,"ok":false,"failing":36,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":1,"via":161,"vector":"750,0","tidy":100,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":2,"via":23,"vector":"750,-750","tidy":2147483647,"ok":false,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":3,"via":176,"vector":"-750,750","tidy":100,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":4,"via":174,"vector":"5250,-5250","tidy":2147483647,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":5,"via":175,"vector":"0,1500","tidy":100,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":6,"via":23,"vector":"-2250,-2250","tidy":2147483647,"ok":false,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":7,"via":174,"vector":"5250,5250","tidy":100,"ok":false,"failing":36,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":8,"via":23,"vector":"0,5250","tidy":2147483647,"ok":false,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"stage":"move","step":9,"via":171,"vector":"6750,-6750","tidy":100,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":176}
+{"id":176,"kind":"via","nets":"1","padstack":"Via[0-1]_600:300_um","center":"732000,-445250","fixed":0}
+{"id":175,"kind":"via","nets":"4","padstack":"Via[0-1]_600:300_um","center":"221250,-548500","fixed":0}
+{"id":174,"kind":"via","nets":"5","padstack":"Via[0-1]_600:300_um","center":"785250,-468000","fixed":0}
+{"id":172,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"739090,-426910 739090,-447949 752944,-461803 773983,-461803"}
+{"id":171,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"663383,-363733","fixed":0}
+{"id":170,"kind":"via","nets":"6","padstack":"Via[0-1]_600:300_um","center":"793268,-466000","fixed":0}
+{"id":169,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-350000 208500,-358017"}
+{"id":167,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"184750,-358017 182983,-356250 182983,-343750 197215,-329518 208500,-329518 208500,-329517"}
+{"id":166,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 184750,-358017"}
+{"id":165,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"184750,-358017 184750,-361517 144000,-402267"}
+{"id":161,"kind":"via","nets":"6","padstack":"Via[0-1]_600:300_um","center":"779348,-473437","fixed":0}
+{"id":147,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1353750,-420267"}
+{"id":145,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 771733,-446000"}
+{"id":141,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-350000 1308500,-369337"}
+{"id":136,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-567250 208500,-571000"}
+{"id":135,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 208500,-567250"}
+{"id":127,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1308500,-341983 1300483,-341983 1297250,-338750"}
+{"id":58,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-358017 168750,-397767"}
+{"id":53,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"1291500,-358017 1291500,-383517"}
+{"id":51,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 682883,-300733"}
+{"id":50,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"781267,-455267 780517,-455267"}
+{"id":48,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"641633,-341983 641633,-298483"}
+{"id":47,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 245250,-594767"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"773233,-446000 f0x4127744500000000,0xc11b81fa00000000"}
+{"id":42,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":1,"corners":"208500,-550000 208500,-558017"}
+{"id":40,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":0,"corners":"208500,-558017 216517,-558017 216750,-558250"}
+{"id":36,"kind":"trace","nets":"6","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-550000 876000,-550000 781267,-455267"}
+{"id":35,"kind":"trace","nets":"6","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"781267,-455267 780000,-454000"}
+{"id":34,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-350000 1291500,-358017"}
+{"id":33,"kind":"trace","nets":"5","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"787019,-450000 780000,-450000"}
+{"id":32,"kind":"trace","nets":"5","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1291500,-358017 1199517,-450000 787019,-450000"}
+{"id":31,"kind":"trace","nets":"4","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-550000 624000,-550000 718733,-455267"}
+{"id":30,"kind":"trace","nets":"4","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"718733,-455267 720000,-454000"}
+{"id":29,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-350000 208500,-358017"}
+{"id":28,"kind":"trace","nets":"3","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"569653,-450000 720000,-450000"}
+{"id":27,"kind":"trace","nets":"3","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"208500,-358017 300483,-450000 569653,-450000"}
+{"id":26,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"745650,-446000","fixed":2}
+{"id":25,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"780000,-446000 773233,-446000"}
+{"id":24,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"191500,-350000 191500,-341983"}
+{"id":23,"kind":"via","nets":"2","padstack":"Via[0-1]_600:300_um","center":"641633,-341983","fixed":2}
+{"id":22,"kind":"trace","nets":"2","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"641633,-341983 191500,-341983"}
+{"id":21,"kind":"trace","nets":"2","layer":1,"halfWidth":1000,"class":1,"fixed":2,"corners":"745650,-446000 641633,-341983"}
+{"id":20,"kind":"trace","nets":"2","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"773233,-446000 745650,-446000"}
+{"id":19,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-350000 1308500,-341983"}
+{"id":18,"kind":"trace","nets":"1","layer":0,"halfWidth":1000,"class":1,"fixed":2,"corners":"1308500,-341983 824017,-341983 739090,-426910"}
+{"id":17,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"739090,-426910 726767,-439233 726767,-446000"}
+{"id":16,"kind":"trace","nets":"1","layer":0,"halfWidth":750,"class":1,"fixed":2,"corners":"720000,-446000 726767,-446000"}
+{"maxGeneratedId":176,"items":62}
+{"stage":"attach","pin":14,"net":6,"via":"Via[0-1]_600:300_um","attach":false,"ok":false,"failing":14,"failingLayer":0,"maxGeneratedId":176}
+{"stage":"attach","pin":14,"net":6,"via":"Via[0-1]_600:300_um","attach":true,"ok":true,"failing":-1,"failingLayer":-1,"maxGeneratedId":177}

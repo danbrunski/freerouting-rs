@@ -7,7 +7,7 @@ edits. Path insertion (A06) can't be ported without it, and the
 `TODO(router)` in `RoutingBoard::clear_changed_area` waits for it. This
 checklist ports the shared driver, the 45° and 90° variants, the trace-level
 entry with Java's pin-exit recursion, and the board entry points without via
-optimization (O05 adds that). See [O00](O00-optimizer-README.md) for the
+optimization (O05 adds that). See [O00](../O00-optimizer-README.md) for the
 series rules.
 
 **Prerequisites:**
@@ -94,7 +94,7 @@ pull_tight_trace, pull_tight_own_net}`.
 
 ## Checklist
 
-- [ ] **O01.1 — Tightener types and dispatch.**
+- [x] **O01.1 — Tightener types and dispatch.**
   - Java: `TraceTightener` constructor and `getInstance` (`:63-114`).
   - Rust: `optimize/params.rs` with `PullTightParams { only_nets:
     Vec<i32>, clip: Clip, accuracy: i32, keep_point: Option<(Point,
@@ -112,8 +112,17 @@ pull_tight_trace, pull_tight_own_net}`.
     (`null`, `EMPTY`, `EMPTY.enlarge(250)`, which is `Skip`);
     `new_mapped_matches_new` on 1,000 seeded line arrays (equal polylines;
     maps checked by hand on cases with a dropped and a flipped line).
+  *Done 2026-10-16:* `optimize/{mod.rs, params.rs, tighten/mod.rs}`. `PullTightParams` carries
+  `limit: Option<i64>` (nominal ms, started in `Tightener::new` on the board's meter, as
+  Java's `WorkLimit` starts in the constructor) and `stop` (the cancel token, checked first).
+  Tests: `optimize::tighten::tests::angle_dispatch`, `clip_from_java_cases` (`null`,
+  `EMPTY`, `EMPTY.enlarge(250)` = `Skip`), `line_reuse_counts_same_index_origins`;
+  `reference_pull_tight::min_translate_dist_is_at_least_100` (accuracy 0, 100, 500 -> 100,
+  100, 500); geometry `polyline::new_mapped_tests::new_mapped_matches_new` (1,000 seeded
+  arrays from `JavaRandom(20261016)`, equal polylines, dropped and flipped lines seen) and
+  `new_mapped_hand_cases` (a dropped parallel line, a turned middle line).
 
-- [ ] **O01.2 — Shared line steps.**
+- [x] **O01.2 — Shared line steps.**
   - Java: `repositionLines` / `repositionLine` (`:215-331`),
     `skipSegmentsOfLength0` (`:338-398`).
   - Rust: functions in `optimize/tighten/mod.rs` taking `&mut Tightener`
@@ -139,8 +148,16 @@ pull_tight_trace, pull_tight_own_net}`.
     alone to 200 seeded polylines per board on `Issue026-J2_reference` and
     `Issue508-DAC2020_bm08` with their routed SES. Rust output and
     changed/unchanged flags are equal for every input.
+  *Done 2026-10-16:* `repositionLines`, `repositionLine` (with Java's in-place reversal of the
+  middle check line replayed) and `skipSegmentsOfLength0` in `optimize/tighten/mod.rs`.
+  Probe `pull-tight` sections `steps-45`/`steps-90` on J2 and DAC2020_bm08 (routed SES): 200
+  seeded polylines per board and angle (own polyline, bump, jitter, zigzag, a line inserted
+  through a corner; every third clipped), each step alone plus the fixpoint, with the changed
+  flag, the result and the changed area: `reference_pull_tight::steps_45_match_java`,
+  `steps_90_match_java` equal on every input. Java changed counts (J2 / bm08, 45°):
+  repositionLines 36/40 of 200, skipSegmentsOfLength0 28/23.
 
-- [ ] **O01.3 — 45° variant.**
+- [x] **O01.3 — 45° variant.**
   - Java: `TraceTightener45` (all methods listed above).
   - Rust: `optimize/tighten/diag45.rs`.
   - Orders: the fixpoint `reduceCorners → smoothenCorners → repositionLines`
@@ -150,15 +167,24 @@ pull_tight_trace, pull_tight_own_net}`.
   - **Accept:** probe mode `steps` covers `reduceCorners`,
     `smoothenCorners` and both end smoothings, equal on every input; O01.7
     in 45° mode.
+  *Done 2026-10-16:* `optimize/tighten/diag45.rs`; the fixpoint and stop check in
+  `Tightener::pull_tight`. `steps_45_match_java`: reduceCorners 29/29 changed of 200 (J2 /
+  bm08), smoothenCorners 32/43, pullTight 50/49, all equal; `ends_45_match_java`: both end
+  smoothings of every trace, on the imported board (user-fixed contacts end them) and on the
+  unfixed board with every trace split at its middle corner (`ends-45-split`, 3 smoothings
+  on bm08), equal; `board_45_matches_java` (O01.7) equal.
 
-- [ ] **O01.4 — 90° variant.**
+- [x] **O01.4 — 90° variant.**
   - Java: `TraceTightener90` (`trySkipSecondCorner → trySkipCorners →
     repositionLines`; clip tests use `contains`; end smoothing returns null).
   - Rust: `optimize/tighten/ortho.rs`.
   - **Accept:** probe mode `steps` with the restriction forced to 90°;
     O01.7 in forced 90° mode.
+  *Done 2026-10-16:* `optimize/tighten/ortho.rs`. `steps_90_match_java` (restriction forced
+  to 90°): trySkipSecondCorner 11/13 changed (J2 / bm08), trySkipCorners 19/13, pullTight
+  44/51, all equal; `board_90_matches_java` (O01.7) equal on all 41 boards.
 
-- [ ] **O01.5 — Trace-level pull-tight and end-corner smoothing.**
+- [x] **O01.5 — Trace-level pull-tight and end-corner smoothing.**
   - Java: `PolylineTrace.pullTight(algo)` (`:810-863`),
     `pullTight(ownNetOnly, accuracy, stop)` (`:869-890`),
     `smoothenEndCornersAtTrace(1,2)` (`:402-513`), `splitTracesAtKeepPoint`
@@ -193,8 +219,15 @@ pull_tight_trace, pull_tight_own_net}`.
     SES and `pinEdgeToTurnDist` set to 4 × the board's minimum trace half
     width, `pull_tight_own_net` on every trace ending at a pin (descending
     id) gives the same dump and `maxGeneratedId`.
+  *Done 2026-10-16:* `optimize/pull_tight.rs`: `pull_tight_trace`, `pull_tight_own_net`,
+  `smoothen_end_corners_at_trace`, `split_at_keep_point`; kept quirks in the module docs and
+  DIVERGENCES ("Pull-tight"). `reference_pull_tight::pin_exit_matches_java` on J2,
+  DAC2020_bm08 and Issue143-rpi_splitter (routed SES, traces and vias unfixed because
+  `SesReader` imports them user-fixed, `pinEdgeToTurnDist` = 4 × the minimum half width,
+  every trace ending at a pin, highest id first): per-trace results, `maxGeneratedId` and
+  the dump equal (3 traces changed on J2).
 
-- [ ] **O01.6 — Board entry points and work limits.**
+- [x] **O01.6 — Board entry points and work limits.**
   - Java: `TraceTightener.optChangedArea` (`:121-169`),
     `RoutingBoardOperations.optChangedArea` (`:52-79`) and
     `removeItemsAndPullTight` (`:81-120`), `RoutingBoard.optChangedArea`
@@ -237,8 +270,22 @@ pull_tight_trace, pull_tight_own_net}`.
     - after J01: probe mode `limit` runs `optChangedArea` on J2 + SES with
       a limit small enough to fire (pick it from the Java log); the Rust
       dump and the visit count at the cut-off are equal.
+  *Done 2026-10-16:* `opt_changed_area` (returns an `OptChangedAreaRun`: stopped, stop checks,
+  units at the last check) and `remove_items_and_pull_tight` in `optimize/pull_tight.rs`;
+  `clear_changed_area`'s `TODO(router)` replaced by the doc line. Constants in
+  `optimize/params.rs`: `ENDLESS_LOOP_GUARD_NOMINAL_MS` 1000, `REMOVE_ITEMS_PULL_TIGHT_NOMINAL_MS`
+  2000, `ROUTE_PULL_TIGHT_NOMINAL_MS` 2000, `MOVE_COMPONENT_PULL_TIGHT_NOMINAL_MS` 1000,
+  `budget_units` (× 64,000; exceeded when `used > budget`, B02.7's `WorkLimit`). Tests:
+  `reference_pull_tight::changed_area_lifecycle_with_pull_tight` (in this file, because
+  `tests/java_ports.rs` carries other sessions' uncommitted hunks: no marking does nothing,
+  `Clip::Skip` drops the area without a stop check or a change, a full run drops it and
+  changes traces); `remove_items_and_pull_tight_matches_java` (J2, 10 seeded traces, widths
+  `i32::MAX`, 0, 2000: results and dumps equal); `work_limit_cuts_off_like_java` (pin
+  `a773a70ec`; on DAC2020_bm08, because on J2 the whole run takes 50,652 units, less than the
+  smallest limit of 1 nominal ms = 64,000: limit 1 ms fires after 161 stop checks at 64,251
+  units in Java and Rust, dumps equal).
 
-- [ ] **O01.7 — Differential probe `pulltight` and Rust comparison.**
+- [x] **O01.7 — Differential probe `pulltight` and Rust comparison.**
   Build the probe and the dump first: O01.2–O01.6 accept against its modes.
   - Java: `tools/java-reference/probes/board/PullTightProbe.java`, modes `board`
     (default), `steps`, `pin-exit`, `remove`, `limit`. `board` loads DSN +
@@ -259,8 +306,19 @@ pull_tight_trace, pull_tight_own_net}`.
     A board may be an expected mismatch only with a named cause found by
     bisecting to the first differing trace (for example a Java exception
     path), written next to the test, at most 2 of 43 per mode.
+  *Done 2026-10-16:* `tools/java-reference/probes/board/PullTightProbe.java` (kind
+  `pull-tight`, generated with `generate.sh <pin> pull-tight` at `a773a70ec` into
+  `fixtures/reference/probe/pull-tight/`; the directory follows `generate.sh`'s kind naming,
+  not `pulltight`), `tests/support/item_dump.rs` (geometry-first, then ids),
+  `tests/reference_pull_tight.rs`. The board-level modes unfix the imported traces and vias
+  first (`SesReader` makes them user-fixed; without it nothing changes). Board set: the 40
+  smallest rows with a route session (minus Issue676-ch32v-tx118s) plus
+  Issue508-DAC2020_bm05 = 41 boards (bm08 and J2 are among the 40; all use the route
+  sessions of `fixtures.tsv`). `board_45_matches_java`, `board_90_matches_java`: dumps and ids
+  identical on 41 of 41 boards in both modes, no expected mismatch; `board-45-tree` on J2 and
+  bm08: the default tree's fingerprint equals Java's walk hash.
 
-- [ ] **O01.8 — Speed and determinism.**
+- [x] **O01.8 — Speed and determinism.**
   - Scratch buffers for line arrays and offset shapes; no per-check
     `BTreeSet`; reuse the tightener across traces of one call.
   - `examples/pull_tight_dump.rs <dsn> <ses> <out> [--angle 45|90|none]`
@@ -271,3 +329,12 @@ pull_tight_trace, pull_tight_own_net}`.
     - a release-build `#[ignore]` timing test records Rust time for the
       `board` mode on bm08 and J2 next to the Java probe's own timing; the
       done note gives both (measured, not gated).
+  *Done 2026-10-16:* `examples/pull_tight_dump.rs` (`--angle none` errors until O02).
+  `tools/determinism-check.sh --out <dir> -- target/release/examples/pull_tight_dump
+  fixtures/<b>.dsn fixtures/reference/route/<b>.ses {OUT}`: `identical` on
+  Issue508-DAC2020_bm08 and Issue026-J2_reference (loaded runs at load 13.8 and 14.0).
+  `reference_pull_tight::board_mode_timing` (`#[ignore]`, release, median of 5, machine at
+  load 13-20 from other sessions): bm08 8.3 ms, J2 1.2 ms; Java probe's own `TIMING`
+  (one cold run, JIT included): bm08 408 ms, J2 68 ms. The tightener is reused across the
+  traces of a run and no stop check builds a `BTreeSet`; no further scratch buffers were
+  added, because nothing measured hot.

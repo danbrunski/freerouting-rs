@@ -39,3 +39,9 @@ pub use spring::SpringOver;
 pub use trace_check::{FULL_OK_LENGTH, TraceShover};
 pub use trace_entries::ShapeTraceEntries;
 pub use via_check::ShoveDepths;
+
+// O04: the insert half (shove insert, drill moves, forced pads and vias,
+// forced trace insertion).
+pub mod insert;
+
+pub use forced::{ForcedInsert, ForcedTrace, ForcedTraceParams};

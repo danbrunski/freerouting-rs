@@ -976,3 +976,187 @@ mod tests {
         assert_eq!(s.corners(), vec![ip(0, 0), ip(10, 0), ip(10, 40)]);
     }
 }
+
+impl Polyline {
+    /// [`Polyline::new`] that also says where each output line comes from: for every
+    /// line of the result, the index of the input line it is, or `None` where the
+    /// constructor turned the line around (Java's `opposite()` creates a new `Line`
+    /// object there).
+    ///
+    /// Java's `PolylineTrace.change` compares `Line` objects by reference, so the
+    /// pull-tight optimizer (O01) tracks which lines of its working polyline are the
+    /// trace's own. `new_mapped(lines).0` equals `Polyline::new(lines)`.
+    pub fn new_mapped(input_lines: &[Line]) -> (Polyline, Vec<Option<usize>>) {
+        let indexed: Vec<(Line, usize)> = input_lines.iter().copied().zip(0..).collect();
+        let mut filtered = remove_overlaps_mapped(remove_parallel_mapped(indexed));
+        if filtered.len() < 3 {
+            return (Polyline::from_raw_lines(Vec::new()), Vec::new());
+        }
+        let mut origins: Vec<Option<usize>> = filtered.iter().map(|(_, i)| Some(*i)).collect();
+        let mut float_corners: Vec<Option<FloatPoint>> = vec![None; filtered.len() - 1];
+        for i in 1..filtered.len() - 1 {
+            let corner = filtered[i].0.intersection_approx(&filtered[i + 1].0);
+            float_corners[i] = Some(corner);
+            let side_of_line = filtered[i - 1].0.side_of_float(corner);
+            if side_of_line != Side::Collinear {
+                let d0 = filtered[i - 1].0.direction();
+                let d1 = filtered[i].0.direction();
+                if d0.side_of(&d1) != side_of_line {
+                    filtered[i].0 = filtered[i].0.opposite();
+                    origins[i] = None;
+                }
+            }
+        }
+        let result = Polyline::from_raw_lines(filtered.into_iter().map(|(l, _)| l).collect());
+        for (cell, corner) in result.inner.float_corners.iter().zip(float_corners) {
+            if let Some(c) = corner {
+                let _ = cell.set(c);
+            }
+        }
+        (result, origins)
+    }
+}
+
+/// [`remove_consecutive_parallel_lines`] carrying each line's input index.
+fn remove_parallel_mapped(lines: Vec<(Line, usize)>) -> Vec<(Line, usize)> {
+    if lines.len() < 3 {
+        return lines;
+    }
+    let mut tmp: Vec<(Line, usize)> = Vec::with_capacity(lines.len());
+    tmp.push(lines[0]);
+    for line in &lines[1..] {
+        if !tmp[tmp.len() - 1].0.is_parallel(&line.0) {
+            tmp.push(*line);
+        }
+    }
+    if tmp.len() == lines.len() {
+        return lines;
+    }
+    if tmp.len() < 3 {
+        return Vec::new();
+    }
+    tmp
+}
+
+/// [`remove_overlaps`] carrying each line's input index.
+fn remove_overlaps_mapped(lines: Vec<(Line, usize)>) -> Vec<(Line, usize)> {
+    let len = lines.len();
+    if len < 4 {
+        return lines;
+    }
+    let mut tmp: Vec<(Line, usize)> = vec![lines[0]; len];
+    let mut new_length = 0usize;
+    if !lines[0].0.is_equal_or_opposite(&lines[2].0) {
+        new_length += 1;
+    }
+    tmp[new_length] = lines[1];
+    new_length += 1;
+    for i in 2..len - 2 {
+        let last = new_length
+            .checked_sub(1)
+            .expect("Polyline.removeOverlaps: index -1 (ArrayIndexOutOfBoundsException in Java)");
+        if tmp[last].0.is_equal_or_opposite(&lines[i + 1].0) {
+            new_length -= 1;
+        } else {
+            tmp[new_length] = lines[i];
+            new_length += 1;
+        }
+    }
+    tmp[new_length] = lines[len - 2];
+    new_length += 1;
+    if new_length >= 2
+        && !lines[len - 1]
+            .0
+            .is_equal_or_opposite(&tmp[new_length - 2].0)
+    {
+        tmp[new_length] = lines[len - 1];
+        new_length += 1;
+    }
+    if new_length == len {
+        return lines;
+    }
+    if new_length < 3 {
+        return Vec::new();
+    }
+    tmp.truncate(new_length);
+    tmp
+}
+
+#[cfg(test)]
+mod new_mapped_tests {
+    use super::*;
+    use crate::jmath::JavaRandom;
+
+    fn same_lines(a: &Polyline, b: &Polyline) -> bool {
+        a.lines().len() == b.lines().len()
+            && a.lines()
+                .iter()
+                .zip(b.lines())
+                .all(|(x, y)| x.a() == y.a() && x.b() == y.b())
+    }
+
+    fn random_lines(random: &mut JavaRandom) -> Vec<Line> {
+        let count = 2 + random.next_int(8) as usize;
+        let coord = |random: &mut JavaRandom| random.next_int(9) - 4;
+        let mut lines = Vec::with_capacity(count);
+        while lines.len() < count {
+            let (ax, ay, bx, by) = (coord(random), coord(random), coord(random), coord(random));
+            if (ax, ay) != (bx, by) {
+                lines.push(Line::from_coords(ax * 100, ay * 100, bx * 100, by * 100));
+            }
+        }
+        lines
+    }
+
+    /// O01.1: `new_mapped(lines).0` equals `Polyline::new(lines)` on 1,000 seeded
+    /// line arrays, and every kept line is its input line or its opposite.
+    #[test]
+    fn new_mapped_matches_new() {
+        let mut random = JavaRandom::new(20261016);
+        let (mut dropped, mut flipped) = (0, 0);
+        for _ in 0..1000 {
+            let lines = random_lines(&mut random);
+            let (mapped, origins) = Polyline::new_mapped(&lines);
+            assert!(same_lines(&mapped, &Polyline::new(&lines)), "{lines:?}");
+            assert_eq!(origins.len(), mapped.lines().len());
+            for (line, origin) in mapped.lines().iter().zip(&origins) {
+                match origin {
+                    Some(i) => assert!(line.a() == lines[*i].a() && line.b() == lines[*i].b()),
+                    None => flipped += 1,
+                }
+            }
+            if !mapped.is_empty() && mapped.lines().len() < lines.len() {
+                dropped += 1;
+            }
+        }
+        assert!(
+            dropped > 0 && flipped > 0,
+            "dropped {dropped}, flipped {flipped}"
+        );
+    }
+
+    /// O01.1: hand-checked maps with a dropped and a flipped line.
+    #[test]
+    fn new_mapped_hand_cases() {
+        // A parallel duplicate (index 2) is dropped.
+        let lines = [
+            Line::from_coords(0, 0, 0, 1),
+            Line::from_coords(0, 0, 1, 0),
+            Line::from_coords(0, 0, 2, 0),
+            Line::from_coords(5, 0, 5, 1),
+        ];
+        let (p, origins) = Polyline::new_mapped(&lines);
+        assert_eq!(p.lines().len(), 3);
+        assert_eq!(origins, vec![Some(0), Some(1), Some(3)]);
+        // The middle line points against the polyline's direction and is turned.
+        let lines = [
+            Line::from_coords(0, 0, 0, 1),
+            Line::from_coords(10, 0, 0, 0),
+            Line::from_coords(10, 0, 10, 1),
+        ];
+        let (p, origins) = Polyline::new_mapped(&lines);
+        assert_eq!(origins, vec![Some(0), None, Some(2)]);
+        assert_eq!(p.lines()[1].a(), IntPoint::new(0, 0));
+        assert!(same_lines(&p, &Polyline::new(&lines)));
+    }
+}

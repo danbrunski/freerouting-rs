@@ -1,0 +1,6 @@
+{"kind":"pull-tight-any","board":"scoring-mixed-layer","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"board-none"}
+{"id":6,"kind":"via","nets":"1","padstack":"Via[0-1]_800:400_um","center":"82700,20000","fixed":0}
+{"id":5,"kind":"trace","nets":"1","layer":1,"halfWidth":1250,"class":1,"fixed":0,"corners":"80000,80000 82700,20000"}
+{"id":4,"kind":"trace","nets":"1","layer":0,"halfWidth":1250,"class":1,"fixed":0,"corners":"20000,20000 82700,20000"}
+{"maxGeneratedId":6,"items":6}
