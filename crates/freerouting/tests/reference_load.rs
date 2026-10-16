@@ -12,14 +12,43 @@ use freerouting::scoring::BoardStatistics;
 /// Differences from the Java reference that are expected, as
 /// `(fixture path, field, reason)`. A field of `"*"` covers the whole
 /// fixture.
-const EXPECTED_MISMATCHES: &[(&str, &str, &str)] = &[(
-    "Issue179-Autorouter_PCB1_2023-3-24.dsn",
-    "result",
-    "Java loads the board, then BoardStatistics throws a NullPointerException \
-     (\"edgeLines\") in the Delaunay triangulation of the incomplete-connection \
-     count (drc.NetIncompletes), so the reference records an exception; the Rust \
-     port does not count connections (DRC stage) and computes the statistics",
-)];
+const ISSUE721_QUOTES: &str = "the network classes list their nets as 'GND', 'VCC', ...; \
+     Java's raw string reader keeps the single quotes, so no net joins its class and the \
+     items keep the default clearance (0.41 mil); the Rust DSN reader accepts ' as a \
+     quote (docs/DIVERGENCES.md, freerouting-dsn), so the items get their class's \
+     0.4 mil and the violation depths differ (the counts match)";
+
+const EXPECTED_MISMATCHES: &[(&str, &str, &str)] = &[
+    (
+        "Issue179-Autorouter_PCB1_2023-3-24.dsn",
+        "result",
+        "Java loads the board, then BoardStatistics throws a NullPointerException \
+         (\"edgeLines\") in the Delaunay triangulation of the incomplete-connection \
+         count (drc.NetIncompletes), so the reference records an exception; the Rust \
+         triangulation skips the corners outside its bounding triangle and computes \
+         the statistics (docs/DIVERGENCES.md)",
+    ),
+    (
+        "Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn",
+        "clearance_violations.total_violation_um",
+        ISSUE721_QUOTES,
+    ),
+    (
+        "Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn",
+        "clearance_violations.min_violation_um",
+        ISSUE721_QUOTES,
+    ),
+    (
+        "Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn",
+        "clearance_violations.max_violation_um",
+        ISSUE721_QUOTES,
+    ),
+    (
+        "Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn",
+        "clearance_violations.avg_violation_um",
+        ISSUE721_QUOTES,
+    ),
+];
 
 // ---------------------------------------------------------------------------
 // A minimal JSON reader, enough for the reference files.
@@ -271,6 +300,13 @@ const COUNT_FIELDS: &[&str] = &[
     "bounds.min_bend_count",
     "fanout.total_smd_pins",
     "fanout.pins_to_escape",
+    "fanout.escaped_count",
+    "connections.maximum_count",
+    "connections.incomplete_count",
+    "clearance_violations.total_count",
+    "clearance_violations.pre_existing_count",
+    "clearance_violations.unfixable_count",
+    "clearance_violations.router_introduced_count",
 ];
 
 /// Floating point fields, written by Java with two decimals.
@@ -294,6 +330,10 @@ const FLOAT_FIELDS: &[&str] = &[
     "difficulty.difficulty_d",
     "difficulty.board_area_cm2",
     "bounds.min_trace_length_mm",
+    "clearance_violations.total_violation_um",
+    "clearance_violations.min_violation_um",
+    "clearance_violations.max_violation_um",
+    "clearance_violations.avg_violation_um",
 ];
 
 fn rust_count(stats: &BoardStatistics, field: &str) -> i64 {
@@ -329,6 +369,15 @@ fn rust_count(stats: &BoardStatistics, field: &str) -> i64 {
         "bounds.min_bend_count" => return i64::from(stats.bounds.min_bend_count),
         "fanout.total_smd_pins" => stats.fanout.total_smd_pins,
         "fanout.pins_to_escape" => stats.fanout.pins_to_escape,
+        "fanout.escaped_count" => stats.fanout.escaped_count,
+        "connections.maximum_count" => stats.connections.maximum_count,
+        "connections.incomplete_count" => stats.connections.incomplete_count,
+        "clearance_violations.total_count" => stats.clearance_violations.total_count,
+        "clearance_violations.pre_existing_count" => stats.clearance_violations.pre_existing_count,
+        "clearance_violations.unfixable_count" => stats.clearance_violations.unfixable_count,
+        "clearance_violations.router_introduced_count" => {
+            stats.clearance_violations.router_introduced_count
+        }
         _ => unreachable!("{field}"),
     };
     value as i64
@@ -355,6 +404,18 @@ fn rust_float(stats: &BoardStatistics, field: &str) -> f32 {
         "difficulty.difficulty_d" => stats.difficulty.difficulty_d,
         "difficulty.board_area_cm2" => stats.difficulty.board_area_cm2,
         "bounds.min_trace_length_mm" => stats.bounds.min_trace_length_mm,
+        "clearance_violations.total_violation_um" => {
+            stats.clearance_violations.total_violation_um as f32
+        }
+        "clearance_violations.min_violation_um" => {
+            stats.clearance_violations.min_violation_um as f32
+        }
+        "clearance_violations.max_violation_um" => {
+            stats.clearance_violations.max_violation_um as f32
+        }
+        "clearance_violations.avg_violation_um" => {
+            stats.clearance_violations.avg_violation_um as f32
+        }
         _ => unreachable!("{field}"),
     }
 }

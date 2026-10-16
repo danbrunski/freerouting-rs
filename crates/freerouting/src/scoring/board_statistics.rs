@@ -1,9 +1,8 @@
 //! Board statistics.
 //!
 //! Port of `core.scoring.BoardStatistics` and its parts
-//! (`BoardStatisticsBoard`, `BoardStatisticsItems`, ...), as far as the board
-//! model supports them. The connection counts and clearance violations need
-//! the design rule checker and are not part of the board model.
+//! (`BoardStatisticsBoard`, `BoardStatisticsItems`, ...), with the V2 router
+//! and optimizer scores.
 
 use std::collections::HashMap;
 
@@ -11,8 +10,9 @@ use freerouting_geometry::FloatPoint;
 
 use super::bounds_calculator::{BoardStatisticsBounds, calculate_bounds};
 use crate::board::BasicBoard;
-use crate::board::items::ItemKind;
+use crate::board::items::{ItemId, ItemKind};
 use crate::board::structure::{FixedState, Unit};
+use crate::drc::{ClearanceViolation, DesignRulesChecker};
 use crate::rules::BoardRules;
 
 /// A rectangle as Java's `Rectangle2D.Float`.
@@ -116,8 +116,7 @@ pub struct BoardStatisticsDifficulty {
     pub board_area_cm2: f32,
 }
 
-/// Port of `BoardStatistics.BoardStatisticsFanout` without `escaped_count`,
-/// which needs the clearance checker.
+/// Port of `BoardStatistics.BoardStatisticsFanout`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct BoardStatisticsFanout {
     /// SMD pins with a net.
@@ -125,14 +124,94 @@ pub struct BoardStatisticsFanout {
     /// SMD pins with a net minus those whose unconnected set
     /// (`Item.getUnconnectedSet`) is empty.
     pub pins_to_escape: usize,
+    /// SMD pins with a net that are escaped (Java `isPinEscaped`).
+    pub escaped_count: usize,
+}
+
+/// Port of `BoardStatisticsConnections`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct BoardStatisticsConnections {
+    /// Per net the pins and conduction areas minus one.
+    pub maximum_count: usize,
+    /// The airlines of all nets.
+    pub incomplete_count: usize,
+}
+
+/// Port of `BoardStatisticsClearanceViolations`.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct BoardStatisticsClearanceViolations {
+    pub total_count: usize,
+    /// The violations the board had when it was loaded
+    /// ([`BasicBoard::pre_existing_clearance_violations_count`]).
+    pub pre_existing_count: usize,
+    /// Violations between items that are not routable.
+    pub unfixable_count: usize,
+    /// `max(0, total - pre_existing)`.
+    pub router_introduced_count: usize,
+    /// The summed clearance shortfalls in micrometers.
+    pub total_violation_um: f64,
+    pub min_violation_um: f64,
+    pub max_violation_um: f64,
+    pub avg_violation_um: f64,
+}
+
+/// The settings of the V2 (continuous) router score.
+///
+/// Port of `settings.RouterScoreSettings` with the defaults of
+/// `DefaultSettings`; the weights are `float` in Java.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RouterScoreSettings {
+    pub unrouted_free_fraction: f32,
+    pub unrouted_first_half_weight: f32,
+    pub unrouted_second_half_weight: f32,
+    pub clearance_violation_count_weight: f32,
+    pub clearance_violation_depth_weight: f32,
+    pub clearance_violation_depth_scale: f32,
+}
+
+impl Default for RouterScoreSettings {
+    fn default() -> Self {
+        RouterScoreSettings {
+            unrouted_free_fraction: 0.5,
+            unrouted_first_half_weight: 1000.0 / 3.0,
+            unrouted_second_half_weight: 2000.0 / 3.0,
+            clearance_violation_count_weight: 25.0,
+            clearance_violation_depth_weight: 300.0,
+            clearance_violation_depth_scale: 1000.0,
+        }
+    }
+}
+
+/// The settings of the V2 (lower bound) optimizer score.
+///
+/// Port of `settings.OptimizerScoreSettings` with the defaults of
+/// `DefaultSettings`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct OptimizerScoreSettings {
+    pub excess_wire_length_weight: f32,
+    pub excess_via_weight: f32,
+    pub excess_bend_weight: f32,
+    pub length_floor: f32,
+    pub difficulty_scale_floor: f32,
+}
+
+impl Default for OptimizerScoreSettings {
+    fn default() -> Self {
+        OptimizerScoreSettings {
+            excess_wire_length_weight: 1000.0,
+            excess_via_weight: 2000.0,
+            excess_bend_weight: 500.0,
+            length_floor: 1.0,
+            difficulty_scale_floor: 1.0,
+        }
+    }
 }
 
 /// Statistics of a board.
 ///
-/// Port of `core.scoring.BoardStatistics`, without the connection counts
-/// and the clearance violations (they belong to the design rule checker).
-// TODO(router): Java's `getRouterScore` and `getOptimizerScore` take the
-// router settings (`RouterSettings`), which come with the router stage.
+/// Port of `core.scoring.BoardStatistics`. Of the scores only the V2
+/// formulas (Java's defaults) are ported; the legacy scores need the
+/// router's cost settings.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct BoardStatistics {
     /// `<host cad>,<host version>` from the DSN parser scope.
@@ -145,9 +224,11 @@ pub struct BoardStatistics {
     pub components: BoardStatisticsComponents,
     pub pads: BoardStatisticsPads,
     pub nets: BoardStatisticsNets,
+    pub connections: BoardStatisticsConnections,
     pub traces: BoardStatisticsTraces,
     pub bends: BoardStatisticsBends,
     pub vias: BoardStatisticsVias,
+    pub clearance_violations: BoardStatisticsClearanceViolations,
     pub difficulty: BoardStatisticsDifficulty,
     pub bounds: BoardStatisticsBounds,
     pub fanout: BoardStatisticsFanout,
@@ -176,13 +257,164 @@ fn unescape_unicode(s: &str) -> String {
 }
 
 impl BoardStatistics {
-    /// The statistics of `board`, with lengths in millimeters.
+    /// The statistics of `board`, with lengths in millimeters, including
+    /// the connection counts and the clearance violations.
     pub fn new(board: &BasicBoard) -> Self {
         Self::with_unit(board, Unit::Mm)
     }
 
-    /// The statistics of `board`, with lengths converted to `unit`.
+    /// The statistics of `board`, with lengths converted to `unit`,
+    /// including the connection counts and the clearance violations.
     pub fn with_unit(board: &BasicBoard, unit: Unit) -> Self {
+        Self::with_options(board, unit, true, true)
+    }
+
+    /// The statistics of `board`; the clearance violations and the
+    /// connection counts (both run the design rules checker) only if asked
+    /// for, zero otherwise.
+    pub fn with_options(
+        board: &BasicBoard,
+        unit: Unit,
+        include_clearance_violations: bool,
+        include_connections: bool,
+    ) -> Self {
+        let mut s = Self::base(board, unit);
+        if include_connections || include_clearance_violations {
+            let mut checker = DesignRulesChecker::new(board);
+            if include_connections {
+                s.connections = BoardStatisticsConnections {
+                    maximum_count: checker.max_connections(),
+                    incomplete_count: checker.incomplete_count(),
+                };
+            }
+            if include_clearance_violations {
+                s.set_clearance_violations(board, &checker.all_clearance_violations());
+            }
+        }
+        s
+    }
+
+    /// The statistics of `board` with clearance violations and connection
+    /// counts already computed by a [`DesignRulesChecker`].
+    pub fn with_drc_results(
+        board: &BasicBoard,
+        unit: Unit,
+        violations: &[ClearanceViolation],
+        maximum_connections: usize,
+        incomplete_connections: usize,
+    ) -> Self {
+        let mut s = Self::base(board, unit);
+        s.connections = BoardStatisticsConnections {
+            maximum_count: maximum_connections,
+            incomplete_count: incomplete_connections,
+        };
+        s.set_clearance_violations(board, violations);
+        s
+    }
+
+    fn set_clearance_violations(&mut self, board: &BasicBoard, violations: &[ClearanceViolation]) {
+        let c = &mut self.clearance_violations;
+        c.total_count = violations.len();
+        if !violations.is_empty() {
+            let factor = board.board_unit_to_um_factor();
+            let mut min = f64::MAX;
+            let mut max = 0.0f64;
+            let mut sum = 0.0;
+            for v in violations {
+                let shortfall_um = v.shortfall().max(0.0) * factor;
+                min = min.min(shortfall_um);
+                max = max.max(shortfall_um);
+                sum += shortfall_um;
+            }
+            c.total_violation_um = sum;
+            c.min_violation_um = min;
+            c.max_violation_um = max;
+            c.avg_violation_um = sum / violations.len() as f64;
+        }
+        c.pre_existing_count = board.pre_existing_clearance_violations_count;
+        c.unfixable_count = violations.iter().filter(|v| v.is_unfixable(board)).count();
+        c.router_introduced_count = c.total_count.saturating_sub(c.pre_existing_count);
+    }
+
+    /// Java `getRouterScore` with the V2 (continuous) formula: 1000 minus
+    /// the penalties for unrouted connections and clearance violations.
+    pub fn router_score_v2(&self, settings: &RouterScoreSettings) -> f32 {
+        let difficulty = f64::from(self.difficulty.difficulty_d).max(1.0);
+        let connections = self.connections.maximum_count as f64;
+        let incomplete = self.connections.incomplete_count as f64;
+        let violation_count = self.clearance_violations.total_count as f64;
+        let violation_depth = self.clearance_violations.total_violation_um.max(0.0);
+        let split = f64::from(settings.unrouted_free_fraction).clamp(0.0, 1.0);
+        let first_half_weight = f64::from(settings.unrouted_first_half_weight);
+        let second_half_weight = f64::from(settings.unrouted_second_half_weight);
+        let open_fraction = if connections > 0.0 {
+            incomplete / connections
+        } else {
+            0.0
+        };
+        let (first_half_open, second_half_open) = if connections <= 0.0 {
+            (0.0, 0.0)
+        } else if split <= 0.0 {
+            (0.0, open_fraction)
+        } else if split >= 1.0 {
+            (open_fraction, 0.0)
+        } else {
+            (
+                ((open_fraction - split) / (1.0 - split)).clamp(0.0, 1.0),
+                (open_fraction / split).min(1.0),
+            )
+        };
+        let unrouted_penalty =
+            first_half_weight * first_half_open + second_half_weight * second_half_open;
+        let mut drc_penalty =
+            f64::from(settings.clearance_violation_count_weight) * violation_count / difficulty;
+        let depth_scale = f64::from(settings.clearance_violation_depth_scale).max(1.0);
+        drc_penalty += f64::from(settings.clearance_violation_depth_weight) * violation_depth
+            / depth_scale
+            / difficulty;
+        (1000.0 - unrouted_penalty - drc_penalty).max(0.0) as f32
+    }
+
+    /// [`router_score_v2`](Self::router_score_v2) with Java's default
+    /// settings.
+    pub fn router_score_v2_default(&self) -> f32 {
+        self.router_score_v2(&RouterScoreSettings::default())
+    }
+
+    /// Java `getOptimizerScore` with the V2 (lower bound) formula: 1000
+    /// minus the penalties for trace length, vias and bends above the lower
+    /// bounds of the board.
+    pub fn optimizer_score_v2(&self, settings: &OptimizerScoreSettings) -> f32 {
+        let difficulty = f64::from(self.difficulty.difficulty_d).max(1.0);
+        let min_trace_length = f64::from(self.bounds.min_trace_length_mm).max(0.0);
+        let min_via_count = f64::from(self.bounds.min_via_count.max(0));
+        let min_bend_count = f64::from(self.bounds.min_bend_count.max(0));
+        let actual_trace_length = f64::from(self.traces.total_length_mm).max(0.0);
+        let actual_via_count = self.vias.total_count as f64;
+        let actual_bend_count = self.bends.total_count as f64;
+        let length_floor = f64::from(settings.length_floor).max(0.0);
+        let difficulty_floor = f64::from(settings.difficulty_scale_floor).max(1.0);
+        let length_penalty = f64::from(settings.excess_wire_length_weight)
+            * (actual_trace_length - min_trace_length).max(0.0)
+            / min_trace_length.max(length_floor);
+        let via_penalty = f64::from(settings.excess_via_weight)
+            * (actual_via_count - min_via_count).max(0.0)
+            / difficulty.max(difficulty_floor);
+        let bend_penalty = f64::from(settings.excess_bend_weight)
+            * (actual_bend_count - min_bend_count).max(0.0)
+            / difficulty.max(difficulty_floor);
+        (1000.0 - length_penalty - via_penalty - bend_penalty).max(0.0) as f32
+    }
+
+    /// [`optimizer_score_v2`](Self::optimizer_score_v2) with Java's default
+    /// settings.
+    pub fn optimizer_score_v2_default(&self) -> f32 {
+        self.optimizer_score_v2(&OptimizerScoreSettings::default())
+    }
+
+    /// The statistics without the parts that need the design rules
+    /// checker.
+    fn base(board: &BasicBoard, unit: Unit) -> Self {
         let mut s = BoardStatistics::default();
         let bb = board.bounding_box();
         let info = board.communication.specctra_parser_info.as_ref();
@@ -391,10 +623,46 @@ impl BoardStatistics {
                 {
                     s.fanout.pins_to_escape += 1;
                 }
+                if is_pin_escaped(board, id) {
+                    s.fanout.escaped_count += 1;
+                }
             }
         }
         s
     }
+}
+
+/// Java `BoardStatistics.isPinEscaped`: the pin has a contact trace
+/// without clearance violations, a contact via without clearance
+/// violations that continues in a trace or conduction area, or a contact
+/// conduction area.
+pub fn is_pin_escaped(board: &BasicBoard, pin: ItemId) -> bool {
+    for contact in board.normal_contacts(pin) {
+        let Some(item) = board.item(contact) else {
+            continue;
+        };
+        match &item.kind {
+            ItemKind::Trace(_) => {
+                if board.clearance_violations(contact).is_empty() {
+                    return true;
+                }
+            }
+            ItemKind::Via(_) => {
+                if board.clearance_violations(contact).is_empty()
+                    && board.normal_contacts(contact).iter().any(|c| {
+                        board
+                            .item(*c)
+                            .is_some_and(|c| c.is_trace() || c.is_conduction_area())
+                    })
+                {
+                    return true;
+                }
+            }
+            _ if item.is_conduction_area() => return true,
+            _ => {}
+        }
+    }
+    false
 }
 
 #[cfg(test)]

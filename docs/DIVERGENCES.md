@@ -97,9 +97,48 @@ branch 3 in IntOctagon's box cutout.
 
 **Board statistics** (`scoring`, port of `BoardStatistics` and
 `BoardStatisticsBoundsCalculator`)
-- The connection counts, the clearance violations and `fanout.escaped_count` need the
-  design rule checker and are left out; so are the router and optimizer scores, which
-  need the router settings, and the constructor from a KiCad JSON file.
-- Java throws a NullPointerException for `Issue179-Autorouter_PCB1_2023-3-24.dsn`
-  while counting incomplete connections; the port computes the statistics.
+- Only the V2 router and optimizer scores (Java's defaults) are ported; the legacy
+  formulas need the router's cost settings. The constructor from a KiCad JSON file is
+  not ported.
+- Java throws a NullPointerException in the Delaunay triangulation of
+  `Issue179-Autorouter_PCB1_2023-3-24.dsn` while counting incomplete connections (a
+  corner lies outside the bounding triangle) and writes no statistics or scores; the
+  port skips such corners and computes them.
 - The statistics are computed on construction and not cached on the board.
+
+**Design rule check** (`drc`, port of `app.freerouting.drc` and `cli.DrcRunner`)
+- Java collects items in `HashSet`s ordered by identity hash codes; the port uses
+  fixed orders instead. An unconnected group lists its items by id, highest first, and
+  its representative is the first pin, else the first trace, else the first item. Java
+  picks a different representative, and the representative tail traces are not
+  reported as `track_dangling`, so those two findings can differ by representatives
+  while the groups are the same. `NetIncompletes` starts each connected group from the
+  first remaining item in board order.
+- Copper islands (`zone_islands`): Java builds the fill with `java.awt.geom.Area` and
+  takes its subpaths as islands, which assigns holes to the wrong outer subpath. The
+  port computes the same fill (border minus holes, foreign and same-net clearance areas,
+  plus the same-net thermal spokes) with its own polygon sweep on a grid of cells,
+  flattening AWT's Bézier circles with 16 steps per quarter. Island boundaries match
+  the AWT area except for slivers below 1e5 board units² without items. The islands
+  are ordered by lowest y, then lowest x; Java lists them in AWT path order.
+- `DesignRulesChecker::set_check_zone_islands` is a Rust addition. It turns the island
+  check off, and the reference tests use it.
+- The clearance violations and island fills are computed on all cores. The results are
+  merged in item order, so the output does not depend on the thread count.
+- The DRC command line (`freerouting -de board.dsn [board.ses] -drc [report.json]`)
+  does the post-load processing before importing the session. Java runs the post-load
+  DRC in a background thread while it imports the session. On
+  `Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn` that race leaves net +5V in the
+  outline's edge-pin-net cache and hides 6 trace-to-outline violations.
+- The session reader imports the wires of `Issue676-ch32v-tx118s.dsn` (1 000 000 units
+  per mm). Java's `SesReader` fails on all 48 with a ClassCastException
+  (RationalVector to IntVector) and imports none.
+- Rules files (`-dr`, `board.dsn+board.rules`) are not supported. The runner logs a
+  message and ignores them.
+- The report's `date` is in UTC; Java uses the local zone. `freeroutingVersion` is
+  `rs-<crate version>`.
+- `RoutingBoard::reduce_nets_of_route_items` reports whether a net was removed.
+- For an unknown net, the item descriptions print `null`; Java throws.
+- `Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn` quotes its class nets with `'`.
+  Java keeps the quotes, so its nets stay in the default class; the port reads them
+  (see freerouting-dsn), so the expected hole clearances and the scores differ.

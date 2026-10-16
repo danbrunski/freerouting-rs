@@ -1,0 +1,1902 @@
+load	Issue015-StackOverflow.dsn	clearance	0	cbf29ce484222325
+load	Issue015-StackOverflow.dsn	holeClearance	1	e866e73e98fc7394
+load	Issue015-StackOverflow.dsn	via_dangling	0	cbf29ce484222325
+load	Issue015-StackOverflow.dsn	unconnectedItems	114	9264f5e3bd02af22
+load	Issue015-StackOverflow.dsn	track_dangling	27	2256,2263,2269,2316,2334,2336,2373,2485,2486,2494,2513,2514,2581,2590,2621,2673,2739,2761,2811,2816,2823,2831,2840,2841,2842,2843,2844
+load	Issue015-StackOverflow.dsn	scores	625.62	979.66
+load	Issue022-AutoRouter_interrupted.dsn	clearance	0	cbf29ce484222325
+load	Issue022-AutoRouter_interrupted.dsn	holeClearance	9	37db5ecb3f28cb4d
+load	Issue022-AutoRouter_interrupted.dsn	via_dangling	5	278e1d2deaaf49ab
+load	Issue022-AutoRouter_interrupted.dsn	unconnectedItems	141	545a0d01027ea8fc
+load	Issue022-AutoRouter_interrupted.dsn	track_dangling	38	3042,3052,3064,3101,3115,3146,3167,3171,3174,3191,3204,3207,3210,3214,3316,3325,3334,3349,3379,3395,3404,3415,3445,3526,3535,3587,3590,3623,3636,3643,3651,3675,3680,3682,3684,3686,3696,3701
+load	Issue022-AutoRouter_interrupted.dsn	scores	432.06	965.58
+load	Issue026-J2_reference.dsn	clearance	0	cbf29ce484222325
+load	Issue026-J2_reference.dsn	holeClearance	0	cbf29ce484222325
+load	Issue026-J2_reference.dsn	via_dangling	0	cbf29ce484222325
+load	Issue026-J2_reference.dsn	unconnectedItems	12	b515561e8eac7303
+load	Issue026-J2_reference.dsn	track_dangling	0	
+load	Issue026-J2_reference.dsn	scores	0.0	1000.0
+load	Issue027-zMRETestFixture.dsn	clearance	0	cbf29ce484222325
+load	Issue027-zMRETestFixture.dsn	holeClearance	0	cbf29ce484222325
+load	Issue027-zMRETestFixture.dsn	via_dangling	0	cbf29ce484222325
+load	Issue027-zMRETestFixture.dsn	unconnectedItems	166	857fffddc3be9c79
+load	Issue027-zMRETestFixture.dsn	track_dangling	0	
+load	Issue027-zMRETestFixture.dsn	scores	86.58	1000.0
+load	Issue029-hw48na.dsn	clearance	21	108078ef1875fac8
+load	Issue029-hw48na.dsn	holeClearance	80	69ebc9fb4ae565a2
+load	Issue029-hw48na.dsn	via_dangling	1	8dcb7849d5a9c365
+load	Issue029-hw48na.dsn	unconnectedItems	131	034c102f931f9265
+load	Issue029-hw48na.dsn	track_dangling	92	2721,2732,2748,2761,2763,2764,2766,2769,2806,2807,2812,2813,2823,2825,2826,2839,2840,2841,2847,2849,2854,2855,2860,2861,2868,2877,2884,2896,2902,2904,2914,2917,2920,2935,2936,2949,3017,3018,3019,3020,3022,3023,3025,3026,3028,3029,3031,3032,3033,3034,3036,3037,3039,3040,3042,3043,3045,3049,3076,3078,3085,3088,3091,3094,3097,3100,3103,3106,3109,3112,3115,3118,3121,3124,3127,3130,3133,3136,3139,3142,3143,3145,3151,3152,3180,3233,3235,3237,3238,3263,3268,3274
+load	Issue029-hw48na.dsn	scores	451.32	949.0
+load	Issue034-Green14SegLED.dsn	clearance	0	cbf29ce484222325
+load	Issue034-Green14SegLED.dsn	holeClearance	0	cbf29ce484222325
+load	Issue034-Green14SegLED.dsn	via_dangling	0	cbf29ce484222325
+load	Issue034-Green14SegLED.dsn	unconnectedItems	101	401e8ab8cf76d4d5
+load	Issue034-Green14SegLED.dsn	track_dangling	0	
+load	Issue034-Green14SegLED.dsn	scores	0.0	1000.0
+load	Issue035-ReadPlaceScope.dsn	clearance	0	cbf29ce484222325
+load	Issue035-ReadPlaceScope.dsn	holeClearance	152	979e0358691210d7
+load	Issue035-ReadPlaceScope.dsn	via_dangling	124	8663d3e010b69ff8
+load	Issue035-ReadPlaceScope.dsn	unconnectedItems	93	b8dc5d219482eaf1
+load	Issue035-ReadPlaceScope.dsn	track_dangling	2	3085,3086
+load	Issue035-ReadPlaceScope.dsn	scores	0.0	656.07
+load	Issue039-bug-design.dsn	clearance	0	cbf29ce484222325
+load	Issue039-bug-design.dsn	holeClearance	0	cbf29ce484222325
+load	Issue039-bug-design.dsn	via_dangling	0	cbf29ce484222325
+load	Issue039-bug-design.dsn	unconnectedItems	74	b746c7bcba4c970d
+load	Issue039-bug-design.dsn	track_dangling	0	
+load	Issue039-bug-design.dsn	scores	0.0	1000.0
+load	Issue054-tairakb.dsn	clearance	0	cbf29ce484222325
+load	Issue054-tairakb.dsn	holeClearance	0	cbf29ce484222325
+load	Issue054-tairakb.dsn	via_dangling	0	cbf29ce484222325
+load	Issue054-tairakb.dsn	unconnectedItems	55	34533b2eff51788e
+load	Issue054-tairakb.dsn	track_dangling	1	6789
+load	Issue054-tairakb.dsn	scores	17.68	1000.0
+load	Issue066-Project_GP8B.dsn	clearance	0	cbf29ce484222325
+load	Issue066-Project_GP8B.dsn	holeClearance	0	cbf29ce484222325
+load	Issue066-Project_GP8B.dsn	via_dangling	0	cbf29ce484222325
+load	Issue066-Project_GP8B.dsn	unconnectedItems	227	4a7b3b784adb6dc0
+load	Issue066-Project_GP8B.dsn	track_dangling	26	2374,2377,2379,2381,2387,2400,2402,2404,2414,2416,2420,2422,2424,2426,2428,2440,2442,2443,2444,2445,2446,2452,2456,2459,2466,2467
+load	Issue066-Project_GP8B.dsn	scores	26.35	1000.0
+load	Issue069-TestSensel/TestSensel-KiCad6.dsn	clearance	0	cbf29ce484222325
+load	Issue069-TestSensel/TestSensel-KiCad6.dsn	holeClearance	9	7ceeb3f29bdc3621
+load	Issue069-TestSensel/TestSensel-KiCad6.dsn	via_dangling	2	8c00ce39b5a070ed
+load	Issue069-TestSensel/TestSensel-KiCad6.dsn	unconnectedItems	4	87e1f7402395a8ee
+load	Issue069-TestSensel/TestSensel-KiCad6.dsn	track_dangling	1	36
+load	Issue069-TestSensel/TestSensel-KiCad6.dsn	scores	0.0	833.33
+load	Issue069-TestSensel/TestSensel.dsn	clearance	0	cbf29ce484222325
+load	Issue069-TestSensel/TestSensel.dsn	holeClearance	9	b4744097312cbee1
+load	Issue069-TestSensel/TestSensel.dsn	via_dangling	2	8c00ce39b5a070ed
+load	Issue069-TestSensel/TestSensel.dsn	unconnectedItems	4	87e1f7402395a8ee
+load	Issue069-TestSensel/TestSensel.dsn	track_dangling	1	36
+load	Issue069-TestSensel/TestSensel.dsn	scores	0.0	833.33
+load	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	clearance	0	cbf29ce484222325
+load	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	holeClearance	14	02c27a82f440c391
+load	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	via_dangling	0	cbf29ce484222325
+load	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	unconnectedItems	67	54a8359eac738a04
+load	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	track_dangling	114	571,639,640,645,648,652,653,654,658,661,662,664,665,667,670,671,674,677,678,680,686,689,691,692,693,698,703,705,710,711,718,720,723,730,733,734,735,736,738,745,746,748,753,755,760,765,768,771,777,780,782,783,784,786,788,789,792,793,796,808,810,811,813,815,816,820,825,829,831,834,836,842,843,848,849,850,853,859,862,866,867,892,896,901,903,956,958,959,961,966,985,990,994,1000,1012,1013,1017,1019,1027,1043,1054,1055,1063,1068,1070,1071,1091,1120,1128,1134,1172,1173,1177,1178
+load	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	scores	253.3	760.21
+load	Issue093-interf_u.dsn	clearance	0	cbf29ce484222325
+load	Issue093-interf_u.dsn	holeClearance	0	cbf29ce484222325
+load	Issue093-interf_u.dsn	via_dangling	1	ff565eb31145f9ee
+load	Issue093-interf_u.dsn	unconnectedItems	38	2000ab082934d452
+load	Issue093-interf_u.dsn	track_dangling	41	833,837,840,844,846,850,851,855,859,871,872,880,906,912,917,920,922,1012,1225,1227,1235,1240,1242,1245,1281,1286,1288,1300,1305,1308,1316,1338,1340,1415,1451,1473,1477,1478,1479,1480,1481
+load	Issue093-interf_u.dsn	scores	714.76	720.01
+load	Issue102-Mars-64-revE-rot00.dsn	clearance	0	cbf29ce484222325
+load	Issue102-Mars-64-revE-rot00.dsn	holeClearance	64	5cc403fa54b5ba77
+load	Issue102-Mars-64-revE-rot00.dsn	via_dangling	65	78a00d4f402fd31b
+load	Issue102-Mars-64-revE-rot00.dsn	unconnectedItems	74	02f3e1358f23d6e6
+load	Issue102-Mars-64-revE-rot00.dsn	track_dangling	0	
+load	Issue102-Mars-64-revE-rot00.dsn	scores	0.0	995.0
+load	Issue103-Board-Routed.dsn	clearance	0	cbf29ce484222325
+load	Issue103-Board-Routed.dsn	holeClearance	0	cbf29ce484222325
+load	Issue103-Board-Routed.dsn	via_dangling	0	cbf29ce484222325
+load	Issue103-Board-Routed.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue103-Board-Routed.dsn	track_dangling	1	3217
+load	Issue103-Board-Routed.dsn	scores	1000.0	0.0
+load	Issue103-Board-Unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue103-Board-Unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue103-Board-Unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue103-Board-Unrouted.dsn	unconnectedItems	267	7b30b026eb4250a5
+load	Issue103-Board-Unrouted.dsn	track_dangling	0	
+load	Issue103-Board-Unrouted.dsn	scores	0.0	1000.0
+load	Issue107-freq_teiler_200kHz_kicad.dsn	clearance	0	cbf29ce484222325
+load	Issue107-freq_teiler_200kHz_kicad.dsn	holeClearance	0	cbf29ce484222325
+load	Issue107-freq_teiler_200kHz_kicad.dsn	via_dangling	0	cbf29ce484222325
+load	Issue107-freq_teiler_200kHz_kicad.dsn	unconnectedItems	59	c8836c978b5f7b12
+load	Issue107-freq_teiler_200kHz_kicad.dsn	track_dangling	4	1769,1770,1772,1775
+load	Issue107-freq_teiler_200kHz_kicad.dsn	scores	19.72	1000.0
+load	Issue107-freq_teiler_200kHz_kicad_bad.dsn	clearance	0	cbf29ce484222325
+load	Issue107-freq_teiler_200kHz_kicad_bad.dsn	holeClearance	0	cbf29ce484222325
+load	Issue107-freq_teiler_200kHz_kicad_bad.dsn	via_dangling	0	cbf29ce484222325
+load	Issue107-freq_teiler_200kHz_kicad_bad.dsn	unconnectedItems	59	d447993fa18e8b24
+load	Issue107-freq_teiler_200kHz_kicad_bad.dsn	track_dangling	4	1789,1790,1792,1795
+load	Issue107-freq_teiler_200kHz_kicad_bad.dsn	scores	18.83	1000.0
+load	Issue110-Pajalnaja_stancija.dsn	clearance	0	cbf29ce484222325
+load	Issue110-Pajalnaja_stancija.dsn	holeClearance	10	391b3c5a35d2d975
+load	Issue110-Pajalnaja_stancija.dsn	via_dangling	0	cbf29ce484222325
+load	Issue110-Pajalnaja_stancija.dsn	unconnectedItems	41	c493d7a8f0706017
+load	Issue110-Pajalnaja_stancija.dsn	track_dangling	0	
+load	Issue110-Pajalnaja_stancija.dsn	scores	0.0	1000.0
+load	Issue110-RelayModule.dsn	clearance	0	cbf29ce484222325
+load	Issue110-RelayModule.dsn	holeClearance	0	cbf29ce484222325
+load	Issue110-RelayModule.dsn	via_dangling	22	d8bcd16563a19966
+load	Issue110-RelayModule.dsn	unconnectedItems	44	e51662b58dc0ea1a
+load	Issue110-RelayModule.dsn	track_dangling	0	
+load	Issue110-RelayModule.dsn	scores	0.0	881.58
+load	Issue110-testPCBSpecctraFile.dsn	clearance	0	cbf29ce484222325
+load	Issue110-testPCBSpecctraFile.dsn	holeClearance	27	3e37e5ec7df746ac
+load	Issue110-testPCBSpecctraFile.dsn	via_dangling	0	cbf29ce484222325
+load	Issue110-testPCBSpecctraFile.dsn	unconnectedItems	11	9c4778f8cf31f0f9
+load	Issue110-testPCBSpecctraFile.dsn	track_dangling	22	1380,1383,1388,1430,1432,1435,1440,1443,1460,1473,1476,1480,1485,1487,1492,1497,1519,1522,1526,1533,1534,1547
+load	Issue110-testPCBSpecctraFile.dsn	scores	509.72	706.38
+load	Issue110-testProjectFromFreeroutingBugTest.dsn	clearance	0	cbf29ce484222325
+load	Issue110-testProjectFromFreeroutingBugTest.dsn	holeClearance	0	cbf29ce484222325
+load	Issue110-testProjectFromFreeroutingBugTest.dsn	via_dangling	0	cbf29ce484222325
+load	Issue110-testProjectFromFreeroutingBugTest.dsn	unconnectedItems	4	09806415130b3d99
+load	Issue110-testProjectFromFreeroutingBugTest.dsn	track_dangling	0	
+load	Issue110-testProjectFromFreeroutingBugTest.dsn	scores	0.0	1000.0
+load	Issue110-testProjectFromFreeroutingBugTest01.dsn	clearance	0	cbf29ce484222325
+load	Issue110-testProjectFromFreeroutingBugTest01.dsn	holeClearance	0	cbf29ce484222325
+load	Issue110-testProjectFromFreeroutingBugTest01.dsn	via_dangling	0	cbf29ce484222325
+load	Issue110-testProjectFromFreeroutingBugTest01.dsn	unconnectedItems	4	09806415130b3d99
+load	Issue110-testProjectFromFreeroutingBugTest01.dsn	track_dangling	0	
+load	Issue110-testProjectFromFreeroutingBugTest01.dsn	scores	0.0	1000.0
+load	Issue113-Protein.dsn	clearance	0	cbf29ce484222325
+load	Issue113-Protein.dsn	holeClearance	0	cbf29ce484222325
+load	Issue113-Protein.dsn	via_dangling	0	cbf29ce484222325
+load	Issue113-Protein.dsn	unconnectedItems	159	6fb8ff52b368ade1
+load	Issue113-Protein.dsn	track_dangling	73	1508,1509,1510,1511,1514,1552,1557,1560,1561,1562,1563,1568,1570,1573,1577,1579,1582,1586,1600,1602,1605,1609,1612,1615,1616,1618,1620,1621,1622,1623,1624,1625,1626,1627,1628,1629,1630,1631,1632,1633,1634,1635,1636,1637,1638,1639,1640,1641,1642,1643,1644,1645,1646,1647,1648,1649,1650,1651,1652,1653,1654,1655,1656,1659,1660,1661,1664,1665,1667,1668,1669,1670,1673
+load	Issue113-Protein.dsn	scores	139.64	1000.0
+load	Issue143-rpi_splitter.dsn	clearance	0	cbf29ce484222325
+load	Issue143-rpi_splitter.dsn	holeClearance	0	cbf29ce484222325
+load	Issue143-rpi_splitter.dsn	via_dangling	0	cbf29ce484222325
+load	Issue143-rpi_splitter.dsn	unconnectedItems	4	53275485b8228625
+load	Issue143-rpi_splitter.dsn	track_dangling	0	
+load	Issue143-rpi_splitter.dsn	scores	0.0	1000.0
+load	Issue143-rpi_splitter_mod.dsn	clearance	0	cbf29ce484222325
+load	Issue143-rpi_splitter_mod.dsn	holeClearance	0	cbf29ce484222325
+load	Issue143-rpi_splitter_mod.dsn	via_dangling	0	cbf29ce484222325
+load	Issue143-rpi_splitter_mod.dsn	unconnectedItems	1	a606b1e1e8feae41
+load	Issue143-rpi_splitter_mod.dsn	track_dangling	0	
+load	Issue143-rpi_splitter_mod.dsn	scores	0.0	1000.0
+load	Issue145-smoothieboard.dsn	clearance	0	cbf29ce484222325
+load	Issue145-smoothieboard.dsn	holeClearance	42	422d572d51c2ab0e
+load	Issue145-smoothieboard.dsn	via_dangling	42	56f56a645d515e40
+load	Issue145-smoothieboard.dsn	unconnectedItems	225	7bec2d83ad70156a
+load	Issue145-smoothieboard.dsn	track_dangling	0	
+load	Issue145-smoothieboard.dsn	scores	38.38	974.09
+load	Issue153-wavefolder.dsn	clearance	0	cbf29ce484222325
+load	Issue153-wavefolder.dsn	holeClearance	0	cbf29ce484222325
+load	Issue153-wavefolder.dsn	via_dangling	0	cbf29ce484222325
+load	Issue153-wavefolder.dsn	unconnectedItems	17	acc944f34b14df0b
+load	Issue153-wavefolder.dsn	track_dangling	3	970,972,977
+load	Issue153-wavefolder.dsn	scores	555.56	897.83
+load	Issue155-CH376_MCP795_Module.dsn	clearance	0	cbf29ce484222325
+load	Issue155-CH376_MCP795_Module.dsn	holeClearance	0	cbf29ce484222325
+load	Issue155-CH376_MCP795_Module.dsn	via_dangling	0	cbf29ce484222325
+load	Issue155-CH376_MCP795_Module.dsn	unconnectedItems	25	213c2fe515a043a2
+load	Issue155-CH376_MCP795_Module.dsn	track_dangling	0	
+load	Issue155-CH376_MCP795_Module.dsn	scores	0.0	1000.0
+load	Issue157-TeamAdapt-LinePCB.dsn	clearance	1	57ab38cad66fe835
+load	Issue157-TeamAdapt-LinePCB.dsn	holeClearance	9	00cff50b2ec533fc
+load	Issue157-TeamAdapt-LinePCB.dsn	via_dangling	0	cbf29ce484222325
+load	Issue157-TeamAdapt-LinePCB.dsn	unconnectedItems	64	4d7689235e4724a5
+load	Issue157-TeamAdapt-LinePCB.dsn	track_dangling	15	2127,2129,2134,2137,2138,2139,2140,2146,2149,2152,2155,2158,2163,2168,2172
+load	Issue157-TeamAdapt-LinePCB.dsn	scores	0.0	1000.0
+load	Issue159-setonix_2hp-pcb.dsn	clearance	0	cbf29ce484222325
+load	Issue159-setonix_2hp-pcb.dsn	holeClearance	0	cbf29ce484222325
+load	Issue159-setonix_2hp-pcb.dsn	via_dangling	0	cbf29ce484222325
+load	Issue159-setonix_2hp-pcb.dsn	unconnectedItems	6	e23c64868e6b581f
+load	Issue159-setonix_2hp-pcb.dsn	track_dangling	0	
+load	Issue159-setonix_2hp-pcb.dsn	scores	0.0	1000.0
+load	Issue163-pic_programmer.dsn	clearance	0	cbf29ce484222325
+load	Issue163-pic_programmer.dsn	holeClearance	3	6a03d242644e5943
+load	Issue163-pic_programmer.dsn	via_dangling	0	cbf29ce484222325
+load	Issue163-pic_programmer.dsn	unconnectedItems	13	56063cac846db12a
+load	Issue163-pic_programmer.dsn	track_dangling	17	1299,1304,1307,1375,1376,1397,1398,1399,1453,1457,1462,1466,1467,1477,1515,1533,1562
+load	Issue163-pic_programmer.dsn	scores	756.25	975.1
+load	Issue178-KeebMaker_Sofle_Choc.dsn	clearance	0	cbf29ce484222325
+load	Issue178-KeebMaker_Sofle_Choc.dsn	holeClearance	1	00b5d91c92e1fb00
+load	Issue178-KeebMaker_Sofle_Choc.dsn	via_dangling	0	cbf29ce484222325
+load	Issue178-KeebMaker_Sofle_Choc.dsn	unconnectedItems	168	74529b9a1fe0c697
+load	Issue178-KeebMaker_Sofle_Choc.dsn	track_dangling	0	
+load	Issue178-KeebMaker_Sofle_Choc.dsn	scores	12.49	1000.0
+load	Issue179-Autorouter_PCB1_2023-3-24.dsn	clearance	0	cbf29ce484222325
+load	Issue179-Autorouter_PCB1_2023-3-24.dsn	holeClearance	0	cbf29ce484222325
+load	Issue179-Autorouter_PCB1_2023-3-24.dsn	via_dangling	0	cbf29ce484222325
+load	Issue179-Autorouter_PCB1_2023-3-24.dsn	unconnectedItems	20	7875b438ff72b458
+load	Issue179-Autorouter_PCB1_2023-3-24.dsn	track_dangling	0	
+load	Issue179-Autorouter_PCB1_2023-3-24.dsn	scores	null	null
+load	Issue187-processor.Z80.dsn	clearance	0	cbf29ce484222325
+load	Issue187-processor.Z80.dsn	holeClearance	0	cbf29ce484222325
+load	Issue187-processor.Z80.dsn	via_dangling	0	cbf29ce484222325
+load	Issue187-processor.Z80.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue187-processor.Z80.dsn	track_dangling	0	
+load	Issue187-processor.Z80.dsn	scores	1000.0	27.84
+load	Issue190-processor.Z80.dsn	clearance	0	cbf29ce484222325
+load	Issue190-processor.Z80.dsn	holeClearance	0	cbf29ce484222325
+load	Issue190-processor.Z80.dsn	via_dangling	1	87f90fdd02aecc9d
+load	Issue190-processor.Z80.dsn	unconnectedItems	9	fad70c558b513edb
+load	Issue190-processor.Z80.dsn	track_dangling	9	4724,4782,4842,5074,5120,8212,8298,10258,10275
+load	Issue190-processor.Z80.dsn	scores	971.22	836.63
+load	Issue191-processor.Z80/processor.Z80.dsn	clearance	0	cbf29ce484222325
+load	Issue191-processor.Z80/processor.Z80.dsn	holeClearance	0	cbf29ce484222325
+load	Issue191-processor.Z80/processor.Z80.dsn	via_dangling	0	cbf29ce484222325
+load	Issue191-processor.Z80/processor.Z80.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue191-processor.Z80/processor.Z80.dsn	track_dangling	0	
+load	Issue191-processor.Z80/processor.Z80.dsn	scores	1000.0	152.75
+load	Issue199-StackOverflow/Signale_Vor+Block.dsn	clearance	0	cbf29ce484222325
+load	Issue199-StackOverflow/Signale_Vor+Block.dsn	holeClearance	0	cbf29ce484222325
+load	Issue199-StackOverflow/Signale_Vor+Block.dsn	via_dangling	0	cbf29ce484222325
+load	Issue199-StackOverflow/Signale_Vor+Block.dsn	unconnectedItems	27	11fb3fcd05f30cdc
+load	Issue199-StackOverflow/Signale_Vor+Block.dsn	track_dangling	0	
+load	Issue199-StackOverflow/Signale_Vor+Block.dsn	scores	0.0	1000.0
+load	Issue208-freerouting.dsn	clearance	0	cbf29ce484222325
+load	Issue208-freerouting.dsn	holeClearance	0	cbf29ce484222325
+load	Issue208-freerouting.dsn	via_dangling	0	cbf29ce484222325
+load	Issue208-freerouting.dsn	unconnectedItems	298	36a0e158c885d3ab
+load	Issue208-freerouting.dsn	track_dangling	0	
+load	Issue208-freerouting.dsn	scores	72.33	1000.0
+load	Issue209-split05.dsn	clearance	0	cbf29ce484222325
+load	Issue209-split05.dsn	holeClearance	0	cbf29ce484222325
+load	Issue209-split05.dsn	via_dangling	0	cbf29ce484222325
+load	Issue209-split05.dsn	unconnectedItems	40	1689d9d5ff44a360
+load	Issue209-split05.dsn	track_dangling	0	
+load	Issue209-split05.dsn	scores	94.64	1000.0
+load	Issue209-split10.dsn	clearance	0	cbf29ce484222325
+load	Issue209-split10.dsn	holeClearance	0	cbf29ce484222325
+load	Issue209-split10.dsn	via_dangling	0	cbf29ce484222325
+load	Issue209-split10.dsn	unconnectedItems	40	1689d9d5ff44a360
+load	Issue209-split10.dsn	track_dangling	0	
+load	Issue209-split10.dsn	scores	94.64	1000.0
+load	Issue214-freerouting.dsn	clearance	10	de41fb2b4d4c198b
+load	Issue214-freerouting.dsn	holeClearance	38	07527f75be9ca175
+load	Issue214-freerouting.dsn	via_dangling	31	6595777f648f9d90
+load	Issue214-freerouting.dsn	unconnectedItems	61	13f49a6a04b5b010
+load	Issue214-freerouting.dsn	track_dangling	78	2519,2520,2522,2530,2538,2557,2598,2605,2654,2666,2695,2707,2711,2712,2717,2718,2721,2727,2733,2736,2747,2755,2757,2758,2761,2764,2769,2777,2778,2780,2781,2782,2783,2786,2789,2790,2794,2795,2796,2797,2798,2799,2800,2801,2803,2817,2820,2825,2847,2858,2859,2862,2863,2868,2875,2883,2885,2886,2889,2893,2901,2914,2925,2934,2945,2951,2991,2995,3004,3062,3079,3199,3257,3264,3356,3457,3459,3463
+load	Issue214-freerouting.dsn	scores	614.99	847.07
+load	Issue217-8088sbc.dsn	clearance	0	cbf29ce484222325
+load	Issue217-8088sbc.dsn	holeClearance	0	cbf29ce484222325
+load	Issue217-8088sbc.dsn	via_dangling	0	cbf29ce484222325
+load	Issue217-8088sbc.dsn	unconnectedItems	76	4ab44d1d5d63ec3d
+load	Issue217-8088sbc.dsn	track_dangling	0	
+load	Issue217-8088sbc.dsn	scores	0.0	1000.0
+load	Issue219-LogicBoard_smt.dsn	clearance	0	cbf29ce484222325
+load	Issue219-LogicBoard_smt.dsn	holeClearance	0	cbf29ce484222325
+load	Issue219-LogicBoard_smt.dsn	via_dangling	0	cbf29ce484222325
+load	Issue219-LogicBoard_smt.dsn	unconnectedItems	317	439bf6e97ec25995
+load	Issue219-LogicBoard_smt.dsn	track_dangling	0	
+load	Issue219-LogicBoard_smt.dsn	scores	8.06	1000.0
+load	Issue229-display-8-digit-hc595.dsn	clearance	0	cbf29ce484222325
+load	Issue229-display-8-digit-hc595.dsn	holeClearance	0	cbf29ce484222325
+load	Issue229-display-8-digit-hc595.dsn	via_dangling	2	d6c82d69817673b4
+load	Issue229-display-8-digit-hc595.dsn	unconnectedItems	10	6889c1a1581c2803
+load	Issue229-display-8-digit-hc595.dsn	track_dangling	46	277,288,299,300,305,309,310,311,313,318,320,321,322,326,327,328,329,334,335,339,342,344,348,354,355,356,357,358,359,365,374,379,389,392,393,394,395,396,401,402,403,405,408,415,417,421
+load	Issue229-display-8-digit-hc595.dsn	scores	583.33	0.0
+load	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	clearance	0	cbf29ce484222325
+load	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	holeClearance	6	fd3ad578a53f09a4
+load	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	via_dangling	0	cbf29ce484222325
+load	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	unconnectedItems	62	4286a5328e97a758
+load	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	track_dangling	4	2091,2095,2096,2098
+load	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	scores	177.01	1000.0
+load	Issue230-CNH_Functional_Tester_1.dsn	clearance	0	cbf29ce484222325
+load	Issue230-CNH_Functional_Tester_1.dsn	holeClearance	6	fd3ad578a53f09a4
+load	Issue230-CNH_Functional_Tester_1.dsn	via_dangling	0	cbf29ce484222325
+load	Issue230-CNH_Functional_Tester_1.dsn	unconnectedItems	62	4286a5328e97a758
+load	Issue230-CNH_Functional_Tester_1.dsn	track_dangling	4	2091,2095,2096,2098
+load	Issue230-CNH_Functional_Tester_1.dsn	scores	177.01	1000.0
+load	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	clearance	0	cbf29ce484222325
+load	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	holeClearance	0	cbf29ce484222325
+load	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	via_dangling	0	cbf29ce484222325
+load	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	unconnectedItems	3	345b53ec0d5ebf12
+load	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	track_dangling	0	
+load	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	scores	0.0	1000.0
+load	Issue269-caniot-tiny-arm.dsn	clearance	0	cbf29ce484222325
+load	Issue269-caniot-tiny-arm.dsn	holeClearance	0	cbf29ce484222325
+load	Issue269-caniot-tiny-arm.dsn	via_dangling	0	cbf29ce484222325
+load	Issue269-caniot-tiny-arm.dsn	unconnectedItems	52	6bf76f6125a49e48
+load	Issue269-caniot-tiny-arm.dsn	track_dangling	14	1257,1281,1289,1341,1351,1360,1369,1394,1451,1471,1475,1476,1506,1522
+load	Issue269-caniot-tiny-arm.dsn	scores	295.14	1000.0
+load	Issue269-min_fr_test/min_fr_test.dsn	clearance	0	cbf29ce484222325
+load	Issue269-min_fr_test/min_fr_test.dsn	holeClearance	0	cbf29ce484222325
+load	Issue269-min_fr_test/min_fr_test.dsn	via_dangling	0	cbf29ce484222325
+load	Issue269-min_fr_test/min_fr_test.dsn	unconnectedItems	2	dd41de89bc67b257
+load	Issue269-min_fr_test/min_fr_test.dsn	track_dangling	0	
+load	Issue269-min_fr_test/min_fr_test.dsn	scores	0.0	1000.0
+load	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	clearance	0	cbf29ce484222325
+load	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	holeClearance	0	cbf29ce484222325
+load	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	via_dangling	0	cbf29ce484222325
+load	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	unconnectedItems	2	dd41de89bc67b257
+load	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	track_dangling	0	
+load	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	scores	0.0	1000.0
+load	Issue269-z10_module.dsn	clearance	0	cbf29ce484222325
+load	Issue269-z10_module.dsn	holeClearance	7	cdd8f70fd83a0fa3
+load	Issue269-z10_module.dsn	via_dangling	0	cbf29ce484222325
+load	Issue269-z10_module.dsn	unconnectedItems	32	dd9cdd3715b64263
+load	Issue269-z10_module.dsn	track_dangling	44	1559,1562,1572,1587,1598,1605,1634,1654,1656,1695,1909,1916,1925,1926,1928,1929,1930,1957,1979,1986,1987,2007,2008,2022,2040,2062,2086,2105,2158,2160,2174,2182,2183,2185,2186,2191,2197,2209,2219,2248,2250,2262,2266,2271
+load	Issue269-z10_module.dsn	scores	328.79	731.48
+load	Issue270-non-ansi_bracket.dsn	clearance	0	cbf29ce484222325
+load	Issue270-non-ansi_bracket.dsn	holeClearance	0	cbf29ce484222325
+load	Issue270-non-ansi_bracket.dsn	via_dangling	0	cbf29ce484222325
+load	Issue270-non-ansi_bracket.dsn	unconnectedItems	4	53275485b8228625
+load	Issue270-non-ansi_bracket.dsn	track_dangling	0	
+load	Issue270-non-ansi_bracket.dsn	scores	0.0	1000.0
+load	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	clearance	0	cbf29ce484222325
+load	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	holeClearance	0	cbf29ce484222325
+load	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	via_dangling	0	cbf29ce484222325
+load	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	unconnectedItems	57	b2ab8b94be42c6ab
+load	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	track_dangling	33	1102,1104,1105,1106,1107,1108,1113,1114,1115,1116,1117,1118,1119,1120,1121,1122,1123,1124,1133,1134,1136,1137,1138,1144,1145,1147,1148,1149,1150,1151,1152,1154,1155
+load	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	scores	0.0	1000.0
+load	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	clearance	0	cbf29ce484222325
+load	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	holeClearance	0	cbf29ce484222325
+load	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	via_dangling	0	cbf29ce484222325
+load	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	unconnectedItems	142	4a8b977ef1ad5c55
+load	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	track_dangling	0	
+load	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	scores	28.07	1000.0
+load	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	clearance	0	cbf29ce484222325
+load	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	holeClearance	0	cbf29ce484222325
+load	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	via_dangling	0	cbf29ce484222325
+load	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	unconnectedItems	242	df8a63a2ef2f8f31
+load	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	track_dangling	0	
+load	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	scores	0.0	1000.0
+load	Issue297-myboard.dsn	clearance	0	cbf29ce484222325
+load	Issue297-myboard.dsn	holeClearance	0	cbf29ce484222325
+load	Issue297-myboard.dsn	via_dangling	0	cbf29ce484222325
+load	Issue297-myboard.dsn	unconnectedItems	54	364983af06024f20
+load	Issue297-myboard.dsn	track_dangling	0	
+load	Issue297-myboard.dsn	scores	0.0	1000.0
+load	Issue313-FastTest.dsn	clearance	0	cbf29ce484222325
+load	Issue313-FastTest.dsn	holeClearance	40	ca91e1daf5dc9f73
+load	Issue313-FastTest.dsn	via_dangling	0	cbf29ce484222325
+load	Issue313-FastTest.dsn	unconnectedItems	3	c669eec36c165752
+load	Issue313-FastTest.dsn	track_dangling	0	
+load	Issue313-FastTest.dsn	scores	945.89	512.81
+load	Issue326-Mars-64-revE.dsn	clearance	0	cbf29ce484222325
+load	Issue326-Mars-64-revE.dsn	holeClearance	64	5cc403fa54b5ba77
+load	Issue326-Mars-64-revE.dsn	via_dangling	65	78a00d4f402fd31b
+load	Issue326-Mars-64-revE.dsn	unconnectedItems	74	02f3e1358f23d6e6
+load	Issue326-Mars-64-revE.dsn	track_dangling	0	
+load	Issue326-Mars-64-revE.dsn	scores	0.0	995.0
+load	Issue367-Charger.dsn	clearance	0	cbf29ce484222325
+load	Issue367-Charger.dsn	holeClearance	1	66a3f1d27d217e33
+load	Issue367-Charger.dsn	via_dangling	0	cbf29ce484222325
+load	Issue367-Charger.dsn	unconnectedItems	8	70a2808b7c65a55d
+load	Issue367-Charger.dsn	track_dangling	2	595,631
+load	Issue367-Charger.dsn	scores	758.74	923.91
+load	Issue367-UltraFlactyl/UltraFlactyl.dsn	clearance	0	cbf29ce484222325
+load	Issue367-UltraFlactyl/UltraFlactyl.dsn	holeClearance	0	cbf29ce484222325
+load	Issue367-UltraFlactyl/UltraFlactyl.dsn	via_dangling	2	7b127d3a03e82bb9
+load	Issue367-UltraFlactyl/UltraFlactyl.dsn	unconnectedItems	16	ca9e37132a00c2f5
+load	Issue367-UltraFlactyl/UltraFlactyl.dsn	track_dangling	22	2963,2975,2976,2988,2989,2993,3022,3038,3085,3103,3108,3113,3120,3121,3124,3126,3130,3135,3140,3143,3145,3146
+load	Issue367-UltraFlactyl/UltraFlactyl.dsn	scores	720.63	938.89
+load	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	clearance	0	cbf29ce484222325
+load	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	holeClearance	0	cbf29ce484222325
+load	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	via_dangling	0	cbf29ce484222325
+load	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	unconnectedItems	3	4d28766efbe02637
+load	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	track_dangling	0	
+load	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	scores	0.0	1000.0
+load	Issue368-CorneyIslandWireless_input_design.dsn	clearance	0	cbf29ce484222325
+load	Issue368-CorneyIslandWireless_input_design.dsn	holeClearance	0	cbf29ce484222325
+load	Issue368-CorneyIslandWireless_input_design.dsn	via_dangling	0	cbf29ce484222325
+load	Issue368-CorneyIslandWireless_input_design.dsn	unconnectedItems	3	bafbe4ddb26a0f1f
+load	Issue368-CorneyIslandWireless_input_design.dsn	track_dangling	0	
+load	Issue368-CorneyIslandWireless_input_design.dsn	scores	0.0	1000.0
+load	Issue413-test.dsn	clearance	0	cbf29ce484222325
+load	Issue413-test.dsn	holeClearance	0	cbf29ce484222325
+load	Issue413-test.dsn	via_dangling	0	cbf29ce484222325
+load	Issue413-test.dsn	unconnectedItems	1	80fad955d98f4561
+load	Issue413-test.dsn	track_dangling	0	
+load	Issue413-test.dsn	scores	733.33	500.0
+load	Issue420-contribution-board.dsn	clearance	0	cbf29ce484222325
+load	Issue420-contribution-board.dsn	holeClearance	0	cbf29ce484222325
+load	Issue420-contribution-board.dsn	via_dangling	0	cbf29ce484222325
+load	Issue420-contribution-board.dsn	unconnectedItems	375	54a7959dea4d0848
+load	Issue420-contribution-board.dsn	track_dangling	0	
+load	Issue420-contribution-board.dsn	scores	0.0	1000.0
+load	Issue433-my-board.dsn	clearance	0	cbf29ce484222325
+load	Issue433-my-board.dsn	holeClearance	0	cbf29ce484222325
+load	Issue433-my-board.dsn	via_dangling	0	cbf29ce484222325
+load	Issue433-my-board.dsn	unconnectedItems	6	e28a189e7512ed20
+load	Issue433-my-board.dsn	track_dangling	0	
+load	Issue433-my-board.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	unconnectedItems	99	7fc9827582fa3a1e
+load	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	unconnectedItems	99	7fc9827582fa3a1e
+load	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	unconnectedItems	99	7fc9827582fa3a1e
+load	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	unconnectedItems	15	ce43634de328dafc
+load	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	unconnectedItems	15	ce43634de328dafc
+load	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	unconnectedItems	15	ce43634de328dafc
+load	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	unconnectedItems	44	3e79ec540c379e9d
+load	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	unconnectedItems	44	3e79ec540c379e9d
+load	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	unconnectedItems	44	3e79ec540c379e9d
+load	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	unconnectedItems	47	735f398fabf41576
+load	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	unconnectedItems	47	735f398fabf41576
+load	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	unconnectedItems	47	735f398fabf41576
+load	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	unconnectedItems	27	ff3568dfcb4b4108
+load	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	unconnectedItems	27	ff3568dfcb4b4108
+load	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	unconnectedItems	27	ff3568dfcb4b4108
+load	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	unconnectedItems	51	313c87a8f51a5600
+load	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	unconnectedItems	51	313c87a8f51a5600
+load	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	unconnectedItems	51	313c87a8f51a5600
+load	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	unconnectedItems	9	77fd4ecaccb2ce5d
+load	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	unconnectedItems	9	77fd4ecaccb2ce5d
+load	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	unconnectedItems	9	77fd4ecaccb2ce5d
+load	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	unconnectedItems	58	e63ba9d31e0bdd3b
+load	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	unconnectedItems	58	e63ba9d31e0bdd3b
+load	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	unconnectedItems	58	e63ba9d31e0bdd3b
+load	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	unconnectedItems	63	74253bcd4f3cf797
+load	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	unconnectedItems	63	74253bcd4f3cf797
+load	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	unconnectedItems	63	74253bcd4f3cf797
+load	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	unconnectedItems	35	5269d22f2aec60eb
+load	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	unconnectedItems	35	5269d22f2aec60eb
+load	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	unconnectedItems	35	5269d22f2aec60eb
+load	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	track_dangling	0	
+load	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm01.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm01.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm01.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm01.dsn	unconnectedItems	99	7fc9827582fa3a1e
+load	Issue508-DAC2020_bm01.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm01.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm02.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm02.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm02.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm02.dsn	unconnectedItems	15	ce43634de328dafc
+load	Issue508-DAC2020_bm02.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm02.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm04.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm04.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm04.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm04.dsn	unconnectedItems	44	3e79ec540c379e9d
+load	Issue508-DAC2020_bm04.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm04.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm05.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm05.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm05.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm05.dsn	unconnectedItems	47	735f398fabf41576
+load	Issue508-DAC2020_bm05.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm05.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm06.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm06.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm06.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm06.dsn	unconnectedItems	27	ff3568dfcb4b4108
+load	Issue508-DAC2020_bm06.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm06.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm07.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm07.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm07.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm07.dsn	unconnectedItems	51	313c87a8f51a5600
+load	Issue508-DAC2020_bm07.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm07.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm08.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm08.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm08.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm08.dsn	unconnectedItems	9	77fd4ecaccb2ce5d
+load	Issue508-DAC2020_bm08.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm08.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm09.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm09.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm09.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm09.dsn	unconnectedItems	58	e63ba9d31e0bdd3b
+load	Issue508-DAC2020_bm09.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm09.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm10.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm10.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm10.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm10.dsn	unconnectedItems	63	74253bcd4f3cf797
+load	Issue508-DAC2020_bm10.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm10.dsn	scores	0.0	1000.0
+load	Issue508-DAC2020_bm11.dsn	clearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm11.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-DAC2020_bm11.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-DAC2020_bm11.dsn	unconnectedItems	35	5269d22f2aec60eb
+load	Issue508-DAC2020_bm11.dsn	track_dangling	0	
+load	Issue508-DAC2020_bm11.dsn	scores	0.0	1000.0
+load	Issue508-SMD-routing-issue-demo.dsn	clearance	0	cbf29ce484222325
+load	Issue508-SMD-routing-issue-demo.dsn	holeClearance	0	cbf29ce484222325
+load	Issue508-SMD-routing-issue-demo.dsn	via_dangling	0	cbf29ce484222325
+load	Issue508-SMD-routing-issue-demo.dsn	unconnectedItems	6	1292daa55ce3119d
+load	Issue508-SMD-routing-issue-demo.dsn	track_dangling	0	
+load	Issue508-SMD-routing-issue-demo.dsn	scores	0.0	1000.0
+load	Issue555-BBD_Mars-64.dsn	clearance	0	cbf29ce484222325
+load	Issue555-BBD_Mars-64.dsn	holeClearance	0	cbf29ce484222325
+load	Issue555-BBD_Mars-64.dsn	via_dangling	0	cbf29ce484222325
+load	Issue555-BBD_Mars-64.dsn	unconnectedItems	74	c3d27d6150bf1c33
+load	Issue555-BBD_Mars-64.dsn	track_dangling	0	
+load	Issue555-BBD_Mars-64.dsn	scores	0.0	1000.0
+load	Issue555-CNH_Functional_Tester_1.dsn	clearance	0	cbf29ce484222325
+load	Issue555-CNH_Functional_Tester_1.dsn	holeClearance	6	fd3ad578a53f09a4
+load	Issue555-CNH_Functional_Tester_1.dsn	via_dangling	0	cbf29ce484222325
+load	Issue555-CNH_Functional_Tester_1.dsn	unconnectedItems	62	4286a5328e97a758
+load	Issue555-CNH_Functional_Tester_1.dsn	track_dangling	4	2091,2095,2096,2098
+load	Issue555-CNH_Functional_Tester_1.dsn	scores	177.01	1000.0
+load	Issue558-dev-board.dsn	clearance	0	cbf29ce484222325
+load	Issue558-dev-board.dsn	holeClearance	0	cbf29ce484222325
+load	Issue558-dev-board.dsn	via_dangling	0	cbf29ce484222325
+load	Issue558-dev-board.dsn	unconnectedItems	45	1abaa3ea68df0cdb
+load	Issue558-dev-board.dsn	track_dangling	0	
+load	Issue558-dev-board.dsn	scores	13.89	1000.0
+load	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	clearance	3	9756bf96513fce7b
+load	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	holeClearance	64	7fc66455089442ca
+load	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	via_dangling	18	c62da182ac6c4fe3
+load	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	unconnectedItems	3	01a4536ae22f27db
+load	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	track_dangling	2	998,1031
+load	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	scores	948.13	189.92
+load	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	clearance	0	cbf29ce484222325
+load	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	holeClearance	0	cbf29ce484222325
+load	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	via_dangling	4	9f0e44bc49cc8d05
+load	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	unconnectedItems	44	fc045848ed00031f
+load	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	track_dangling	110	1117,1137,1181,1187,1198,1213,1222,1235,1240,1242,1280,1303,1312,1320,1335,1347,1360,1388,1391,1411,1425,1432,1436,1445,1449,1488,1552,1553,1580,1583,1588,1664,1686,1694,1696,1697,1721,1788,1789,1802,1809,1811,1825,1844,1846,1847,1848,1855,1856,1857,1858,1859,1860,1861,1864,1867,1869,1909,1919,1932,1995,2002,2044,2046,2063,2064,2083,2090,2095,2096,2098,2101,2132,2204,2212,2228,2235,2250,2263,2265,2266,2267,2286,2293,2303,2307,2331,2340,2341,2356,2372,2377,2390,2396,2402,2403,2406,2407,2408,2409,2410,2411,2413,2425,2433,2435,2436,2437,2439,2443
+load	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	scores	223.24	478.4
+load	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	clearance	0	cbf29ce484222325
+load	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	holeClearance	0	cbf29ce484222325
+load	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	via_dangling	0	cbf29ce484222325
+load	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	unconnectedItems	4	dd838c04924154ec
+load	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	track_dangling	8	385,386,404,739,759,767,768,769
+load	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	scores	875.0	825.17
+load	Issue593-BBD_Mars-64.dsn	clearance	0	cbf29ce484222325
+load	Issue593-BBD_Mars-64.dsn	holeClearance	0	cbf29ce484222325
+load	Issue593-BBD_Mars-64.dsn	via_dangling	0	cbf29ce484222325
+load	Issue593-BBD_Mars-64.dsn	unconnectedItems	74	c3d27d6150bf1c33
+load	Issue593-BBD_Mars-64.dsn	track_dangling	0	
+load	Issue593-BBD_Mars-64.dsn	scores	0.0	1000.0
+load	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	clearance	0	cbf29ce484222325
+load	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	holeClearance	0	cbf29ce484222325
+load	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	via_dangling	0	cbf29ce484222325
+load	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	unconnectedItems	93	c1582693aacf08c5
+load	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	track_dangling	0	
+load	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	scores	0.0	1000.0
+load	Issue649-kicad_ecc83-pp_input_board_v1.dsn	clearance	0	cbf29ce484222325
+load	Issue649-kicad_ecc83-pp_input_board_v1.dsn	holeClearance	0	cbf29ce484222325
+load	Issue649-kicad_ecc83-pp_input_board_v1.dsn	via_dangling	0	cbf29ce484222325
+load	Issue649-kicad_ecc83-pp_input_board_v1.dsn	unconnectedItems	8	1bbba77fcabe6f19
+load	Issue649-kicad_ecc83-pp_input_board_v1.dsn	track_dangling	0	
+load	Issue649-kicad_ecc83-pp_input_board_v1.dsn	scores	222.22	1000.0
+load	Issue649-kicad_ecc83-pp_input_board_v2.dsn	clearance	0	cbf29ce484222325
+load	Issue649-kicad_ecc83-pp_input_board_v2.dsn	holeClearance	0	cbf29ce484222325
+load	Issue649-kicad_ecc83-pp_input_board_v2.dsn	via_dangling	0	cbf29ce484222325
+load	Issue649-kicad_ecc83-pp_input_board_v2.dsn	unconnectedItems	6	ab37d6872739f6fb
+load	Issue649-kicad_ecc83-pp_input_board_v2.dsn	track_dangling	8	360,370,375,377,382,389,397,399
+load	Issue649-kicad_ecc83-pp_input_board_v2.dsn	scores	365.08	1000.0
+load	Issue676-ch32v-tx118s.dsn	clearance	0	cbf29ce484222325
+load	Issue676-ch32v-tx118s.dsn	holeClearance	0	cbf29ce484222325
+load	Issue676-ch32v-tx118s.dsn	via_dangling	0	cbf29ce484222325
+load	Issue676-ch32v-tx118s.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue676-ch32v-tx118s.dsn	track_dangling	0	
+load	Issue676-ch32v-tx118s.dsn	scores	1000.0	769.23
+load	Issue684-Autorouter_PCB1_2026-5-8.dsn	clearance	0	cbf29ce484222325
+load	Issue684-Autorouter_PCB1_2026-5-8.dsn	holeClearance	5	ff63f335de626ee3
+load	Issue684-Autorouter_PCB1_2026-5-8.dsn	via_dangling	0	cbf29ce484222325
+load	Issue684-Autorouter_PCB1_2026-5-8.dsn	unconnectedItems	32	6b695d0eefbaddac
+load	Issue684-Autorouter_PCB1_2026-5-8.dsn	track_dangling	0	
+load	Issue684-Autorouter_PCB1_2026-5-8.dsn	scores	49.17	1000.0
+load	Issue689-BBD_Mars-64.dsn	clearance	0	cbf29ce484222325
+load	Issue689-BBD_Mars-64.dsn	holeClearance	0	cbf29ce484222325
+load	Issue689-BBD_Mars-64.dsn	via_dangling	0	cbf29ce484222325
+load	Issue689-BBD_Mars-64.dsn	unconnectedItems	74	c3d27d6150bf1c33
+load	Issue689-BBD_Mars-64.dsn	track_dangling	0	
+load	Issue689-BBD_Mars-64.dsn	scores	0.0	1000.0
+load	Issue690-ecc83.dsn	clearance	0	cbf29ce484222325
+load	Issue690-ecc83.dsn	holeClearance	0	cbf29ce484222325
+load	Issue690-ecc83.dsn	via_dangling	0	cbf29ce484222325
+load	Issue690-ecc83.dsn	unconnectedItems	6	ab37d6872739f6fb
+load	Issue690-ecc83.dsn	track_dangling	8	360,370,375,377,383,389,397,399
+load	Issue690-ecc83.dsn	scores	365.08	1000.0
+load	Issue690-kit-dev-coldfire-xilinx_5213.dsn	clearance	2	59cdf87826f9e1d0
+load	Issue690-kit-dev-coldfire-xilinx_5213.dsn	holeClearance	20	cb5775b58902e27d
+load	Issue690-kit-dev-coldfire-xilinx_5213.dsn	via_dangling	0	cbf29ce484222325
+load	Issue690-kit-dev-coldfire-xilinx_5213.dsn	unconnectedItems	197	8933ea9a2b97ef29
+load	Issue690-kit-dev-coldfire-xilinx_5213.dsn	track_dangling	365	2625,2626,2644,2671,2684,2694,2700,2728,2730,2735,2744,2748,2773,2788,2807,2830,2832,2851,2852,2863,2866,2887,2889,2905,2915,2932,2940,2959,2961,2979,2980,2982,3003,3006,3013,3034,3048,3064,3089,3104,3108,3121,3123,3150,3155,3173,3185,3203,3208,3210,3228,3230,3235,3243,3247,3258,3262,3265,3267,3269,3277,3286,3294,3300,3302,3304,3305,3309,3311,3314,3317,3318,3322,3327,3330,3332,3334,3341,3346,3349,3351,3355,3356,3360,3365,3370,3376,3378,3384,3388,3395,3402,3407,3411,3414,3416,3418,3419,3420,3422,3423,3424,3426,3427,3438,3441,3443,3445,3447,3452,3461,3462,3467,3468,3471,3478,3486,3492,3494,3496,3497,3502,3505,3507,3508,3509,3527,3528,3530,3534,3539,3541,3542,3543,3544,3545,3548,3553,3555,3559,3564,3567,3576,3580,3585,3587,3593,3594,3595,3596,3598,3608,3610,3611,3621,3622,3623,3678,3679,3682,3683,3700,3713,3729,3747,3758,3774,3775,3800,3803,3820,3822,3836,3842,3858,3868,3873,3876,3888,3891,3893,3895,3901,3902,3903,3904,3906,3909,3914,3920,3922,3923,3924,3926,3927,3929,3936,3937,3941,3944,3945,3947,3958,3961,3968,3971,3981,3983,3986,3987,3990,3999,4006,4010,4017,4022,4024,4040,4041,4046,4050,4054,4055,4059,4060,4062,4063,4064,4066,4067,4071,4079,4083,4084,4085,4086,4102,4110,4113,4123,4125,4126,4158,4160,4163,4191,4200,4201,4229,4243,4257,4261,4284,4306,4307,4343,4344,4392,4396,4421,4423,4425,4437,4459,4460,4500,4501,4535,4536,4566,4568,4599,4619,4636,4644,4659,4675,4699,4717,4736,4765,4785,4816,4840,4878,4910,4942,4975,4986,4988,4996,5003,5007,5010,5012,5014,5018,5019,5021,5023,5024,5027,5031,5033,5035,5038,5041,5055,5058,5059,5062,5063,5066,5068,5071,5075,5078,5091,5103,5109,5112,5129,5131,5133,5135,5136,5137,5140,5151,5152,5154,5156,5159,5167,5169,5171,5172,5175,5183,5185,5186,5192,5193,5196,5197,5202,5207,5210,5213,5217,5225,5226,5228,5230,5233,5235,5237,5241,5244,5248,5252,5256,5260,5263,5270
+load	Issue690-kit-dev-coldfire-xilinx_5213.dsn	scores	137.73	846.67
+load	Issue690-sonde_xilinx.dsn	clearance	0	cbf29ce484222325
+load	Issue690-sonde_xilinx.dsn	holeClearance	0	cbf29ce484222325
+load	Issue690-sonde_xilinx.dsn	via_dangling	0	cbf29ce484222325
+load	Issue690-sonde_xilinx.dsn	unconnectedItems	15	fc2319a18ee843cc
+load	Issue690-sonde_xilinx.dsn	track_dangling	19	595,600,601,605,606,607,609,616,625,626,630,641,646,649,652,656,744,746,753
+load	Issue690-sonde_xilinx.dsn	scores	601.99	972.22
+load	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	clearance	0	cbf29ce484222325
+load	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	holeClearance	135	993a4856d74727c8
+load	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	via_dangling	2	22512f965c135689
+load	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	unconnectedItems	23	78da213d9cd7efc5
+load	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	track_dangling	54	172,174,183,184,185,193,194,196,198,204,206,215,216,228,231,234,235,236,242,247,260,265,268,273,276,279,284,290,293,295,296,307,309,328,332,354,355,357,367,371,376,377,384,387,396,403,406,407,413,422,423,430,432,445
+load	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	scores	293.44	902.94
+load	Issue723-CombineStackOverflow.dsn	clearance	0	cbf29ce484222325
+load	Issue723-CombineStackOverflow.dsn	holeClearance	0	cbf29ce484222325
+load	Issue723-CombineStackOverflow.dsn	via_dangling	0	cbf29ce484222325
+load	Issue723-CombineStackOverflow.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue723-CombineStackOverflow.dsn	track_dangling	1	4001
+load	Issue723-CombineStackOverflow.dsn	scores	1000.0	0.0
+load	Issue730-DAC2020_bm11.dsn	clearance	0	cbf29ce484222325
+load	Issue730-DAC2020_bm11.dsn	holeClearance	0	cbf29ce484222325
+load	Issue730-DAC2020_bm11.dsn	via_dangling	0	cbf29ce484222325
+load	Issue730-DAC2020_bm11.dsn	unconnectedItems	35	5269d22f2aec60eb
+load	Issue730-DAC2020_bm11.dsn	track_dangling	0	
+load	Issue730-DAC2020_bm11.dsn	scores	0.0	1000.0
+load	Issue732-CM5_MINIMA_3.dsn	clearance	0	cbf29ce484222325
+load	Issue732-CM5_MINIMA_3.dsn	holeClearance	1	b92b622d39158723
+load	Issue732-CM5_MINIMA_3.dsn	via_dangling	0	cbf29ce484222325
+load	Issue732-CM5_MINIMA_3.dsn	unconnectedItems	94	bc77e5b9aa009b20
+load	Issue732-CM5_MINIMA_3.dsn	track_dangling	0	
+load	Issue732-CM5_MINIMA_3.dsn	scores	317.84	1000.0
+load	Issue732-DAC2020_bm10.dsn	clearance	0	cbf29ce484222325
+load	Issue732-DAC2020_bm10.dsn	holeClearance	0	cbf29ce484222325
+load	Issue732-DAC2020_bm10.dsn	via_dangling	0	cbf29ce484222325
+load	Issue732-DAC2020_bm10.dsn	unconnectedItems	63	74253bcd4f3cf797
+load	Issue732-DAC2020_bm10.dsn	track_dangling	0	
+load	Issue732-DAC2020_bm10.dsn	scores	0.0	1000.0
+load	Issue732-RoyalBlue54L-Feather.dsn	clearance	0	cbf29ce484222325
+load	Issue732-RoyalBlue54L-Feather.dsn	holeClearance	234	c44731262dded02d
+load	Issue732-RoyalBlue54L-Feather.dsn	via_dangling	0	cbf29ce484222325
+load	Issue732-RoyalBlue54L-Feather.dsn	unconnectedItems	68	a4acc851eca89082
+load	Issue732-RoyalBlue54L-Feather.dsn	track_dangling	0	
+load	Issue732-RoyalBlue54L-Feather.dsn	scores	264.59	1000.0
+load	Issue733-kicad_complex_hierarchy_input_design.dsn	clearance	0	cbf29ce484222325
+load	Issue733-kicad_complex_hierarchy_input_design.dsn	holeClearance	0	cbf29ce484222325
+load	Issue733-kicad_complex_hierarchy_input_design.dsn	via_dangling	0	cbf29ce484222325
+load	Issue733-kicad_complex_hierarchy_input_design.dsn	unconnectedItems	50	0995c7dc67206709
+load	Issue733-kicad_complex_hierarchy_input_design.dsn	track_dangling	0	
+load	Issue733-kicad_complex_hierarchy_input_design.dsn	scores	0.0	1000.0
+load	Issue733-kicad_interf_u_input_design.dsn	clearance	0	cbf29ce484222325
+load	Issue733-kicad_interf_u_input_design.dsn	holeClearance	0	cbf29ce484222325
+load	Issue733-kicad_interf_u_input_design.dsn	via_dangling	1	5d4dd82e7e932ccb
+load	Issue733-kicad_interf_u_input_design.dsn	unconnectedItems	38	25ef4de21959db80
+load	Issue733-kicad_interf_u_input_design.dsn	track_dangling	40	757,761,764,768,770,774,775,779,783,795,796,804,830,836,841,844,846,936,1149,1151,1159,1164,1166,1169,1205,1210,1212,1224,1229,1240,1262,1264,1339,1375,1392,1400,1404,1405,1406,1407
+load	Issue733-kicad_interf_u_input_design.dsn	scores	714.76	720.01
+load	Issue742-tastexx-pcb.dsn	clearance	0	cbf29ce484222325
+load	Issue742-tastexx-pcb.dsn	holeClearance	0	cbf29ce484222325
+load	Issue742-tastexx-pcb.dsn	via_dangling	0	cbf29ce484222325
+load	Issue742-tastexx-pcb.dsn	unconnectedItems	11	4f102097211facd3
+load	Issue742-tastexx-pcb.dsn	track_dangling	0	
+load	Issue742-tastexx-pcb.dsn	scores	0.0	1000.0
+load	Issue742-tastexx-pcb/tastexx-pcb.dsn	clearance	0	cbf29ce484222325
+load	Issue742-tastexx-pcb/tastexx-pcb.dsn	holeClearance	0	cbf29ce484222325
+load	Issue742-tastexx-pcb/tastexx-pcb.dsn	via_dangling	0	cbf29ce484222325
+load	Issue742-tastexx-pcb/tastexx-pcb.dsn	unconnectedItems	11	4f102097211facd3
+load	Issue742-tastexx-pcb/tastexx-pcb.dsn	track_dangling	0	
+load	Issue742-tastexx-pcb/tastexx-pcb.dsn	scores	0.0	1000.0
+load	Issue753-CPU-85_r104.dsn	clearance	0	cbf29ce484222325
+load	Issue753-CPU-85_r104.dsn	holeClearance	76	2b5cee80681e88b4
+load	Issue753-CPU-85_r104.dsn	via_dangling	13	5c73b5fa443fd479
+load	Issue753-CPU-85_r104.dsn	unconnectedItems	169	0faf155877a04615
+load	Issue753-CPU-85_r104.dsn	track_dangling	16	2333,2334,2335,2341,2359,2365,2379,2381,2382,2383,2387,2388,2389,2390,2395,2396
+load	Issue753-CPU-85_r104.dsn	scores	235.45	975.45
+load	Issue754-avionics_hub.dsn	clearance	17	22598c1f62c27e30
+load	Issue754-avionics_hub.dsn	holeClearance	194	93525a1b255894d1
+load	Issue754-avionics_hub.dsn	via_dangling	10	1f7f845a90c2eb12
+load	Issue754-avionics_hub.dsn	unconnectedItems	184	cb7f2667653246ec
+load	Issue754-avionics_hub.dsn	track_dangling	37	1439,1440,1463,1469,1489,1493,1528,1546,1574,1584,1602,1838,1839,1908,2015,2016,2019,2035,2040,2042,2059,2085,2095,2113,2115,2126,2161,2162,2228,2256,2282,2289,2299,2329,2332,2342,2347
+load	Issue754-avionics_hub.dsn	scores	290.42	995.18
+load	Issue756-minimal-hang.dsn	clearance	0	cbf29ce484222325
+load	Issue756-minimal-hang.dsn	holeClearance	0	cbf29ce484222325
+load	Issue756-minimal-hang.dsn	via_dangling	0	cbf29ce484222325
+load	Issue756-minimal-hang.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue756-minimal-hang.dsn	track_dangling	2	2,3
+load	Issue756-minimal-hang.dsn	scores	1000.0	0.0
+load	Issue756-minimal-ok.dsn	clearance	0	cbf29ce484222325
+load	Issue756-minimal-ok.dsn	holeClearance	0	cbf29ce484222325
+load	Issue756-minimal-ok.dsn	via_dangling	0	cbf29ce484222325
+load	Issue756-minimal-ok.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue756-minimal-ok.dsn	track_dangling	1	2
+load	Issue756-minimal-ok.dsn	scores	1000.0	0.0
+load	Issue756-tomu-fpga.dsn	clearance	0	cbf29ce484222325
+load	Issue756-tomu-fpga.dsn	holeClearance	72	849a1fded867dffb
+load	Issue756-tomu-fpga.dsn	via_dangling	9	73987ecc0a6105d8
+load	Issue756-tomu-fpga.dsn	unconnectedItems	15	7c4bd6aa2dbbd277
+load	Issue756-tomu-fpga.dsn	track_dangling	45	724,732,762,779,785,849,857,862,922,964,967,985,996,1000,1004,1006,1038,1087,1129,1140,1149,1155,1169,1191,1237,1275,1279,1281,1283,1290,1305,1312,1315,1317,1330,1339,1359,1378,1380,1381,1395,1396,1397,1404,1410
+load	Issue756-tomu-fpga.dsn	scores	826.37	373.54
+load	Issue756-tomu-fpga11.dsn	clearance	0	cbf29ce484222325
+load	Issue756-tomu-fpga11.dsn	holeClearance	72	0df7e3458cf62a21
+load	Issue756-tomu-fpga11.dsn	via_dangling	8	8c56b8d9347868e3
+load	Issue756-tomu-fpga11.dsn	unconnectedItems	15	8e0f85954fe93801
+load	Issue756-tomu-fpga11.dsn	track_dangling	45	711,744,784,786,858,877,883,891,956,1003,1022,1023,1045,1058,1130,1149,1188,1203,1211,1213,1220,1223,1249,1301,1340,1341,1345,1349,1351,1356,1373,1386,1403,1404,1413,1424,1436,1462,1477,1479,1484,1485,1488,1504,1525
+load	Issue756-tomu-fpga11.dsn	scores	839.63	373.54
+load	Issue756-tomu-fpga7.dsn	clearance	0	cbf29ce484222325
+load	Issue756-tomu-fpga7.dsn	holeClearance	72	19d65f3f5d3e7d01
+load	Issue756-tomu-fpga7.dsn	via_dangling	8	98e9f1e7ec118320
+load	Issue756-tomu-fpga7.dsn	unconnectedItems	15	b0d2a516ddbc8ad2
+load	Issue756-tomu-fpga7.dsn	track_dangling	46	712,745,785,787,804,859,878,884,892,957,1004,1023,1024,1046,1059,1131,1150,1189,1204,1212,1214,1221,1224,1250,1302,1341,1346,1347,1350,1352,1357,1374,1387,1404,1405,1414,1425,1437,1463,1478,1480,1485,1486,1489,1505,1526
+load	Issue756-tomu-fpga7.dsn	scores	840.39	373.54
+load	Issue756-tomu-fpga8.dsn	clearance	0	cbf29ce484222325
+load	Issue756-tomu-fpga8.dsn	holeClearance	72	19d65f3f5d3e7d01
+load	Issue756-tomu-fpga8.dsn	via_dangling	8	98e9f1e7ec118320
+load	Issue756-tomu-fpga8.dsn	unconnectedItems	15	b0d2a516ddbc8ad2
+load	Issue756-tomu-fpga8.dsn	track_dangling	46	712,745,785,787,804,859,878,884,892,957,1004,1023,1024,1046,1059,1131,1150,1189,1204,1212,1214,1221,1224,1250,1302,1341,1346,1347,1350,1352,1357,1374,1387,1404,1405,1414,1425,1437,1463,1478,1480,1485,1486,1489,1505,1526
+load	Issue756-tomu-fpga8.dsn	scores	840.39	373.54
+load	Issue756-tomu-fpga9.dsn	clearance	0	cbf29ce484222325
+load	Issue756-tomu-fpga9.dsn	holeClearance	72	4fe8dcb6e917cf24
+load	Issue756-tomu-fpga9.dsn	via_dangling	20	0c1ba87858f330c3
+load	Issue756-tomu-fpga9.dsn	unconnectedItems	16	936aa3ea9049edae
+load	Issue756-tomu-fpga9.dsn	track_dangling	52	669,677,682,685,695,697,711,744,784,786,803,858,877,883,891,956,1003,1022,1023,1045,1058,1130,1149,1188,1203,1211,1213,1220,1223,1249,1301,1340,1341,1345,1349,1351,1356,1373,1386,1403,1404,1413,1424,1436,1462,1477,1479,1484,1485,1488,1504,1525
+load	Issue756-tomu-fpga9.dsn	scores	760.03	373.54
+load	Issue757-minimal-soe-ok.dsn	clearance	0	cbf29ce484222325
+load	Issue757-minimal-soe-ok.dsn	holeClearance	0	cbf29ce484222325
+load	Issue757-minimal-soe-ok.dsn	via_dangling	0	cbf29ce484222325
+load	Issue757-minimal-soe-ok.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue757-minimal-soe-ok.dsn	track_dangling	1	2
+load	Issue757-minimal-soe-ok.dsn	scores	1000.0	0.0
+load	Issue757-minimal-soe.dsn	clearance	0	cbf29ce484222325
+load	Issue757-minimal-soe.dsn	holeClearance	0	cbf29ce484222325
+load	Issue757-minimal-soe.dsn	via_dangling	0	cbf29ce484222325
+load	Issue757-minimal-soe.dsn	unconnectedItems	0	cbf29ce484222325
+load	Issue757-minimal-soe.dsn	track_dangling	2	2,3
+load	Issue757-minimal-soe.dsn	scores	1000.0	0.0
+load	Issue872-single-layer-repro.dsn	clearance	0	cbf29ce484222325
+load	Issue872-single-layer-repro.dsn	holeClearance	0	cbf29ce484222325
+load	Issue872-single-layer-repro.dsn	via_dangling	0	cbf29ce484222325
+load	Issue872-single-layer-repro.dsn	unconnectedItems	8	460f21924a88abb3
+load	Issue872-single-layer-repro.dsn	track_dangling	0	
+load	Issue872-single-layer-repro.dsn	scores	0.0	1000.0
+load	Issue951-corney_island_wireless.dsn	clearance	126	60379acf7c898bd3
+load	Issue951-corney_island_wireless.dsn	holeClearance	96	058fece7769f9e55
+load	Issue951-corney_island_wireless.dsn	via_dangling	0	cbf29ce484222325
+load	Issue951-corney_island_wireless.dsn	unconnectedItems	49	0ca83be72e214e9b
+load	Issue951-corney_island_wireless.dsn	track_dangling	37	1467,1478,1489,1666,1668,1671,1676,1679,1682,1690,1691,1692,1693,1694,1700,1704,1705,1706,1707,1708,1709,1713,1714,1718,1719,1720,1721,1722,1723,1727,1728,1732,1733,1734,1735,1737,1741
+load	Issue951-corney_island_wireless.dsn	scores	142.57	929.82
+load	Issue954-circle.dsn	clearance	0	cbf29ce484222325
+load	Issue954-circle.dsn	holeClearance	0	cbf29ce484222325
+load	Issue954-circle.dsn	via_dangling	1	04bfff90768be92c
+load	Issue954-circle.dsn	unconnectedItems	1	6082c31827c7546a
+load	Issue954-circle.dsn	track_dangling	0	
+load	Issue954-circle.dsn	scores	1000.0	0.0
+load	Issue954-invalid-polygon64.dsn	clearance	0	cbf29ce484222325
+load	Issue954-invalid-polygon64.dsn	holeClearance	2	ea14850e7e218686
+load	Issue954-invalid-polygon64.dsn	via_dangling	1	7aae375b2ce4da81
+load	Issue954-invalid-polygon64.dsn	unconnectedItems	1	6082c31827c7546a
+load	Issue954-invalid-polygon64.dsn	track_dangling	0	
+load	Issue954-invalid-polygon64.dsn	scores	950.06	0.0
+load	Issue954-polygon64.dsn	clearance	0	cbf29ce484222325
+load	Issue954-polygon64.dsn	holeClearance	0	cbf29ce484222325
+load	Issue954-polygon64.dsn	via_dangling	1	04bfff90768be92c
+load	Issue954-polygon64.dsn	unconnectedItems	1	6082c31827c7546a
+load	Issue954-polygon64.dsn	track_dangling	0	
+load	Issue954-polygon64.dsn	scores	1000.0	0.0
+load	Issue955-rotated-pad-contacts.dsn	clearance	0	cbf29ce484222325
+load	Issue955-rotated-pad-contacts.dsn	holeClearance	4	04f807bfbe42be97
+load	Issue955-rotated-pad-contacts.dsn	via_dangling	0	cbf29ce484222325
+load	Issue955-rotated-pad-contacts.dsn	unconnectedItems	39	73ee166ed68ee896
+load	Issue955-rotated-pad-contacts.dsn	track_dangling	0	
+load	Issue955-rotated-pad-contacts.dsn	scores	292.28	929.82
+load	Issue957-smoke-ldo-led.dsn	clearance	0	cbf29ce484222325
+load	Issue957-smoke-ldo-led.dsn	holeClearance	0	cbf29ce484222325
+load	Issue957-smoke-ldo-led.dsn	via_dangling	0	cbf29ce484222325
+load	Issue957-smoke-ldo-led.dsn	unconnectedItems	2	fad55bf9477f9d29
+load	Issue957-smoke-ldo-led.dsn	track_dangling	1	84
+load	Issue957-smoke-ldo-led.dsn	scores	777.78	0.0
+load	PCBench-Box0-hv-analog-breakout.dsn	clearance	0	cbf29ce484222325
+load	PCBench-Box0-hv-analog-breakout.dsn	holeClearance	0	cbf29ce484222325
+load	PCBench-Box0-hv-analog-breakout.dsn	via_dangling	0	cbf29ce484222325
+load	PCBench-Box0-hv-analog-breakout.dsn	unconnectedItems	36	edd23b2aafd49b5f
+load	PCBench-Box0-hv-analog-breakout.dsn	track_dangling	0	
+load	PCBench-Box0-hv-analog-breakout.dsn	scores	0.0	1000.0
+load	PCBench-retroreflectors-CONGFLOCK.dsn	clearance	0	cbf29ce484222325
+load	PCBench-retroreflectors-CONGFLOCK.dsn	holeClearance	8	d784f3d07fcf65ee
+load	PCBench-retroreflectors-CONGFLOCK.dsn	via_dangling	0	cbf29ce484222325
+load	PCBench-retroreflectors-CONGFLOCK.dsn	unconnectedItems	5	d550f9f05d88773f
+load	PCBench-retroreflectors-CONGFLOCK.dsn	track_dangling	0	
+load	PCBench-retroreflectors-CONGFLOCK.dsn	scores	0.0	1000.0
+load	empty_board.dsn	clearance	0	cbf29ce484222325
+load	empty_board.dsn	holeClearance	0	cbf29ce484222325
+load	empty_board.dsn	via_dangling	0	cbf29ce484222325
+load	empty_board.dsn	unconnectedItems	0	cbf29ce484222325
+load	empty_board.dsn	track_dangling	0	
+load	empty_board.dsn	scores	1000.0	1000.0
+load	scoring-empty-net.dsn	clearance	0	cbf29ce484222325
+load	scoring-empty-net.dsn	holeClearance	0	cbf29ce484222325
+load	scoring-empty-net.dsn	via_dangling	0	cbf29ce484222325
+load	scoring-empty-net.dsn	unconnectedItems	0	cbf29ce484222325
+load	scoring-empty-net.dsn	track_dangling	0	
+load	scoring-empty-net.dsn	scores	1000.0	1000.0
+load	scoring-mixed-layer.dsn	clearance	0	cbf29ce484222325
+load	scoring-mixed-layer.dsn	holeClearance	0	cbf29ce484222325
+load	scoring-mixed-layer.dsn	via_dangling	0	cbf29ce484222325
+load	scoring-mixed-layer.dsn	unconnectedItems	1	6082bd1827c74a38
+load	scoring-mixed-layer.dsn	track_dangling	0	
+load	scoring-mixed-layer.dsn	scores	0.0	1000.0
+load	scoring-perfect-two-pin.dsn	clearance	0	cbf29ce484222325
+load	scoring-perfect-two-pin.dsn	holeClearance	0	cbf29ce484222325
+load	scoring-perfect-two-pin.dsn	via_dangling	0	cbf29ce484222325
+load	scoring-perfect-two-pin.dsn	unconnectedItems	1	6082bd1827c74a38
+load	scoring-perfect-two-pin.dsn	track_dangling	0	
+load	scoring-perfect-two-pin.dsn	scores	0.0	1000.0
+load	scoring-zero-length.dsn	clearance	0	cbf29ce484222325
+load	scoring-zero-length.dsn	holeClearance	0	cbf29ce484222325
+load	scoring-zero-length.dsn	via_dangling	0	cbf29ce484222325
+load	scoring-zero-length.dsn	unconnectedItems	0	cbf29ce484222325
+load	scoring-zero-length.dsn	track_dangling	0	
+load	scoring-zero-length.dsn	scores	1000.0	1000.0
+route	Issue015-StackOverflow.dsn	clearance	0	cbf29ce484222325
+route	Issue015-StackOverflow.dsn	holeClearance	25	776962fa4ae682bc
+route	Issue015-StackOverflow.dsn	via_dangling	4	ae85387114049cff
+route	Issue015-StackOverflow.dsn	unconnectedItems	46	8ae8774787e645ee
+route	Issue015-StackOverflow.dsn	track_dangling	0	
+route	Issue015-StackOverflow.dsn	scores	867.92	461.52
+route	Issue022-AutoRouter_interrupted.dsn	clearance	0	cbf29ce484222325
+route	Issue022-AutoRouter_interrupted.dsn	holeClearance	87	5b591f7bef23c92d
+route	Issue022-AutoRouter_interrupted.dsn	via_dangling	3	5e0f4d0757d76631
+route	Issue022-AutoRouter_interrupted.dsn	unconnectedItems	42	a626bfc8779dae23
+route	Issue022-AutoRouter_interrupted.dsn	track_dangling	0	
+route	Issue022-AutoRouter_interrupted.dsn	scores	888.18	645.11
+route	Issue026-J2_reference.dsn	clearance	0	cbf29ce484222325
+route	Issue026-J2_reference.dsn	holeClearance	0	cbf29ce484222325
+route	Issue026-J2_reference.dsn	via_dangling	0	cbf29ce484222325
+route	Issue026-J2_reference.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue026-J2_reference.dsn	track_dangling	0	
+route	Issue026-J2_reference.dsn	scores	1000.0	554.88
+route	Issue027-zMRETestFixture.dsn	clearance	0	cbf29ce484222325
+route	Issue027-zMRETestFixture.dsn	holeClearance	0	cbf29ce484222325
+route	Issue027-zMRETestFixture.dsn	via_dangling	0	cbf29ce484222325
+route	Issue027-zMRETestFixture.dsn	unconnectedItems	31	2f61e98aa15e6304
+route	Issue027-zMRETestFixture.dsn	track_dangling	0	
+route	Issue027-zMRETestFixture.dsn	scores	946.82	969.0
+route	Issue029-hw48na.dsn	clearance	67	4a9b9ac2a4a50ff7
+route	Issue029-hw48na.dsn	holeClearance	252	d4672d15eff14bda
+route	Issue029-hw48na.dsn	via_dangling	1	258308028e66e8b0
+route	Issue029-hw48na.dsn	unconnectedItems	91	0df37f95c3334cb6
+route	Issue029-hw48na.dsn	track_dangling	0	
+route	Issue029-hw48na.dsn	scores	708.92	558.26
+route	Issue034-Green14SegLED.dsn	clearance	0	cbf29ce484222325
+route	Issue034-Green14SegLED.dsn	holeClearance	0	cbf29ce484222325
+route	Issue034-Green14SegLED.dsn	via_dangling	0	cbf29ce484222325
+route	Issue034-Green14SegLED.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue034-Green14SegLED.dsn	track_dangling	0	
+route	Issue034-Green14SegLED.dsn	scores	1000.0	399.58
+route	Issue035-ReadPlaceScope.dsn	clearance	0	cbf29ce484222325
+route	Issue035-ReadPlaceScope.dsn	holeClearance	400	67e92c717cb6efa7
+route	Issue035-ReadPlaceScope.dsn	via_dangling	6	afd22756d95cd43d
+route	Issue035-ReadPlaceScope.dsn	unconnectedItems	1	c1a6dc2f70699145
+route	Issue035-ReadPlaceScope.dsn	track_dangling	0	
+route	Issue035-ReadPlaceScope.dsn	scores	941.54	0.0
+route	Issue039-bug-design.dsn	clearance	0	cbf29ce484222325
+route	Issue039-bug-design.dsn	holeClearance	0	cbf29ce484222325
+route	Issue039-bug-design.dsn	via_dangling	33	1af70c32e1abb50a
+route	Issue039-bug-design.dsn	unconnectedItems	30	baca1d81487eb448
+route	Issue039-bug-design.dsn	track_dangling	0	
+route	Issue039-bug-design.dsn	scores	738.56	205.52
+route	Issue054-tairakb.dsn	clearance	0	cbf29ce484222325
+route	Issue054-tairakb.dsn	holeClearance	2	de24c5756e421d01
+route	Issue054-tairakb.dsn	via_dangling	7	55121ab34481b367
+route	Issue054-tairakb.dsn	unconnectedItems	1	ff95798c52253d38
+route	Issue054-tairakb.dsn	track_dangling	0	
+route	Issue054-tairakb.dsn	scores	974.48	45.26
+route	Issue066-Project_GP8B.dsn	clearance	0	cbf29ce484222325
+route	Issue066-Project_GP8B.dsn	holeClearance	0	cbf29ce484222325
+route	Issue066-Project_GP8B.dsn	via_dangling	371	6017e5cc01f4cb2d
+route	Issue066-Project_GP8B.dsn	unconnectedItems	206	955ab454e6bb69e4
+route	Issue066-Project_GP8B.dsn	track_dangling	4	2953,3118,3480,3638
+route	Issue066-Project_GP8B.dsn	scores	249.45	723.96
+route	Issue069-TestSensel/TestSensel-KiCad6.dsn	clearance	0	cbf29ce484222325
+route	Issue069-TestSensel/TestSensel-KiCad6.dsn	holeClearance	16	b2d49505ade47f00
+route	Issue069-TestSensel/TestSensel-KiCad6.dsn	via_dangling	1	82be47e3316e72b8
+route	Issue069-TestSensel/TestSensel-KiCad6.dsn	unconnectedItems	4	483404af1877c800
+route	Issue069-TestSensel/TestSensel-KiCad6.dsn	track_dangling	1	57
+route	Issue069-TestSensel/TestSensel-KiCad6.dsn	scores	0.0	458.33
+route	Issue069-TestSensel/TestSensel.dsn	clearance	0	cbf29ce484222325
+route	Issue069-TestSensel/TestSensel.dsn	holeClearance	16	4bd595bf5b484595
+route	Issue069-TestSensel/TestSensel.dsn	via_dangling	1	82be47e3316e72b8
+route	Issue069-TestSensel/TestSensel.dsn	unconnectedItems	4	483404af1877c800
+route	Issue069-TestSensel/TestSensel.dsn	track_dangling	1	57
+route	Issue069-TestSensel/TestSensel.dsn	scores	0.0	458.33
+route	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	clearance	0	cbf29ce484222325
+route	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	holeClearance	27	31cd9f18b0ab3b3a
+route	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	via_dangling	0	cbf29ce484222325
+route	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	unconnectedItems	52	865e10eead547a91
+route	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	track_dangling	2	1281,1739
+route	Issue070-Autorouter_FQ101_PCB_2022-05-13.dsn	scores	306.63	0.0
+route	Issue093-interf_u.dsn	clearance	0	cbf29ce484222325
+route	Issue093-interf_u.dsn	holeClearance	168	89ebb34fcdeb4fbd
+route	Issue093-interf_u.dsn	via_dangling	0	cbf29ce484222325
+route	Issue093-interf_u.dsn	unconnectedItems	19	f30310aaf81d4e48
+route	Issue093-interf_u.dsn	track_dangling	0	
+route	Issue093-interf_u.dsn	scores	851.52	0.0
+route	Issue102-Mars-64-revE-rot00.dsn	clearance	0	cbf29ce484222325
+route	Issue102-Mars-64-revE-rot00.dsn	holeClearance	194	7a55a7079e85b187
+route	Issue102-Mars-64-revE-rot00.dsn	via_dangling	0	cbf29ce484222325
+route	Issue102-Mars-64-revE-rot00.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue102-Mars-64-revE-rot00.dsn	track_dangling	0	
+route	Issue102-Mars-64-revE-rot00.dsn	scores	958.75	0.0
+route	Issue103-Board-Routed.dsn	clearance	0	cbf29ce484222325
+route	Issue103-Board-Routed.dsn	holeClearance	886	28cf917fba41bf25
+route	Issue103-Board-Routed.dsn	via_dangling	0	cbf29ce484222325
+route	Issue103-Board-Routed.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue103-Board-Routed.dsn	track_dangling	1	3217
+route	Issue103-Board-Routed.dsn	scores	961.71	0.0
+route	Issue103-Board-Unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue103-Board-Unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue103-Board-Unrouted.dsn	via_dangling	12	1b221ca1aa4da933
+route	Issue103-Board-Unrouted.dsn	unconnectedItems	196	0ba08c6525a6ce52
+route	Issue103-Board-Unrouted.dsn	track_dangling	0	
+route	Issue103-Board-Unrouted.dsn	scores	321.94	786.33
+route	Issue107-freq_teiler_200kHz_kicad.dsn	clearance	0	cbf29ce484222325
+route	Issue107-freq_teiler_200kHz_kicad.dsn	holeClearance	0	cbf29ce484222325
+route	Issue107-freq_teiler_200kHz_kicad.dsn	via_dangling	0	cbf29ce484222325
+route	Issue107-freq_teiler_200kHz_kicad.dsn	unconnectedItems	1	fb4823142475518a
+route	Issue107-freq_teiler_200kHz_kicad.dsn	track_dangling	0	
+route	Issue107-freq_teiler_200kHz_kicad.dsn	scores	992.11	480.89
+route	Issue107-freq_teiler_200kHz_kicad_bad.dsn	clearance	0	cbf29ce484222325
+route	Issue107-freq_teiler_200kHz_kicad_bad.dsn	holeClearance	0	cbf29ce484222325
+route	Issue107-freq_teiler_200kHz_kicad_bad.dsn	via_dangling	0	cbf29ce484222325
+route	Issue107-freq_teiler_200kHz_kicad_bad.dsn	unconnectedItems	6	6808901ab47cdd46
+route	Issue107-freq_teiler_200kHz_kicad_bad.dsn	track_dangling	0	
+route	Issue107-freq_teiler_200kHz_kicad_bad.dsn	scores	947.27	829.96
+route	Issue110-Pajalnaja_stancija.dsn	clearance	0	cbf29ce484222325
+route	Issue110-Pajalnaja_stancija.dsn	holeClearance	10	391b3c5a35d2d975
+route	Issue110-Pajalnaja_stancija.dsn	via_dangling	0	cbf29ce484222325
+route	Issue110-Pajalnaja_stancija.dsn	unconnectedItems	2	c56085381a9743c8
+route	Issue110-Pajalnaja_stancija.dsn	track_dangling	0	
+route	Issue110-Pajalnaja_stancija.dsn	scores	973.1	632.86
+route	Issue110-RelayModule.dsn	clearance	0	cbf29ce484222325
+route	Issue110-RelayModule.dsn	holeClearance	44	b5ddaf563fa57ecd
+route	Issue110-RelayModule.dsn	via_dangling	0	cbf29ce484222325
+route	Issue110-RelayModule.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue110-RelayModule.dsn	track_dangling	0	
+route	Issue110-RelayModule.dsn	scores	987.69	99.24
+route	Issue110-testPCBSpecctraFile.dsn	clearance	0	cbf29ce484222325
+route	Issue110-testPCBSpecctraFile.dsn	holeClearance	77	e2020146935547d2
+route	Issue110-testPCBSpecctraFile.dsn	via_dangling	0	cbf29ce484222325
+route	Issue110-testPCBSpecctraFile.dsn	unconnectedItems	6	ea7d7f02eabffb4a
+route	Issue110-testPCBSpecctraFile.dsn	track_dangling	1	1676
+route	Issue110-testPCBSpecctraFile.dsn	scores	624.56	0.0
+route	Issue110-testProjectFromFreeroutingBugTest.dsn	clearance	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest.dsn	holeClearance	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest.dsn	via_dangling	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest.dsn	track_dangling	0	
+route	Issue110-testProjectFromFreeroutingBugTest.dsn	scores	1000.0	843.75
+route	Issue110-testProjectFromFreeroutingBugTest01.dsn	clearance	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest01.dsn	holeClearance	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest01.dsn	via_dangling	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest01.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue110-testProjectFromFreeroutingBugTest01.dsn	track_dangling	0	
+route	Issue110-testProjectFromFreeroutingBugTest01.dsn	scores	1000.0	843.75
+route	Issue113-Protein.dsn	clearance	0	cbf29ce484222325
+route	Issue113-Protein.dsn	holeClearance	0	cbf29ce484222325
+route	Issue113-Protein.dsn	via_dangling	154	4225ed1b03848432
+route	Issue113-Protein.dsn	unconnectedItems	132	767ba182601e814e
+route	Issue113-Protein.dsn	track_dangling	8	1814,1959,1984,2076,2089,2202,2262,2309
+route	Issue113-Protein.dsn	scores	240.24	743.83
+route	Issue143-rpi_splitter.dsn	clearance	0	cbf29ce484222325
+route	Issue143-rpi_splitter.dsn	holeClearance	0	cbf29ce484222325
+route	Issue143-rpi_splitter.dsn	via_dangling	0	cbf29ce484222325
+route	Issue143-rpi_splitter.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue143-rpi_splitter.dsn	track_dangling	0	
+route	Issue143-rpi_splitter.dsn	scores	1000.0	631.69
+route	Issue143-rpi_splitter_mod.dsn	clearance	0	cbf29ce484222325
+route	Issue143-rpi_splitter_mod.dsn	holeClearance	0	cbf29ce484222325
+route	Issue143-rpi_splitter_mod.dsn	via_dangling	0	cbf29ce484222325
+route	Issue143-rpi_splitter_mod.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue143-rpi_splitter_mod.dsn	track_dangling	0	
+route	Issue143-rpi_splitter_mod.dsn	scores	1000.0	775.41
+route	Issue145-smoothieboard.dsn	clearance	0	cbf29ce484222325
+route	Issue145-smoothieboard.dsn	holeClearance	210	62fc860a31ca3dce
+route	Issue145-smoothieboard.dsn	via_dangling	203	e5ee1bb37e6ae634
+route	Issue145-smoothieboard.dsn	unconnectedItems	173	f91b68b69454d5f5
+route	Issue145-smoothieboard.dsn	track_dangling	4	4117,4735,4954,5118
+route	Issue145-smoothieboard.dsn	scores	377.29	740.92
+route	Issue153-wavefolder.dsn	clearance	0	cbf29ce484222325
+route	Issue153-wavefolder.dsn	holeClearance	22	dca6194bb59fe531
+route	Issue153-wavefolder.dsn	via_dangling	1	ada625f8e13ccf39
+route	Issue153-wavefolder.dsn	unconnectedItems	1	e09daa576727723d
+route	Issue153-wavefolder.dsn	track_dangling	0	
+route	Issue153-wavefolder.dsn	scores	975.4	146.35
+route	Issue155-CH376_MCP795_Module.dsn	clearance	0	cbf29ce484222325
+route	Issue155-CH376_MCP795_Module.dsn	holeClearance	0	cbf29ce484222325
+route	Issue155-CH376_MCP795_Module.dsn	via_dangling	0	cbf29ce484222325
+route	Issue155-CH376_MCP795_Module.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue155-CH376_MCP795_Module.dsn	track_dangling	0	
+route	Issue155-CH376_MCP795_Module.dsn	scores	1000.0	332.38
+route	Issue157-TeamAdapt-LinePCB.dsn	clearance	4	79bc29127f64386f
+route	Issue157-TeamAdapt-LinePCB.dsn	holeClearance	18	acce95bfb2e30828
+route	Issue157-TeamAdapt-LinePCB.dsn	via_dangling	10	12de1f901a9b01e6
+route	Issue157-TeamAdapt-LinePCB.dsn	unconnectedItems	6	96bbbedbfe470ae2
+route	Issue157-TeamAdapt-LinePCB.dsn	track_dangling	0	
+route	Issue157-TeamAdapt-LinePCB.dsn	scores	891.05	666.67
+route	Issue159-setonix_2hp-pcb.dsn	clearance	0	cbf29ce484222325
+route	Issue159-setonix_2hp-pcb.dsn	holeClearance	0	cbf29ce484222325
+route	Issue159-setonix_2hp-pcb.dsn	via_dangling	0	cbf29ce484222325
+route	Issue159-setonix_2hp-pcb.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue159-setonix_2hp-pcb.dsn	track_dangling	0	
+route	Issue159-setonix_2hp-pcb.dsn	scores	1000.0	828.13
+route	Issue163-pic_programmer.dsn	clearance	0	cbf29ce484222325
+route	Issue163-pic_programmer.dsn	holeClearance	17	2f5082c6255d01bd
+route	Issue163-pic_programmer.dsn	via_dangling	0	cbf29ce484222325
+route	Issue163-pic_programmer.dsn	unconnectedItems	8	db5e0572e9fdc390
+route	Issue163-pic_programmer.dsn	track_dangling	0	
+route	Issue163-pic_programmer.dsn	scores	901.76	224.34
+route	Issue178-KeebMaker_Sofle_Choc.dsn	clearance	0	cbf29ce484222325
+route	Issue178-KeebMaker_Sofle_Choc.dsn	holeClearance	1	00b5d91c92e1fb00
+route	Issue178-KeebMaker_Sofle_Choc.dsn	via_dangling	199	731a178fed5a0731
+route	Issue178-KeebMaker_Sofle_Choc.dsn	unconnectedItems	39	56d2134ad163d274
+route	Issue178-KeebMaker_Sofle_Choc.dsn	track_dangling	0	
+route	Issue178-KeebMaker_Sofle_Choc.dsn	scores	690.11	0.0
+route	Issue187-processor.Z80.dsn	clearance	0	cbf29ce484222325
+route	Issue187-processor.Z80.dsn	holeClearance	648	a663681d0f269e97
+route	Issue187-processor.Z80.dsn	via_dangling	0	cbf29ce484222325
+route	Issue187-processor.Z80.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue187-processor.Z80.dsn	track_dangling	0	
+route	Issue187-processor.Z80.dsn	scores	979.82	0.0
+route	Issue190-processor.Z80.dsn	clearance	0	cbf29ce484222325
+route	Issue190-processor.Z80.dsn	holeClearance	446	84b68fe8c6902d5d
+route	Issue190-processor.Z80.dsn	via_dangling	0	cbf29ce484222325
+route	Issue190-processor.Z80.dsn	unconnectedItems	9	dacd372599fb5de9
+route	Issue190-processor.Z80.dsn	track_dangling	0	
+route	Issue190-processor.Z80.dsn	scores	966.92	0.0
+route	Issue191-processor.Z80/processor.Z80.dsn	clearance	0	cbf29ce484222325
+route	Issue191-processor.Z80/processor.Z80.dsn	holeClearance	446	4c6af7e11ea3b79d
+route	Issue191-processor.Z80/processor.Z80.dsn	via_dangling	0	cbf29ce484222325
+route	Issue191-processor.Z80/processor.Z80.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue191-processor.Z80/processor.Z80.dsn	track_dangling	0	
+route	Issue191-processor.Z80/processor.Z80.dsn	scores	986.1	0.0
+route	Issue199-StackOverflow/Signale_Vor+Block.dsn	clearance	0	cbf29ce484222325
+route	Issue199-StackOverflow/Signale_Vor+Block.dsn	holeClearance	0	cbf29ce484222325
+route	Issue199-StackOverflow/Signale_Vor+Block.dsn	via_dangling	0	cbf29ce484222325
+route	Issue199-StackOverflow/Signale_Vor+Block.dsn	unconnectedItems	27	11fb3fcd05f30cdc
+route	Issue199-StackOverflow/Signale_Vor+Block.dsn	track_dangling	0	
+route	Issue199-StackOverflow/Signale_Vor+Block.dsn	scores	0.0	1000.0
+route	Issue208-freerouting.dsn	clearance	0	cbf29ce484222325
+route	Issue208-freerouting.dsn	holeClearance	0	cbf29ce484222325
+route	Issue208-freerouting.dsn	via_dangling	0	cbf29ce484222325
+route	Issue208-freerouting.dsn	unconnectedItems	298	36a0e158c885d3ab
+route	Issue208-freerouting.dsn	track_dangling	0	
+route	Issue208-freerouting.dsn	scores	72.33	1000.0
+route	Issue209-split05.dsn	clearance	0	cbf29ce484222325
+route	Issue209-split05.dsn	holeClearance	0	cbf29ce484222325
+route	Issue209-split05.dsn	via_dangling	11	e8339f045354b8fb
+route	Issue209-split05.dsn	unconnectedItems	11	3876b14dcbd54b47
+route	Issue209-split05.dsn	track_dangling	0	
+route	Issue209-split05.dsn	scores	924.29	709.25
+route	Issue209-split10.dsn	clearance	0	cbf29ce484222325
+route	Issue209-split10.dsn	holeClearance	0	cbf29ce484222325
+route	Issue209-split10.dsn	via_dangling	0	cbf29ce484222325
+route	Issue209-split10.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue209-split10.dsn	track_dangling	0	
+route	Issue209-split10.dsn	scores	1000.0	605.66
+route	Issue214-freerouting.dsn	clearance	40	e6684ecee9181e23
+route	Issue214-freerouting.dsn	holeClearance	792	445c8155243573c2
+route	Issue214-freerouting.dsn	via_dangling	29	8b47ff42c5a2b5f9
+route	Issue214-freerouting.dsn	unconnectedItems	52	942d6d47da482a9a
+route	Issue214-freerouting.dsn	track_dangling	7	4195,4256,4409,4472,4829,4833,4834
+route	Issue214-freerouting.dsn	scores	716.13	132.73
+route	Issue217-8088sbc.dsn	clearance	0	cbf29ce484222325
+route	Issue217-8088sbc.dsn	holeClearance	0	cbf29ce484222325
+route	Issue217-8088sbc.dsn	via_dangling	0	cbf29ce484222325
+route	Issue217-8088sbc.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue217-8088sbc.dsn	track_dangling	0	
+route	Issue217-8088sbc.dsn	scores	1000.0	540.09
+route	Issue219-LogicBoard_smt.dsn	clearance	0	cbf29ce484222325
+route	Issue219-LogicBoard_smt.dsn	holeClearance	0	cbf29ce484222325
+route	Issue219-LogicBoard_smt.dsn	via_dangling	551	ed710391b079c0ef
+route	Issue219-LogicBoard_smt.dsn	unconnectedItems	309	0e37a6f183d4360f
+route	Issue219-LogicBoard_smt.dsn	track_dangling	77	3226,3238,3272,3319,3324,3338,3351,3353,3360,3362,3370,3389,3394,3401,3414,3418,3440,3507,3542,3552,3554,3565,3584,3598,3602,3605,3608,3634,3637,3658,3662,3666,3680,3683,3690,3788,3869,3905,3908,3913,4019,4025,4079,4095,4111,4121,4127,4142,4147,4150,4153,4199,4202,4213,4222,4269,4288,4373,4394,4401,4434,4473,4482,4485,4542,4567,4582,4642,4707,4720,4723,4739,4748,4751,4763,4768,4771
+route	Issue219-LogicBoard_smt.dsn	scores	127.56	786.03
+route	Issue229-display-8-digit-hc595.dsn	clearance	0	cbf29ce484222325
+route	Issue229-display-8-digit-hc595.dsn	holeClearance	48	e9a997436cb5993d
+route	Issue229-display-8-digit-hc595.dsn	via_dangling	0	cbf29ce484222325
+route	Issue229-display-8-digit-hc595.dsn	unconnectedItems	10	37b41501f1292ab0
+route	Issue229-display-8-digit-hc595.dsn	track_dangling	0	
+route	Issue229-display-8-digit-hc595.dsn	scores	563.51	0.0
+route	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	clearance	0	cbf29ce484222325
+route	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	holeClearance	6	fd3ad578a53f09a4
+route	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	via_dangling	0	cbf29ce484222325
+route	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	unconnectedItems	1	481e13d4c5128f6e
+route	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	track_dangling	0	
+route	Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.dsn	scores	993.1	910.46
+route	Issue230-CNH_Functional_Tester_1.dsn	clearance	0	cbf29ce484222325
+route	Issue230-CNH_Functional_Tester_1.dsn	holeClearance	6	fd3ad578a53f09a4
+route	Issue230-CNH_Functional_Tester_1.dsn	via_dangling	0	cbf29ce484222325
+route	Issue230-CNH_Functional_Tester_1.dsn	unconnectedItems	1	481e13d4c5128f6e
+route	Issue230-CNH_Functional_Tester_1.dsn	track_dangling	0	
+route	Issue230-CNH_Functional_Tester_1.dsn	scores	993.1	910.46
+route	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	clearance	0	cbf29ce484222325
+route	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	holeClearance	0	cbf29ce484222325
+route	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	via_dangling	0	cbf29ce484222325
+route	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	track_dangling	0	
+route	Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn	scores	1000.0	916.67
+route	Issue269-caniot-tiny-arm.dsn	clearance	0	cbf29ce484222325
+route	Issue269-caniot-tiny-arm.dsn	holeClearance	0	cbf29ce484222325
+route	Issue269-caniot-tiny-arm.dsn	via_dangling	10	d0edbf3e2d6df7f9
+route	Issue269-caniot-tiny-arm.dsn	unconnectedItems	27	2af8ff181957072e
+route	Issue269-caniot-tiny-arm.dsn	track_dangling	0	
+route	Issue269-caniot-tiny-arm.dsn	scores	708.33	661.01
+route	Issue269-min_fr_test/min_fr_test.dsn	clearance	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test.dsn	holeClearance	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test.dsn	via_dangling	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test.dsn	track_dangling	0	
+route	Issue269-min_fr_test/min_fr_test.dsn	scores	1000.0	333.33
+route	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	clearance	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	holeClearance	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	via_dangling	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	track_dangling	0	
+route	Issue269-min_fr_test/min_fr_test_no_quotes.dsn	scores	1000.0	333.33
+route	Issue269-z10_module.dsn	clearance	0	cbf29ce484222325
+route	Issue269-z10_module.dsn	holeClearance	375	2b18bc89f02bdd7b
+route	Issue269-z10_module.dsn	via_dangling	5	64746b1e413f5654
+route	Issue269-z10_module.dsn	unconnectedItems	23	64fe1cbea2f6fed6
+route	Issue269-z10_module.dsn	track_dangling	6	2404,2412,2436,2557,3204,3205
+route	Issue269-z10_module.dsn	scores	664.48	0.0
+route	Issue270-non-ansi_bracket.dsn	clearance	0	cbf29ce484222325
+route	Issue270-non-ansi_bracket.dsn	holeClearance	0	cbf29ce484222325
+route	Issue270-non-ansi_bracket.dsn	via_dangling	0	cbf29ce484222325
+route	Issue270-non-ansi_bracket.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue270-non-ansi_bracket.dsn	track_dangling	0	
+route	Issue270-non-ansi_bracket.dsn	scores	1000.0	631.69
+route	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	clearance	0	cbf29ce484222325
+route	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	holeClearance	0	cbf29ce484222325
+route	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	via_dangling	17	9e1b17f39908d8a4
+route	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	unconnectedItems	27	82fceb709216f229
+route	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	track_dangling	20	1106,1107,1108,1115,1116,1117,1119,1120,1121,1122,1124,1138,1144,1147,1148,1149,1151,1152,1154,1155
+route	Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.dsn	scores	626.91	314.75
+route	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	clearance	0	cbf29ce484222325
+route	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	holeClearance	0	cbf29ce484222325
+route	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	via_dangling	0	cbf29ce484222325
+route	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	unconnectedItems	124	4f5f8cf54050ddf7
+route	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	track_dangling	0	
+route	Issue289-Autorouter_PCB_FHT-8086_2024-03-08.dsn	scores	146.37	986.22
+route	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	clearance	6	c6c3593c144e5639
+route	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	holeClearance	0	cbf29ce484222325
+route	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	via_dangling	0	cbf29ce484222325
+route	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	unconnectedItems	201	a79457dcb3665ec4
+route	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	track_dangling	0	
+route	Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn	scores	126.7	966.2
+route	Issue297-myboard.dsn	clearance	0	cbf29ce484222325
+route	Issue297-myboard.dsn	holeClearance	0	cbf29ce484222325
+route	Issue297-myboard.dsn	via_dangling	0	cbf29ce484222325
+route	Issue297-myboard.dsn	unconnectedItems	1	5aff4e7d86188922
+route	Issue297-myboard.dsn	track_dangling	0	
+route	Issue297-myboard.dsn	scores	991.72	281.8
+route	Issue313-FastTest.dsn	clearance	0	cbf29ce484222325
+route	Issue313-FastTest.dsn	holeClearance	122	b017cabea2df9bdf
+route	Issue313-FastTest.dsn	via_dangling	0	cbf29ce484222325
+route	Issue313-FastTest.dsn	unconnectedItems	2	289ca2e23e5156ef
+route	Issue313-FastTest.dsn	track_dangling	0	
+route	Issue313-FastTest.dsn	scores	949.86	0.0
+route	Issue326-Mars-64-revE.dsn	clearance	0	cbf29ce484222325
+route	Issue326-Mars-64-revE.dsn	holeClearance	194	7a55a7079e85b187
+route	Issue326-Mars-64-revE.dsn	via_dangling	0	cbf29ce484222325
+route	Issue326-Mars-64-revE.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue326-Mars-64-revE.dsn	track_dangling	0	
+route	Issue326-Mars-64-revE.dsn	scores	958.75	0.0
+route	Issue367-Charger.dsn	clearance	0	cbf29ce484222325
+route	Issue367-Charger.dsn	holeClearance	25	eeedab21f90bba37
+route	Issue367-Charger.dsn	via_dangling	0	cbf29ce484222325
+route	Issue367-Charger.dsn	unconnectedItems	6	a63ceb8ceceedc40
+route	Issue367-Charger.dsn	track_dangling	0	
+route	Issue367-Charger.dsn	scores	847.95	430.41
+route	Issue367-UltraFlactyl/UltraFlactyl.dsn	clearance	0	cbf29ce484222325
+route	Issue367-UltraFlactyl/UltraFlactyl.dsn	holeClearance	22	8333b10e09ea02bd
+route	Issue367-UltraFlactyl/UltraFlactyl.dsn	via_dangling	0	cbf29ce484222325
+route	Issue367-UltraFlactyl/UltraFlactyl.dsn	unconnectedItems	7	2352aa42a6730db4
+route	Issue367-UltraFlactyl/UltraFlactyl.dsn	track_dangling	0	
+route	Issue367-UltraFlactyl/UltraFlactyl.dsn	scores	867.82	52.38
+route	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	clearance	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	holeClearance	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	via_dangling	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	track_dangling	0	
+route	Issue368-CorneyIslandWireless/corney_island_wireless.dsn	scores	1000.0	1000.0
+route	Issue368-CorneyIslandWireless_input_design.dsn	clearance	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless_input_design.dsn	holeClearance	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless_input_design.dsn	via_dangling	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless_input_design.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue368-CorneyIslandWireless_input_design.dsn	track_dangling	0	
+route	Issue368-CorneyIslandWireless_input_design.dsn	scores	1000.0	1000.0
+route	Issue413-test.dsn	clearance	0	cbf29ce484222325
+route	Issue413-test.dsn	holeClearance	0	cbf29ce484222325
+route	Issue413-test.dsn	via_dangling	0	cbf29ce484222325
+route	Issue413-test.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue413-test.dsn	track_dangling	0	
+route	Issue413-test.dsn	scores	1000.0	0.0
+route	Issue420-contribution-board.dsn	clearance	0	cbf29ce484222325
+route	Issue420-contribution-board.dsn	holeClearance	0	cbf29ce484222325
+route	Issue420-contribution-board.dsn	via_dangling	203	4da0c726f7d0808e
+route	Issue420-contribution-board.dsn	unconnectedItems	371	34764ab26557cf92
+route	Issue420-contribution-board.dsn	track_dangling	0	
+route	Issue420-contribution-board.dsn	scores	299.85	853.35
+route	Issue433-my-board.dsn	clearance	0	cbf29ce484222325
+route	Issue433-my-board.dsn	holeClearance	0	cbf29ce484222325
+route	Issue433-my-board.dsn	via_dangling	0	cbf29ce484222325
+route	Issue433-my-board.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue433-my-board.dsn	track_dangling	0	
+route	Issue433-my-board.dsn	scores	1000.0	812.5
+route	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	via_dangling	23	a777c9d593cdd965
+route	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	unconnectedItems	17	683b21adfa29febe
+route	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm01/DAC2020_bm01.unrouted.dsn	scores	876.92	79.15
+route	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	via_dangling	23	2e7e04c1ae99299a
+route	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	unconnectedItems	18	3d788efcebc52c70
+route	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm01/FRv1.9.0/DAC2020_bm01.unrouted.dsn	scores	876.92	78.37
+route	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	via_dangling	21	0c0eb72f71715ab5
+route	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	unconnectedItems	17	c151c80bf101b317
+route	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm01/FRv2.1.0/DAC2020_bm01.unrouted.dsn	scores	876.92	43.89
+route	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm02/DAC2020_bm02.unrouted.dsn	scores	1000.0	820.0
+route	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm02/FRv1.9.0/DAC2020_bm02.unrouted.dsn	scores	1000.0	820.0
+route	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm02/FRv2.1.0/DAC2020_bm02.unrouted.dsn	scores	1000.0	820.0
+route	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	via_dangling	9	86a54099109acd24
+route	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	unconnectedItems	2	582fe4e8fc18cc39
+route	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm04/DAC2020_bm04.unrouted.dsn	scores	981.35	927.3
+route	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	via_dangling	9	86a54099109acd24
+route	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	unconnectedItems	2	582fe4e8fc18cc39
+route	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm04/FRv1.9.0/DAC2020_bm04.unrouted.dsn	scores	981.35	927.3
+route	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	via_dangling	9	86a54099109acd24
+route	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	unconnectedItems	2	582fe4e8fc18cc39
+route	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm04/FRv2.1.0/DAC2020_bm04.unrouted.dsn	scores	981.35	927.3
+route	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	via_dangling	5	60b3a9025e91e844
+route	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	unconnectedItems	10	511acc93ad43c0e2
+route	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm05/DAC2020_bm05.unrouted.dsn	scores	825.55	642.86
+route	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	via_dangling	5	60b3a9025e91e844
+route	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	unconnectedItems	10	511acc93ad43c0e2
+route	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm05/FRv1.9.0/DAC2020_bm05.unrouted.dsn	scores	825.55	642.86
+route	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	via_dangling	5	60b3a9025e91e844
+route	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	unconnectedItems	10	511acc93ad43c0e2
+route	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm05/FRv2.1.0/DAC2020_bm05.unrouted.dsn	scores	825.55	642.86
+route	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm06/DAC2020_bm06.unrouted.dsn	scores	1000.0	628.61
+route	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm06/FRv1.9.0/DAC2020_bm06.unrouted.dsn	scores	1000.0	628.61
+route	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm06/FRv2.1.0/DAC2020_bm06.unrouted.dsn	scores	1000.0	628.61
+route	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm07/DAC2020_bm07.unrouted.dsn	scores	1000.0	650.0
+route	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm07/FRv1.9.0/DAC2020_bm07.unrouted.dsn	scores	1000.0	650.0
+route	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm07/FRv2.1.0/DAC2020_bm07.unrouted.dsn	scores	1000.0	650.0
+route	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm08/DAC2020_bm08.unrouted.dsn	scores	1000.0	819.22
+route	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm08/FRv1.9.0/DAC2020_bm08.unrouted.dsn	scores	1000.0	819.22
+route	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm08/FRv2.1.0/DAC2020_bm08.unrouted.dsn	scores	1000.0	819.22
+route	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm09/DAC2020_bm09.unrouted.dsn	scores	1000.0	994.35
+route	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm09/FRv1.9.0/DAC2020_bm09.unrouted.dsn	scores	1000.0	994.35
+route	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm09/FRv2.1.0/DAC2020_bm09.unrouted.dsn	scores	1000.0	994.35
+route	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm10/DAC2020_bm10.unrouted.dsn	scores	1000.0	612.98
+route	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm10/FRv1.9.0/DAC2020_bm10.unrouted.dsn	scores	1000.0	612.98
+route	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm10/FRv2.1.0/DAC2020_bm10.unrouted.dsn	scores	1000.0	612.58
+route	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm11/DAC2020_bm11.unrouted.dsn	scores	1000.0	737.86
+route	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm11/FRv1.9.0/DAC2020_bm11.unrouted.dsn	scores	1000.0	737.86
+route	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	track_dangling	0	
+route	Issue508-DAC2020/DAC2020_bm11/FRv2.1.0/DAC2020_bm11.unrouted.dsn	scores	1000.0	737.86
+route	Issue508-DAC2020_bm01.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm01.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm01.dsn	via_dangling	23	4f1d7f38ea7d3ec8
+route	Issue508-DAC2020_bm01.dsn	unconnectedItems	17	609aab3126cfa114
+route	Issue508-DAC2020_bm01.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm01.dsn	scores	876.92	77.59
+route	Issue508-DAC2020_bm02.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm02.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm02.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm02.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm02.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm02.dsn	scores	1000.0	820.0
+route	Issue508-DAC2020_bm04.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm04.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm04.dsn	via_dangling	7	09e8a7879ecba8ed
+route	Issue508-DAC2020_bm04.dsn	unconnectedItems	1	befb7431dd2a12eb
+route	Issue508-DAC2020_bm04.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm04.dsn	scores	990.68	914.72
+route	Issue508-DAC2020_bm05.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm05.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm05.dsn	via_dangling	5	60b3a9025e91e844
+route	Issue508-DAC2020_bm05.dsn	unconnectedItems	10	511acc93ad43c0e2
+route	Issue508-DAC2020_bm05.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm05.dsn	scores	825.55	642.86
+route	Issue508-DAC2020_bm06.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm06.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm06.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm06.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm06.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm06.dsn	scores	1000.0	628.61
+route	Issue508-DAC2020_bm07.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm07.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm07.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm07.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm07.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm07.dsn	scores	1000.0	650.0
+route	Issue508-DAC2020_bm08.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm08.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm08.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm08.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm08.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm08.dsn	scores	1000.0	819.22
+route	Issue508-DAC2020_bm09.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm09.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm09.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm09.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm09.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm09.dsn	scores	1000.0	994.35
+route	Issue508-DAC2020_bm10.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm10.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm10.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm10.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm10.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm10.dsn	scores	1000.0	601.36
+route	Issue508-DAC2020_bm11.dsn	clearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm11.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-DAC2020_bm11.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-DAC2020_bm11.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-DAC2020_bm11.dsn	track_dangling	0	
+route	Issue508-DAC2020_bm11.dsn	scores	1000.0	737.86
+route	Issue508-SMD-routing-issue-demo.dsn	clearance	0	cbf29ce484222325
+route	Issue508-SMD-routing-issue-demo.dsn	holeClearance	0	cbf29ce484222325
+route	Issue508-SMD-routing-issue-demo.dsn	via_dangling	0	cbf29ce484222325
+route	Issue508-SMD-routing-issue-demo.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue508-SMD-routing-issue-demo.dsn	track_dangling	0	
+route	Issue508-SMD-routing-issue-demo.dsn	scores	1000.0	857.14
+route	Issue555-BBD_Mars-64.dsn	clearance	0	cbf29ce484222325
+route	Issue555-BBD_Mars-64.dsn	holeClearance	0	cbf29ce484222325
+route	Issue555-BBD_Mars-64.dsn	via_dangling	30	a4c3c02020148a01
+route	Issue555-BBD_Mars-64.dsn	unconnectedItems	19	6d407aeaea93852d
+route	Issue555-BBD_Mars-64.dsn	track_dangling	0	
+route	Issue555-BBD_Mars-64.dsn	scores	761.01	190.0
+route	Issue555-CNH_Functional_Tester_1.dsn	clearance	0	cbf29ce484222325
+route	Issue555-CNH_Functional_Tester_1.dsn	holeClearance	6	fd3ad578a53f09a4
+route	Issue555-CNH_Functional_Tester_1.dsn	via_dangling	0	cbf29ce484222325
+route	Issue555-CNH_Functional_Tester_1.dsn	unconnectedItems	1	481e13d4c5128f6e
+route	Issue555-CNH_Functional_Tester_1.dsn	track_dangling	0	
+route	Issue555-CNH_Functional_Tester_1.dsn	scores	993.1	910.46
+route	Issue558-dev-board.dsn	clearance	0	cbf29ce484222325
+route	Issue558-dev-board.dsn	holeClearance	0	cbf29ce484222325
+route	Issue558-dev-board.dsn	via_dangling	0	cbf29ce484222325
+route	Issue558-dev-board.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue558-dev-board.dsn	track_dangling	0	
+route	Issue558-dev-board.dsn	scores	1000.0	538.46
+route	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	clearance	6	bd488e22f66c0e7e
+route	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	holeClearance	266	c5a2a582256404d6
+route	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	via_dangling	0	cbf29ce484222325
+route	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	unconnectedItems	3	04ac04a6197a4722
+route	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	track_dangling	0	
+route	Issue575-drc_BBD_Mars-64_6_track_1_hole_clearance_violations.dsn	scores	904.68	0.0
+route	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	clearance	0	cbf29ce484222325
+route	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	holeClearance	242	547e525d8ed81e6d
+route	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	via_dangling	0	cbf29ce484222325
+route	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	unconnectedItems	32	e9cde319c7122225
+route	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	track_dangling	11	2390,2396,2403,2407,2408,2409,2410,2435,2436,2437,2439
+route	Issue575-drc_Natural_Tone_Preamp_7_unconnected_items.dsn	scores	486.04	0.0
+route	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	clearance	0	cbf29ce484222325
+route	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	holeClearance	50	cf3b3bff89a9af71
+route	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	via_dangling	0	cbf29ce484222325
+route	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	unconnectedItems	2	1515d61985bbb211
+route	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	track_dangling	0	
+route	Issue575-drc_dev-board_4_hole_clearance_violations.dsn	scores	901.81	0.0
+route	Issue593-BBD_Mars-64.dsn	clearance	0	cbf29ce484222325
+route	Issue593-BBD_Mars-64.dsn	holeClearance	0	cbf29ce484222325
+route	Issue593-BBD_Mars-64.dsn	via_dangling	32	a0a57c1dce8bfaf0
+route	Issue593-BBD_Mars-64.dsn	unconnectedItems	25	93d4c6ad2db05341
+route	Issue593-BBD_Mars-64.dsn	track_dangling	0	
+route	Issue593-BBD_Mars-64.dsn	scores	685.53	201.25
+route	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	clearance	0	cbf29ce484222325
+route	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	holeClearance	0	cbf29ce484222325
+route	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	via_dangling	0	cbf29ce484222325
+route	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	track_dangling	0	
+route	Issue632-MiniAutoPilot/Mini Auto Pilot.dsn	scores	1000.0	466.93
+route	Issue649-kicad_ecc83-pp_input_board_v1.dsn	clearance	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v1.dsn	holeClearance	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v1.dsn	via_dangling	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v1.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v1.dsn	track_dangling	0	
+route	Issue649-kicad_ecc83-pp_input_board_v1.dsn	scores	1000.0	1000.0
+route	Issue649-kicad_ecc83-pp_input_board_v2.dsn	clearance	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v2.dsn	holeClearance	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v2.dsn	via_dangling	0	cbf29ce484222325
+route	Issue649-kicad_ecc83-pp_input_board_v2.dsn	unconnectedItems	4	a4393e7f8a6a605b
+route	Issue649-kicad_ecc83-pp_input_board_v2.dsn	track_dangling	0	
+route	Issue649-kicad_ecc83-pp_input_board_v2.dsn	scores	619.05	576.55
+route	Issue676-ch32v-tx118s.dsn	clearance	0	cbf29ce484222325
+route	Issue676-ch32v-tx118s.dsn	holeClearance	42	5ba9f2d80909b4c5
+route	Issue676-ch32v-tx118s.dsn	via_dangling	6	c5ae7c96299e4472
+route	Issue676-ch32v-tx118s.dsn	unconnectedItems	3	3488a5fdf7e06206
+route	Issue676-ch32v-tx118s.dsn	track_dangling	0	
+route	Issue676-ch32v-tx118s.dsn	scores	974.96	538.46
+route	Issue684-Autorouter_PCB1_2026-5-8.dsn	clearance	0	cbf29ce484222325
+route	Issue684-Autorouter_PCB1_2026-5-8.dsn	holeClearance	5	ff63f335de626ee3
+route	Issue684-Autorouter_PCB1_2026-5-8.dsn	via_dangling	0	cbf29ce484222325
+route	Issue684-Autorouter_PCB1_2026-5-8.dsn	unconnectedItems	8	5f3368d70e0c701d
+route	Issue684-Autorouter_PCB1_2026-5-8.dsn	track_dangling	0	
+route	Issue684-Autorouter_PCB1_2026-5-8.dsn	scores	868.1	993.9
+route	Issue689-BBD_Mars-64.dsn	clearance	0	cbf29ce484222325
+route	Issue689-BBD_Mars-64.dsn	holeClearance	0	cbf29ce484222325
+route	Issue689-BBD_Mars-64.dsn	via_dangling	28	bbcd65e4fadfebe0
+route	Issue689-BBD_Mars-64.dsn	unconnectedItems	15	6ecd3416b81780f5
+route	Issue689-BBD_Mars-64.dsn	track_dangling	0	
+route	Issue689-BBD_Mars-64.dsn	scores	811.32	61.25
+route	Issue690-ecc83.dsn	clearance	0	cbf29ce484222325
+route	Issue690-ecc83.dsn	holeClearance	0	cbf29ce484222325
+route	Issue690-ecc83.dsn	via_dangling	0	cbf29ce484222325
+route	Issue690-ecc83.dsn	unconnectedItems	4	a4393e7f8a6a605b
+route	Issue690-ecc83.dsn	track_dangling	0	
+route	Issue690-ecc83.dsn	scores	619.05	576.55
+route	Issue690-kit-dev-coldfire-xilinx_5213.dsn	clearance	8	5f4a8a308c5617a9
+route	Issue690-kit-dev-coldfire-xilinx_5213.dsn	holeClearance	1048	8c69e569652d22dd
+route	Issue690-kit-dev-coldfire-xilinx_5213.dsn	via_dangling	1	5ef30586cced6985
+route	Issue690-kit-dev-coldfire-xilinx_5213.dsn	unconnectedItems	127	44d55b815deac62a
+route	Issue690-kit-dev-coldfire-xilinx_5213.dsn	track_dangling	4	5575,5580,5900,8430
+route	Issue690-kit-dev-coldfire-xilinx_5213.dsn	scores	307.05	0.0
+route	Issue690-sonde_xilinx.dsn	clearance	0	cbf29ce484222325
+route	Issue690-sonde_xilinx.dsn	holeClearance	6	b5000ffbd8a774fd
+route	Issue690-sonde_xilinx.dsn	via_dangling	0	cbf29ce484222325
+route	Issue690-sonde_xilinx.dsn	unconnectedItems	8	00d89652a16eabf2
+route	Issue690-sonde_xilinx.dsn	track_dangling	0	
+route	Issue690-sonde_xilinx.dsn	scores	778.28	242.47
+route	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	clearance	0	cbf29ce484222325
+route	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	holeClearance	399	ece67080f199db78
+route	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	via_dangling	0	cbf29ce484222325
+route	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	unconnectedItems	19	0ef61bed175288ee
+route	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	track_dangling	0	
+route	Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn	scores	767.81	0.0
+route	Issue723-CombineStackOverflow.dsn	clearance	0	cbf29ce484222325
+route	Issue723-CombineStackOverflow.dsn	holeClearance	0	cbf29ce484222325
+route	Issue723-CombineStackOverflow.dsn	via_dangling	0	cbf29ce484222325
+route	Issue723-CombineStackOverflow.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue723-CombineStackOverflow.dsn	track_dangling	1	4001
+route	Issue723-CombineStackOverflow.dsn	scores	1000.0	0.0
+route	Issue730-DAC2020_bm11.dsn	clearance	0	cbf29ce484222325
+route	Issue730-DAC2020_bm11.dsn	holeClearance	0	cbf29ce484222325
+route	Issue730-DAC2020_bm11.dsn	via_dangling	0	cbf29ce484222325
+route	Issue730-DAC2020_bm11.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue730-DAC2020_bm11.dsn	track_dangling	0	
+route	Issue730-DAC2020_bm11.dsn	scores	1000.0	737.86
+route	Issue732-CM5_MINIMA_3.dsn	clearance	0	cbf29ce484222325
+route	Issue732-CM5_MINIMA_3.dsn	holeClearance	7	eb3b0ff7c21f9623
+route	Issue732-CM5_MINIMA_3.dsn	via_dangling	132	9b49f81871c77167
+route	Issue732-CM5_MINIMA_3.dsn	unconnectedItems	73	df79aa1414713fad
+route	Issue732-CM5_MINIMA_3.dsn	track_dangling	14	1429,1511,1671,1744,1787,1801,1807,1862,1870,1872,1982,2026,2044,2096
+route	Issue732-CM5_MINIMA_3.dsn	scores	716.32	921.26
+route	Issue732-DAC2020_bm10.dsn	clearance	0	cbf29ce484222325
+route	Issue732-DAC2020_bm10.dsn	holeClearance	0	cbf29ce484222325
+route	Issue732-DAC2020_bm10.dsn	via_dangling	0	cbf29ce484222325
+route	Issue732-DAC2020_bm10.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue732-DAC2020_bm10.dsn	track_dangling	0	
+route	Issue732-DAC2020_bm10.dsn	scores	1000.0	612.98
+route	Issue732-RoyalBlue54L-Feather.dsn	clearance	0	cbf29ce484222325
+route	Issue732-RoyalBlue54L-Feather.dsn	holeClearance	234	c44731262dded02d
+route	Issue732-RoyalBlue54L-Feather.dsn	via_dangling	59	d70da52187171599
+route	Issue732-RoyalBlue54L-Feather.dsn	unconnectedItems	56	8a0eb413cb61fa6c
+route	Issue732-RoyalBlue54L-Feather.dsn	track_dangling	5	1094,1157,1172,1203,1245
+route	Issue732-RoyalBlue54L-Feather.dsn	scores	525.56	931.88
+route	Issue733-kicad_complex_hierarchy_input_design.dsn	clearance	0	cbf29ce484222325
+route	Issue733-kicad_complex_hierarchy_input_design.dsn	holeClearance	0	cbf29ce484222325
+route	Issue733-kicad_complex_hierarchy_input_design.dsn	via_dangling	0	cbf29ce484222325
+route	Issue733-kicad_complex_hierarchy_input_design.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue733-kicad_complex_hierarchy_input_design.dsn	track_dangling	0	
+route	Issue733-kicad_complex_hierarchy_input_design.dsn	scores	1000.0	893.94
+route	Issue733-kicad_interf_u_input_design.dsn	clearance	0	cbf29ce484222325
+route	Issue733-kicad_interf_u_input_design.dsn	holeClearance	168	642cfe90b01b1d15
+route	Issue733-kicad_interf_u_input_design.dsn	via_dangling	0	cbf29ce484222325
+route	Issue733-kicad_interf_u_input_design.dsn	unconnectedItems	19	a818d65b9a1a9f2b
+route	Issue733-kicad_interf_u_input_design.dsn	track_dangling	0	
+route	Issue733-kicad_interf_u_input_design.dsn	scores	851.53	0.0
+route	Issue742-tastexx-pcb.dsn	clearance	0	cbf29ce484222325
+route	Issue742-tastexx-pcb.dsn	holeClearance	0	cbf29ce484222325
+route	Issue742-tastexx-pcb.dsn	via_dangling	0	cbf29ce484222325
+route	Issue742-tastexx-pcb.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue742-tastexx-pcb.dsn	track_dangling	0	
+route	Issue742-tastexx-pcb.dsn	scores	1000.0	616.28
+route	Issue742-tastexx-pcb/tastexx-pcb.dsn	clearance	0	cbf29ce484222325
+route	Issue742-tastexx-pcb/tastexx-pcb.dsn	holeClearance	0	cbf29ce484222325
+route	Issue742-tastexx-pcb/tastexx-pcb.dsn	via_dangling	0	cbf29ce484222325
+route	Issue742-tastexx-pcb/tastexx-pcb.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue742-tastexx-pcb/tastexx-pcb.dsn	track_dangling	0	
+route	Issue742-tastexx-pcb/tastexx-pcb.dsn	scores	1000.0	616.28
+route	Issue753-CPU-85_r104.dsn	clearance	0	cbf29ce484222325
+route	Issue753-CPU-85_r104.dsn	holeClearance	76	2b5cee80681e88b4
+route	Issue753-CPU-85_r104.dsn	via_dangling	62	08ef6a66c99871e7
+route	Issue753-CPU-85_r104.dsn	unconnectedItems	108	717a34ec14d2d591
+route	Issue753-CPU-85_r104.dsn	track_dangling	8	2333,2334,2335,2341,2359,2379,2381,2387
+route	Issue753-CPU-85_r104.dsn	scores	689.46	791.02
+route	Issue754-avionics_hub.dsn	clearance	51	e5bcb5fc52ebe9e5
+route	Issue754-avionics_hub.dsn	holeClearance	235	e0812df63640a1bc
+route	Issue754-avionics_hub.dsn	via_dangling	8	d9db4960e8061312
+route	Issue754-avionics_hub.dsn	unconnectedItems	96	744584791c37f933
+route	Issue754-avionics_hub.dsn	track_dangling	21	2015,2016,2035,2040,2042,2059,2060,2085,2095,2115,2126,2161,2162,2228,2256,2284,2289,2299,2336,2342,2347
+route	Issue754-avionics_hub.dsn	scores	672.11	935.39
+route	Issue756-minimal-hang.dsn	clearance	0	cbf29ce484222325
+route	Issue756-minimal-hang.dsn	holeClearance	0	cbf29ce484222325
+route	Issue756-minimal-hang.dsn	via_dangling	0	cbf29ce484222325
+route	Issue756-minimal-hang.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue756-minimal-hang.dsn	track_dangling	0	
+route	Issue756-minimal-hang.dsn	scores	1000.0	0.0
+route	Issue756-minimal-ok.dsn	clearance	0	cbf29ce484222325
+route	Issue756-minimal-ok.dsn	holeClearance	0	cbf29ce484222325
+route	Issue756-minimal-ok.dsn	via_dangling	0	cbf29ce484222325
+route	Issue756-minimal-ok.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue756-minimal-ok.dsn	track_dangling	0	
+route	Issue756-minimal-ok.dsn	scores	1000.0	0.0
+route	Issue756-tomu-fpga.dsn	clearance	0	cbf29ce484222325
+route	Issue756-tomu-fpga.dsn	holeClearance	546	51cbda757482873b
+route	Issue756-tomu-fpga.dsn	via_dangling	0	cbf29ce484222325
+route	Issue756-tomu-fpga.dsn	unconnectedItems	9	cf1fc74a056bed7d
+route	Issue756-tomu-fpga.dsn	track_dangling	0	
+route	Issue756-tomu-fpga.dsn	scores	833.12	0.0
+route	Issue756-tomu-fpga11.dsn	clearance	0	cbf29ce484222325
+route	Issue756-tomu-fpga11.dsn	holeClearance	546	cd0bf0fc983a063b
+route	Issue756-tomu-fpga11.dsn	via_dangling	0	cbf29ce484222325
+route	Issue756-tomu-fpga11.dsn	unconnectedItems	10	35031cc96b89325a
+route	Issue756-tomu-fpga11.dsn	track_dangling	0	
+route	Issue756-tomu-fpga11.dsn	scores	839.75	0.0
+route	Issue756-tomu-fpga7.dsn	clearance	0	cbf29ce484222325
+route	Issue756-tomu-fpga7.dsn	holeClearance	546	10ad173234d81921
+route	Issue756-tomu-fpga7.dsn	via_dangling	0	cbf29ce484222325
+route	Issue756-tomu-fpga7.dsn	unconnectedItems	11	18f363c1be8efc6d
+route	Issue756-tomu-fpga7.dsn	track_dangling	0	
+route	Issue756-tomu-fpga7.dsn	scores	820.41	0.0
+route	Issue756-tomu-fpga8.dsn	clearance	0	cbf29ce484222325
+route	Issue756-tomu-fpga8.dsn	holeClearance	546	10ad173234d81921
+route	Issue756-tomu-fpga8.dsn	via_dangling	0	cbf29ce484222325
+route	Issue756-tomu-fpga8.dsn	unconnectedItems	11	18f363c1be8efc6d
+route	Issue756-tomu-fpga8.dsn	track_dangling	0	
+route	Issue756-tomu-fpga8.dsn	scores	820.41	0.0
+route	Issue756-tomu-fpga9.dsn	clearance	0	cbf29ce484222325
+route	Issue756-tomu-fpga9.dsn	holeClearance	546	b1b595ba538b7088
+route	Issue756-tomu-fpga9.dsn	via_dangling	1	b83fb3ddcd762d24
+route	Issue756-tomu-fpga9.dsn	unconnectedItems	12	a2896df835655b35
+route	Issue756-tomu-fpga9.dsn	track_dangling	2	1690,1694
+route	Issue756-tomu-fpga9.dsn	scores	753.52	0.0
+route	Issue757-minimal-soe-ok.dsn	clearance	0	cbf29ce484222325
+route	Issue757-minimal-soe-ok.dsn	holeClearance	0	cbf29ce484222325
+route	Issue757-minimal-soe-ok.dsn	via_dangling	0	cbf29ce484222325
+route	Issue757-minimal-soe-ok.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue757-minimal-soe-ok.dsn	track_dangling	0	
+route	Issue757-minimal-soe-ok.dsn	scores	1000.0	0.0
+route	Issue757-minimal-soe.dsn	clearance	0	cbf29ce484222325
+route	Issue757-minimal-soe.dsn	holeClearance	0	cbf29ce484222325
+route	Issue757-minimal-soe.dsn	via_dangling	0	cbf29ce484222325
+route	Issue757-minimal-soe.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue757-minimal-soe.dsn	track_dangling	0	
+route	Issue757-minimal-soe.dsn	scores	1000.0	0.0
+route	Issue872-single-layer-repro.dsn	clearance	0	cbf29ce484222325
+route	Issue872-single-layer-repro.dsn	holeClearance	0	cbf29ce484222325
+route	Issue872-single-layer-repro.dsn	via_dangling	0	cbf29ce484222325
+route	Issue872-single-layer-repro.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue872-single-layer-repro.dsn	track_dangling	0	
+route	Issue872-single-layer-repro.dsn	scores	1000.0	800.44
+route	Issue951-corney_island_wireless.dsn	clearance	252	74fa85bb9623a374
+route	Issue951-corney_island_wireless.dsn	holeClearance	280	5f4a5e7c6d4cfd73
+route	Issue951-corney_island_wireless.dsn	via_dangling	4	9e004cbe71d26927
+route	Issue951-corney_island_wireless.dsn	unconnectedItems	17	d49465b07a41d1bd
+route	Issue951-corney_island_wireless.dsn	track_dangling	0	
+route	Issue951-corney_island_wireless.dsn	scores	707.8	204.69
+route	Issue954-circle.dsn	clearance	0	cbf29ce484222325
+route	Issue954-circle.dsn	holeClearance	2	c04464542993f3ed
+route	Issue954-circle.dsn	via_dangling	0	cbf29ce484222325
+route	Issue954-circle.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue954-circle.dsn	track_dangling	0	
+route	Issue954-circle.dsn	scores	915.0	0.0
+route	Issue954-invalid-polygon64.dsn	clearance	0	cbf29ce484222325
+route	Issue954-invalid-polygon64.dsn	holeClearance	6	08ad188dd1a73543
+route	Issue954-invalid-polygon64.dsn	via_dangling	0	cbf29ce484222325
+route	Issue954-invalid-polygon64.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue954-invalid-polygon64.dsn	track_dangling	0	
+route	Issue954-invalid-polygon64.dsn	scores	815.12	0.0
+route	Issue954-polygon64.dsn	clearance	0	cbf29ce484222325
+route	Issue954-polygon64.dsn	holeClearance	2	c04464542993f3ed
+route	Issue954-polygon64.dsn	via_dangling	0	cbf29ce484222325
+route	Issue954-polygon64.dsn	unconnectedItems	0	cbf29ce484222325
+route	Issue954-polygon64.dsn	track_dangling	0	
+route	Issue954-polygon64.dsn	scores	915.0	0.0
+route	Issue955-rotated-pad-contacts.dsn	clearance	0	cbf29ce484222325
+route	Issue955-rotated-pad-contacts.dsn	holeClearance	100	bc49de15d3f6493d
+route	Issue955-rotated-pad-contacts.dsn	via_dangling	0	cbf29ce484222325
+route	Issue955-rotated-pad-contacts.dsn	unconnectedItems	13	a315cc28a0834828
+route	Issue955-rotated-pad-contacts.dsn	track_dangling	0	
+route	Issue955-rotated-pad-contacts.dsn	scores	857.29	216.5
+route	Issue957-smoke-ldo-led.dsn	clearance	0	cbf29ce484222325
+route	Issue957-smoke-ldo-led.dsn	holeClearance	28	bc4b41606490f0e5
+route	Issue957-smoke-ldo-led.dsn	via_dangling	0	cbf29ce484222325
+route	Issue957-smoke-ldo-led.dsn	unconnectedItems	1	351456c02605a2e2
+route	Issue957-smoke-ldo-led.dsn	track_dangling	0	
+route	Issue957-smoke-ldo-led.dsn	scores	803.89	0.0
+route	PCBench-Box0-hv-analog-breakout.dsn	clearance	0	cbf29ce484222325
+route	PCBench-Box0-hv-analog-breakout.dsn	holeClearance	0	cbf29ce484222325
+route	PCBench-Box0-hv-analog-breakout.dsn	via_dangling	0	cbf29ce484222325
+route	PCBench-Box0-hv-analog-breakout.dsn	unconnectedItems	0	cbf29ce484222325
+route	PCBench-Box0-hv-analog-breakout.dsn	track_dangling	0	
+route	PCBench-Box0-hv-analog-breakout.dsn	scores	1000.0	793.89
+route	PCBench-retroreflectors-CONGFLOCK.dsn	clearance	1	9f4a4f1dcf2d6b35
+route	PCBench-retroreflectors-CONGFLOCK.dsn	holeClearance	8	d784f3d07fcf65ee
+route	PCBench-retroreflectors-CONGFLOCK.dsn	via_dangling	0	cbf29ce484222325
+route	PCBench-retroreflectors-CONGFLOCK.dsn	unconnectedItems	3	91ab209509c43302
+route	PCBench-retroreflectors-CONGFLOCK.dsn	track_dangling	3	49,50,52
+route	PCBench-retroreflectors-CONGFLOCK.dsn	scores	455.99	1000.0
+route	empty_board.dsn	clearance	0	cbf29ce484222325
+route	empty_board.dsn	holeClearance	0	cbf29ce484222325
+route	empty_board.dsn	via_dangling	0	cbf29ce484222325
+route	empty_board.dsn	unconnectedItems	0	cbf29ce484222325
+route	empty_board.dsn	track_dangling	0	
+route	empty_board.dsn	scores	1000.0	1000.0
+route	scoring-empty-net.dsn	clearance	0	cbf29ce484222325
+route	scoring-empty-net.dsn	holeClearance	0	cbf29ce484222325
+route	scoring-empty-net.dsn	via_dangling	0	cbf29ce484222325
+route	scoring-empty-net.dsn	unconnectedItems	0	cbf29ce484222325
+route	scoring-empty-net.dsn	track_dangling	0	
+route	scoring-empty-net.dsn	scores	1000.0	1000.0
+route	scoring-mixed-layer.dsn	clearance	0	cbf29ce484222325
+route	scoring-mixed-layer.dsn	holeClearance	0	cbf29ce484222325
+route	scoring-mixed-layer.dsn	via_dangling	0	cbf29ce484222325
+route	scoring-mixed-layer.dsn	unconnectedItems	0	cbf29ce484222325
+route	scoring-mixed-layer.dsn	track_dangling	0	
+route	scoring-mixed-layer.dsn	scores	1000.0	968.18
+route	scoring-perfect-two-pin.dsn	clearance	0	cbf29ce484222325
+route	scoring-perfect-two-pin.dsn	holeClearance	0	cbf29ce484222325
+route	scoring-perfect-two-pin.dsn	via_dangling	0	cbf29ce484222325
+route	scoring-perfect-two-pin.dsn	unconnectedItems	1	6082bd1827c74a38
+route	scoring-perfect-two-pin.dsn	track_dangling	0	
+route	scoring-perfect-two-pin.dsn	scores	0.0	1000.0
+route	scoring-zero-length.dsn	clearance	0	cbf29ce484222325
+route	scoring-zero-length.dsn	holeClearance	0	cbf29ce484222325
+route	scoring-zero-length.dsn	via_dangling	0	cbf29ce484222325
+route	scoring-zero-length.dsn	unconnectedItems	0	cbf29ce484222325
+route	scoring-zero-length.dsn	track_dangling	0	
+route	scoring-zero-length.dsn	scores	1000.0	1000.0

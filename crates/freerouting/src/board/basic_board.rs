@@ -1,8 +1,8 @@
 //! The board facade: the item list, the search trees and the operations on
 //! them.
 
-use std::cell::OnceCell;
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::sync::OnceLock;
 
 use freerouting_geometry::{
     Area, FloatPoint, IntBox, IntOctagon, IntPoint, Point, PolylineShape, PolylineShapeOps, Shape,
@@ -52,11 +52,15 @@ pub struct BasicBoard {
     normalize_suppressed_nets: HashSet<i32>,
     /// The nets of pins on or outside the outline (Java
     /// `BoardOutline.edgePinNets`), computed on demand.
-    edge_pin_nets: OnceCell<HashSet<i32>>,
+    edge_pin_nets: OnceLock<HashSet<i32>>,
     /// The changed area of `RoutingBoard`; `None` while not marking.
     pub(crate) changed_area: Option<ChangedArea>,
     /// Messages Java writes to its log during board operations.
     pub(crate) log: Vec<String>,
+    /// The clearance violations the board had when it was loaded for
+    /// routing (Java `preExistingClearanceViolationsCount`); the statistics
+    /// count only the violations beyond these as router introduced.
+    pub pre_existing_clearance_violations_count: usize,
 }
 
 impl BasicBoard {
@@ -83,9 +87,10 @@ impl BasicBoard {
             min_trace_half_width: 10000,
             revision: 0,
             normalize_suppressed_nets: HashSet::new(),
-            edge_pin_nets: OnceCell::new(),
+            edge_pin_nets: OnceLock::new(),
             changed_area: None,
             log: Vec::new(),
+            pre_existing_clearance_violations_count: 0,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board

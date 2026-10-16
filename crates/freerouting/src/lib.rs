@@ -10,6 +10,7 @@ pub use freerouting_geometry as geometry;
 
 pub mod board;
 pub mod datastructures;
+pub mod drc;
 pub mod io;
 pub mod library;
 pub mod rules;

@@ -258,9 +258,36 @@ impl ShapeSearchTree {
         matrix: &ClearanceMatrix,
         items: &UndoableObjects<ItemId, Item>,
     ) -> Vec<TreeEntry> {
+        self.overlapping_tree_entries_with_clearance_where(
+            shape,
+            layer,
+            ignore_nets,
+            clearance_class,
+            matrix,
+            items,
+            |_| true,
+        )
+    }
+
+    /// [`overlapping_tree_entries_with_clearance`](Self::overlapping_tree_entries_with_clearance)
+    /// restricted to the items for which `keep` is true. The result is the
+    /// one of the unrestricted query without the other items; the
+    /// restriction only saves the geometric tests of the dropped entries.
+    #[allow(clippy::too_many_arguments)]
+    pub fn overlapping_tree_entries_with_clearance_where(
+        &self,
+        shape: &TileShape,
+        layer: i32,
+        ignore_nets: &[i32],
+        clearance_class: i32,
+        matrix: &ClearanceMatrix,
+        items: &UndoableObjects<ItemId, Item>,
+        keep: impl Fn(&Item) -> bool,
+    ) -> Vec<TreeEntry> {
         let mut result = Vec::new();
         if self.is_clearance_compensation_used() {
             self.overlapping_tree_entries(shape, layer, ignore_nets, items, &mut result);
+            result.retain(|e| items.get(&e.item).is_some_and(&keep));
             return result;
         }
         let Some(bounds) = shape.bounding_shape(self.tree.bounding_directions()) else {
@@ -284,6 +311,9 @@ impl ShapeSearchTree {
                 continue;
             }
             if ignore_nets.iter().any(|n| !item.is_obstacle_for_net(*n)) {
+                continue;
+            }
+            if !keep(item) {
                 continue;
             }
             let clearance = matrix.get_value(clearance_class, item.clearance_class(), layer, true);

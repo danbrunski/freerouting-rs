@@ -7,7 +7,7 @@ use freerouting_geometry::{FloatPoint, IntBox, PolylineShape};
 use crate::board::basic_board::BasicBoard;
 use crate::board::items::ItemKind;
 use crate::board::state::{ChangedArea, Communication};
-use crate::board::structure::LayerStructure;
+use crate::board::structure::{FixedState, LayerStructure};
 use crate::rules::BoardRules;
 
 /// A [`BasicBoard`] with the state the router needs.
@@ -113,6 +113,87 @@ impl RoutingBoard {
         if something_changed {
             self.board.reinsert_tree_items();
         }
+    }
+
+    /// Reduces the nets of traces and vias with more than one net to the
+    /// nets of their contacts (traces at tie pins). Returns true if a net
+    /// was removed.
+    ///
+    /// Port of `RoutingBoard.reduceNetsOfRouteItems`.
+    pub fn reduce_nets_of_route_items(&mut self) -> bool {
+        let mut result = false;
+        loop {
+            let mut something_changed = false;
+            for id in self.board.item_ids() {
+                let item = self.board.item_ref(id);
+                if item.net_numbers().len() <= 1 || item.fixed_state() == FixedState::SystemFixed {
+                    continue;
+                }
+                let nets = item.net_numbers().to_vec();
+                match &item.kind {
+                    ItemKind::Via(_) => {
+                        let contacts = self.board.normal_contacts(id);
+                        for net in nets {
+                            if contacts
+                                .iter()
+                                .any(|c| !self.board.item_ref(*c).contains_net(net))
+                            {
+                                self.board.remove_from_net(id, net);
+                                something_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    ItemKind::Trace(_) => {
+                        for contacts in [
+                            self.board.trace_start_contacts(id),
+                            self.board.trace_end_contacts(id),
+                        ] {
+                            // Java iterates over the nets the trace had when
+                            // this end was started.
+                            let nets = self.board.item_ref(id).net_numbers().to_vec();
+                            for net in nets {
+                                let mut pin_found = false;
+                                let mut remove = false;
+                                for c in &contacts {
+                                    let contact = self.board.item_ref(*c);
+                                    if contact.is_pin() {
+                                        pin_found = true;
+                                        if !contact.contains_net(net) {
+                                            remove = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                // At tie pins traces may have different nets.
+                                if !pin_found {
+                                    remove = contacts.iter().any(|c| {
+                                        let contact = self.board.item_ref(*c);
+                                        !contact.is_pin() && !contact.contains_net(net)
+                                    });
+                                }
+                                if remove {
+                                    self.board.remove_from_net(id, net);
+                                    something_changed = true;
+                                }
+                            }
+                            if something_changed {
+                                break;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+                if something_changed {
+                    break;
+                }
+            }
+            if !something_changed {
+                break;
+            }
+            result = true;
+        }
+        result
     }
 
     /// True if any item is a trace (used by tests and callers that only

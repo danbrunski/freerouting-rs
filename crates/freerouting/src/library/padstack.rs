@@ -1,4 +1,4 @@
-use std::cell::OnceCell;
+use std::sync::OnceLock;
 
 use freerouting_geometry::{ConvexShape, Direction, PolylineShapeOps, TileShape};
 
@@ -24,7 +24,7 @@ pub struct Padstack {
     pub has_non_convex_geometry: bool,
     /// A drill hole without copper.
     pub hole_only: bool,
-    cached_drill_radius: OnceCell<f64>,
+    cached_drill_radius: OnceLock<f64>,
 }
 
 impl Padstack {
@@ -45,7 +45,7 @@ impl Padstack {
             auxiliary_shapes,
             has_non_convex_geometry: false,
             hole_only: false,
-            cached_drill_radius: OnceCell::new(),
+            cached_drill_radius: OnceLock::new(),
         }
     }
 
