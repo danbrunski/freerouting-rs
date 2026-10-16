@@ -7,6 +7,8 @@
 | `export_dsn.py` | The KiCad-side step of `export.sh` (`pcbnew.LoadBoard`, `ExportSpecctraDSN`, prints the build version). Never imports the plugin package. |
 | `export-corpus.sh <dir>` | `export.sh` for every board of a corpus folder. |
 | `manifest.py write\|check` | Writes and verifies `fixtures/kicad/MANIFEST.tsv`. |
+| `synthetic.py OUT_DIR [BOARD ...]` | Writes the synthetic boards of `fixtures/kicad/synthetic/` with pcbnew (all of them, or only the named ones: the files hold random UUIDs). |
+| `track_length.py <board>` | The sum of `GetLength()` over a board's tracks with a net (K06.5: `CM5_MINIMA_3` is 2,785,801,604 nm with KiCad 10.0.7). |
 | `old_arcs.py <scratch dir>` | Loads old-syntax arcs and overbar net names in KiCad 10 and prints what it holds (pinned in `crates/freerouting-kicad/tests/legacy_kicad.rs`). |
 
 Rules: run KiCad only on copies; never close or restart a running KiCad (the

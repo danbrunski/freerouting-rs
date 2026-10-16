@@ -273,6 +273,16 @@ pub(crate) fn read_library(ctx: &mut ReadContext, library: &ast::Library) -> boo
         for keepout in &image.keepouts {
             let index = match keepout.kind {
                 ast::KeepoutKind::Keepout => 0,
+                // Java reads `wire_keepout` as `keepout`; K06.1.
+                ast::KeepoutKind::WireKeepout => {
+                    ctx.log(format!(
+                        "wire_keepout on layer {} (image '{}') is treated as a keepout and \
+                         also blocks vias",
+                        keepout.area.shape.layer().name(),
+                        image.name
+                    ));
+                    0
+                }
                 ast::KeepoutKind::ViaKeepout => 1,
                 ast::KeepoutKind::PlaceKeepout => 2,
             };

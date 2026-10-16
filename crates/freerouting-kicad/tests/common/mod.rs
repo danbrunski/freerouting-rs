@@ -4,6 +4,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+pub mod copper;
 pub mod parity;
 
 pub const JAVA_COMMIT: &str = "cda540f";

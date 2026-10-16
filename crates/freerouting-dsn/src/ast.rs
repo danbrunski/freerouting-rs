@@ -154,8 +154,13 @@ pub struct Area {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum KeepoutKind {
-    /// `keepout` (also written `wire_keepout`).
+    /// `keepout`.
     Keepout,
+    /// `wire_keepout`, which KiCad writes for a rule area that bans tracks
+    /// only. The board treats it as [`KeepoutKind::Keepout`] (it also blocks
+    /// vias), as Java does; the tree keeps the difference so that a later
+    /// change is one `match` arm.
+    WireKeepout,
     ViaKeepout,
     PlaceKeepout,
 }
@@ -164,6 +169,7 @@ impl KeepoutKind {
     pub fn keyword(self) -> &'static str {
         match self {
             KeepoutKind::Keepout => "keepout",
+            KeepoutKind::WireKeepout => "wire_keepout",
             KeepoutKind::ViaKeepout => "via_keepout",
             KeepoutKind::PlaceKeepout => "place_keepout",
         }

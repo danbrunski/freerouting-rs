@@ -24,6 +24,7 @@ use crate::legacy::{Angle, Pt, rotate_about, rotate_origin};
 use crate::nets::NetTable;
 use crate::sexpr::NodeRef;
 use crate::units::mm_to_nm;
+use crate::zones::{Zone, ZoneLayerMap, parse_zone};
 
 /// `DEFAULT_LINE_WIDTH`, 0.1 mm: KiCad gives an unfilled shape without a
 /// stroke width this one.
@@ -339,6 +340,12 @@ pub struct Footprint {
     pub orient: f64,
     pub pads: Vec<Pad>,
     pub graphics: Vec<Graphic>,
+    /// The footprint's zones, in board coordinates like the file stores them
+    /// (K06.3); mirrored by [`Footprint::flip_to_front`].
+    pub zones: Vec<Zone>,
+    /// The same zones as the file has them, never flipped: a copper zone of a
+    /// back-side footprint is a plane in board coordinates.
+    pub zones_as_filed: Vec<Zone>,
     /// Arena index of the footprint's node in the tree (its line is computed
     /// on demand: counting lines is linear in the file).
     pub line: u32,
@@ -743,11 +750,12 @@ pub fn read_footprints(
     warnings: &mut Vec<Warning>,
 ) -> Result<Vec<Footprint>, KicadError> {
     let mut out = Vec::new();
+    let mut zone_map: Option<ZoneLayerMap> = None;
     for node in board
         .items()
         .filter(|c| c.is_list() && matches!(c.head(), Some("footprint") | Some("module")))
     {
-        out.push(read_footprint(node, nets, warnings)?);
+        out.push(read_footprint(node, nets, &mut zone_map, board, warnings)?);
     }
     Ok(out)
 }
@@ -755,6 +763,8 @@ pub fn read_footprints(
 fn read_footprint(
     node: NodeRef<'_>,
     nets: &NetTable,
+    zone_map: &mut Option<ZoneLayerMap>,
+    board: NodeRef<'_>,
     warnings: &mut Vec<Warning>,
 ) -> Result<Footprint, KicadError> {
     let id = node
@@ -796,8 +806,15 @@ fn read_footprint(
     }
     let mut pads = Vec::new();
     let mut graphics = Vec::new();
+    let mut zones = Vec::new();
     for child in node.items().filter(|c| c.is_list()) {
         match child.head().unwrap_or("") {
+            "zone" => {
+                let map = zone_map.get_or_insert_with(|| ZoneLayerMap::from_board(board));
+                if let Some(z) = parse_zone(child, map, nets, true, warnings) {
+                    zones.push(z);
+                }
+            }
             "pad" => pads.push(parse_pad(child, pos, orient, nets, warnings)?),
             "fp_line" | "fp_rect" | "fp_circle" | "fp_arc" | "fp_poly" | "fp_curve" => {
                 if let Some(g) = parse_shape(child, Some((pos, orient)), warnings)? {
@@ -816,6 +833,8 @@ fn read_footprint(
         orient,
         pads,
         graphics,
+        zones_as_filed: zones.clone(),
+        zones,
         line: node.index(),
         flipped: false,
     })
@@ -861,6 +880,9 @@ impl Footprint {
             }
         }
         self.orient = new_orient;
+        for z in &mut self.zones {
+            z.flip_top_bottom(cy, copper_count);
+        }
         for g in &mut self.graphics {
             g.flip_top_bottom(cy);
             g.layer = flip_layer_name(&g.layer);

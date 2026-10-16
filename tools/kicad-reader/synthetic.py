@@ -1,10 +1,12 @@
 """K05.8: generate the synthetic test boards of fixtures/kicad/synthetic/ with pcbnew.
 
-    python3 -I tools/kicad-reader/synthetic.py OUT_DIR
+    python3 -I tools/kicad-reader/synthetic.py OUT_DIR [BOARD ...]
 
 Run under a KiCad interpreter (WSL: the system python3, KiCad 10.0.7). Writes
 pads.kicad_pcb, outline.kicad_pcb, backside.kicad_pcb, classes.kicad_pcb and
-classes6.kicad_pcb with their .kicad_pro files. The exports next to them
+classes6.kicad_pcb with their .kicad_pro files (K05), and rule-areas.kicad_pcb, arcs.kicad_pcb and
+vias.kicad_pcb (K06). Name boards on the command line to write only those: the files hold random
+UUIDs, so regenerating a committed board changes it. The exports next to them
 (`*.kicad10.dsn`) come from tools/kicad-reader/export.sh. Coordinates are
 integer nanometres (pcbnew.FromMM truncates).
 """
@@ -260,17 +262,220 @@ def classes_board(path, schema):
         json.dump(pro, f, indent=2)
 
 
-def main(out):
+# ---- K06 ---------------------------------------------------------------------------------------
+
+def lset(*layers):
+    s = pcbnew.LSET()
+    for l in layers:
+        s.AddLayer(l)
+    return s
+
+
+def chain(points):
+    c = pcbnew.SHAPE_LINE_CHAIN()
+    for x, y in points:
+        c.Append(nm(x), nm(y))
+    c.SetClosed(True)
+    return c
+
+
+def rect_pts(x, y, w, h):
+    return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+
+
+def make_zone(parent, layers, pts, holes=(), flags=None, net=None, placement=False, name=None):
+    """A zone. flags=None: a copper zone; else a rule area with the given
+    (tracks, vias, pads, copperpour, footprints) bans."""
+    z = pcbnew.ZONE(parent)
+    z.SetLayerSet(layers)
+    z.Outline().AddOutline(chain(pts))
+    for h in holes:
+        z.Outline().AddHole(chain(h))
+    if flags is None:
+        z.SetIsRuleArea(False)
+        if net is not None:
+            z.SetNet(net)
+    else:
+        tracks, vias, pads, pour, footprints = flags
+        z.SetIsRuleArea(True)
+        z.SetDoNotAllowTracks(tracks)
+        z.SetDoNotAllowVias(vias)
+        z.SetDoNotAllowPads(pads)
+        z.SetDoNotAllowZoneFills(pour)
+        z.SetDoNotAllowFootprints(footprints)
+        if placement:
+            z.SetPlacementAreaEnabled(True)
+            z.SetPlacementAreaSource("sheet")
+    if name:
+        z.SetZoneName(name)
+    return z
+
+
+def rule_areas_board(path):
+    b = new_board(4)
+    n1, n2 = add_net(b, "N1"), add_net(b, "N2")
+    fp = footprint(b, "U1", "syn:Two", 100.0, 125.0, 0.0)
+    pad(fp, "1", pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 0, 0, 1.5, 1.5, net=n1)
+    pad(fp, "2", pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 4, 0, 1.5, 1.5, net=n2)
+    b.Add(fp)
+    F, B, I1, I2 = pcbnew.F_Cu, pcbnew.B_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu
+    # flags: (tracks, vias, pads, copper pour, footprints)
+    areas = [
+        ("tracks-vias", lset(F), (1, 1, 0, 0, 0)),
+        ("vias", lset(F, B), (0, 1, 0, 0, 0)),
+        ("tracks", lset(F), (1, 0, 0, 0, 0)),
+        ("footprints", lset(F), (0, 0, 0, 0, 1)),
+        ("pads", lset(B), (0, 0, 1, 0, 0)),
+        ("pour", lset(F), (0, 0, 0, 1, 0)),
+        ("placement", lset(F), (0, 0, 0, 0, 0)),
+        ("tracks-footprints", lset(F), (1, 0, 0, 0, 1)),
+        ("pads-footprints", lset(B), (0, 0, 1, 0, 1)),
+        ("all-copper", pcbnew.LSET.AllCuMask(4), (1, 1, 0, 0, 0)),
+        ("f-and-b", lset(F, B), (1, 1, 0, 0, 0)),
+        ("hole", lset(F), (1, 1, 0, 0, 0)),
+        ("inner", lset(I2, I1), (0, 1, 0, 0, 0)),
+    ]
+    for i, (name, layers, flags) in enumerate(areas):
+        x, y = 20 + 15 * (i % 10), 20 + 20 * (i // 10)
+        holes = [[(x + 3, y + 3), (x + 6, y + 3), (x + 6, y + 6), (x + 3, y + 6)]] if name == "hole" else []
+        z = make_zone(b, layers, rect_pts(x, y, 10, 10), holes, flags=[bool(f) for f in flags],
+                      placement=(name == "placement"), name=name)
+        b.Add(z)
+    # copper zones: nets, two layers, and netless ones (@:no_net_N)
+    b.Add(make_zone(b, lset(F), rect_pts(20, 70, 20, 10), net=n1))
+    b.Add(make_zone(b, lset(F, B), rect_pts(50, 70, 20, 10), [[(55, 73), (60, 73), (60, 77), (55, 77)]], net=n2))
+    b.Add(make_zone(b, lset(I1), rect_pts(80, 70, 20, 10)))
+    b.Add(make_zone(b, lset(I2, I1), rect_pts(110, 70, 20, 10)))
+    # footprints that own rule areas, at 0, 30 and 135 degrees on both sides
+    specs = [("A0", 30.0, 100.0, 0.0, False, lset(F), (1, 1, 0, 0, 0), False),
+             ("A30", 60.0, 100.0, 30.0, False, lset(F, B), (0, 1, 0, 0, 1), True),
+             ("A135", 90.0, 100.0, 135.0, False, lset(I1, F), (1, 0, 0, 0, 0), False),
+             ("B0", 30.0, 125.0, 0.0, True, lset(F), (1, 1, 0, 0, 0), False),
+             ("B30", 60.0, 125.0, 30.0, True, lset(F, B), (0, 1, 0, 0, 1), True),
+             ("B135", 90.0, 125.0, 135.0, True, lset(I1, F), (1, 0, 0, 0, 0), False)]
+    for ref, x, y, ang, back, layers, flags, hole in specs:
+        f = footprint(b, ref, "syn:Area", x, y, 0.0, "area")
+        pad(f, "1", pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 0, 0, 1.5, 1.5, net=n1)
+        holes = [[(x + 4.5, y - 1), (x + 6.5, y - 1), (x + 6.5, y + 1)]] if hole else []
+        f.Add(make_zone(f, layers, rect_pts(x + 3, y - 4, 6, 8), holes, flags=[bool(v) for v in flags],
+                        name="fp-" + ref))
+        b.Add(f)
+        if ang != 0.0:
+            f.SetOrientationDegrees(ang)
+        if back:
+            f.Flip(f.GetPosition(), False)
+    # a footprint that owns a copper zone: KiCad's export drops it
+    f = footprint(b, "C1", "syn:Copper", 150.0, 100.0, 0.0, "copper")
+    pad(f, "1", pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 0, 0, 1.5, 1.5, net=n2)
+    f.Add(make_zone(f, lset(F), rect_pts(147, 96, 6, 8), net=n2, name="fp-copper"))
+    b.Add(f)
+    outline_rect(b, 10, 10, 200, 150)
+    pcbnew.SaveBoard(path, b)
+
+
+def arcs_board(path):
+    import math
+    b = new_board(2)
+    n1, n2 = add_net(b, "N1"), add_net(b, "N2")
+    fp = footprint(b, "U1", "syn:Two", 100.0, 5.0, 0.0)
+    pad(fp, "1", pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 0, 0, 1.5, 1.5, net=n1)
+    pad(fp, "2", pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 4, 0, 1.5, 1.5, net=n2)
+    b.Add(fp)
+
+    def seg(x1, y1, x2, y2, net, layer=pcbnew.F_Cu, width=0.25, locked=False):
+        t = pcbnew.PCB_TRACK(b)
+        t.SetStart(pt(x1, y1))
+        t.SetEnd(pt(x2, y2))
+        t.SetWidth(nm(width))
+        t.SetLayer(layer)
+        t.SetNet(net)
+        t.SetLocked(locked)
+        b.Add(t)
+
+    def arc_track(cx, cy, r, a0, sweep, net, layer=pcbnew.F_Cu, width=0.25):
+        p = lambda a: (cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a)))
+        s, m, e = p(a0), p(a0 + sweep / 2), p(a0 + sweep)
+        t = pcbnew.PCB_ARC(b)
+        t.SetStart(pt(*s))
+        t.SetMid(pt(*m))
+        t.SetEnd(pt(*e))
+        t.SetWidth(nm(width))
+        t.SetLayer(layer)
+        t.SetNet(net)
+        b.Add(t)
+        return s, e
+
+    # a segment, an arc and a segment, joined: sweeps of 10, 90 and 270 degrees
+    # (positive and negative) at radii from 0.1 mm to 20 mm
+    row = 0
+    for r in (0.1, 1.0, 5.0, 20.0):
+        col = 0
+        for sweep in (10.0, 90.0, 270.0, -90.0):
+            cx, cy = 30.0 + col * 55.0, 30.0 + row * 55.0
+            a0 = 200.0
+            s, e = arc_track(cx, cy, r, a0, sweep, n1 if col % 2 == 0 else n2)
+            net = n1 if col % 2 == 0 else n2
+            seg(s[0] - 2.0, s[1], s[0], s[1], net)
+            seg(e[0], e[1], e[0] + 2.0, e[1] + 1.5, net)
+            col += 1
+        row += 1
+    # a locked segment
+    seg(5, 5, 20, 5, n2, locked=True)
+    outline_rect(b, 0, 0, 240, 240)
+    pcbnew.SaveBoard(path, b)
+
+
+def vias_board(path):
+    b = new_board(6)
+    n = [add_net(b, "N%d" % i) for i in range(1, 7)]
+    fp = footprint(b, "U1", "syn:Row", 20.0, 10.0, 0.0)
+    for i in range(6):
+        pad(fp, str(i + 1), pcbnew.PAD_SHAPE_RECT, pcbnew.PAD_ATTRIB_SMD, 3 * i, 0, 1.5, 1.5, net=n[i])
+    b.Add(fp)
+    layers = [pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.In3_Cu, pcbnew.In4_Cu, pcbnew.B_Cu]
+
+    def via(x, y, kind, top, bottom, net, size=0.8, drill=0.4, locked=False):
+        v = pcbnew.PCB_VIA(b)
+        v.SetViaType(kind)
+        v.SetPosition(pt(x, y))
+        v.SetWidth(nm(size))
+        v.SetDrill(nm(drill))
+        v.SetLayerPair(layers[top], layers[bottom])
+        v.SetNet(net)
+        v.SetLocked(locked)
+        b.Add(v)
+
+    via(20, 30, pcbnew.VIATYPE_THROUGH, 0, 5, n[0])
+    via(30, 30, pcbnew.VIATYPE_BLIND, 0, 2, n[1], 0.7, 0.3)
+    via(40, 30, pcbnew.VIATYPE_BURIED, 1, 3, n[2], 0.6, 0.3)
+    via(50, 30, pcbnew.VIATYPE_MICROVIA, 0, 1, n[3], 0.3, 0.1)
+    via(60, 30, pcbnew.VIATYPE_THROUGH, 0, 5, n[4], 0.8, 0.4, locked=True)   # same padstack as the first, locked
+    via(70, 30, pcbnew.VIATYPE_BLIND, 5, 3, n[5], 0.7, 0.3)                  # from the bottom side
+    via(80, 30, pcbnew.VIATYPE_BLIND, 0, 2, n[1], 0.7, 0.3)                  # a second via of the same padstack
+    outline_rect(b, 5, 5, 100, 50)
+    pcbnew.SaveBoard(path, b)
+
+
+def main(out, only):
     os.makedirs(out, exist_ok=True)
-    pads_board(os.path.join(out, "pads.kicad_pcb"))
-    outline_board(os.path.join(out, "outline.kicad_pcb"))
-    backside_board(os.path.join(out, "backside.kicad_pcb"))
-    classes_board(os.path.join(out, "classes.kicad_pcb"), 5)
-    classes_board(os.path.join(out, "classes6.kicad_pcb"), 2)
+    boards = {
+        "pads": lambda p: pads_board(p),
+        "outline": lambda p: outline_board(p),
+        "backside": lambda p: backside_board(p),
+        "classes": lambda p: classes_board(p, 5),
+        "classes6": lambda p: classes_board(p, 2),
+        "rule-areas": lambda p: rule_areas_board(p),
+        "arcs": lambda p: arcs_board(p),
+        "vias": lambda p: vias_board(p),
+    }
+    for name, make in boards.items():
+        if only and name not in only:
+            continue
+        make(os.path.join(out, name + ".kicad_pcb"))
     print("KICAD_VERSION " + pcbnew.GetBuildVersion())
 
 
-if len(sys.argv) != 2:
-    print("usage: synthetic.py OUT_DIR", file=sys.stderr)
+if len(sys.argv) < 2:
+    print("usage: synthetic.py OUT_DIR [BOARD ...]", file=sys.stderr)
     sys.exit(2)
-main(sys.argv[1])
+main(sys.argv[1], sys.argv[2:])

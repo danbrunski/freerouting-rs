@@ -8,26 +8,33 @@
 use std::collections::BTreeSet;
 
 use freerouting_dsn::ast::{
-    Area, Boundary, Image, ImagePin, Keepout, KeepoutKind, LayerRef, Library, Network, ParserInfo,
-    Pcb, PinRef, Place, PlaceLocation, Placement, Point, Resolution, Rule, Shape, Side, Structure,
-    Unit, ViaPadstacks, Wiring,
+    Area, Boundary, Image, ImagePin, Keepout, KeepoutKind, LayerRef, Library, Net, Network,
+    ParserInfo, Pcb, PinRef, Place, PlaceLocation, Placement, Point, Resolution, Rule, Shape, Side,
+    Structure, Unit, ViaPadstacks, Wiring, WiringItem,
 };
 
 use crate::classes::ClassTable;
 use crate::error::{ErrorKind, KicadError, Warning};
 use crate::fmt6g::c_fmt_6g;
-use crate::footprints::{Footprint, Graphic, normalize_360, parse_shape, read_footprints};
+use crate::footprints::{
+    Footprint, Graphic, PadShape, normalize_360, parse_shape, read_footprints,
+};
 use crate::header;
 use crate::image_outlines::image_outlines;
 use crate::layers::{Layers, StackupLayer, read_stackup};
-use crate::legacy;
+use crate::legacy::{self, Angle, rotate_about};
 use crate::nets::NetTable;
 use crate::network::{build_nets, classes_in_use, dsn_class, via_name};
 use crate::outline::board_outline;
 use crate::pads::{PadstackSet, make_pads, shape_key};
 use crate::project::Project;
+use crate::report::ReadReport;
+use crate::rule_areas::rule_area_keepouts;
 use crate::sexpr::Tree;
+use crate::tracks::read_wires;
 use crate::units::{map_pt, um};
+use crate::vias::read_vias;
+use crate::zones::{ZoneLayerMap, cu_stack_order, layer_id_order, make_plane, parse_zone};
 
 /// What the DSN tree cannot carry (X-series length and impedance work).
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -52,6 +59,8 @@ pub struct KicadRead {
     pub pcb: Pcb,
     pub warnings: Vec<Warning>,
     pub extras: Extras,
+    /// What the reader decided: rule areas, planes, arcs, dropped zones.
+    pub report: ReadReport,
 }
 
 /// Options of the reader.
@@ -65,6 +74,11 @@ pub struct ReadOptions {
     /// one gets `_1`, `_2`, ... (case-insensitively), and the reader does the
     /// same when this is off (the default), with a warning per footprint.
     pub strict_references: bool,
+    /// Drop the copper zones that footprints own, as KiCad's DSN export does
+    /// (its plane loop walks the board's zones only). Off by default: the
+    /// reader keeps them as planes (K00 question 6, K06.4), after the board's
+    /// own zones, and warns once per zone.
+    pub drop_footprint_zones: bool,
 }
 
 /// Reads a board with the name `board.dsn` in the tree.
@@ -224,6 +238,7 @@ pub fn read_with(
     let mut image_ids: Vec<String> = Vec::new(); // KiCad id of each registered image
     let mut components: Vec<(String, Vec<Place>)> = Vec::new();
     let mut padstack_set = PadstackSet::default();
+    let mut report = ReadReport::default();
     let mut pins_by_code: Vec<Vec<PinRef>> = vec![Vec::new(); nets.by_code.len()];
     let mut extras = Extras {
         stackup: read_stackup(board),
@@ -231,6 +246,11 @@ pub fn read_with(
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();
+        report.custom_pad_hulls += fp
+            .pads
+            .iter()
+            .filter(|p| p.shape == PadShape::Custom)
+            .count();
         let pads = make_pads(fp, &layers, project.hole_clearance, project.max_error);
         for d in &pads.padstacks {
             padstack_set.insert(d);
@@ -266,6 +286,65 @@ pub fn read_with(
                     },
                 });
             }
+        }
+        // rule areas of the footprint: after the copper-less holes, in
+        // physical layer order (`LSET::CuStack`), relative to the footprint
+        let rel_angle = Angle(-fp.orient).normalize();
+        let to_image = |p: legacy::Pt| -> freerouting_dsn::ast::Point {
+            let r = rotate_about(p, fp.pos, rel_angle);
+            map_pt(
+                i64::from(r.0) - i64::from(fp.pos.0),
+                i64::from(r.1) - i64::from(fp.pos.1),
+            )
+        };
+        for zone in &fp.zones {
+            report.zone_arcs_flattened += zone.arcs as usize;
+            if !zone.rule_area {
+                let what = zone
+                    .name
+                    .as_deref()
+                    .map(|n| format!(" '{n}'"))
+                    .unwrap_or_default();
+                if options.drop_footprint_zones {
+                    warnings.push(Warning {
+                        line: tree.node(zone.node).line(),
+                        message: format!(
+                            "copper zone{what} of footprint {component_id} dropped, as KiCad's \
+                             export drops it"
+                        ),
+                    });
+                    report
+                        .footprint_zones_dropped
+                        .push((component_id.clone(), zone.name.clone()));
+                } else {
+                    warnings.push(Warning {
+                        line: tree.node(zone.node).line(),
+                        message: format!(
+                            "copper zone{what} of footprint {component_id} kept as a plane; \
+                             KiCad's export drops it"
+                        ),
+                    });
+                    report
+                        .footprint_zones_kept
+                        .push((component_id.clone(), zone.name.clone()));
+                }
+                continue;
+            }
+            let order = cu_stack_order(zone.layers, copper);
+            let line = tree.node(zone.node).line();
+            let window_layer = layer_id_order(zone.layers, copper).first().copied();
+            let (ks, rep) = rule_area_keepouts(
+                zone,
+                &order,
+                &layers,
+                Some(&component_id),
+                window_layer,
+                &to_image,
+                &mut warnings,
+                line,
+            );
+            keepouts.extend(ks);
+            report.rule_areas.push(rep);
         }
         let image = Image {
             name: fp.id.clone(),
@@ -342,7 +421,7 @@ pub fn read_with(
         .as_ref()
         .map(|c| c.values)
         .unwrap_or_else(|| table.values_of_name("Default"));
-    let mut via_defs: Vec<(String, i32)> = vec![(
+    let mut via_defs: Vec<(String, i32, usize, usize)> = vec![(
         via_name(
             0,
             copper - 1,
@@ -350,20 +429,42 @@ pub fn read_with(
             default_values.via_drill,
         ),
         default_values.via_diameter,
+        0,
+        copper - 1,
     )];
     for c in in_use.iter().filter(|c| c.name != "Default") {
         let n = via_name(0, copper - 1, c.values.via_diameter, c.values.via_drill);
-        if !via_defs.iter().any(|(m, _)| *m == n) {
-            via_defs.push((n, c.values.via_diameter));
+        if !via_defs.iter().any(|(m, ..)| *m == n) {
+            via_defs.push((n, c.values.via_diameter, 0, copper - 1));
         }
     }
 
+    // copper: planes, wires and vias (K06.4 to K06.6)
+    let zone_map = ZoneLayerMap::from_board(board);
+    let mut board_zones = Vec::new();
+    for node in board.children("zone") {
+        if let Some(z) = parse_zone(node, &zone_map, &nets, false, &mut warnings) {
+            report.zone_arcs_flattened += z.arcs as usize;
+            board_zones.push(z);
+        }
+    }
+    let (wires, track_stats) = read_wires(board, &layers, &nets, &mut warnings);
+    report.track_arcs_flattened = track_stats.arcs_flattened;
+    let board_vias = read_vias(board, &layers, &nets, &mut warnings);
+    for v in &board_vias {
+        if !via_defs.iter().any(|(m, ..)| *m == v.name) {
+            via_defs.push((v.name.clone(), v.diameter, v.top, v.bottom));
+        }
+    }
+    report.wires = wires.len();
+    report.vias = board_vias.len();
+
     // library padstacks: pads in KiCad's set order, then the vias
     let mut padstacks = padstack_set.into_padstacks();
-    for (n, dia) in &via_defs {
+    for (n, dia, top, bottom) in &via_defs {
         padstacks.push(freerouting_dsn::ast::Padstack {
             name: n.clone(),
-            shapes: (0..copper)
+            shapes: (*top..=*bottom)
                 .map(|p| Shape::Circle {
                     layer: LayerRef::Named(layers.name(p).to_owned()),
                     diameter: um(i64::from(*dia)),
@@ -410,6 +511,64 @@ pub fn read_with(
             });
         }
     }
+    // rule areas in board zone order, per area in KiCad's layer-id order
+    let mut planes = Vec::new();
+    let mut no_net_nets: Vec<Net> = Vec::new();
+    let board_frame = |p: legacy::Pt| map_pt(i64::from(p.0), i64::from(p.1));
+    for zone in board_zones.iter().filter(|z| z.rule_area) {
+        let order = layer_id_order(zone.layers, copper);
+        let line = tree.node(zone.node).line();
+        let (ks, rep) = rule_area_keepouts(
+            zone,
+            &order,
+            &layers,
+            None,
+            None,
+            &board_frame,
+            &mut warnings,
+            line,
+        );
+        keepouts.extend(ks);
+        report.rule_areas.push(rep);
+    }
+    // copper zones become planes: zones in board order, layers in layer-id order, then the
+    // copper zones that footprints own (in the file's coordinates)
+    let footprint_zones = footprints
+        .iter()
+        .flat_map(|fp| fp.zones_as_filed.iter())
+        .filter(|z| !z.rule_area && !options.drop_footprint_zones);
+    for zone in board_zones
+        .iter()
+        .filter(|z| !z.rule_area)
+        .chain(footprint_zones)
+    {
+        for p in layer_id_order(zone.layers, copper) {
+            let net_name = match nets
+                .name(zone.net)
+                .filter(|n| zone.net > 0 && !n.is_empty())
+            {
+                Some(n) => n.replace('"', "''"),
+                None => {
+                    // `@:no_net_<n>`, counted per plane; the net goes to the
+                    // head of the network
+                    let n = format!("@:no_net_{}", no_net_nets.len());
+                    no_net_nets.push(Net {
+                        name: n.clone(),
+                        subnet: None,
+                        pins: Vec::new(),
+                        ordered: false,
+                        fromtos: Vec::new(),
+                        rules: Vec::new(),
+                        circuit: None,
+                    });
+                    n
+                }
+            };
+            planes.push(make_plane(zone, layers.name(p), net_name, &board_frame));
+        }
+    }
+    report.planes = planes.len();
+
     let clearance = um(i64::from(default_values.clearance));
     let structure = Structure {
         layers: layers.dsn_layers(),
@@ -418,7 +577,7 @@ pub fn read_with(
             clearance_class: None,
         }],
         via: Some(ViaPadstacks {
-            padstacks: via_defs.iter().map(|(n, _)| n.clone()).collect(),
+            padstacks: via_defs.iter().map(|(n, ..)| n.clone()).collect(),
             spare: Vec::new(),
         }),
         rules: vec![
@@ -433,11 +592,14 @@ pub fn read_with(
             },
         ],
         keepouts,
+        planes,
         ..Structure::default()
     };
 
+    let mut all_nets = no_net_nets;
+    all_nets.extend(build_nets(&nets, &pins_by_code));
     let network = Network {
-        nets: build_nets(&nets, &pins_by_code),
+        nets: all_nets,
         classes: in_use.iter().map(|c| dsn_class(c, copper)).collect(),
         ..Network::default()
     };
@@ -474,12 +636,19 @@ pub fn read_with(
         }),
         part_library: None,
         network: Some(network),
-        wiring: Some(Wiring::default()),
+        wiring: Some(Wiring {
+            items: wires
+                .into_iter()
+                .map(WiringItem::Wire)
+                .chain(board_vias.iter().map(|v| WiringItem::Via(v.to_dsn())))
+                .collect(),
+        }),
     };
     Ok(KicadRead {
         pcb,
         warnings,
         extras,
+        report,
     })
 }
 
@@ -503,8 +672,12 @@ fn image_key(image: &Image) -> String {
         s.push_str(&c_fmt_6g(p.at.y));
     }
     for k in &image.keepouts {
-        s.push_str("keepout");
+        s.push_str(k.kind.keyword());
         s.push_str(&shape_key(&k.area.shape));
+        for w in &k.area.windows {
+            s.push_str("window");
+            s.push_str(&shape_key(w));
+        }
     }
     s
 }

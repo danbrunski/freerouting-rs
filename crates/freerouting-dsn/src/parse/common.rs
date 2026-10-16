@@ -609,7 +609,11 @@ impl Parser<'_> {
                         }
                     },
                     "pin" => place.pins.extend(self.item_clearance(pos, "pin")?),
-                    "keepout" => place.keepouts.extend(self.item_clearance(pos, "keepout")?),
+                    // A place holds names only, so a `wire_keepout` here is read as a
+                    // `keepout` (Java's lexer made the same alias).
+                    "keepout" | "wire_keepout" => {
+                        place.keepouts.extend(self.item_clearance(pos, "keepout")?)
+                    }
                     "via_keepout" => place
                         .via_keepouts
                         .extend(self.item_clearance(pos, "via_keepout")?),

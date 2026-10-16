@@ -20,9 +20,15 @@
 //!
 //! The reader follows the Java reader's grammar: keywords are matched without
 //! regard to case and with the same aliases (`clear`, `circ`, `rectangle`,
-//! `wire_keepout`, `prefered_direction`, ...); names are read with the same
+//! `prefered_direction`, ...); names are read with the same
 //! token rules; unknown scopes are skipped. Errors and warnings carry the
 //! line and column where they were found.
+//!
+//! `wire_keepout` (KiCad's tracks-only rule area) is not an alias: the tree
+//! keeps it as [`ast::KeepoutKind::WireKeepout`] and writes it back as
+//! `wire_keepout`. Java's lexer reads it as `keepout`, and the engine's board
+//! builder does the same. Inside a `(place ...)` scope, which holds names only,
+//! it is read as `keepout`.
 //!
 //! # Writing
 //!

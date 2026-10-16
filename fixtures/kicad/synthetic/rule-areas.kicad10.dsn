@@ -1,0 +1,188 @@
+(pcb "rule-areas.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer In1.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (layer In2.Cu
+      (type signal)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  200000 -150000  10000 -150000  10000 -10000  200000 -10000
+            200000 -150000)
+    )
+    (plane N1 (polygon F.Cu 0  20000 -70000  40000 -70000  40000 -80000  20000 -80000
+            20000 -70000))
+    (plane N2 (polygon F.Cu 0  50000 -70000  70000 -70000  70000 -80000  50000 -80000
+            50000 -70000)
+      (window (polygon F.Cu 0  55000 -73000  60000 -73000  60000 -77000  55000 -77000
+            55000 -73000))
+    )
+    (plane N2 (polygon B.Cu 0  50000 -70000  70000 -70000  70000 -80000  50000 -80000
+            50000 -70000)
+      (window (polygon B.Cu 0  55000 -73000  60000 -73000  60000 -77000  55000 -77000
+            55000 -73000))
+    )
+    (plane @:no_net_0 (polygon In1.Cu 0  80000 -70000  100000 -70000  100000 -80000  80000 -80000
+            80000 -70000))
+    (plane @:no_net_1 (polygon In1.Cu 0  110000 -70000  130000 -70000  130000 -80000  110000 -80000
+            110000 -70000))
+    (plane @:no_net_2 (polygon In2.Cu 0  110000 -70000  130000 -70000  130000 -80000  110000 -80000
+            110000 -70000))
+    (keepout "" (polygon F.Cu 0  110000 -20000  120000 -20000  120000 -30000  110000 -30000
+            110000 -20000))
+    (keepout "" (polygon F.Cu 0  95000 -20000  105000 -20000  105000 -30000  95000 -30000
+            95000 -20000))
+    (wire_keepout "" (polygon F.Cu 0  125000 -20000  135000 -20000  135000 -30000  125000 -30000
+            125000 -20000))
+    (keepout "" (polygon F.Cu 0  20000 -20000  30000 -20000  30000 -30000  20000 -30000
+            20000 -20000))
+    (wire_keepout "" (polygon F.Cu 0  50000 -20000  60000 -20000  60000 -30000  50000 -30000
+            50000 -20000))
+    (keepout "" (polygon F.Cu 0  35000 -40000  45000 -40000  45000 -50000  35000 -50000
+            35000 -40000)
+      (window (polygon F.Cu 0  38000 -43000  41000 -43000  41000 -46000  38000 -46000
+            38000 -43000))
+    )
+    (keepout "" (polygon F.Cu 0  65000 -20000  75000 -20000  75000 -30000  65000 -30000
+            65000 -20000))
+    (via_keepout "" (polygon F.Cu 0  35000 -20000  45000 -20000  45000 -30000  35000 -30000
+            35000 -20000))
+    (via_keepout "" (polygon B.Cu 0  35000 -20000  45000 -20000  45000 -30000  35000 -30000
+            35000 -20000))
+    (keepout "" (polygon F.Cu 0  20000 -40000  30000 -40000  30000 -50000  20000 -50000
+            20000 -40000))
+    (keepout "" (polygon B.Cu 0  20000 -40000  30000 -40000  30000 -50000  20000 -50000
+            20000 -40000))
+    (keepout "" (polygon F.Cu 0  155000 -20000  165000 -20000  165000 -30000  155000 -30000
+            155000 -20000))
+    (keepout "" (polygon B.Cu 0  155000 -20000  165000 -20000  165000 -30000  155000 -30000
+            155000 -20000))
+    (keepout "" (polygon In1.Cu 0  155000 -20000  165000 -20000  165000 -30000  155000 -30000
+            155000 -20000))
+    (keepout "" (polygon In2.Cu 0  155000 -20000  165000 -20000  165000 -30000  155000 -30000
+            155000 -20000))
+    (keepout "" (polygon B.Cu 0  140000 -20000  150000 -20000  150000 -30000  140000 -30000
+            140000 -20000))
+    (keepout "" (polygon B.Cu 0  80000 -20000  90000 -20000  90000 -30000  80000 -30000
+            80000 -20000))
+    (via_keepout "" (polygon In1.Cu 0  50000 -40000  60000 -40000  60000 -50000  50000 -50000
+            50000 -40000))
+    (via_keepout "" (polygon In2.Cu 0  50000 -40000  60000 -40000  60000 -50000  50000 -50000
+            50000 -40000))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component syn:Area
+      (place A0 30000 -100000 front 0 (PN area))
+      (place B0 30000 -125000 back 0 (PN area))
+    )
+    (component syn:Area::1
+      (place A135 90000 -100000 front 135 (PN area))
+      (place B135 90000 -125000 back 225 (PN area))
+    )
+    (component syn:Area::2
+      (place A30 60000 -100000 front 30 (PN area))
+      (place B30 60000 -125000 back 330 (PN area))
+    )
+    (component syn:Two
+      (place U1 100000 -125000 front 0 (PN V))
+    )
+    (component syn:Copper
+      (place C1 150000 -100000 front 0 (PN copper))
+    )
+  )
+  (library
+    (image syn:Area
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 1 0 0)
+      (keepout "" (polygon F.Cu 0  3000 4000  9000 4000  9000 -4000  3000 -4000  3000 4000))
+    )
+    (image syn:Area::1
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 1 0 0)
+      (wire_keepout "" (polygon F.Cu 0  3000 4000  9000 4000  9000 -4000  3000 -4000  3000 4000))
+      (wire_keepout "" (polygon In1.Cu 0  3000 4000  9000 4000  9000 -4000  3000 -4000  3000 4000))
+    )
+    (image syn:Area::2
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 1 0 0)
+      (via_keepout "" (polygon F.Cu 0  3000 4000  9000 4000  9000 -4000  3000 -4000  3000 4000)
+        (window (polygon F.Cu 0  4500 1000  6500 1000  6500 -1000  4500 1000))
+      )
+      (via_keepout "" (polygon B.Cu 0  3000 4000  9000 4000  9000 -4000  3000 -4000  3000 4000)
+        (window (polygon F.Cu 0  4500 1000  6500 1000  6500 -1000  4500 1000))
+      )
+    )
+    (image syn:Two
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 1 0 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 2 4000 0)
+    )
+    (image syn:Copper
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 1 0 0)
+    )
+    (padstack Rect[T]Pad_1500.000000x1500.000000_um
+      (shape (rect F.Cu -750 -750 750 750))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle In2.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net @:no_net_0
+    )
+    (net @:no_net_1
+    )
+    (net @:no_net_2
+    )
+    (net N1
+      (pins A0-1 A135-1 A30-1 U1-1 B135-1 B0-1 B30-1)
+    )
+    (net N2
+      (pins U1-2 C1-1)
+    )
+    (class kicad_default N1 N2
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

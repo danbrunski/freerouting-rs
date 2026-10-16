@@ -7,7 +7,7 @@ images, padstacks and placements. It follows KiCad's own DSN exporter
 (`pcbnew/specctra_import_export/specctra_export.cpp` at tag `10.0.0`) so that
 `build_board` of the reader's tree and `build_board` of KiCad's export give the
 same board, which K07 checks. Copper items (rule areas, zones, tracks, vias)
-are [K06](../K06-kicad-pcb-rule-areas-and-copper.md).
+are [K06](K06-kicad-pcb-rule-areas-and-copper.md).
 
 Prerequisites: [K04](K04-kicad-pcb-syntax.md) (tree, header, net table,
 corpus, reference exports). [F04](F04-provenance.md) only for an item that

@@ -339,6 +339,7 @@ fn footprint_reference_errors() {
     };
     let strict = freerouting_kicad::ReadOptions {
         strict_references: true,
+        ..Default::default()
     };
     let e = freerouting_kicad::read_with("b.dsn", &mini_board(&fp("", "10k")), None, strict)
         .unwrap_err();

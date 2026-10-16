@@ -37,7 +37,6 @@ pub(crate) fn canonical_keyword(text: &str) -> String {
         "comp" => "component",
         "poly" => "polygon",
         "rectangle" => "rect",
-        "wire_keepout" => "keepout",
         "prefered_direction" => "preferred_direction",
         "prefered_direction_trace_costs" => "preferred_direction_trace_costs",
         "against_prefered_direction_trace_costs" => "against_preferred_direction_trace_costs",

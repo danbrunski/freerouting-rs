@@ -102,7 +102,7 @@ impl Parser<'_> {
                     "layer" => structure.layers.push(self.layer_scope()?),
                     "via" => structure.via = Some(self.via_padstacks("via")?),
                     "rule" => structure.rules.extend(self.rule_scope()?),
-                    "keepout" | "via_keepout" | "place_keepout" => {
+                    "keepout" | "wire_keepout" | "via_keepout" | "place_keepout" => {
                         if let Some(keepout) = self.keepout_scope(&keyword, pos)? {
                             structure.keepouts.push(keepout);
                         }
@@ -194,6 +194,7 @@ impl Parser<'_> {
     fn keepout_scope(&mut self, keyword: &str, pos: Pos) -> Result<Option<Keepout>> {
         let kind = match keyword {
             "keepout" => KeepoutKind::Keepout,
+            "wire_keepout" => KeepoutKind::WireKeepout,
             "via_keepout" => KeepoutKind::ViaKeepout,
             _ => KeepoutKind::PlaceKeepout,
         };
@@ -250,7 +251,7 @@ impl Parser<'_> {
                         image.outlines.extend(shape);
                         self.finish_scope("outline")?;
                     }
-                    "keepout" | "via_keepout" | "place_keepout" => {
+                    "keepout" | "wire_keepout" | "via_keepout" | "place_keepout" => {
                         if let Some(keepout) = self.keepout_scope(&keyword, pos)? {
                             image.keepouts.push(keepout);
                         }

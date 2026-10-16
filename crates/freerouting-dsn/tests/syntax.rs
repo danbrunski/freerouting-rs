@@ -206,7 +206,7 @@ fn full_design() {
             KeepoutKind::Keepout,
             KeepoutKind::ViaKeepout,
             KeepoutKind::PlaceKeepout,
-            KeepoutKind::Keepout
+            KeepoutKind::WireKeepout
         ]
     );
     assert_eq!(s.keepouts[0].area.name.as_deref(), Some("k 1"));
@@ -365,6 +365,38 @@ fn full_design() {
         WireType::Other("route".into()).fixed_state(),
         FixedState::UserFixed
     );
+}
+
+/// K06.1: `wire_keepout` is its own kind in the structure and image scopes and is written
+/// back as `wire_keepout`; in a place scope (names only) it reads as `keepout`.
+#[test]
+fn wire_keepout_keeps_its_kind() {
+    let pcb = parse(
+        "(pcb x (structure (WIRE_KEEPOUT \"a\" (rect B.Cu 0 0 1 1)) (keepout (rect B.Cu 0 0 2 2)) \
+         (wire_keepout (rect F.Cu 0 0 3 3))) \
+         (placement (component img (place U1 1 2 front 0 (wire_keepout k (clearance_class big))))) \
+         (library (image img (wire_keepout (rect F.Cu 0 0 1 1)) (keepout (rect F.Cu 0 0 2 2)))))",
+    );
+    let s = pcb.structure.as_ref().unwrap();
+    let kinds: Vec<_> = s.keepouts.iter().map(|k| k.kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            KeepoutKind::WireKeepout,
+            KeepoutKind::Keepout,
+            KeepoutKind::WireKeepout
+        ]
+    );
+    assert_eq!(s.keepouts[0].area.name.as_deref(), Some("a"));
+    let image = &pcb.library.as_ref().unwrap().images[0];
+    assert_eq!(image.keepouts[0].kind, KeepoutKind::WireKeepout);
+    assert_eq!(image.keepouts[1].kind, KeepoutKind::Keepout);
+    let place = &pcb.placement.as_ref().unwrap().components[0].places[0];
+    assert_eq!(place.keepouts.len(), 1);
+    assert_eq!(place.keepouts[0].name, "k");
+    let text = pcb.to_dsn();
+    assert_eq!(text.matches("(wire_keepout").count(), 3, "{text}");
+    assert_eq!(KeepoutKind::WireKeepout.keyword(), "wire_keepout");
 }
 
 #[test]

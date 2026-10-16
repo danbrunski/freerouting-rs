@@ -23,7 +23,23 @@
 //!   and [`classes`] (net classes from the [`project`] file), [`outline`] (the
 //!   board outline), [`footprints`] and [`pads`] (images, padstacks, pins),
 //!   [`image_outlines`] (courtyards and graphics) and [`arc`] (KiCad's
-//!   arc-to-polyline arithmetic). K06 adds keepouts, planes and wiring.
+//!   arc-to-polyline arithmetic).
+//! - K06 adds the copper: [`zones`] reads `(zone ...)`; [`rule_areas`] maps rule
+//!   areas to keepouts by their flags; copper zones become planes
+//!   ([`zones::make_plane`]); [`tracks`] merges segments and arcs into wires;
+//!   [`vias`] reads vias and their padstacks. [`report`] says what the reader
+//!   decided ([`ReadReport`], in [`KicadRead::report`]).
+//!
+//! Rule areas are the main departure from KiCad's export, which makes a full
+//! `keepout` of any area that bans neither tracks nor vias. The reader maps by
+//! flags: tracks and vias give `keepout`, vias only `via_keepout`, tracks only
+//! `wire_keepout` (built as a keepout, as Java does, with a warning), and an
+//! area that bans footprints also gets a `place_keepout`; an area that bans only
+//! pads, copper pour or nothing emits no keepout and warns. Track arcs follow
+//! the curve instead of KiCad's chord, copper zones owned by footprints stay
+//! planes (`ReadOptions::drop_footprint_zones` restores KiCad's behaviour), and
+//! the vias of net classes come in project order. `docs/DIVERGENCES.md` lists
+//! each with its test.
 //!
 //! Parity with KiCad is tested against `fixtures/kicad/*/*.kicad10.dsn`, the
 //! DSN KiCad 10.0.7 writes for each board (`tests/structure.rs`). Deviations:
@@ -75,8 +91,14 @@ pub mod outline;
 pub mod pads;
 pub mod project;
 pub mod read;
+pub mod report;
+pub mod rule_areas;
 pub mod sexpr;
+pub mod tracks;
 pub mod units;
+pub mod vias;
+pub mod zones;
 
 pub use error::{ErrorKind, KicadError, Warning};
 pub use read::{DieLength, Extras, KicadRead, ReadOptions, read, read_named, read_with};
+pub use report::ReadReport;

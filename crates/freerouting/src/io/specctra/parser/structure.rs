@@ -128,6 +128,14 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
     for keepout in &structure.keepouts {
         let index = match keepout.kind {
             ast::KeepoutKind::Keepout => 0,
+            // Java reads `wire_keepout` as `keepout`; K06.1.
+            ast::KeepoutKind::WireKeepout => {
+                ctx.log(format!(
+                    "wire_keepout on layer {} is treated as a keepout and also blocks vias",
+                    keepout.area.shape.layer().name()
+                ));
+                0
+            }
             ast::KeepoutKind::ViaKeepout => 1,
             ast::KeepoutKind::PlaceKeepout => 2,
         };

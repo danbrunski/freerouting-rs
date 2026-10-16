@@ -9,7 +9,7 @@ over the island would also bar the GND and power vias that must pass through
 it. What's wanted is an area that bars traces but allows vias.
 
 Specctra has exactly that, `wire_keepout`, and KiCad exports a rule area that
-bans only tracks as one ([K06](K06-kicad-pcb-rule-areas-and-copper.md)). But
+bans only tracks as one ([K06](archive/K06-kicad-pcb-rule-areas-and-copper.md)). But
 Java lexes `wire_keepout` as a plain `keepout`
 (`SpecctraFileDescription.flex:201` at `cda540f`), and so does freerouting-dsn
 (`canonical_keyword` in `src/parse/mod.rs`). A Java probe at `cda540f`

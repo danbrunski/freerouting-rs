@@ -15,7 +15,7 @@ needs neither `ExportSpecctraDSN` nor KiCad's exporter. Bringing the result
 back still needs `ImportSpecctraSES` or the optional writer
 ([K08](K08-kicad-pcb-writer.md)).
 
-Prerequisites: [K06](K06-kicad-pcb-rule-areas-and-copper.md). K07.2 needs
+Prerequisites: [K06](archive/K06-kicad-pcb-rule-areas-and-copper.md). K07.2 needs
 [C07](C00-cli-settings-io-README.md) (CLI argument handling, which owns
 `crates/freerouting-cli`) and [G01](archive/G01-session-and-test-harness.md) (the
 GUI's `Session`); without them it is partial. K07.4 needs
