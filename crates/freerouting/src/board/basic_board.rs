@@ -2098,7 +2098,11 @@ impl BasicBoard {
                         break;
                     }
                 }
-                result.insert(current_id);
+                if !result.insert(current_id) {
+                    // back at an item already collected: the connection is
+                    // a cycle (Java 588320207, after the pin)
+                    break;
+                }
                 let mut next: Option<(ItemId, Point, i32)> = None;
                 let mut fork_found = false;
                 for tmp_id in self.normal_contacts(current_id) {

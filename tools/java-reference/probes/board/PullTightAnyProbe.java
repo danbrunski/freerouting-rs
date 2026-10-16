@@ -130,13 +130,12 @@ public class PullTightAnyProbe {
       "Issue508-DAC2020_bm05");
   // board set: 41 boards
 
-  /** Boards whose {@code board-none} run never returns, with the reason. */
-  static final java.util.Map<String, String> BOARD_SKIP =
-      java.util.Map.of(
-          "Issue756-minimal-hang",
-          "optChangedArea -> smoothenEndCornersAtTrace1 -> splitTraces -> PolylineTrace.split ->"
-              + " removeIfCycle -> getConnectionItems doesn't return (jstack after 40 s, also"
-              + " with a 100 ms work limit: no stop check inside)");
+  /**
+   * Boards whose {@code board-none} run never returns. Empty since 588320207 (after the pin
+   * a773a70ec), which made {@code Item.getConnectionItems} stop at an already collected item;
+   * {@code Issue756-minimal-hang} used to loop there.
+   */
+  static final java.util.Map<String, String> BOARD_SKIP = java.util.Map.of();
 
   static final String J2 = "Issue026-J2_reference";
 

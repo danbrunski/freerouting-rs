@@ -402,12 +402,16 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   `SKIP_LENGTH`, at a bend with a contact trace: Java calls `repositionLine` with start index
   `-1` and throws an `ArrayIndexOutOfBoundsException` that nothing catches; the port returns no
   smoothing (`optimize::tighten::any_angle` module docs). No probe board reaches it.
-- Java behaviour kept on purpose: on `Issue756-minimal-hang` with its routed session and the
-  restriction forced to `None`, `opt_changed_area` never returns, in Java and in Rust, with or
-  without a work limit: after the first trace's end smoothing, `split_traces` (Java
-  `BasicBoard.splitTraces -> PolylineTrace.split -> removeIfCycle -> getConnectionItems`)
-  doesn't end, and it has no stop check. `board_none_matches_java` lists the board as an
-  expected mismatch with the stacks of both (`NONE_EXPECTED_MISMATCHES`).
+- Follows Java 588320207, which is after the pin a773a70ec: `connection_items` (Java
+  `Item.getConnectionItems`) stops at the first item already collected. At the pin the walk looped
+  forever on a closed ring with no fork, so on `Issue756-minimal-hang` with its routed session (a
+  second copy of each wire) and the restriction forced to `None`, `opt_changed_area` never
+  returned, in Java and in Rust (`split_traces -> removeIfCycle`). The returned set is unchanged
+  wherever the old walk finished. The `pull-tight-any` reference of that board
+  (`fixtures/reference/probe/pull-tight-any/Issue756-minimal-hang.jsonl`, `javaCommit`
+  588320207) comes from 588320207, not the pin; pull-tight removes all four traces.
+  `board_none_matches_java` has no expected mismatch any more; the ring is pinned by
+  `any_angle_tightener_cycle` in `tests/java_ports.rs`.
 - Java bugs kept on purpose (`optimize::pull_tight` module docs): the end-corner smoothing
   removes the trace before it inserts the smoothed copy and leaves it removed when the
   insertion fails (fewer than two corners, or zero length and unfixed), then removes the old

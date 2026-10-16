@@ -20,8 +20,8 @@
 //! - `steps_none`, `ends_none`, `board_none` (O02): the same with the
 //!   restriction forced to `None`, against probe `pull-tight-any`
 //!   (`PullTightAnyProbe.java`, `fixtures/reference/probe/pull-tight-any/`);
-//!   `Issue756-minimal-hang` is an expected mismatch of `board_none`
-//!   ([`NONE_EXPECTED_MISMATCHES`]).
+//!   `board_none` has no expected mismatch ([`NONE_EXPECTED_MISMATCHES`]);
+//!   the reference of `Issue756-minimal-hang` comes from Java 588320207.
 //!
 //! The board-level modes first unfix every trace and via, because the
 //! session import makes them user-fixed (Java's `SesReader` too).
@@ -635,22 +635,13 @@ const PIN_EXIT_BOARDS: [&str; 3] = [
     "Issue143-rpi_splitter",
 ];
 const LIMIT_MS: i64 = 1;
-/// Expected mismatches of `board_none_matches_java` (O02.3), with the
-/// cause; `PullTightAnyProbe.BOARD_SKIP` leaves the same boards out.
-///
-/// `Issue756-minimal-hang`: neither Java nor Rust returns. Bisected to the
-/// first trace the scan reaches: its pull-tight changes nothing, its end
-/// smoothing succeeds, and then `split_traces` at the smoothed trace's end
-/// corner (Java `smoothenEndCornersAtTrace1 -> BasicBoard.splitTraces ->
-/// PolylineTrace.split -> removeIfCycle -> getConnectionItems`) doesn't
-/// return. Java's stack (`jstack` after 40 s) and Rust's (`gdb` after 3, 12
-/// and 25 s) are in that call; a 100 nominal ms work limit doesn't help,
-/// because the call has no stop check (one stop check in 40 s). The board
-/// isn't run.
-const NONE_EXPECTED_MISMATCHES: [(&str, &str); 1] = [(
-    "Issue756-minimal-hang",
-    "split_traces after the end smoothing doesn't return, in Java and Rust",
-)];
+/// Expected mismatches of `board_none_matches_java` (O02.3): none. Until
+/// 588320207 (after the pin a773a70ec) `Issue756-minimal-hang` was one: Java's
+/// `Item.getConnectionItems` never stopped on a closed ring, so `split_traces`
+/// after the end smoothing (`removeIfCycle`) looped, in Java and in Rust. The
+/// port now stops at the first item already collected, as 588320207 does,
+/// and that board's `pull-tight-any` reference comes from 588320207.
+const NONE_EXPECTED_MISMATCHES: [(&str, &str); 0] = [];
 
 /// The default tree's fingerprint line, as `TreeOpsProbe.hash` writes it.
 fn tree_line(stage: &str, board: &RoutingBoard) -> String {

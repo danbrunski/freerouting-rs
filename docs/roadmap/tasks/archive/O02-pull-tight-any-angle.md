@@ -113,6 +113,11 @@ dispatch.
   end. Java's `jstack` after 40 s and Rust's `gdb` stacks at 3, 12 and 25 s are in that call; a
   100 nominal ms work limit doesn't fire (one stop check in 40 s), so the probe skips the board
   (`BOARD_SKIP`).
+  *Addendum 2026-10-16:* the hang is fixed by Java 588320207 (after the pin): the connection
+  walk stops at the first item already collected. The port follows it (`connection_items`), the
+  board left `BOARD_SKIP` and `NONE_EXPECTED_MISMATCHES`, and its `pull-tight-any` reference was
+  regenerated from 588320207 (all four traces removed). `board_none_matches_java` is now equal on
+  41 of 41 boards; `any_angle_tightener_cycle` in `tests/java_ports.rs` pins the ring.
 
 - [x] **O02.4 — Termination under a budget.**
   - Build a synthetic one-layer board in the test (no fixture file) with a

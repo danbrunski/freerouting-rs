@@ -1107,3 +1107,62 @@ mod dialog_interaction_handlers {
         assert!(!board.rules.net_classes.get(class).is_ignored_by_autorouter);
     }
 }
+
+/// `AnyAngleTightenerCycleTest` (Java 588320207, after the pin a773a70ec):
+/// `connectionItemsOfAClosedRingReturnEveryTraceOnce`. The walk of
+/// `connection_items` stops at the first item already collected, so a closed
+/// ring of three traces with no fork returns each trace once instead of
+/// looping.
+///
+/// Not ported: `anyAngleTightenerReturnsWithDuplicatedWires` (the fixture's
+/// wires imported a second time, angle restriction `None`, `opt_changed_area`
+/// returns). `board_none_matches_java` in `tests/reference_pull_tight.rs`
+/// runs the same board and compares it with the Java reference from 588320207.
+mod any_angle_tightener_cycle {
+    use super::*;
+    use freerouting::board::items::StopConnectionOption;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    #[test]
+    fn connection_items_of_a_closed_ring_return_every_trace_once() {
+        let (tx, rx) = mpsc::channel();
+        // A walk that does not stop never returns; run it on its own thread so
+        // that the test fails instead of hanging.
+        std::thread::spawn(move || {
+            let mut board = one_layer_board(2_000_000);
+            let ring = [
+                ip(950_000, 420_000),
+                ip(1_050_000, 420_000),
+                ip(1_000_000, 370_000),
+            ];
+            let traces: Vec<ItemId> = (0..ring.len())
+                .map(|i| {
+                    let polyline = Polyline::from_points(&[
+                        ring[i].clone(),
+                        ring[(i + 1) % ring.len()].clone(),
+                    ]);
+                    board
+                        .insert_trace_without_cleaning(
+                            polyline,
+                            0,
+                            100,
+                            &[1],
+                            0,
+                            FixedState::Unfixed,
+                        )
+                        .expect("ring trace")
+                })
+                .collect();
+            let first = traces[0];
+            let items = board.connection_items(first, StopConnectionOption::None);
+            let expected: BTreeSet<ItemId> = traces.into_iter().collect();
+            tx.send((items, expected)).ok();
+        });
+        let (items, expected) = rx
+            .recv_timeout(Duration::from_secs(10))
+            .expect("connection_items returns on a closed ring");
+        assert_eq!(items.len(), 3);
+        assert_eq!(items, expected);
+    }
+}
