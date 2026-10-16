@@ -8,7 +8,7 @@ defines the traits and the registry, and ports the decision logic of the pipelin
 needs no router: the pass controller's stop and restore rules, item selection and
 ordering with the seeded shuffle, the ripup cost schedule, the fanout ordering and stop
 rules, and the unrouted report. All of it is testable with synthetic inputs
-([A00](A00-autorouter-README.md); pipeline report P7).
+([A00](../A00-autorouter-README.md); pipeline report P7).
 
 **Prerequisites:**
 - C02 (the settings model; this checklist appends the stage keys to it) and C03.7
@@ -123,13 +123,24 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
 
 ## Checklist
 
-- [ ] **A10.1 — Traits and types.** `stages.rs` as in the decisions, with doc comments that
+- [x] **A10.1 — Traits and types.** `stages.rs` as in the decisions, with doc comments that
   state each trait's contract: what it may change on the board, what it must reset on
   `reset()` (state keyed by `ItemId` or net, because a restore brings back old ids), and
   that budgets are work, never time.
   - **Accept:** the crate builds; a doc test shows a minimal custom `NetOrdering`.
 
-- [ ] **A10.2 — Registry and selection.** `StageRegistry::builtin()`,
+  *Done 2026-10-16:* `crates/freerouting/src/autoroute/stages.rs`: the nine traits with
+  their contracts in the doc comments (what each may change, `reset` for id/net-keyed
+  state, work budgets never time), `StageCtx` (`events` is `&dyn RouterEvents`, so
+  `NullEvents` works), `RouteTask`, `ConnectionParams`, `ConnectionOutcome`,
+  `FailureRecord` (a placeholder A04 extends), `WorkStats`, `PassReport` (plus
+  `incomplete_nets` for the ordering), `StagePhase`, `Destinations`. `PassController` gets
+  `before_pass(pass, timed_out)` and `after_action(&ActionOutcome)`, the driver's report
+  of a restore, fanout recovery or last-mile ripup, because Java's later rules read the
+  board those actions leave. The crate builds; the doc test on `NetOrdering` (a custom
+  ordering) passes: `cargo test -p freerouting --doc autoroute` (1 passed).
+
+- [x] **A10.2 — Registry and selection.** `StageRegistry::builtin()`,
   `StageSelection::from_settings`, `StageRegistry::build(&selection) -> Result<Pipeline,
   UnknownStage>`. Append the per-stage keys to C02's settings as `Option<String>` (and a
   list for `router.special.stages`) with no default other than "use the bundle".
@@ -141,7 +152,24 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
     - a test-only `reverse-ordering` registered in the test changes the task order and is
       named in the resolved selection.
 
-- [ ] **A10.3 — `FreeroutingPassController`.** The decision logic of
+  *Done 2026-10-16:* in `autoroute/stages/registry.rs` (re-exported from `stages`, which
+  stays under 800 lines): `StageRegistry::builtin()`, `StageSelection::from_settings` /
+  `resolve(settings, registry)`, `StageRegistry::build(&selection, &settings) ->
+  Result<Pipeline, UnknownStage>`; factories take `&RouterSettings`. Stage keys appended
+  to `settings/fields.rs` as `opt` fields with no default: `fanout.algorithm`,
+  `autorouter.{ordering, connection_router, ripup_policy, pass_controller}`, new section
+  `special` (`plane_taps`, `neck_down`, `stages: Vec<String>`); `tests/settings_defaults.rs`
+  lists them (it must list every table entry). Unported Freerouting ids
+  (`freerouting-connection`, `-plane-taps`, `-neck-down`, `-fanout`, `-optimizer`) are
+  `NotPorted` placeholders that A11/A12/O06 replace. `StageSelection::entries()` gives
+  `RunSummary.stages`. Tests in `CARGO_TARGET_DIR=<scratch> cargo test -p freerouting --test autoroute_batch_control` (39 passed): `unknown_algorithm_normalizes_to_current`,
+  `legacy_algorithm_token_normalizes_to_current`, `canonical_algorithm_remains_unchanged`
+  (the ported Java test), `unknown_per_stage_id_is_an_error_naming_the_key_and_the_known_ids`,
+  `registered_test_ordering_changes_the_task_order_and_is_named`,
+  `default_selection_builds_the_freerouting_bundle`,
+  `unknown_optimizer_algorithm_warns_and_defaults`, `listed_board_stages_are_built_in_order`.
+
+- [x] **A10.3 — `FreeroutingPassController`.** The decision logic of
   `AutorouteBatchLoop.run` (`:313-645`), with no board inside: the driver (A13) feeds it a
   `PassReport { pass, continue_routing, score: f32, incomplete, router_stop_requested,
   timed_out, history_size, history_max_score }`. Rules, all `// PARITY:`:
@@ -170,7 +198,20 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
     equal scores never restore; fanout recovery fires once; last-mile fires at most twice;
     `max_passes = 2` stops before pass 3; an exhausted history stops.
 
-- [ ] **A10.4 — `FreeroutingOrdering`.**
+  *Done 2026-10-16:* `autoroute/batch/control.rs`, `FreeroutingPassController`, every
+  rule `// PARITY:` with its `AutorouteBatchLoop.java` line at `a773a70ec`; also the
+  `BOARD_RANK_LIMIT` stop (`:376-381`) and the restore under a router stop. A scripted
+  driver in `CARGO_TARGET_DIR=<scratch> cargo test -p freerouting --test autoroute_batch_control` (39 passed) feeds synthetic score sequences: `flat_score_stops_at_pass_18_without_restoring`
+  (pass-local stop at 18, no restore, last-mile at 11 and 12),
+  `global_tracker_stops_a_flat_score_at_pass_18` (counter reset by ripups, global stop at
+  18), `score_drop_at_pass_8_restores`, `fanout_recovery_fires_once` (pass 11 only),
+  `last_mile_needs_few_incompletes`, `max_passes_stops_before_the_next_pass`,
+  `exhausted_history_stops`, `restored_board_past_the_rank_limit_stops`,
+  `timed_out_pass_requests_a_stop_and_checks_restore`,
+  `completed_pass_stops_without_a_router_stop`,
+  `finish_restores_the_best_board_and_removes_tails`, `improvement_threshold_is_added_in_f32`.
+
+- [x] **A10.4 — `FreeroutingOrdering`.**
   - `select` = `BatchAutorouter.getAutorouteItems` (`:353-440`): walk the item list
     (descending id); connectable items that are not routable (pins, conduction areas,
     fixed traces and vias); skip items already handled (members of an earlier item's
@@ -195,7 +236,19 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
     - a unit test of the shuffle against values Java prints for seed
       `2 * 1000003 + 40`.
 
-- [ ] **A10.5 — `FreeroutingRipupPolicy`.** `ripup_cost`: autoroute `start * pass`
+  *Done 2026-10-16:* `autoroute/batch/ordering.rs` (`select_items`, `is_plane_item`,
+  `FreeroutingOrdering`). The probe is `tools/java-reference/probes/batch/BatchProbe.java`,
+  kind `items`, not `AutorouteProbe.java`/`fixtures.tsv`: A01 has not created them, and its
+  output is committed under `crates/freerouting/tests/data/batch_probe/items/` because
+  `fixtures/reference/**` belongs to J01. Generated at `a773a70ec` (header `javaCommit`
+  checked by the test): select, then pass 2 sorted, pass 2 with the load-time incomplete
+  nets, passes 2 and 3 with `stagnationCount = 2`. `items_probe_j2`,
+  `items_probe_dac2020_bm01`, `items_probe_z10_plane_board` (83 plane items) equal, and the
+  Rust incomplete nets equal Java's. `pass_shuffle_matches_java`: Java prints
+  `Collections.shuffle(0..39, new Random(2000046))` (`BatchProbe.java shuffle 2000046 40`),
+  Rust equal. Also `ordering_state_counts_stagnation_and_resets`. All in `CARGO_TARGET_DIR=<scratch> cargo test -p freerouting --test autoroute_batch_control` (39 passed).
+
+- [x] **A10.5 — `FreeroutingRipupPolicy`.** `ripup_cost`: autoroute `start * pass`
   (`AutorouteConnectionRouter.java:46`); fanout `start * (pass + 1)` with pass counted
   from 0, or -1 when fanout ripup is off (`BatchFanout.fanoutPass`); the optimizer's
   factors belong to O06. `strict_check(pass, strict_drc) = strict_drc || pass >= 3`
@@ -206,7 +259,15 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
   - **Accept:** unit tests for each rule; `after_failure` on a fixture removes exactly the
     expected ids.
 
-- [ ] **A10.6 — Fanout ordering and stop rules.** Pure helpers for A12:
+  *Done 2026-10-16:* `autoroute/batch/ripup_policy.rs`. `CARGO_TARGET_DIR=<scratch> cargo test -p freerouting --test autoroute_batch_control` (39 passed): `ripup_cost_schedule`
+  (autoroute `start * pass`, fanout `start * (pass + 1)`, -1 with fanout ripup off, int
+  wrap), `strict_check_from_pass_3`, `after_failure_rips_the_net_on_the_second_failure` (J2
+  with Java's session, wires unfixed except ids divisible by 5: the second failure removes
+  exactly the unfixed single-net traces and vias in `connectable_items` order, the fixed
+  ones stay, the first failure removes nothing), `after_failure_keeps_user_fixed_wires`
+  (Issue957's `(type route)` wires are user-fixed, as Java's `Wiring.calcFixed`).
+
+- [x] **A10.6 — Fanout ordering and stop rules.** Pure helpers for A12:
   - components (`BatchFanout.Component`, `:693-777`): SMD pins with a net and no ignored
     nets; the centre of gravity of the component's SMD pins summed in pin-list order;
     order by SMD pin count descending, then component id;
@@ -220,7 +281,17 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
   - **Accept:** port `autoroute/pipeline/FanoutRetryTest`; table tests for the stop rules;
     a pin-order probe kind `fanout-order` on `Issue558-dev-board` equal.
 
-- [ ] **A10.7 — Reports and small checks.**
+  *Done 2026-10-16:* `autoroute/batch/fanout_rules.rs` (`fanout_components`,
+  `PinSortingOrder`, `retry_fanout`, `FanoutPassTracker`). `CARGO_TARGET_DIR=<scratch> cargo test -p freerouting --test autoroute_batch_control` (39 passed):
+  `retries_until_the_component_escapes_something_else` (the ported `FanoutRetryTest`),
+  `fanout_pass_loop_stop_rules` (table: 0 pins, 3 identical `(routed << 32) ^ vias`,
+  reset on change, unchanged hash, deadline, `max_items`), `pin_sorting_order_names`,
+  `fanout_order_probe_dev_board`: `BatchProbe.java` kind `fanout-order` on
+  `Issue558-dev-board` for `outer_first`, `inner_first`, `distanceToClosestOnNet`,
+  `surroundingsDensity` and `distance_to_closest_on_net`; component order, pin order,
+  centres, distances and densities bit-equal.
+
+- [x] **A10.7 — Reports and small checks.**
   - `AutorouteUnroutedReport.build` as text, and the diagnostics `BoardStage` that logs it.
   - `LastMileBlockerRipup.corridor` (`max(span / 4, 1)` margin) and `is_removable_blocker`
     (traces and vias only, not deletion-forbidden, not user-fixed, not on the airline's
@@ -230,3 +301,11 @@ rules, and the unrouted report. All of it is testable with synthetic inputs
   - **Accept:** port `autoroute/pipeline/FanoutSliceAndLastMileTest` (margin 100 for
     `(0,0)–(400,100)`) and `autoroute/RoutableLayersSafetyCheckTest`; a golden test of the
     report on `PCBench-retroreflectors-CONGFLOCK` with its load-time airlines.
+  *Done 2026-10-16:* `autoroute/batch/report.rs` (`unrouted_report`,
+  `UnroutedReportStage` = `freerouting-unrouted-report`, `corridor`,
+  `is_removable_blocker`, `check_routable_layers` / `NoRoutableLayer`). `CARGO_TARGET_DIR=<scratch> cargo test -p freerouting --test autoroute_batch_control` (39 passed):
+  `airline_corridor_covers_both_ends_and_a_margin` (ported `FanoutSliceAndLastMileTest`),
+  `routing_fails_when_all_layers_disabled` (ported `RoutableLayersSafetyCheckTest`, Java's
+  message), `unrouted_report_matches_java_on_congflock` (golden text from
+  `BatchProbe.java` kind `unrouted-report` at `a773a70ec`, 5 nets, 10 airlines),
+  `unrouted_report_of_a_complete_board`, `removable_blockers`, `corridor_margins`.

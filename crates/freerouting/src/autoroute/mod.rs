@@ -17,11 +17,22 @@
 //! - [`events`]: the router's progress events over a bounded channel, and
 //!   the two-level [`CancelToken`](events::CancelToken) (Java's
 //!   `StoppableThread`).
+//!
+//! The D9 stage pipeline (A10):
+//!
+//! - [`stages`]: the stage traits, the [`StageRegistry`](stages::StageRegistry)
+//!   and the [`StageSelection`](stages::StageSelection) read from the
+//!   settings;
+//! - [`batch`]: the Freerouting stages' decision logic that needs no
+//!   router: the pass controller, the item ordering with its seeded
+//!   shuffle, the ripup policy, the fanout rules and the unrouted report.
 
+pub mod batch;
 pub mod events;
 pub mod failure_log;
 pub mod history;
 pub mod item_route_result;
+pub mod stages;
 
 /// The possible results of autorouting a connection (Java
 /// `AutorouteAttemptState`).

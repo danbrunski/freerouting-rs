@@ -97,6 +97,7 @@ fn defaults_with_eight_cores() {
         ("fanout.pin_sorting_order", s("outer_first")),
         ("fanout.fallback_to_board_vias", b(true)),
         ("fanout.timeout", None),
+        ("fanout.algorithm", None),
         // optimizer.
         ("optimizer.enabled", b(true)),
         ("optimizer.algorithm", s("freerouting-optimizer")),
@@ -156,6 +157,14 @@ fn defaults_with_eight_cores() {
         ("optimizer_scoring.excess_bend_weight", f32v(500.0)),
         ("optimizer_scoring.length_floor", f32v(1.0)),
         ("optimizer_scoring.difficulty_scale_floor", f32v(1.0)),
+        // The A10.2 stage keys: no default.
+        ("autorouter.ordering", None),
+        ("autorouter.connection_router", None),
+        ("autorouter.ripup_policy", None),
+        ("autorouter.pass_controller", None),
+        ("special.plane_taps", None),
+        ("special.neck_down", None),
+        ("special.stages", None),
     ];
     let tabled: BTreeSet<&str> = FIELDS.iter().map(|f| f.path).collect();
     let listed: BTreeSet<&str> = expected.iter().map(|(p, _)| *p).collect();

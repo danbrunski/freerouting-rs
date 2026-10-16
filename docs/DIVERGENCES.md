@@ -192,6 +192,12 @@ branch 3 in IntOctagon's box cutout.
   Java.
 - `min_trace_width_um` (Java fork commit `46bf9e2ef`, after the pin) is a settings
   field, unset by default.
+- The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
+  (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
+  `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the
+  `special` section (`plane_taps`, `neck_down`, `stages`). An unknown id in them is an
+  error naming the key and the known ids; the two Java keys keep Java's warn-and-default
+  (`autoroute_batch_control.rs`, `unknown_per_stage_id_is_an_error_naming_the_key_and_the_known_ids`).
 - Floating point text: hexadecimal floating point literals (`0x1p3`) and Unicode
   decimal digits in `Integer.parseInt` are not accepted (`settings_text.rs`).
 - A rules file's `autoroute_settings` build their patch from the layer names found in

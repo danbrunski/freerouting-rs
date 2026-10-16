@@ -268,6 +268,14 @@ settings_table! {
                 Flat::Deprecated, true, "Save intermediate board snapshots between passes."),
             (ignore_net_classes, Vec<String>, req, Some(Vec::new()), Vec::new(), "ignoreNetClasses", [],
                 Flat::Deprecated, true, "Net class names the autorouter skips."),
+            (ordering, String, opt, None, None, "ordering", [], Flat::No, true,
+                "Net ordering stage id (A10.2); unset uses the `algorithm` bundle's."),
+            (connection_router, String, opt, None, None, "connectionRouter", [], Flat::No, true,
+                "Connection router stage id (A10.2); unset uses the `algorithm` bundle's."),
+            (ripup_policy, String, opt, None, None, "ripupPolicy", [], Flat::No, true,
+                "Ripup policy stage id (A10.2); unset uses the `algorithm` bundle's."),
+            (pass_controller, String, opt, None, None, "passController", [], Flat::No, true,
+                "Pass controller stage id (A10.2); unset uses the `algorithm` bundle's."),
         }
         fanout, FanoutPatch, FanoutSettings, "fanout",
         "Configuration of the SMD-pin fanout pre-pass." {
@@ -296,6 +304,8 @@ settings_table! {
                 "Fall back to the board's vias."),
             (timeout, String, opt, None, None, "timeoutString", [], Flat::No, true,
                 "Fanout time limit as `HH:mm:ss`, `mm:ss` or `ss`."),
+            (algorithm, String, opt, None, None, "algorithm", [], Flat::No, true,
+                "Fanout stage id (A10.2); unset is `freerouting-fanout`."),
         }
         optimizer, OptimizerPatch, OptimizerSettings, "optimizer",
         "Configuration of the post-route optimizer." {
@@ -400,6 +410,15 @@ settings_table! {
                 "Lower bound of the length."),
             (difficulty_scale_floor, f32, req, Some(1.0), 0.0, "difficultyScaleFloor", [], Flat::No, true,
                 "Lower bound of the difficulty scale."),
+        }
+        special, SpecialPatch, SpecialSettings, "special",
+        "Stage selection for the special stages (A10.2; not a Java section)." {
+            (plane_taps, String, opt, None, None, "planeTaps", [], Flat::No, true,
+                "Plane tap policy id; unset uses the `autorouter.algorithm` bundle's."),
+            (neck_down, String, opt, None, None, "neckDown", [], Flat::No, true,
+                "Neck-down policy id; unset uses the `autorouter.algorithm` bundle's."),
+            (stages, Vec<String>, opt, None, None, "stages", [], Flat::No, true,
+                "Extra board stage ids, run at each stage's phase in list order."),
         }
     }
 }
