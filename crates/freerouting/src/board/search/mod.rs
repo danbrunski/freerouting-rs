@@ -138,6 +138,12 @@ impl ShapeSearchTree {
         result.max(0)
     }
 
+    /// The underlying shape tree, for inspecting its shape (leaf order,
+    /// depths and bounds).
+    pub fn shape_tree(&self) -> &ShapeTree<ItemId> {
+        &self.tree
+    }
+
     /// True if `id` has entries in this tree.
     pub fn contains(&self, id: ItemId) -> bool {
         self.entries.contains_key(&id)

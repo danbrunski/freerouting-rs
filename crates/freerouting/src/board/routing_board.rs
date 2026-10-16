@@ -4,8 +4,9 @@ use std::ops::{Deref, DerefMut};
 
 use freerouting_geometry::{FloatPoint, IntBox, PolylineShape};
 
+use crate::autoroute::failure_log::FailureLog;
 use crate::board::basic_board::BasicBoard;
-use crate::board::items::ItemKind;
+use crate::board::items::{ItemId, ItemKind};
 use crate::board::state::{ChangedArea, Communication};
 use crate::board::structure::{FixedState, LayerStructure};
 use crate::rules::BoardRules;
@@ -16,9 +17,23 @@ use crate::rules::BoardRules;
 /// (autorouting, shoving, pull-tight optimization, forced traces and vias
 /// and the interactive operations), which belong to the router stage.
 /// It dereferences to the [`BasicBoard`].
+///
+/// `Clone` is not a Java copy (it keeps the search trees and the transient
+/// state); routing, history and optimizer code uses
+/// [`deep_copy`](Self::deep_copy) or a
+/// [`BoardSnapshot`](crate::board::BoardSnapshot).
 #[derive(Clone, Debug)]
 pub struct RoutingBoard {
     board: BasicBoard,
+    /// The obstacle responsible for the last shove to fail (Java
+    /// `shoveFailingObstacle`, transient).
+    shove_failing_obstacle: Option<ItemId>,
+    /// The layer of the last failed shove, -1 for none (Java
+    /// `shoveFailingLayer`, transient).
+    shove_failing_layer: i32,
+    /// The routing failures per item (Java `failureLog`, serialized with
+    /// the board, A08.2).
+    failure_log: FailureLog,
 }
 
 impl RoutingBoard {
@@ -30,21 +45,77 @@ impl RoutingBoard {
         rules: BoardRules,
         communication: Communication,
     ) -> Self {
+        RoutingBoard::from_basic(BasicBoard::new(
+            bounding_box,
+            layer_structure,
+            outline_shapes,
+            outline_clearance_class,
+            rules,
+            communication,
+        ))
+    }
+
+    /// A routing board around `board`, with no transient routing state.
+    pub(crate) fn from_basic(board: BasicBoard) -> Self {
         RoutingBoard {
-            board: BasicBoard::new(
-                bounding_box,
-                layer_structure,
-                outline_shapes,
-                outline_clearance_class,
-                rules,
-                communication,
-            ),
+            board,
+            shove_failing_obstacle: None,
+            shove_failing_layer: -1,
+            failure_log: FailureLog::new(),
         }
+    }
+
+    /// The obstacle responsible for the last shove to fail (Java
+    /// `getShoveFailingObstacle`).
+    pub fn shove_failing_obstacle(&self) -> Option<ItemId> {
+        self.shove_failing_obstacle
+    }
+
+    /// Java `setShoveFailingObstacle`.
+    pub fn set_shove_failing_obstacle(&mut self, item: Option<ItemId>) {
+        self.shove_failing_obstacle = item;
+    }
+
+    /// The layer of the last failed shove, -1 for none (Java
+    /// `getShoveFailingLayer`).
+    pub fn shove_failing_layer(&self) -> i32 {
+        self.shove_failing_layer
+    }
+
+    /// Java `setShoveFailingLayer`.
+    pub fn set_shove_failing_layer(&mut self, layer: i32) {
+        self.shove_failing_layer = layer;
+    }
+
+    /// Forgets the failed shove (Java `clearShoveFailingObstacle`).
+    pub fn clear_shove_failing_obstacle(&mut self) {
+        self.shove_failing_obstacle = None;
+        self.shove_failing_layer = -1;
+    }
+
+    /// Drops the routing state that undo does not restore (Java
+    /// `clearTransientAutorouteState`): the changed area and the
+    /// shove-failing state. Java also finishes the autoroute engine and
+    /// clears the items' autoroute info; in the port both live in the
+    /// autoroute session, outside the board.
+    pub fn clear_transient_autoroute_state(&mut self) {
+        self.board.changed_area = None;
+        self.clear_shove_failing_obstacle();
     }
 
     /// The underlying board.
     pub fn basic(&self) -> &BasicBoard {
         &self.board
+    }
+
+    /// The routing failures per item (Java `failureLog`).
+    pub fn failure_log(&self) -> &FailureLog {
+        &self.failure_log
+    }
+
+    /// The routing failures per item, for recording (Java `failureLog`).
+    pub fn failure_log_mut(&mut self) -> &mut FailureLog {
+        &mut self.failure_log
     }
 
     /// Starts recording the area changed by the following edits.

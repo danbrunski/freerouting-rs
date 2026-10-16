@@ -13,4 +13,5 @@ mod undoable_objects;
 pub use id_generator::{IdGenerator, ItemIdGenerator};
 pub use planar_delaunay_triangulation::{PlanarDelaunayTriangulation, ResultEdge};
 pub use shape_tree::{LeafId, ShapeTree};
+pub(crate) use undoable_objects::StateRecord;
 pub use undoable_objects::UndoableObjects;

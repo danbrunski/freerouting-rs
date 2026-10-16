@@ -13,6 +13,7 @@ mod checker;
 mod clearance;
 mod incompletes;
 pub mod json;
+mod ledger;
 mod report;
 mod runner;
 mod summary;
@@ -22,8 +23,10 @@ mod zone_islands;
 pub use checker::{DesignRulesChecker, DrcFindings};
 pub use clearance::{ClearanceViolation, ClearanceViolationCategory, aggregate_sorted_by_severity};
 pub use incompletes::{AirLine, NetIncompletes};
+pub use ledger::RoutingLedger;
 pub use report::{DrcPosition, DrcReport, DrcViolation, DrcViolationItem, FREEROUTING_VERSION};
 pub use runner::{DrcRun, DrcRunOptions, load_design, run_drc};
 pub use summary::{CongestionZone, DiagnosticViolation, DrcSummary};
 pub use unconnected::{UnconnectedItems, UnconnectedKind};
 pub use zone_islands::{Island, Trapezoid, ZoneIslandKind, ZoneIslandViolation, fill_islands};
+

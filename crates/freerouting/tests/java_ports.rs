@@ -717,3 +717,41 @@ fn component_translation_is_exact() {
     let location = components.get(id).unwrap().exact_location().unwrap();
     assert_eq!((location.x, location.y), (2010.5, -3020.5));
 }
+
+// ---------------------------------------------------------------------------
+// core.StoppableThreadTest, against `autoroute::events::CancelToken` (A08.5):
+// all three tests. The thread itself is not ported; the token is what the
+// router and its caller share.
+
+mod stoppable_thread {
+    use freerouting::autoroute::events::CancelToken;
+
+    #[test]
+    fn stop_request() {
+        let token = CancelToken::new();
+        assert!(!token.is_stop_requested());
+        assert!(!token.is_router_stop_requested());
+        token.stop_all();
+        assert!(token.is_stop_requested());
+        assert!(token.is_router_stop_requested());
+    }
+
+    #[test]
+    fn stop_auto_router_request() {
+        let token = CancelToken::new();
+        assert!(!token.is_stop_requested());
+        assert!(!token.is_router_stop_requested());
+        token.stop_router();
+        assert!(!token.is_stop_requested());
+        assert!(token.is_router_stop_requested());
+    }
+
+    #[test]
+    fn stop_request_overrides_auto_router_request() {
+        let token = CancelToken::new();
+        token.stop_router();
+        token.stop_all();
+        assert!(token.is_stop_requested());
+        assert!(token.is_router_stop_requested());
+    }
+}

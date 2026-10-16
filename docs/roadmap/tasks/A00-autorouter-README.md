@@ -37,7 +37,7 @@ The optimizer stays aggregates-only until a later ledger line says otherwise.
 | [A05](A05-path-location.md) | Backtrack and 45° corner location; `locate` probe equal | M / medium | A04 |
 | [A06](A06-connection-insertion.md) | `FoundConnectionInserter`, `route_connection`; `insert` probe equal on one connection (rung 2) | L / high | A05, O04, O01, B05, B04, B01 |
 | [A07](A07-angle-variants.md) | 90° and any-angle room graphs and locator, with a `TreeMap`-faithful set; probes equal on synthetic fixtures | M–L / medium | A06, B03 (90°, plain), O02 |
-| [A08](A08-support-classes.md) | `BoardHistory`, `RoutingFailureLog`, `ItemRouteResult`, router events, two-level cancel token | S / low | B01, B06 for the real-board tests; none for the rest |
+| [A08](archive/A08-support-classes.md) ✅ | `BoardHistory`, `RoutingFailureLog`, `ItemRouteResult`, router events, two-level cancel token | S / low | B01, B06 for the real-board tests; none for the rest |
 | [A10](A10-stage-traits-and-batch-control.md) | D9 stage traits and registry; pure pass controller, item ordering and shuffle, ripup policy, fanout rules | M / medium | C02, C03.7, A08 |
 | [A11](A11-connection-routing-in-passes.md) | Connection router stage, strict DRC, the pass runner, the optimizer entry point; `pass` probe equal | L / high | A06, A08, A10, O05, B01, J01; P02.1 for A11.8 |
 | [A12](A12-fanout.md) | `RoutingBoard.fanout` and `BatchFanout` as the fanout stage; D8 plane-via tests | M / medium | A11, O05, B01 |

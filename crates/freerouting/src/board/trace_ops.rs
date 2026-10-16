@@ -474,11 +474,13 @@ impl BasicBoard {
         let joined = Polyline::new(&new_lines);
 
         self.items.save_for_undo(&id);
+        self.note_changed(id);
         self.remove_from_trees(id);
         if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
             trace.polyline = joined;
         }
         self.insert_into_trees(id);
+        self.note_changed(id);
         let too_short = self
             .trace_data(id)
             .is_some_and(|(_, t)| t.polyline.lines().len() < 3);
@@ -562,6 +564,7 @@ impl BasicBoard {
         if unchanged {
             return;
         }
+        self.note_changed(id);
         self.remove_from_trees(id);
         let layer =
             if let Some(ItemKind::Trace(trace)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
@@ -571,6 +574,7 @@ impl BasicBoard {
                 return;
             };
         self.insert_into_trees(id);
+        self.note_changed(id);
         let clip = self.changed_area_on_layer(layer);
         self.normalize_trace(id, clip.as_ref());
     }

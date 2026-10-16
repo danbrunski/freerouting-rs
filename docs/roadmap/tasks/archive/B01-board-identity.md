@@ -13,7 +13,7 @@ A Java restore rebuilds the search tree by inserting the items in item-list
 order and resets every transient field (`BasicBoard.readObject`,
 `board/facade/BasicBoard.java:1508-1520`). Item ids order every
 `TreeSet<Item>`, and Java takes an id for every item it constructs, including
-temporaries. Decision D5 in [port-completion.md](../port-completion.md) makes
+temporaries. Decision D5 in [port-completion.md](../../port-completion.md) makes
 both part of the parity target: ids burned where Java burns them, and deep
 copies rebuilt in item-list order. This checklist gives the Rust board those
 semantics. It also adds the probe support every B checklist uses, the routing
@@ -21,7 +21,7 @@ ledger that Java's pass control and statistics read, and the change journal the
 GUI needs (G05, G07).
 
 **Prerequisites:** F02.1 (`probe.sh`) for B01.1 and every probe-based Accept.
-Nothing else. Series rules: [B00](B00-board-gaps-README.md).
+Nothing else. Series rules: [B00](../B00-board-gaps-README.md).
 
 Suggested split for two dispatches: B01.1–B01.4, then B01.5–B01.8.
 
@@ -94,7 +94,7 @@ are not ported" is rewritten by the item that ports each piece.
 
 ## Checklist
 
-- [ ] **B01.1 — Board-probe support and the `ids` probe.**
+- [x] **B01.1 — Board-probe support and the `ids` probe.**
   Every later B probe loads boards the same way on both sides, so this comes
   first. The `ids` probe also proves the precondition of all of them: the Java
   and Rust loaders produce the same item ids.
@@ -143,8 +143,20 @@ are not ported" is rewritten by the item that ports each piece.
     - A test `probe_loader_copies_identical` reads every
       `tools/java-reference/probes/board/*Probe.java` and fails if any `Boards`
       block differs from `IdsProbe.java`'s.
+  - *Done 2026-10-15:* `tools/java-reference/probes/board/{IdsProbe.java, fixtures.tsv,
+    generate.sh, README.md}`, `tests/board_probe/mod.rs`, `tests/board_probe_ids.rs`.
+    `fixtures.tsv` has 164 rows (159 with `fixtures/reference/route/**.ses`, 5 canary-pwr
+    rows without a session); boards are the DSN path below `fixtures/` without `.dsn`, so
+    nested fixtures keep their directories. `generate.sh <cda540f worktree> ids` wrote 164
+    files; a second full run was byte-identical (`diff -r` exit 0). `cargo test --test
+    board_probe_ids`: 4 passed (`ids_match_java`, `probe_loader_copies_identical`, the two
+    B01.2 tests); `EXPECTED_MISMATCHES` holds only Issue676 `ses` (Java: maxGeneratedId 166,
+    118 items; Rust: 166 items) and a listed entry that stops occurring fails the test. No
+    zero-length entry was needed (B01.2). `tools/determinism-check.sh --out <scratch>/det --
+    env BOARD_PROBE_OUT={OUT} cargo test --release --test board_probe_ids --test
+    board_probe_state_hash`: identical (167 files). A probe that exits 3 skips a board.
 
-- [ ] **B01.2 — Take item ids where Java does.**
+- [x] **B01.2 — Take item ids where Java does.**
   - Java: `Item` constructor (`Item.java:86-91`); `insertTraceWithoutCleaning`
     (`BasicBoard.java:198-222`) constructs the trace, taking an id, and only then
     returns `null` for a zero-length trace below `USER_FIXED`.
@@ -174,8 +186,20 @@ are not ported" is rewritten by the item that ports each piece.
       `EXPECTED_MISMATCHES`. The done note names the fixtures that contain
       zero-length wires (or says there are none).
     - `reference_load.rs` and `reference_drc.rs` green.
+  - *Done 2026-10-15:* `insert_trace_without_cleaning` takes the id after the corner check
+    and before the zero-length check; `burn_item_id` carries the site table.
+    `zero_length_unfixed_trace_consumes_an_id` and `zero_length_user_fixed_trace_is_inserted`
+    pass (closed triangle polylines: two equal points alone give fewer than 2 corners, in
+    Java too). Zero-length wires: the DSNs of Issue015, Issue022, Issue029, Issue054, Issue190
+    (9), Issue269-z10_module, Issue367-UltraFlactyl (14), Issue575-drc (43), Issue754,
+    Issue756-tomu-fpga{,7,8,9,11} and canary-pwr-2026-10-15-1747-unpoured have wires whose
+    two points are equal; both loaders drop those before constructing a trace (fewer than 2
+    corners), so no fixture reaches the zero-length branch: `board_probe_ids` was green
+    without B01.2 (checked in a HEAD worktree) and stays green with it. `reference_load.rs`
+    and `reference_drc.rs` green (release, 5 tests, on a copy of the tree without the
+    untracked foreign `fixtures/quality/`).
 
-- [ ] **B01.3 — Snapshots and deep copies with Java's restore semantics.**
+- [x] **B01.3 — Snapshots and deep copies with Java's restore semantics.**
   - Java: `BasicBoard.readObject` (`:1508-1520`), the `transient` fields of
     `BasicBoard` (`:98-112`) and `RoutingBoard` (`:67-76`),
     `RoutingBoardUndoFacade.deepCopy` (`:41-73`).
@@ -214,8 +238,20 @@ are not ported" is rewritten by the item that ports each piece.
       `distance_to_root` per leaf and leaf bounds as a tree built by inserting
       `items()` in order. B02.2 later adds the Java comparison (`deep-copy` stage).
     - The gate is green.
+  - *Done 2026-10-15:* `board/snapshot.rs` (`BoardSnapshot`, `RoutingBoard::snapshot`,
+    `restore`, `deep_copy`), `BasicBoard::from_snapshot` (fresh transient state, new
+    `SearchTreeManager` holding only the default tree, items inserted highest id first).
+    `tests/board_snapshot.rs`: `restore_resets_transient_state` (normalize suppression,
+    revision, changed area, shove-failing obstacle and layer, edge-pin-net cache, ledger
+    unbuilt, journal off, log; the work meter is B02.7's), `deep_copy_resets_normalize_suppression`,
+    `deep_copy_keeps_ids_generator_and_undo`, `deep_copy_drops_compensated_trees`,
+    `deep_copy_drops_clearance_compensation`, `deep_copy_tree_equals_ordered_rebuild` (J2 +
+    SES: leaf order, depth and bounds equal), `deep_copy_items_equal_original`, and
+    `failure_log_rolls_back_with_snapshot` (the snapshot carries A08's `failure_log`, as
+    Java serializes it; closes A08.2's remainder). Gate: see the report; the only failures
+    are foreign.
 
-- [ ] **B01.4 — Make snapshots and copies cheap.**
+- [~] **B01.4 — Make snapshots and copies cheap.**
   Measure first (`docs/roadmap/performance.md`): release build, quiet machine.
   - Rust:
     - `examples/snapshot_bench.rs` times `snapshot()`, `restore()`, `deep_copy()`
@@ -241,8 +277,34 @@ are not ported" is rewritten by the item that ports each piece.
       `Clone`, or the note says why not.
     - B01.3's tests, `reference_load.rs`, `reference_drc.rs` and
       `board_probe_ids` stay green.
+  - *Partial 2026-10-15:* `examples/snapshot_bench.rs` (median of 7, counting allocator for
+    bytes; release; the machine was not quiet, load average 8-14). Item payloads are
+    `Arc<V>` in `UndoableObjects` nodes (`Arc::make_mut` in `get_mut`, undo and redo;
+    `save_for_undo` shares the version). Before/after on today's code:
 
-- [ ] **B01.5 — `state_hash` with Java's equality.**
+    | Board (items) | op | before | after |
+    |---|---|---|---|
+    | Issue190-processor.Z80 (10885) | snapshot | 813 µs, 3.28 MB | 189 µs, 1.28 MB |
+    | | Clone | 932 µs, 6.39 MB | 483 µs, 4.39 MB |
+    | | restore / deep_copy | 14.1 / 14.4 ms | 13.0 / 13.4 ms |
+    | Issue054-tairakb (6791) | snapshot | 117 µs, 1.78 MB | 64 µs, 0.61 MB |
+    | | Clone | 230 µs, 3.16 MB | 169 µs, 1.99 MB |
+    | | restore / deep_copy | 8.5 / 8.9 ms | 8.3 / 8.5 ms |
+    | Issue690-kit-dev-coldfire (5551) | snapshot | 192 µs, 1.71 MB | 102 µs, 0.63 MB |
+    | | Clone | 453 µs, 3.80 MB | 297 µs, 2.72 MB |
+    | | restore / deep_copy | 8.6 / 8.5 ms | 7.9 / 8.3 ms |
+
+    `snapshot()` on Issue190 is 4.9x cheaper than the old `Clone` (932 / 189 µs), not 10x:
+    what is left is the key map and node arena (about 0.8 MB) and deep copies of rules,
+    library, layer structure and components (about 0.5 MB). Putting those behind `Arc`
+    changes `BasicBoard`'s public field types, and the mutation sites include
+    `settings/board.rs` and `job/overrides.rs`, held by the concurrent C03 agent (tried;
+    reverted). Remainder: the `Arc` fields with `Arc::make_mut` at their mutation sites,
+    and the optional canonical-tree flag (`restore()` is the tree rebuild, about 13 ms on
+    Issue190), owned here (B01.4) after C03 lands. B01.3's tests, `reference_load.rs`,
+    `reference_drc.rs` and `board_probe_ids` stay green.
+
+- [x] **B01.5 — `state_hash` with Java's equality.**
   - Java: `BoardSnapshotManager.getHash` (`:62-84`) hashes `serialize(true)`:
     `getTraces()`, `getVias()` and `itemList`. No field of `UndoableObjects` or
     its nodes is transient (`UndoableObjects.java:21-32,328-333`), so the hash
@@ -278,8 +340,21 @@ are not ported" is rewritten by the item that ports each piece.
       test with that reason.
     - `state_hash` on Issue190-processor.Z80 takes under 5 ms in release (done
       note).
+  - *Done 2026-10-15:* `board/state_hash.rs`, `UndoableObjects::walk_state` (nodes with
+    handles for back references). Undo and redo now clear `on_the_board` on the cancelled
+    versions, as Java's `SearchTreeManager.remove` does. Tests in
+    `tests/board_probe_state_hash.rs`: `state_hash_tracks_changes` (insert, fixed-state
+    change, trace change, remove, `generate_snapshot`; survives `deep_copy`),
+    `insert_then_undo_differs_from_before`, `state_hash_equality_matches_java`.
+    `StateHashProbe.java` on Issue026-J2_reference, Issue508-DAC2020_bm08, Issue413-test:
+    Java's matrix is the same on all three (h6 = h5; h7 = h5 = h6; all else distinct) and
+    Rust's equals it. The session's wires are user fixed, so the probe unfixes the 5 traces
+    before removing them (on both sides). No step differs through `smallestClearance`
+    (`EXPECTED_MISMATCHES` empty). DIVERGENCES line added. Release on Issue190: 4.66 ms
+    (`snapshot_bench`, median of 7; 9.7 ms before dropping Java's redundant
+    `getTraces/getVias` prefix and digesting `Debug` text with FNV-1a 64).
 
-- [ ] **B01.6 — Exact incremental routing ledger.**
+- [x] **B01.6 — Exact incremental routing ledger.**
   - Java: `drc/NetRoutingLedger.java`: per-net item lists, a `TreeSet` of dirty
     nets recounted on read, `incompleteCount`, `incompleteNetNumbers` (ascending),
     `maximumConnections` (pins and conduction areas per net, minus one). It is fed
@@ -317,8 +392,25 @@ are not ported" is rewritten by the item that ports each piece.
     - `reference_load.rs` and `reference_drc.rs` green, so the statistics didn't
       change.
     - An insert plus a read costs under 1 ms on Issue190-processor.Z80 (done note).
+  - *Done 2026-10-15:* `drc/ledger.rs` (`RoutingLedger` behind a `Mutex`, per-net
+    `BTreeSet<ItemId>`, dirty nets, per-net incomplete and maximum counts), marked at insert,
+    remove, undo and redo (cancelled and restored versions), `change_trace` and combine,
+    `assign_net_no`, `remove_from_net`, fixed-state and conduction changes and
+    `note_changed`; invalidated by `delete_all_traces_and_vias` and `restore()`.
+    `BoardStatistics` reads `maximum_connections` and `incomplete_count` from it.
+    `tests/drc_ledger.rs` (not `tests/drc.rs`, which the orchestrator kept for B07; the Java
+    port is not in `java_ports.rs`, which another session was editing):
+    `incomplete_count_matches_full_scan_across_insert_and_remove` (port of
+    `NetRoutingLedgerTest`), `ledger_matches_full_count` (all 164 rows, loaded and with the
+    session), `ledger_matches_full_count_after_undo_redo_and_net_change` (3 fixtures),
+    `ledger_restarts_after_delete_all_and_restore`, all green. `ledger` probe committed
+    (`fixtures/reference/probe/ledger/`). Java's ledger differs from Java's fresh count at:
+    J2 `undo` 3 vs 0, `cutout-0..19` from 3/3 to 1/4 (13 stale steps); DAC2020_bm08 `undo`
+    4 vs 0, `assign-net-5-vias` 4 vs 1 and the cutouts (18 stale steps); Issue413 `undo` 3
+    vs 0, `assign-net-5-vias` 3 vs 0 and the cutouts (16 stale steps). `reference_load.rs`
+    and `reference_drc.rs` green (release). Insert + read on Issue190: 0.46 ms release.
 
-- [ ] **B01.7 — Board change journal.**
+- [x] **B01.7 — Board change journal.**
   This replaces Java's observers and graphics update box (`BasicBoard.java:1255-1295`).
   G05.5, G07.4 and G09 patch their scene from it; O01 joins its dirty region
   where Java calls `joinGraphicsUpdateBox`.
@@ -345,8 +437,17 @@ are not ported" is rewritten by the item that ports each piece.
       (B01.5) with journaling on and off;
     - with journaling off, `reference_load.rs` time is unchanged within noise
       (done note: before and after).
+  - *Done 2026-10-15:* `board/journal.rs` (`set_journaling`, `set_journaling_with_cap`,
+    `take_changes`, `BoardChanges`, cap 100 000), recorded at insert, remove, delete all,
+    every `save_for_undo` site, undo and redo, net, clearance-class, fixed-state and
+    conduction changes and the outline keepout switch. `tests/board_journal.rs`, 9 green:
+    insert, remove, change (dirty covers before and after), undo, redo, net change (old and
+    new net), insert-then-remove reduces to nothing, `journal_overflow_signals_rebuild`,
+    `journal_has_no_effect` (J2 + SES script, equal `state_hash`). `reference_load` release,
+    journaling off, alternating runs: HEAD 14.5 / 14.8 / 6.8 s, B01 10.4 / 9.4 / 7.6 s (load
+    average 8-14, so noise dominates; no slowdown visible).
 
-- [ ] **B01.8 — Transient routing state, and the fields Java's undo keeps.**
+- [x] **B01.8 — Transient routing state, and the fields Java's undo keeps.**
   - Java: `RoutingBoard.get/setShoveFailingObstacle`,
     `get/setShoveFailingLayer`, `clearShoveFailingObstacle` (`:1407-1426`);
     `clearTransientAutorouteState` (`:911-917`). Undo doesn't restore the id
@@ -360,3 +461,8 @@ are not ported" is rewritten by the item that ports each piece.
   - **Accept:** `undo_keeps_trace_half_width_bounds`, `undo_keeps_id_generator`,
     `undo_keeps_normalize_suppression`, `restore_resets_shove_failing_state`,
     `clear_transient_autoroute_state_resets_changed_area`.
+  - *Done 2026-10-15:* `RoutingBoard` shove-failing obstacle and layer with getters,
+    setters, `clear_shove_failing_obstacle`, `clear_transient_autoroute_state`. Tests in
+    `tests/board_snapshot.rs`: `undo_keeps_trace_half_width_bounds`, `undo_keeps_id_generator`,
+    `undo_keeps_normalize_suppression`, `restore_resets_shove_failing_state`,
+    `clear_transient_autoroute_state_resets_changed_area`, all green.

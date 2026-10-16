@@ -2,21 +2,25 @@
 //! them.
 
 use std::collections::{BTreeSet, HashMap, HashSet};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use freerouting_geometry::{
     Area, FloatPoint, IntBox, IntOctagon, IntPoint, Point, PolylineShape, PolylineShapeOps, Shape,
     TileShape, TileShapeOps, Vector,
 };
 
+use crate::autoroute::failure_log::FailureLog;
 use crate::board::items::{
     AreaKind, BoardOutline, ComponentOutline, DrillData, Item, ItemId, ItemKind, ObstacleArea, Pin,
     PolylineTrace, StopConnectionOption, Via, base_pin_name, point_tile,
 };
-use crate::board::search::{SearchTreeManager, ShapeContext, TreeEntry};
+use crate::board::journal::{Journal, Record};
+use crate::board::search::{SearchTreeManager, ShapeContext, ShapeSearchTree, TreeEntry};
+use crate::board::snapshot::BoardSnapshot;
 use crate::board::state::{ChangedArea, Communication};
 use crate::board::structure::{ComponentId, Components, FixedState, LayerStructure};
 use crate::datastructures::{IdGenerator, UndoableObjects};
+use crate::drc::RoutingLedger;
 use crate::library::{BoardLibrary, Packages, PadstackId, Padstacks};
 use crate::rules::{BoardRules, Nets};
 
@@ -33,9 +37,13 @@ pub(crate) const MAX_NORMALIZE_ITERATIONS: usize = 2000;
 /// Port of `board.facade.BasicBoard` (together with its helpers
 /// `BoardItemRepository`, `BoardConnectivityQueries` and
 /// `BoardSnapshotManager`). The methods of `Item` and its subclasses that
-/// need the board are methods of this type taking an [`ItemId`]. Observers,
-/// the routing ledger, serialization and the graphics update box are not
-/// ported.
+/// need the board are methods of this type taking an [`ItemId`]. Observers
+/// and the graphics update box are not ported.
+///
+/// `Clone` is not a Java copy: it keeps the search trees and the transient
+/// state. Java's serialization copy is [`BoardSnapshot`] and
+/// [`RoutingBoard::deep_copy`](crate::board::RoutingBoard::deep_copy)
+/// (see [`crate::board::snapshot`]).
 #[derive(Clone, Debug)]
 pub struct BasicBoard {
     pub(crate) items: UndoableObjects<ItemId, Item>,
@@ -61,6 +69,11 @@ pub struct BasicBoard {
     /// routing (Java `preExistingClearanceViolationsCount`); the statistics
     /// count only the violations beyond these as router introduced.
     pub pre_existing_clearance_violations_count: usize,
+    /// The incremental incomplete-connection counts (Java `routingLedger`,
+    /// transient).
+    pub(crate) ledger: RoutingLedger,
+    /// The change journal while journaling (B01.7).
+    pub(crate) journal: Option<Box<Journal>>,
 }
 
 impl BasicBoard {
@@ -91,6 +104,8 @@ impl BasicBoard {
             changed_area: None,
             log: Vec::new(),
             pre_existing_clearance_violations_count: 0,
+            ledger: RoutingLedger::default(),
+            journal: None,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -178,6 +193,27 @@ impl BasicBoard {
         ItemId(self.communication.id_generator.new_id())
     }
 
+    /// Takes one id from the id generator for a temporary item Java
+    /// constructs and drops (decision D5: ids are burned where Java burns
+    /// them). Returns the id, for logging.
+    ///
+    /// Java's `Item` constructor takes `idGenerator.newId()` whenever it is
+    /// given an id `<= 0` (`Item.java:86-91`). The construction sites at
+    /// `cda540f` and the checklist that takes the id there:
+    ///
+    /// | Java site | Temporary? | Rust owner |
+    /// |---|---|---|
+    /// | `BasicBoard.insertTraceWithoutCleaning` (`:209`) | rejected zero-length trace | B01.2 (`insert_trace_without_cleaning`) |
+    /// | `BasicBoard.checkPolylineTrace` (`:1169`) | yes, every call | B04.4 |
+    /// | `ShapeTraceEntries.nextSubstituteTracePiece` (`:276`) | yes, also on check paths | O03 |
+    /// | `ShapeTraceEntries.fastCutoutTrace` (`:116,131`) | no: start piece, then end piece | O03 |
+    /// | `Item.copy(0)` in every item class (`PolylineTrace.java:63`, `Via.java:71`, `Pin.java:122`, area items) | id taken only for `copy(0)` | B05.2 |
+    /// | `BasicBoard.makeConductive` (`:1312`) | no; id before the removal | `make_conductive` |
+    #[allow(dead_code)] // B04.4, B05.2 and O03 call it.
+    pub(crate) fn burn_item_id(&mut self) -> ItemId {
+        self.new_item_id()
+    }
+
     pub(crate) fn item_ref(&self, id: ItemId) -> &Item {
         self.items.get(&id).expect("item on the board")
     }
@@ -185,6 +221,83 @@ impl BasicBoard {
     // ------------------------------------------------------------------
     // Insertion
     // ------------------------------------------------------------------
+
+    // ------------------------------------------------------------------
+    // Snapshots (B01.3)
+    // ------------------------------------------------------------------
+
+    /// What Java serializes of this board (see [`BoardSnapshot`]).
+    pub(crate) fn snapshot(&self) -> BoardSnapshot {
+        BoardSnapshot {
+            items: self.items.clone(),
+            components: Arc::new(self.components.clone()),
+            rules: Arc::new(self.rules.clone()),
+            library: Arc::new(self.library.clone()),
+            layer_structure: Arc::new(self.layer_structure.clone()),
+            communication: self.communication.clone(),
+            bounding_box: self.bounding_box,
+            max_trace_half_width: self.max_trace_half_width,
+            min_trace_half_width: self.min_trace_half_width,
+            pre_existing_clearance_violations_count: self.pre_existing_clearance_violations_count,
+            failure_log: FailureLog::new(),
+        }
+    }
+
+    /// A board built from `snapshot` as Java's `readObject` builds one: the
+    /// transient state fresh, and a new [`SearchTreeManager`] with only the
+    /// default tree, into which every item is inserted in item-list order
+    /// (highest id first), each with its shapes in index order.
+    pub(crate) fn from_snapshot(snapshot: &BoardSnapshot) -> BasicBoard {
+        let mut board = BasicBoard {
+            items: snapshot.items.clone(),
+            components: (*snapshot.components).clone(),
+            rules: (*snapshot.rules).clone(),
+            library: (*snapshot.library).clone(),
+            layer_structure: (*snapshot.layer_structure).clone(),
+            communication: snapshot.communication.clone(),
+            bounding_box: snapshot.bounding_box,
+            search_trees: SearchTreeManager::new(),
+            max_trace_half_width: snapshot.max_trace_half_width,
+            min_trace_half_width: snapshot.min_trace_half_width,
+            revision: 0,
+            normalize_suppressed_nets: HashSet::new(),
+            edge_pin_nets: OnceLock::new(),
+            changed_area: None,
+            log: Vec::new(),
+            pre_existing_clearance_violations_count: snapshot
+                .pre_existing_clearance_violations_count,
+            ledger: RoutingLedger::default(),
+            journal: None,
+        };
+        board.insert_all_into_trees();
+        board
+    }
+
+    /// Inserts every item into the search trees in item-list order (Java
+    /// `readObject`'s loop over `getItems()`).
+    fn insert_all_into_trees(&mut self) {
+        let ctx = ShapeContext {
+            rules: &self.rules,
+            padstacks: &self.library.padstacks,
+            communication: &self.communication,
+            layer_count: self.layer_structure.count(),
+        };
+        let ids: Vec<ItemId> = self.items.keys().copied().collect();
+        for id in &ids {
+            if let Some(item) = self.items.get(id) {
+                self.search_trees.insert(item, &ctx);
+            }
+        }
+        for id in &ids {
+            // Only touch items whose flag changes: the items are shared with
+            // the snapshot until they change.
+            if self.items.get(id).is_some_and(|item| !item.on_the_board)
+                && let Some(item) = self.items.get_mut(id)
+            {
+                item.on_the_board = true;
+            }
+        }
+    }
 
     /// Inserts `item` into the item list and the search trees (Java
     /// `insertItem`).
@@ -204,7 +317,102 @@ impl BasicBoard {
         if invalidates {
             self.invalidate_edge_pin_nets();
         }
+        self.note_inserted(id);
         id
+    }
+
+    // ------------------------------------------------------------------
+    // Bookkeeping: the routing ledger (B01.6) and the journal (B01.7)
+    // ------------------------------------------------------------------
+
+    /// Records that item `id` was added to the item list.
+    fn note_inserted(&mut self, id: ItemId) {
+        let Some(item) = self.items.get(&id) else {
+            return;
+        };
+        if item.is_connectable_kind() {
+            self.ledger.note_inserted(id, &item.net_numbers);
+        }
+        if let Some(journal) = &mut self.journal {
+            journal.record(id, Record::Inserted, &item.net_numbers, item.bounding_box());
+        }
+    }
+
+    /// What the bookkeeping needs of an item that leaves the item list.
+    fn removal_note(&self, item: &Item) -> RemovalNote {
+        RemovalNote {
+            id: item.id(),
+            nets: item.net_numbers.clone(),
+            connectable: item.is_connectable_kind(),
+            bounds: if self.journal.is_some() {
+                item.bounding_box()
+            } else {
+                IntBox::EMPTY
+            },
+        }
+    }
+
+    /// Records that an item left the item list.
+    fn note_removed(&mut self, note: RemovalNote) {
+        if note.connectable {
+            self.ledger.note_removed(note.id, &note.nets);
+        }
+        if let Some(journal) = &mut self.journal {
+            journal.record(note.id, Record::Removed, &note.nets, note.bounds);
+        }
+    }
+
+    /// Records that item `id` changed in place: marks its nets for a
+    /// recount and journals it with its current bounding box. Call it
+    /// before and after a change that moves the item, so that the dirty
+    /// region covers both. O03's fast cutout calls it for its pieces.
+    pub(crate) fn note_changed(&mut self, id: ItemId) {
+        let Some(item) = self.items.get(&id) else {
+            return;
+        };
+        self.ledger.mark_dirty(&item.net_numbers);
+        if let Some(journal) = &mut self.journal {
+            journal.record(id, Record::Changed, &item.net_numbers, item.bounding_box());
+        }
+    }
+
+    /// Records that the nets of item `id` changed from `old_nets`.
+    fn note_nets_changed(&mut self, id: ItemId, old_nets: &[i32]) {
+        let Some(item) = self.items.get(&id) else {
+            return;
+        };
+        if item.is_connectable_kind() {
+            self.ledger.note_removed(id, old_nets);
+            self.ledger.note_inserted(id, &item.net_numbers);
+        }
+        if let Some(journal) = &mut self.journal {
+            journal.record(id, Record::Changed, old_nets, item.bounding_box());
+            journal.record(id, Record::Changed, &item.net_numbers, IntBox::EMPTY);
+        }
+    }
+
+    /// The incomplete connections of the board, from the routing ledger
+    /// (Java `routingLedger().incompleteCount()`). The first read builds the
+    /// ledger; later reads recount only the nets changed since.
+    pub fn ledger_incomplete_count(&self) -> usize {
+        self.ledger.incomplete_count(self)
+    }
+
+    /// Per net the pins and conduction areas minus one, summed, from the
+    /// routing ledger (Java `routingLedger().maximumConnections()`).
+    pub fn ledger_maximum_connections(&self) -> usize {
+        self.ledger.maximum_connections(self)
+    }
+
+    /// The nets with incomplete connections, from the routing ledger (Java
+    /// `routingLedger().incompleteNetNumbers()`).
+    pub fn ledger_incomplete_net_numbers(&self) -> BTreeSet<i32> {
+        self.ledger.incomplete_net_numbers(self)
+    }
+
+    /// The routing ledger.
+    pub fn routing_ledger(&self) -> &RoutingLedger {
+        &self.ledger
     }
 
     /// Inserts the tree shapes of item `id` into the search trees.
@@ -218,7 +426,9 @@ impl BasicBoard {
         if let Some(item) = self.items.get(&id) {
             self.search_trees.insert(item, &ctx);
         }
-        if let Some(item) = self.items.get_mut(&id) {
+        if self.items.get(&id).is_some_and(|item| !item.on_the_board)
+            && let Some(item) = self.items.get_mut(&id)
+        {
             item.on_the_board = true;
         }
     }
@@ -263,10 +473,12 @@ impl BasicBoard {
             layer,
             half_width,
         };
+        // Java constructs the trace, taking an id, before it rejects a zero
+        // length one.
+        let id = self.new_item_id();
         if trace.first_corner() == trace.last_corner() && fixed_state < FixedState::UserFixed {
             return None;
         }
-        let id = self.new_item_id();
         let item = Item::new(
             id,
             net_numbers.to_vec(),
@@ -775,12 +987,14 @@ impl BasicBoard {
             return;
         }
         let bounding_box = self.bounding_box;
+        self.note_changed(id);
         self.remove_from_trees(id);
         if let Some(ItemKind::BoardOutline(outline)) = self.items.get_mut(&id).map(|i| &mut i.kind)
         {
             outline.set_keepout_outside(value, bounding_box);
         }
         self.insert_into_trees(id);
+        self.note_changed(id);
     }
 
     /// Enlarges the bounding box, if necessary, to contain all items, with a
@@ -859,10 +1073,14 @@ impl BasicBoard {
         }
         let invalidates = matches!(item.kind, ItemKind::Pin(_) | ItemKind::BoardOutline(_));
         self.remove_from_trees(id);
+        let note = self.items.get(&id).map(|item| self.removal_note(item));
         self.items.delete(&id);
         self.revision += 1;
         if invalidates {
             self.invalidate_edge_pin_nets();
+        }
+        if let Some(note) = note {
+            self.note_removed(note);
         }
         true
     }
@@ -894,8 +1112,12 @@ impl BasicBoard {
             .collect();
         for id in ids {
             self.search_trees.remove(id);
+            if let (Some(journal), Some(item)) = (&mut self.journal, self.items.get(&id)) {
+                journal.record(id, Record::Removed, &item.net_numbers, item.bounding_box());
+            }
             self.items.delete(&id);
         }
+        self.ledger.invalidate();
     }
 
     // ------------------------------------------------------------------
@@ -1881,6 +2103,7 @@ impl BasicBoard {
         let Some(item) = self.items.get_mut(&id) else {
             return;
         };
+        let old_nets = item.net_numbers.clone();
         if net_number <= 0 {
             item.net_numbers.clear();
         } else if item.net_numbers.is_empty() {
@@ -1891,6 +2114,7 @@ impl BasicBoard {
         if item.is_pin() {
             self.invalidate_edge_pin_nets();
         }
+        self.note_nets_changed(id, &old_nets);
     }
 
     /// Changes the clearance class of item `id` and updates the trees if
@@ -1907,6 +2131,7 @@ impl BasicBoard {
         if self.search_trees.is_clearance_compensation_used() {
             self.reinsert_into_trees(id);
         }
+        self.note_changed(id);
     }
 
     /// Sets the fixed state of item `id`.
@@ -1914,6 +2139,7 @@ impl BasicBoard {
         if let Some(item) = self.items.get_mut(&id) {
             item.fixed_state = fixed_state;
         }
+        self.note_changed(id);
     }
 
     /// Unfixes item `id` unless it is system fixed.
@@ -1921,13 +2147,20 @@ impl BasicBoard {
         if let Some(item) = self.items.get_mut(&id) {
             item.unfix();
         }
+        self.note_changed(id);
     }
 
     /// Removes net `net_number` from item `id` (Java `removeFromNet`).
     pub fn remove_from_net(&mut self, id: ItemId, net_number: i32) -> bool {
-        self.items
-            .get_mut(&id)
-            .is_some_and(|item| item.remove_from_net(net_number))
+        let Some(item) = self.items.get_mut(&id) else {
+            return false;
+        };
+        let old_nets = item.net_numbers.clone();
+        let removed = item.remove_from_net(net_number);
+        if removed {
+            self.note_nets_changed(id, &old_nets);
+        }
+        removed
     }
 
     /// Sets whether conduction area `id` is an obstacle for other nets.
@@ -1939,6 +2172,7 @@ impl BasicBoard {
                 is_obstacle: value,
                 is_filled,
             });
+            self.note_changed(id);
         }
     }
 
@@ -1985,33 +2219,51 @@ impl BasicBoard {
     /// to `changed_nets`. Returns false if there is nothing to undo.
     pub fn undo(&mut self, mut changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
         self.components.undo();
+        let journaling = self.journal.is_some();
+        let mut notes = Vec::new();
         let result = self.items.undo_with(|cancelled| {
             if let Some(nets) = changed_nets.as_deref_mut() {
                 nets.extend(cancelled.net_numbers().iter().copied());
             }
+            // Java's `SearchTreeManager.remove` takes it off the board.
+            cancelled.on_the_board = false;
+            notes.push(cancelled_note(cancelled, journaling));
         });
-        self.apply_undo_redo(result, changed_nets)
+        self.apply_undo_redo(result, notes, changed_nets)
     }
 
     /// Restores the state before the last undo.
     pub fn redo(&mut self, mut changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
         self.components.redo();
+        let journaling = self.journal.is_some();
+        let mut notes = Vec::new();
         let result = self.items.redo_with(|cancelled| {
             if let Some(nets) = changed_nets.as_deref_mut() {
                 nets.extend(cancelled.net_numbers().iter().copied());
             }
+            cancelled.on_the_board = false;
+            notes.push(cancelled_note(cancelled, journaling));
         });
-        self.apply_undo_redo(result, changed_nets)
+        self.apply_undo_redo(result, notes, changed_nets)
     }
 
     fn apply_undo_redo(
         &mut self,
         result: Option<(Vec<ItemId>, Vec<ItemId>)>,
+        cancelled_notes: Vec<RemovalNote>,
         mut changed_nets: Option<&mut BTreeSet<i32>>,
     ) -> bool {
         let Some((cancelled, restored)) = result else {
             return false;
         };
+        // The ledger and the journal see the cancelled versions leave and
+        // the restored ones arrive (Java's ledger misses both, B00 Q1).
+        for note in cancelled_notes {
+            self.note_removed(note);
+        }
+        for id in &restored {
+            self.note_inserted(*id);
+        }
         for id in &cancelled {
             // The cancelled version is gone from the item list; only its
             // tree entries remain.
@@ -2048,6 +2300,61 @@ impl BasicBoard {
 
     pub(crate) fn normalize_suppressed(&mut self) -> &mut HashSet<i32> {
         &mut self.normalize_suppressed_nets
+    }
+
+    /// The nets [`normalize_traces`](Self::normalize_traces) skips on this
+    /// board (Java `normalizeSuppressedNetNos`, transient), ascending.
+    pub fn normalize_suppressed_nets(&self) -> Vec<i32> {
+        let mut nets: Vec<i32> = self.normalize_suppressed_nets.iter().copied().collect();
+        nets.sort_unstable();
+        nets
+    }
+
+    /// Makes [`normalize_traces`](Self::normalize_traces) skip net
+    /// `net_number` on this board, as it does after an oscillating net hit
+    /// its iteration limit.
+    pub fn suppress_normalize(&mut self, net_number: i32) {
+        self.normalize_suppressed_nets.insert(net_number);
+    }
+
+    /// True if the edge-pin-net cache of the outline is filled.
+    pub fn edge_pin_nets_cached(&self) -> bool {
+        self.edge_pin_nets.get().is_some()
+    }
+
+    /// The search tree compensated for `clearance_class`, created and
+    /// filled if there is none (Java `SearchTreeManager.getAutorouteTree`).
+    pub fn autoroute_search_tree(&mut self, clearance_class: i32) -> &ShapeSearchTree {
+        let ctx = ShapeContext {
+            rules: &self.rules,
+            padstacks: &self.library.padstacks,
+            communication: &self.communication,
+            layer_count: self.layer_structure.count(),
+        };
+        self.search_trees
+            .get_autoroute_tree(clearance_class, &self.items, &ctx)
+    }
+}
+
+/// What the ledger and the journal need of an item that leaves the item
+/// list.
+struct RemovalNote {
+    id: ItemId,
+    nets: Vec<i32>,
+    connectable: bool,
+    bounds: IntBox,
+}
+
+fn cancelled_note(item: &Item, journaling: bool) -> RemovalNote {
+    RemovalNote {
+        id: item.id(),
+        nets: item.net_numbers.clone(),
+        connectable: item.is_connectable_kind(),
+        bounds: if journaling {
+            item.bounding_box()
+        } else {
+            IntBox::EMPTY
+        },
     }
 }
 

@@ -8,6 +8,7 @@
 pub use freerouting_dsn as dsn;
 pub use freerouting_geometry as geometry;
 
+pub mod autoroute;
 pub mod board;
 pub mod datastructures;
 pub mod drc;

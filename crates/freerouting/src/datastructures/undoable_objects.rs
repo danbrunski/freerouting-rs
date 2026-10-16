@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// Index of a version node in the node arena.
 type NodeIdx = usize;
@@ -7,13 +8,34 @@ type NodeIdx = usize;
 #[derive(Clone, Debug)]
 struct Node<K, V> {
     key: K,
-    object: V,
+    /// Shared with the snapshots and undo versions that hold the same
+    /// version; changed through `Arc::make_mut` (copy on write).
+    object: Arc<V>,
     /// The undo stack level this version was created at.
     level: usize,
     /// The version to restore on undo.
     undo: Option<NodeIdx>,
     /// The version to restore on redo.
     redo: Option<NodeIdx>,
+}
+
+/// One step of [`UndoableObjects::walk_state`].
+pub(crate) enum StateRecord<'a, K, V> {
+    Header {
+        stack_level: usize,
+        redo_possible: bool,
+    },
+    /// A key of the map; its node follows.
+    Key(&'a K),
+    /// A version node at its first visit; its undo, then its redo link
+    /// follow.
+    Node { level: usize, object: &'a V },
+    /// A node visited before, by its handle (the order of first visits).
+    Seen(usize),
+    /// A missing undo or redo link.
+    NoNode,
+    /// The start of a level of the deleted-objects stack, with its length.
+    DeletedLevel(usize),
 }
 
 /// A set of objects that records its changes so that they can be undone and
@@ -91,7 +113,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> + '_ {
         self.objects.iter().filter_map(move |(key, &idx)| {
             let node = self.node(idx);
-            (node.level <= self.stack_level).then_some((key, &node.object))
+            (node.level <= self.stack_level).then_some((key, &*node.object))
         })
     }
 
@@ -112,7 +134,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
     /// The current version of the object with key `key`, if it is visible.
     pub fn get(&self, key: &K) -> Option<&V> {
         let node = self.node(*self.objects.get(key)?);
-        (node.level <= self.stack_level).then_some(&node.object)
+        (node.level <= self.stack_level).then_some(&*node.object)
     }
 
     /// The current version of the object with key `key` for changing it in
@@ -122,7 +144,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
         let idx = *self.objects.get(key)?;
         let level = self.stack_level;
         let node = self.node_mut(idx);
-        (node.level <= level).then_some(&mut node.object)
+        (node.level <= level).then_some(Arc::make_mut(&mut node.object))
     }
 
     /// True if an object with key `key` is visible.
@@ -136,7 +158,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
         self.disable_redo();
         let idx = self.alloc(Node {
             key: key.clone(),
-            object,
+            object: Arc::new(object),
             level: self.stack_level,
             undo: None,
             redo: None,
@@ -183,8 +205,9 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
     }
 
     /// [`undo`](Self::undo), calling `on_cancelled` with each cancelled
-    /// version (Java passes the cancelled objects themselves).
-    pub fn undo_with(&mut self, mut on_cancelled: impl FnMut(&V)) -> Option<(Vec<K>, Vec<K>)> {
+    /// version (Java passes the cancelled objects themselves, and the board
+    /// changes them: it takes them off the search trees).
+    pub fn undo_with(&mut self, mut on_cancelled: impl FnMut(&mut V)) -> Option<(Vec<K>, Vec<K>)> {
         if self.stack_level == 0 {
             return None;
         }
@@ -203,7 +226,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
                     self.objects.insert(key.clone(), undo_idx);
                     restored.push(self.node(undo_idx).key.clone());
                 }
-                on_cancelled(&self.node(idx).object);
+                on_cancelled(Arc::make_mut(&mut self.node_mut(idx).object));
                 cancelled.push(key);
             }
         }
@@ -227,7 +250,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
 
     /// [`redo`](Self::redo), calling `on_cancelled` with each cancelled
     /// version.
-    pub fn redo_with(&mut self, mut on_cancelled: impl FnMut(&V)) -> Option<(Vec<K>, Vec<K>)> {
+    pub fn redo_with(&mut self, mut on_cancelled: impl FnMut(&mut V)) -> Option<(Vec<K>, Vec<K>)> {
         if self.stack_level >= self.deleted_objects_stack.len() {
             return None;
         }
@@ -244,7 +267,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
             match node.redo {
                 Some(redo_idx) if self.node(redo_idx).level == self.stack_level => {
                     self.objects.insert(key.clone(), redo_idx);
-                    on_cancelled(&self.node(idx).object);
+                    on_cancelled(Arc::make_mut(&mut self.node_mut(idx).object));
                     cancelled.push(key);
                     restored.push(self.node(redo_idx).key.clone());
                 }
@@ -269,7 +292,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
             if let Some(pos) = restored.iter().position(|k| *k == key) {
                 restored.remove(pos);
             } else {
-                on_cancelled(&self.node(current).object);
+                on_cancelled(Arc::make_mut(&mut self.node_mut(current).object));
                 cancelled.push(key);
             }
         }
@@ -332,7 +355,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
         if node.level < self.stack_level {
             let old = Node {
                 key: node.key.clone(),
-                object: node.object.clone(),
+                object: Arc::clone(&node.object),
                 level: node.level,
                 undo: node.undo,
                 redo: Some(idx),
@@ -401,6 +424,62 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
                 self.nodes[idx] = None;
                 self.free.push(idx);
             }
+        }
+    }
+
+    /// Walks everything Java serializes of this structure (B01.5): the stack
+    /// level and `redo_possible`, then each key of the map in key order with
+    /// its version node, then the deleted-objects stack level by level, in
+    /// list order. A node is reported once, at its first visit, followed by
+    /// its undo and redo links; later visits report its handle, so the walk
+    /// encodes the shape of the version graph the way Java's back
+    /// references do.
+    pub(crate) fn walk_state(&self, mut visit: impl FnMut(StateRecord<'_, K, V>)) {
+        visit(StateRecord::Header {
+            stack_level: self.stack_level,
+            redo_possible: self.redo_possible,
+        });
+        let mut handles: Vec<Option<usize>> = vec![None; self.nodes.len()];
+        let mut next_handle = 0;
+        for (key, &idx) in &self.objects {
+            visit(StateRecord::Key(key));
+            self.walk_node(Some(idx), &mut handles, &mut next_handle, &mut visit);
+        }
+        for list in &self.deleted_objects_stack {
+            visit(StateRecord::DeletedLevel(list.len()));
+            for &idx in list {
+                self.walk_node(Some(idx), &mut handles, &mut next_handle, &mut visit);
+            }
+        }
+    }
+
+    fn walk_node(
+        &self,
+        start: Option<NodeIdx>,
+        handles: &mut [Option<usize>],
+        next_handle: &mut usize,
+        visit: &mut impl FnMut(StateRecord<'_, K, V>),
+    ) {
+        // An explicit stack: undo chains can be long.
+        let mut stack = vec![start];
+        while let Some(entry) = stack.pop() {
+            let Some(idx) = entry else {
+                visit(StateRecord::NoNode);
+                continue;
+            };
+            if let Some(handle) = handles[idx] {
+                visit(StateRecord::Seen(handle));
+                continue;
+            }
+            handles[idx] = Some(*next_handle);
+            *next_handle += 1;
+            let node = self.node(idx);
+            visit(StateRecord::Node {
+                level: node.level,
+                object: &*node.object,
+            });
+            stack.push(node.redo);
+            stack.push(node.undo);
         }
     }
 

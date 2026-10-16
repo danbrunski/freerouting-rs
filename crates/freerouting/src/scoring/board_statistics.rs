@@ -279,17 +279,17 @@ impl BoardStatistics {
         include_connections: bool,
     ) -> Self {
         let mut s = Self::base(board, unit);
-        if include_connections || include_clearance_violations {
-            let mut checker = DesignRulesChecker::new(board);
-            if include_connections {
-                s.connections = BoardStatisticsConnections {
-                    maximum_count: checker.max_connections(),
-                    incomplete_count: checker.incomplete_count(),
-                };
-            }
-            if include_clearance_violations {
-                s.set_clearance_violations(board, &checker.all_clearance_violations());
-            }
+        if include_connections {
+            // Java reads the connection counts from the board's routing
+            // ledger (`BoardStatistics.java:297-299`).
+            s.connections = BoardStatisticsConnections {
+                maximum_count: board.ledger_maximum_connections(),
+                incomplete_count: board.ledger_incomplete_count(),
+            };
+        }
+        if include_clearance_violations {
+            let checker = DesignRulesChecker::new(board);
+            s.set_clearance_violations(board, &checker.all_clearance_violations());
         }
         s
     }
