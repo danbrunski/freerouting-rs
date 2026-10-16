@@ -6,6 +6,7 @@
 
 mod common;
 mod dsn;
+pub mod java_style;
 mod rules;
 mod ses;
 

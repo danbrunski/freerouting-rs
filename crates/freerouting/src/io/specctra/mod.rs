@@ -9,6 +9,8 @@
 mod dsn_reader;
 pub(crate) mod parser;
 mod ses_reader;
+pub mod ses_writer;
 
 pub use dsn_reader::{BoardReadResult, build_board, read_board, read_board_from_str};
 pub use ses_reader::{SesImportSummary, import_session, read_session};
+pub use ses_writer::{SesStyle, session_from_board, snapped_endpoint, write_ses, write_ses_to};

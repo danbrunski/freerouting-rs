@@ -24,7 +24,7 @@ field table. Start C02 now, and C03 as soon as C02.2 lands.
 | [C02](archive/C02-settings-model.md) ✅ | `settings/`: one field table, Java's names, aliases and defaults; Java's merge and precedence; config file (`--settings`, Dan's `freerouting.json`); env vars; DSN and rules `autoroute_settings`; validation; test profiles | M / low | none (C01.1 for C02.8) |
 | [C03](archive/C03-settings-on-board.md) ✅ | Cost tuning, net-class exclusions, the five board overrides, `minimum_pin_gap`, `prepare_job` in Java's order, `BoardRouterSettings` for A01 | M / medium | C02, C01.1 |
 | [C04](C04-rules-files.md) | Rules reader (`-dr`, `+rules`, adjacent `<design>.rules`), rules in DRC, rules writer | M / medium | C02, C03, C01.1, C01.5, C01.6 |
-| [C05](C05-ses-writer.md) | SES writer, byte-identical to Java, with `(attach off)` | M / low | C01.3 (F02.1 optional) |
+| [C05](archive/C05-ses-writer.md) ✅ | SES writer, byte-identical to Java, with `(attach off)` | M / low | C01.3 (F02.1 optional) |
 | [C06](C06-dsn-writer.md) | DSN writer (board → `Pcb`), round trip on every fixture, `-do out.dsn` | L / medium | C05.1, C01.4 |
 | [C07](C07-cli-parity.md) | CLI parity: Java flags and settings, outputs never 0 bytes, Java exit codes, parsed log lines, wall-clock deadlines that only stop work, settings parity gates; the router wired in at C07.8 | M / low; C07.8 high | C02, C03, C05 (C04 and C06 for their formats); A08 for C07.5; A13 for C07.8 |
 | [C08](C08-plugin-cli-extras.md) | Exit codes 0/1/2/130, `--version`, `--capabilities`, `--progress json`, `--result-json`, stop through stdin or Ctrl-C, long-form aliases, reserved `--seed` | S–M / low | C07, A08; A13 for the routed checks |

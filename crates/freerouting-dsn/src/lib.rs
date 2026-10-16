@@ -28,6 +28,8 @@
 //!
 //! [`Pcb::to_dsn`], [`Session::to_ses`] and [`RulesFile::to_rules`] write a
 //! tree back as text. Reading the output gives back an identical tree.
+//! [`Session::to_ses_java`] writes a session in the exact text layout of Java's
+//! `SesWriter` (see [`write::java_style`]).
 //!
 //! # Differences from the Java reader
 //!
@@ -76,7 +78,7 @@ pub mod ast;
 mod error;
 mod lexer;
 mod parse;
-mod write;
+pub mod write;
 
 use std::borrow::Cow;
 
@@ -132,6 +134,12 @@ impl Session {
     /// Writes the session as SES text.
     pub fn to_ses(&self) -> String {
         write::write_session(self)
+    }
+
+    /// Writes the session in the exact text layout of Java's `SesWriter` (see
+    /// [`write::java_style`]), with `"` as the string quote.
+    pub fn to_ses_java(&self) -> String {
+        write::java_style::write_session_java(self)
     }
 }
 

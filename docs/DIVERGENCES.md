@@ -54,6 +54,9 @@ branch 3 in IntOctagon's box cutout.
   are kept; names may be keywords or numbers.
 - A non-integer value for an integer setting leaves it unset with a warning.
 - An unterminated string or `/*` comment is an error at its start, not at end of file.
+- The Java-layout session writer (`write::java_style`, C05.1) removes the outer quotes of a name
+  without dropping its last character; Java's `IdentifierType.write` unwraps with
+  `substring(1, len - 2)` and loses it (`identifier_with_outer_quotes_keeps_last_char`).
 
 ## freerouting (board model)
 

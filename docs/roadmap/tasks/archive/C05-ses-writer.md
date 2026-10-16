@@ -94,7 +94,7 @@ What this adds:
 
 ## Checklist
 
-- [ ] **C05.1 — Java-layout serializer, `java_double`, names.**
+- [x] **C05.1 — Java-layout serializer, `java_double`, names.**
   Java: `IndentFileWriter`, `IdentifierType.write`, `SesWriter`'s write
   order, the reduced `Parser.writeScope`, `Resolution.writeScope` and the
   `writeScopeInt` of each shape class. Rust: `JavaIndentWriter` (start and
@@ -118,7 +118,32 @@ What this adds:
       `JavaNumberFormatProbe.java` run at the pin. The probe output is
       pasted into the test with the command that produced it.
 
-- [ ] **C05.2 — Board → `Session`: header, placement, `was_is`, routes
+  *Done 2026-10-15:* `crates/freerouting-dsn/src/write/java_style.rs`
+  (`JavaIndentWriter`, `java_ident`, `java_double`, `java_plain_decimal`,
+  `write_session_java[_with_quote|_to]`, `Session::to_ses_java`);
+  `crates/freerouting-dsn/tests/java_style_ses.rs` (11 tests, all pass:
+  `cargo test -p freerouting-dsn --test java_style_ses`).
+  - Self-check: `route_sessions_round_trip_to_their_own_bytes` gives back its
+    own bytes on all 116 non-empty `fixtures/reference/route/*.ses` (the
+    directory holds 117 `.ses`, one is 0 bytes; the "160" in this checklist
+    was stale). No exceptions: no reference name was affected by Java's
+    non-ASCII stripping. `ses_dump_sessions_round_trip_to_their_own_bytes`
+    does the same for the 34 files of C01.3's `ses/{unrouted,routed}`.
+  - `identifier_type_write` (every case of `IdentifierTypeTest`),
+    `identifier_with_outer_quotes_keeps_last_char`,
+    `placement_rotation_formatting_matches_kicad_style` (the five values).
+  - `java_double_matches_java`: 52 values (bits, `Double.toString`, plain
+    decimal) from `tools/java-reference/probes/JavaNumberFormatProbe.java` at
+    `cda540f` (command in the test file's header): integers around 10^7,
+    `1.2345E8`, `0.001`, `1.0E-4`, `-0.0`, subnormals (`4.9E-324`, `9.9E-324`),
+    Issue676 values (`1.7145E7`, `1.9684999999999996E7`). The same probe's 86
+    `IdentifierType.write` outputs (double and single quote) are in
+    `java_ident_matches_java`; the five outer-quote cases that differ by
+    design are listed in `OUTER_QUOTE_FIXES`.
+  - `java_double_reads_back`: 200 000 random bit patterns read back exactly.
+  - DIVERGENCES.md, freerouting-dsn: the outer-quote fix.
+
+- [x] **C05.2 — Board → `Session`: header, placement, `was_is`, routes
   header.**
   Java: `write`, `writeSessionScope`, `writePlacement`, `writeComponents`,
   `writeComponent`, `writeWasIs` and the first part of `writeRoutes`.
@@ -142,7 +167,20 @@ What this adds:
     up to the `(library_out` line equals C01.3's `ses/unrouted/<b>.ses`
     byte for byte.
 
-- [ ] **C05.3 — `library_out` and `(attach off)`.**
+  *Done 2026-10-15:* `crates/freerouting/src/io/specctra/ses_writer.rs`
+  (`session_from_board`, `write_ses`, `write_ses_to`, `SesStyle`; exports
+  appended to `io/specctra/mod.rs`). `tests/ses_writer.rs`
+  `ses_matches_java_on_the_subset` compares the **whole** unrouted file, not
+  only the part up to `(library_out`, for the 19 subset boards (`cargo test -p
+  freerouting --test ses_writer`): byte-identical on 18, and on `Issue029` up
+  to the `library_out` padstacks (see C05.3). That includes the exponent
+  coordinates of `Issue676`, rotation `338.5` of `Issue742`, the Cyrillic names
+  of `Issue110-Pajalnaja_stancija` and `(lock_type position)` of
+  `cases/lock-position`. `was_is` is written from `Pin::changed_to` (empty on
+  every board: nothing sets it). An unplaced component is written as
+  `(place name)` (Java throws; DIVERGENCES).
+
+- [~] **C05.3 — `library_out` and `(attach off)`.**
   Java: `writeLibrary`, `writePadstack`.
   - Walk the via padstacks in library order and skip any name already
     written (`LinkedHashSet`).
@@ -160,7 +198,20 @@ What this adds:
     - Port of `SesRoundTripTest`'s check that `library_out` padstack names
       are unique.
 
-- [ ] **C05.4 — `network_out`: wires, vias, conduction areas.**
+  *Partial 2026-10-15:* `library_out` and `(attach off)` are written
+  (`library_out`, `padstack_out` in `ses_writer.rs`). Passing in
+  `tests/ses_writer.rs`: `ses_writes_attach_off_for_no_attach_padstacks`
+  (`Issue508-DAC2020_bm06`), `library_out_padstack_names_are_unique` (all 19
+  subset boards; the Java test's non-empty check on `Issue742` only, because
+  `Issue757` has no via padstack) and `ses_matches_java_on_the_subset`
+  (`library_out` byte-identical on 18 of 19 boards). Remaining: `Issue029-hw48na`.
+  Java's dump loads the adjacent `Issue029-hw48na.rules`, whose library adds the
+  via padstacks `Via[0-1]_1092.2:685.8_um`, `Via[0-1]_1541.78:1186.18_um` and
+  `Via[0-1]_1000:400_um` to `library_out`; the port's load does not read the
+  rules file. The test cuts those three blocks out of Java's text and compares
+  the rest. Owner: C04 (rules reader and adjacent rules discovery).
+
+- [~] **C05.4 — `network_out`: wires, vias, conduction areas.**
   Java: `writeNetwork`, `writeNet`, `writeWire`, `snappedEndpoint`,
   `writeVia`, `writeFixedState`, `writePath`, `writeConductionArea`.
   - Nets run `1..=max_net_number`. A net's header is written only when it
@@ -188,7 +239,31 @@ What this adds:
       reports the number. If it is 0, the module docs say snapping never
       fires at the pin.
 
-- [ ] **C05.5 — Public API and styles.**
+  *Partial 2026-10-15:* wires, vias and signal-layer conduction areas are
+  written (`network_out`, `wire`, `conduction_area`, `snapped_endpoint` in
+  `ses_writer.rs`), in item-list order with the net buckets of one pass.
+  - Routed, 19 subset boards (`ses_matches_java_on_the_subset`, 37 sessions
+    compared with the unrouted ones): byte-identical, with two expected
+    exceptions. `Issue676-ch32v-tx118s` routed differs (Java imports none of
+    its wires, the port 48; its unrouted SES matches). `Issue029-hw48na` differs
+    only by the C04 padstacks described under C05.3; its wires, vias and
+    nets are identical.
+  - `ses_full_set_matches_java` (`#[ignore]`) ran on a full Java dump made
+    for this item (`REFERENCE_FULL=1 REFERENCE_OUT_DIR=... run.sh <pin> ses`
+    on the pin, 2026-10-15, in `target/java-reference/full/ses`; `SES_FULL_DIR`
+    names another directory): 324 sessions on 165 boards, all equal to Java
+    except the two above and `Issue110-RelayModule` (unrouted and routed), where
+    Java's scanner drops the Cyrillic characters of package names so that two
+    packages become one `(component :` scope; the test accepts that only when
+    the `(place` lines and the rest of the file are equal (DIVERGENCES,
+    freerouting-dsn). C01.7 still owns producing the full set as a standing
+    artifact.
+  - `endpoint_snaps_never_fire` (`tests/ses_round_trip.rs`): 0 snaps on the
+    87 616 traces of the 129 routed fixture boards. The module docs of
+    `ses_writer` say snapping never fires at the pin.
+  - Remaining for `[x]`: the `Issue029` padstacks (C04).
+
+- [x] **C05.5 — Public API and styles.**
   - `ses_writer::write_ses(board, design_name, SesStyle::{Java, Plain}) ->
     String`, with `Java` as the default.
   - `write_ses_to(board, design_name, style, &mut impl Write)` streams for
@@ -201,7 +276,21 @@ What this adds:
       style) is in the done note, next to `load_design` for the same
       board.
 
-- [ ] **C05.6 — Round trip and the Java test ports.**
+  *Done 2026-10-15:* `write_ses(board, design_name, SesStyle)` with
+  `SesStyle::Java` as the `Default`, and `write_ses_to(board, design_name,
+  style, out)` (flushes, does not close; `write_ses_to_matches_write_ses`).
+  - `both_styles_parse_to_equal_sessions_on_every_fixture`
+    (`tests/ses_round_trip.rs`): 135 fixture boards, each with Java's route
+    session imported where there is one; the Java-style and Plain texts parse
+    to equal `Session` trees, and the Plain text has no exponent.
+  - Release timing of `Issue190-processor.Z80` (`cargo test --release -p
+    freerouting --test ses_writer -- --ignored --nocapture ses_write_time`,
+    8-core WSL2, routed write best of 5): `load_design` 164 ms; unrouted write
+    43 ms (916 KB); importing Java's route session 130 ms; routed write, Java
+    style, 100 ms (1.81 MB); streamed to a `Vec` 100 ms; Plain 101 ms (1.38 MB).
+    Nothing worth optimising.
+
+- [x] **C05.6 — Round trip and the Java test ports.**
   - **Accept:**
     - Ports of `SesRoundTripTest`:
       - `sesWriterProducesValidHeader`: starts with `(session `; contains
@@ -220,3 +309,25 @@ What this adds:
     - **Property on every fixture with a route reference.** Load, import
       the reference SES, write it, re-import into a fresh load. The
       `BoardStatistics` of both imports are equal.
+
+  *Done 2026-10-15:* `crates/freerouting/tests/ses_round_trip.rs`, 11 tests
+  (`cargo test -p freerouting --test ses_round_trip`, about 23 s):
+  `ses_writer_produces_valid_header`, `ses_round_trip_preserves_wire_count`,
+  `writer_output_can_be_read_back_by_ses_reader`, `ses_writer_output_is_non_empty`,
+  `endpoint_snapping_is_stable_and_round_trips`,
+  `issue742_ses_round_trips_without_errors`, `multi_output_ses_is_not_empty`
+  (`Issue508-DAC2020_bm01` unrouted); the invalid-input cases are
+  `reading_empty_and_garbage_input_is_an_error` (garbage and empty text are
+  errors; the two null cases cannot occur in Rust, see the file header).
+  - Property `written_session_reimports_to_the_same_statistics`: 129
+    fixtures with a non-empty route reference. Both loads drop the DSN's own
+    wiring first, because a written session contains every trace and via of
+    the board, the DSN's included, and importing it onto the DSN's wiring
+    would double it. Import summaries equal on all 129; `BoardStatistics`
+    equal (integers and text exactly, `f32`/`f64` lengths within 1e-5
+    relative, since the second import inserts traces in another order and the
+    sums add up differently) on 128. Expected exception `Issue676`: Java's
+    `SesReader` and `SesWriter` both divide by `dsn_to_board(1) / resolution`,
+    which is 0.1 only on this board, so a written session reads back 100
+    times too large. The port reproduces both sides (kept Java bug; the
+    written text is byte-identical to Java's); see DIVERGENCES.
