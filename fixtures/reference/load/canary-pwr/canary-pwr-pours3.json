@@ -1,0 +1,102 @@
+{
+  "result": "success",
+  "warnings": [],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.5",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1651.00,
+        "y": -439.00,
+        "width": 999.00,
+        "height": -1001.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 652.00,
+        "height": 562.00
+      },
+      "area_cm2": 36.64
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 1726,
+      "trace_count": 156,
+      "via_count": 41,
+      "conduction_area_count": 4,
+      "drill_item_count": 0,
+      "pin_count": 443,
+      "component_count": 1039,
+      "other_count": 43
+    },
+    "components": {
+      "total_count": 130
+    },
+    "pads": {
+      "total_count": 443
+    },
+    "nets": {
+      "total_count": 128,
+      "class_count": 6
+    },
+    "connections": {
+      "maximum_count": 313,
+      "incomplete_count": 297
+    },
+    "traces": {
+      "total_count": 156,
+      "total_segment_count": 164,
+      "total_length": 5340.06,
+      "total_length_mm": 534.01,
+      "total_weighted_length": 0.00,
+      "average_length": 34.23,
+      "total_vertical_length": 4470.84,
+      "total_horizontal_length": 712.28,
+      "total_angled_length": 157.67
+    },
+    "bends": {
+      "total_count": 8,
+      "90_degree_count": 0,
+      "45_degree_count": 7,
+      "other_angle_count": 1
+    },
+    "vias": {
+      "total_count": 41,
+      "through_hole_count": 41,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 42,
+      "pre_existing_count": 0,
+      "unfixable_count": 42,
+      "router_introduced_count": 42,
+      "total_violation_um": 3495.98,
+      "min_violation_um": 10.50,
+      "max_violation_um": 200.00,
+      "avg_violation_um": 83.24
+    },
+    "difficulty": {
+      "pin_count": 443,
+      "signal_layer_count": 2,
+      "complexity_c": 886,
+      "difficulty_d": 886.00,
+      "board_area_cm2": 36.64
+    },
+    "bounds": {
+      "min_trace_length_mm": 2047.47,
+      "min_via_count": 18,
+      "min_bend_count": 250
+    },
+    "fanout": {
+      "total_smd_pins": 367,
+      "pins_to_escape": 351,
+      "escaped_count": 1
+    }
+  },
+  "fixture": "canary-pwr/canary-pwr-pours3.dsn"
+}

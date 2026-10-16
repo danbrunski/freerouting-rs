@@ -1,0 +1,106 @@
+{
+  "result": "success",
+  "warnings": [
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027F.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool.",
+    "Wiring: degenerate wire trace skipped (all 1 corners are identical — zero-length trace) on layer \u0027B.Cu\u0027. This is likely a DSN export issue in your EDA tool."
+  ],
+  "statistics": {
+    "host": "KiCad\u0027s Pcbnew,10.0.5",
+    "unit": "mm",
+    "board": {
+      "bounding_box": {
+        "x": 1651.00,
+        "y": -439.00,
+        "width": 999.00,
+        "height": -1001.00
+      },
+      "size": {
+        "x": 0.00,
+        "y": 0.00,
+        "width": 652.00,
+        "height": 562.00
+      },
+      "area_cm2": 36.64
+    },
+    "layers": {
+      "total_count": 4,
+      "signal_count": 2
+    },
+    "items": {
+      "total_count": 2490,
+      "trace_count": 896,
+      "via_count": 79,
+      "conduction_area_count": 3,
+      "drill_item_count": 0,
+      "pin_count": 443,
+      "component_count": 1039,
+      "other_count": 30
+    },
+    "components": {
+      "total_count": 130
+    },
+    "pads": {
+      "total_count": 443
+    },
+    "nets": {
+      "total_count": 128,
+      "class_count": 6
+    },
+    "connections": {
+      "maximum_count": 312,
+      "incomplete_count": 186
+    },
+    "traces": {
+      "total_count": 896,
+      "total_segment_count": 960,
+      "total_length": 15743.36,
+      "total_length_mm": 1574.34,
+      "total_weighted_length": 0.00,
+      "average_length": 17.57,
+      "total_vertical_length": 5086.77,
+      "total_horizontal_length": 5033.65,
+      "total_angled_length": 10931.25
+    },
+    "bends": {
+      "total_count": 64,
+      "90_degree_count": 4,
+      "45_degree_count": 60,
+      "other_angle_count": 0
+    },
+    "vias": {
+      "total_count": 79,
+      "through_hole_count": 79,
+      "blind_count": 0,
+      "buried_count": 0
+    },
+    "clearance_violations": {
+      "total_count": 6,
+      "pre_existing_count": 0,
+      "unfixable_count": 6,
+      "router_introduced_count": 6,
+      "total_violation_um": 434.21,
+      "min_violation_um": 50.50,
+      "max_violation_um": 110.90,
+      "avg_violation_um": 72.37
+    },
+    "difficulty": {
+      "pin_count": 443,
+      "signal_layer_count": 2,
+      "complexity_c": 886,
+      "difficulty_d": 886.00,
+      "board_area_cm2": 36.64
+    },
+    "bounds": {
+      "min_trace_length_mm": 2052.94,
+      "min_via_count": 18,
+      "min_bend_count": 251
+    },
+    "fanout": {
+      "total_smd_pins": 367,
+      "pins_to_escape": 284,
+      "escaped_count": 161
+    }
+  },
+  "fixture": "canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn"
+}
