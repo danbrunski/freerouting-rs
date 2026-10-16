@@ -188,20 +188,32 @@ Issue190 has 10,885 items and 5,981 traces
    button pans and F fits the board. *Recommendation:* Java's set, plus Home
    to fit, Ctrl+Z/Ctrl+Y as aliases for U/B, and Space+left-drag to pan for
    laptops. G01.7 implements this and stays partial until Dan confirms.
-2. **Java features to drop.** `.frb` files (Java serialization), the
-   Autodesk Fusion `.scr` export, the KiCad session JSON export, the
-   tutorial board, Sample Designs, Router Demonstrations, and the
-   telemetry, sponsor and e-mail dialogs. *Recommendation:* drop all of
-   them, each with a DIVERGENCES line. DSN + SES + `.rules` restore
-   everything `.frb` did. Open Recent replaces the tutorial.
+2. **Java features to drop.** `.frb` files (Java serialization:
+   `board/facade/BoardSnapshotManager`, `util/SafeObjectInputStream`), the
+   Autodesk Fusion `.scr` export (`io/specctra/parser/SessionToFusion`, 631
+   lines, and `SessionToFusionTest`), the KiCad session JSON export
+   (`io/kicad/KiCadJsonWriter`, `KiCadBoardJson`, `Issue733DsnJsonParityTest`),
+   the tutorial board (`gui/rendering/TutorialBoardPalette`), Sample Designs,
+   Router Demonstrations, and the telemetry, sponsor, e-mail and user-profile
+   dialogs (`gui/windows/board/WindowUserSettings`, 375 lines: user id,
+   e-mail, telemetry and contact consent, usage statistics).
+   *Recommendation:* drop all of them, each with a DIVERGENCES line. DSN +
+   SES + `.rules` restore everything `.frb` did. Open Recent replaces the
+   tutorial. *Accepted by Dan 2026-10-15; the DIVERGENCES lines were added
+   2026-10-16 ("Dropped Java features").*
 3. **Languages.** Java ships 36 locales. *Recommendation:* English only,
    with every string in `src/text.rs`, so Fluent or gettext can come later.
    egui does no Arabic or Hebrew shaping, and CJK needs bundled fonts.
 4. **Frame targets FT1–FT7** as written above. *Recommendation:* accept
    them, and re-baseline once G01.5 has recorded FT0.
-5. **Router single-step controls** (Java's debug play, pause, step).
+5. **Router single-step controls** (Java's debug play, pause, step:
+   `debug/DebugControl.java`, 342 lines, driven from `gui/board/BoardToolbar`
+   and tested by `autoroute/BatchAutorouterDebugTest`, 521 lines).
    *Recommendation:* developer-only, behind an environment variable, after
-   the A series has a step API. Not in G07.
+   the A series has a step API (A04's `MazeSearch::step` and the batch
+   loop's pass boundary). Not in G07; `DebugControl` is not ported as a
+   class and `BatchAutorouterDebugTest` is not ported. *Accepted by Dan
+   2026-10-15.*
 6. **Java's disabled edits.** At `cda540f`, Delete, Fix, Unfix, New Net,
    New Component, Cutout, Assign Clearance Class, Autoroute and Pull Tight
    of a selection do nothing in Java: they call

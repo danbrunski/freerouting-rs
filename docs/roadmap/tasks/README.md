@@ -1,10 +1,29 @@
 # Implementation task index
 
-**Status 2026-10-15: roadmap opened.** [port-completion.md](../port-completion.md)
+**Status 2026-10-16.** [port-completion.md](../port-completion.md)
 is the plan for finishing the port. It sets out what "complete" means, the
-decisions D1–D9, the verification ladder and the series below. Nothing in
-these checklists has landed yet. Every box starts unchecked. Writing a plan
-is not evidence that anything works.
+decisions D1–D9, the verification ladder and the series below. Finished
+checklists live in `archive/` and are marked ✅ in their series README; the
+live state is `python3 tools/roadmap/checklists.py status`. A box is
+evidence only with its done note; writing a plan is not evidence that
+anything works.
+
+**Cited research reports are not in the repository.** The series READMEs
+and checklists cite "the board-gap report", "the autoroute report", "the
+pipeline report", "the GUI, plugin and packaging report", "the KRT report"
+and `series-map.md` (all 2026-10-15). Those were working documents of the
+planning session and were never committed. Every decision they informed is
+restated in the checklist that cites them, so treat a citation as provenance
+only. When a checklist's own text is not enough, read the Java at the pin
+through git, never guess at what the report said.
+
+**The Java fork's research notes are in the repository, at `main`:**
+`git -C ../freerouting show main:docs/research/<file>`. The ones the
+checklists use: `large-board-autorouter-performance.md` (P03: which
+parallel passes Java measured and removed), `escape_congestion_research.md`
+(Q07, X10, X12), `kicad_ipc_api_research.md` (K00 question 5),
+`star-ground-routing.md` (an unplanned feature request, issue 383). Dan's
+analysis tools are in `docs/development/tools/` (Q06, X01).
 
 ## Series
 
@@ -23,6 +42,7 @@ is not evidence that anything works.
 | **P** Performance | [P00](P00-performance-README.md) | 5 | 19 | Profiling and baselines; optimizations that keep results identical; parallelism; a freed search tree; SIMD and an allocator trial |
 | **Q** Routing quality | [Q00](Q00-routing-quality-README.md) | 9 | 47 | Measured improvements beyond Java: planes, neck-down, diagnostics, stop rule, ripup, ordering, budgets, trace-only keepouts |
 | **X** Algorithms from KiCadRoutingTools | [X00](X00-krt-algorithms-README.md) | 12 | 65 | The head-to-head, then KRT algorithms as D9 stages: plane repair, a grid router, length matching, differential pairs, escapes |
+| **S** Server and job management | [S00](S00-server-README.md) | 0 | 0 | Placeholder, outside "complete": the REST and MCP API, job scheduling and sessions (`api.*`, `management.*`), and the seams the port already leaves for them |
 
 ## Where to start
 

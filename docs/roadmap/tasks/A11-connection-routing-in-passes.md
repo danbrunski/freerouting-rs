@@ -95,7 +95,12 @@ probe, and an example binary for the determinism check.
     through the strict check (A11.3) before it is returned;
   - on `Routed`, the strict check;
   - any panic-free error path that Java reaches through `catch (Exception)` returns
-    `Failed`.
+    `Failed`;
+  - the attempt's airline: `AutorouteAirlineCalculator.calculateAirline(start, dest)`
+    (`pipeline/AutorouteAirlineCalculator.java`, the nearest points between the two
+    item sets; called at `AutorouteConnectionRouter.java:81,108` and stored in
+    `BatchAutorouter.airLine` for the GUI to draw). It changes no result. Rust puts it
+    in A08's `Progress` event for G07.5's routing overlay; nothing else reads it.
   - **Accept:** covered by A11.7; a unit test that the fallback reuses the budget.
 
 - [ ] **A11.2 — Plane taps and neck-down as policies.**

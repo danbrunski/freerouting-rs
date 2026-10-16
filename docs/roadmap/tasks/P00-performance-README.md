@@ -45,3 +45,12 @@ P02. P04 is last, because it gives up exact parity with Java on purpose.
 - **The release speed target.** port-completion.md proposes at least 3×
   lower median wall time than Java at equal or better results. P01.5
   measures the first parity build and recommends the final number.
+- **P04's position** (raised by the roadmap review of 2026-10-16). D5 ties
+  the search tree's shape and the work meter to Java's `MinAreaTree`, so the
+  two hottest paths, overlap queries and room completion, can only change
+  their constants, not their structure, until P04 lands. P04 is last in the
+  order above because it gives up exact parity. If P01's baseline shows P02's
+  constant-factor work cannot reach the target on its own, P04 is the lever.
+  *Recommendation:* keep P04 after P02, but run it before P05 and before any
+  Q item that changes routes, so the tree is freed once and every later
+  measurement is against the freed tree. P01.5 says which, from the numbers.

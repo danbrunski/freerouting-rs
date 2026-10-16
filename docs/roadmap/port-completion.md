@@ -32,14 +32,18 @@ push-and-shove and blind/buried vias. See decision D9 and the X series.
 | DSN/SES/rules files | done | 160 of 161 fixture DSN files parse and round-trip |
 | Board model, rules, library, search trees, DSN → board | done for loading | `tests/reference_load.rs`: all 159 boards Java loads match on every compared `BoardStatistics` field |
 | DRC, incompletes, airlines, SES import, `-drc` CLI | done, two loose ends | `tests/reference_load.rs`, `tests/reference_drc.rs`; Java DRC unit tests not all ported; copper islands not compared |
-| Board viewer GUI | done | `docs/development/gui.md` |
-| KiCad plugin | waiting on routing | `docs/development/kicad-plugin.md` |
+| Board viewer GUI: session model, GPU renderer, ratsnest, DRC markers and info lists | done (G01–G03) | `docs/development/gui.md`; the windows and dialogs are G04–G06 |
+| KiCad plugin | hardened, waiting on routing (K01 done) | `docs/development/kicad-plugin.md` |
 | Board editing operations used by the router (shove, forced vias and pads, drill moves, pull-tight) | not started | B and O series |
-| Autorouter (`autoroute.*`, ~18k Java lines) | not started | A series |
+| Autorouter (`autoroute.*`, ~18k Java lines) | support classes done (A08: history, failure log, events, cancel token); search core not started | A series |
 | Optimizer (`board.optimize`, `BatchOptimizer`, ~5k lines) | not started | O series |
 | Interactive editing (`gui.interactive`, ~5k lines) | not started | I series |
-| Settings, CLI routing flags, SES/DSN writing from a board | not started | C series |
-| Release builds and CI | CI workflow written, not installed | R series |
+| Settings model, settings applied to the board, Java reference dumps, SES writer | done (C01, C02, C03, C05) | `tests/settings_*.rs`, `tests/job_*.rs`, `tests/ses_writer.rs` |
+| Rules files, DSN writer, CLI routing flags, plugin-facing CLI extras | not started | C04, C06, C07, C08 |
+| Release builds and CI | CI workflow written, not installed (F01) | R series |
+
+(Table updated 2026-10-16; `python3 tools/roadmap/checklists.py status` is
+the live state.)
 
 In release, loading plus a full DRC already takes 0.04–0.5 s on the largest
 fixtures (0.09 s on Dan's `canary-pwr` board).
@@ -75,8 +79,10 @@ The port is complete when all of these hold:
 7. **Release builds** exist for Windows, macOS (universal) and Linux, and CI
    runs fmt, clippy and the tests on all three.
 
-Later, and outside "complete": the KiCad `.kicad_pcb` importer, the REST/MCP
-server and job management (PORT_PLAN step 11).
+Later, and outside "complete": the KiCad `.kicad_pcb` importer (K04–K08),
+and the REST/MCP server and job management (PORT_PLAN step 11;
+[S00](tasks/S00-server-README.md) lists the Java classes and the seams the
+port leaves for them).
 
 ## Decisions
 
@@ -249,6 +255,7 @@ Each rung uses the reference data and harness in
 | **Q** Routing quality beyond Java | [routing-quality.md](routing-quality.md) | [Q00](tasks/Q00-routing-quality-README.md) | after board parity |
 | **X** Algorithms from KiCadRoutingTools | [algorithms.md](algorithms.md) | [X00](tasks/X00-krt-algorithms-README.md) | head-to-head now; ports after board parity |
 | **R** Release builds | [desktop-app.md](desktop-app.md) | [R01](tasks/R01-release-builds.md) | after the CLI routes |
+| **S** Server and job management | this file ("Later") | [S00](tasks/S00-server-README.md) | after "complete", when Dan asks |
 
 The critical path is J01 → B (router prerequisites) → O (shared board
 operations) → A (search core → path insertion → batch pipeline) → C (routing

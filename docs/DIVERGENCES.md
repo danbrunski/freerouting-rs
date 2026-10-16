@@ -252,3 +252,20 @@ users would notice is listed. Texts follow the English Java bundles.)
   conduction areas are not unfilled and "ignore conduction" is not set, as Java does.
 - Zoom to the selection (W) fits the box of the selection plus 10 %; Java offsets the
   box by the largest trace half width.
+
+**Dropped Java features** (G00 question 2, accepted by Dan 2026-10-15; recorded 2026-10-16)
+- `.frb` snapshots (Java serialization, `BoardSnapshotManager`, `SafeObjectInputStream`):
+  not ported. DSN + SES + `.rules` carry everything they did; the GUI's own session state
+  is G01's persistence.
+- The Autodesk Fusion `.scr` export (`SessionToFusion`) and the KiCad session JSON export
+  (`KiCadJsonWriter`, `KiCadBoardJson`): not ported. The plugin imports the SES.
+- The tutorial board, Sample Designs and Router Demonstrations: not ported; Open Recent
+  replaces the tutorial.
+- The telemetry, sponsor, e-mail and user-profile dialogs (`WindowUserSettings`: user id,
+  e-mail, consent flags, usage statistics) and everything under `analytics`: not ported.
+  No data leaves the machine.
+- The router's debug play/pause/step toolbar (`debug/DebugControl`): not ported as such;
+  a developer-only stepping view may come after the A series (G00 question 5).
+- The headless `--compare-boards` and `--calculate-benchmark-scores` commands
+  (`BoardComparator`, `BenchmarkAndCompareCommands`): not ported; `freerouting-dev ses-diff`
+  is the comparison tool (C07.3).

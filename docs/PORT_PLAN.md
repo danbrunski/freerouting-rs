@@ -59,9 +59,10 @@ between the editor and the engine and complicates the hot interactive-routing pa
 | `io.specctra` | 1.8k | `freerouting-dsn` (format) + `freerouting::io` (AST ↔ board) | |
 | `io.kicad` | 1.6k | `freerouting-dsn` or its own crate (later) | |
 | `rules` | 2.2k | `freerouting::rules` | |
-| `board.model.*`, `board.facade`, `board.state`, `board.trace`, `board.actions` | 13k | `freerouting::board` | See ownership notes below. |
+| `board.model.*`, `board.facade`, `board.state`, `board.trace` | 12k | `freerouting::board` | See ownership notes below. |
+| `board.actions` (`ForcedPadRouter`, `ForcedViaInserter`, `DrillItemMover`) and `board.optimize.TraceShover` with `ShapeTraceEntries`/`ShapeEntrySide` | 2.7k | `freerouting::shove` | Push-and-shove checks and inserts (O03, O04); the autorouter is the main caller. `ComponentItemTransform`/`MoveComponent` go to `freerouting::interactive` (I02, I04). |
 | `board.searchtree` | 3.6k | `freerouting::board::search` | |
-| `board.optimize` | 4.0k | `freerouting::optimize` | |
+| `board.optimize` tighteners and `ViaOptimizer`; `autoroute.pipeline.BatchOptimizer` | 4.4k | `freerouting::optimize`, `::optimize::batch` | O01, O02, O05, O06 |
 | `drc` | 2.6k | `freerouting::drc` | |
 | `autoroute.*` | 18k | `freerouting::autoroute` | Expansion rooms/doors, drill pages, maze search, path insertion, batch pipeline. |
 | `core.scoring` | 2.1k | `freerouting::scoring` | |

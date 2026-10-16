@@ -13,6 +13,14 @@ against Java's order, for pass 1 only.
 Prerequisites: board parity (rung 3); A10 (`TaskOrdering` trait,
 `FreeroutingOrdering`); F03.1, F03.4.
 
+A third candidate order comes from the Java fork's unimplemented plan
+`docs/research/escape_congestion_research.md` (at `main`; a planning
+document, no code): estimate escape congestion per component before
+routing and route the pins under the most pressure first. It is written
+for the fanout pre-pass (X10, X12), but its congestion estimate is also a
+pass-1 ordering key. Preregister it as an arm only if the first two orders
+leave congestion failures (Q06's verdicts say).
+
 ## What exists and what this adds
 
 | Exists | State |

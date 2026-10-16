@@ -12,6 +12,12 @@ Prerequisites: board parity (rung 3); A10 (the fanout stage slot and
 Freerouting's fanout as the default); B05 (pin exits and neck-down width);
 B09; Q02 (widen-back with taper, reused); F04; F03.1, F03.4.
 
+Also read the Java fork's `docs/research/escape_congestion_research.md`
+(at `main`; a plan, never implemented): pre-route escape-congestion
+estimation and congestion-aware pin ordering for the fanout. Its congestion
+measure is the natural order for X10's stubs, and its "detect escape
+bottlenecks before routing" idea overlaps Q03.
+
 ## What exists and what this adds
 
 | Exists | State |

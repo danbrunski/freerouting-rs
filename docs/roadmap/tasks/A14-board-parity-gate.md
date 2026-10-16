@@ -23,7 +23,7 @@ and proves determinism on the benchmark set ([A00](A00-autorouter-README.md)).
 |---|---|
 | `fixtures/reference/route/` | 118 boards at `cda540f`, time-bounded and not reproducible; J01 regenerates them |
 | `freerouting-dev ses-diff` (F02.2) | Structural comparison: wires and vias per net, plus statistics |
-| Java fixture tests under `src/test/java/app/freerouting/fixtures/` | Not ported; they assume `TestingSettings` (copper-to-edge clearance 0, the optimizer on unless disabled) |
+| Java fixture tests under `src/test/java/app/freerouting/fixtures/` | Not ported; they assume `TestingSettings` (copper-to-edge clearance 0, the optimizer on unless disabled). 47 classes at the pin: the routing ones are A14.6; `WorkLimitDeterminismTest` is A12.6, `RoutingPipelineComparisonTest` A13.7, `Issue954CircularKeepoutInsertionTest` O04.6, `Issue955PlacementLifecycleTest` and `Issue955RotatedPadContactTest` B05.8, `BatchOptimizerDeterminismTest` O06.5, `KiCadDrcViolationRoutingTest` is the same data as B07.2, `PCBenchPreExistingClearanceViolationsTest` is below (load-only), `Issue733DsnJsonParityTest` is dropped with the KiCad JSON export (G00 question 2) |
 | A13 `run_pipeline`, `examples/route_board.rs` | Prerequisite |
 
 What this adds: `tests/autoroute_board_parity.rs` (the gate), `tests/autoroute_fixture_ports.rs`
@@ -120,6 +120,39 @@ expected mismatch.
   - `StrictDrcRoutingTest` (exactly 16 violations, at most 30 unrouted) and
     `BbdMars64PerformanceRoutingTest` (unrouted bounds only) as `#[ignore]`, slow in Java
     too.
+  - Added 2026-10-16 (the review found them unclaimed; bounds read at `a773a70ec`):
+    - `BendCostRoutingTest`: J2, 2 passes, 5 items, a bend cost injected for layer 0,
+      the standard `RoutingResultAssertions.check()` (completes, within its bounds);
+    - `Issue676FullPassTest`: `Issue676-ch32v-tx118s`, 3 passes, completes;
+    - `Issue690RoutingTest`: `Issue690-ecc83`, `Issue690-kit-dev-coldfire-xilinx_5213`
+      and `Issue690-sonde_xilinx`, 1 pass, 50 items each, completes;
+    - `Issue420ContributionBoardRoutingTest`: `Issue420-contribution-board`, fanout off,
+      1 pass and 100 items completes with 0 clearance violations; then the optimizer on,
+      1 pass, 150 items, 1 thread, completes (Java's point is "no OutOfMemoryError";
+      Rust records peak RSS in the done note);
+    - `Issue957SmokeRoutingTest`: `Issue957-smoke-ldo-led`, 2 passes, completes; the
+      board has `ComponentOutline` items; B01's `state_hash` of the routed board equals
+      the hash of its `deep_copy()`;
+    - `Issue955RoutingQualityTest`: checkpoints on `Issue955-rotated-pad-contacts`,
+      `Issue508-DAC2020_bm01` and `Issue026-J2_reference` at `max_items` 0, 2 and 10,
+      1 pass, fanout and optimizer off, 1 thread: incompletes and clearance violations
+      after are at most those before;
+    - `MinTraceWidthTest` (Java fork `46bf9e2ef`, after the pin; its setting is C02's
+      `router.min_trace_width_um` and A06 applies it): bm05, 1 pass, optimizer off:
+      without the setting at least one trace is narrower than its class width; with it
+      above every class width, none is;
+    - load-only, no routing, so they may be ported earlier into `tests/java_ports.rs`
+      by whoever gets there first: `CombineStackOverflowTest`
+      (`Issue723-CombineStackOverflow`, ~4,000 collinear segments on one net: loading
+      and combining must not overflow the stack; Rust's `combine_traces` is iterative
+      or has a test at this depth), `FootprintImageVariantKeepoutTest`
+      (`Issue951-corney_island_wireless`: package `ceoloide:mounting_hole_npth` and its
+      variant `::1` are distinct packages with their own keepout circles, MH1 and MH5
+      reference the right one, S1 and S4 exist), and
+      `PCBenchPreExistingClearanceViolationsTest` (eight boards under the Java repo's
+      `scripts/benchmark/fixtures/PCBench/<name>/unrouted.dsn`, read at the pin
+      through git and skipped when missing: 0 pre-existing clearance violations each;
+      plus `testBasePinNameNormalization`).
   - **Accept:** all green (the ignored ones run once, results in the done note); any bound
     Rust misses where Java meets it is a parity bug, fixed or listed.
 

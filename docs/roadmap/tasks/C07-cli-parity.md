@@ -205,6 +205,13 @@ token and A13 owns `run_pipeline`; C07 only calls them.
     `--logging.file.*` is accepted and ignored.
   - `-im`, `-hr`, unknown `-x` and `--x` without `=` warn
     `Unknown command line argument: <arg>`, as Java does.
+  - Java's two headless utility commands are not ported, each with a
+    DIVERGENCES line: `--compare-boards=<a>,<b>` (`cli/BenchmarkAndCompareCommands`
+    over `board/state/BoardComparator.java`, 758 lines: units, bounding box, layers,
+    items and nets of two boards with a tolerance) and
+    `--calculate-benchmark-scores --input=<f> --output=<f>`. Both exit 2 with
+    `not supported; use freerouting-dev ses-diff` (F02.2). A board-level
+    comparison beyond `ses-diff` is added only if a P or Q item needs it.
   - `-help`, `--help` and `-h` print `help.txt` and exit 0. The help lists
     every flag in `args.rs` with its settings path.
   - **Accept:**

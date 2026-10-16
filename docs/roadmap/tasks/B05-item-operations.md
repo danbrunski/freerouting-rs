@@ -191,7 +191,10 @@ Suggested split: B05.1–B05.4, then B05.5–B05.8.
 - [ ] **B05.8 — The remaining placement tests.**
   - Java tests: `fixtures/Issue955PlacementLifecycleTest.java` (14 tests: contact
     kept through the DSN round trip, quarter, arbitrary and mirror turns, copy
-    rebinding, mirrored exit directions); `board/BoardItemRenderingMetadataTest.java`
+    rebinding, mirrored exit directions); `fixtures/Issue955RotatedPadContactTest.java`
+    (load-only: S21 pins `2@1` and `1` each have exactly one normal contact after
+    import, and the contact ids are as Java reports them; added 2026-10-16);
+    `board/BoardItemRenderingMetadataTest.java`
     (86 lines); `board/actions/ComponentItemTransformTest.java` (the cases that
     don't need `board.actions.ComponentItemTransform`).
   - Rust: port into `tests/item_transform.rs` and `tests/java_ports.rs`. Cases

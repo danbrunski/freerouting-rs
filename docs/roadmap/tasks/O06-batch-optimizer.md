@@ -196,7 +196,14 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
       from has the same `state_hash` and tree fingerprint (B02.1) as
       `baseline.deep_copy()`;
     - `candidates_leave_the_baseline_untouched`: the baseline's
-      `state_hash` is the same before and after a pass's evaluation.
+      `state_hash` is the same before and after a pass's evaluation;
+    - `work_limit_is_per_candidate_not_per_thread` (added 2026-10-16): B00
+      argues that Rust's per-board meter equals Java's per-thread meter for
+      every limit in the O series. This is the one place several boards are
+      worked on at once, so prove it: a candidate given a `WorkLimit` small
+      enough to fire cuts off after the same number of visits whether it
+      runs alone, after nine other candidates on the same thread, or on
+      `--threads 8`; the per-candidate result log is equal in all three.
 
 - [ ] **O06.5 — The pass loop.**
   - Java: `runBatchLoop` (`:279-517`), `restoreIncumbentBoard`.

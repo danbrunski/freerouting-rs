@@ -16,6 +16,11 @@ Prerequisites: board parity (rung 3); A10 (fanout stage slot); K02 (pad
 arrays in the footprint frame, rotation and side); X10.1 (the part frame);
 B09; F04; F03.1, F03.4.
 
+Also read the Java fork's `docs/research/escape_congestion_research.md`
+(at `main`; a plan, never implemented) for its escape-congestion estimate
+and its survey of why pin-by-pin fanout fails on dense arrays; X12's channel
+planner is the answer to the problem it describes.
+
 ## What exists and what this adds
 
 | Exists | State |

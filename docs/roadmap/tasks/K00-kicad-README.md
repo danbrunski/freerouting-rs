@@ -169,10 +169,15 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
    differ from the Java plugin's `app.freerouting.kicad-plugin`; proposed
    `com.github.danbrunski.freerouting-rs`.
 5. **KiCad 11.** KRT's docstring says KiCad master removed SWIG in 2026-03
-   (commit `65a442b1`, unverified here). The plugin needs `ExportSpecctraDSN`
-   and `ImportSpecctraSES`, which are SWIG calls. *Recommendation:* K01.5
-   records the facts; decide on K08 (direct writer) or an IPC-API plugin
-   once KiCad 11's release date is known.
+   (commit `65a442b1`, unverified here). The Java fork's own research note
+   (`git -C ../freerouting show main:docs/research/kicad_ipc_api_research.md`,
+   729 lines) says the same from KiCad's side: the SWIG bindings are
+   deprecated and removed in KiCad 11, and the Protocol Buffers IPC API is
+   supported on KiCad 9 and 10. It also sketches an IPC-based plugin. The
+   plugin needs `ExportSpecctraDSN` and `ImportSpecctraSES`, which are SWIG
+   calls. *Recommendation:* K01.5 records the facts; decide on K08 (direct
+   writer) or an IPC-API plugin once KiCad 11's release date is known.
+   *Accepted by Dan 2026-10-15.*
 6. **What the reader adds beyond KiCad's export.** KiCad's exporter writes
    non-default net classes in `std::unordered_map` order (not
    reproducible), turns placement-only rule areas into full keepouts, and

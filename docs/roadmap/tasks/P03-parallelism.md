@@ -27,7 +27,16 @@ Prerequisites: P01; O06 (the batch optimizer) for P03.2.
   - speculative searches for the next connection;
   - reusing rooms or drills across connections.
   Each of these changes the tree topology or the work counts (A-series
-  research §6.4).
+  research §6.4). Java measured the same idea and removed it:
+  `git -C ../freerouting show main:docs/research/large-board-autorouter-performance.md`
+  records that the clone-and-shuffle multithreaded pass
+  (`AutoroutePassRunner.runMultiThread`, one deep copy per thread, best
+  score kept) and two further parallel phases never beat the single-thread
+  pass by enough to keep, so upstream deleted them; `router.autorouter.max_threads`
+  stayed in the settings and the live pass ignores it. Its profiles also show
+  the maze at over 95 % of item time on the slow boards, with statistics and
+  the incomplete scan under 120 ms combined. P03 does not repeat that
+  experiment; a parallel pass is a Q-style measured divergence if ever.
 - **One thread pool.** Use one `rayon` pool (a `NEW DEP` for the engine
   crate if it isn't one already; check `Cargo.toml`). It is sized by
   `router.max_threads`, which defaults to the core count. Threads=1 must give
