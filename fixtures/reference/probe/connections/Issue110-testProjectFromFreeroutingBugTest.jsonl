@@ -1,0 +1,10 @@
+{"kind":"connections","board":"Issue110-testProjectFromFreeroutingBugTest","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":20,"connections":4}
+{"stage":"off:1","net":1,"item":41,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[11],"dest":[41]}
+{"stage":"off:2","net":2,"item":42,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[12],"dest":[42]}
+{"stage":"off:7","net":7,"item":47,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[17],"dest":[47]}
+{"stage":"off:8","net":8,"item":48,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[10],"dest":[48]}
+{"stage":"on:1","net":1,"item":41,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[11],"dest":[41]}
+{"stage":"on:2","net":2,"item":42,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[12],"dest":[42]}
+{"stage":"on:7","net":7,"item":47,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[17],"dest":[47]}
+{"stage":"on:8","net":8,"item":48,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[10],"dest":[48]}

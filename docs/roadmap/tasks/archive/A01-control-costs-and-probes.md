@@ -5,7 +5,7 @@ search reads its parameters from `AutorouteControl`. This checklist builds both:
 `autoroute` module skeleton, the per-net control values and cost bounds, the Java
 `getId` hash formulas that break queue ties, and the shared probe harness with its
 connection sampler. It is the first rung-1 comparison of
-the series ([A00](A00-autorouter-README.md)).
+the series ([A00](../A00-autorouter-README.md)).
 
 **Prerequisites:**
 - C02 (the `RouterSettings` type), C03.6 (`prepare_job`, Java's load sequence with the
@@ -44,7 +44,7 @@ and `distance`.
   read by reflection, which works because the Java repo has no `module-info.java`. Later
   checklists append a kind; none rewrites another's.
 - **Canonical lines, compared as text.** `autoroute::probe::ProbeWriter` and the Java
-  writer emit identical lines (format in [A00](A00-autorouter-README.md)). No JSON parser
+  writer emit identical lines (format in [A00](../A00-autorouter-README.md)). No JSON parser
   is needed on the Rust side. A test fails at the first differing line and prints it with
   the five lines before it. Doubles are printed as raw bits; the failure message decodes
   them for people.
@@ -94,7 +94,7 @@ and `distance`.
 
 ## Checklist
 
-- [ ] **A01.1 — Module skeleton, probe writer and connection sampler.**
+- [x] **A01.1 — Module skeleton, probe writer and connection sampler.**
   - `autoroute/mod.rs`: module docs naming the Java packages, and
     `AttemptState { Unknown, Skipped, NoUnconnectedNets, ConnectedToPlane,
     AlreadyConnected, NoConnections, Routed, Failed, InsertError }` plus
@@ -128,8 +128,23 @@ and `distance`.
       `Issue413-test`, `Issue676-ch32v-tx118s`, `Issue957-smoke-ldo-led`. This list is
       "the fixture ladder" in later A checklists; record it in `fixtures.tsv`.
     - A digest-mode mismatch, forced in a unit test, prints the `probe.sh` command.
+  - *Done 2026-10-16:* `autoroute/mod.rs` (docs, `AttemptState::java_name`, `AttemptResult`
+    with Java's `toString`), `autoroute/probe.rs` (`ProbeWriter`, `ProbeValue`, `fnv64`,
+    `digest`, `first_difference`, `decode_bits`; 5 unit tests),
+    `tools/java-reference/probes/autoroute/{AutorouteProbe.java, generate.sh, fixtures.tsv,
+    README.md}` (the `ladder` row holds the 17 boards above), `tests/autoroute_common/mod.rs`
+    (loader through `prepare_job`, sampler, `router_control`, `compare_probe`) and
+    `tests/autoroute_probe_harness.rs`. `cargo test -p freerouting --test
+    autoroute_probe_harness`: 3 passed — `probe_selftest_matches_java` (ints incl.
+    `Integer.MIN_VALUE`/`Long.MIN_VALUE`, `-0.0`, `0.1`, `Double.MIN_VALUE`, NaN, -inf,
+    escapes, `[]`, `[[1,-2],[],["0x3fe…",true]]`, FNV-1a), `probe_connections_match_java`
+    (all 17 ladder boards equal, both variants), `digest_mismatch_prints_the_probe_command`.
+    References from `generate.sh <a773a70ec worktree> all`; a second full run was
+    byte-identical for all five kinds (`diff -r`). The `connections` kind prints the ripup
+    values of each variant without building the control, because Java's constructor throws
+    on `scoring-perfect-two-pin` (no via rule).
 
-- [ ] **A01.2 — Java id formulas.** `autoroute/java_ids.rs`, all `i32` with
+- [x] **A01.2 — Java id formulas.** `autoroute/java_ids.rs`, all `i32` with
   `wrapping_mul`/`wrapping_add`, `// PARITY:` on each:
   - `expansion_door_id(a, b) = min(a, b) * 31 + max(a, b)` (`ExpansionDoor.java:185-190`);
   - `target_door_id(item_id, room_id_or_0) = 31 * item_id + room_id`
@@ -146,8 +161,17 @@ and `distance`.
   - **Accept:** probe kind `ids`: 1,000 inputs per formula drawn from `new Random(7)`
     (`nextInt()` over the full range, so overflow is exercised), plus the shape ids of
     the first 200 tree shapes of J2. Rust equal (`java_ids_match_java`).
+  - *Done 2026-10-16:* `autoroute/java_ids.rs` (six functions, `// PARITY:` with the Java
+    line on each, unit test `ids_overflow_like_java_int`). The kind is named `java-ids`
+    (`fixtures/reference/probe/java-ids/Issue026-J2_reference.jsonl`), because B01 already
+    owns `ids`. Random part: 6 × 1,000 inputs from `new Random(7).nextInt()` (Rust
+    `JavaRandom::next_int_unbounded`, appended to `jmath` with `min_f64`). Tree part: the
+    first 200 default-tree shapes of J2 in item-list order, with the ids of real Java
+    `ObstacleExpansionRoom`, `IncompleteFreeSpaceExpansionRoom`, `ExpansionDrill` and
+    `DrillPage` objects (a new page's net is -1) plus the door and target formulas on them.
+    `cargo test -p freerouting --test autoroute_probe_control java_ids_match_java`: ok.
 
-- [ ] **A01.3 — `AutorouteControl`.** Port `autoroute/maze/AutorouteControl.java` as
+- [x] **A01.3 — `AutorouteControl`.** Port `autoroute/maze/AutorouteControl.java` as
   `autoroute/control.rs`:
   - the private constructor (`:140-193`): per-layer bend costs, the plane-layer rule (a
     non-signal layer that the settings mark active is forced inactive, with Java's warning
@@ -170,8 +194,18 @@ and `distance`.
   - **Accept:** unit tests for the plane-layer rule, the pure-SMD factor, the null-net
     fallback, and the radius accumulation across two `rebuild_via_info` calls. Full
     equality comes in A01.5.
+  - *Done 2026-10-16:* `autoroute/control.rs`: `AutorouteControl::{for_net,
+    for_net_default, rebuild_via_info}`, `ViaMask`, `ViaCost`, `ExpansionCostFactor` (the
+    settings' `TraceCostFactor` re-exported, one type), `ControlError` for Java's throws
+    (missing net, no via rules, class without via rule; `java_exception()` names Java's
+    exception), `warnings` for the plane-layer text. `// PARITY(quirk):` on the two
+    never-reset accumulations. The fallback rule is `via_rules.nth(0)`, which is what
+    `rules::default_via_rule` returns. Unit tests in `tests/autoroute_probe_control.rs` on a
+    synthetic 3-layer board with a GND plane: `control_plane_layer_is_forced_inactive`,
+    `control_pure_smd_net_has_cheaper_vias` (bit-exact factor order), `control_missing_net_falls_back`
+    (net 0 and net 99), `control_rebuild_only_grows_the_via_radii`; all 4 ok.
 
-- [ ] **A01.4 — `DestinationDistance`.** Port `autoroute/maze/DestinationDistance.java`
+- [x] **A01.4 — `DestinationDistance`.** Port `autoroute/maze/DestinationDistance.java`
   (391 lines) as `autoroute/distance.rs`: `new(trace_costs, layer_active,
   min_normal_via_cost, min_cheap_via_cost)`, `join(box, layer)`, `calculate_point`,
   `calculate_box` and `calculate_cheap_distance`.
@@ -182,8 +216,13 @@ and `distance`.
     constructor (`:45-100`), plus the per-layer trace costs and active flags; no allocation
     per `calculate` call.
   - **Accept:** covered by A01.5's `distance` probe.
+  - *Done 2026-10-16:* `autoroute/distance.rs`: Java's sums and `Math.min` chains in
+    order (`jmath::min_f64`, `max_f64`; no `mul_add`), `int` deltas with `wrapping_sub`,
+    `Integer.MAX_VALUE` for an empty destination, the minima in the constructor, the cheap
+    distance as a parameter instead of Java's swap of the field (same values, no mutation);
+    3 unit tests. `distance_matches_java` (A01.5) is bit-equal on all 17 ladder boards.
 
-- [ ] **A01.5 — `control` and `distance` probes; Java tests.**
+- [x] **A01.5 — `control` and `distance` probes; Java tests.**
   - Kind `control`: for every net, every field of `AutorouteControl` built as the
     router builds it (via costs `getPlaneViaCosts()` for a plane net, else
     `getViaCosts()`; the router's trace costs), with `ripupAllowed = true` and
@@ -199,3 +238,11 @@ and `distance`.
   - **Accept:** `control` equal for every net on the whole fixture ladder;
     `distance` bit-equal on the ladder up to J2;
     `scoring_maze_cost_independence` (both cases) green.
+  - *Done 2026-10-16:* `cargo test -p freerouting --test autoroute_probe_control`: 7 passed;
+    `control_matches_java` equal on all 17 ladder boards (every field per net, plus a
+    `rebuilt:` line after a second `rebuildViaInfo`; `scoring-perfect-two-pin` throws
+    `NullPointerException` in Java and gives `ControlError::NoViaRule` in Rust, both printed
+    as the same record); `distance_matches_java` bit-equal on all 17 boards (J2, DAC2020_bm08,
+    the SMD demo and CONGFLOCK through their committed digests). `cargo test -p freerouting
+    --test java_ports scoring_maze`: `scoring_maze_cost_independence::{maze_search_costs_stay_put_when_v2_board_score_weights_change,
+    autoroute_control_via_cost_tracks_maze_settings_not_v2_weights}` ok.

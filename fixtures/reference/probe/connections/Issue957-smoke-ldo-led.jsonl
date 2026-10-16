@@ -1,0 +1,6 @@
+{"kind":"connections","board":"Issue957-smoke-ldo-led","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":4,"connections":2}
+{"stage":"off:2","net":2,"item":80,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[55],"dest":[80,79,78,77,76,38,6,5]}
+{"stage":"off:4","net":4,"item":85,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[45],"dest":[85,84,39]}
+{"stage":"on:2","net":2,"item":80,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[55],"dest":[80,79,78,77,76,38,6,5]}
+{"stage":"on:4","net":4,"item":85,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[45],"dest":[85,84,39]}

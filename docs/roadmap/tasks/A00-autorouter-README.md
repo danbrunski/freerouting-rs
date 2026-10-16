@@ -30,7 +30,7 @@ The optimizer stays aggregates-only until a later ledger line says otherwise.
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [A01](A01-control-costs-and-probes.md) | `AutorouteControl`, `DestinationDistance`, the Java `getId` formulas, and the probe harness every later A checklist uses | M / low | C02, C03.6, C03.7, F02.1, B04.7 |
+| [A01](archive/A01-control-costs-and-probes.md) ✅ | `AutorouteControl`, `DestinationDistance`, the Java `getId` formulas, and the probe harness every later A checklist uses | M / low | C02, C03.6, C03.7, F02.1, B04.7 |
 | [A02](A02-room-graph-45.md) | 45° room graph: room and door arenas, room database, neighbour sorting, door sections, search init; `start-rooms` probe equal | L / high | A01, B02, B03, B04.7 |
 | [A03](A03-drill-pages.md) | Drill pages and drills; `drills` probe equal | M / medium | A02 |
 | [A04](A04-maze-search.md) | The maze search as one core generic over sinks: queue, expansion, layer changes, ripup, shove-room checks; `maze-log` probe equal pop for pop | L / high | A03, O03, B04, B05, B02.7, B03.7 |

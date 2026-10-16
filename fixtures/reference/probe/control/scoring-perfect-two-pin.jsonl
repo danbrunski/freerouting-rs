@@ -1,0 +1,3 @@
+{"kind":"control","board":"scoring-perfect-two-pin","javaCommit":"a773a70ec","format":1}
+{"stage":"board","maxNetNumber":1,"layerCount":1,"viaCosts":50,"planeViaCosts":5,"startRipupCosts":100,"fanout":true}
+{"stage":"net:1","exception":"NullPointerException"}

@@ -1,0 +1,12 @@
+{"kind":"connections","board":"PCBench-retroreflectors-CONGFLOCK","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":5}
+{"stage":"off:1","net":1,"item":21,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[16,9],"dest":[21]}
+{"stage":"off:2","net":2,"item":24,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[14,3],"dest":[24]}
+{"stage":"off:3","net":3,"item":32,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[15,2],"dest":[32]}
+{"stage":"off:4","net":4,"item":33,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[26,22,8],"dest":[33]}
+{"stage":"off:5","net":5,"item":25,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[23],"dest":[25]}
+{"stage":"on:1","net":1,"item":21,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[16,9],"dest":[21]}
+{"stage":"on:2","net":2,"item":24,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[14,3],"dest":[24]}
+{"stage":"on:3","net":3,"item":32,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[15,2],"dest":[32]}
+{"stage":"on:4","net":4,"item":33,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[26,22,8],"dest":[33]}
+{"stage":"on:5","net":5,"item":25,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[23],"dest":[25]}

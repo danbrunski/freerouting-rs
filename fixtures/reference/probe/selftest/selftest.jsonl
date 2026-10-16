@@ -1,0 +1,6 @@
+{"kind":"selftest","board":"selftest","javaCommit":"a773a70ec","format":1}
+{"stage":"ints","zero":0,"intMin":-2147483648,"intMax":2147483647,"longMin":-9223372036854775808}
+{"stage":"doubles","negZero":"0x8000000000000000","tenth":"0x3fb999999999999a","minValue":"0x0000000000000001","minNormal":"0x0010000000000000","max":"0x7fefffffffffffff","nan":"0x7ff8000000000000","negInf":"0xfff0000000000000","intMaxAsDouble":"0x41dfffffffc00000"}
+{"stage":"other","yes":true,"no":false,"text":"quote\" backslash\\ tab\u0009 ctl\u0001 é"}
+{"stage":"lists","empty":[],"nested":[[1,-2],[],["0x3fe0000000000000",true]]}
+{"stage":"fnv","ab":"78ed6781f136a14e","none":"cbf29ce484222325"}

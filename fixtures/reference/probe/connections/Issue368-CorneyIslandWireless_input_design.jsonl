@@ -1,0 +1,8 @@
+{"kind":"connections","board":"Issue368-CorneyIslandWireless_input_design","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":3}
+{"stage":"off:1","net":1,"item":32,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[20],"dest":[32]}
+{"stage":"off:2","net":2,"item":21,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[3],"dest":[21]}
+{"stage":"off:3","net":3,"item":33,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[12],"dest":[33]}
+{"stage":"on:1","net":1,"item":32,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[20],"dest":[32]}
+{"stage":"on:2","net":2,"item":21,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[3],"dest":[21]}
+{"stage":"on:3","net":3,"item":33,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[12],"dest":[33]}

@@ -1,0 +1,13 @@
+# Autoroute-probe fixtures (A01). Columns are tab separated.
+#
+# A row "ladder<TAB>path..." defines the fixture ladder of the A series (A01.1): the small boards
+# of the autoroute research's fixture table, smallest first. Every other row is
+# "<kind><TAB>path..." and names the fixtures of one probe kind; "@ladder" stands for the whole
+# ladder and "-" for no fixture (the output is then <kind>/<kind>.jsonl). Paths are below the
+# repository root. Later checklists append their kinds; none rewrites another's row.
+ladder	fixtures/empty_board.dsn	fixtures/scoring-perfect-two-pin.dsn	fixtures/Issue954-circle.dsn	fixtures/scoring-zero-length.dsn	fixtures/scoring-mixed-layer.dsn	fixtures/Issue508-SMD-routing-issue-demo.dsn	fixtures/Issue269-min_fr_test/min_fr_test.dsn	fixtures/Issue368-CorneyIslandWireless_input_design.dsn	fixtures/Issue143-rpi_splitter.dsn	fixtures/Issue143-rpi_splitter_mod.dsn	fixtures/PCBench-retroreflectors-CONGFLOCK.dsn	fixtures/Issue508-DAC2020_bm08.dsn	fixtures/Issue110-testProjectFromFreeroutingBugTest.dsn	fixtures/Issue026-J2_reference.dsn	fixtures/Issue413-test.dsn	fixtures/Issue676-ch32v-tx118s.dsn	fixtures/Issue957-smoke-ldo-led.dsn
+selftest	-
+connections	@ladder
+java-ids	fixtures/Issue026-J2_reference.dsn
+control	@ladder
+distance	@ladder

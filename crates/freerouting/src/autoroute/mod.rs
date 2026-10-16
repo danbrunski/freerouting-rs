@@ -26,12 +26,27 @@
 //! - [`batch`]: the Freerouting stages' decision logic that needs no
 //!   router: the pass controller, the item ordering with its seeded
 //!   shuffle, the ripup policy, the fanout rules and the unrouted report.
+//!
+//! The search parameters and the probe harness (A01):
+//!
+//! - [`control`]: `AutorouteControl`, the per-net search parameters (layer
+//!   activity, trace widths, via masks and radii, via costs);
+//! - [`distance`]: `DestinationDistance`, the lower bound of the cost to
+//!   the destination that orders the maze queue;
+//! - [`java_ids`]: Java's `getId` hash formulas of rooms, doors, drills and
+//!   drill pages, which break queue ties;
+//! - [`probe`]: the line format of the Java probes
+//!   (`tools/java-reference/probes/autoroute/AutorouteProbe.java`).
 
 pub mod batch;
+pub mod control;
+pub mod distance;
 pub mod events;
 pub mod failure_log;
 pub mod history;
 pub mod item_route_result;
+pub mod java_ids;
+pub mod probe;
 pub mod stages;
 
 /// The possible results of autorouting a connection (Java
@@ -56,4 +71,54 @@ pub enum AttemptState {
     Failed,
     /// Inserting the found connection failed.
     InsertError,
+}
+
+impl AttemptState {
+    /// The Java enum constant name (`AutorouteAttemptState.name()`).
+    pub fn java_name(self) -> &'static str {
+        match self {
+            AttemptState::Unknown => "UNKNOWN",
+            AttemptState::Skipped => "SKIPPED",
+            AttemptState::NoUnconnectedNets => "NO_UNCONNECTED_NETS",
+            AttemptState::ConnectedToPlane => "CONNECTED_TO_PLANE",
+            AttemptState::AlreadyConnected => "ALREADY_CONNECTED",
+            AttemptState::NoConnections => "NO_CONNECTIONS",
+            AttemptState::Routed => "ROUTED",
+            AttemptState::Failed => "FAILED",
+            AttemptState::InsertError => "INSERT_ERROR",
+        }
+    }
+}
+
+/// The outcome of autorouting a connection: its state and a detail message
+/// (Java `AutorouteAttemptResult`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttemptResult {
+    pub state: AttemptState,
+    pub details: String,
+}
+
+impl AttemptResult {
+    /// A result with empty details.
+    pub fn new(state: AttemptState) -> AttemptResult {
+        AttemptResult {
+            state,
+            details: String::new(),
+        }
+    }
+
+    /// A result with a detail message.
+    pub fn with_details(state: AttemptState, details: impl Into<String>) -> AttemptResult {
+        AttemptResult {
+            state,
+            details: details.into(),
+        }
+    }
+}
+
+impl std::fmt::Display for AttemptResult {
+    /// Java's `toString`: `STATE: details`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.state.java_name(), self.details)
+    }
 }

@@ -1,0 +1,14 @@
+{"kind":"connections","board":"Issue508-SMD-routing-issue-demo","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":6,"connections":6}
+{"stage":"off:1","net":1,"item":11,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[2],"dest":[11]}
+{"stage":"off:2","net":2,"item":8,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[7],"dest":[8]}
+{"stage":"off:3","net":3,"item":9,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[3],"dest":[9]}
+{"stage":"off:4","net":4,"item":13,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[4],"dest":[13]}
+{"stage":"off:5","net":5,"item":10,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[6],"dest":[10]}
+{"stage":"off:6","net":6,"item":14,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[5],"dest":[14]}
+{"stage":"on:1","net":1,"item":11,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[2],"dest":[11]}
+{"stage":"on:2","net":2,"item":8,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[7],"dest":[8]}
+{"stage":"on:3","net":3,"item":9,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[3],"dest":[9]}
+{"stage":"on:4","net":4,"item":13,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[4],"dest":[13]}
+{"stage":"on:5","net":5,"item":10,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[6],"dest":[10]}
+{"stage":"on:6","net":6,"item":14,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[5],"dest":[14]}

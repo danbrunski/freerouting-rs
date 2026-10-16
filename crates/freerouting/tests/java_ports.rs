@@ -818,3 +818,78 @@ mod stoppable_thread {
         assert!(token.is_router_stop_requested());
     }
 }
+
+mod scoring_maze_cost_independence {
+    use freerouting::autoroute::control::AutorouteControl;
+    use freerouting::io::{BoardReadResult, read_board};
+    use freerouting::settings::board::{BoardRouterSettings, apply_board_specific};
+    use freerouting::settings::{ResolveContext, RouterSettings, defaults};
+
+    const DEFAULT_VIA_COSTS: i32 = 50;
+
+    fn default_settings() -> RouterSettings {
+        let ctx = ResolveContext { cores: 8 };
+        RouterSettings::from_patch(&defaults(&ctx), ctx.cores)
+    }
+
+    #[test]
+    fn maze_search_costs_stay_put_when_v2_board_score_weights_change() {
+        let mut settings = default_settings();
+        let before = settings.clone();
+        settings.router_scoring.unrouted_first_half_weight = 9999.0;
+        settings.router_scoring.unrouted_second_half_weight = 8888.0;
+        settings.router_scoring.clearance_violation_count_weight = 1.0;
+        settings.router_scoring.clearance_violation_depth_weight = 2.0;
+        settings.optimizer_scoring.excess_wire_length_weight = 3.0;
+        settings.optimizer_scoring.excess_via_weight = 4.0;
+        settings.optimizer_scoring.excess_bend_weight = 5.0;
+
+        let (b, s) = (&before.scoring, &settings.scoring);
+        assert_eq!(b.via_costs, s.via_costs);
+        assert_eq!(b.plane_via_costs, s.plane_via_costs);
+        assert_eq!(b.start_ripup_costs, s.start_ripup_costs);
+        assert_eq!(
+            b.default_preferred_direction_trace_cost,
+            s.default_preferred_direction_trace_cost
+        );
+        assert_eq!(
+            b.default_undesired_direction_trace_cost,
+            s.default_undesired_direction_trace_cost
+        );
+        assert_eq!(b.unrouted_net_penalty, s.unrouted_net_penalty);
+        assert_eq!(b.clearance_violation_penalty, s.clearance_violation_penalty);
+        assert_eq!(b.bend_penalty, s.bend_penalty);
+        assert_eq!(s.via_costs, DEFAULT_VIA_COSTS);
+    }
+
+    #[test]
+    fn autoroute_control_via_cost_tracks_maze_settings_not_v2_weights() {
+        let bytes = std::fs::read(super::fixture("scoring-zero-length.dsn")).unwrap();
+        let BoardReadResult::Success { board, .. } = read_board(&bytes) else {
+            panic!("scoring-zero-length.dsn must load");
+        };
+        let ctx = ResolveContext { cores: 8 };
+        let mut patch = defaults(&ctx);
+        apply_board_specific(&mut patch, &board);
+        let mut settings = RouterSettings::from_patch(&patch, ctx.cores);
+        let via_cost_before = AutorouteControl::for_net_default(
+            &board,
+            1,
+            &BoardRouterSettings::from_settings(&settings),
+        )
+        .unwrap()
+        .min_normal_via_cost;
+
+        settings.router_scoring.unrouted_first_half_weight = 50_000.0;
+        settings.optimizer_scoring.excess_via_weight = 9_000.0;
+
+        let after_weights = AutorouteControl::for_net_default(
+            &board,
+            1,
+            &BoardRouterSettings::from_settings(&settings),
+        )
+        .unwrap();
+        assert!((via_cost_before - after_weights.min_normal_via_cost).abs() <= 0.001);
+        assert_eq!(settings.scoring.via_costs, DEFAULT_VIA_COSTS);
+    }
+}

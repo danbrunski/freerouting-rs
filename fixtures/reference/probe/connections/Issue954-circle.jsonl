@@ -1,0 +1,4 @@
+{"kind":"connections","board":"Issue954-circle","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":1,"connections":1}
+{"stage":"off:1","net":1,"item":5,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[2],"dest":[5]}
+{"stage":"on:1","net":1,"item":5,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[2],"dest":[5]}

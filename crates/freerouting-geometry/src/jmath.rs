@@ -56,6 +56,19 @@ pub fn max_f64(a: f64, b: f64) -> f64 {
     if a >= b { a } else { b }
 }
 
+/// Java `Math.min(double, double)`: a `NaN` argument gives `NaN`, and
+/// `-0.0` is smaller than `+0.0`. Rust's `f64::min` returns the other
+/// argument for a `NaN` and leaves the sign of a zero unspecified.
+pub fn min_f64(a: f64, b: f64) -> f64 {
+    if a.is_nan() {
+        return a;
+    }
+    if a == 0.0 && b == 0.0 && b.is_sign_negative() {
+        return b;
+    }
+    if a <= b { a } else { b }
+}
+
 /// Java `DoubleStream.sum()` (JDK 25): Kahan summation in input order
 /// (`Collectors.sumWithCompensation`), and the final sum minus the
 /// compensation; a `NaN` result with an infinite plain sum gives the plain
@@ -122,6 +135,11 @@ impl JavaRandom {
         self.next(1) != 0
     }
 
+    /// `Random.nextInt()`: 32 random bits, over the whole `int` range.
+    pub fn next_int_unbounded(&mut self) -> i32 {
+        self.next(32)
+    }
+
     /// `Random.nextInt(bound)`; panics if `bound <= 0`, as Java throws.
     pub fn next_int(&mut self, bound: i32) -> i32 {
         assert!(bound > 0, "bound must be positive");
@@ -154,6 +172,22 @@ impl JavaRandom {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn min_f64_matches_java_semantics() {
+        assert!(min_f64(f64::NAN, 1.0).is_nan());
+        assert!(min_f64(1.0, f64::NAN).is_nan());
+        assert!(min_f64(0.0, -0.0).is_sign_negative());
+        assert!(min_f64(-0.0, 0.0).is_sign_negative());
+        assert_eq!(min_f64(2.0, 3.0), 2.0);
+    }
+
+    #[test]
+    fn next_int_unbounded_matches_java() {
+        // `new Random(42).nextInt()` and `new Random(0).nextInt()` in Java.
+        assert_eq!(JavaRandom::new(42).next_int_unbounded(), -1_170_105_035);
+        assert_eq!(JavaRandom::new(0).next_int_unbounded(), -1_155_484_576);
+    }
 
     #[test]
     fn java_round_matches_java_semantics() {

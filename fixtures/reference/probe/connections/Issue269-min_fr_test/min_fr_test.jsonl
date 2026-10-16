@@ -1,0 +1,6 @@
+{"kind":"connections","board":"Issue269-min_fr_test/min_fr_test","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":2,"connections":2}
+{"stage":"off:1","net":1,"item":21,"plane":true,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[21],"dest":[2]}
+{"stage":"off:2","net":2,"item":30,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[12],"dest":[30]}
+{"stage":"on:1","net":1,"item":21,"plane":true,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[21],"dest":[2]}
+{"stage":"on:2","net":2,"item":30,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[12],"dest":[30]}

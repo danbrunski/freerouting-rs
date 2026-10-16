@@ -1,0 +1,4 @@
+{"kind":"connections","board":"Issue143-rpi_splitter_mod","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":1}
+{"stage":"off:5","net":5,"item":16,"plane":false,"state":"","ripupAllowed":false,"ripupCosts":1000,"start":[7],"dest":[16]}
+{"stage":"on:5","net":5,"item":16,"plane":false,"state":"","ripupAllowed":true,"ripupCosts":100,"start":[7],"dest":[16]}
