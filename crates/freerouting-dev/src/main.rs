@@ -11,11 +11,15 @@ use freerouting_dev::bench_report;
 use freerouting_dev::ses_diff::{SesDiff, parse_session};
 use freerouting_dev::{load_board, read_text};
 
+mod feasibility;
+
 const USAGE: &str = "usage:
   freerouting-dev ses-diff board.dsn a.ses b.ses [--json out.json]
   freerouting-dev bench --set <file> --java <jar> [--rust <bin>] [--runs N] --out <dir>
       [--optimize] [--max-passes N] [--bounds <tsv>] [--max-load L|off] [--load-wait S]
-      [--timeout S] [--java-bin <java>]";
+      [--timeout S] [--java-bin <java>]
+  freerouting-dev feasibility board.dsn [--json out.json] [--all-pins] [--step-um N]
+      [--start shape|centre]";
 
 /// Bench defaults: passes when no route bounds name the board, the load
 /// limit, how long to wait for it, and the per-run safety timeout.
@@ -31,6 +35,7 @@ fn main() -> ExitCode {
     let result = match args.first().map(String::as_str) {
         Some("ses-diff") => ses_diff(&args[1..]),
         Some("bench") => bench(&args[1..]),
+        Some("feasibility") => feasibility_command(&args[1..]),
         _ => Err(USAGE.to_string()),
     };
     match result {
@@ -216,4 +221,33 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
         Some(_) => ExitCode::from(EXIT_BUSY),
         None => ExitCode::SUCCESS,
     })
+}
+
+fn feasibility_command(args: &[String]) -> Result<ExitCode, String> {
+    let (positional, options) = split_options(args, &["json", "step-um", "start"], &["all-pins"])?;
+    let [board] = positional.as_slice() else {
+        return Err(USAGE.to_string());
+    };
+    let defaults = freerouting::quality::feasibility::FeasibilityOptions::default();
+    let step_um: f64 = parsed(&options, "step-um", defaults.step_um)?;
+    if step_um.is_nan() || step_um <= 0.0 {
+        return Err(format!("--step-um must be positive\n{USAGE}"));
+    }
+    let start = match option(&options, "start") {
+        None | Some("shape") => freerouting::quality::feasibility::StartModel::PinShape,
+        Some("centre") => freerouting::quality::feasibility::StartModel::PinCentre,
+        Some(other) => return Err(format!("bad value for --start: '{other}'\n{USAGE}")),
+    };
+    let feasibility_options = freerouting::quality::feasibility::FeasibilityOptions {
+        step_um,
+        start,
+        all_pins: option(&options, "all-pins").is_some(),
+        ..defaults
+    };
+    feasibility::run(
+        Path::new(board),
+        option(&options, "json").map(Path::new),
+        &feasibility_options,
+    )?;
+    Ok(ExitCode::SUCCESS)
 }

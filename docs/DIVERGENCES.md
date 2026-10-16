@@ -228,6 +228,14 @@ branch 3 in IntOctagon's box cutout.
   them in `library_out` until the rules reader (C04) lands; `ses_writer.rs` strips them from
   Java's text before comparing.
 
+**Infeasible-connection diagnostic** (`quality::feasibility`, Q03; tests
+`tests/quality_feasibility.rs`, `tests/quality_feasibility_java.rs`)
+- New, with no Java counterpart (Java's `AutorouteUnroutedReport` only lists unrouted
+  connections): a static report of the pins no trace of the net class's width can reach,
+  with the widest corridor and the items forming it. Nothing in routing reads it, so routes
+  are unchanged. Its own pin widths (`Pin.getMinWidth`, `getTraceNeckdownHalfwidth`) follow
+  Java until B05 ports them on the board.
+
 ## freerouting-gui
 
 (The GUI is rebuilt with egui, not translated from Swing; only behaviour that Java

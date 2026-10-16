@@ -1,0 +1,104 @@
+(pcb q03-qfn-0p5.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q03 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  20000 0  20000 20000  0 20000  0 0)
+    )
+    (via VIA600)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component QFN_ROW
+      (place U1 10000 10000 front 0)
+    )
+    (component BIG_PAD
+      (place J1 10000 4000 front 0)
+      (place J2 4000 4000 front 0)
+    )
+  )
+  (library
+    (image QFN_ROW
+      (pin QFN_PAD 1 -2000 0)
+      (pin QFN_PAD 2 -1500 0)
+      (pin QFN_PAD 3 -1000 0)
+      (pin QFN_PAD 4 -500 0)
+      (pin QFN_PAD 5 0 0)
+      (pin QFN_PAD 6 500 0)
+      (pin QFN_PAD 7 1000 0)
+      (pin QFN_PAD 8 1500 0)
+      (pin QFN_PAD 9 2000 0)
+      (pin QFN_EP 10 0 1825)
+    )
+    (image BIG_PAD
+      (pin BIG 1 0 0)
+    )
+    (padstack QFN_PAD
+      (shape (rect F.Cu -125 -350 125 350))
+      (attach off)
+    )
+    (padstack QFN_EP
+      (shape (rect F.Cu -2300 -1175 2300 1175))
+      (attach off)
+    )
+    (padstack BIG
+      (shape (circle F.Cu 2000))
+      (attach off)
+    )
+    (padstack VIA600
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net PWR (pins U1-5 J1-1))
+    (net N1 (pins U1-1))
+    (net N2 (pins U1-2))
+    (net N3 (pins U1-3))
+    (net N4 (pins U1-4))
+    (net N6 (pins U1-6))
+    (net N7 (pins U1-7))
+    (net N8 (pins U1-8))
+    (net N9 (pins U1-9))
+    (net GND (pins U1-10 J2-1))
+    (class kicad_default N1 N2 N3 N4 N6 N7 N8 N9 GND
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+    (class Power_High PWR
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 1500)
+        (clearance 250)
+      )
+    )
+  )
+)

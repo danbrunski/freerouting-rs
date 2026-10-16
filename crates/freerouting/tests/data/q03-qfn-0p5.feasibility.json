@@ -1,0 +1,90 @@
+{
+  "schema": "freerouting-feasibility/1",
+  "board_sha256": "d0ce52ba7ef62a80e80b787feae5a6fe7e0afa642dda317b5a1c6beeabbec1ac",
+  "options": {
+    "step_um": 10.000,
+    "start": "shape",
+    "all_pins": false,
+    "neck_ladder": true
+  },
+  "step": 100,
+  "units_per_mm": 10000.000,
+  "candidates": 1,
+  "infeasible": 1,
+  "pins": [
+    {
+      "id": 6,
+      "net": "PWR",
+      "net_number": 1,
+      "component": "U1",
+      "pin": "5",
+      "layers": [
+        "F.Cu"
+      ],
+      "required_width": {
+        "F.Cu": 15000,
+        "B.Cu": 15000
+      },
+      "width": 15000,
+      "width_mm": 1.5000,
+      "corridor": 2602,
+      "corridor_mm": 0.2602,
+      "margin": -12398,
+      "verdict": "infeasible",
+      "throat": {
+        "layer": "F.Cu",
+        "x": 100000,
+        "y": 96400,
+        "x_mm": 10.0000,
+        "y_mm": 9.6400
+      },
+      "near": [
+        {
+          "id": 5,
+          "kind": "pin",
+          "net": "N4",
+          "component": "U1",
+          "pin": "4"
+        },
+        {
+          "id": 7,
+          "kind": "pin",
+          "net": "N6",
+          "component": "U1",
+          "pin": "6"
+        }
+      ],
+      "step": 100,
+      "window": [
+        58700,
+        56500,
+        141300,
+        143500
+      ],
+      "neck": {
+        "neck_width": [
+          2498,
+          15000
+        ],
+        "neck_needed_mm": 1.0000,
+        "rungs": [
+          {
+            "radius_mm": 0.2500,
+            "verdict": "infeasible",
+            "corridor_mm": 0.2602
+          },
+          {
+            "radius_mm": 0.5000,
+            "verdict": "infeasible",
+            "corridor_mm": 0.3246
+          },
+          {
+            "radius_mm": 1.0000,
+            "verdict": "passable",
+            "corridor_mm": 0.2602
+          }
+        ]
+      }
+    }
+  ]
+}

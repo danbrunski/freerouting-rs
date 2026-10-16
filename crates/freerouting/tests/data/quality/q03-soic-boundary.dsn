@@ -1,0 +1,103 @@
+(pcb q03-soic-boundary.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q03 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  20000 0  20000 20000  0 20000  0 0)
+    )
+    (via VIA600)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component SOIC_ROW
+      (place U7 10000 10000 front 0)
+    )
+    (component BIG_PAD
+      (place J1 6000 4000 front 0)
+      (place J2 14000 4000 front 0)
+    )
+  )
+  (library
+    (image SOIC_ROW
+      (pin SOIC_PAD 1 -3810 0)
+      (pin SOIC_PAD 2 -2540 0)
+      (pin SOIC_PAD 3 -1270 0)
+      (pin SOIC_PAD 4 0 0)
+      (pin SOIC_PAD 5 1270 0)
+      (pin SOIC_PAD 6 2540 0)
+      (pin SOIC_PAD 7 3810 0)
+    )
+    (image BIG_PAD
+      (pin BIG 1 0 0)
+    )
+    (padstack SOIC_PAD
+      (shape (rect F.Cu -300 -975 300 975))
+      (attach off)
+    )
+    (padstack BIG
+      (shape (circle F.Cu 2000))
+      (attach off)
+    )
+    (padstack VIA600
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net P150 (pins U7-3 J1-1))
+    (net P140 (pins U7-5 J2-1))
+    (net S1 (pins U7-1))
+    (net S2 (pins U7-2))
+    (net S4 (pins U7-4))
+    (net S6 (pins U7-6))
+    (net S7 (pins U7-7))
+    (class kicad_default S1 S2 S4 S6 S7
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+    (class W150 P150
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 1500)
+        (clearance 250)
+      )
+    )
+    (class W140 P140
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 1400)
+        (clearance 250)
+      )
+    )
+  )
+)
