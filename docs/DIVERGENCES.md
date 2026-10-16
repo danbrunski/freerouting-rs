@@ -116,9 +116,7 @@ branch 3 in IntOctagon's box cutout.
 
 **Board statistics** (`scoring`, port of `BoardStatistics` and
 `BoardStatisticsBoundsCalculator`)
-- Only the V2 router and optimizer scores (Java's defaults) are ported; the legacy
-  formulas need the router's cost settings. The constructor from a KiCad JSON file is
-  not ported.
+- The constructor from a KiCad JSON file is not ported.
 - Java throws a NullPointerException in the Delaunay triangulation of
   `Issue179-Autorouter_PCB1_2023-3-24.dsn` while counting incomplete connections (a
   corner lies outside the bounding triangle) and writes no statistics or scores; the

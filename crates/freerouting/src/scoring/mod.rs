@@ -14,3 +14,5 @@ pub use board_statistics::{
     OptimizerScoreSettings, Rect, RouterScoreSettings, is_pin_escaped,
 };
 pub use bounds_calculator::{BoardStatisticsBounds, calculate_bounds};
+
+pub mod legacy;

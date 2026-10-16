@@ -1,17 +1,28 @@
 //! `BoardHistory` (A08.1) with a fake board: the eviction, restore and rank
-//! rules of `autoroute/BoardHistory.java` at `cda540f`.
+//! rules of `autoroute/BoardHistory.java` at `cda540f` (unchanged at
+//! `a773a70ec`).
 //!
-//! Java's `autoroute/BoardHistoryTest` (6 tests on `empty_board.dsn` and
-//! `Issue159-setonix_2hp-pcb.dsn`) is not ported yet: it compares restored
-//! boards by their state hash (B01.5) and scores them with the
-//! `RouterSettings` dispatch (B06.2); A13.1 implements the history entry for
-//! B01's snapshot and ports it.
+//! The last six tests port Java's `autoroute/BoardHistoryTest` (all six, on
+//! `empty_board.dsn` and `Issue159-setonix_2hp-pcb.dsn`): they store B01's
+//! `BoardSnapshot`, compare boards by their state hash (B01.5) and score
+//! them with `BoardStatistics::router_score` on Java's default settings
+//! (B06.2), as Java's `new BoardStatistics(board).getRouterScore(settings)`.
+//! The history entry for the snapshot is a minimal one in this file; the
+//! pipeline's own is A13.1's. Java loads through `HeadlessBoardManager`;
+//! the port loads as the DRC does (`drc::load_design`), which only adds the
+//! post-load processing, and the tests only compare a board with itself.
 
 use std::cell::Cell;
+use std::path::Path;
+use std::sync::OnceLock;
 
 use freerouting::autoroute::history::{
     BoardHistory, HistoryEntry, HistorySource, MAX_HISTORY_SIZE,
 };
+use freerouting::board::{BoardSnapshot, RoutingBoard};
+use freerouting::drc::load_design;
+use freerouting::scoring::BoardStatistics;
+use freerouting::settings::{ResolveContext, RouterSettings, Source, default_patch, resolve};
 
 /// A fake board: a hash and a score.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -239,4 +250,164 @@ fn signed_zero_scores_sort_positive_first() {
     let mut history = history(5, &[(1, -0.0), (2, 0.0)]);
     assert_eq!(history.restore_best().unwrap().hash, 2);
     assert_eq!(history.rank(1), Some(2));
+}
+
+// Java's `autoroute/BoardHistoryTest`.
+
+/// A real board with the settings its history scores it with.
+struct RealBoard<'a> {
+    board: &'a RoutingBoard,
+    settings: &'a RouterSettings,
+}
+
+/// The stored board: B01's snapshot and the hash of the board it came from.
+struct SnapshotEntry {
+    snapshot: BoardSnapshot,
+    hash: u128,
+}
+
+impl HistoryEntry for SnapshotEntry {
+    type Board = RoutingBoard;
+
+    fn state_hash(&self) -> u128 {
+        self.hash
+    }
+
+    fn restore(&self) -> RoutingBoard {
+        self.snapshot.restore()
+    }
+}
+
+impl HistorySource for RealBoard<'_> {
+    type Entry = SnapshotEntry;
+
+    fn state_hash(&self) -> u128 {
+        self.board.state_hash()
+    }
+
+    fn router_score(&self) -> f32 {
+        BoardStatistics::new(self.board).router_score(Some(self.settings))
+    }
+
+    fn to_entry(&self) -> SnapshotEntry {
+        SnapshotEntry {
+            snapshot: self.board.snapshot(),
+            hash: self.board.state_hash(),
+        }
+    }
+}
+
+/// Java's `setUp`: the two boards and `SettingsMerger` over
+/// `DefaultSettings`.
+struct Setup {
+    board1: RoutingBoard,
+    board2: RoutingBoard,
+    settings: RouterSettings,
+}
+
+impl Setup {
+    fn board1(&self) -> RealBoard<'_> {
+        RealBoard {
+            board: &self.board1,
+            settings: &self.settings,
+        }
+    }
+
+    fn board2(&self) -> RealBoard<'_> {
+        RealBoard {
+            board: &self.board2,
+            settings: &self.settings,
+        }
+    }
+}
+
+fn load(name: &str) -> RoutingBoard {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures")
+        .join(name);
+    let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    load_design(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"))
+}
+
+fn setup() -> &'static Setup {
+    static SETUP: OnceLock<Setup> = OnceLock::new();
+    SETUP.get_or_init(|| {
+        let ctx = ResolveContext { cores: 4 };
+        Setup {
+            board1: load("empty_board.dsn"),
+            board2: load("Issue159-setonix_2hp-pcb.dsn"),
+            settings: resolve(&[(Source::Defaults, default_patch(ctx.cores))], &ctx).settings,
+        }
+    })
+}
+
+#[test]
+fn add_and_restore_board() {
+    let s = setup();
+    let mut history = BoardHistory::new();
+    history.add(&s.board1());
+    let restored = history.restore_best().expect("a restored board");
+    assert!(!std::ptr::eq(&restored, &s.board1), "a new board");
+    assert_eq!(
+        restored.state_hash(),
+        s.board1.state_hash(),
+        "the restored board equals the original"
+    );
+}
+
+#[test]
+fn restore_best_board_from_multiple() {
+    let s = setup();
+    let mut history = BoardHistory::new();
+    // board2 has unrouted connections, so it scores lower than the empty
+    // board1.
+    history.add(&s.board1());
+    history.add(&s.board2());
+    assert!(s.board1().router_score() > s.board2().router_score());
+    let best = history.restore_best().expect("a restored board");
+    assert_eq!(best.state_hash(), s.board1.state_hash(), "the best board");
+}
+
+#[test]
+fn contains() {
+    let s = setup();
+    let mut history = BoardHistory::new();
+    history.add(&s.board1());
+    assert!(history.contains(s.board1.state_hash()));
+    assert!(!history.contains(s.board2.state_hash()));
+}
+
+#[test]
+fn clear() {
+    let s = setup();
+    let mut history = BoardHistory::new();
+    history.add(&s.board1());
+    history.add(&s.board2());
+    assert_eq!(history.len(), 2);
+    history.clear();
+    assert_eq!(history.len(), 0, "empty after clear");
+}
+
+#[test]
+fn size_cap_never_exceeds_max_history_size() {
+    let s = setup();
+    let mut history = BoardHistory::with_max_size(MAX_HISTORY_SIZE);
+    history.add(&s.board1());
+    history.add(&s.board2());
+    history.add(&s.board1());
+    assert!(history.len() <= MAX_HISTORY_SIZE);
+}
+
+#[test]
+fn size_cap_evicts_worst_entry() {
+    let s = setup();
+    // A cap of 1: the better board1 fills it, and the worse board2 does not
+    // evict it.
+    let mut history = BoardHistory::with_max_size(1);
+    history.add(&s.board1());
+    assert_eq!(history.len(), 1);
+    history.add(&s.board2());
+    assert_eq!(history.len(), 1, "the size stays at the cap");
+    let best = history.restore_best().expect("the best board is kept");
+    assert_eq!(best.state_hash(), s.board1.state_hash(), "board1 is kept");
 }

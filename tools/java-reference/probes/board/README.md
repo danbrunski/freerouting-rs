@@ -28,3 +28,4 @@ TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <scratch>/java-pi
 | `ids` | `IdsProbe.java` (B01.1) | all rows | `tests/board_probe_ids.rs` |
 | `state-hash` | `StateHashProbe.java` (B01.5) | J2, DAC2020_bm08, Issue413 | `tests/board_probe_state_hash.rs` |
 | `ledger` | `LedgerProbe.java` (B01.6, Java only: where `NetRoutingLedger` goes stale) | J2, DAC2020_bm08, Issue413 | `tests/drc_ledger.rs` (exact count) |
+| `scores` | `ScoresProbe.java` (B06.3: `getRouterScore`, `getOptimizerScore` and `getOptimizerRankingScore` of `new BoardStatistics(board)` for 19 settings variants: `null`, defaults, V1, each V2 weight and each legacy cost doubled, `lengthFloor = 0`; the statistics they read first) | all rows (`load`, `ses`) | `tests/board_probe_scores.rs` |

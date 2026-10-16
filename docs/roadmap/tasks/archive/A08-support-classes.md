@@ -69,7 +69,7 @@ here so the GUI (G07) can be written against it before the batch loop (A13) exis
 
 ## Checklist
 
-- [~] **A08.1 — `BoardHistory`.** Port `BoardHistory.java` exactly:
+- [x] **A08.1 — `BoardHistory`.** Port `BoardHistory.java` exactly:
   - `add` (`:60-94`): skip when an entry has the same hash; when full, compute the new
     score, find the worst entry by a linear scan keeping the **first** of equal worst
     scores, and drop the newcomer if its score is `<=` the worst; otherwise remove the
@@ -109,6 +109,16 @@ here so the GUI (G07) can be written against it before the batch loop (A13) exis
     `autoroute/BoardHistoryTest` (6 tests) needs B01.5's `state_hash` and B06.2's
     `RouterSettings` score, and the `HistoryEntry` impl for `BoardSnapshot`, which is
     A13.1's.
+  - *Done 2026-10-16:* the remainder landed with B06.2. `tests/autoroute_history.rs`
+    ports all six `autoroute/BoardHistoryTest` tests (`add_and_restore_board`,
+    `restore_best_board_from_multiple`, `contains`, `clear`,
+    `size_cap_never_exceeds_max_history_size`, `size_cap_evicts_worst_entry`) on
+    `empty_board.dsn` and `Issue159-setonix_2hp-pcb.dsn`: restored boards have the
+    original's `state_hash`, the empty board wins, cap 1 keeps the better board. The
+    boards are scored with `BoardStatistics::router_score(Some(&settings))` on
+    `resolve`d `DefaultSettings`; the entry is a minimal `HistoryEntry` for
+    `BoardSnapshot` in the test file (A13.1 keeps the pipeline's own). `cargo test -p
+    freerouting --test autoroute_history`: 19 passed (13 fake-board tests, 6 ports).
 
 - [x] **A08.2 — `RoutingFailureLog`.** Port `RoutingFailureLog.java`: `record_failure(item,
   pass, state, reason)` creates the entry with the item's first net (or -1) and increments

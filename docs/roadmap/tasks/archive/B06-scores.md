@@ -64,7 +64,7 @@ B01.1 for the probe.
 
 ## Checklist
 
-- [ ] **B06.1 — The legacy score.**
+- [x] **B06.1 — The legacy score.**
   - Java: `calculateScore` (`:642-661`), `getMaximumScore` (`:664-666`:
     `maximumCount * unroutedNetPenalty`), `getLegacyNormalizedScore`
     (`:669-681`).
@@ -76,8 +76,23 @@ B01.1 for the probe.
     - a case where computing the costs in `f32` would round differently from
       Java's `f64` path, showing the split matters;
     - the `max_score <= 0` guard.
+  - *Done 2026-10-16:* `scoring/legacy.rs`: `legacy_maximum_score`, `legacy_penalties`,
+    `legacy_costs`, `legacy_score`, `legacy_normalized_score` (on `&BoardStatistics` and
+    C02's `ScoringSettings`, Java's `RoutingCostSettings`), with Java's `int`/`float`/`double`
+    types; the clamp is Java's `Math.max`, added as `jmath::max_f32`/`max_f64`
+    (`max_matches_java_math_max`: 98 pairs printed by
+    `tools/java-reference/probes/JavaMathMaxProbe.java` at `a773a70ec`). `tests/scores.rs`:
+    `legacy_hand_case_defaults`, `legacy_hand_case_fraction`,
+    `legacy_hand_case_doubled_costs` (every `f32` intermediate written out, including the
+    tie 38 999 930 -> 38 999 928); `legacy_costs_are_summed_in_double` (via cost
+    16 777 217: the `f32` path gives 16 777 216, Java's `double` path 16 777 218);
+    `legacy_normalized_score_guards_non_positive_maximum` (no connections, zero and
+    negative penalty); `legacy_via_costs_wrap_as_java_int`; and
+    `legacy_scores_match_java_bits`, all nine cases equal to the bits
+    `tools/java-reference/probes/LegacyScoreProbe.java` prints at `a773a70ec`. `cargo test
+    -p freerouting --test scores`: 14 passed.
 
-- [ ] **B06.2 — Dispatch on `RouterSettings`.**
+- [x] **B06.2 — Dispatch on `RouterSettings`.**
   - Java: `getRouterScore(RouterSettings)` (`:688-696`), `getOptimizerScore(RouterSettings)`
     (`:807-816`), `legacyScoringOrDefault` (`:790-795`: the settings' `scoring`,
     else `new DefaultSettings().getSettings().scoring`).
@@ -89,8 +104,24 @@ B01.1 for the probe.
       missing `router_scoring` section (if C02's type allows it).
     - The DIVERGENCES line "Only the V2 router and optimizer scores … are ported"
       is removed.
+  - *Done 2026-10-16:* `BoardStatistics::router_score`, `optimizer_score` and, new at
+    `a773a70ec` (68a9efed0), `optimizer_ranking_score` (`getOptimizerRankingScore`: the V2
+    optimizer score unclamped, via the new `optimizer_score_v2_unclamped`), all taking
+    `Option<&RouterSettings>`; `legacy_scoring_or_default` reads `DefaultSettings`'
+    `scoring` for `None`. The V2 bodies are unchanged except the final clamp, now Java's
+    `Math.max(0.0, x)` (`jmath::max_f64`, so a `NaN` stays `NaN`, as the probe's
+    `lengthFloor = 0` variant shows). Tests in `tests/scores.rs`:
+    `no_settings_select_the_legacy_score_with_default_costs` (`None`),
+    `v1_legacy_uses_the_settings_costs`, `defaults_select_the_v2_scores`,
+    `router_and_optimizer_versions_dispatch_separately`,
+    `v2_branches_read_the_settings_weights`,
+    `optimizer_ranking_score_is_the_unclamped_v2_score`. C02's resolved `RouterSettings`
+    cannot miss a section (every section resolves to Java's default); the nearest case,
+    `settings_without_scoring_sections_resolve_to_the_v2_defaults`, merges a source that
+    sets nothing over `DefaultSettings`. The DIVERGENCES line is removed (the KiCad JSON
+    constructor sentence stays).
 
-- [ ] **B06.3 — The `scores` probe.**
+- [x] **B06.3 — The `scores` probe.**
   - Java `ScoresProbe.java`: for every `fixtures.tsv` row, load with the session
     imported and compute `new BoardStatistics(board)`. Write `getRouterScore` and
     `getOptimizerScore` (raw float bits) for each of these settings:
@@ -104,16 +135,41 @@ B01.1 for the probe.
     statistics difference already listed in `tests/reference_drc.rs`
     (`EXPECTED_MISMATCHES`, for example Issue721 and Issue676) is listed here with
     the same reason.
+  - *Done 2026-10-16:* `tools/java-reference/probes/board/ScoresProbe.java` (Boards block
+    verbatim; `board_probe_ids::probe_loader_copies_identical` green) writes, per stage
+    `load` and `ses`, the statistics the scores read and then `getRouterScore`,
+    `getOptimizerScore` and `getOptimizerRankingScore` (`a773a70ec`) as raw bits for 19
+    variants: `null`, defaults, `v1`, each of the 7 router and 5 optimizer weights doubled,
+    `bendPenalty`, `viaCosts` and `defaultPreferredDirectionTraceCost` doubled under V1,
+    and `lengthFloor = 0` (a `NaN` on boards without traces, written canonically on both
+    sides). `generate.sh <a773a70ec worktree> scores`: 164 boards, 1.5 MB in
+    `fixtures/reference/probe/scores/`. `tests/board_probe_scores.rs::scores_match_java`
+    passes (`cargo test -p freerouting --test board_probe_scores`, 126 s): every line equal
+    on 161 boards; the three listed stages are `tests/reference_drc.rs`'s
+    `ISSUE721_WHY` (Issue721 `load` and `ses`: violation depths) and `ISSUE676_WHY`
+    (Issue676 `ses`: Java imports none of the wires). Issue289's race does not occur, as
+    the probe waits for the post-load. The first run found two statistics bugs, both fixed
+    in `BoardStatistics`: Rust's float `Sum` starts at `-0.0` (Java's total trace length is
+    `+0.0` without traces), and Java's `DoubleStream.sum()` is compensated; the port is
+    `jmath::double_stream_sum` (`double_stream_sum_matches_java`, 28 sums printed by
+    `tools/java-reference/probes/JavaDoubleSumProbe.java`, 16 of them differing from a
+    plain sum).
 
-- [ ] **B06.4 — Optional: `BoardScoreBreakdown` and `ScoringWeightComparison`.**
+- [~] **B06.4 — Optional: `BoardScoreBreakdown` and `ScoringWeightComparison`.**
   Only if C07 ports Java's benchmark commands.
   - Java: `core/scoring/BoardScoreBreakdown.java`, `ScoringWeightComparison.java`;
     test `core/scoring/ScoringWeightComparisonTest.java` (16 tests).
   - **Accept:** the 16 tests ported and green.
+  - *Partial 2026-10-16:* not ported, by this item's own condition: C07 decides that
+    Java's `--compare-boards` and `--calculate-benchmark-scores` are not ported (they exit
+    2, with a DIVERGENCES line), so nothing uses these classes. The whole item stays open
+    with C07, should it ever port the benchmark commands.
 
-- [ ] **B06.5 — Optional: `BenchmarkScoreCalculator`.**
+- [~] **B06.5 — Optional: `BenchmarkScoreCalculator`.**
   Same condition as B06.4.
   - Java: `core/scoring/BenchmarkScoreCalculator.java`; test
     `BenchmarkScoreCalculatorTest.java`. Its elapsed-time fields
     (`:68,91`) feed only a report and stay out of any score.
   - **Accept:** the test ported and green.
+  - *Partial 2026-10-16:* not ported, for the reason B06.4 gives: C07 does not port
+    the benchmark commands. The whole item stays open with C07.

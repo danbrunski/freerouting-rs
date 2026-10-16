@@ -1,19 +1,28 @@
 //! Board statistics.
 //!
 //! Port of `core.scoring.BoardStatistics` and its parts
-//! (`BoardStatisticsBoard`, `BoardStatisticsItems`, ...), with the V2 router
-//! and optimizer scores.
+//! (`BoardStatisticsBoard`, `BoardStatisticsItems`, ...), with the router and
+//! optimizer scores: the V2 formulas here, the legacy one in
+//! [`super::legacy`], dispatched on the [`RouterSettings`] as Java's
+//! `getRouterScore(RouterSettings)` and `getOptimizerScore(RouterSettings)`
+//! do.
 
 use std::collections::HashMap;
 
 use freerouting_geometry::FloatPoint;
+use freerouting_geometry::jmath::{double_stream_sum, max_f64};
 
 use super::bounds_calculator::{BoardStatisticsBounds, calculate_bounds};
+use super::legacy;
 use crate::board::BasicBoard;
 use crate::board::items::{ItemId, ItemKind};
 use crate::board::structure::{FixedState, Unit};
 use crate::drc::{ClearanceViolation, DesignRulesChecker};
 use crate::rules::BoardRules;
+use crate::settings::fields::ScoringSettings;
+use crate::settings::{
+    OptimizerScoringVersion, RouterScoringVersion, RouterSettings, default_patch,
+};
 
 /// A rectangle as Java's `Rectangle2D.Float`.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -209,9 +218,11 @@ impl Default for OptimizerScoreSettings {
 
 /// Statistics of a board.
 ///
-/// Port of `core.scoring.BoardStatistics`. Of the scores only the V2
-/// formulas (Java's defaults) are ported; the legacy scores need the
-/// router's cost settings.
+/// Port of `core.scoring.BoardStatistics`, with the V2 and the legacy
+/// scores and their dispatch on the [`RouterSettings`]
+/// ([`router_score`](Self::router_score),
+/// [`optimizer_score`](Self::optimizer_score),
+/// [`optimizer_ranking_score`](Self::optimizer_ranking_score)).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct BoardStatistics {
     /// `<host cad>,<host version>` from the DSN parser scope.
@@ -372,7 +383,7 @@ impl BoardStatistics {
         drc_penalty += f64::from(settings.clearance_violation_depth_weight) * violation_depth
             / depth_scale
             / difficulty;
-        (1000.0 - unrouted_penalty - drc_penalty).max(0.0) as f32
+        max_f64(0.0, 1000.0 - unrouted_penalty - drc_penalty) as f32
     }
 
     /// [`router_score_v2`](Self::router_score_v2) with Java's default
@@ -385,6 +396,13 @@ impl BoardStatistics {
     /// minus the penalties for trace length, vias and bends above the lower
     /// bounds of the board.
     pub fn optimizer_score_v2(&self, settings: &OptimizerScoreSettings) -> f32 {
+        max_f64(0.0, self.optimizer_score_v2_unclamped(settings)) as f32
+    }
+
+    /// The V2 optimizer score without the clamp at zero (Java
+    /// `getV2OptimizerScoreUnclamped`, `a773a70ec`): 1000 minus the excess
+    /// length, via and bend penalties, in `double`.
+    pub fn optimizer_score_v2_unclamped(&self, settings: &OptimizerScoreSettings) -> f64 {
         let difficulty = f64::from(self.difficulty.difficulty_d).max(1.0);
         let min_trace_length = f64::from(self.bounds.min_trace_length_mm).max(0.0);
         let min_via_count = f64::from(self.bounds.min_via_count.max(0));
@@ -403,13 +421,70 @@ impl BoardStatistics {
         let bend_penalty = f64::from(settings.excess_bend_weight)
             * (actual_bend_count - min_bend_count).max(0.0)
             / difficulty.max(difficulty_floor);
-        (1000.0 - length_penalty - via_penalty - bend_penalty).max(0.0) as f32
+        1000.0 - length_penalty - via_penalty - bend_penalty
     }
 
     /// [`optimizer_score_v2`](Self::optimizer_score_v2) with Java's default
     /// settings.
     pub fn optimizer_score_v2_default(&self) -> f32 {
         self.optimizer_score_v2(&OptimizerScoreSettings::default())
+    }
+
+    /// Java `getRouterScore(RouterSettings)`: the V2 score when the router
+    /// scoring version is `V2_CONTINUOUS`, else the legacy normalized score
+    /// with the settings' `scoring` costs. `None` is Java's `null`: the
+    /// legacy score with the default costs.
+    pub fn router_score(&self, settings: Option<&RouterSettings>) -> f32 {
+        match settings {
+            Some(s) if s.router_scoring.version == RouterScoringVersion::V2Continuous => {
+                self.router_score_v2(&s.router_scoring.score_weights())
+            }
+            _ => self.legacy_normalized_score(&legacy_scoring_or_default(settings)),
+        }
+    }
+
+    /// Java `getOptimizerScore(RouterSettings)`: the V2 score when the
+    /// optimizer scoring version is `V2_LOWER_BOUND`, else the legacy
+    /// normalized score, as in [`router_score`](Self::router_score).
+    pub fn optimizer_score(&self, settings: Option<&RouterSettings>) -> f32 {
+        match settings {
+            Some(s) if s.optimizer_scoring.version == OptimizerScoringVersion::V2LowerBound => {
+                self.optimizer_score_v2(&s.optimizer_scoring.score_weights())
+            }
+            _ => self.legacy_normalized_score(&legacy_scoring_or_default(settings)),
+        }
+    }
+
+    /// Java `getOptimizerRankingScore(RouterSettings)` (`a773a70ec`), which
+    /// the optimizer ranks passes by: the V2 score without the clamp at
+    /// zero, cast to `float`, else [`optimizer_score`](Self::optimizer_score).
+    /// On real boards the V2 penalties often pass 1000, and the clamped score
+    /// is then 0 for better and worse boards alike.
+    pub fn optimizer_ranking_score(&self, settings: Option<&RouterSettings>) -> f32 {
+        match settings {
+            Some(s) if s.optimizer_scoring.version == OptimizerScoringVersion::V2LowerBound => {
+                self.optimizer_score_v2_unclamped(&s.optimizer_scoring.score_weights()) as f32
+            }
+            _ => self.optimizer_score(settings),
+        }
+    }
+
+    /// Java `calculateScore(RoutingCostSettings)`: the legacy score (see
+    /// [`super::legacy`]).
+    pub fn legacy_score(&self, costs: &ScoringSettings) -> f32 {
+        legacy::legacy_score(self, costs)
+    }
+
+    /// Java `getMaximumScore(RoutingCostSettings)`.
+    pub fn legacy_maximum_score(&self, costs: &ScoringSettings) -> f32 {
+        legacy::legacy_maximum_score(self, costs)
+    }
+
+    /// Java `getLegacyNormalizedScore`, which is also
+    /// `getRouterScore(RoutingCostSettings)` and
+    /// `getOptimizerScore(RoutingCostSettings)`.
+    pub fn legacy_normalized_score(&self, costs: &ScoringSettings) -> f32 {
+        legacy::legacy_normalized_score(self, costs)
     }
 
     /// The statistics without the parts that need the design rules
@@ -464,11 +539,14 @@ impl BoardStatistics {
             .filter_map(|id| board.item(id))
             .collect();
         s.traces.total_count = traces.len();
-        s.traces.total_length = traces
-            .iter()
-            .filter_map(|t| t.as_trace())
-            .map(|t| t.length())
-            .sum::<f64>() as f32;
+        // Java `mapToDouble(Trace::getLength).sum()`: compensated, and +0.0
+        // without traces.
+        s.traces.total_length = double_stream_sum(
+            traces
+                .iter()
+                .filter_map(|t| t.as_trace())
+                .map(|t| t.length()),
+        ) as f32;
         let resolution = f64::from(if board.communication.resolution > 0 {
             board.communication.resolution
         } else {
@@ -629,6 +707,16 @@ impl BoardStatistics {
             }
         }
         s
+    }
+}
+
+/// Java `legacyScoringOrDefault`: the settings' `scoring` section, else
+/// that of `new DefaultSettings().getSettings()`.
+fn legacy_scoring_or_default(settings: Option<&RouterSettings>) -> ScoringSettings {
+    match settings {
+        Some(s) => s.scoring.clone(),
+        // The `scoring` defaults don't depend on the core count.
+        None => RouterSettings::from_patch(&default_patch(1), 1).scoring,
     }
 }
 
