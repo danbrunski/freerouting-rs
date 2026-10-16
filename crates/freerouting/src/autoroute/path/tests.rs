@@ -174,17 +174,23 @@ fn ninety_degree_routing_uses_the_45_degree_locator_with_orthogonal_corners() {
     }
 }
 
+/// Without an angle restriction the any-angle locator (A07.5) runs on the
+/// same backtrack chain and ends at the start door.
 #[test]
-fn any_angle_routing_is_unsupported_until_a07() {
+fn any_angle_routing_uses_the_any_angle_locator() {
     let mut f = fixture();
     let (start, dest) = (f.start.clone(), f.dest.clone());
     let mut s = Session::new(&mut f.board, &f.control, None, None);
     let result = search(&mut s, &start, &dest);
     let mut ripped = BTreeSet::new();
-    let error = locate(&mut s, &result, AngleRestriction::None, &mut ripped, None)
-        .expect_err("any angle is A07's");
-    assert_eq!(error, LocateError::UnsupportedAngle(AngleRestriction::None));
-    assert_eq!(error.java_exception(), "UnsupportedAngle");
+    let located =
+        locate(&mut s, &result, AngleRestriction::None, &mut ripped, None).expect("located");
+    assert!(!located.items.is_empty());
+    assert!(located.items.iter().all(|item| !item.corners.is_empty()));
+    assert!(matches!(
+        located.backtrack.last().map(|e| e.door),
+        Some(ExpandableRef::TargetDoor(_))
+    ));
 }
 
 fn square(llx: i32, lly: i32, urx: i32, ury: i32) -> TileShape {

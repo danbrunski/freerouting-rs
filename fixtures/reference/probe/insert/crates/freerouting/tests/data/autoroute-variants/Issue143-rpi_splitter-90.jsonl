@@ -1,0 +1,33 @@
+{"kind":"insert","board":"crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":5,"connections":4}
+{"stage":"insert:1","net":1,"start":[2],"dest":[21]}
+{"state":"FAILED","details":"Failed to route connection between pin of component #1 and pin of component #3, because no connection was found between their nets."}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":33,"incomplete":0,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x0000000000000000","units":131449}
+{"stage":"insert:2","net":2,"start":[3],"dest":[22]}
+{"state":"FAILED","details":"Failed to route connection between pin #1 of component #1 and pin #1 of component #3, because no connection was found between their nets."}
+{"ripped":[],"costs":[]}
+{"removed":[]}
+{"maxGeneratedId":33,"incomplete":0,"vias":0,"lengthBefore":"0x0000000000000000","lengthAfter":"0x0000000000000000","units":122326}
+{"stage":"insert:3","net":3,"start":[10,4],"dest":[23]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":42,"kind":"trace","nets":[3],"layer":0,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[856000,3306000],[856000,2832288],[903702,2832288]]}
+{"added":44,"kind":"trace","nets":[3],"layer":0,"halfWidth":15240,"class":1,"fixed":"UNFIXED","corners":[[903702,2832288],[903702,2619005],[965571,2619005]]}
+{"added":45,"kind":"via","nets":[3],"padstack":"Round1$13.779528","center":[965571,2619005],"class":3,"fixed":"UNFIXED"}
+{"added":54,"kind":"trace","nets":[3],"layer":1,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[965571,2619005],[470664,2619005],[470664,2237232]]}
+{"added":55,"kind":"via","nets":[3],"padstack":"Round1$13.779528","center":[470664,2237232],"class":3,"fixed":"UNFIXED"}
+{"added":57,"kind":"trace","nets":[3],"layer":0,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[470664,2237232],[727900,2237232],[727900,2204700]]}
+{"removed":[]}
+{"maxGeneratedId":57,"incomplete":-1,"vias":2,"lengthBefore":"0x0000000000000000","lengthAfter":"0x40e85891c0000000","units":57294}
+{"stage":"insert:5","net":5,"start":[7],"dest":[16]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":35,"kind":"trace","nets":[5],"layer":0,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[727900,1884700],[647997,1884700],[647997,1795065]]}
+{"added":36,"kind":"via","nets":[5],"padstack":"Round1$13.779528","center":[647997,1795065],"class":3,"fixed":"UNFIXED"}
+{"added":43,"kind":"trace","nets":[5],"layer":1,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[647997,1795065],[647997,1437898]]}
+{"added":44,"kind":"via","nets":[5],"padstack":"Round1$13.779528","center":[647997,1437898],"class":3,"fixed":"UNFIXED"}
+{"added":46,"kind":"trace","nets":[5],"layer":0,"halfWidth":20320,"class":1,"fixed":"UNFIXED","corners":[[647997,1437898],[666000,1437898],[666000,802200]]}
+{"removed":[]}
+{"maxGeneratedId":46,"incomplete":-1,"vias":2,"lengthBefore":"0x0000000000000000","lengthAfter":"0x40dd479400000000","units":29791}

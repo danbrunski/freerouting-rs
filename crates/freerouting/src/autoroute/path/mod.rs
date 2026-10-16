@@ -30,8 +30,9 @@
 //!   `calculateNextTraceCorners` that returns corners without advancing),
 //!   the locator returns [`LocateError::EndlessLoop`] (`DIVERGENCES.md`,
 //!   "Path location").
-//! - The any-angle locator is A07's: [`locate`] returns
-//!   [`LocateError::UnsupportedAngle`] for it.
+//! - `locate_any.rs`: the any-angle corner rules
+//!   (`FoundConnectionLocatorAnyAngle`, A07.5), for boards without an angle
+//!   restriction.
 //! - [`Located`] also carries the backtrack chain, for the `locate` probe
 //!   and for diagnostics (Java's `emitDiagnostics` reads the same array).
 
@@ -39,6 +40,7 @@ pub mod backtrack;
 pub mod insert;
 pub mod locate;
 mod locate45;
+mod locate_any;
 
 pub use backtrack::{BacktrackElement, RipupCosts, backtrack, put_cost};
 pub use insert::{InsertError, Inserted, insert_located, insert_segments};

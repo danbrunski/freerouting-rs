@@ -67,7 +67,7 @@ const NPE: RoomError = RoomError::NullPointer {
 
 /// The Java `getId` of a tree object: the room's counter id or the item's
 /// id.
-fn object_java_id(object: TreeObject) -> i32 {
+pub(super) fn object_java_id(object: TreeObject) -> i32 {
     match object {
         TreeObject::Room(id) => id.0,
         TreeObject::Item(id) => id.0,
@@ -75,7 +75,7 @@ fn object_java_id(object: TreeObject) -> i32 {
 }
 
 /// `Integer.signum`-style ordering of a Java `int` comparator result.
-fn sign(value: i32) -> Ordering {
+pub(super) fn sign(value: i32) -> Ordering {
     value.cmp(&0)
 }
 
@@ -295,7 +295,7 @@ impl Session<'_> {
 
     /// The tree shape of a tree object (`getTreeShape`): an item's stored
     /// shape or a room's shape.
-    fn object_tree_shape(&self, object: TreeObject, index: usize) -> Option<TileShape> {
+    pub(super) fn object_tree_shape(&self, object: TreeObject, index: usize) -> Option<TileShape> {
         let tree = self.tree();
         match object {
             TreeObject::Room(id) => tree.room(id).map(|r| r.shape.clone()),
@@ -307,7 +307,7 @@ impl Session<'_> {
     }
 
     /// `isTraceObstacle(netNumber)` of a tree object; rooms always are.
-    fn is_trace_obstacle_object(&self, object: TreeObject) -> bool {
+    pub(super) fn is_trace_obstacle_object(&self, object: TreeObject) -> bool {
         match object {
             TreeObject::Room(_) => true,
             TreeObject::Item(id) => self
@@ -317,7 +317,7 @@ impl Session<'_> {
         }
     }
 
-    fn is_routable(&self, item: ItemId) -> bool {
+    pub(super) fn is_routable(&self, item: ItemId) -> bool {
         self.board.item(item).is_some_and(|i| i.is_routable())
     }
 
@@ -430,7 +430,7 @@ impl Session<'_> {
     /// (`CompleteFreeSpaceExpansionRoom.java:132-152`): the room overlaps an
     /// object of its own net, so it depends on the net; a connectable item
     /// of the net whose connection shape meets the room gets a target door.
-    fn calculate_target_doors(
+    pub(super) fn calculate_target_doors(
         &mut self,
         room: RoomId,
         object: TreeObject,
@@ -471,7 +471,7 @@ impl Session<'_> {
     /// 2-dimensional door between two overlapping obstacle rooms of
     /// routable items of the same net (of one trace only between
     /// consecutive segments). `other` missing is Java's null.
-    fn create_overlap_door(
+    pub(super) fn create_overlap_door(
         &mut self,
         this: RoomId,
         other: Option<RoomId>,
@@ -577,7 +577,7 @@ impl Session<'_> {
     /// Java `SortedRoomNeighbours.insertDoorOk(room, doorLine)`
     /// (`:374-388`): at the first and last segment of a trace only doors
     /// parallel to the segment.
-    fn insert_door_ok_at_trace(
+    pub(super) fn insert_door_ok_at_trace(
         &self,
         (item, index): (ItemId, usize),
         door_line: Option<&Line>,

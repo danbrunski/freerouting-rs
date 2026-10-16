@@ -245,16 +245,21 @@ fn a_door_whose_section_count_changes_loses_its_state() {
     );
 }
 
+/// Java's orthogonal calculation gives up on a room that is not a box
+/// (`SortedOrthogonalRoomNeighbours.java:117-120` warns and returns null):
+/// an octagon room completes to no room.
 #[test]
-fn ninety_degree_and_any_angle_rooms_are_a07() {
+fn an_orthogonal_calculation_completes_no_room_of_an_octagon() {
     let mut f = fixture();
     let mut s = Session::new(&mut f.board, &f.control, None, None);
     s.mode = CalculationMode::Orthogonal;
-    let room = s.add_incomplete(None, 0, Some(square(1990, 1990, 2010, 2010)));
-    assert_eq!(
-        s.complete_expansion_room(room),
-        Err(RoomError::UnsupportedAngle(CalculationMode::Orthogonal))
+    let room = s.add_incomplete(
+        Some(square(1990, 1990, 2010, 2010)),
+        0,
+        Some(square(1990, 1990, 2010, 2010)),
     );
+    assert_eq!(s.complete_expansion_room(room), Ok(Vec::new()));
+    assert!(s.complete_rooms().is_empty());
 }
 
 struct StopNow;

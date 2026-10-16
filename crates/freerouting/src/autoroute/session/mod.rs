@@ -38,10 +38,12 @@
 //! `getInstance` throws. The port returns [`RoomError`] and maps it where
 //! Java's catch is. Each variant names the Java exception it stands for.
 //!
-//! Only the 45 degree room graph is here (every fixture routes at 45
-//! degrees). The 90 degree and any-angle neighbour calculations are A07;
-//! until then [`CalculationMode::Orthogonal`] and
-//! [`CalculationMode::AnyAngle`] give [`RoomError::UnsupportedAngle`].
+//! The neighbour calculation follows the tree kind
+//! ([`select_calculation_mode`]): 45 degrees (`neighbours45`), 90 degrees
+//! (`neighbours90.rs`, box rooms, A07.2) and any angle
+//! (`neighbours_any.rs`, convex rooms, A07.4, with its neighbour set in a
+//! [`java_tree_set::JavaTreeSet`] because its comparator is not
+//! transitive).
 //!
 //! The modules:
 //! - [`rooms`]: the room database (`AutorouteEngine.java:355-700`);
@@ -63,8 +65,11 @@ pub mod doors;
 pub mod drills;
 mod incomplete45;
 pub mod init;
+pub mod java_tree_set;
 pub mod layers;
 pub mod neighbours45;
+mod neighbours90;
+mod neighbours_any;
 pub mod queue;
 pub mod ripup;
 pub mod rooms;
@@ -283,9 +288,6 @@ pub fn select_calculation_mode(kind: TreeKind) -> CalculationMode {
 /// An error of the room graph where Java throws.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RoomError {
-    /// No Java counterpart: the 90 degree and any-angle room graphs are
-    /// A07's.
-    UnsupportedAngle(CalculationMode),
     /// Java's `NullPointerException`: a shape, room or item that Java
     /// dereferences is missing. `at` names the Java method.
     NullPointer { at: &'static str },
@@ -298,7 +300,6 @@ impl RoomError {
     /// The simple name of the Java exception.
     pub fn java_exception(&self) -> &'static str {
         match self {
-            RoomError::UnsupportedAngle(_) => "UnsupportedAngle",
             RoomError::NullPointer { .. } => "NullPointerException",
             RoomError::IndexOutOfBounds { .. } => "ArrayIndexOutOfBoundsException",
         }
@@ -308,12 +309,6 @@ impl RoomError {
 impl fmt::Display for RoomError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RoomError::UnsupportedAngle(mode) => {
-                write!(
-                    f,
-                    "unsupported angle restriction ({mode:?} room neighbours)"
-                )
-            }
             RoomError::NullPointer { at } => write!(f, "NullPointerException in {at}"),
             RoomError::IndexOutOfBounds { at } => {
                 write!(f, "ArrayIndexOutOfBoundsException in {at}")

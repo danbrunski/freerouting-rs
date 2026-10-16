@@ -89,8 +89,8 @@ fn fortyfive_degree_corner(from: FloatPoint, to: FloatPoint, horizontal_first: b
 
 /// Java `FoundConnectionLocator.calculateAdditionalCorner` (`:390-404`): a
 /// corner such that both lines from `from` over it to `to` keep the angle
-/// restriction. Without a restriction Java returns `to` itself; the any-angle
-/// locator (A07) never reaches here.
+/// restriction. Without a restriction Java returns `to` itself (the
+/// any-angle locator's adjusted start corner).
 pub(super) fn calculate_additional_corner(
     from: FloatPoint,
     to: FloatPoint,

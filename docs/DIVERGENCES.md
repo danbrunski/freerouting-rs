@@ -426,11 +426,13 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
 
 **Autoroute room graph** (`autoroute::session`, A02; tests `tests/autoroute_probe_start_rooms.rs` and
 `autoroute::session::tests`)
-- Only the 45 degree room graph is ported. On a 90 degree or any-angle autoroute tree, room
-  completion returns `RoomError::UnsupportedAngle` instead of rooms, and this error is not
-  swallowed like the exceptions Java's `completeExpansionRoom` catches
-  (`ninety_degree_and_any_angle_rooms_are_a07`). No fixture routes at those angles. A07 ports
-  them.
+- Any-angle room graph (`autoroute::session::neighbours_any`, A07.4): a neighbour that touches
+  the room in one point lying on no border line of the room or of the neighbour (Java logs
+  "touchingSideNoOfRoom >= 0 expected" and goes on with side -1, which each shape class then
+  clamps or rejects in its own way) ends the neighbour calculation with
+  `RoomError::IndexOutOfBounds`: `completeExpansionRoom` swallows it like Java's exceptions, an
+  obstacle room's door calculation passes it on (`a_point_touch_on_no_border_line_is_an_error`). It needs a point-sized tree shape strictly
+  inside a room; no `variants.txt` board reaches it.
 
 **Maze search** (`autoroute::session::{search, layers, ripup, shove_room}`, A04; tests
 `tests/autoroute_probe_maze.rs`, `tests/autoroute_search_sinks.rs`)
@@ -450,8 +452,6 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   `OutOfMemoryError`, which `autorouteConnection` does not catch); the port returns
   `LocateError::EndlessLoop` (`a_warning_branch_without_corners_ends_the_trace_and_with_corners_loops`).
   No `locate` or `locate-routed` board reaches either branch.
-- The any-angle locator (`FoundConnectionLocatorAnyAngle`) is not ported: `locate` returns
-  `LocateError::UnsupportedAngle` (`any_angle_routing_is_unsupported_until_a07`). A07 ports it.
 
 **Connection insertion** (`autoroute::path::insert`, `autoroute::connection`, A06; tests
 `tests/autoroute_probe_insert.rs`, `autoroute::connection::tests`)
@@ -473,8 +473,6 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   `lastCorner`, a `NullPointerException` that reaches the batch router's catch (`FAILED`, no
   details); the port returns `InsertError::NullCorner` and `Failed` with empty details
   (`an_empty_located_path_across_layers_fails_like_javas_null_pointer`).
-- A board routed at 90 degrees or any angle gives `Failed` ("unsupported angle restriction") at
-  the start of `route_connection` until A07; no fixture routes at those angles.
 - The opt-in `router.min_trace_width_um` floor of Java `46bf9e2ef` (after the pin; ledger
   "Port: yes") is ported: pin neck-downs in the maze search and the inserter use
   `AutorouteControl::neckdown_half_width` and the micro-neck-down skips narrower candidates.

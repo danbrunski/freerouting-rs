@@ -1,0 +1,10 @@
+{"kind":"maze-log","board":"crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90","javaCommit":"a773a70ec","format":1}
+sample 1 aee1653a08f5556c
+off:1 2055 a73ebb13bee1ca2b
+off:2 1942 93a886c77894f580
+off:3 125 7315da90da754cef
+off:5 56 823b9f087e260c00
+on:1 2055 e58b005403ecaf67
+on:2 1942 fd459e3c66a7df74
+on:3 125 39ff3a31a6fdf723
+on:5 56 3d89f20ca450a70c

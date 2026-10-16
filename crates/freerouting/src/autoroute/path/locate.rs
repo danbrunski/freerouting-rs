@@ -61,9 +61,6 @@ pub struct Located {
 /// the exception and returns `FAILED` (`AutorouteEngine.java:179-195`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LocateError {
-    /// No Java counterpart: the any-angle locator
-    /// (`FoundConnectionLocatorAnyAngle`) is A07's.
-    UnsupportedAngle(AngleRestriction),
     /// Java's `NullPointerException`: a shape, room, item or point that
     /// Java dereferences is missing.
     NullPointer { at: &'static str },
@@ -85,7 +82,6 @@ impl LocateError {
     /// The simple name of the Java exception (or error).
     pub fn java_exception(&self) -> &'static str {
         match self {
-            LocateError::UnsupportedAngle(_) => "UnsupportedAngle",
             LocateError::NullPointer { .. } => "NullPointerException",
             LocateError::IndexOutOfBounds { .. } => "ArrayIndexOutOfBoundsException",
             LocateError::ClassCast { .. } => "ClassCastException",
@@ -98,11 +94,6 @@ impl LocateError {
 impl fmt::Display for LocateError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LocateError::UnsupportedAngle(angle) => write!(
-                f,
-                "unsupported angle restriction {angle:?}: FoundConnectionLocatorAnyAngle \
-                 (FoundConnectionLocator.java:201-205) is not ported"
-            ),
             LocateError::NullPointer { at } => write!(f, "NullPointerException in {at}"),
             LocateError::IndexOutOfBounds { at } => {
                 write!(f, "ArrayIndexOutOfBoundsException in {at}")
@@ -150,6 +141,8 @@ pub(super) struct Locator<'a, 'b> {
     pub(super) angle: AngleRestriction,
     pub(super) chain: Vec<BacktrackElement>,
     pub(super) current_from: FloatPoint,
+    /// `previousFromPoint`, read by the any-angle locator only.
+    pub(super) previous_from: FloatPoint,
     pub(super) current_trace_layer: i32,
     pub(super) from_index: usize,
     pub(super) to_index: usize,
@@ -188,7 +181,7 @@ pub(super) fn round_to_integer(point: FloatPoint) -> FloatPoint {
 /// constructor (`:62-183`): backtracks the search result into `ripped` and
 /// `costs` (filled even when the caller rejects the result) and locates
 /// the traces. The 45 and 90 degree restrictions use the 45 degree
-/// locator; any angle is A07's.
+/// locator, no restriction the any-angle locator (A07).
 pub fn locate(
     session: &mut Session<'_>,
     result: &SearchResult,
@@ -196,12 +189,6 @@ pub fn locate(
     ripped: &mut BTreeSet<ItemId>,
     costs: Option<&mut RipupCosts>,
 ) -> Result<Located, LocateError> {
-    if !matches!(
-        angle,
-        AngleRestriction::NinetyDegree | AngleRestriction::FortyfiveDegree
-    ) {
-        return Err(LocateError::UnsupportedAngle(angle));
-    }
     let chain = backtrack(session, result, ripped, costs)?;
     let mut located = Located {
         items: Vec::new(),
@@ -244,6 +231,8 @@ pub fn locate(
         angle,
         chain: std::mem::take(&mut located.backtrack),
         current_from,
+        // FoundConnectionLocator.java:137.
+        previous_from: current_from,
         current_trace_layer: located.target_layer,
         from_index: 0,
         to_index: 0,
@@ -366,11 +355,15 @@ impl Locator<'_, '_> {
                 );
                 corners.push(add);
                 corners.push(adjusted);
+                self.previous_from = self.current_from;
                 self.current_from = adjusted;
             }
         }
         loop {
-            let next = locate45::calculate_next_trace_corners(self)?;
+            let next = match self.angle {
+                AngleRestriction::None => self.next_trace_corners_any()?,
+                _ => locate45::calculate_next_trace_corners(self)?,
+            };
             if next.is_empty() {
                 break;
             }
@@ -379,6 +372,7 @@ impl Locator<'_, '_> {
                 // corner with the previous one by reference.
                 if let Corner::New(point) = corner {
                     corners.push(point);
+                    self.previous_from = self.current_from;
                     self.current_from = point;
                 }
             }
@@ -440,11 +434,6 @@ mod tests {
     #[test]
     fn each_error_maps_to_its_java_exception_and_names_the_java_site() {
         let cases = [
-            (
-                LocateError::UnsupportedAngle(AngleRestriction::None),
-                "UnsupportedAngle",
-                "FoundConnectionLocator.java:201",
-            ),
             (
                 LocateError::NullPointer {
                     at: AT_STARTING_POINT,

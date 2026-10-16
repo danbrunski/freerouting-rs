@@ -1,0 +1,12 @@
+{"kind":"start-rooms","board":"crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-90","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":1,"connections":1}
+{"stage":"off:1","net":1,"ok":true,"roomCount":1,"complete":1,"incomplete":0,"queue":1}
+{"room":1,"layer":0,"shape":["box",1600,1600,98400,98400],"netDependent":true,"doors":0,"targets":1}
+{"target":63,"item":2,"entry":0,"destination":false,"bounds":[15000,15000,25000,25000]}
+{"queue":["0x40ffbd0000000000","0x0000000000000000",63,0],"kind":"TargetItemExpansionDoor","entry":["0x40d3880000000000","0x40d3880000000000"],"nextRoom":1}
+{"cleared":"ShapeSearchTree90Degree_Orthogonal_cc1","nodes":19,"leaves":10,"maxDepth":8,"shapeHash":"bcfcbbe7ab7d377b"}
+{"stage":"on:1","net":1,"ok":true,"roomCount":1,"complete":1,"incomplete":0,"queue":1}
+{"room":1,"layer":0,"shape":["box",1600,1600,98400,98400],"netDependent":true,"doors":0,"targets":1}
+{"target":63,"item":2,"entry":0,"destination":false,"bounds":[15000,15000,25000,25000]}
+{"queue":["0x40ffbd0000000000","0x0000000000000000",63,0],"kind":"TargetItemExpansionDoor","entry":["0x40d3880000000000","0x40d3880000000000"],"nextRoom":1}
+{"cleared":"ShapeSearchTree90Degree_Orthogonal_cc1","nodes":19,"leaves":10,"maxDepth":8,"shapeHash":"bcfcbbe7ab7d377b"}

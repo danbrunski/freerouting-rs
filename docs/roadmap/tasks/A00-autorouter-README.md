@@ -36,7 +36,7 @@ The optimizer stays aggregates-only until a later ledger line says otherwise.
 | [A04](archive/A04-maze-search.md) ✅ | The maze search as one core generic over sinks: queue, expansion, layer changes, ripup, shove-room checks; `maze-log` probe equal pop for pop | L / high | A03, O03, B04, B05, B02.7, B03.7 |
 | [A05](archive/A05-path-location.md) ✅ | Backtrack and 45° corner location; `locate` probe equal | M / medium | A04 |
 | [A06](archive/A06-connection-insertion.md) ✅ | `FoundConnectionInserter`, `route_connection`; `insert` probe equal on one connection (rung 2) | L / high | A05, O04, O01, B05, B04, B01 |
-| [A07](A07-angle-variants.md) | 90° and any-angle room graphs and locator, with a `TreeMap`-faithful set; probes equal on synthetic fixtures | M–L / medium | A06, B03 (90°, plain), O02 |
+| [A07](archive/A07-angle-variants.md) ✅ | 90° and any-angle room graphs and locator, with a `TreeMap`-faithful set; probes equal on synthetic fixtures | M–L / medium | A06, B03 (90°, plain), O02 |
 | [A08](archive/A08-support-classes.md) ✅ | `BoardHistory`, `RoutingFailureLog`, `ItemRouteResult`, router events, two-level cancel token | S / low | B01, B06 for the real-board tests; none for the rest |
 | [A10](archive/A10-stage-traits-and-batch-control.md) ✅ | D9 stage traits and registry; pure pass controller, item ordering and shuffle, ripup policy, fanout rules | M / medium | C02, C03.7, A08 |
 | [A11](archive/A11-connection-routing-in-passes.md) ✅ | Connection router stage, strict DRC, the pass runner, the optimizer entry point; `pass` probe equal | L / high | A06, A08, A10, O05, B01, J01; P02.1 for A11.8 |
@@ -73,9 +73,8 @@ What each step waits for from other series:
   layer that the next one builds on.
 - A08 and A10 are pure logic. They can run as soon as C02 exists, in parallel with the
   search core.
-- A07 is off the critical path. No fixture uses 90° or any-angle routing; until A07
-  lands, `route_connection` returns `AttemptState::Failed` with the detail
-  "unsupported angle restriction" for those boards, and the CLI reports it.
+- A07 was off the critical path: no fixture uses 90° or any-angle routing. Its synthetic
+  boards live in `crates/freerouting/tests/data/autoroute-variants/`, outside `fixtures/`.
 - Fanout is on by default in Java (`DefaultSettings.java:182`), so every board with SMD
   pins runs it before the passes. A12 therefore comes before the batch loop (A13), and
   both before the gate (A14).
@@ -93,7 +92,7 @@ Rust paths are under `crates/freerouting/src/` unless they start with `crates/`,
 | A04 | `autoroute/session/{search.rs, layers.rs, ripup.rs, shove_room.rs, sink.rs}`, `tests/autoroute_probe_maze.rs`, `tests/autoroute_search_sinks.rs`, `fixtures/reference/probe/maze-log/` | `session/{mod.rs, queue.rs}`, `crates/freerouting-geometry/src/jmath.rs` (append `next_double`), `crates/freerouting/Cargo.toml` (append a `[lints.rust]` check-cfg line) |
 | A05 | `autoroute/path/{mod.rs, backtrack.rs, locate.rs, locate45.rs}`, `tests/autoroute_probe_locate.rs`, `fixtures/reference/probe/locate/` | `autoroute/mod.rs` |
 | A06 | `autoroute/path/insert.rs`, `autoroute/connection.rs`, `tests/autoroute_probe_insert.rs`, `crates/freerouting/examples/route_connections.rs`, `fixtures/reference/probe/insert/` | `autoroute/mod.rs` |
-| A07 | `autoroute/session/{neighbours90.rs, neighbours_any.rs, java_tree_set.rs}`, `autoroute/path/locate_any.rs`, `fixtures/autoroute-variants/`, `tests/autoroute_probe_variants.rs` | the angle dispatch in `session/mod.rs` and `path/locate.rs` |
+| A07 | `autoroute/session/{neighbours90.rs, neighbours_any.rs, java_tree_set.rs}`, `autoroute/path/locate_any.rs`, `tests/data/autoroute-variants/`, `tests/autoroute_probe_variants.rs` | the angle dispatch in `session/mod.rs` and `path/locate.rs` |
 | A08 | `autoroute/{history.rs, failure_log.rs, item_route_result.rs, events.rs}`, `tests/autoroute_history.rs` | `board/routing_board.rs` (append the `failure_log` field and its accessor only), `board/snapshot.rs` (B01.3: carry the failure log in `BoardSnapshot`) |
 | A10 | `autoroute/stages.rs`, `autoroute/batch/{mod.rs, control.rs, ordering.rs, ripup_policy.rs, fanout_rules.rs, report.rs}`, `tests/autoroute_batch_control.rs` | `settings/fields.rs` (append the stage keys, A10.2), `autoroute/mod.rs` |
 | A11 | `autoroute/batch/{connection.rs, strict_drc.rs, pass.rs}`, `tests/autoroute_pass.rs`, `crates/freerouting/examples/route_pass.rs`, `fixtures/reference/probe/pass/` | `batch/mod.rs` |

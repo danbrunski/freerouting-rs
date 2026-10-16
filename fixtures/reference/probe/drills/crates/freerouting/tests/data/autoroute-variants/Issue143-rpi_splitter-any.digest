@@ -1,0 +1,14 @@
+{"kind":"drills","board":"crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any","javaCommit":"a773a70ec","format":1}
+sample 1 aee1653a08f5556c
+off:1 648 1ee7ada7fcdfec03
+off:2 648 20af53ba1f58fb11
+off:3 648 8150ddcbcdee5e99
+off:5 648 4206846a06aefcae
+on:1 648 6154321f34cba11f
+on:2 648 a02288377a39eead
+on:3 648 97af21fc8142d2bd
+on:5 648 df963c609389776a
+smd:1 646 088cbd22043c16a5
+smd:2 647 5b913a912c817daf
+smd:3 648 a27d36d30d967345
+smd:5 647 75877ad414f6218e

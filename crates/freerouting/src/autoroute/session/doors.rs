@@ -5,7 +5,7 @@
 //!
 //! A door's shape is the intersection of its two rooms' shapes, recomputed
 //! on every call as Java's `getShape` does (`:43-52`): room shapes change
-//! during the search (an incomplete room's edge removal, A07's any-angle
+//! during the search (an incomplete room's edge removal, the any-angle
 //! corner cuts), and a cache would have to follow every change. P02 may
 //! cache it later.
 //!

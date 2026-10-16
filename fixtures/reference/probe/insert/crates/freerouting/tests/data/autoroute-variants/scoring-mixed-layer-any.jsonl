@@ -1,0 +1,10 @@
+{"kind":"insert","board":"crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any","javaCommit":"a773a70ec","format":1}
+{"stage":"sample","maxConnections":200,"maxNetNumber":1,"connections":1}
+{"stage":"insert:1","net":1,"start":[2],"dest":[3]}
+{"state":"ROUTED","details":""}
+{"ripped":[],"costs":[]}
+{"added":4,"kind":"trace","nets":[1],"layer":1,"halfWidth":1250,"class":1,"fixed":"UNFIXED","corners":[[80000,80000],[50000,17300]]}
+{"added":5,"kind":"via","nets":[1],"padstack":"Via[0-1]_800:400_um","center":[50000,17300],"class":1,"fixed":"UNFIXED"}
+{"added":6,"kind":"trace","nets":[1],"layer":0,"halfWidth":1250,"class":1,"fixed":"UNFIXED","corners":[[50000,17300],[20000,20000]]}
+{"removed":[]}
+{"maxGeneratedId":6,"incomplete":-1,"vias":1,"lengthBefore":"0x0000000000000000","lengthAfter":"0x4058e83d20000000","units":2394}

@@ -159,12 +159,10 @@ impl Session<'_> {
     /// completed again first, because the first room may now overlap it.
     ///
     /// Java catches every exception here and returns no rooms, keeping what
-    /// was changed before; so does this, but for
-    /// [`RoomError::UnsupportedAngle`], which has no Java counterpart.
+    /// was changed before; so does this.
     pub fn complete_expansion_room(&mut self, room: RoomId) -> Result<Vec<RoomId>, RoomError> {
         match self.try_complete_expansion_room(room) {
             Ok(rooms) => Ok(rooms),
-            Err(e @ RoomError::UnsupportedAngle(_)) => Err(e),
             Err(_) => Ok(Vec::new()),
         }
     }
@@ -280,7 +278,8 @@ impl Session<'_> {
     pub(crate) fn calculate_doors(&mut self, from: FromRoom) -> Result<Option<RoomId>, RoomError> {
         match self.mode {
             CalculationMode::Degree45 => self.calculate_neighbours_45(from),
-            mode => Err(RoomError::UnsupportedAngle(mode)),
+            CalculationMode::Orthogonal => self.calculate_neighbours_90(from),
+            CalculationMode::AnyAngle => self.calculate_neighbours_any(from),
         }
     }
 

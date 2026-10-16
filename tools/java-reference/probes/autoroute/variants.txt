@@ -1,0 +1,10 @@
+# The synthetic 90 degree and any-angle boards of A07, smallest first: the boards of
+# tests/autoroute_probe_variants.rs and generate-variants.sh. They live outside fixtures/ so the
+# fixture-wide scans (reference_load.rs, route-bounds.tsv, the bench) leave them out; their probe
+# outputs are fixtures/reference/probe/<kind>/<this path without .dsn>.*
+crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-90.dsn
+crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn

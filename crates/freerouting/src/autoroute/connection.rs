@@ -56,7 +56,6 @@ use super::{AttemptResult, AttemptState};
 use crate::board::RoutingBoard;
 use crate::board::items::{AreaKind, Item, ItemId, ItemKind, StopConnectionOption};
 use crate::board::search::WorkLimit;
-use crate::board::structure::AngleRestriction;
 
 /// The stop checks of one connection's search: the settings it reads, the
 /// user's stop request and the work limit (Java's `stoppableThread` and
@@ -104,8 +103,7 @@ enum Searched {
 /// located, ends on a disabled signal layer, or cannot be inserted (what was
 /// inserted stays; the strict DRC of A11 cleans up); `Skipped` without
 /// result items; else `Routed`. The ripped items are removed before the
-/// insert. Boards routed at 90 degrees or any angle give `Failed`
-/// ("unsupported angle restriction") until A07.
+/// insert. Every angle restriction routes (A07).
 pub fn route_connection<S: SearchSink>(
     board: &mut RoutingBoard,
     start: &BTreeSet<ItemId>,
@@ -115,18 +113,6 @@ pub fn route_connection<S: SearchSink>(
     ripped: Ripped<'_>,
     sink: S,
 ) -> (AttemptResult, S) {
-    let angle = board.rules.trace_angle_restriction();
-    if angle != AngleRestriction::FortyfiveDegree {
-        let details = format!(
-            "Failed to route connection between {}, because of an unsupported angle \
-             restriction ({angle:?}) until A07.",
-            describe_connection(board, start, dest)
-        );
-        return (
-            AttemptResult::with_details(AttemptState::Failed, details),
-            sink,
-        );
-    }
     let Ripped { items, costs } = ripped;
     let (searched, sink) = search_and_locate(board, start, dest, ctrl, limits, items, costs, sink);
     let (result, located) = match searched {
