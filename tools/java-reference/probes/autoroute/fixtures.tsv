@@ -11,3 +11,5 @@ connections	@ladder
 java-ids	fixtures/Issue026-J2_reference.dsn
 control	@ladder
 distance	@ladder
+start-rooms	@ladder
+door-sections	fixtures/Issue026-J2_reference.dsn

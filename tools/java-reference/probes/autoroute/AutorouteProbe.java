@@ -61,6 +61,12 @@ import java.util.UUID;
  *       it, then after a second rebuildViaInfo.
  *   <li>distance: per sampled connection a DestinationDistance joined as MazeSearchEngine.init
  *       joins it, evaluated at 1,000 points and 1,000 boxes from new Random(11) on every layer.
+ *   <li>start-rooms (A02.7): per sampled connection and variant, after
+ *       MazeSearchEngine.getInstance: the complete rooms in list order with their doors and target
+ *       doors, the incomplete rooms left, the maze queue in order, the room counter, and the
+ *       autoroute tree's walk hash after AutorouteEngine.clear().
+ *   <li>door-sections (A02.5): ExpansionDoor.getSectionSegments of a hand-built pair of doors at
+ *       four offsets, then of the first 100 doors of the routable sampled connections.
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -87,6 +93,8 @@ public class AutorouteProbe {
         case "java-ids" -> javaIds(out, Loaded.load(dsn));
         case "control" -> control(out, Loaded.load(dsn));
         case "distance" -> distance(out, Loaded.load(dsn));
+        case "start-rooms" -> startRooms(out, Loaded.load(dsn));
+        case "door-sections" -> doorSections(out, Loaded.load(dsn));
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -451,6 +459,319 @@ public class AutorouteProbe {
         out.line(new Line().raw("box", intArray(new int[] {box.ll.x, box.ll.y, box.ur.x, box.ur.y}))
             .raw("d", bitsList(r)).raw("cheap", bitsList(cheap)).end());
       }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // start-rooms (A02.7) and door-sections (A02.5)
+  // ------------------------------------------------------------------------------------------
+
+  /** A private field of {@code target}'s class (or a superclass) by reflection. */
+  @SuppressWarnings("unchecked")
+  static <T> T privateField(Object target, String name) throws Exception {
+    Class<?> type = target.getClass();
+    while (type != null) {
+      try {
+        java.lang.reflect.Field field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        return (T) field.get(target);
+      } catch (NoSuchFieldException e) {
+        type = type.getSuperclass();
+      }
+    }
+    throw new NoSuchFieldException(name);
+  }
+
+  /** A shape: its kind and coordinates ([] for null; a simplex by line count, id and box). */
+  static String shapeJson(TileShape shape) {
+    if (shape == null) {
+      return "[]";
+    }
+    if (shape instanceof app.freerouting.geometry.planar.IntOctagon o) {
+      return "[\"oct\"," + o.leftX + "," + o.bottomY + "," + o.rightX + "," + o.topY + ","
+          + o.upperLeftDiagonalX + "," + o.lowerRightDiagonalX + "," + o.lowerLeftDiagonalX + ","
+          + o.upperRightDiagonalX + "]";
+    }
+    if (shape instanceof IntBox b) {
+      return "[\"box\"," + b.ll.x + "," + b.ll.y + "," + b.ur.x + "," + b.ur.y + "]";
+    }
+    IntBox b = shape.boundingBox();
+    return "[\"simplex\"," + shape.borderLineCount() + "," + shape.getId() + "," + b.ll.x + ","
+        + b.ll.y + "," + b.ur.x + "," + b.ur.y + "]";
+  }
+
+  static String boxJson(TileShape shape) {
+    IntBox b = shape.boundingBox();
+    return "[" + b.ll.x + "," + b.ll.y + "," + b.ur.x + "," + b.ur.y + "]";
+  }
+
+  static String roomKind(app.freerouting.autoroute.expansion.ExpansionRoom room) {
+    if (room instanceof app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom) {
+      return "free";
+    }
+    if (room instanceof ObstacleExpansionRoom) {
+      return "obstacle";
+    }
+    if (room instanceof IncompleteFreeSpaceExpansionRoom) {
+      return "incomplete";
+    }
+    return "?";
+  }
+
+  /** The tree's walk hash as TreeProbe computes it (probes/board/TreeProbe.java). */
+  static String treeLine(String key, ShapeSearchTree tree) throws Exception {
+    String treeNode = "app.freerouting.datastructures.ShapeTree$TreeNode";
+    java.lang.reflect.Field rootField =
+        app.freerouting.datastructures.ShapeTree.class.getDeclaredField("root");
+    rootField.setAccessible(true);
+    java.lang.reflect.Field boundsField = Class.forName(treeNode).getDeclaredField("boundingShape");
+    boundsField.setAccessible(true);
+    long hash = FNV_OFFSET;
+    int nodes = 0;
+    int leaves = 0;
+    int maxDepth = 0;
+    java.util.Deque<Object[]> stack = new java.util.ArrayDeque<>();
+    Object root = rootField.get(tree);
+    if (root != null) {
+      stack.push(new Object[] {root, 0});
+    }
+    while (!stack.isEmpty()) {
+      Object[] top = stack.pop();
+      Object node = top[0];
+      int depth = (Integer) top[1];
+      nodes++;
+      maxDepth = Math.max(maxDepth, depth);
+      StringBuilder line = new StringBuilder().append(depth);
+      app.freerouting.geometry.planar.RegularTileShape shape =
+          (app.freerouting.geometry.planar.RegularTileShape) boundsField.get(node);
+      StringBuilder bounds = new StringBuilder();
+      if (shape instanceof app.freerouting.geometry.planar.IntOctagon o) {
+        bounds.append("O ").append(o.leftX).append(' ').append(o.bottomY).append(' ')
+            .append(o.rightX).append(' ').append(o.topY).append(' ').append(o.upperLeftDiagonalX)
+            .append(' ').append(o.lowerRightDiagonalX).append(' ').append(o.lowerLeftDiagonalX)
+            .append(' ').append(o.upperRightDiagonalX);
+      } else if (shape instanceof IntBox b) {
+        bounds.append("B ").append(b.ll.x).append(' ').append(b.ll.y).append(' ').append(b.ur.x)
+            .append(' ').append(b.ur.y);
+      } else {
+        bounds.append("? ").append(shape);
+      }
+      if (node instanceof app.freerouting.datastructures.ShapeTree.Leaf leaf) {
+        leaves++;
+        line.append(" L ").append(bounds).append(' ');
+        if (leaf.object
+            instanceof app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom room) {
+          line.append("R ").append(room.getId());
+        } else if (leaf.object instanceof Item item) {
+          line.append("I ").append(item.getId());
+        } else {
+          line.append("? ").append(leaf.object);
+        }
+        line.append(' ').append(leaf.shapeIndexInObject);
+      } else {
+        app.freerouting.datastructures.ShapeTree.InnerNode inner =
+            (app.freerouting.datastructures.ShapeTree.InnerNode) node;
+        line.append(" I ").append(bounds);
+        stack.push(new Object[] {inner.secondChild, depth + 1});
+        stack.push(new Object[] {inner.firstChild, depth + 1});
+      }
+      line.append('\n');
+      for (byte b : line.toString().getBytes(StandardCharsets.UTF_8)) {
+        hash ^= (b & 0xff);
+        hash *= FNV_PRIME;
+      }
+    }
+    return new Line().str(key, tree.key).num("nodes", nodes).num("leaves", leaves)
+        .num("maxDepth", maxDepth).str("shapeHash", hex(hash)).end();
+  }
+
+  /** The start rooms of one connection after MazeSearchEngine.getInstance. */
+  static void startRoomLines(Out out, String stage, Conn conn, AutorouteEngine engine,
+      MazeSearchEngine search) throws Exception {
+    List<app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom> complete =
+        privateField(engine, "completeExpansionRooms");
+    List<IncompleteFreeSpaceExpansionRoom> incomplete =
+        privateField(engine, "incompleteExpansionRooms");
+    int count = privateField(engine, "expansionRoomInstanceCount");
+    if (complete == null) {
+      complete = List.of();
+    }
+    if (incomplete == null) {
+      incomplete = List.of();
+    }
+    out.line(new Line().str("stage", stage).num("net", conn.net).bool("ok", search != null)
+        .num("roomCount", count).num("complete", complete.size())
+        .num("incomplete", incomplete.size())
+        .num("queue", search == null ? 0 : search.mazeExpansionList.size()).end());
+    for (app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom room : complete) {
+      out.line(new Line().num("room", room.getId()).num("layer", room.getLayer())
+          .raw("shape", shapeJson(room.getShape())).bool("netDependent", room.isNetDependent())
+          .num("doors", room.getDoors().size()).num("targets", room.getTargetDoors().size())
+          .end());
+      for (app.freerouting.autoroute.expansion.ExpansionDoor door : room.getDoors()) {
+        app.freerouting.autoroute.expansion.ExpansionRoom other = door.otherRoom(
+            (app.freerouting.autoroute.expansion.ExpansionRoom) room);
+        out.line(new Line().num("door", door.getId()).num("dim", door.dimension)
+            .str("other", roomKind(other)).num("otherId", other.getId())
+            .bool("first", door.firstRoom == room).raw("bounds", boxJson(door.getShape()))
+            .end());
+      }
+      for (app.freerouting.autoroute.expansion.TargetItemExpansionDoor door :
+          room.getTargetDoors()) {
+        out.line(new Line().num("target", door.getId()).num("item", door.item.getId())
+            .num("entry", door.treeEntryNo).bool("destination", door.isDestinationDoor())
+            .raw("bounds", boxJson(door.getShape())).end());
+      }
+    }
+    for (IncompleteFreeSpaceExpansionRoom room : incomplete) {
+      out.line(new Line().raw("incomplete", shapeJson(room.getShape()))
+          .raw("contained", shapeJson(room.getContainedShape())).num("layer", room.getLayer())
+          .num("doors", room.getDoors().size()).end());
+    }
+    if (search != null) {
+      for (MazeListElement element : search.mazeExpansionList) {
+        out.line(new Line()
+            .raw("queue", "[" + quoted(bits(element.sortingValue)) + ","
+                + quoted(bits(element.expansionValue)) + "," + element.door.getId() + ","
+                + element.sectionNoOfDoor + "]")
+            .str("kind", element.door.getClass().getSimpleName())
+            .raw("entry", "[" + quoted(bits(element.shapeEntry.a.x)) + ","
+                + quoted(bits(element.shapeEntry.a.y)) + "]")
+            .num("nextRoom", element.nextRoom == null ? 0 : element.nextRoom.getId()).end());
+      }
+    }
+  }
+
+  static void startRooms(Out out, Loaded l) throws Exception {
+    RoutingBoard board = l.board;
+    List<Conn> conns = sample(board);
+    sampleLine(out, board, conns);
+    for (String variant : new String[] {"off", "on"}) {
+      boolean ripup = variant.equals("on");
+      for (Conn conn : conns) {
+        String stage = variant + ":" + conn.net;
+        if (!conn.state.isEmpty()) {
+          out.line(new Line().str("stage", stage).num("net", conn.net).str("state", conn.state)
+              .end());
+          continue;
+        }
+        AutorouteControl c;
+        try {
+          c = routerControl(l, conn.net, ripup);
+        } catch (RuntimeException e) {
+          out.line(new Line().str("stage", stage).num("net", conn.net)
+              .str("exception", e.getClass().getSimpleName()).end());
+          continue;
+        }
+        AutorouteEngine engine = new AutorouteEngine(board, c.traceClearanceClassIndex, false);
+        engine.initConnection(conn.net, null, null);
+        MazeSearchEngine search;
+        try {
+          search = MazeSearchEngine.getInstance(conn.start, conn.dest, engine, c);
+        } catch (Exception e) {
+          out.line(new Line().str("stage", stage).num("net", conn.net)
+              .str("exception", e.getClass().getSimpleName()).end());
+          engine.clear();
+          out.line(treeLine("cleared", engine.autorouteSearchTree));
+          continue;
+        }
+        startRoomLines(out, stage, conn, engine, search);
+        engine.clear();
+        out.line(treeLine("cleared", engine.autorouteSearchTree));
+      }
+    }
+  }
+
+  static String segmentsJson(app.freerouting.geometry.planar.FloatLine[] segments) {
+    StringBuilder text = new StringBuilder("[");
+    for (int i = 0; i < segments.length; i++) {
+      if (i > 0) {
+        text.append(',');
+      }
+      app.freerouting.geometry.planar.FloatLine s = segments[i];
+      text.append('[').append(quoted(bits(s.a.x))).append(',').append(quoted(bits(s.a.y)))
+          .append(',').append(quoted(bits(s.b.x))).append(',').append(quoted(bits(s.b.y)))
+          .append(']');
+    }
+    return text.append(']').toString();
+  }
+
+  static String doorSectionLine(app.freerouting.autoroute.expansion.ExpansionDoor door,
+      double offset) {
+    app.freerouting.geometry.planar.FloatLine[] segments = door.getSectionSegments(offset);
+    return new Line().num("door", door.getId()).num("dim", door.dimension)
+        .dbl("offset", offset).num("count", segments.length)
+        .num("sections", door.sectionArr == null ? 0 : door.sectionArr.length)
+        .raw("segments", segmentsJson(segments)).end();
+  }
+
+  static final int DOOR_SECTION_DOORS = 100;
+
+  static void doorSections(Out out, Loaded l) throws Exception {
+    // A hand-built pair: room b overlaps room a (a 2-dimensional door between free rooms),
+    // room c touches a along x = 0 (a 1-dimensional door).
+    app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom a =
+        new app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom(
+            new IntBox(0, 0, 1000, 1000).boundingOctagon(), 0, 1);
+    app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom b =
+        new app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom(
+            new IntBox(500, 200, 2000, 800).boundingOctagon(), 0, 2);
+    app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom cRoom =
+        new app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom(
+            new IntBox(-800, 0, 0, 600).boundingOctagon(), 0, 3);
+    app.freerouting.autoroute.expansion.ExpansionDoor ab =
+        new app.freerouting.autoroute.expansion.ExpansionDoor(a, b);
+    app.freerouting.autoroute.expansion.ExpansionDoor ac =
+        new app.freerouting.autoroute.expansion.ExpansionDoor(a, cRoom);
+    for (double offset : new double[] {0, 10, 50, 200}) {
+      out.line(new Line().str("stage", "hand:ab:" + offset).end());
+      out.line(doorSectionLine(ab, offset));
+      out.line(new Line().str("stage", "hand:ac:" + offset).end());
+      out.line(doorSectionLine(ac, offset));
+    }
+    // The first 100 doors of the routable sampled connections (ripup off), in room list order.
+    RoutingBoard board = l.board;
+    int printed = 0;
+    for (Conn conn : sample(board)) {
+      if (printed >= DOOR_SECTION_DOORS) {
+        break;
+      }
+      if (!conn.state.isEmpty()) {
+        continue;
+      }
+      AutorouteControl c;
+      try {
+        c = routerControl(l, conn.net, false);
+      } catch (RuntimeException e) {
+        continue;
+      }
+      AutorouteEngine engine = new AutorouteEngine(board, c.traceClearanceClassIndex, false);
+      engine.initConnection(conn.net, null, null);
+      MazeSearchEngine.getInstance(conn.start, conn.dest, engine, c);
+      List<app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom> complete =
+          privateField(engine, "completeExpansionRooms");
+      List<app.freerouting.autoroute.expansion.ExpansionDoor> doors = new ArrayList<>();
+      for (app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom room :
+          complete == null
+              ? List.<app.freerouting.autoroute.expansion.CompleteFreeSpaceExpansionRoom>of()
+              : complete) {
+        for (app.freerouting.autoroute.expansion.ExpansionDoor door : room.getDoors()) {
+          boolean seen = false;
+          for (app.freerouting.autoroute.expansion.ExpansionDoor d : doors) {
+            seen |= d == door;
+          }
+          if (!seen && printed + doors.size() < DOOR_SECTION_DOORS) {
+            doors.add(door);
+          }
+        }
+      }
+      out.line(new Line().str("stage", "conn:" + conn.net).num("net", conn.net)
+          .num("doors", doors.size()).end());
+      for (app.freerouting.autoroute.expansion.ExpansionDoor door : doors) {
+        out.line(doorSectionLine(door, c.compensatedTraceHalfWidth[door.firstRoom.getLayer()]));
+      }
+      printed += doors.size();
+      engine.clear();
     }
   }
 

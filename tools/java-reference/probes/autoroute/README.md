@@ -41,6 +41,8 @@ commit; `probe.sh` refuses a cache built from a different commit than the worktr
 | `java-ids` | the six `getId` formulas on 1,000 `new Random(7).nextInt()` inputs each, then real `ObstacleExpansionRoom`, `IncompleteFreeSpaceExpansionRoom`, `ExpansionDrill` and `DrillPage` ids on the first 200 default-tree shapes | J2 | `autoroute_probe_control.rs::java_ids_match_java` |
 | `control` | every `AutorouteControl` field of every net as the batch router builds it (ripup on), then after a second `rebuildViaInfo` | ladder | `autoroute_probe_control.rs::control_matches_java` |
 | `distance` | per sampled connection a `DestinationDistance` joined as `MazeSearchEngine.init` joins it (no tie-pin reduction, no rooms), at 1,000 points and 1,000 boxes from `new Random(11)` on every layer | ladder | `autoroute_probe_control.rs::distance_matches_java` |
+| `start-rooms` | per sampled connection, ripup off then on, after `MazeSearchEngine.getInstance`: the complete rooms in list order with their doors and target doors, the incomplete rooms left, the maze queue in order, the room counter, and the autoroute tree's walk hash after `AutorouteEngine.clear()` (A02.7) | ladder | `autoroute_probe_start_rooms.rs::start_rooms_match_java` |
+| `door-sections` | `ExpansionDoor.getSectionSegments` of a hand-built pair of doors at four offsets, then of the first 100 doors of the routable sampled connections (A02.5) | J2 | `autoroute_probe_start_rooms.rs::door_sections_match_java` |
 
 A Java exception ends the output with `{"exception":…,"at":…}`. Where `AutorouteControl`'s
 constructor throws (a board without via rules, `scoring-perfect-two-pin`), `control` and

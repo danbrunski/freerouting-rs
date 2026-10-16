@@ -37,6 +37,12 @@
 //!   drill pages, which break queue ties;
 //! - [`probe`]: the line format of the Java probes
 //!   (`tools/java-reference/probes/autoroute/AutorouteProbe.java`).
+//!
+//! The room graph of one connection search (A02):
+//!
+//! - [`session`]: the rooms, doors and maze queue of one search, the room
+//!   database, the 45 degree neighbour calculation and the search
+//!   initialisation (`MazeSearchEngine.getInstance`).
 
 pub mod batch;
 pub mod control;
@@ -47,6 +53,7 @@ pub mod history;
 pub mod item_route_result;
 pub mod java_ids;
 pub mod probe;
+pub mod session;
 pub mod stages;
 
 /// The possible results of autorouting a connection (Java

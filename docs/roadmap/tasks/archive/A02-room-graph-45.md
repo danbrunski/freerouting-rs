@@ -81,14 +81,29 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
 
 ## Checklist
 
-- [ ] **A02.1 — Session and arenas.** Types as in the decisions. Add
+- [x] **A02.1 — Session and arenas.** Types as in the decisions. Add
   `TreeKind { Plain, Ninety, FortyFive }` dispatch for neighbour calculation, matching
   `SortedRoomNeighbours.selectCalculationMode` (`SortedRoomNeighbours.java:80-93`);
   `Ninety` and `Plain` return `RoomError::UnsupportedAngle` until A07.
   - **Accept:** port `autoroute/expansion/SortedRoomNeighboursFactoryTest` (dispatch by
     tree kind); a unit test that door removal keeps the order of the remaining doors.
+  - *Done 2026-10-16:* `autoroute/session/mod.rs`: `Session<'b>` (borrows the `BasicBoard` and
+    the `AutorouteControl`; owns `rooms: Vec<Room>`, `doors`, `target_doors`, flat `sections`,
+    both room lists, the counter, an `ItemSideTable<ItemAutorouteInfo>`, the queue and the
+    `DestinationDistance`), `RoomId`/`DoorId`/`TargetDoorId(u32)`, `Room::{Incomplete,
+    CompleteFree, Obstacle}`, `RoomError` (variants name `NullPointerException`,
+    `ArrayIndexOutOfBoundsException`; `UnsupportedAngle` for A07). The dispatch reuses
+    `board::search::TreeKind` through `select_calculation_mode` → `CalculationMode::{Orthogonal,
+    Degree45, AnyAngle}`; `Orthogonal`/`AnyAngle` give `RoomError::UnsupportedAngle`
+    (`tests::ninety_degree_and_any_angle_rooms_are_a07`, DIVERGENCES line "Autoroute room
+    graph"). Port of `SortedRoomNeighboursFactoryTest` (3 tests):
+    `autoroute::session::factory_tests::{selects_orthogonal_calculation_for_orthogonal_search_tree,
+    selects_45_degree_calculation_for_45_degree_search_tree,
+    selects_any_angle_calculation_for_other_search_trees}`; door order:
+    `autoroute::session::tests::removing_a_door_keeps_the_order_of_the_others`. Command
+    `cargo test -p freerouting --lib autoroute::session`: 17 passed.
 
-- [ ] **A02.2 — Room database.** Port `AutorouteEngine.java:355-700`:
+- [x] **A02.2 — Room database.** Port `AutorouteEngine.java:355-700`:
   - `add_incomplete` (append), `first_incomplete` (first in list), `remove_incomplete`
     (`remove_all_doors`, then remove by identity);
   - `remove_complete` (`:391-430`): for each door, a dimension-1 intersection gives a new
@@ -112,8 +127,22 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
     tree inserts and removals (in order); the tree's fingerprint after `clear` is compared
     with Java's in A02.7, not with the state before the session, because removals
     recompute inner bounds and need not restore them.
+  - *Done 2026-10-16:* `autoroute/session/rooms.rs`: `add_incomplete`, `first_incomplete`,
+    `remove_incomplete`, `remove_all_doors` (cascade), `remove_complete` (new `Simplex`
+    incomplete rooms on line-touching neighbours, `invalidate_drill_pages` hook left empty for
+    A03), `complete_expansion_room` (Java's catch-all maps errors to no rooms, except
+    `UnsupportedAngle`), `add_complete_room` (list then tree insert), `calculate_doors`,
+    `complete_neighbour_rooms` (restart after each completion, obstacle doors once), `clear`
+    (tree removals in list order), `obstacle_room` (`getExpansionRoom` with the resize). Every
+    tree insert/remove is logged in `Session::tree_ops`. Synthetic-board tests in
+    `autoroute::session::tests`: `incomplete_rooms_append_and_leave_with_their_doors`,
+    `completing_a_start_room_inserts_rooms_in_list_order`,
+    `removing_a_complete_room_gives_its_neighbours_new_incomplete_rooms` (also
+    `complete_neighbour_rooms` and `clear`'s removals in list order, counter reset, no room left
+    in the tree). The fingerprint after `clear()` equals Java's in A02.7 on all 17 ladder
+    boards.
 
-- [ ] **A02.3 — 45° neighbours.** Port `Sorted45DegreeRoomNeighbours.calculate`
+- [x] **A02.3 — 45° neighbours.** Port `Sorted45DegreeRoomNeighbours.calculate`
   (`:45-171`) and its neighbour type:
   - take a room id from the counter, create the complete room;
   - `overlapping_tree_entries(room_shape, layer)` in tree order, then a **stable** sort by
@@ -133,8 +162,19 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
   - `remove_not_touching_border_lines` (`:173-242`).
   - **Accept:** covered by A02.7; plus a unit test that a duplicate neighbour still sets the
     edge flags.
+  - *Done 2026-10-16:* `autoroute/session/neighbours45.rs`: `calculate_neighbours_45`
+    (`calculate` as a loop with a new id per restart), `sorted_neighbours_45` (tree order, then
+    stable `sort_by` on `getId` / shape index), `Neighbour45::new` (edge flags set before the
+    set insert), `Neighbour45::compare` (int arithmetic), a sorted `Vec` with first-wins
+    insertion, `calculate_target_doors`, `create_overlap_door`, `insert_door_ok` (both forms),
+    `remove_not_touching_border_lines`. Duplicate test:
+    `neighbours45::tests::a_duplicate_neighbour_still_sets_the_edge_flags` (plus
+    `neighbours_sort_counterclockwise_by_touching_side_and_point`,
+    `untouched_border_lines_move_to_the_limits`). Covered by A02.7 (`start_rooms_match_java`
+    green; the references hold 84 doors to free rooms, 770 to incomplete rooms, 2 to obstacle
+    rooms).
 
-- [ ] **A02.4 — Edge removal and new incomplete rooms.** Port `try_remove_edge_line`
+- [x] **A02.4 — Edge removal and new incomplete rooms.** Port `try_remove_edge_line`
   (`:315-430`: when an edge has no neighbour, remove that line, call `complete_shape` on
   the larger octagon ignoring the largest 2-D door to a complete room, and if the area
   grew, `remove_all_doors` and start over with a new id), `calculate_new_incomplete_rooms`
@@ -142,8 +182,14 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
   `insert_incomplete_room` (`:437-472`). Then the room goes into the autoroute tree.
   - Orders: neighbour iteration order, the restart rule, room creation order.
   - **Accept:** covered by A02.7.
+  - *Done 2026-10-16:* `try_remove_edge_line`, `edge_incomplete_rooms_of_obstacle` (Java's
+    never-advanced compare corner kept, `// PARITY(quirk):`), `new_incomplete_rooms_of_obstacle`,
+    `new_incomplete_rooms_45` with `gap_octagon`, `insert_incomplete_room_45` (`try_remove_edge_line`
+    in `neighbours45.rs`, the rest in `session/incomplete45.rs`); the room enters the tree in `rooms.rs::add_complete_room`. Covered by
+    A02.7: `start_rooms_match_java` equal on all 17 ladder boards (e.g. J2 `off:1`: room counter
+    21 for 17 complete rooms, so edge-removal restarts are exercised).
 
-- [ ] **A02.5 — Door geometry.** Port `ExpansionDoor` (`ExpansionDoor.java`):
+- [x] **A02.5 — Door geometry.** Port `ExpansionDoor` (`ExpansionDoor.java`):
   - `shape()` recomputes the intersection of the two room shapes on every call (`:43-52`).
     Cache it only if the cache is invalidated by every room shape change; in doubt,
     recompute (P02 may cache later);
@@ -156,8 +202,19 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
   - **Accept:** unit tests: a door whose section count changes loses its occupied flag; the
     segment endpoints on a hand-built pair of octagons equal values computed in a probe
     kind `door-sections` (100 doors of J2's first sampled connection).
+  - *Done 2026-10-16:* `autoroute/session/doors.rs`: `door_shape` recomputed per call (no
+    cache), `other_room`/`other_complete_room`, `door_java_id`, `section_segments` with
+    `allocate_sections` (`// PARITY(quirk):` reallocation), `calc_door_line_segment`,
+    `reset_door`, `new_target_door` (shape = tree shape ∩ room shape, empty without a room),
+    `is_destination_door` (read from the start flag when asked). Tests:
+    `autoroute::session::tests::a_door_whose_section_count_changes_loses_its_state`;
+    `autoroute_probe_start_rooms.rs::door_sections_match_java` against the new Java kind
+    `door-sections` (`fixtures/reference/probe/door-sections/Issue026-J2_reference.jsonl`): a
+    hand-built pair (a 2-dimensional door between free rooms, a 1-dimensional one) at offsets
+    0, 10, 50, 200, then the first 100 doors of J2's routable sampled connections (81 of net 1,
+    then nets 2-5), endpoints bit-equal.
 
-- [ ] **A02.6 — Queue entry and search init.**
+- [x] **A02.6 — Queue entry and search init.**
   - `session/queue.rs`: `MazeListElement` with `door: ExpandableRef` (door, target door,
     drill or drill page), `section`, `backtrack: Option<(ExpandableRef, section)>`,
     `expansion_value`, `sorting_value`, `next_room`, `shape_entry`, `room_ripped`,
@@ -181,8 +238,22 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
     `30baad7e2`. The limit is optional (`None` in the probes).
   - **Accept:** port `autoroute/maze/MazeListElementTest` (both tests) and add tie tests:
     by expansion value, by door id, by section, and a full tie that keeps the first.
+  - *Done 2026-10-16:* `autoroute/session/queue.rs` (`QueueKey` with `<`/`>` doubles, `-0.0`
+    normalized, `debug_assert!` against NaN; `MazeQueue` = `BTreeMap<QueueKey, usize>` + payload
+    `Vec`, first wins) and `autoroute/session/init.rs` (`Session::init`: tie-pin reductions of
+    start then destination items, destinations joined in tree-shape order, the fanout board-box
+    join, start rooms per tree shape with `trace_connection_shape`, completion, start doors
+    queued at the centre of gravity with `calculate_point`). Stop checks at Java's four points
+    through `Session::is_stop_requested` (the optional `WorkLimit`, logging its
+    `WORK_LIMIT_CUTOFF` line, then the optional `&dyn Stoppable`). Tests in
+    `autoroute::session::queue::tests`: `compare_to_returns_zero_for_same_instance`,
+    `compare_to_sorts_by_sorting_value` (the two `MazeListElementTest` ports),
+    `ties_break_by_expansion_value_then_door_id_then_section`,
+    `a_full_tie_keeps_the_first_element`; and
+    `autoroute::session::tests::a_stop_request_or_an_exhausted_work_limit_fails_the_init`. The
+    queue's fanout filter is A04's.
 
-- [ ] **A02.7 — `start-rooms` probe.** Java kind `start-rooms`: after
+- [x] **A02.7 — `start-rooms` probe.** Java kind `start-rooms`: after
   `MazeSearchEngine.getInstance` for each sampled connection (both variants), print:
   - every complete room in creation order: id, layer, octagon coordinates, net-dependent
     flag (read `completeExpansionRooms` by reflection);
@@ -195,3 +266,13 @@ sorting, door geometry, search init and the queue type; the `start-rooms` probe.
   - the room id counter, and B02's autoroute-tree fingerprint after `clear()`.
   - **Accept:** `start_rooms_match_java` equal for every sampled connection on the fixture
     ladder up to and including `Issue026-J2_reference`, in both ripup variants.
+  - *Done 2026-10-16:* Java kind `start-rooms` appended to `AutorouteProbe.java` (reflection
+    on `completeExpansionRooms`, `incompleteExpansionRooms`, `expansionRoomInstanceCount`; the
+    tree walk hash copied from `TreeProbe.java`), rows `start-rooms @ladder` and `door-sections`
+    in `fixtures.tsv`, references generated with `generate.sh <a773a70ec worktree> start-rooms`
+    into `fixtures/reference/probe/start-rooms/` (17 boards, 102 connections with `ok`, largest
+    120 KB). `tests/autoroute_probe_start_rooms.rs::start_rooms_match_java` is equal on the
+    whole ladder (all 17 boards, both variants, past J2 too; `EXPECTED_MISMATCHES` empty);
+    `cargo test -p freerouting --test autoroute_probe_start_rooms`: 2 passed. A changed
+    reference line is reported (checked by editing line 500 of J2's reference: "line 500
+    differs").

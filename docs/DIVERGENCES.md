@@ -346,6 +346,69 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   are unchanged. Its own pin widths (`Pin.getMinWidth`, `getTraceNeckdownHalfwidth`) follow
   Java until B05 ports them on the board.
 
+**Shove checks** (`shove`, O03; tests `tests/board_probe_shove.rs`)
+- The fast cutout (`ShapeTraceEntries.fastCutoutTrace`) of a trace with a segment that has
+  no tree leaf (a zero-length segment, left by an earlier cutout): Java throws a
+  `NullPointerException` in `ShapeSearchTree.reuseEntriesAfterCutout` and leaves the board
+  half changed; the port skips the missing leaf and finishes the cutout. The
+  `trace-entries` probe hits it on `Issue026-J2_reference` at cutout sample 37
+  (`JAVA_CUTOUT_EXCEPTIONS`); every line before it is equal.
+- Java bugs kept on purpose: `ForcedPadRouter.inFrontOfPad` for from side 0 takes
+  `min(lineA.x + lineA.y, lineB.x + lineB.x)` (`ForcedPadRouter.java:78`; test
+  `in_front_of_pad_keeps_java_typo`), and `ShapeTraceEntries.storeTrace` compares a
+  contact trace's clearance class with itself, so only the shove-fixed state and the half
+  width decide there (`shove::trace_entries` module docs).
+- `ForcedPadRouter.calcCheckShapeForFromSide` with a rational shape centre (Java's
+  `Line(Point, Direction)` only warns and builds a rational line) or a polyline whose offset
+  shape is `null` (Java then throws in `checkTraceShape`): the port skips that side
+  (`shove::drill_check::calc_check_shape_for_from_side`, test
+  `calc_check_shape_skips_rational_centre`). Every caller passes an integer via location, so
+  no probe query reaches it.
+
+**Autoroute room graph** (`autoroute::session`, A02; tests `tests/autoroute_probe_start_rooms.rs` and
+`autoroute::session::tests`)
+- Only the 45 degree room graph is ported. On a 90 degree or any-angle autoroute tree, room
+  completion returns `RoomError::UnsupportedAngle` instead of rooms, and this error is not
+  swallowed like the exceptions Java's `completeExpansionRoom` catches
+  (`ninety_degree_and_any_angle_rooms_are_a07`). No fixture routes at those angles. A07 ports
+  them.
+
+## freerouting-cli
+
+**Command line and job outputs** (`freerouting-cli`; `freerouting::job::{run, outputs, deadline,
+log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_parity}.rs`)
+- One parser does the work of Java's `GlobalSettings.applyCommandLineArguments` and
+  `CliSettings`; Java runs both and logs some warnings twice (`-mp`, `--router.max_passes`),
+  Rust logs each once. `-mt` still does nothing headless; Rust adds an info line naming
+  `--router.optimizer.max_threads` (`mt_does_nothing_headless`).
+- `-inc` keeps Java's comma split and adds a backslash: `-inc 'Power\,Default'` names the class
+  `Power,Default` that KiCad writes. When the plain split's parts joined with `,` are a class
+  of the board, the job warns (`inc_escaped_comma_names_one_class`,
+  `comma_split_warns_when_it_looks_like_a_mistake` on `Issue558-dev-board.dsn`).
+- No 0-byte outputs (`no_zero_byte_outputs`). Java's `-do x.xyz` writes the SES text into
+  `x.xyz` and exits 0, and a format it cannot produce headless (`.frb`, `.scr`, `.kicad_pcb`) gives
+  a 0-byte file or nothing. Rust refuses every format except `.ses`, `.dsn`, `.rules`, `.drc` and
+  `.drc.json` before any work and exits 1. (Java at `cda540f` also wrote a 0-byte `x.dsn` and
+  exited 1; `a773a70ec` writes a DSN, and so does Rust.)
+- `-do a.ses+b.drc.json`: Java reads `.drc.json` as plain `.json` and writes a KiCad design JSON
+  under that name; Rust writes the DRC report there (`.drc` too, also as the main output).
+- Every output is written to `.<name>.<pid>.tmp` and renamed, so a killed process leaves no
+  partial file; stale temporary files are removed at the next start
+  (`killed_run_leaves_no_partial_file`). A serializer result of 0 bytes is an error.
+- Wall-clock limits only stop work: one watcher thread sleeps until the earliest deadline and stops
+  the cancel token. Java's monitor polls once a second and waits 30 s of grace before it marks
+  the job `TIMED_OUT`; the Rust stages check the token between steps, so there is no grace
+  (`timeouts_only_stop_work`). A timed-out job exits 0 and logs
+  `warning: stopped by wall-clock limit; result is timing-dependent`.
+- Log lines go to stderr without timestamps, prefixed `warning: ` or `error: `. The stage
+  summary stops after the score (no JVM CPU or heap figures). `1 violation` is singular, as in
+  Java, so `compare.py`'s regex misses a one-violation board.
+- `--compare-boards` and `--calculate-benchmark-scores` are recognized and exit 2 with
+  `not supported; use freerouting-dev ses-diff`; a command line without `-de` and `-do` is an
+  error with exit 1 (Java opens the GUI), and `-de x.json` (KiCad JSON) is refused.
+- Until C07.8 the pipeline is a stub: with the router enabled the job warns that routing is not
+  implemented and writes the board as loaded.
+
 ## freerouting-gui
 
 (The GUI is rebuilt with egui, not translated from Swing; only behaviour that Java
