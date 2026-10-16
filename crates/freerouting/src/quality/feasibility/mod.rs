@@ -209,9 +209,9 @@ pub fn candidate_pins(board: &BasicBoard, all_pins: bool) -> Vec<ItemId> {
         if on_layers.is_empty() {
             continue;
         }
-        let needs_neck = on_layers.iter().any(|&l| {
-            f64::from(2 * class.trace_half_width(l)) > neck::pin_min_width(board, item, l)
-        });
+        let needs_neck = on_layers
+            .iter()
+            .any(|&l| f64::from(2 * class.trace_half_width(l)) > board.pin_min_width(item.id(), l));
         if all_pins || needs_neck {
             result.push(id);
         }

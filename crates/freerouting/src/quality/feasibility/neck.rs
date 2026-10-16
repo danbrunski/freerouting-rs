@@ -8,16 +8,14 @@
 //! choose its neck distance.
 //!
 //! The pin widths are Java's `Pin.getMinWidth` and
-//! `Pin.getTraceNeckdownHalfwidth` (`board/model/items/Pin.java:567-590`
-//! at `cda540f`). B05.4 ports them as board methods
-//! (`board/pin_exits.rs`); until it lands they are computed here from the
-//! padstack, the same way, and this module should then call B05's.
+//! `Pin.getTraceNeckdownHalfwidth` (`board/model/items/Pin.java:567-590`),
+//! B05.4's [`BasicBoard::pin_min_width`] and
+//! [`BasicBoard::trace_neckdown_half_width`] (`board/pin_exits.rs`), which
+//! the `pin-exits` probe compares with Java.
 
 use freerouting_geometry::FloatPoint;
 
 use crate::board::BasicBoard;
-use crate::board::items::Item;
-use crate::board::structure::ComponentId;
 
 use super::Verdict;
 use super::widest_path::{Field, Requirement, ViaSpan, widest_path};
@@ -25,54 +23,6 @@ use super::{PinContext, verdict_of};
 
 /// The neck radii tried, in mm from the pin centre.
 pub const NECK_RADII_MM: [f64; 5] = [0.25, 0.5, 1.0, 2.0, 4.0];
-
-/// Java `Pin.getMinWidth(layer)`: the smaller side of the bounding box of
-/// the padstack shape on `layer` (0 if the pin has none there).
-pub fn pin_min_width(board: &BasicBoard, item: &Item, layer: i32) -> f64 {
-    padstack_box_width(board, item, layer, i32::min)
-}
-
-/// Java `Pin.getMaxWidth(layer)`.
-pub fn pin_max_width(board: &BasicBoard, item: &Item, layer: i32) -> f64 {
-    padstack_box_width(board, item, layer, i32::max)
-}
-
-fn padstack_box_width(
-    board: &BasicBoard,
-    item: &Item,
-    layer: i32,
-    pick: fn(i32, i32) -> i32,
-) -> f64 {
-    let Some(pin) = item.as_pin() else {
-        return 0.0;
-    };
-    let Some(padstack) = board.library.padstacks.get(pin.drill.padstack) else {
-        return 0.0;
-    };
-    let first = item.first_layer();
-    let index = layer - first;
-    let on_front = board
-        .components
-        .get(ComponentId(item.component_id()))
-        .is_none_or(|c| c.placed_on_front());
-    // Java `Pin.getPadstackLayer`.
-    let padstack_layer = if on_front || padstack.placed_absolute {
-        index + first
-    } else {
-        padstack.board_layer_count() as i32 - index - first - 1
-    };
-    let Some(shape) = padstack.get_shape(padstack_layer) else {
-        return 0.0;
-    };
-    let bounds = shape.to_shape().bounding_box();
-    f64::from(pick(bounds.width(), bounds.height()))
-}
-
-/// Java `Pin.getTraceNeckdownHalfwidth(layer)`:
-/// `(int) max(0.5·getMinWidth(layer) − 1, 1)`.
-pub fn trace_neckdown_half_width(board: &BasicBoard, item: &Item, layer: i32) -> i32 {
-    (0.5 * pin_min_width(board, item, layer) - 1.0).max(1.0) as i32
-}
 
 /// One rung of the ladder.
 #[derive(Clone, Debug, PartialEq)]
@@ -115,7 +65,7 @@ pub(super) fn neck_ladder(
             if item.drill().and_then(|d| d.shape_on_layer(layer)).is_none() {
                 return w;
             }
-            let neck = 2 * i64::from(trace_neckdown_half_width(board, item, layer));
+            let neck = 2 * i64::from(board.trace_neckdown_half_width(item.id(), layer));
             neck.max(floor).min(w)
         })
         .collect();

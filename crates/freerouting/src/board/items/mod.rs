@@ -198,6 +198,35 @@ impl PolylineTrace {
     pub fn tile_shape_count(&self) -> usize {
         self.polyline.lines().len().saturating_sub(2)
     }
+
+    // B05.1: the geometry transforms of `PolylineTrace` (`PolylineTrace.java:144-170`
+    // through `PolylineTraceGeometry`). They change only the trace; the board
+    // updates its trees (`board::item_ops`).
+
+    /// Java `PolylineTrace.translateBy`.
+    pub fn translate_by(&mut self, vector: &Vector) {
+        self.polyline = self.polyline.translate_by(vector);
+    }
+
+    /// Java `PolylineTrace.turn90Degree`.
+    pub fn turn_90_degree(&mut self, factor: i32, pole: IntPoint) {
+        self.polyline = self.polyline.turn_90_degree(factor, pole);
+    }
+
+    /// Java `PolylineTrace.rotateApprox`: `Math.toRadians(angleInDegree)`,
+    /// then `Polyline.rotateApprox`.
+    pub fn rotate_approx(&mut self, angle_in_degree: f64, pole: FloatPoint) {
+        self.polyline = self
+            .polyline
+            .rotate_approx(angle_in_degree.to_radians(), pole);
+    }
+
+    /// Java `PolylineTrace.changePlacementSide`: mirrors at the vertical line
+    /// through `pole` and moves the trace to the mirrored layer.
+    pub fn change_placement_side(&mut self, pole: IntPoint, layer_count: usize) {
+        self.polyline = self.polyline.mirror_vertical(pole);
+        self.layer = layer_count as i32 - self.layer - 1;
+    }
 }
 
 /// The class of an obstacle or conduction area.
@@ -551,6 +580,27 @@ impl BoardOutline {
             self.keepout_piece_count = area.split_to_convex().map_or(0, |pieces| pieces.len());
             self.keepout_area = Some(area);
         }
+    }
+
+    /// The geometry transforms of the outline (`BoardOutline.java:265-302`,
+    /// B05.1). Java's loops assign the transformed shape to the loop
+    /// variable only (`currentShape = currentShape.translateBy(vector)`), so
+    /// the outline shapes stay where they are; only the generated keepout
+    /// area moves. That Java bug is kept: it decides the tree shapes of an
+    /// outline with a generated keepout. The board invalidates its edge-pin
+    /// cache, as Java's `invalidateEdgePinNets` does.
+    pub(crate) fn transform_keepout(&mut self, transform: impl FnOnce(&Area) -> Area) {
+        if let Some(area) = &self.keepout_area {
+            let moved = transform(area);
+            self.keepout_piece_count = moved.split_to_convex().map_or(0, |pieces| pieces.len());
+            self.keepout_area = Some(moved);
+        }
+    }
+
+    /// A copy as Java's `BoardOutline.copy` constructs it: the same shapes,
+    /// no generated keepout.
+    pub(crate) fn copy_shapes(&self) -> BoardOutline {
+        BoardOutline::new(self.shapes.clone(), self.layer_count)
     }
 
     /// Java `BoardOutline.tileShapeCount`.

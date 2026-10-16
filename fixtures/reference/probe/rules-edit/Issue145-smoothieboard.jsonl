@@ -1,0 +1,13 @@
+{"kind":"rules-edit","board":"Issue145-smoothieboard","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"load","step":"load","maxGeneratedId":6125,"items":6125}
+{"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":142,"shapeHash":"c40e415e4f51b69a","contentDigest":"26e1fb6a2c2db4c9"}
+{"stage":"load","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":16233,"leaves":8117,"maxDepth":76,"shapeHash":"c80046266463acb2","contentDigest":"0c1c811a4ebcafe0"}
+{"stage":"value-changed","step":"smd-smd","maxGeneratedId":6125,"items":6125}
+{"stage":"value-changed","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":142,"shapeHash":"c40e415e4f51b69a","contentDigest":"26e1fb6a2c2db4c9"}
+{"stage":"class-added","step":"extra","maxGeneratedId":6125,"items":6125}
+{"stage":"class-added","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":142,"shapeHash":"c40e415e4f51b69a","contentDigest":"26e1fb6a2c2db4c9"}
+{"stage":"assigned","step":"moved-269","maxGeneratedId":6125,"items":6125}
+{"stage":"assigned","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":142,"shapeHash":"c40e415e4f51b69a","contentDigest":"26e1fb6a2c2db4c9"}
+{"stage":"assigned","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc3","nodes":16233,"leaves":8117,"maxDepth":76,"shapeHash":"c80046266463acb2","contentDigest":"0c1c811a4ebcafe0"}
+{"stage":"pruned","step":"classes-3","maxGeneratedId":6125,"items":6125}
+{"stage":"pruned","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":142,"shapeHash":"c40e415e4f51b69a","contentDigest":"26e1fb6a2c2db4c9"}

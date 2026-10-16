@@ -1,0 +1,5 @@
+{"kind":"route-stubs","board":"Issue690-ecc83","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"stubs","count":0}
+{"stage":"stubs-after-removal","count":2}
+{"stage":"stub-after-removal","item":397,"type":"trace","net":"Net-(U1A-G)","x":"0x4102a33800000000","y":"0xc0fce94000000000","boardX":"0x41374c0600000000","boardY":"0xc13211c800000000","layer":1}
+{"stage":"stub-after-removal","item":370,"type":"trace","net":"Net-(U1A-K)","x":"0x4100be4000000000","y":"0xc0fc372000000000","boardX":"0x4134edd000000000","boardY":"0xc131a27400000000","layer":1}

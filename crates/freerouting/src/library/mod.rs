@@ -10,6 +10,8 @@ pub use logical_part::{LogicalPart, LogicalPartId, LogicalParts, PartPin};
 pub use package::{Package, PackageId, PackageKeepout, PackagePin, Packages};
 pub use padstack::{Padstack, PadstackId, Padstacks};
 
+use crate::board::BasicBoard;
+
 /// The padstacks, packages, logical parts and via padstacks of a board.
 ///
 /// Port of `core.library.BoardLibrary`.
@@ -29,6 +31,18 @@ impl BoardLibrary {
             logical_parts: LogicalParts::default(),
             via_padstacks: None,
         }
+    }
+
+    /// Java `BoardLibrary.isUsed`: true if a pin or via on `board` has
+    /// `padstack`, or a package pin of the library names it.
+    pub fn is_used(&self, padstack: PadstackId, board: &BasicBoard) -> bool {
+        board
+            .items()
+            .any(|item| item.drill().is_some_and(|drill| drill.padstack == padstack))
+            || self
+                .packages
+                .iter()
+                .any(|package| package.pins().iter().any(|pin| pin.padstack_id == padstack))
     }
 
     /// The number of via padstacks.

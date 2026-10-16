@@ -126,8 +126,19 @@ DRC panels. Both data sets are already exposed in `freerouting::drc`:
   plus unconnected items and zone islands. `generate_report` gives the Java JSON
   report.
 
-`tests/drc.rs::drc_findings_are_drawable` exercises these on a fixture. If the
-GUI needs something else from the engine, add it to the engine crate. Don't
+`tests/drc.rs::drc_findings_are_drawable` exercises these on a fixture.
+
+Engine API added for the desktop app (B08, 2026-10-16), all on `BasicBoard` (so on
+`RoutingBoard` through `Deref`) unless noted:
+- `item_geometry(id)`: the drawable shapes of an item in board units (`board::item_geometry`);
+- `item_info(id)`: the fields of the info window in Java's order (`board::item_info`);
+- `drc::route_stubs(&board)`: the route stubs list in the window's order;
+- `detach_item_for_move`, `set_conduction_is_filled`, `unfill_conduction_areas`,
+  `non_45_degree_trace_count`, `net_items` (`board::gui_ops`), and a public `insert_item`;
+- the rule dialogs' edits (`rules::edit`: clearance values, classes and prune, net classes, via
+  infos and rules), `ClearanceMatrix::get_row`/`row`, `BoardLibrary::is_used`, `Nets::new_net`.
+
+If the GUI needs something else from the engine, add it to the engine crate. Don't
 put board logic in the GUI.
 
 ## Next stages

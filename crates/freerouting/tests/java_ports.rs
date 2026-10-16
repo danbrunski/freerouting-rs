@@ -738,8 +738,14 @@ fn changed_area_lifecycle() {
 
 // ---------------------------------------------------------------------------
 // board.actions.ComponentItemTransformTest: only
-// `componentRotationApiUsesExactQuarterTurns`; the others test the
-// interactive component move.
+// `componentRotationApiUsesExactQuarterTurns`. The others
+// (`sharedJunctionViaAndUndoRemainConsistent`,
+// `conflictingAnchorsRejectWithoutChangingPoseOrSearchTree`,
+// `newForeignNetClearanceRejectsAndLeavesStationaryPinUntouched`,
+// `existingNonGridPinEscapeCanStillRotateRigidly`,
+// `illegalTraceAngleRejectsRatherThanDistortingCopper`) run
+// `ComponentItemTransform.apply` on items detached with `detachItemForMove`;
+// owner I04 (B05.8 checked).
 
 #[test]
 fn component_rotation_api_uses_exact_quarter_turns() {
@@ -819,6 +825,132 @@ mod stoppable_thread {
     }
 }
 
+// ---------------------------------------------------------------------------
+// board.facade.BasicBoard.deleteAllTracksAndVias (B08.7). Java has no unit test
+// for it; it deletes from the item list only (`BasicBoard.java:1523-1544`), so
+// the search trees keep entries of removed traces and vias and a later query
+// can return an item that is gone. The port removes the tree entries too
+// (DIVERGENCES.md, "Board model").
+
+mod delete_all_traces_and_vias {
+    use super::*;
+    use freerouting::geometry::{Circle, ConvexShape};
+
+    #[test]
+    fn delete_all_traces_and_vias_leaves_no_tree_entries() {
+        let mut board = one_layer_board(1_000_000);
+        let class = board.rules.default_net_class();
+        let net = board.rules.nets.add("one", 1, false, class);
+        let pad = board.library.padstacks.add(
+            "via",
+            vec![Some(ConvexShape::Circle(Circle::new(
+                IntPoint::new(0, 0),
+                300,
+            )))],
+            vec![None],
+            true,
+            false,
+        );
+        let mut removed = Vec::new();
+        for i in 0..5 {
+            let y = 100_000 + 50_000 * i;
+            let corners = [ip(100_000, y), ip(400_000, y)];
+            removed.push(
+                board
+                    .insert_trace_without_cleaning(
+                        Polyline::from_points(&corners),
+                        0,
+                        500,
+                        &[net],
+                        1,
+                        FixedState::Unfixed,
+                    )
+                    .unwrap(),
+            );
+        }
+        for i in 0..3 {
+            removed.push(board.insert_via(
+                pad,
+                IntPoint::new(600_000 + 10_000 * i, 500_000),
+                &[net],
+                1,
+                FixedState::Unfixed,
+                false,
+            ));
+        }
+        let everything = TileShape::from(IntBox::new(0, 0, 1_000_000, 1_000_000));
+        let before = board.overlapping_objects(&everything, 0);
+        assert!(removed.iter().all(|id| before.contains(id)));
+
+        board.delete_all_traces_and_vias();
+
+        assert!(removed.iter().all(|id| board.item(*id).is_none()));
+        let after = board.overlapping_objects(&everything, 0);
+        assert!(
+            removed.iter().all(|id| !after.contains(id)),
+            "removed ids still in the tree: {after:?}"
+        );
+        // The outline is still found.
+        assert_eq!(after.len(), 1);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// board.BoardItemRenderingMetadataTest (B05.8): its one test.
+
+#[test]
+fn every_board_item_exposes_neutral_semantic_metadata() {
+    use freerouting::board::items::{AreaKind, BoardItemType, ItemKind};
+    let bytes = std::fs::read(fixture(
+        "Issue575-drc_dev-board_4_hole_clearance_violations.dsn",
+    ))
+    .unwrap();
+    let board = match read_board(&bytes) {
+        BoardReadResult::Success { board, .. } => *board,
+        BoardReadResult::OutlineMissing {
+            board: Some(board), ..
+        } => *board,
+        _ => panic!("the fixture must load"),
+    };
+    let mut observed = BTreeSet::new();
+    for item in board.items() {
+        let kind = item.board_item_type();
+        observed.insert(kind);
+        let _bounds = item.bounding_box();
+        assert!(
+            item.first_layer() <= item.last_layer(),
+            "layer range ordered"
+        );
+        let expected = match &item.kind {
+            ItemKind::Pin(_) => BoardItemType::Pin,
+            ItemKind::Via(_) => BoardItemType::Via,
+            ItemKind::Trace(_) => BoardItemType::Trace,
+            ItemKind::Area(area) => match area.kind {
+                AreaKind::Conduction { .. } => BoardItemType::ConductionArea,
+                AreaKind::ViaObstacle => BoardItemType::ViaObstacleArea,
+                AreaKind::ComponentObstacle => BoardItemType::ComponentObstacleArea,
+                AreaKind::Obstacle => BoardItemType::ObstacleArea,
+            },
+            ItemKind::ComponentOutline(_) => BoardItemType::ComponentOutline,
+            ItemKind::BoardOutline(_) => BoardItemType::BoardOutline,
+        };
+        assert_eq!(kind, expected);
+    }
+    assert!(
+        observed.contains(&BoardItemType::Pin),
+        "fixture must contain pins"
+    );
+    assert!(
+        observed.contains(&BoardItemType::Trace),
+        "fixture must contain traces"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// core.scoring.ScoringMazeCostIndependenceTest (A01.5): both tests. The maze
+// search reads its costs from the scoring section; the V2 board-score
+// weights never reach it, nor `AutorouteControl`'s via cost.
+
 mod scoring_maze_cost_independence {
     use freerouting::autoroute::control::AutorouteControl;
     use freerouting::io::{BoardReadResult, read_board};
@@ -891,5 +1023,87 @@ mod scoring_maze_cost_independence {
         .unwrap();
         assert!((via_cost_before - after_weights.min_normal_via_cost).abs() <= 0.001);
         assert_eq!(settings.scoring.via_costs, DEFAULT_VIA_COSTS);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// gui.DialogInteractionHandlersTest, the engine part of two tests (B08.4), on a real board
+// instead of Mockito mocks: `clearanceMatrixGridCellParsingAndLayeredApplyWorkAsExpected`
+// (the three `applyClearanceValue` cases) and `netClassesButtonAndTableHelpersApplyExpectedChanges`
+// (`applyShoveFixedSelection`, `applyAutorouterIgnoreSelection`).
+//
+// Not ported, because they test Swing windows' static helpers, which belong to the GUI (G06):
+// `WindowNetClassesTest` (all three: `parseTraceWidthValue` parses a cell value and
+// `applyTraceWidth` converts user to board units with a `CoordinateTransform`), and in
+// `DialogInteractionHandlersTest` the route and autoroute parameter window handlers, the
+// number normalizers, `isLegalClassName`, `parseClearanceTableValue` and `canRemoveNetClass`
+// (a row count test). The facade keeps `Net classes` removal rules in `rules::edit`.
+
+mod dialog_interaction_handlers {
+    use super::*;
+    use freerouting::rules::edit::ClearanceLayer;
+
+    fn four_layer_board() -> RoutingBoard {
+        let layers = LayerStructure::new(vec![
+            Layer::new("Top", true),
+            Layer::new("In1", true),
+            Layer::new("In2", true),
+            Layer::new("Bottom", true),
+        ]);
+        let matrix = ClearanceMatrix::default_instance(layers.count(), 10);
+        let mut rules = BoardRules::new(layers.clone(), matrix);
+        rules.create_default_net_class();
+        let outline = IntBox::new(0, 0, 100_000, 100_000);
+        let mut board = RoutingBoard::new(
+            outline,
+            layers,
+            vec![PolylineShape::Tile(TileShape::from(outline))],
+            0,
+            rules,
+            Communication::default(),
+        );
+        board.add_clearance_class("class2");
+        board
+    }
+
+    #[test]
+    fn apply_clearance_value_on_all_inner_and_single_layers() {
+        let mut board = four_layer_board();
+        let value = |board: &RoutingBoard, i: i32, j: i32, layer: i32| {
+            board.rules.clearance_matrix.get_value(i, j, layer, false)
+        };
+        board.apply_clearance_value(2, 1, ClearanceLayer::All, 300);
+        for layer in 0..4 {
+            assert_eq!(value(&board, 2, 1, layer), 300);
+            assert_eq!(value(&board, 1, 2, layer), 300);
+        }
+        board.apply_clearance_value(2, 1, ClearanceLayer::Inner, 220);
+        assert_eq!(
+            [0, 1, 2, 3].map(|l| value(&board, 2, 1, l)),
+            [300, 220, 220, 300]
+        );
+        assert_eq!(
+            [0, 1, 2, 3].map(|l| value(&board, 1, 2, l)),
+            [300, 220, 220, 300]
+        );
+        board.apply_clearance_value(2, 1, ClearanceLayer::Layer(3), 180);
+        assert_eq!(value(&board, 2, 1, 3), 180);
+        assert_eq!(value(&board, 1, 2, 3), 180);
+        assert_eq!(value(&board, 2, 1, 0), 300);
+    }
+
+    #[test]
+    fn net_class_selection_helpers() {
+        let mut board = four_layer_board();
+        let class = board.add_net_class();
+        assert!(!board.rules.net_classes.get(class).is_shove_fixed());
+        board.set_net_class_shove_fixed(class, true);
+        assert!(board.rules.net_classes.get(class).is_shove_fixed());
+        assert!(!board.rules.net_classes.get(class).pull_tight());
+        assert!(!board.rules.net_classes.get(class).is_ignored_by_autorouter);
+        board.set_net_class_ignored_by_autorouter(class, true);
+        assert!(board.rules.net_classes.get(class).is_ignored_by_autorouter);
+        board.set_net_class_ignored_by_autorouter(class, false);
+        assert!(!board.rules.net_classes.get(class).is_ignored_by_autorouter);
     }
 }

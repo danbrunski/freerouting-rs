@@ -7,8 +7,9 @@
 //! ids held elsewhere stay valid, as Java references to a removed object do.
 
 mod clearance_matrix;
+pub mod edit;
 
-pub use clearance_matrix::{CLEARANCE_SAFETY_MARGIN, ClearanceMatrix};
+pub use clearance_matrix::{CLEARANCE_SAFETY_MARGIN, ClearanceMatrix, ClearanceRow};
 
 use crate::board::structure::{AngleRestriction, LayerStructure};
 use crate::library::{PadstackId, Padstacks};
@@ -849,6 +850,18 @@ impl Nets {
             length_constraint: None,
         });
         number
+    }
+
+    /// Java `Nets.newNet(locale)`: a net named `net#<count + 1>` in class
+    /// `default_class` (Java's `Net` constructor takes the board's default
+    /// class), subnet 1, without a plane. Returns the net number.
+    ///
+    /// Java looks the prefix up as `TextManager.getText("net#")` in the bundle
+    /// of `NetClasses` and `Common`, which have no such key at the pin, so
+    /// `getText` returns the key and the name is `net#<n>` in every locale.
+    pub fn new_net(&mut self, default_class: NetClassId) -> i32 {
+        let name = format!("net#{}", self.nets.len() + 1);
+        self.add(name, 1, false, default_class)
     }
 
     /// All nets in number order.

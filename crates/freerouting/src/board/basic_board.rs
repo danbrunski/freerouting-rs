@@ -311,7 +311,7 @@ impl BasicBoard {
 
     /// Inserts `item` into the item list and the search trees (Java
     /// `insertItem`).
-    pub(crate) fn insert_item(&mut self, mut item: Item) -> ItemId {
+    pub fn insert_item(&mut self, mut item: Item) -> ItemId {
         let class_count = self.rules.clearance_matrix.class_count() as i32;
         if item.clearance_class < 0 || item.clearance_class >= class_count {
             self.log
@@ -1103,10 +1103,17 @@ impl BasicBoard {
     /// Removes item `id` unless its deletion is forbidden. Returns true if
     /// it was removed.
     pub fn remove_item(&mut self, id: ItemId) -> bool {
+        self.remove_item_checked(id, false)
+    }
+
+    /// Java `BoardItemRepository.removeItem(item, forMove)`: a move removes
+    /// an item of a component although its deletion is forbidden
+    /// (B08.5's `detach_item_for_move`).
+    pub(crate) fn remove_item_checked(&mut self, id: ItemId, for_move: bool) -> bool {
         let Some(item) = self.items.get(&id) else {
             return false;
         };
-        if self.is_deletion_forbidden(item) {
+        if self.is_deletion_forbidden(item) && !(for_move && item.component_id() > 0) {
             return false;
         }
         let invalidates = matches!(item.kind, ItemKind::Pin(_) | ItemKind::BoardOutline(_));

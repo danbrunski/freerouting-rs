@@ -238,7 +238,7 @@ What this adds:
   machine (load 16–28). Candidates also need a net with at least two
   connectable items (a one-pin net has nothing to route).
 
-- [~] **Q03.5 — Neck ladder: how long a neck would make it routable.**
+- [x] **Q03.5 — Neck ladder: how long a neck would make it routable.**
   For each `infeasible` pin, recompute with `req(p)` equal to the neck width
   `2·trace_neckdown_half_width(layer)` (B05's port of
   `Pin.getTraceNeckdownHalfwidth`) within radius R of the pin centre, and `W`
@@ -260,6 +260,14 @@ What this adds:
   (`Pin.java:567-590`, with `getPadstackLayer`); replace them with B05's
   `board/pin_exits.rs` functions when they land, which also gives them the
   pin-exits probe check.
+  *Done 2026-10-16:* the remainder landed with B05.4: `neck.rs`'s local
+  `pin_min_width`, `pin_max_width`, `trace_neckdown_half_width` and
+  `padstack_box_width` are deleted; `neck_ladder` calls
+  `BasicBoard::trace_neckdown_half_width` and `feasibility/mod.rs` calls
+  `BasicBoard::pin_min_width` (`board/pin_exits.rs`), which
+  `board_probe_pin_exits` compares with Java on every pin and layer of 4
+  boards. `cargo test -p freerouting --test quality_feasibility`: 6 passed,
+  1 ignored (`qfn_neck_ladder`, `enclosed_pin_has_no_neck` among the passed).
 
 - [x] **Q03.6 — `canary-pwr` and the synthetic fixtures.**
   Expected, from canary-09 (`canary-pwr-q03-cases`), in the 17:46 copy

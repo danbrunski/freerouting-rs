@@ -116,6 +116,14 @@ branch 3 in IntOctagon's box cutout.
 - Stale `LeafId`s and `ItemId`s cannot be used after removal; Java's locking tests
   (`MinAreaTreeLeafLifecycleTest`, `ShapeSearchTreeLeafLifecycleTest`) have no
   counterpart because the borrow checker rules out concurrent reads and writes.
+- `delete_all_traces_and_vias` removes the search-tree entries of the traces and vias too.
+  Java's `deleteAllTracksAndVias` deletes from the item list only, so its trees keep the
+  removed items and later queries return them (GUI-only: `BoardToolbar`, `BoardMenuOther`).
+  `delete_all_traces_and_vias_leaves_no_tree_entries` (`tests/java_ports.rs`, B08.7).
+- `unfill_conduction_areas` and `set_conduction_is_filled` save the area for undo before they
+  change it, so an undo restores the filled flag and the obstacle flag. Java's
+  `ConductionArea.setIsFilled` and `setIsObstacle` change the object the undo snapshot shares,
+  so an undo keeps the change (`unfill_is_undone_by_undo`, `tests/board_gui_ops.rs`, B08.5).
 
 **Board statistics** (`scoring`, port of `BoardStatistics` and
 `BoardStatisticsBoundsCalculator`)

@@ -31,3 +31,24 @@ pub mod queries;
 pub mod selection_filter;
 
 pub use selection_filter::{ItemFilter, SelectableChoice};
+
+// B05: item operations, pin exits and pin-connection fixes (in their own
+// files, beside the other lanes' work on basic_board.rs).
+pub mod item_ops;
+pub mod pin_exits;
+mod trace_pin_connection;
+
+pub use item_ops::ItemTransform;
+pub use pin_exits::TraceExitRestriction;
+
+// B08: the engine API of the GUI (drawable geometry, item info, interactive
+// leftovers), in their own files.
+pub mod item_geometry;
+
+pub use item_geometry::{GeometryShape, ItemGeometry, LayerShape};
+pub mod gui_ops;
+
+pub use gui_ops::DetachError;
+pub mod item_info;
+
+pub use item_info::{InfoField, ItemInfo};

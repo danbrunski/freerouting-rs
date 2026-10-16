@@ -32,3 +32,7 @@ pub use zone_islands::{Island, Trapezoid, ZoneIslandKind, ZoneIslandViolation, f
 
 /// Ordered parallel map, shared with the feasibility diagnostic (Q03).
 pub(crate) use clearance::parallel_map;
+
+// B08.3: the route stubs list of the GUI.
+pub mod route_stubs;
+pub use route_stubs::{RouteStub, RouteStubKind, route_stubs};

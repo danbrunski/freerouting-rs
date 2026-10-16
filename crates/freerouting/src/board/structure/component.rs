@@ -178,6 +178,15 @@ impl Component {
         }
     }
 
+    /// Takes the pose of `original`: location, rotation and side (Java
+    /// `Component.restorePose`, B05.2), used to roll back a rejected
+    /// transform.
+    pub fn restore_pose(&mut self, original: &Component) {
+        self.exact_location = original.exact_location;
+        self.rotation_in_degree = original.rotation_in_degree;
+        self.on_front = original.on_front;
+    }
+
     /// The vector from the origin to the rounded location.
     pub fn translation(&self) -> Option<Vector> {
         self.location()
@@ -367,6 +376,53 @@ impl Components {
     /// Moves the component to the other side of the board.
     pub fn change_side(&mut self, id: ComponentId, pole: IntPoint) {
         self.change(id, |c, rotate_first| c.change_side(pole, rotate_first));
+    }
+
+    /// Adds a copy of component `original` moved by `translation`, with the
+    /// package `package` on both sides, named `Component#<n>` (Java
+    /// `Components.copy`, B05.2). `None` if `original` does not exist or is
+    /// not placed (Java throws there).
+    pub fn copy(
+        &mut self,
+        original: ComponentId,
+        translation: &Vector,
+        package: PackageId,
+    ) -> Option<ComponentId> {
+        let original = self.get(original)?;
+        let location = original.exact_location()?;
+        let offset = translation.to_float();
+        let translated = FloatPoint::new(location.x + offset.x, location.y + offset.y);
+        let (rotation, on_front, part_number) = (
+            original.rotation_in_degree(),
+            original.placed_on_front(),
+            original.part_number().map(str::to_string),
+        );
+        let name = format!("Component#{}", self.components.len() + 1);
+        Some(self.add_precise(
+            name,
+            Some(translated),
+            rotation,
+            on_front,
+            package,
+            package,
+            false,
+            part_number,
+        ))
+    }
+
+    /// Gives component `id` the pose of `original` (Java
+    /// `component.restorePose(original)`). Like Java, which changes the
+    /// object its undo list holds, it takes no undo snapshot.
+    pub fn restore_pose(&mut self, id: ComponentId, original: &Component) {
+        let Some(component) = self.get_mut(id) else {
+            return;
+        };
+        component.restore_pose(original);
+        let key = CaseInsensitive(component.name.clone());
+        let updated = component.clone();
+        if let Some(stored) = self.undo_list.get_mut(&key) {
+            *stored = updated;
+        }
     }
 
     /// Whether the components on the back side are rotated before they are

@@ -1,0 +1,63 @@
+{"kind":"item-ops","board":"Issue026-J2_reference","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"connect","k":0,"trace":141,"corner":1,"from":"1097123,-898296","result":true,"inserted":"198,197,196","removed":"141","maxGeneratedId":198,"items":196,"itemsHash":"e06d1995e9236eb5"}
+{"stage":"connect","k":1,"trace":194,"corner":1,"from":"1274066,-820035","result":false,"inserted":"","removed":"","maxGeneratedId":198,"items":196,"itemsHash":"e06d1995e9236eb5"}
+{"stage":"connect","k":2,"trace":189,"corner":0,"from":"1266782,-830090","result":false,"inserted":"","removed":"","maxGeneratedId":198,"items":196,"itemsHash":"e06d1995e9236eb5"}
+{"stage":"connect","k":3,"trace":190,"corner":0,"from":"1093137,-786448","result":true,"inserted":"202,201,200","removed":"190","maxGeneratedId":202,"items":198,"itemsHash":"39fb1c80cfb49b7e"}
+{"stage":"connect","k":4,"trace":127,"corner":0,"from":"1320306,-922187","result":false,"inserted":"","removed":"","maxGeneratedId":202,"items":198,"itemsHash":"39fb1c80cfb49b7e"}
+{"stage":"connect","k":5,"trace":202,"corner":0,"from":"1095017,-787311","result":true,"inserted":"206,205,204","removed":"202","maxGeneratedId":206,"items":200,"itemsHash":"45ffd8c80cf1b0e3"}
+{"stage":"connect","k":6,"trace":117,"corner":0,"from":"1270923,-787046","result":false,"inserted":"","removed":"","maxGeneratedId":206,"items":200,"itemsHash":"45ffd8c80cf1b0e3"}
+{"stage":"connect","k":7,"trace":129,"corner":2,"from":"1102972,-919555","result":true,"inserted":"210,209,208","removed":"129","maxGeneratedId":210,"items":202,"itemsHash":"ead138090538b2b0"}
+{"stage":"connect","k":8,"trace":89,"corner":1,"from":"1383640,-919823","result":true,"inserted":"214,213,212","removed":"89","maxGeneratedId":214,"items":204,"itemsHash":"983fe5e53db13d31"}
+{"stage":"connect","k":9,"trace":123,"corner":0,"from":"1281735,-914165","result":false,"inserted":"","removed":"","maxGeneratedId":215,"items":204,"itemsHash":"983fe5e53db13d31"}
+{"stage":"connect","k":10,"trace":123,"corner":0,"from":"1283389,-902940","result":true,"inserted":"219,218,217","removed":"123","maxGeneratedId":219,"items":206,"itemsHash":"212caf287a232ec1"}
+{"stage":"connect","k":11,"trace":196,"corner":0,"from":"1106135,-901488","result":false,"inserted":"","removed":"","maxGeneratedId":219,"items":206,"itemsHash":"212caf287a232ec1"}
+{"stage":"connect","k":12,"trace":118,"corner":0,"from":"1290452,-814329","result":false,"inserted":"","removed":"","maxGeneratedId":219,"items":206,"itemsHash":"212caf287a232ec1"}
+{"stage":"connect","k":13,"trace":184,"corner":2,"from":"1254059,-841851","result":false,"inserted":"","removed":"","maxGeneratedId":219,"items":206,"itemsHash":"212caf287a232ec1"}
+{"stage":"connect","k":14,"trace":198,"corner":1,"from":"1106103,-913455","result":true,"inserted":"223,222,221","removed":"198","maxGeneratedId":223,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":15,"trace":221,"corner":1,"from":"1092711,-901236","result":false,"inserted":"","removed":"","maxGeneratedId":223,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":16,"trace":164,"corner":0,"from":"1087377,-822738","result":false,"inserted":"","removed":"","maxGeneratedId":224,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":17,"trace":122,"corner":0,"from":"1287712,-901444","result":false,"inserted":"","removed":"","maxGeneratedId":224,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":18,"trace":148,"corner":0,"from":"1306194,-895406","result":false,"inserted":"","removed":"","maxGeneratedId":225,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":19,"trace":222,"corner":1,"from":"1103577,-903711","result":false,"inserted":"","removed":"","maxGeneratedId":225,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":20,"trace":222,"corner":1,"from":"1098445,-906787","result":false,"inserted":"","removed":"","maxGeneratedId":225,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":21,"trace":223,"corner":1,"from":"1092387,-897884","result":false,"inserted":"","removed":"","maxGeneratedId":225,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":22,"trace":149,"corner":1,"from":"1107001,-882690","result":false,"inserted":"","removed":"","maxGeneratedId":226,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":23,"trace":121,"corner":0,"from":"1307365,-932903","result":false,"inserted":"","removed":"","maxGeneratedId":226,"items":208,"itemsHash":"fbe0e789e7a3e578"}
+{"stage":"connect","k":24,"trace":209,"corner":0,"from":"1116280,-911284","result":true,"inserted":"230,229,228","removed":"209","maxGeneratedId":230,"items":210,"itemsHash":"a2066fac90c273ef"}
+{"stage":"connect","k":25,"trace":177,"corner":1,"from":"1095704,-800552","result":false,"inserted":"","removed":"","maxGeneratedId":230,"items":210,"itemsHash":"a2066fac90c273ef"}
+{"stage":"connect","k":26,"trace":191,"corner":1,"from":"1106393,-795882","result":false,"inserted":"","removed":"","maxGeneratedId":231,"items":210,"itemsHash":"a2066fac90c273ef"}
+{"stage":"connect","k":27,"trace":185,"corner":0,"from":"1075625,-834442","result":false,"inserted":"","removed":"","maxGeneratedId":231,"items":210,"itemsHash":"a2066fac90c273ef"}
+{"stage":"connect","k":28,"trace":149,"corner":0,"from":"1085660,-879136","result":false,"inserted":"","removed":"","maxGeneratedId":231,"items":210,"itemsHash":"a2066fac90c273ef"}
+{"stage":"connect","k":29,"trace":193,"corner":0,"from":"1286931,-842229","result":false,"inserted":"","removed":"","maxGeneratedId":231,"items":210,"itemsHash":"a2066fac90c273ef"}
+{"stage":"connect","k":30,"trace":166,"corner":1,"from":"1309568,-864597","result":true,"inserted":"235,234,233","removed":"166","maxGeneratedId":235,"items":212,"itemsHash":"6b973acee5c7f2c0"}
+{"stage":"connect","k":31,"trace":119,"corner":0,"from":"1297709,-799004","result":false,"inserted":"","removed":"","maxGeneratedId":236,"items":212,"itemsHash":"6b973acee5c7f2c0"}
+{"stage":"connect","k":32,"trace":101,"corner":1,"from":"1259758,-828544","result":false,"inserted":"","removed":"","maxGeneratedId":237,"items":212,"itemsHash":"6b973acee5c7f2c0"}
+{"stage":"connect","k":33,"trace":201,"corner":0,"from":"1086726,-776133","result":true,"inserted":"241,240,239","removed":"201","maxGeneratedId":241,"items":214,"itemsHash":"af5152f6c72ed364"}
+{"stage":"connect","k":34,"trace":193,"corner":0,"from":"1287140,-840933","result":false,"inserted":"","removed":"","maxGeneratedId":241,"items":214,"itemsHash":"af5152f6c72ed364"}
+{"stage":"connect","k":35,"trace":148,"corner":2,"from":"1195840,-880721","result":false,"inserted":"","removed":"","maxGeneratedId":241,"items":214,"itemsHash":"af5152f6c72ed364"}
+{"stage":"connect","k":36,"trace":138,"corner":0,"from":"1314898,-911954","result":false,"inserted":"","removed":"","maxGeneratedId":241,"items":214,"itemsHash":"af5152f6c72ed364"}
+{"stage":"connect","k":37,"trace":234,"corner":0,"from":"1307082,-869502","result":true,"inserted":"245,244,243","removed":"234","maxGeneratedId":245,"items":216,"itemsHash":"fd42009ec32761c3"}
+{"stage":"connect","k":38,"trace":147,"corner":0,"from":"1086208,-840337","result":false,"inserted":"","removed":"","maxGeneratedId":246,"items":216,"itemsHash":"fd42009ec32761c3"}
+{"stage":"connect","k":39,"trace":168,"corner":2,"from":"1327954,-852869","result":false,"inserted":"","removed":"","maxGeneratedId":246,"items":216,"itemsHash":"fd42009ec32761c3"}
+{"stage":"connect","k":40,"trace":243,"corner":0,"from":"1306301,-862885","result":false,"inserted":"","removed":"","maxGeneratedId":246,"items":216,"itemsHash":"fd42009ec32761c3"}
+{"stage":"connect","k":41,"trace":172,"corner":0,"from":"1320990,-855773","result":false,"inserted":"","removed":"","maxGeneratedId":246,"items":216,"itemsHash":"fd42009ec32761c3"}
+{"stage":"connect","k":42,"trace":192,"corner":1,"from":"1273244,-828024","result":true,"inserted":"250,249,248","removed":"192","maxGeneratedId":250,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":43,"trace":197,"corner":1,"from":"1100611,-894630","result":false,"inserted":"","removed":"","maxGeneratedId":250,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":44,"trace":229,"corner":0,"from":"1120866,-918186","result":false,"inserted":"","removed":"","maxGeneratedId":250,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":45,"trace":101,"corner":2,"from":"1257188,-847096","result":false,"inserted":"","removed":"","maxGeneratedId":251,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":46,"trace":102,"corner":1,"from":"1087989,-841753","result":false,"inserted":"","removed":"","maxGeneratedId":252,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":47,"trace":92,"corner":1,"from":"1070031,-900163","result":false,"inserted":"","removed":"","maxGeneratedId":252,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":48,"trace":107,"corner":1,"from":"1284880,-873661","result":false,"inserted":"","removed":"","maxGeneratedId":252,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"connect","k":49,"trace":150,"corner":0,"from":"1089811,-891515","result":false,"inserted":"","removed":"","maxGeneratedId":253,"items":218,"itemsHash":"c58bbbc9a37ec5df"}
+{"stage":"transform","op":"turn90","item":"194 PolylineTrace n19 f2 c1 l0 w1250 1181250,-786619 1173250,-786619"}
+{"stage":"transform","op":"turn90","item":"188 Via n17 f2 c1 1199221,-789681 l0-1 1195221,-793681,1203221,-785681"}
+{"stage":"transform","op":"turn90","item":"81 Pin n f0 c2 1105609,-937880 l0-0 1092209,-955880,1119009,-919880"}
+{"stage":"transform","op":"side","item":"194 PolylineTrace n19 f2 c1 l1 w1250 1218750,-786619 1226750,-786619"}
+{"stage":"transform","op":"side","item":"188 Via n17 f2 c1 1200779,-789681 l0-1 1196779,-793681,1204779,-785681"}
+{"stage":"transform","op":"side","item":"81 Pin n f0 c2 1294391,-937880 l1-1 1280991,-955880,1307791,-919880"}
+{"stage":"transform","op":"rotate30","item":"194 PolylineTrace n19 f2 c1 l1 w1250 1184547,-785735 1191476,-781735"}
+{"stage":"transform","op":"rotate30","item":"188 Via n17 f2 c1 1170515,-797373 l0-1 1166515,-801373,1174515,-793373"}
+{"stage":"transform","op":"rotate30","item":"81 Pin n f0 c2 1325685,-878911 l1-1 1305080,-901199,1346290,-856622"}
+{"stage":"transform","op":"rotate45.5","item":"194 PolylineTrace n19 f2 c1 l1 w1250 1143332,-815978 1145335,-808232"}
+{"stage":"transform","op":"rotate45.5","item":"188 Via n17 f2 c1 1141797,-834143 l0-1 1137797,-838143,1145797,-830143"}
+{"stage":"transform","op":"rotate45.5","item":"81 Pin n f0 c2 1308714,-780619 l1-1 1287933,-798099,1329496,-763139"}

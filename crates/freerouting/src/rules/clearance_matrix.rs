@@ -237,6 +237,80 @@ impl ClearanceMatrix {
     }
 }
 
+/// A row of the clearance matrix, read-only (Java `ClearanceMatrix.Row`, which
+/// `getRow` returns for the clearance matrix window).
+///
+/// Row `j` holds, for every class `i`, the clearance from class `i` to class
+/// `j` on every layer: `column[i].layer[l]` in Java.
+#[derive(Clone, Copy, Debug)]
+pub struct ClearanceRow<'a> {
+    matrix: &'a ClearanceMatrix,
+    index: usize,
+}
+
+impl ClearanceRow<'_> {
+    /// The class number of the row.
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
+    /// The name of the row's class.
+    pub fn name(&self) -> &str {
+        &self.matrix.rows[self.index].name
+    }
+
+    /// The clearance from class `class_i` to the row's class on `layer`;
+    /// `None` if an argument is out of range.
+    pub fn value(&self, class_i: usize, layer: usize) -> Option<i32> {
+        self.matrix.rows[self.index]
+            .column
+            .get(class_i)?
+            .get(layer)
+            .copied()
+    }
+
+    /// The largest clearance of the row's class on `layer` (Java
+    /// `Row.maxValue`; 0 for a layer out of range).
+    pub fn max_value(&self, layer: usize) -> i32 {
+        self.matrix.rows[self.index]
+            .max_value
+            .get(layer)
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// True if the entry for class `class_i` differs between layers (Java
+    /// `MatrixEntry.isLayerDependent`).
+    pub fn is_layer_dependent(&self, class_i: usize) -> bool {
+        class_i < self.matrix.rows.len() && self.matrix.is_layer_dependent(class_i, self.index)
+    }
+}
+
+impl ClearanceMatrix {
+    /// Java `getRow`: the row of class `index`; `None` if out of range (Java
+    /// logs a warning and returns `null`).
+    pub fn get_row(&self, index: i32) -> Option<ClearanceRow<'_>> {
+        let index = usize::try_from(index)
+            .ok()
+            .filter(|i| *i < self.rows.len())?;
+        Some(ClearanceRow {
+            matrix: self,
+            index,
+        })
+    }
+
+    /// The clearances to class `class` on `layer`, one per class `i` in class
+    /// order: `get_value(i, class, layer)`. `None` if `class` or `layer` is out
+    /// of range.
+    pub fn row(&self, class: usize, layer: usize) -> Option<Vec<i32>> {
+        let row = self.rows.get(class)?;
+        if layer >= self.layer_count {
+            return None;
+        }
+        Some(row.column.iter().map(|column| column[layer]).collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

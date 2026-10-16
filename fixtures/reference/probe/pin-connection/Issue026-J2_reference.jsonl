@@ -1,0 +1,106 @@
+{"kind":"pin-connection","board":"Issue026-J2_reference","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"fixes","pinEdgeToTurnDist":1874,"angle":"FORTYFIVE_DEGREE","maxGeneratedId":194}
+{"pass":1,"trace":193,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-831250 1263381,-831250","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":192,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-823250 1263381,-823250","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":190,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-785500 1097056,-785500","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":187,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-847250 1263694,-847250","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":185,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-825500 1097056,-825500","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":180,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-843250 1312706,-843250","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":176,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-805500 1097369,-805500","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":173,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-851250 1313019,-851250","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":170,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-795500 1097056,-795500","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":166,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-867250 1312706,-867250","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":164,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-815500 1097369,-815500","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":158,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-875500 1097056,-875500","maxGeneratedId":194,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":155,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1300750,-883250 1303566,-880434 1320086,-880434 1321324,-879196","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":153,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-891250 1312706,-891250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":150,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-885500 1097369,-885500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":147,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1084100,-845500 1096079,-845500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":145,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-911250 1263381,-911250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":142,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-905500 1097056,-905500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":140,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-907250 1313019,-907250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":137,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-919250 1263694,-919250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":135,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-855500 1097369,-855500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":132,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-915250 1312706,-915250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":130,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-915500 1097056,-915500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":126,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-927250 1287606,-927250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":125,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1275650,-791250 1275650,-790246","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":124,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-787250 1288794,-787250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":123,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-903250 1287919,-903250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":119,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-811250 1288481,-811250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":114,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-899250 1288481,-899250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":112,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-815250 1287919,-815250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":110,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-879250 1287919,-879250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":108,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-835250 1288481,-835250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":106,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-875250 1288481,-875250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":105,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-839250 1287919,-839250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":102,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1084100,-835500 1084854,-836254 1097354,-836254","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":100,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-839250 1263694,-839250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":97,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-925500 1071144,-925500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":96,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-895500 1070831,-895500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":95,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-865500 1070831,-865500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":93,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-835500 1071144,-835500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":90,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1300750,-923250 1300750,-924254","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":89,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1300750,-924254 1387754,-924254 1409750,-946250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":88,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1474750,-768250 1444750,-768250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":88,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1474750,-768250 1444750,-768250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":87,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1474750,-946250 1444750,-946250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":87,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1474750,-946250 1444750,-946250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":86,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1444750,-768250 1409750,-768250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":86,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1444750,-768250 1409750,-768250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":85,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1444750,-946250 1409750,-946250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":85,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1444750,-946250 1409750,-946250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":84,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1409750,-768250 1387754,-790246 1341346,-790246","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":1,"trace":82,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-787250 1312706,-787250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":193,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-831250 1263381,-831250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":192,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-823250 1263381,-823250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":190,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-785500 1097056,-785500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":187,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-847250 1263694,-847250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":185,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-825500 1097056,-825500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":180,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-843250 1312706,-843250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":176,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-805500 1097369,-805500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":173,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-851250 1313019,-851250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":170,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-795500 1097056,-795500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":166,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-867250 1312706,-867250","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":164,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-815500 1097369,-815500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":158,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-875500 1097056,-875500","maxGeneratedId":195,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":155,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1300750,-883250 1303566,-880434 1320086,-880434 1321324,-879196","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":153,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-891250 1312706,-891250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":150,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-885500 1097369,-885500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":147,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1084100,-845500 1096079,-845500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":145,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-911250 1263381,-911250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":142,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-905500 1097056,-905500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":140,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-907250 1313019,-907250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":137,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-919250 1263694,-919250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":135,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-855500 1097369,-855500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":132,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-915250 1312706,-915250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":130,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-915500 1097056,-915500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":126,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-927250 1287606,-927250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":125,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1275650,-791250 1275650,-790246","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":124,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-787250 1288794,-787250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":123,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-903250 1287919,-903250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":119,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-811250 1288481,-811250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":114,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-899250 1288481,-899250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":112,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-815250 1287919,-815250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":110,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-879250 1287919,-879250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":108,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-835250 1288481,-835250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":106,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-875250 1288481,-875250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":105,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-839250 1287919,-839250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":102,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1084100,-835500 1084854,-836254 1097354,-836254","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":100,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1275650,-839250 1263694,-839250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":97,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-925500 1071144,-925500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":96,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-895500 1070831,-895500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":95,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-865500 1070831,-865500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":93,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1084100,-835500 1071144,-835500","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":90,"atStart":true,"check":false,"correct":"false","swap":"false","corners":"1300750,-923250 1300750,-924254","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":89,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1300750,-924254 1387754,-924254 1409750,-946250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":88,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1474750,-768250 1444750,-768250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":88,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1474750,-768250 1444750,-768250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":87,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1474750,-946250 1444750,-946250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":87,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1474750,-946250 1444750,-946250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":86,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1444750,-768250 1409750,-768250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":86,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1444750,-768250 1409750,-768250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":85,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1444750,-946250 1409750,-946250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":85,"atStart":false,"check":true,"correct":"false","swap":"false","corners":"1444750,-946250 1409750,-946250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":84,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1409750,-768250 1387754,-790246 1341346,-790246","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}
+{"pass":2,"trace":82,"atStart":true,"check":true,"correct":"false","swap":"false","corners":"1300750,-787250 1312706,-787250","maxGeneratedId":196,"items":194,"itemsHash":"eeecd697cff5bbf3"}

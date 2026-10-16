@@ -31,10 +31,10 @@ the new pin by J01.5.
 | [B02](archive/B02-search-tree-parity.md) ✅ | Search-tree parity (D5): `TreeObject` keys (rooms first, ids descending), Java's leaf reuse for combine, change and cutout, tree fingerprints equal to Java's on every loadable fixture, `WorkMeter`/`WorkLimit` (64,000 units per nominal ms), tie-pin reduction, side table; removes the DIVERGENCES entry "Combining traces removes and reinserts" | L / high | B01.1, B01.3, F02.1; Java `30baad7e2` for B02.7 |
 | [B03](archive/B03-room-completion.md) ✅ | `complete_shape` plain, 45° and 90°, with restrain helpers and work counting; the `complete-shape` probe equal | L / high | B02.1, B02.2, B01.1; B02.7 for B03.7 |
 | [B04](archive/B04-checks-and-picks.md) ✅ | `ItemFilter` and filtered picks, `check_shape`, `check_trace_shape`, `check_polyline_trace` (burns an id), `check_trace_segment`, nearest-item pick, move and net-change checks, item helpers; the `board-queries` probe equal | M / medium | B01.1, B01.2; B02.6 for B04.7 |
-| [B05](B05-item-operations.md) | Item moves and transforms, copies, pin exit restrictions and widths, the three pin-connection fixes, `connect_to_trace`, pin swap, placement tests | L / medium | B01.2, B02.4, B04.4 |
+| [B05](archive/B05-item-operations.md) ✅ | Item moves and transforms, copies, pin exit restrictions and widths, the three pin-connection fixes, `connect_to_trace`, pin swap, placement tests | L / medium | B01.2, B02.4, B04.4 |
 | [B06](archive/B06-scores.md) ✅ | Router and optimizer scores dispatched on `RouterSettings`, the legacy score with Java's float/double split; optional benchmark classes | S–M / low | C02; B01.6 |
 | [B07](archive/B07-drc-loose-ends.md) ✅ | The unported Java DRC tests, exact Issue575 counts, copper islands compared with Java, plane owner-rule tests | M / low | B01.1 for B07.3 |
-| [B08](B08-gui-engine-api.md) | `ItemGeometry`, `ItemInfo`, route stubs, the rules-edit facade, interactive leftovers, rule-dialog queries | M / low | B02.5 for B08.4; none for the rest |
+| [B08](archive/B08-gui-engine-api.md) ✅ | `ItemGeometry`, `ItemInfo`, route stubs, the rules-edit facade, interactive leftovers, rule-dialog queries | M / low | B02.5 for B08.4; none for the rest |
 | [B09](B09-stage-services.md) | Services for algorithm stages: insert-check-revert transaction, per-net obstacle view, fill model and connectivity, conduction-area obstacle hook | M / medium | B01.3, B01.5, B02.1, B04.3; runs when X or Q needs it |
 
 The series map's ids are kept. The old board-gap proposal's "shove support"
