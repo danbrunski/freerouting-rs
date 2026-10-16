@@ -1,0 +1,62 @@
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+
+public class Probe {
+  static String hex(String s) {
+    StringBuilder b = new StringBuilder();
+    for (byte x : s.getBytes(StandardCharsets.UTF_8)) b.append(String.format("%02x", x));
+    return b.toString();
+  }
+
+  static String conv(String t) {
+    String[] parts = t.split(":");
+    StringBuilder d = new StringBuilder("PT");
+    if (parts.length == 3) d.append(parts[0]).append("H").append(parts[1]).append("M").append(parts[2]).append("S");
+    else if (parts.length == 2) d.append(parts[0]).append("M").append(parts[1]).append("S");
+    else if (parts.length == 1) d.append(parts[0]).append("S");
+    return d.toString();
+  }
+
+  static String ts(String s) {
+    if (s == null || s.isBlank()) return "NULL";
+    try {
+      return Long.toString(Duration.parse(conv(s)).getSeconds());
+    } catch (DateTimeParseException e) {
+      return "NULL";
+    }
+  }
+
+  public static void main(String[] args) {
+    Random r = new Random(12345);
+    List<Double> ds = new ArrayList<>(List.of(0.0, -0.0, 1.0, 0.001, 9.999e-4, 1.0e7, 9999999.999, 1.7, 0.1,
+        2.5, 9.9, 250.0, 1e21, 1e-5, 123456789.0, 4.9e-324, Double.MAX_VALUE, 9007199254740993.0, 100.0, 0.6, 1.0 / 3.0,
+        2.0 / 3.0, 1e22, 1e23, 8.41e21, 2.2250738585072014E-308, 5e-324, 1.0E-3, 12345678.9, 0.00123));
+    for (int i = 0; i < 300; i++) ds.add(Double.longBitsToDouble(r.nextLong()));
+    for (int i = 0; i < 200; i++) ds.add(r.nextInt(100000) / 100.0);
+    for (int i = 0; i < 100; i++) ds.add(r.nextInt(1000) / 1000.0);
+    for (double d : ds) System.out.println("D\t" + Long.toHexString(Double.doubleToRawLongBits(d)) + "\t" + Double.toString(d));
+    List<Float> fs = new ArrayList<>(List.of(0.0f, -0.0f, 1.0f, 0.001f, 5_000_000.0f, 1000.0f / 3.0f, 2000.0f / 3.0f, 2.5f, 0.6f,
+        1.0e7f, 9999999.0f, 1e-3f, 9.999e-4f, 0.035f * 100.0f, 0.015f * 100.0f, 1e10f, 3.4028235e38f, 1.4e-45f, 0.5f, 10.0f));
+    for (int i = 0; i < 300; i++) fs.add(Float.intBitsToFloat(r.nextInt()));
+    for (int i = 0; i < 100; i++) fs.add(r.nextInt(100000) / 100.0f);
+    for (float f : fs) System.out.println("F\t" + Integer.toHexString(Float.floatToRawIntBits(f)) + "\t" + Float.toString(f));
+    String[] ps = {"1.5", "1.5d", "1.5F", " 1.5 ", "\t2\n", ".5", "5.", "1e3", "1E+3", "1e", "e5", "-", "+", "", "NaN", "-NaN",
+        "+Infinity", "Infinity", "-Infinity", "infinity", "inf", "nan", "0x1p3", "0x1.8p1", "1_000", "1,5", "1.5e", "1.5ee", "d", "1d", ".d", "1.d",
+        "++1", "1.5 f", "  ", "1e5f", "1e+5D", "00012", "-0", "+0", "1e400", "1e-400", "4.9e-324", "1.7976931348623157e308", "2147483648",
+        "-2147483648", "+7", "1 ", "0x10", "1.0E3", "7", "-7", "3.0", "42", " 42", "42 ", "1e2", "0.035", "NaNd", "Infinityf", "1.5dd", "٣"};
+    for (String p : ps) {
+      String d, f, i, l;
+      try { d = Long.toHexString(Double.doubleToRawLongBits(Double.parseDouble(p))); } catch (Exception e) { d = "ERR"; }
+      try { f = Integer.toHexString(Float.floatToRawIntBits(Float.parseFloat(p))); } catch (Exception e) { f = "ERR"; }
+      try { i = Integer.toString(Integer.parseInt(p)); } catch (Exception e) { i = "ERR"; }
+      try { l = Long.toString(Long.parseLong(p)); } catch (Exception e) { l = "ERR"; }
+      System.out.println("P\t" + hex(p) + "\t" + d + "\t" + f + "\t" + i + "\t" + l);
+    }
+    String[] tss = {"12:00:00", "01:30", "45", "0:0:5", "1.5", "12:", "5m", "", "  ", "1:2:3:4", ":5", "-5", "00:00:45", "1h", "+5", "5:",
+        "::", "1::2", "12:00:00.5", "99999999999:00:00", "1:60:60", "-1:-1", "1,5", "PT5S", "0:0:0.000000001", "1.0000000001", "1e3",
+        "24:00:00", "100:00", "0", "-1.5", "+1:+2:+3", "1:2.5:3", "1.5:2", "007", "1h:2:3"};
+    for (String t : tss) System.out.println("T\t" + hex(t) + "\t" + ts(t));
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "version": "2.5.1",
+  "router": {
+    "job_timeout": "00:10:00",
+    "trace_pull_tight_accuracy": "250",
+    "allowed_via_types": false,
+    "conduction_is_obstacle": true,
+    "plane_nets": ["GND", "VCC"],
+    "copper_to_edge_clearance_um": 100,
+    "neck_width_um": 130.5,
+    "max_threads": 3,
+    "autorouter": { "max_passes": 7, "ignore_net_classes": ["POWER"] },
+    "fanout": { "max_milliseconds_per_pin": 2500, "ripupAllowed": false, "timeout": "30" },
+    "optimizer": {
+      "improvement_threshold": 1.25,
+      "max_passes": 42.0,
+      "board_update_strategy": "SOMETHING_ELSE"
+    },
+    "scoring": {
+      "viaCosts": 75,
+      "default_bend_cost": 0.5,
+      "preferred_direction_trace_cost": [9.0, 9.0]
+    },
+    "router_scoring": { "version": "V1_LEGACY", "unrouted_free_fraction": 0.25 },
+    "optimizer_scoring": { "version": "NOT_A_VERSION", "excess_via_weight": 1 },
+    "layers": [
+      { "routable": true, "preferred_direction_horizontal": true, "bend_cost": 1.5 },
+      null,
+      { "routable": false, "preferred_direction_trace_cost": 2.0, "undesired_direction_trace_cost": 4.0 }
+    ],
+    "some_future_key": { "anything": [1, 2, 3] }
+  }
+}

@@ -141,7 +141,7 @@ Paths are under `crates/freerouting/src/` unless they start with
 
 ## Checklist
 
-- [ ] **C02.1 — The field table, `SettingsPatch` and `RouterSettings`.**
+- [x] **C02.1 — The field table, `SettingsPatch` and `RouterSettings`.**
   Java: the field declarations in the settings classes listed above;
   defaults from `DefaultSettings.getSettings()`.
   - Top level:
@@ -247,8 +247,32 @@ Paths are under `crates/freerouting/src/` unless they start with
       untabled field behind `#[cfg(test)]`.
     - Port of `BendCostSettingsTest.nullScoringSafety`: an empty
       `SettingsPatch` resolves through the fallbacks to 1, 1 and 1.0.
+  - *Done 2026-10-15:* `crates/freerouting/src/settings/{fields.rs, types.rs, mod.rs, layers.rs}`.
+    One `settings_table!` invocation in `fields.rs` lists 76 scalar fields once (JSON
+    name, Java name, Gson alternates, flat alias, Java type, default, unset-fallback,
+    doc line) and generates `SettingsPatch`, `RouterSettings`, the six section
+    structs of each, `SECTIONS`, `FIELDS` and `default_patch(cores)`. `LayerSettings`,
+    `layers`, `costs_initialized` and `validation_warnings` are written by hand; the
+    cost arrays and the optimizer strategies are table entries marked not-JSON.
+    Getter fallbacks (`via_costs`/`plane_via_costs`/`start_ripup_costs` 1,
+    `optimizer.enabled`/`fanout.enabled`/`automatic_neckdown` false,
+    `autorouter.enabled` true) are the table's `fb` kind. The resolved sections
+    reuse `scoring::{RouterScoreSettings, OptimizerScoreSettings}` through
+    `score_weights()` (checked equal to their `Default`), so `scoring/` is unedited.
+    `RouterSettings::work_bounds()` / `deadlines()` (D2) are in `mod.rs`.
+    `tests/settings_defaults.rs` (8 tests): `defaults_with_eight_cores` asserts all
+    76 defaults with `cores = 8` and fails if it omits a table entry;
+    `every_field_has_a_table_entry` walks the `Debug` output of `SettingsPatch` and
+    `RouterSettings` and compares it with `FIELDS` (negative control
+    `table_check_flags_an_untabled_member` adds an untabled member to a probe
+    struct and sees it); `null_scoring_safety` ports
+    `BendCostSettingsTest.nullScoringSafety` (settings half: 1, 1, 5, 3, 2.0 and
+    1.0 through the fallbacks; the `applyBoardSpecificOptimizations` half is
+    C03); `work_bounds_carry_counts_and_deadlines_carry_durations` (24 h cap,
+    `"5m"` no-op). Differential: `tests/settings_java_probe.rs` scenario `defaults`
+    equals Java 25's `DefaultSettings` merge at `cda540f`.
 
-- [ ] **C02.2 — Merge with Java's `copyFields` semantics.**
+- [x] **C02.2 — Merge with Java's `copyFields` semantics.**
   Java: `SettingsMerger.merge` (the first non-null source is cloned as the
   base, the rest applied in priority order, then `validate()`) and
   `ReflectionUtil.copyFields`. Rust:
@@ -276,8 +300,35 @@ Paths are under `crates/freerouting/src/` unless they start with
       `cliNestedAutorouterMaxThreadsIsIndependentOfOptimizer`.
     - `Issue885SettingsInitializationTest.reflectionUtilCopiesExplicitEmptyArray`.
     - A test that a shorter target array is rebuilt from the source only.
+  - *Done 2026-10-15:* `settings/merge.rs`: `SettingsPatch::apply_from`
+    (`copyFields`), `resolve(&[(Source, SettingsPatch)], &ResolveContext) -> Resolved
+    { patch, settings, provenance, warnings, cores }`, `Source` with Java's
+    priorities (0, 10, 20, 40, 55, 60, 70, 80, stable sort), `Resolved::provenance_lines`
+    (`scoring.start_ripup_costs = 1500 (config file)`). The merge base is cloned
+    like `RouterSettings.clone()`, which drops `result_json`
+    (`merge_base_clone_drops_result_json`).
+    `tests/settings_merge.rs` (24 tests): every `SettingsMergerTest` method, named
+    after Java's (`default_settings_only`, `empty_sources_list`, `source_priorities`,
+    `multiple_sources_merging`, `priority_ordering`, `null_value_handling` (an empty
+    patch, since a patch can't be null), `partial_overrides`,
+    `environment_variables_priority`, `complex_merging`,
+    `cli_can_disable_router_and_optimizer`,
+    `legacy_batch_mode_enables_router_when_json_disables_it`,
+    `explicit_router_enabled_false_overrides_legacy_batch_mode`,
+    `cli_routable_layers_does_not_disable_router`, `layers_array_not_shrunk_on_merge`,
+    `cli_optimizer_improvement_threshold_parses_and_scales_fraction`,
+    `cli_nested_autorouter_max_threads_is_independent_of_optimizer`);
+    `reflection_util_copies_explicit_empty_array`
+    (`Issue885...`), `copy_fields_overwrites_existing_non_empty_array`;
+    `shorter_target_layers_are_rebuilt_from_the_source_only` names the layers
+    asymmetry; also `some_false_and_some_zero_overwrite_and_none_never_does`,
+    `equal_priorities_keep_insertion_order`, provenance. Differential:
+    `settings_java_probe.rs` merges Defaults with CLI, env, JSON, DSN, rules and the
+    `Api` second merge on Java 25 at the pin and compares the whole tree: 17 of 18
+    scenarios equal, `json-every` differs only in a `null` layer element (listed,
+    DIVERGENCES.md).
 
-- [ ] **C02.3 — Path setter for CLI and environment values.**
+- [x] **C02.3 — Path setter for CLI and environment values.**
   Java: `ReflectionUtil.setFieldValue` and `convertValue`;
   `LegacyRouterSettingsBridge.canonicalCliPath` and
   `isDeprecatedFlatAutorouterPath`; `CliSettings.applyRouterSetting`. Rust:
@@ -329,8 +380,30 @@ Paths are under `crates/freerouting/src/` unless they start with
       Under it, `-oit 0.035` → 3.5, `4.0` → 4.0 and `0.015` → 1.5.
     - An unknown path is an error, which C07 turns into Java's warning
       text.
+  - *Done 2026-10-15:* `settings/path.rs` (`SettingsPatch::set_path`,
+    `cli_property`, `canonical_cli_path`, `is_deprecated_flat_autorouter_path`,
+    `SetError::{UnknownPath, BadValue}`), `settings/text.rs` (Java's
+    `Integer.parseInt`, `Double.parseDouble` with the `d`/`f` suffix and trimming,
+    `Float.parseFloat`, `Double.toString`, `Float.toString`, `String.split`),
+    `settings/cli_args.rs` (`parse_cli_arguments`: the settings half of
+    `CliSettings`, which C07 replaces with the real parser). Flat aliases come
+    from the table's `Flat::{Deprecated, Quiet}`.
+    `tests/settings_path.rs` (21 tests): `flat_cost_keys_reach_scoring` (ports
+    `flatCliCostKeysReachTheScoringSettings` and `nestedCliCostKeysStillWork`, no
+    warning), `set_simple_property`, `set_nested_array_properties_when_null`,
+    `..._when_initialized`, `case_insensitive_and_serialized_name_matching`
+    (`ReflectionUtilArrayTest`), the five `ScoringVersionSettingsTest` methods
+    that apply, `neck_width_*` (`NeckWidthSettingsTest`),
+    `improvement_threshold_scales_only_inside_zero_and_one_and_only_on_the_cli`
+    (`-oit 0.035` -> 3.5, `4.0` -> 4.0, `0.015` -> 1.5 also in
+    `settings_merge.rs`), `unknown_paths_and_bad_values_are_errors`,
+    `no_name_matches_two_fields` (every JSON name, Java name and alternate of
+    every table field sets exactly that field). `tests/settings_text.rs` compares
+    the text helpers with Java 25: 630 `Double.toString`, 420 `Float.toString`,
+    62 parse and 36 timespan probe lines equal (it found `4.9E-324`; two hex-float
+    inputs and one non-ASCII digit string are listed as expected mismatches).
 
-- [ ] **C02.4 — JSON settings files and Dan's `freerouting.json`.**
+- [x] **C02.4 — JSON settings files and Dan's `freerouting.json`.**
   Java: `JsonFileSettings` (reads the `"router"` member; a missing file,
   missing member, non-object or malformed JSON gives empty settings, no
   error), `RouterSettingsTypeAdapterFactory` (absorbs legacy flat keys,
@@ -358,8 +431,31 @@ Paths are under `crates/freerouting/src/` unless they start with
       1500}`, and the top level holds `"version": "2.5.1"` and a `gui`
       object. Resolving gives `start_ripup_costs == 1500`, with provenance
       "config file", and every other field at its default.
+  - *Done 2026-10-15:* `JsonValue::parse` and `JsonParseError` appended to
+    `drc/json.rs` (numbers keep their source text; strict JSON plus comments; 2 unit
+    tests). `settings/json_file.rs`: `patch_from_router_json`, `patch_from_config_text`
+    (the `"router"` member), `load_config_file` (default file: missing or malformed
+    gives empty settings, malformed with a warning; `--settings`: an error),
+    `load_config`, with Gson's string-for-number leniency, `42.0` as an int, float
+    fields read as `(float) double`, exact names and alternates, `transient` fields
+    ignored, and `absorbLegacyJson` (flat keys only where the nested value is unset,
+    one warning).
+    `tests/settings_json.rs` (16 tests): the `JsonFileSettingsTest` cases
+    (`loads_max_passes_from_valid_router_section` 42,
+    `..._nested_autorouter_section` 7, the four empty-settings cases),
+    `flat_cost_keys_reach_scoring` and `nested_json_cost_keys_win_over_flat_ones`
+    (flat 25 with nested 30 -> 30), `router_settings_deserialization` (the
+    deserialize half of `RouterSettingsSerializationTest`, both payloads),
+    `every_section_file`, `a_type_error_anywhere_fails_the_whole_read`, and
+    `owner_settings_file_sets_start_ripup_costs` (data file
+    `tests/data/settings/owner_freerouting.json` has Dan's shape: `version`
+    "2.5.1", `gui`, empty sections, `scoring.start_ripup_costs = 1500`; resolving
+    gives 1500 with provenance `ConfigFile` and every other table field at its
+    default). Differential: `settings_java_probe.rs` scenarios `json-every`,
+    `json-owner`, `json-cli-validation`, `dsn-every-json` equal Java except the
+    listed null layer element.
 
-- [ ] **C02.5 — Config-file lookup.**
+- [x] **C02.5 — Config-file lookup.**
   `config_path::default_config_file(env: &dyn EnvLookup, os: Os) ->
   Option<PathBuf>` and `ConfigChoice { Default, UserDataPath(PathBuf),
   Explicit(PathBuf) }`. The precedence is:
@@ -377,8 +473,19 @@ Paths are under `crates/freerouting/src/` unless they start with
     - `--settings` replaces the default file instead of stacking, checked
       with both files present and different values.
     - A missing `--settings` file is an error naming the path.
+  - *Done 2026-10-15:* `settings/config_path.rs`: `Os`, `EnvLookup` (+ `ProcessEnv`),
+    `default_config_file(env, os)`, `ConfigChoice::{Default, UserDataPath, Explicit}`
+    with `from_args`, `config_file`; `json_file::load_config`.
+    `tests/settings_config_path.rs` (6 tests): `os_defaults` (injected `APPDATA`,
+    `HOME`, `XDG_CONFIG_HOME` for Windows, macOS, Linux, empty and relative XDG
+    ignored), `precedence_of_the_choices` (`--settings`, `--user_data_path=`,
+    `FREEROUTING__USER_DATA_PATH`, then `FREEROUTING__LOGGING__FILE__LOCATION`, then
+    the OS default), `settings_flag_replaces_the_default_file` (both files exist
+    with different values; the default file's `via_costs` does not leak into the
+    explicit load), `a_missing_settings_file_is_an_error_naming_the_path...`
+    (also `settings_json.rs::explicit_settings_file_errors_name_the_path`).
 
-- [ ] **C02.6 — Environment variables.**
+- [x] **C02.6 — Environment variables.**
   Java: `EnvironmentVariablesSource`.
   - Names are upper-cased.
   - Only names starting with `FREEROUTING__ROUTER__` count.
@@ -398,8 +505,22 @@ Paths are under `crates/freerouting/src/` unless they start with
       `scoring.start_ripup_costs`.
     - Env (55) loses to CLI (60) and beats the config file (10)
       (`SettingsMergerTest.environmentVariablesPriority`).
+  - *Done 2026-10-15:* `settings/env.rs` (`parse_environment`,
+    `parse_process_environment`, `EnvParse { patch, parsed, warnings }`).
+    `tests/settings_env.rs` (21 tests): all 19 `EnvironmentVariablesSourceTest`
+    cases (enums, comma lists, lower-case names, trace cost arrays; the
+    priority/name cases are in `settings_merge.rs`), `env_collision_is_deterministic`
+    (both argument orders, and `FREEROUTING...` vs `freerouting...`),
+    `flat_cost_keys_reach_scoring` (`FREEROUTING__ROUTER__START_RIPUP_COSTS=1500`
+    sets `scoring.start_ripup_costs`, no warning),
+    `deprecated_flat_autorouter_variables_warn`,
+    `every_field_is_reachable_through_its_variable` (all 76 table fields). Env (55)
+    loses to CLI (60) and beats the config file (10):
+    `settings_merge.rs::environment_variables_priority`. Differential:
+    `settings_java_probe.rs` scenario `env` (11 variables incl. an unknown one)
+    equals Java. DIVERGENCES.md has the sorted-order line.
 
-- [ ] **C02.7 — `autoroute_settings` from a DSN or rules file → patch.**
+- [x] **C02.7 — `autoroute_settings` from a DSN or rules file → patch.**
   Java: `AutorouteSettings.readScope` and `readLayerRule`; `DsnFileSettings`
   and `RulesFileSettings` (priorities 20 and 40). The patch:
   - **Seeding.** Start with `setLayerCount(n)`: every layer `routable =
@@ -432,8 +553,30 @@ Paths are under `crates/freerouting/src/` unless they start with
       (`Issue103-Board-Routed.dsn`, `Issue187-processor.Z80.dsn`,
       `Issue191-processor.Z80/processor.Z80.dsn`) equal C01.1's `settings`
       dump for those fields.
+  - *Done 2026-10-15:* `settings/autoroute_scope.rs` (`read_scope`,
+    `patch_from_dsn`, `patch_from_rules`, `rules_layer_names`, `layer_number`);
+    seeding via `SettingsPatch::set_layer_count` and the clamping setters in
+    `layers.rs`. `tests/settings_autoroute_scope.rs` (14 tests): both
+    `DsnFileSettingsTest` layer counts (`Issue413-test.dsn` 2,
+    `Issue066-Project_GP8B.dsn` 4), `dsn_without_the_scope_yields_only_the_seed`,
+    both `RulesFileSettingsTest` cases (processor.rules: vias on, 50/5/100, router
+    and optimizer on, L0 horizontal 1.0/2.5, L1 vertical 1.0/1.7; hw48na_valid:
+    L0 vertical 1.0/2.0, L1 horizontal 1.0/2.0), clamps, unknown-layer abort,
+    `Top`/`Bottom` lookup, rules layer discovery, a layer-count sweep over all (more than 100)
+    parseable fixture DSNs and every rules fixture. Third clause: the patches of
+    `Issue103-Board-Routed.dsn`, `Issue187-processor.Z80.dsn` and
+    `Issue191-processor.Z80/processor.Z80.dsn` merged with the defaults equal a
+    direct Java 25 run at the pin (`settings_java_probe.rs`, scenarios
+    `dsn-Issue103...`, `dsn-Issue187...`, `dsn-Issue191...`: layers, both cost
+    arrays, `costs_initialized`, run flags, via costs).
+  - *Done 2026-10-15 (third clause):* `settings_reference.rs::settings_match_java_dumps`
+    now runs against C01.1's `fixtures/reference/settings/**` and
+    `cases/settings/**` (present in the working tree, written by C01's
+    `ReferenceDump settings`): the DSN-derived settings of every fixture DSN
+    (including the three that carry the scope) equal the dump in all four
+    scenarios; see C02.8 for the numbers.
 
-- [ ] **C02.8 — Validation, test profiles and the comparison dump.**
+- [x] **C02.8 — Validation, test profiles and the comparison dump.**
   Java: `RouterSettings.validateAgainstBoard(null)` as `merge()` runs it.
   - **Clamps:**
     - `max_passes` < 0, or > 9999 and ≠ `i32::MAX`, becomes 0 (unlimited);
@@ -472,3 +615,35 @@ Paths are under `crates/freerouting/src/` unless they start with
       The `cli` scenario patch is built here through C02.3 from C01's
       fixed argument list. C07 replaces that with the real parser. Any
       mismatch is listed in the test with its reason.
+  - *Done 2026-10-15:* `settings/validate.rs` (`validate`), `settings/profiles.rs`
+    (`java_fixture_test`, `TestingProfile` with Java's `TestingSettings` setters,
+    first write wins for `set_max_passes`/`set_job_timeout`/`set_enabled`;
+    `java_cli_default`), `settings/dump.rs` (`dump(&Resolved)`, `dump_patch`),
+    `tests/settings_reference.rs` (12 tests): `max_passes_clamps` (also `-mp 10000`
+    -> unlimited), `max_threads_clamps`, `trace_pull_tight_accuracy_clamps`,
+    `layer_costs_clamp` (every clamp with Java's exact warning text, checked
+    against Java's output in `settings_java_probe.rs::json-cli-validation`),
+    `unknown_ignore_net_classes_never_warn_without_a_board`,
+    `java_fixture_profile` (edge clearance 0, optimizer on, priority 80 beats the
+    CLI), `dump_has_the_gson_keys_and_normalised_threads`. The comparison harness
+    (`settings_match_java_dumps`: scenarios `default`, `fixture`, `cli`,
+    `owner-config`; the two merges of `RoutingJobScheduler`; the `cli` patch built
+    through C02.3 from C01's fixed argument list; boards with an adjacent rules file
+    listed as waiting on C04; `EXPECTED_MISMATCHES`) is written and its tree diff is
+    tested on a hand-written tree.
+  - *Done 2026-10-15 (comparison):* C01.1's dumps landed in the working tree
+    (`fixtures/reference/settings/` 131 files, `cases/settings/` 4). `cargo test -p
+    freerouting --test settings_reference settings_match -- --nocapture` compares
+    **464 board scenarios** (`default`, `fixture`, `cli`, `owner-config` on 131
+    fixture DSNs and 4 synthetic cases: static settings = everything except `layers`,
+    the cost arrays and `costs_initialized`, after the scheduler's two merges, the
+    `cli` patch built through C02.3 from C01's argument list) with **0 mismatches**
+    (`EXPECTED_MISMATCHES` is empty) and **20 scenarios waiting on C04**: the boards
+    with an adjacent rules file, listed in the test as `WAITING_ON_C04`
+    (`Issue029-hw48na`, `Issue107-freq_teiler_200kHz_kicad`,
+    `Issue107-freq_teiler_200kHz_kicad_bad`, `Issue593-BBD_Mars-64`,
+    `explicit-cost-rules`). The dump files are uncommitted in the tree; if C01
+    changes their shape the test says so (it also runs without them, then it
+    prints "nothing compared"). Also ran: `settings_java_probe.rs`, 18 scenarios
+    against Java 25 at `cda540f` (defaults, CLI, env, JSON, DSN, rules, `Api` second
+    merge, validation clamps), 17 equal and one listed.

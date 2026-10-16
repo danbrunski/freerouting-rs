@@ -15,4 +15,5 @@ pub mod io;
 pub mod library;
 pub mod rules;
 pub mod scoring;
+pub mod settings;
 mod util;

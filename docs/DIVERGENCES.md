@@ -142,3 +142,32 @@ branch 3 in IntOctagon's box cutout.
 - `Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn` quotes its class nets with `'`.
   Java keeps the quotes, so its nets stay in the default class; the port reads them
   (see freerouting-dsn), so the expected hole clearances and the scores differ.
+
+**Settings** (`settings`, port of `app.freerouting.settings`, `util.ReflectionUtil` and
+`LegacyRouterSettingsBridge`; tests `tests/settings_*.rs`)
+- Machine-dependent defaults take an explicit `cores` (`ResolveContext`): `max_threads`
+  defaults to `max(1, cores - 1)` and validation caps it at `cores`. Java reads
+  `Runtime.availableProcessors()`.
+- Environment variables are processed in sorted order of their names, so when two
+  variables set the same field the later name wins on every platform. Java iterates
+  `System.getenv()` in hash order. (`env_collision_is_deterministic`)
+- The settings file is JSON in Java's shape, read by the workspace's own parser:
+  strict JSON plus `//`, `#` and `/* */` comments. Gson's other lenient forms
+  (unquoted names or strings, single quotes) are errors, and an error in a default
+  config file is a warning and an empty source, as in Java. A `null` element of
+  `layers` is read as an empty layer and a `null` element of `ignore_net_classes` is
+  dropped; Java keeps the nulls (`merge_matches_java`, scenario `json-every`).
+- The default config file is `<config dir>/freerouting-rs/freerouting.json`
+  (`%APPDATA%`, `~/Library/Application Support`, `$XDG_CONFIG_HOME` or `~/.config`),
+  not Java's `freerouting/` directory; Java's file is read only through `--settings`,
+  which replaces the default source and is an error when missing or malformed. A
+  `FREEROUTING__LOGGING__FILE__LOCATION` fallback moves the user-data path as in
+  Java.
+- `min_trace_width_um` (Java fork commit `46bf9e2ef`, after the pin) is a settings
+  field, unset by default.
+- Floating point text: hexadecimal floating point literals (`0x1p3`) and Unicode
+  decimal digits in `Integer.parseInt` are not accepted (`settings_text.rs`).
+- A rules file's `autoroute_settings` build their patch from the layer names found in
+  the rules file, as `RulesReader.discoverLayerStructure` does; a non-integer value in
+  a DSN or rules `autoroute_settings` integer scope is left unset (see freerouting-dsn)
+  where Java sets 0 and then clamps it to 1.

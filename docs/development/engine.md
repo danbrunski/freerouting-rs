@@ -63,6 +63,7 @@ baseline for completion, vias, length and speed, not an exact target.
 | DSN/SES/rules files | `freerouting-dsn` | 160 of 161 fixture DSN files parse and round-trip (the other is an OrCAD binary Java rejects too); all SES and rules files round-trip. |
 | Board model, rules, library, search trees, DSN → board | `freerouting` (`board`, `rules`, `library`, `io::specctra`) | `tests/reference_load.rs`: all 159 boards Java loads match on every compared `BoardStatistics` field. |
 | `BoardStatistics` | `freerouting::scoring` | Same test. Router and optimizer scores still need `RouterSettings`. |
+| Router settings model | `freerouting::settings` | One field table with Java's names, aliases and defaults; Java's merge and precedence; config file, environment, CLI-argument and `autoroute_settings` sources; validation. `tests/settings_*.rs` (Java unit tests ported; `settings_java_probe.rs` and `settings_text.rs` compare with Java 25 at the pin). The comparison with C01.1's dumps is `settings_reference.rs`. Does not apply settings to a board (C03). |
 | DRC, incompletes, airlines, SES import | `freerouting::drc`, `io::specctra::ses_reader` | `tests/reference_load.rs` (connections and violations on every board) and `tests/reference_drc.rs` (the full Java DRC report, on each board as loaded and with Java's routed SES imported). Remaining differences are listed in those tests with reasons. |
 | `freerouting -de board.dsn [board.ses] -drc [report.json]` | `freerouting-cli` | Same JSON report as Java's DRC command. Routing isn't implemented yet. |
 

@@ -1,0 +1,36 @@
+{
+  "profile": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "email": "",
+    "allow_telemetry": true,
+    "allow_contact": true
+  },
+  "version": "2.5.1",
+  "gui": {
+    "enabled": true,
+    "input_directory": "",
+    "dialog_confirmation_timeout": 5,
+    "show_routing_summary": true
+  },
+  "router": {
+    "autorouter": {},
+    "fanout": {},
+    "optimizer": {},
+    "scoring": {
+      "start_ripup_costs": 1500
+    },
+    "router_scoring": {},
+    "optimizer_scoring": {}
+  },
+  "drc": {
+    "include_warnings": true,
+    "include_errors": true,
+    "clearance_tolerance_um": 1.00
+  },
+  "api_server": {
+    "enabled": false,
+    "endpoints": [
+      "http://127.0.0.1:37864"
+    ]
+  }
+}

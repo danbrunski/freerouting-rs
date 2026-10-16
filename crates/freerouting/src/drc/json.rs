@@ -246,6 +246,312 @@ pub fn iso_offset_date_time(seconds: i64, nanos: u32) -> String {
     result
 }
 
+/// A JSON syntax error from [`JsonValue::parse`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct JsonParseError {
+    /// What was wrong.
+    pub message: String,
+    /// Byte offset in the input.
+    pub offset: usize,
+}
+
+impl std::fmt::Display for JsonParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} at offset {}", self.message, self.offset)
+    }
+}
+
+impl std::error::Error for JsonParseError {}
+
+impl JsonValue {
+    /// Parses a JSON document.
+    ///
+    /// Numbers keep their source text (`Number("1500")`, `Number("2.50")`),
+    /// so they convert exactly as Java's `Integer.parseInt` and
+    /// `Double.parseDouble` would. Object members keep their order, and
+    /// duplicate names are kept. The text is strict JSON plus `//`, `#` and
+    /// `/* */` comments; Gson's other lenient forms (unquoted names, single
+    /// quotes) are errors. Anything after the value except whitespace and
+    /// comments is an error, as in `JsonParser.parseReader`.
+    pub fn parse(text: &str) -> Result<JsonValue, JsonParseError> {
+        let mut parser = JsonParser {
+            bytes: text.as_bytes(),
+            text,
+            pos: 0,
+        };
+        parser.skip_blank()?;
+        let value = parser.value(0)?;
+        parser.skip_blank()?;
+        if parser.pos != parser.bytes.len() {
+            return Err(parser.error("Did not consume the entire document"));
+        }
+        Ok(value)
+    }
+}
+
+const MAX_JSON_DEPTH: usize = 256;
+
+struct JsonParser<'a> {
+    bytes: &'a [u8],
+    text: &'a str,
+    pos: usize,
+}
+
+impl JsonParser<'_> {
+    fn error(&self, message: &str) -> JsonParseError {
+        JsonParseError {
+            message: message.to_string(),
+            offset: self.pos,
+        }
+    }
+
+    fn peek(&self) -> Option<u8> {
+        self.bytes.get(self.pos).copied()
+    }
+
+    fn skip_blank(&mut self) -> Result<(), JsonParseError> {
+        loop {
+            match self.peek() {
+                Some(b' ' | b'\t' | b'\n' | b'\r') => self.pos += 1,
+                Some(b'#') => self.skip_line(),
+                Some(b'/') => match self.bytes.get(self.pos + 1) {
+                    Some(b'/') => self.skip_line(),
+                    Some(b'*') => {
+                        let start = self.pos;
+                        self.pos += 2;
+                        loop {
+                            match self.peek() {
+                                None => {
+                                    self.pos = start;
+                                    return Err(self.error("Unterminated comment"));
+                                }
+                                Some(b'*') if self.bytes.get(self.pos + 1) == Some(&b'/') => {
+                                    self.pos += 2;
+                                    break;
+                                }
+                                Some(_) => self.pos += 1,
+                            }
+                        }
+                    }
+                    _ => return Ok(()),
+                },
+                _ => return Ok(()),
+            }
+        }
+    }
+
+    fn skip_line(&mut self) {
+        while let Some(b) = self.peek() {
+            self.pos += 1;
+            if b == b'\n' {
+                break;
+            }
+        }
+    }
+
+    fn expect(&mut self, byte: u8, what: &str) -> Result<(), JsonParseError> {
+        if self.peek() == Some(byte) {
+            self.pos += 1;
+            Ok(())
+        } else {
+            Err(self.error(what))
+        }
+    }
+
+    fn literal(&mut self, word: &str, value: JsonValue) -> Result<JsonValue, JsonParseError> {
+        if self.bytes[self.pos..].starts_with(word.as_bytes()) {
+            self.pos += word.len();
+            Ok(value)
+        } else {
+            Err(self.error("Unexpected character"))
+        }
+    }
+
+    fn value(&mut self, depth: usize) -> Result<JsonValue, JsonParseError> {
+        if depth > MAX_JSON_DEPTH {
+            return Err(self.error("Nesting too deep"));
+        }
+        match self.peek() {
+            None => Err(self.error("Unexpected end of input")),
+            Some(b'{') => self.object(depth),
+            Some(b'[') => self.array(depth),
+            Some(b'"') => Ok(JsonValue::String(self.string()?)),
+            Some(b't') => self.literal("true", JsonValue::Bool(true)),
+            Some(b'f') => self.literal("false", JsonValue::Bool(false)),
+            Some(b'n') => self.literal("null", JsonValue::Null),
+            Some(b'-' | b'0'..=b'9') => self.number(),
+            Some(_) => Err(self.error("Unexpected character")),
+        }
+    }
+
+    fn object(&mut self, depth: usize) -> Result<JsonValue, JsonParseError> {
+        self.pos += 1;
+        let mut members = Vec::new();
+        self.skip_blank()?;
+        if self.peek() == Some(b'}') {
+            self.pos += 1;
+            return Ok(JsonValue::Object(members));
+        }
+        loop {
+            self.skip_blank()?;
+            if self.peek() != Some(b'"') {
+                return Err(self.error("Expected a quoted member name"));
+            }
+            let name = self.string()?;
+            self.skip_blank()?;
+            self.expect(b':', "Expected ':' after the member name")?;
+            self.skip_blank()?;
+            let value = self.value(depth + 1)?;
+            members.push((name, value));
+            self.skip_blank()?;
+            match self.peek() {
+                Some(b',') => self.pos += 1,
+                Some(b'}') => {
+                    self.pos += 1;
+                    return Ok(JsonValue::Object(members));
+                }
+                _ => return Err(self.error("Expected ',' or '}'")),
+            }
+        }
+    }
+
+    fn array(&mut self, depth: usize) -> Result<JsonValue, JsonParseError> {
+        self.pos += 1;
+        let mut values = Vec::new();
+        self.skip_blank()?;
+        if self.peek() == Some(b']') {
+            self.pos += 1;
+            return Ok(JsonValue::Array(values));
+        }
+        loop {
+            self.skip_blank()?;
+            values.push(self.value(depth + 1)?);
+            self.skip_blank()?;
+            match self.peek() {
+                Some(b',') => self.pos += 1,
+                Some(b']') => {
+                    self.pos += 1;
+                    return Ok(JsonValue::Array(values));
+                }
+                _ => return Err(self.error("Expected ',' or ']'")),
+            }
+        }
+    }
+
+    fn number(&mut self) -> Result<JsonValue, JsonParseError> {
+        let start = self.pos;
+        if self.peek() == Some(b'-') {
+            self.pos += 1;
+        }
+        let digits = |p: &mut Self| {
+            let from = p.pos;
+            while matches!(p.peek(), Some(b'0'..=b'9')) {
+                p.pos += 1;
+            }
+            p.pos - from
+        };
+        match self.peek() {
+            Some(b'0') => self.pos += 1,
+            Some(b'1'..=b'9') => {
+                digits(self);
+            }
+            _ => return Err(self.error("Malformed number")),
+        }
+        if self.peek() == Some(b'.') {
+            self.pos += 1;
+            if digits(self) == 0 {
+                return Err(self.error("Malformed number"));
+            }
+        }
+        if matches!(self.peek(), Some(b'e' | b'E')) {
+            self.pos += 1;
+            if matches!(self.peek(), Some(b'+' | b'-')) {
+                self.pos += 1;
+            }
+            if digits(self) == 0 {
+                return Err(self.error("Malformed number"));
+            }
+        }
+        Ok(JsonValue::Number(self.text[start..self.pos].to_string()))
+    }
+
+    fn hex4(&mut self) -> Result<u32, JsonParseError> {
+        let end = self.pos + 4;
+        let digits = self
+            .text
+            .get(self.pos..end)
+            .filter(|d| d.bytes().all(|b| b.is_ascii_hexdigit()))
+            .ok_or_else(|| self.error("Malformed \\u escape"))?;
+        self.pos = end;
+        Ok(u32::from_str_radix(digits, 16).expect("four hex digits"))
+    }
+
+    fn string(&mut self) -> Result<String, JsonParseError> {
+        self.pos += 1;
+        let mut out = String::new();
+        loop {
+            let Some(b) = self.peek() else {
+                return Err(self.error("Unterminated string"));
+            };
+            match b {
+                b'"' => {
+                    self.pos += 1;
+                    return Ok(out);
+                }
+                b'\\' => {
+                    self.pos += 1;
+                    let Some(escape) = self.peek() else {
+                        return Err(self.error("Unterminated string"));
+                    };
+                    self.pos += 1;
+                    match escape {
+                        b'"' => out.push('"'),
+                        b'\\' => out.push('\\'),
+                        b'/' => out.push('/'),
+                        b'b' => out.push('\u{8}'),
+                        b'f' => out.push('\u{c}'),
+                        b'n' => out.push('\n'),
+                        b'r' => out.push('\r'),
+                        b't' => out.push('\t'),
+                        b'u' => {
+                            let first = self.hex4()?;
+                            let code = if (0xD800..0xDC00).contains(&first)
+                                && self.bytes[self.pos..].starts_with(b"\\u")
+                            {
+                                let save = self.pos;
+                                self.pos += 2;
+                                let second = self.hex4()?;
+                                if (0xDC00..0xE000).contains(&second) {
+                                    0x10000 + ((first - 0xD800) << 10) + (second - 0xDC00)
+                                } else {
+                                    self.pos = save;
+                                    first
+                                }
+                            } else {
+                                first
+                            };
+                            out.push(char::from_u32(code).unwrap_or('\u{FFFD}'));
+                        }
+                        _ => {
+                            self.pos -= 1;
+                            return Err(self.error("Invalid escape sequence"));
+                        }
+                    }
+                }
+                b if b < 0x20 => return Err(self.error("Unescaped control character")),
+                _ => {
+                    let c = self.text[self.pos..]
+                        .chars()
+                        .next()
+                        .expect("a character at a valid offset");
+                    out.push(c);
+                    self.pos += c.len_utf8();
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -287,6 +593,57 @@ mod tests {
             value.to_pretty_string(),
             "{\n  \"a\": \"x\\\"<\",\n  \"b\": [],\n  \"c\": [\n    {\n      \"x\": 1.50\n    }\n  ]\n}"
         );
+    }
+
+    #[test]
+    fn parses_json_keeping_number_text() {
+        let value = JsonValue::parse(
+            "{ \"a\": [1, 2.50, -3e2, true, null], \"b\": {\"c\": \"x\\u00e9\\n\"} } // end",
+        )
+        .unwrap();
+        assert_eq!(
+            value,
+            JsonValue::Object(vec![
+                (
+                    "a".into(),
+                    JsonValue::Array(vec![
+                        JsonValue::Number("1".into()),
+                        JsonValue::Number("2.50".into()),
+                        JsonValue::Number("-3e2".into()),
+                        JsonValue::Bool(true),
+                        JsonValue::Null,
+                    ])
+                ),
+                (
+                    "b".into(),
+                    JsonValue::Object(vec![("c".into(), JsonValue::string("x\u{e9}\n"))])
+                ),
+            ])
+        );
+        assert_eq!(
+            JsonValue::parse("\"\\ud83d\\ude00\"").unwrap(),
+            JsonValue::string("\u{1F600}")
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_json() {
+        for bad in [
+            "",
+            "{ this is not valid json !! }",
+            "{\"a\": 1,}",
+            "[1 2]",
+            "{\"a\": 01}",
+            "{\"a\": 1.}",
+            "{} {}",
+            "\"abc",
+            "{\"a\"}",
+            "/* open",
+        ] {
+            assert!(JsonValue::parse(bad).is_err(), "{bad:?} must fail");
+        }
+        let deep = "[".repeat(1000);
+        assert!(JsonValue::parse(&deep).is_err());
     }
 
     #[test]

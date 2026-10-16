@@ -1,0 +1,94 @@
+import app.freerouting.Freerouting;
+import app.freerouting.settings.*;
+import app.freerouting.settings.sources.*;
+import com.google.gson.*;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+
+/** Prints the merged settings of fixed source combinations as compact Gson JSON. */
+public class MergeProbe {
+  static final Gson PLAIN = new GsonBuilder().create();
+
+  static JsonElement doubles(double[] v) {
+    if (v == null) return JsonNull.INSTANCE;
+    JsonArray a = new JsonArray();
+    for (double d : v) a.add(d);
+    return a;
+  }
+
+  static String tree(RouterSettings rs) {
+    JsonObject t = PLAIN.toJsonTree(rs).getAsJsonObject();
+    JsonArray layers = new JsonArray();
+    if (rs.layers != null) for (LayerSettings l : rs.layers) layers.add(l == null ? JsonNull.INSTANCE : PLAIN.toJsonTree(l));
+    t.add("layers", layers);
+    JsonObject s = t.getAsJsonObject("scoring");
+    s.add("preferred_direction_trace_cost", doubles(rs.scoring.preferredDirectionTraceCost));
+    s.add("undesired_direction_trace_cost", doubles(rs.scoring.undesiredDirectionTraceCost));
+    JsonObject o = t.getAsJsonObject("optimizer");
+    o.addProperty("board_update_strategy", rs.optimizer.boardUpdateStrategy == null ? null : rs.optimizer.boardUpdateStrategy.name());
+    o.addProperty("item_selection_strategy", rs.optimizer.itemSelectionStrategy == null ? null : rs.optimizer.itemSelectionStrategy.name());
+    t.addProperty("costs_initialized", rs.boardSpecificTraceCostsApplied);
+    t.addProperty("run_router", rs.getRunRouter());
+    t.addProperty("run_optimizer", rs.getRunOptimizer());
+    t.addProperty("via_costs_getter", rs.getViaCosts());
+    return PLAIN.toJson(t);
+  }
+
+  static void print(String name, SettingsSource... sources) {
+    RouterSettings rs = new SettingsMerger(sources).merge();
+    System.out.println("S\t" + name + "\t" + tree(rs));
+  }
+
+  static DsnFileSettings dsn(String fixtures, String name) throws IOException {
+    return new DsnFileSettings(new FileInputStream(fixtures + "/" + name), name);
+  }
+
+  static String[] cliArgs(String base) {
+    return new String[] {
+      "-de", base + ".dsn", "-do", base + ".ses", "-mp", "7", "-mt", "3", "-oit", "0.035",
+      "-inc", "POWER", "--router.via_costs=77", "--router.scoring.plane_via_costs=7",
+      "--router.optimizer.enabled=false", "--router.default_undesired_direction_trace_cost=1.5"
+    };
+  }
+
+  public static void main(String[] args) throws Exception {
+    String fixtures = args[0];
+    String data = args[1];
+    Freerouting.globalSettings = new GlobalSettings();
+    System.out.println("CORES\t" + Runtime.getRuntime().availableProcessors());
+    DefaultSettings defaults = new DefaultSettings();
+    print("defaults", defaults);
+    print("cli-c01", defaults, new CliSettings(cliArgs("Issue187-processor.Z80")));
+    Map<String, String> env = new LinkedHashMap<>();
+    env.put("FREEROUTING__ROUTER__MAX_PASSES", "17");
+    env.put("FREEROUTING__ROUTER__OPTIMIZER__MAX_THREADS", "2");
+    env.put("FREEROUTING__ROUTER__SCORING__PREFERRED_DIRECTION_TRACE_COST", "1.5,2.0");
+    env.put("FREEROUTING__ROUTER__START_RIPUP_COSTS", "1500");
+    env.put("FREEROUTING__ROUTER__VIAS_ALLOWED", "false");
+    env.put("FREEROUTING__ROUTER__AUTOROUTER__IGNORE_NET_CLASSES", "a, b");
+    env.put("freerouting__router__optimizer__board_update_strategy", "global_optimal");
+    env.put("FREEROUTING__ROUTER__LAYERS__ROUTABLE", "false,true");
+    env.put("FREEROUTING__ROUTER__FANOUT__MAX_MILLISECONDS_PER_PIN", "123");
+    env.put("FREEROUTING__ROUTER__NECK_WIDTH_UM", "12.5d");
+    env.put("FREEROUTING__ROUTER__BOGUS", "1");
+    print("env", defaults, new EnvironmentVariablesSource(env));
+    JsonFileSettings every = new JsonFileSettings(Path.of(data + "/every_section.json"));
+    JsonFileSettings owner = new JsonFileSettings(Path.of(data + "/owner_freerouting.json"));
+    print("json-every", defaults, every);
+    print("json-owner", defaults, owner);
+    CliSettings cli = new CliSettings(new String[] {"-mp", "10000", "-mt", "99",
+        "--router.layers.bend_cost=12.5,-1", "--router.layers.preferred_direction_trace_cost=0.05,3"});
+    print("json-cli-validation", defaults, every, cli);
+    for (String n : new String[] {"Issue187-processor.Z80.dsn", "Issue103-Board-Routed.dsn", "Issue413-test.dsn", "Issue066-Project_GP8B.dsn", "Issue191-processor.Z80/processor.Z80.dsn"}) {
+      print("dsn-" + n, defaults, dsn(fixtures, n));
+    }
+    print("dsn-cli", defaults, dsn(fixtures, "Issue187-processor.Z80.dsn"), new CliSettings(cliArgs("x")));
+    print("dsn-every-json", defaults, dsn(fixtures, "Issue187-processor.Z80.dsn"), every);
+    RouterSettings first = new SettingsMerger(defaults, new CliSettings(cliArgs("x")), dsn(fixtures, "Issue103-Board-Routed.dsn")).merge();
+    print("api-second", defaults, new CliSettings(cliArgs("x")), dsn(fixtures, "Issue103-Board-Routed.dsn"), new ApiSettings(first));
+    print("rules-processor", defaults, new RulesFileSettings(new File(fixtures + "/Issue191-processor.Z80/processor.rules")));
+    print("rules-hw48na", defaults, new RulesFileSettings(new File(fixtures + "/Issue029-hw48na_valid.rules")));
+    print("rules-over-cli", defaults, new CliSettings(cliArgs("x")), new RulesFileSettings(new File(fixtures + "/Issue191-processor.Z80/processor.rules")));
+  }
+}
