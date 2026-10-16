@@ -1,0 +1,70 @@
+# K04.7: the .kicad_pcb boards of the direct reader (K05-K07), for parity against KiCad 10's own DSN export.
+# The first seven are committed (fixtures/kicad/, tools/kicad-reader/); the rest are the out-of-repo corpus
+# (tools/kicad-reader/fetch-corpus.sh target/kicad-corpus; FR_KICAD_CORPUS may point elsewhere) and are skipped
+# while missing. Each board has a <stem>.kicad10.dsn next to it (tools/kicad-reader/export-corpus.sh).
+# The Java repo's PCBench boards are KiCad 5 files and are not part of this set.
+fixtures/kicad/Issue180-Test/Test.kicad_pcb   # committed
+fixtures/kicad/Issue184-motorizedopener/motorizedopener.kicad_pcb   # committed
+fixtures/kicad/Issue269-min_fr_test/min_fr_test.kicad_pcb   # committed
+fixtures/kicad/Issue368-CorneyIslandWireless/corney_island_wireless.kicad_pcb   # committed
+fixtures/kicad/Issue508-DAC2020/DAC2020_bm01/bm1.unrouted.kicad_pcb   # committed
+fixtures/kicad/Issue558-dev-board-autoroute-demo/dev-board.kicad_pcb   # committed
+fixtures/kicad/Issue742-tastexx-pcb/tastexx-pcb.kicad_pcb   # committed
+target/kicad-corpus/java/Issue069-TestSensel/TestSensel.kicad_pcb   # Java repo fixtures/examples at cda540f (KiCad 5: refused by the version gate)
+target/kicad-corpus/java/Issue180-Test/Test.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue184-motorizedopener/motorizedopener.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue191-processor.Z80/processor.Z80.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue230-CNH_Functional_Tester/CNH_Functional_Tester_1.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue269-NoWiresOnPowerLayers/proba.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue269-min_fr_test/min_fr_test.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue283-UnconnectedTracesUnderPads/Natural_Tone_Preamp.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue367-UltraFlactyl/UltraFlactyl.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue368-CorneyIslandWireless/corney_island_wireless.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm01/bm1.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm01/bm1.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm02/bm2.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm02/bm2.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm04/bm4.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm04/bm4.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm05/bm5.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm05/bm5.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm06/bm6.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm06/bm6.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm07/bm7.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm07/bm7.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm08/bm8.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm08/bm8.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm09/bm9.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm09/bm9.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm10/bm10.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm10/bm10.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm11/bm11.routed.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue508-DAC2020/DAC2020_bm11/bm11.unrouted.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue558-dev-board-autoroute-demo/dev-board.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue593-BBD_Mars-64/Mars-64.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue593-BBD_Mars-64/Mars-64_2-layer.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue632-MiniAutoPilot/Mini Auto Pilot.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue718-Allow_Net-Ties/sample.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/Issue742-tastexx-pcb/tastexx-pcb.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/java/tutorial_board/tutorial_board.kicad_pcb   # Java repo fixtures/examples at cda540f
+target/kicad-corpus/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/complex_hierarchy/complex_hierarchy.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/ecc83/ecc83-pp.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/ecc83/ecc83-pp_v2.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/interf_u/interf_u.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/microwave/microwave.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/multichannel/multichannel_mixer-unrouted.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/multichannel/multichannel_mixer.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/openair-max/One-Air-Max.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/pic_programmer/pic_programmer.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/royalblue54L_feather/nfc_antenna/RoyalBlue54L-NFC-Antenna/RoyalBlue54L-NFC-Antenna.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/sonde xilinx/sonde xilinx.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/stickhub/StickHub.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/tiny_tapeout/tinytapeout-demo.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/video/video.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/demos/vme-wren/vme-wren.kicad_pcb   # KiCad 10.0.7 demo
+target/kicad-corpus/canary-pwr/canary-pwr.kicad_pcb   # canary-pwr snapshot (SNAPSHOT.sha256)

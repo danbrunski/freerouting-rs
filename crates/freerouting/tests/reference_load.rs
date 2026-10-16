@@ -250,7 +250,9 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
         .collect();
     entries.sort();
     for path in entries {
-        if path == fixtures_dir().join("reference") {
+        // `reference/` holds the Java harness's outputs. `kicad/` holds the K
+        // series' KiCad exports, which K07 compares with Java itself.
+        if path == fixtures_dir().join("reference") || path == fixtures_dir().join("kicad") {
             continue;
         }
         if path.is_dir() {

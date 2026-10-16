@@ -11,7 +11,7 @@ absolute coordinates above 100 mm lose everything below 1 µm: the via at
 (`place C5 133199.999 ...`, `canary-pwr.dsn:107`). The K
 series replaces that export with a direct reader of `.kicad_pcb` files that
 produces the same DSN syntax tree `build_board` already consumes
-([K00](K00-kicad-README.md)). This checklist builds the bottom layer: a new
+([K00](../K00-kicad-README.md)). This checklist builds the bottom layer: a new
 crate with an s-expression lexer and tree, the version gates, net-dialect
 detection, and a test corpus paired with KiCad 10's own DSN exports, so
 K05–K07 can compare the reader against KiCad bit for bit.
@@ -19,7 +19,7 @@ K05–K07 can compare the reader against KiCad bit for bit.
 Prerequisites: none. KiCad 10 is needed only for K04.8. This machine has
 two: Windows KiCad 10.0.5 (Dan's, the one the plugin runs in) and WSL KiCad
 10.0.7 from the Ubuntu packages (`/usr/bin/kicad-cli`; system `python3`
-imports `pcbnew`), see K00 "Two KiCads". [F04](archive/F04-provenance.md) is a prerequisite
+imports `pcbnew`), see K00 "Two KiCads". [F04](F04-provenance.md) is a prerequisite
 only if an item translates KiCadRoutingTools (KRT) code; the plan here takes
 KRT's pitfalls and test cases, not its code.
 
@@ -101,7 +101,7 @@ What this adds:
 
 ## Checklist
 
-- [ ] **K04.1 — Crate skeleton.**
+- [x] **K04.1 — Crate skeleton.**
   - `crates/freerouting-kicad`, `license.workspace = true`, depending only on
     `freerouting-dsn` and `freerouting-geometry` (K00 layering). No other
     dependency in this checklist.
@@ -116,7 +116,9 @@ What this adds:
   - **Accept:** the gate is green with the empty crate; `cargo doc -p
     freerouting-kicad` builds without warnings.
 
-- [ ] **K04.2 — Lexer.**
+  *Done 2026-10-16:* `crates/freerouting-kicad` (depends on `freerouting-dsn` and `freerouting-geometry` only; `license.workspace = true`). `lib.rs` has the layer overview and a Credits paragraph (KRT for the pitfall list and issue numbers, no code taken; KiCad 10.0.0 for the ported algorithms). `error.rs`: `KicadError { kind, line, column, message }`, `ErrorKind::{Syntax, UnsupportedVersion, NotABoard, Semantic}`, `Warning { line, message }`, `line_col` (lazy, character columns). Gate on this crate: `cargo clippy -p freerouting-kicad --all-targets -- -D warnings` clean, `RUSTDOCFLAGS="-D warnings" cargo doc -p freerouting-kicad --no-deps` clean, `rustfmt --edition 2024 --check` on its files clean. (`cargo fmt --all --check` is red at the time of writing on other sessions' uncommitted engine files, not on this crate.) `tools/check-provenance.sh`: `provenance ok` (no KRT code was ported).
+
+- [x] **K04.2 — Lexer.**
   - Tokens: `(`, `)`, bare atoms (symbols and numbers, terminated by
     whitespace, `(`, `)` or `"`), and quoted strings. Inside a quoted string,
     `\"` and `\\` are escapes and parentheses are text. This is KRT #113: a
@@ -135,7 +137,9 @@ What this adds:
     allocation per token (check with a counting allocator in the test, or
     assert the token vector is the only growth).
 
-- [ ] **K04.3 — Arena tree.**
+  *Done 2026-10-16:* `sexpr/lexer.rs`. Unit tests (`cargo test -p freerouting-kicad --lib`): `issue_113_parens_inside_a_string_are_text`, `escaped_quotes_stay_in_the_string` (`"a \"quoted\" word"`), `string_with_embedded_newline`, `numbers_are_atoms_and_stop_at_delimiters` (`(xy 1.5 -2e-3)`), `error_unterminated_string_points_at_the_opening_quote` (2:6), `error_stray_close_paren` (2:2), `error_end_of_file_inside_a_list_points_at_the_innermost_open_paren` (3:3), `utf8_check_names_the_first_bad_byte` (`decode`), `unescape_follows_dsnlexer` (KiCad's `\a \b \f \n \r \t \v \xHH \NNN`, from `common/dsnlexer.cpp`). `tests/lexer_alloc.rs`: counting global allocator, a 1 MB synthetic stream (more than 200,000 tokens, 2 strings per line) lexes with exactly 0 allocations. Choice: the lexer tracks nesting depth, so a stray `)` and an unclosed list are lexer errors; the end-of-file error points at the innermost unclosed `(` (found by a rescan on the error path only).
+
+- [x] **K04.3 — Arena tree.**
   - `Tree<'a> { src: &'a str, nodes: Vec<Node>, children: Vec<u32> }`,
     `Node::{List { first: u32, len: u32 }, Atom(Span), Str(Span)}`. Built in
     one pass with an explicit stack.
@@ -157,7 +161,9 @@ What this adds:
       `jetson-agx-thor-baseboard.kicad_pcb` (85 MB in WSL). Target ≤ 1 s;
       record the number either way.
 
-- [ ] **K04.4 — Header and version gate.**
+  *Done 2026-10-16:* `sexpr/tree.rs`: `Tree<'a> { src, extra, nodes, children }`, `Node::{List{first,len}, Atom(Span), Str(Span)}`, built in one pass with an explicit stack (plus a pending-children buffer so each list's children are contiguous). Node 0 is an implicit root list, so a board is `tree.root().child("kicad_pcb")`. `NodeRef` has `head`, `items`, `item`, `child`, `children` (file order), `atom`, `raw`, `str_value` (lazy `Cow`), `f64`, `line`/`position`, `error`. Synthesised text (legacy conversions) lives in a side buffer addressed by spans at or past `src.len()`. Tests (`tests/tree.rs`): `one_line_rewrite_of_corney_gives_the_same_tree` (all tokens joined by one space; `Tree` equality is iterative and structural, 1,715 nodes each) and the same for all 7 committed boards; `deeply_nested_input_does_not_overflow_the_stack` (100,000 levels, on a 256 KiB thread stack, including equality and drop); `accessors_follow_file_order`, `lines_of_nodes`. Timing (`cargo test -p freerouting-kicad --release --test parse_time -- --ignored --nocapture`, lexing plus tree, median of 3 in-process runs, file read not counted; the machine was heavily loaded, load average about 30, so these are pessimistic): `jetson-agx-thor-baseboard.kicad_pcb` 84.81 MB in 365 ms = 232 MB/s (11.56 M nodes), target <= 1 s met; `vme-wren.kicad_pcb` 69.64 MB in 268 ms = 260 MB/s; the whole corpus of 58 boards, 201.2 MB, in 0.760 s = 265 MB/s; boards under 1 MB run at 0.7 to 1.9 GB/s.
+
+- [x] **K04.4 — Header and version gate.**
   - Read `(kicad_pcb (version N) (generator ...) (generator_version ...))`.
     KiCad 6+ files start this way; KiCad 5 has `(host pcbnew ...)` instead
     of `generator`.
@@ -171,7 +177,9 @@ What this adds:
     - A PCBench file with `(version 3)` fails the same way.
     - All 37 newer Java-repo boards and all 18 demos pass the gate.
 
-- [ ] **K04.5 — Legacy conversions.**
+  *Done 2026-10-16:* `header.rs`: `Header { version: u32, generator: String, generator_version: Option<String> }`, `read_header`, `board`, `check`, `FIRST_SUPPORTED_VERSION = 20201115`, `LATEST_KNOWN_VERSION = 20260206` (`Header::is_newer_than_known`; newer files are read, not refused). A `kicad_pcb` without `(version)` reads as `20201115`, as KiCad's `parseHeader` does. Tests (`tests/header.rs`, 12): `issue069_testsensel_is_refused` (read through `git show cda540f:`; message contains `20171130`, one line, "open and save the board in KiCad 6 or later"); `pcbench_file_with_version_3_is_refused` (real PCBench file from the Java repo) and `pcbench_version_3_is_refused_with_one_line`; `not_a_board` (`NotABoard` for `footprint`, `kicad_sch`, a bare atom, a nested list, an empty file; `Syntax` for data after the board); `committed_boards_pass_the_gate` (versions 20211014, 20221018, 20240108 x2, 20241229 x2, 20260206); `corpus_boards_pass_the_gate_except_kicad_5`: all 38 Java boards (exactly one refused, `TestSensel`, so 37 pass) and all 19 `.kicad_pcb` files of the WSL KiCad 10.0.7 demos pass (the checklist says 18; there are 19 boards because `royalblue54L_feather` holds a second one under `nfc_antenna/`). Windows 10.0.5 demos not checked.
+
+- [x] **K04.5 — Legacy conversions.**
   KiCad converts some older spellings on load; the reader does the same, on
   the tree, so later items see one format. Port each from KiCad's reader,
   not from KRT:
@@ -187,7 +195,9 @@ What this adds:
     None of the committed boards hits the arc or overbar case (the oldest is
     `20211014`); the done note says so.
 
-- [ ] **K04.6 — Net dialect and net table.**
+  *Done 2026-10-16:* `legacy.rs` (ported from KiCad 10.0.0: `parsePCB_SHAPE`, `EDA_SHAPE::SetArcAngleAndEnd/GetArcMid/CalcArcAngles`, `RotatePoint`, `EDA_ANGLE`, `ConvertToNewOverbarNotation`) and `units.rs` (`parseBoardUnits`, `KiROUND`). `normalise(&mut Tree, version) -> Conversions { arcs, overbars, warnings }`: `gr_arc`/`fp_arc` with `version <= 20210925` become `(start) (mid) (end)` (a broken old arc is left alone with a warning); `~TEXT~` becomes `~{TEXT}` in `(net N "name")` and `(add_net "name")` for `version < 20210606` (a zone's `net_name` is not converted, as in KiCad); `item_uuid` reads `tstamp` where `uuid` is absent (an accessor, not a rewrite). Tests: unit tests in `legacy.rs` with the expected values computed by hand from the cited KiCad code (`arc_90_degrees_counter_example_by_hand` etc.). Beyond the checklist, `tests/legacy_kicad.rs` pins six arcs and three overbar names against what KiCad 10.0.7 itself holds after `pcbnew.LoadBoard` of the old syntax (`tools/kicad-reader/old_arcs.py`): all six arcs agree to the nanometre, and the three net names agree. None of the committed boards hits the arc or overbar case (the oldest is `20211014`), nor does any corpus board that passes the gate.
+
+- [x] **K04.6 — Net dialect and net table.**
   - Detect in this order (KRT `board_uses_name_nets`, KRT #1028, #163):
     1. any `(net "name")` reference → names;
     2. a top-level `(net N "name")` table and no name references → ids;
@@ -209,7 +219,9 @@ What this adds:
       net resolved.
     - A board with no nets → decided by the stamp.
 
-- [ ] **K04.7 — Corpus.**
+  *Done 2026-10-16:* `nets.rs`: `Dialect::{Ids, Names}`, `NetTable { dialect, by_code, codes_by_name: BTreeMap, warnings }`, `detect_dialect`, `NetTable::build/build_ids/build_names`, `name`, `code_of_raw`, `net_of`. Lookups use the raw escaped text (`lookups_use_the_raw_escaped_text_369`). Tests (`tests/nets.rs`, 9): `cm5_minima_has_a_numeric_table_despite_its_stamp` (`20250513` -> ids; net 1 `GND`, net 2 `Net-(J1-VCC)`, 221 nets); `name_dialect_boards` (`tastexx-pcb` `20260206` -> names, 29 table entries (net 0 included), all 43 pads with a net resolve; `pic_programmer` -> names, 1 `VCC`, 2 `GND`); `numeric_table_wins_over_a_new_stamp_issue_1028` (synthetic `20260206` over a numeric table -> ids, segment, via and pad nets all resolve); `a_board_with_no_nets_is_decided_by_the_stamp`; `names_get_codes_in_order_of_first_appearance`; `table_problems_are_warnings`; `every_corpus_board_resolves_all_its_tracks_and_vias` (Java boards plus demos, minus TestSensel and the two 70-85 MB demos: 51 ids boards, 3 names boards, every track and via with a `(net)` child resolves). Deviation from the text above: the stamp fallback for a board with no nets uses `20251028` (KiCad 10.0.0's `SEXPR_BOARD_FILE_VERSION` comment "Stop writing netcodes") instead of KRT's `20250000`; it only matters for a board without any net, and `NAME_NETS_FROM_VERSION` is one constant. Name-dialect codes (first appearance, 0 = unconnected) are still unverified against KiCad's export; K05.2 owns that.
+
+- [x] **K04.7 — Corpus.**
   - Copy with `git -C ../freerouting show cda540f:<path>` into
     `fixtures/kicad/<Issue dir>/`, with the `.kicad_pro` next to it where the
     Java repo has one:
@@ -242,7 +254,9 @@ What this adds:
     - the done note states whether F03.3's licence rule accepts the
       committed set, or that the set moved out of the repo.
 
-- [ ] **K04.8 — KiCad 10 reference exports.**
+  *Done 2026-10-16:* `fixtures/kicad/` holds the seven boards and their `.kicad_pro` files (six of seven; `bm1.unrouted` has none), `MANIFEST.tsv` (path, source `freerouting@cda540f:fixtures/<path>`, sha256, bytes, file version, `.kicad_pro`, licence `LicenseRef-freerouting-fixture`, plus the K04.8 export columns) and `README.md`; `tools/kicad-reader/fetch-corpus.sh <dir>` (`--committed` re-extracts the set), `manifest.py write|check`, `tools/bench/sets/kicad-reader.txt` (70 lines: the 7 committed boards, 38 Java boards, 19 demos, canary-pwr). Evidence: `python3 -I tools/kicad-reader/manifest.py check` prints `manifest ok` (every committed board's sha256 equals `git show cda540f:` output); `tests/fixtures.rs::committed_boards_match_the_java_repo` does the byte comparison in Rust. Fetching three times into two fresh folders gave `diff -r` identical trees (106 files; canary-pwr included because nobody edited it in between; its `SNAPSHOT.sha256` pins `canary-pwr.kicad_pcb` at `15aa06a3...`). The corpus has 58 boards: 38 Java, 19 demos (each with its folder's licence file), 1 canary. F03.3's licence rule accepts the committed set: `committed_violations` (`crates/freerouting-dev/tests/corpus.rs::no_committed_board_in_this_repository_has_a_licence_that_is_not_allow_listed`) matches files by sha256 against the corpus manifest and these boards are not in it; it passed with `fixtures/kicad/` present. (`LicenseRef-freerouting-fixture` is not on `allowed-licenses.txt`, so a rule that matched by directory would move the set out; see `fixtures/kicad/README.md`.)
+
+- [x] **K04.8 — KiCad 10 reference exports.**
   - `tools/kicad-reader/export_dsn.py` runs under a KiCad interpreter:
     `pcbnew.LoadBoard`, then `pcbnew.ExportSpecctraDSN(board, out)`, then
     prints `pcbnew.GetBuildVersion()`. Default: WSL KiCad 10.0.7, run as
@@ -276,3 +290,5 @@ What this adds:
       than assume it);
     - `pgrep` shows the same KiCad processes before and after; the originals'
       checksums are unchanged.
+
+  *Done 2026-10-16:* `tools/kicad-reader/export_dsn.py` (`LoadBoard`, `ExportSpecctraDSN`, prints `KICAD_VERSION ...`, never imports the plugin), `export.sh [--windows]` (copies the board, `.kicad_pro` and `.kicad_dru` into a scratch folder, runs `python3 -I` there or Windows KiCad's `python.exe` with `wslpath -w`, compares `pgrep -x kicad`/`pcbnew` or `tasklist.exe` before and after and fails on a difference, refuses a scratch folder inside `fixtures/` or the canary repo, replaces the export's first line with `(pcb "<stem>.dsn"` and strips CR) and `export-corpus.sh`. Evidence: (a) seven `fixtures/kicad/**/<stem>.kicad10.dsn` made with WSL KiCad 10.0.7 (`10.0.7-10.0.7~ubuntu24.04.1`, recorded in `MANIFEST.tsv` as `kicad10_host_version`; `tests/fixtures.rs` checks it and that all seven parse with `freerouting_dsn::Pcb::parse`). (b) all seven also exported with Windows KiCad 10.0.5: after CRLF -> LF the files are identical except the single `(host_version "10.0.5")` line (2 differing lines per board in `diff`), on every board. (c) exporting each board twice (`KEEP_FIRST_LINE=1`, separate processes) gave identical files apart from the first line on all seven; those have at most 2 `class` blocks, so this cannot show ordering instability. The corpus board `CNH_Functional_Tester_1` (9 classes) was exported three times with WSL KiCad 10.0.7: all three identical, so the `unordered_map` order was stable here, but that is not a guarantee (noted in `tools/kicad-reader/README.md`). On that board WSL 10.0.7 and Windows 10.0.5 differ in 52 diff lines beyond `host_version`: inner layer `(type signal)` in 10.0.7 vs `(type power)` in 10.0.5, and the board outline path is written differently (different segmentation of the same arcs); the seven committed boards show no such difference. (d) `pgrep -x kicad` and `pgrep -x pcbnew` printed nothing before, during (checked inside every `export.sh` run, WSL and Windows) and after; the originals' sha256 sums are unchanged (`export.sh` checks, and `manifest.py check` re-verified). The 58 corpus boards were exported too (`kicad10-export.log`: 58 exported, 0 failed, jetson-agx-thor-baseboard included).

@@ -9,7 +9,7 @@ images, padstacks and placements. It follows KiCad's own DSN exporter
 same board, which K07 checks. Copper items (rule areas, zones, tracks, vias)
 are [K06](K06-kicad-pcb-rule-areas-and-copper.md).
 
-Prerequisites: [K04](K04-kicad-pcb-syntax.md) (tree, header, net table,
+Prerequisites: [K04](archive/K04-kicad-pcb-syntax.md) (tree, header, net table,
 corpus, reference exports). [F04](archive/F04-provenance.md) only for an item that
 translates KRT code.
 
