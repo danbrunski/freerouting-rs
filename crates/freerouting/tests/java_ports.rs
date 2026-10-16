@@ -1,9 +1,10 @@
 //! Ports of the Java unit tests of the board model packages
 //! (`src/test/java/app/freerouting/{board,rules,datastructures,core}`).
 //!
-//! Tests of GUI types, routing, DRC, interactive component moves, Java
-//! serialization and thread safety are not ported; see the module docs of
-//! each group below.
+//! Tests of GUI types, routing, DRC, Java serialization and thread safety
+//! are not ported; see the module docs of each group below.
+//! `MoveComponentTest` (interactive component moves) is ported in
+//! `board_actions_move_component` (I02.1).
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -1199,5 +1200,297 @@ mod gui_workspace_settings {
         assert!(s.automatic_neckdown);
         assert_eq!(s.manual_rules.trace_half_widths, vec![1000; 4]);
         assert!((0..4).all(|l| s.visible_layers.is_visible(l)));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// board.actions.MoveComponentTest (I02.1): all 8 tests, with real pins,
+// traces and areas on the test board instead of Mockito mocks and spies. A
+// `verify(board).moveDrillItem` or `verify(pin).moveBy` becomes an assert on
+// the path the move takes (`requires_drill_item_mover`, `items_to_shove`)
+// and on the moved geometry.
+
+mod board_actions_move_component {
+    use super::*;
+    use freerouting::board::items::AreaKind;
+    use freerouting::board::structure::ComponentId;
+    use freerouting::geometry::{Area, ConvexShape, Shape};
+    use freerouting::interactive::{
+        MoveBudget, MoveComponent, SortedItem, requires_drill_item_mover,
+    };
+
+    const CX: i32 = 100_000;
+    const CY: i32 = 100_000;
+
+    fn net(board: &mut RoutingBoard, name: &str) -> i32 {
+        let class = board.rules.default_net_class();
+        board.rules.nets.add(name, 1, false, class)
+    }
+
+    /// A placed component with one pin per offset; each pad is a 200 x 200
+    /// square (`minWidth` 200).
+    fn component(
+        board: &mut RoutingBoard,
+        name: &str,
+        at: (i32, i32),
+        pins: &[((i32, i32), &[i32])],
+    ) -> (ComponentId, Vec<ItemId>) {
+        let pad_box = ConvexShape::Tile(TileShape::from(IntBox::new(-100, -100, 100, 100)));
+        let pad = board.library.padstacks.add_unnamed(vec![Some(pad_box)]);
+        let package_pins = pins
+            .iter()
+            .enumerate()
+            .map(|(i, ((x, y), _))| {
+                PackagePin::new(
+                    format!("{}", i + 1),
+                    pad,
+                    FloatPoint::new(f64::from(*x), f64::from(*y)),
+                    0.0,
+                )
+            })
+            .collect();
+        let package = board.library.packages.add_unnamed(package_pins);
+        let component = board.components.add_precise(
+            name,
+            Some(FloatPoint::new(f64::from(at.0), f64::from(at.1))),
+            0.0,
+            true,
+            package,
+            package,
+            false,
+            Some("ESP32".to_string()),
+        );
+        let ids = pins
+            .iter()
+            .enumerate()
+            .map(|(i, (_, nets))| {
+                board
+                    .insert_pin(component.0, i, nets, 1, FixedState::Unfixed)
+                    .expect("pin")
+            })
+            .collect();
+        (component, ids)
+    }
+
+    fn trace_from(board: &mut RoutingBoard, from: (i32, i32), nets: &[i32]) -> ItemId {
+        let corners = [ip(from.0, from.1), ip(from.0 + 5_000, from.1)];
+        board
+            .insert_trace_without_cleaning(
+                Polyline::from_points(&corners),
+                0,
+                50,
+                nets,
+                1,
+                FixedState::Unfixed,
+            )
+            .unwrap()
+    }
+
+    fn v(x: i32, y: i32) -> Vector {
+        Vector::Int(IntVector::new(x, y))
+    }
+
+    fn center(board: &RoutingBoard, id: ItemId) -> IntPoint {
+        board.item(id).unwrap().drill().unwrap().center
+    }
+
+    #[test]
+    fn get_min_drill_item_width_with_traces_returns_negative_when_no_connected_traces() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        let (_, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[n])]);
+        let moving = MoveComponent::new(&board, pins[0], v(500, 0), 99, 5);
+        assert_eq!(moving.min_drill_item_width_with_traces(&board), -1.0);
+    }
+
+    #[test]
+    fn get_min_drill_item_width_with_traces_returns_width_when_trace_connected() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        let (_, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[n])]);
+        trace_from(&mut board, (CX, CY), &[n]);
+        let moving = MoveComponent::new(&board, pins[0], v(500, 0), 99, 5);
+        assert_eq!(moving.min_drill_item_width_with_traces(&board), 200.0);
+    }
+
+    #[test]
+    fn check_allows_move_larger_than_min_width_when_no_connecting_traces_and_space_clear() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        let (_, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[n])]);
+        // 1000 >= minWidth (200)
+        let mut moving = MoveComponent::new(&board, pins[0], v(1000, 0), 99, 5);
+        assert!(moving.check(&mut board, MoveBudget::JAVA));
+        assert!(moving.items_to_shove().is_empty());
+    }
+
+    #[test]
+    fn check_fails_move_larger_than_min_width_when_connecting_trace_present() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        let (_, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[n])]);
+        trace_from(&mut board, (CX, CY), &[n]);
+        // 1000 >= minWidth (200)
+        let mut moving = MoveComponent::new(&board, pins[0], v(1000, 0), 99, 5);
+        assert!(!moving.check(&mut board, MoveBudget::JAVA));
+    }
+
+    #[test]
+    fn insert_bypasses_move_drill_item_when_no_connecting_traces_and_space_clear() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        let (component, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[n])]);
+        let mut moving = MoveComponent::new(&board, pins[0], v(500, 0), 99, 5);
+        assert!(moving.check(&mut board, MoveBudget::JAVA));
+        // Java: verify(board, never()).moveDrillItem(..)
+        assert!(!requires_drill_item_mover(&board, pins[0]));
+        assert!(moving.items_to_shove().is_empty());
+        let items_before = board.items().count();
+        assert!(moving.insert(&mut board, 100, 50, MoveBudget::JAVA));
+        // Java: verify(pin1).moveBy(vector)
+        assert_eq!(center(&board, pins[0]), IntPoint::new(CX + 500, CY));
+        assert_eq!(
+            board.components.get(component).unwrap().location(),
+            Some(IntPoint::new(CX + 500, CY))
+        );
+        assert_eq!(board.items().count(), items_before, "no trace was added");
+    }
+
+    #[test]
+    fn move_component_without_drill_items_computes_center_and_moves_successfully() {
+        let mut board = one_layer_board(2_000_000);
+        let package = board.library.packages.add_unnamed(Vec::new());
+        let component = board.components.add_precise(
+            "R1",
+            Some(FloatPoint::new(100.0, 200.0)),
+            0.0,
+            true,
+            package,
+            package,
+            false,
+            Some("RES_0805".to_string()),
+        );
+        let relative = Area::from(Shape::from(TileShape::from(IntBox::new(-20, -20, 20, 20))));
+        let smd_pad = board.insert_area(
+            AreaKind::Obstacle,
+            relative,
+            0,
+            Vector::ZERO,
+            0.0,
+            false,
+            &[],
+            1,
+            component.0,
+            None,
+            FixedState::Unfixed,
+        );
+        assert_eq!(
+            board.item(smd_pad).unwrap().bounding_box(),
+            IntBox::new(80, 180, 120, 220)
+        );
+        let mut moving = MoveComponent::new(&board, smd_pad, v(300, 400), 99, 5);
+        assert_eq!(moving.min_drill_item_width_with_traces(&board), -1.0);
+        assert!(moving.check(&mut board, MoveBudget::JAVA));
+        assert!(moving.insert(&mut board, 100, 50, MoveBudget::JAVA));
+        // Java: verify(smdPad).moveBy(moveVector)
+        assert_eq!(
+            board.item(smd_pad).unwrap().bounding_box(),
+            IntBox::new(380, 580, 420, 620)
+        );
+        assert_eq!(
+            board.components.get(component).unwrap().location(),
+            Some(IntPoint::new(400, 600))
+        );
+    }
+
+    #[test]
+    fn check_uses_drill_item_mover_for_multi_net_drill_item_without_traces() {
+        let mut board = one_layer_board(2_000_000);
+        let (a, b) = (net(&mut board, "a"), net(&mut board, "b"));
+        let (_, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[a, b])]);
+        assert!(requires_drill_item_mover(&board, pins[0]));
+        let moving = MoveComponent::new(&board, pins[0], v(50, 0), 99, 5);
+        assert_eq!(moving.min_drill_item_width_with_traces(&board), 200.0);
+        // a move larger than minWidth is rejected for a multi-net drill item
+        let mut large_move = MoveComponent::new(&board, pins[0], v(500, 0), 99, 5);
+        assert!(!large_move.check(&mut board, MoveBudget::JAVA));
+    }
+
+    #[test]
+    fn insert_uses_move_drill_item_for_multi_net_drill_item() {
+        let mut board = one_layer_board(2_000_000);
+        let (a, b) = (net(&mut board, "a"), net(&mut board, "b"));
+        let (_, pins) = component(&mut board, "U1", (CX, CY), &[((0, 0), &[a, b])]);
+        // Java: verify(board).moveDrillItem(pin1, vector, ..); never pin1.moveBy
+        assert!(requires_drill_item_mover(&board, pins[0]));
+        let moving = MoveComponent::new(&board, pins[0], v(50, 0), 99, 5);
+        assert!(moving.insert(&mut board, 100, 50, MoveBudget::JAVA));
+        assert_eq!(center(&board, pins[0]), IntPoint::new(CX + 50, CY));
+    }
+
+    /// The decision of I02: Java keeps the group in identity-hash sets, the
+    /// port in item-id order. The move order is the component's item-list
+    /// order (highest id first) stably sorted by the projection on the
+    /// vector, the items in front first; equal projections keep the
+    /// item-list order. No result depends on the set order (the check's
+    /// ignore set is the whole group from the start).
+    #[test]
+    fn move_component_order_is_item_id_order() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        // pins at x offsets 0, 1000, 1000, -1000 (two with equal projection)
+        let (_, pins) = component(
+            &mut board,
+            "U1",
+            (CX, CY),
+            &[
+                ((0, 0), &[n]),
+                ((1000, 0), &[n]),
+                ((1000, 2000), &[n]),
+                ((-1000, 0), &[n]),
+            ],
+        );
+        let component_items: Vec<ItemId> = board.component_items(1);
+        let mut by_id = pins.clone();
+        by_id.sort();
+        assert_eq!(
+            component_items, by_id,
+            "item-list order is highest id first"
+        );
+        let moving = MoveComponent::new(&board, pins[0], v(1000, 0), 99, 5);
+        let order: Vec<ItemId> = moving.group().iter().map(|s: &SortedItem| s.item).collect();
+        // gravity point (CX + 250, CY + 500): projections -750000 (pins 1
+        // and 2), 250000 (pin 0), 1250000 (pin 3); pins 1 and 2 tie and keep
+        // the item-list order, pin 2 (the higher id) first
+        assert_eq!(order, vec![pins[2], pins[1], pins[0], pins[3]]);
+        let projections: Vec<f64> = moving.group().iter().map(|s| s.projection).collect();
+        assert_eq!(
+            projections,
+            vec![-750_000.0, -750_000.0, 250_000.0, 1_250_000.0]
+        );
+        // the reverse direction puts pin 3 in front; the tie keeps its order
+        let back = MoveComponent::new(&board, pins[0], v(-1000, 0), 99, 5);
+        let order: Vec<ItemId> = back.group().iter().map(|s| s.item).collect();
+        assert_eq!(order, vec![pins[3], pins[0], pins[2], pins[1]]);
+    }
+
+    /// A user-fixed item makes the whole group immovable.
+    #[test]
+    fn a_user_fixed_item_makes_the_group_immovable() {
+        let mut board = one_layer_board(2_000_000);
+        let n = net(&mut board, "a");
+        let (_, pins) = component(
+            &mut board,
+            "U1",
+            (CX, CY),
+            &[((0, 0), &[n]), ((1000, 0), &[n])],
+        );
+        board.set_fixed_state(pins[1], FixedState::UserFixed);
+        let mut moving = MoveComponent::new(&board, pins[0], v(100, 0), 99, 5);
+        assert!(!moving.is_movable());
+        assert!(moving.group().is_empty());
+        assert!(!moving.check(&mut board, MoveBudget::JAVA));
+        assert!(!moving.insert(&mut board, 100, 50, MoveBudget::JAVA));
+        assert_eq!(center(&board, pins[0]), IntPoint::new(CX, CY));
     }
 }

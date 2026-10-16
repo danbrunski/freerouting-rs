@@ -511,6 +511,16 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   Java's `getUnconnectedSet` on the removed object does. No `route-script` board shows a
   difference.
 
+**Interactive drag** (`interactive`, I02, port of `board.actions.MoveComponent`, `DragState`,
+`DragItemState` and `MakeSpaceState`; tests `tests/interactive_drag.rs`, `tests/java_ports.rs`
+`board_actions_move_component`)
+- Java's message for dragging a user-fixed item is a literal English text ("Please unfix item
+  before dragging"), not a resource key; the session reports `DragStep::Fixed` and the GUI owns
+  the text (`press_on_a_trace_starts_nothing_and_a_fixed_via_does_not_move`).
+- Component dragging and the item filter of a press are input (`DragSettings`); Java keeps them
+  in the workspace settings. `MoveComponent`'s identity-hash sets are sorted sets; at the pin no
+  result depends on their order (`move_component_order_is_item_id_order`).
+
 ## freerouting-kicad
 
 Differences from KiCad's own DSN export, which is what Java reads. The reader builds the same

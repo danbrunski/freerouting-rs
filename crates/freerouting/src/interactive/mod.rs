@@ -44,3 +44,15 @@ impl Status {
         }
     }
 }
+
+// I02: `move_component` (I02.1), [`MoveComponent`], Java's
+// `board.actions.MoveComponent`; `drag` (I02.2, I02.3), [`DragSession`], the
+// drag of drill items and components and make-space.
+pub mod drag;
+pub mod move_component;
+
+pub use drag::{
+    DragBudget, DragRelease, DragSession, DragSettings, DragStep, ItemDrag, MakeSpaceDrag,
+    find_item_to_move,
+};
+pub use move_component::{MoveBudget, MoveComponent, SortedItem, requires_drill_item_mover};

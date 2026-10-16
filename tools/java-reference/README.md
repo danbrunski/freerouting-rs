@@ -138,6 +138,12 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
     command:
     `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> route-script`
     (then `find fixtures/reference/probe/route-script -type d -empty -delete`).
+  - `drag-script` (`DragScriptProbe.java`, I02): drags of seeded vias and pins (a pin drags its
+    component) through `board.actions.MoveComponent` and make-space through `gui.interactive.Route`
+    on the hidden net, with the drag states' board calls transcribed, on five boards with their
+    wiring unfixed. One command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> drag-script`
+    (then `find fixtures/reference/probe/drag-script -type d -empty -delete`).
 
 ## Settings, writer and CLI dumps (C01)
 

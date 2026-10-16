@@ -15,9 +15,15 @@
 //! tools/determinism-check.sh --out <scratch>/det -- target/release/examples/edit_script \
 //!   fixtures/Issue026-J2_reference.dsn crates/freerouting/tests/data/edit_script_j2.json {OUT}
 //! ```
+//!
+//! A script whose settings say `"tool": "drag"` is a drag script (I02.5): `press`, `drag_to` and
+//! `release` commands (the format is in `tests/support/drag_script.rs`), replayed with Java's
+//! `MoveComponent` and route budgets (`--unlimited`: none).
 
 #[path = "../tests/board_probe/mod.rs"]
 mod board_probe;
+#[path = "../tests/support/drag_script.rs"]
+mod drag_script;
 #[path = "../tests/support/edit_script.rs"]
 mod edit_script;
 #[path = "../tests/support/item_dump.rs"]
@@ -25,7 +31,7 @@ mod item_dump;
 
 use std::process::ExitCode;
 
-use freerouting::interactive::RouteBudget;
+use freerouting::interactive::{DragBudget, RouteBudget};
 
 fn canonical(path: &str) -> String {
     std::fs::canonicalize(path).map_or_else(|_| path.to_string(), |p| p.display().to_string())
@@ -33,11 +39,16 @@ fn canonical(path: &str) -> String {
 
 fn main() -> ExitCode {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
-    let budget = if let Some(i) = args.iter().position(|a| a == "--unlimited") {
+    let unlimited = if let Some(i) = args.iter().position(|a| a == "--unlimited") {
         args.remove(i);
-        RouteBudget::UNLIMITED
+        true
     } else {
-        RouteBudget::JAVA
+        false
+    };
+    let (budget, drag_budget) = if unlimited {
+        (RouteBudget::UNLIMITED, DragBudget::UNLIMITED)
+    } else {
+        (RouteBudget::JAVA, DragBudget::JAVA)
     };
     let (dsn, ses, script, out) = match args.as_slice() {
         [dsn, script, out] => (dsn, None, script, out),
@@ -54,8 +65,14 @@ fn main() -> ExitCode {
             return ExitCode::from(1);
         }
     };
-    let script = match edit_script::parse_script(&text) {
-        Ok(script) => script,
+    let is_drag = drag_script::is_drag_script(&text);
+    let parsed = if is_drag {
+        drag_script::parse_drag_script(&text).map(|s| (None, Some(s)))
+    } else {
+        edit_script::parse_script(&text).map(|s| (Some(s), None))
+    };
+    let (route_script, drag_script) = match parsed {
+        Ok(scripts) => scripts,
         Err(e) => {
             eprintln!("edit_script: {script}: {e}");
             return ExitCode::from(1);
@@ -68,7 +85,11 @@ fn main() -> ExitCode {
     };
     let mut board = board_probe::load(&row);
     board_probe::import_session(&mut board, &row);
-    let lines = edit_script::replay(&mut board, &script, budget);
+    let lines = match (&route_script, &drag_script) {
+        (_, Some(drag)) => drag_script::replay_drag(&mut board, drag, drag_budget),
+        (Some(route), None) => edit_script::replay(&mut board, route, budget),
+        (None, None) => unreachable!("one script was parsed"),
+    };
     let mut text = lines.join("\n");
     text.push('\n');
     if let Err(e) = std::fs::write(out, text) {

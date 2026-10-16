@@ -5,7 +5,7 @@ starts dragging it, shoving traces aside (`DragItemState` with
 `board.actions.MoveComponent`); a press on empty space starts "make space",
 which pushes copper away with an invisible trace on a hidden net
 (`MakeSpaceState`). Both are reachable at `cda540f`. This checklist ports
-them into `freerouting::interactive`. See [I00](I00-interactive-README.md)
+them into `freerouting::interactive`. See [I00](../I00-interactive-README.md)
 for the API and the series rules.
 
 **Prerequisites:** I01 (`RouteSession`, settings, the replay example); O04
@@ -62,7 +62,7 @@ for the API and the series rules.
 
 ## Checklist
 
-- [ ] **I02.1 — MoveComponent.**
+- [x] **I02.1 — MoveComponent.**
   - Java: `MoveComponent` (all).
   - Rust: `interactive/move_component.rs`.
   - Orders (exact):
@@ -85,8 +85,19 @@ for the API and the series rules.
   - **Accept:** `MoveComponentTest` (8 tests) ported with behavioural asserts
     instead of Mockito spies; `move_component_order_is_item_id_order`
     (the DIVERGENCES line pinned).
+  - *Done 2026-10-16:* `interactive/move_component.rs` (`MoveComponent::new/check/insert`,
+    `min_drill_item_width_with_traces`, `requires_drill_item_mover`, `MoveBudget::JAVA` =
+    3000/1000 nominal ms). Order check at `a773a70ec`: `itemGroupSet`, `itemsToShove` and the
+    check's ignore set are used only by `contains`, `removeAll` (`DrillItemMover.shoveVias`) and
+    the `LinkedList` copy of `:222`, which is itself only tested for membership; the ignore set
+    starts as the whole group, so the drill items the check adds are already in it. No result
+    depends on the set order, so no DIVERGENCES line (the decision's condition);
+    `move_component_order_is_item_id_order` pins the item-list order (highest id first), the
+    stable `Signum` sort and the tie order. `cargo test -p freerouting --test java_ports
+    board_actions_move_component` → 10 passed (the 8 `MoveComponentTest` ports, the order test,
+    `a_user_fixed_item_makes_the_group_immovable`).
 
-- [ ] **I02.2 — Drag of items.**
+- [x] **I02.2 — Drag of items.**
   - Java: `DragState.getInstance/findItemToMove/selectItemToMove`,
     `DragItemState.moveTo`, `DragState.mouseDragged`.
   - Rust: `interactive/drag.rs`, `DragSession::start(board, settings, at)`
@@ -103,8 +114,19 @@ for the API and the series rules.
     step; an insert failure ends the drag and undoes, reporting changed
     nets.
   - **Accept:** I02.4.
+  - *Done 2026-10-16:* `interactive/drag.rs`: `DragSession::start(board, settings,
+    drag_settings, at)` (`find_item_to_move` transcribes Java's loop, including its layer
+    order), `drag_to` (angle projection, `DragStep::Fixed` for a user-fixed item, the two
+    `MoveComponent(item, delta, 99, 5)` tries with the shortened second move, snapshot on the
+    first success, `DragStep::Failed { vector, changed_nets }` after the undo of a failed
+    insert), `release` (`DragRelease::Item { changed_nets }`, Java's nets). `DragSettings`
+    carries Java's `dragComponentsEnabled` and item filter (defaults on / `ItemFilter::default`)
+    because `settings.rs` is I01's. Accept I02.4: `drag_script_matches_java_*` 5 passed; own
+    tests `press_on_a_trace_starts_nothing_and_a_fixed_via_does_not_move`,
+    `a_drag_is_undone_by_one_undo` (`cargo test -p freerouting --test interactive_drag` → 9
+    passed).
 
-- [ ] **I02.3 — Make-space.**
+- [x] **I02.3 — Make-space.**
   - Java: `MakeSpaceState`.
   - Rust: `interactive/drag.rs`; `rules::HIDDEN_NET_NUMBER = 10000001`.
   - Rules: half width `max(min(100, min_trace_half_width / 10), 5)` on
@@ -115,8 +137,16 @@ for the API and the series rules.
     connectable item of the hidden net.
   - **Accept:** `make_space_leaves_no_hidden_net_items`; I02.4's make-space
     cases.
+  - *Done 2026-10-16:* `RouteSession::make_space` (`interactive/route/make_space.rs`; the
+    session's start item and target set became `Option`s for Java's `null`s, so
+    `connectToTarget` keeps the nearest item as Java does) and `MakeSpaceDrag` in `drag.rs`;
+    the hidden net is the existing `rules::Nets::HIDDEN_NET_NUMBER` (10000001), so no second
+    constant was added. The warp point is `DragStep::MadeSpace { warp_pointer }` (I03's
+    `Response` takes it over). `make_space_leaves_no_hidden_net_items` passes (hidden trace on
+    the board during the drag, none after `release`); the probe's make-space cases match on all
+    5 boards (15 presses: 9 make-space drags run, 5 found an item, 1 only a trace).
 
-- [ ] **I02.4 — Probe `drag-script`.**
+- [x] **I02.4 — Probe `drag-script`.**
   - Java: `DragScriptProbe` drives `MoveComponent` and `Route` headless.
   - Boards: `Issue026-J2_reference` + SES, `Issue508-DAC2020_bm05` + SES,
     `Issue508-DAC2020_bm08` + routed SES, `Issue143-rpi_splitter` + SES,
@@ -129,9 +159,33 @@ for the API and the series rules.
     10th canonical dump are equal on all 5 boards. Component drags (several
     items) are compared only where every order of the group passes the
     check (the probe reports that), per the decision above.
+  - *Done 2026-10-16:* `tools/java-reference/probes/board/DragScriptProbe.java`,
+    `fixtures/reference/probe/drag-script/` (5 `.jsonl`), `tests/interactive_drag.rs`:
+    `cargo test -p freerouting --test interactive_drag drag_script` → 5 passed
+    (`drag_script_matches_java_{j2,bm05,bm08,rpi_splitter,issue957}`), every step line
+    (outcome, vector, centre, component location, `maxGeneratedId`) and every dump equal.
+    Generated at `a773a70ec` with `JDK_JAVA_OPTIONS=-Xmx4g REFERENCE_WORK_DIR=… generate.sh
+    <pin> drag-script` → 5 boards (byte-identical to the direct `probe.sh` runs; Java J2 1.0 s).
+    Two choices beyond the checklist: the session import and Issue957's DSN user-fix all
+    wiring, so the probe unfixes every user-fixed trace and via first (otherwise every via step
+    is `fixed`); the 5 pins are drawn from all pins with a net, so a pin of a several-item
+    component drags the component (all 25 pin drags: `group` 2-63). They are compared too: I02.1
+    showed the check's ignore set is the whole group from the start and the check does not
+    change the board, so no order of Java's sets can change a result. Outcomes over the 5
+    boards: 320 moved, 21 blocked, 7 failed (undone), 0 exceptions.
 
-- [ ] **I02.5 — Replay and determinism.**
+- [x] **I02.5 — Replay and determinism.**
   - `examples/edit_script.rs` accepts `press`, `drag_to`, `release` in
     drag mode.
   - **Accept:** a committed 40-step drag script on bm05 replays to
     identical output under `tools/determinism-check.sh`.
+  - *Done 2026-10-16:* `tests/support/drag_script.rs` (format and replay; a script with
+    `"tool": "drag"` is a drag script, `"unfix": true` unfixes the wiring as the probe does),
+    `examples/edit_script.rs` dispatches on it (`--unlimited` → `DragBudget::UNLIMITED`),
+    `tests/data/edit_script_drag_bm05.json` (40 commands: the probe's via drags 0-2, two pin
+    drags and three make-space steps). `tools/determinism-check.sh --out … --
+    <target>/release/examples/edit_script fixtures/Issue508-DAC2020_bm05.dsn
+    fixtures/reference/route/Issue508-DAC2020_bm05.ses
+    crates/freerouting/tests/data/edit_script_drag_bm05.json {OUT}` → `identical` (327 lines;
+    load 4.38 idle, 4.75 with 8 burners). `edit_script_replays_the_probe_drags`: the replay's
+    first 21 lines equal the probe's via drags 0-2, and Java and unlimited budgets agree.

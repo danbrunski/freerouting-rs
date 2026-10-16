@@ -137,8 +137,8 @@ impl RouteSession {
         };
         let mut session = RouteSession {
             net_numbers: nets.clone(),
-            start_item: picked,
-            target_set,
+            start_item: Some(picked),
+            target_set: Some(target_set),
             swap_pins: BTreeMap::new(),
             params: params.clone(),
             depths: ShoveDepths::for_push(settings.push_enabled),
@@ -181,7 +181,7 @@ impl RouteSession {
     /// Java `Route.calculateTargetPointsAndAreas`: the centres of the drill
     /// targets, and the trace and conduction-area targets, in target order.
     fn calculate_target_points_and_areas(&mut self, board: &RoutingBoard) {
-        for &id in &self.target_set {
+        for &id in self.target_set.iter().flatten() {
             let Some(item) = board.item(id) else {
                 continue;
             };
@@ -203,6 +203,7 @@ impl RouteSession {
         let target_pins = self
             .target_set
             .iter()
+            .flatten()
             .copied()
             .filter(|&id| board.item(id).is_some_and(|i| i.is_pin()));
         let picked = board.pick_items_filtered(

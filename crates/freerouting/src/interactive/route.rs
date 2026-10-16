@@ -42,6 +42,7 @@
 //! (DIVERGENCES, "Interactive routing").
 
 mod layer;
+mod make_space;
 mod start;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -220,8 +221,10 @@ impl ShoveDepths {
 #[derive(Clone, Debug)]
 pub struct RouteSession {
     net_numbers: Vec<i32>,
-    start_item: ItemId,
-    target_set: BTreeSet<ItemId>,
+    /// `None` for a make-space route (Java's `null` start item).
+    start_item: Option<ItemId>,
+    /// `None` for a make-space route (Java's `null` target set).
+    target_set: Option<BTreeSet<ItemId>>,
     swap_pins: BTreeMap<ItemId, SwapPinInfo>,
     params: RouteParams,
     depths: ShoveDepths,
@@ -253,14 +256,15 @@ impl RouteSession {
         &self.net_numbers
     }
 
-    /// The item the route started at.
-    pub fn start_item(&self) -> ItemId {
+    /// The item the route started at (`None` for a make-space route).
+    pub fn start_item(&self) -> Option<ItemId> {
         self.start_item
     }
 
     /// The items the route may end at, highest id first.
     pub fn target_set(&self) -> &BTreeSet<ItemId> {
-        &self.target_set
+        static NONE: BTreeSet<ItemId> = BTreeSet::new();
+        self.target_set.as_ref().unwrap_or(&NONE)
     }
 
     /// The swappable pins, highest id first.
@@ -552,7 +556,8 @@ impl RouteSession {
         budget: RouteBudget,
     ) -> bool {
         if let Some(id) = self.nearest_target_item
-            && !self.target_set.contains(&id)
+            && let Some(target_set) = &self.target_set
+            && !target_set.contains(&id)
         {
             self.nearest_target_item = None;
         }
@@ -653,7 +658,9 @@ impl RouteSession {
         to: IntPoint,
         budget: RouteBudget,
     ) -> ForcedInsert {
-        let pin = self.start_item;
+        let Some(pin) = self.start_item else {
+            return ForcedInsert::Unchanged;
+        };
         let Some(neck) = self.neckdown_half_width(board, pin, self.prev_corner) else {
             return ForcedInsert::Unchanged;
         };
