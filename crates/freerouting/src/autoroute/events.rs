@@ -403,12 +403,16 @@ mod tests {
         let (sink, receiver) = EventSink::channel(1);
         assert!(sink.progress(progress(1)));
         let sent = Arc::new(AtomicBool::new(false));
+        // The reader takes the delta only after the writer has tried the
+        // second progress event, so that event always meets a full channel.
+        let (tried_tx, tried_rx) = std::sync::mpsc::channel::<()>();
         let writer = {
             let sink = sink.clone();
             let sent = Arc::clone(&sent);
             thread::spawn(move || {
                 sink.delta(vec![ItemId(3)], vec![ItemId(4), ItemId(5)]);
                 assert!(!sink.progress(progress(2)), "full again: dropped");
+                tried_tx.send(()).unwrap();
                 sink.replaced(snapshot);
                 sent.store(true, Ordering::SeqCst);
             })
@@ -421,8 +425,11 @@ mod tests {
             !sent.load(Ordering::SeqCst),
             "delta must block on a full channel"
         );
-        let mut events = Vec::new();
-        for _ in 0..3 {
+        let mut events = vec![receiver.recv().unwrap()];
+        tried_rx
+            .recv()
+            .expect("the writer tries the second progress event");
+        for _ in 0..2 {
             events.push(receiver.recv().unwrap());
         }
         writer.join().unwrap();
