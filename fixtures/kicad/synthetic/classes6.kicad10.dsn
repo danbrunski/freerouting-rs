@@ -1,0 +1,128 @@
+(pcb "classes6.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  80000 -70000  40000 -70000  40000 -40000  80000 -40000
+            80000 -70000)
+    )
+    (via "Via[0-1]_800:400_um" "Via[0-1]_500:250_um" "Via[0-1]_1000:500_um")
+    (rule
+      (width 250)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component syn:Row
+      (place U1 50000 -50000 front 0 (PN V))
+    )
+  )
+  (library
+    (image syn:Row
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 1 0 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 2 3000 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 3 6000 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 4 9000 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 5 12000 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 6 15000 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 7 18000 0)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 20 0 -3000)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 21 3000 -3000)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 22 6000 -3000)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 23 9000 -3000)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 24 12000 -3000)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 25 15000 -3000)
+      (pin Rect[T]Pad_1500.000000x1500.000000_um 26 18000 -3000)
+    )
+    (padstack Rect[T]Pad_1500.000000x1500.000000_um
+      (shape (rect F.Cu -750 -750 750 750))
+      (attach off)
+    )
+    (padstack "Via[0-1]_800:400_um"
+      (shape (circle F.Cu 800))
+      (shape (circle B.Cu 800))
+      (attach off)
+    )
+    (padstack "Via[0-1]_500:250_um"
+      (shape (circle F.Cu 500))
+      (shape (circle B.Cu 500))
+      (attach off)
+    )
+    (padstack "Via[0-1]_1000:500_um"
+      (shape (circle F.Cu 1000))
+      (shape (circle B.Cu 1000))
+      (attach off)
+    )
+  )
+  (network
+    (net A1
+      (pins U1-1 U1-20)
+    )
+    (net A2
+      (pins U1-2 U1-21)
+    )
+    (net B
+      (pins U1-3 U1-22)
+    )
+    (net C
+      (pins U1-4 U1-23)
+    )
+    (net D
+      (pins U1-5 U1-24)
+    )
+    (net /sig1
+      (pins U1-6 U1-25)
+    )
+    (net E
+      (pins U1-7 U1-26)
+    )
+    (class kicad_default D E
+      (circuit
+        (use_via "Via[0-1]_800:400_um")
+      )
+      (rule
+        (width 250)
+        (clearance 200)
+      )
+    )
+    (class Fast A1 A2 C
+      (circuit
+        (use_via "Via[0-1]_500:250_um")
+      )
+      (rule
+        (width 100)
+        (clearance 150)
+      )
+    )
+    (class Wide,Default /sig1 B
+      (circuit
+        (use_via "Via[0-1]_1000:500_um")
+      )
+      (rule
+        (width 600)
+        (clearance 300)
+      )
+    )
+  )
+  (wiring
+  )
+)

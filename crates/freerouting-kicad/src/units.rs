@@ -49,3 +49,36 @@ pub fn nm_to_mm_text(nm: i32) -> String {
     }
     s
 }
+
+// ---- the DSN frame (K05.1) ------------------------------------------------
+
+/// `parseBoardUnits` on a number's text, as an `i64` of nanometres:
+/// `nm = (parse_f64(text) * 1e6).round()`, half away from zero (`KiROUND` is
+/// `std::llround`), clamped to KiCad's `INT_LIMIT` like the reader does.
+/// `None` when the text is not a number.
+pub fn nm(text: &str) -> Option<i64> {
+    parse_board_units(text).map(i64::from)
+}
+
+/// Nanometres to the DSN's micrometres: `scale` in `specctra_export.cpp`
+/// (`kicadDist / (IU_PER_MM / 1000.0)`). Never convert mm to µm directly.
+pub fn um(nm: i64) -> f64 {
+    nm as f64 / (NM_PER_MM / 1000.0)
+}
+
+/// `IU2um`: `kicadDist * (1000.0 / IU_PER_MM)`. The padstack and via names
+/// use this one; it can differ from [`um`] in the last bit.
+pub fn iu2um(nm: i64) -> f64 {
+    nm as f64 * (1000.0 / NM_PER_MM)
+}
+
+/// `FixNegativeZero`: `-0.0` becomes `0.0`.
+pub fn fix_neg_zero(v: f64) -> f64 {
+    if v == 0.0 { 0.0 } else { v }
+}
+
+/// `mapPt( const VECTOR2I& )`: a board point in nanometres to the DSN frame
+/// (`um`, Y negated, no offset).
+pub fn map_pt(x_nm: i64, y_nm: i64) -> freerouting_dsn::ast::Point {
+    freerouting_dsn::ast::Point::new(fix_neg_zero(um(x_nm)), fix_neg_zero(-um(y_nm)))
+}

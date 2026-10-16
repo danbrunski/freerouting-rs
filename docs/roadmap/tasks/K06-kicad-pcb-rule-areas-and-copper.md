@@ -27,7 +27,7 @@ Track arcs are the other difference: KiCad exports each arc as one straight
 chord (start to end, in the "create the wires from tracks" loop). The reader
 follows the arc.
 
-Prerequisites: [K05](K05-kicad-pcb-board-structure.md). K06.1 touches
+Prerequisites: [K05](archive/K05-kicad-pcb-board-structure.md). K06.1 touches
 `freerouting-dsn` and the engine's DSN reader; coordinate with
 [C06](C00-cli-settings-io-README.md) (the DSN writer) if it is in flight.
 

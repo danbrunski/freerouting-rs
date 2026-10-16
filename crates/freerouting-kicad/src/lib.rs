@@ -17,8 +17,23 @@
 //! - [`nets`] (K04): net dialect detection (names or numeric table) and the
 //!   net table.
 //!
-//! Board structure (layers, nets, footprints, pads) and copper arrive with
-//! K05 and K06.
+//! - [`read`] (K05): `read( text, project )` builds the board structure of the
+//!   DSN tree the way KiCad's own exporter (`specctra_export.cpp`, tag
+//!   `10.0.0`; 10.0.7 for the reference exports) does: [`layers`], [`network`]
+//!   and [`classes`] (net classes from the [`project`] file), [`outline`] (the
+//!   board outline), [`footprints`] and [`pads`] (images, padstacks, pins),
+//!   [`image_outlines`] (courtyards and graphics) and [`arc`] (KiCad's
+//!   arc-to-polyline arithmetic). K06 adds keepouts, planes and wiring.
+//!
+//! Parity with KiCad is tested against `fixtures/kicad/*/*.kicad10.dsn`, the
+//! DSN KiCad 10.0.7 writes for each board (`tests/structure.rs`). Deviations:
+//! every shape keeps KiCad's nanometre precision instead of `%.6g`; a custom
+//! pad is the convex hull of its parts, like KiCad's export, but named with
+//! its own hash; the start vertex Clipper gives a courtyard polygon is
+//! reproduced by a rule fitted to the exports ([`outline::rotate_to_clipper_start`]);
+//! and an empty or repeated reference designator is renamed (`REF**`,
+//! `R1_1`) like KiCad 10.0.7 instead of refused (KiCad 10.0.0's behaviour is
+//! [`ReadOptions::strict_references`]).
 //!
 //! # Determinism
 //!
@@ -36,13 +51,32 @@
 //! `common/string_utils.cpp`, `common/eda_shape.cpp`,
 //! `libs/kimath/src/trigo.cpp` and `libs/kimath/include/geometry/eda_angle.h`
 //! at tag `10.0.0`; GPL-2.0-or-later, compatible with this crate's
-//! GPL-3.0-only licence).
+//! GPL-3.0-only licence). The K05 modules port, from the same tag,
+//! `pcbnew/specctra_import_export/specctra_export.cpp` and `specctra.h`,
+//! `pcbnew/pad.cpp`, `footprint.cpp`, `convert_shape_list_to_polygon.cpp`,
+//! `common/project/net_settings.cpp` and `eda_pattern_match.cpp`,
+//! `libs/kimath/src/convert_basic_shapes_to_polygon.cpp`,
+//! `geometry/shape_arc.cpp`, `geometry/arc_chord_params.cpp`,
+//! `geometry/convex_hull.cpp` and `math/vector2d.h`. No KiCadRoutingTools
+//! code was taken in K05 either (F04 does not apply).
 
+pub mod arc;
+pub mod classes;
 pub mod error;
+pub mod fmt6g;
+pub mod footprints;
 pub mod header;
+pub mod image_outlines;
+pub mod layers;
 pub mod legacy;
 pub mod nets;
+pub mod network;
+pub mod outline;
+pub mod pads;
+pub mod project;
+pub mod read;
 pub mod sexpr;
 pub mod units;
 
 pub use error::{ErrorKind, KicadError, Warning};
+pub use read::{DieLength, Extras, KicadRead, ReadOptions, read, read_named, read_with};

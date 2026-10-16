@@ -4,6 +4,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+pub mod parity;
+
 pub const JAVA_COMMIT: &str = "cda540f";
 
 /// The workspace root.
@@ -16,10 +18,21 @@ pub fn fixtures() -> PathBuf {
     repo().join("fixtures/kicad")
 }
 
-/// The committed boards, as paths under `fixtures/kicad/`, in a fixed order.
+/// The committed boards of the Java repository, as paths under
+/// `fixtures/kicad/`, in a fixed order. The generated boards of `synthetic/`
+/// are [`synthetic_boards`].
 pub fn committed_boards() -> Vec<PathBuf> {
     let mut out = Vec::new();
     collect(&fixtures(), &mut out);
+    out.retain(|p| !p.starts_with(fixtures().join("synthetic")));
+    out.sort();
+    out
+}
+
+/// The boards generated with pcbnew (`tools/kicad-reader/synthetic.py`).
+pub fn synthetic_boards() -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    collect(&fixtures().join("synthetic"), &mut out);
     out.sort();
     out
 }

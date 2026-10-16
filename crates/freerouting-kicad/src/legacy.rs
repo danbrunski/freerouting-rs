@@ -177,17 +177,17 @@ pub fn convert_overbar(old: &str) -> String {
 
 /// An `EDA_ANGLE`: degrees as an `f64`, with KiCad's exact special cases.
 #[derive(Clone, Copy, PartialEq, Debug)]
-struct Angle(f64);
+pub struct Angle(pub f64);
 
 const DEGREES_TO_RADIANS: f64 = std::f64::consts::PI / 180.0;
 
 impl Angle {
-    fn from_radians(r: f64) -> Angle {
+    pub fn from_radians(r: f64) -> Angle {
         Angle(r / DEGREES_TO_RADIANS)
     }
 
     /// `EDA_ANGLE(VECTOR2D)`.
-    fn from_vector(x: f64, y: f64) -> Angle {
+    pub fn from_vector(x: f64, y: f64) -> Angle {
         if x == 0.0 && y == 0.0 {
             Angle(0.0)
         } else if y == 0.0 {
@@ -203,7 +203,7 @@ impl Angle {
         }
     }
 
-    fn normalize(self) -> Angle {
+    pub fn normalize(self) -> Angle {
         let mut v = self.0;
         while v < -0.0 {
             v += 360.0;
@@ -214,7 +214,7 @@ impl Angle {
         Angle(v)
     }
 
-    fn normalize720(self) -> Angle {
+    pub fn normalize720(self) -> Angle {
         let mut v = self.0;
         while v < -360.0 {
             v += 360.0;
@@ -225,11 +225,11 @@ impl Angle {
         Angle(v)
     }
 
-    fn radians(self) -> f64 {
+    pub fn radians(self) -> f64 {
         self.0 * DEGREES_TO_RADIANS
     }
 
-    fn sin(self) -> f64 {
+    pub fn sin(self) -> f64 {
         let t = self.normalize().0;
         if t == 0.0 || t == 180.0 {
             0.0
@@ -246,7 +246,7 @@ impl Angle {
         }
     }
 
-    fn cos(self) -> f64 {
+    pub fn cos(self) -> f64 {
         let t = self.normalize().0;
         if t == 0.0 {
             1.0
@@ -264,10 +264,10 @@ impl Angle {
     }
 }
 
-type Pt = (i32, i32);
+pub type Pt = (i32, i32);
 
 /// `RotatePoint( int* pX, int* pY, const EDA_ANGLE& )` (`trigo.cpp`).
-fn rotate_origin(x: i32, y: i32, angle: Angle) -> Pt {
+pub fn rotate_origin(x: i32, y: i32, angle: Angle) -> Pt {
     let a = angle.normalize();
     if a.0 == 0.0 {
         (x, y)
@@ -285,7 +285,7 @@ fn rotate_origin(x: i32, y: i32, angle: Angle) -> Pt {
 }
 
 /// `RotatePoint( VECTOR2I&, const VECTOR2I& centre, const EDA_ANGLE& )`.
-fn rotate_about(p: Pt, centre: Pt, angle: Angle) -> Pt {
+pub fn rotate_about(p: Pt, centre: Pt, angle: Angle) -> Pt {
     let (ox, oy) = (p.0.wrapping_sub(centre.0), p.1.wrapping_sub(centre.1));
     let (rx, ry) = rotate_origin(ox, oy, angle);
     (rx.wrapping_add(centre.0), ry.wrapping_add(centre.1))

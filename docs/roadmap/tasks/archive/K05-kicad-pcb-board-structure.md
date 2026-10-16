@@ -7,10 +7,10 @@ images, padstacks and placements. It follows KiCad's own DSN exporter
 (`pcbnew/specctra_import_export/specctra_export.cpp` at tag `10.0.0`) so that
 `build_board` of the reader's tree and `build_board` of KiCad's export give the
 same board, which K07 checks. Copper items (rule areas, zones, tracks, vias)
-are [K06](K06-kicad-pcb-rule-areas-and-copper.md).
+are [K06](../K06-kicad-pcb-rule-areas-and-copper.md).
 
-Prerequisites: [K04](archive/K04-kicad-pcb-syntax.md) (tree, header, net table,
-corpus, reference exports). [F04](archive/F04-provenance.md) only for an item that
+Prerequisites: [K04](K04-kicad-pcb-syntax.md) (tree, header, net table,
+corpus, reference exports). [F04](F04-provenance.md) only for an item that
 translates KRT code.
 
 ## What exists and what this adds
@@ -86,7 +86,7 @@ translates KRT code.
 
 ## Checklist
 
-- [ ] **K05.1 — Frame, layers and number helpers.**
+- [x] **K05.1 — Frame, layers and number helpers.**
   - `Pcb.parser`: `host_cad "KiCad's Pcbnew"`, `host_version` = the file's
     `generator_version` plus ` (freerouting-kicad)`. `resolution um 10`,
     `unit um` (`FromBOARD`, "unit_descriptor"). `Pcb.name`: the board path
@@ -119,8 +119,9 @@ translates KRT code.
     - `canary-pwr`'s stackup in `extras`: four copper layers of 0.035 mm and
       dielectrics of 0.1, 1.24 and 0.1 mm with `epsilon_r` 4.5 (its
       `(setup (stackup ...))`).
+  *Done 2026-10-16:* `src/{units,fmt6g,layers}.rs`, `KicadRead.extras`. `tests/numbers.rs`: `66.1` gives 66,100,000 nm and `-0.0000005` gives -1 nm (`nm_rounds_like_kicad_not_like_frommm`); `c_fmt_6g` equals C printf `%.6g` on 200 values including the named ones (`c_fmt_6g_matches_printf_on_200_values`, vectors from Python's C-library `%.6g`; `printf(1)` parses long double and differs on `99999.95`). `tests/structure.rs`: `layers_equal_the_export` (all 7 committed and 5 synthetic boards), `canary_pwr_structure` (F.Cu, Gnd.Cu, Power.Cu, B.Cu as signal, power, power, signal; four 0.035 mm coppers; dielectrics 100, 1240 and 100 um with epsilon_r 4.5; the corpus snapshot), `extras_hold_stackup_and_die_length` (multi-sheet dielectrics add up, epsilon_r thickness-weighted). Not representable: the layer `(property (index n))` has no field in `freerouting_dsn::ast::Layer`; nothing reads it.
 
-- [ ] **K05.2 — Nets and pins.**
+- [x] **K05.2 — Nets and pins.**
   - The DSN network holds every net with at least one pin, in net-code order
     (`FromBOARD`, "build the images, components, and netlist"). Numeric
     dialect: the file's codes. Name dialect: first appearance in the file
@@ -134,8 +135,9 @@ translates KRT code.
   - Nets of netless zones (`@:no_net_N`) are added by K06.4.
   - **Accept:** on every committed board, the net names, their order, and
     each net's pin list equal the KiCad export's `network`.
+  *Done 2026-10-16:* `src/network.rs`. `nets_and_pins_equal_the_export`: net names, order and every pin list equal the KiCad 10.0.7 export on all 12 boards; `Issue742` (the only committed name-dialect board) confirms codes by first appearance. Net names containing `"` become `''` like 10.0.7. Pins skip pads without copper and copper-less round holes; a repeated or empty pad number becomes `@1`, `@2` (`synthetic_pads_cover_every_shape`).
 
-- [ ] **K05.3 — Net classes and default rules.**
+- [x] **K05.3 — Net classes and default rules.**
   - Read `.kicad_pro` `net_settings`:
     - `classes[]`: `name`, `clearance`, `track_width`, `via_diameter`,
       `via_drill`, `priority` (mm values; convert with `units::nm` on the
@@ -171,8 +173,9 @@ translates KRT code.
     - a synthetic project with a pattern, an explicit assignment, a KiCad 6
       `nets` list and a two-class net gives the classes KiCad exports;
     - class order differs only as the decisions say, and K07 lists it.
+  *Done 2026-10-16:* `src/{project,classes}.rs`, `serde_json` (`float_roundtrip`) and `regex`. Answers to the open points: (1) KiCad's pattern matcher for net classes is `EDA_COMBINED_MATCHER` with `CTX_NETCLASS`: an anchored regular expression **and** an anchored wildcard, either matching the whole name; the `regex` crate stands in for wx's ARE. (2) An aggregate class (a net matching several classes, or a class that lacks one of clearance, track width, via diameter and drill, microvia diameter and drill, differential pair width and gap, wire and bus width) is named by its members joined with `,`, in priority order, with `Default` appended when it filled a gap: `Power,Default`, `Fast,Wide` (seen in the dev-board and synthetic exports). Priority: lower number wins, then name; KiCad 6 projects (schema 2) get priorities 0, 1, ... in file order and a class's `nets` list becomes patterns. `net_classes_rules_and_vias_equal_the_export` (width, clearance, `use_via`, net set; all 12 boards, `Issue508 bm1` without a `.kicad_pro`) and `synthetic_projects_give_kicad_classes` (pattern, assignment, regex, two-class net, KiCad 6 `nets` list). Class order: Default, then the project order, then aggregates by name; KiCad's is `std::unordered_map` order (the export of `classes` lists them differently); K07 lists it. Not implemented: bus expansion in patterns (`IN[0..7]`), which gives a warning.
 
-- [ ] **K05.4 — Board outline.**
+- [x] **K05.4 — Board outline.**
   - Collect Edge.Cuts shapes: `gr_line`, `gr_arc`, `gr_circle`, `gr_rect`,
     `gr_poly`, `gr_curve` (bezier), and the same shapes inside footprints on
     Edge.Cuts, transformed to board coordinates.
@@ -194,8 +197,9 @@ translates KRT code.
       `KiCadJsonReader` polar sort scrambled such outlines; gui report §6.1);
     - a synthetic board with a slot (inner contour) gives one signal
       keepout, as the export does.
+  *Done 2026-10-16:* `src/{outline,arc}.rs`. `outlines_equal_the_export` (area within 0.1 % and equal vertex counts on all 12 boards; 0.0004 % at most on the committed ones; `canary-pwr` 65 vs 65 vertices, areas 3,632,261,113 vs 3,632,262,427 um^2), `notched_outline_and_slot` (the concave outline keeps its four notch vertices, the slot gives one `signal` keepout, the export agrees). Chaining follows `doConvertOutlineToPolygon`; differences: the first shape of a chain is the first unused one in file order, a footprint's Edge.Cuts is a hole when a pad centre lies outside it, and `Simplify` is replaced by duplicate removal and Clipper's orientation (positive outer) with a fitted start vertex (`rotate_to_clipper_start`).
 
-- [ ] **K05.5 — Footprints and placement.**
+- [x] **K05.5 — Footprints and placement.**
   - Footprints in file order. Refuse an empty or repeated reference with
     KiCad's messages ("Footprint with value of '%s' has an empty reference
     designator.", "Multiple footprints have the reference designator
@@ -218,8 +222,9 @@ translates KRT code.
       rotation equal the export (positions within 0.001 µm);
     - `Issue368` and `Issue184` cover back-side parts at 0° and 90°; a
       synthetic `backside.kicad_pcb` adds 30° and 225°.
+  *Done 2026-10-16:* `src/footprints.rs`, `src/read.rs`. `placement_equals_the_export`: image names (with `::n`), component grouping and order, and every place's position (0.001 um), side, rotation and `PN` equal the export on all 12 boards; `back_side_rotations` (`Issue368` D16 `back 270`, S16 `back 180`; the synthetic `backside` at 0, 30, 90 and 225 degrees gives 0, 330, 270, 135 and the front parts 30 and -135, as exported). Image grouping depends on the start vertex of the courtyard polygon, so it is part of the rule above. **Decision to confirm:** the checklist asks to refuse an empty or repeated reference; KiCad 10.0.7 (which made the reference exports) no longer refuses (empty becomes `REF**`, repeats `R1_1`, case-insensitive, `specctra_export.cpp` at 10.0.7), and three corpus boards (`microwave`, `One-Air-Max`, `tinytapeout-demo`) have such references. The default follows 10.0.7 with a warning per footprint; `ReadOptions { strict_references: true }` gives 10.0.0's refusals with KiCad's messages (`footprint_reference_errors`).
 
-- [ ] **K05.6 — Pads, padstacks and image pins.**
+- [x] **K05.6 — Pads, padstacks and image pins.**
   Port `SPECCTRA_DB::makePADSTACK` and the pad loop of `makeIMAGE`:
   - layer set: plated through-hole pads are on every copper layer whatever
     the file lists (KRT `canonical_pad_layers`, probed on 10.0.0); expand
@@ -257,8 +262,9 @@ translates KRT code.
       offsets, chamfers, a two-primitive custom pad, and an NPTH hole;
     - on `canary-pwr`, the `Cust` padstacks' polygons equal the export's
       within 1 µm.
+  *Done 2026-10-16:* `src/pads.rs`. `pads_equal_the_export`: image pins (names, padstack names, positions within 0.1 um, rotations) and every non-custom padstack's shapes within `%.6g` rounding equal the export on all 12 boards; the synthetic `pads` board holds each shape at 0/30/90 degrees, an offset, a chamfered rect, a two-primitive custom pad, an NPTH hole and a repeated number; on `canary-pwr` the custom pads' hulls equal the export's within 1 um (`canary_pwr_structure`). **`i_overlay` is not needed:** KiCad's exporter has `#define EXPORT_CUSTOM_PADS_CONVEX_HULL`, so a custom pad is exported as the convex hull of anchor and primitives, and the hull of a union is the hull of its parts. Custom padstack names equal KiCad's up to the pad bounding box (up to about 2 um different) and the 128-bit hash, which is the reader's own hash of the hull. Trapezoid, oval, circle, rect and round-rect names and shapes equal. Not exact: `BEZIER_POLY` flattening of `gr_curve` primitives (a recursive subdivision).
 
-- [ ] **K05.7 — Image outlines.**
+- [x] **K05.7 — Image outlines.**
   - Courtyard first: the union of the F and B courtyard polygons built from
     the courtyard graphics (`FOOTPRINT::GetCourtyard`), one
     `(outline (polygon signal 0 ...))` per contour.
@@ -274,8 +280,9 @@ translates KRT code.
   - **Accept:** on every committed board, each image's outline count equals
     the export's, and each outline's points are within 1 µm or listed in
     K07 with the reason.
+  *Done 2026-10-16:* `src/image_outlines.rs`. `image_outlines_equal_the_export`: outline counts equal and every outline's points are within 1 um on all 12 boards (no exceptions). `ARC_HIGH_DEF` is 0.005 mm (`base_units.h`); `fp_poly` and `fp_curve` graphics are skipped by KiCad's `default: continue`, as in the reader. Courtyards: front and back are chained and shrunk by the max error, identical or enclosed polygons are merged, and the start vertex follows a rule fitted to the exports (a rectangle starts at its bottom right corner), which decides the image grouping above. Not done: a real polygon union of overlapping courtyards.
 
-- [ ] **K05.8 — Assemble and build.**
+- [x] **K05.8 — Assemble and build.**
   - `freerouting_kicad::read(text, project: Option<&str>) -> Result<KicadRead,
     KicadError>` with `KicadRead { pcb: Pcb, warnings: Vec<Warning> }`. K06
     adds keepouts, planes and wiring to the same `Pcb`.
@@ -286,3 +293,4 @@ translates KRT code.
     - `Pcb::parse(&pcb.to_dsn())` gives back an equal tree on every
       committed board;
     - read time for the largest corpus board in the done note.
+  *Done 2026-10-16:* `src/read.rs`, `tests/structure.rs`, `tests/common/parity.rs`, `fixtures/kicad/synthetic/` (generated by `tools/kicad-reader/synthetic.py` with pcbnew 10.0.7; exports by `export.sh`). `build_board_succeeds` and `tree_round_trips_through_dsn_text` pass on all 12 boards (the tree prints and parses back equal). `corpus_builds` (ignored, `cargo test --release -p freerouting-kicad --test structure corpus_builds -- --ignored --nocapture`): all 57 readable corpus boards (the 58th, `TestSensel`, is KiCad 5 and refused by K04's version gate) read and `build_board` succeeds; the largest, `jetson-agx-thor-baseboard.kicad_pcb` (84,806,775 bytes), reads in 1,178 ms in release (1,500 ms in a standalone run; parse 322 ms, images 830 ms), `vme-wren` (69.6 MB) in 334 ms. A first version took over ten minutes on that board because it counted source lines per pad (linear in the file); line numbers are now computed only for warnings and errors. `corpus_parity` (ignored) compares all 56 boards that have an export: 13 still differ, none in layers, nets, classes, placement or boundary except `Natural_Tone_Preamp`/`tutorial_board` (see the report); the rest are via lists (K06), custom-pad hull sizes, rare outline details. Dependency note: the tests use `freerouting` as a dev-dependency for `build_board`, so they do not compile while the engine is mid-edit.

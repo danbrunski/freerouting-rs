@@ -10,3 +10,8 @@ description = "Direct reader for KiCad .kicad_pcb files (s-expression layer, ver
 [dependencies]
 freerouting-dsn = { workspace = true }
 freerouting-geometry = { workspace = true }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+regex = "1"
+
+[dev-dependencies]
+freerouting = { workspace = true }
