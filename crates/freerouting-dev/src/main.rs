@@ -19,7 +19,9 @@ const USAGE: &str = "usage:
       [--optimize] [--max-passes N] [--bounds <tsv>] [--max-load L|off] [--load-wait S]
       [--timeout S] [--java-bin <java>]
   freerouting-dev feasibility board.dsn [--json out.json] [--all-pins] [--step-um N]
-      [--start shape|centre]";
+      [--start shape|centre]
+  freerouting-dev gate ...       (the measurement gate; `freerouting-dev gate --self-test`)
+  freerouting-dev failed-vs-human board.dsn engine.ses human.dsn [--json out.json] [--no-feasibility]";
 
 /// Bench defaults: passes when no route bounds name the board, the load
 /// limit, how long to wait for it, and the per-run safety timeout.
@@ -36,6 +38,8 @@ fn main() -> ExitCode {
         Some("ses-diff") => ses_diff(&args[1..]),
         Some("bench") => bench(&args[1..]),
         Some("feasibility") => feasibility_command(&args[1..]),
+        Some("gate") => freerouting_dev::gate_cli::run(&args[1..]),
+        Some("failed-vs-human") => freerouting_dev::failed_vs_human::run(&args[1..]),
         _ => Err(USAGE.to_string()),
     };
     match result {

@@ -29,8 +29,8 @@ while IFS= read -r line; do
     printf '%s\tskipped\tmissing\n' "$line" >> "$OUT/grades.tsv"
     continue
   fi
-  name=$(basename "$path" .kicad_pcb | tr -c 'A-Za-z0-9_.-\n' '_')
-  result=$("$HERE/grade.sh" --out "$OUT/$name" "${FLAGS[@]}" "$path" -- "$@" | head -n 1)
+  name=$(basename "$path" .kicad_pcb | tr -c 'A-Za-z0-9_.\n-' '_')
+  result=$("$HERE/grade.sh" --out "$OUT/$name" "${FLAGS[@]}" "$path" -- "$@" | sed -n '1p')
   status=${PIPESTATUS[0]}
   echo "$name: exit $status: $result"
   printf '%s\t%s\t%s\n' "$line" "$status" "$result" >> "$OUT/grades.tsv"

@@ -12,6 +12,23 @@
 //!   `bench.json` and `bench.md` ([`bench`], [`bench_report`]). Exit status 0
 //!   when it ran, 3 when it refused because the machine was busy, 2 on an
 //!   error.
+//! - `gate --records <run.json> --baseline <base.json> [--prereg <reg.json>]`
+//!   and `gate collect`: the measurement gate ([`gate`], [`gate_prereg`],
+//!   [`gate_collect`], [`gate_cli`], F03.1 and F03.4). It compares per-board,
+//!   per-arm records with a baseline file, names every problem (INVERTED,
+//!   DRIFT, ORPHAN, MISSING, NEW ROW, MALFORMED, UNGRADED, HARD, REFUSED),
+//!   applies the pass rule (at least 3 distinct boards, improve on N-1,
+//!   regress on none) and checks a run against its preregistration
+//!   (`tools/ab/`). A self-test runs on every invocation. Exit status 0 when
+//!   it passes, 1 when it fails, 2 on a usage or file error.
+//! - `failed-vs-human board.dsn engine.ses human.dsn [--json out.json]`: every
+//!   connection an engine leaves unrouted next to the human-routed original's
+//!   layers, vias, widths and clearance headroom, tagged `router gap`,
+//!   `no human route` or `infeasible` (Q03) ([`failed_vs_human`], F03.2).
+//!
+//! The manifest of the out-of-repo corpus of open KiCad boards
+//! (`tools/corpus/`, F03.3) is read by [`corpus`], which also refuses any
+//! committed board whose licence is not allow-listed.
 //!
 //! Wires are compared as multisets of (layer, half width, point list) and
 //! vias as multisets of (padstack, position) per net, in board coordinates
@@ -25,6 +42,14 @@
 
 pub mod bench;
 pub mod bench_report;
+pub mod corpus;
+pub mod failed_vs_human;
+pub mod gate;
+pub mod gate_baseline;
+pub mod gate_cli;
+pub mod gate_collect;
+pub mod gate_prereg;
+pub mod gate_selftest;
 pub mod json_read;
 pub mod ses_diff;
 pub mod session_geometry;

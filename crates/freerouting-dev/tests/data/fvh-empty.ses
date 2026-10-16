@@ -1,0 +1,19 @@
+(session "fvh-qfn"
+  (base_design "fvh-qfn")
+  (placement
+    (resolution um 10)
+  )
+  (was_is
+  )
+  (routes
+    (resolution um 10)
+    (parser
+      (host_cad "freerouting-rs F03.2 test fixture")
+      (host_version "1")
+    )
+    (library_out
+    )
+    (network_out
+    )
+  )
+)

@@ -1,0 +1,41 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X01-head-to-head",
+  "registered": "2026-10-16",
+  "question": "Does KiCadRoutingTools (krt) route more of canary-pwr and four KiCad demo boards than the Java Freerouting fork (java), graded by the same KiCad DRC, with no via in a pad, no copper below the board minimums and no new DRC item?",
+  "arms": {
+    "java": {
+      "engine": "java Freerouting fork, jar built from a detached worktree at the J01 pin (a773a70ec) or main; the jar's sha256 is recorded in the results",
+      "command": "java -jar freerouting.jar -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500",
+      "settings": { "job_cap": "10 minutes", "optimizer": "Java default" }
+    },
+    "krt": {
+      "engine": "KiCadRoutingTools 0486e799, run from a git archive export",
+      "command": "python3 -I py_router/route.py {IN} {OUT} --nets '*'",
+      "settings": { "options": "KRT defaults", "kicad_cli_reachable": false }
+    }
+  },
+  "baseline_arm": "java",
+  "candidate_arm": "krt",
+  "boards": {
+    "set": "tools/bench/sets/x01-h2h.txt",
+    "files": {
+      "canary-pwr-9511d9a": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "pic_programmer": "8fca4f862e01958979c83f4295f87fd1b4aa6e7a0d2e5eefea58f3fabbdfb6fc",
+      "interf_u": "f5323c1644ab203cbe24aaf5f04db4fba6e9466f5c42665eaa2eee7254b1844e",
+      "kit-dev-coldfire-xilinx_5213": "042247d782121ed4819147b4467e84ba628889fd976cbcfe2f58295aeb5871e5",
+      "video": "f9c78923f8ade1a1fdf44afc5cdc660cb68ad337f52a77597104a561337a3c17"
+    }
+  },
+  "metrics": [
+    { "name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "drc_real", "role": "guard", "kind": "int", "direction": "lower" },
+    { "name": "kicad_unconnected", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "vias", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "length_mm", "role": "score", "kind": "float", "direction": "lower", "tol": 1e-6 },
+    { "name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false }
+  ],
+  "pass_rule": { "min_boards": 3, "improve_all_but": 1, "max_regress": 0 },
+  "amendments": []
+}

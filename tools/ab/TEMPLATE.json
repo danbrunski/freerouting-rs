@@ -1,0 +1,37 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "REPLACE-with-the-checklist-item-and-name",
+  "registered": "YYYY-MM-DD",
+  "question": "REPLACE: one sentence; what does a pass mean?",
+  "arms": {
+    "off": {
+      "engine": "REPLACE: engine and commit, e.g. java a773a70ec",
+      "command": "REPLACE: the exact command with {DSN} and {SES}",
+      "settings": {}
+    },
+    "on": {
+      "engine": "REPLACE: engine and commit",
+      "command": "REPLACE: the exact command with {DSN} and {SES}",
+      "settings": {}
+    }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "on",
+  "boards": {
+    "set": "REPLACE: tools/bench/sets/<set>.txt",
+    "files": {
+      "REPLACE-row-name (the set entry as written)": "REPLACE: sha256 of the input file, 64 hex digits"
+    }
+  },
+  "metrics": [
+    { "name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "drc_real", "role": "guard", "kind": "int", "direction": "lower" },
+    { "name": "unrouted", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "vias", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "length_mm", "role": "score", "kind": "float", "direction": "lower", "tol": 1e-6 },
+    { "name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false }
+  ],
+  "pass_rule": { "min_boards": 3, "improve_all_but": 1, "max_regress": 0 },
+  "amendments": []
+}

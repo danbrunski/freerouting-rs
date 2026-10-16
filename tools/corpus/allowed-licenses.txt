@@ -1,0 +1,13 @@
+# SPDX ids whose boards may be committed to this repository (tests/corpus.rs refuses any other).
+# Permissive licences and CC0 only; copyleft, NonCommercial and unlicensed boards are fetched,
+# never committed. The repository itself is GPL-3.0-only.
+MIT
+BSD-2-Clause
+BSD-3-Clause
+Apache-2.0
+ISC
+0BSD
+CC0-1.0
+Unlicense
+CC-BY-4.0
+CERN-OHL-P-2.0

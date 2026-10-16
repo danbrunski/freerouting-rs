@@ -147,3 +147,34 @@ repository. The counts below are `connections.maximum_count`,
 | `canary-pwr/canary-pwr-2026-10-15-1747-unpoured` | 312 | 443 | 2/4 | 128 | 212 |
 | `~/code/freerouting/logs/canary-pwr/canary-pwr-2026-10-15-1747-stale.dsn` (out of the repository) | | | | | |
 
+
+## `freerouting-dev gate`, `gate collect` and `failed-vs-human` (F03)
+
+`bench` and the KiCad oracle produce per-board, per-engine numbers;
+`gate collect` turns the `bench.json` of each arm (and, where there is one,
+the oracle's `grade-set.sh` output directory) into a records file, and
+`gate` compares it with a baseline and applies the pass rule: at least 3
+distinct boards, improve on N-1, regress on none. See
+[tools/ab/README.md](../ab/README.md) for the preregistration that has to be
+committed before the first number, and the module docs of
+`crates/freerouting-dev/src/gate.rs` for the problem classes (INVERTED, DRIFT,
+ORPHAN, MISSING, NEW ROW, MALFORMED, UNGRADED, HARD, REFUSED).
+
+`gate collect` adds a `via_in_pad` count to every arm by importing the saved
+SES (`<out>/<board>/<engine>-run1.ses`) and counting the vias whose copper
+overlaps an SMD pad, minus those already in the input. A via in a pad is a
+hard failure in scoring, not a quality note.
+
+`freerouting-dev failed-vs-human board.dsn engine.ses human.dsn` lists every
+connection an engine leaves unrouted next to what the human-routed original
+did (layers, vias, widths, clearance headroom), tagged `router gap`, `no human
+route` or `infeasible` (the Q03 diagnostic). `tools/corpus/prep.sh` writes the
+`<id>.human.dsn` it needs.
+
+### kicad-corpus
+
+`sets/kicad-corpus.txt` lists the 30 prepared boards of the out-of-repo corpus
+(`tools/corpus/`, F03.3), at `target/corpus/prepped/<id>.dsn`. Fetch and prepare
+them first (`tools/corpus/fetch.sh`, `tools/corpus/prep.sh`); missing boards are
+skipped with a note. Use `target/corpus/grade-set.txt` with
+`tools/kicad-oracle/grade-set.sh` to grade the same boards with KiCad's DRC.

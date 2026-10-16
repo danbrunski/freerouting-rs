@@ -1,0 +1,36 @@
+# F03.3: the out-of-repo corpus of open KiCad boards (tools/corpus/manifest.json), prepared by
+# tools/corpus/prep.sh: tracks and vias stripped, zones and layer types kept, DSN exported
+# through the KiCad oracle (F02.6). Needs tools/corpus/fetch.sh then tools/corpus/prep.sh; the
+# default location is target/corpus (FR_CORPUS_DIR; symlink target/corpus to use another).
+# Boards are skipped with a note while missing. To grade the same boards with KiCad's DRC:
+#   tools/kicad-oracle/grade-set.sh target/corpus/grade-set.txt <out> -- <engine command>
+target/corpus/prepped/picodebugger-picoprobetester.dsn   # 2 layers, easy, 10 footprints, MIT
+target/corpus/prepped/pcietestpcb-pcietest.dsn   # 2 layers, easy, 22 footprints, CC0-1.0
+target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn   # 2 layers, easy, 25 footprints, CERN-OHL-W-2.0
+target/corpus/prepped/cc1101-module-cc1101-module.dsn   # 2 layers, easy, 27 footprints, LicenseRef-none
+target/corpus/prepped/mydevboard-rp2040dev.dsn   # 2 layers, medium, 36 footprints, LicenseRef-none
+target/corpus/prepped/slice-dcmt-bread-slice.dsn   # 2 layers, medium, 38 footprints, GPL-3.0
+target/corpus/prepped/flight-computer-core-board.dsn   # 2 layers, medium, 39 footprints, CERN-OHL-S-2.0
+target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn   # 2 layers, medium, 47 footprints, CERN-OHL-W-2.0
+target/corpus/prepped/vfo-controller-catvfoctrl.dsn   # 2 layers, medium, 55 footprints, MIT
+target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn   # 2 layers, medium, 60 footprints, MIT
+target/corpus/prepped/eprom-card-80bus.dsn   # 2 layers, medium, 79 footprints, CERN-OHL-S-2.0
+target/corpus/prepped/rio-iceshield-rio-iceshield.dsn   # 2 layers, hard, 94 footprints, LicenseRef-none
+target/corpus/prepped/macroprocessor-diode-matrix-rom-dip.dsn   # 4 layers, easy, 29 footprints, planes, MIT
+target/corpus/prepped/vna-usb-pd.dsn   # 4 layers, medium, 32 footprints, planes, LicenseRef-none
+target/corpus/prepped/picodvi-picodvi.dsn   # 4 layers, medium, 37 footprints, planes, BSD-3-Clause
+target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn   # 4 layers, medium, 47 footprints, planes, MIT
+target/corpus/prepped/solarmeshtasticnode-meshtasticnode-bq25185.dsn   # 4 layers, medium, 49 footprints, planes, CERN-OHL-S-2.0
+target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn   # 4 layers, medium, 56 footprints, planes, CERN-OHL-S-2.0
+target/corpus/prepped/wisweep-driver-board.dsn   # 4 layers, medium, 58 footprints, planes, MIT
+target/corpus/prepped/nudac-nudac.dsn   # 4 layers, medium, 62 footprints, planes, MIT
+target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn   # 4 layers, hard, 94 footprints, planes, LicenseRef-none
+target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn   # 4 layers, hard, 112 footprints, planes, MIT
+target/corpus/prepped/moteus-moteus-c1.dsn   # 4 layers, hard, 125 footprints, planes, Apache-2.0
+target/corpus/prepped/pocketsdr-v3-0.dsn   # 4 layers, hard, 158 footprints, planes, BSD-2-Clause
+target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn   # 6 layers, medium, 55 footprints, planes, LicenseRef-none
+target/corpus/prepped/overlord-overlord.dsn   # 6 layers, medium, 58 footprints, planes, CERN-OHL-S-2.0
+target/corpus/prepped/fc-rom-vomitter-nescart.dsn   # 6 layers, hard, 84 footprints, planes, MIT
+target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn   # 6 layers, hard, 111 footprints, planes, GPL-3.0
+target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn   # 6 layers, hard, 116 footprints, planes, CC0-1.0
+target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn   # 6 layers, hard, 124 footprints, planes, MIT
