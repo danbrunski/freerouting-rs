@@ -1,0 +1,8 @@
+{"kind":"opt-vias","board":"empty_board","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"costs","layers":2}
+{"layer":0,"horizontal":"0x3ff0000000000000","vertical":"0x4000cccccccccccd"}
+{"layer":1,"horizontal":"0x3ffe666666666666","vertical":"0x3ff0000000000000"}
+{"stage":"vias-each"}
+{"maxGeneratedId":1,"items":1}
+{"stage":"board-optvias"}
+{"maxGeneratedId":1,"items":1}

@@ -415,6 +415,10 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   tightener's contact pins unrestored; `pull_tight_trace` reports a change when
   `change_trace` finds every line reused and returns early. No probe board reaches the first
   two; the `pull-tight` probe compares the paths around them.
+- Via optimizer (`optimize::via`, O05; `tests/reference_opt_vias.rs`): a trace-cost array without
+  an entry for a contact trace's layer leaves a via between two traces unchanged, where Java's
+  `ViaOptimizer.optViaLocation` throws an `ArrayIndexOutOfBoundsException`
+  (`short_trace_costs_leave_a_via_between_traces`). The router always passes one entry per layer.
 
 **Autoroute room graph** (`autoroute::session`, A02; tests `tests/autoroute_probe_start_rooms.rs` and
 `autoroute::session::tests`)

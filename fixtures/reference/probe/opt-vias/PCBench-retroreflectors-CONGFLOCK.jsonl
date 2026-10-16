@@ -1,0 +1,37 @@
+{"kind":"opt-vias","board":"PCBench-retroreflectors-CONGFLOCK","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"costs","layers":2}
+{"layer":0,"horizontal":"0x3ff0000000000000","vertical":"0x4000000000000000"}
+{"layer":1,"horizontal":"0x4000000000000000","vertical":"0x3ff0000000000000"}
+{"stage":"vias-each"}
+{"id":52,"kind":"trace","nets":"5","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"819150,-551180 821709,-548621 821709,-538480"}
+{"id":51,"kind":"trace","nets":"4","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"819150,-508000 818134,-509016 818134,-519430"}
+{"id":50,"kind":"trace","nets":"4","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"818134,-519430 818134,-521525 809942,-529717 809271,-529717"}
+{"id":49,"kind":"trace","nets":"4","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"819150,-508000 821690,-510540 821690,-515601"}
+{"id":48,"kind":"trace","nets":"3","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"814324,-539750 814324,-531859"}
+{"id":47,"kind":"trace","nets":"3","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"814324,-531859 813694,-531859"}
+{"id":46,"kind":"trace","nets":"3","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"813694,-531859 813063,-531859 812724,-531520"}
+{"id":45,"kind":"trace","nets":"2","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"803656,-531859 803055,-531859 802716,-531520"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"803656,-539750 803656,-531859"}
+{"id":43,"kind":"trace","nets":"2","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-551180 803656,-548386 803656,-539750"}
+{"id":42,"kind":"trace","nets":"1","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-508000 806450,-508136 807720,-509406"}
+{"id":41,"kind":"trace","nets":"1","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"807720,-517500 807720,-509406"}
+{"id":40,"kind":"trace","nets":"1","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-518431 806467,-518431 807466,-519430"}
+{"id":39,"kind":"trace","nets":"1","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-508000 806450,-518431"}
+{"maxGeneratedId":52,"items":52}
+{"stage":"board-optvias"}
+{"id":55,"kind":"trace","nets":"4","layer":1,"halfWidth":2540,"class":1,"fixed":1,"corners":"818134,-519430 818134,-527321"}
+{"id":52,"kind":"trace","nets":"5","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"819150,-551180 821709,-548621 821709,-538480"}
+{"id":51,"kind":"trace","nets":"4","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"819150,-508000 818134,-509016 818134,-519430"}
+{"id":50,"kind":"trace","nets":"4","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"818134,-527321 811667,-527321 809271,-529717"}
+{"id":49,"kind":"trace","nets":"4","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"819150,-508000 821690,-510540 821690,-515601"}
+{"id":48,"kind":"trace","nets":"3","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"814324,-539750 814324,-531859"}
+{"id":47,"kind":"trace","nets":"3","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"814324,-531859 813694,-531859"}
+{"id":46,"kind":"trace","nets":"3","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"813694,-531859 813063,-531859 812724,-531520"}
+{"id":45,"kind":"trace","nets":"2","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"803656,-531859 803055,-531859 802716,-531520"}
+{"id":44,"kind":"trace","nets":"2","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"803656,-539750 803656,-531859"}
+{"id":43,"kind":"trace","nets":"2","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-551180 803656,-548386 803656,-539750"}
+{"id":42,"kind":"trace","nets":"1","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-508000 806450,-508136 807720,-509406"}
+{"id":41,"kind":"trace","nets":"1","layer":0,"halfWidth":2540,"class":1,"fixed":0,"corners":"807720,-517500 807720,-509406"}
+{"id":40,"kind":"trace","nets":"1","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-518431 806467,-518431 807466,-519430"}
+{"id":39,"kind":"trace","nets":"1","layer":1,"halfWidth":2540,"class":1,"fixed":0,"corners":"806450,-508000 806450,-518431"}
+{"maxGeneratedId":55,"items":53}

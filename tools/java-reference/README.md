@@ -126,6 +126,11 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
     `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> shove-insert`
     (it leaves empty `fixtures/reference/probe/shove-insert/<dir>/` directories for nested
     fixture names; `find fixtures/reference/probe/shove-insert -type d -empty -delete`).
+  - `opt-vias` (`OptViasProbe.java`, O05): the via optimizer with the batch autorouter's default
+    trace costs (written into the output): `optViaLocation` of every via, then `optChangedArea`
+    of whole boards with the costs, on the `pull-tight` board set. One command:
+    `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> opt-vias`
+    (then `find fixtures/reference/probe/opt-vias -type d -empty -delete`).
 
 ## Settings, writer and CLI dumps (C01)
 

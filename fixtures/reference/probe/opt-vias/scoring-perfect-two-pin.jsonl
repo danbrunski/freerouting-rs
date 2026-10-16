@@ -1,0 +1,7 @@
+{"kind":"opt-vias","board":"scoring-perfect-two-pin","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"costs","layers":1}
+{"layer":0,"horizontal":"0x3ff0000000000000","vertical":"0x4000000000000000"}
+{"stage":"vias-each"}
+{"maxGeneratedId":3,"items":3}
+{"stage":"board-optvias"}
+{"maxGeneratedId":3,"items":3}

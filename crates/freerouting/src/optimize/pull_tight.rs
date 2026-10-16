@@ -7,8 +7,9 @@
 //! `RoutingBoardOperations.optChangedArea` and `removeItemsAndPullTight`
 //! (`board/facade/RoutingBoardOperations.java:52-120`) at `a773a70ec`.
 //!
-//! Without trace costs (O05 adds them and the via optimizer), a via in the
-//! changed area is skipped, as Java does with `traceCosts == null`.
+//! With trace costs in the parameters, a via in the changed area is moved by
+//! the via optimizer (`optimize::via`, O05); without them it is skipped, as
+//! Java does with `traceCosts == null`.
 //! `joinGraphicsUpdateBox` is cosmetic and dropped.
 //!
 //! Kept Java quirks (DIVERGENCES, "Java bugs kept on purpose"):
@@ -33,12 +34,14 @@ use std::collections::BTreeSet;
 
 use freerouting_geometry::{IntOctagon, Polyline, PolylineShapeOps, TileShape};
 
+use crate::autoroute::control::ExpansionCostFactor;
 use crate::board::RoutingBoard;
-use crate::board::items::{ItemId, ItemKind};
+use crate::board::items::ItemId;
 use crate::board::selection_filter::{ItemFilter, SelectableChoice};
 use crate::board::structure::AngleRestriction;
 use crate::optimize::params::{Clip, PullTightParams, REMOVE_ITEMS_PULL_TIGHT_NOMINAL_MS};
 use crate::optimize::tighten::{Outcome, Tightener, TrackedPolyline};
+use crate::optimize::via::OPT_VIA_RECURSION_DEPTH;
 
 /// What [`RoutingBoard::opt_changed_area`] did.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -240,11 +243,56 @@ impl RoutingBoard {
         false
     }
 
-    /// Optimizes the traces in the changed area and stops marking it (Java
-    /// `RoutingBoard.optChangedArea` without trace costs).
+    /// Optimizes the traces in the changed area, and with
+    /// [`PullTightParams::trace_costs`] its vias, and stops marking it (Java
+    /// `RoutingBoard.optChangedArea`).
     ///
     /// Returns at once when not marking. The tightener runs unless the clip
     /// is [`Clip::Skip`]; then the changed area is dropped.
+    ///
+    /// # The post-connection entry point (O05.4)
+    ///
+    /// The autorouter reproduces Java's three call patterns with
+    /// [`PullTightParams::after_connection`]`(accuracy, trace_costs)` (all
+    /// nets, [`Clip::Unbounded`], the router's pull-tight accuracy and trace
+    /// costs, the
+    /// [`ENDLESS_LOOP_GUARD_NOMINAL_MS`](crate::optimize::params::ENDLESS_LOOP_GUARD_NOMINAL_MS)
+    /// work limit), with the
+    /// router's cancel token in [`PullTightParams::stop`]:
+    /// - after each routed connection (`AutorouteConnectionRouter.java:126-132`,
+    ///   and `:258-264` after a neck-down connection), on the changed area
+    ///   the insertion marked;
+    /// - in `removeTails` (`BatchAutorouter.java:536-545`):
+    ///   `start_marking_changed_area`, `remove_trace_tails`, then the same
+    ///   call;
+    /// - in fanout (`RoutingBoard.java:1136-1142`) and the interactive
+    ///   autoroute of one item (`:975-981`): the same, with
+    ///   [`PullTightParams::only_nets`] set to the routed net.
+    ///
+    /// ```
+    /// use freerouting::drc::load_design;
+    /// use freerouting::io::read_session;
+    /// use freerouting::optimize::PullTightParams;
+    /// use freerouting::settings::board::apply_board_specific;
+    /// use freerouting::settings::{RouterSettings, default_patch};
+    ///
+    /// let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/");
+    /// let dsn = std::fs::read(format!("{root}Issue508-DAC2020_bm08.dsn")).unwrap();
+    /// let ses = std::fs::read(format!("{root}Issue508-DAC2020_bm08-routed.ses")).unwrap();
+    /// let mut board = load_design(&dsn).unwrap();
+    /// read_session(&mut board, &freerouting::dsn::decode(&ses)).unwrap();
+    /// let mut patch = default_patch(1);
+    /// apply_board_specific(&mut patch, &board);
+    /// let costs = RouterSettings::from_patch(&patch, 1).trace_costs();
+    /// assert_eq!(costs.len(), board.layer_count());
+    ///
+    /// board.start_marking_changed_area();
+    /// board.mark_all_changed_area();
+    /// let params = PullTightParams::after_connection(500, costs);
+    /// let run = board.opt_changed_area(&params);
+    /// assert!(!run.stopped);
+    /// assert!(board.changed_area().is_none());
+    /// ```
     pub fn opt_changed_area(&mut self, params: &PullTightParams) -> OptChangedAreaRun {
         if self.changed_area().is_none() {
             return OptChangedAreaRun::default();
@@ -252,7 +300,8 @@ impl RoutingBoard {
         let mut run = OptChangedAreaRun::default();
         if params.clip != Clip::Skip {
             let mut tightener = Tightener::new(self, params);
-            run.stopped = self.tighten_changed_area(&mut tightener);
+            let costs = params.trace_costs.clone();
+            run.stopped = self.tighten_changed_area(&mut tightener, costs.as_deref());
             run.stop_checks = tightener.stop_checks();
             run.units_at_last_check = tightener.units_at_last_check();
         }
@@ -265,7 +314,17 @@ impl RoutingBoard {
     /// snapshot of the objects overlapping it, enlarged by 1.5 × (the
     /// largest clearance + twice the largest half width). True if a stop
     /// ended the run.
-    fn tighten_changed_area(&mut self, tightener: &mut Tightener) -> bool {
+    ///
+    /// With `trace_costs`, a via of the scan goes to
+    /// [`opt_via_location`](Self::opt_via_location) with the tightener's
+    /// `min_translate_dist` and depth [`OPT_VIA_RECURSION_DEPTH`]; a moved
+    /// via marks a change but doesn't end the scan (Java
+    /// `TraceTightener.java:156-161`).
+    fn tighten_changed_area(
+        &mut self,
+        tightener: &mut Tightener,
+        trace_costs: Option<&[ExpansionCostFactor]>,
+    ) -> bool {
         let mut something_changed = true;
         while something_changed {
             something_changed = false;
@@ -291,11 +350,22 @@ impl RoutingBoard {
                     if tightener.is_stop_requested(self) {
                         return true;
                     }
-                    let is_trace = self
-                        .item(id)
-                        .is_some_and(|i| matches!(i.kind, ItemKind::Trace(_)));
+                    let kind = self.item(id).map(|i| (i.is_trace(), i.is_via()));
+                    let Some((is_trace, is_via)) = kind else {
+                        continue;
+                    };
                     if !is_trace {
-                        // vias need trace costs (O05)
+                        if is_via
+                            && trace_costs.is_some()
+                            && self.opt_via_location(
+                                id,
+                                trace_costs,
+                                tightener.min_translate_dist(),
+                                OPT_VIA_RECURSION_DEPTH,
+                            )
+                        {
+                            something_changed = true;
+                        }
                         continue;
                     }
                     if self.pull_tight_trace(id, tightener) {

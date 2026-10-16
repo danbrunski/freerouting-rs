@@ -9,7 +9,7 @@ trace direction (`ViaOptimizer.optViaLocation`) and pulls plane and fanout
 vias towards the trace corner (`optPlaneOrFanoutVia`). Without it, Rust
 routes keep vias where Java moves them, so board parity (rung 3) can't hold.
 This checklist ports `ViaOptimizer` and completes `opt_changed_area`. See
-[O00](O00-optimizer-README.md) for the series rules.
+[O00](../O00-optimizer-README.md) for the series rules.
 
 **Prerequisites:** O04 (`DrillItemMover` insert and check); A01
 (`ExpansionCostFactor { horizontal: f64, vertical: f64 }`, Java's record
@@ -59,7 +59,7 @@ series calls.
 
 ## Checklist
 
-- [ ] **O05.1 — Via between two traces.**
+- [x] **O05.1 — Via between two traces.**
   - Java: `optViaLocation` (`:33-158`), the cost-based `repositionVia`
     (`:435-717`), `isWithinTolerance` (`:719`).
   - Rust: `optimize/via.rs`, `RoutingBoard::opt_via_location(via,
@@ -79,8 +79,17 @@ series calls.
       first trace's layer, then on the second's; then recurse on the first
       via picked there (highest id) with depth − 1, and stop.
   - **Accept:** O05.5.
+  *Done 2026-10-16:* `crates/freerouting/src/optimize/via.rs`: `RoutingBoard::opt_via_location(via,
+  trace_costs, accuracy, depth) -> bool` (no meter argument: the nested pull-tights count on the
+  board's own work meter, module docs), the cost-based `repositionVia` split into
+  `reposition_via_by_costs`, `reposition_acute_angle`, `reposition_axis_parallel`, with the two
+  helper overloads `reposition_via_toward` and `reposition_via_with_connection`, and
+  `is_within_tolerance`. Accepted by O05.5 (`opt_vias_match_java`, 41 of 41 boards identical).
+  Branches reached on the probe boards (temporary counters, removed): collinear 50, cost towards
+  the first corner 80, towards the second 32, acute angle 30, axis-parallel 49, two-trace moves
+  215; unit test `optimize::via::tests::tolerance_is_manhattan_and_inclusive`.
 
-- [ ] **O05.2 — Plane and fanout vias.**
+- [x] **O05.2 — Plane and fanout vias.**
   - Java: `optPlaneOrFanoutVia` (`:161-300`), `repositionVia` (`:302-433`).
   - Rust: `optimize/via.rs`.
   - Orders: at most one plane and one unfixed trace among the contacts;
@@ -93,8 +102,12 @@ series calls.
     depths 9/9; pull-tight own net; recurse with depth − 1 only when the
     via landed exactly on the check corner.
   - **Accept:** O05.5.
+  *Done 2026-10-16:* `opt_plane_or_fanout_via` and `project_via_to_line` in `optimize/via.rs`.
+  Accepted by O05.5 (`opt_vias_match_java`, 41 of 41 identical): 8 plane/fanout entries, 16
+  moves, 16 recursions after landing on the check corner. The projection branch is not reached
+  by any probe board (it is ported line by line; Java's order of checks kept).
 
-- [ ] **O05.3 — The via branch of `opt_changed_area`.**
+- [x] **O05.3 — The via branch of `opt_changed_area`.**
   - Java: `TraceTightener.optChangedArea` (`:156-161`): a `Via` in the
     scan with trace costs present calls `optViaLocation(board, via, costs,
     minTranslateDist, 10)`; a change marks `somethingChanged` but does not
@@ -102,8 +115,16 @@ series calls.
   - Rust: add `trace_costs` to `PullTightParams`; implement the branch.
   - **Accept:** `opt_changed_area_without_costs_skips_vias` (O01's dumps
     unchanged with `None`), and O05.5.
+  *Done 2026-10-16:* `PullTightParams::trace_costs: Option<Arc<[ExpansionCostFactor]>>`
+  (`optimize/params.rs`, `None` in `new`); the branch is in `tighten_changed_area`
+  (`optimize/pull_tight.rs`, where O01 put the scan; `tighten/mod.rs` untouched): a via with
+  costs calls `opt_via_location(id, costs, tightener.min_translate_dist(), 10)`, a change sets
+  `something_changed` and the scan goes on. `cargo test -p freerouting --test reference_opt_vias`:
+  `opt_changed_area_without_costs_skips_vias` (J2, bm08, bm05, rpi_splitter: no via moves, dumps
+  equal to Java's `pull-tight` `board-45`), `opt_vias_match_java` (section `board-optvias`);
+  `--test reference_pull_tight` still 13 passed.
 
-- [ ] **O05.4 — The post-connection entry point for the A series.**
+- [x] **O05.4 — The post-connection entry point for the A series.**
   - Document on `RoutingBoard::opt_changed_area` the three Java call
     patterns the A series reproduces: after each connection
     (`only_nets` empty, `Clip::Unbounded`, the router's pull-tight
@@ -117,8 +138,17 @@ series calls.
   - **Accept:** a doc test that marks the whole board, calls the entry
     point with default trace costs on `Issue508-DAC2020_bm08` + routed SES,
     and finishes with no changed area left.
+  *Done 2026-10-16:* the three call patterns documented on `RoutingBoard::opt_changed_area`
+  (after a connection `AutorouteConnectionRouter.java:126-132` and `:258-264`, `removeTails`
+  `BatchAutorouter.java:536-545`, fanout `RoutingBoard.java:1136-1142` and the one-item
+  autoroute `:975-981`, the last two with `only_nets` = the routed net);
+  `PullTightParams::after_connection(accuracy, trace_costs)` (all nets, `Clip::Unbounded`,
+  limit `ENDLESS_LOOP_GUARD_NOMINAL_MS` = 1000 nominal ms, the caller sets `stop`). The doc test
+  (bm08 + `-routed.ses`, default settings' `apply_board_specific` costs, whole board marked)
+  passes: `cargo test -p freerouting --doc optimize`, 1 passed; not stopped, no changed area
+  left.
 
-- [ ] **O05.5 — Probe `optvias`.**
+- [x] **O05.5 — Probe `optvias`.**
   - Java: `PullTightProbe` mode `optvias`: like mode `board`, but with
     trace costs built exactly as `AutorouteControl` builds them for the
     batch autorouter (default settings after
@@ -132,8 +162,28 @@ series calls.
       that differs and its cause named;
     - DRC on every Rust result reports no clearance violation that the
       input board didn't have, and no via inside a pad of another net (D8).
+  *Done 2026-10-16:* `tools/java-reference/probes/board/OptViasProbe.java` (kind `opt-vias`, a new
+  probe beside `PullTightProbe.java`, which is O01's uncommitted file; the directory is
+  `fixtures/reference/probe/opt-vias/` after `generate.sh`'s kind naming), generated at
+  `a773a70ec` with `generate.sh <pin> opt-vias`: 41 boards (O01's set has 41, not 43), no Java
+  exception. Sections `costs` (Java's `getTraceCosts()` after `applyBoardSpecificOptimizations`
+  on default settings, read by the Rust test), `vias-each` (`optViaLocation` of every via) and
+  `board-optvias`. `cargo test -p freerouting --test reference_opt_vias`:
+  `opt_vias_match_java` identical on 41 of 41 boards, ids and `maxGeneratedId` included, no
+  expected mismatch; 55 via moves in `vias-each` (bm07 7, J2 5, bm05 2-3, …). DRC on every
+  Rust result: no clearance-violation count per (layer, item kinds and nets) above the input
+  board's, no new via overlapping a pin of another net (`drc_regressions`).
 
-- [ ] **O05.6 — Determinism.**
+- [x] **O05.6 — Determinism.**
   - `examples/pull_tight_dump.rs --trace-costs <json>`.
   - **Accept:** `tools/determinism-check.sh` reports `identical` with trace
     costs on J2 and bm08.
+  *Done 2026-10-16:* `crates/freerouting/examples/opt_vias_dump.rs <dsn> <ses> <out>
+  [--trace-costs <json>|default]` (a new example beside O01's `pull_tight_dump.rs`, which is
+  uncommitted O01 work). `tools/determinism-check.sh --out <dir> -- <release>/opt_vias_dump
+  fixtures/<b>.dsn <ses> {OUT}` (default costs): `identical` on Issue026-J2_reference and
+  Issue508-DAC2020_bm08. With Java's costs as `--trace-costs '[[1.0,2.8],[1.5,1.0]]'` (J2) and
+  `'[[1.0,2.5],[1.7000000000000002,1.0]]'` (bm08) the dump equals Java's `board-optvias` dump,
+  and equals the default-cost run (the Rust default costs are Java's on both). Release time of
+  `opt_changed_area` with costs: J2 6.5 ms, bm08 5.3 ms; Java probe (cold JVM): J2 80 ms, bm08
+  49 ms.

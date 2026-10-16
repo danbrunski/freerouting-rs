@@ -15,3 +15,8 @@ pub mod tighten;
 pub use params::{Clip, PullTightParams};
 pub use pull_tight::OptChangedAreaRun;
 pub use tighten::{AngleMode, LineOrigin, Outcome, Tightener, TrackedPolyline};
+
+// O05: the via optimizer.
+pub mod via;
+
+pub use via::OPT_VIA_RECURSION_DEPTH;

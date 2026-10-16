@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use freerouting_geometry::{IntOctagon, Point, PolylineShapeOps, Stoppable};
 
+use crate::autoroute::control::ExpansionCostFactor;
 use crate::board::search::UNITS_PER_NOMINAL_MS;
 
 /// The pull-tight guard after every routed connection and in `removeTails`
@@ -100,6 +101,11 @@ pub struct PullTightParams {
     pub limit: Option<i64>,
     /// The cancel token, checked before the limit (Java `stoppableThread`).
     pub stop: Option<Arc<dyn Stoppable + Send + Sync>>,
+    /// The router's trace costs, one entry per layer (Java `traceCosts`).
+    /// With costs, the scan also moves the vias in the changed area
+    /// ([`RoutingBoard::opt_via_location`](crate::board::RoutingBoard::opt_via_location),
+    /// O05); `None` skips them, as Java does with `traceCosts == null`.
+    pub trace_costs: Option<Arc<[ExpansionCostFactor]>>,
 }
 
 impl PullTightParams {
@@ -112,6 +118,26 @@ impl PullTightParams {
             keep_point: None,
             limit: None,
             stop: None,
+            trace_costs: None,
+        }
+    }
+
+    /// The pull-tight Java runs after each routed connection
+    /// (`AutorouteConnectionRouter.java:126-132`, `:258-264`) and in
+    /// `removeTails` (`BatchAutorouter.java:539-545`): all nets, no clip,
+    /// the router's pull-tight `accuracy` and `trace_costs`, and the
+    /// [`ENDLESS_LOOP_GUARD_NOMINAL_MS`] work limit. The caller sets
+    /// [`stop`](Self::stop) to the router's cancel token; fanout and the
+    /// interactive autoroute also set [`only_nets`](Self::only_nets) to the
+    /// routed net (`RoutingBoard.java:975-981`, `:1136-1142`).
+    pub fn after_connection(
+        accuracy: i32,
+        trace_costs: impl Into<Arc<[ExpansionCostFactor]>>,
+    ) -> Self {
+        PullTightParams {
+            limit: Some(ENDLESS_LOOP_GUARD_NOMINAL_MS),
+            trace_costs: Some(trace_costs.into()),
+            ..PullTightParams::new(accuracy)
         }
     }
 }
@@ -125,6 +151,7 @@ impl fmt::Debug for PullTightParams {
             .field("keep_point", &self.keep_point)
             .field("limit", &self.limit)
             .field("stop", &self.stop.is_some())
+            .field("trace_costs", &self.trace_costs)
             .finish()
     }
 }

@@ -1,0 +1,12 @@
+{"kind":"opt-vias","board":"Issue756-minimal-ok","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"costs","layers":2}
+{"layer":0,"horizontal":"0x3ff0000000000000","vertical":"0x4008000000000000"}
+{"layer":1,"horizontal":"0x3ff8000000000000","vertical":"0x3ff0000000000000"}
+{"stage":"vias-each"}
+{"id":3,"kind":"trace","nets":"1","layer":0,"halfWidth":5000,"class":1,"fixed":0,"corners":"1005000,-405000 998000,-392000"}
+{"id":2,"kind":"trace","nets":"1","layer":0,"halfWidth":5000,"class":1,"fixed":0,"corners":"1005000,-405000 998000,-392000"}
+{"maxGeneratedId":3,"items":3}
+{"stage":"board-optvias"}
+{"id":3,"kind":"trace","nets":"1","layer":0,"halfWidth":5000,"class":1,"fixed":0,"corners":"1005000,-405000 998000,-392000"}
+{"id":2,"kind":"trace","nets":"1","layer":0,"halfWidth":5000,"class":1,"fixed":0,"corners":"1005000,-405000 998000,-392000"}
+{"maxGeneratedId":3,"items":3}
