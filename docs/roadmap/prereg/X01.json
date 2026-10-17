@@ -1,0 +1,254 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X01-krt-head-to-head",
+  "registered": "2026-10-16",
+  "checklist": "docs/roadmap/tasks/X01-krt-head-to-head.md",
+  "question": "Held to each board's own design rules (D8), does KiCadRoutingTools (krt) leave fewer KiCad-unconnected items than the Java Freerouting fork (java) on canary-pwr and four KiCad demo boards, graded by the same KiCad 10.0.7 DRC with the input board's DRC subtracted, and which class of connection does each engine fail on? The answer orders the X series (decision_table).",
+  "arms": {
+    "java": {
+      "engine": "java Freerouting fork danbrunski/freerouting at a773a70ec (the J01 pin): the frozen jar ~/code/freerouting/logs/jars/freerouting-a773a70ec.jar (sha256 c9b7da4ad96f98f6a96e580454fc159e3490ab6cfff934a470038be487a02e5c), copied to $X01_DIR/java/ by tools/krt-h2h/build-java.sh",
+      "command": "java -Xmx3g -jar $X01_DIR/java/freerouting-a773a70ec.jar -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500",
+      "settings": {
+        "pass_limit": "Java default",
+        "optimizer": "Java default",
+        "dsn": "demos: exported from the prepared board by tools/kicad-oracle/grade.sh --keep-tracks (pcbnew.ExportSpecctraDSN, open rule-area keepouts removed); canary-pwr: fixtures/canary-pwr/canary-pwr-9511d9a.dsn (canary's own exporter, what Dan's runs see)",
+        "jvm_heap": "-Xmx3g (machine memory limit after the 2026-10-16 WSL crashes; amendment 2)"
+      }
+    },
+    "krt": {
+      "engine": "KiCadRoutingTools 0486e799144050d4e826f71bb31acdc7275af2a2, run from a git archive export in $X01_DIR/krt with its own venv and grid_router built from source (tools/krt-h2h/setup-krt.sh)",
+      "command": "$X01_DIR/venv/bin/python -E -s py_router/route.py {IN} {OUT} --nets '*' --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper",
+      "settings": {
+        "options": "KRT defaults except: --fab-tier standard and --escalation off (D8: the board's rules are hard floors, never escalated or lowered; X00 rule 'Not ported'), --same-net-pad-clearance 0.1 (KRT's default allows a via in a pad, a hard failure under D8; any value > 0 keeps vias off same-net SMD pads), --no-fix-drc-settings (a router never rewrites the board's rules), --keep-input-copper (canary-pwr's hand-laid copper is kept; a no-op on the stripped demos)",
+        "kicad_cli_reachable": false,
+        "pcbnew_importable": false,
+        "path": "PATH holds the venv and a directory of links to /usr/bin with every kicad* name left out; the venv has no system site-packages"
+      }
+    }
+  },
+  "optional_arms": {
+    "krt-kicad": "the krt command with tools/krt-h2h/kicad-cli-shim.sh reachable as kicad-cli (KRT's oracle reconnect calls); run only if X01.2's smoke test shows the oracle call succeeds; reported, not judged"
+  },
+  "baseline_arm": "java",
+  "candidate_arm": "krt",
+  "boards": {
+    "set": "tools/bench/sets/x01-h2h.txt",
+    "kicad": "10.0.7 (WSL-native /usr/bin/kicad-cli and the system python3's pcbnew)",
+    "sources": {
+      "canary-pwr-9511d9a": {
+        "path": "~/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb (canary 9511d9a; equal to HEAD 037f12c6 for these three files)",
+        "kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+        "kicad_pro": "c98f01964c5057eea501718117e296d01f2d2d9a7893813ac5cdc5b0571ce764",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8",
+        "java_dsn": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn 65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a"
+      },
+      "pic_programmer": {
+        "path": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
+        "kicad_pcb": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+        "kicad_pro": "3b0ac39da5af86d0baa2a64da55a89c39ba00148dc82b54f3062f5c3650a5cc5"
+      },
+      "interf_u": {
+        "path": "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb",
+        "kicad_pcb": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e",
+        "kicad_pro": "b9908a96e6113e6e51f488482108dc87aa5d9bcd838f9e3345c85e0db09bffa9"
+      },
+      "kit-dev-coldfire-xilinx_5213": {
+        "path": "/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "kicad_pcb": "392cf6bf4b9b62beb435f965ccd7671a46decb17f947b74bfde482acd2132a5e",
+        "kicad_pro": "d6ca906944730a3eae31ba3d9240c6966424b0d80ba76e80710e39d7b23c4637"
+      },
+      "video": {
+        "path": "/usr/share/kicad/demos/video/video.kicad_pcb",
+        "kicad_pcb": "f620675158ddd5c61e5ce9e15f4c92b230ae1df1cbcec6c502b8ce266e4007ea",
+        "kicad_pro": "329241ed4d9d176ef51adcec457a7c072e4bbc1b6500738622ebeaeba74d6c7f"
+      }
+    },
+    "files": {
+      "canary-pwr-9511d9a": "25d41d39b84e8ab20a04f8f65b0c83da5dbdd61311fe1f005018843f7b5715e8",
+      "pic_programmer": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5",
+      "interf_u": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1",
+      "kit-dev-coldfire-xilinx_5213": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83",
+      "video": "7c423c022f8172e4a92de32fa1557fa82d7a21a01be519f40d5c32d66b7ef83f"
+    },
+    "prepared": "tools/krt-h2h/prep_board.py: the demos lose every track, arc and via, keep zones and layer types, and are refilled and saved; canary-pwr is copied as is (with its .kicad_pro and .kicad_dru) and only refilled. The prepared boards' sha256 replace boards.files in an amendment before the first engine run."
+  },
+  "grading": {
+    "grader": "tools/kicad-oracle (F02.6): java through grade.sh --keep-tracks on the prepared board; krt through tools/krt-h2h/grade_routed.sh, which runs the same oracle_lib.py and kicad_steps.py steps on KRT's routed board against the prepared input",
+    "rules": "the board's ORIGINAL .kicad_pro/.kicad_dru copied over both graded boards; copper severities forced to error; kicad-cli pcb drc --severity-all --refill-zones; the prepared input's own DRC items subtracted (same type and net pair within 0.5 mm)",
+    "not_graded": "exit 2, a timeout, a crash or no output fails that board for that arm and is reported; it is never a pass",
+    "canary-pwr": "not graded here: the SES (java) and routed board (krt) with their flags go to canary-23, who grades through Windows KiCad (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py = 0). Until those grades exist, canary-pwr counts as not graded for both arms: no win for either"
+  },
+  "timeout": "7200 s per board and arm (timeout(1)); it only stops a run",
+  "load_rule": "tools/krt-h2h/run.sh waits for the 1-minute load average to be at most 1.0 (F02.3's rule). The machine is shared with other agents, so a run may start above it with --allow-load; the load before and after is recorded and wall time is then an upper bound. Wall time is a report metric only. One router or KiCad job at a time.",
+  "determinism": "each arm routes pic_programmer twice; whether the two outputs (java SES, krt .kicad_pcb) are byte-identical is reported",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "tools/krt-h2h/via_in_pad_kicad.py: vias whose centre lies in an SMD pad of any net"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "grader copper.json below_minimum (track width, via diameter, via drill)"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "grader summary drc_real"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower",
+      "source": "KiCad unconnected_items of the routed board after refill"
+    },
+    {
+      "name": "vias",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower",
+      "source": "tools/krt-h2h/copper_stats.py: vias added relative to the prepared input"
+    },
+    {
+      "name": "length_mm",
+      "role": "score",
+      "kind": "float",
+      "direction": "lower",
+      "tol": 1e-06,
+      "source": "tools/krt-h2h/copper_stats.py: segment and arc length added relative to the prepared input"
+    },
+    {
+      "name": "under_class_width_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false,
+      "source": "grader copper.json: length of copper narrower than its net class"
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "load_before",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "load_after",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "engine_exit",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "classes": {
+    "matching": "tools/krt-h2h/classify.py matches each arm's KiCad unconnected items by net and unordered pad pair; java-only, krt-only and shared failures",
+    "precedence": [
+      "plane-net: the net has a zone on the board",
+      "wide-at-fine-pitch: the net's class width exceeds the smaller dimension of an end pad that is fine-pitch by KRT's rule (plane_pad_tap.pad_is_fine_pitch: a pad of the same footprint within 0.65 mm centre to centre, or a smaller dimension under 0.35 mm)",
+      "dense-escape: an end pad in a footprint with at least 32 pads and a pitch of at most 0.8 mm",
+      "other"
+    ]
+  },
+  "decision_table": {
+    "inputs": "the graded boards; java-only failures summed over the graded boards",
+    "rules": [
+      {
+        "id": "grid-first",
+        "when": "krt has fewer kicad_unconnected than java on at least 4 of 5 boards and no more drc_real on any graded board",
+        "then": "X03-X06 move ahead of X02"
+      },
+      {
+        "id": "planes-first",
+        "when": "plane-net is at least 30 % of java-only failures",
+        "then": "X02 (and Q01) first"
+      },
+      {
+        "id": "neck-first",
+        "when": "wide-at-fine-pitch is at least 30 % of java-only failures",
+        "then": "Q02 and X10 move ahead of the grid router"
+      },
+      {
+        "id": "escape-first",
+        "when": "dense-escape is at least 30 % of java-only failures",
+        "then": "X10 and X12 move ahead of X07-X09"
+      }
+    ],
+    "otherwise": "the D9 default order of X00 stands",
+    "several": "if several fire, they apply in the order listed",
+    "ungraded": "a board an arm could not have graded is a failure of that arm; a board neither arm has graded (canary-pwr until canary-23 reports) is no win for krt"
+  },
+  "amendments": [
+    {
+      "date": "2026-10-16",
+      "reason": "X01.4 prepared the inputs and X01.2's smoke test ran, both before any engine run on a registered board. (1) The registered inputs are the prepared boards, not the sources. (2) `python -I` implies -P on Python 3.11+ (no script directory on sys.path), so route.py could not import its own modules; -E -s keeps the isolation from PYTHON* variables and the user site. (3) With kicad-cli-shim.sh reachable, KRT made no KiCad call on kicad_files/cap_chain or kicad_files/esp_prog (oracle_check 'disabled'/'skipped'), so the optional krt-kicad arm is not run.",
+      "changes": {
+        "boards.files": {
+          "canary-pwr-9511d9a": {
+            "from": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+            "to": "25d41d39b84e8ab20a04f8f65b0c83da5dbdd61311fe1f005018843f7b5715e8"
+          },
+          "pic_programmer": {
+            "from": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+            "to": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5"
+          },
+          "interf_u": {
+            "from": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e",
+            "to": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1"
+          },
+          "kit-dev-coldfire-xilinx_5213": {
+            "from": "392cf6bf4b9b62beb435f965ccd7671a46decb17f947b74bfde482acd2132a5e",
+            "to": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83"
+          },
+          "video": {
+            "from": "f620675158ddd5c61e5ce9e15f4c92b230ae1df1cbcec6c502b8ce266e4007ea",
+            "to": "7c423c022f8172e4a92de32fa1557fa82d7a21a01be519f40d5c32d66b7ef83f"
+          }
+        },
+        "arms.krt.command": "python -I -> python -E -s",
+        "optional_arms.krt-kicad": "not run"
+      }
+    },
+    {
+      "date": "2026-10-16",
+      "reason": "WSL crashed (out of memory) during the java run of video, after the java and krt runs of pic_programmer (twice), interf_u and kit-dev-coldfire-xilinx_5213 had finished with -Xmx4g. The orchestrator capped every JVM at -Xmx3g. The heap bounds memory only: Java's routing at the pin counts work, not time or memory, so the result does not depend on it unless the JVM runs out. Every java run is repeated with -Xmx3g, and the -Xmx4g sessions are kept and compared byte for byte with the -Xmx3g ones.",
+      "changes": {
+        "arms.java.command": "-Xmx4g -> -Xmx3g",
+        "arms.java.settings.jvm_heap": "-Xmx4g -> -Xmx3g"
+      }
+    },
+    {
+      "date": "2026-10-16",
+      "reason": "Found after every run had finished, recorded here and not changed: the krt arm's own interpreter could not import pcbnew and found no kicad-cli (its log says 'kicad-cli NOT FOUND' on every board, so no oracle reconnect ran), but KRT's exact-fill step (kicad_exact_fill.find_kicad_python, kicad_locate.kicad_python_candidates at 0486e799) probes /usr/bin/python3 by its absolute path, and the WSL-native KiCad 10.0.7 installs pcbnew there. So KRT used KiCad's exact zone fill on all five boards ('exact fill: N island(s)' in each log) instead of its raster fallback. The registered settings.pcbnew_importable=false held for KRT's process only. The decision table is not changed and no run is repeated; the effect can only make krt stronger, and the report says so.",
+      "changes": {
+        "arms.krt.settings.pcbnew_importable": "observed: false in KRT's process; KiCad's exact fill reached through /usr/bin/python3 (not hidden by the PATH filter)"
+      }
+    }
+  ]
+}
