@@ -760,6 +760,11 @@ plugin_flags}.rs`)
   Ctrl-Break on Windows, through the `ctrlc` crate) are handled: the first is `stop`, the
   second aborts with exit 130 and no output (`sigint_and_sigterm_are_a_stop`,
   `two_signals_abort`); Java's CLI has no such two-level stop.
+- `--stats json` and `--stats-out <file>` (P01.2) are developer flags that Java lacks. They are
+  taken out of the command line before the Java parsers see it, so they are not plugin flags and
+  not in `--capabilities`. They write per-stage work counts and times and change no result: the
+  session is byte-identical with and without them and the counts of two runs are equal
+  (`stats_change_no_session_and_the_counts_repeat`).
 
 ## freerouting-gui
 

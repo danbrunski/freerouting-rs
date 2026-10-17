@@ -453,8 +453,12 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
     let design_name = input.design_name.clone();
 
     // 2. The load sequence.
+    let load_scope = crate::run_stats::stage("load", 0);
     let prepared = match prepare_job(&input, &ctx.resolve) {
-        Ok(prepared) => prepared,
+        Ok(prepared) => {
+            load_scope.finish();
+            prepared
+        }
         Err(e) => {
             push(&mut log, LogLevel::Error, e.to_string());
             flush_log(ctx, &log, &mut sent);
@@ -600,6 +604,14 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
     if matches!(state, JobState::Completed | JobState::TimedOut)
         && let Some(final_board) = &final_board
     {
+        if crate::run_stats::enabled() {
+            // P01.2: the statistics time one full clearance check of the
+            // board that is about to be written.
+            let scope = crate::run_stats::stage("drc", 0);
+            let _ = crate::drc::DesignRulesChecker::new(final_board).all_clearance_violations();
+            scope.finish();
+        }
+        let write_scope = crate::run_stats::stage("write", 0);
         ctx.notify(JobEvent::Write(summary.as_ref()));
         let source = OutputSource {
             board: final_board,
@@ -607,6 +619,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
             settings: &settings,
         };
         write_outputs(outputs, &source, ctx, &mut written, &mut log);
+        write_scope.finish();
     }
     if ctx.collect_report
         && let Some(final_board) = &final_board

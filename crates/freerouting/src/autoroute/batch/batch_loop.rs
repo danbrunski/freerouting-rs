@@ -314,7 +314,9 @@ impl Run {
             );
             return;
         }
+        let scope = crate::run_stats::stage("fanout", 0);
         let summary = stages.fanout.run(board, ctx);
+        scope.finish();
         let status = if summary.timed_out {
             "completed with timeout:"
         } else if ctx.cancel.is_router_stop_requested() {
@@ -370,6 +372,7 @@ impl Run {
                 hash,
                 score: figures.score,
             });
+            let scope = crate::run_stats::stage("pass", pass);
             let result = {
                 let mut pass_stages = PassStages {
                     ordering: &mut *stages.ordering,
@@ -378,6 +381,7 @@ impl Run {
                 };
                 executor.run_pass(board, pass, &mut pass_stages, ctx)
             };
+            scope.finish();
             for text in &result.log {
                 self.outcome.info(text.clone());
             }

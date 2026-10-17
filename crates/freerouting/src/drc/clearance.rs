@@ -3,7 +3,7 @@
 //! Port of `drc.ClearanceViolation` and of `Item.clearanceViolations`
 //! (with the `Via` override).
 
-use std::collections::HashSet;
+use crate::util::HashSet;
 
 use freerouting_geometry::jmath::round_to_i32;
 use freerouting_geometry::{FloatPoint, PolylineShapeOps, TileShape};
@@ -193,7 +193,7 @@ impl BasicBoard {
         let ids: Vec<ItemId> = self.items().map(Item::id).collect();
         let per_item = parallel_map(&ids, |id| self.clearance_violations(*id));
         let mut result = Vec::new();
-        let mut seen = HashSet::new();
+        let mut seen = HashSet::default();
         for violations in per_item {
             for violation in violations {
                 let (a, b) = (violation.first_item.0, violation.second_item.0);

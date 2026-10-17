@@ -11,7 +11,7 @@ tree.
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [P01](P01-profiling-and-baselines.md) | Profiler recipes, a per-stage stats output, microbenchmarks with identical work counts, the first Rust-against-Java baseline, the release speed target | M / tooling | F02.3 (`bench`); the benchmark rows need the A-series board-parity gate |
+| [P01](archive/P01-profiling-and-baselines.md) ✅ | Profiler recipes, a per-stage stats output, microbenchmarks with identical work counts, the first Rust-against-Java baseline, the release speed target | M / tooling | F02.3 (`bench`); the benchmark rows need the A-series board-parity gate |
 | [P02](P02-parity-safe-optimizations.md) | Speed-ups that leave every routed result byte-identical, starting with an incremental-against-rebuild audit | M–L / correctness guarded by `ses-diff` | P01; the A-series board-parity gate |
 | [P03](P03-parallelism.md) | Parallel work with an ordered merge where results can't depend on order | M / determinism | P01, O06 |
 | [P04](P04-order-independent-rooms.md) | Room completion independent of tree visit order (a measured divergence), then a faster search tree | L / changes routes; Q-series rules | P01, P02, the A-series board-parity gate |

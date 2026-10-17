@@ -48,11 +48,10 @@ use std::collections::BTreeSet;
 
 use freerouting_geometry::{FloatPoint, IntBox};
 
-use super::connection::{Ripped, RouteLimits, java_item_text, route_connection_on_engine};
+use super::connection::{Ripped, RouteLimits, java_item_text, route_connection_counted};
 use super::control::AutorouteControl;
 use super::session::drills::DrillCarry;
 use super::session::search::SearchSettings;
-use super::session::sink::NoopSink;
 use super::stages::StageCtx;
 use super::{AttemptResult, AttemptState};
 use crate::board::RoutingBoard;
@@ -160,10 +159,7 @@ fn attempt(
         items: ripped,
         costs: None,
     };
-    route_connection_on_engine(
-        board, start, dest, control, limits, ripped, NoopSink, engine,
-    )
-    .0
+    route_connection_counted(board, start, dest, control, limits, ripped, engine)
 }
 
 /// True if a plane or closest-target attempt ended the fanout.

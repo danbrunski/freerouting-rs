@@ -12,7 +12,7 @@
 //! a slab are trapezoids, and trapezoids of neighbouring slabs touching
 //! along a segment of positive length belong to the same island.
 
-use std::collections::HashMap;
+use crate::util::HashMap;
 
 use freerouting_geometry::jmath::round_to_i32;
 use freerouting_geometry::{
@@ -668,7 +668,7 @@ fn islands_of(operands: &[Operand], drill_count: usize) -> Vec<Island> {
         }
     }
 
-    let mut by_root: HashMap<usize, usize> = HashMap::new();
+    let mut by_root: HashMap<usize, usize> = HashMap::default();
     let mut islands: Vec<Island> = Vec::new();
     for (index, trapezoid) in trapezoids.into_iter().enumerate() {
         let root = components.find(index);

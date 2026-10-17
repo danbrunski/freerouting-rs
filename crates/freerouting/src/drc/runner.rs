@@ -135,6 +135,7 @@ pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
         if kicad { "KiCad board" } else { "DSN" },
         design.display()
     ));
+    let load_scope = crate::run_stats::stage("load", 0);
     let read = read_design(design)?;
     if let Some(input) = &read.kicad {
         messages.extend(input.report_lines());
@@ -177,8 +178,11 @@ pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
         }
     }
 
+    load_scope.finish();
     let source = file_name(design);
+    let drc_scope = crate::run_stats::stage("drc", 0);
     let report = DesignRulesChecker::new(&board).generate_report(&source, &options.coordinate_unit);
+    drc_scope.finish();
     Ok(DrcRun {
         board,
         report,

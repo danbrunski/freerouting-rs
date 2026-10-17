@@ -139,6 +139,20 @@ mod tests {
     }
 }
 
+/// The hasher of the engine's hash maps and sets: SipHash with fixed keys.
+///
+/// `std`'s default `RandomState` draws new keys in every process, so the
+/// bucket order and the probing of a map differ from run to run. Nothing
+/// that reaches a result may depend on that (D2), but the number of
+/// instructions a run executes does, a little (about 1 % of a DRC run), and
+/// a profile or a callgrind baseline (P01.4) needs the same count every
+/// time. These maps hash the same way in every process.
+pub(crate) type StableHasher = std::hash::BuildHasherDefault<std::hash::DefaultHasher>;
+/// A `HashMap` with the [`StableHasher`] hasher; build it with `default()`.
+pub(crate) type HashMap<K, V> = std::collections::HashMap<K, V, StableHasher>;
+/// A `HashSet` with the [`StableHasher`] hasher; build it with `default()`.
+pub(crate) type HashSet<T> = std::collections::HashSet<T, StableHasher>;
+
 /// The iteration order of a Java `HashMap<Integer, V>` whose keys were
 /// inserted in the order `keys` (all distinct), with the default capacity
 /// and load factor.

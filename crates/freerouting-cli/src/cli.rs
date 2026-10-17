@@ -83,8 +83,28 @@ impl Finish {
     }
 }
 
-/// Runs the command line and returns the exit code.
+/// Runs the command line and returns the exit code. `--stats json`
+/// (P01.2, [`stats`](crate::stats)) is taken out first and writes its file
+/// when the run ends.
 pub fn run(argv: &[String]) -> ExitCode {
+    match crate::stats::extract(argv) {
+        Ok(None) => run_command(argv),
+        Ok(Some(request)) => {
+            request.start();
+            let code = run_command(&request.argv);
+            if let Err(e) = request.finish() {
+                eprintln!("{e}");
+            }
+            code
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            Code::usage().into()
+        }
+    }
+}
+
+fn run_command(argv: &[String]) -> ExitCode {
     let parsed = args::parse(argv);
     if parsed.version {
         println!("{}", version::version_line());

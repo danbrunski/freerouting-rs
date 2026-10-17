@@ -31,7 +31,9 @@
 //! KiCad's minimum-thickness opening of the fill (erode, then dilate by half
 //! the thickness) is not modelled; Q01.4 measures whether it is needed.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::util::HashMap;
 
 use freerouting_geometry::FloatPoint;
 
@@ -328,7 +330,7 @@ fn trace_rings(edges: &[Edge]) -> Vec<Vec<FloatPoint>> {
             .then(edges[a].to.x.total_cmp(&edges[b].to.x))
             .then(a.cmp(&b))
     });
-    let mut outgoing: HashMap<Key, Vec<usize>> = HashMap::new();
+    let mut outgoing: HashMap<Key, Vec<usize>> = HashMap::default();
     for &e in &order {
         outgoing.entry(key(edges[e].from)).or_default().push(e);
     }

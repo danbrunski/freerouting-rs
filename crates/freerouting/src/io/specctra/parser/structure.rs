@@ -3,7 +3,7 @@
 //!
 //! Port of `io.specctra.parser.Structure.readScope` and its helpers.
 
-use std::collections::HashSet;
+use crate::util::HashSet;
 
 use freerouting_dsn::ast;
 use freerouting_geometry::jmath::round_to_i32;

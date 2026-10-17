@@ -154,6 +154,54 @@ pub fn route_connection_on_engine<S: SearchSink>(
     (result, sink)
 }
 
+/// [`route_connection_on_engine`] for the batch router, the fanout and the
+/// optimizer: with `NoopSink`, or, while the statistics are on
+/// ([`run_stats`](crate::run_stats), P01.2), with the A04 sink
+/// [`WorkCounters`](super::session::sink::WorkCounters), whose counts go to
+/// the statistics. The sink only observes, so the result is the same.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn route_connection_counted(
+    board: &mut RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+    ctrl: &AutorouteControl,
+    limits: RouteLimits<'_>,
+    ripped: Ripped<'_>,
+    engine: &mut DrillCarry,
+) -> AttemptResult {
+    if !crate::run_stats::enabled() {
+        return route_connection_on_engine(
+            board,
+            start,
+            dest,
+            ctrl,
+            limits,
+            ripped,
+            super::session::sink::NoopSink,
+            engine,
+        )
+        .0;
+    }
+    let Ripped { items, costs } = ripped;
+    let ripped_before = items.len();
+    let (result, counters) = route_connection_on_engine(
+        board,
+        start,
+        dest,
+        ctrl,
+        limits,
+        Ripped {
+            items: &mut *items,
+            costs,
+        },
+        super::session::sink::WorkCounters::default(),
+        engine,
+    );
+    let added = items.len().saturating_sub(ripped_before);
+    crate::run_stats::record_connection(&counters, result.state, added);
+    result
+}
+
 /// The part of `autorouteConnection` after the session is cleared
 /// (`:206-261`): the checks of the search result and the located path, then
 /// the rip of `ripped` and the insert.

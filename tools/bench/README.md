@@ -148,6 +148,24 @@ repository. The counts below are `connections.maximum_count`,
 | `~/code/freerouting/logs/canary-pwr/canary-pwr-2026-10-15-1747-stale.dsn` (out of the repository) | | | | | |
 
 
+## Profiling and instruction-count baselines (P01)
+
+Wall time is the number that counts, but it needs a quiet machine. For a steady
+signal on a busy one there are callgrind instruction counts:
+
+- `freerouting-dev microbench board.dsn` times five hot kernels (overlap
+  queries, room completion, one maze search, a pull-tight, the DRC clearance
+  pass) with a fixed amount of work and prints the work counts, which must not
+  change between builds that keep results identical;
+- `callgrind.sh` counts the instructions of each kernel and of three routing
+  runs and compares them with `callgrind-baseline.json` in percent
+  (`--compare`);
+- `callgrind_top.py` sums a callgrind profile per function;
+- `freerouting --stats json` writes work counts and times per stage.
+
+All of them are described in
+[docs/development/profiling.md](../../docs/development/profiling.md).
+
 ## `freerouting-dev gate`, `gate collect` and `failed-vs-human` (F03)
 
 `bench` and the KiCad oracle produce per-board, per-engine numbers;

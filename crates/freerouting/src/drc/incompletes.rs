@@ -3,7 +3,9 @@
 //! Port of `drc.NetIncompletes` and `drc.AirLine`.
 
 use std::cmp::Ordering;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
+
+use crate::util::HashMap;
 
 use freerouting_geometry::{FloatPoint, Point};
 
@@ -96,7 +98,7 @@ impl NetIncompletes {
     /// Calculates the incomplete connections of net `net_number` from its
     /// connectable items `net_items`.
     pub fn new(board: &BasicBoard, net_number: i32, net_items: &[ItemId]) -> Self {
-        Self::new_cached(board, net_number, net_items, &mut HashMap::new())
+        Self::new_cached(board, net_number, net_items, &mut HashMap::default())
     }
 
     /// [`new`](Self::new) with the normal contacts memoized in `contacts`
@@ -263,7 +265,7 @@ fn calculate_net_items(
     contacts: &mut HashMap<ItemId, Vec<ItemId>>,
 ) -> Vec<NetItem> {
     let mut result = Vec::new();
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = crate::util::HashSet::default();
     let mut remaining: Vec<ItemId> = items
         .iter()
         .copied()
@@ -272,8 +274,7 @@ fn calculate_net_items(
     let mut group = 0;
     while let Some(&start) = remaining.first() {
         let connected = board.connected_set_cached(start, net_number, false, contacts);
-        let still_remaining: std::collections::HashSet<ItemId> =
-            remaining.iter().copied().collect();
+        let still_remaining: crate::util::HashSet<ItemId> = remaining.iter().copied().collect();
         let mut in_component: Vec<ItemId> = connected
             .iter()
             .copied()
@@ -382,7 +383,7 @@ mod tests {
             // Ascending ids: the reverse of the connected-set order.
             let mut items = board.connectable_items(net_number);
             items.sort_by_key(|id| id.0);
-            let mut contacts = HashMap::new();
+            let mut contacts = HashMap::default();
             let net_items = calculate_net_items(&board, net_number, &items, &mut contacts);
             assert_eq!(net_items.len(), items.len());
             let mut first_of_group: Vec<ItemId> = Vec::new();
@@ -399,7 +400,7 @@ mod tests {
             }
             // Each group holds the first item, in input order, not taken by
             // an earlier group.
-            let mut taken: std::collections::HashSet<ItemId> = std::collections::HashSet::new();
+            let mut taken: crate::util::HashSet<ItemId> = crate::util::HashSet::default();
             let mut group_no = 0;
             for id in &items {
                 if taken.contains(id) {

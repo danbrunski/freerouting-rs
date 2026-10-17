@@ -26,6 +26,12 @@
 //!   layers, vias, widths and clearance headroom, tagged `router gap`,
 //!   `no human route` or `infeasible` (Q03) ([`failed_vs_human`], F03.2).
 //!
+//! - `microbench board.dsn [--runs N] [--kernel a,b] [--json out.json]`: the
+//!   hot kernels (overlap queries, room completion, one maze search,
+//!   a pull-tight, the DRC clearance pass) with fixed work: the minimum time
+//!   over the runs and the work counts, which every run must repeat
+//!   ([`microbench`], P01.3).
+//!
 //! The manifest of the out-of-repo corpus of open KiCad boards
 //! (`tools/corpus/`, F03.3) is read by [`corpus`], which also refuses any
 //! committed board whose licence is not allow-listed.
@@ -51,6 +57,7 @@ pub mod gate_collect;
 pub mod gate_prereg;
 pub mod gate_selftest;
 pub mod json_read;
+pub mod microbench;
 pub mod ses_diff;
 pub mod session_geometry;
 

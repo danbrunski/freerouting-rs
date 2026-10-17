@@ -46,7 +46,7 @@
 //! Via padstacks that a rules file adds to the library (`-dr`, adjacent `<design>.rules`) are
 //! written once the rules reader (C04) puts them there.
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 use std::io::{self, Write};
 
 use freerouting_dsn::Session;
@@ -66,6 +66,7 @@ use crate::board::items::{Item, ItemId, ItemKind};
 use crate::board::structure::{ComponentId, FixedState, Unit};
 use crate::io::CoordinateTransform;
 use crate::library::{PackageId, Padstack};
+use crate::util::HashSet;
 
 /// The text layout of a written session file.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -270,7 +271,7 @@ fn parser_info(board: &BasicBoard) -> ParserInfo {
 
 /// `writeLibrary`: the via padstacks in library order, each name once.
 fn library_out(board: &BasicBoard, transform: &CoordinateTransform) -> Vec<DsnPadstack> {
-    let mut written: HashSet<&str> = HashSet::new();
+    let mut written: HashSet<&str> = HashSet::default();
     let mut result = Vec::new();
     for no in 0..board.library.via_padstack_count() {
         let Some(padstack) = board.library.get_via_padstack(no) else {

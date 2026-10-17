@@ -17,5 +17,6 @@ pub mod exit;
 pub mod log;
 pub mod manifest;
 pub mod progress;
+pub mod stats;
 pub mod stop;
 pub mod version;

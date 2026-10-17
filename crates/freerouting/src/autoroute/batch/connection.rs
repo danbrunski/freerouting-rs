@@ -56,11 +56,11 @@ use freerouting_geometry::FloatPoint;
 use freerouting_geometry::jmath::round_to_i32;
 
 use super::strict_drc::apply_strict_drc_after_route;
-use crate::autoroute::connection::{Ripped, RouteLimits, route_connection};
+use crate::autoroute::connection::{Ripped, RouteLimits, route_connection_counted};
 use crate::autoroute::control::AutorouteControl;
 use crate::autoroute::path::RipupCosts;
+use crate::autoroute::session::drills::DrillCarry;
 use crate::autoroute::session::search::SearchSettings;
-use crate::autoroute::session::sink::NoopSink;
 use crate::autoroute::stages::{
     ConnectionOutcome, ConnectionParams, ConnectionRouter, Destinations, FailureRecord,
     NeckDownAttempt, NeckDownPolicy, PlaneTapPolicy, RouteTask, StageCtx, StageRegistry,
@@ -219,7 +219,15 @@ pub(crate) fn attempt(
         items: ripped,
         costs: Some(costs),
     };
-    route_connection(board, start, dest, control, limits, ripped, NoopSink).0
+    route_connection_counted(
+        board,
+        start,
+        dest,
+        control,
+        limits,
+        ripped,
+        &mut DrillCarry::default(),
+    )
 }
 
 /// The pull-tight after a routed connection (`:121-128`, `:257-264`).

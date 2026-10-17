@@ -4,7 +4,9 @@
 //! `PolylineTraceNormalization`, and of the trace clean-up methods of
 //! `BasicBoard` and `RoutingBoard`.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
+
+use crate::util::HashMap;
 
 use freerouting_geometry::{
     IntOctagon, Line, LineSegment, Point, Polyline, PolylineShapeOps, TileShape,
@@ -170,7 +172,7 @@ impl BasicBoard {
         let polyline = &this_trace.polyline;
         let layer = this_trace.layer;
         let mut own_trace_split = false;
-        let mut found_items: HashMap<ItemId, FoundItem> = HashMap::new();
+        let mut found_items: HashMap<ItemId, FoundItem> = HashMap::default();
         for i in 0..polyline.lines().len().saturating_sub(2) {
             if let Some(clip) = clip_shape {
                 let segment = LineSegment::from_polyline(polyline, i + 1);
@@ -810,7 +812,7 @@ impl BasicBoard {
     /// of Java's `HashMap<Integer, List>`.
     pub fn normalize_all_traces(&mut self) -> bool {
         let mut result = false;
-        let mut traces_by_net: HashMap<i32, Vec<ItemId>> = HashMap::new();
+        let mut traces_by_net: HashMap<i32, Vec<ItemId>> = HashMap::default();
         let mut net_order: Vec<i32> = Vec::new();
         for item in self.items() {
             if item.is_trace() && item.is_on_the_board() {

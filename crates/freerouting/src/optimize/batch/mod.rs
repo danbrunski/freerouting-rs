@@ -423,8 +423,10 @@ pub fn run_batch_optimizer(
         let before = statistics(board);
         let score_before = before.optimizer_ranking_score(Some(settings));
         let with_preferred_directions = pass % 2 != 0;
+        let scope = crate::run_stats::stage("optimizer_pass", pass);
         let (candidates, evaluation) =
             state.opt_route_pass(board, pass, with_preferred_directions, &before);
+        scope.finish();
 
         let after = statistics(board);
         let after_figures = gate_figures(&after, settings);

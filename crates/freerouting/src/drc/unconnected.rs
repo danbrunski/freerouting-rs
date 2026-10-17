@@ -4,7 +4,9 @@
 //! Port of `drc.UnconnectedItems` and
 //! `DesignRulesChecker.getAllUnconnectedItems`.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
+
+use crate::util::{HashMap, HashSet};
 
 use crate::board::BasicBoard;
 use crate::board::items::ItemId;
@@ -58,7 +60,7 @@ pub(crate) fn all_unconnected_items(
     contacts: &mut HashMap<ItemId, Vec<ItemId>>,
 ) -> Vec<UnconnectedItems> {
     let mut result: Vec<UnconnectedItems> = Vec::new();
-    let mut items_by_net: HashMap<i32, Vec<ItemId>> = HashMap::new();
+    let mut items_by_net: HashMap<i32, Vec<ItemId>> = HashMap::default();
     let mut net_order: Vec<i32> = Vec::new();
     for item in board.items() {
         if item.is_connectable_kind() && item.net_count() > 0 {
@@ -79,7 +81,7 @@ pub(crate) fn all_unconnected_items(
         }
         let net_item_set: HashSet<ItemId> = net_items.iter().copied().collect();
         let mut connected_sets: Vec<BTreeSet<ItemId>> = Vec::new();
-        let mut processed: HashSet<ItemId> = HashSet::new();
+        let mut processed: HashSet<ItemId> = HashSet::default();
         for id in net_items {
             if processed.contains(id) {
                 continue;

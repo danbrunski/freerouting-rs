@@ -8,6 +8,7 @@ use freerouting_dev::bench::{
     BenchOptions, Bounds, Engine, check_java, repository_root, run_bench,
 };
 use freerouting_dev::bench_report;
+use freerouting_dev::microbench;
 use freerouting_dev::ses_diff::{SesDiff, parse_session};
 use freerouting_dev::{load_board, read_text};
 
@@ -18,6 +19,8 @@ const USAGE: &str = "usage:
   freerouting-dev bench --set <file> --java <jar> [--rust <bin>] [--runs N] --out <dir>
       [--optimize] [--max-passes N] [--bounds <tsv>] [--max-load L|off] [--load-wait S]
       [--timeout S] [--java-bin <java>]
+  freerouting-dev microbench board.dsn [--runs N] [--kernel overlap,complete_shape,maze,pull_tight,drc]
+      [--json out.json]
   freerouting-dev feasibility board.dsn [--json out.json] [--all-pins] [--step-um N]
       [--start shape|centre]
   freerouting-dev gate ...       (the measurement gate; `freerouting-dev gate --self-test`)
@@ -37,6 +40,7 @@ fn main() -> ExitCode {
     let result = match args.first().map(String::as_str) {
         Some("ses-diff") => ses_diff(&args[1..]),
         Some("bench") => bench(&args[1..]),
+        Some("microbench") => microbench_command(&args[1..]),
         Some("feasibility") => feasibility_command(&args[1..]),
         Some("gate") => freerouting_dev::gate_cli::run(&args[1..]),
         Some("failed-vs-human") => freerouting_dev::failed_vs_human::run(&args[1..]),
@@ -110,6 +114,38 @@ fn ses_diff(args: &[String]) -> Result<ExitCode, String> {
     })
 }
 
+/// Kernel runs per microbenchmark unless `--runs` says otherwise.
+const DEFAULT_MICROBENCH_RUNS: usize = 9;
+
+fn microbench_command(args: &[String]) -> Result<ExitCode, String> {
+    let (positional, options) = split_options(args, &["runs", "kernel", "json"], &[])?;
+    let [board] = positional.as_slice() else {
+        return Err(USAGE.to_string());
+    };
+    let runs = match option(&options, "runs") {
+        Some(text) => text
+            .parse::<usize>()
+            .ok()
+            .filter(|n| *n >= 1)
+            .ok_or_else(|| format!("--runs: '{text}' is not a count of 1 or more"))?,
+        None => DEFAULT_MICROBENCH_RUNS,
+    };
+    let kernels: Vec<String> = options
+        .iter()
+        .filter(|(n, _)| n == "kernel")
+        .flat_map(|(_, v)| v.split(',').map(str::to_string))
+        .collect();
+    let loaded = microbench::load(Path::new(board))?;
+    let reports = microbench::run_kernels(&loaded, runs, &kernels)?;
+    let load = microbench::load_average();
+    print!("{}", microbench::to_text(board, &reports, load));
+    if let Some(file) = option(&options, "json") {
+        let json = microbench::to_json(board, &reports, load).to_pretty_string() + "\n";
+        std::fs::write(file, json).map_err(|e| format!("{file}: {e}"))?;
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
 fn option<'a>(options: &'a Options, name: &str) -> Option<&'a str> {
     options
         .iter()
@@ -154,7 +190,9 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
             .ok_or_else(|| format!("--{name} is required\n{USAGE}"))
     };
     let set_file = need("set")?;
-    let out_dir = need("out")?;
+    // The engines run in the board's directory, so a relative `--out` would be
+    // read from there (P01.5: no session was written).
+    let out_dir = std::path::absolute(need("out")?).map_err(|e| format!("--out: {e}"))?;
     let mut engines = Vec::new();
     let mut java_version = None;
     if let Some(jar) = option(&options, "java") {

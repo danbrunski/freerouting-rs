@@ -20,6 +20,7 @@ pub mod library;
 pub mod optimize;
 pub mod quality;
 pub mod rules;
+pub mod run_stats;
 pub mod scoring;
 pub mod settings;
 pub mod shove;

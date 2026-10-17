@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "what": "callgrind instruction counts (P01.4); see tools/bench/callgrind.sh",
+  "git": "f9e9ead",
+  "tracked_files_modified": 36,
+  "valgrind": "valgrind-3.22.0",
+  "counts": {
+    "kernel/complete_shape": 73732534,
+    "kernel/drc": 17063465,
+    "kernel/maze": 112492649,
+    "kernel/overlap": 67871587,
+    "kernel/pull_tight": 5479187,
+    "route/Issue143-rpi_splitter": 762876365,
+    "route/Issue433-my-board": 235816875,
+    "route/Issue508-SMD-routing-issue-demo": 322228233
+  }
+}

@@ -49,6 +49,8 @@ impl WorkMeter {
     pub fn add(&self, units: u64) {
         if units > 0 {
             self.units.fetch_add(units, Ordering::Relaxed);
+            // P01.2: one load of a flag while the statistics are off.
+            crate::run_stats::record_tree_query(units);
         }
     }
 

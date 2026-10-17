@@ -1,7 +1,9 @@
 //! The board facade: the item list, the search trees and the operations on
 //! them.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
+
+use crate::util::{HashMap, HashSet};
 use std::sync::{Arc, OnceLock};
 
 use freerouting_geometry::{
@@ -101,7 +103,7 @@ impl BasicBoard {
             max_trace_half_width: 1000,
             min_trace_half_width: 10000,
             revision: 0,
-            normalize_suppressed_nets: HashSet::new(),
+            normalize_suppressed_nets: HashSet::default(),
             edge_pin_nets: OnceLock::new(),
             changed_area: None,
             log: Vec::new(),
@@ -269,7 +271,7 @@ impl BasicBoard {
             max_trace_half_width: snapshot.max_trace_half_width,
             min_trace_half_width: snapshot.min_trace_half_width,
             revision: 0,
-            normalize_suppressed_nets: HashSet::new(),
+            normalize_suppressed_nets: HashSet::default(),
             edge_pin_nets: OnceLock::new(),
             changed_area: None,
             log: Vec::new(),
@@ -1585,7 +1587,7 @@ impl BasicBoard {
     /// outline.
     pub fn edge_pin_nets(&self) -> &HashSet<i32> {
         self.edge_pin_nets.get_or_init(|| {
-            let mut result = HashSet::new();
+            let mut result = HashSet::default();
             let Some(outline) = self.outline().and_then(Item::as_board_outline) else {
                 return result;
             };
@@ -1826,7 +1828,7 @@ impl BasicBoard {
             &mut result,
             net_number,
             stop_at_plane,
-            &mut HashMap::new(),
+            &mut HashMap::default(),
         );
         result
     }
@@ -1898,7 +1900,7 @@ impl BasicBoard {
     /// The connectable items of the net (or the nets of `id` if
     /// `net_number <= 0`) not connected to `id`.
     pub fn unconnected_set(&self, id: ItemId, net_number: i32) -> BTreeSet<ItemId> {
-        self.unconnected_set_cached(id, net_number, &mut HashMap::new())
+        self.unconnected_set_cached(id, net_number, &mut HashMap::default())
     }
 
     /// [`unconnected_set`](Self::unconnected_set) with memoized contacts

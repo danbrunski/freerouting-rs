@@ -107,6 +107,14 @@ PLUGIN FLAGS (not in Java)
   --seed <number>
       Reserved. 0 means Java's own seeds; any other value is refused.
 
+DEVELOPER FLAGS (not in Java; not in --capabilities)
+  --stats json
+      Write the work counts and wall time of each stage (load, fanout, every
+      autorouter pass, every optimizer pass, drc, write) to
+      <output>.stats.json. The route is the same with and without it.
+  --stats-out <file>
+      Write the statistics to this file instead.
+
 STOPPING A RUN
   Lines on standard input, whole lines, any case:
     stop         finish the current step, write the best board, exit 0

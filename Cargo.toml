@@ -20,3 +20,10 @@ freerouting = { path = "crates/freerouting" }
 # Opt-level 1: `cargo test --workspace` warm takes 26 s instead of 181 s; overflow checks and debug assertions stay on.
 [profile.dev]
 opt-level = 1
+
+# For profilers (docs/development/profiling.md): the release build with line tables, so callgrind
+# and samply can name functions and lines. Same optimizer settings as release, so the code is the
+# same code; only the debug info differs.
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"

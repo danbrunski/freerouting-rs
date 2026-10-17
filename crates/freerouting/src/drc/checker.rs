@@ -3,7 +3,9 @@
 //! Port of `drc.DesignRulesChecker` and of the counts of
 //! `drc.NetRoutingLedger`.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
+
+use crate::util::{HashMap, HashSet};
 
 use freerouting_geometry::{FloatPoint, PolylineShapeOps};
 
@@ -97,7 +99,7 @@ impl<'a> DesignRulesChecker<'a> {
     pub fn new(board: &'a BasicBoard) -> Self {
         DesignRulesChecker {
             board,
-            contacts: HashMap::new(),
+            contacts: HashMap::default(),
             net_incompletes: None,
             max_connections: 0,
             check_zone_islands: true,
@@ -492,7 +494,7 @@ impl<'a> DesignRulesChecker<'a> {
         let violations = self.all_clearance_violations();
         summary.clearance_violations_count = violations.len();
         let unconnected = self.all_unconnected_items();
-        let mut unconnected_nets: HashSet<i32> = HashSet::new();
+        let mut unconnected_nets: HashSet<i32> = HashSet::default();
         let mut dangling_stubs = 0;
         for u in &unconnected {
             let first = self.board.item(u.first_item);

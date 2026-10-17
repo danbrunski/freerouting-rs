@@ -7,7 +7,7 @@
 //! `getRouterScore(RouterSettings)` and `getOptimizerScore(RouterSettings)`
 //! do.
 
-use std::collections::HashMap;
+use crate::util::HashMap;
 
 use freerouting_geometry::FloatPoint;
 use freerouting_geometry::jmath::{double_stream_sum, max_f64};
@@ -686,7 +686,7 @@ impl BoardStatistics {
 
         // The board does not change while counting, so the contacts of the
         // items are computed once for all pins.
-        let mut contacts = HashMap::new();
+        let mut contacts = HashMap::default();
         for id in board.smd_pins() {
             let Some(pin) = board.item(id) else {
                 continue;
