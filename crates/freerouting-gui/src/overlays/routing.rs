@@ -73,7 +73,7 @@ pub fn draw(
             }
             RoutingShape::Cross { center, radius_mm } => {
                 let r = radius_mm;
-                let stroke = Stroke::new(2.0, color);
+                let stroke = Stroke::new(2.0f32, color);
                 for (a, b) in [
                     (
                         P::new(center.x - r, center.y - r),

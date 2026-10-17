@@ -157,12 +157,15 @@ pub fn draw(
         let faint =
             Color32::from_rgba_unmultiplied(highlight.r(), highlight.g(), highlight.b(), 50);
         for id in &route.targets {
-            drawn += pen.item(board, *id, Stroke::new(1.0, highlight), faint);
+            drawn += pen.item(board, *id, Stroke::new(1.0f32, highlight), faint);
         }
         for pin in &route.swap_pins {
-            drawn += pen.item(board, pin.pin, Stroke::new(1.5, highlight), faint);
+            drawn += pen.item(board, pin.pin, Stroke::new(1.5f32, highlight), faint);
             if let Some((a, b)) = pin.incomplete {
-                painter.line_segment([pen.screen(a), pen.screen(b)], Stroke::new(1.0, incomplete));
+                painter.line_segment(
+                    [pen.screen(a), pen.screen(b)],
+                    Stroke::new(1.0f32, incomplete),
+                );
                 drawn += 1;
             }
         }
@@ -184,37 +187,37 @@ pub fn draw(
                 .into_iter()
                 .map(|p| pen.screen(p))
                 .collect();
-            painter.add(Draw::line(points, Stroke::new(1.0, incomplete)));
+            painter.add(Draw::line(points, Stroke::new(1.0f32, incomplete)));
             drawn += 1;
         }
         if let Some((centre, radius)) = route.layer_change_marker {
             let r = ((frame.len(radius) * camera.zoom) as f32).max(3.0);
-            painter.circle_stroke(pen.screen(centre), r, Stroke::new(1.5, highlight));
+            painter.circle_stroke(pen.screen(centre), r, Stroke::new(1.5f32, highlight));
             drawn += 1;
         }
         for id in highlights(overlay) {
             let fill =
                 Color32::from_rgba_unmultiplied(violation.r(), violation.g(), violation.b(), 90);
-            drawn += pen.item(board, id, Stroke::new(2.0, violation), fill);
+            drawn += pen.item(board, id, Stroke::new(2.0f32, violation), fill);
         }
     }
     if let Some((first, swappable)) = &overlay.swap {
         drawn += pen.item(
             board,
             *first,
-            Stroke::new(2.0, highlight),
+            Stroke::new(2.0f32, highlight),
             Color32::TRANSPARENT,
         );
         let faint =
             Color32::from_rgba_unmultiplied(highlight.r(), highlight.g(), highlight.b(), 60);
         for id in swappable {
-            drawn += pen.item(board, *id, Stroke::new(1.5, highlight), faint);
+            drawn += pen.item(board, *id, Stroke::new(1.5f32, highlight), faint);
         }
     }
     let fill = Color32::from_rgba_unmultiplied(highlight.r(), highlight.g(), highlight.b(), 90);
     for geometry in &overlay.floating {
         for g in geometry_geoms(frame, geometry) {
-            pen.geom(g, Stroke::new(1.5, highlight), fill);
+            pen.geom(g, Stroke::new(1.5f32, highlight), fill);
             drawn += 1;
         }
     }
@@ -222,7 +225,7 @@ pub fn draw(
         if let Some(g) = shape_geom(frame, shape) {
             let vfill =
                 Color32::from_rgba_unmultiplied(violation.r(), violation.g(), violation.b(), 110);
-            pen.geom(g, Stroke::new(1.0, violation), vfill);
+            pen.geom(g, Stroke::new(1.0f32, violation), vfill);
             drawn += 1;
         }
     }

@@ -22,7 +22,7 @@ pub fn draw(
         return 0;
     }
     let stroke = Stroke::new(
-        1.0,
+        1.0f32,
         look.overlay_color(OtherColor::Incompletes, Object::Incompletes),
     );
     for line in &ratsnest.airlines {

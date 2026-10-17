@@ -126,7 +126,7 @@ pub fn draw(
     let alpha = |a: u8| {
         Color32::from_rgba_unmultiplied(base.r(), base.g(), base.b(), a).gamma_multiply(level)
     };
-    let stroke = Stroke::new(2.0, alpha(255));
+    let stroke = Stroke::new(2.0f32, alpha(255));
     let fill = alpha(70);
     let screen = |p: P| camera.to_screen(rect, p);
     let mut drawn = 0;

@@ -22,7 +22,7 @@ pub fn draw(
     look: &Look,
 ) -> usize {
     let color = look.other_color(OtherColor::Violations);
-    let outline = Stroke::new(1.0, color);
+    let outline = Stroke::new(1.0f32, color);
     let fill = Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 90);
     for violation in &drc.clearance {
         let points: Vec<Pos2> = violation
@@ -36,7 +36,7 @@ pub fn draw(
             painter.add(Shape::convex_polygon(points, fill, outline));
         }
         let centre = camera.to_screen(rect, frame.pt(violation.location()));
-        painter.circle_stroke(centre, RING_RADIUS, Stroke::new(1.5, color));
+        painter.circle_stroke(centre, RING_RADIUS, Stroke::new(1.5f32, color));
     }
     drc.clearance.len()
 }

@@ -533,7 +533,7 @@ fn drag_events(
 }
 
 fn draw_overlays(painter: &egui::Painter, view: &ViewState, rect: Rect) {
-    let stroke = Stroke::new(1.0, Color32::from_white_alpha(140));
+    let stroke = Stroke::new(1.0f32, Color32::from_white_alpha(140));
     if let Some((a, b)) = view.tool_drag {
         painter.rect_stroke(
             Rect::from_two_pos(a, b),

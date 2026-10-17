@@ -53,7 +53,7 @@ pub fn draw(
     kind: KeepoutKind,
 ) -> usize {
     let color = Color32::from_white_alpha(200);
-    let stroke = Stroke::new(1.5, color);
+    let stroke = Stroke::new(1.5f32, color);
     let screen = |p: IntPoint| -> Pos2 { camera.to_screen(rect, frame.pt(p.to_float())) };
     if kind == KeepoutKind::Circle {
         let Some(center) = band.points.first() else {
