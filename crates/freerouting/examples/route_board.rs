@@ -255,5 +255,13 @@ fn main() -> ExitCode {
             counters.replaced.get()
         );
     }
+    // P02.1: `-- --router.debug.audit_incremental=true` turns the audit on.
+    if let Some(audit) = &outcome.audit {
+        eprintln!("  {}", audit.summary_line());
+        if let Some((point, difference)) = &audit.first {
+            eprintln!("  first difference {point}: {difference}");
+            return ExitCode::from(1);
+        }
+    }
     ExitCode::SUCCESS
 }

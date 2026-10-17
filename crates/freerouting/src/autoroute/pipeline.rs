@@ -57,6 +57,7 @@ use crate::autoroute::stages::{
     StopReason, UnknownStage, lock_diagnostics,
 };
 use crate::board::RoutingBoard;
+use crate::board::search::audit::AuditReport;
 use crate::job::deadline::{StopLevel, Watcher};
 use crate::job::{LogLevel, LogLine};
 use crate::settings::RouterSettings;
@@ -136,6 +137,24 @@ pub struct PipelineOutcome {
     pub timed_out: bool,
     /// Java's job log lines.
     pub log: Vec<LogLine>,
+    /// P02.1's search-tree audit, if `router.debug.audit_incremental` was on.
+    pub audit: Option<AuditReport>,
+}
+
+/// The job log lines of P02.1's audit: the tally, and the first difference
+/// as an error.
+fn audit_log(audit: &AuditReport) -> Vec<LogLine> {
+    let mut lines = vec![LogLine {
+        level: LogLevel::Info,
+        text: audit.summary_line(),
+    }];
+    if let Some((point, difference)) = &audit.first {
+        lines.push(LogLine {
+            level: LogLevel::Error,
+            text: format!("Incremental search-tree audit, first difference {point}: {difference}"),
+        });
+    }
+    lines
 }
 
 /// Java's router-enabled rule (`RoutingPipeline.java:108-111`):
@@ -257,7 +276,10 @@ pub fn run_pipeline_with(
             &mut ctx,
             &timed_out,
         ) {
-            Ok(result) => loop_outcome = result,
+            Ok(result) => {
+                loop_outcome = result;
+                outcome.audit = runner.audit_report();
+            }
             Err(e) => {
                 drop(watcher);
                 return Err(fail(PipelineError::NoRoutableLayer(e), board));
@@ -266,6 +288,9 @@ pub fn run_pipeline_with(
         outcome.loop_ran = true;
     }
     log.append(&mut loop_outcome.log);
+    if let Some(audit) = &outcome.audit {
+        log.extend(audit_log(audit));
+    }
     // PARITY: :125, `finishAutoroute()`: nothing on the board to drop.
 
     // PARITY: :130-136, the optimizer unless a full stop was requested.

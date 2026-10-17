@@ -67,6 +67,7 @@ use crate::autoroute::stages::{
 };
 use crate::board::RoutingBoard;
 use crate::board::items::StopConnectionOption;
+use crate::board::search::audit::{AuditPoint, AuditReport};
 use crate::job::{LogLevel, LogLine, log};
 use crate::settings::RouterSettings;
 
@@ -88,6 +89,15 @@ pub trait PassExecutor {
     fn figures(&self, board: &RoutingBoard, settings: &RouterSettings) -> BoardFigures {
         BoardFigures::of(board, settings)
     }
+
+    /// P02.1: audits the board's search trees, if the executor's audit is
+    /// on. It only reads the board.
+    fn audit(&mut self, _board: &RoutingBoard, _point: AuditPoint) {}
+
+    /// The audit's tally, if the audit is on.
+    fn audit_report(&self) -> Option<AuditReport> {
+        None
+    }
 }
 
 impl PassExecutor for PassRunner {
@@ -103,6 +113,14 @@ impl PassExecutor for PassRunner {
 
     fn remove_tails(&mut self, board: &mut RoutingBoard, option: StopConnectionOption) -> bool {
         PassRunner::remove_tails(self, board, option)
+    }
+
+    fn audit(&mut self, board: &RoutingBoard, point: AuditPoint) {
+        PassRunner::audit(self, board, point);
+    }
+
+    fn audit_report(&self) -> Option<AuditReport> {
+        PassRunner::audit_report(self).cloned()
     }
 }
 
@@ -440,6 +458,7 @@ impl Run {
                 && !matches!(decision, PassDecision::Stop(StopReason::RankLimit))
             {
                 self.swap(board, restore.board, ctx);
+                executor.audit(board, AuditPoint::Restore);
                 // PARITY: :384, `resetAntiOscillationState`.
                 stages.ordering.reset();
                 figures = restore.figures;
@@ -492,6 +511,7 @@ impl Run {
                 PassDecision::FanoutRecovery => {
                     let before = figures.incomplete;
                     executor.remove_tails(board, StopConnectionOption::None);
+                    executor.audit(board, AuditPoint::LoopRipup);
                     figures = executor.figures(board, settings);
                     self.outcome.debug(format!(
                         "Applied one-time fanout recovery cleanup (removed fanout tails/vias). \
@@ -503,6 +523,7 @@ impl Run {
                 PassDecision::LastMileRipup => {
                     let incomplete_now = figures.incomplete;
                     let removed = rip_blockers(board);
+                    executor.audit(board, AuditPoint::LoopRipup);
                     self.outcome.last_mile.push(removed);
                     if removed > 0 {
                         figures = executor.figures(board, settings);
@@ -596,6 +617,7 @@ impl Run {
         {
             let before = score_text(&figures);
             self.swap(board, best, ctx);
+            executor.audit(board, AuditPoint::Restore);
             figures = executor.figures(board, settings);
             self.outcome.restored_best = true;
             self.outcome.debug(format!(
@@ -607,6 +629,7 @@ impl Run {
         // PARITY: :635-639.
         if decision.remove_tails {
             executor.remove_tails(board, StopConnectionOption::None);
+            executor.audit(board, AuditPoint::Finish);
             figures = executor.figures(board, settings);
         }
         self.history.clear();

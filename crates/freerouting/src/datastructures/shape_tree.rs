@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use freerouting_geometry::{RegularTileShape, ShapeBoundingDirections, TileShapeOps};
+use freerouting_geometry::{RegularTileShape, ShapeBoundingDirections, TileShape, TileShapeOps};
 
 use crate::board::search::WorkMeter;
 
@@ -269,7 +269,7 @@ impl<K: Ord + Copy> ShapeTree<K> {
         while let Some(current) = stack.pop() {
             visited += 1;
             let node = self.node(current);
-            if node.bounds.to_tile_shape().intersects_tile(&query) {
+            if bounds_intersect(&node.bounds, &query) {
                 match node.kind {
                     NodeKind::Leaf {
                         object,
@@ -403,6 +403,20 @@ impl<K: Ord + Copy> ShapeTree<K> {
     /// True if the tree has no leaves (Java `root == null`).
     pub fn is_empty(&self) -> bool {
         self.root.is_none()
+    }
+}
+
+/// `bounds.to_tile_shape().intersects_tile(query)`, with the two pairs of
+/// one kind (the 45 degree and the 90 degree trees with their own queries)
+/// tested directly, the same calls `intersects_tile` makes (P02.2).
+#[inline]
+fn bounds_intersect(bounds: &RegularTileShape, query: &TileShape) -> bool {
+    match (bounds, query) {
+        (RegularTileShape::IntOctagon(node), TileShape::IntOctagon(q)) => {
+            q.intersects_octagon(node)
+        }
+        (RegularTileShape::IntBox(node), TileShape::IntBox(q)) => q.intersects_box(node),
+        _ => bounds.to_tile_shape().intersects_tile(query),
     }
 }
 

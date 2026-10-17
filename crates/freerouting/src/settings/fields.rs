@@ -435,7 +435,12 @@ settings_table! {
             (stages, Vec<String>, opt, None, None, "stages", [], Flat::No, true,
                 "Extra board stage ids, run at each stage's phase in list order."),
             (diagnostics, Vec<String>, opt, None, None, "diagnostics", [], Flat::No, true,
-                "Report-only diagnostics ids (Q06 `verdicts`); they change no routes."),
+                "Report-only diagnostics ids (Q06 `verdicts` and rip-stats (Q05)); they change no routes."),
+        }
+        debug, DebugPatch, DebugSettings, "debug",
+        "Engine self-checks (P02.1; not a Java section)." {
+            (audit_incremental, bool, opt, None, None, "auditIncremental", [], Flat::No, true,
+                "Compare the search trees with a rebuild after each ripup and restore and each pass (unset: off)."),
         }
     }
 }

@@ -43,6 +43,9 @@
 //! - `PARITY_RESUME=1`: reuse the record of a board already routed into `PARITY_OUT`;
 //! - `PARITY_SINK=counters`: route with a listening sink that counts events (A04's sink
 //!   requirement at the SES level: the SES files must equal the `noop` run's).
+//! - `PARITY_AUDIT=1`: route with P02.1's incremental search-tree audit
+//!   (`router.debug.audit_incremental`); a board whose audit finds a difference fails with
+//!   `audit_difference` and the first difference.
 
 #[path = "../../freerouting-dev/src/session_geometry.rs"]
 #[allow(dead_code)]

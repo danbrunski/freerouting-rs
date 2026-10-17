@@ -339,6 +339,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "special.diagnostics",
         "report-only diagnostics (Q06), set with the CLI or a settings file",
     ),
+    (
+        "debug.audit_incremental",
+        "engine self-check (P02.1), set with the CLI or a settings file",
+    ),
 ];
 
 /// True if the window has a control for the field `path`.

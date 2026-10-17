@@ -37,6 +37,11 @@
 //! channel drops what a slow listener cannot take, so nothing depends on
 //! time.
 //!
+//! **Audit.** With `router.debug.audit_incremental` (P02.1) the runner
+//! compares the board's search trees with a rebuild after each connection
+//! that ripped items or failed, and after the tail removal
+//! ([`IncrementalAudit`]). The audit only reads.
+//!
 //! Not ported: Java's trace logging, its per-net debug dumps and its
 //! benchmark profile. A Java exception inside the pass returns false; the
 //! port has no such path.
@@ -52,6 +57,7 @@ use crate::autoroute::stages::{
 };
 use crate::board::RoutingBoard;
 use crate::board::items::StopConnectionOption;
+use crate::board::search::audit::{AuditPoint, AuditReport, IncrementalAudit};
 use crate::scoring::BoardStatistics;
 use crate::settings::RouterSettings;
 use crate::settings::board::BoardRouterSettings;
@@ -144,6 +150,8 @@ pub struct PassRunner {
     pub max_items: i32,
     /// `totalItemsRouted`, across the passes of this runner.
     total_items_routed: i64,
+    /// P02.1's audit, when `router.debug.audit_incremental` is on.
+    audit: Option<IncrementalAudit>,
 }
 
 impl PassRunner {
@@ -179,6 +187,7 @@ impl PassRunner {
             pull_tight_accuracy,
             max_items,
             total_items_routed: 0,
+            audit: None,
         }
     }
 
@@ -187,14 +196,31 @@ impl PassRunner {
     /// preferred directions on, the settings' start ripup costs and
     /// pull-tight accuracy.
     pub fn for_job(settings: &RouterSettings, board_settings: &BoardRouterSettings) -> Self {
-        PassRunner::new(
+        let mut runner = PassRunner::new(
             board_settings,
             !settings.fanout.enabled,
             true,
             board_settings.start_ripup_costs(),
             board_settings.trace_pull_tight_accuracy(),
             settings.autorouter.max_items,
-        )
+        );
+        if settings.debug.audit_incremental == Some(true) {
+            runner.audit = Some(IncrementalAudit::new());
+        }
+        runner
+    }
+
+    /// P02.1: compares the board's search trees with a rebuild, if the
+    /// audit is on.
+    pub fn audit(&mut self, board: &RoutingBoard, point: AuditPoint) {
+        if let Some(audit) = &mut self.audit {
+            audit.check(board, point);
+        }
+    }
+
+    /// The audit's tally, if the audit is on.
+    pub fn audit_report(&self) -> Option<&AuditReport> {
+        self.audit.as_ref().map(IncrementalAudit::report)
     }
 
     /// The items counted against `max_items` so far.
@@ -292,6 +318,9 @@ impl PassRunner {
                 let result = stages.router.route(board, &net_task, &params, ctx);
                 self.count(board, pass, &net_task, &result, stages, &mut outcome);
                 observer.after_connection(board, &net_task, &result);
+                if self.audit.is_some() && (!result.ripped.is_empty() || is_failure(result.state)) {
+                    self.audit(board, AuditPoint::Ripup { pass });
+                }
                 // G07.4: the listener sees the connection's items before its
                 // progress event.
                 flush_journal(board, ctx.events);
@@ -306,6 +335,7 @@ impl PassRunner {
         observer.before_tails(board);
         let removed = self.remove_tails(board, option);
         observer.after_tails(board, removed);
+        self.audit(board, AuditPoint::PassEnd { pass });
         let ledger = board.routing_ledger();
         outcome.incomplete = ledger.incomplete_count(board);
         outcome.incomplete_nets = ledger.incomplete_net_numbers(board);
@@ -358,6 +388,18 @@ impl PassRunner {
         }
         outcome.ripped += result.ripped.len();
     }
+}
+
+/// True if `state` is a failed attempt (`count`'s failure branch, where the
+/// ripup policy may rip items).
+fn is_failure(state: AttemptState) -> bool {
+    !matches!(
+        state,
+        AttemptState::Routed
+            | AttemptState::AlreadyConnected
+            | AttemptState::NoUnconnectedNets
+            | AttemptState::ConnectedToPlane
+    )
 }
 
 /// The progress counters of a pass and the statistics they carry.

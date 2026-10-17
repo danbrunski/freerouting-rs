@@ -45,6 +45,178 @@ fn sort_lines(lines: &mut [Line]) {
     lines.sort_by(|a, b| a.compare_to(b).cmp(&0));
 }
 
+/// Lines up to this many are handled in stack buffers by the predicates
+/// below (P02.2); longer ones fall back to the heap.
+const SCRATCH_LINES: usize = 32;
+
+/// The first step of [`Simplex::remove_redundant_lines`]: drops each line
+/// that `fast_equals` the last line kept, in place. Returns the number kept
+/// at the front.
+fn dedup_lines(lines: &mut [Line]) -> usize {
+    if lines.is_empty() {
+        return 0;
+    }
+    let mut kept = 1;
+    for i in 1..lines.len() {
+        if !lines[i].fast_equals(&lines[kept - 1]) {
+            lines[kept] = lines[i];
+            kept += 1;
+        }
+    }
+    kept
+}
+
+/// The rest of [`Simplex::remove_redundant_lines`] on `lines` (sorted, no
+/// consecutive duplicates): removes the redundant lines in place and
+/// returns how many remain at the front; 0 means the simplex is empty.
+fn reduce_redundant_lines(lines: &mut [Line]) -> usize {
+    let mut new_length = lines.len();
+    // On which side of each line the previous and the next line intersect.
+    let mut stack_sides = [None; SCRATCH_LINES];
+    let mut heap_sides;
+    let intersection_sides: &mut [Option<Side>] = if new_length <= SCRATCH_LINES {
+        &mut stack_sides[..new_length]
+    } else {
+        heap_sides = vec![None; new_length];
+        &mut heap_sides
+    };
+    let mut try_again = new_length > 2;
+    let mut index_of_last_removed_line = new_length as isize;
+    while try_again {
+        try_again = false;
+        let mut prev_ind = new_length - 1;
+        let mut prev_line = lines[prev_ind];
+        let mut current_line = lines[0];
+        let mut ind: isize = 0;
+        while ind < new_length as isize {
+            let u = ind as usize;
+            let next_ind = if u == new_length - 1 { 0 } else { u + 1 };
+            let next_line = lines[next_ind];
+            let mut remove_line = false;
+            let prev_dir = prev_line.int_direction();
+            let next_dir = next_line.int_direction();
+            let det = prev_dir.determinant(&next_dir);
+            if det != 0.0 {
+                let side = *intersection_sides[u].get_or_insert_with(|| {
+                    current_line.side_of_intersection(&prev_line, &next_line)
+                });
+                if det > 0.0 {
+                    // If the intersection of prev_line and next_line is not on the
+                    // left of current_line, current_line is redundant.
+                    remove_line = side != Side::OnTheLeft;
+                } else if side == Side::OnTheLeft {
+                    let current_direction = current_line.int_direction();
+                    if prev_dir.determinant(&current_direction) > 0.0 {
+                        // The simplex is empty.
+                        new_length = 0;
+                        break;
+                    }
+                }
+            } else if prev_line.side_of_int(next_line.a) == Side::OnTheLeft {
+                // Parallel half-planes without intersection.
+                new_length = 0;
+                break;
+            }
+            if remove_line {
+                try_again = true;
+                new_length -= 1;
+                for i in u..new_length {
+                    lines[i] = lines[i + 1];
+                    intersection_sides[i] = intersection_sides[i + 1];
+                }
+                if new_length < 3 {
+                    try_again = false;
+                    break;
+                }
+                if u == 0 {
+                    prev_ind = new_length - 1;
+                }
+                intersection_sides[prev_ind] = None;
+                let reset_ind = if u >= new_length { 0 } else { u };
+                intersection_sides[reset_ind] = None;
+                ind -= 1;
+                index_of_last_removed_line = ind;
+            } else {
+                prev_line = current_line;
+                prev_ind = u;
+            }
+            current_line = next_line;
+            if !try_again && ind >= index_of_last_removed_line {
+                break;
+            }
+            ind += 1;
+        }
+        if new_length == 0 {
+            try_again = false;
+        }
+    }
+    if new_length == 2 && lines[0].is_parallel(&lines[1]) {
+        if lines[0].direction() == lines[1].direction() {
+            // One of the two remaining lines is redundant.
+            if lines[1].side_of_int(lines[0].a) == Side::OnTheLeft {
+                lines[0] = lines[1];
+            }
+            new_length -= 1;
+        } else if lines[1].side_of_int(lines[0].a) == Side::OnTheLeft {
+            // Opposite directions without intersection.
+            new_length = 0;
+        }
+    }
+    new_length
+}
+
+/// `!Simplex::new(a ++ b sorted).remove_redundant_lines().is_empty()`, the
+/// emptiness test of [`Simplex::intersection_simplex`], without building a
+/// simplex: the same lines in the same order through the same steps, in a
+/// stack buffer. `a` and `b` are the lines of two simplexes, `a` first.
+fn lines_intersect(a: &[Line], b: &[Line]) -> bool {
+    if a.is_empty() || b.is_empty() {
+        return false;
+    }
+    let n = a.len() + b.len();
+    let mut stack = [a[0]; SCRATCH_LINES];
+    let mut heap;
+    let buffer: &mut [Line] = if n <= SCRATCH_LINES {
+        &mut stack[..n]
+    } else {
+        heap = vec![a[0]; n];
+        &mut heap
+    };
+    buffer[..a.len()].copy_from_slice(a);
+    buffer[a.len()..].copy_from_slice(b);
+    sort_lines(buffer);
+    let distinct = dedup_lines(buffer);
+    reduce_redundant_lines(&mut buffer[..distinct]) > 0
+}
+
+/// The lines of `o.to_simplex()` in `out`, without building it; returns
+/// their number (0 for an empty octagon or simplex).
+pub(crate) fn octagon_simplex_lines(o: &IntOctagon, out: &mut [Line; 8]) -> usize {
+    if o.is_empty() {
+        return 0;
+    }
+    for (i, line) in out.iter_mut().enumerate() {
+        *line = o.border_line(i);
+    }
+    let distinct = dedup_lines(out);
+    reduce_redundant_lines(&mut out[..distinct])
+}
+
+/// The lines of `b.to_simplex()` in `out`; returns their number (0 for an
+/// empty box).
+pub(crate) fn box_simplex_lines(b: &IntBox, out: &mut [Line; 4]) -> usize {
+    if b.is_empty() {
+        return 0;
+    }
+    *out = [
+        Line::get_instance(b.ll, IntDirection::RIGHT),
+        Line::get_instance(b.ur, IntDirection::UP),
+        Line::get_instance(b.ur, IntDirection::LEFT),
+        Line::get_instance(b.ll, IntDirection::DOWN),
+    ];
+    4
+}
+
 impl Simplex {
     /// Creates a simplex from the directed lines without normalizing it (Java
     /// `new Simplex(Line[])`); use [`Simplex::get_instance`] for a normalized one.
@@ -233,9 +405,26 @@ impl Simplex {
         Simplex::new(new_array).remove_redundant_lines()
     }
 
-    /// True if this simplex and `other` intersect.
+    /// True if this simplex and `other` intersect: the intersection is not
+    /// empty, tested without building it.
     pub fn intersects_simplex(&self, other: &Simplex) -> bool {
-        !self.intersection_simplex(other).is_empty()
+        lines_intersect(self.lines(), other.lines())
+    }
+
+    /// `self.intersects_simplex(&o.to_simplex())` without building either
+    /// simplex.
+    pub fn intersects_octagon_simplex(&self, o: &IntOctagon) -> bool {
+        let mut lines = [Line::get_instance(IntPoint::new(0, 0), IntDirection::RIGHT); 8];
+        let n = octagon_simplex_lines(o, &mut lines);
+        lines_intersect(self.lines(), &lines[..n])
+    }
+
+    /// `self.intersects_simplex(&b.to_simplex())` without building either
+    /// simplex.
+    pub fn intersects_box_simplex(&self, b: &IntBox) -> bool {
+        let mut lines = [Line::get_instance(IntPoint::new(0, 0), IntDirection::RIGHT); 4];
+        let n = box_simplex_lines(b, &mut lines);
+        lines_intersect(self.lines(), &lines[..n])
     }
 
     /// This simplex without border line `no` (it may become unbounded).
@@ -359,100 +548,9 @@ impl Simplex {
         if src.is_empty() {
             return self.clone();
         }
-        let mut lines: Vec<Line> = Vec::with_capacity(src.len());
-        lines.push(src[0]);
-        let mut prev = src[0];
-        for line in &src[1..] {
-            if !line.fast_equals(&prev) {
-                lines.push(*line);
-                prev = *line;
-            }
-        }
-        let mut new_length = lines.len();
-        // On which side of each line the previous and the next line intersect.
-        let mut intersection_sides: Vec<Option<Side>> = vec![None; new_length];
-        let mut try_again = new_length > 2;
-        let mut index_of_last_removed_line = new_length as isize;
-        while try_again {
-            try_again = false;
-            let mut prev_ind = new_length - 1;
-            let mut prev_line = lines[prev_ind];
-            let mut current_line = lines[0];
-            let mut ind: isize = 0;
-            while ind < new_length as isize {
-                let u = ind as usize;
-                let next_ind = if u == new_length - 1 { 0 } else { u + 1 };
-                let next_line = lines[next_ind];
-                let mut remove_line = false;
-                let prev_dir = prev_line.int_direction();
-                let next_dir = next_line.int_direction();
-                let det = prev_dir.determinant(&next_dir);
-                if det != 0.0 {
-                    let side = *intersection_sides[u].get_or_insert_with(|| {
-                        current_line.side_of_intersection(&prev_line, &next_line)
-                    });
-                    if det > 0.0 {
-                        // If the intersection of prev_line and next_line is not on the
-                        // left of current_line, current_line is redundant.
-                        remove_line = side != Side::OnTheLeft;
-                    } else if side == Side::OnTheLeft {
-                        let current_direction = current_line.int_direction();
-                        if prev_dir.determinant(&current_direction) > 0.0 {
-                            // The simplex is empty.
-                            new_length = 0;
-                            break;
-                        }
-                    }
-                } else if prev_line.side_of_int(next_line.a) == Side::OnTheLeft {
-                    // Parallel half-planes without intersection.
-                    new_length = 0;
-                    break;
-                }
-                if remove_line {
-                    try_again = true;
-                    new_length -= 1;
-                    for i in u..new_length {
-                        lines[i] = lines[i + 1];
-                        intersection_sides[i] = intersection_sides[i + 1];
-                    }
-                    if new_length < 3 {
-                        try_again = false;
-                        break;
-                    }
-                    if u == 0 {
-                        prev_ind = new_length - 1;
-                    }
-                    intersection_sides[prev_ind] = None;
-                    let reset_ind = if u >= new_length { 0 } else { u };
-                    intersection_sides[reset_ind] = None;
-                    ind -= 1;
-                    index_of_last_removed_line = ind;
-                } else {
-                    prev_line = current_line;
-                    prev_ind = u;
-                }
-                current_line = next_line;
-                if !try_again && ind >= index_of_last_removed_line {
-                    break;
-                }
-                ind += 1;
-            }
-            if new_length == 0 {
-                try_again = false;
-            }
-        }
-        if new_length == 2 && lines[0].is_parallel(&lines[1]) {
-            if lines[0].direction() == lines[1].direction() {
-                // One of the two remaining lines is redundant.
-                if lines[1].side_of_int(lines[0].a) == Side::OnTheLeft {
-                    lines[0] = lines[1];
-                }
-                new_length -= 1;
-            } else if lines[1].side_of_int(lines[0].a) == Side::OnTheLeft {
-                // Opposite directions without intersection.
-                new_length = 0;
-            }
-        }
+        let mut lines: Vec<Line> = src.to_vec();
+        let distinct = dedup_lines(&mut lines);
+        let new_length = reduce_redundant_lines(&mut lines[..distinct]);
         if new_length == src.len() {
             return self.clone();
         }

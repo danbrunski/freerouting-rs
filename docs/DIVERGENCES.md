@@ -227,6 +227,11 @@ branch 3 in IntOctagon's box cutout.
   `special` section (`plane_taps`, `neck_down`, `stages`). An unknown id in them is an
   error naming the key and the known ids; the two Java keys keep Java's warn-and-default
   (`autoroute_batch_control.rs`, `unknown_per_stage_id_is_an_error_naming_the_key_and_the_known_ids`).
+- The `debug` section (P02.1) is a settings section Java does not have: `audit_incremental`,
+  off by default, compares every search tree with a fresh build after each ripup and restore
+  and at the end of each pass, and logs the tally and the first difference. It only reads
+  the board, so the routed result is the same with it on (`tests/search_audit.rs`,
+  `board::search::audit`).
 - Floating point text: hexadecimal floating point literals (`0x1p3`) and Unicode
   decimal digits in `Integer.parseInt` are not accepted (`settings_text.rs`).
 - A rules file's `autoroute_settings` build their patch from the layer names found in

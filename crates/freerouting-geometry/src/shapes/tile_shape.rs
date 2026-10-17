@@ -882,8 +882,16 @@ impl TileShape {
     }
 
     /// True if this shape and `other` have a nonempty intersection.
+    ///
+    /// The dispatch of [`intersects`](Self::intersects) on two tile shapes
+    /// (`Shape::intersects` picks `other`'s overload by this shape's kind),
+    /// without cloning either shape into a [`Shape`] (P02.2).
     pub fn intersects_tile(&self, other: &TileShape) -> bool {
-        self.intersects(&Shape::from(other.clone()))
+        match self {
+            TileShape::IntBox(b) => other.intersects_box(b),
+            TileShape::IntOctagon(o) => other.intersects_octagon(o),
+            TileShape::Simplex(s) => other.intersects_simplex(s),
+        }
     }
 
     /// The shape translated by `vector`.

@@ -496,7 +496,7 @@ impl TileShape {
         match self {
             TileShape::IntBox(a) => a.intersects_box(b),
             TileShape::IntOctagon(a) => a.intersects_octagon(&b.to_int_octagon()),
-            TileShape::Simplex(a) => a.intersects_simplex(&b.to_simplex()),
+            TileShape::Simplex(a) => a.intersects_box_simplex(b),
         }
     }
 
@@ -505,15 +505,15 @@ impl TileShape {
         match self {
             TileShape::IntBox(a) => o.intersects_octagon(&a.to_int_octagon()),
             TileShape::IntOctagon(a) => a.intersects_octagon(o),
-            TileShape::Simplex(a) => a.intersects_simplex(&o.to_simplex()),
+            TileShape::Simplex(a) => a.intersects_octagon_simplex(o),
         }
     }
 
     /// Java `intersects(Simplex)` overload.
     pub fn intersects_simplex(&self, s: &Simplex) -> bool {
         match self {
-            TileShape::IntBox(a) => s.intersects_simplex(&a.to_simplex()),
-            TileShape::IntOctagon(a) => s.intersects_simplex(&a.to_simplex()),
+            TileShape::IntBox(a) => s.intersects_box_simplex(a),
+            TileShape::IntOctagon(a) => s.intersects_octagon_simplex(a),
             TileShape::Simplex(a) => a.intersects_simplex(s),
         }
     }

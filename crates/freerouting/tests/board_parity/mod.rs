@@ -232,6 +232,10 @@ pub fn load(root: &Path, reference: &Reference) -> Result<Loaded, String> {
     patch.optimizer.enabled = Some(false);
     patch.autorouter.max_passes = reference.max_passes;
     patch.autorouter.max_items = reference.max_items;
+    // P02.1: `PARITY_AUDIT=1` routes with the incremental search-tree audit.
+    if std::env::var("PARITY_AUDIT").is_ok_and(|v| v == "1") {
+        patch.debug.audit_incremental = Some(true);
+    }
     input.extra_sources.push((Source::Testing, patch));
     let prepared = prepare_job(&input, &ResolveContext { cores: 8 }).map_err(|e| e.to_string())?;
     Ok(Loaded {
@@ -314,6 +318,12 @@ fn run(loaded: Loaded, sink: Sink) -> Result<Routed, String> {
         }
     };
     let board = outcome.board.take().ok_or("no board came back")?;
+    if let Some(audit) = &outcome.audit {
+        eprintln!("  {}", audit.summary_line());
+        if let Some((point, difference)) = &audit.first {
+            return Err(format!("audit_difference: {point}: {difference}"));
+        }
+    }
     let last_mile = outcome
         .log
         .iter()

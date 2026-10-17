@@ -172,6 +172,8 @@ fn defaults_with_eight_cores() {
         ("special.neck_down", None),
         ("special.stages", None),
         ("special.diagnostics", None),
+        // P02.1: unset, which is off.
+        ("debug.audit_incremental", None),
     ];
     let tabled: BTreeSet<&str> = FIELDS.iter().map(|f| f.path).collect();
     let listed: BTreeSet<&str> = expected.iter().map(|(p, _)| *p).collect();

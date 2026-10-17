@@ -16,6 +16,7 @@
 //! (`ItemSearchTreesInfo`); here each tree keeps them in a map keyed by
 //! [`ItemId`], and the rooms in a map keyed by [`RoomId`].
 
+pub mod audit;
 pub mod entries;
 pub mod fingerprint;
 pub mod tree_object;
@@ -925,6 +926,14 @@ impl SearchTreeManager {
 
     /// Removes the entries of `id` from all trees.
     pub fn remove(&mut self, id: ItemId) {
+        // P02.1's seeded fault: a test build can skip one removal.
+        #[cfg(test)]
+        for (index, tree) in self.trees.iter_mut().enumerate() {
+            if !audit::fault::skips_removal(id, index) {
+                tree.remove(id);
+            }
+        }
+        #[cfg(not(test))]
         for tree in &mut self.trees {
             tree.remove(id);
         }
