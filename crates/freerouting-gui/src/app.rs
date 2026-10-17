@@ -80,6 +80,8 @@ pub struct App {
     // G07: the autorouter job and its settings.
     pub(crate) routing: Option<crate::routing::RoutingRun>,
     pub(crate) autoroute: crate::routing::Autoroute,
+    // G08: saving, the questions and the front-end mode.
+    pub(crate) files: crate::app_files::FilesState,
 }
 
 impl App {
@@ -157,7 +159,9 @@ impl App {
             bench_press: None,
             routing: None,
             autoroute: crate::routing::Autoroute::default(),
+            files: crate::app_files::FilesState::default(),
         };
+        app.init_files(&args);
         if !args.open.is_empty() {
             app.start_load(ctx, args.open, None);
         }
@@ -330,7 +334,7 @@ impl App {
             self.end_editor_session();
         }
         match command {
-            Command::Open(path) => self.start_load(ctx, vec![path], self.current()),
+            Command::Open(path) => self.open_checked(ctx, vec![path]),
             Command::OpenDialog => self.open_dialog(),
             Command::Reload => {
                 if let Some(b) = &self.loaded {
@@ -356,6 +360,10 @@ impl App {
             | Command::ApplyAutorouteSettings(_)
             | Command::CloseRoutingSummary
             | Command::SetShowRoutingSummary(_)) => self.execute_routing(ctx, command),
+            command @ (Command::SaveAsDialog
+            | Command::SaveAs(_)
+            | Command::SaveCancelled
+            | Command::AnswerPrompt(_)) => self.execute_files(ctx, command),
             Command::Notice(message) => self.notice = Some(message),
             command @ (Command::CanvasClick { .. }
             | Command::SelectRegion { .. }
@@ -419,7 +427,7 @@ impl App {
         }
     }
 
-    fn current(&self) -> Option<CurrentDesign> {
+    pub(crate) fn current(&self) -> Option<CurrentDesign> {
         let s = &self.loaded.as_ref()?.session;
         Some((s.design.clone(), s.paths.design.clone()))
     }
@@ -435,7 +443,7 @@ impl App {
         }
     }
 
-    fn start_load(
+    pub(crate) fn start_load(
         &mut self,
         ctx: &egui::Context,
         paths: Vec<PathBuf>,
@@ -538,7 +546,6 @@ impl App {
     fn commands_this_frame(&mut self, ctx: &egui::Context) -> Vec<Command> {
         let dropped = ctx.input(|i| i.raw.dropped_files.iter().find_map(|f| f.path.clone()));
         let mut out: Vec<Command> = dropped.into_iter().map(Command::Open).collect();
-        out.extend(self.dialog.ui(ctx).map(Command::Open));
         let typing = ctx.wants_keyboard_input();
         out.extend(ctx.input(|i| input::key_commands(i, typing)));
         // Java's `V` shows the clearance violations of the selected items
@@ -637,6 +644,7 @@ impl eframe::App for App {
         }
         commands.extend(self.export_dialog.ui(ctx).map(Command::ExportDrcReport));
         commands.extend(self.autoroute_ui(ctx));
+        commands.extend(self.files_frame(ctx));
         for command in commands {
             self.execute(ctx, command);
         }

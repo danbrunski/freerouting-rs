@@ -24,11 +24,13 @@
 //! | [`route_settings`] | `WindowRouteParameter`, the board-rule part |
 //! | [`autoroute_handlers`] | the static helpers of `WindowAutorouteParameter` |
 //! | [`autoroute_settings`] | `WindowAutorouteParameter` itself (G07.1) |
+//! | [`autostart`] | the front-end mode's auto-start countdown (G08.5) |
 //! | [`input`] | the static parse helpers of those windows |
 
 pub mod assign_net_class;
 pub mod autoroute_handlers;
 pub mod autoroute_settings;
+pub mod autostart;
 pub mod clearance_matrix;
 pub mod input;
 pub mod net_classes;

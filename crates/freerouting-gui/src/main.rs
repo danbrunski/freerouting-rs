@@ -1,7 +1,10 @@
 //! `freerouting-gui` desktop app.
 //!
 //! Usage: `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom]
-//! [--frames N] [--screenshot out.png] [--exit]`
+//! [--frames N] [--screenshot out.png] [--exit]`, or Java's front-end form
+//! `freerouting-gui -de board.dsn -do board.ses [-dct seconds] [-dr board.rules]`
+//! (G08.4): routes after a countdown, writes the session, exits with 0 (written)
+//! or 1 (the write failed or the board did not load).
 
 // No console window on Windows release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -56,5 +59,11 @@ fn main() -> eframe::Result {
     if let Some(path) = persistence_path {
         let _ = std::fs::remove_file(path);
     }
-    result
+    result?;
+    // The front-end mode (`-de`, `-do`) reports a failed write or load.
+    let code = freerouting_gui::exit_code();
+    if code != 0 {
+        std::process::exit(code);
+    }
+    Ok(())
 }

@@ -179,6 +179,40 @@ The app is a board viewer for now. Nothing in it edits or routes.
   setting with its reason, and `every_router_setting_has_a_control` fails when the engine grows one that is in
   neither list. Only the values that differ from the board's own are kept between runs.
 
+- **Saving, the questions and the front-end mode (G08, `files.rs`, `app_files.rs`,
+  `dialogs/autostart.rs`, `file_dialog.rs`).** File > Save as... (`Ctrl+S`; Java's File menu has no plain
+  Save) opens the file dialog in save mode: a file name field, the filters `Specctra session file (*.ses)`
+  and `Specctra design file (*.dsn)`, and a question before an existing file is replaced. The default is
+  the last output, else `<design dir>/<design stem>.ses`. A session is written by the CLI's writer (C05,
+  `SesStyle::Java`) and then Java's question `Would you like to save the current design rules to a separate
+  .rules file?` (default No) writes `<output stem>.rules` (C04); a design is written by C06. Every write
+  goes to a temporary file in the target folder and is renamed over it (`job::outputs::write_atomic`), so
+  a failed write leaves the old file and an empty result is an error. The session is named after the
+  design file (`board.dsn` gives `board.ses`, as Java's Save As does). "Changed" is Java's
+  `isBoardChanged`: the edit counter says dirty, and then the CRC32 of the board written as DSN
+  (`files::content_hash`) must differ from the one taken at load or at the last save, so an edit that
+  was undone is clean. Closing the window with a changed board (or a running job) asks `confirm_cancel`;
+  opening or dropping a file over a changed board asks `confirm_save_changes` (Save, Don't Save, Cancel;
+  Save runs Save As first, see DIVERGENCES). At start the `<design>.rules` file next to a DSN is offered
+  with `confirm_import_rules` (`-dr` reads one without asking); File > Open does not look for it, as in
+  Java.
+  **Front-end mode** is what the KiCad plugin's "Route in GUI" (K02.5) starts, with Java's flags:
+  ```
+  freerouting-gui -de board.dsn [board.ses] [board.rules] -do out.ses [-dct seconds] [-dr board.rules] [-mp passes]
+  freerouting-gui board.dsn [board.ses]            # as before: no output, no auto-start
+  ```
+  `-de` files are sorted by extension (`a.dsn+b.ses` is split); `-do` is the output (`.ses` or `.dsn`; the
+  first one counts); `-dct` is the countdown in seconds (default 5; 0 or less starts at once, no dialog);
+  `--autoroute` is `-dct 0`; `-mp` is the pass limit, the one router flag read. With `-de` and `-do` a
+  stale output is deleted at start, the dialog `The Autorouter is about to start` counts down in
+  `Start Now (n)` (GUI time; Cancel leaves the app idle and open), the job runs with the settings the
+  open board would have, and when it ends, completed or stopped, the output is written. After Start Now (or
+  `-dct 0`) the app then exits: 0 after a written file, 1 when the write failed or the design did not
+  load. Closing the window stops the job and writes the output if the board changed or has traces,
+  without a question. `tools/gui/frontend-smoke.sh <fixture.dsn>` checks all of it under Xvfb in a
+  release build (the GUI exits 0, and the CLI imports the session with `-drc` with no import errors).
+  Tests: `tests/ui_files.rs`.
+
 Screenshots from the cloud sessions are in the project's shared folder under
 `freerouting-rs/gui/`.
 
@@ -188,7 +222,7 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | --- | --- |
 | `lib.rs` | The library target (`freerouting_gui`), so integration tests can reach `App`. |
 | `main.rs` | Argument collection, window options, the WSL X11 switch (see below). |
-| `args.rs` | The command line: files, `--bench`, `--bench-synthetic 4x4 board.dsn`, `--frames`, `--screenshot`, `--exit`, `--control-dir`. |
+| `args.rs` | The command line: files, `--bench`, `--bench-synthetic 4x4 board.dsn`, `--frames`, `--screenshot`, `--exit`, `--control-dir`, and Java's front-end flags `-de`, `-do`, `-dr`, `-dct`, `-mp`, `-di`, `--autoroute` (G08). |
 | `app.rs` | `App`: state, `execute(Command)` (the one path for menus, keys and tests), background loading, `save`. `layout.rs` lays out one frame (menu, status bar, side panel, canvas). |
 | `commands.rs` | `enum Command`, every user action. |
 | `input.rs` | The key table (Java's keys). `viewport.rs` has the mouse model, `ViewState` (camera, visibility, active layer) and the hover status. |
@@ -210,7 +244,8 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs` | G05: Settings > Select ("General Settings", `SelectionSettings`), the toolbar over the canvas while items are selected, the item info window (G04.3), the keepout's rubber band. |
 | `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`, `panels/{progress,routing_summary}.rs`, `overlays/routing.rs` | G07: the router thread and its events (`RoutingJobHandle`, `FrameEvents`, `GeometryMapper`, `reconcile`), `App`'s start, stop and per-frame poll, the settings dialog (`Draft`, `CONTROLS`, `CLI_ONLY`, `timeout`), the progress and summary panels and the airline overlay. |
 | `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
-| `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`. |
+| `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`/`.kicad_pcb`; in save mode (G08) a file name field, the two filters and the replace question. |
+| `files.rs`, `app_files.rs`, `dialogs/autostart.rs` | G08: the writers (Save As, `.rules`, the front-end output, the content checksum), `App`'s side (Save As, the questions, the start-up steps, the front-end mode) and the auto-start countdown. |
 
 The data flows like this: the file is read into a `dsn::Pcb`.
 `freerouting::io::specctra::build_board` builds the `RoutingBoard` (moved out
@@ -619,7 +654,7 @@ with their flags and the keepouts emitted, planes, arcs followed, `.kicad_dru` r
 into `Session::warnings` as "KiCad reader: ..." and "KiCad read report: ..." lines, for the warnings window.
 `find_design` also looks for `<base_design>.kicad_pcb` when a `.ses` is opened alone. The file browser lists
 `.kicad_pcb`. Tests: `tests/ui_kicad.rs` (Issue368 opens, its item count equals `build_board` of the reader's
-tree) and `file_dialog::tests::lists_kicad_boards`. No Save yet writes a `.kicad_pcb` (K08).
+tree) and `file_dialog::tests::lists_kicad_boards`. Writing a `.kicad_pcb` is K08.
 
 ## What's next
 
@@ -644,7 +679,8 @@ In plan order. Each item needs engine work first, so check what has landed in
 
 Other gaps:
 
-- Saving: there is no Save, and no SES or DSN export from the GUI yet.
+- Saving: done in G08 (SES, DSN, `.rules`). Not offered, by decision (G00 question 2): `.frb`, the
+  Autodesk Fusion `.scr` and the KiCad session JSON.
 - Screen readers: eframe's `accesskit` feature is on, so the widgets are in
   the accessibility tree (egui_kittest finds them by label through it). Nobody
   has tried a screen reader on it.

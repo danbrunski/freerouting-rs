@@ -24,6 +24,7 @@
 //! | `U`, `Ctrl+Z` | undo |
 //! | `B`, `Ctrl+Y` | redo |
 //! | `Ctrl+O` | open |
+//! | `Ctrl+S` | save as (Java's File menu has no plain Save) |
 
 use eframe::egui::{InputState, Key};
 
@@ -53,6 +54,9 @@ pub fn key_commands(input: &InputState, typing: bool) -> Vec<Command> {
     let mut out = Vec::new();
     if input.modifiers.command && input.key_pressed(Key::O) {
         out.push(Command::OpenDialog);
+    }
+    if input.modifiers.command && !input.modifiers.alt && input.key_pressed(Key::S) {
+        out.push(Command::SaveAsDialog);
     }
     if !typing && input.modifiers.command && !input.modifiers.alt {
         if input.key_pressed(Key::Z) {

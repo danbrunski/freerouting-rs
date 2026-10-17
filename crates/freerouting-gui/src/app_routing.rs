@@ -44,6 +44,10 @@ impl App {
                 prepare_job_settings(&b.session.board, Some(&b.session.design), &[], &resolve);
             let mut draft = Draft::new(baseline.clone(), resolve.cores);
             draft.apply_overrides(&self.settings.autoroute);
+            // `-mp` of the front-end mode (G08.4).
+            if let Some(passes) = self.files.frontend.options.max_passes {
+                draft.patch.autorouter.max_passes = Some(passes);
+            }
             self.autoroute.baseline = Some(baseline);
             self.autoroute.applied = Some(draft.patch);
         }
@@ -145,8 +149,10 @@ impl App {
         let disconnected = events.disconnected;
         if let Some((board, summary)) = finished {
             self.finish_routing(board, summary);
+            self.frontend_job_ended(ctx);
         } else if disconnected {
             self.routing_failed();
+            self.frontend_job_ended(ctx);
         } else {
             ctx.request_repaint_after(REPAINT_EVERY);
         }

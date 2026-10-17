@@ -16,6 +16,7 @@
 //! | [`session`] | the open design: the engine board, files, loading |
 //! | [`scene`], [`view`] | the board flattened to drawable shapes, and drawing |
 //! | [`canvas`] | the board's geometry in chunks, the wgpu pipeline that draws it |
+//! | [`files`] | writing: Save As (SES, DSN, rules), the front-end output, the content checksum (G08; `app_files.rs` is `App`'s side) |
 //! | [`routing`] | the autorouter job: its thread, events, the frame's merged deltas, the scene patch (G07; `app_routing.rs` is `App`'s side) |
 //! | [`bench_synthetic`] | the tiled stress board for `--bench-synthetic` |
 //! | [`panels`], [`menu`] | side panel sections, warnings window, menu bar |
@@ -26,6 +27,7 @@
 pub mod analysis;
 pub mod app;
 mod app_analysis;
+mod app_files;
 mod app_routing;
 pub mod args;
 pub mod bench;
@@ -37,6 +39,7 @@ pub mod commands;
 pub mod dialogs;
 pub mod drc_export;
 pub mod file_dialog;
+pub mod files;
 pub mod input;
 mod layout;
 pub mod lists;
@@ -58,3 +61,4 @@ pub mod viewport;
 pub mod windows;
 
 pub use app::App;
+pub use app_files::{Prompt, exit_code};

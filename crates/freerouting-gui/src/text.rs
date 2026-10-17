@@ -968,6 +968,55 @@ pub const SUMMARY_EXECUTION_TIME: &str = "Execution Time:";
 pub const SUMMARY_SHOW_CHECKBOX: &str = "Show this summary after auto-routing finishes";
 pub const SUMMARY_CLOSE: &str = "Close";
 
+// G08: saving, the prompts and the front-end mode.
+// BoardMenuFile_en.properties
+pub const SAVE_AS: &str = "Save as...";
+pub const SAVE_MESSAGE: &str = "Design file saved.";
+pub const ERROR_DESIGN_SAVE_FAILED: &str = "Unable to save the design file.";
+// BoardFrame_en.properties
+pub const MESSAGE_SPECCTRA_SES_SAVED: &str =
+    "Specctra session file '{{filename}}' saved successfully.";
+pub const MESSAGE_SPECCTRA_SES_SAVE_FAILED: &str =
+    "Unable to save the Specctra session file '{{filename}}'.";
+pub const CONFIRM_RULES_SAVE: &str =
+    "Would you like to save the current design rules to a separate .rules file?";
+pub const CONFIRM_SAVE_TITLE: &str = "Unsaved Changes";
+pub const CONFIRM_SAVE_CHANGES: &str =
+    "The current board has unsaved changes. Would you like to save it before loading a new file?";
+pub const CONFIRM_SAVE_YES: &str = "Save";
+pub const CONFIRM_SAVE_NO: &str = "Don't Save";
+pub const CONFIRM_SAVE_CANCEL: &str = "Cancel";
+pub const CONFIRM_EXIT_TITLE: &str = "Warning";
+pub const CONFIRM_EXIT: &str =
+    "The board has changed since you last saved it.\nAre you sure you want to exit?";
+pub const CONFIRM_EXIT_YES: &str = "Yes";
+pub const CONFIRM_EXIT_NO: &str = "No";
+// GuiManager_en.properties
+pub const CONFIRM_IMPORT_RULES: &str = "Please confirm that you want to import the stored rules.\nRules imported from the host system may overwrite your current rules.";
+pub const AUTO_START_ROUTING_TITLE: &str = "Autorouter Confirmation";
+pub const AUTO_START_ROUTING_MESSAGE: &str = "The Autorouter is about to start.\n\nDefault settings will be used unless you cancel now and change them.\nYou can start Auto-routing later by clicking the Autoroute button.";
+pub const AUTO_START_ROUTING_STARTNOW: &str = "Start Now";
+pub const AUTO_START_ROUTING_CANCEL: &str = "Cancel";
+/// The Select an Option title of `JOptionPane.showConfirmDialog`, which
+/// Java's yes/no questions (`WindowMessage.confirm`) use.
+pub const SELECT_AN_OPTION: &str = "Select an Option";
+pub const SAVE_FILTER_SES: &str = "Specctra session file (*.ses)";
+pub const SAVE_FILTER_DSN: &str = "Specctra design file (*.dsn)";
+/// Port-only texts.
+pub const SAVE_BOARD_TITLE: &str = "Save as";
+pub const SAVE_BUTTON: &str = "Save";
+pub const FILE_NAME_LABEL: &str = "File name:";
+pub const OVERWRITE_CONFIRM: &str =
+    "The file '{{filename}}' already exists. Do you want to replace it?";
+pub const SAVE_UNSUPPORTED_EXTENSION: &str =
+    "Only .ses and .dsn files can be saved; '{{filename}}' has another extension.";
+pub const SAVE_WHILE_ROUTING: &str = "The autorouter is running; stop it before saving.";
+pub const ERROR_RULES_SAVE_FAILED: &str = "Unable to save the rules file '{{filename}}'.";
+pub const MESSAGE_RULES_SAVED: &str = "Rules file '{{filename}}' saved successfully.";
+pub const RULES_IMPORTED: &str = "Rules imported from '{{filename}}'.";
+pub const RULES_IMPORT_FAILED: &str = "Failed to read the rules file '{{filename}}': {{reason}}";
+pub const RULES_NOT_FOUND: &str = "Rules file not found: '{{filename}}'.";
+
 #[cfg(test)]
 mod tests {
     use super::*;

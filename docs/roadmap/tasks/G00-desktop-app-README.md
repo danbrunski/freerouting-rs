@@ -21,7 +21,7 @@ the research behind it is the GUI, plugin and packaging report of
 | [G05](archive/G05-inspect-and-safe-edits.md) ✅ | Inspect mode, selection settings, extend selection, selection toolbar, undo and redo with scene patching, context menus, keepout construction | M / medium | G02 (G02.4 patching), G03, B01 (change journal), B04 (selection filter), I03 (editor commands, for G05.4 and G05.7) |
 | [G06](archive/G06-rules-dialogs.md) ✅ | Net classes, assign net class, clearance matrix, vias and padstacks, via rules, the static routing settings | M / medium | G03, B08 (rules-edit facade) |
 | [G07](archive/G07-autorouter-run-and-live-redraw.md) ✅ | Autoroute settings dialog, routing job, progress panel, live redraw from deltas, routing overlay, routing summary, selection-scoped routing | L / high | G02, A08 (router events, cancel token), A13 (batch loop, `run_pipeline`), B01, B08 (`ItemGeometry`), C02, C03, C05; O06 for the optimizer stage control |
-| [G08](G08-save-and-front-end-mode.md) | Save SES/DSN/rules, unsaved-changes prompts, rules import, the `-de/-do` front-end mode with the auto-start countdown | M / medium | G07, C04, C05, C06; B01 (`state_hash`) for G08.2 |
+| [G08](archive/G08-save-and-front-end-mode.md) ✅ | Save SES/DSN/rules, unsaved-changes prompts, rules import, the `-de/-do` front-end mode with the auto-start countdown | M / medium | G07, C04, C05, C06; B01 (`state_hash`) for G08.2 |
 | [G09](archive/G09-interactive-routing-and-editing.md) ✅ | Route mode, interactive settings, drag, move and copy components, pin swap, cutout, make space, frame time while dragging | L / high | G05, I01, I02, I03, I04 (optional parts) |
 
 Ids follow `series-map.md`: G01 is the report's GUI-1, G02 is GUI-2, and

@@ -40,6 +40,9 @@ pub struct Session {
     /// counts inserts and removes only, so it would miss rule edits.
     pub edit_generation: u64,
     pub saved_generation: u64,
+    /// The checksum of the board's content (`files::content_hash`) when it
+    /// was loaded or last saved; `None` if the DSN writer failed then.
+    pub saved_hash: Option<u32>,
     /// What the readers skipped or did not understand, as text.
     pub warnings: Vec<String>,
     /// What importing the `.ses` did, if one was opened.
@@ -49,6 +52,26 @@ pub struct Session {
 impl Session {
     pub fn is_dirty(&self) -> bool {
         self.edit_generation != self.saved_generation
+    }
+
+    /// True if the board's content differs from the loaded or saved one,
+    /// as Java's `isBoardChanged` (G08.2). The edit counter is checked first
+    /// and is cheap; only a session that says dirty pays for the checksum,
+    /// so an edit that was undone again is clean.
+    pub fn is_changed(&self) -> bool {
+        if !self.is_dirty() {
+            return false;
+        }
+        match (crate::files::content_hash(&self.board), self.saved_hash) {
+            (Some(now), Some(saved)) => now != saved,
+            _ => true,
+        }
+    }
+
+    /// Records the board as it is as the saved state.
+    pub fn mark_saved(&mut self) {
+        self.saved_generation = self.edit_generation;
+        self.saved_hash = crate::files::content_hash(&self.board);
     }
 
     /// The board for editing. Copies it first if a background job still
@@ -341,6 +364,7 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
     board.set_journaling(true);
     timings.board_ms = phase.elapsed().as_secs_f64() * 1000.0;
     let board = Arc::new(board);
+    let saved_hash = crate::files::content_hash(&board);
     let phase = Instant::now();
     let scene = Scene::from_board(&pcb.name, &board);
     timings.scene_ms = phase.elapsed().as_secs_f64() * 1000.0;
@@ -360,6 +384,7 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
             },
             edit_generation: 0,
             saved_generation: 0,
+            saved_hash,
             warnings,
             ses_summary,
         },

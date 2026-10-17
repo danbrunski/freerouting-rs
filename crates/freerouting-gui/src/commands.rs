@@ -220,6 +220,15 @@ pub enum Command {
     /// Stops the running autorouter; it hands back the board it keeps
     /// (Cancel, Esc, a click on the canvas).
     StopRouting,
+    // G08: saving and the prompts (`app_files.rs`).
+    /// File > Save as... (`Ctrl+S`): the file dialog in save mode.
+    SaveAsDialog,
+    /// Writes the session (`.ses`) or the design (`.dsn`) to the path.
+    SaveAs(PathBuf),
+    /// The save dialog was closed without a file.
+    SaveCancelled,
+    /// The answer to the question being asked.
+    AnswerPrompt(Answer),
     /// Opens Settings > Autorouter.
     ShowAutorouteSettings,
     CloseAutorouteSettings,
@@ -228,6 +237,14 @@ pub enum Command {
     CloseRoutingSummary,
     /// The summary window's "show after auto-routing" checkbox.
     SetShowRoutingSummary(bool),
+}
+
+/// The buttons of a question: Yes (Save), No (Don't Save) and Cancel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Answer {
+    Yes,
+    No,
+    Cancel,
 }
 
 impl Command {

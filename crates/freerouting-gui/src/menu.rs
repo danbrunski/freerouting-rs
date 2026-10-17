@@ -46,6 +46,16 @@ pub fn ui(ui: &mut egui::Ui, loaded: Option<&Loaded>, recent: &[PathBuf]) -> Vec
                 }
             });
             if ui
+                .add_enabled(
+                    loaded.is_some(),
+                    egui::Button::new(format!("{}  (Ctrl+S)", text::SAVE_AS)),
+                )
+                .clicked()
+            {
+                out.push(Command::SaveAsDialog);
+                ui.close();
+            }
+            if ui
                 .add_enabled(loaded.is_some(), egui::Button::new("Reload"))
                 .clicked()
             {
