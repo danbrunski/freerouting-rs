@@ -251,6 +251,8 @@ pub struct RunRecord {
     /// The run's `freerouting-rip-stats/1` report without its `nets` list
     /// (`--rip-stats`, Rust runs only).
     pub rip_stats: Option<freerouting::drc::json::JsonValue>,
+    /// Q02.1's delivered widths of the SES imported into the board.
+    pub widths: Option<freerouting::quality::neckdown::width_report::WidthReport>,
 }
 
 /// Starts `args` in `dir` with stdout and stderr in `log`, waits at most
@@ -341,6 +343,18 @@ pub fn measure(
     }
     let session = parse_session(&read_text(ses)?)?;
     Ok(SessionStatistics::of_session(board, &session).0)
+}
+
+/// Q02.1's delivered-width report of the SES a run wrote, imported into a
+/// copy of `board`.
+pub fn measure_widths(
+    board: &freerouting::board::BasicBoard,
+    ses: &Path,
+) -> Result<freerouting::quality::neckdown::width_report::WidthReport, String> {
+    let session = parse_session(&read_text(ses)?)?;
+    let mut copy = board.clone();
+    freerouting::io::specctra::import_session(&mut copy, &session);
+    Ok(freerouting::quality::neckdown::width_report::report(&copy))
 }
 
 /// Options of a bench run.
@@ -532,6 +546,10 @@ pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
                     Ok(board) => measure(board, &ses),
                     Err(e) => Err(format!("board doesn't load: {e}")),
                 };
+                let widths = match (&board, &measured) {
+                    (Ok(board), Ok(_)) => measure_widths(board, &ses).ok(),
+                    _ => None,
+                };
                 engine_result.runs.push(RunRecord {
                     run,
                     wall_seconds,
@@ -543,6 +561,7 @@ pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
                     note: measured.as_ref().err().cloned(),
                     statistics: measured.ok(),
                     rip_stats: rip_stats.then(|| read_rip_stats(&result_json)).flatten(),
+                    widths,
                 });
             }
             board_result.engines.push(engine_result);

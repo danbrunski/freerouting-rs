@@ -58,6 +58,10 @@ fn run_json(run: &RunRecord) -> JsonValue {
                 .as_ref()
                 .map_or(JsonValue::Null, SessionStatistics::to_json),
         ),
+        (
+            "widths".to_string(),
+            run.widths.as_ref().map_or(JsonValue::Null, |w| w.to_json()),
+        ),
     ];
     if let Some(note) = &run.note {
         members.push(("note".to_string(), JsonValue::string(note.clone())));

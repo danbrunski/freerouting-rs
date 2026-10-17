@@ -5,9 +5,10 @@
 //! | 0 | An output was written, even with incomplete connections (the result manifest has the details). |
 //! | 1 | Failure with no output: a load error, an engine error, a write failure. |
 //! | 2 | A usage error found before any work. |
+//! | 3 | `router.neck_down.strict` (Q02.2): an output was written, but some wide net has copper under its class width (the result manifest's `widths` has the details). |
 //! | 130 | Aborted before an output could be written: a second Ctrl-C, or a stop during the load. |
 //!
-//! Java uses 1 for usage errors; codes 2 and 130 are listed in DIVERGENCES.
+//! Java uses 1 for usage errors; codes 2, 3 and 130 are listed in DIVERGENCES.
 //! Only `cli.rs` builds a [`Code`], and only the binary turns it into a
 //! process exit status.
 
@@ -33,6 +34,11 @@ impl Code {
     /// 2: a usage error, found before any work.
     pub const fn usage() -> Code {
         Code(2)
+    }
+
+    /// 3: strict sizes (Q02.2) and copper shipped under its class width.
+    pub const fn strict_sizes() -> Code {
+        Code(3)
     }
 
     /// 130: aborted before an output could be written.
@@ -85,6 +91,7 @@ mod tests {
         assert_eq!(Code::success().value(), 0);
         assert_eq!(Code::failure().value(), 1);
         assert_eq!(Code::usage().value(), 2);
+        assert_eq!(Code::strict_sizes().value(), 3);
         assert_eq!(Code::aborted().value(), 130);
     }
 

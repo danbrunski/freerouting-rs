@@ -15,7 +15,7 @@ implementation is never edited, so default results stay byte-identical.
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
 | [Q01](archive/Q01-planes-block-pass-through-nets.md) ✅ | Pours of listed net classes block only nets with no pin inside them; pour-cut report | M / medium: obstacle hook in the search | rung 3; B09 obstacle predicate hook; C02, C03 |
-| [Q02](Q02-neck-down-through-pin-fields.md) | Delivered-width report, no width ratchet, neck bounded by distance, widen-back with taper | L / high: width policy inside the maze search | rung 3; A04, A06 width hooks; B05; O01; Q03 |
+| [Q02](archive/Q02-neck-down-through-pin-fields.md) ✅ | Delivered-width report, no width ratchet, neck bounded by distance, widen-back with taper | L / high: width policy inside the maze search | rung 3; A04, A06 width hooks; B05; O01; Q03 |
 | [Q03](archive/Q03-infeasible-connection-diagnostic.md) ✅ | "Cannot route `<net>` to `<pin>` at width W: widest corridor C" from a static widest-path check | M / low: report only | **none: starts now**; F02.2 for the subcommand; B05 for one item |
 | [Q04](Q04-restore-stop-rule.md) | Work-based stop when restores stop helping; two-axis output guard | S / low | rung 3; A10, A13, A08; B01 |
 | [Q05](archive/Q05-congestion-aware-ripup.md) ✅ | Rip instrumentation; history and corridor costs; victim-cost ripup, each measured | L / high: weak prior evidence | rung 3; A04 cost hook; A11 rip events; Q06 |

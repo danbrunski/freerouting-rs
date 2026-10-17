@@ -384,6 +384,20 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   attempt's outcome only when a diagnostic is selected; the SES is byte-identical with it on
   and off (`the_ses_is_byte_identical_with_the_verdicts_on_and_off`).
 
+**Delivered widths, the narrowing ledger and strict sizes** (`quality::neckdown`, Q02.1 and
+Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
+`crates/freerouting-cli/tests/result_json_widths.rs`)
+- New, with no Java counterpart: with `router.special.diagnostics=widths` (not a Java key) the
+  run reports, for each net whose class is wider than the board's narrowest class, the length
+  under its class width and the length per width, and lists every shipped trace under its class
+  width with the stage that made it (from item ids). It reads the final board only; the SES is
+  byte-identical with it on and off (`the_ses_is_byte_identical_with_the_report_on_and_off`).
+- `neck_down.strict` (Q02.2) is a settings field Java does not have, unset by default (off, Java's
+  routing). When true, `automatic_neckdown` and `neck_width_um` act as off and 0 on the board,
+  so Java's two neck-downs never narrow (the fanout's micro neck-downs still may); routes
+  change where Java would have necked
+  (`strict_sizes_turn_the_neck_downs_off_and_add_the_report`).
+
 **Shove checks** (`shove`, O03; tests `tests/board_probe_shove.rs`)
 - The fast cutout (`ShapeTraceEntries.fastCutoutTrace`) of a trace with a segment that has
   no tree leaf (a zero-length segment, left by an earlier cutout): Java throws a
@@ -766,6 +780,11 @@ plugin_flags}.rs`)
 - With `--router.special.diagnostics=verdicts` the manifest gets one key Java does not have,
   `verdicts`, after Java's keys (Q06, `docs/development/verdicts.md`); without it the key is
   absent (`the_manifest_carries_the_verdicts_only_with_the_diagnostic`).
+- With `--router.special.diagnostics=widths`, or `--router.neck_down.strict=true`, the manifest
+  gets `widths` (Q02.1, `freerouting-widths/1`) after `verdicts`; without either the key is
+  absent (`the_manifest_carries_the_widths_only_with_the_diagnostic`). With strict sizes a run
+  that wrote its output exits 3 instead of 0 when some reported net has copper under its class
+  width (KRT's `--strict-sizes`; `strict_sizes_exit_3_exactly_when_copper_ships_under_width`).
 - Stopping: a stdin reader acts on `stop` (stop everything) and `stop-router` (Java's
   `requestStopAutoRouter`); end of input is not a stop (`stdin_eof_is_not_a_stop`). Java's CLI
   has no such channel. Ctrl-C and SIGTERM (SIGINT, SIGTERM and SIGHUP on Unix, Ctrl-C and

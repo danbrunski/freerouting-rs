@@ -198,6 +198,18 @@ pub struct JobReport {
     pub total_seconds: f64,
 }
 
+impl JobReport {
+    /// Q02.2: the number of reported wide nets with copper under their class
+    /// width, when `router.neck_down.strict` is on (`None` when it is off or
+    /// the `widths` report did not run). The CLI exits 3 when it is above 0.
+    pub fn strict_sizes_violations(&self) -> Option<usize> {
+        let settings = self.router_settings.as_ref()?;
+        let widths = self.summary.as_ref()?.widths.as_ref().map(|w| &w.widths);
+        crate::quality::neckdown::ledger::strict_violation(settings, widths)
+            .then(|| widths.map_or(0, |w| w.nets.iter().filter(|n| n.under > 0.0).count()))
+    }
+}
+
 impl JobOutcome {
     /// `CliRunner.computeCliExitCode`, with "written" meaning more than 0
     /// bytes.

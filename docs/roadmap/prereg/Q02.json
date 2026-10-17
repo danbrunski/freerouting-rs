@@ -1,0 +1,130 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q02.6-bounded-neck",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/Q02-neck-down-through-pin-fields.md",
+  "question": "With router.special.neck_down=bounded-neck (the maze search uses the neck width only in rooms within D of a start or destination pin, D = courtyard plus one pitch; retried after FAILED or INSERT_ERROR like Java's retryConnectionNecked), are fewer connections unrouted than with Java's default room-local neck-down, on at least N-1 of the boards with none worse, with no new clearance violation, no via in a pad, no copper below the board minimum, and a median under-width length per wide net below the shelved Java widening's 40 mm?",
+  "arms": {
+    "java-default": {
+      "engine": "freerouting-rs at the commit that lands Q02.3-Q02.5, after P04's default-tree decision (the Freerouting implementation: room-local neck-down only, automatic_neckdown on, neck_width_um 0)",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp {PASSES} --router.scoring.start_ripup_costs=1500 --router.special.diagnostics=widths --result-json {JSON} {BOARD_FLAGS}",
+      "settings": {
+        "special.neck_down": "unset (freerouting-neck-down)",
+        "neck_width_um": 0
+      }
+    },
+    "java-retry-400": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp {PASSES} --router.scoring.start_ripup_costs=1500 --router.special.diagnostics=widths --result-json {JSON} --router.neck_width_um=400 {BOARD_FLAGS}",
+      "settings": {
+        "special.neck_down": "unset (freerouting-neck-down)",
+        "neck_width_um": 400
+      }
+    },
+    "bounded-neck": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp {PASSES} --router.scoring.start_ripup_costs=1500 --router.special.diagnostics=widths --result-json {JSON} --router.special.neck_down=bounded-neck {BOARD_FLAGS}",
+      "settings": {
+        "special.neck_down": "bounded-neck",
+        "distance": "courtyard plus one pin pitch (quality::neckdown::bounded::neck_distance)",
+        "widen_back": "on (Q02.5)"
+      }
+    },
+    "bounded-neck-2.5mm": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp {PASSES} --router.scoring.start_ripup_costs=1500 --router.special.diagnostics=widths --result-json {JSON} --router.special.neck_down=bounded-neck --router.neck_down.path_mm=2.5 {BOARD_FLAGS}",
+      "settings": {
+        "special.neck_down": "bounded-neck",
+        "distance": "2.5 mm of path from the pin (KRT single_ended_routing._neck_pass at 0486e799); the path_mm key is added by Q02.3",
+        "widen_back": "on (Q02.5)"
+      }
+    }
+  },
+  "baseline_arm": "java-default",
+  "candidate_arm": "bounded-neck",
+  "boards": {
+    "set": "tools/bench/sets/q02-wide-nets.txt",
+    "passes": "canary-pwr: 3 (the Java fork's de7a4fd2c measurement, 88 unrouted, re-measured in the same run by java-default and java-retry-400); other boards: their tools/java-reference/route-bounds.tsv row",
+    "board_flags": "canary-pwr: --router.min_trace_width_um=150 (the board minimum; D8). Others: none",
+    "eligibility": "decided from the inputs: some net's class trace width is above the smallest pad width of a pin of that net on a routing layer (Q03's candidate rule, quality::feasibility::candidate_pins), listed per board in the set file",
+    "files": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue029-hw48na.dsn": "ce62cb9fe64253cc13327b93149b0c01365521c1dcee7df7022df9b18c88422f",
+      "fixtures/Issue684-Autorouter_PCB1_2026-5-8.dsn": "83cf89ee07dc3adbede5edee663c9f32316c82000a90dea684d00f9ac2a2458a"
+    }
+  },
+  "grading": "the CLI's result JSON (unrouted, clearance violations) and its widths report (Q02.1: under_mm per wide net); via_in_pad and below_minimum from the A14 parity gate's D8 checks on the SES; canary-pwr also by canary-23's ses_import.py, kicad-cli drc --refill-zones and via_in_pad.py",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "median_under_width_mm",
+      "role": "guard",
+      "kind": "float",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "bounded-neck is kept only if it beats java-default on unrouted on N-1 boards (the canary-pwr variants grouped as one board) and loses on none, and its median under-width length per wide net is below 40 mm (the shelved Java widening's 40-60 mm of 0.4 mm trace). The 2.5 mm arm is kept instead if it meets the same rule and beats bounded-neck on unrouted on more boards than it loses",
+  "stop_rule": "one measurement run per arm and board; no re-runs to chase a result (canary-pwr moves by about 10 unrouted with small input changes, so its variants are compared together, never repeat runs)",
+  "decision_table": {
+    "pass": "keep router.special.neck_down=bounded-neck (off by default); DIVERGENCES line with the numbers; all arms per board in Q02.6's done note",
+    "fail": "remove Q02.3-Q02.5's code (quality::neckdown::{bounded, widen_back}, the fixture and its tests); Q02.1 and Q02.2 stay; numbers in Q02.6's done note and the baseline rows marked rejected"
+  },
+  "baseline_input": "Java's own canary-pwr session (fixtures/canary-pwr/canary-pwr-9511d9a.46bf9e2ef.ses) through freerouting-dev widths: 30 wide nets, 14 with under-width copper, 50.2082 mm under in total (Q02.1's done note)",
+  "timing": "measured only after P04's default-tree decision (Q00 README, 'Order and critical path'; P00 'Order')",
+  "amendments": []
+}

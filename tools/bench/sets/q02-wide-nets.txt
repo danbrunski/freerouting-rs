@@ -1,0 +1,17 @@
+# Q02.6: boards for the bounded-neck measurement (docs/roadmap/prereg/Q02.json).
+# Eligibility is decided from the inputs: some net's class trace width is above
+# the smallest pad width of one of its pins on a routing layer (Q03's candidate
+# rule, `freerouting-dev feasibility`; the count of such pins after each row,
+# at 25b0f2e). Not eligible, so left out: Issue093-interf_u and
+# Issue555-CNH_Functional_Tester_1 (wide classes, no pad narrower than them).
+# The canary-pwr variants are one board in the pass rule (their results move
+# by about 10 unrouted with small input changes).
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn                    # 19 pins
+fixtures/canary-pwr/canary-pwr-pours1.dsn                     # 19
+fixtures/canary-pwr/canary-pwr-pours2.dsn                     # 19
+fixtures/canary-pwr/canary-pwr-pours3.dsn                     # 1 (taps at 0.2 mm)
+fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn            # 19
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn            # 55, 4 layers, KiCad demo
+fixtures/Issue269-z10_module.dsn                              # 5, inner planes
+fixtures/Issue029-hw48na.dsn                                  # 104
+fixtures/Issue684-Autorouter_PCB1_2026-5-8.dsn                # 110 (33 infeasible at class width)

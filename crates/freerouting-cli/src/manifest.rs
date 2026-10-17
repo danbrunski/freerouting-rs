@@ -33,6 +33,11 @@
 //! `freerouting-rip-stats/1` report
 //! (`freerouting::quality::congestion::rip_stats`). Without it the key is
 //! absent.
+//!
+//! **Widths (Q02.1).** With `--router.special.diagnostics=widths` (or
+//! `--router.neck_down.strict=true`) the manifest gets `widths` after
+//! `rip_stats`: the `freerouting-widths/1` report of the wide nets' delivered
+//! widths and the narrowing ledger (`quality::neckdown`).
 
 use std::path::Path;
 
@@ -448,6 +453,11 @@ pub fn build(input: &ManifestInput<'_>) -> JsonValue {
         (
             "rip_stats",
             summary.and_then(|s| s.rip_stats.as_ref().map(|r| r.to_json())),
+        ),
+        // Q02.1: the delivered widths and the narrowing ledger.
+        (
+            "widths",
+            summary.and_then(|s| s.widths.as_ref().map(|w| w.to_json())),
         ),
     ]
     .into_iter()

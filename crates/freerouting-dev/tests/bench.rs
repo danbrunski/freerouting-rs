@@ -193,6 +193,7 @@ fn run(run: usize, wall: f64, vias: usize) -> RunRecord {
         }),
         note: None,
         rip_stats: None,
+        widths: None,
     }
 }
 

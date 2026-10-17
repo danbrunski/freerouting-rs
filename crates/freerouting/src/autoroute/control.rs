@@ -434,7 +434,7 @@ fn own_plane_layers(board: &BasicBoard, net_number: i32) -> Vec<bool> {
 /// Java `AutorouteControl.minTraceHalfWidth(board, settings)`
 /// (`46bf9e2ef`): `router.min_trace_width_um` in board units, halved and
 /// rounded up; 0 when the setting is unset or not positive.
-fn min_trace_half_width(board: &BasicBoard, settings: &BoardRouterSettings) -> i32 {
+pub fn min_trace_half_width(board: &BasicBoard, settings: &BoardRouterSettings) -> i32 {
     let min_width_um = settings.min_trace_width_um();
     if min_width_um <= 0.0 {
         return 0;

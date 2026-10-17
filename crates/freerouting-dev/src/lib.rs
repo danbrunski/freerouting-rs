@@ -60,6 +60,7 @@ pub mod json_read;
 pub mod microbench;
 pub mod ses_diff;
 pub mod session_geometry;
+pub mod widths;
 
 use std::path::Path;
 

@@ -414,6 +414,11 @@ settings_table! {
             (difficulty_scale_floor, f32, req, Some(1.0), 0.0, "difficultyScaleFloor", [], Flat::No, true,
                 "Lower bound of the difficulty scale."),
         }
+        neck_down, NeckDownPatch, NeckDownSettings, "neckDown",
+        "Neck-down limits (Q02.2; not a Java section)." {
+            (strict, bool, opt, None, None, "strict", [], Flat::No, true,
+                "Strict sizes: neck-down stages don't narrow; exit 3 if copper ships under its class width."),
+        }
         special, SpecialPatch, SpecialSettings, "special",
         "Stage selection for the special stages (A10.2; not a Java section)." {
             (plane_taps, String, opt, None, None, "planeTaps", [], Flat::No, true,

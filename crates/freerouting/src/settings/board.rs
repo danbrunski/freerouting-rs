@@ -264,12 +264,18 @@ impl BoardRouterSettings {
             plane_via_costs: settings.scoring.plane_via_costs,
             start_ripup_costs: settings.scoring.start_ripup_costs,
             vias_allowed: settings.allowed_via_types,
-            automatic_neckdown: settings.automatic_neckdown,
+            // Q02.2: strict sizes turn both neck-downs off.
+            automatic_neckdown: settings.automatic_neckdown
+                && !crate::quality::neckdown::ledger::is_strict(settings),
             fanout_min_escape_length_mm: settings.fanout.min_escape_length_mm,
             fanout_max_escape_length_mm: settings.fanout.max_escape_length_mm,
             fallback_to_board_vias: settings.fanout.fallback_to_board_vias,
             trace_pull_tight_accuracy: settings.trace_pull_tight_accuracy,
-            neck_width_um: settings.neck_width(),
+            neck_width_um: if crate::quality::neckdown::ledger::is_strict(settings) {
+                0.0
+            } else {
+                settings.neck_width()
+            },
             min_trace_width_um: settings
                 .min_trace_width_um
                 .filter(|w| *w > 0.0)

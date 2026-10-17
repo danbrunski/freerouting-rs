@@ -237,8 +237,29 @@ fn run_drc_mode(parsed: &Args, printer: &Printer) -> Code {
 /// result manifest if one was asked for.
 fn run_route_mode(parsed: &Args, printer: &Printer) -> Finish {
     let mut finish = route_job(parsed, printer);
+    apply_strict_sizes(printer, &mut finish);
     write_manifest(parsed, printer, &mut finish);
     finish
+}
+
+/// Q02.2: a successful run with `router.neck_down.strict` that shipped
+/// copper under its class width ends with exit code 3.
+fn apply_strict_sizes(printer: &Printer, finish: &mut Finish) {
+    let Some(outcome) = &finish.outcome else {
+        return;
+    };
+    if finish.code != Code::success() {
+        return;
+    }
+    if let Some(nets) = outcome.report.strict_sizes_violations() {
+        printer.print(&[line(
+            LogLevel::Error,
+            format!(
+                "Strict sizes: {nets} net(s) have copper under their class width (exit code 3)."
+            ),
+        )]);
+        finish.code = Code::strict_sizes();
+    }
 }
 
 /// The result manifest of `--result-json` / `router.result_json`, written

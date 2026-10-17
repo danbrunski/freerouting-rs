@@ -312,6 +312,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "score weight without a Java control",
     ),
     (
+        "neck_down.strict",
+        "strict sizes (Q02.2), set with the CLI or a settings file",
+    ),
+    (
         "special.plane_taps",
         "stage selection (A10), set with the CLI or a settings file",
     ),

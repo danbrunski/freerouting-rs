@@ -24,7 +24,8 @@ const USAGE: &str = "usage:
   freerouting-dev feasibility board.dsn [--json out.json] [--all-pins] [--step-um N]
       [--start shape|centre]
   freerouting-dev gate ...       (the measurement gate; `freerouting-dev gate --self-test`)
-  freerouting-dev failed-vs-human board.dsn engine.ses human.dsn [--json out.json] [--no-feasibility]";
+  freerouting-dev failed-vs-human board.dsn engine.ses human.dsn [--json out.json] [--no-feasibility]
+  freerouting-dev widths board.dsn [session.ses] [--json out.json]";
 
 /// Bench defaults: passes when no route bounds name the board, the load
 /// limit, how long to wait for it, and the per-run safety timeout.
@@ -44,6 +45,7 @@ fn main() -> ExitCode {
         Some("feasibility") => feasibility_command(&args[1..]),
         Some("gate") => freerouting_dev::gate_cli::run(&args[1..]),
         Some("failed-vs-human") => freerouting_dev::failed_vs_human::run(&args[1..]),
+        Some("widths") => freerouting_dev::widths::run(&args[1..]),
         _ => Err(USAGE.to_string()),
     };
     match result {

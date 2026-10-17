@@ -18,4 +18,11 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::congestion::rip_stats::DIAGNOSTIC_ID, |s| {
             Box::new(super::congestion::rip_stats::RipStats::from_settings(s))
         });
+    // Q02: the `widths` diagnostic (`router.special.diagnostics`, also
+    // added by `router.neck_down.strict`).
+    registry
+        .diagnostics
+        .insert(super::neckdown::DIAGNOSTIC_ID, |s| {
+            Box::new(super::neckdown::WidthDiagnostics::from_settings(s))
+        });
 }

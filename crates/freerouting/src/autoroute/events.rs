@@ -157,6 +157,9 @@ pub struct RunSummary {
     /// Per-net rip statistics, when the `rip-stats` diagnostic ran (Q05.1;
     /// `router.special.diagnostics`). The CLI's result JSON reads them.
     pub rip_stats: Option<crate::quality::congestion::rip_stats::RipReport>,
+    /// The delivered widths of the wide nets and the narrowing ledger, when
+    /// the `widths` diagnostic ran (Q02.1, Q02.2).
+    pub widths: Option<crate::quality::neckdown::NeckdownReport>,
 }
 
 /// One message from the router to its listeners.
@@ -522,6 +525,7 @@ mod tests {
             )],
             verdicts: None,
             rip_stats: None,
+            widths: None,
         };
         let (sink, receiver) = EventSink::channel(1);
         let reader = thread::spawn(move || receiver.recv().unwrap());

@@ -387,7 +387,10 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         }
     }
 
-    let settings = RouterSettings::from_patch(&patch, ctx.cores);
+    // Q02.2: strict sizes need the `widths` report for their exit status.
+    let settings = crate::quality::neckdown::ledger::with_strict_report(
+        RouterSettings::from_patch(&patch, ctx.cores),
+    );
     // 8. The pour guard (Q01), on the board as loaded; off unless
     // `router.plane_obstacle_net_classes` lists a class.
     let guard = pour_guard::install(&mut board, &settings)
