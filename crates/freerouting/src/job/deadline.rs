@@ -10,12 +10,13 @@
 //! job then reports `TimedOut` (see [`assign_terminal_state`]) and logs
 //! [`TIMEOUT_WARNING`](super::log::TIMEOUT_WARNING).
 //!
-//! The job limit is armed by [`run_job`](super::run::run_job) with
+//! The job limit goes through `run_job` to `run_pipeline`, whose watcher arms it with
 //! [`StopLevel::All`]. The fanout and optimizer limits are measured from the
 //! start of their stage, so the pipeline arms them when the stage starts
 //! (`Watcher::arm`): the fanout limit with [`StopLevel::Router`], the
-//! optimizer limit with [`StopLevel::All`]. The stub pipeline of C07 has no
-//! stages, so it arms none; C07.8 does.
+//! optimizer limit with [`StopLevel::All`]. The pipeline reads the fanout
+//! limit itself (`FanoutRun::new`); the optimizer stage is a placeholder
+//! until O06, which arms its limit then.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};

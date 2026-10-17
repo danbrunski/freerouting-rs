@@ -12,33 +12,46 @@
 //!    existing primary output (Java does, so a failed run cannot leave a
 //!    stale file behind).
 //! 2. [`prepare_job`] (C03.6). An error ends the job as `Terminated`.
-//! 3. Arm the job limit (`job_timeout`, capped at 24 h) on a [`Watcher`].
-//! 4. Run the pipeline. **Until C07.8 the pipeline is a stub** that leaves
-//!    the board as it is (it logs that, and the stage summary a run with the
-//!    router enabled prints). "All layers are disabled" is a `Terminated`
-//!    job, as `AutorouteBatchLoop`'s `IllegalArgumentException`.
+//! 3. Run [`run_pipeline`] (A13) on the prepared board with the job's cancel
+//!    token and the job limit (`job_timeout`, capped at 24 h), which the
+//!    pipeline hands to a `Watcher`: a limit only requests a full stop (D2).
+//!    A progress sink listens to the router's events and times the passes.
+//!    "All layers are disabled" is a `Terminated` job, as
+//!    `AutorouteBatchLoop`'s `IllegalArgumentException`.
+//! 4. The log: the loop's own pass lines are replaced by Java's
+//!    (`Auto-routing pass #N on board '<hash>' was completed in X.XX seconds
+//!    with score S`), and a run with the router enabled ends with the stage
+//!    summary that `compare.py` parses.
 //! 5. [`assign_terminal_state`]: `Completed`, `TimedOut` or `Cancelled`.
 //! 6. For `Completed` and `TimedOut` only, write the outputs from the final
-//!    board, the primary one first.
+//!    board (after the best-board restore and the optimizer), the primary one
+//!    first.
 //!
 //! The exit code is Java's `computeCliExitCode` ([`JobOutcome::exit_code`]):
 //! 0 when the job is `Completed` or `TimedOut` and at least one output with
 //! more than 0 bytes was written, else 1.
 
+use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use super::deadline::{RunFacts, StopLevel, Watcher, assign_terminal_state, terminate_on_error};
+use super::deadline::{RunFacts, assign_terminal_state, terminate_on_error};
 use super::log::{self, TIMEOUT_WARNING};
 use super::outputs::{
     BeforeRename, OutputSource, OutputSpec, remove_stale_temp_files, serialize, write_atomic,
 };
 use super::prepare::{JobInput, PreparedJob, prepare_job};
 use super::{LogLevel, LogLine};
-use crate::autoroute::events::CancelToken;
-use crate::scoring::BoardStatistics;
+use crate::autoroute::events::{
+    CancelToken, ItemGeometry, Phase, Progress, RouterEvents, RunSummary,
+};
+use crate::autoroute::pipeline::{
+    PipelineError, PipelineJob, PipelineOutcome, router_enabled, run_pipeline,
+};
+use crate::board::items::ItemId;
+use crate::board::{BoardSnapshot, RoutingBoard};
 use crate::settings::ResolveContext;
 
 /// `RoutingJobState`, the states a job passes through.
@@ -131,53 +144,112 @@ fn push(log: &mut Vec<LogLine>, level: LogLevel, text: impl Into<String>) {
     });
 }
 
-/// The stub pipeline of C07: it leaves the board as it is. With the router
-/// enabled it logs a warning and the stage summary of a stage that ran no
-/// pass (`started with N unrouted ... final score`). C07.8 replaces it by A13's
-/// `run_pipeline`, which takes the same prepared job, the work bounds, the
-/// cancel token and a progress sink.
+/// The router's event sink for a job (C07.8). It keeps the time of the last
+/// progress event of every pass (and of the fanout) so the pass lines can say
+/// how long a pass took; the board changes and snapshots are dropped, and the
+/// final board is handed back to the caller.
 ///
-/// Returns `Err` for what Java throws (`AutorouteBatchLoop`: all layers
-/// disabled), which ends the job as `Terminated`.
-fn run_pipeline_stub(
-    prepared: &PreparedJob,
+/// It listens, so the board's change journal runs while the router works
+/// (B01.7); that changes no result.
+struct ProgressSink {
+    start: Instant,
+    fanout_end: Cell<Option<Instant>>,
+    /// `(pass, time of its last progress event)`, in pass order.
+    pass_ends: RefCell<Vec<(i32, Instant)>>,
+}
+
+impl ProgressSink {
+    fn new() -> ProgressSink {
+        ProgressSink {
+            start: Instant::now(),
+            fanout_end: Cell::new(None),
+            pass_ends: RefCell::new(Vec::new()),
+        }
+    }
+
+    /// The seconds pass `pass` took: from the end of the previous pass (or of
+    /// the fanout, or the start of the run) to its last progress event.
+    fn pass_seconds(&self, pass: i32) -> f64 {
+        let ends = self.pass_ends.borrow();
+        let Some(index) = ends.iter().position(|(p, _)| *p == pass) else {
+            return 0.0;
+        };
+        let begin = if index > 0 {
+            ends[index - 1].1
+        } else {
+            self.fanout_end.get().unwrap_or(self.start)
+        };
+        ends[index].1.saturating_duration_since(begin).as_secs_f64()
+    }
+}
+
+impl RouterEvents for ProgressSink {
+    fn is_listening(&self) -> bool {
+        true
+    }
+
+    fn progress(&self, progress: Progress) -> bool {
+        let now = Instant::now();
+        match progress.phase {
+            Phase::Fanout => self.fanout_end.set(Some(now)),
+            Phase::Autoroute => {
+                let mut ends = self.pass_ends.borrow_mut();
+                match ends.last_mut() {
+                    Some(last) if last.0 == progress.pass => last.1 = now,
+                    _ => ends.push((progress.pass, now)),
+                }
+            }
+            Phase::Optimize => {}
+        }
+        true
+    }
+
+    fn delta(&self, _removed: Vec<ItemId>, _added: Vec<ItemGeometry>) {}
+
+    fn replaced(&self, _snapshot: BoardSnapshot) {}
+
+    fn finished(&self, board: RoutingBoard, _summary: RunSummary) -> Option<RoutingBoard> {
+        Some(board)
+    }
+}
+
+/// The loop's log with Java's pass lines (`was completed in X.XX seconds`) in
+/// place of its own, and the pipeline's other lines as they are.
+fn pipeline_lines(outcome: &PipelineOutcome, sink: &ProgressSink) -> Vec<LogLine> {
+    let mut passes = outcome.passes.iter();
+    outcome
+        .log
+        .iter()
+        .map(|line| {
+            if line.text.starts_with("Auto-routing pass #")
+                && let Some(record) = passes.next()
+            {
+                return LogLine {
+                    level: line.level,
+                    text: log::pass_line(
+                        record.pass,
+                        &format!("{:032x}", record.hash),
+                        sink.pass_seconds(i32::try_from(record.pass).unwrap_or(i32::MAX)),
+                        record.score,
+                        to_u32(record.incomplete),
+                        to_u32(record.violations),
+                    ),
+                };
+            }
+            line.clone()
+        })
+        .collect()
+}
+
+/// The stage summary of `RoutingJobSchedulerActionThread` (`isTimedOut` and
+/// the status words of the stage listener).
+fn stage_summary(
+    outcome: &PipelineOutcome,
     ctx: &JobContext,
     started: Instant,
     job_deadline: Option<Duration>,
-    log: &mut Vec<LogLine>,
-) -> Result<(), String> {
-    let settings = &prepared.settings;
-    let router_enabled = settings.run_router() && settings.autorouter.max_passes >= 0;
-    if !router_enabled {
-        return Ok(());
-    }
-    let board = &prepared.board;
-    let any_routable = (0..prepared.board_settings.layer_count()).any(|layer| {
-        prepared.board_settings.layer_active(layer)
-            && board
-                .layer_structure
-                .layers
-                .get(layer)
-                .is_some_and(|l| l.is_signal)
-    });
-    if !any_routable {
-        push(
-            log,
-            LogLevel::Warn,
-            "Cannot start autorouter: all layers are disabled.",
-        );
-        return Err("Cannot start autorouter: all layers are disabled.".to_string());
-    }
-    push(
-        log,
-        LogLevel::Warn,
-        "routing is not implemented yet (C07.8); the board is written as loaded",
-    );
-    let stats = BoardStatistics::new(board);
-    let unrouted = to_u32(stats.connections.incomplete_count);
-    let violations = to_u32(stats.clearance_violations.total_count);
-    let score = stats.router_score(Some(settings));
-    // `isTimedOut` and the status words of the stage listener.
+) -> String {
+    let summary = &outcome.summary;
     let clock_expired = job_deadline.is_some_and(|d| started.elapsed() >= d);
     let status = if clock_expired && ctx.cancel.is_stop_requested() {
         "completed with timeout"
@@ -190,19 +262,14 @@ fn run_pipeline_stub(
     } else {
         "completed"
     };
-    push(
-        log,
-        LogLevel::Info,
-        log::stage_summary_line(
-            status,
-            unrouted,
-            started.elapsed().as_secs_f64(),
-            score,
-            unrouted,
-            violations,
-        ),
-    );
-    Ok(())
+    log::stage_summary_line(
+        status,
+        to_u32(summary.initial_unrouted),
+        started.elapsed().as_secs_f64(),
+        summary.score,
+        to_u32(summary.incomplete),
+        to_u32(summary.violations),
+    )
 }
 
 /// The lines every run starts with after the load: the effective
@@ -254,7 +321,7 @@ fn to_u32(count: usize) -> u32 {
     u32::try_from(count).unwrap_or(u32::MAX)
 }
 
-/// Runs a job: prepare, route (a stub until C07.8) and write the outputs.
+/// Runs a job: prepare, route ([`run_pipeline`]) and write the outputs.
 /// The first of `outputs` is the primary one.
 pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> JobOutcome {
     let mut log = Vec::new();
@@ -290,27 +357,62 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
     log.extend(prepared.log.iter().cloned());
     log.extend(settings_lines(&prepared));
 
-    // 3. The job limit.
+    // 3. The pipeline. The job limit goes to the pipeline's watcher, which
+    // only requests a full stop.
     let started = Instant::now();
     let job_deadline = prepared.settings.deadlines().job;
-    let watcher = Watcher::new(Arc::clone(&ctx.cancel));
-    if let Some(limit) = job_deadline {
-        watcher.arm(limit, StopLevel::All);
-    }
-
-    // 4. The pipeline.
+    let sink = ProgressSink::new();
+    let PreparedJob {
+        board,
+        settings,
+        board_settings,
+        ..
+    } = prepared;
+    let job = PipelineJob {
+        settings: &settings,
+        board_settings: &board_settings,
+        cancel: Arc::clone(&ctx.cancel),
+        events: &sink,
+        deadline: job_deadline,
+        registry: None,
+    };
     let mut state = JobState::Running;
-    if let Err(message) = run_pipeline_stub(&prepared, ctx, started, job_deadline, &mut log) {
+    let mut final_board = None;
+    match run_pipeline(board, &job) {
+        Ok(outcome) => {
+            log.extend(pipeline_lines(&outcome, &sink));
+            if router_enabled(&settings) && outcome.loop_ran {
+                push(
+                    &mut log,
+                    LogLevel::Info,
+                    stage_summary(&outcome, ctx, started, job_deadline),
+                );
+            }
+            final_board = outcome.board;
+        }
+        Err(failure) => {
+            let message = failure.error.to_string();
+            if matches!(failure.error, PipelineError::NoRoutableLayer(_)) {
+                push(&mut log, LogLevel::Warn, message.clone());
+            }
+            push(
+                &mut log,
+                LogLevel::Error,
+                format!("Job '{design_name}' terminated due to an error: {message}"),
+            );
+            state = terminate_on_error(state);
+        }
+    }
+    if final_board.is_none() && state == JobState::Running {
         push(
             &mut log,
             LogLevel::Error,
-            format!("Job '{design_name}' terminated due to an error: {message}"),
+            format!("Job '{design_name}' terminated due to an error: no board came back"),
         );
         state = terminate_on_error(state);
     }
 
-    // 5. The terminal state.
-    let _ = watcher.finish();
+    // 4. The terminal state.
     let stop_requested = ctx.cancel.is_stop_requested();
     let facts = RunFacts {
         cancelled_by_user: ctx.cancelled_by_user.load(Ordering::Acquire),
@@ -324,11 +426,13 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
 
     // 6. The outputs.
     let mut written = Vec::new();
-    if matches!(state, JobState::Completed | JobState::TimedOut) {
+    if matches!(state, JobState::Completed | JobState::TimedOut)
+        && let Some(final_board) = &final_board
+    {
         let source = OutputSource {
-            board: &prepared.board,
+            board: final_board,
             design_name: &design_name,
-            settings: &prepared.settings,
+            settings: &settings,
         };
         write_outputs(outputs, &source, ctx, &mut written, &mut log);
     }

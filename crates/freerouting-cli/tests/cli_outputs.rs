@@ -1,8 +1,8 @@
 //! The job flow of the CLI: outputs, exit codes and the log (C07.4 to C07.6).
 //!
-//! Every test runs the `freerouting` binary. The routing stage is a stub
-//! until C07.8 (the board is written as loaded), so the comparisons with
-//! Java's `clirun` dumps use rows whose command line turns the router off.
+//! Every test runs the `freerouting` binary. The comparisons with Java's
+//! `clirun` dumps use rows whose command line turns the router off; the
+//! routing runs are in `cli_route.rs` (C07.8).
 //!
 //! Java at the pin: `a773a70ec` fixes `cda540f`'s `-do x.dsn` (row 2 wrote a
 //! 0-byte file and exited 1 there, `7bef8995f`); Rust writes a real DSN either
@@ -383,8 +383,10 @@ fn timeouts_only_stop_work() {
         stderr(&zero).contains("warning: stopped by wall-clock limit; result is timing-dependent")
     );
     assert!(stderr(&zero).contains("finished with state: TIMED_OUT"));
-    // The stub leaves the board as it is, so even the stopped run matches.
-    assert_eq!(zero_ses, std::fs::read(dir.join("none.ses")).unwrap());
+    // C07.8: the stopped run routed less than the full one (the fanout
+    // checks the stop between steps). `cli_route.rs` repeats the timeout
+    // checks on a bigger board.
+    assert!(zero_ses.len() < std::fs::read(dir.join("none.ses")).unwrap().len());
 }
 
 // ---- C07.6 --------------------------------------------------------------
@@ -444,7 +446,7 @@ fn compare_py_regex_matches() {
         None
     );
 
-    // The stub run's stage summary.
+    // A routed run's stage summary.
     let dir = dir_with_fixture("regex");
     let out = run_in(
         &dir,
@@ -460,11 +462,12 @@ fn compare_py_regex_matches() {
     let text = stderr(&out);
     let summary = text
         .lines()
-        .find(|l| l.starts_with("Auto-routing stage "))
+        .find(|l| l.starts_with("Auto-routing stage completed"))
         .unwrap_or_else(|| panic!("no stage summary in:\n{text}"));
     let (_, unrouted, violations) =
         compare_py_regex(summary).unwrap_or_else(|| panic!("compare.py's regex misses: {summary}"));
-    assert_eq!(unrouted, 1);
+    // C07.8: the router routes the board's one open connection.
+    assert_eq!(unrouted, 0);
     assert_eq!(violations, 0);
 }
 
@@ -481,7 +484,7 @@ fn the_log_has_no_timestamps_and_prefixed_levels() {
         "{text}"
     );
     assert!(
-        text.contains("warning: routing is not implemented yet"),
+        text.contains("Auto-routing stage completed: started with "),
         "{text}"
     );
     assert!(text.lines().any(|l| l.starts_with("Saving output file '")));

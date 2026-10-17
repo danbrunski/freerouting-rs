@@ -667,8 +667,10 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
 - `--compare-boards` and `--calculate-benchmark-scores` are recognized and exit 2 with
   `not supported; use freerouting-dev ses-diff`; a command line without `-de` and `-do` is an
   error with exit 1 (Java opens the GUI), and `-de x.json` (KiCad JSON) is refused.
-- Until C07.8 the pipeline is a stub: with the router enabled the job warns that routing is not
-  implemented and writes the board as loaded.
+- The pass line's `in X.XX seconds` is the time from the last progress event of the previous pass
+  (or of the fanout, or the start of the run) to the last one of this pass; Java times the pass
+  itself. The loop's `Auto-routing stage started with baseline score ...` line has no board
+  hash. Logs are not results.
 - `-de board.kicad_pcb` is accepted (Java: "Unknown file type"). The board is read directly with
   its `.kicad_pro` and `.kicad_dru` (`io::read_design`), the reader's warnings and read report are
   printed before the job's own log, and a file the reader refuses (KiCad 5 or older) exits 1 with

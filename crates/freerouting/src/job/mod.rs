@@ -5,8 +5,8 @@
 //!
 //! The job flow of the CLI (C07), which the GUI's front-end mode reuses:
 //!
-//! - [`run`]: `run_job`, prepare, route (a stub until C07.8) and write the
-//!   outputs; the job states and Java's exit code.
+//! - [`run`]: `run_job`, prepare, route (A13's `run_pipeline`) and write
+//!   the outputs; the job states and Java's exit code.
 //! - [`outputs`]: the output formats and the atomic, never-empty writer.
 //! - [`deadline`]: wall-clock limits that only stop work, and the mapping to
 //!   a terminal state.
