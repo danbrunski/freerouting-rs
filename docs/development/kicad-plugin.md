@@ -59,9 +59,20 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   `settings.json` = `bin_dir: C:\Users\thebo\Documents\code\freerouting-rs\target\release`
   (plus a WSL fallback, `wsl_bin_dir: /home/thebo/.cache/freerouting-rs-target/release`, only
   used if the Windows exes are missing).
-- Reinstall after changing the plugin source, from Windows:
-  `& "C:\Program Files\KiCad\10.0\bin\python.exe" kicad-plugin\install.py --bin-dir target\release --wsl-bin-dir /home/thebo/.cache/freerouting-rs-target/release`
-  then Tools > External Plugins > Refresh Plugins in the PCB editor (no restart).
+- Rebuild and reinstall after a change, from the Windows checkout. This builds natively, then
+  installs with `bin_dir` set to `target\release` and keeps the WSL fallback:
+  `python tools\install_plugin.py --wsl-bin-dir /home/thebo/.cache/freerouting-rs-target/release`
+  Then use Tools > External Plugins > Refresh Plugins in the PCB editor; no restart is needed.
+- `tools/install_plugin.py` checks the build environment first and offers each missing fix:
+  - Rust;
+  - the windows-gnu toolchain with WinLibs when there are no Visual Studio C++ tools;
+  - on Windows, a viewer that is still running.
+
+  `--check` only reports what it finds. The step-by-step form is still
+  `& "C:\Program Files\KiCad\10.0\bin\python.exe" kicad-plugin\install.py --bin-dir target\release --wsl-bin-dir ...`.
+- From WSL, `python3 tools/install_plugin.py --windows-kicad` builds the Linux executables and
+  installs into the Windows KiCad with `wsl_bin_dir` set to that build. A `bin_dir` that was
+  already in `settings.json`, the Windows exes, stays in place and is still preferred.
 - Dan had not yet confirmed the button appears in KiCad when these notes were written.
 
 ## Native Windows toolchain

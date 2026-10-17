@@ -33,14 +33,34 @@ the executables as below and set `bin_dir`. Maintainers: `python3 kicad-plugin/p
 <dir> --out <dir>` builds the zip, `update_metadata.py` and `validate_pcm.py` finish the
 release metadata (docs/development/kicad-plugin.md, "PCM package").
 
-**From source.** Build the executables, then run the installer with any Python 3 (KiCad's own works):
+**From source, in one step.** From the repository root, with any Python 3.8+ (KiCad's own
+works), on Windows, macOS, Linux or WSL:
+
+```
+python tools/install_plugin.py
+```
+
+It checks the build environment and offers to fix what is missing, asking first each time:
+- Rust, and a linker (on Windows, MSVC or windows-gnu with WinLibs);
+- on Linux, the viewer's libraries;
+- KiCad's user folder.
+
+Then it builds both executables and runs `install.py` below with `--bin-dir` pointing at them.
+- `--check` only reports.
+- `--yes` applies the fixes without asking.
+- `--windows-kicad`, run from WSL, installs into the Windows KiCad and runs the Linux build
+  through WSL.
+
+The top-level [README](../README.md#install-the-kicad-plugin) lists every option.
+
+**From source, step by step.** Build the executables, then run the installer:
 
 ```
 cargo build --release -p freerouting-cli -p freerouting-gui
 python kicad-plugin/install.py --bin-dir target/release
 ```
 
-It copies `freerouting_rs/` into the newest KiCad version's user `scripting/plugins` folder
+`install.py` copies `freerouting_rs/` into the newest KiCad version's user `scripting/plugins` folder
 (`--kicad-version` or `--plugins-dir` to choose) and records where the executables are in
 `settings.json` there. Without `--bin-dir` the plugin looks in `FREEROUTING_RS_BIN`, the PATH
 and `~/.cargo/bin`.
