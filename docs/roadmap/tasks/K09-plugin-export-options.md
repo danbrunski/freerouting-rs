@@ -18,7 +18,7 @@ Opened 2026-10-17, from the Java Freerouting session (freerouting-08) on
 
 This checklist gives the plugin the transforms of `dsn_export.py`, each as an option,
 so a plugin run can reproduce the graded flow (45 at pass-1 parity, 40 with the
-add-only second run).
+add-only second run, 37 since canary-7a's re-run of 2026-10-17).
 
 Prerequisites: K01 (`rule_area_fixup`, the DSN fix-up framework), K02 (the routing
 dialog and options), K03 (options file schema), Q01 (`plane_obstacle_net_classes`),
@@ -94,7 +94,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   via as fixed, as `dsn_export.py --fix-existing` does, so a run only adds. If Q10's
   in-engine sweep is accepted first, the option offers it instead and the done note
   says so.
-  - **Accept:** on `canary-pwr`, plugin run then second run grades ≤ 40, or the done
+  - **Accept:** on `canary-pwr`, plugin run then second run grades ≤ 37, or the done
     note gives the number and the cause.
 - [ ] **K09.7 — Stop wasted passes.** On `canary-pwr`, pass 1 is best (94
   router-unrouted). Passes 2–18 each end at 139–181 and the best board is restored,
@@ -113,3 +113,13 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
       `dsn_export.py`'s DSN (`ses-diff` against the 97d10d6 / Java 7f56b062d
       session);
     - `kicad-plugin.md` documents the options and the preset.
+- [ ] **K09.9 — Class clearances reach the DSN.** canary-7a's placement runs
+  (2026-10-17) had router clearance errors that were rule gaps, not geometry: a
+  `+12V_BUS` via close to an `LTC_INTVCC` track, and a `VCAP` via against U7 pad 14.
+  The `Power_High` class's 0.25 mm clearance wasn't in the DSN (K00 question 6
+  again). Option `class_clearances: {CLASS: mm}`, filled by default from the
+  board's net classes, written as the class's `(rule (clearance ...))`.
+  - **Accept:**
+    - a unit test writes one class's clearance;
+    - on `canary-pwr` with the preset, KiCad reports no clearance error that the
+      router's own DRC missed.

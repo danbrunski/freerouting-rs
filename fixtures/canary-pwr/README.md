@@ -30,6 +30,7 @@ Per fixture:
 | `*.a773a70ec.ses` | — | Sessions routed by the Java fork at `a773a70ec` (deterministic) | reference outputs |
 | `canary-pwr-9511d9a.dsn` | `65186b28` | The placement at canary `9511d9a` (handed over 2026-10-15 by the CANary layout session, canary-09) | the board on hold for freerouting-rs |
 | `canary-pwr-9511d9a-addonly.dsn` | `05fd3b0b` | The same placement with the routing of its best board so far (36 unconnected, `routed36`) added as fixed wires (1177 wires against 179, every one `type fix`), so a router can only add. `routed36` was never a valid result (a CAN_WAKE track on In1 and a PWR_FAIL clearance error; 37 without the In1 track), so it is not the result to beat (see below) | add-only routing (Q04, Q05) |
+| `canary-pwr-1a7df77-addonly.dsn` | `b4b822f8` | Java `7f56b062d`'s pass-1 routing of canary `1a7df77` exported with `dsn_export --fix-existing`, so a router can only add (canary-7a, 2026-10-17). Its add-only session `canary-pwr-1a7df77-addonly.7f56b062d.ses` (`d0b38e67`, `-mp 2`) grades **37**, the result to beat | add-only parity (Q10, K09.6) |
 | `canary-pwr-9511d9a-in2-open.dsn` | `17020c17` | 9511d9a exported with In2 (Power.Cu) open for signals: `dsn_export.py --signal-layers Power.Cu --width Power_High=0.3 --width Switch_Node=0.3 --width Power=0.3 --width GND=0.4` | Q09.5 baseline |
 | `canary-pwr-9511d9a-in2-open-wirekeepout.dsn` | `7b876b9d` | in2-open plus `(wire_keepout)` over the +12V_BUS and +5V_PI islands on Power.Cu. Not routed yet | Q09 (trace-only keepouts) |
 | `*.46bf9e2ef.ses` | `4dc9eedf` (9511d9a), `571d1e01` (addonly), `a8848d1e` (in2-open) | Sessions routed by the Java fork at `46bf9e2ef` (byte-identical to `a773a70ec` while `router.min_trace_width_um` is unset; these runs set it) | reference outputs |
@@ -57,17 +58,21 @@ grading below):
 `inner_tracks.py` (KiCad python, exits 1 on any track on an inner layer) must both report
 0. A valid result has no clearance, track width, annular ring or via-in-pad errors, and no
 tracks on In1/In2; canary's `autoroute.sh` refuses a result that fails `inner_tracks.py`.
-Starved thermals are counted but do not disqualify. **The result to beat is 40
-unconnected** (canary `1a7df77`): Java `7f56b062d`, which has the power-layer fix of Q01.7,
-add-only second run (`dsn_export --fix-existing`, `-mp 2`) after pass 1 on
-`canary-pwr-9511d9a.dsn`. Clean: no clearance, width, annular, via-in-pad or inner-layer
-errors; 5 starved thermals. **The pass-1 parity target is 45**: Java `7f56b062d` pass 1, 109
+Starved thermals are counted but do not disqualify. **The result to beat is 37
+unconnected** (canary `c5ad2ea`, canary-7a, 2026-10-17): Java `7f56b062d`, which has the
+power-layer fix of Q01.7, pass 1 (`-mp 1 --router.scoring.start_ripup_costs=1500
+--router.min_trace_width_um=150`, taps 0.3 mm, GND 0.4 mm), then the add-only second run
+(`dsn_export --fix-existing`, `-mp 2`). Clean apart from 4 starved thermals. A second solo
+run wrote a byte-identical SES; its input and output are `canary-pwr-1a7df77-addonly.dsn`
+(`b4b822f8`) and `canary-pwr-1a7df77-addonly.7f56b062d.ses` (`d0b38e67`). The earlier single
+add-only run that gave 40 (canary `1a7df77`) could not be reproduced and its scratch is gone,
+so 40 is superseded. **The pass-1 parity target is 45**: Java `7f56b062d` pass 1, 109
 unrouted at the router, clean, 4 starved thermals. Before the fix, Java `46bf9e2ef` pass 1 gave
 41, or 42 with its In1 track stripped (canary `9b7a5fe`). Rust at `4336133` (A13, before Q01.7):
 44 as routed, 46 with its In1 tracks stripped, 3 starved thermals. Rust with Q01.7 (`aff2c68`,
 same pass-1 flags): **45**, clean, 4 starved thermals, the same unconnected nets as Java
 `7f56b062d` pass 1 and the same 1141 segments and vias item by item (canary-23, 2026-10-16):
-pass-1 parity is reached. The next step is Java's add-only second run (40).
+pass-1 parity is reached. The next step is Java's add-only second run (37).
 
 The Java route references for these boards in `fixtures/reference/route/canary-pwr/` are
 bounded runs with the harness's settings (optimizer off, `route-bounds.tsv`, no extra

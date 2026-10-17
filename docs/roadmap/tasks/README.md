@@ -42,7 +42,7 @@ analysis tools are in `docs/development/tools/` (Q06, X01).
 | **P** Performance | [P00](P00-performance-README.md) | 5 | 19 | Profiling and baselines; optimizations that keep results identical; parallelism; a freed search tree; SIMD and an allocator trial |
 | **Q** Routing quality | [Q00](Q00-routing-quality-README.md) | 9 | 47 | Measured improvements beyond Java: planes, neck-down, diagnostics, stop rule, ripup, ordering, budgets, trace-only keepouts |
 | **X** Algorithms from KiCadRoutingTools | [X00](X00-krt-algorithms-README.md) | 12 | 65 | The head-to-head, then KRT algorithms as D9 stages: plane repair, a grid router, length matching, differential pairs, escapes |
-| **N** Beyond Java | [N00](N00-beyond-java-README.md) | 5 | 17 | Profiles `java` and `best`; a totals-within-noise keep rule; the freed search tree judged again; contacts inside pads; promoting accepted stages into `best` |
+| **N** Beyond Java | [N00](N00-beyond-java-README.md) | 5 | 18 | Profiles `legacy` and `enhanced`, with every stage and option still selectable; a totals-within-noise keep rule; the freed search tree judged again; contacts inside pads; promoting accepted stages into `enhanced` |
 | **S** Server and job management | [S00](S00-server-README.md) | 0 | 0 | Placeholder, outside "complete": the REST and MCP API, job scheduling and sessions (`api.*`, `management.*`), and the seams the port already leaves for them |
 
 ## Where to start

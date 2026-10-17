@@ -1,8 +1,8 @@
-# N05 — Promote accepted improvements into `best`
+# N05 — Promote accepted improvements into `enhanced`
 
 Opened 2026-10-17 (D10). Every Q, X and K candidate is built off by default, with
 its measurement registered. When a measurement accepts a candidate, it joins
-profile `best` through this checklist: one entry in the profile table, one
+profile `enhanced` through this checklist: one entry in the profile table, one
 DIVERGENCES line, and the measurement it rests on. The CLI must also be able to
 reach the KRT stages at all: today it does not call `freerouting_krt::register`
 (the C07 TODO).
@@ -20,7 +20,7 @@ Prerequisites: N01; each candidate's own accepted measurement.
     - with no KRT key set, every session is byte-identical.
 - [ ] **N05.2 — The promotion procedure.**
   - A short section in `docs/development/engine.md` gives the steps: the profile
-    table entry, the DIVERGENCES line, a test that `best` sets the key, and the
+    table entry, the DIVERGENCES line, a test that `enhanced` sets the key, and the
     measurement link.
   - **Accept:** the section exists, and the first promotion follows it.
 - [ ] **N05.3 — Promotions.** This item stays open as a running list. Each accepted

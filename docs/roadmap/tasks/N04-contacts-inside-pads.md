@@ -22,8 +22,8 @@ Prerequisites: N01.
 
 ## Decisions made here
 
-- **Under `best`, a trace end connects to a same-net pin when the end lies inside
-  the pin's pad shape on the trace's layer**, as in KiCad. `java` keeps
+- **Under `enhanced`, a trace end connects to a same-net pin when the end lies inside
+  the pin's pad shape on the trace's layer**, as in KiCad. `legacy` keeps
   exact-centre contacts.
 - **Not a snap.** The trace keeps its geometry: the SES writes it back exactly, and
   KiCad's import sees the same copper. Only the connectivity model changes.
@@ -34,13 +34,13 @@ Prerequisites: N01.
 
 ## Checklist
 
-- [ ] **N04.1 — The contact rule.** Under `best`, `contact_at_point` (or a
+- [ ] **N04.1 — The contact rule.** Under `enhanced`, `contact_at_point` (or a
   profile-aware variant) accepts a trace end inside a same-net pad shape. The
   incompletes, the routing ledger and the optimizer all use it.
   - **Accept:**
     - ecc83-pp exported with its tracks has the same unconnected count in the
       router as in KiCad (0) before routing;
-    - with `java`, the A14 exact set is unchanged.
+    - with `legacy`, the A14 exact set is unchanged.
 - [ ] **N04.2 — Everything that walks connectivity agrees.** This covers
   pull-tight, trace tails (`remove_trace_tails`), the optimizer's connected sets,
   the DRC's dangling-trace check and the SES writer's endpoint handling (C05).
@@ -51,4 +51,4 @@ Prerequisites: N01.
     - the SES round-trips the end unchanged.
 - [ ] **N04.3 — Measure.** Register the KiCad demos and corpus boards that have
   existing tracks, plus canary-pwr (with N02's rule).
-  - **Accept:** measured; if accepted, N05 adds it to `best`.
+  - **Accept:** measured; if accepted, N05 adds it to `enhanced`.

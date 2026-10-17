@@ -8,7 +8,7 @@ half the maze work, yet 5 boards regressed.
 
 ## Decisions made here
 
-The rule for a change to profile `best`:
+The rule for a change to profile `enhanced`:
 - **Hard guards, unchanged:**
   - no new clearance violations (KiCad `drc_real` where graded);
   - no via in a pad;
@@ -49,5 +49,5 @@ The rule for a change to profile `best`:
     registration validates.
 - [ ] **N02.3 — routing-quality.md.** Amend "How to measure a quality change":
   keep the paired rule as the rule for stages that are opt-in, and use the totals
-  rule for changes to `best`. Record the reason, with P04.1's numbers.
+  rule for changes to `enhanced`. Record the reason, with P04.1's numbers.
   - **Accept:** the amendment is in the doc, dated, with a pointer to D10.

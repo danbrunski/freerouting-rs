@@ -191,7 +191,7 @@ it depends on.
     whose result Freerouting's pull-tight optimizer then cleans up.
   - **The Freerouting implementations are the parity baseline.** Adding an
     algorithm never changes their results. They were also the defaults
-    until D10; now they are profile `java`.
+    until D10; now they are profile `legacy`.
   - **The same gates for every implementation:** deterministic (D2), no new
     clearance violations, no via in a pad. It becomes a default only by the
     measurement rules in [routing-quality.md](routing-quality.md): at least
@@ -213,16 +213,16 @@ it depends on.
 - **D10 — Beyond Java (Dan, 2026-10-17).** "Let's move beyond java
   freerouting now, and make this better." Board parity is reached (A14),
   so the goal becomes the best routed board, not Java's board.
-  - **Two profiles.** `router.profile = java` keeps every Java behaviour
-    and is what the parity gates and probes pin. The default, `best`, is
+  - **Two profiles.** `router.profile = legacy` keeps every Java behaviour
+    and is what the parity gates and probes pin. The default, `enhanced`, is
     the set of accepted improvements; CLI, GUI and plugin use it.
   - **Defaults may diverge from Java** when a measurement accepts the
-    change. Changes to `best` are judged by the totals-within-noise rule
+    change. Changes to `enhanced` are judged by the totals-within-noise rule
     (N02) instead of the per-board paired rule. The hard guards stay:
     D2, D8, no new clearance violations, the KiCad oracle,
     preregistration, and no code left behind by a rejected candidate.
-  - **D4 and D5 relax for `best` only.** The search tree may stop
-    matching Java's shape there (N03); `java` keeps the Java tree.
+  - **D4 and D5 relax for `enhanced` only.** The search tree may stop
+    matching Java's shape there (N03); `legacy` keeps the Java tree.
   - The work is the N series ([N00](tasks/N00-beyond-java-README.md)).
 
 ## Verification ladder
@@ -252,7 +252,7 @@ Each rung uses the reference data and harness in
    byte-identical.
 6. **Quality beyond Java.** Deliberate changes, measured and logged
    ([routing-quality.md](routing-quality.md)), collected in profile
-   `best` (D10).
+   `enhanced` (D10).
 
 ## Work series and order
 
