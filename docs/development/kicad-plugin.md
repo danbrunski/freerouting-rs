@@ -251,6 +251,12 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
   through export, route and import (K02.6), and the five demos graded against Java (K02.7). Not
   yet run inside KiCad (K02.8).
 - Native viewer renders CM5_MINIMA_3 fitted, and ecc83-pp with reference designators.
+- 2026-10-17, Windows, main at `97d10d6`: native rebuild (windows-gnu + WinLibs, 1m34s),
+  `freerouting --version` = `0.1.0 (git 97d10d6315ee)`, plugin reinstalled with `install.py
+  --bin-dir target\release` (no shadow copies found) and byte-compiled by KiCad 10.0.5's Python
+  3.11.5. The CLI routed KiCad's `ecc83-pp` demo exported with its tracks in 0.18 s ("6 unrouted",
+  where KiCad's DRC of the demo reports 0 unconnected), KiCad's `ImportSpecctraSES` took the
+  session headlessly, and the GUI opened the DSN + SES. Not yet run inside KiCad.
 
 ## What's left
 
