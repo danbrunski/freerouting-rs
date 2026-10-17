@@ -79,20 +79,46 @@ Prerequisites: X03; F04. No board-model change is needed: item shapes
 
 ## Checklist
 
-- [ ] **X04.1 — Crate skeleton and provenance.**
+- [x] **X04.1 — Crate skeleton and provenance.**
   - **Accept:** the gate passes with the new crate; its `README.md` states the
     licence split (GPL-3.0-only for code written here, MIT for files carrying
     KRT code, which have the F04 header); F04's CI check passes.
+  *Done 2026-10-17:* X02.1 had created the crate, so X04.1 added the
+  `krt-grid-router` path dependency (`crates/freerouting-krt/Cargo.toml`;
+  `Cargo.lock` gains one line), the `grid` module and its line in `lib.rs`,
+  and a `grid` entry in the crate's `README.md`, whose licence section
+  (GPL-3.0-only for code written here, MIT for files carrying KRT code with
+  the F04 header) already stood. The `grid` files are written from KRT's
+  design with a one-line credit each; no KRT code is ported, so they carry no
+  SPDX/`Portions ported from` header and need no `docs/PROVENANCE.md` row.
+  Gate: `cargo fmt --all --check` clean; `cargo clippy -p freerouting-krt
+  --all-targets -- -D warnings` clean (no crate depends on
+  `freerouting-krt`, so the workspace clippy adds nothing);
+  `cargo test -p freerouting-krt`: 15 + 6 (2 ignored) + 12 passed;
+  `tools/check-provenance.sh` → `provenance ok`;
+  `tools/krt/vendor-diff.sh --check` → `VENDORED.diff ok`.
 
-- [ ] **X04.2 — Frame and window.**
+- [x] **X04.2 — Frame and window.**
   Rust design: `grid::frame::Frame { step, i0, j0, nx, ny, layers }` with
   `fn cell_of(Point) -> (i32, i32)`, `fn centre(i, j) -> Point`, all integer.
   `fn window_for(board, task) -> Frame`.
   - **Accept:** unit tests: windows of two overlapping connections give the
     same centre for a shared cell; a point exactly on a cell boundary maps to
     the cell with the lower index.
+  *Done 2026-10-17:* `grid::frame::{Frame, cell_of, window_for}`, all
+  integer (`i64` intermediates). `window_for(board, task, step)` takes the
+  step as a third argument (the task doesn't carry one; X05 retries at finer
+  steps on the same task); the task type is `grid::GridTask { net, start,
+  dest }`. Unit tests `frame::tests::overlapping_frames_share_centres`
+  (65 shared cells, equal centres, `cell_of(centre) == (i, j)` in both),
+  `boundary_points_map_to_the_lower_index` (steps 1000 and 5, negative
+  coordinates), `cells_near_clips_to_the_frame`; in `crates/freerouting-krt/tests/raster.rs`,
+  `windows_of_overlapping_connections_share_cells`: the windows of A1→A2
+  and P1→Q1 on the hand board (206 × 106 and 356 × 160 cells, clipped to the
+  outline box) share 161 × 61 cells with equal centres, and `(100500,
+  100500)`, on the boundary of cells 100 and 101, maps to 100.
 
-- [ ] **X04.3 — Trace obstacles, keepouts and outline.**
+- [x] **X04.3 — Trace obstacles, keepouts and outline.**
   Source: KRT `obstacle_map.build_base_obstacle_map`,
   `add_rule_area_keepout_obstacles`, `add_board_edge_obstacles`.
   Rust design: `grid::raster::build(board, task, frame) -> GridObstacleMap`.
@@ -112,16 +138,46 @@ Prerequisites: X03; F04. No board-model change is needed: item shapes
       1 board unit. It is unverified whether it is exact Euclidean for every
       shape kind; if it isn't, the raster uses the brute-force distance and
       the done note says so.
+  *Done 2026-10-17:* `grid::raster::{build, build_raster}`. Tests in
+  `crates/freerouting-krt/tests/raster.rs` on the hand board: `pad_blocks_the_expected_cell_count` (the 1 mm
+  square pad of net P at 0.1 mm, `c = 2016` with the safety margin, `hw =
+  1250`, `h = 708`: 285 cells blocked on F.Cu, equal to the exact integer
+  count, 0 on B.Cu); `keepouts_and_outline` (the F.Cu keepout blocks F.Cu
+  traces and vias but not B.Cu; the via keepout blocks only vias; cells
+  outside the L-shaped outline are blocked on both layers and for vias; the
+  ring outside the frame is blocked); `own_net_pads_are_free_for_traces_but_not_for_vias`;
+  `outside_cells_match_the_per_cell_test` (the block shortcut of
+  `outside_cells` equals `BoardOutline::contains` per cell on the hand board,
+  smoothieboard and canary-pwr-pours2). `shape_distance_matches_brute_force`:
+  1,000 points around random boxes, bounding octagons and simplices
+  (`JavaRandom(0x450403)`), max |`Shape::distance` − brute force| = 0 /
+  8.4e-11 / 1.7e-10 units, so the raster uses `Shape::distance` as is.
+  Trace obstacles are `BasicBoard::is_trace_obstacle(item, net)` (the board
+  form of `Item::is_obstacle_for_net`, with Q01's area policy). Not covered:
+  hole-to-hole clearance, left to X05's DRC (module docs).
 
-- [ ] **X04.4 — Via map.**
+- [x] **X04.4 — Via map.**
   As in the decisions, using the net's via rule: the first via info in the
   rule whose padstack spans the layers the path needs (for a two-layer
   board, the through via).
   - **Accept:** a via cell is never inside any pad (test over every pad of
     `Issue145-smoothieboard`); a cell next to a pad is via-blocked when the
     via ring would come within clearance.
+  *Done 2026-10-17:* the via map in `raster::build_raster`; `NetRules::of_net`
+  picks the first via of the net's rule spanning every board layer (else the
+  first), with `r_via(L)` the rounded-up largest centre-to-pad distance.
+  Pads of **any** net block via cells within `r_via(L) + h`, not only cells
+  whose centre is inside the pad: the gate's `via_in_pad_count` counts any
+  overlap of via copper with a pad, and the raster must never invite one
+  (see Operator decisions in the X04 report). Tests in `crates/freerouting-krt/tests/raster.rs`:
+  `via_ring_near_a_foreign_pad` (along the row right of P1, a cell is
+  via-blocked exactly when `d < c_via + r_via + h` = 5724; the 5 cells
+  whose via ring would come within the clearance are all blocked; the first
+  free cell keeps it); `smoothieboard_via_cells_are_never_in_a_pad`
+  (whole-board frame, 1,055 pads, 569,590 pad cells on the via's layers, all
+  via-blocked; each of the 733,325 via-free cells has no pad at its centre).
 
-- [ ] **X04.5 — Terminals.**
+- [x] **X04.5 — Terminals.**
   Source: KRT `add_source_target_cell`, `add_allowed_rect`.
   Rust design: `grid::terminals::cells(board, frame, items) -> Vec<[i32; 3]>`:
   the free cells whose centre lies inside the item's shape on its layers. If
@@ -129,8 +185,16 @@ Prerequisites: X03; F04. No board-model change is needed: item shapes
   finer step.
   - **Accept:** a 0.25 mm QFN pad at 0.1 mm step has at least one source
     cell; a 0.05 mm sliver pad has none and is reported.
+  *Done 2026-10-17:* `grid::terminals::{cells, collect, for_task, mark}`:
+  the frame cells inside the item's copper on its layers (exact pad shapes)
+  and inside the outline; `Terminals::empty` reports the items with none.
+  Clearance to neighbouring pads doesn't remove a terminal cell; `mark` adds
+  the cells to the map's source/target set (KRT's override). Test
+  `qfn_pad_has_source_cells_and_a_sliver_has_none` in `crates/freerouting-krt/tests/raster.rs`: the 0.25 ×
+  0.8 mm pad has 27 cells at 0.1 mm; the 0.05 mm sliver at x = 35.05 mm has
+  none and is the one item in `empty`; marked cells read as free.
 
-- [ ] **X04.6 — Incremental stamps (only if X06 measures the need).**
+- [~] **X04.6 — Incremental stamps (only if X06 measures the need).**
   Source: KRT `obstacle_cache.py` (`NetObstacleData`, refcounted per-net
   stamps) and its audits (`run_obstacle_audit`, `run_obstacle_content_audit`,
   #309 and #806).
@@ -141,8 +205,11 @@ Prerequisites: X03; F04. No board-model change is needed: item shapes
     numbers. If triggered: after 1,000 random insert/delete operations on a
     `benchmark` board, the audit finds no difference; a seeded fault (one
     skipped removal) is reported with its item id and layer.
+  *Partial 2026-10-17:* not triggered: it waits for X06's measurement of
+  raster building's share of the stage's time (over 30 % triggers it).
+  X04.7's release numbers for one build per connection are in its note.
 
-- [ ] **X04.7 — The conservative property, checked exactly.**
+- [x] **X04.7 — The conservative property, checked exactly.**
   - **Accept:**
     - on `Issue145-smoothieboard` and `canary-pwr`, for 10,000 free cells
       sampled with a fixed `JavaRandom` seed, the exact `Shape::distance` to
@@ -153,3 +220,20 @@ Prerequisites: X03; F04. No board-model change is needed: item shapes
       `s/8`);
     - build time per connection (median and maximum) on those two boards is
       in the done note.
+  *Done 2026-10-17:* `conservative_on_smoothieboard` and
+  `conservative_on_canary_pwr` (`canary-pwr-pours2.dsn`, the variant with the
+  edge and fiducial keepouts) in `crates/freerouting-krt/tests/raster.rs`: rasters of each board's first 20
+  open connections (net ascending, its first two connected sets), sampled
+  with `JavaRandom(4045007)`. 10,000 free cells each: exact distance to every
+  trace obstacle on the layer (pads by their exact shape, areas by their
+  exact convex pieces, traces and outline lines by their tile shapes) ≥
+  `c + hw`, worst margin 712.0 / 711.1 units. 10,000 adjacent free pairs
+  each (also diagonal), the segment sampled every `s/8`: worst margin 726.3
+  / 724.0 units. `raster_builds_are_deterministic`: two builds equal cell by
+  cell. Build time per connection, release, 3 runs
+  (`cargo test --release -p freerouting-krt --test raster conservative --
+  --nocapture --test-threads 1`): smoothieboard median 4.5–4.9 ms, max
+  195–209 ms (net 1, a 1295 × 1051-cell window on 4 layers); canary-pwr
+  median 5.5–5.9 ms, max 73–74 ms. Before the outline block shortcut, the
+  smoothieboard max was 280–293 ms (callgrind: 32 % in
+  `BoardOutline::contains`, 45 % in `TileShape::distance`).

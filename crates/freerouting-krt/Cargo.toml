@@ -13,3 +13,6 @@ publish = false
 
 [dependencies]
 freerouting.workspace = true
+# The vendored grid A* and its obstacle map (X03, MIT): the raster store of
+# `grid` (X04).
+krt-grid-router = { path = "../krt-grid-router" }

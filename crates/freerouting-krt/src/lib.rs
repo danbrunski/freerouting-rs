@@ -14,9 +14,13 @@
 //! Modules:
 //! - [`planes`] (X02): islands, anchors and main components of plane nets,
 //!   the plane-tap report and pour region repair.
+//! - [`grid`] (X04): the conservative obstacle raster of one connection for
+//!   the vendored grid A* (`krt-grid-router`). No stage yet; X05 adds
+//!   `krt-grid`.
 
 use freerouting::autoroute::stages::StageRegistry;
 
+pub mod grid;
 pub mod planes;
 
 /// Registers this crate's stages on `registry`. Each X checklist appends

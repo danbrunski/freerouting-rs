@@ -29,3 +29,9 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
 - `planes` (X02): plane islands, anchors and main components; plane-tap
   verification (a report); pour region repair (`krt-region-repair`). All three
   are written from KRT ideas; no KRT code is ported.
+- `grid` (X04): the conservative obstacle raster of one connection for the
+  vendored grid A* (`crates/krt-grid-router`, MIT, a dependency of this
+  crate): the frame and window, trace and via cells from the board's shapes,
+  keepouts, the outline and terminal cells. Written from KRT's design; no KRT
+  code is ported, so these files are GPL-3.0-only. No stage uses it yet; X05
+  adds `krt-grid`.
