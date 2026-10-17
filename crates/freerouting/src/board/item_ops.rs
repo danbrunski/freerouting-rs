@@ -36,7 +36,7 @@
 
 use std::collections::BTreeMap;
 
-use freerouting_geometry::{FloatPoint, IntPoint, Point, Vector};
+use freerouting_geometry::{FloatPoint, IntPoint, Point, Polyline, Vector};
 
 use crate::board::autoroute_log::AutorouteChange;
 use crate::board::basic_board::BasicBoard;
@@ -425,6 +425,15 @@ fn translate_point(center: IntPoint, vector: &Vector) -> IntPoint {
     moved.as_int().unwrap_or_else(|| moved.to_float().round())
 }
 
+/// What Java's `connectToTrace` reads of a `PolylineTrace` object: its
+/// polyline, layer and nets.
+#[derive(Clone, Debug)]
+pub struct TraceObject {
+    pub polyline: Polyline,
+    pub layer: i32,
+    pub net_numbers: Vec<i32>,
+}
+
 impl RoutingBoard {
     /// Inserts a trace from `from` to the nearest point of trace `trace`
     /// with half width `half_width` and clearance class `clearance_class`.
@@ -445,29 +454,56 @@ impl RoutingBoard {
         half_width: i32,
         clearance_class: i32,
     ) -> bool {
-        let Some(item) = self.item(trace) else {
-            return false;
-        };
-        let Some(polyline_trace) = item.as_trace() else {
-            return false;
-        };
+        match self.trace_object(trace) {
+            Some(object) => {
+                self.connect_to_trace_object(from, &object, half_width, clearance_class)
+            }
+            None => false,
+        }
+    }
+
+    /// The geometry and nets of polyline trace `trace` as they are now, or
+    /// `None` if it is no polyline trace on the board.
+    pub fn trace_object(&self, trace: ItemId) -> Option<TraceObject> {
+        let item = self.item(trace)?;
+        let polyline_trace = item.as_trace()?;
+        Some(TraceObject {
+            polyline: polyline_trace.polyline.clone(),
+            layer: polyline_trace.layer,
+            net_numbers: item.net_numbers().to_vec(),
+        })
+    }
+
+    /// [`RoutingBoard::connect_to_trace`] on a trace object: Java's
+    /// `connectToTrace` reads only the object's fields, so it also runs on a
+    /// trace that has left the board meanwhile (A14, the autorouter's
+    /// inserter).
+    pub fn connect_to_trace_object(
+        &mut self,
+        from: IntPoint,
+        trace: &TraceObject,
+        half_width: i32,
+        clearance_class: i32,
+    ) -> bool {
         let from_point = Point::Int(from);
-        if polyline_trace.polyline.contains(&from_point) {
+        if trace.polyline.contains(&from_point) {
             return true;
         }
-        let Some(projection) = polyline_trace.polyline.projection_line(&from_point) else {
+        let Some(projection) = trace.polyline.projection_line(&from_point) else {
             return false;
         };
         let connection = projection.to_polyline();
         if connection.lines().len() != 3 {
             return false;
         }
-        let layer = polyline_trace.layer;
+        let layer = trace.layer;
         // Java reads the corners after the insertion from the trace object,
         // whose geometry a split or combine of other items leaves alone.
-        let (first_corner, last_corner) =
-            (polyline_trace.first_corner(), polyline_trace.last_corner());
-        let net_numbers = item.net_numbers().to_vec();
+        let (first_corner, last_corner) = (
+            trace.polyline.corner(0),
+            trace.polyline.corner(trace.polyline.lines().len() - 2),
+        );
+        let net_numbers = trace.net_numbers.clone();
         if !self.check_polyline_trace(
             &connection,
             layer,

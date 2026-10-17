@@ -183,3 +183,65 @@ pub fn pass_lines(dsn: &str) -> Vec<String> {
     ]));
     out
 }
+
+/// The lines of the A14 bisecting kind `fanout-pass` (not committed; `AutorouteProbe.java`
+/// has no such kind at the pin): the real fanout stage on the loaded board, a line with its
+/// route hash and id watermark, then `passes` passes as [`pass_lines`] writes them.
+pub fn fanout_pass_lines(dsn: &str, passes: u32) -> Vec<String> {
+    use freerouting::autoroute::batch::fanout::{FanoutRun, NoFanoutObserver};
+    let mut loaded = load(dsn);
+    let mut out = writer("fanout-pass", &board_name(dsn)).into_lines();
+    let mut runner = PassRunner::for_job(&loaded.settings, &loaded.router);
+    let mut ordering = FreeroutingOrdering::new();
+    let mut router = FreeroutingConnectionRouter::from_settings(&loaded.settings);
+    let mut ripup = FreeroutingRipupPolicy::from_settings(&loaded.settings);
+    let cancel = CancelToken::new();
+    let events = NullEvents;
+    let mut ctx = StageCtx {
+        settings: &loaded.settings,
+        board_settings: &loaded.router,
+        cancel: &cancel,
+        events: &events,
+    };
+    let board = &mut loaded.board;
+    let mut fanout = FanoutRun::new(board, &ctx);
+    fanout.run(board, &mut ctx, &mut NoFanoutObserver);
+    out.push(record_line(&[
+        ("stage", "fanout".into()),
+        ("boardHash", hex(route_hash(board))),
+        ("maxGeneratedId", max_id(board).into()),
+    ]));
+    let mut stages = PassStages {
+        ordering: &mut ordering,
+        router: &mut router,
+        ripup: &mut ripup,
+    };
+    for pass in 1..=passes {
+        let mut lines = Lines {
+            out: &mut out,
+            pass,
+            index: 0,
+            max_before: 0,
+            units_before: 0,
+            tails: None,
+        };
+        let outcome = runner.run_pass_observed(board, pass, &mut stages, &mut ctx, &mut lines);
+        let Some((removed, tail_units)) = lines.tails else {
+            continue;
+        };
+        out.push(record_line(&[
+            ("tails", i64::from(pass).into()),
+            ("removed", removed.into()),
+            ("units", (tail_units as i64).into()),
+            ("incomplete", (outcome.incomplete as i64).into()),
+            (
+                "incompleteNets",
+                ProbeValue::ints(outcome.incomplete_nets.iter().map(|n| i64::from(*n))),
+            ),
+            ("continue", outcome.continue_routing.into()),
+            ("maxGeneratedId", max_id(board).into()),
+            ("boardHash", hex(route_hash(board))),
+        ]));
+    }
+    out
+}

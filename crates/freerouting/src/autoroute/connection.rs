@@ -50,6 +50,7 @@ use freerouting_geometry::Stoppable;
 use super::control::AutorouteControl;
 use super::path::{InsertError, Located, RipupCosts, insert_located, locate};
 use super::session::Session;
+use super::session::drills::DrillCarry;
 use super::session::search::{MazeSearch, SearchResult, SearchSettings};
 use super::session::sink::{NoExtraCost, SearchSink};
 use super::{AttemptResult, AttemptState};
@@ -113,8 +114,28 @@ pub fn route_connection<S: SearchSink>(
     ripped: Ripped<'_>,
     sink: S,
 ) -> (AttemptResult, S) {
+    let mut engine = DrillCarry::default();
+    route_connection_on_engine(board, start, dest, ctrl, limits, ripped, sink, &mut engine)
+}
+
+/// [`route_connection`] as a further `autorouteConnection` on the Java engine
+/// whose drill pages `engine` holds (see [`DrillCarry`]): the search starts
+/// with them and leaves them there for the next call. A fresh
+/// `DrillCarry::default()` is a new engine.
+#[allow(clippy::too_many_arguments)]
+pub fn route_connection_on_engine<S: SearchSink>(
+    board: &mut RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+    ctrl: &AutorouteControl,
+    limits: RouteLimits<'_>,
+    ripped: Ripped<'_>,
+    sink: S,
+    engine: &mut DrillCarry,
+) -> (AttemptResult, S) {
     let Ripped { items, costs } = ripped;
-    let (searched, sink) = search_and_locate(board, start, dest, ctrl, limits, items, costs, sink);
+    let (searched, sink) =
+        search_and_locate(board, start, dest, ctrl, limits, items, costs, sink, engine);
     let (result, located) = match searched {
         Searched::InitFailed => {
             let details = format!(
@@ -193,27 +214,33 @@ fn search_and_locate<S: SearchSink>(
     ripped: &mut BTreeSet<ItemId>,
     costs: Option<&mut RipupCosts>,
     sink: S,
+    engine: &mut DrillCarry,
 ) -> (Searched, S) {
     let angle = board.rules.trace_angle_restriction();
     let mut session = Session::new(board, ctrl, limits.stop, limits.work_limit);
+    // PARITY(quirk): the engine's drill pages (`AutorouteEngine.java:91`).
+    session.install_drill_carry(std::mem::take(engine));
     let (result, sink) = {
         let mut search = MazeSearch::new(&mut session, sink, NoExtraCost, limits.settings);
         // Java catches what `getInstance` throws and treats it as null.
-        if !search.init(start, dest).unwrap_or(false) {
-            // PARITY(quirk): AutorouteEngine.java:142-150, FAILED before
-            // `clear()`: the session's rooms stay in the tree.
-            return (Searched::InitFailed, search.into_sink());
-        }
+        let initialized = search.init(start, dest).unwrap_or(false);
         // Java catches what `findConnection` throws: no result.
-        let result = search.find_connection().ok().flatten();
+        let result = initialized.then(|| search.find_connection().ok().flatten());
         (result, search.into_sink())
+    };
+    let Some(result) = result else {
+        // PARITY(quirk): AutorouteEngine.java:142-150, FAILED before
+        // `clear()`: the session's rooms stay in the tree.
+        *engine = session.take_drill_carry();
+        return (Searched::InitFailed, sink);
     };
     // Java catches what the locator throws: no located path.
     let located = result
         .as_ref()
         .and_then(|result| locate(&mut session, result, angle, ripped, costs).ok());
     // PARITY: AutorouteEngine.java:196-204, the rooms leave the tree before
-    // any check of the result.
+    // any check of the result; the drill pages stay with the engine.
+    *engine = session.take_drill_carry();
     session.clear();
     (Searched::Done { result, located }, sink)
 }

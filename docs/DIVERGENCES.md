@@ -187,6 +187,12 @@ branch 3 in IntOctagon's box cutout.
 - `Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn` quotes its class nets with `'`.
   Java keeps the quotes, so its nets stay in the default class; the port reads them
   (see freerouting-dsn), so the expected hole clearances and the scores differ.
+- Board parity gate (A14): `Issue684-Autorouter_PCB1_2026-5-8` and
+  `Issue721-Autorouter_CE2632_HarryMu_2026-6-15` quote their class nets with `'`, so the
+  port puts those nets in their classes where Java leaves them in the default one and
+  their traces get another clearance class (on Issue684 the fanout's trace at pin 23 has
+  Java's corners and widths but class 8 for Java's 1); both route differently from Java
+  (`EXPECTED_MISMATCHES` in `tests/autoroute_board_parity.rs`).
 
 **Settings** (`settings`, port of `app.freerouting.settings`, `util.ReflectionUtil` and
 `LegacyRouterSettingsBridge`; tests `tests/settings_*.rs`)

@@ -38,7 +38,7 @@ pub mod item_ops;
 pub mod pin_exits;
 mod trace_pin_connection;
 
-pub use item_ops::ItemTransform;
+pub use item_ops::{ItemTransform, TraceObject};
 pub use pin_exits::TraceExitRestriction;
 
 // B08: the engine API of the GUI (drawable geometry, item info, interactive

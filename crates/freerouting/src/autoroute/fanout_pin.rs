@@ -48,8 +48,9 @@ use std::collections::BTreeSet;
 
 use freerouting_geometry::{FloatPoint, IntBox};
 
-use super::connection::{Ripped, RouteLimits, java_item_text, route_connection};
+use super::connection::{Ripped, RouteLimits, java_item_text, route_connection_on_engine};
 use super::control::AutorouteControl;
+use super::session::drills::DrillCarry;
 use super::session::search::SearchSettings;
 use super::session::sink::NoopSink;
 use super::stages::StageCtx;
@@ -138,6 +139,7 @@ fn fanout_control(
 }
 
 /// One `autorouteConnection` of the pin's engine, adding to `ripped`.
+#[allow(clippy::too_many_arguments)]
 fn attempt(
     board: &mut RoutingBoard,
     start: &BTreeSet<ItemId>,
@@ -146,6 +148,7 @@ fn attempt(
     limit: &WorkLimit,
     ctx: &StageCtx,
     ripped: &mut BTreeSet<ItemId>,
+    engine: &mut DrillCarry,
 ) -> AttemptResult {
     let limits = RouteLimits {
         settings: SearchSettings::from_router(ctx.board_settings),
@@ -157,7 +160,10 @@ fn attempt(
         items: ripped,
         costs: None,
     };
-    route_connection(board, start, dest, control, limits, ripped, NoopSink).0
+    route_connection_on_engine(
+        board, start, dest, control, limits, ripped, NoopSink, engine,
+    )
+    .0
 }
 
 /// True if a plane or closest-target attempt ended the fanout.
@@ -265,13 +271,26 @@ fn route_attempts(
 ) -> Result<AttemptResult, String> {
     let settings = ctx.board_settings;
     let net = control.net_number;
+    // PARITY(quirk): one engine for every attempt (`:1076-1078`), so the
+    // later attempts see the drill pages the earlier ones used.
+    let mut engine = DrillCarry::default();
+    let engine = &mut engine;
     let plane_targets = board.power_plane_areas(unconnected.iter().copied());
     if !plane_targets.is_empty() {
         control
             .rebuild_via_info(board, settings.plane_via_costs(), net)
             .map_err(|e| e.to_string())?;
         control.is_plane_fanout = true;
-        let plane = attempt(board, start, &plane_targets, control, limit, ctx, ripped);
+        let plane = attempt(
+            board,
+            start,
+            &plane_targets,
+            control,
+            limit,
+            ctx,
+            ripped,
+            engine,
+        );
         control.is_plane_fanout = false;
         control
             .rebuild_via_info(board, settings.via_costs(), net)
@@ -295,10 +314,11 @@ fn route_attempts(
             limit,
             ctx,
             ripped,
+            engine,
         ));
     }
     let closest = BTreeSet::from([*closest]);
-    let result = attempt(board, start, &closest, control, limit, ctx, ripped);
+    let result = attempt(board, start, &closest, control, limit, ctx, ripped, engine);
     if !connected(&result) && sorted.len() > 1 {
         return Ok(attempt(
             board,
@@ -308,6 +328,7 @@ fn route_attempts(
             limit,
             ctx,
             ripped,
+            engine,
         ));
     }
     Ok(result)

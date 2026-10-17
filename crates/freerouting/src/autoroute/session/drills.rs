@@ -32,8 +32,10 @@
 //! number and the empty list are set before the split).
 //!
 //! `Session::clear` drops the pages and the drills with the rooms. Java's
-//! `clear` leaves the page array alone, but its drills then point to
-//! removed rooms and the engine is discarded (one engine per connection).
+//! `clear` leaves the page array alone, so its drills then point to removed
+//! rooms; the batch router discards the engine (one per connection), but the
+//! fanout routes up to three connections on one engine, which
+//! [`DrillCarry`] reproduces.
 
 use freerouting_geometry::jmath::d2i;
 use freerouting_geometry::{
@@ -113,6 +115,27 @@ pub struct DrillPageArray {
     /// Row-major: page `(i, j)` (column `i`, row `j`) is at
     /// `j * column_count + i`.
     pages: Vec<DrillPage>,
+}
+
+/// The drill pages and drills one Java `AutorouteEngine` keeps between the
+/// connections it routes (A14). Java's `clear` (`AutorouteEngine.java:321-332`)
+/// leaves `drillPageArray` alone and only the retained-database mode resets
+/// it (`resetAllDoors`, `:692`), so a second `autorouteConnection` on the same
+/// engine sees the pages with their drills (calculated for the same net,
+/// so not recalculated, and pointing to the removed rooms of the first
+/// search) and the occupied flags of their maze search elements. Only
+/// `RoutingBoard.fanout` routes more than one connection per engine (the
+/// plane attempt, the closest target, then all targets, `:1077-1126`); the
+/// batch router creates an engine per attempt. Of the section states only
+/// the occupied flags are kept: an occupied section is never popped again,
+/// and a free one is overwritten when it is.
+#[derive(Clone, Debug, Default)]
+pub struct DrillCarry {
+    pages: Option<DrillPageArray>,
+    drills: Vec<ExpansionDrill>,
+    /// The occupied flags; each page's and drill's `sections` range indexes
+    /// this vector while carried.
+    occupied: Vec<bool>,
 }
 
 impl DrillPageArray {
@@ -422,6 +445,72 @@ impl Session<'_> {
     pub(crate) fn clear_drills(&mut self) {
         self.drill_pages = None;
         self.drills.clear();
+    }
+
+    /// Takes the page array and the drills out of the session for the next
+    /// connection of the same engine (see [`DrillCarry`]). The session keeps
+    /// none.
+    pub(crate) fn take_drill_carry(&mut self) -> DrillCarry {
+        let Some(mut pages) = self.drill_pages.take() else {
+            self.drills.clear();
+            return DrillCarry::default();
+        };
+        let mut occupied = Vec::new();
+        let mut keep = |range: &mut (u32, u32), sections: &[SectionState]| {
+            let start = occupied.len() as u32;
+            occupied.extend(
+                sections[range.0 as usize..(range.0 + range.1) as usize]
+                    .iter()
+                    .map(|s| s.occupied),
+            );
+            *range = (start, range.1);
+        };
+        for page in &mut pages.pages {
+            keep(&mut page.sections, &self.sections);
+        }
+        let mut drills = std::mem::take(&mut self.drills);
+        for drill in &mut drills {
+            keep(&mut drill.sections, &self.sections);
+        }
+        DrillCarry {
+            pages: Some(pages),
+            drills,
+            occupied,
+        }
+    }
+
+    /// Puts `carry` into a new session, before its search: the pages and
+    /// drills get sections in this session with their occupied flags, and
+    /// the drills lose their rooms, which belonged to the session that
+    /// computed them.
+    pub(crate) fn install_drill_carry(&mut self, carry: DrillCarry) {
+        let DrillCarry {
+            pages,
+            mut drills,
+            occupied,
+        } = carry;
+        let Some(mut pages) = pages else {
+            return;
+        };
+        let place = |range: &mut (u32, u32), session: &mut Self| {
+            let fresh = session.allocate_section_range(range.1 as usize);
+            for k in 0..range.1 {
+                session.sections[(fresh.0 + k) as usize].occupied =
+                    occupied[(range.0 + k) as usize];
+            }
+            *range = fresh;
+        };
+        for page in &mut pages.pages {
+            place(&mut page.sections, self);
+        }
+        for drill in &mut drills {
+            place(&mut drill.sections, self);
+            // PARITY(quirk): Java's `roomArr` keeps the removed rooms of the
+            // earlier search, which no room of this one is identical to.
+            drill.rooms.iter_mut().for_each(|room| *room = None);
+        }
+        self.drill_pages = Some(pages);
+        self.drills = drills;
     }
 
     /// Java `DrillPage.getDrills(engine, attachSmd)` (`:63-135`): the drills
@@ -962,6 +1051,44 @@ mod tests {
         s.clear();
         assert!(s.built_drill_pages().is_none());
         assert_eq!(s.drill_count(), 0);
+    }
+
+    #[test]
+    fn a_carried_engine_keeps_its_drills_and_occupied_sections() {
+        let mut f = fixture();
+        let mut s = Session::new(&mut f.board, &f.control, None, None);
+        let drills = s
+            .page_drills(DrillPageId(0), false)
+            .expect("drills")
+            .to_vec();
+        s.drill_sections_mut(drills[0])[1].occupied = true;
+        let count = s.drill_count();
+        let carry = s.take_drill_carry();
+        assert!(s.built_drill_pages().is_none(), "the session keeps none");
+        s.clear();
+        drop(s);
+        let mut next = Session::new(&mut f.board, &f.control, None, None);
+        next.install_drill_carry(carry);
+        let again = next
+            .page_drills(DrillPageId(0), false)
+            .expect("drills")
+            .to_vec();
+        // The same net: page 0 is not recalculated.
+        assert_eq!(again, drills);
+        assert_eq!(next.drill_count(), count);
+        let flags: Vec<bool> = next
+            .drill_sections(drills[0])
+            .iter()
+            .map(|s| s.occupied)
+            .collect();
+        assert_eq!(flags, [false, true]);
+        assert!(next.drill(drills[0]).rooms.iter().all(Option::is_none));
+        drop(next);
+        // An engine that never built its pages carries nothing.
+        let mut s = Session::new(&mut f.board, &f.control, None, None);
+        let carry = s.take_drill_carry();
+        s.install_drill_carry(carry);
+        assert!(s.built_drill_pages().is_none());
     }
 
     struct AlwaysStop(Cell<bool>);

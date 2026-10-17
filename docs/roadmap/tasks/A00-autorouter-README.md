@@ -42,7 +42,7 @@ The optimizer stays aggregates-only until a later ledger line says otherwise.
 | [A11](archive/A11-connection-routing-in-passes.md) ✅ | Connection router stage, strict DRC, the pass runner, the optimizer entry point; `pass` probe equal | L / high | A06, A08, A10, O05, B01, J01; P02.1 for A11.8 |
 | [A12](archive/A12-fanout.md) ✅ | `RoutingBoard.fanout` and `BatchFanout` as the fanout stage; D8 plane-via tests | M / medium | A11, O05, B01 |
 | [A13](archive/A13-batch-loop-and-pipeline.md) ✅ | The batch loop with snapshots and restores, last-mile ripup, `run_pipeline`; determinism with the audit | M–L / high | A12, B01, B06, P02.1 |
-| [A14](A14-board-parity-gate.md) | Rung 3: route every fixture, `ses-diff` against `fixtures/reference/route`; ported Java fixture tests | L / high | A13, J01, C05, F02.2, F02.4, F02.5 |
+| [A14](archive/A14-board-parity-gate.md) ✅ | Rung 3: route every fixture, `ses-diff` against `fixtures/reference/route`; ported Java fixture tests | L / high | A13, J01, C05, F02.2, F02.4, F02.5 |
 
 A09 is unused. The series map reserved A01–A08 for the search core and A10+ for the
 pipeline; the gap keeps the two blocks apart.

@@ -34,9 +34,9 @@ use freerouting_geometry::{FloatPoint, IntPoint, Point, Polyline};
 use super::locate::{Located, ResultItem};
 use super::locate45::calculate_additional_corner;
 use crate::autoroute::control::AutorouteControl;
-use crate::board::RoutingBoard;
 use crate::board::items::ItemId;
 use crate::board::selection_filter::{ItemFilter, SelectableChoice};
+use crate::board::{RoutingBoard, TraceObject};
 use crate::shove::{ForcedInsert, ForcedTrace, ForcedTraceParams, ShoveDepths, TraceShover};
 
 /// Java's `tolerance` of `tryNeckDown` (`:592`).
@@ -97,6 +97,11 @@ pub fn insert_segments(
     target_layer: i32,
     segments: &[ResultItem],
 ) -> Result<Inserted, InsertError> {
+    // PARITY(quirk): Java holds the start and target items as objects
+    // (`:108-137`); a trace the insertion splits or removes leaves the board,
+    // and `connectToTrace` still connects to the removed object's geometry.
+    let target_object = target_item.and_then(|id| board.trace_object(id));
+    let start_object = start_item.and_then(|id| board.trace_object(id));
     let mut inserter = Inserter {
         board,
         ctrl,
@@ -122,24 +127,35 @@ pub fn insert_segments(
     let class = ctrl.trace_clearance_class_index;
     // PARITY: FoundConnectionInserter.java:113-140, the target trace gets
     // the start layer's half width and the start trace the target layer's.
-    if let Some(trace) = target_item.filter(|id| is_trace(board, *id))
+    if let Some(trace) = trace_object_now(board, target_item, target_object)
         && let Some(corner) = done.first_corner
     {
         let half_width = half_width_at(ctrl, start_layer);
-        board.connect_to_trace(corner, trace, half_width, class);
+        board.connect_to_trace_object(corner, &trace, half_width, class);
     }
-    if let Some(trace) = start_item.filter(|id| is_trace(board, *id))
+    if let Some(trace) = trace_object_now(board, start_item, start_object)
         && let Some(corner) = done.last_corner
     {
         let half_width = half_width_at(ctrl, target_layer);
-        board.connect_to_trace(corner, trace, half_width, class);
+        board.connect_to_trace_object(corner, &trace, half_width, class);
     }
     board.normalize_traces(net);
     Ok(done)
 }
 
-fn is_trace(board: &RoutingBoard, id: ItemId) -> bool {
-    board.item(id).is_some_and(|item| item.is_trace())
+/// The Java object of start or target item `id`, a polyline trace when the
+/// insertion began (`before`): its current geometry while it is on the
+/// board (a combine changes the object in place), else the geometry it had
+/// when the insertion began. Java's object keeps the geometry it had when
+/// it left the board; a trace combined and then removed within one
+/// insertion would differ, which no fixture shows.
+fn trace_object_now(
+    board: &RoutingBoard,
+    id: Option<ItemId>,
+    before: Option<TraceObject>,
+) -> Option<TraceObject> {
+    let before = before?;
+    id.and_then(|id| board.trace_object(id)).or(Some(before))
 }
 
 fn half_width_at(ctrl: &AutorouteControl, layer: i32) -> i32 {
