@@ -56,6 +56,27 @@ fn traces(board: &BasicBoard, net: i32, layer: i32) -> Vec<(Vec<FloatPoint>, f64
         .collect()
 }
 
+/// The coupling of `pair` summed over `layers` (each layer once), for a
+/// pair that changes layer (X09.1).
+pub fn coupling_on(board: &BasicBoard, pair: &Pair, layers: &[i32]) -> Coupling {
+    let mut seen: Vec<i32> = layers.to_vec();
+    seen.sort_unstable();
+    seen.dedup();
+    seen.iter().fold(
+        Coupling {
+            copper_length: 0.0,
+            within_length: 0.0,
+        },
+        |acc, layer| {
+            let c = coupling(board, pair, *layer);
+            Coupling {
+                copper_length: acc.copper_length + c.copper_length,
+                within_length: acc.within_length + c.within_length,
+            }
+        },
+    )
+}
+
 /// The coupling of `pair` on `layer` ([module docs](self)).
 pub fn coupling(board: &BasicBoard, pair: &Pair, layer: i32) -> Coupling {
     let gap = f64::from(pair.gap[layer as usize]);

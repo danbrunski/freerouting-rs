@@ -1,4 +1,4 @@
-//! Differential pairs (X08): the `krt-diffpair` board stage.
+//! Differential pairs (X08, X09): the `krt-diffpair` board stage.
 //!
 //! Java Freerouting has no differential pairs. KiCadRoutingTools routes a
 //! pair as one centreline and offsets it into the P and N tracks; this
@@ -11,7 +11,14 @@
 //! - [`legs`]: the terminal legs, the B09 insertion with its DRC gate and
 //!   the setback fallback (X08.4);
 //! - [`report`]: coupled length and gap share per pair (X08.5);
-//! - [`measure`]: the float distances the checks and the report use.
+//! - [`measure`]: the float distances the checks and the report use;
+//! - [`vias`]: coupled via pairs at a layer change (X09.1);
+//! - [`skew`]: intra-pair skew compensation with X07's bumps (X09.4);
+//! - [`optimizer`]: the set of pair items the batch optimizer leaves alone
+//!   (X09.3).
+//!
+//! A pair whose P and N would cross is reported and not routed (X09.2,
+//! [`legs::crossing`]).
 //!
 //! **Selection.** `router.special.diff_pairs = "krt-diffpair"` (or the id
 //! in `router.special.stages`) adds the stage. It runs before the fanout
@@ -27,11 +34,13 @@
 //! with `router.diff_pairs.infer_from_names = true`.
 //! [`KrtDiffPair::with_classes`] takes K05.3's project classes.
 //!
-//! **Scope (X08).** Two-pin nets, one layer (the lowest signal layer all
-//! four pins reach), no vias; coupled vias, the pair-aware optimizer and
-//! the measurement are X09. The coupled tracks are user fixed so later
-//! passes and the optimizer leave them alone; the SES marks them
-//! `protect`.
+//! **Scope.** Two-pin nets; one layer (the lowest signal layer all four
+//! pins reach), or, when the four pins share none, the start pins' layer
+//! and the end pins' layer joined by coupled via pairs (X09.1). With
+//! `router.diff_pairs.skew_um` (unset: 25 µm) the shorter track gets
+//! meander bumps (X09.4). The coupled tracks and vias are user fixed, so
+//! later passes and the optimizer leave them alone (X09.3); the SES marks
+//! them `protect`.
 //!
 //! **Determinism** (D2): pairs in ascending P-net number, ends by the
 //! lowest-index assignment, attempts in a fixed order; every search budget
@@ -48,7 +57,10 @@ pub mod legs;
 pub mod measure;
 pub mod model;
 pub mod offset;
+pub mod optimizer;
 pub mod report;
+pub mod skew;
+pub mod vias;
 
 pub use legs::{PairOptions, PairOutcome, PairStatus, route_pair};
 pub use model::{Pair, PairClasses, PairModel, build_pairs, name_key};
@@ -84,7 +96,10 @@ impl KrtDiffPair {
         KrtDiffPair {
             classes: PairClasses::none(),
             infer_from_names: settings.diff_pairs.infer_from_names.unwrap_or(false),
-            options: PairOptions::default(),
+            options: PairOptions {
+                skew_um: Some(settings.diff_pairs.skew_um.unwrap_or(skew::DEFAULT_SKEW_UM)),
+                ..PairOptions::default()
+            },
         }
     }
 
@@ -149,13 +164,34 @@ impl DiffPairReport {
                 PairStatus::Routed {
                     setback_um,
                     layer,
+                    layers,
+                    vias,
+                    skew,
                     centreline_length,
                     ..
                 } => {
-                    let c = report::coupling(board, &o.pair, *layer);
+                    let c = report::coupling_on(board, &o.pair, layers);
+                    let vias = match vias.len() {
+                        0 => String::new(),
+                        n => format!("; {n} coupled via pair(s)"),
+                    };
+                    let skew = skew.as_ref().map_or(String::new(), |s| match s.bumps {
+                        0 => format!(
+                            "; skew {:.4} mm left: no straight run of net {} near the \
+                             mismatched end has room for a bump",
+                            mm(s.before),
+                            s.net
+                        ),
+                        n => format!(
+                            "; skew {:.4} mm → {:.4} mm with {n} bump(s) on net {}",
+                            mm(s.before),
+                            mm(s.after),
+                            s.net
+                        ),
+                    });
                     format!(
                         "{head}: routed (setback {} mm); coupled length {:.4} mm; {:.1} % of \
-                         the pair's {:.4} mm of track within ±10 % of the gap {:.4} mm",
+                         the pair's {:.4} mm of track within ±10 % of the gap {:.4} mm{vias}{skew}",
                         setback_um / 1000.0,
                         mm(*centreline_length),
                         100.0 * c.share(),
@@ -165,6 +201,10 @@ impl DiffPairReport {
                 }
                 PairStatus::AlreadyRouted => format!("{head}: already connected; left alone"),
                 PairStatus::Skipped(e) => format!("{head}: skipped: {e}"),
+                PairStatus::Crossing(e) => format!(
+                    "{head}: crossing: {e}; not routed by the stage (the fix is a pad swap in \
+                     the schematic, which freerouting-rs doesn't touch)"
+                ),
                 PairStatus::Failed(e) => format!("{head}: not routed: {e}"),
                 PairStatus::Stopped => format!("{head}: stopped"),
             });

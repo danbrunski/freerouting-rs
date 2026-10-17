@@ -21,8 +21,9 @@
 //!   classes that measure it.
 //! - [`length`] (X07): length and time matching with trombone meanders,
 //!   the `krt-meander` board stage.
-//! - [`diffpair`] (X08): differential pairs, centreline and P/N offset, the
-//!   `krt-diffpair` board stage.
+//! - [`diffpair`] (X08, X09): differential pairs, centreline and P/N
+//!   offset, coupled via pairs, polarity, skew and the optimizer exclusion,
+//!   the `krt-diffpair` board stage.
 //! - [`fanout`] (X10): the `krt-qfn-escape` fanout stage.
 
 use freerouting::autoroute::stages::StageRegistry;

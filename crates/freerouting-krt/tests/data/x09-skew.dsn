@@ -1,0 +1,61 @@
+(pcb x09-skew.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic X09 fixture: the X08 connector pair with the far connector turned by 90 degrees, so the pair turns and its outer track is longer than its inner one (a built-in skew of about 0.4 mm at width 0.1 mm and gap 0.141 mm)")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 30000  0 30000  0 0)
+    )
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 100)
+      (clearance 141)
+    )
+  )
+  (placement
+    (component "CONN6"
+      (place J1 5000 6000 front 0)
+      (place J2 22000 24000 front 90)
+    )
+  )
+  (library
+    (image "CONN6"
+      (pin Pad 1 0 1250)
+      (pin Pad 2 0 750)
+      (pin Pad 3 0 250)
+      (pin Pad 4 0 -250)
+      (pin Pad 5 0 -750)
+      (pin Pad 6 0 -1250)
+    )
+    (padstack Pad
+      (shape (rect F.Cu -500 -125 500 125))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net VBUS (pins J1-1 J2-6))
+    (net GND (pins J1-2 J2-5))
+    (net "USB_D+" (pins J1-3 J2-3))
+    (net "USB_D-" (pins J1-4 J2-4))
+    (net ID (pins J1-5 J2-2))
+    (net GND2 (pins J1-6 J2-1))
+    (class kicad_default "" VBUS GND "USB_D+" "USB_D-" ID GND2
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 100) (clearance 141))
+    )
+  )
+  (wiring
+  )
+)

@@ -11,6 +11,12 @@
 //! along the escape direction: perpendicular to the P–N axis, towards the
 //! other end (the left normal of P→N on a tie).
 //!
+//! **Layer changes** (X09.1). When the ends sit on different layers,
+//! [`route_sections`] activates both layers and gives the search one via, a
+//! circle of the compound radius ([`CompoundVia`], [`super::vias`]), added
+//! to the scratch board's library and via rule only; the routed traces are
+//! cut into one [`Section`] per layer.
+//!
 //! **Search.** On a scratch copy of the board, every item of N is
 //! reassigned to P, so the pair's own copper is no obstacle and is no
 //! target either (only the far terminal ends the search,
@@ -43,7 +49,10 @@ use freerouting::board::items::ItemId;
 use freerouting::board::search::WorkLimit;
 use freerouting::board::structure::FixedState;
 use freerouting::board::{BasicBoard, RoutingBoard};
-use freerouting::geometry::{FloatPoint, IntPoint, Point, Polyline, PolylineShapeOps};
+use freerouting::geometry::{
+    Area, Circle, ConvexShape, FloatPoint, IntPoint, Point, Polyline, PolylineShapeOps, Shape,
+};
+use freerouting::rules::ViaInfo;
 
 use super::model::Pair;
 
@@ -126,13 +135,25 @@ pub fn pad_reach(board: &BasicBoard, end: &End, other: &End, layer: i32) -> f64 
     reach
 }
 
-/// The pins and layer of a pair.
+/// The pins and layers of a pair.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PairEnds {
     pub start: End,
     pub end: End,
-    /// The routing layer: the lowest signal layer all four pins reach.
+    /// The routing layer at the start: the lowest signal layer all four
+    /// pins reach, else the lowest one both start pins reach (X09.1).
     pub layer: i32,
+    /// The routing layer at the end: `layer` when all four pins share it,
+    /// else the lowest signal layer both end pins reach; the centreline
+    /// then changes layer through coupled vias ([`super::vias`]).
+    pub end_layer: i32,
+}
+
+impl PairEnds {
+    /// True if the pair must change layer.
+    pub fn changes_layer(&self) -> bool {
+        self.layer != self.end_layer
+    }
 }
 
 fn pins_of(board: &BasicBoard, net: i32) -> Vec<(ItemId, IntPoint, i32, i32)> {
@@ -166,11 +187,18 @@ pub fn pair_ends(board: &BasicBoard, pair: &Pair) -> Result<PairEnds, String> {
     } else {
         (n[0], n[1])
     };
-    let first = [p[0], p[1], n0, n1].iter().map(|x| x.2).max().unwrap_or(0);
-    let last = [p[0], p[1], n0, n1].iter().map(|x| x.3).min().unwrap_or(-1);
-    let layer = (first..=last)
-        .find(|l| board.layer_structure.layers[*l as usize].is_signal)
-        .ok_or_else(|| "the four pins share no signal layer".to_string())?;
+    let common = |pins: &[(ItemId, IntPoint, i32, i32)]| {
+        let first = pins.iter().map(|x| x.2).max().unwrap_or(0);
+        let last = pins.iter().map(|x| x.3).min().unwrap_or(-1);
+        (first..=last).find(|l| board.layer_structure.layers[*l as usize].is_signal)
+    };
+    let (layer, end_layer) = match common(&[p[0], p[1], n0, n1]) {
+        Some(layer) => (layer, layer),
+        None => match (common(&[p[0], n0]), common(&[p[1], n1])) {
+            (Some(a), Some(b)) => (a, b),
+            _ => return Err("the P and N pins of an end share no signal layer".to_string()),
+        },
+    };
     let end = |pp: (ItemId, IntPoint, i32, i32), nn: (ItemId, IntPoint, i32, i32)| End {
         p_pin: pp.0,
         n_pin: nn.0,
@@ -181,6 +209,7 @@ pub fn pair_ends(board: &BasicBoard, pair: &Pair) -> Result<PairEnds, String> {
         start: end(p[0], n0),
         end: end(p[1], n1),
         layer,
+        end_layer,
     })
 }
 
@@ -242,6 +271,31 @@ pub fn net_clearance_class(board: &BasicBoard, net: i32) -> i32 {
         .unwrap_or(1)
 }
 
+/// One layer's part of a centreline.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Section {
+    /// Its layer.
+    pub layer: i32,
+    /// Its corners, in order from the start; consecutive sections share
+    /// the via point (the last corner of one is the first of the next).
+    pub corners: Vec<IntPoint>,
+}
+
+/// The compound via of a layer-changing centreline search (X09.1): a
+/// circle of `radius` around the middle of a coupled via pair, on the
+/// layers `from_layer..=to_layer`, with the real via's clearance class
+/// ([`super::vias`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CompoundVia {
+    pub radius: i32,
+    pub from_layer: i32,
+    pub to_layer: i32,
+    pub clearance_class: i32,
+}
+
+/// The name of the scratch board's compound via.
+const COMPOUND_VIA_NAME: &str = "krt_diffpair_compound_via";
+
 /// Routes the centreline of `pair` from `params.start` to `params.end`
 /// ([module docs](self)). The board is not changed.
 pub fn route_centreline(
@@ -250,9 +304,32 @@ pub fn route_centreline(
     pair: &Pair,
     params: &CentrelineParams,
 ) -> Result<Polyline, String> {
+    let sections = route_sections(board, ctx, pair, params, params.layer, None)?;
+    let corners: Vec<Point> = sections[0].corners.iter().map(|p| Point::Int(*p)).collect();
+    Ok(Polyline::from_points(&corners))
+}
+
+/// Routes the centreline of `pair` from `params.start` on `params.layer`
+/// to `params.end` on `end_layer`, with `via` as the layer change when the
+/// layers differ (X09.1); the sections in order. A first or last section
+/// may be the single via point when the search changed layer on a
+/// terminal; every other section has two corners or more. The board is not
+/// changed.
+pub fn route_sections(
+    board: &RoutingBoard,
+    ctx: &StageCtx,
+    pair: &Pair,
+    params: &CentrelineParams,
+    end_layer: i32,
+    via: Option<&CompoundVia>,
+) -> Result<Vec<Section>, String> {
     let mut scratch = board.clone();
     let layer = params.layer;
     let hw = pair.search_half_width(layer);
+    let hw_end = pair.search_half_width(end_layer);
+    if layer != end_layer {
+        keep_vias_off_own_pads(&mut scratch, pair);
+    }
     let n_items: Vec<ItemId> = scratch
         .items()
         .filter(|i| i.contains_net(pair.n))
@@ -275,14 +352,19 @@ pub fn route_centreline(
         &mut scratch,
         params.end,
         (-dir.0, -dir.1),
-        layer,
-        hw,
+        end_layer,
+        hw_end,
         pair.p,
         cl,
     )
     .ok_or("the end terminal stub was refused")?;
     let dest: BTreeSet<ItemId> = [end].into();
-    let control = centreline_control(&scratch, ctx, pair.p, layer, hw, &dest)?;
+    let mut control = centreline_control(&scratch, ctx, pair.p, (layer, hw), (end_layer, hw_end))?;
+    control.destinations_only = Some(dest.clone());
+    if layer != end_layer {
+        let via = via.ok_or("the pair changes layer but has no via")?;
+        add_compound_via(&mut scratch, &mut control, via, ctx)?;
+    }
     let limits = RouteLimits {
         settings: SearchSettings::from_router(ctx.board_settings),
         stop: Some(ctx.cancel),
@@ -314,44 +396,140 @@ pub fn route_centreline(
                 .to_string(),
         );
     }
-    let traces: Vec<Vec<IntPoint>> = scratch
+    let traces: Vec<(i32, Vec<IntPoint>)> = scratch
         .items()
         .filter(|i| i.id().0 > last_id && i.id() != start && i.id() != end)
         .filter_map(|i| i.as_trace())
-        .filter(|t| t.layer == layer && t.half_width == hw)
-        .map(|t| t.polyline.corners().iter().map(round_point).collect())
+        .filter(|t| {
+            t.layer == layer && t.half_width == hw || t.layer == end_layer && t.half_width == hw_end
+        })
+        .map(|t| {
+            (
+                t.layer,
+                t.polyline.corners().iter().map(round_point).collect(),
+            )
+        })
         .collect();
     if traces.is_empty() {
+        if layer != end_layer {
+            return Err("the centreline search changed layer without a trace".to_string());
+        }
         // The terminals' stubs met without a new trace (ends a few
         // compound widths apart): the straight line between them, which
         // the stage's DRC gate then judges.
-        return chain(&[vec![params.start, params.end]], params.start, params.end);
+        return chain(
+            &[(layer, vec![params.start, params.end])],
+            params.start,
+            params.end,
+        );
     }
-    chain(&traces, params.start, params.end)
+    let mut sections = chain(&traces, params.start, params.end)?;
+    // A via on a terminal (the search changed layer right at a stub): the
+    // terminal's layer gets a section of that one point, which the caller
+    // extends to the pins.
+    if sections[0].layer != layer {
+        let at = sections[0].corners[0];
+        sections.insert(
+            0,
+            Section {
+                layer,
+                corners: vec![at],
+            },
+        );
+    }
+    let last = &sections[sections.len() - 1];
+    if last.layer != end_layer {
+        let at = last.corners[last.corners.len() - 1];
+        sections.push(Section {
+            layer: end_layer,
+            corners: vec![at],
+        });
+    }
+    Ok(sections)
 }
 
-/// The control of the centreline search ([module docs](self)).
+/// Via keepouts on the scratch board over the pads of the pair's own pins:
+/// the search sees N's items as P's, so without them the compound via
+/// could stand on the pair's pads, which the real vias then violate.
+fn keep_vias_off_own_pads(scratch: &mut RoutingBoard, pair: &Pair) {
+    let mut keepouts = Vec::new();
+    for pin in scratch
+        .items()
+        .filter(|i| i.is_pin() && (i.contains_net(pair.p) || i.contains_net(pair.n)))
+    {
+        for index in 0..scratch.tile_shape_count(pin) {
+            if let Some(shape) = scratch.tile_shape(pin, index) {
+                keepouts.push((shape, pin.shape_layer(index), pin.clearance_class()));
+            }
+        }
+    }
+    for (shape, layer, class) in keepouts {
+        scratch.insert_via_obstacle(
+            Area::Shape(Shape::from(shape)),
+            layer,
+            class,
+            FixedState::SystemFixed,
+        );
+    }
+}
+
+/// Adds the compound via ([`CompoundVia`]) to the scratch board and makes
+/// it the only via of `control`.
+fn add_compound_via(
+    scratch: &mut RoutingBoard,
+    control: &mut AutorouteControl,
+    via: &CompoundVia,
+    ctx: &StageCtx,
+) -> Result<(), String> {
+    let shape = ConvexShape::Circle(Circle::new(IntPoint::new(0, 0), via.radius));
+    let padstack = scratch
+        .library
+        .padstacks
+        .add_layer_range(shape, via.from_layer, via.to_layer);
+    let info = scratch
+        .rules
+        .via_infos
+        .add(ViaInfo {
+            name: COMPOUND_VIA_NAME.to_string(),
+            padstack,
+            clearance_class: via.clearance_class,
+            attach_smd_allowed: false,
+        })
+        .ok_or("the compound via exists already")?;
+    control.merged_via_rule = Some(vec![info]);
+    control.vias_allowed = true;
+    let net = control.net_number;
+    control
+        .rebuild_via_info(scratch, ctx.board_settings.via_costs(), net)
+        .map_err(|e| format!("compound via: {e}"))
+}
+
+/// The control of the centreline search ([module docs](self)): the start
+/// layer's and the end layer's `(layer, half width)` active, the start
+/// half width on every other layer.
 fn centreline_control(
     board: &RoutingBoard,
     ctx: &StageCtx,
     net: i32,
-    layer: i32,
-    hw: i32,
-    dest: &BTreeSet<ItemId>,
+    start: (i32, i32),
+    end: (i32, i32),
 ) -> Result<AutorouteControl, String> {
     let mut control = AutorouteControl::for_net_default(board, net, ctx.board_settings)
         .map_err(|e| format!("centreline control: {e}"))?;
-    if !control
-        .layer_active
-        .get(layer as usize)
-        .copied()
-        .unwrap_or(false)
-    {
-        return Err(format!("layer {layer} is not active for routing"));
+    for layer in [start.0, end.0] {
+        if !control
+            .layer_active
+            .get(layer as usize)
+            .copied()
+            .unwrap_or(false)
+        {
+            return Err(format!("layer {layer} is not active for routing"));
+        }
     }
     let class = control.trace_clearance_class_index;
     for l in 0..control.layer_count {
-        control.layer_active[l] = l == layer as usize;
+        let hw = if l == end.0 as usize { end.1 } else { start.1 };
+        control.layer_active[l] = l == start.0 as usize || l == end.0 as usize;
         control.trace_half_width[l] = hw;
         control.compensated_trace_half_width[l] = hw
             + board
@@ -362,7 +540,6 @@ fn centreline_control(
     control.vias_allowed = false;
     control.ripup_allowed = false;
     control.with_neckdown = false;
-    control.destinations_only = Some(dest.clone());
     Ok(control)
 }
 
@@ -376,52 +553,72 @@ fn round_point(p: &Point) -> IntPoint {
     }
 }
 
-/// Chains the corner lists `traces` into one point list from `start` to
-/// `end`: the trace nearest `start` first, then each trace that begins
-/// (or, reversed, ends) where the chain ends. The first and last points
-/// snap onto `start` and `end`.
-fn chain(traces: &[Vec<IntPoint>], start: IntPoint, end: IntPoint) -> Result<Polyline, String> {
+/// Chains the corner lists `traces` (each with its layer) into sections
+/// from `start` to `end`: the trace nearest `start` first, then each trace
+/// that begins (or, reversed, ends) where the chain ends; a layer change
+/// starts a new section. The first and last points snap onto `start` and
+/// `end`.
+fn chain(
+    traces: &[(i32, Vec<IntPoint>)],
+    start: IntPoint,
+    end: IntPoint,
+) -> Result<Vec<Section>, String> {
     if traces.is_empty() {
         return Err("the centreline search inserted no trace".to_string());
     }
-    let mut left: Vec<Vec<IntPoint>> = traces.to_vec();
+    let mut left: Vec<(i32, Vec<IntPoint>)> = traces.to_vec();
     let near = |p: IntPoint, q: IntPoint| p.distance(q);
     let first = (0..left.len())
         .min_by(|a, b| {
-            let da = near(left[*a][0], start).min(near(*left[*a].last().unwrap(), start));
-            let db = near(left[*b][0], start).min(near(*left[*b].last().unwrap(), start));
+            let (pa, pb) = (&left[*a].1, &left[*b].1);
+            let da = near(pa[0], start).min(near(*pa.last().unwrap(), start));
+            let db = near(pb[0], start).min(near(*pb.last().unwrap(), start));
             da.total_cmp(&db)
         })
         .unwrap_or(0);
-    let mut points = left.remove(first);
+    let (layer, mut points) = left.remove(first);
     if near(*points.last().unwrap(), start) < near(points[0], start) {
         points.reverse();
     }
+    let mut sections = vec![Section {
+        layer,
+        corners: points,
+    }];
     while !left.is_empty() {
-        let tail = *points.last().unwrap();
+        let tail = *sections.last().unwrap().corners.last().unwrap();
         let Some(i) = left
             .iter()
-            .position(|t| t[0] == tail || *t.last().unwrap() == tail)
+            .position(|(_, t)| t[0] == tail || *t.last().unwrap() == tail)
         else {
             return Err(format!(
                 "the centreline's traces don't chain ({} left at {tail:?})",
                 left.len()
             ));
         };
-        let mut next = left.remove(i);
+        let (layer, mut next) = left.remove(i);
         if next[0] != tail {
             next.reverse();
         }
-        points.extend(next.into_iter().skip(1));
+        let current = sections.last_mut().unwrap();
+        if current.layer == layer {
+            current.corners.extend(next.into_iter().skip(1));
+        } else {
+            sections.push(Section {
+                layer,
+                corners: next,
+            });
+        }
     }
-    snap(&mut points, start, true);
-    snap(&mut points, end, false);
-    let points = simplify(&points);
-    if points.len() < 2 {
-        return Err("the centreline is a point".to_string());
+    snap(&mut sections[0].corners, start, true);
+    let last = sections.len() - 1;
+    snap(&mut sections[last].corners, end, false);
+    for section in &mut sections {
+        section.corners = simplify(&section.corners);
+        if section.corners.len() < 2 {
+            return Err("a section of the centreline is a point".to_string());
+        }
     }
-    let corners: Vec<Point> = points.iter().map(|p| Point::Int(*p)).collect();
-    Ok(Polyline::from_points(&corners))
+    Ok(sections)
 }
 
 /// Replaces the first (or last) point by `at` if it is at most 3 units

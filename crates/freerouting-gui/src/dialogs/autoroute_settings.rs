@@ -328,6 +328,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "differential pair naming (X08), set with the CLI or a settings file",
     ),
     (
+        "diff_pairs.skew_um",
+        "differential pair skew tolerance (X09), set with the CLI or a settings file",
+    ),
+    (
         "special.diff_pairs",
         "stage selection (X08), set with the CLI or a settings file",
     ),

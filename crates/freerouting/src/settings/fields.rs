@@ -418,6 +418,8 @@ settings_table! {
         "Differential pair detection (X08; not a Java section)." {
             (infer_from_names, bool, opt, None, None, "inferFromNames", [], Flat::No, true,
                 "Pair nets by name (`_P`/`_N`, `+`/`-`, ...) when no net class makes them a pair (unset: off)."),
+            (skew_um, f64, opt, None, None, "skewUm", [], Flat::No, true,
+                "Intra-pair skew tolerance in micrometers (X09.4; unset: 25); the shorter track gets meander bumps."),
         }
         neck_down, NeckDownPatch, NeckDownSettings, "neckDown",
         "Neck-down limits (Q02.2; not a Java section)." {

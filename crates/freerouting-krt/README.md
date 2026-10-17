@@ -59,7 +59,11 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   pair's outer width, the P and N tracks offset from it with miter corners, and
   single-ended legs to the pins, all in one DRC-checked transaction, with KRT's
   1, 2 and 4 mm setback fallback (`centreline.rs`, `offset.rs`, `legs.rs`,
-  `report.rs`, written from KRT ideas).
+  `report.rs`, written from KRT ideas). X09 adds coupled via pairs where the
+  pair's ends sit on different layers (`vias.rs`), the crossing-polarity report,
+  intra-pair skew compensation with X07's bumps (`router.diff_pairs.skew_um`,
+  `skew.rs`) and the set of pair items the batch optimizer leaves alone
+  (`optimizer.rs`), all written from KRT ideas.
 - `fanout` (X10): the `krt-qfn-escape` fanout stage
   (`router.fanout.algorithm = krt-qfn-escape`): the part frame and the sides of
   QFN, QFP, SOIC and SOP parts at a pitch of at most 0.65 mm
