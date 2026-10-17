@@ -29,7 +29,7 @@ Per fixture:
 | `canary-pwr-2026-10-15-1747-unpoured.dsn` | `34cbcd43` | The older placement before any power copper. It has the net-class bug (VCAP, +12V_RAW and +5V_SHUNT at 0.2 mm) and the full fan keepout | Q03 (the "1.5 mm can't reach a 0.25 mm pin" cases) |
 | `*.a773a70ec.ses` | — | Sessions routed by the Java fork at `a773a70ec` (deterministic) | reference outputs |
 | `canary-pwr-9511d9a.dsn` | `65186b28` | The placement at canary `9511d9a` (handed over 2026-10-15 by the CANary layout session, canary-09) | the board on hold for freerouting-rs |
-| `canary-pwr-9511d9a-addonly.dsn` | `05fd3b0b` | The same placement with the routing of its best board so far (36 unconnected, `routed36`) added as fixed wires (1177 wires against 179, every one `type fix`), so a router can only add; the result to beat is 36 unconnected | add-only routing (Q04, Q05) |
+| `canary-pwr-9511d9a-addonly.dsn` | `05fd3b0b` | The same placement with the routing of its best board so far (36 unconnected, `routed36`) added as fixed wires (1177 wires against 179, every one `type fix`), so a router can only add. `routed36` was never a valid result (a CAN_WAKE track on In1 and a PWR_FAIL clearance error; 37 without the In1 track), so it is not the result to beat (see below) | add-only routing (Q04, Q05) |
 | `canary-pwr-9511d9a-in2-open.dsn` | `17020c17` | 9511d9a exported with In2 (Power.Cu) open for signals: `dsn_export.py --signal-layers Power.Cu --width Power_High=0.3 --width Switch_Node=0.3 --width Power=0.3 --width GND=0.4` | Q09.5 baseline |
 | `canary-pwr-9511d9a-in2-open-wirekeepout.dsn` | `7b876b9d` | in2-open plus `(wire_keepout)` over the +12V_BUS and +5V_PI islands on Power.Cu. Not routed yet | Q09 (trace-only keepouts) |
 | `*.46bf9e2ef.ses` | `4dc9eedf` (9511d9a), `571d1e01` (addonly), `a8848d1e` (in2-open) | Sessions routed by the Java fork at `46bf9e2ef` (byte-identical to `a773a70ec` while `router.min_trace_width_um` is unset; these runs set it) | reference outputs |
@@ -48,13 +48,19 @@ grading below):
 
 | Board | Flags | Freerouting | KiCad |
 |---|---|---|---|
-| 9511d9a | `-mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150` | 102 / 40 (all 40 in the input); 1 `WORK_LIMIT_CUTOFF` (`pull_tight`) and 3 `normalizeTraces` 2000-iteration guards, so not a zero-cut-off parity target | 41 unconnected |
+| 9511d9a | `-mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150` | 102 / 40 (all 40 in the input); 1 `WORK_LIMIT_CUTOFF` (`pull_tight`) and 3 `normalizeTraces` 2000-iteration guards, so not a zero-cut-off parity target | 41 unconnected with a CAN_WAKE track on In1; **42** with it stripped (2 starved thermals, no errors): the result to beat (canary `9b7a5fe`) |
 | 9511d9a-in2-open | same | 94 unrouted | 28 unconnected, 2 clearance, 8 starved thermals, 0 vias in pads: not a valid result (clearance errors) |
-| 9511d9a-addonly | not recorded in the handover | not recorded | the board to beat has 36 unconnected |
+| 9511d9a-addonly | not recorded in the handover | not recorded | `routed36` is 37 without its In1 track and still has a clearance error, so not valid |
 
-**Grading** (canary-09 grades): `ses_import.py`, then `kicad-cli pcb drc --schematic-parity
---refill-zones --severity-all`, then `via_in_pad.py` must report 0. A valid result has no
-clearance, track width, annular ring or via-in-pad errors, and no tracks on In1/In2.
+**Grading** (canary-23, formerly canary-09, grades): `ses_import.py`, then `kicad-cli pcb drc
+--schematic-parity --refill-zones --severity-all`, then `via_in_pad.py` and
+`inner_tracks.py` (KiCad python, exits 1 on any track on an inner layer) must both report
+0. A valid result has no clearance, track width, annular ring or via-in-pad errors, and no
+tracks on In1/In2; canary's `autoroute.sh` refuses a result that fails `inner_tracks.py`.
+Starved thermals are counted but do not disqualify. **The result to beat is 42
+unconnected** (Java `46bf9e2ef` pass 1 on `canary-pwr-9511d9a.dsn` with its In1 track
+stripped, canary `9b7a5fe`). Rust at `4336133` (A13): 44 as routed, 46 with its In1
+tracks stripped, 3 starved thermals; the In1 tracks are Q01.7.
 
 The Java route references for these boards in `fixtures/reference/route/canary-pwr/` are
 bounded runs with the harness's settings (optimizer off, `route-bounds.tsv`, no extra
