@@ -1,0 +1,168 @@
+(pcb x10-qfn-rotated.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs X10 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer In1.Cu
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer In2.Cu
+      (type signal)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  44000 0  44000 44000  0 44000  0 0)
+    )
+    (plane GND (polygon In1.Cu 0  500 500  43500 500  43500 43500  500 43500))
+    (via VIA600)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component QFN24
+      (place U1 12000 12000 front 0)
+      (place U2 32000 12000 front 90)
+      (place U3 12000 32000 front 180)
+      (place U4 32000 32000 back 0)
+    )
+  )
+  (library
+    (image QFN24
+      (outline (path signal 120  -2100 -2100  2100 -2100  2100 2100  -2100 2100  -2100 -2100))
+      (pin QFN_PAD_H 1 -2000 1250)
+      (pin QFN_PAD_H 2 -2000 750)
+      (pin QFN_PAD_H 3 -2000 250)
+      (pin QFN_PAD_H 4 -2000 -250)
+      (pin QFN_PAD_H 5 -2000 -750)
+      (pin QFN_PAD_H 6 -2000 -1250)
+      (pin QFN_PAD_V 7 -1250 -2000)
+      (pin QFN_PAD_V 8 -750 -2000)
+      (pin QFN_PAD_V 9 -250 -2000)
+      (pin QFN_PAD_V 10 250 -2000)
+      (pin QFN_PAD_V 11 750 -2000)
+      (pin QFN_PAD_V 12 1250 -2000)
+      (pin QFN_PAD_H 13 2000 -1250)
+      (pin QFN_PAD_H 14 2000 -750)
+      (pin QFN_PAD_H 15 2000 -250)
+      (pin QFN_PAD_H 16 2000 250)
+      (pin QFN_PAD_H 17 2000 750)
+      (pin QFN_PAD_H 18 2000 1250)
+      (pin QFN_PAD_V 19 1250 2000)
+      (pin QFN_PAD_V 20 750 2000)
+      (pin QFN_PAD_V 21 250 2000)
+      (pin QFN_PAD_V 22 -250 2000)
+      (pin QFN_PAD_V 23 -750 2000)
+      (pin QFN_PAD_V 24 -1250 2000)
+      (pin QFN_EP 25 0 0)
+    )
+    (padstack QFN_PAD_H
+      (shape (rect F.Cu -400 -125 400 125))
+      (attach off)
+    )
+    (padstack QFN_PAD_V
+      (shape (rect F.Cu -125 -400 125 400))
+      (attach off)
+    )
+    (padstack QFN_EP
+      (shape (rect F.Cu -1250 -1250 1250 1250))
+      (attach off)
+    )
+    (padstack BALL
+      (shape (circle F.Cu 300))
+      (attach off)
+    )
+    (padstack SO_PAD
+      (shape (rect F.Cu -750 -200 750 200))
+      (attach off)
+    )
+    (padstack TS_PAD
+      (shape (rect F.Cu -600 -175 600 175))
+      (attach off)
+    )
+    (padstack HDR
+      (shape (circle F.Cu 800))
+      (attach off)
+    )
+    (padstack BIG
+      (shape (circle F.Cu 2000))
+      (attach off)
+    )
+    (padstack VIA600
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle In2.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net S1 (pins U1-1 U2-1 U3-1 U4-1))
+    (net S2 (pins U1-2 U2-2 U3-2 U4-2))
+    (net PWR (pins U1-3 U2-3 U3-3 U4-3))
+    (net S4 (pins U1-4 U2-4 U3-4 U4-4))
+    (net S5 (pins U1-5 U2-5 U3-5 U4-5))
+    (net S6 (pins U1-6 U2-6 U3-6 U4-6))
+    (net S7 (pins U1-7 U2-7 U3-7 U4-7))
+    (net S8 (pins U1-8 U2-8 U3-8 U4-8))
+    (net S9 (pins U1-9 U2-9 U3-9 U4-9))
+    (net GND (pins U1-10 U2-10 U3-10 U4-10))
+    (net S11 (pins U1-11 U2-11 U3-11 U4-11))
+    (net S12 (pins U1-12 U2-12 U3-12 U4-12))
+    (net S13 (pins U1-13 U2-13 U3-13 U4-13))
+    (net S14 (pins U1-14 U2-14 U3-14 U4-14))
+    (net S15 (pins U1-15 U2-15 U3-15 U4-15))
+    (net S16 (pins U1-16 U2-16 U3-16 U4-16))
+    (net S17 (pins U1-17 U2-17 U3-17 U4-17))
+    (net S18 (pins U1-18 U2-18 U3-18 U4-18))
+    (net S19 (pins U1-19 U2-19 U3-19 U4-19))
+    (net NC20_U1 (pins U1-20))
+    (net NC20_U2 (pins U2-20))
+    (net NC20_U3 (pins U3-20))
+    (net NC20_U4 (pins U4-20))
+    (net S21 (pins U1-21 U2-21 U3-21 U4-21))
+    (net S22 (pins U1-22 U2-22 U3-22 U4-22))
+    (net S23 (pins U1-23 U2-23 U3-23 U4-23))
+    (net S24 (pins U1-24 U2-24 U3-24 U4-24))
+    (class kicad_default S1 S2 S4 S5 S6 S7 S8 S9 GND S11 S12 S13 S14 S15 S16 S17 S18 S19 NC20_U1 NC20_U2 NC20_U3 NC20_U4 S21 S22 S23 S24
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+    (class Power_High PWR
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 1500)
+        (clearance 250)
+      )
+    )
+  )
+)

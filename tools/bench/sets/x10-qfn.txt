@@ -1,0 +1,16 @@
+# X10.4: boards for the krt-qfn-escape measurement (docs/roadmap/tasks/X10-qfn-escape.md),
+# registered in docs/roadmap/prereg/X10.json. Eligibility is decided from the inputs: the
+# board has a part freerouting_krt::fanout::frame::analyze qualifies (4 or 2 opposite edge
+# rows, at least 8 side pins, pitch at most 0.65 mm); the qualifying parts after each row,
+# from qualifying_parts_on_a_set at a607aca plus X10. The canary-pwr variants are one board
+# in the pass rule, as in Q02.6. Paths are relative to the repository root.
+fixtures/Issue066-Project_GP8B.dsn                            # IC1 100 pins at 0.5 mm
+fixtures/Issue508-DAC2020_bm01.dsn                            # U53 28 at 0.65, U56 100 at 0.5
+fixtures/Issue508-DAC2020_bm10.dsn                            # J1, U3, U5 at 0.65, U4 64 at 0.5
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn            # U102 100, U301 144 at 0.5; KiCad demo
+fixtures/Issue145-smoothieboard.dsn                           # IC1 100 at 0.5, 8 TSSOPs
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn                    # U1 38 at 0.5, U3, U6, U8
+fixtures/canary-pwr/canary-pwr-pours1.dsn
+fixtures/canary-pwr/canary-pwr-pours2.dsn
+fixtures/canary-pwr/canary-pwr-pours3.dsn
+fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn

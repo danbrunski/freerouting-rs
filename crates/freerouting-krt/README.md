@@ -60,3 +60,10 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   single-ended legs to the pins, all in one DRC-checked transaction, with KRT's
   1, 2 and 4 mm setback fallback (`centreline.rs`, `offset.rs`, `legs.rs`,
   `report.rs`, written from KRT ideas).
+- `fanout` (X10): the `krt-qfn-escape` fanout stage
+  (`router.fanout.algorithm = krt-qfn-escape`): the part frame and the sides of
+  QFN, QFP, SOIC and SOP parts at a pitch of at most 0.65 mm
+  (`fanout/frame.rs`, which ports KRT's `analyze_qfn_layout` and `analyze_pad`
+  and so is GPL-3.0-only AND MIT), straight escape stubs with a taper or a
+  plane via, each in one DRC-checked transaction (`fanout/qfn.rs`, written from
+  KRT ideas), then Freerouting's fanout on the other parts.

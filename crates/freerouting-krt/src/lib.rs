@@ -23,10 +23,12 @@
 //!   the `krt-meander` board stage.
 //! - [`diffpair`] (X08): differential pairs, centreline and P/N offset, the
 //!   `krt-diffpair` board stage.
+//! - [`fanout`] (X10): the `krt-qfn-escape` fanout stage.
 
 use freerouting::autoroute::stages::StageRegistry;
 
 pub mod diffpair;
+pub mod fanout;
 pub mod grid;
 pub mod length;
 pub mod planes;
@@ -39,4 +41,5 @@ pub fn register(registry: &mut StageRegistry) {
     grid::bundle::register(registry);
     length::register(registry);
     diffpair::register(registry);
+    fanout::register(registry);
 }

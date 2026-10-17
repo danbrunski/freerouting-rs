@@ -28,7 +28,7 @@ board parity (rung 3).
 | [X07](archive/X07-length-and-time-matching.md) ✅ | Trombone meanders to length and time targets, each bump DRC-checked | M / medium | rung 3; K05.1 (stackup); O01; B09; F04 |
 | [X08](archive/X08-diff-pairs-routing.md) ✅ | Pair model, centreline at compound width, P/N offset | L / high | rung 3; K05.3, K07.5; A04 width hook; A06; B09; F04 |
 | [X09](X09-diff-pairs-vias-and-optimizer.md) | Coupled via pairs, pair-aware optimizer, measurement | M / high | X08; O01, O06 |
-| [X10](X10-qfn-escape.md) | QFN/QFP escape stubs as a fanout stage, paired with Q02 | S–M / medium | rung 3; A10; B05; B09; Q02; F04 |
+| [X10](archive/X10-qfn-escape.md) ✅ | QFN/QFP escape stubs as a fanout stage, paired with Q02 | S–M / medium | rung 3; A10; B05; B09; Q02; F04 |
 | [X11](X11-bus-ordering-and-attraction.md) | Bus detection, middle-out order, attraction cost | S–M / medium | rung 3; A10; A04 cost hook; F04 |
 | [X12](X12-bga-escape-planner.md) | Dense-BGA channel escape planner as a fanout stage | L / high | rung 3; A10; K05.5 (part frames); B09; F04 |
 

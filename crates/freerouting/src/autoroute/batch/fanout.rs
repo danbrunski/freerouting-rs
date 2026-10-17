@@ -197,6 +197,14 @@ impl FanoutRun {
         &self.components
     }
 
+    /// Keeps only the components `keep` accepts, in their order, so another
+    /// fanout stage can hand the rest of the board to this one (X10's
+    /// `krt-qfn-escape`). Java has no such filter; the Freerouting stage
+    /// never calls it.
+    pub fn retain_components(&mut self, keep: impl FnMut(&FanoutComponent) -> bool) {
+        self.components.retain(keep);
+    }
+
     /// Pins fanned out so far.
     pub fn total_items_fanouted(&self) -> i32 {
         self.total_items_fanouted

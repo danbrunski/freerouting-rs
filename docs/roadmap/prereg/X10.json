@@ -1,0 +1,73 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X10.4-krt-qfn-escape",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/X10-qfn-escape.md",
+  "question": "With the fanout stage enabled and the full pipeline after it, does krt-qfn-escape (straight escape stubs on QFN, QFP, SOIC and SOP parts at a pitch of at most 0.65 mm, widened past the pin field or ending in a plane via, then Freerouting's fanout on the other parts) leave fewer unrouted connections than Freerouting's fanout, without new clearance violations, vias in pads or more copper under its class width?",
+  "hypothesis": "none registered: the X10 checklist names no expected direction; the measurement decides whether the stage stays selectable",
+  "arms": {
+    "freerouting-fanout": {
+      "engine": "freerouting-rs at the commit that lands X10, after P04's default-tree decision, in-process through freerouting-krt's harness (the CLI does not call freerouting_krt::register before C07)",
+      "command": "X10_DSN={DSN} X10_ARMS=freerouting-fanout X10_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test qfn_escape escape_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "fanout.enabled": "true",
+        "fanout.algorithm": "freerouting-fanout",
+        "everything else": "the defaults (optimizer enabled, 20 passes)"
+      }
+    },
+    "krt-qfn-escape": {
+      "engine": "the same commit and harness",
+      "command": "X10_DSN={DSN} X10_ARMS=krt-qfn-escape X10_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test qfn_escape escape_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "fanout.enabled": "true",
+        "fanout.algorithm": "krt-qfn-escape",
+        "everything else": "the defaults (optimizer enabled, 20 passes)"
+      }
+    }
+  },
+  "baseline_arm": "freerouting-fanout",
+  "candidate_arm": "krt-qfn-escape",
+  "boards": {
+    "set": "tools/bench/sets/x10-qfn.txt",
+    "eligibility_rule": "a board with at least one part freerouting_krt::fanout::frame::analyze qualifies (qualifying_parts_on_a_set on the input board); the five canary-pwr variants count as one board in the pass rule (their results move by about 10 unrouted with small input changes, as in Q02.6) and are reported each",
+    "files": {
+      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "fixtures/Issue508-DAC2020_bm10.dsn": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "fixtures/Issue145-smoothieboard.dsn": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992"
+    }
+  },
+  "eligibility": "every board of the set; a board where both arms leave the same number unrouted is neutral, printed; a board not graded (a crash, a timeout, exit 2 of a grader) fails that board for the arm that was not graded and is never a pass",
+  "grading": {
+    "canary-pwr": "the SES of each arm goes to the CANary layout session (canary-23) as in X01; until its grade exists canary-pwr counts as not graded for both arms (no win for either); Rust's DRC numbers are printed beside it",
+    "coldfire": "tools/kicad-oracle/grade.sh on the KiCad demo kit-dev-coldfire-xilinx_5213 prepared as X01 prepared it, with the arm's command as ENGINE_COMMAND: the board's original rules, copper severities forced to error, the input board's DRC subtracted; drc_real, kicad_unconnected and via_in_pad from the grader. If the grader cannot run, Rust's DRC grades it and the amendment says so",
+    "others": "no .kicad_pcb in the repository: graded by Rust's DRC inside the harness (drc_new: all_clearance_violations of the routed board with an item the run created) and its via-in-pad test"
+  },
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "hard", "kind": "int", "direction": "lower", "source": "the KiCad grader where it runs; drc_new from Rust's DRC otherwise"},
+    {"name": "unrouted", "role": "score", "kind": "int", "direction": "lower", "source": "kicad_unconnected on KiCad-graded boards; the routed board's airlines (DesignRulesChecker::all_airlines) otherwise"},
+    {"name": "under_width_mm", "role": "guard", "kind": "float", "direction": "lower", "tol": 1e-06, "source": "Q02.1: freerouting::quality::neckdown::width_report::report(routed).under_total() in mm (copper under its net's class width, taper steps included)"},
+    {"name": "vias", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "krt-qfn-escape stays a selectable fanout stage (off by default) only if unrouted improves on N-1 of the graded boards and regresses on none, with via_in_pad and drc_real 0 for it on every board and under_width_mm no higher than Freerouting's fanout on any board (a higher value is a regression on that board). Otherwise the stage registration is removed (the frame module may stay for X12) and the numbers stay in X10.4's done note. Either way it is never a default from this run.",
+  "decision_table": {
+    "keep": "krt-qfn-escape stays registered; docs/DIVERGENCES.md gets its line (a selectable stage Java does not have)",
+    "reject": "the registration goes; X10.4 records the numbers"
+  },
+  "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'); X10.4's partial note gives a pre-P04 dry run at the landing tree, labelled as such, not this registration's result",
+  "amendments": []
+}
