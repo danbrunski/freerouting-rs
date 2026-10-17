@@ -160,17 +160,30 @@ impl Loaded {
                 flattener.flatten(item, &mut added);
             }
         }
-        let report = self.tess.patch(&gone, &added);
-        let gone_set: HashSet<ItemId> = gone.iter().copied().collect();
-        self.scene.items.retain(|i| !gone_set.contains(&i.id));
-        self.scene.items.extend(added);
-        self.scene.build_index();
+        let report = self.patch_scene(&gone, added);
         SceneSync {
             removed: gone.len(),
             added: fresh.len(),
             rebuilt: false,
             dirty_chunks: report.dirty_chunks,
         }
+    }
+
+    /// Takes the scene items of the engine items `gone` out of the scene and
+    /// the chunks and puts `added` in (G07.4 patches the router's deltas
+    /// through this too). `added` holds all the scene items of an engine
+    /// item together, in flatten order.
+    pub fn patch_scene(
+        &mut self,
+        gone: &[ItemId],
+        added: Vec<crate::scene::Item>,
+    ) -> crate::canvas::chunks::PatchReport {
+        let report = self.tess.patch(gone, &added);
+        let gone_set: HashSet<ItemId> = gone.iter().copied().collect();
+        self.scene.items.retain(|i| !gone_set.contains(&i.id));
+        self.scene.items.extend(added);
+        self.scene.build_index();
+        report
     }
 }
 

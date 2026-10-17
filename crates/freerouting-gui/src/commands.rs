@@ -214,6 +214,55 @@ pub enum Command {
         horizontal: i32,
         vertical: i32,
     },
+    // G07: the autorouter (`routing.rs`).
+    /// Starts the autorouter on the open board (toolbar, Autoroute).
+    StartRouting,
+    /// Stops the running autorouter; it hands back the board it keeps
+    /// (Cancel, Esc, a click on the canvas).
+    StopRouting,
+    /// Opens Settings > Autorouter.
+    ShowAutorouteSettings,
+    CloseAutorouteSettings,
+    /// The dialog's Apply: these are the settings the next job starts with.
+    ApplyAutorouteSettings(Box<freerouting::settings::SettingsPatch>),
+    CloseRoutingSummary,
+    /// The summary window's "show after auto-routing" checkbox.
+    SetShowRoutingSummary(bool),
+}
+
+impl Command {
+    /// True for a command that changes the board or replaces the open one.
+    /// The app refuses these while the autorouter runs (the job owns the
+    /// board, G07).
+    pub fn edits_board(&self) -> bool {
+        matches!(
+            self,
+            Command::Open(_)
+                | Command::Reload
+                | Command::DeleteAll
+                | Command::ConfirmDeleteAll
+                | Command::Undo
+                | Command::Redo
+                | Command::RunDrc
+                | Command::EditRules(_)
+                | Command::DeleteSelection
+                | Command::FixSelection
+                | Command::UnfixSelection
+                | Command::StartKeepout { .. }
+                | Command::Complete
+                | Command::StartRoute { .. }
+                | Command::StartPinSwap { .. }
+                | Command::PointerMoved(_)
+                | Command::DragStart(_)
+                | Command::DragMove(_)
+                | Command::DragEnd
+                | Command::ChangeRouteLayer(_)
+                | Command::MoveSelection { .. }
+                | Command::RotateSelection(_)
+                | Command::MirrorSelection
+                | Command::CopySelection { .. }
+        )
+    }
 }
 
 /// What an "extend selection" action extends to (the toolbar buttons and

@@ -1,5 +1,5 @@
 //! Command-line arguments:
-//! `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom|drag] [--frames N]
+//! `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom|drag|route] [--frames N]
 //! [--screenshot out.png] [--exit] [--control-dir dir]
 //! [--bench-synthetic 4x4 board.dsn]`.
 
@@ -16,6 +16,10 @@ pub enum BenchScript {
     /// Drag one component back and forth with the drag tool (G09.7, FT7),
     /// the camera fixed on the fitted board.
     Drag,
+    /// Starts the autorouter on the open board and runs until it ends
+    /// (G07.4, FT4 to FT6). `FREEROUTING_BENCH_PASSES` limits the passes and
+    /// `FREEROUTING_BENCH_CANCEL_MS` presses Cancel after that long.
+    Route,
 }
 
 impl BenchScript {
@@ -23,6 +27,7 @@ impl BenchScript {
         match self {
             BenchScript::PanZoom => "pan-zoom",
             BenchScript::Drag => "drag",
+            BenchScript::Route => "route",
         }
     }
 }
@@ -65,6 +70,7 @@ impl Args {
                     out.bench = Some(match name.to_string_lossy().as_ref() {
                         "pan-zoom" => BenchScript::PanZoom,
                         "drag" => BenchScript::Drag,
+                        "route" => BenchScript::Route,
                         other => return Err(format!("unknown bench script {other:?}")),
                     });
                 }
@@ -134,6 +140,13 @@ mod tests {
         assert!(parse(&["--bench-synthetic", "4", "a.dsn"]).is_err());
         assert!(parse(&["--bench-synthetic", "0x4", "a.dsn"]).is_err());
         assert!(parse(&["--bench-synthetic", "4x4"]).is_err());
+    }
+
+    #[test]
+    fn parses_the_route_script() {
+        let a = parse(&["a.dsn", "--bench", "route"]).unwrap();
+        assert_eq!(a.bench, Some(BenchScript::Route));
+        assert_eq!(BenchScript::Route.name(), "route");
     }
 
     #[test]

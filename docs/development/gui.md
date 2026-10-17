@@ -153,6 +153,32 @@ The app is a board viewer for now. Nothing in it edits or routes.
   call) and the manual rules; Settings > Component Movement has the placement grid of a move.
   What differs from Java is in DIVERGENCES, "Interactive routing and editing".
 
+- **Autorouter (G07, `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`,
+  `panels/{progress,routing_summary}.rs`, `overlays/routing.rs`).** The toolbar's Autoroute button
+  (`Command::StartRouting`) starts the engine's `run_pipeline` on its own thread with the settings of
+  Settings > Autorouter and nothing else, so a GUI run and a CLI run with equal settings write the same
+  SES (`tests/ui_routing.rs::gui_and_cli_write_identical_ses`). The job routes a copy of the session board
+  (`prepare_board_for_routing`: the board half of the CLI's load sequence) and sends `RouterEvent`s over a
+  bounded channel; each frame `App::poll_routing` drains it without blocking, merges the frame's deltas
+  (an item added and removed in the same frame is dropped), patches the chunks once
+  (`Loaded::patch_scene`, `stats.full_rebuilds` stays 0) and keeps the newest `Progress`. The router
+  sends a delta after each connection and each fanout pin (`events::flush_journal`; the geometry of the
+  added items is in the event, B08.1's `ItemGeometry`), so traces appear while a pass runs. A `Replaced`
+  board and the `Finished` board are compared with the drawn scene item by item (`routing::reconcile`),
+  so a missed delta can't leave the picture wrong. While a job runs the side panel shows Java's footer
+  texts (`panels::progress`: "To route / routed", "Ripped up / failed", "Failed / extra vias" for the
+  fanout, the score line) and the router's incomplete and violation counts instead of the stale checks,
+  the canvas shows the airline being routed (`overlays::routing`), edits are refused with a status
+  message (`Command::edits_board`), and Cancel, Esc or a click on the canvas stop the job (a full stop;
+  the best board comes back). When it ends the returned board replaces the session board, and the
+  summary window (`panels::routing_summary`: nets, incomplete connections, violations, vias, trace length,
+  score, time; "show after routing" is kept) opens. The dialog edits the engine's `SettingsPatch`
+  (`Draft`): layers (active, preferred direction, trace and bend costs), the three stages, vias,
+  the costs, passes, threads and the job timeout (number and unit, capped at four weeks); a power layer's
+  row is disabled and the optimization stage is disabled until O06. `CLI_ONLY` lists every other engine
+  setting with its reason, and `every_router_setting_has_a_control` fails when the engine grows one that is in
+  neither list. Only the values that differ from the board's own are kept between runs.
+
 Screenshots from the cloud sessions are in the project's shared folder under
 `freerouting-rs/gui/`.
 
@@ -182,6 +208,7 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `tools/{host,route,drag,move_component}.rs`, `overlays/route.rs`, `bench_drag.rs` | G09: the editor host (`Editor::apply_on` on the session board, scene patching, status, layer), route mode with pin swap and the interactive keys, drag mode, move and copy of the selection, the editor overlay as egui shapes, and the `--bench drag` script. |
 | `tools/{inspect,popup,keepout,edit}.rs`, `tools/mod.rs` | G05: `Tools` (the selection settings, the keepout under construction, the context menu, the shown violations, the item info windows); `App::execute_tool` runs the canvas commands (`CanvasClick`, `SelectRegion`, `ExtendSelection`, `DeleteSelection`, `OpenPopup`, `StartKeepout`, ...). `inspect.rs` has the pick, region and extend rules on the engine's queries; `popup.rs` the menu rows by mode; `keepout.rs` maps clicks onto the engine's `interactive::Construction` (I03.4); `edit.rs` maps Delete, Fix and Unfix onto `interactive::{delete_selection, fix_selection}` (I03.6). |
 | `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs` | G05: Settings > Select ("General Settings", `SelectionSettings`), the toolbar over the canvas while items are selected, the item info window (G04.3), the keepout's rubber band. |
+| `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`, `panels/{progress,routing_summary}.rs`, `overlays/routing.rs` | G07: the router thread and its events (`RoutingJobHandle`, `FrameEvents`, `GeometryMapper`, `reconcile`), `App`'s start, stop and per-frame poll, the settings dialog (`Draft`, `CONTROLS`, `CLI_ONLY`, `timeout`), the progress and summary panels and the airline overlay. |
 | `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
 | `file_dialog.rs` | A minimal folder browser filtered to `.dsn`/`.ses`. |
 
@@ -372,6 +399,54 @@ Target: frame CPU p95 at most 8 ms and 0 full rebuilds. Both runs are under 8 ms
 machine and rebuild nothing (598 patches in 600 frames). Pending: the same run on a quiet machine
 (load average at most 1.0) and on Dan's Windows GPU. The checklist box stays partial until then.
 
+### FT4 to FT6: during an autoroute (G07.4, G07.8)
+
+`freerouting-gui --bench route board.dsn` starts the autorouter on the first counted frame and runs until the
+job ends, then prints the usual JSON plus `route_ms`, `job_status`, `passes`, the event counts
+(`progress_events`, `delta_events`, `items_added`, `replaced`), `reconcile_fixes`, `max_apply_ms` (the slowest
+frame's event handling) and the GPU buffer bytes at the first counted frame and the largest since.
+`FREEROUTING_BENCH_PASSES=n` limits the passes; `FREEROUTING_BENCH_CANCEL_MS=n` presses Cancel after that long
+and reports `cancel_to_finished_ms` (the press to the `Finished` event).
+
+**Recorded 2026-10-16** at `d21d5f1` plus the G07 working tree (release build, Xvfb with lavapipe, Issue190,
+`FREEROUTING_BENCH_PASSES=10`). The machine was **not quiet**: another session was running a release test, so
+the 1-minute load average was 2.8 to 4.5 on 8 cores (the targets need at most 1.0). Read the numbers as upper
+bounds; the box stays partial until a quiet run and Dan's Windows GPU.
+
+| Run | route | passes | frame p50 / p95 / max (ms) | update p95 (ms) | `max_apply_ms` | patches | full rebuilds | GPU buffers first to max | load 1 min |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 5.89 s | 10 | 0.430 / 1.518 / 1.581 | 1.306 | 1.129 | 46 deltas | 0 | 7,797,692 to 7,808,068 B | 2.83 |
+| 2 | 5.66 s | 10 | 0.428 / 1.488 / 1.676 | 1.295 | 1.175 | 46 deltas | 0 | 7,797,692 to 7,808,068 B | 2.85 |
+| 3 | 5.71 s | 10 | 0.426 / 1.462 / 1.525 | 1.256 | 1.083 | 46 deltas | 0 | 7,797,692 to 7,808,068 B | 4.06 |
+
+Cancel (`FREEROUTING_BENCH_CANCEL_MS`; frame p95 stayed 1.48 to 1.56 ms, 0 full rebuilds):
+
+| Cancel pressed at | pass at the press | Cancel to `Finished` | load 1 min |
+|---|---|---|---|
+| 0.7 s | 1 | 213.7 ms | 3.87 |
+| 1.5 s | 3 | 243.7 ms | 4.52 |
+| 3.0 s | 5 | 87.0 ms | 4.48 |
+
+Targets: frame CPU p95 at most 4 ms (met, 1.5 ms), Cancel to `Finished` at most 250 ms (met, 244 ms at most, but
+close, and under load: the time is the router finishing the connection it is in, the best-board restore and
+the statistics of the returned board), GPU buffers at most 64 MB (7.4 MiB) and growth at most 10 % across the
+passes (0.13 % over 10 passes), 0 full rebuilds (met). Issue190 is mostly routed when it loads, so a job adds
+only 34 to 35 items (46 delta events, one per connection that changed the board) and a pass is short; the
+busier Issue684 test `live_redraw_patches_before_the_job_ends` has 310 deltas and 4 `Replaced` boards. The
+longest single connection was not measured: Cancel is checked between connections and inside the maze search
+(full stop), and the 244 ms above is the worst Cancel seen.
+
+Dan's Windows GPU: pending (run `freerouting-gui.exe --bench route Issue190-processor.Z80.dsn` with
+`FREEROUTING_BENCH_PASSES=10`, and once with `FREEROUTING_BENCH_CANCEL_MS=1500`, and put the numbers here).
+
+A mid-run screenshot under Xvfb (`Issue269-caniot-tiny-arm.dsn`, `--bench route`, about 6 s into the job,
+pass 1): the side panel shows "Autorouter is running. Click anywhere on the canvas to cancel. Autorouter pass
+#1", "To route: 24; routed: 24", "Ripped up: 68; failed: 5" and the score line "Score: 604.17 (57 incomplete
+connections, 0 clearance violations)"; the canvas has the board with the F.Cu traces in red and a mesh of new
+B.Cu traces in blue that the earlier shot taken 3.5 s into the job does not have (it shows the fanout pass:
+the first vias and short traces); the stale airlines are not drawn, and one yellow airline of the connection
+being routed crosses the top right of the board.
+
 ## Renderer (G02)
 
 The board is drawn by one wgpu paint callback (`canvas/gpu.rs`); the CPU painter
@@ -559,12 +634,11 @@ In plan order. Each item needs engine work first, so check what has landed in
    I03 (2026-10-16). Route, drag, pin swap, move and undo run on `interactive::Editor::apply`
    since G09; the G05 tools (select, keepout, Delete, Fix) still call the engine's I03 functions
    directly. Delete still takes the push-off path (plain removal).
-3. **Autorouter run:** start and stop the router from the GUI, with live
-   progress. The board should redraw as routes land, which needs a way to
-   rebuild or patch the `Scene`/`Tessellation` from engine change events
-   (today they are rebuilt only on load).
-4. **Parameter dialogs:** route and autoroute settings, nets, net classes,
-   the clearance matrix and via rules, as in the Java `gui.windows.*`.
+3. **Autorouter run:** done in G07 (see "What works"). Open: the FT4 to FT6 numbers on a quiet machine
+   and on Dan's Windows GPU (see "FT4 to FT6: during an autoroute"), routing a selection (G07.7, an operator
+   decision) and the optimizer's cross and stage (O06).
+4. **Parameter dialogs:** the autorouter's (G07) and the rules dialogs (G06) are done; the remaining
+   Java windows are listed in G08.
 5. **Interactive routing and editing:** done in G09 (see "What works"). Open: the
    FT7 numbers on a quiet machine and on Dan's Windows GPU (see "Frame numbers").
 

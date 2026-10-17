@@ -77,6 +77,16 @@ impl Scripted {
         self.bench.as_ref().and_then(Bench::drag_step)
     }
 
+    /// The index of the coming frame of a `--bench route` run.
+    pub fn route_step(&self) -> Option<usize> {
+        self.bench.as_ref().and_then(Bench::route_step)
+    }
+
+    /// The route bench's state changes (see [`Bench`]).
+    pub fn bench_mut(&mut self) -> Option<&mut Bench> {
+        self.bench.as_mut()
+    }
+
     /// Frames the bench runs in all, warm-up included.
     pub fn bench_total_frames(&self) -> Option<usize> {
         self.bench.as_ref().map(Bench::total_frames)

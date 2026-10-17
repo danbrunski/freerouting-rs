@@ -10,7 +10,7 @@ ends, exit). It is the report's GUI-8 (GUI, plugin and packaging report
 G08.4 and G08.5.
 
 **Prerequisites:**
-- [G07](G07-autorouter-run-and-live-redraw.md): the routing job and its
+- [G07](archive/G07-autorouter-run-and-live-redraw.md): the routing job and its
   `Finished` event (G08.4, G08.5).
 - C05: SES writer; C06: DSN writer; C04: `.rules` reader and writer.
 - B01's `state_hash` (board content equality), for G08.2's "undo back to

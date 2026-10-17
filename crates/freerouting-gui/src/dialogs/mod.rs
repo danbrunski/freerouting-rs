@@ -23,10 +23,12 @@
 //! | [`via_rules`] | `WindowVia`, `WindowViaRule` |
 //! | [`route_settings`] | `WindowRouteParameter`, the board-rule part |
 //! | [`autoroute_handlers`] | the static helpers of `WindowAutorouteParameter` |
+//! | [`autoroute_settings`] | `WindowAutorouteParameter` itself (G07.1) |
 //! | [`input`] | the static parse helpers of those windows |
 
 pub mod assign_net_class;
 pub mod autoroute_handlers;
+pub mod autoroute_settings;
 pub mod clearance_matrix;
 pub mod input;
 pub mod net_classes;

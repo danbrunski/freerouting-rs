@@ -17,6 +17,8 @@ pub mod library;
 pub mod log;
 pub mod nets;
 pub mod object_list;
+pub mod progress;
+pub mod routing_summary;
 pub mod select_settings;
 pub mod selection_toolbar;
 pub mod status;

@@ -82,6 +82,33 @@ pub struct Bench {
     /// Full rebuilds and patches at the first counted frame and now.
     baseline: Option<(u64, u64)>,
     latest: (u64, u64),
+    /// GPU buffer bytes at the first counted frame and the largest since.
+    gpu_first: Option<u64>,
+    gpu_max: u64,
+    route: RouteBench,
+}
+
+/// What the `route` script knows of the job.
+#[derive(Default)]
+struct RouteBench {
+    started: Option<std::time::Instant>,
+    cancelled: Option<std::time::Instant>,
+    finished: Option<std::time::Instant>,
+    report: Option<RouteReport>,
+}
+
+/// The job's own counters, for the `route` report.
+#[derive(Clone, Debug, Default)]
+pub struct RouteReport {
+    pub passes: i32,
+    pub status: String,
+    pub progress_events: u64,
+    pub delta_events: u64,
+    pub patches: u64,
+    pub replaced: u64,
+    pub items_added: u64,
+    pub reconcile_fixes: u64,
+    pub max_apply_ms: f64,
 }
 
 impl Bench {
@@ -101,6 +128,9 @@ impl Bench {
             counted_from: None,
             baseline: None,
             latest: (0, 0),
+            gpu_first: None,
+            gpu_max: 0,
+            route: RouteBench::default(),
         }
     }
 
@@ -127,9 +157,35 @@ impl Bench {
         let base = *self.fit.get_or_insert(fit);
         match self.script {
             BenchScript::PanZoom => pan_zoom_camera(self.step, base, canvas),
-            // The drag bench looks at the board as fitted.
-            BenchScript::Drag => base,
+            // The drag and route benches look at the board as fitted.
+            BenchScript::Drag | BenchScript::Route => base,
         }
+    }
+
+    /// The index of the coming frame when the script is `route`.
+    pub fn route_step(&self) -> Option<usize> {
+        (self.script == BenchScript::Route).then_some(self.step)
+    }
+
+    /// The route bench has started the job.
+    pub fn route_started(&mut self) {
+        self.route.started = Some(std::time::Instant::now());
+    }
+
+    /// The route bench pressed Cancel.
+    pub fn route_cancelled(&mut self) {
+        self.route.cancelled = Some(std::time::Instant::now());
+    }
+
+    /// When the job was started and cancelled, if it was.
+    pub fn route_times(&self) -> (Option<std::time::Instant>, Option<std::time::Instant>) {
+        (self.route.started, self.route.cancelled)
+    }
+
+    /// The job has ended: the next [`frame_done`](Self::frame_done) reports.
+    pub fn route_finished(&mut self, run: RouteReport) {
+        self.route.finished = Some(std::time::Instant::now());
+        self.route.report = Some(run);
     }
 
     /// The index of the coming frame when the script is `drag`.
@@ -139,6 +195,9 @@ impl Bench {
 
     /// Frames the script runs in all, warm-up included.
     pub fn total_frames(&self) -> usize {
+        if self.script == BenchScript::Route {
+            return usize::MAX;
+        }
         WARMUP + self.frames
     }
 
@@ -159,10 +218,15 @@ impl Bench {
             self.counted_from
                 .get_or_insert_with(std::time::Instant::now);
             self.samples.push(ms);
+            self.gpu_first.get_or_insert(paint.gpu_buffer_bytes);
+            self.gpu_max = self.gpu_max.max(paint.gpu_buffer_bytes);
         }
         self.step += 1;
         self.last = paint;
         self.triangles = triangles;
+        if self.script == BenchScript::Route {
+            return self.route.finished.is_some().then(|| self.report());
+        }
         (self.samples.len() >= self.frames).then(|| self.report())
     }
 
@@ -182,7 +246,7 @@ impl Bench {
         let first = self
             .first_frame_ms
             .map_or_else(|| "null".to_string(), |ms| format!("{ms:.1}"));
-        format!(
+        let mut json = format!(
             "{{\"script\":\"{}\",\"frames\":{},\"p50_ms\":{:.3},\"p95_ms\":{:.3},\"max_ms\":{:.3},\"frame_frames\":{},\"frame_p50_ms\":{:.3},\"frame_p95_ms\":{:.3},\"frame_max_ms\":{:.3},\"wall_ms\":{:.3},\"triangles\":{},\"draws\":{},\"uploaded_bytes\":{},\"chunks_drawn\":{},\"chunks_total\":{},\"gpu_buffer_bytes\":{},\"first_frame_ms\":{},\"load_ms\":{},\"full_rebuilds\":{},\"patches\":{},\"load_avg_1m\":{:.2}}}",
             self.script.name(),
             self.samples.len(),
@@ -205,7 +269,37 @@ impl Bench {
             self.latest.0 - base.0,
             self.latest.1 - base.1,
             load_average_1m()
-        )
+        );
+        if let (Some(run), Some(started), Some(finished)) =
+            (&self.route.report, self.route.started, self.route.finished)
+        {
+            // The cancel latency is the time from the press to `Finished`.
+            let cancel = self.route.cancelled.map_or_else(
+                || "null".to_string(),
+                |c| {
+                    format!(
+                        "{:.1}",
+                        finished.saturating_duration_since(c).as_secs_f64() * 1000.0
+                    )
+                },
+            );
+            json.pop();
+            json.push_str(&format!(
+                ",\"route_ms\":{:.1},\"cancel_to_finished_ms\":{cancel},\"job_status\":\"{}\",\"passes\":{},\"progress_events\":{},\"delta_events\":{},\"replaced\":{},\"items_added\":{},\"reconcile_fixes\":{},\"max_apply_ms\":{:.3},\"gpu_buffer_first\":{},\"gpu_buffer_max\":{}}}",
+                finished.saturating_duration_since(started).as_secs_f64() * 1000.0,
+                run.status,
+                run.passes,
+                run.progress_events,
+                run.delta_events,
+                run.replaced,
+                run.items_added,
+                run.reconcile_fixes,
+                run.max_apply_ms,
+                self.gpu_first.unwrap_or(0),
+                self.gpu_max,
+            ));
+        }
+        json
     }
 }
 
@@ -250,6 +344,39 @@ mod tests {
             .fold(0.0, f64::max);
         assert!(fastest < 0.02, "{fastest} mm per frame");
         assert!((0..240).all(|k| (0.0..=0.3 + 1e-12).contains(&drag_offset(k).x)));
+    }
+
+    #[test]
+    fn route_script_reports_when_the_job_ends() {
+        let mut bench = Bench::new(BenchScript::Route, 1);
+        let paint = PaintStats {
+            gpu_buffer_bytes: 10,
+            ..PaintStats::default()
+        };
+        for _ in 0..WARMUP + 5 {
+            assert!(
+                bench.frame_done(1.0, paint, 5).is_none(),
+                "runs until the job ends"
+            );
+        }
+        assert_eq!(bench.total_frames(), usize::MAX);
+        bench.route_started();
+        bench.route_finished(RouteReport {
+            passes: 3,
+            status: "Completed".into(),
+            ..RouteReport::default()
+        });
+        let json = bench.frame_done(2.0, paint, 5).expect("done");
+        assert!(json.starts_with("{\"script\":\"route\","), "{json}");
+        assert!(json.contains("\"cancel_to_finished_ms\":null,"), "{json}");
+        assert!(
+            json.contains("\"job_status\":\"Completed\",\"passes\":3,"),
+            "{json}"
+        );
+        assert!(
+            json.ends_with("\"gpu_buffer_first\":10,\"gpu_buffer_max\":10}"),
+            "{json}"
+        );
     }
 
     #[test]

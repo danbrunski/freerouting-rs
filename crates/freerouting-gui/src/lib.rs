@@ -16,6 +16,7 @@
 //! | [`session`] | the open design: the engine board, files, loading |
 //! | [`scene`], [`view`] | the board flattened to drawable shapes, and drawing |
 //! | [`canvas`] | the board's geometry in chunks, the wgpu pipeline that draws it |
+//! | [`routing`] | the autorouter job: its thread, events, the frame's merged deltas, the scene patch (G07; `app_routing.rs` is `App`'s side) |
 //! | [`bench_synthetic`] | the tiled stress board for `--bench-synthetic` |
 //! | [`panels`], [`menu`] | side panel sections, warnings window, menu bar |
 //! | [`tools`] | inspect mode, selection operations, safe edits, context menus, keepout construction (G05); the editor host, route, drag, pin swap and move (G09) |
@@ -25,6 +26,7 @@
 pub mod analysis;
 pub mod app;
 mod app_analysis;
+mod app_routing;
 pub mod args;
 pub mod bench;
 mod bench_drag;
@@ -42,6 +44,7 @@ pub mod look;
 pub mod menu;
 pub mod overlays;
 pub mod panels;
+pub mod routing;
 pub mod scene;
 pub mod selection;
 pub mod session;

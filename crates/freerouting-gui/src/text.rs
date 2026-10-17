@@ -900,6 +900,74 @@ pub const MV_HORIZONTAL_GRID_TIP: &str = "Horizontal spacing of the component pl
 pub const MV_VERTICAL_GRID: &str = "Vertical component placement grid spacing:";
 pub const MV_VERTICAL_GRID_TIP: &str = "Vertical spacing of the component placement grid.";
 
+// ---------------------------------------------------------------------------
+// G07: the autorouter. `WindowAutorouteParameter_en`, `ScreenMessages_en`,
+// `WindowRoutingSummary_en`, `BoardToolbar_en` and `BoardMenuParameter_en`.
+// ---------------------------------------------------------------------------
+
+pub const MENU_AUTOROUTER: &str = "Autorouter"; // BoardMenuParameter_en: autoroute
+pub const AUTOROUTE_BUTTON: &str = "Autoroute";
+pub const AUTOROUTE_BUTTON_TOOLTIP: &str = "Start the autorouter and route optimizer.";
+pub const CANCEL_BUTTON: &str = "Cancel";
+pub const CANCEL_BUTTON_TOOLTIP: &str = "Stop the current process.";
+pub const AUTOROUTE_SETTINGS_TITLE: &str = "Autorouter Settings";
+pub const POWER_LAYER_TOOLTIP: &str =
+    "Disabled because this is not a signal layer and cannot be used for regular trace routing.";
+pub const BEND_COST_TOOLTIP: &str = "Per-layer bend penalty added to the expansion cost each time the router changes direction on this layer. Valid range: 0.0 (no penalty; default) to 9.9 (strongly discourages bends). Set a high value on a single-sided or jump-wire layer to favor straight traces.";
+pub const FANOUT_TOOLTIP: &str = "The fanout stage creates initial vias and short trace segments from dense-component pads (such as BGA pads) to other PCB layers.";
+pub const AUTOROUTE_TOOLTIP: &str = "During the Auto-routing stage, the Autorouter establishes electrical connections by placing traces and vias.";
+pub const OPTIMIZATION_TOOLTIP: &str =
+    "During the optimization stage, the initial routes are refined to improve the overall design.";
+/// Port-only: the optimizer stage is O06.
+pub const OPTIMIZATION_NOT_PORTED: &str =
+    "The optimizer is not ported yet (O06); the stage does nothing.";
+pub const VIAS_ALLOWED_TOOLTIP: &str = "Allow the Autorouter to change layers by placing vias.";
+pub const VIA_COSTS_TOOLTIP: &str = "Cost of changing layers with a via. Higher values keep the router on the current layer longer.";
+pub const PLANE_VIA_COSTS_TOOLTIP: &str =
+    "Cost of a via used when a net connects to a power or ground plane.";
+pub const RIPUP_COSTS_TOOLTIP: &str = "Initial penalty for ripping up existing traces. Higher values make the router less likely to undo existing work.";
+pub const MAX_PASSES_TOOLTIP: &str =
+    "Set the maximum number of routing passes. Use 0 for no limit.";
+pub const MAX_THREADS_TOOLTIP: &str = "Number of routing threads. 1 uses one CPU core; higher values use more cores, up to the limit of this machine.";
+pub const JOB_TIMEOUT_TOOLTIP: &str = "Set the routing timeout. The value is capped at four weeks.";
+
+// ScreenMessages_en.properties
+pub const BATCH_AUTOROUTE_ADD: &str = "To route: {{items_to_go}}; routed: {{routed_count}}";
+pub const BATCH_AUTOROUTE_LAYER: &str = "Ripped up: {{ripped_count}}; failed: {{failed_count}}";
+pub const BATCH_FANOUT_LAYER: &str = "Failed: {{failed_count}}; extra vias: +{{extra_vias}}";
+pub const SCORE: &str = "Score: {{score}} ({{incomplete_count}} incomplete connections, {{violation_count}} clearance violations)";
+pub const AUTOROUTER_STARTED: &str = "Autorouter is running. Click anywhere on the canvas to cancel. Autorouter pass #{{autorouter_pass_number}}";
+pub const OPTIMIZER_STARTED: &str = "Optimizer is running. Click anywhere on the canvas to cancel. Optimizer pass #{{optimizer_pass_number}}.";
+pub const BATCH_AUTOROUTER_START_MESSAGE: &str =
+    "Autorouter is running. Click anywhere on the canvas to cancel.";
+pub const BATCH_OPTIMIZER_START_MESSAGE: &str =
+    "Optimizer is running. Click anywhere on the canvas to cancel.";
+pub const AUTOROUTE_END_MESSAGE: &str =
+    "Autoroute {{status}}; {{incomplete_count}} connections remain unrouted.";
+pub const OPTIMIZATION_END_MESSAGE: &str = "Optimization {{status}}.";
+pub const COMPLETED: &str = "completed";
+pub const INTERRUPTED: &str = "interrupted";
+/// Port-only: the status line when an edit is refused while the router runs
+/// (Java makes the board read-only).
+pub const OPEN_A_BOARD: &str = "Open a board first.";
+pub const ROUTING_READ_ONLY: &str =
+    "The autorouter is running; the board can't be edited until it finishes.";
+
+// WindowRoutingSummary_en.properties
+pub const SUMMARY_TITLE: &str = "Routing Summary";
+pub const SUMMARY_HEADER_COMPLETED: &str = "Auto-routing Completed";
+pub const SUMMARY_HEADER_INTERRUPTED: &str = "Auto-routing Interrupted";
+pub const SUMMARY_NETS_TOTAL: &str = "Total Nets:";
+pub const SUMMARY_CONNECTIONS_INCOMPLETE: &str = "Incomplete connections:";
+pub const SUMMARY_ZERO_INCOMPLETES: &str = "0 (100% routed)";
+pub const SUMMARY_CLEARANCE_VIOLATIONS: &str = "Clearance Violations:";
+pub const SUMMARY_VIAS_ADDED: &str = "Vias Added:";
+pub const SUMMARY_TRACE_LENGTH: &str = "Total Trace Length:";
+pub const SUMMARY_SCORE: &str = "Score:";
+pub const SUMMARY_EXECUTION_TIME: &str = "Execution Time:";
+pub const SUMMARY_SHOW_CHECKBOX: &str = "Show this summary after auto-routing finishes";
+pub const SUMMARY_CLOSE: &str = "Close";
+
 #[cfg(test)]
 mod tests {
     use super::*;

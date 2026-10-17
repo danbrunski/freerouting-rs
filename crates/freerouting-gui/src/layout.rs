@@ -33,6 +33,7 @@ impl App {
                 self.view.unit,
                 self.tools.mode,
                 self.editor_busy(),
+                self.routing.is_some(),
             ));
         });
         // The status bar is laid out before the canvas, so the hover of the
@@ -80,14 +81,29 @@ impl App {
                     .show(ui, |ui| match &self.loaded {
                         None => drop(ui.weak("No board loaded.")),
                         Some(b) => {
+                            if let Some(run) = &self.routing {
+                                // G07.3: the router's counters, and its
+                                // figures instead of the stale checks.
+                                commands.extend(crate::panels::progress::ui(
+                                    ui,
+                                    run.progress.as_ref(),
+                                    run.stop_requested.is_some(),
+                                ));
+                                ui.add_space(8.0);
+                            }
                             commands.extend(layers::ui(ui, &b.scene, &self.view));
                             ui.add_space(8.0);
                             commands.extend(board_stats::ui(ui, b));
                             ui.add_space(8.0);
-                            commands.extend(board_stats::checks(
-                                ui,
-                                &board_stats::Checks::of(&b.session, &self.analysis),
-                            ));
+                            let checks =
+                                match self.routing.as_ref().and_then(|r| r.progress.as_ref()) {
+                                    Some(p) => board_stats::Checks {
+                                        incomplete: Some(p.incomplete),
+                                        clearance: Some(p.violations),
+                                    },
+                                    None => board_stats::Checks::of(&b.session, &self.analysis),
+                                };
+                            commands.extend(board_stats::checks(ui, &checks));
                         }
                     });
             });
@@ -120,7 +136,23 @@ impl App {
             .show(ctx, |ui| {
                 out = viewport::canvas(ui, &mut self.view, self.loaded.as_ref(), &message);
                 self.overlay_counts = Default::default();
-                if let (Some(b), Some(camera)) = (&self.loaded, self.view.camera) {
+                if let (Some(run), Some(camera)) = (&self.routing, self.view.camera) {
+                    // G07.5: the airline being routed; the stale ratsnest
+                    // and markers of the board the job started from are not
+                    // drawn.
+                    if let Some(progress) = &run.progress {
+                        let shapes =
+                            overlays::routing::shapes(progress, &run.frame, run.half_width);
+                        let painter = ui.painter_at(self.view.canvas);
+                        overlays::routing::draw(
+                            &painter,
+                            self.view.canvas,
+                            &camera,
+                            &shapes,
+                            &self.view.look,
+                        );
+                    }
+                } else if let (Some(b), Some(camera)) = (&self.loaded, self.view.camera) {
                     // The Net Classes window's "Filter Incomplete Connections"
                     // keeps the airlines of some nets only.
                     let filtered = self.dialogs.incompletes_filter().and_then(|keep| {

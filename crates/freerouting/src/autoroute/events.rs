@@ -56,11 +56,10 @@ use crate::board::BoardSnapshot;
 use crate::board::items::ItemId;
 use crate::board::routing_board::RoutingBoard;
 
-/// The drawable geometry of an item added by a [`RouterEvent::Delta`].
-///
-/// A placeholder until B08.1 ports `ItemGeometry`: for now a delta names
-/// the added items by id, and listeners read their geometry from the board.
-pub type ItemGeometry = ItemId;
+/// The drawable geometry of an item added by a [`RouterEvent::Delta`]
+/// (B08.1). The listener of a run never holds the board the router works
+/// on, so a delta carries what a renderer needs to draw the new items.
+pub use crate::board::ItemGeometry;
 
 /// The stage the router is in (Java `RouterCounters.phase`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -205,6 +204,39 @@ pub trait RouterEvents {
     /// Hands the final board to the listener, waiting for room. Returns the
     /// board when no listener took it, so it is never lost.
     fn finished(&self, board: RoutingBoard, summary: RunSummary) -> Option<RoutingBoard>;
+}
+
+/// Sends what the board's change journal recorded since the last drain to
+/// `events`: a [`RouterEvent::Delta`] (the removed ids, and the geometry of
+/// the inserted and changed items that still exist), or a
+/// [`RouterEvent::Replaced`] when the journal overflowed. A changed item is
+/// in both lists, so a listener drops its old shape and draws the new one.
+///
+/// Does nothing unless the board journals (the batch loop turns that on
+/// while a listener is attached). Draining the journal changes nothing a
+/// later step reads, so the cadence of these events never changes a result
+/// (G07.4: the passes call this after each connection, the fanout after
+/// each pin).
+pub fn flush_journal(board: &mut RoutingBoard, events: &dyn RouterEvents) {
+    if !events.is_listening() || !board.is_journaling() {
+        return;
+    }
+    let changes = board.take_changes();
+    if changes.overflow {
+        events.replaced(board.snapshot());
+    } else if !changes.is_empty() {
+        let mut removed = changes.removed;
+        removed.extend(changes.changed.iter().copied());
+        let mut added = Vec::with_capacity(changes.inserted.len() + changes.changed.len());
+        for id in changes.inserted.iter().chain(&changes.changed) {
+            if let Some(geometry) = board.basic().item_geometry(*id) {
+                added.push(geometry);
+            }
+        }
+        // Ascending ids, the order the items were created in.
+        added.sort_by_key(|g| g.id.0);
+        events.delta(removed, added);
+    }
 }
 
 /// A [`RouterEvents`] sink that drops every event (for the CLI and tests).
@@ -372,6 +404,19 @@ mod tests {
         }
     }
 
+    fn geometry(id: i32) -> ItemGeometry {
+        ItemGeometry {
+            id: ItemId(id),
+            kind: crate::board::items::BoardItemType::Trace,
+            first_layer: 0,
+            last_layer: 0,
+            nets: vec![1],
+            fixed_state: crate::board::structure::FixedState::Unfixed,
+            component: 0,
+            shapes: Vec::new(),
+        }
+    }
+
     fn progress(pass: i32) -> Progress {
         Progress {
             pass,
@@ -414,7 +459,7 @@ mod tests {
             let sink = sink.clone();
             let sent = Arc::clone(&sent);
             thread::spawn(move || {
-                sink.delta(vec![ItemId(3)], vec![ItemId(4), ItemId(5)]);
+                sink.delta(vec![ItemId(3)], vec![geometry(4), geometry(5)]);
                 assert!(!sink.progress(progress(2)), "full again: dropped");
                 tried_tx.send(()).unwrap();
                 sink.replaced(snapshot);
@@ -442,7 +487,7 @@ mod tests {
         match &events[1] {
             RouterEvent::Delta { removed, added } => {
                 assert_eq!(removed, &vec![ItemId(3)]);
-                assert_eq!(added, &vec![ItemId(4), ItemId(5)]);
+                assert_eq!(added, &vec![geometry(4), geometry(5)]);
             }
             other => panic!("expected a delta, got {other:?}"),
         }

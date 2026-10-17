@@ -59,7 +59,7 @@ use crate::autoroute::batch::last_mile::rip_blockers;
 use crate::autoroute::batch::pass::{PassOutcome, PassRunner, PassStages};
 use crate::autoroute::batch::report::{NoRoutableLayer, check_routable_layers};
 use crate::autoroute::batch::snapshot::{BoardFigures, ScoredBoard, SnapshotHistory};
-use crate::autoroute::events::{Phase, Progress};
+use crate::autoroute::events::{Phase, Progress, flush_journal};
 use crate::autoroute::stages::{
     ActionOutcome, BoardScore, BoardStage, ConnectionRouter, FanoutStage, FanoutSummary,
     NetOrdering, PassController, PassDecision, PassReport, PassStart, RestoredBoard, RipupPolicy,
@@ -262,20 +262,12 @@ impl Run {
         }
     }
 
-    /// Sends what the journal recorded since the last drain.
+    /// Sends what the journal recorded since the last drain (the passes and
+    /// the fanout drain it after each connection and pin already, so this
+    /// is the rest).
     fn flush(&self, board: &mut RoutingBoard, ctx: &StageCtx) {
-        if !self.listening {
-            return;
-        }
-        let changes = board.take_changes();
-        if changes.overflow {
-            ctx.events.replaced(board.snapshot());
-        } else if !changes.is_empty() {
-            let mut removed = changes.removed;
-            removed.extend(changes.changed.iter().copied());
-            let mut added = changes.inserted;
-            added.extend(changes.changed);
-            ctx.events.delta(removed, added);
+        if self.listening {
+            flush_journal(board, ctx.events);
         }
     }
 

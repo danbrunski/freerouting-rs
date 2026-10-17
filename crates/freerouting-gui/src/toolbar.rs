@@ -20,10 +20,35 @@ pub fn ui(
     unit: Unit,
     tool: ToolMode,
     session: bool,
+    routing: bool,
 ) -> Vec<Command> {
     let mut out = Vec::new();
     ui.horizontal(|ui| {
-        ui.add_enabled_ui(board_open && !session, |ui| {
+        // G07: Java's autoroute button starts the autorouter; while it runs the
+        // button stops it.
+        if routing {
+            if ui
+                .button(text::CANCEL_BUTTON)
+                .on_hover_text(text::CANCEL_BUTTON_TOOLTIP)
+                .clicked()
+            {
+                out.push(Command::StopRouting);
+            }
+            ui.separator();
+        } else {
+            if ui
+                .add_enabled(
+                    board_open && !session,
+                    egui::Button::new(text::AUTOROUTE_BUTTON),
+                )
+                .on_hover_text(text::AUTOROUTE_BUTTON_TOOLTIP)
+                .clicked()
+            {
+                out.push(Command::StartRouting);
+            }
+            ui.separator();
+        }
+        ui.add_enabled_ui(board_open && !session && !routing, |ui| {
             // Java's menu states: inspect (S), route (R) and drag (D).
             for (candidate, label, tip) in [
                 (ToolMode::Select, text::TOOL_SELECT, text::TOOL_SELECT_TIP),
@@ -40,7 +65,7 @@ pub fn ui(
             }
             ui.separator();
         });
-        ui.add_enabled_ui(board_open, |ui| {
+        ui.add_enabled_ui(board_open && !routing, |ui| {
             if ui
                 .selectable_label(overlay.show_ratsnest, text::RATSNEST_TOGGLE)
                 .on_hover_text(text::RATSNEST_TOOLTIP)

@@ -55,6 +55,12 @@ pub struct PersistedSettings {
     pub selectable_items: Option<Vec<String>>,
     // G09.2: the interactive routing settings.
     pub interactive: InteractiveSettings,
+    // G07: the autorouter. The control values the user applied that differ
+    // from the board's own settings, as (path of the settings field, Java's
+    // text of the value).
+    pub autoroute: Vec<(String, String)>,
+    /// Java `guiSettings.showRoutingSummary`.
+    pub show_routing_summary: bool,
 }
 
 /// The interactive routing settings of Java's `WindowRouteParameter` that are
@@ -151,6 +157,8 @@ impl Default for PersistedSettings {
             selection_layers: None,
             selectable_items: None,
             interactive: InteractiveSettings::default(),
+            autoroute: Vec::new(),
+            show_routing_summary: true,
         }
     }
 }

@@ -202,6 +202,13 @@ fn rules_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
                 text::MENU_MOVE_SETTINGS,
                 Command::ShowRulesDialog(RulesDialog::MoveSettings),
             );
+            // G07.1: the autorouter's settings.
+            item(
+                ui,
+                out,
+                text::MENU_AUTOROUTER,
+                Command::ShowAutorouteSettings,
+            );
             // G05.2: the selection's "General Settings".
             item(
                 ui,

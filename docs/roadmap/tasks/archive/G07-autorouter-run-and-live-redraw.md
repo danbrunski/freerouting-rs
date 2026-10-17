@@ -9,7 +9,7 @@ report's GUI-7 (GUI, plugin and packaging report §1.6, §3.2 items 3–4, §4),
 and where frame targets FT4–FT6 are met during a real run.
 
 **Prerequisites:**
-- [G02](archive/G02-gpu-board-renderer.md): chunked buffers patched by `ItemId`
+- [G02](G02-gpu-board-renderer.md): chunked buffers patched by `ItemId`
   (G02.4).
 - A08: router events and the two-level cancel token (`autoroute/events.rs`).
 - A13: the batch loop and `run_pipeline`, the routing job the GUI starts.
@@ -94,7 +94,7 @@ Paths are under `crates/freerouting-gui/`.
 
 ## Checklist
 
-- [ ] **G07.1 — Autoroute settings dialog.**
+- [x] **G07.1 — Autoroute settings dialog.**
   - Java: `WindowAutorouteParameter` (1,431 lines) and
     `WindowAutorouteParameterState`. Fields (`WindowAutorouteParameter_en.properties`):
     per layer `active` and `preferred_direction` (`horizontal`,
@@ -132,7 +132,31 @@ Paths are under `crates/freerouting-gui/`.
     - `power_layers_disabled`: on a board with a power plane layer, that
       layer's `active` checkbox is disabled (AccessKit state).
 
-- [ ] **G07.2 — Routing job wiring.**
+  *Done 2026-10-16:* `dialogs/autoroute_settings.rs` (the dialog: `Draft` over the engine's
+  `SettingsPatch`, `CONTROLS`, `CLI_ONLY`, `uncovered_fields`) and `autoroute_settings/timeout.rs`
+  (`WindowAutorouteParameterState`). The dialog edits C02's patch (the design's `autoroute_settings` and
+  C03's board tuning first, from the new `job::prepare::prepare_job_settings`), never a copy of its own, and
+  never writes board rules.
+  - The six Java tests are ported as unit tests of `dialogs::autoroute_settings::timeout` with Java's strings:
+    `clamps_integer_and_positive_double_inputs`, `parses_and_formats_bounded_timeouts` ("1 hours 2 minutes"),
+    `caps_timeout_at_four_weeks` ("672:00:00", "28 days 0 hours 0 minutes"),
+    `formats_timeout_with_days_hours_minutes_thresholds`, `decomposes_and_builds_timeouts_with_units`,
+    `normalizes_timeout_input` (6 passed).
+  - `tests/ui_routing.rs::settings_round_trip`: the defaults and a settings value with every field changed go
+    through the dialog's getters and setters and come back equal (`RouterSettings` equal; every field equal).
+  - `every_router_setting_has_a_control`: walks `FIELDS` (more than 60 paths); 12 are controls, the rest are in
+    `CLI_ONLY` with a reason; both tables name real fields once; a fake extra field
+    (`scoring.a_new_engine_setting`) is reported.
+  - `power_layers_disabled` on `Issue269-z10_module.dsn` (In1.Cu is a power plane): AccessKit says the
+    "Active: In1.Cu" checkbox is disabled and "Active: F.Cu" is not; the Optimization stage is disabled too
+    (O06 is not ported). `applying_the_dialog_keeps_the_user_values`: Apply keeps only the values that differ
+    from the board's own and clamps Java's way (max passes 100000 -> 9999, 2 days -> "48:00:00").
+  - Java's labels `start_pass` and `speed` have no control in its window at `cda540f` (the bundle only), so the
+    dialog has none (DIVERGENCES, "Autorouter run"). Not ported: `WindowRoutingSummaryA11yTest` and
+    `WorkspacePortTest` (Swing accessibility and port plumbing; `summary_matches_board_statistics` reads the
+    window through AccessKit instead).
+
+- [x] **G07.2 — Routing job wiring.**
   - Java: `BoardToolbar` autoroute button, `GuiBoardManager.startAutorouterAndRouteOptimizer`,
     `stopAutorouterAndRouteOptimizer`, `GuiRoutingJobWorker`.
   - Rust: `routing::RoutingJobHandle { events: Receiver<RouterEvent>,
@@ -152,7 +176,28 @@ Paths are under `crates/freerouting-gui/`.
     - `cancel_hands_back_board`: Cancel during pass 1 leads to `Finished`
       and an editable session.
 
-- [ ] **G07.3 — Progress panel and status messages.**
+  *Done 2026-10-16:* `routing.rs` (`RoutingJobHandle { events, cancel, thread }`, `FrameEvents`,
+  `GeometryMapper`), `app_routing.rs` (start, stop, poll, finish), `Command::{StartRouting, StopRouting,
+  ShowAutorouteSettings, ApplyAutorouteSettings, ...}`, the toolbar's Autoroute / Cancel button and Settings >
+  Autorouter. The job thread gets an `Arc` clone of the session board (it copies, because the session keeps its
+  own), applies the settings with the new `job::prepare::prepare_board_for_routing` and runs `run_pipeline`
+  with the dialog's settings. The session has no `SessionState::Routing`; `App::routing` is the running job and
+  `Command::edits_board` lists what is refused meanwhile.
+  - `routes_small_fixture_to_completion` (Issue159, max passes 3): the job ends `Completed`, the board has more
+    traces, frame CPU max <= 50 ms (`stats().max()`; the release run below has 1.6 ms).
+  - `gui_and_cli_write_identical_ses`: the GUI's board written with `write_ses(.., SesStyle::Java)` is
+    byte-identical to the SES of the CLI's job flow (`run_job` with `-mp 3`, the flow `freerouting -de -do`
+    uses) on Issue159, Issue143 and Issue684 (the last has history restores). Also checked against the real
+    binary: `freerouting -de x.dsn -do y.ses -mp 3` on the three gives files `cmp`-identical to the GUI's
+    (9,201, 4,145 and 17,065 bytes; the test writes them with `G07_DUMP_SES=<dir>`). Engine side,
+    `tests/autoroute_deltas.rs::split_preparation_equals_prepare_job`: `prepare_job_settings` +
+    `prepare_board_for_routing` give the same settings, patch and board `state_hash` as `prepare_job`.
+  - `cancel_hands_back_board` (Issue684): Cancel once the router has routed something in pass 1 ends in
+    `Finished` (status `Interrupted`), the session is no longer routing, a following edit command is not
+    refused, and the summary is marked interrupted. `edits_are_refused_while_routing`: a delete all and an undo
+    leave the board's revision alone and say "The autorouter is running; the board can't be edited ...".
+
+- [x] **G07.3 — Progress panel and status messages.**
   - Java texts (`ScreenMessages_en.properties`): `batch_autoroute_add`
     ("To route: {{items_to_go}}; routed: {{routed_count}}"),
     `batch_autoroute_layer` ("Ripped up: …; failed: …"),
@@ -172,7 +217,19 @@ Paths are under `crates/freerouting-gui/`.
     with the event's values. A mid-run snapshot `routing_progress_issue159.png`
     passes on lavapipe.
 
-- [ ] **G07.4 — Live redraw from deltas.**
+  *Done 2026-10-16:* `panels/progress.rs` (`texts`, `end_message`, `ui`), the Java templates in `text.rs`, the
+  panel in the side panel while a job runs (the Cancel button too) and `autoroute_end_message` in the status
+  line when it ends. `tests/data/progress_issue159.json` is the 46 `Progress` events of a real run of Issue159
+  (8 fanout, 38 routing; `record_progress_issue159` writes it from a real run).
+  - `progress_texts_match_events`: after each recorded event the four lines (status, "To route / routed",
+    "Ripped up / failed" or the fanout's "Failed / extra vias", score) equal Java's templates filled by hand
+    from the event's values, and the labels are found by AccessKit in the panel.
+  - `progress_snapshot` (`tests/snapshots/routing_progress_issue159.png`, lavapipe): the panel with a recorded
+    event from the middle of the routing passes. The canvas of a real mid-run frame is G07.4's screenshot.
+  - A fanout event between the pass's statistics carries a score of 0; the GUI keeps the last figures on show
+    (`routing::carry_figures`, unit test).
+
+- [~] **G07.4 — Live redraw from deltas.**
   - Java: the GUI repaints from the shared board on each
     `BoardUpdatedEvent`. The port patches instead.
   - Rust: `routing::apply_frame_events` coalesces as in the decisions and
@@ -192,7 +249,38 @@ Paths are under `crates/freerouting-gui/`.
     - A Xvfb screenshot taken mid-run shows routed traces on the canvas;
       the implementer looks at it and describes it in the done note.
 
-- [ ] **G07.5 — Routing overlay.**
+  *Partial 2026-10-16:* everything is met except the quiet-machine numbers (see the remainder).
+  **Engine change (smallest that does it):** A13's deltas reached listeners only at pass boundaries and carried
+  ids. `events::flush_journal` now sends a delta after each connection (`pass.rs`) and each fanout pin
+  (`fanout.rs`), and `ItemGeometry` in `RouterEvent::Delta` is B08.1's real type, so the GUI needs no board
+  (`events.rs`, `batch_loop.rs`). It only drains the journal that the loop already kept, so results are
+  unchanged: `autoroute_pipeline`, `autoroute_batch_control`, `autoroute_pass`, `autoroute_history`,
+  `autoroute_fanout`, `autoroute_log` and the CLI tests pass, and `tests/autoroute_deltas.rs::deltas_follow_the_board`
+  applies the deltas (and `Replaced`) of Issue159 and Issue684 to the loaded board's geometry and gets the
+  final board's, with more than one delta per run.
+  - `final_scene_equals_fresh_build` (Issue159): the chunk draw list (every item's vertices, indices and
+    lines by batch, whatever the cutting into chunks) equals one built from scratch from the returned board
+    with the same origin, the scene items equal a fresh flattening, `full_rebuilds == 0` and
+    `reconcile_fixes == 0` (the deltas alone made the picture right).
+    `live_redraw_patches_before_the_job_ends` (Issue684): trace items appear in the scene while the job runs,
+    310 deltas, 243 patches, 4 `Replaced` boards handled by item-by-item comparison (225 differing items
+    patched), then the same equality, `full_rebuilds == 0` and `reconcile_fixes == 0` for the final board.
+  - Numbers (release, Xvfb, lavapipe, Issue190, `--bench route`, 3 runs; the table is in `gui.md`, "FT4 to
+    FT6"): frame CPU p95 1.46 to 1.52 ms (target 4), `max_apply_ms` (a frame's event handling, the FT4 delta
+    of real size) 1.08 to 1.18 ms (target 2), GPU buffers 7,797,692 to 7,808,068 B (7.4 MiB, target 64 MB; growth
+    0.13 % over 10 passes, target 10 %), 0 full rebuilds, Cancel to `Finished` 213.7, 243.7 and 87.0 ms
+    (target 250). The longest connection was not measured separately (Cancel is a full stop, which the maze
+    search polls).
+  - Screenshot under Xvfb (`Issue269-caniot-tiny-arm.dsn`, 3.5 s and 12.5 s into the job): the canvas fills in
+    while the job runs, with the fanout's vias and traces first, then a mesh of blue B.Cu traces; the stale
+    airlines are gone and one yellow airline of the connection being routed is drawn; the side panel's
+    counters change between the two (details in `gui.md`).
+  *Remainder:* the numbers were taken at load average 2.8 to 4.5 on 8 cores (another session was running a
+  release test; the checklist wants at most 1.0), and Cancel at 244 ms is within 6 ms of its target. Repeat
+  `freerouting-gui --bench route` on a quiet machine (owner: P01, the measurement runs) and on Dan's Windows
+  GPU (owner: G00, "Frame targets"; the pending line is in `gui.md`).
+
+- [x] **G07.5 — Routing overlay.**
   - Java: `GuiRoutingJobWorker.draw`: the airline of the connection being
     routed, drawn in the incomplete colour, width
     `min(3 mil in board units, 300)`; and the optimizer position as an X of
@@ -207,7 +295,17 @@ Paths are under `crates/freerouting-gui/`.
     event's endpoints (checked on the overlay's shape list), and a snapshot
     shows it.
 
-- [ ] **G07.6 — Routing summary window.**
+  *Done 2026-10-16:* `overlays/routing.rs` (`shapes`, `draw`), drawn instead of the stale ratsnest while a job
+  runs. A08's `Progress` carries `airline` and `optimizer_position`, so no request to A08 is needed.
+  - `overlay_draws_current_airline`: with a recorded event that has an airline (25 of the 46 do), `shapes`
+    gives exactly one `Line` between the event's endpoints (through `Frame::pt`) with a positive width
+    (`min(3 mil in board units, 300)`); an event with an `optimizer_position` gives one `Cross` of radius
+    `10 * default trace half width` (layer 0); an event with neither gives none. `overlay_snapshot`
+    (`routing_overlay_issue159.png`, lavapipe) shows the line. The mid-run Xvfb screenshot of G07.4 shows it
+    in the real window.
+  - The optimizer's cross is unit-tested but cannot be seen in a run until O06 sends `optimizer_position`.
+
+- [x] **G07.6 — Routing summary window.**
   - Java: `WindowRoutingSummary`, `RoutingSummaryData` (total nets,
     incomplete count, violations, via count, total trace length, duration,
     score, interrupted). Texts: `header_completed`, `header_interrupted`,
@@ -224,7 +322,16 @@ Paths are under `crates/freerouting-gui/`.
     "show after routing" off survives a save/restore and suppresses the
     window on the next run.
 
-- [ ] **G07.7 — Routing a selection (optional).**
+  *Done 2026-10-16:* `panels/routing_summary.rs` (`rows`, `ui`), `routing::RoutingSummaryData`, the window opens
+  when a job ends (not modal; no sponsor message or button, G00 question 2). The statistics are computed on the
+  job thread from the board it hands back, so the GUI thread never waits for them.
+  - `summary_matches_board_statistics` (Issue159): the summary's incomplete count, via count, violation count,
+    trace length (`total_length_mm`) and net count equal `BoardStatistics::new` of the returned board; the
+    window shows "Auto-routing Completed" and the checkbox label, and its "Vias Added:" row equals the via
+    count. Turning "show after routing" off is kept by `eframe::App::save` and comes back in a fresh app built
+    from that storage, and the next run's summary exists but the window stays shut.
+
+- [~] **G07.7 — Routing a selection (optional).**
   - Java at the pin: `GuiBoardManager.autorouteSelectedItems` and
     `optimizeSelectedItems` call `GuiBoardLegacyEditActions`, whose methods
     are empty; there is no fanout of a selection. The toolbar texts
@@ -241,9 +348,23 @@ Paths are under `crates/freerouting-gui/`.
     every item of an unselected net is identical before and after (ids and
     geometry).
 
-- [ ] **G07.8 — Record the numbers.**
+  *Partial 2026-10-16, not attempted:* this item waits on the operator decision (G00 question 6: Java's
+  Autoroute, Fanout and Pull Tight of a selection do nothing at the pin; the recommendation is to leave them out
+  until Dan asks), on A12 and O01 entry points for a selection, and on an engine entry point that limits
+  `run_pipeline` to the selected nets. None of the three exists, so nothing was built. Owner: the operator
+  decision first, then A12/O01/A13.
+
+- [~] **G07.8 — Record the numbers.**
   - `docs/development/gui.md` gains the FT4, FT5 and FT6 numbers on this
     machine (lavapipe, release, load average) and a line for Dan's Windows
     GPU, filled in by hand.
   - **Accept:** the numbers are in `gui.md` with the commit they were
     measured at; Dan's line is marked "pending" until he runs it.
+
+  *Partial 2026-10-16:* `docs/development/gui.md`, "FT4 to FT6: during an autoroute", has the numbers, the
+  command (`freerouting-gui --bench route`, new: `--bench route` with `FREEROUTING_BENCH_PASSES` and
+  `FREEROUTING_BENCH_CANCEL_MS`; `bench.rs`, `app_routing.rs`) and the commit they were taken at (`d21d5f1`
+  plus the G07 working tree), with the load average of every row (2.8 to 4.5, not quiet). Dan's Windows GPU line
+  is marked pending with the exact commands. Remainder: the quiet-machine run (owner: P01, the measurement
+  runs) and Dan's Windows GPU line (owner: G00, "Frame targets").
+

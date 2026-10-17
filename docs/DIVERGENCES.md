@@ -879,3 +879,27 @@ users would notice is listed. Texts follow the English Java bundles.)
 - The headless `--compare-boards` and `--calculate-benchmark-scores` commands
   (`BoardComparator`, `BenchmarkAndCompareCommands`): not ported; `freerouting-dev ses-diff`
   is the comparison tool (C07.3).
+
+**Autorouter run** (G07, `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`,
+`panels/{progress,routing_summary}.rs`, `overlays/routing.rs`; tests `tests/ui_routing.rs`)
+- The GUI draws a running job by patching chunks from the router's delta events (the geometry of
+  the added traces and vias travels in the event) once per frame, where Java repaints the shared
+  board on every `BoardUpdatedEvent`. A `Replaced` board (a history restore, the final best board)
+  and the `Finished` board are compared with the drawn scene item by item and only the differences
+  are patched; the scene is not rebuilt. Pinned by `final_scene_equals_fresh_build` and
+  `live_redraw_patches_before_the_job_ends`.
+- The job routes a copy of the session board (the session keeps its own until `Finished`), so the
+  panels read the board the job started from while it runs. Java routes the shared board and makes
+  it read-only. Edits are refused with a status message in both (`edits_are_refused_while_routing`).
+- The autoroute settings dialog edits the engine's settings patch: the design's `autoroute_settings`
+  and the board tuning of the layer costs come first, then the values the user applied (only values
+  that differ from them are kept between runs). Java's window has no control for `start_pass` and
+  `speed` (its bundle has the labels), so the dialog has none. The "Optimization" stage checkbox is
+  disabled until the batch optimizer (O06) is ported. Fields without a control are listed with a
+  reason in `CLI_ONLY` (`every_router_setting_has_a_control`).
+- The routing summary is a window, not a modal dialog, and has no sponsor message or button (G00
+  question 2). "Vias Added" is the board's via count and the trace length the board's total, as in
+  Java; the figures are computed by the job thread from the returned board.
+- Cancel is a full stop of the engine's cancel token: the pipeline finishes the step it is in and
+  hands back the best board (D8); Java's `requestStop` ends the thread the same way. Esc, the
+  toolbar's Cancel and a click on the canvas all stop it (Java: "Click anywhere on the canvas").

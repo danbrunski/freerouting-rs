@@ -59,7 +59,7 @@ use super::fanout_rules::{
     retry_fanout,
 };
 use super::strict_drc::enforce_strict_drc;
-use crate::autoroute::events::{Phase, Progress};
+use crate::autoroute::events::{Phase, Progress, flush_journal};
 use crate::autoroute::fanout_pin::fanout_pin;
 use crate::autoroute::stages::{FanoutStage, FanoutSummary, StageCtx};
 use crate::autoroute::{AttemptResult, AttemptState};
@@ -310,6 +310,7 @@ impl FanoutRun {
                 let outcome = fanout_one(board, pin.pin, effective_ripup, &limit, ctx);
                 self.count(&mut report, component.component, pin.pin, &outcome.result);
                 observer.after_pin(board, component.component, pin.pin, &outcome);
+                flush_journal(board, ctx.events);
                 pins_to_go = pins_to_go.saturating_sub(1);
                 report.extra_vias = board.vias().len().saturating_sub(vias_before);
                 self.progress(board, ctx, &report, pins_to_go, false);

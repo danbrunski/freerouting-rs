@@ -45,7 +45,7 @@ use std::collections::BTreeSet;
 
 use crate::autoroute::AttemptState;
 use crate::autoroute::batch::connection::{connection_params, pull_tight_after_connection};
-use crate::autoroute::events::{Phase, Progress};
+use crate::autoroute::events::{Phase, Progress, flush_journal};
 use crate::autoroute::stages::{
     ConnectionOutcome, ConnectionRouter, NetOrdering, PassReport, RipupPolicy, RouteTask, StageCtx,
     StageRegistry, StageSelection,
@@ -292,6 +292,9 @@ impl PassRunner {
                 let result = stages.router.route(board, &net_task, &params, ctx);
                 self.count(board, pass, &net_task, &result, stages, &mut outcome);
                 observer.after_connection(board, &net_task, &result);
+                // G07.4: the listener sees the connection's items before its
+                // progress event.
+                flush_journal(board, ctx.events);
                 progress.after_connection(board, ctx, &outcome, result.airline);
             }
         }

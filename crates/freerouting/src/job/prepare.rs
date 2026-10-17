@@ -395,3 +395,80 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         rules_path,
     })
 }
+
+/// The settings of a design before the user changes any (G07.1): the first
+/// merge of [`prepare_job`] (defaults, the design's `autoroute_settings`
+/// and `sources`) with the board-specific tuning of step 3, **on the board
+/// as it is now**. Java tunes on the unexpanded bounding box, so call this
+/// before [`prepare_board_for_routing`] has run on `board`.
+///
+/// The GUI shows these in its settings dialog and edits them; the dialog's
+/// result goes to [`prepare_board_for_routing`]. The two calls together do
+/// what [`prepare_job`] does for a board that has no rules file and no
+/// session (`tests/ui_routing.rs::gui_and_cli_write_identical_ses` checks
+/// that they agree with it). Returns the patch and the first merge's
+/// warnings.
+pub fn prepare_job_settings(
+    board: &RoutingBoard,
+    pcb: Option<&Pcb>,
+    sources: &[(Source, SettingsPatch)],
+    ctx: &ResolveContext,
+) -> (SettingsPatch, Vec<LogLine>) {
+    let mut all = vec![(Source::Defaults, defaults(ctx))];
+    if let Some(pcb) = pcb {
+        all.push((Source::Dsn, patch_from_dsn(pcb)));
+    }
+    all.extend(sources.iter().cloned());
+    let merged = resolve(&all, ctx);
+    let mut log = Vec::new();
+    for warning in &merged.warnings {
+        push(&mut log, LogLevel::Warn, warning.clone());
+    }
+    let mut patch = merged.patch;
+    if patch.layer_count() != board.layer_count() {
+        patch.set_layer_count(board.layer_count());
+    }
+    apply_board_specific(&mut patch, board);
+    (patch, log)
+}
+
+/// The router's view of a prepared job, from [`prepare_board_for_routing`].
+#[derive(Clone, Debug)]
+pub struct RoutingReady {
+    /// `patch` read through Java's getter fallbacks.
+    pub settings: RouterSettings,
+    /// The router's read-only view of `settings`.
+    pub board_settings: BoardRouterSettings,
+    /// Java's log lines of the preparation.
+    pub log: Vec<LogLine>,
+}
+
+/// The board half of [`prepare_job`]'s steps 3, 4 and 6 for a board that was
+/// loaded already (G07.2): the net-class exclusions, the five overrides, the
+/// bounding box expanded to all items and the nets of the route items
+/// reduced, with the settings of `patch` (see [`prepare_job_settings`]; the
+/// tuning is not repeated, because the patch carries `costs_initialized`).
+pub fn prepare_board_for_routing(
+    board: &mut RoutingBoard,
+    patch: &SettingsPatch,
+    ctx: &ResolveContext,
+) -> RoutingReady {
+    let mut log = Vec::new();
+    for warning in apply_net_class_exclusions(patch, board) {
+        push(&mut log, LogLevel::Warn, warning);
+    }
+    let mut state = OverrideState::default();
+    let settings = RouterSettings::from_patch(patch, ctx.cores);
+    log.extend(overrides::apply_all(board, &settings, &mut state));
+    board.expand_bounding_box_to_include_all_items();
+    board.reduce_nets_of_route_items();
+    for warning in apply_net_class_exclusions(patch, board) {
+        push(&mut log, LogLevel::Warn, warning);
+    }
+    let board_settings = BoardRouterSettings::from_settings(&settings);
+    RoutingReady {
+        settings,
+        board_settings,
+        log,
+    }
+}

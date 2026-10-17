@@ -77,6 +77,9 @@ pub struct App {
     seen_tess: Option<u64>,
     /// `--bench drag`: where the press was (scene millimetres).
     pub(crate) bench_press: Option<crate::scene::P>,
+    // G07: the autorouter job and its settings.
+    pub(crate) routing: Option<crate::routing::RoutingRun>,
+    pub(crate) autoroute: crate::routing::Autoroute,
 }
 
 impl App {
@@ -152,6 +155,8 @@ impl App {
             done: Vec::new(),
             seen_tess: None,
             bench_press: None,
+            routing: None,
+            autoroute: crate::routing::Autoroute::default(),
         };
         if !args.open.is_empty() {
             app.start_load(ctx, args.open, None);
@@ -298,6 +303,11 @@ impl App {
 
     /// Runs one command: the single path for menus, keys and tests.
     pub fn execute(&mut self, ctx: &egui::Context, command: Command) {
+        // G07: while the autorouter runs, Cancel and a click stop it and
+        // edits are refused.
+        if self.routing_filter(&command) {
+            return;
+        }
         // G09: while a route or a copy is under way the layer keys and the
         // layers panel ask the editor to change the layer.
         if self.editor_layer(&command) {
@@ -339,6 +349,13 @@ impl App {
             Command::ShowRulesDialog(dialog) => self.dialogs.open(dialog, true),
             Command::CloseRulesDialog(dialog) => self.dialogs.open(dialog, false),
             Command::EditRules(edit) => self.execute_rules_edit(edit),
+            command @ (Command::StartRouting
+            | Command::StopRouting
+            | Command::ShowAutorouteSettings
+            | Command::CloseAutorouteSettings
+            | Command::ApplyAutorouteSettings(_)
+            | Command::CloseRoutingSummary
+            | Command::SetShowRoutingSummary(_)) => self.execute_routing(ctx, command),
             Command::Notice(message) => self.notice = Some(message),
             command @ (Command::CanvasClick { .. }
             | Command::SelectRegion { .. }
@@ -505,6 +522,7 @@ impl App {
             self.view.look.apply_colors(&self.settings.colors, &names);
         }
         self.loaded = Some(board);
+        self.autoroute = crate::routing::Autoroute::default();
         self.error = None;
         self.analysis.reset();
         self.selection.clear();
@@ -576,14 +594,17 @@ impl eframe::App for App {
             .renderer
             .select(frame.wgpu_render_state().map(|s| s.target_format));
         self.poll_load();
+        self.poll_routing(ctx);
         self.count_builds();
-        self.analysis.set_held(self.editor_busy());
+        self.analysis
+            .set_held(self.editor_busy() || self.routing.is_some());
         self.analysis
             .poll(ctx, self.loaded.as_ref().map(|b| &b.session));
         self.poll_export();
         self.log_analysis();
         let mut commands = self.commands_this_frame(ctx);
         commands.extend(self.bench_drag_commands());
+        commands.extend(self.bench_route_commands());
         let (panel_commands, canvas) = self.panels(ctx);
         commands.extend(panel_commands);
         if let Some(b) = &self.loaded {
@@ -615,6 +636,7 @@ impl eframe::App for App {
             commands.extend(self.dialogs.show(ctx, &view));
         }
         commands.extend(self.export_dialog.ui(ctx).map(Command::ExportDrcReport));
+        commands.extend(self.autoroute_ui(ctx));
         for command in commands {
             self.execute(ctx, command);
         }
