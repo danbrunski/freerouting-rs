@@ -1,0 +1,16 @@
+# PCBWorld-Bench D3-C (tools/corpus/pcbworld-d3c.json): fetch with
+#   FR_CORPUS_DIR=target/corpus-d3c tools/corpus/fetch.sh --manifest tools/corpus/pcbworld-d3c.json
+#   FR_CORPUS_DIR=target/corpus-d3c tools/corpus/prep.sh
+# Rows marked hard.test are PCBWorld's own D3-C test split. Boards are skipped with a note
+# while missing. Not committable unless the manifest says so (tools/corpus/README.md).
+target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn   # 2 layers, 39 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn   # 2 layers, 44 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn   # 2 layers, 31 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn   # 2 layers, 38 footprints, CC-BY-SA-4.0, hard.test
+target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn   # 2 layers, 37 footprints, GPL-3.0, hard.test
+target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn   # 2 layers, 28 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn   # 2 layers, 68 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn   # 2 layers, 77 footprints, GPL-2.0, hard.test
+target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn   # 4 layers, 67 footprints, MIT, hard.train
+target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn   # 2 layers, 52 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn   # 4 layers, 267 footprints, 0BSD, hard.train, BGA U30 11x11@0.8

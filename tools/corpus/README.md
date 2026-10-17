@@ -41,6 +41,49 @@ only: 479 boards, 31 pinned to a commit, 372 with licence "see repo") by
 hashes itself. The seed picks per layer count the licensed boards first and
 fills with unlicensed ones spread over board size.
 
+## `pcbworld-d3c.json`: PCBWorld-Bench D3-C
+
+A second manifest, in the same format, kept apart so the 30-board corpus, its bench set and its
+baselines do not change:
+
+```sh
+FR_CORPUS_DIR=target/corpus-d3c tools/corpus/fetch.sh --manifest tools/corpus/pcbworld-d3c.json
+FR_CORPUS_DIR=target/corpus-d3c tools/corpus/prep.sh
+freerouting-dev bench --set tools/bench/sets/pcbworld-d3c.txt --rust target/release/freerouting --out <dir>
+```
+
+Eleven boards (`left_out` names the twelfth chosen):
+- PCBWorld's D3-C test split: nine two-layer boards of 84–206 connections;
+- `d3c-0581-a123-battery-integration-bcm`: a four-layer battery power board with inner planes;
+- `d3c-0677-kitspace-glasgow`: 912 connections on two signal layers with inner planes, and an
+  11 × 11, 0.8 mm BGA (U30). Pass 1 alone takes about 12 minutes on it: fanout about 6 and
+  routing about 6. The other ten take under 5 seconds each.
+
+D3-C is the `hard` difficulty (more than 100 pins) of [PCBWorld-Bench](https://github.com/LGAI-Research/PCBWorld)
+(arXiv 2607.05915, LG AI Research): `configs/datasets/d3.json` at `b3d62f5c37`. Its boards are
+[PCBench](https://github.com/PCBench/PCBench)'s (He et al., 2024; `dec3be75cb`). PCBench's MIT
+licence covers its own files, not the boards it collected, and neither project redistributes a
+board under the board's licence. So `seed_pcbworld.py` pins every board at its **original**
+repository:
+- the commit is one whose tree holds PCBench's exact `raw.kicad_pcb` (the same git blob,
+  recorded as `pcbench_blob`): the commit at PCBench's retrieval date, else the default branch's
+  head, else the newest commit `git log --find-object` names;
+- the licence is read there (GitHub's license API at that commit), exactly as for `manifest.json`.
+
+Extra fields per entry:
+- `pcbworld_id`: PCBWorld's `<NNNN>_<name>`, where NNNN is its difficulty order;
+- `pcbworld_split`: `hard.test` for PCBWorld's 10-board D3-C test split, `hard.train` otherwise;
+- `pcbench_blob`;
+- `ball_arrays`: the footprints that pass X12's array test (`fanout/bga/array.rs`: one pitch on
+  both axes, at least 6 × 6 positions, not staggered, both outer rings at least half populated),
+  computed on footprint-local SMD pad centres.
+
+`left_out` lists the boards that could not be pinned or licensed, and why.
+
+PCBWorld converts each board to KiCad 9 and patches its rules (`drc_fix_v9.py`) before
+measuring. This corpus does neither: `prep.sh` grades every board at its own rules (D8).
+PCBWorld's published scores are therefore not comparable with numbers from this set.
+
 ## Licences
 
 A board may be committed only if its licence is in `allowed-licenses.txt`

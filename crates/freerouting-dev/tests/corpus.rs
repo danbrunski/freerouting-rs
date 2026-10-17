@@ -18,6 +18,12 @@ fn manifest() -> Vec<Entry> {
         .unwrap()
 }
 
+/// PCBWorld-Bench's D3-C boards, a second manifest beside the 30-board corpus.
+fn d3c() -> Vec<Entry> {
+    parse_manifest(&std::fs::read_to_string(repo().join("tools/corpus/pcbworld-d3c.json")).unwrap())
+        .unwrap()
+}
+
 fn allowed() -> Vec<String> {
     parse_allowed(
         &std::fs::read_to_string(repo().join("tools/corpus/allowed-licenses.txt")).unwrap(),
@@ -145,8 +151,39 @@ fn a_committed_board_with_a_licence_that_is_not_allow_listed_is_refused() {
 }
 
 #[test]
+fn every_d3c_entry_has_a_commit_a_sha256_and_an_spdx_id_or_licenseref_none() {
+    let entries = d3c();
+    assert!(entries.len() >= 8, "{} D3-C boards", entries.len());
+    let problems = manifest_problems(&entries, &allowed());
+    assert!(problems.is_empty(), "{problems:#?}");
+    for e in &entries {
+        assert!(is_spdx_or_none(&e.license), "{}: {}", e.id, e.license);
+        assert!(e.id.starts_with("d3c-"), "{}", e.id);
+    }
+    // One namespace for both manifests: FR_CORPUS_DIR may hold either.
+    let ids: Vec<String> = manifest().into_iter().map(|e| e.id).collect();
+    assert!(entries.iter().all(|e| !ids.contains(&e.id)));
+}
+
+#[test]
+fn the_d3c_bench_set_lists_every_d3c_board_and_only_those() {
+    let set = std::fs::read_to_string(repo().join("tools/bench/sets/pcbworld-d3c.txt")).unwrap();
+    let listed: Vec<String> = set
+        .lines()
+        .map(|l| l.split('#').next().unwrap_or("").trim().to_string())
+        .filter(|l| !l.is_empty())
+        .collect();
+    let expected: Vec<String> = d3c()
+        .iter()
+        .map(|e| format!("target/corpus-d3c/prepped/{}.dsn", e.id))
+        .collect();
+    assert_eq!(listed, expected);
+}
+
+#[test]
 fn no_committed_board_in_this_repository_has_a_licence_that_is_not_allow_listed() {
-    let violations = committed_violations(&repo(), &manifest());
+    let boards: Vec<Entry> = manifest().into_iter().chain(d3c()).collect();
+    let violations = committed_violations(&repo(), &boards);
     assert!(violations.is_empty(), "{violations:#?}");
     // And git tracks no .kicad_pcb file at all outside the allow-list's reach.
     let output = Command::new("git")
@@ -159,9 +196,7 @@ fn no_committed_board_in_this_repository_has_a_licence_that_is_not_allow_listed(
             let bytes = std::fs::read(repo().join(line)).unwrap_or_default();
             let hash = freerouting::quality::feasibility::report::sha256_hex(&bytes);
             assert!(
-                !manifest()
-                    .iter()
-                    .any(|e| e.sha256 == hash && !e.committable),
+                !boards.iter().any(|e| e.sha256 == hash && !e.committable),
                 "{line} is a corpus board with a licence that is not allow-listed"
             );
         }
