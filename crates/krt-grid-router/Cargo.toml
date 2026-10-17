@@ -1,0 +1,14 @@
+[package]
+name = "krt-grid-router"
+description = "KiCadRoutingTools' grid A* router (Rust core, grid_router 0.23.0 at 0486e799) with the Python binding removed"
+version = "0.23.0"
+edition = "2021"
+# MIT, explicitly: the code is drandyhaas's KiCadRoutingTools (see LICENSE and
+# README.md), not part of the workspace's GPL-3.0-only code.
+license = "MIT"
+repository = "https://github.com/drandyhaas/KiCadRoutingTools"
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+rustc-hash = "2.1"
