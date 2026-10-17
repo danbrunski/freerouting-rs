@@ -46,6 +46,13 @@ target/release/freerouting-dev bench --set tools/bench/sets/benchmark.txt \
   `ses-diff`'s statistics: incomplete connections, clearance violations,
   vias, trace length in mm and bends. Java's `WORK_LIMIT_CUTOFF` log lines
   (from `a773a70ec` on) are counted per run.
+- **Rip statistics (Q05.1).** `--rip-stats` adds
+  `--router.special.diagnostics=rip-stats --result-json <run>.result.json`
+  to every Rust run and keeps the manifest's `freerouting-rip-stats/1`
+  report, without its per-net list, under `rip_stats` in the run's record
+  in `bench.json` (totals, the top five nets by torn length with their
+  shares, the passes). It changes no route but adds work, so don't compare
+  its wall times with plain runs.
 - **Output.** `<out>/bench.json` has every run (wall seconds, load before and
   after, exit status, cut-offs, statistics) plus the median and spread per
   board and engine; `<out>/bench.md` is a table with one row per board and

@@ -86,7 +86,7 @@ board that matches Java.
 
 ## Checklist
 
-- [ ] **Q05.1 — Rip instrumentation (report only).**
+- [x] **Q05.1 — Rip instrumentation (report only).**
   Rust design: `quality::congestion::rip_stats::RipStats` subscribes to A11's
   rip events and records per net, in a `BTreeMap<i32, NetRipStats>`: rips,
   torn length (sum of ripped trace lengths), reroutes, and
@@ -99,7 +99,89 @@ board that matches Java.
       five nets by torn length with their shares, and the Q06 verdict counts;
     - the decision rule above is evaluated and its outcome recorded.
 
-- [ ] **Q05.2 — Cost lattice.**
+  *Done 2026-10-17:* `quality/congestion/{mod,rip_stats}.rs` (new):
+  `RipStats`, the `rip-stats` diagnostic on Q06's `Diagnostics` mechanism
+  (`router.special.diagnostics=rip-stats`, registered in
+  `quality/register.rs`), records per net in `BTreeMap<i32, NetRipStats>`
+  rips, torn length, removed items, reroutes, pins and span (pin-centre
+  bounding-box diagonal) with `size_factor = sqrt(pins)·sqrt(span_mm)`, plus
+  per-pass totals; `RipReport::to_json` is `freerouting-rip-stats/1` with
+  `top_nets` (top five by torn length, ties by net number, with `share`) and
+  `top_share`. No A11 rip event existed, so the engine got one hook:
+  `Diagnostics::before_connection` (default no-op, `autoroute/stages.rs`),
+  called by the observing router (`stages/registry.rs`); a rip is the diff
+  of the ripped nets' copper before and after the connection-router call
+  (removed old traces minus traces the call added, which nets out the
+  pull-tight's replacements; see the module docs). Emitted as
+  `RunSummary::rip_stats`, under `rip_stats` in the C08 result manifest
+  (`freerouting-cli/src/manifest.rs`), and in `bench` run records with
+  `freerouting-dev bench --rip-stats` (the report without its per-net list).
+  Tests: `cargo test -p freerouting --lib rip_stats` (5: order and ties,
+  shares, null share, torn-length subtraction, size factor, JSON);
+  `--test quality_rip_stats` (5): `routing_through_a_wall_rips_the_wall_net`
+  (q06-sole-wall: B torn once, 18.6 mm = its whole wire, share 1.0),
+  `later_passes_count_reroutes` (pass 2 reroutes B),
+  `nothing_ripped_reports_no_rips`,
+  `the_ses_is_byte_identical_with_the_rip_stats_on_and_off` (2 fixtures × 1
+  and 3 passes, rip-stats alone and with verdicts),
+  `the_report_is_deterministic`; `-p freerouting-cli --test
+  result_json_rip_stats` (key present only with the diagnostic, same SES);
+  `-p freerouting-dev --test bench`
+  (`rip_stats_records_keep_the_report_without_the_net_list`).
+  - **SES byte-identical on and off** (release CLI, `cmp`): `bm01` and
+    `Issue690-sonde_xilinx` at `-mp 5 --router.optimizer.enabled=false`,
+    `canary-pwr-9511d9a` with Q01.7's flags (`-mp 1 --gui.enabled=false
+    --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150`)
+    and the optimizer off: off = `rip-stats` = `verdicts,rip-stats`; the
+    same three boards with exactly Q01.7's flags (optimizer on): off =
+    `rip-stats`; `bm02`, `bm07`, `bm10`, `Issue093-interf_u` (`-mp 5`, optimizer
+    off): off = `verdicts,rip-stats`. Determinism: a second
+    `verdicts,rip-stats` run on bm01, sonde and canary gave the same SES and
+    equal `rip_stats` and `verdicts`; `tools/determinism-check.sh` on bm01
+    (`-mp 5`, both diagnostics, SES plus both reports): `identical`. Cost
+    (load average 6–10, other agents running): bm01 31.6 s off, 32.3 s with
+    `rip-stats`; canary 53.7 s off, 53.7 s with it.
+  - **Top five by torn length** (share of the run's torn length):
+    - `Issue508-DAC2020_bm01` (`-mp 5`): 222 rips in 180 attempts, 6976.5 mm
+      torn, 185 reroutes; ADC9 4.6 %, ADC12 4.1 %, ADC10 3.9 %, SCL 3.7 %,
+      RXD1 3.5 %. Pass 1 tears 3788.7 mm, passes 2–5 1216.8, 843.9, 689.9,
+      437.2. With Q01.7's flags (`-mp 1`): 42 rips, 1435.6 mm; ADC9 9.0 %,
+      ADC12 8.6 %, ADC13 7.3 %, PH6 6.8 %, PC1 6.0 %.
+    - `Issue508-DAC2020_bm10` (`-mp 5`, routes completely): 39 rips,
+      1618.6 mm; /E1-A 8.6 %, /E1-BUT 8.6 %, /RF 7.2 %, /MOSI 6.7 %, /YAW
+      6.5 %.
+    - `Issue508-DAC2020_bm07` (complete): 13 rips, 206.2 mm; /SCK 22.2 %,
+      /MOSI 21.8 %, /A7 10.9 %, /RST 9.3 %, /TXO 9.2 %.
+    - `Issue508-DAC2020_bm02` (complete): one rip, RESET 13.4 mm, 100 %.
+    - `Issue690-sonde_xilinx` and `Issue093-interf_u` (`-mp 5`): no rip.
+    - `canary-pwr-9511d9a`: 63 rips in 45 attempts, 1618.5 mm, 28 reroutes;
+      /Supervisor/BUTTON 9.2 %, BUCK_PG 7.6 %, /Supervisor/LED_STATUS 6.5 %,
+      /Holdup/VCAP 6.4 % (12 pins, the largest net in the top five),
+      LTC_SMBALERT 6.3 %.
+    - `canary-pwr-pours1`: 69 rips, 1921.5 mm; /Supervisor/LED_BANK 10.5 %,
+      +12V_PROT 6.0 % (15 pins), PRIV_SDA 5.9 %, /Holdup/LTC_INTVCC 5.8 %,
+      LTC_SMBALERT 5.4 %. `pours2`: 77 rips, 1814.6 mm; PI_3V3_SENSE 9.9 %,
+      BUCK_PG 7.5 %, /Holdup/LTC_CAPFB 7.5 %, LTC_SMBALERT 5.7 %,
+      /Supervisor/LED_STATUS 5.4 %. `pours3`: 90 rips, 2041.0 mm;
+      /Holdup/LTC_CAPFB 10.9 %, /Supervisor/LED_BANK 7.5 %,
+      /Supervisor/BUTTON 6.6 %, /Holdup/VCAP 5.7 %, SWCLK_BOOT0 5.0 %.
+  - **Q06 verdict counts** (same runs): bm01 15 incomplete: `blocked_by` 4,
+    `unrouted` 11; sonde 11: `unrouted` 11; interf_u 19: `unrouted` 19;
+    bm02, bm07, bm10: 0 incomplete; canary-pwr-9511d9a 109: `infeasible` 8,
+    `blocked_by` 14, `unrouted` 87; pours1 105: 7 / 30 / 68; pours2 111: 6 /
+    28 / 77; pours3 109: 0 / 20 / 89 (`infeasible` / `blocked_by` /
+    `unrouted`; `work_limit` 0 everywhere).
+  - **Decision rule: not met.** `blocked_by` share of the unrouted: bm01
+    27 %, sonde 0 %, interf_u 0 %, canary-pwr 12.8 %, pours1 28.6 %, pours2
+    25.2 %, pours3 18.3 %: none above 50 %. Top net's share of torn length:
+    at most 10.9 % on every board with unrouted connections; above 25 % only
+    on bm02 (one rip on a board that routes completely, 100 %); bm07 22.2 %.
+    So no board with unrouted connections meets either arm, and at most one
+    board meets either under the most literal reading: fewer than three.
+    No large net dominates the churn (KRT's 87-pad rail case): the top nets
+    are 2–15-pin nets. Q05.2–Q05.4 are not built.
+
+- [~] **Q05.2 — Cost lattice.**
   Rust design: `quality::congestion::lattice::Lattice { origin, bin, nx, ny,
   layers, cells: Vec<Vec<u32>> }` with `add_shape(layer, &TileShape, amount)`
   (every bin whose square intersects the shape gains `amount`, saturating at
@@ -109,7 +191,14 @@ board that matches Java.
     the cap saturates; adding the same shapes in two different orders gives
     equal lattices.
 
-- [ ] **Q05.3 — History and corridor costs (`history-cost`).**
+  *Partial 2026-10-17:* not triggered: Q05.1's decision rule is not met
+  (`blocked_by` at most 28.6 % of the unrouted on every board, top net at
+  most 10.9 % of torn length on every board with unrouted connections; the
+  numbers are in Q05.1's note). Not built. Reopen if a later Q05.1 + Q06
+  run meets the rule on three boards; any build and its measurement then
+  wait for P04's default-tree decision.
+
+- [~] **Q05.3 — History and corridor costs (`history-cost`).**
   Source: KRT `history_congestion.py` (three charges, flat, capped);
   `obstacle_costs.compute_ripped_route_costs` (corridor).
   Rust design, `quality::congestion::history`:
@@ -132,7 +221,14 @@ board that matches Java.
       default arm's result is recorded beside it;
     - `tools/determinism-check.sh` passes on `canary-pwr`.
 
-- [ ] **Q05.4 — Victim-cost ripup (`victim-cost`).**
+  *Partial 2026-10-17:* not triggered: Q05.1's decision rule is not met
+  (`blocked_by` at most 28.6 % of the unrouted on every board, top net at
+  most 10.9 % of torn length on every board with unrouted connections; the
+  numbers are in Q05.1's note). Not built. Reopen if a later Q05.1 + Q06
+  run meets the rule on three boards; any build and its measurement then
+  wait for P04's default-tree decision.
+
+- [~] **Q05.4 — Victim-cost ripup (`victim-cost`).**
   Rust design: a `RipupPolicy` that multiplies an item's ripup cost by its
   net's factor `min(cap, 1 + isqrt(pins · span_µm) / d)`, all in integers
   (`isqrt` is the integer square root, so no libm call can differ across
@@ -141,7 +237,14 @@ board that matches Java.
   - **Accept:** unit tests of the scale; with the policy on, Q05.1's torn
     length on the top net is reported for both arms on `canary-pwr`.
 
-- [ ] **Q05.5 — Measurement.**
+  *Partial 2026-10-17:* not triggered: Q05.1's decision rule is not met
+  (`blocked_by` at most 28.6 % of the unrouted on every board, top net at
+  most 10.9 % of torn length on every board with unrouted connections; the
+  numbers are in Q05.1's note). Not built. Reopen if a later Q05.1 + Q06
+  run meets the rule on three boards; any build and its measurement then
+  wait for P04's default-tree decision.
+
+- [~] **Q05.5 — Measurement.**
   Preregister (F03.4) with the prior stated: KRT's result was not
   significant. Arms: default; `history-cost`; `history-cost` with the corridor
   off; `victim-cost`. Boards: those with at least 10 unrouted connections in
@@ -152,3 +255,10 @@ board that matches Java.
     and regresses on none. Each rejected arm's code is removed and its numbers
     stay in this done note. If every arm is rejected, Q05.2's lattice stays
     only if Q01.6 uses it.
+
+  *Partial 2026-10-17:* nothing to measure: Q05.2–Q05.4 are not triggered
+  (Q05.1's decision rule is not met), so no arm exists, no preregistration
+  or `tools/bench/sets/q05-congested.txt` was written and no
+  `DIVERGENCES.md` line is needed. If the rule is met later, preregister
+  (F03.4) and measure after P04's default-tree decision, as the Q series
+  orders. Q01.6 decides whether it builds its own lattice.

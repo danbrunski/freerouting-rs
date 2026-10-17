@@ -18,7 +18,7 @@ implementation is never edited, so default results stay byte-identical.
 | [Q02](Q02-neck-down-through-pin-fields.md) | Delivered-width report, no width ratchet, neck bounded by distance, widen-back with taper | L / high: width policy inside the maze search | rung 3; A04, A06 width hooks; B05; O01; Q03 |
 | [Q03](archive/Q03-infeasible-connection-diagnostic.md) ✅ | "Cannot route `<net>` to `<pin>` at width W: widest corridor C" from a static widest-path check | M / low: report only | **none: starts now**; F02.2 for the subcommand; B05 for one item |
 | [Q04](Q04-restore-stop-rule.md) | Work-based stop when restores stop helping; two-axis output guard | S / low | rung 3; A10, A13, A08; B01 |
-| [Q05](Q05-congestion-aware-ripup.md) | Rip instrumentation; history and corridor costs; victim-cost ripup, each measured | L / high: weak prior evidence | rung 3; A04 cost hook; A11 rip events; Q06 |
+| [Q05](archive/Q05-congestion-aware-ripup.md) ✅ | Rip instrumentation; history and corridor costs; victim-cost ripup, each measured | L / high: weak prior evidence | rung 3; A04 cost hook; A11 rip events; Q06 |
 | [Q06](archive/Q06-failure-attribution-and-verdicts.md) ✅ | Blocking nets per failed connection; one verdict per incomplete connection | M / low: report only | rung 3; A04 failure record; Q03; C08 |
 | [Q07](Q07-first-pass-ordering.md) | Pass-1 conflict-round and inside-out orderings | S / medium | rung 3; A10 |
 | [Q08](Q08-earned-budget-extension.md) | One more maze budget only when the search is still closing in | S / medium: changes where limits cut | rung 3; A04 budget hook; B02 WorkMeter |

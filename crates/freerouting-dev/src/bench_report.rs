@@ -62,6 +62,9 @@ fn run_json(run: &RunRecord) -> JsonValue {
     if let Some(note) = &run.note {
         members.push(("note".to_string(), JsonValue::string(note.clone())));
     }
+    if let Some(rip_stats) = &run.rip_stats {
+        members.push(("rip_stats".to_string(), rip_stats.clone()));
+    }
     JsonValue::Object(members)
 }
 

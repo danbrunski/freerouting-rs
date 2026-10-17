@@ -12,4 +12,10 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::verdict::DIAGNOSTIC_ID, |s| {
             Box::new(super::verdict::VerdictDiagnostics::from_settings(s))
         });
+    // Q05.1: the `rip-stats` diagnostic (`router.special.diagnostics`).
+    registry
+        .diagnostics
+        .insert(super::congestion::rip_stats::DIAGNOSTIC_ID, |s| {
+            Box::new(super::congestion::rip_stats::RipStats::from_settings(s))
+        });
 }

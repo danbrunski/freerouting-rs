@@ -27,6 +27,12 @@
 //! manifest gets one more key after Java's, `verdicts`: the run's
 //! `freerouting-verdicts/1` report (`docs/development/verdicts.md`). Without
 //! it the key is absent and the manifest is Java's.
+//!
+//! **Rip statistics (Q05.1).** With `rip-stats` among the diagnostics the
+//! manifest gets `rip_stats` after `verdicts`: the run's
+//! `freerouting-rip-stats/1` report
+//! (`freerouting::quality::congestion::rip_stats`). Without it the key is
+//! absent.
 
 use std::path::Path;
 
@@ -431,14 +437,28 @@ pub fn build(input: &ManifestInput<'_>) -> JsonValue {
         ("output_written", JsonValue::Bool(input.output_written)),
         ("cpu_score", null()),
     ]);
-    // Q06: the verdicts, after Java's keys, only when the diagnostic ran.
-    let verdicts = report.summary.as_ref().and_then(|s| s.verdicts.as_ref());
-    match (manifest, verdicts) {
-        (JsonValue::Object(mut members), Some(verdicts)) => {
-            members.push(("verdicts".to_string(), verdicts.to_json()));
+    // Q06 and Q05.1: the diagnostics' reports, after Java's keys, only when
+    // the diagnostic ran.
+    let summary = report.summary.as_ref();
+    let extra: Vec<(String, JsonValue)> = [
+        (
+            "verdicts",
+            summary.and_then(|s| s.verdicts.as_ref().map(|v| v.to_json())),
+        ),
+        (
+            "rip_stats",
+            summary.and_then(|s| s.rip_stats.as_ref().map(|r| r.to_json())),
+        ),
+    ]
+    .into_iter()
+    .filter_map(|(key, value)| value.map(|v| (key.to_string(), v)))
+    .collect();
+    match manifest {
+        JsonValue::Object(mut members) => {
+            members.extend(extra);
             JsonValue::Object(members)
         }
-        (manifest, _) => manifest,
+        manifest => manifest,
     }
 }
 

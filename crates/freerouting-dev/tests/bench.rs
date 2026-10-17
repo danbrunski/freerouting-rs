@@ -6,7 +6,8 @@ use std::time::{Duration, Instant};
 
 use freerouting_dev::bench::{
     BenchOptions, BenchResult, BoardResult, Bounds, Engine, EngineResult, RunRecord, SetEntry,
-    bounds_for, count_cutoffs, java_major_version, read_bounds, read_set, wait_for_quiet,
+    bounds_for, count_cutoffs, java_major_version, read_bounds, read_set, rip_stats_arguments,
+    rip_stats_of_manifest, wait_for_quiet,
 };
 use freerouting_dev::bench_report::{median, spread, to_json, to_markdown};
 use freerouting_dev::json_read::Json;
@@ -191,6 +192,7 @@ fn run(run: usize, wall: f64, vias: usize) -> RunRecord {
             bends: 3,
         }),
         note: None,
+        rip_stats: None,
     }
 }
 
@@ -219,6 +221,7 @@ fn sample_result() -> BenchResult {
         load_wait: Duration::from_secs(1),
         timeout: Duration::from_secs(1),
         java_version: Some("openjdk version \"25\"".into()),
+        rip_stats: false,
     };
     let board = |name: &str| BoardResult {
         entry: SetEntry {
@@ -305,4 +308,33 @@ fn json_records_every_run_with_its_load() {
     assert_eq!(runs[1].get("exit_status").and_then(Json::as_f64), Some(0.0));
     assert!(engines[1].get("skipped").is_some());
     assert_eq!(json.get("optimizer"), Some(&Json::Bool(false)));
+}
+
+#[test]
+fn rip_stats_records_keep_the_report_without_the_net_list() {
+    let manifest = r#"{"schema_version": 1, "rip_stats": {"schema": "freerouting-rip-stats/1",
+        "rips": 3, "top_share": 0.6000, "top_nets": [{"net": 2, "share": 0.6000}],
+        "nets": [{"net": 2}, {"net": 5}]}}"#;
+    let stats = rip_stats_of_manifest(manifest).expect("a rip_stats member");
+    let text = stats.to_pretty_string();
+    assert!(text.contains("\"top_nets\""), "{text}");
+    assert!(text.contains("\"share\": 0.6000"), "{text}");
+    assert!(!text.contains("\"nets\""), "{text}");
+    assert!(rip_stats_of_manifest(r#"{"schema_version": 1}"#).is_none());
+    assert!(rip_stats_of_manifest("not json").is_none());
+    assert_eq!(
+        rip_stats_arguments(Path::new("r.json")),
+        vec![
+            "--router.special.diagnostics=rip-stats",
+            "--result-json",
+            "r.json"
+        ]
+    );
+
+    let mut record = run(1, 2.0, 4);
+    record.rip_stats = Some(stats);
+    let mut result = sample_result();
+    result.boards[0].engines[0].runs = vec![record];
+    let json = to_json(&result).to_pretty_string();
+    assert!(json.contains("\"rip_stats\""), "{json}");
 }

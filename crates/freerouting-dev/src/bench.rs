@@ -14,6 +14,12 @@
 //! - Each result is measured with `ses-diff`'s statistics after importing
 //!   its SES into the board, and the engine's `WORK_LIMIT_CUTOFF` log lines
 //!   are counted.
+//! - With `--rip-stats` (Q05.1) each Rust run also gets
+//!   `--router.special.diagnostics=rip-stats --result-json <run>.result.json`
+//!   and its record keeps the manifest's `rip_stats` report without the
+//!   per-net list (the totals, the top five nets by torn length with their
+//!   shares, the passes). The diagnostic changes no route but costs time, so
+//!   time such runs apart from plain ones.
 //!
 //! The report (`bench.json` and `bench.md`) is written by
 //! [`crate::bench_report`].
@@ -242,6 +248,9 @@ pub struct RunRecord {
     pub statistics: Option<SessionStatistics>,
     /// Why there are no statistics, if there are none.
     pub note: Option<String>,
+    /// The run's `freerouting-rip-stats/1` report without its `nets` list
+    /// (`--rip-stats`, Rust runs only).
+    pub rip_stats: Option<freerouting::drc::json::JsonValue>,
 }
 
 /// Starts `args` in `dir` with stdout and stderr in `log`, waits at most
@@ -349,6 +358,9 @@ pub struct BenchOptions {
     pub load_wait: Duration,
     pub timeout: Duration,
     pub java_version: Option<String>,
+    /// Q05.1: run the Rust engine with the `rip-stats` diagnostic and keep
+    /// its report in the run records.
+    pub rip_stats: bool,
 }
 
 /// The results of one board and engine.
@@ -395,6 +407,35 @@ fn file_name_for(entry: &SetEntry) -> String {
         })
         .collect();
     name.trim_start_matches('_').to_string()
+}
+
+/// The Rust CLI arguments of a `--rip-stats` run (Q05.1).
+pub fn rip_stats_arguments(result_json: &Path) -> Vec<String> {
+    vec![
+        "--router.special.diagnostics=rip-stats".to_string(),
+        "--result-json".to_string(),
+        result_json.display().to_string(),
+    ]
+}
+
+/// The `rip_stats` member of a result manifest without its `nets` list,
+/// if the manifest exists and has one.
+pub fn rip_stats_of_manifest(text: &str) -> Option<freerouting::drc::json::JsonValue> {
+    use freerouting::drc::json::JsonValue;
+    let JsonValue::Object(members) = JsonValue::parse(text).ok()? else {
+        return None;
+    };
+    let (_, stats) = members.into_iter().find(|(k, _)| k == "rip_stats")?;
+    match stats {
+        JsonValue::Object(stats) => Some(JsonValue::Object(
+            stats.into_iter().filter(|(k, _)| k != "nets").collect(),
+        )),
+        _ => None,
+    }
+}
+
+fn read_rip_stats(result_json: &Path) -> Option<freerouting::drc::json::JsonValue> {
+    rip_stats_of_manifest(&std::fs::read_to_string(result_json).ok()?)
 }
 
 /// A Rust CLI that answers exit 2 without a SES doesn't route yet.
@@ -469,7 +510,13 @@ pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
                 let ses = dir.join(format!("{stem}.ses"));
                 let log = dir.join(format!("{stem}.log"));
                 let _ = std::fs::remove_file(&ses);
-                let args = engine.arguments(&entry.path, &ses, bounds, options.optimize);
+                let mut args = engine.arguments(&entry.path, &ses, bounds, options.optimize);
+                let result_json = dir.join(format!("{stem}.result.json"));
+                let rip_stats = options.rip_stats && engine.name == "rust";
+                if rip_stats {
+                    let _ = std::fs::remove_file(&result_json);
+                    args.extend(rip_stats_arguments(&result_json));
+                }
                 eprintln!("bench: {} {} run {run}", entry.written, engine.name);
                 let load_before = load_average();
                 let (wall_seconds, exit_status, timed_out) =
@@ -495,6 +542,7 @@ pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
                     work_limit_cutoffs: count_cutoffs(&log_text),
                     note: measured.as_ref().err().cloned(),
                     statistics: measured.ok(),
+                    rip_stats: rip_stats.then(|| read_rip_stats(&result_json)).flatten(),
                 });
             }
             board_result.engines.push(engine_result);

@@ -18,7 +18,7 @@ const USAGE: &str = "usage:
   freerouting-dev ses-diff board.dsn a.ses b.ses [--json out.json]
   freerouting-dev bench --set <file> --java <jar> [--rust <bin>] [--runs N] --out <dir>
       [--optimize] [--max-passes N] [--bounds <tsv>] [--max-load L|off] [--load-wait S]
-      [--timeout S] [--java-bin <java>]
+      [--timeout S] [--java-bin <java>] [--rip-stats]
   freerouting-dev microbench board.dsn [--runs N] [--kernel overlap,complete_shape,maze,pull_tight,drc]
       [--json out.json]
   freerouting-dev feasibility board.dsn [--json out.json] [--all-pins] [--step-um N]
@@ -179,7 +179,7 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
             "timeout",
             "java-bin",
         ],
-        &["optimize"],
+        &["optimize", "rip-stats"],
     )?;
     if !positional.is_empty() {
         return Err(format!("unexpected arguments {positional:?}\n{USAGE}"));
@@ -239,6 +239,7 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
         load_wait: Duration::from_secs(parsed(&options, "load-wait", DEFAULT_LOAD_WAIT_SECONDS)?),
         timeout: Duration::from_secs(parsed(&options, "timeout", DEFAULT_TIMEOUT_SECONDS)?),
         java_version,
+        rip_stats: option(&options, "rip-stats").is_some(),
     };
     let result = match run_bench(bench_options) {
         Ok(result) => result,

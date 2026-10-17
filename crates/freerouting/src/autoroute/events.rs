@@ -154,6 +154,9 @@ pub struct RunSummary {
     /// diagnostic ran (Q06; `router.special.diagnostics`). The CLI's result
     /// JSON and the GUI's incompletes list read these values.
     pub verdicts: Option<crate::quality::verdict::VerdictReport>,
+    /// Per-net rip statistics, when the `rip-stats` diagnostic ran (Q05.1;
+    /// `router.special.diagnostics`). The CLI's result JSON reads them.
+    pub rip_stats: Option<crate::quality::congestion::rip_stats::RipReport>,
 }
 
 /// One message from the router to its listeners.
@@ -518,6 +521,7 @@ mod tests {
                 "freerouting-router".to_owned(),
             )],
             verdicts: None,
+            rip_stats: None,
         };
         let (sink, receiver) = EventSink::channel(1);
         let reader = thread::spawn(move || receiver.recv().unwrap());

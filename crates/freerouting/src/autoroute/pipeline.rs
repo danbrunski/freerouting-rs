@@ -326,6 +326,7 @@ pub fn run_pipeline_with(
         violations: figures.violations,
         stages: selection.entries(),
         verdicts: None,
+        rip_stats: None,
     };
     for diagnostic in lock_diagnostics(&diagnostics).iter_mut() {
         diagnostic.finish(&board, &ctx, &mut outcome.summary);

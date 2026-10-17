@@ -619,6 +619,16 @@ pub trait Diagnostics: Send {
     fn id(&self) -> &'static str;
     /// The board before the fanout.
     fn on_input(&mut self, _board: &RoutingBoard, _ctx: &StageCtx) {}
+    /// Before the connection router routes `task` with `p` (Q05.1's rip
+    /// statistics read the copper an attempt may rip).
+    fn before_connection(
+        &mut self,
+        _board: &RoutingBoard,
+        _task: &RouteTask,
+        _p: &ConnectionParams,
+        _ctx: &StageCtx,
+    ) {
+    }
     /// After the connection router routed `task` with `p` (the board as the
     /// attempt left it).
     fn after_connection(

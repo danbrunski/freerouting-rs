@@ -305,9 +305,9 @@ pub fn lock(shared: &SharedDiagnostics) -> std::sync::MutexGuard<'_, Vec<Box<dyn
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
-/// A connection router that hands every outcome to the diagnostics after
-/// the inner router returned it. It decides nothing: `route` returns the
-/// inner router's outcome unchanged.
+/// A connection router that shows every connection to the diagnostics
+/// before the inner router routes it and hands them its outcome after. It
+/// decides nothing: `route` returns the inner router's outcome unchanged.
 struct ObservedRouter {
     inner: Box<dyn ConnectionRouter>,
     diagnostics: SharedDiagnostics,
@@ -325,6 +325,9 @@ impl ConnectionRouter for ObservedRouter {
         p: &ConnectionParams,
         ctx: &mut StageCtx,
     ) -> ConnectionOutcome {
+        for diagnostic in lock(&self.diagnostics).iter_mut() {
+            diagnostic.before_connection(board, task, p, ctx);
+        }
         let outcome = self.inner.route(board, task, p, ctx);
         for diagnostic in lock(&self.diagnostics).iter_mut() {
             diagnostic.after_connection(board, task, p, &outcome, ctx);
