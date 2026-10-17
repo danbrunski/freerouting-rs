@@ -1,0 +1,15 @@
+[package]
+name = "freerouting-krt"
+description = "Routing stages from KiCadRoutingTools for the freerouting-rs pipeline (D9, the X series)"
+version.workspace = true
+edition.workspace = true
+# GPL-3.0-only for the code written here; MIT for the files that carry
+# KiCadRoutingTools code structure (they have the F04 SPDX header and a
+# docs/PROVENANCE.md row). See README.md.
+license = "GPL-3.0-only AND MIT"
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+freerouting.workspace = true

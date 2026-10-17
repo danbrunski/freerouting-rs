@@ -170,6 +170,13 @@ pub struct AutorouteControl {
     pub min_cheap_via_cost: f64,
     /// Java's `FRLogger.warn` lines of the construction, in order.
     pub warnings: Vec<String>,
+    /// When set, only these items end the search; other items of the net
+    /// that are not in the start set are ignored as targets. `None` is
+    /// Java's rule (every item of the net outside the start set is a
+    /// destination), and the only value the Freerouting stages use. For
+    /// algorithm stages that route between two chosen sets of one net
+    /// (X02's straps between pour islands, past the net's own plane).
+    pub destinations_only: Option<std::collections::BTreeSet<ItemId>>,
 }
 
 impl AutorouteControl {
@@ -276,6 +283,7 @@ impl AutorouteControl {
             max_spring_over_recursion_depth: 8,
             min_cheap_via_cost: 0.0,
             warnings,
+            destinations_only: None,
         }
     }
 

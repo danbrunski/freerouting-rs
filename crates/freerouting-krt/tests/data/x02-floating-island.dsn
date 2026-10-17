@@ -1,0 +1,70 @@
+(pcb x02-floating-island.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic X02.2 fixture: a GND pour on B.Cu with two through-hole pins, and two SMD GND pins on F.Cu whose own vias land on two small GND pours cut off from it")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  45000 0  45000 30000  0 30000  0 0)
+    )
+    (plane GND (polygon B.Cu 0  5000 5000  25000 5000  25000 25000  5000 25000))
+    (plane GND (polygon B.Cu 0  31000 4000  39000 4000  39000 11000  31000 11000))
+    (plane GND (polygon B.Cu 0  31000 19000  39000 19000  39000 26000  31000 26000))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "TH"
+      (place G1 10000 10000 front 0)
+      (place G2 10000 20000 front 0)
+    )
+    (component "SMD"
+      (place P1 42000 13000 front 0)
+      (place P2 42000 17000 front 0)
+    )
+  )
+  (library
+    (image "TH"
+      (pin Th 1 0 0)
+    )
+    (image "SMD"
+      (pin Smd 1 0 0)
+    )
+    (padstack Th
+      (shape (circle F.Cu 1000))
+      (shape (circle B.Cu 1000))
+      (attach off)
+    )
+    (padstack Smd
+      (shape (rect F.Cu -600 -400 600 400))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net GND (pins G1-1 G2-1 P1-1 P2-1))
+    (class kicad_default "" GND
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 250  42000 13000  35000 8000) (net GND) (type route))
+    (via "Via[0-1]_600:300_um" 35000 8000 (net GND) (type route))
+    (wire (path F.Cu 250  42000 17000  35000 22000) (net GND) (type route))
+    (via "Via[0-1]_600:300_um" 35000 22000 (net GND) (type route))
+  )
+)

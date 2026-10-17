@@ -634,7 +634,7 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
         let layer = self.s.room(room).layer();
         let mut result = false;
         for door in self.s.room(room).target_doors().to_vec() {
-            if element.door == ExpandableRef::TargetDoor(door) {
+            if element.door == ExpandableRef::TargetDoor(door) || self.s.is_ignored_door(door) {
                 continue;
             }
             let (item, entry) = {

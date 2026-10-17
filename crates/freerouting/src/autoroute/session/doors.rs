@@ -310,9 +310,30 @@ impl Session<'_> {
     /// Java `TargetItemExpansionDoor.isDestinationDoor`: the item is not in
     /// the start set. Java creates the item's autoroute data when it is
     /// missing, with the start flag off.
+    ///
+    /// With [`AutorouteControl::destinations_only`](crate::autoroute::control::AutorouteControl::destinations_only)
+    /// set, the item must also be in that set.
     pub fn is_destination_door(&self, door: TargetDoorId) -> bool {
         let item = self.target_door(door).item;
-        !self.item_info(item).is_some_and(|info| info.start)
+        !self.is_start_door(door)
+            && self
+                .control
+                .destinations_only
+                .as_ref()
+                .is_none_or(|only| only.contains(&item))
+    }
+
+    /// True if the item is in the start set. With Java's rule (no
+    /// `destinations_only`) this is exactly `!is_destination_door`.
+    pub fn is_start_door(&self, door: TargetDoorId) -> bool {
+        let item = self.target_door(door).item;
+        self.item_info(item).is_some_and(|info| info.start)
+    }
+
+    /// True if the search ignores the door: its item is neither a start
+    /// item nor one of `destinations_only`. Never true with Java's rule.
+    pub fn is_ignored_door(&self, door: TargetDoorId) -> bool {
+        !self.is_start_door(door) && !self.is_destination_door(door)
     }
 
     /// Java `TargetItemExpansionDoor.reset`.

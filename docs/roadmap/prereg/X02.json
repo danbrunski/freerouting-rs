@@ -1,0 +1,150 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X02.5-region-repair",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/X02-plane-taps-and-region-repair.md",
+  "question": "With the krt-region-repair stage selected (router.special.stages), do fewer pour islands lose their connection to the rest of their net after routing (Q01.4's islands lost, counted on the electrical groups of crates/freerouting-krt planes::PlaneComponents) than with the default pipeline, on at least N-1 of the boards, with KiCad's unconnected_items of zone nets, unrouted and drc_real rising on none and no via in a pad; and does Q01's rule plus the repair do at least as well as Q01's rule alone?",
+  "arms": {
+    "default": {
+      "engine": "freerouting-rs at the commit that lands X02 (the Freerouting implementation, no KRT stage selected)",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.scoring.start_ripup_costs=1500",
+      "settings": {
+        "special.stages": "unset",
+        "plane_obstacle_net_classes": "unset"
+      }
+    },
+    "repair": {
+      "engine": "freerouting-rs at the same commit, with freerouting_krt::register called by the CLI (X00: the CLI's one registration line; until it lands, the same pipeline through crates/freerouting-krt's test harness)",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.scoring.start_ripup_costs=1500 --router.special.stages=krt-region-repair",
+      "settings": {
+        "special.stages": "krt-region-repair",
+        "plane_obstacle_net_classes": "unset"
+      }
+    },
+    "q01-repair": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.scoring.start_ripup_costs=1500 --router.plane_obstacle_net_classes={CLASSES} --router.special.stages=krt-region-repair",
+      "settings": {
+        "special.stages": "krt-region-repair",
+        "plane_obstacle_net_classes": {
+          "interf_u": "Power",
+          "pic_programmer": "POWER",
+          "kit-dev-coldfire-xilinx_5213": "POWER",
+          "complex_hierarchy": "power",
+          "canary-pwr": "Power_High,Switch_Node"
+        },
+        "classes_rule": "the net classes of the board's signal-layer copper zones other than the default class, decided from the input (canary-pwr: Dan's freerouting.json classes, Q00 open question 3)"
+      }
+    }
+  },
+  "baseline_arm": "default",
+  "candidate_arm": "repair",
+  "secondary_comparisons": [
+    {
+      "baseline": "default",
+      "candidate": "q01-repair",
+      "rule": "the same pass_rule"
+    },
+    {
+      "baseline": "Q01.5's `on` arm (docs/roadmap/prereg/Q01.json), rerun at the same commit",
+      "candidate": "q01-repair",
+      "rule": "islands lost not higher on any board; guards as below"
+    }
+  ],
+  "boards": {
+    "set": "tools/bench/sets/q01-pours.txt",
+    "kicad": "10.0.7 (WSL-native kicad-cli and the system python3's pcbnew)",
+    "dsn": "demos: exported by tools/kicad-oracle/grade.sh from the stripped board; canary-pwr: also fixtures/canary-pwr/canary-pwr-9511d9a.dsn and the pours1..3 / pours-as-planes variants (grouped as one board, graded by canary-23)",
+    "files": {
+      "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e",
+      "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+      "/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb": "392cf6bf4b9b62beb435f965ccd7671a46decb17f947b74bfde482acd2132a5e",
+      "/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb": "d5f4162d4c766448832723d139f9e0fcb88a17c82340f10f6f6dc6c2042f0d69",
+      "~/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1"
+    }
+  },
+  "eligibility": "every board of the set; a board where no pour net has more than one island after the default arm counts as neutral, printed, never as an improvement",
+  "grading": "tools/kicad-oracle/grade.sh (copper severities forced to error, the input board's DRC subtracted, refill on); canary-pwr by canary-23's ses_import.py, kicad-cli drc --refill-zones, via_in_pad.py and inner_tracks.py",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pour_unconnected",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "islands_lost",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "straps",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "islands_lost": "per board, summed over pour nets and layers: the pour's islands with an anchor (pin or via of the net) minus the electrical groups they form (PlaneComponents::regions), after routing; 0 when every anchored island is joined",
+    "pour_unconnected": "KiCad unconnected_items whose net is a zone net, after refill",
+    "straps": "the stage's 'strap at width' log lines"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "decision_table": {
+    "pass": "keep krt-region-repair (off by default); DIVERGENCES line with the numbers",
+    "fail": "remove X02.3-X02.4's code (planes/repair.rs, the destinations_only hook, x02-split-pour.dsn); the numbers stay in X02.5's done note; X02.2's report may stay if Dan wants it"
+  },
+  "timing": "measured only after P04's default-tree decision (Q00 README, 'Order and critical path'); canary-pwr graded by the peer session (canary-23)",
+  "amendments": []
+}

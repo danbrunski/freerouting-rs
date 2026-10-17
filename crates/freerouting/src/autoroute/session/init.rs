@@ -163,7 +163,7 @@ impl Session<'_> {
                 if self.is_stop_requested() {
                     return Ok(false);
                 }
-                if self.is_destination_door(door) {
+                if !self.is_start_door(door) {
                     continue;
                 }
                 let npe = RoomError::NullPointer {
