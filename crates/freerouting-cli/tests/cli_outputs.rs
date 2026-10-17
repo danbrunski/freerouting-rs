@@ -83,20 +83,24 @@ fn no_zero_byte_outputs() {
         "not Java's design JSON"
     );
 
-    // Row 4: `.xyz` is refused before any work; nothing is written.
+    // Row 4: `.xyz` is refused before any work; nothing is written. Exit
+    // code 2 (a usage error), where Java wrote the SES text into out.xyz and
+    // exited 0 (DIVERGENCES, "Exit codes").
     let row = clirun_row("04-out-xyz");
     assert_eq!(row.exit_code, 0, "Java wrote the SES text into out.xyz");
     let dir = dir_with_fixture("row4");
     let out = run_in(&dir, &row.args());
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     assert_eq!(names_in(&dir), [FIXTURE]);
     assert!(stderr(&out).contains("out.xyz"), "{}", stderr(&out));
 
-    // Row 5: no -do.
+    // Row 5: no -do. Java exits 1; Rust 2, a usage error (DIVERGENCES,
+    // "Exit codes").
     let row = clirun_row("05-no-do");
+    assert_eq!(row.exit_code, 1);
     let dir = dir_with_fixture("row5");
     let out = run_in(&dir, &row.args());
-    assert_eq!(code(&out), row.exit_code);
+    assert_eq!(code(&out), 2);
     assert_eq!(names_in(&dir), [FIXTURE]);
     assert!(
         stderr(&out).contains(
@@ -203,7 +207,7 @@ fn unsupported_output_formats_are_refused_before_any_work() {
     ] {
         let dir = dir_with_fixture("refuse");
         let out = run_in(&dir, &["-de", FIXTURE, "-do", name]);
-        assert_eq!(code(&out), 1, "{name}");
+        assert_eq!(code(&out), 2, "{name}");
         assert_eq!(names_in(&dir), [FIXTURE], "{name}");
         assert!(
             stderr(&out).contains("error: Unsupported output file"),
@@ -214,11 +218,11 @@ fn unsupported_output_formats_are_refused_before_any_work() {
     // One bad output among good ones stops the whole job.
     let dir = dir_with_fixture("refuse2");
     let out = run_in(&dir, &["-de", FIXTURE, "-do", "a.ses+b.frb"]);
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     assert_eq!(names_in(&dir), [FIXTURE]);
     // JSON inputs are not read.
     let out = run_in(&dir, &["-de", "x.json", "-do", "a.ses"]);
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     assert!(stderr(&out).contains("KiCad JSON"), "{}", stderr(&out));
 }
 
@@ -307,11 +311,11 @@ fn refused_java_commands_exit_2() {
 fn missing_arguments_are_errors() {
     let dir = dir_with_fixture("missing");
     let out = run_in(&dir, &[]);
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     let out = run_in(&dir, &["-do", "a.ses"]);
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     let out = run_in(&dir, &["-drc"]);
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     assert!(
         stderr(&out).contains("An input file must be specified with -de argument in DRC mode.")
     );
@@ -525,7 +529,7 @@ fn the_settings_file_and_its_source_are_logged() {
         &dir,
         &["--settings", "missing.json", "-de", FIXTURE, "-do", "o.ses"],
     );
-    assert_eq!(code(&out), 1);
+    assert_eq!(code(&out), 2);
     assert!(
         stderr(&out).contains("Settings file not found"),
         "{}",

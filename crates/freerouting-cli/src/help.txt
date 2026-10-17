@@ -79,6 +79,47 @@ NOT SUPPORTED
   --compare-boards=<a>,<b> and --calculate-benchmark-scores exit 2; use
   freerouting-dev ses-diff.
 
+PLUGIN FLAGS (not in Java)
+  --version
+      Print one line, `freerouting <version> (git <sha>)`, and exit.
+  --capabilities
+      Print what this build can do as JSON (version, output formats, every
+      flag, exit codes, schema versions, stage ids) and exit.
+  --progress json
+      Every stderr line is one JSON object: `start`, `progress` (phase load,
+      fanout, route, optimize or write, with pass, routed, failed, ripped,
+      incomplete, violations, score and elapsed_ms), `log` and `done`. The
+      events are counted, never timed.
+  --result-json <file>
+      Write a machine-readable result manifest (Java's RoutingResultManifest,
+      schema version 1) when the run ends, also when it failed.
+      Setting: result_json
+  --timeout <duration>
+      Stop the job after this long and keep the best board: 90s, 10m, 2h,
+      HH:MM:SS or plain seconds; at most 24 hours. The same as job_timeout.
+      Setting: job_timeout
+  --max-passes <number>
+      The same as -mp.
+      Setting: autorouter.max_passes
+  --threads <number>
+      Threads of the autorouter and the optimizer; never changes the result.
+      Setting: autorouter.max_threads, optimizer.max_threads
+  --seed <number>
+      Reserved. 0 means Java's own seeds; any other value is refused.
+
+STOPPING A RUN
+  Lines on standard input, whole lines, any case:
+    stop         finish the current step, write the best board, exit 0
+    stop-router  stop the router and let the optimizer run
+  End of input is not a stop. A stop during the load, or a second interrupt,
+  aborts the run: nothing is written and the exit code is 130.
+
 EXIT CODES
-  0  the job finished (or timed out) and wrote an output file
-  1  anything else
+  0    the job finished (or timed out) and wrote an output file; incomplete
+       connections are in the log and the result manifest
+  1    failure with no output: a load error, an engine error, a write failure
+  2    usage error found before any work: missing -de or -do, an unsupported
+       file format, a missing or malformed --settings file, a bad value for
+       --progress, --timeout, --max-passes, --threads or --seed, a Java
+       command that is not supported
+  130  aborted before an output was written

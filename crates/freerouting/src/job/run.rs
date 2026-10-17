@@ -8,6 +8,7 @@
 //!
 //! # The flow of [`run_job`]
 //!
+//! 0. Tell the observer the load begins ([`JobEvent`]).
 //! 1. Remove stale temporary files next to the outputs, and delete an
 //!    existing primary output (Java does, so a failed run cannot leave a
 //!    stale file behind).
@@ -52,7 +53,8 @@ use crate::autoroute::pipeline::{
 };
 use crate::board::items::ItemId;
 use crate::board::{BoardSnapshot, RoutingBoard};
-use crate::settings::ResolveContext;
+use crate::scoring::BoardStatistics;
+use crate::settings::{ResolveContext, RouterSettings, SettingsPatch};
 
 /// `RoutingJobState`, the states a job passes through.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -84,6 +86,25 @@ impl JobState {
     }
 }
 
+/// What a running job tells its observer (C08.3). The observer is called on
+/// the job's thread, at work boundaries only, so the sequence of events does
+/// not depend on time.
+#[derive(Debug)]
+pub enum JobEvent<'a> {
+    /// The load sequence begins.
+    Load,
+    /// The router's counters (fanout, routing passes, optimizer).
+    Progress(&'a Progress),
+    /// The outputs are about to be written; the run's summary if the router
+    /// ran.
+    Write(Option<&'a RunSummary>),
+    /// Log lines that have been added to the job's log since the last call.
+    Log(&'a [LogLine]),
+}
+
+/// Receives the [`JobEvent`]s of a job.
+pub type JobObserver = Arc<dyn for<'a> Fn(JobEvent<'a>) + Send + Sync>;
+
 /// What a job runs with.
 #[derive(Clone)]
 pub struct JobContext {
@@ -97,6 +118,13 @@ pub struct JobContext {
     /// A hook between the temporary write and the rename of every output
     /// (tests stop the process there).
     pub before_rename: Option<BeforeRename>,
+    /// Live events, for a progress display (C08.3). The job's log is still
+    /// returned in [`JobOutcome::log`] whole.
+    pub observer: Option<JobObserver>,
+    /// Compute the board statistics of the loaded and the final board for
+    /// [`JobOutcome::report`] (the result manifest, C08.4). They take about
+    /// as long as a design rules check, so they are off by default.
+    pub collect_report: bool,
 }
 
 impl JobContext {
@@ -107,6 +135,14 @@ impl JobContext {
             cancel: Arc::new(CancelToken::new()),
             cancelled_by_user: Arc::new(AtomicBool::new(false)),
             before_rename: None,
+            observer: None,
+            collect_report: false,
+        }
+    }
+
+    fn notify(&self, event: JobEvent<'_>) {
+        if let Some(observer) = &self.observer {
+            observer(event);
         }
     }
 
@@ -125,6 +161,41 @@ pub struct JobOutcome {
     pub written: Vec<(PathBuf, u64)>,
     /// Java's log lines of the job, in order.
     pub log: Vec<LogLine>,
+    /// The facts the result manifest is made of (C08.4).
+    pub report: JobReport,
+}
+
+/// What a finished job knows for the result manifest (C08.4,
+/// `RoutingResultManifest.fromJob`). The statistics are computed only when
+/// [`JobContext::collect_report`] is set.
+#[derive(Clone, Debug, Default)]
+pub struct JobReport {
+    /// The merged `result_json` setting (Java's `resultJsonPath`), known
+    /// once the load sequence has run.
+    pub result_json: Option<String>,
+    /// The final settings with Java's nulls (the manifest's
+    /// `settings_snapshot`).
+    pub settings: Option<SettingsPatch>,
+    /// The final settings as the router reads them.
+    pub router_settings: Option<RouterSettings>,
+    /// The board as loaded, before the fanout.
+    pub loaded: Option<BoardStatistics>,
+    /// The board that was written (or would have been).
+    pub finished: Option<BoardStatistics>,
+    /// What the router run reports, if it ran.
+    pub summary: Option<RunSummary>,
+    /// Routing passes completed (the pass log lines).
+    pub passes_completed: usize,
+    /// Passes the fanout completed, if it ran.
+    pub fanout_passes: Option<u32>,
+    /// Passes the optimizer completed, if it completed any.
+    pub optimizer_passes: Option<u32>,
+    /// Seconds from the start of the pipeline to the end of the fanout.
+    pub fanout_seconds: Option<f64>,
+    /// Seconds of the routing passes.
+    pub router_seconds: Option<f64>,
+    /// Seconds of the whole job.
+    pub total_seconds: f64,
 }
 
 impl JobOutcome {
@@ -156,15 +227,36 @@ struct ProgressSink {
     fanout_end: Cell<Option<Instant>>,
     /// `(pass, time of its last progress event)`, in pass order.
     pass_ends: RefCell<Vec<(i32, Instant)>>,
+    /// The job's observer, which sees every progress event as it happens.
+    observer: Option<JobObserver>,
+    /// True once an optimizer event went by.
+    optimize_seen: Cell<bool>,
 }
 
 impl ProgressSink {
-    fn new() -> ProgressSink {
+    fn new(observer: Option<JobObserver>) -> ProgressSink {
         ProgressSink {
             start: Instant::now(),
             fanout_end: Cell::new(None),
             pass_ends: RefCell::new(Vec::new()),
+            observer,
+            optimize_seen: Cell::new(false),
         }
+    }
+
+    /// Seconds from the start to the last fanout event, if the fanout ran.
+    fn fanout_seconds(&self) -> Option<f64> {
+        self.fanout_end
+            .get()
+            .map(|end| end.saturating_duration_since(self.start).as_secs_f64())
+    }
+
+    /// Seconds from the end of the fanout (or the start) to the last
+    /// routing event, if a pass ran.
+    fn router_seconds(&self) -> Option<f64> {
+        let last = self.pass_ends.borrow().last().map(|(_, at)| *at)?;
+        let begin = self.fanout_end.get().unwrap_or(self.start);
+        Some(last.saturating_duration_since(begin).as_secs_f64())
     }
 
     /// The seconds pass `pass` took: from the end of the previous pass (or of
@@ -199,7 +291,10 @@ impl RouterEvents for ProgressSink {
                     _ => ends.push((progress.pass, now)),
                 }
             }
-            Phase::Optimize => {}
+            Phase::Optimize => self.optimize_seen.set(true),
+        }
+        if let Some(observer) = &self.observer {
+            observer(JobEvent::Progress(&progress));
         }
         true
     }
@@ -321,10 +416,25 @@ fn to_u32(count: usize) -> u32 {
     u32::try_from(count).unwrap_or(u32::MAX)
 }
 
+/// Sends the log lines added since `sent` to the observer.
+fn flush_log(ctx: &JobContext, log: &[LogLine], sent: &mut usize) {
+    if *sent < log.len() {
+        ctx.notify(JobEvent::Log(&log[*sent..]));
+        *sent = log.len();
+    }
+}
+
 /// Runs a job: prepare, route ([`run_pipeline`]) and write the outputs.
 /// The first of `outputs` is the primary one.
+///
+/// A full stop that is requested before the router starts (during the load)
+/// ends the job as `Cancelled` with nothing written (C08.1, exit code 130).
 pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> JobOutcome {
     let mut log = Vec::new();
+    let mut sent = 0;
+    let mut report = JobReport::default();
+    let started = Instant::now();
+    ctx.notify(JobEvent::Load);
     // 1. Stale temporary files, and `CliRunner`'s delete of the old output.
     for output in outputs {
         remove_stale_temp_files(&output.path);
@@ -347,21 +457,54 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
         Ok(prepared) => prepared,
         Err(e) => {
             push(&mut log, LogLevel::Error, e.to_string());
+            flush_log(ctx, &log, &mut sent);
+            report.total_seconds = started.elapsed().as_secs_f64();
             return JobOutcome {
                 state: terminate_on_error(JobState::Running),
                 written: Vec::new(),
                 log,
+                report,
             };
         }
     };
     log.extend(prepared.log.iter().cloned());
     log.extend(settings_lines(&prepared));
+    report.result_json = prepared.settings.result_json.clone();
+    report.settings = Some(prepared.patch.clone());
+    report.router_settings = Some(prepared.settings.clone());
+    if ctx.collect_report {
+        report.loaded = Some(BoardStatistics::new(&prepared.board));
+    }
+    if ctx.cancel.is_stop_requested() {
+        push(
+            &mut log,
+            LogLevel::Warn,
+            format!("Job '{design_name}' was stopped while it was loading; nothing is written."),
+        );
+        push(
+            &mut log,
+            LogLevel::Info,
+            format!(
+                "Job '{design_name}' finished with state: {} (elapsed: {}).",
+                JobState::Cancelled.name(),
+                log::format_duration(started.elapsed().as_secs_f64())
+            ),
+        );
+        flush_log(ctx, &log, &mut sent);
+        report.total_seconds = started.elapsed().as_secs_f64();
+        return JobOutcome {
+            state: JobState::Cancelled,
+            written: Vec::new(),
+            log,
+            report,
+        };
+    }
+    flush_log(ctx, &log, &mut sent);
 
     // 3. The pipeline. The job limit goes to the pipeline's watcher, which
     // only requests a full stop.
-    let started = Instant::now();
     let job_deadline = prepared.settings.deadlines().job;
-    let sink = ProgressSink::new();
+    let sink = ProgressSink::new(ctx.observer.clone());
     let PreparedJob {
         board,
         settings,
@@ -378,6 +521,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
     };
     let mut state = JobState::Running;
     let mut final_board = None;
+    let mut summary = None;
     match run_pipeline(board, &job) {
         Ok(outcome) => {
             log.extend(pipeline_lines(&outcome, &sink));
@@ -388,6 +532,32 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
                     stage_summary(&outcome, ctx, started, job_deadline),
                 );
             }
+            // An optimizer that completed no pass (the unported one) has not
+            // run as far as a listener or the manifest is concerned.
+            if let Some(optimizer) = outcome.optimizer.as_ref().filter(|o| o.passes > 0)
+                && !sink.optimize_seen.get()
+                && let Some(observer) = &ctx.observer
+            {
+                // The optimizer sends no events yet (O06): one at its end.
+                observer(JobEvent::Progress(&Progress {
+                    phase: Phase::Optimize,
+                    pass: i32::try_from(optimizer.passes).unwrap_or(i32::MAX),
+                    incomplete: outcome.summary.incomplete,
+                    violations: outcome.summary.violations,
+                    score: outcome.summary.score,
+                    ..Progress::default()
+                }));
+            }
+            report.passes_completed = outcome.passes.len();
+            report.fanout_passes = outcome.fanout.as_ref().map(|f| f.completed_passes);
+            report.optimizer_passes = outcome
+                .optimizer
+                .as_ref()
+                .map(|o| o.passes)
+                .filter(|passes| *passes > 0);
+            report.fanout_seconds = sink.fanout_seconds();
+            report.router_seconds = sink.router_seconds();
+            summary = Some(outcome.summary.clone());
             final_board = outcome.board;
         }
         Err(failure) => {
@@ -411,6 +581,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
         );
         state = terminate_on_error(state);
     }
+    flush_log(ctx, &log, &mut sent);
 
     // 4. The terminal state.
     let stop_requested = ctx.cancel.is_stop_requested();
@@ -429,6 +600,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
     if matches!(state, JobState::Completed | JobState::TimedOut)
         && let Some(final_board) = &final_board
     {
+        ctx.notify(JobEvent::Write(summary.as_ref()));
         let source = OutputSource {
             board: final_board,
             design_name: &design_name,
@@ -436,6 +608,12 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
         };
         write_outputs(outputs, &source, ctx, &mut written, &mut log);
     }
+    if ctx.collect_report
+        && let Some(final_board) = &final_board
+    {
+        report.finished = Some(BoardStatistics::new(final_board));
+    }
+    report.summary = summary;
     push(
         &mut log,
         LogLevel::Info,
@@ -445,10 +623,13 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
             log::format_duration(started.elapsed().as_secs_f64())
         ),
     );
+    flush_log(ctx, &log, &mut sent);
+    report.total_seconds = started.elapsed().as_secs_f64();
     JobOutcome {
         state,
         written,
         log,
+        report,
     }
 }
 
@@ -500,6 +681,7 @@ mod tests {
             state,
             written: sizes.iter().map(|s| (PathBuf::from("x"), *s)).collect(),
             log: Vec::new(),
+            report: JobReport::default(),
         }
     }
 

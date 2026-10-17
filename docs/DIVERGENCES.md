@@ -649,8 +649,8 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
 - No 0-byte outputs (`no_zero_byte_outputs`). Java's `-do x.xyz` writes the SES text into
   `x.xyz` and exits 0, and a format it cannot produce headless (`.frb`, `.scr`, `.kicad_pcb`) gives
   a 0-byte file or nothing. Rust refuses every format except `.ses`, `.dsn`, `.rules`, `.drc` and
-  `.drc.json` before any work and exits 1. (Java at `cda540f` also wrote a 0-byte `x.dsn` and
-  exited 1; `a773a70ec` writes a DSN, and so does Rust.)
+  `.drc.json` before any work and exits 2 (a usage error, "Exit codes" below). (Java at `cda540f`
+  also wrote a 0-byte `x.dsn` and exited 1; `a773a70ec` writes a DSN, and so does Rust.)
 - `-do a.ses+b.drc.json`: Java reads `.drc.json` as plain `.json` and writes a KiCad design JSON
   under that name; Rust writes the DRC report there (`.drc` too, also as the main output).
 - Every output is written to `.<name>.<pid>.tmp` and renamed, so a killed process leaves no
@@ -666,7 +666,7 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
   Java, so `compare.py`'s regex misses a one-violation board.
 - `--compare-boards` and `--calculate-benchmark-scores` are recognized and exit 2 with
   `not supported; use freerouting-dev ses-diff`; a command line without `-de` and `-do` is an
-  error with exit 1 (Java opens the GUI), and `-de x.json` (KiCad JSON) is refused.
+  error with exit 2 (Java opens the GUI), and `-de x.json` (KiCad JSON) is refused, also with 2.
 - The pass line's `in X.XX seconds` is the time from the last progress event of the previous pass
   (or of the fanout, or the start of the run) to the last one of this pass; Java times the pass
   itself. The loop's `Auto-routing stage started with baseline score ...` line has no board
@@ -676,6 +676,35 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
   printed before the job's own log, and a file the reader refuses (KiCad 5 or older) exits 1 with
   its one-line message (`crates/freerouting-cli/tests/cli_kicad.rs`). The session names the board
   by its file stem, as for a DSN.
+
+**Plugin-facing CLI extras** (C08; `freerouting-cli::{exit, version, progress, manifest, stop}`;
+tests `crates/freerouting-cli/tests/{exit_codes, version, progress_json, result_json, stop,
+plugin_flags}.rs`)
+- Exit codes. Java exits 1 for every failure. Rust adds 2 for a usage error found before any
+  work (no `-de`, no `-do` outside DRC and help, an unsupported output or input format, a
+  missing or malformed `--settings` file, a refused Java command, a bad value for a C08 flag)
+  and 130 for a run aborted before it wrote an output (a second interrupt, or a stop during the
+  load). 0 and 1 are Java's; a load error stays 1. The plugin only tests for non-zero
+  (`usage_errors_exit_2`, `no_zero_byte_outputs`, `second_interrupt_aborts`).
+- New flags that Java lacks: `--version`, `--capabilities`, `--progress json`, `--result-json`
+  (the same field as Java's `--router.result_json=`), `--timeout`, `--max-passes`, `--threads`
+  and `--seed`. The last four are aliases of settings and never add behaviour. `--seed 0`
+  means Java's own seeds; any other value exits 2 (`seed_zero_is_accepted_and_any_other_value_is_refused`).
+  A `--timeout` over 24 hours is capped with a warning.
+- `--progress json` writes every stderr line as a JSON object; the `progress` events are counted
+  (phase change, end of a pass, every 50 connections), never timed (`progress_json.rs` pins the
+  stream against a golden file). Java has no such stream.
+- The result manifest has Java's field names and schema version 1, but keeps every key and writes
+  `null` for the figures Rust has no source for (`cpu_seconds`, `total_allocated_gb`,
+  `peak_heap_mb`, `resource_usage`, `cpu_score`, `fixture.sha256`); Java leaves null fields out.
+  Only `phases.autorouter.before`/`after` (and `optimizer.after` when the optimizer ran) hold a
+  board snapshot; the other phase snapshots are `null` (the pipeline reports the job, not each
+  stage). It is also written when the run fails (`a_failed_load_still_writes_the_manifest`).
+- Stopping: a stdin reader acts on `stop` (stop everything) and `stop-router` (Java's
+  `requestStopAutoRouter`); end of input is not a stop (`stdin_eof_is_not_a_stop`). Java's CLI
+  has no such channel. Ctrl-C and SIGTERM are not handled yet (the `ctrlc` crate is a pending
+  `NEW DEP`); a signal kills the process as before and C07's temporary-file write leaves no
+  partial file.
 
 ## freerouting-gui
 

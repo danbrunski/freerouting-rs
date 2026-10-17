@@ -39,6 +39,12 @@
 //!   ([`ConfigChoice`]).
 //! - `--compare-boards` and `--calculate-benchmark-scores` are recognized and
 //!   refused ([`Unsupported`]).
+//! - The plugin-facing flags of C08 ([`EXTRA_FLAGS`]) are rewritten before the
+//!   walk: `--max-passes`, `--threads`, `--timeout` and `--result-json` become
+//!   the `--router.*` flags that set the same fields, so they can never do
+//!   more than the settings do. `--progress`, `--seed`, `--version` and
+//!   `--capabilities` are the CLI's own. A bad value is a usage error (exit
+//!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
 
@@ -310,6 +316,99 @@ pub const APPLICATION_SECTIONS: &[&str] = &[
     "version",
 ];
 
+/// The flags of C08 (plugin-facing extras), which are not Java's: `(name,
+/// takes a value, what it does)`. Each one takes its value as the next
+/// argument or after `=`.
+pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
+    (
+        "--progress",
+        true,
+        Setting::CliOnly("`--progress json` writes events as JSON lines on stderr"),
+    ),
+    ("--result-json", true, Setting::Paths(&["result_json"])),
+    ("--timeout", true, Setting::Paths(&["job_timeout"])),
+    (
+        "--max-passes",
+        true,
+        Setting::Paths(&["autorouter.max_passes"]),
+    ),
+    (
+        "--threads",
+        true,
+        Setting::Paths(&["autorouter.max_threads", "optimizer.max_threads"]),
+    ),
+    (
+        "--seed",
+        true,
+        Setting::CliOnly("reserved; only 0 (Java's own seeds) is accepted"),
+    ),
+    (
+        "--version",
+        false,
+        Setting::CliOnly("prints the version line"),
+    ),
+    (
+        "--capabilities",
+        false,
+        Setting::CliOnly("prints what this build can do, as JSON"),
+    ),
+];
+
+/// The longest job limit (`RoutingJobScheduler` caps `job_timeout`).
+pub const MAX_TIMEOUT_SECONDS: u64 = 24 * 3600;
+
+/// `--timeout`: `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS` or plain seconds, as
+/// seconds. Returns `None` for anything else.
+pub fn parse_timeout_seconds(text: &str) -> Option<u64> {
+    fn digits(text: &str) -> Option<u64> {
+        if text.is_empty() || !text.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+        text.parse().ok()
+    }
+    let text = text.trim();
+    if text.contains(':') {
+        let parts: Vec<&str> = text.split(':').collect();
+        let numbers: Option<Vec<u64>> = parts.iter().map(|p| digits(p)).collect();
+        let numbers = numbers?;
+        return match numbers.as_slice() {
+            [h, m, s] => h
+                .checked_mul(3600)?
+                .checked_add(m.checked_mul(60)?)?
+                .checked_add(*s),
+            [m, s] => m.checked_mul(60)?.checked_add(*s),
+            _ => None,
+        };
+    }
+    let last = text.chars().last()?;
+    match last.to_ascii_lowercase() {
+        's' => digits(&text[..text.len() - 1]),
+        'm' => digits(&text[..text.len() - 1])?.checked_mul(60),
+        'h' => digits(&text[..text.len() - 1])?.checked_mul(3600),
+        _ => digits(text),
+    }
+}
+
+/// `HH:MM:SS` for a number of seconds (the form of `job_timeout`).
+pub fn timeout_text(seconds: u64) -> String {
+    format!(
+        "{:02}:{:02}:{:02}",
+        seconds / 3600,
+        seconds / 60 % 60,
+        seconds % 60
+    )
+}
+
+/// What `--progress` selects.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ProgressMode {
+    /// Java-style log lines only.
+    #[default]
+    Off,
+    /// One JSON object per stderr line.
+    Json,
+}
+
 /// A Java command that is recognized and refused.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Unsupported {
@@ -359,6 +458,15 @@ pub struct Args {
     pub config: ConfigChoice,
     /// `-ll` or `--logging.console.level`, upper-cased.
     pub console_level: Option<String>,
+    /// `--progress` (C08.3).
+    pub progress: ProgressMode,
+    /// `--version` was given (C08.2).
+    pub version: bool,
+    /// `--capabilities` was given (C08.2).
+    pub capabilities: bool,
+    /// Bad values of the C08 flags, each a complete message. A command line
+    /// with any is a usage error (exit 2).
+    pub usage_errors: Vec<String>,
     /// The log of the parse: Java's warnings and errors, and a debug line
     /// for each flag that is accepted and ignored.
     pub log: Vec<LogLine>,
@@ -668,12 +776,111 @@ fn decoded_value(argv: &[String], i: usize, out: &mut Args) -> usize {
     }
 }
 
+/// Takes the C08 flags out of `argv` (see [`EXTRA_FLAGS`]) and returns the
+/// rest, with the aliases rewritten to the flags they stand for.
+fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
+    let mut rest = Vec::with_capacity(argv.len());
+    let mut i = 0;
+    while i < argv.len() {
+        let arg = argv[i].as_str();
+        if arg == "--settings" {
+            rest.push(argv[i].clone());
+            if let Some(file) = argv.get(i + 1) {
+                rest.push(file.clone());
+                i += 1;
+            }
+            i += 1;
+            continue;
+        }
+        let (name, inline) = match arg.split_once('=') {
+            Some((name, value)) => (name, Some(value.to_string())),
+            None => (arg, None),
+        };
+        let Some(&(name, takes_value, _)) = EXTRA_FLAGS.iter().find(|(n, _, _)| *n == name) else {
+            rest.push(argv[i].clone());
+            i += 1;
+            continue;
+        };
+        i += 1;
+        let value = if !takes_value {
+            None
+        } else if inline.is_some() {
+            inline
+        } else if let Some(next) = argv.get(i).filter(|a| !a.starts_with('-')) {
+            i += 1;
+            Some(next.clone())
+        } else {
+            None
+        };
+        if takes_value && value.is_none() {
+            out.usage_errors.push(format!("{name} needs a value"));
+            continue;
+        }
+        let value = value.unwrap_or_default();
+        match name {
+            "--version" => out.version = true,
+            "--capabilities" => out.capabilities = true,
+            "--progress" => match value.to_lowercase().as_str() {
+                "json" => out.progress = ProgressMode::Json,
+                "off" | "none" => out.progress = ProgressMode::Off,
+                _ => out.usage_errors.push(format!(
+                    "--progress: '{value}' is not a progress format (use json or off)"
+                )),
+            },
+            "--seed" => match value.trim().parse::<u64>() {
+                Ok(0) => {}
+                Ok(_) => out
+                    .usage_errors
+                    .push("--seed: seeded variation is not supported yet (use --seed 0)".into()),
+                Err(_) => out
+                    .usage_errors
+                    .push(format!("--seed: '{value}' is not a number")),
+            },
+            "--result-json" => rest.push(format!("--router.result_json={value}")),
+            "--max-passes" => {
+                if java_decode_int(&value).is_some() {
+                    rest.push(format!("--router.autorouter.max_passes={value}"));
+                } else {
+                    out.usage_errors
+                        .push(format!("--max-passes: '{value}' is not an integer"));
+                }
+            }
+            "--threads" => match value.trim().parse::<i32>() {
+                Ok(n) if n >= 1 => {
+                    rest.push(format!("--router.autorouter.max_threads={n}"));
+                    rest.push(format!("--router.optimizer.max_threads={n}"));
+                }
+                _ => out.usage_errors.push(format!(
+                    "--threads: '{value}' is not a thread count of 1 or more"
+                )),
+            },
+            "--timeout" => match parse_timeout_seconds(&value) {
+                Some(seconds) => {
+                    let capped = seconds.min(MAX_TIMEOUT_SECONDS);
+                    if capped != seconds {
+                        out.note(
+                            LogLevel::Warn,
+                            format!("--timeout {value} is longer than 24 hours; using 24:00:00"),
+                        );
+                    }
+                    rest.push(format!("--router.job_timeout={}", timeout_text(capped)));
+                }
+                None => out.usage_errors.push(format!(
+                    "--timeout: '{value}' is not a duration (use 90s, 10m, 2h or HH:MM:SS)"
+                )),
+            },
+            _ => unreachable!("every row of EXTRA_FLAGS is handled"),
+        }
+    }
+    rest
+}
+
 /// Parses the arguments after the program name.
 pub fn parse(argv: &[String]) -> Args {
-    let mut out = Args {
-        config: ConfigChoice::from_args(argv),
-        ..Args::default()
-    };
+    let mut out = Args::default();
+    let rewritten = rewrite_extras(argv, &mut out);
+    let argv = rewritten.as_slice();
+    out.config = ConfigChoice::from_args(argv);
     let cli = parse_cli_arguments(argv);
     out.patch = cli.patch;
     out.parsed_arguments = cli.parsed_arguments;

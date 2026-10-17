@@ -105,6 +105,10 @@ pub struct Progress {
     /// The two endpoints of the airline being routed (Java
     /// `BatchAutorouter.getAirLine`), if any.
     pub airline: Option<(FloatPoint, FloatPoint)>,
+    /// True for the event that closes a routing pass: it carries the same
+    /// figures as the pass log line (`incomplete`, `violations`, `score`).
+    /// Port-only (C08.3): Java's counters have no such marker.
+    pub pass_end: bool,
     /// Where the optimizer is working (a via centre or a trace's first
     /// corner, O06), if it runs.
     pub optimizer_position: Option<FloatPoint>,

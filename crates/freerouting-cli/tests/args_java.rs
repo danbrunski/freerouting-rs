@@ -869,3 +869,194 @@ fn static_part(java: &JsonValue) -> JsonValue {
             .collect(),
     )
 }
+
+// ---- C08.6: the long-form aliases and the reserved seed ----------------
+
+/// The plugin-facing flags are aliases of settings: they set the same patch
+/// fields as their Java forms and never warn as unknown flags. Rust-only
+/// (Java has no such flags), so the expected values are the spec's.
+mod plugin_flags {
+    use super::*;
+    use freerouting_cli::args::{EXTRA_FLAGS, ProgressMode, parse_timeout_seconds, timeout_text};
+
+    fn timeout_patch(value: &str) -> (Option<String>, Args) {
+        let a = parse_strs(&["--timeout", value]);
+        (a.patch.job_timeout.clone(), a)
+    }
+
+    #[test]
+    fn timeout_is_job_timeout() {
+        for (given, expected) in [
+            ("90s", "00:01:30"),
+            ("10m", "00:10:00"),
+            ("2h", "02:00:00"),
+            ("1:30", "00:01:30"),
+            ("01:02:03", "01:02:03"),
+            ("45", "00:00:45"),
+            ("24h", "24:00:00"),
+        ] {
+            let (patch, a) = timeout_patch(given);
+            assert_eq!(patch.as_deref(), Some(expected), "{given}");
+            assert!(a.usage_errors.is_empty(), "{given}: {:?}", a.usage_errors);
+            assert_eq!(count(&a, LogLevel::Warn), 0, "{given}");
+        }
+        // The `=` form.
+        assert_eq!(
+            parse_strs(&["--timeout=10m"]).patch.job_timeout.as_deref(),
+            Some("00:10:00")
+        );
+    }
+
+    #[test]
+    fn a_timeout_over_24_hours_is_capped_with_a_warning() {
+        let (patch, a) = timeout_patch("25h");
+        assert_eq!(patch.as_deref(), Some("24:00:00"));
+        assert_eq!(count(&a, LogLevel::Warn), 1, "{:?}", a.log);
+        assert!(a.usage_errors.is_empty());
+    }
+
+    #[test]
+    fn a_bad_timeout_is_a_usage_error() {
+        for bad in [
+            "x",
+            "",
+            "10x",
+            "-5",
+            "1:2:3:4",
+            "h",
+            "1.5h",
+            "9999999999999999999999s",
+        ] {
+            let a = parse_strs(&["--timeout", bad]);
+            assert_eq!(a.patch.job_timeout, None, "{bad}");
+            assert_eq!(a.usage_errors.len(), 1, "{bad}: {:?}", a.usage_errors);
+        }
+        let a = parse_strs(&["--timeout"]);
+        assert_eq!(a.usage_errors, ["--timeout needs a value"]);
+    }
+
+    #[test]
+    fn timeout_text_and_parse_agree() {
+        assert_eq!(parse_timeout_seconds("90s"), Some(90));
+        assert_eq!(parse_timeout_seconds(" 2H "), Some(7200));
+        assert_eq!(timeout_text(86_400), "24:00:00");
+        for seconds in [0, 1, 59, 60, 3599, 3600, 86_399] {
+            assert_eq!(parse_timeout_seconds(&timeout_text(seconds)), Some(seconds));
+        }
+    }
+
+    #[test]
+    fn max_passes_is_mp() {
+        for value in ["3", "0", "9999", "0x10"] {
+            let long = parse_strs(&["--max-passes", value]);
+            let short = parse_strs(&["-mp", value]);
+            assert_eq!(
+                format!("{:?}", long.patch),
+                format!("{:?}", short.patch),
+                "{value}"
+            );
+            assert!(long.usage_errors.is_empty());
+        }
+        assert_eq!(
+            parse_strs(&["--max-passes", "3"])
+                .patch
+                .autorouter
+                .max_passes,
+            Some(3)
+        );
+        assert_eq!(
+            parse_strs(&["--max-passes=7"]).patch.autorouter.max_passes,
+            Some(7)
+        );
+        let bad = parse_strs(&["--max-passes", "many"]);
+        assert_eq!(bad.usage_errors.len(), 1);
+    }
+
+    #[test]
+    fn threads_sets_both_thread_fields() {
+        let a = parse_strs(&["--threads", "4"]);
+        assert_eq!(a.patch.autorouter.max_threads, Some(4));
+        assert_eq!(a.patch.optimizer.max_threads, Some(4));
+        assert!(a.usage_errors.is_empty());
+        for bad in ["0", "-1", "x", "2.5"] {
+            let a = parse_strs(&["--threads", bad]);
+            assert_eq!(a.usage_errors.len(), 1, "{bad}");
+            assert_eq!(a.patch.autorouter.max_threads, None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn seed_zero_is_accepted_and_any_other_value_is_refused() {
+        let a = parse_strs(&["--seed", "0"]);
+        assert!(a.usage_errors.is_empty(), "{:?}", a.usage_errors);
+        assert_eq!(count(&a, LogLevel::Warn), 0);
+        let a = parse_strs(&["--seed", "5"]);
+        assert_eq!(a.usage_errors.len(), 1);
+        assert!(
+            a.usage_errors[0].contains("seeded variation is not supported yet"),
+            "{:?}",
+            a.usage_errors
+        );
+        assert_eq!(parse_strs(&["--seed", "x"]).usage_errors.len(), 1);
+        assert_eq!(parse_strs(&["--seed"]).usage_errors.len(), 1);
+    }
+
+    #[test]
+    fn result_json_progress_version_and_capabilities() {
+        let a = parse_strs(&["--result-json", "out/r.json"]);
+        assert_eq!(a.patch.result_json.as_deref(), Some("out/r.json"));
+        let b = parse_strs(&["--router.result_json=out/r.json"]);
+        assert_eq!(format!("{:?}", a.patch), format!("{:?}", b.patch));
+
+        assert_eq!(
+            parse_strs(&["--progress", "json"]).progress,
+            ProgressMode::Json
+        );
+        assert_eq!(
+            parse_strs(&["--progress=json"]).progress,
+            ProgressMode::Json
+        );
+        assert_eq!(parse_strs(&[]).progress, ProgressMode::Off);
+        assert_eq!(parse_strs(&["--progress", "xml"]).usage_errors.len(), 1);
+
+        assert!(parse_strs(&["--version"]).version);
+        assert!(parse_strs(&["--capabilities"]).capabilities);
+        assert!(!parse_strs(&["-de", "a.dsn"]).version);
+    }
+
+    /// The extras are known flags: none warns as unknown, and a value after
+    /// one is not read as a file.
+    #[test]
+    fn the_extras_are_not_unknown_arguments() {
+        let a = parse_strs(&[
+            "-de",
+            "a.dsn",
+            "-do",
+            "a.ses",
+            "--progress",
+            "json",
+            "--timeout",
+            "10m",
+            "--max-passes",
+            "3",
+            "--threads",
+            "2",
+            "--seed",
+            "0",
+            "--result-json",
+            "r.json",
+        ]);
+        assert_eq!(count(&a, LogLevel::Warn), 0, "{:?}", a.log);
+        assert!(a.usage_errors.is_empty());
+        assert_eq!(a.design_file.as_deref(), Some("a.dsn"));
+        assert_eq!(a.output_file.as_deref(), Some("a.ses"));
+        assert_eq!(EXTRA_FLAGS.len(), 8);
+    }
+
+    /// The settings file path stays together with its flag.
+    #[test]
+    fn settings_keeps_its_value_even_if_it_looks_like_a_flag() {
+        let a = parse_strs(&["--settings", "--version", "-de", "a.dsn"]);
+        assert!(!a.version);
+    }
+}

@@ -553,6 +553,7 @@ impl Run {
                 incomplete: figures.incomplete,
                 violations: figures.violations,
                 score: figures.score,
+                pass_end: true,
                 ..Progress::default()
             });
         }
