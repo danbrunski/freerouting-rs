@@ -69,6 +69,7 @@ fn defaults_with_eight_cores() {
         ("clearance_tolerance_um", f64v(1.0)),
         ("plane_nets", empty_list()),
         ("plane_as_obstacle", b(false)),
+        ("plane_obstacle_net_classes", None),
         ("neck_width_um", f64v(0.0)),
         ("min_trace_width_um", None),
         ("strict_drc", b(false)),

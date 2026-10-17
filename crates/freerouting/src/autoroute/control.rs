@@ -151,6 +151,12 @@ pub struct AutorouteControl {
     /// board's rule.
     pub merged_via_rule: Option<Vec<ViaInfoId>>,
     pub net_number: i32,
+    /// Per layer: true if the current net has a plane (conduction area) on
+    /// that power layer. Power layers are never active, and the maze search
+    /// enters one only for the nets of its planes, so a via can land on the
+    /// net's own plane but no other net is routed across it (Java
+    /// `ownPlaneLayers`, `7f56b062d`, after the pin; Q01.7).
+    pub own_plane_layers: Vec<bool>,
     pub via_clearance_class: i32,
     pub via_infos: Vec<ViaMask>,
     pub via_lower_bound: i32,
@@ -257,6 +263,7 @@ impl AutorouteControl {
             via_rule: ViaRuleId(0),
             merged_via_rule: None,
             net_number: 0,
+            own_plane_layers: vec![false; layer_count],
             via_clearance_class: 0,
             via_infos: Vec::new(),
             via_lower_bound: 0,
@@ -315,7 +322,9 @@ impl AutorouteControl {
                 self.layer_active[i] = false;
             }
         }
-        self.rebuild_via_info(board, via_costs, net_number)
+        self.rebuild_via_info(board, via_costs, net_number)?;
+        self.own_plane_layers = own_plane_layers(board, net_number);
+        Ok(())
     }
 
     /// The vias of the control's via rule (Java `viaRule`): the merged
@@ -396,6 +405,22 @@ impl AutorouteControl {
             .trace_neckdown_half_width(pin, layer)
             .max(self.min_trace_half_width)
     }
+}
+
+/// The power layers that carry a plane (conduction area) of net
+/// `net_number` (Java `initNet`'s `ownPlaneLayers` loop, `7f56b062d`).
+fn own_plane_layers(board: &BasicBoard, net_number: i32) -> Vec<bool> {
+    let mut own = vec![false; board.layer_count()];
+    for id in board.conduction_areas() {
+        let Some(area) = board.item(id) else {
+            continue;
+        };
+        let index = area.first_layer() as usize;
+        if !board.layer_structure.layers[index].is_signal && area.contains_net(net_number) {
+            own[index] = true;
+        }
+    }
+    own
 }
 
 /// Java `AutorouteControl.minTraceHalfWidth(board, settings)`

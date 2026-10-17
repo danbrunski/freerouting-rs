@@ -113,7 +113,8 @@ impl Class {
 /// One Java route reference.
 #[derive(Clone, Debug)]
 pub struct Reference {
-    /// The board name (the file stem).
+    /// The board name: the file stem, or the path below `fixtures/reference/route/` without
+    /// `.json` for a board in a subdirectory (`PARITY_SUBDIRS`).
     pub name: String,
     /// The DSN, relative to the repository root.
     pub dsn: PathBuf,
@@ -141,6 +142,24 @@ pub fn references(root: &Path, java_failures: &[(&str, &str, &str)]) -> Vec<Refe
         .filter_map(|e| e.ok().map(|e| e.path()))
         .filter(|p| p.extension().is_some_and(|x| x == "json"))
         .collect();
+    // `PARITY_SUBDIRS=1`: the references one directory down too (`canary-pwr/`, the
+    // multi-board issues), named by their path below `route/` (Q01.7).
+    if std::env::var("PARITY_SUBDIRS").is_ok_and(|v| v == "1") {
+        let mut subdirs: Vec<PathBuf> = std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.is_dir())
+            .collect();
+        subdirs.sort();
+        for sub in subdirs {
+            paths.extend(
+                std::fs::read_dir(&sub)
+                    .unwrap_or_else(|e| panic!("{}: {e}", sub.display()))
+                    .filter_map(|e| e.ok().map(|e| e.path()))
+                    .filter(|p| p.extension().is_some_and(|x| x == "json")),
+            );
+        }
+    }
     paths.sort();
     paths
         .iter()
@@ -150,10 +169,11 @@ pub fn references(root: &Path, java_failures: &[(&str, &str, &str)]) -> Vec<Refe
                 .and_then(|t| JsonValue::parse(&t).ok())
                 .unwrap_or_else(|| panic!("{}: not JSON", path.display()));
             let name = path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap()
-                .to_string();
+                .strip_prefix(&dir)
+                .unwrap_or(path)
+                .with_extension("")
+                .to_string_lossy()
+                .replace('\\', "/");
             let fixture = text(field(&json, "fixture")).unwrap_or_else(|| format!("{name}.dsn"));
             let result = text(field(&json, "result")).unwrap_or_default();
             let cutoffs = field(&json, "workLimitCutoffs")
@@ -376,8 +396,10 @@ fn smd_pins(board: &BasicBoard) -> Vec<ItemId> {
 /// The D8 breaches `board` adds to `input` (the board as loaded): a new via without attach
 /// on an SMD pad of its layer (`via x,y on pin #id`), and an SMD pad of a plane net that
 /// reaches the plane and is chained by copper to another SMD pad of its net, where the
-/// input did not chain them (`pins #a #b`). The text uses positions and the ids of input
-/// items, so Rust's and Java's boards give comparable lines.
+/// input did not chain them (`pins #a #b`), and a new trace on a power layer of a net that
+/// has no plane on that layer (`trace of <net> on power layer <layer>`, Q01.7, Java
+/// `7f56b062d`). The text uses positions, net names and the ids of input items, so Rust's
+/// and Java's boards give comparable lines.
 pub fn d8_breaches(board: &BasicBoard, input: &BasicBoard) -> Vec<String> {
     let input_ids: BTreeSet<ItemId> = input.items().map(|i| i.id()).collect();
     let pins = smd_pins(board);
@@ -442,7 +464,40 @@ pub fn d8_breaches(board: &BasicBoard, input: &BasicBoard) -> Vec<String> {
             }
         }
     }
+    out.extend(foreign_traces_on_power_layers(board, &input_ids));
     out
+}
+
+/// The traces not in the input that lie on a power layer without a plane of their net there
+/// (Q01.7), in item order, one line per (net, layer).
+fn foreign_traces_on_power_layers(board: &BasicBoard, input_ids: &BTreeSet<ItemId>) -> Vec<String> {
+    let planes: Vec<&freerouting::board::items::Item> = board
+        .conduction_areas()
+        .into_iter()
+        .filter_map(|id| board.item(id))
+        .collect();
+    let mut seen = BTreeSet::new();
+    for trace in board
+        .items()
+        .filter(|i| i.is_trace() && !input_ids.contains(&i.id()))
+    {
+        let layer = trace.first_layer();
+        if board.layer_structure.layers[layer as usize].is_signal {
+            continue;
+        }
+        let own_plane = planes.iter().any(|plane| {
+            plane.first_layer() == layer
+                && trace.net_numbers().iter().any(|n| plane.contains_net(*n))
+        });
+        if own_plane {
+            continue;
+        }
+        let net = trace.net_numbers().first().copied().unwrap_or(0);
+        let net_name = board.rules.nets.get(net).map_or("?", |n| n.name.as_str());
+        let layer_name = &board.layer_structure.layers[layer as usize].name;
+        seen.insert(format!("trace of {net_name} on power layer {layer_name}"));
+    }
+    seen.into_iter().collect()
 }
 
 mod record;

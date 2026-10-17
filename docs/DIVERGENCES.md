@@ -216,6 +216,11 @@ branch 3 in IntOctagon's box cutout.
   Java.
 - `min_trace_width_um` (Java fork commit `46bf9e2ef`, after the pin) is a settings
   field, unset by default.
+- `plane_obstacle_net_classes` (Q01, `quality::pour_guard`) is a settings field Java does not
+  have, unset by default (no policy, Java's routing). Listing net classes makes their
+  signal-layer pours obstacles for the nets with no pin or input via inside them, through the
+  B09 area policy; an unknown class name fails the job, naming it and the board's classes; with
+  `plane_as_obstacle` set it changes nothing (`tests/quality_pour_guard.rs`).
 - The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
   (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
   `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the
@@ -479,6 +484,21 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   compares ids at comparison time, and a drill page's id changes when its drills are first
   calculated. The orders differ only for a full tie of both doubles with an element of such a
   page; no `maze-log` or `maze-routed` board has one.
+- Adopted Java fix `7f56b062d` (after the pin; ledger "Port: yes"; Q01.7): a power layer carries
+  only its planes' nets. `AutorouteControl::own_plane_layers` marks the power layers with a
+  conduction area of the current net, and `expand_to_room_doors` does not expand on an inactive
+  power layer without one, as on an inactive signal layer (before, an existing via or
+  through-hole pin of a foreign net could start a trace across the plane). Test
+  `autoroute_fixture_ports::power_layer_carries_no_foreign_net_trace` (Java's
+  `PowerLayerForeignNetTest` and its fixture, `tests/data/PowerLayer-foreign-via-pair.dsn`).
+  It changes Java's own routes, so the route references of the four boards whose Java output
+  changes are regenerated at `7f56b062d` (`Issue145-smoothieboard`, `Issue753-CPU-85_r104`,
+  `canary-pwr-9511d9a-in2-open-wirekeepout`, `canary-pwr-pours-as-planes`, with their DRC
+  digest rows and smoothieboard's `ses` dumps; see `tools/java-reference/README.md`); the other
+  17 references of boards with a power layer came out byte-identical there and stay at the pin.
+  17 probe references are regenerated there too (`pass`, `insert`, `maze-log` of `min_fr_test`,
+  whose maze work units change, and the board probes that load the two new sessions); the
+  other 59 probe runs were identical and stay at the pin.
 
 **Path location** (`autoroute::path`, A05; tests `tests/autoroute_probe_locate.rs` and
 `autoroute::path::tests`)

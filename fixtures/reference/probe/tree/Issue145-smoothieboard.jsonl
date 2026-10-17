@@ -1,10 +1,10 @@
-{"kind":"tree","board":"Issue145-smoothieboard","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"kind":"tree","board":"Issue145-smoothieboard","javaCommit":"7f56b062d","jdk":"25.0.2","format":1}
 {"stage":"load","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":5471,"leaves":2736,"maxDepth":132,"shapeHash":"b03a747ec32b3921","contentDigest":"905848773fb0d3fc"}
 {"stage":"autoroute","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":5471,"leaves":2736,"maxDepth":79,"shapeHash":"c7d1c7239a799e64","contentDigest":"8115a6aee0ad4454"}
-{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":142,"shapeHash":"c40e415e4f51b69a","contentDigest":"26e1fb6a2c2db4c9"}
-{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":16233,"leaves":8117,"maxDepth":81,"shapeHash":"6056eea53f5e6169","contentDigest":"0c1c811a4ebcafe0"}
-{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":69,"shapeHash":"a6bbb082047d9f89","contentDigest":"26e1fb6a2c2db4c9"}
+{"stage":"ses","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16235,"leaves":8118,"maxDepth":142,"shapeHash":"2f1879babeeea044","contentDigest":"4bfa2801a6b20cf5"}
+{"stage":"ses","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":16235,"leaves":8118,"maxDepth":81,"shapeHash":"e4116bf3f957606e","contentDigest":"de6310d322b1fb71"}
+{"stage":"deep-copy","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16235,"leaves":8118,"maxDepth":69,"shapeHash":"6f4b14d4dc5f9588","contentDigest":"4bfa2801a6b20cf5"}
 {"stage":"undo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":5471,"leaves":2736,"maxDepth":132,"shapeHash":"b03a747ec32b3921","contentDigest":"905848773fb0d3fc"}
 {"stage":"undo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":5471,"leaves":2736,"maxDepth":79,"shapeHash":"c7d1c7239a799e64","contentDigest":"8115a6aee0ad4454"}
-{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16233,"leaves":8117,"maxDepth":138,"shapeHash":"0bed862bb413c70b","contentDigest":"26e1fb6a2c2db4c9"}
-{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":16233,"leaves":8117,"maxDepth":82,"shapeHash":"65dd7e4f69d998d4","contentDigest":"0c1c811a4ebcafe0"}
+{"stage":"redo","tree":"ShapeSearchTree_FortyfiveDegree_cc0","nodes":16235,"leaves":8118,"maxDepth":138,"shapeHash":"768661f7db163e17","contentDigest":"4bfa2801a6b20cf5"}
+{"stage":"redo","tree":"ShapeSearchTree45Degree_FortyfiveDegree_cc1","nodes":16235,"leaves":8118,"maxDepth":82,"shapeHash":"4c0e7432ba9be671","contentDigest":"de6310d322b1fb71"}

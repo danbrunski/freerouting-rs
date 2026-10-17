@@ -603,7 +603,8 @@ impl Session<'_> {
             let Some(item) = self.board.item(entry.item) else {
                 continue;
             };
-            if item.is_drillable(self.net) {
+            // `Item.isDrillable`, with the area policy (Q01) on conduction areas.
+            if self.board.is_drillable_with_policy(item, self.net) {
                 continue;
             }
             if attach_smd && item.pin_drill_allowed() && item.contains_net(self.net) {

@@ -102,4 +102,7 @@ Known about these boards:
 
 The Java load and route references are in `fixtures/reference/load/canary-pwr/` and
 `fixtures/reference/route/canary-pwr/`, generated at `a773a70ec` with
-`tools/java-reference/run.sh <a773a70ec worktree> load` and `route` (J01.5).
+`tools/java-reference/run.sh <a773a70ec worktree> load` and `route` (J01.5). Two route
+references, `canary-pwr-9511d9a-in2-open-wirekeepout` and `canary-pwr-pours-as-planes`, are at
+`7f56b062d` (Q01.7, Java's power-layer fix; see `tools/java-reference/README.md`); the other
+seven came out byte-identical there.

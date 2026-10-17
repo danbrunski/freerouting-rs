@@ -1,0 +1,65 @@
+(pcb PowerLayer-foreign-via-pair.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic: SIG vias on both sides of an F.Cu and B.Cu wall, GND planes on both inner power layers")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer Gnd.Cu (type power) (property (index 1)))
+    (layer Power.Cu (type power) (property (index 2)))
+    (layer B.Cu (type signal) (property (index 3)))
+    (boundary
+      (path pcb 0  0 0  20000 0  20000 -10000  0 -10000  0 0)
+    )
+    (plane GND (polygon Gnd.Cu 0  0 0  20000 0  20000 -10000  0 -10000))
+    (plane GND (polygon Power.Cu 0  0 0  20000 0  20000 -10000  0 -10000))
+    (keepout "" (polygon F.Cu 0  9000 0  11000 0  11000 -10000  9000 -10000))
+    (keepout "" (polygon B.Cu 0  9000 0  11000 0  11000 -10000  9000 -10000))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "R_0603"
+      (place R1 4000 -5000 back 0)
+      (place R2 16000 -5000 back 0)
+    )
+  )
+  (library
+    (image "R_0603"
+      (pin RectPad 1 -800 0)
+      (pin RectPad 2 800 0)
+    )
+    (padstack RectPad
+      (shape (rect B.Cu -400 -450 400 450))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle Gnd.Cu 600))
+      (shape (circle Power.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net SIG (pins R1-2 R2-1))
+    (net GND (pins R1-1 R2-2))
+    (class kicad_default "" GND SIG
+      (circuit (use_via "Via[0-3]_600:300_um"))
+      (rule (width 200) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path B.Cu 200  4800 -5000  7000 -5000) (net SIG) (type route))
+    (via "Via[0-3]_600:300_um" 7000 -5000 (net SIG) (type route))
+    (wire (path B.Cu 200  15200 -5000  13000 -5000) (net SIG) (type route))
+    (via "Via[0-3]_600:300_um" 13000 -5000 (net SIG) (type route))
+  )
+)

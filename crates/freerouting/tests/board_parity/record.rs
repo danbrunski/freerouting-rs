@@ -281,8 +281,10 @@ pub fn route_board(root: &Path, reference: &Reference, out: &Path, sink: Sink) -
     record.restores = routed.restores;
     record.first_pass_diff = first_pass_diff(&record.java_passes, &record.rust_passes);
     let ses = write_ses(&routed.board, &design, SesStyle::Java);
-    std::fs::create_dir_all(out).expect("the output directory");
-    std::fs::write(out.join(format!("{}.ses", reference.name)), &ses).expect("the SES");
+    // A board below a subdirectory (PARITY_SUBDIRS) keeps its directory.
+    let ses_path = out.join(format!("{}.ses", reference.name));
+    std::fs::create_dir_all(ses_path.parent().unwrap_or(out)).expect("the output directory");
+    std::fs::write(&ses_path, &ses).expect("the SES");
     record.d8_rust = d8_breaches(&routed.board, &input);
     drop(routed.board);
     let java_path = root.join(format!("fixtures/reference/route/{}.ses", reference.name));

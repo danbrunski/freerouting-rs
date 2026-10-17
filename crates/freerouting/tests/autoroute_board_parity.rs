@@ -21,7 +21,8 @@
 //! On every routed board the D8 owner rules are checked as well: no via the router added
 //! overlaps an SMD pad of its layer unless its padstack allows attach, and no SMD pad of a
 //! plane net that reaches the plane is chained by new traces to another SMD pad of its net
-//! (each gets its own via).
+//! (each gets its own via), and no new trace lies on a power layer unless its net has a plane
+//! there (Q01.7, Java `7f56b062d`).
 //!
 //! The gate routes 118 boards and is `#[ignore]`:
 //!
@@ -35,6 +36,9 @@
 //! - `PARITY_OUT=<dir>`: the output directory instead of `target/parity`;
 //! - `PARITY_BOARDS=a,b,...`: only these boards (names without `.dsn`);
 //! - `PARITY_SET=<file>`: only the boards of a `tools/bench/sets` file;
+//! - `PARITY_SUBDIRS=1`: the references in subdirectories of `fixtures/reference/route` too
+//!   (`canary-pwr/`, the multi-board issues), named by their path below it
+//!   (`canary-pwr/canary-pwr-pours-as-planes`); `PARITY_BOARDS` takes those names;
 //! - `PARITY_MAX_JAVA_S=<s>`: only the boards whose Java route took at most `s` seconds;
 //! - `PARITY_RESUME=1`: reuse the record of a board already routed into `PARITY_OUT`;
 //! - `PARITY_SINK=counters`: route with a listening sink that counts events (A04's sink

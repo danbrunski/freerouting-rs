@@ -1,7 +1,7 @@
 {
   "result": "completed",
-  "routeMillis": 157482,
-  "freeroutingVersion": "a773a70ec",
+  "routeMillis": 59784,
+  "freeroutingVersion": "7f56b062d",
   "javaRuntime": "OpenJDK 64-Bit Server VM 25.0.2+10-LTS",
   "maxPasses": 3,
   "maxItems": null,
@@ -36,6 +36,7 @@
     "plane_nets": [],
     "plane_as_obstacle": false,
     "neck_width_um": 0.0,
+    "min_trace_width_um": 0.0,
     "strict_drc": false,
     "job_timeout": "00:30:00",
     "validation_warnings": [],
@@ -193,17 +194,17 @@
     {
       "pass": 1,
       "boardHash": "7a7923304529780ebd6ed2cf74e55b4a",
-      "score": "500.13 (116 unrouted and 77 violations)"
+      "score": "495.85 (117 unrouted and 77 violations)"
     },
     {
       "pass": 2,
-      "boardHash": "7572cb2b51b5983b63d9a1790068b8bd",
-      "score": "243.72 (196 unrouted and 77 violations)"
+      "boardHash": "82ee72c7f39fcd93376641e1e7a49599",
+      "score": "247.99 (194 unrouted and 77 violations)"
     },
     {
       "pass": 3,
-      "boardHash": "0b747770aca8772d855208280fb85f21",
-      "score": "282.18 (178 unrouted and 77 violations)"
+      "boardHash": "2f9f2cacbcd395c0113687d046253d7d",
+      "score": "277.91 (180 unrouted and 77 violations)"
     }
   ],
   "workLimitCutoffs": {
@@ -233,9 +234,9 @@
       "signal_count": 3
     },
     "items": {
-      "total_count": 2213,
-      "trace_count": 555,
-      "via_count": 128,
+      "total_count": 2202,
+      "trace_count": 545,
+      "via_count": 127,
       "conduction_area_count": 3,
       "drill_item_count": 0,
       "pin_count": 443,
@@ -254,28 +255,28 @@
     },
     "connections": {
       "maximum_count": 312,
-      "incomplete_count": 116
+      "incomplete_count": 117
     },
     "traces": {
-      "total_count": 555,
-      "total_segment_count": 934,
-      "total_length": 15642.25,
-      "total_length_mm": 1564.23,
-      "total_weighted_length": 33803612.00,
-      "average_length": 28.18,
-      "total_vertical_length": 7074.83,
-      "total_horizontal_length": 3515.74,
-      "total_angled_length": 3280.46
+      "total_count": 545,
+      "total_segment_count": 918,
+      "total_length": 15323.85,
+      "total_length_mm": 1532.38,
+      "total_weighted_length": 32889782.00,
+      "average_length": 28.12,
+      "total_vertical_length": 6969.64,
+      "total_horizontal_length": 3354.64,
+      "total_angled_length": 3207.63
     },
     "bends": {
-      "total_count": 379,
+      "total_count": 373,
       "90_degree_count": 7,
-      "45_degree_count": 371,
+      "45_degree_count": 365,
       "other_angle_count": 1
     },
     "vias": {
-      "total_count": 128,
-      "through_hole_count": 128,
+      "total_count": 127,
+      "through_hole_count": 127,
       "blind_count": 0,
       "buried_count": 0
     },
@@ -303,10 +304,10 @@
     },
     "fanout": {
       "total_smd_pins": 367,
-      "pins_to_escape": 270,
-      "escaped_count": 275
+      "pins_to_escape": 272,
+      "escaped_count": 274
     }
   },
-  "routerScore": 500.12848,
+  "routerScore": 495.85495,
   "fixture": "canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn"
 }

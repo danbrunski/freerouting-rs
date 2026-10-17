@@ -1,0 +1,58 @@
+(pcb q01-pour-between-pads.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic Q01 fixture: a 12 mm wide pour of net Z (class Pwr) on F.Cu between the two pads of net S, with room around it on F.Cu")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (boundary
+      (path pcb 0  0 0  40000 0  40000 30000  0 30000  0 0)
+    )
+    (plane Z (polygon F.Cu 0  14000 6000  26000 6000  26000 24000  14000 24000)
+    )
+    (via "Via[0-0]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "PAD"
+      (place S1 5000 15000 front 0)
+      (place S2 35000 15000 front 0)
+      (place Z1 17000 9000 front 0)
+      (place Z2 23000 9000 front 0)
+    )
+  )
+  (library
+    (image "PAD"
+      (pin RectPad 1 0 0)
+    )
+    (padstack RectPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-0]_600:300_um"
+      (shape (circle F.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net S (pins S1-1 S2-1))
+    (net Z (pins Z1-1 Z2-1))
+    (class kicad_default "" S
+      (circuit (use_via "Via[0-0]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+    (class Pwr Z
+      (circuit (use_via "Via[0-0]_600:300_um"))
+      (rule (width 500) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

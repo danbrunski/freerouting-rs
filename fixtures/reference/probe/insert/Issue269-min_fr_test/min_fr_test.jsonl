@@ -1,4 +1,4 @@
-{"kind":"insert","board":"Issue269-min_fr_test/min_fr_test","javaCommit":"a773a70ec","format":1}
+{"kind":"insert","board":"Issue269-min_fr_test/min_fr_test","javaCommit":"7f56b062d","format":1}
 {"stage":"sample","maxConnections":200,"maxNetNumber":2,"connections":2}
 {"stage":"insert:1","net":1,"start":[21],"dest":[2]}
 {"state":"ROUTED","details":""}
@@ -16,4 +16,4 @@
 {"added":47,"kind":"via","nets":[2],"padstack":"Via[0-3]_600:300_um","center":[1667458,-886125],"class":1,"fixed":"UNFIXED"}
 {"added":49,"kind":"trace","nets":[2],"layer":0,"halfWidth":1000,"class":1,"fixed":"UNFIXED","corners":[[1667458,-886125],[1696125,-886125],[1710000,-900000]]}
 {"removed":[]}
-{"maxGeneratedId":49,"incomplete":-1,"vias":2,"lengthBefore":"0x0000000000000000","lengthAfter":"0x406696bde0000000","units":29242}
+{"maxGeneratedId":49,"incomplete":-1,"vias":2,"lengthBefore":"0x0000000000000000","lengthAfter":"0x406696bde0000000","units":28239}

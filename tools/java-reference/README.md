@@ -68,6 +68,38 @@ K07 compares itself; `reference_load` skips them too).
 `route` skips boards that already have a `route/<board>.json`, so an interrupted run
 picks up where it stopped. Set `REFERENCE_REDO=1` to rerun everything.
 
+### References at `7f56b062d` (Q01.7)
+
+The port adopted Java's fix `7f56b062d` ("Route only a power layer's own plane nets on it",
+after the pin; `docs/DIVERGENCES.md`, "Maze search"), which changes Java's own routes on
+boards with a power layer. On 2026-10-16 `route` was rerun at `7f56b062d` (a detached
+worktree, this harness from the repository's `HEAD`, `-Xmx3g`, `NAME_FILTER` set to the 21
+route references whose DSN has a `(type power)` layer). Four came out different and were
+replaced; their JSON says `"freeroutingVersion": "7f56b062d"`:
+
+- `route/Issue145-smoothieboard.*` (5 foreign-net wires on `Route2` before, none after),
+- `route/Issue753-CPU-85_r104.*` (2 on `In1.Cu` before; it now has 2 work-limit cut-offs, so
+  A14 classes it `cutoff`),
+- `route/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.*` (1 on `Gnd.Cu` before),
+- `route/canary-pwr/canary-pwr-pours-as-planes.*` (1 on `Gnd.Cu` before).
+
+The other 17 were byte-identical and stay at `a773a70ec`. Their dependants were regenerated
+at `7f56b062d` the same day: the `route` rows of these four boards in
+`crates/freerouting/tests/data/java_drc_digest.tsv` (Java's `FreeroutingCli -drc` on the new
+sessions; the `load` rows and every other board are unchanged, and a control rerun of
+`Issue269-z10_module` gave its old rows), and `ses/Issue145-smoothieboard.json` with
+`ses/routed/Issue145-smoothieboard.ses` (`ses` mode; `ses/unrouted` was byte-identical).
+The probe references (`fixtures/reference/probe/`) were rerun at `7f56b062d` the same day with
+`probe.sh` (`REFERENCE_WORK_DIR` private): the autoroute kinds `pass`, `insert`, `maze-log`,
+`insert-routed` and `maze-routed` on all their boards, and every board-probe kind that has a
+reference for `Issue145-smoothieboard` or `Issue753-CPU-85_r104` (they load the route
+session). Of 76 runs, 59 came out identical below the header and stay at `a773a70ec`; 17 were
+replaced and say `"javaCommit":"7f56b062d"`: `pass`, `insert` and `maze-log` of
+`Issue269-min_fr_test/min_fr_test` (the maze search's work units change on its power layer),
+and `ids`, `islands`, `scores`, `tree`, `tree-ops` of both boards plus `item-info`,
+`pin-connection`, `rules-edit` and `tree-visits` of smoothieboard (the new sessions).
+A re-pin past `7f56b062d` makes this note obsolete.
+
 ## Known Java failures
 
 - `Issue006-LPC18XX_43XX_SCH.dsn` is not a PCB file (`parse_error` in `load`; its `route`

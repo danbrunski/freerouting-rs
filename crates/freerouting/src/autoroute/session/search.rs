@@ -372,7 +372,13 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
         let layer = self.s.room(room).layer();
         let layer_index = layer as usize;
         let layer_active = control.layer_active[layer_index];
-        if !layer_active && self.s.board.layer_structure.layers[layer_index].is_signal {
+        // A disabled signal layer, or a power layer without a plane of this
+        // net (Java `7f56b062d`, Q01.7): a start or target item's copper
+        // there (a via or through-hole pin) must not lead to a trace on it.
+        if !layer_active
+            && (self.s.board.layer_structure.layers[layer_index].is_signal
+                || !control.own_plane_layers[layer_index])
+        {
             return Ok(true);
         }
         let mut half_width = f64::from(control.compensated_trace_half_width[layer_index]);

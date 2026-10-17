@@ -191,8 +191,11 @@ impl ShapeTraceEntries {
                 }
             }
             let contains_own_net = item.shares_net_no(&self.own_net_nos);
+            // Java's flag, or the area policy (Q01) for one of the own nets.
             if let Some(area) = item.as_conduction_area()
-                && (contains_own_net || !area.conduction_is_obstacle())
+                && (contains_own_net
+                    || !(area.conduction_is_obstacle()
+                        || board.area_policy_blocks_any_net(item, &self.own_net_nos)))
             {
                 continue;
             }

@@ -1,7 +1,7 @@
 {
   "result": "completed",
-  "routeMillis": 671053,
-  "freeroutingVersion": "a773a70ec",
+  "routeMillis": 254618,
+  "freeroutingVersion": "7f56b062d",
   "javaRuntime": "OpenJDK 64-Bit Server VM 25.0.2+10-LTS",
   "maxPasses": 3,
   "maxItems": null,
@@ -36,6 +36,7 @@
     "plane_nets": [],
     "plane_as_obstacle": false,
     "neck_width_um": 0.0,
+    "min_trace_width_um": 0.0,
     "strict_drc": false,
     "job_timeout": "00:30:00",
     "validation_warnings": [],
@@ -197,12 +198,12 @@
     },
     {
       "pass": 2,
-      "boardHash": "b940ca4fba130130e983681d14594ca3",
+      "boardHash": "a30ef27bc62de699e17f57147ec27215",
       "score": "955.16 (26 unrouted and 42 violations)"
     },
     {
       "pass": 3,
-      "boardHash": "c39cd8c82699f3c5816120adb0af1bca",
+      "boardHash": "9e9d420573c39a865a0d766e864ee198",
       "score": "966.93 (19 unrouted and 42 violations)"
     }
   ],
@@ -314,8 +315,8 @@
       "signal_count": 3
     },
     "items": {
-      "total_count": 6084,
-      "trace_count": 1864,
+      "total_count": 6085,
+      "trace_count": 1865,
       "via_count": 488,
       "conduction_area_count": 1,
       "drill_item_count": 0,
@@ -338,14 +339,14 @@
       "incomplete_count": 19
     },
     "traces": {
-      "total_count": 1864,
-      "total_segment_count": 3435,
-      "total_length": 69027.11,
-      "total_length_mm": 6902.71,
-      "total_weighted_length": 213819856.00,
-      "average_length": 37.03,
-      "total_vertical_length": 16126.73,
-      "total_horizontal_length": 16890.59,
+      "total_count": 1865,
+      "total_segment_count": 3436,
+      "total_length": 69025.39,
+      "total_length_mm": 6902.54,
+      "total_weighted_length": 213814208.00,
+      "average_length": 37.01,
+      "total_vertical_length": 16126.74,
+      "total_horizontal_length": 16975.89,
       "total_angled_length": 22174.40
     },
     "bends": {

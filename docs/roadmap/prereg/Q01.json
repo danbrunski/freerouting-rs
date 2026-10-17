@@ -1,0 +1,115 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q01.5-pour-guard",
+  "registered": "2026-10-16",
+  "checklist": "docs/roadmap/tasks/Q01-planes-block-pass-through-nets.md",
+  "question": "With router.plane_obstacle_net_classes listing each board's pour net classes, do fewer pour-net connections break after KiCad's refill (KiCad unconnected_items of pour nets, and Q01.4's lost pins) than with the key unset, on at least N-1 of the boards, with unrouted rising on none and no new DRC errors?",
+  "arms": {
+    "off": {
+      "engine": "freerouting-rs at the commit that lands Q01 (the Freerouting implementation, key unset)",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.scoring.start_ripup_costs=1500",
+      "settings": {
+        "plane_obstacle_net_classes": "unset"
+      }
+    },
+    "on": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.scoring.start_ripup_costs=1500 --router.plane_obstacle_net_classes={CLASSES}",
+      "settings": {
+        "plane_obstacle_net_classes": {
+          "interf_u": "Power",
+          "pic_programmer": "POWER",
+          "kit-dev-coldfire-xilinx_5213": "POWER",
+          "complex_hierarchy": "power",
+          "canary-pwr": "Power_High,Switch_Node"
+        },
+        "classes_rule": "the net classes of the board's signal-layer copper zones other than the default class, decided from the input (canary-pwr: Dan's freerouting.json classes, Q00 open question 3)"
+      }
+    }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "on",
+  "boards": {
+    "set": "tools/bench/sets/q01-pours.txt",
+    "kicad": "10.0.7 (WSL-native kicad-cli and the system python3's pcbnew)",
+    "dsn": "demos: exported by tools/kicad-oracle/grade.sh from the stripped board; canary-pwr: also fixtures/canary-pwr/canary-pwr-9511d9a.dsn and the pours1..3 / pours-as-planes variants (grouped as one board, graded by canary-23)",
+    "files": {
+      "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e",
+      "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+      "/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb": "392cf6bf4b9b62beb435f965ccd7671a46decb17f947b74bfde482acd2132a5e",
+      "/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb": "d5f4162d4c766448832723d139f9e0fcb88a17c82340f10f6f6dc6c2042f0d69",
+      "~/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1"
+    }
+  },
+  "grading": "tools/kicad-oracle/grade.sh (copper severities forced to error, the input board's DRC subtracted, refill on); canary-pwr by canary-23's ses_import.py, kicad-cli drc --refill-zones, via_in_pad.py and inner_tracks.py",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pour_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pour_lost_pins",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "decision_table": {
+    "pass": "keep the key (off by default); DIVERGENCES line with the numbers",
+    "fail": "remove the code that only serves the rule (Q01.1-Q01.3; the report may stay), numbers in Q01.5's done note"
+  },
+  "timing": "measured only after P04's default-tree decision (Q00 README, 'Order and critical path')",
+  "amendments": []
+}

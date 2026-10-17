@@ -1,4 +1,4 @@
-{"kind":"scores","board":"Issue145-smoothieboard","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"kind":"scores","board":"Issue145-smoothieboard","javaCommit":"7f56b062d","jdk":"25.0.2","format":1}
 {"stage":"load","maximum":793,"incomplete":746,"violations":42,"violationUm":"0x40c06c3333333331","difficulty":"0x40a8ba0000000000","bends":0,"vias":42,"lengthMm":"0x0000000000000000","minLengthMm":"0x40c0c04660000000","minVias":1,"minBends":660}
 {"variant":"null","router":"0x40485674c0000000","optimizer":"0x40485674c0000000","ranking":"0x40485674c0000000"}
 {"variant":"defaults","router":"0x4043311a40000000","optimizer":"0x408e70bba0000000","ranking":"0x408e70bba0000000"}
@@ -19,7 +19,7 @@
 {"variant":"v1.viaCosts","router":"0x4048566360000000","optimizer":"0x4048566360000000","ranking":"0x4048566360000000"}
 {"variant":"v1.defaultPreferredDirectionTraceCost","router":"0x40485674c0000000","optimizer":"0x40485674c0000000","ranking":"0x40485674c0000000"}
 {"variant":"optimizer.lengthFloor=0","router":"0x4043311a40000000","optimizer":"0x408e70bba0000000","ranking":"0x408e70bba0000000"}
-{"stage":"ses","maximum":793,"incomplete":19,"violations":210,"violationUm":"0x40e4873ffffffff9","difficulty":"0x40a8ba0000000000","bends":1566,"vias":530,"lengthMm":"0x40baf6b640000000","minLengthMm":"0x40c0c04660000000","minVias":1,"minBends":660}
+{"stage":"ses","maximum":793,"incomplete":19,"violations":210,"violationUm":"0x40e4873ffffffff9","difficulty":"0x40a8ba0000000000","bends":1566,"vias":530,"lengthMm":"0x40baf68a40000000","minLengthMm":"0x40c0c04660000000","minVias":1,"minBends":660}
 {"variant":"null","router":"0x408cd88440000000","optimizer":"0x408cd88440000000","ranking":"0x408cd88440000000"}
 {"variant":"defaults","router":"0x408e1347c0000000","optimizer":"0x408054ba00000000","ranking":"0x408054ba00000000"}
 {"variant":"v1","router":"0x408cd88440000000","optimizer":"0x408cd88440000000","ranking":"0x408cd88440000000"}

@@ -361,3 +361,33 @@ fn issue957_component_outlines_route_and_copy() {
     let hash = routed.board.state_hash();
     assert_eq!(routed.board.deep_copy().state_hash(), hash);
 }
+
+/// `PowerLayerForeignNetTest.signalNetIsNotRoutedAcrossAPowerLayer` (Java `7f56b062d`, after
+/// the pin; Q01.7): a SIG via on each side of an F.Cu/B.Cu keepout wall, GND planes on both
+/// inner power layers. The connection cannot be made legally, so no trace lies on a power
+/// layer (before the fix the search joined the two vias across the GND plane on Gnd.Cu).
+/// The fixture is Java's `fixtures/PowerLayer-foreign-via-pair.dsn`, kept in
+/// `tests/data/` so the reference tests that walk `fixtures/` don't need a Java load
+/// reference for it.
+#[test]
+fn power_layer_carries_no_foreign_net_trace() {
+    let fixture = "../crates/freerouting/tests/data/PowerLayer-foreign-via-pair.dsn";
+    let routed = route(fixture, TestingProfile::default());
+    let board = &routed.board;
+    let on_power_layers: Vec<String> = board
+        .items()
+        .filter(|item| item.is_trace())
+        .filter(|item| !board.layer_structure.layers[item.first_layer() as usize].is_signal)
+        .map(|item| {
+            let net = item.net_numbers().first().copied().unwrap_or(0);
+            let net_name = board.rules.nets.get(net).map_or("?", |n| n.name.as_str());
+            let layer = &board.layer_structure.layers[item.first_layer() as usize].name;
+            format!("{net_name} on {layer}")
+        })
+        .collect();
+    assert_eq!(
+        on_power_layers,
+        Vec::<String>::new(),
+        "no trace may be routed on a power layer"
+    );
+}

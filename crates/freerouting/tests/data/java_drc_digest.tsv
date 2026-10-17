@@ -1182,8 +1182,8 @@ route	Issue143-rpi_splitter_mod.dsn	track_dangling	0
 route	Issue143-rpi_splitter_mod.dsn	scores	1000.0	775.41
 route	Issue145-smoothieboard.dsn	clearance	0	cbf29ce484222325
 route	Issue145-smoothieboard.dsn	holeClearance	210	a8201d0945212fce
-route	Issue145-smoothieboard.dsn	via_dangling	45	2a8c0e257c6717ad
-route	Issue145-smoothieboard.dsn	unconnectedItems	15	32bafecef802ea05
+route	Issue145-smoothieboard.dsn	via_dangling	45	0936039275c0283d
+route	Issue145-smoothieboard.dsn	unconnectedItems	15	57cc742ef5fa674f
 route	Issue145-smoothieboard.dsn	track_dangling	0	
 route	Issue145-smoothieboard.dsn	scores	962.41	522.59
 route	Issue153-wavefolder.dsn	clearance	0	cbf29ce484222325
@@ -1818,10 +1818,10 @@ route	Issue742-tastexx-pcb/tastexx-pcb.dsn	track_dangling	0
 route	Issue742-tastexx-pcb/tastexx-pcb.dsn	scores	1000.0	563.95
 route	Issue753-CPU-85_r104.dsn	clearance	0	cbf29ce484222325
 route	Issue753-CPU-85_r104.dsn	holeClearance	76	2b5cee80681e88b4
-route	Issue753-CPU-85_r104.dsn	via_dangling	46	ca9b5bc3de688ead
-route	Issue753-CPU-85_r104.dsn	unconnectedItems	50	0f88dd0327a6c0c9
+route	Issue753-CPU-85_r104.dsn	via_dangling	52	2020fcae1df1d61c
+route	Issue753-CPU-85_r104.dsn	unconnectedItems	47	cb5948486ac6e633
 route	Issue753-CPU-85_r104.dsn	track_dangling	8	2333,2334,2335,2341,2359,2379,2381,2387
-route	Issue753-CPU-85_r104.dsn	scores	860.52	468.35
+route	Issue753-CPU-85_r104.dsn	scores	862.87	499.68
 route	Issue754-avionics_hub.dsn	clearance	51	955020dd2bd6c244
 route	Issue754-avionics_hub.dsn	holeClearance	235	47ece110cb1ae31a
 route	Issue754-avionics_hub.dsn	via_dangling	8	d9db4960e8061312
@@ -1950,10 +1950,10 @@ route	canary-pwr/canary-pwr-9511d9a-addonly.dsn	track_dangling	182	1530,1531,153
 route	canary-pwr/canary-pwr-9511d9a-addonly.dsn	scores	469.64	502.36
 route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	clearance	4	ab769362596e5712
 route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	holeClearance	73	ba0031e4b2159fc9
-route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	via_dangling	45	e3234923ba554ef1
-route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	unconnectedItems	48	7c0e4215de5615b3
+route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	via_dangling	46	0e3a30bf7c91ec8d
+route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	unconnectedItems	49	d0e183c728e65b7c
 route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	track_dangling	127	1531,1532,1533,1534,1535,1536,1537,1538,1539,1540,1541,1542,1543,1544,1545,1546,1547,1548,1549,1550,1551,1552,1553,1554,1555,1556,1557,1558,1559,1560,1561,1562,1563,1564,1565,1566,1567,1568,1569,1570,1571,1572,1573,1574,1575,1576,1577,1578,1579,1580,1581,1582,1583,1584,1585,1586,1587,1588,1589,1590,1591,1592,1593,1594,1595,1596,1597,1598,1599,1600,1602,1603,1604,1605,1606,1607,1608,1609,1610,1611,1612,1613,1614,1615,1616,1617,1618,1619,1620,1621,1622,1623,1624,1626,1627,1628,1629,1630,1631,1632,1633,1634,1635,1636,1637,1638,1639,1640,1642,1649,1651,1653,1659,1662,1665,1673,1675,1680,1681,1684,1686,1687,1692,1697,1701,1702,1708
-route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	scores	500.13	785.55
+route	canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn	scores	495.85	789.32
 route	canary-pwr/canary-pwr-9511d9a-in2-open.dsn	clearance	4	923539578bf1a35b
 route	canary-pwr/canary-pwr-9511d9a-in2-open.dsn	holeClearance	36	99e1cc2f0f047300
 route	canary-pwr/canary-pwr-9511d9a-in2-open.dsn	via_dangling	48	075dadf95d8a9d0e

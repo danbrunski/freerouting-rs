@@ -20,9 +20,12 @@
 //!   a branch that only conduction areas reach.
 //!
 //! The callers ask at query time, so a policy never changes the contents of
-//! a search tree. Not every Java call site goes through the two predicates:
-//! `Item::is_drillable` and the shover's direct reads of the area flag
-//! (`shove/spring.rs`, `shove/trace_entries.rs`) still use Java's flag only.
+//! a search tree. The Java call sites that read the area flag directly go
+//! through the policy as well (Q01): the drill page's `isDrillable` test
+//! ([`BasicBoard::is_drillable_with_policy`], `autoroute/session/drills.rs`)
+//! and the shover's two reads (`shove/spring.rs`, `shove/trace_entries.rs`,
+//! [`BasicBoard::area_policy_blocks_any_net`]). Each is one `Option` test
+//! when no policy is installed.
 //!
 //! [`BoardRules::area_obstacle_policy`]: crate::rules::BoardRules::area_obstacle_policy
 //! [`BasicBoard::is_trace_obstacle`]: crate::board::BasicBoard::is_trace_obstacle
@@ -78,5 +81,28 @@ impl BasicBoard {
                         .any(|n| policy.blocks(area.id(), *n))
             }
         }
+    }
+
+    /// True if the area policy makes conduction area `area` an obstacle for
+    /// at least one of `nets`, none of which the area contains (the
+    /// shover's test for the nets of the item it moves). False without a
+    /// policy.
+    #[inline]
+    pub(crate) fn area_policy_blocks_any_net(&self, area: &Item, nets: &[i32]) -> bool {
+        match &self.rules.area_obstacle_policy {
+            None => false,
+            Some(policy) => {
+                !area.shares_net_no(nets) && nets.iter().any(|n| policy.blocks(area.id(), *n))
+            }
+        }
+    }
+
+    /// Java `Item.isDrillable(net)` with the area policy: a conduction area
+    /// the policy blocks for `net` is not drillable for it. Without a policy
+    /// this is [`Item::is_drillable`].
+    #[inline]
+    pub(crate) fn is_drillable_with_policy(&self, item: &Item, net: i32) -> bool {
+        item.is_drillable(net)
+            && !(item.is_conduction_area() && self.area_policy_blocks_net(item, net))
     }
 }

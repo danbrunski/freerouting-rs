@@ -1,7 +1,7 @@
 {
   "result": "completed",
-  "routeMillis": 76994,
-  "freeroutingVersion": "a773a70ec",
+  "routeMillis": 69770,
+  "freeroutingVersion": "7f56b062d",
   "javaRuntime": "OpenJDK 64-Bit Server VM 25.0.2+10-LTS",
   "maxPasses": 3,
   "maxItems": null,
@@ -36,6 +36,7 @@
     "plane_nets": [],
     "plane_as_obstacle": false,
     "neck_width_um": 0.0,
+    "min_trace_width_um": 0.0,
     "strict_drc": false,
     "job_timeout": "00:30:00",
     "validation_warnings": [],
@@ -197,18 +198,39 @@
     },
     {
       "pass": 2,
-      "boardHash": "548317dd98819ba26660183017b853a5",
-      "score": "773.82 (95 unrouted and 76 violations)"
+      "boardHash": "9112af7d9642dad29f2b50976624bddb",
+      "score": "783.19 (91 unrouted and 76 violations)"
     },
     {
       "pass": 3,
-      "boardHash": "f718701339b78cd597dc920edec6538a",
-      "score": "860.52 (58 unrouted and 76 violations)"
+      "boardHash": "e6bad41d21552704d5a7163eb9c727fe",
+      "score": "862.87 (57 unrouted and 76 violations)"
     }
   ],
   "workLimitCutoffs": {
-    "count": 0,
-    "lines": []
+    "count": 2,
+    "lines": [
+      {
+        "pass": 2,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 64048023,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d64048023 nets\u003d[]"
+      },
+      {
+        "pass": 2,
+        "site": "pull_tight",
+        "nominalMs": 1000,
+        "units": 64092960,
+        "context": {
+          "nets": "[]"
+        },
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d64092960 nets\u003d[]"
+      }
+    ]
   },
   "statistics": {
     "host": "KiCad\u0027s Pcbnew,10.0.4",
@@ -233,9 +255,9 @@
       "signal_count": 2
     },
     "items": {
-      "total_count": 3664,
-      "trace_count": 1144,
-      "via_count": 189,
+      "total_count": 3695,
+      "trace_count": 1181,
+      "via_count": 183,
       "conduction_area_count": 3,
       "drill_item_count": 0,
       "pin_count": 774,
@@ -254,28 +276,28 @@
     },
     "connections": {
       "maximum_count": 569,
-      "incomplete_count": 58
+      "incomplete_count": 57
     },
     "traces": {
-      "total_count": 1144,
-      "total_segment_count": 2511,
-      "total_length": 133469.56,
-      "total_length_mm": 13346.96,
-      "total_weighted_length": 388449504.00,
-      "average_length": 116.67,
-      "total_vertical_length": 32073.66,
-      "total_horizontal_length": 39857.63,
-      "total_angled_length": 35513.34
+      "total_count": 1181,
+      "total_segment_count": 2475,
+      "total_length": 135254.06,
+      "total_length_mm": 13525.41,
+      "total_weighted_length": 392556608.00,
+      "average_length": 114.53,
+      "total_vertical_length": 36898.29,
+      "total_horizontal_length": 43252.28,
+      "total_angled_length": 28164.79
     },
     "bends": {
-      "total_count": 1367,
-      "90_degree_count": 7,
-      "45_degree_count": 1360,
+      "total_count": 1294,
+      "90_degree_count": 3,
+      "45_degree_count": 1291,
       "other_angle_count": 0
     },
     "vias": {
-      "total_count": 189,
-      "through_hole_count": 189,
+      "total_count": 183,
+      "through_hole_count": 183,
       "blind_count": 0,
       "buried_count": 0
     },
@@ -304,9 +326,9 @@
     "fanout": {
       "total_smd_pins": 102,
       "pins_to_escape": 33,
-      "escaped_count": 66
+      "escaped_count": 65
     }
   },
-  "routerScore": 860.52325,
+  "routerScore": 862.8666,
   "fixture": "Issue753-CPU-85_r104.dsn"
 }

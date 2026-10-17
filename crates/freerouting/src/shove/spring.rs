@@ -280,7 +280,10 @@ impl TraceShover<'_> {
         }
         match &item.kind {
             ItemKind::Area(area) => match area.kind {
-                AreaKind::Conduction { is_obstacle, .. } => is_obstacle,
+                // Java's flag, or the area policy (Q01) for one of the nets.
+                AreaKind::Conduction { is_obstacle, .. } => {
+                    is_obstacle || board.area_policy_blocks_any_net(item, net_numbers)
+                }
                 AreaKind::ViaObstacle | AreaKind::ComponentObstacle => false,
                 AreaKind::Obstacle => !item.is_routable(),
             },

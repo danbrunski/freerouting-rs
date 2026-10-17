@@ -1,7 +1,7 @@
 {
   "result": "completed",
-  "routeMillis": 233640,
-  "freeroutingVersion": "a773a70ec",
+  "routeMillis": 99751,
+  "freeroutingVersion": "7f56b062d",
   "javaRuntime": "OpenJDK 64-Bit Server VM 25.0.2+10-LTS",
   "maxPasses": 3,
   "maxItems": null,
@@ -36,6 +36,7 @@
     "plane_nets": [],
     "plane_as_obstacle": false,
     "neck_width_um": 0.0,
+    "min_trace_width_um": 0.0,
     "strict_drc": false,
     "job_timeout": "00:30:00",
     "validation_warnings": [],
@@ -197,13 +198,13 @@
     },
     {
       "pass": 2,
-      "boardHash": "f5c777f6926959dfc58b476ec62cdb24",
+      "boardHash": "d3c972ee08be14eadf732ad1ea7b3c4d",
       "score": "452.23 (132 unrouted and 21 violations)"
     },
     {
       "pass": 3,
-      "boardHash": "7986309da8f7cfff936e5b77f465a4cc",
-      "score": "609.58 (94 unrouted and 21 violations)"
+      "boardHash": "23d4f3b631a6181b8e8b56e3ecf3b681",
+      "score": "605.44 (95 unrouted and 21 violations)"
     }
   ],
   "workLimitCutoffs": {
@@ -313,11 +314,11 @@
         "pass": 3,
         "site": "pull_tight",
         "nominalMs": 1000,
-        "units": 64625990,
+        "units": 68154272,
         "context": {
           "nets": "[]"
         },
-        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d64625990 nets\u003d[]"
+        "line": "WORK_LIMIT_CUTOFF site\u003dpull_tight nominal_ms\u003d1000 units\u003d68154272 nets\u003d[]"
       }
     ]
   },
