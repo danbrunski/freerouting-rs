@@ -127,19 +127,6 @@ pan, `F` to fit the board, `1`–`9` to bring a layer to the front.
 On Linux the app needs the usual X11 or Wayland libraries (`libxkbcommon-x11`, plus a Vulkan or
 OpenGL driver). Under WSL it runs through WSLg.
 
-## Releases
-
-Releases will put builds on the [releases page](https://github.com/danbrunski/freerouting-rs/releases),
-with a `SHA256SUMS` file:
-- Windows: MSI and zip;
-- macOS: universal DMG and tar.gz;
-- Linux: AppImage and tar.gz;
-- KiCad: a plugin-manager zip.
-
-At first they won't be signed, so Windows shows a SmartScreen warning and macOS asks for "Open
-Anyway" on the first launch. What each file is, the Linux requirements, and how to verify a
-download: [docs/development/release.md](docs/development/release.md).
-
 ## Layout
 
 | Crate | Purpose |
