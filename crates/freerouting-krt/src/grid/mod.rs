@@ -21,17 +21,23 @@
 //! two connections agree where they overlap. Grid coordinates handed to the
 //! vendored map are these absolute cell indices.
 //!
-//! Nothing in the default pipeline uses this module: the `krt-grid` stage
-//! (X05) is the first caller.
+//! Nothing in the default pipeline uses this module. The `krt-grid` stage
+//! ([`router`], X05) routes one connection on the raster and inserts the
+//! path ([`path`]) behind the exact DRC; [`register`] adds it to a registry,
+//! where `router.autorouter.connection_router = krt-grid` selects it.
 
 use std::collections::BTreeSet;
 
+use freerouting::autoroute::stages::StageRegistry;
 use freerouting::board::BasicBoard;
 use freerouting::board::items::ItemId;
 use freerouting::job::overrides::um_to_board_units;
 
 pub mod frame;
+pub mod frontier;
+pub mod path;
 pub mod raster;
+pub mod router;
 pub mod terminals;
 
 pub use krt_grid_router::GridObstacleMap;
@@ -66,6 +72,13 @@ impl GridTask {
     pub fn items(&self) -> Vec<ItemId> {
         self.start.union(&self.dest).copied().collect()
     }
+}
+
+/// Registers the `krt-grid` connection router (X05).
+pub fn register(registry: &mut StageRegistry) {
+    registry.connection_router.insert(router::KRT_GRID_ID, |s| {
+        Box::new(router::KrtGrid::from_settings(s))
+    });
 }
 
 /// A grid step of `step_um` µm in board units, at least 1.

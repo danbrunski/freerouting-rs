@@ -14,9 +14,9 @@
 //! Modules:
 //! - [`planes`] (X02): islands, anchors and main components of plane nets,
 //!   the plane-tap report and pour region repair.
-//! - [`grid`] (X04): the conservative obstacle raster of one connection for
-//!   the vendored grid A* (`krt-grid-router`). No stage yet; X05 adds
-//!   `krt-grid`.
+//! - [`grid`] (X04, X05): the conservative obstacle raster of one
+//!   connection for the vendored grid A* (`krt-grid-router`), and the
+//!   `krt-grid` connection router on it.
 
 use freerouting::autoroute::stages::StageRegistry;
 
@@ -27,4 +27,5 @@ pub mod planes;
 /// its own registration lines here.
 pub fn register(registry: &mut StageRegistry) {
     planes::register(registry);
+    grid::register(registry);
 }

@@ -154,6 +154,29 @@ pub struct ConnectionParams {
 pub struct FailureRecord {
     /// A one-line reason.
     pub reason: String,
+    /// The items a failed search met at its frontier, sorted by `(net, item
+    /// id, layer)` ascending, at most [`MAX_BLOCKING_ITEMS`]. Empty when the
+    /// router keeps no frontier (the Freerouting maze search; Q06 runs its
+    /// own analysis for it). The `krt-grid` stage (X05) fills it.
+    pub blocking: Vec<BlockingItem>,
+}
+
+/// The most entries a [`FailureRecord::blocking`] list keeps (KRT's
+/// frontier cap).
+pub const MAX_BLOCKING_ITEMS: usize = 10_000;
+
+/// One item of a [`FailureRecord`]'s frontier: an item that blocked the
+/// search on a layer, with the number of frontier cells it blocked there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BlockingItem {
+    /// The item's first net, 0 for none.
+    pub net: i32,
+    /// The blocking item.
+    pub item: ItemId,
+    /// The layer it blocked on.
+    pub layer: i32,
+    /// The frontier cells it blocked on that layer.
+    pub cells: u32,
 }
 
 impl FailureRecord {
@@ -161,6 +184,7 @@ impl FailureRecord {
     pub fn new(reason: impl Into<String>) -> Self {
         FailureRecord {
             reason: reason.into(),
+            blocking: Vec::new(),
         }
     }
 }

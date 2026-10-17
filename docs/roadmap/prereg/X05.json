@@ -1,0 +1,101 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X05.6-krt-grid-connection-level",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/archive/X05-grid-connection-router-stage.md",
+  "question": "Per board of connection-parity, in routing pass 1 without the optimizer, how many connections does the krt-grid connection router route compared with the Freerouting maze search (freerouting-connection), at what median wall time per connection, and does every connection krt-grid reports as routed have no clearance violation and no via in a pad? A report, not a keep/reject decision: X06 measures the full pipeline.",
+  "arms": {
+    "maze": {
+      "engine": "freerouting-rs at the commit that lands X05, freerouting-krt's in-process harness (the CLI does not call freerouting_krt::register yet)",
+      "command": "X05_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting-krt --test grid_router connection_level_comparison_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "autorouter.connection_router": "freerouting-connection",
+        "special.diagnostics": "x05-probe (report-only timing and DRC probe)",
+        "max_passes": 1,
+        "optimizer.enabled": false
+      }
+    },
+    "krt-grid": {
+      "engine": "the same commit and harness",
+      "command": "X05_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting-krt --test grid_router connection_level_comparison_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "autorouter.connection_router": "krt-grid",
+        "special.diagnostics": "x05-probe (report-only timing and DRC probe)",
+        "max_passes": 1,
+        "optimizer.enabled": false
+      }
+    }
+  },
+  "baseline_arm": "maze",
+  "candidate_arm": "krt-grid",
+  "boards": {
+    "set": "tools/bench/sets/connection-parity.txt",
+    "dsn": "the committed fixtures",
+    "files": {
+      "fixtures/Issue269-min_fr_test/min_fr_test.dsn": "cc07a8d523ae8b72af6de3b75e93b6bec57a795a980d1b4812170ede1264a870",
+      "fixtures/Issue368-CorneyIslandWireless_input_design.dsn": "287b6952a909879045c9523e0fee4ab3d581a23002450b0a44abd00d169d50b3",
+      "fixtures/Issue110-testProjectFromFreeroutingBugTest.dsn": "1b47e91d92fc9ce5ec5c1cfade4532c08df783d199111f21bf9109d9117a0a00",
+      "fixtures/Issue143-rpi_splitter.dsn": "d079367aee3e3bf8c68d589d0cfba9fdbabf16693491a7873af459016e2680fe",
+      "fixtures/Issue413-test.dsn": "04bc0654d2614a16ebce939cc12910bfc07420c713629d936de5a8866154512e",
+      "fixtures/Issue508-SMD-routing-issue-demo.dsn": "86168e5c7c697033c2af9f6b1f6894bd3aa54f84eb687a9d59894cb47b54bc3d",
+      "fixtures/Issue069-TestSensel/TestSensel.dsn": "0a0ededfca40c52daba9b2d32c9701dca90f34da32a9cbcd790733c18c1a0610",
+      "fixtures/Issue269-NoViasOnPowerPlanes/Issue269-NoViasOnPowerPlanes.dsn": "62bd6b994ce98ece567f257584c1e068a2e0a1eb79b4ef993a0a57f7e4e4419d",
+      "fixtures/Issue433-my-board.dsn": "36ce022caadc2e375e7faa5ecd0325f45671df6a1cbe71c13e3f10bed7086b50",
+      "fixtures/PCBench-retroreflectors-CONGFLOCK.dsn": "e909161b06df4efd6a8a3f08a0514a6e0c2637053fcf306fa15cbc2065735873"
+    }
+  },
+  "eligibility": "every board of the set; a board where neither arm attempts a connection counts as neutral, printed",
+  "grading": "Rust's DRC on each routed connection's new items (clearance_violations) and the stage's via-in-pad test (any pin pad), inside the probe; no KiCad grading (the fixtures have no .kicad_pcb)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_new",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "routed",
+      "role": "score",
+      "kind": "int",
+      "direction": "higher"
+    },
+    {
+      "name": "attempted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "median_ms_per_connection",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "routed": "connections whose outcome is Routed in pass 1",
+    "attempted": "connections whose outcome is Routed, Failed or InsertError in pass 1",
+    "drc_new": "summed over the arm's routed connections: clearance violations of the items with an id at or above the outcome's first_new_id, right after the connection",
+    "via_in_pad": "summed over the arm's routed connections: new vias whose copper overlaps a pin's pad",
+    "median_ms_per_connection": "median wall time of ConnectionRouter::route over the board's connections (report only, D2: never decides anything)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "decision_table": {
+    "pass": "report only: krt-grid stays off by default; X06 decides on the bundle",
+    "fail": "report only: the numbers go in X05.6's done note; X06 decides"
+  },
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'); the X05 done note gives a pre-P04 run at the landing commit, not this registration's result",
+  "amendments": []
+}

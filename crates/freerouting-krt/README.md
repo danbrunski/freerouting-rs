@@ -33,5 +33,11 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   vendored grid A* (`crates/krt-grid-router`, MIT, a dependency of this
   crate): the frame and window, trace and via cells from the board's shapes,
   keepouts, the outline and terminal cells. Written from KRT's design; no KRT
-  code is ported, so these files are GPL-3.0-only. No stage uses it yet; X05
-  adds `krt-grid`.
+  code is ported, so these files are GPL-3.0-only.
+- `grid` (X05): the `krt-grid` connection router
+  (`router.autorouter.connection_router = krt-grid`): one connection on the
+  raster at 0.1, then 0.05, then 0.025 mm, the path turned into traces and vias
+  (`grid/path.rs`, which ports KRT's `simplify_path` and
+  `_path_to_segments_vias` and so is GPL-3.0-only AND MIT), exact connectors to
+  the pins, and one DRC-checked transaction per attempt; on failure the
+  frontier's blocking items. The other X05 files are written from KRT ideas.

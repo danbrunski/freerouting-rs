@@ -19,3 +19,4 @@ below are parsed: first column is the Rust file path (backticked).
 | `crates/krt-grid-router/src/lib.rs` | module list, re-exports | `rust_router/src/lib.rs` | mod list, pub use (not identify_blocking_obstacles, #[pymodule], allocator) | `0486e799` | 2026-10-17 | replaced: module list and re-exports |
 | `crates/krt-grid-router/Cargo.toml` | package manifest | `rust_router/Cargo.toml` | dependencies (pyo3, numpy, mimalloc dropped) | `0486e799` | 2026-10-17 | replaced |
 | `crates/krt-grid-router/LICENSE` | MIT licence text | `LICENSE` | whole file | `0486e799` | 2026-10-17 | vendored, unchanged |
+| `crates/freerouting-krt/src/grid/path.rs` | simplify, plan | `py_router/geometry_utils.py`, `py_router/single_ended_routing.py` | simplify_path, _path_to_segments_vias | `0486e799` | 2026-10-17 | ported, adapted: exact integer collinearity test; no via reuse, no via resizing, connectors in `terminals.rs` |
