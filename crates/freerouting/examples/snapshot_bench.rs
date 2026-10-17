@@ -1,6 +1,7 @@
-//! Times board copies (B01.4): `snapshot()`, `restore()`, `deep_copy()`,
-//! `Clone` and `state_hash()`, and the heap bytes a snapshot and a clone
-//! keep alive, on the boards given (default: the three largest fixtures by
+//! Times board copies (B01.4): `snapshot()`, `restore()` (a build, as
+//! `rebuild()`), a repeated `restore()` of one snapshot (the P02.4 memo),
+//! `deep_copy()`, `Clone` and `state_hash()`, and the heap bytes a snapshot,
+//! a memoized restore and a clone keep alive, on the boards given (default: the three largest fixtures by
 //! item count).
 //!
 //! ```sh
@@ -80,15 +81,17 @@ fn main() {
         .collect();
     }
     println!(
-        "{:<44} {:>6} {:>11} {:>11} {:>11} {:>11} {:>11} {:>12} {:>12}",
+        "{:<44} {:>6} {:>11} {:>11} {:>11} {:>11} {:>11} {:>11} {:>12} {:>12} {:>12}",
         "board",
         "items",
         "snapshot",
         "restore",
+        "re-restore",
         "deep_copy",
         "clone",
         "state_hash",
         "snap bytes",
+        "memo bytes",
         "clone bytes"
     );
     for path in boards {
@@ -96,7 +99,13 @@ fn main() {
         let board = load_design(&bytes).unwrap_or_else(|e| panic!("{path}: {e}"));
         let snapshot = board.snapshot();
         let (snap_t, snap_b) = measure(|| board.snapshot());
-        let (restore_t, _) = measure(|| snapshot.restore());
+        let (restore_t, _) = measure(|| snapshot.rebuild());
+        // The first restore builds, the second fills the memo.
+        let before = LIVE.load(Ordering::Relaxed);
+        let repeated = board.snapshot();
+        drop((repeated.restore(), repeated.restore()));
+        let memo_b = LIVE.load(Ordering::Relaxed) - before;
+        let (again_t, _) = measure(|| repeated.restore());
         let (copy_t, _) = measure(|| board.deep_copy());
         let (clone_t, clone_b) = measure(|| board.clone());
         let (hash_t, _) = measure(|| board.state_hash());
@@ -105,15 +114,17 @@ fn main() {
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
         println!(
-            "{:<44} {:>6} {:>11.3?} {:>11.3?} {:>11.3?} {:>11.3?} {:>11.3?} {:>12} {:>12}",
+            "{:<44} {:>6} {:>11.3?} {:>11.3?} {:>11.3?} {:>11.3?} {:>11.3?} {:>11.3?} {:>12} {:>12} {:>12}",
             name,
             board.item_count(),
             snap_t,
             restore_t,
+            again_t,
             copy_t,
             clone_t,
             hash_t,
             snap_b,
+            memo_b,
             clone_b
         );
     }

@@ -255,6 +255,12 @@ fn main() -> ExitCode {
             counters.replaced.get()
         );
     }
+    // P02.5: the trace-shape memo the board and its restores shared.
+    let memo = board.search_trees().shape_memo().counts();
+    eprintln!(
+        "  shape memo: {} hits, {} misses, {} evictions",
+        memo.hits, memo.misses, memo.evictions
+    );
     // P02.1: `-- --router.debug.audit_incremental=true` turns the audit on.
     if let Some(audit) = &outcome.audit {
         eprintln!("  {}", audit.summary_line());

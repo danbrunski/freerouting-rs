@@ -188,7 +188,7 @@ Prerequisites: P01 (measurements), the A-series board-parity gate, and B01
   a whole DRC per pass as in Java. Making them incremental or parallel is P03.1's (or a new P02
   item), an operator decision in the P02 report.
 
-- [ ] **P02.4 — Immutable base, wiring overlay.** *(not attempted in the 2026-10-17 run)*
+- [~] **P02.4 — Immutable base, wiring overlay.**
   - Split the board into an `Arc`-shared base and a mutable overlay. The
     base holds the outline, keepouts, fixed and locked items, pins and their
     tree entries. The overlay holds routed wiring.
@@ -200,8 +200,45 @@ Prerequisites: P01 (measurements), the A-series board-parity gate, and B01
     - Copy time and peak RSS are given before and after on the 3 largest
       boards.
     - Copy time drops by at least 2×; otherwise revert.
+  *Partial 2026-10-17:* the base/overlay split as written cannot keep D5: Java's `readObject`
+  inserts every item highest id first, so a restore's default tree interleaves wiring (newer,
+  higher ids) and fixed items, and a tree of the base alone cannot be extended into that shape.
+  What a shared immutable base buys under D5 is a **restore memo** (`board/snapshot.rs`,
+  "Repeated restores"): a restore is a pure function of the snapshot, so the second restore of a
+  snapshot (or of its clones) keeps a compact clone of the board it built, and every later
+  restore clones it instead of rebuilding the tree. The optimizer restores its pass baseline once
+  per candidate (O06.4), which is where copies cost. The first restore builds as before, so a
+  snapshot restored once (history, strict DRC, `deep_copy`) costs and keeps nothing more;
+  `BoardSnapshot::rebuild` always builds. Not done: `Arc` for rules, library, components and
+  layer structure (B01.4's remainder; they are part of the clone below, and the 2× holds without
+  them). Restores reset exactly what B01 says: `tests/snapshot_memo.rs`
+  (`repeated_restores_equal_a_rebuild`: restores 1 to 3 against `rebuild()` on J2 with its
+  session, equal `state_hash`, default-tree walk and content digest, tree count, meter count,
+  revision 0, compensation off, edge-pin cache and ledger unbuilt, P02.1 `audit_board` clean;
+  `memoized_restore_counts_from_the_snapshot_meter`; `memoized_restore_routes_like_a_rebuild`:
+  my-board routed with the optimizer from a memoized restore and from a rebuild, equal SES, pass
+  records, summary and optimizer summary), plus B01.3's `tests/board_snapshot.rs` (13 pass).
+  Copy time on the 3 largest fixtures by item count (`examples/snapshot_bench.rs`, new
+  `re-restore` and `memo bytes` columns, release, median of 7, load 5.5): build / repeated
+  restore Issue190-processor.Z80 8.49 ms / 0.41 ms, Issue054-tairakb 8.22 / 0.19,
+  Issue690-kit-dev-coldfire 6.62 / 0.23; callgrind of the same bench, instructions per call:
+  116.15 M / 8.7 M (13×), 119.66 M / about 2.6 M (about 46×), 92.17 M / 4.38 M (21×);
+  `snapshot()` unchanged (185 / 60 / 93 µs). Peak RSS of the bench process (`/usr/bin/time`),
+  HEAD → this tree: 25.6 → 33.4 MB, 17.5 → 24.0 MB, 15.9 → 21.2 MB: a memoized snapshot keeps one
+  board (heap kept with the snapshot 5.83 / 5.35 / 3.39 MB). Optimizer routes
+  (`--router.optimizer.enabled=true`, 3 passes): peak RSS Issue508-DAC2020_bm07 38.5 → 38.8 MB,
+  Issue508-DAC2020_bm02 27.0 → 25.1 MB; with P02.5 too, bm07 38.8 → 40.1 MB, bm01 54.1 →
+  57.5 MB. Callgrind of the bm07 optimizer route (one thread):
+  61.08 G → 59.46 G instructions (−2.65 %; `BoardSnapshot::restore` was 2.86 % of it); plain
+  routes (`callgrind.sh`'s route entries, `run_batch_loop`) move by codegen only: rpi_splitter
+  −0.02 %, SMD-demo −0.07 %, my-board −0.11 %, bm07 −0.03 %, interf_u −0.19 %. SES: identical
+  to HEAD's with the optimizer on (9 `benchmark` boards up to Issue508-DAC2020_bm01, the
+  optimizer on its default threads; and the one-thread bm07 callgrind run). The `benchmark` gate
+  with the audit on is clean and byte-identical: see P02.5's note (one gate for both items).
+  Remainder: the quiet-machine wall time (median of 5) of `snapshot_bench` and of an optimizer
+  route; the load stayed at 4 to 6.
 
-- [ ] **P02.5 — Exact-key shape memo.** *(not attempted in the 2026-10-17 run)*
+- [~] **P02.5 — Exact-key shape memo.**
   - Memoize clearance-expanded tree shapes by the exact key (shape, clearance
     class, layer). Keys use exact integers; never canonicalize translations,
     which isn't bit-safe under D6.
@@ -210,3 +247,47 @@ Prerequisites: P01 (measurements), the A-series board-parity gate, and B01
     - Identical SES on `benchmark`.
     - Wall time drops on the 3 largest boards.
     - Evictions stay under 50 % of misses. Otherwise resize it or revert.
+  *Partial 2026-10-17:* `crates/freerouting/src/board/search/memo.rs` (`ShapeMemo`,
+  `MemoCounts`): a trace's tree shapes keyed by its polyline's lines (their defining integer
+  points, compared exactly, not by Java's geometric `Line.equals`), the total offset (half width
+  plus the tree's compensation for the trace's class on its layer) and the box kind of a 90 degree
+  tree; nothing is canonicalized (D6). Two generations of 16,384 polylines; a board's trees, its
+  copies, snapshots and restores share one memo behind a mutex (it stores a pure function, so a
+  hit or which thread fills it never changes a result). The first version memoized every trace
+  shape calculation and failed the eviction rule on the 3 largest `benchmark` boards (routed
+  with their gate bounds, one thread; SES identical to P02's gate): Issue145-smoothieboard
+  825,160 hits / 144,339 misses / 121,163 evictions (84 %), Issue219-LogicBoard_smt 482,478 /
+  184,226 / 157,001 (85 %), Issue420-contribution-board 256,420 / 280,424 / 259,945 (93 %); the
+  misses are new and candidate polylines that never come back. Resized by scope instead of
+  capacity: only whole-tree builds use the memo (`insert_memoized`: a restore's build, an
+  autoroute tree, a compensation rebuild); single insertions and other shape calculations
+  compute. Measured since: 0 evictions everywhere (`examples/route_board` prints the counts):
+  Issue508-DAC2020_bm07 with the optimizer 57,050 hits / 579 misses, Issue143-rpi_splitter with
+  the optimizer 611 / 74, Issue093-interf_u 653 / 653 (its history restores), plain routes
+  without restores 0 lookups. Also, `tree_shape` and `tree_shape_count` of a trace outside the
+  tree compute only the segment asked for or the count, where they computed every shape (the
+  same values; this was most of the first version's hits). Tests: `board::search::memo` unit
+  tests (`a_hit_returns_the_computed_shapes`, `keys_are_exact`: another offset, the box kind, a
+  translated copy and the same line through other points all miss,
+  `a_full_generation_ages_and_old_hits_move_back`); `tests/shape_memo.rs`
+  (`memoized_trees_equal_uncached_builds`: on J2 with its session the memoized default and
+  compensated trees equal uncached builds walk for walk and shape for shape;
+  `restores_share_the_board_memo`). Callgrind, against P02.4 (instructions): plain routes
+  (`run_batch_loop`, 3 passes) rpi_splitter −0.25 %, SMD-demo −0.39 %, my-board +0.12 %, bm07
+  −0.45 %, interf_u −0.06 %; the bm07 optimizer route −1.62 %. Split with a build whose memo is
+  off: the memo alone 0.00 % (bm07), −0.16 % (interf_u), −0.82 % (bm07 optimizer); the direct
+  `tree_shape` −0.45 %, +0.10 %, −0.80 %. P02.4 and P02.5 together against HEAD: bm07 optimizer
+  route 61.08 G → 58.50 G (−4.22 %), plain bm07 −0.47 %, interf_u −0.25 %, rpi_splitter
+  −0.27 %, SMD-demo −0.46 %, my-board +0.02 %. SES identical to HEAD on every callgrind run.
+  `benchmark` with the audit on, both items in (`PARITY_SET=tools/bench/sets/benchmark.txt
+  PARITY_AUDIT=1 cargo test --release -p freerouting --test autoroute_board_parity -- --ignored
+  autoroute_board_parity --test-threads=1`, base `94b344f`): EXIT 0, 16 of 16 pass (10 exact,
+  6 cutoff), 16 SES byte-identical to Java, no audit difference (one fails its board), 2,375 s;
+  the 16 SES are byte-identical to P02.1's audit gate's. Gate route times (audit on, load 3 to
+  8, not comparable): Issue420 652.3 s (P02.1's gate 658.1 s), Issue219 390.1 s (408.0 s),
+  Issue145 161.7 s (185.7 s).
+  Remainder: "wall time drops on the 3 largest boards" is not shown: their gate routes rebuild
+  trees only on history restores, so the memo saves little there; the gain is in optimizer runs
+  and boards with restores (O06.4). Quiet-machine wall times (median of 5) are owed for P02.4
+  and P02.5 as for P02.1 to P02.3, and whether to keep the memo for a gain of under 1 % is an
+  operator decision (report).

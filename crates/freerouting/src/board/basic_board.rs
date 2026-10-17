@@ -251,6 +251,8 @@ impl BasicBoard {
             min_trace_half_width: self.min_trace_half_width,
             pre_existing_clearance_violations_count: self.pre_existing_clearance_violations_count,
             failure_log: FailureLog::new(),
+            memo: Default::default(),
+            shape_memo: self.search_trees.shape_memo().clone(),
         }
     }
 
@@ -267,7 +269,7 @@ impl BasicBoard {
             layer_structure: (*snapshot.layer_structure).clone(),
             communication: snapshot.communication.clone(),
             bounding_box: snapshot.bounding_box,
-            search_trees: SearchTreeManager::new(),
+            search_trees: SearchTreeManager::with_memo(snapshot.shape_memo.clone()),
             max_trace_half_width: snapshot.max_trace_half_width,
             min_trace_half_width: snapshot.min_trace_half_width,
             revision: 0,
@@ -297,7 +299,7 @@ impl BasicBoard {
         let ids: Vec<ItemId> = self.items.keys().copied().collect();
         for id in &ids {
             if let Some(item) = self.items.get(id) {
-                self.search_trees.insert(item, &ctx);
+                self.search_trees.insert_memoized(item, &ctx);
             }
         }
         for id in &ids {

@@ -15,10 +15,18 @@
 //! Java stores the tree shapes and leaves of an item in the item
 //! (`ItemSearchTreesInfo`); here each tree keeps them in a map keyed by
 //! [`ItemId`], and the rooms in a map keyed by [`RoomId`].
+//!
+//! A board's trees take trace shapes from one [`ShapeMemo`] (P02.5), which
+//! the board's snapshots and restores share, when they build a whole tree (a
+//! restore, an autoroute tree, a compensation change): a trace's shapes are
+//! computed once per offset and tree kind, not again at every build. Single
+//! insertions and [`ShapeSearchTree::calculate_tree_shapes`] compute; a tree
+//! made with [`ShapeSearchTree::new`] has no memo.
 
 pub mod audit;
 pub mod entries;
 pub mod fingerprint;
+pub mod memo;
 pub mod tree_object;
 pub mod work;
 
@@ -44,6 +52,7 @@ use crate::rules::{BoardRules, ClearanceMatrix};
 
 pub use entries::{TraceChange, TraceMerge};
 pub use fingerprint::TreeFingerprint;
+pub use memo::{MemoCounts, ShapeMemo};
 pub use tree_object::{ObjectEntry, RoomEntry, RoomId, TreeObject};
 pub use work::{UNITS_PER_NOMINAL_MS, WorkLimit, WorkMeter};
 
@@ -98,6 +107,9 @@ pub struct ShapeSearchTree {
     tree: ShapeTree<TreeObject>,
     entries: BTreeMap<ItemId, ItemEntries>,
     rooms: BTreeMap<RoomId, RoomEntry>,
+    /// The board's trace-shape memo (P02.5); `None` for a tree of its own,
+    /// which computes every shape.
+    memo: Option<Arc<ShapeMemo>>,
 }
 
 impl ShapeSearchTree {
@@ -112,7 +124,17 @@ impl ShapeSearchTree {
             tree: ShapeTree::new(directions),
             entries: BTreeMap::new(),
             rooms: BTreeMap::new(),
+            memo: None,
         }
+    }
+
+    /// An empty tree of the same kind and class, counting on the same meter
+    /// and sharing the same memo.
+    fn emptied(&self) -> ShapeSearchTree {
+        let mut tree = ShapeSearchTree::new(self.kind, self.compensated_clearance_class);
+        tree.tree.set_meter(self.tree.meter().clone());
+        tree.memo = self.memo.clone();
+        tree
     }
 
     pub fn kind(&self) -> TreeKind {
@@ -175,6 +197,17 @@ impl ShapeSearchTree {
     /// Inserts the tree shapes of `item`.
     pub fn insert(&mut self, item: &Item, ctx: &ShapeContext<'_>) {
         let shapes = self.calculate_tree_shapes(item, ctx);
+        self.insert_shapes(item, shapes);
+    }
+
+    /// [`insert`](Self::insert) with the trace shapes from the board's memo
+    /// (P02.5): for whole-tree builds, which meet the same traces again.
+    pub(crate) fn insert_memoized(&mut self, item: &Item, ctx: &ShapeContext<'_>) {
+        let shapes = self.tree_shapes_of(item, ctx, self.memo.as_deref());
+        self.insert_shapes(item, shapes);
+    }
+
+    fn insert_shapes(&mut self, item: &Item, shapes: Vec<Option<TileShape>>) {
         let directions = self.tree.bounding_directions();
         let mut leaves = Vec::with_capacity(shapes.len());
         for (index, shape) in shapes.iter().enumerate() {
@@ -251,9 +284,11 @@ impl ShapeSearchTree {
 
     /// The number of tree shapes of `item`.
     pub fn tree_shape_count(&self, item: &Item, ctx: &ShapeContext<'_>) -> usize {
-        match self.entries.get(&item.id()) {
-            Some(entries) => entries.shapes.len(),
-            None => self.calculate_tree_shapes(item, ctx).len(),
+        match (self.entries.get(&item.id()), &item.kind) {
+            (Some(entries), _) => entries.shapes.len(),
+            // One shape per segment (`tree_shapes_of`), without computing them.
+            (None, ItemKind::Trace(trace)) => trace.tile_shape_count(),
+            (None, _) => self.calculate_tree_shapes(item, ctx).len(),
         }
     }
 
@@ -265,9 +300,16 @@ impl ShapeSearchTree {
         index: usize,
         ctx: &ShapeContext<'_>,
     ) -> Option<TileShape> {
-        match self.entries.get(&item.id()) {
-            Some(entries) => entries.shapes.get(index).cloned().flatten(),
-            None => self
+        match (self.entries.get(&item.id()), &item.kind) {
+            (Some(entries), _) => entries.shapes.get(index).cloned().flatten(),
+            // Only segment `index` of the shapes `tree_shapes_of` computes.
+            (None, ItemKind::Trace(trace)) => (index < trace.tile_shape_count())
+                .then(|| {
+                    let offset = self.trace_offset(item, trace.half_width, trace.layer, ctx);
+                    self.trace_offset_shape(&trace.polyline, offset, index)
+                })
+                .flatten(),
+            (None, _) => self
                 .calculate_tree_shapes(item, ctx)
                 .into_iter()
                 .nth(index)
@@ -564,18 +606,31 @@ impl ShapeSearchTree {
         item: &Item,
         ctx: &ShapeContext<'_>,
     ) -> Vec<Option<TileShape>> {
+        self.tree_shapes_of(item, ctx, None)
+    }
+
+    fn tree_shapes_of(
+        &self,
+        item: &Item,
+        ctx: &ShapeContext<'_>,
+        memo: Option<&ShapeMemo>,
+    ) -> Vec<Option<TileShape>> {
         match &item.kind {
             ItemKind::Pin(_) | ItemKind::Via(_) => self.drill_item_tree_shapes(item, ctx),
             ItemKind::Trace(trace) => {
-                let offset = trace.half_width
-                    + self.clearance_compensation_value(
-                        &ctx.rules.clearance_matrix,
-                        item.clearance_class(),
-                        trace.layer,
-                    );
-                (0..trace.tile_shape_count())
-                    .map(|i| self.trace_offset_shape(&trace.polyline, offset, i))
-                    .collect()
+                let offset = self.trace_offset(item, trace.half_width, trace.layer, ctx);
+                let compute = || {
+                    (0..trace.tile_shape_count())
+                        .map(|i| self.trace_offset_shape(&trace.polyline, offset, i))
+                        .collect()
+                };
+                match memo {
+                    Some(memo) => {
+                        let boxes = self.kind == TreeKind::NinetyDegree;
+                        memo.trace_shapes(&trace.polyline, offset, boxes, compute)
+                    }
+                    None => compute(),
+                }
             }
             ItemKind::Area(area) => {
                 let shapes = self.obstacle_area_tree_shapes(
@@ -592,6 +647,23 @@ impl ShapeSearchTree {
             }
             ItemKind::ComponentOutline(_) => Vec::new(),
         }
+    }
+
+    /// The offset of the tree shapes of a trace of `item`'s clearance class:
+    /// its half width plus the compensation on its layer.
+    fn trace_offset(
+        &self,
+        item: &Item,
+        half_width: i32,
+        layer: i32,
+        ctx: &ShapeContext<'_>,
+    ) -> i32 {
+        half_width
+            + self.clearance_compensation_value(
+                &ctx.rules.clearance_matrix,
+                item.clearance_class(),
+                layer,
+            )
     }
 
     /// The 45 degree tree replaces area and outline shapes by their bounding
@@ -853,18 +925,14 @@ pub struct SearchTreeManager {
     trees: Vec<ShapeSearchTree>,
     clearance_compensation_used: bool,
     meter: Arc<WorkMeter>,
+    /// The trace-shape memo of the trees (P02.5), shared with the board's
+    /// copies, snapshots and restores.
+    memo: Arc<ShapeMemo>,
 }
 
 impl Default for SearchTreeManager {
     fn default() -> Self {
-        let meter = Arc::new(WorkMeter::new());
-        let mut tree = ShapeSearchTree::new(TreeKind::Plain, 0);
-        tree.tree.set_meter(meter.clone());
-        SearchTreeManager {
-            trees: vec![tree],
-            clearance_compensation_used: false,
-            meter,
-        }
+        Self::with_memo(Arc::new(ShapeMemo::new()))
     }
 }
 
@@ -881,6 +949,7 @@ impl Clone for SearchTreeManager {
             trees,
             clearance_compensation_used: self.clearance_compensation_used,
             meter,
+            memo: self.memo.clone(),
         }
     }
 }
@@ -888,6 +957,24 @@ impl Clone for SearchTreeManager {
 impl SearchTreeManager {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// A manager with only the default tree, whose trees share `memo`.
+    pub fn with_memo(memo: Arc<ShapeMemo>) -> Self {
+        let mut manager = SearchTreeManager {
+            trees: Vec::new(),
+            clearance_compensation_used: false,
+            meter: Arc::new(WorkMeter::new()),
+            memo,
+        };
+        let tree = manager.new_tree(TreeKind::Plain, 0);
+        manager.trees.push(tree);
+        manager
+    }
+
+    /// The trace-shape memo of the trees (P02.5).
+    pub fn shape_memo(&self) -> &Arc<ShapeMemo> {
+        &self.memo
     }
 
     /// The board's work meter: the nodes visited by the queries on its
@@ -900,6 +987,7 @@ impl SearchTreeManager {
     fn new_tree(&self, kind: TreeKind, class: i32) -> ShapeSearchTree {
         let mut tree = ShapeSearchTree::new(kind, class);
         tree.tree.set_meter(self.meter.clone());
+        tree.memo = Some(self.memo.clone());
         tree
     }
 
@@ -921,6 +1009,14 @@ impl SearchTreeManager {
     pub fn insert(&mut self, item: &Item, ctx: &ShapeContext<'_>) {
         for tree in &mut self.trees {
             tree.insert(item, ctx);
+        }
+    }
+
+    /// [`insert`](Self::insert) with the trace shapes from the memo, for a
+    /// whole-board build (a restore).
+    pub(crate) fn insert_memoized(&mut self, item: &Item, ctx: &ShapeContext<'_>) {
+        for tree in &mut self.trees {
+            tree.insert_memoized(item, ctx);
         }
     }
 
@@ -1040,7 +1136,7 @@ impl SearchTreeManager {
         let class = if value { 1 } else { 0 };
         let mut tree = self.new_tree(TreeKind::Plain, class);
         for (_, item) in items.iter().filter(|(_, i)| i.is_on_the_board()) {
-            tree.insert(item, ctx);
+            tree.insert_memoized(item, ctx);
         }
         self.trees = vec![tree];
     }
@@ -1093,7 +1189,7 @@ impl SearchTreeManager {
         };
         let mut tree = self.new_tree(kind, clearance_class);
         for (_, item) in items.iter() {
-            tree.insert(item, ctx);
+            tree.insert_memoized(item, ctx);
         }
         self.trees.push(tree);
         self.trees.last().expect("tree just pushed")
@@ -1114,16 +1210,14 @@ impl SearchTreeManager {
     pub fn rebuild(&mut self, items: &UndoableObjects<ItemId, Item>, ctx: &ShapeContext<'_>) {
         for tree in &mut self.trees {
             if tree.rooms.is_empty() {
-                let meter = tree.tree.meter().clone();
-                *tree = ShapeSearchTree::new(tree.kind, tree.compensated_clearance_class);
-                tree.tree.set_meter(meter);
+                *tree = tree.emptied();
             } else {
                 for (id, _) in items.iter() {
                     tree.remove(*id);
                 }
             }
             for (_, item) in items.iter().filter(|(_, i)| i.is_on_the_board()) {
-                tree.insert(item, ctx);
+                tree.insert_memoized(item, ctx);
             }
         }
     }
