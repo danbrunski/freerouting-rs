@@ -57,10 +57,14 @@ grading below):
 `inner_tracks.py` (KiCad python, exits 1 on any track on an inner layer) must both report
 0. A valid result has no clearance, track width, annular ring or via-in-pad errors, and no
 tracks on In1/In2; canary's `autoroute.sh` refuses a result that fails `inner_tracks.py`.
-Starved thermals are counted but do not disqualify. **The result to beat is 42
-unconnected** (Java `46bf9e2ef` pass 1 on `canary-pwr-9511d9a.dsn` with its In1 track
-stripped, canary `9b7a5fe`). Rust at `4336133` (A13): 44 as routed, 46 with its In1
-tracks stripped, 3 starved thermals; the In1 tracks are Q01.7.
+Starved thermals are counted but do not disqualify. **The result to beat is 40
+unconnected** (canary `1a7df77`): Java `7f56b062d`, which has the power-layer fix of Q01.7,
+add-only second run (`dsn_export --fix-existing`, `-mp 2`) after pass 1 on
+`canary-pwr-9511d9a.dsn`. Clean: no clearance, width, annular, via-in-pad or inner-layer
+errors; 5 starved thermals. **The pass-1 parity target is 45**: Java `7f56b062d` pass 1, 109
+unrouted at the router, clean, 4 starved thermals. Before the fix, Java `46bf9e2ef` pass 1 gave
+41, or 42 with its In1 track stripped (canary `9b7a5fe`). Rust at `4336133` (A13, before Q01.7):
+44 as routed, 46 with its In1 tracks stripped, 3 starved thermals.
 
 The Java route references for these boards in `fixtures/reference/route/canary-pwr/` are
 bounded runs with the harness's settings (optimizer off, `route-bounds.tsv`, no extra
