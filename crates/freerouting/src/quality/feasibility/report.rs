@@ -320,7 +320,8 @@ impl PinFeasibility {
         Some(line)
     }
 
-    fn to_json(&self, units_per_mm: f64) -> JsonValue {
+    /// The pin's JSON object of the report.
+    pub fn to_json(&self, units_per_mm: f64) -> JsonValue {
         let num = |v: f64| JsonValue::Number(format!("{v:.4}"));
         let opt_int = |v: Option<i64>| match v {
             Some(i64::MAX) => JsonValue::string("connected"),

@@ -150,6 +150,10 @@ pub struct RunSummary {
     /// The resolved stage selection as `(settings key, stage id)` pairs
     /// (A10.2).
     pub stages: Vec<(String, String)>,
+    /// One verdict per incomplete connection, when the `verdicts`
+    /// diagnostic ran (Q06; `router.special.diagnostics`). The CLI's result
+    /// JSON and the GUI's incompletes list read these values.
+    pub verdicts: Option<crate::quality::verdict::VerdictReport>,
 }
 
 /// One message from the router to its listeners.
@@ -513,6 +517,7 @@ mod tests {
                 "router.autorouter.algorithm".to_owned(),
                 "freerouting-router".to_owned(),
             )],
+            verdicts: None,
         };
         let (sink, receiver) = EventSink::channel(1);
         let reader = thread::spawn(move || receiver.recv().unwrap());

@@ -3,6 +3,9 @@
 //!
 //! Each checklist appends its own `pub mod` line here.
 
+pub mod attribution;
 pub mod feasibility;
 pub mod pour_audit;
 pub mod pour_guard;
+pub mod register;
+pub mod verdict;

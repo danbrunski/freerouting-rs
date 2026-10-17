@@ -166,6 +166,7 @@ fn defaults_with_eight_cores() {
         ("special.plane_taps", None),
         ("special.neck_down", None),
         ("special.stages", None),
+        ("special.diagnostics", None),
     ];
     let tabled: BTreeSet<&str> = FIELDS.iter().map(|f| f.path).collect();
     let listed: BTreeSet<&str> = expected.iter().map(|(p, _)| *p).collect();

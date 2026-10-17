@@ -1,0 +1,65 @@
+(pcb q06-fixed-cage.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q06 synthetic fixture")
+    (host_version "one layer; pad A1 is walled in by eight fixed pads of other nets 0.3 mm apart")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 20000  0 20000  0 0)
+    )
+    (via "Via[0-0]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "PAD"
+      (place A1 8000 10000 front 0)
+      (place A2 25000 10000 front 0)
+      (place C1 6700 8700 front 0)
+      (place C2 6700 10000 front 0)
+      (place C3 6700 11300 front 0)
+      (place C4 8000 8700 front 0)
+      (place C5 8000 11300 front 0)
+      (place C6 9300 8700 front 0)
+      (place C7 9300 10000 front 0)
+      (place C8 9300 11300 front 0)
+    )
+  )
+  (library
+    (image "PAD"
+      (pin RectPad 1 0 0)
+    )
+    (padstack RectPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-0]_600:300_um"
+      (shape (circle F.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net A (pins A1-1 A2-1))
+    (net NC1 (pins C1-1))
+    (net NC2 (pins C2-1))
+    (net NC3 (pins C3-1))
+    (net NC4 (pins C4-1))
+    (net NC5 (pins C5-1))
+    (net NC6 (pins C6-1))
+    (net NC7 (pins C7-1))
+    (net NC8 (pins C8-1))
+    (class kicad_default "" A NC1 NC2 NC3 NC4 NC5 NC6 NC7 NC8
+      (circuit (use_via "Via[0-0]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

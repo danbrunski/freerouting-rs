@@ -375,6 +375,15 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   are unchanged. Its own pin widths (`Pin.getMinWidth`, `getTraceNeckdownHalfwidth`) follow
   Java until B05 ports them on the board.
 
+**Failure attribution and verdicts** (`quality::{attribution, verdict}`, Q06; tests
+`tests/quality_attribution.rs`, `crates/freerouting-cli/tests/result_json_verdicts.rs`)
+- New, with no Java counterpart: with `router.special.diagnostics=verdicts` (not a Java key)
+  every incomplete connection gets one verdict (`infeasible`, `work_limit`, `blocked_by`,
+  `unrouted`) and the routed nets in its way, from a ripup-off replay of the Freerouting maze
+  search on a copy of the final board. The connection router is wrapped to observe each
+  attempt's outcome only when a diagnostic is selected; the SES is byte-identical with it on
+  and off (`the_ses_is_byte_identical_with_the_verdicts_on_and_off`).
+
 **Shove checks** (`shove`, O03; tests `tests/board_probe_shove.rs`)
 - The fast cutout (`ShapeTraceEntries.fastCutoutTrace`) of a trace with a segment that has
   no tree leaf (a zero-length segment, left by an earlier cutout): Java throws a
@@ -754,6 +763,9 @@ plugin_flags}.rs`)
   Only `phases.autorouter.before`/`after` (and `optimizer.after` when the optimizer ran) hold a
   board snapshot; the other phase snapshots are `null` (the pipeline reports the job, not each
   stage). It is also written when the run fails (`a_failed_load_still_writes_the_manifest`).
+- With `--router.special.diagnostics=verdicts` the manifest gets one key Java does not have,
+  `verdicts`, after Java's keys (Q06, `docs/development/verdicts.md`); without it the key is
+  absent (`the_manifest_carries_the_verdicts_only_with_the_diagnostic`).
 - Stopping: a stdin reader acts on `stop` (stop everything) and `stop-router` (Java's
   `requestStopAutoRouter`); end of input is not a stop (`stdin_eof_is_not_a_stop`). Java's CLI
   has no such channel. Ctrl-C and SIGTERM (SIGINT, SIGTERM and SIGHUP on Unix, Ctrl-C and

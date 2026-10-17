@@ -5,10 +5,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
+use std::sync::{Arc, Mutex};
+
 use super::{
-    BoardStage, ConnectionOutcome, ConnectionParams, ConnectionRouter, Destinations, FailureRecord,
-    FanoutStage, FanoutSummary, NeckDownAttempt, NeckDownPolicy, NetOrdering, Optimizer,
-    OptimizerSummary, PassController, PlaneTapPolicy, RipupPolicy, RouteTask, StageCtx,
+    BoardStage, ConnectionOutcome, ConnectionParams, ConnectionRouter, Destinations, Diagnostics,
+    FailureRecord, FanoutStage, FanoutSummary, NeckDownAttempt, NeckDownPolicy, NetOrdering,
+    Optimizer, OptimizerSummary, PassController, PlaneTapPolicy, RipupPolicy, RouteTask, StageCtx,
 };
 use crate::autoroute::AttemptState;
 use crate::autoroute::batch::connection::{
@@ -180,6 +182,8 @@ pub struct StageRegistry {
     pub board_stages: BTreeMap<&'static str, Factory<dyn BoardStage>>,
     /// Optimizers.
     pub optimizer: BTreeMap<&'static str, Factory<dyn Optimizer>>,
+    /// Report-only diagnostics (`router.special.diagnostics`, Q06).
+    pub diagnostics: BTreeMap<&'static str, Factory<dyn Diagnostics>>,
 }
 
 impl fmt::Debug for StageRegistry {
@@ -207,6 +211,7 @@ impl fmt::Debug for StageRegistry {
                 &self.board_stages.keys().collect::<Vec<_>>(),
             )
             .field("optimizer", &self.optimizer.keys().collect::<Vec<_>>())
+            .field("diagnostics", &self.diagnostics.keys().collect::<Vec<_>>())
             .finish()
     }
 }
@@ -243,6 +248,7 @@ impl StageRegistry {
                 s,
             ))
         });
+        crate::quality::register::register(&mut r);
         r
     }
 
@@ -252,12 +258,25 @@ impl StageRegistry {
         selection: &StageSelection,
         settings: &RouterSettings,
     ) -> Result<Pipeline, UnknownStage> {
+        let diagnostics: Vec<Box<dyn Diagnostics>> = selection
+            .diagnostics
+            .iter()
+            .map(|choice| lookup(&self.diagnostics, choice).map(|f| f(settings)))
+            .collect::<Result<_, _>>()?;
+        let diagnostics: SharedDiagnostics = Arc::new(Mutex::new(diagnostics));
+        let mut connection_router =
+            lookup(&self.connection_router, &selection.connection_router)?(settings);
+        if !lock(&diagnostics).is_empty() {
+            // Q06: only a job with diagnostics gets the observing wrapper.
+            connection_router = Box::new(ObservedRouter {
+                inner: connection_router,
+                diagnostics: Arc::clone(&diagnostics),
+            });
+        }
         Ok(Pipeline {
             fanout: lookup(&self.fanout, &selection.fanout)?(settings),
             ordering: lookup(&self.ordering, &selection.ordering)?(settings),
-            connection_router: lookup(&self.connection_router, &selection.connection_router)?(
-                settings,
-            ),
+            connection_router,
             ripup_policy: lookup(&self.ripup_policy, &selection.ripup_policy)?(settings),
             pass_controller: lookup(&self.pass_controller, &selection.pass_controller)?(settings),
             plane_taps: lookup(&self.plane_taps, &selection.plane_taps)?(settings),
@@ -268,8 +287,49 @@ impl StageRegistry {
                 .map(|choice| lookup(&self.board_stages, choice).map(|f| f(settings)))
                 .collect::<Result<_, _>>()?,
             optimizer: lookup(&self.optimizer, &selection.optimizer)?(settings),
+            diagnostics,
             selection: selection.clone(),
         })
+    }
+}
+
+/// The diagnostics of a pipeline, shared with the connection router's
+/// observing wrapper.
+pub type SharedDiagnostics = Arc<Mutex<Vec<Box<dyn Diagnostics>>>>;
+
+/// The diagnostics behind `shared`; a poisoned lock still gives them (a
+/// diagnostic's panic does not hide the others).
+pub fn lock(shared: &SharedDiagnostics) -> std::sync::MutexGuard<'_, Vec<Box<dyn Diagnostics>>> {
+    shared
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// A connection router that hands every outcome to the diagnostics after
+/// the inner router returned it. It decides nothing: `route` returns the
+/// inner router's outcome unchanged.
+struct ObservedRouter {
+    inner: Box<dyn ConnectionRouter>,
+    diagnostics: SharedDiagnostics,
+}
+
+impl ConnectionRouter for ObservedRouter {
+    fn id(&self) -> &'static str {
+        self.inner.id()
+    }
+
+    fn route(
+        &mut self,
+        board: &mut RoutingBoard,
+        task: &RouteTask,
+        p: &ConnectionParams,
+        ctx: &mut StageCtx,
+    ) -> ConnectionOutcome {
+        let outcome = self.inner.route(board, task, p, ctx);
+        for diagnostic in lock(&self.diagnostics).iter_mut() {
+            diagnostic.after_connection(board, task, p, &outcome, ctx);
+        }
+        outcome
     }
 }
 
@@ -361,6 +421,8 @@ pub struct StageSelection {
     pub neck_down: StageChoice,
     /// The extra board stages, in list order.
     pub stages: Vec<StageChoice>,
+    /// The report-only diagnostics, in list order (Q06).
+    pub diagnostics: Vec<StageChoice>,
     /// The optimizer (`router.optimizer.algorithm` after normalisation).
     pub optimizer: StageChoice,
     /// Java's warnings for the two Java keys it normalised.
@@ -450,6 +512,16 @@ impl StageSelection {
                     from_default: false,
                 })
                 .collect(),
+            diagnostics: sp
+                .diagnostics
+                .iter()
+                .flatten()
+                .map(|id| StageChoice {
+                    key: "router.special.diagnostics",
+                    id: id.clone(),
+                    from_default: false,
+                })
+                .collect(),
             optimizer: StageChoice {
                 key: "router.optimizer.algorithm",
                 id: optimizer,
@@ -479,6 +551,7 @@ impl StageSelection {
         out.extend(
             self.stages
                 .iter()
+                .chain(&self.diagnostics)
                 .map(|c| (c.key.to_string(), c.id.clone())),
         );
         out
@@ -517,6 +590,9 @@ pub struct Pipeline {
     pub board_stages: Vec<Box<dyn BoardStage>>,
     /// The optimizer.
     pub optimizer: Box<dyn Optimizer>,
+    /// The report-only diagnostics, in list order (Q06); the connection
+    /// router feeds them when there are any.
+    pub diagnostics: SharedDiagnostics,
 }
 
 impl fmt::Debug for Pipeline {

@@ -323,6 +323,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "special.stages",
         "stage selection (A10), set with the CLI or a settings file",
     ),
+    (
+        "special.diagnostics",
+        "report-only diagnostics (Q06), set with the CLI or a settings file",
+    ),
 ];
 
 /// True if the window has a control for the field `path`.

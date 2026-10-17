@@ -1,0 +1,263 @@
+{
+  "q06-sole-wall.dsn": {
+    "schema": "freerouting-verdicts/1",
+    "count": 1,
+    "counts": {
+      "infeasible": 0,
+      "work_limit": 0,
+      "blocked_by": 1,
+      "unrouted": 0
+    },
+    "connections": [
+      {
+        "net": 1,
+        "net_name": "A",
+        "net_class": "default",
+        "trace_width_mm": 0.2500,
+        "from": {
+          "item": 3,
+          "kind": "pin",
+          "name": "A2-1",
+          "layers": [
+            "F.Cu",
+            "F.Cu"
+          ],
+          "x_mm": 25.0000,
+          "y_mm": 10.0000,
+          "pad_min_width_mm": 1.0000
+        },
+        "to": {
+          "item": 2,
+          "kind": "pin",
+          "name": "A1-1",
+          "layers": [
+            "F.Cu",
+            "F.Cu"
+          ],
+          "x_mm": 5.0000,
+          "y_mm": 10.0000,
+          "pad_min_width_mm": 1.0000
+        },
+        "length_mm": 20.0000,
+        "verdict": "blocked_by",
+        "evidence": {
+          "top_net": 2,
+          "top_net_name": "B"
+        },
+        "search": "exhausted",
+        "coverage": {
+          "entries": 12,
+          "routed": 10,
+          "fixed": 2,
+          "dropped": 0
+        },
+        "blockers": [
+          {
+            "net": 2,
+            "name": "B",
+            "blocked": 10,
+            "unique": 10,
+            "near_start": 0,
+            "near_dest": 0
+          }
+        ]
+      }
+    ]
+  },
+  "q06-fixed-cage.dsn": {
+    "schema": "freerouting-verdicts/1",
+    "count": 1,
+    "counts": {
+      "infeasible": 0,
+      "work_limit": 0,
+      "blocked_by": 0,
+      "unrouted": 1
+    },
+    "connections": [
+      {
+        "net": 1,
+        "net_name": "A",
+        "net_class": "default",
+        "trace_width_mm": 0.2500,
+        "from": {
+          "item": 3,
+          "kind": "pin",
+          "name": "A2-1",
+          "layers": [
+            "F.Cu",
+            "F.Cu"
+          ],
+          "x_mm": 25.0000,
+          "y_mm": 10.0000,
+          "pad_min_width_mm": 1.0000
+        },
+        "to": {
+          "item": 2,
+          "kind": "pin",
+          "name": "A1-1",
+          "layers": [
+            "F.Cu",
+            "F.Cu"
+          ],
+          "x_mm": 8.0000,
+          "y_mm": 10.0000,
+          "pad_min_width_mm": 1.0000
+        },
+        "length_mm": 17.0000,
+        "verdict": "unrouted",
+        "evidence": {
+          "entries": 6,
+          "routed": 0,
+          "fixed": 6,
+          "dropped": 0
+        },
+        "attempt": {
+          "pass": 1,
+          "state": "FAILED",
+          "work_units": 10256,
+          "work_limit_hit": false
+        },
+        "search": "exhausted",
+        "coverage": {
+          "entries": 6,
+          "routed": 0,
+          "fixed": 6,
+          "dropped": 0
+        },
+        "blockers": []
+      }
+    ]
+  },
+  "q03-qfn-0p5.dsn": {
+    "schema": "freerouting-verdicts/1",
+    "count": 1,
+    "counts": {
+      "infeasible": 1,
+      "work_limit": 0,
+      "blocked_by": 0,
+      "unrouted": 0
+    },
+    "connections": [
+      {
+        "net": 1,
+        "net_name": "PWR",
+        "net_class": "Power_High",
+        "trace_width_mm": 1.5000,
+        "from": {
+          "item": 12,
+          "kind": "pin",
+          "name": "J1-1",
+          "layers": [
+            "F.Cu",
+            "F.Cu"
+          ],
+          "x_mm": 10.0000,
+          "y_mm": 4.0000,
+          "pad_min_width_mm": 2.0000
+        },
+        "to": {
+          "item": 6,
+          "kind": "pin",
+          "name": "U1-5",
+          "layers": [
+            "F.Cu",
+            "F.Cu"
+          ],
+          "x_mm": 10.0000,
+          "y_mm": 10.0000,
+          "pad_min_width_mm": 0.2500
+        },
+        "length_mm": 6.0000,
+        "verdict": "infeasible",
+        "evidence": {
+          "id": 6,
+          "net": "PWR",
+          "net_number": 1,
+          "component": "U1",
+          "pin": "5",
+          "layers": [
+            "F.Cu"
+          ],
+          "required_width": {
+            "F.Cu": 15000,
+            "B.Cu": 15000
+          },
+          "width": 15000,
+          "width_mm": 1.5000,
+          "corridor": 2602,
+          "corridor_mm": 0.2602,
+          "margin": -12398,
+          "verdict": "infeasible",
+          "throat": {
+            "layer": "F.Cu",
+            "x": 100000,
+            "y": 96400,
+            "x_mm": 10.0000,
+            "y_mm": 9.6400
+          },
+          "near": [
+            {
+              "id": 5,
+              "kind": "pin",
+              "net": "N4",
+              "component": "U1",
+              "pin": "4"
+            },
+            {
+              "id": 7,
+              "kind": "pin",
+              "net": "N6",
+              "component": "U1",
+              "pin": "6"
+            }
+          ],
+          "step": 100,
+          "window": [
+            58700,
+            56500,
+            141300,
+            143500
+          ],
+          "neck": {
+            "neck_width": [
+              2498,
+              15000
+            ],
+            "neck_needed_mm": 1.0000,
+            "rungs": [
+              {
+                "radius_mm": 0.2500,
+                "verdict": "infeasible",
+                "corridor_mm": 0.2602
+              },
+              {
+                "radius_mm": 0.5000,
+                "verdict": "infeasible",
+                "corridor_mm": 0.3246
+              },
+              {
+                "radius_mm": 1.0000,
+                "verdict": "passable",
+                "corridor_mm": 0.2602
+              }
+            ]
+          }
+        },
+        "attempt": {
+          "pass": 1,
+          "state": "FAILED",
+          "work_units": 2392,
+          "work_limit_hit": false
+        },
+        "search": "exhausted",
+        "coverage": {
+          "entries": 0,
+          "routed": 0,
+          "fixed": 0,
+          "dropped": 0
+        },
+        "blockers": []
+      }
+    ]
+  }
+}

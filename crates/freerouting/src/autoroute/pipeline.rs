@@ -54,7 +54,7 @@ use crate::autoroute::batch::report::NoRoutableLayer;
 use crate::autoroute::events::{CancelToken, CompletionStatus, RouterEvents, RunSummary};
 use crate::autoroute::stages::{
     FanoutSummary, OptimizerSummary, StageCtx, StagePhase, StageRegistry, StageSelection,
-    StopReason, UnknownStage,
+    StopReason, UnknownStage, lock_diagnostics,
 };
 use crate::board::RoutingBoard;
 use crate::job::deadline::{StopLevel, Watcher};
@@ -222,6 +222,9 @@ pub fn run_pipeline_with(
 
     let mut outcome = PipelineOutcome::default();
     let mut loop_outcome = LoopOutcome::default();
+    // Q06: the diagnostics that see the job; the loop's, when it runs, as
+    // its connection router feeds them.
+    let mut diagnostics = Arc::clone(&pipeline.diagnostics);
     if let Some(loop_settings) = &loop_settings {
         // The loop's stages come from the settings the loop sees.
         let mut loop_pipeline = match registry.build(&selection, loop_settings) {
@@ -235,6 +238,10 @@ pub fn run_pipeline_with(
             cancel,
             events: job.events,
         };
+        diagnostics = Arc::clone(&loop_pipeline.diagnostics);
+        for diagnostic in lock_diagnostics(&diagnostics).iter_mut() {
+            diagnostic.on_input(&board, &ctx);
+        }
         let mut stages = LoopStages {
             fanout: loop_pipeline.fanout.as_mut(),
             ordering: loop_pipeline.ordering.as_mut(),
@@ -318,7 +325,11 @@ pub fn run_pipeline_with(
         incomplete: figures.incomplete,
         violations: figures.violations,
         stages: selection.entries(),
+        verdicts: None,
     };
+    for diagnostic in lock_diagnostics(&diagnostics).iter_mut() {
+        diagnostic.finish(&board, &ctx, &mut outcome.summary);
+    }
     outcome.fanout = loop_outcome.fanout;
     outcome.passes = loop_outcome.passes;
     outcome.stop = loop_outcome.stop;

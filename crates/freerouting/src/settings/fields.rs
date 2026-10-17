@@ -422,6 +422,8 @@ settings_table! {
                 "Neck-down policy id; unset uses the `autorouter.algorithm` bundle's."),
             (stages, Vec<String>, opt, None, None, "stages", [], Flat::No, true,
                 "Extra board stage ids, run at each stage's phase in list order."),
+            (diagnostics, Vec<String>, opt, None, None, "diagnostics", [], Flat::No, true,
+                "Report-only diagnostics ids (Q06 `verdicts`); they change no routes."),
         }
     }
 }

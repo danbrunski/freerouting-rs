@@ -19,7 +19,7 @@ implementation is never edited, so default results stay byte-identical.
 | [Q03](archive/Q03-infeasible-connection-diagnostic.md) ✅ | "Cannot route `<net>` to `<pin>` at width W: widest corridor C" from a static widest-path check | M / low: report only | **none: starts now**; F02.2 for the subcommand; B05 for one item |
 | [Q04](Q04-restore-stop-rule.md) | Work-based stop when restores stop helping; two-axis output guard | S / low | rung 3; A10, A13, A08; B01 |
 | [Q05](Q05-congestion-aware-ripup.md) | Rip instrumentation; history and corridor costs; victim-cost ripup, each measured | L / high: weak prior evidence | rung 3; A04 cost hook; A11 rip events; Q06 |
-| [Q06](Q06-failure-attribution-and-verdicts.md) | Blocking nets per failed connection; one verdict per incomplete connection | M / low: report only | rung 3; A04 failure record; Q03; C08 |
+| [Q06](archive/Q06-failure-attribution-and-verdicts.md) ✅ | Blocking nets per failed connection; one verdict per incomplete connection | M / low: report only | rung 3; A04 failure record; Q03; C08 |
 | [Q07](Q07-first-pass-ordering.md) | Pass-1 conflict-round and inside-out orderings | S / medium | rung 3; A10 |
 | [Q08](Q08-earned-budget-extension.md) | One more maze budget only when the search is still closing in | S / medium: changes where limits cut | rung 3; A04 budget hook; B02 WorkMeter |
 | [Q09](Q09-trace-only-keepouts.md) | Specctra `wire_keepout` as trace-only (vias allowed) behind a setting; a trace-only mode for Q01's plane policy | M / medium: changes routing on Issue754 when on | rung 3; B09.4; Q01; C02; K06; F03 |

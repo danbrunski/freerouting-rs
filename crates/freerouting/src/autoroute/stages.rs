@@ -57,7 +57,14 @@
 //! `freerouting-unrouted-report` (A10.7), `freerouting-connection` (A11.1),
 //! `freerouting-plane-taps` and `freerouting-neck-down` (A11.2);
 //! `freerouting-fanout` (A12.3); `freerouting-optimizer` (O06,
-//! `optimize::batch::FreeroutingOptimizer`). The registry, the selection and the placeholders are in the
+//! `optimize::batch::FreeroutingOptimizer`).
+//!
+//! **Diagnostics** ([`Diagnostics`], `router.special.diagnostics`) are
+//! report-only observers, not stages: when any is selected,
+//! [`StageRegistry::build`] wraps the connection router in an observer
+//! that hands each outcome to them unchanged, and `run_pipeline` gives them
+//! the board before the fanout and the final board. Q06's `verdicts`
+//! (`quality::verdict`) is registered by `quality::register`. The registry, the selection and the placeholders are in the
 //! `registry` submodule (`stages/registry.rs`), re-exported here.
 
 use std::collections::BTreeSet;
@@ -600,6 +607,39 @@ pub trait BoardStage {
     fn run(&mut self, board: &mut RoutingBoard, ctx: &mut StageCtx) -> StageReport;
 }
 
+/// A report-only observer of a routing job (Q06's `verdicts`), selected by
+/// `router.special.diagnostics`. It sees the board before the fanout, every
+/// connection the connection router routes (with its parameters and
+/// outcome) and the final board, and writes its report into the run's
+/// [`RunSummary`](crate::autoroute::events::RunSummary). It never changes
+/// the board or what any stage decides: it gets the board by shared
+/// reference only, and a diagnostic that searches does it on a copy.
+pub trait Diagnostics: Send {
+    /// The registry id.
+    fn id(&self) -> &'static str;
+    /// The board before the fanout.
+    fn on_input(&mut self, _board: &RoutingBoard, _ctx: &StageCtx) {}
+    /// After the connection router routed `task` with `p` (the board as the
+    /// attempt left it).
+    fn after_connection(
+        &mut self,
+        _board: &RoutingBoard,
+        _task: &RouteTask,
+        _p: &ConnectionParams,
+        _outcome: &ConnectionOutcome,
+        _ctx: &StageCtx,
+    ) {
+    }
+    /// The final board, after the optimizer: fills this diagnostic's part
+    /// of `summary`.
+    fn finish(
+        &mut self,
+        board: &RoutingBoard,
+        ctx: &StageCtx,
+        summary: &mut crate::autoroute::events::RunSummary,
+    );
+}
+
 /// The optimizer stage (O06).
 pub trait Optimizer {
     /// The registry id.
@@ -612,6 +652,6 @@ mod registry;
 
 pub use registry::{
     Bundle, DEFAULT_FANOUT, DEFAULT_OPTIMIZER_ALGORITHM, DEFAULT_ROUTER_ALGORITHM,
-    FREEROUTING_BUNDLE, Factory, NotPorted, Pipeline, StageChoice, StageRegistry, StageSelection,
-    UnknownStage,
+    FREEROUTING_BUNDLE, Factory, NotPorted, Pipeline, SharedDiagnostics, StageChoice,
+    StageRegistry, StageSelection, UnknownStage, lock as lock_diagnostics,
 };

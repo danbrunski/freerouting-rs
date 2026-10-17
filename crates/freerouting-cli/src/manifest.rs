@@ -22,6 +22,11 @@
 //! snapshots are `null`. `duration_seconds` of the autorouter falls back to
 //! the whole job, as in Java. The statistics come from
 //! [`BoardStatistics`], in the key order of `fixtures/reference/load`.
+//!
+//! **Verdicts (Q06).** With `--router.special.diagnostics=verdicts` the
+//! manifest gets one more key after Java's, `verdicts`: the run's
+//! `freerouting-verdicts/1` report (`docs/development/verdicts.md`). Without
+//! it the key is absent and the manifest is Java's.
 
 use std::path::Path;
 
@@ -392,7 +397,7 @@ pub fn build(input: &ManifestInput<'_>) -> JsonValue {
         .zip(report.router_settings.as_ref())
         .filter(|_| report.optimizer_passes.is_some())
         .map(|(stats, settings)| stats.optimizer_score(Some(settings)));
-    object(vec![
+    let manifest = object(vec![
         ("schema_version", JsonValue::int(i64::from(SCHEMA_VERSION))),
         (
             "generated_at",
@@ -425,7 +430,16 @@ pub fn build(input: &ManifestInput<'_>) -> JsonValue {
         ("exit_code", JsonValue::int(i64::from(input.exit_code))),
         ("output_written", JsonValue::Bool(input.output_written)),
         ("cpu_score", null()),
-    ])
+    ]);
+    // Q06: the verdicts, after Java's keys, only when the diagnostic ran.
+    let verdicts = report.summary.as_ref().and_then(|s| s.verdicts.as_ref());
+    match (manifest, verdicts) {
+        (JsonValue::Object(mut members), Some(verdicts)) => {
+            members.push(("verdicts".to_string(), verdicts.to_json()));
+            JsonValue::Object(members)
+        }
+        (manifest, _) => manifest,
+    }
 }
 
 /// Writes the manifest to `path` atomically, creating its folder.

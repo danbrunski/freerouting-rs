@@ -73,7 +73,7 @@ pub fn unrouted_report(board: &BasicBoard) -> String {
 /// Java `describeItem`: `Component-Pin` for a pin of a placed component,
 /// else Java's `Item.toString` (the lower-case class name, `" #<index>"`
 /// for a pin with a positive index, `" of component #<id>"`).
-fn describe_item(board: &BasicBoard, id: ItemId) -> String {
+pub fn describe_item(board: &BasicBoard, id: ItemId) -> String {
     let Some(item) = board.item(id) else {
         return "(unknown)".to_string();
     };
