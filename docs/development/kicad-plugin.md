@@ -27,7 +27,8 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   are parsed; any other line is shown in the log pane as it is. pcbnew and wx are called on the
   UI thread only: the reader thread fills a `queue.Queue`, a `wx.Timer` in the dialog drains it.
 - `freerouting_rs/tools.py`: finds the executables (no pcbnew/wx imports). Order: `bin_dir`
-  in `settings.json`, `FREEROUTING_RS_BIN`, PATH, `~/.cargo/bin`, then on Windows
+  in `settings.json`, the binaries bundled in a PCM install (`bin/<os>-<arch>/`, K03.3),
+  `FREEROUTING_RS_BIN`, PATH, `~/.cargo/bin`, then on Windows
   `wsl_bin_dir` (a Linux build run through `wsl.exe`, paths translated to `/mnt/c/...`).
   Routing runs in a thread behind a cancellable progress dialog.
 - `freerouting_rs/rule_areas.py` + `kicad_areas.py` (K01.2): after `ExportSpecctraDSN`, the
@@ -46,7 +47,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   writes `settings.json` there. It first moves any other copy of this plugin (PCM install in
   `3rdparty/plugins`, or a folder with our identifier) to `<KiCad user dir>/disabled_pcm_plugins/<version>/`
   (`--keep-pcm` refuses instead). The Java plugin (`app.freerouting.kicad-plugin`) is never
-  touched. `OUR_IDENTIFIERS` is a placeholder until K03 fixes the PCM identifier.
+  touched. `OUR_IDENTIFIERS` is the PCM identifier `com.github.danbrunski.freerouting-rs` (K03.1).
 - Route in GUI needs the GUI's front-end mode (G08.4): the window counts down 5 s, routes, and
   writes `-do` when routing ends or the window closes. The router flags (`--max-passes`,
   `--threads`, `--router.*`, ...) are the CLI's (K02.5, `settings::cli_flags`); `--seed` is not
@@ -141,6 +142,87 @@ Checked 2026-10-15 against KiCad's GitLab (`gitlab.com/kicad/code/kicad`).
   (136.5, 53)-(162.5, 79) mm, not footprint-owned. Its DSN export is
   `(keepout "" (polygon B.Cu 0 136500 -53000 162500 -53000 162500 -79000 136500 -79000 ...))`.
   Not probed on Windows KiCad 10.0.5.
+
+## PCM package (K03)
+
+One zip per version for KiCad's Plugin and Content Manager, built locally and by R01's release
+job (`docs/development/release-workflow.yml`, the "PCM zip" step). **Nothing is submitted or
+uploaded:** the KiCad repository submission and the GitHub release need Dan's go-ahead.
+
+- **Files.** `kicad-plugin/metadata.json` (identifier `com.github.danbrunski.freerouting-rs`,
+  `"runtime": "swig"`, `"status": "testing"`, `"kicad_version": "10.0"`, one `versions[]` entry,
+  `download_url` naming the GitHub release asset; no checksum or sizes in the source file),
+  `resources/icon.png` (64 x 64, a copy of `crates/freerouting-gui/icons/icon-64.png`, so a new
+  icon is a `render.py` run plus a copy), `package.py`, `update_metadata.py`, `validate_pcm.py`.
+- **Build.** `python3 kicad-plugin/package.py --bin <dir> --out <dir>`; `<dir>` holds
+  `bin-<platform>/` (the release workflow's artifact names) or `<platform>/`, for
+  `windows-x86_64`, `macos-universal`, `linux-x86_64`, each with `freerouting` and
+  `freerouting-gui` (`.exe` on Windows). `--bin linux-x86_64=target/release` names one platform;
+  `--allow-missing` builds a partial package for local tests. Output:
+  `freerouting-rs-<version>-pcm.zip` and `<zip>.meta.json` (sidecar: `version`, `file`, `sha256`,
+  `download_size`, `install_size`).
+- **Layout.** `metadata.json` (inner copy without `download_*` and `install_size`),
+  `resources/icon.png`, `plugins/` = the contents of `freerouting_rs/` (denylist: caches, `tests`,
+  `settings.json`, a local `bin/`), `plugins/bin/<platform>/` and, because KiCad's validator accepts
+  nothing outside `metadata.json`, `resources/icon.png` and `plugins/**`, also `plugins/LICENSE`,
+  `plugins/THIRD_PARTY_NOTICES.md` and `plugins/LICENSES/`. KiCad copies `plugins/` to
+  `3rdparty/plugins/com_github_danbrunski_freerouting-rs/`, which is the plugin package itself
+  (`plugins/__init__.py` is its `__init__.py`).
+- **Deterministic.** Sorted entries, directory entries included, 1980-01-01 timestamps, Unix
+  attributes (0755 for directories and binaries, 0644 otherwise), deflate level 9. The same inputs
+  give the same bytes with the same zlib; another zlib version may compress differently, so the
+  release zip is built once and its sha256 goes into the metadata.
+- **Release metadata.** `update_metadata.py metadata.json <zip>.meta.json` sets
+  `download_sha256`, `download_size` and `install_size` on the version entry the sidecar names and
+  refuses (naming both versions) when none matches or `download_url` does not end in the zip's
+  name. `tools/release/check_version.py` already compares the entry and URL with the other versions.
+- **Resolver.** `tools.bundled_bin_dir()` returns `bin/<os>-<arch>/` next to `tools.py` (win32 +
+  AMD64/x86_64, any macOS architecture, linux + x86_64), or `None` (an `install.py` copy, a
+  platform the package lacks, Linux or Windows on ARM). It sets the executable bit when missing
+  (a fallback: KiCad keeps the zip's 0755, see below). The dialog says which platforms the package
+  carries when the router is missing.
+- **Size.** Real binaries (Linux CLI 8.7 MB + GUI 18.4 MB, Windows exes 1.2 + 27.8 MB, from
+  2026-10-15/17 builds, no macOS): 56.3 MB installed, **19.6 MB zip**. A macOS universal pair adds
+  about 2 x (3.2 + 6.6) MB compressed, so the full zip should be near 40 MB; the validator's
+  download limit is 100 MiB (`MAX_DOWNLOAD_SIZE` in `ci/validate/package.py`).
+- **K03.5, KiCad's validator.** `validate_pcm.py --zip Z --kicad-metadata <clone>` patches the
+  sidecar values into a copy of `metadata.json`, serves the zip from 127.0.0.1, points
+  `download_url` there and runs the clone's `ci/validate-package.py` (the script `ci/validate.sh`
+  runs on a merge request) with its `schema-v1.json` and `schema-v2.json`. Run 2026-10-17 on
+  commit `cdd6c04105220261ae5a3cc9432075311ab95a61` of `gitlab.com/kicad/addons/metadata`
+  (schemas `https://go.kicad.org/pcm/schemas/v1` and `v2`; the clone's v1 equals the fetched one),
+  jsonschema 4.26.0, requests 2.34.2, tqdm 4.70.1, munch 4.0.0, pillow 13.0.0 in a venv:
+  `schema ok` for both schemas, then `Validation passed` for the fake-binary zip (47 KB) and the
+  real-binary zip (19.6 MB). A zip with a `LICENSE` at its root is rejected (`package contains
+  extra file "LICENSE"`), so the check can fail. The tests run only with
+  `KICAD_METADATA_REPO=<clone>` (and `PCM_VALIDATOR_PYTHON=<venv python>`). Setup:
+  `git clone https://gitlab.com/kicad/addons/metadata.git`, `python3 -m venv v`,
+  `v/bin/pip install -r metadata/ci/requirements.txt`.
+- **K03.6, Linux, KiCad 10.0.7 (WSL), 2026-10-17, on a virtual display with a scratch
+  `KICAD_CONFIG_HOME`/`KICAD_DOCUMENTS_HOME` (nothing under the real KiCad folders).** The PCM's
+  Install from File... took the real-binary zip. Result: `3rdparty/plugins/com_github_danbrunski_freerouting-rs/`
+  holds the plugin, `bin/linux-x86_64/freerouting` and `freerouting-gui` came out **executable**
+  (KiCad keeps the Unix mode of the zip entries), `3rdparty/resources/<id>/icon.png` is the
+  icon, and no `metadata.json` is left in the plugin folder (`install.py`'s shadow check finds the
+  folder by name). A pcbnew on the `pic_programmer` demo listed `freerouting-rs` under Tools >
+  External Plugins; its dialog showed `Router: .../bin/linux-x86_64/freerouting`, `Router
+  version: 0.1.0 (813663cea)`; **Route** ran the bundled router and imported the session (115 of
+  126 connections, 6 vias). The PCM could not fetch KiCad's repository list (no network from that
+  process, "Timeout was reached"), which does not affect Install from File. The first-run
+  wizard of the scratch config and the stacking of dialogs without a window manager made the
+  clicks awkward; steps: project manager > Plugin and Content Manager (not the "unarchive"
+  toolbar button) > Install from File... > pick the zip.
+- **Found by that run (K01 bug, fixed):** `fix_rule_areas` used `Path.read_text(newline=...)`,
+  which exists only from Python 3.13; KiCad 10 ships 3.12, so on every run the rule-area fix-up
+  was skipped with `WARNING: rule-area fix-up skipped: TypeError(...)` in `plugin.log`. It now uses
+  `open()` (`tests/test_dsn_fixup_io.py`). Dan's Windows KiCad 10.0.5 has the same problem if its
+  Python is older than 3.13, so re-check the K01.6 `canary-pwr` log line after reinstalling.
+- **Not checked.** Windows (KiCad 10, PCM install of the zip, the toolbar button, `Router:` showing
+  `plugins/bin/windows-x86_64`; remove the manual `scripting/plugins/freerouting_rs` copy first or
+  K01.4's guard reports the shadow) and macOS (quarantine attribute on the unpacked binary,
+  Gatekeeper, "Open Anyway"; needs R01's macOS job). The macOS universal binary and the MSVC
+  Windows build have not been in a zip yet. Whether KiCad on Windows/macOS keeps the executable
+  bit is moot there (Windows needs none; the resolver sets it on macOS).
 
 ## Gotchas
 

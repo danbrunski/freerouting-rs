@@ -26,8 +26,8 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent / "freerouting_rs"
 FOLDER_NAME = "freerouting_rs"
 
-# K03 sets the final PCM identifier; keep this set in step with its metadata.json.
-OUR_IDENTIFIERS = {"app.freerouting.rs-kicad-plugin"}
+# The PCM identifier of metadata.json (K03.1; test_package checks they agree).
+OUR_IDENTIFIERS = {"com.github.danbrunski.freerouting-rs"}
 JAVA_IDENTIFIER = "app.freerouting.kicad-plugin"
 
 

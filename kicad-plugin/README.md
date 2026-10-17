@@ -25,7 +25,15 @@ must be saved once so that folder has somewhere to live.
 
 ## Install
 
-Build the executables, then run the installer with any Python 3 (KiCad's own works):
+**From the plugin manager (a release).** KiCad > Plugin and Content Manager > Install from
+File... with `freerouting-rs-<version>-pcm.zip`. The zip carries the plugin and the executables
+for Windows (x86_64), macOS (universal) and Linux (x86_64); the plugin picks the ones for your
+system (`plugins/bin/<os>-<arch>/`) after a `bin_dir` of `settings.json`. On another system, build
+the executables as below and set `bin_dir`. Maintainers: `python3 kicad-plugin/package.py --bin
+<dir> --out <dir>` builds the zip, `update_metadata.py` and `validate_pcm.py` finish the
+release metadata (docs/development/kicad-plugin.md, "PCM package").
+
+**From source.** Build the executables, then run the installer with any Python 3 (KiCad's own works):
 
 ```
 cargo build --release -p freerouting-cli -p freerouting-gui

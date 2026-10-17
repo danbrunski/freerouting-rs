@@ -37,7 +37,7 @@ release.
 | `freerouting-rs-<v>-macos-universal.dmg` | `freerouting-rs.app` (arm64 and x86_64) |
 | `freerouting-rs-<v>-macos-universal.tar.gz` | The two universal binaries, the plugin, README, LICENSE, notices |
 | `SHA256SUMS` | SHA-256 of every asset above |
-| PCM zip and `metadata.json` | After K03 only: the KiCad plugin package and its patched metadata |
+| `freerouting-rs-<v>-pcm.zip` and `metadata.json` | The KiCad plugin-manager package (plugin plus the binaries of all three platforms; `kicad-plugin/package.py`) and the repository `metadata.json` with its checksum and sizes patched in (`update_metadata.py`); the job also runs KiCad's validator on the zip. Submitting it to KiCad's repository is a separate step that needs Dan's go-ahead |
 
 Every archive carries `LICENSE` and `THIRD_PARTY_NOTICES.md`.
 

@@ -284,6 +284,13 @@ jobs:
             cp kicad-plugin/metadata.json assets/metadata.json
             python3 kicad-plugin/update_metadata.py assets/metadata.json pcm/*.zip.meta.json
             cp pcm/*-pcm.zip assets/
+            # K03.5: KiCad's own validator (ci/validate-package.py of the metadata repository)
+            # on the zip, served from localhost; nothing is submitted. Versions pinned as in
+            # release.md; the clone is pinned to the commit the validator was last run at.
+            python3 -m pip install jsonschema==4.26.0 requests==2.34.2 tqdm==4.70.1 munch==4.0.0 pillow==13.0.0
+            git clone https://gitlab.com/kicad/addons/metadata.git kicad-metadata
+            git -C kicad-metadata checkout cdd6c04105220261ae5a3cc9432075311ab95a61
+            python3 kicad-plugin/validate_pcm.py --zip pcm/*-pcm.zip --kicad-metadata kicad-metadata
           else
             echo "K03 has not landed: no PCM zip, no metadata.json"
           fi

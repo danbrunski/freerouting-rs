@@ -64,7 +64,7 @@ and install checks on the three operating systems.
 
 ## Checklist
 
-- [ ] **K03.1 — Metadata and icon.**
+- [x] **K03.1 — Metadata and icon.**
   - `metadata.json` with the fields in the decisions, `"license":
     "GPL-3.0"`, author and maintainer Dan, the repository URL, one
     `versions[]` entry whose `version` equals `version.__version__`
@@ -80,7 +80,18 @@ and install checks on the three operating systems.
     workspace version in `Cargo.toml`, and the identifier is not
     `app.freerouting.kicad-plugin`.
 
-- [ ] **K03.2 — Package script.**
+  *Done 2026-10-17:* `kicad-plugin/metadata.json` (identifier `com.github.danbrunski.freerouting-rs`, GPL-3.0, author and
+  maintainer Dan, `swig`, `testing`, `kicad_version` 10.0, `platforms` all three, one entry `0.1.0`, `download_url` =
+  `.../releases/download/v0.1.0/freerouting-rs-0.1.0-pcm.zip`) and `kicad-plugin/resources/icon.png` (64 x 64 RGBA, 3742 B,
+  a copy of R01.3's `crates/freerouting-gui/icons/icon-64.png`, so no "needs icon" remainder). Deviation from the
+  wording: the source file has **no** `download_sha256`/`download_size`/`install_size` placeholders (a fake sha would be
+  indistinguishable from a real one); `update_metadata.py` adds them. `install.py`'s `OUR_IDENTIFIERS` now holds the
+  identifier. `test_package.py::test_metadata_is_consistent` (version equals `__version__` and `Cargo.toml`, one
+  entry, identifier is not the Java one and is in `OUR_IDENTIFIERS`, URL names the asset `package.py` writes) and
+  `test_icon_is_64_px_png_within_the_validators_limits` pass; `tools/release/check_version.py` now reports metadata
+  and download_url `0.1.0` and `version gate: ok`.
+
+- [x] **K03.2 — Package script.**
   - `package.py --bin <dir per platform> --out <dir>` builds
     `freerouting-rs-<version>-pcm.zip` with the layout in the decisions.
     The inner `metadata.json` has one version entry and no `download_*` or
@@ -97,7 +108,20 @@ and install checks on the three operating systems.
     - the done note records the zip size with real release binaries (from
       R01, or local builds for the platforms available).
 
-- [ ] **K03.3 — Binary resolver.**
+  *Done 2026-10-17:* `kicad-plugin/package.py` (`--bin DIR|PLATFORM=DIR` repeatable, `--out`, `--allow-missing`; matches the
+  release workflow's `--bin bins --out pcm` with `bins/bin-<platform>/`). Layout as decided, plus directory entries
+  and, because KiCad's validator allows only `metadata.json`, `resources/icon.png` and `plugins/**`, `LICENSE`,
+  `THIRD_PARTY_NOTICES.md` and `LICENSES/` go under `plugins/`. `test_package.py`: `test_zip_is_deterministic` (equal
+  bytes and sha256 after touching all inputs), `test_zip_layout` (entry list equals the expected list; binaries 0755,
+  the rest 0644; no `__pycache__`, `settings.json`, `tests/`), `test_inner_metadata` (one entry, no
+  `download_*`/`install_size`, everything else equal), plus denylist, missing platform/tool, version mismatch,
+  two-entry and CLI tests. Zip size with real binaries (Linux CLI 8.7 MB from the committed-tree build 813663cea and GUI
+  18.4 MB from 2026-10-15, Windows exes 1.2 + 27.8 MB from 2026-10-15; no macOS binary on this machine,
+  `--allow-missing`): **19,558,770 B zip, 56,261,019 B installed**, sha256 `6902b895...60c2`; a macOS universal pair adds
+  about 19.6 MB, so about 40 MB for all three (validator download limit 100 MiB). The zlib version affects the bytes,
+  so the release zip is built once.
+
+- [x] **K03.3 — Binary resolver.**
   - `tools.bundled_bin_dir()` returns `plugins/bin/<os>-<arch>/` for
     `sys.platform` and `platform.machine()` (`win32`+`AMD64`/`x86_64`,
     `darwin`+any arch → `macos-universal`, `linux`+`x86_64`), or `None`.
@@ -111,7 +135,15 @@ and install checks on the three operating systems.
     (`linux`+`aarch64`); a file without the exec bit gets it; the lookup
     order test from K01.1 still passes with the new step.
 
-- [ ] **K03.4 — Sidecar and metadata patch.**
+  *Done 2026-10-17:* `tools.bundle_platform()`, `bundled_bin_dir()` (returns `bin/<os>-<arch>/` only when that folder exists;
+  sets the exec bit on Linux/macOS), `missing_router_hint()` (the dialog's unsupported-platform text: which platforms the
+  package carries, how to set `bin_dir`), lookup order `bin_dir`, bundle, `FREEROUTING_RS_BIN`, PATH, `~/.cargo/bin`.
+  `test_resolver.py` (15 tests): the four cases (win32 AMD64/x86_64, darwin arm64/x86_64, linux x86_64) plus linux
+  aarch64, win32 ARM64 and freebsd -> `None`; a file without the exec bit gets it; `test_lookup_order_with_the_bundle`;
+  an unpack-and-resolve test on a real built zip. K01.1's `test_lookup_order_each_source_wins_over_later_ones` still
+  passes (`test_tools.py`). Real KiCad kept the exec bit on unzip (K03.6), so the chmod is only a fallback.
+
+- [x] **K03.4 — Sidecar and metadata patch.**
   - `package.py` also writes `<zip>.meta.json` with `sha256`,
     `download_size` and `install_size` (the sum of uncompressed sizes).
     `update_metadata.py <metadata.json> <zip.meta.json>` patches those into
@@ -121,7 +153,16 @@ and install checks on the three operating systems.
     equal those computed from the zip; patching a metadata file whose
     version doesn't match the sidecar fails with a message naming both.
 
-- [ ] **K03.5 — Validate against KiCad's PCM schema.**
+  *Done 2026-10-17:* `package.py` writes `<zip>.meta.json` (`version`, `file`, `sha256`, `download_size`, `install_size` = sum of
+  uncompressed file sizes); `kicad-plugin/update_metadata.py <metadata.json> <sidecar> [--out F]` patches the matching entry
+  in place and refuses (writing nothing) on no matching version (message names both: "the sidecar is for version 0.1.0 ...
+  but metadata.json has version 0.2.0") or a `download_url` that does not end in the sidecar's file name.
+  `test_update_metadata.py` (5 tests): patched sha256, size and install size equal values computed from the zip; failure
+  messages. Simulated the release job's PCM step in a scratch dir with the workflow's own commands (`package.py --bin
+  bins --out pcm`, copy, `update_metadata.py assets/metadata.json pcm/*.zip.meta.json`, `cp pcm/*-pcm.zip assets/`,
+  `tools/release/sha256sums.py assets`): works unchanged. The only workflow hunk added (7 lines) is the K03.5 validator.
+
+- [x] **K03.5 — Validate against KiCad's PCM schema.**
   - Clone `gitlab.com/kicad/addons/metadata` into the scratchpad and run
     its `ci/validate.sh` (or the schema check it wraps) on our
     `metadata.json` and on the packaged zip's inner metadata.
@@ -129,7 +170,18 @@ and install checks on the three operating systems.
     done note and summarized in `kicad-plugin.md`. If the validator can't
     run here, the item stays partial with the reason.
 
-- [ ] **K03.6 — Install from file on three systems.** *Partly manual.*
+  *Done 2026-10-17:* KiCad's real `ci/validate-package.py` (what `ci/validate.sh` runs) from a clone of
+  `gitlab.com/kicad/addons/metadata` at `cdd6c04105220261ae5a3cc9432075311ab95a61`, schemas
+  `https://go.kicad.org/pcm/schemas/v1` and `v2` (the clone's v1 equals the fetched file). `kicad-plugin/validate_pcm.py
+  --zip Z --kicad-metadata <clone> --python <venv>` serves the zip from 127.0.0.1 (nothing is submitted), runs the schema
+  checks of the released metadata and the validator, which downloads the zip and checks size, sha256, every member path,
+  the icon and the inner `metadata.json` against the outer one. Output for both the fake-binary zip (47 KB) and the
+  real-binary zip (19.6 MB): `schema ok: schema-v1.json`, `schema ok: schema-v2.json`, `Validation passed`. Negative check:
+  a zip with `LICENSE` at its root fails with `package contains extra file "LICENSE"`. Both are `test_validate_pcm.py`
+  (run only with `KICAD_METADATA_REPO` set; skipped otherwise). Summarised in `kicad-plugin.md` "PCM package". The release
+  workflow runs it with pinned pip packages and the pinned clone.
+
+- [~] **K03.6 — Install from file on three systems.** *Partly manual.*
   - Windows (Dan): KiCad 10 > Plugin and Content Manager > Install from
     File with the zip; the toolbar button appears; Route on a demo board
     imports a SES using the bundled binaries (the dialog's "Router:" line
@@ -145,3 +197,16 @@ and install checks on the three operating systems.
   - **Accept:** the results per system, with the KiCad version and date,
     are in `kicad-plugin.md`. Each system not yet checked keeps the item
     partial with "needs <system> check".
+
+  *Partial 2026-10-17:* **Linux done** with KiCad 10.0.7 (WSL) on a virtual display and a scratch `KICAD_CONFIG_HOME` and
+  `KICAD_DOCUMENTS_HOME`: the PCM's Install from File... installed the real-binary zip into
+  `3rdparty/plugins/com_github_danbrunski_freerouting-rs/` with the binaries executable (KiCad keeps the zip's 0755); pcbnew
+  on the `pic_programmer` demo lists `freerouting-rs` under Tools > External Plugins; the dialog shows `Router:
+  .../bin/linux-x86_64/freerouting`, `Router version: 0.1.0 (813663cea)`; Route with the bundled router imported the result
+  (115 of 126 connections, 6 vias). Details, and the K01 bug this found (`Path.read_text(newline=)` needs Python 3.13, so
+  the rule-area fix-up was skipped on KiCad's 3.12; fixed, `test_dsn_fixup_io.py`), are in `kicad-plugin.md`. Remainder:
+  **needs Windows check** (Dan: KiCad 10 > Plugin and Content Manager > Install from File with the release zip; remove the
+  manual `scripting/plugins/freerouting_rs` copy first; toolbar button, Route, `Router:` shows `plugins/bin/windows-x86_64`)
+  and **needs macOS check** (R01's macOS job: quarantine attribute, `freerouting --version` as a subprocess, Gatekeeper and
+  Open Anyway). Both need the real release binaries (MSVC build, macOS universal), which exist only after R01's workflow
+  runs. Submitting the package to KiCad's repository or publishing the release needs Dan's go-ahead and is not part of this item.

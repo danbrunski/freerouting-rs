@@ -61,10 +61,14 @@ def fix_rule_areas(board, dsn, work_dir):
     logged and leaves the DSN as KiCad wrote it."""
     try:
         areas = kicad_areas.collect(board, pcbnew)
-        text = dsn.read_text(encoding="utf-8", newline="")
+        # open(), not Path.read_text/write_text(newline=...): read_text has no `newline`
+        # before Python 3.13, and KiCad 10 ships 3.12 (found in K03.6 on KiCad 10.0.7).
+        with open(dsn, encoding="utf-8", newline="") as f:
+            text = f.read()
         new_text, lines = rule_areas.rewrite(text, areas)
         if new_text != text:
-            dsn.write_text(new_text, encoding="utf-8", newline="")
+            with open(dsn, "w", encoding="utf-8", newline="") as f:
+                f.write(new_text)
     except Exception as e:  # never block routing on the fix-up
         lines = [f"WARNING: rule-area fix-up skipped: {e!r}"]
     stamp = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -188,6 +192,8 @@ class Dialog(wx.Dialog):
             self.version_status, self.version_message = version.UNKNOWN, ""
         router_ver = version.format_router_version(self.router_version)
         notice = f"\n{self.version_message}" if self.version_status != version.OK and self.router else ""
+        if not self.router:
+            notice += f"\n{tools.missing_router_hint()}"
 
         info = wx.StaticText(
             self,

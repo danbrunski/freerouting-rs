@@ -6,18 +6,22 @@ Each tool (`freerouting` for headless routing, `freerouting-gui` for the
 viewer) is looked up in this order:
 
 1. `bin_dir` from settings.json next to this file (written by install.py),
-2. the `FREEROUTING_RS_BIN` environment variable,
-3. the PATH,
-4. ~/.cargo/bin,
-5. on Windows only, `wsl_bin_dir` from settings.json: a Linux build inside
+2. the binaries bundled in the PCM package, `bin/<os>-<arch>/` next to this
+   file (K03.3; absent in an install.py copy),
+3. the `FREEROUTING_RS_BIN` environment variable,
+4. the PATH,
+5. ~/.cargo/bin,
+6. on Windows only, `wsl_bin_dir` from settings.json: a Linux build inside
    WSL, run through wsl.exe (the viewer then shows up through WSLg).
 """
 
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
+import stat
 import sys
 from pathlib import Path
 
@@ -33,6 +37,12 @@ PLUGIN_LOG = "plugin.log"
 
 ROUTER = "freerouting"
 VIEWER = "freerouting-gui"
+
+# The PCM package (K03) carries both executables per platform under
+# `<this folder>/bin/<BUNDLE_PLATFORMS entry>/`. `kicad-plugin/package.py`
+# writes the same names.
+BUNDLE_DIR = HERE / "bin"
+BUNDLE_PLATFORMS = ("windows-x86_64", "macos-universal", "linux-x86_64")
 
 IS_WINDOWS = sys.platform == "win32"
 EXE_SUFFIX = ".exe" if IS_WINDOWS else ""
@@ -110,10 +120,75 @@ class Tool:
         return cmd + ["--", self.exe] + conv
 
 
+def bundle_platform(sys_platform=None, machine=None):
+    """The `bin/` subfolder name for a system, or None when the package
+    carries no binaries for it. Defaults to this system. macOS maps to the
+    universal build whatever the architecture; Windows and Linux need x86_64
+    (`AMD64` on Windows, `x86_64` on Linux)."""
+    sys_platform = sys.platform if sys_platform is None else sys_platform
+    machine = (platform.machine() if machine is None else machine).lower()
+    x86_64 = machine in ("amd64", "x86_64", "x64")
+    if sys_platform == "win32":
+        return "windows-x86_64" if x86_64 else None
+    if sys_platform == "darwin":
+        return "macos-universal"
+    if sys_platform.startswith("linux"):
+        return "linux-x86_64" if x86_64 else None
+    return None
+
+
+def _make_executable(folder):
+    """Sets the executable bit on the tools in `folder` where it is missing:
+    an unzip by the plugin manager may drop it (unverified). Errors are
+    ignored; the run then fails with the system's own message."""
+    for name in (ROUTER, VIEWER):
+        exe = folder / name
+        try:
+            mode = exe.stat().st_mode
+            if exe.is_file() and not mode & stat.S_IXUSR:
+                exe.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        except OSError:
+            pass
+
+
+def bundled_bin_dir():
+    """`bin/<os>-<arch>/` of the PCM package for this system, or None when
+    this is not a package install or the package has no binaries for the
+    system. On Linux and macOS it makes sure the tools are executable."""
+    key = bundle_platform()
+    if key is None:
+        return None
+    folder = BUNDLE_DIR / key
+    if not folder.is_dir():
+        return None
+    if sys.platform != "win32":
+        _make_executable(folder)
+    return folder
+
+
+def missing_router_hint():
+    """One sentence for the dialog when no router was found: on a package
+    install without binaries for this system, which systems the package
+    carries; otherwise how to point the plugin at a local build."""
+    build = (
+        "Build it (cargo build --release -p freerouting-cli -p freerouting-gui) and set "
+        f'"bin_dir" in {SETTINGS_FILE}, or set FREEROUTING_RS_BIN.'
+    )
+    if BUNDLE_DIR.is_dir() and bundle_platform() is None:
+        return (
+            f"This package carries binaries for {', '.join(BUNDLE_PLATFORMS)} only, "
+            f"not for this system ({sys.platform}, {platform.machine() or 'unknown'}). " + build
+        )
+    return build
+
+
 def _native_candidates(settings):
     dirs = []
     if settings.get("bin_dir"):
         dirs.append(Path(settings["bin_dir"]))
+    bundled = bundled_bin_dir()
+    if bundled:
+        dirs.append(bundled)
     if os.environ.get("FREEROUTING_RS_BIN"):
         dirs.append(Path(os.environ["FREEROUTING_RS_BIN"]))
     return dirs
