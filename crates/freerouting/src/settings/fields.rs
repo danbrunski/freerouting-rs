@@ -414,6 +414,11 @@ settings_table! {
             (difficulty_scale_floor, f32, req, Some(1.0), 0.0, "difficultyScaleFloor", [], Flat::No, true,
                 "Lower bound of the difficulty scale."),
         }
+        diff_pairs, DiffPairsPatch, DiffPairsSettings, "diffPairs",
+        "Differential pair detection (X08; not a Java section)." {
+            (infer_from_names, bool, opt, None, None, "inferFromNames", [], Flat::No, true,
+                "Pair nets by name (`_P`/`_N`, `+`/`-`, ...) when no net class makes them a pair (unset: off)."),
+        }
         neck_down, NeckDownPatch, NeckDownSettings, "neckDown",
         "Neck-down limits (Q02.2; not a Java section)." {
             (strict, bool, opt, None, None, "strict", [], Flat::No, true,
@@ -428,6 +433,8 @@ settings_table! {
         "Stage selection for the special stages (A10.2; not a Java section)." {
             (length_matching, String, opt, None, None, "lengthMatching", [], Flat::No, true,
                 "Length matching stage id (X07: `krt-meander`), run last; unset runs none."),
+            (diff_pairs, String, opt, None, None, "diffPairs", [], Flat::No, true,
+                "Differential pair stage id (X08: `krt-diffpair`), run before the fanout; unset runs none."),
             (plane_taps, String, opt, None, None, "planeTaps", [], Flat::No, true,
                 "Plane tap policy id; unset uses the `autorouter.algorithm` bundle's."),
             (neck_down, String, opt, None, None, "neckDown", [], Flat::No, true,

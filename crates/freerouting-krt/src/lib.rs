@@ -21,9 +21,12 @@
 //!   classes that measure it.
 //! - [`length`] (X07): length and time matching with trombone meanders,
 //!   the `krt-meander` board stage.
+//! - [`diffpair`] (X08): differential pairs, centreline and P/N offset, the
+//!   `krt-diffpair` board stage.
 
 use freerouting::autoroute::stages::StageRegistry;
 
+pub mod diffpair;
 pub mod grid;
 pub mod length;
 pub mod planes;
@@ -35,4 +38,5 @@ pub fn register(registry: &mut StageRegistry) {
     grid::register(registry);
     grid::bundle::register(registry);
     length::register(registry);
+    diffpair::register(registry);
 }

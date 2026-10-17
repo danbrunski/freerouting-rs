@@ -324,6 +324,14 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "stage selection (X07), set with the CLI or a settings file",
     ),
     (
+        "diff_pairs.infer_from_names",
+        "differential pair naming (X08), set with the CLI or a settings file",
+    ),
+    (
+        "special.diff_pairs",
+        "stage selection (X08), set with the CLI or a settings file",
+    ),
+    (
         "special.plane_taps",
         "stage selection (A10), set with the CLI or a settings file",
     ),

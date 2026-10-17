@@ -1,0 +1,65 @@
+(pcb x08-straight.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic X08 fixture: one differential pair D_P/D_N between two two-pad parts 30 mm apart on F.Cu (pads 0.5 mm apart), with a foreign 1 mm pad of net F on the straight line between them")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  40000 0  40000 20000  0 20000  0 0)
+    )
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "PAIR"
+      (place J1 5000 10000 front 0)
+      (place J2 35000 10000 front 0)
+    )
+    (component "BLOCK"
+      (place F1 20000 10000 front 0)
+      (place F2 20000 3000 front 0)
+    )
+  )
+  (library
+    (image "PAIR"
+      (pin Pad 1 0 250)
+      (pin Pad 2 0 -250)
+    )
+    (image "BLOCK"
+      (pin Block 1 0 0)
+    )
+    (padstack Pad
+      (shape (rect F.Cu -600 -125 600 125))
+      (attach off)
+    )
+    (padstack Block
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net D_P (pins J1-1 J2-1))
+    (net D_N (pins J1-2 J2-2))
+    (net F (pins F1-1 F2-1))
+    (class kicad_default "" D_P D_N F
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 200) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

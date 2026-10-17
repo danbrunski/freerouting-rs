@@ -163,6 +163,9 @@ fn defaults_with_eight_cores() {
         // X07: no length matching unless selected.
         ("length_matching.groups", None),
         ("special.length_matching", None),
+        // X08: no differential pairs unless selected.
+        ("diff_pairs.infer_from_names", None),
+        ("special.diff_pairs", None),
         // The A10.2 stage keys: no default.
         ("autorouter.ordering", None),
         ("autorouter.connection_router", None),

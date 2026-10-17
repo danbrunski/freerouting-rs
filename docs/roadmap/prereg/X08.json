@@ -1,0 +1,91 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X08-krt-diffpair-routing",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/archive/X08-diff-pairs-routing.md (the stage); X09 (the measurement item) runs it",
+  "question": "On boards with differential pairs (named by KRT's suffix rules), does the krt-diffpair stage (run before the fanout, pairs inferred from net names) leave more pairs coupled (at least half of the pair's copper within ±10 % of the gap) than Freerouting routing them single-ended, without a new clearance violation, a via in a pad or a new unrouted connection? The stage stays selectable either way; it is off by default.",
+  "arms": {
+    "off": {
+      "engine": "freerouting-rs at the commit that lands X08, freerouting-krt's in-process harness (the CLI does not call freerouting_krt::register yet, C07)",
+      "command": "X08_SET=tools/bench/sets/x08-diffpairs.txt X08_RECORDS=<out>/records.json cargo test --release -p freerouting-krt --test diffpair measurement_records_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "special.diff_pairs": "unset (the stage is not selected)",
+        "all other settings": "the defaults (optimizer on, as the CLI)"
+      }
+    },
+    "on": {
+      "engine": "the same commit and harness; a full route with the stage selected",
+      "command": "the same run; one records file holds both arms",
+      "settings": {
+        "special.diff_pairs": "krt-diffpair",
+        "diff_pairs.infer_from_names": "true",
+        "all other settings": "the defaults"
+      }
+    }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "on",
+  "boards": {
+    "set": "tools/bench/sets/x08-diffpairs.txt",
+    "dsn": "the two synthetic boards in crates/freerouting-krt/tests/data and three boards of F03.3's out-of-repo corpus (target/corpus/prepped, tools/corpus/prep.sh), the same files X07.6 registered",
+    "files": {
+      "crates/freerouting-krt/tests/data/x08-straight.dsn": "fbdf535239995d14632412c0e1cfd2bfbcb04c8e4c0362180fb50d389adeea23",
+      "crates/freerouting-krt/tests/data/x08-connector.dsn": "df028f0d626c3a4872c609f4ead1cba70d8b2007fd4d65f7c51c728bc7efe20f",
+      "target/corpus/prepped/picodvi-picodvi.dsn": "004fd6f348739b6ad5a1314534ebeb5ea005f22f49809fa3386928c7afc45378",
+      "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn": "7c909c58c3f9de9c4972b6b5fddc0c4820131c6d0cbd54eb41e78ad8b8dea4ce",
+      "target/corpus/prepped/mydevboard-rp2040dev.dsn": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753"
+    }
+  },
+  "eligibility": "decided from the inputs: a board with at least one pair by KRT's naming rules (USB_D+/USB_D-, DVI and PCIe _P/_N names) whose two nets have two pins each. A row with no such pair, or whose pairs the stage skips (more than two pins, no common signal layer), is neutral and printed.",
+  "grading": "Rust's DRC (DesignRulesChecker: clearance violations, incompletes) and the via-in-pad test of crates/freerouting-krt/tests/diffpair.rs on both arms; the coupling of each pair from freerouting_krt::diffpair::report::coupling on the final board. KiCad grading (F02.6) of the corpus rows' sessions is a second step once the harness writes their SES and C07 registers the stage in the CLI (not graded is never a pass).",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pairs_coupled",
+      "role": "score",
+      "kind": "int",
+      "direction": "higher"
+    },
+    {
+      "name": "coupled_share_mean",
+      "role": "report",
+      "kind": "float",
+      "direction": "higher"
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "vias whose centre lies in a pin's pad on a shared layer",
+    "clearance_violations": "DesignRulesChecker::all_clearance_violations on the final board",
+    "unrouted": "DesignRulesChecker::incomplete_count (airlines) on the final board",
+    "pairs_coupled": "the name-inferred pairs with two-pin nets whose copper on their X08 layer is at least half within ±10 % of the gap of the partner's copper (report::coupling share >= 0.5)",
+    "coupled_share_mean": "the mean coupling share over those pairs"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "decision_table": {
+    "pass": "keep krt-diffpair as a selectable stage (off by default); DIVERGENCES.md gets no line (no default changes)",
+    "fail": "a guard regression is a bug to fix before the stage is kept; pairs the stage reports as not routed (all attempts refused by the DRC) and left to the passes are not a failure"
+  },
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'): both arms route, so their numbers depend on the tree; X09 adds coupled vias and the pair-aware optimizer before it runs",
+  "amendments": []
+}

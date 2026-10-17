@@ -519,6 +519,11 @@ impl StageSelection {
                     id: id.clone(),
                     from_default: false,
                 }))
+                .chain(sp.diff_pairs.iter().map(|id| StageChoice {
+                    key: "router.special.diff_pairs",
+                    id: id.clone(),
+                    from_default: false,
+                }))
                 .collect(),
             diagnostics: sp
                 .diagnostics

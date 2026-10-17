@@ -50,3 +50,13 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   GPL-3.0-only AND MIT), and trombone bumps on straight runs, each inserted in one
   DRC-checked transaction (`length/meander.rs`, `length/matching.rs`,
   `length/targets.rs`, written from KRT ideas).
+- `diffpair` (X08): differential pairs, the `krt-diffpair` board stage
+  (`router.special.diff_pairs = krt-diffpair`, name inference behind
+  `router.diff_pairs.infer_from_names`), run before the first pass: pairs from
+  the KiCad project's diff-pair classes or by name (`diffpair/model.rs` ports
+  KRT's `extract_diff_pair_base` and `find_differential_pairs` and so is
+  GPL-3.0-only AND MIT), a centreline through Freerouting's maze search at the
+  pair's outer width, the P and N tracks offset from it with miter corners, and
+  single-ended legs to the pins, all in one DRC-checked transaction, with KRT's
+  1, 2 and 4 mm setback fallback (`centreline.rs`, `offset.rs`, `legs.rs`,
+  `report.rs`, written from KRT ideas).

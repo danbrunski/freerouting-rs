@@ -1,0 +1,10 @@
+# X08/X09: boards with differential pairs for the krt-diffpair stage (docs/roadmap/prereg/X08.json).
+# Pairs are inferred from the net names (router.diff_pairs.infer_from_names = true); the DSN carries
+# no pair rule. The synthetic boards are committed; the corpus boards are F03.3's out-of-repo corpus
+# (tools/bench/sets/kicad-corpus.txt), skipped while missing. Run by
+# crates/freerouting-krt/tests/diffpair.rs measurement_records_on_a_set.
+crates/freerouting-krt/tests/data/x08-straight.dsn   # synthetic, one pair D_P/D_N around a block
+crates/freerouting-krt/tests/data/x08-connector.dsn   # synthetic, USB_D+/USB_D- between 0.5 mm pitch connectors
+target/corpus/prepped/picodvi-picodvi.dsn   # 4 layers, DVI and USB pairs, BSD-3-Clause
+target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn   # 4 layers, PCIe lanes, MIT
+target/corpus/prepped/mydevboard-rp2040dev.dsn   # 2 layers, USB pair, LicenseRef-none
