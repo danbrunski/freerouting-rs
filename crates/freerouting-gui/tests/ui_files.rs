@@ -889,3 +889,36 @@ fn autoroute_flag_is_dct_zero() {
     assert!(dir.join("out.ses").is_file());
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// K02.5: the router flags of the CLI are read by the front-end mode and land
+/// on the settings of the job, over the board's baseline. The exit code and
+/// the result are those of a routed job.
+#[test]
+fn frontend_takes_the_routers_flags_of_the_cli() {
+    let dir = scratch("fe-router-flags");
+    let mut h = frontend(
+        &dir,
+        &[
+            "-dct",
+            "0",
+            "-mt",
+            "2",
+            "--router.optimizer.enabled=false",
+            "--max-passes",
+            "1",
+        ],
+    );
+    step_until(&mut h, 300, "the exit", |a| a.close_sent());
+    let applied = h
+        .state()
+        .autoroute()
+        .applied
+        .clone()
+        .expect("the job started from settings");
+    // `--max-passes 1` comes after `-mp 2`: the last one wins, as on the CLI.
+    assert_eq!(applied.autorouter.max_passes, Some(1));
+    assert_eq!(applied.optimizer.enabled, Some(false));
+    assert!(dir.join("out.ses").is_file());
+    assert_eq!(h.state().frontend_exit_code(), 0);
+    let _ = std::fs::remove_dir_all(dir);
+}

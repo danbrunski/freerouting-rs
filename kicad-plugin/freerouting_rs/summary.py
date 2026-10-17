@@ -1,0 +1,94 @@
+"""The text shown after a routing run (K02.4), from the router's
+`--result-json` manifest (C08.4).
+
+Kept free of pcbnew and wx imports. Reads the manifest defensively: a key that
+is missing or of another type reads as unknown, never as an exception.
+
+Fields used (Java's `RoutingResultManifest` names):
+`board_statistics.connections.maximum_count` / `incomplete_count`,
+`board_statistics.vias.total_count`, `board_statistics.traces.total_length_mm`,
+`board_statistics.clearance_violations.total_count`, `final_state`, and for
+the time the sum of `phases.*.duration_seconds` unless the caller has the
+`done` event's `elapsed_ms`.
+"""
+
+import json
+
+try:  # as part of the plugin package
+    from . import progress
+except ImportError:  # top-level import, as the tests do
+    import progress
+
+
+def load_manifest(path):
+    """The manifest at `path`, or None when it is absent or not a JSON object."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _get(data, *keys):
+    for key in keys:
+        if not isinstance(data, dict):
+            return None
+        data = data.get(key)
+    return data
+
+
+def _int(value):
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _number(value):
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+
+def incomplete_count(manifest):
+    """The manifest's incomplete connections, or None."""
+    return _int(_get(manifest, "board_statistics", "connections", "incomplete_count"))
+
+
+def elapsed_seconds(manifest, elapsed_ms=None):
+    if isinstance(elapsed_ms, (int, float)) and not isinstance(elapsed_ms, bool):
+        return elapsed_ms / 1000
+    phases = _get(manifest, "phases")
+    if not isinstance(phases, dict):
+        return None
+    times = [_number(_get(p, "duration_seconds")) for p in phases.values()]
+    times = [t for t in times if t is not None]
+    return sum(times) if times else None
+
+
+def format_summary(manifest, elapsed_ms=None):
+    """The summary text, several lines. `manifest` None gives a one-line note."""
+    if manifest is None:
+        return "No result summary: the router wrote no result file."
+    maximum = _int(_get(manifest, "board_statistics", "connections", "maximum_count"))
+    incomplete = incomplete_count(manifest)
+    vias = _int(_get(manifest, "board_statistics", "vias", "total_count"))
+    length = _number(_get(manifest, "board_statistics", "traces", "total_length_mm"))
+    violations = _int(_get(manifest, "board_statistics", "clearance_violations", "total_count"))
+    seconds = elapsed_seconds(manifest, elapsed_ms)
+    state = _get(manifest, "final_state")
+
+    lines = []
+    if maximum is not None and incomplete is not None:
+        routed = max(maximum - incomplete, 0)
+        lines.append(f"Connections: {routed} of {maximum} routed, {incomplete} incomplete")
+    else:
+        lines.append("Connections: unknown")
+    lines.append(f"Vias: {vias if vias is not None else 'unknown'}")
+    lines.append(f"Total trace length: {length:.1f} mm" if length is not None else "Total trace length: unknown")
+    lines.append(f"Time: {progress.format_seconds(seconds)}" if seconds is not None else "Time: unknown")
+    if isinstance(state, str) and state != "COMPLETED":
+        lines.append(f"Run state: {state}")
+    if violations:
+        lines.append(f"Clearance violations: {violations}")
+    if incomplete:
+        noun = "connection is" if incomplete == 1 else "connections are"
+        lines.append("")
+        lines.append(f"WARNING: {incomplete} {noun} not routed. Check the board before you use it.")
+    return "\n".join(lines)

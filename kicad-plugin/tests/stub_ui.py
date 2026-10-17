@@ -1,0 +1,205 @@
+"""Stand-ins for `wx` and `pcbnew` so that plugin.py's glue (the dialogs, the
+Route / Route in GUI flows) runs without KiCad. They record what the plugin
+asks for: message boxes, SES imports, DSN exports.
+
+`install(monkeypatch, work)` puts the stubs in `sys.modules`, loads
+`freerouting_rs.plugin` as part of a package whose `__init__` never runs (it
+would register the plugin), and returns `(plugin, ui)`. A modal dialog's
+`ShowModal` runs its timer handlers in a loop until `EndModal`; `ui.on_modal`
+is called on every iteration with `(dialog, iteration)` so a test can press
+Stop, Abort or Terminate.
+"""
+
+import importlib
+import shutil
+import sys
+import time
+import types
+from pathlib import Path
+
+from conftest import PLUGIN_SRC, TESTS
+
+
+class UI:
+    def __init__(self):
+        self.messages = []  # (text, style)
+        self.imports = []  # paths given to ImportSpecctraSES
+        self.exports = []
+        self.on_modal = None
+        self.dialogs = []  # every modal dialog that was shown, in order
+        self.import_ok = True
+
+
+class Control:
+    """A control that holds a value (SpinCtrl, TextCtrl, CheckBox)."""
+
+    def __init__(self, *args, value=None, min=0, max=100, label="", **kwargs):
+        self._v = value if value is not None else min
+        self.label = label
+
+    def GetValue(self):
+        return self._v
+
+    def SetValue(self, v):
+        self._v = v
+
+    def AppendText(self, text):
+        self._v = (self._v or "") + text
+
+    def SetLabel(self, text):
+        self.label = text
+
+    def __getattr__(self, name):  # SetHint, SetToolTip, Enable, Bind, Pulse, ...
+        if name.startswith("__"):
+            raise AttributeError(name)
+        return lambda *a, **k: None
+
+
+class Sizer:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, name):
+        if name.startswith("__"):
+            raise AttributeError(name)
+        return lambda *a, **k: None
+
+
+class TextControl(Control):
+    def __init__(self, *args, value="", **kwargs):
+        super().__init__(*args, value=value, **kwargs)
+
+
+class CheckBox(Control):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, value=False, **kwargs)
+
+
+class Timer:
+    def __init__(self, owner):
+        self.running = False
+
+    def Start(self, ms):
+        self.running = True
+
+    def Stop(self):
+        self.running = False
+
+
+def build_wx(ui):
+    wx = types.ModuleType("wx")
+
+    class Dialog:
+        def __init__(self, parent=None, *args, **kwargs):
+            self._handlers = {}
+            self._ended = None
+
+        def Bind(self, event, handler, source=None):
+            self._handlers.setdefault(event, []).append(handler)
+
+        def ShowModal(self):
+            ui.dialogs.append(self)
+            for n in range(5000):
+                if self._ended is not None:
+                    break
+                if ui.on_modal:
+                    ui.on_modal(self, n)
+                if self._ended is not None:
+                    break
+                for handler in self._handlers.get("EVT_TIMER", []):
+                    handler(None)
+                time.sleep(0.01)
+            assert self._ended is not None, "the modal dialog never ended"
+            return self._ended
+
+        def EndModal(self, code):
+            self._ended = code
+
+        def Destroy(self):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def __getattr__(self, name):
+            if name.startswith("__"):
+                raise AttributeError(name)
+            return lambda *a, **k: None
+
+    wx.Dialog = Dialog
+    wx.Panel = Dialog
+    wx.SpinCtrl = Control
+    wx.TextCtrl = TextControl
+    wx.CheckBox = CheckBox
+    for name in ("Button", "StaticText", "Gauge"):
+        setattr(wx, name, Control)
+    for name in ("BoxSizer", "FlexGridSizer"):
+        setattr(wx, name, Sizer)
+    wx.Timer = Timer
+    wx.EVT_BUTTON, wx.EVT_TIMER, wx.EVT_CLOSE = "EVT_BUTTON", "EVT_TIMER", "EVT_CLOSE"
+    wx.ID_OK, wx.ID_CANCEL = 5100, 5101
+    wx.ICON_EXCLAMATION, wx.ICON_INFORMATION, wx.ICON_ERROR = 0x200, 0x800, 0x200 | 0x400
+    wx.OK = 4
+
+    def message_box(text, caption="", style=0, parent=None):
+        ui.messages.append((text, style))
+
+    wx.MessageBox = message_box
+    wx.__getattr__ = lambda name: 0  # remaining constants (sizer flags, styles)
+    return wx
+
+
+def build_pcbnew(ui, dsn_text):
+    pcbnew = types.ModuleType("pcbnew")
+
+    class ActionPlugin:
+        def register(self):
+            pass
+
+    def export(board, path):
+        ui.exports.append(path)
+        Path(path).write_text(dsn_text, encoding="utf-8")
+        return True
+
+    def import_ses(board, path):
+        ui.imports.append(Path(path))
+        return ui.import_ok
+
+    pcbnew.ActionPlugin = ActionPlugin
+    pcbnew.ExportSpecctraDSN = export
+    pcbnew.ImportSpecctraSES = import_ses
+    pcbnew.Refresh = lambda: None
+    return pcbnew
+
+
+class FakeBoard:
+    def __init__(self, pcb_path, min_track_nm=150000):
+        self.path = str(pcb_path)
+        self.min_track_nm = min_track_nm
+
+    def GetFileName(self):
+        return self.path
+
+    def GetDesignSettings(self):
+        return types.SimpleNamespace(m_TrackMinWidth=self.min_track_nm)
+
+    def Zones(self):
+        return []
+
+
+def install(monkeypatch):
+    ui = UI()
+    monkeypatch.setitem(sys.modules, "wx", build_wx(ui))
+    dsn_text = (TESTS / "data" / "five_areas.dsn").read_text(encoding="utf-8")
+    monkeypatch.setitem(sys.modules, "pcbnew", build_pcbnew(ui, dsn_text))
+    package = types.ModuleType("freerouting_rs")
+    package.__path__ = [str(PLUGIN_SRC)]
+    monkeypatch.setitem(sys.modules, "freerouting_rs", package)
+    for name in list(sys.modules):
+        if name.startswith("freerouting_rs."):
+            monkeypatch.delitem(sys.modules, name)
+    plugin = importlib.import_module("freerouting_rs.plugin")
+    return plugin, ui

@@ -52,8 +52,16 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use freerouting::job::{LogLevel, LogLine};
+use freerouting::settings::SettingsPatch;
+use freerouting::settings::cli_flags::{
+    ALIAS_FLAGS, parse_router_flags_rewritten, rewrite_aliases,
+};
 use freerouting::settings::config_path::ConfigChoice;
-use freerouting::settings::{SettingsPatch, parse_cli_arguments};
+// The helpers moved to the engine (K02.5); the CLI's tests and callers keep
+// reaching them here.
+pub use freerouting::settings::cli_flags::{
+    MAX_TIMEOUT_SECONDS, java_decode_int, parse_timeout_seconds, split_net_classes, timeout_text,
+};
 
 /// How a flag is matched.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -354,51 +362,6 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
     ),
 ];
 
-/// The longest job limit (`RoutingJobScheduler` caps `job_timeout`).
-pub const MAX_TIMEOUT_SECONDS: u64 = 24 * 3600;
-
-/// `--timeout`: `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS` or plain seconds, as
-/// seconds. Returns `None` for anything else.
-pub fn parse_timeout_seconds(text: &str) -> Option<u64> {
-    fn digits(text: &str) -> Option<u64> {
-        if text.is_empty() || !text.bytes().all(|b| b.is_ascii_digit()) {
-            return None;
-        }
-        text.parse().ok()
-    }
-    let text = text.trim();
-    if text.contains(':') {
-        let parts: Vec<&str> = text.split(':').collect();
-        let numbers: Option<Vec<u64>> = parts.iter().map(|p| digits(p)).collect();
-        let numbers = numbers?;
-        return match numbers.as_slice() {
-            [h, m, s] => h
-                .checked_mul(3600)?
-                .checked_add(m.checked_mul(60)?)?
-                .checked_add(*s),
-            [m, s] => m.checked_mul(60)?.checked_add(*s),
-            _ => None,
-        };
-    }
-    let last = text.chars().last()?;
-    match last.to_ascii_lowercase() {
-        's' => digits(&text[..text.len() - 1]),
-        'm' => digits(&text[..text.len() - 1])?.checked_mul(60),
-        'h' => digits(&text[..text.len() - 1])?.checked_mul(3600),
-        _ => digits(text),
-    }
-}
-
-/// `HH:MM:SS` for a number of seconds (the form of `job_timeout`).
-pub fn timeout_text(seconds: u64) -> String {
-    format!(
-        "{:02}:{:02}:{:02}",
-        seconds / 3600,
-        seconds / 60 % 60,
-        seconds % 60
-    )
-}
-
 /// What `--progress` selects.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ProgressMode {
@@ -486,31 +449,6 @@ impl Args {
             format!("Ignored command line argument: {what}"),
         );
     }
-}
-
-/// `Integer.decode`: an optional sign, then decimal, `0x`/`0X`/`#` hexadecimal
-/// or leading-`0` octal digits. `None` where Java throws.
-pub fn java_decode_int(text: &str) -> Option<i32> {
-    let (negative, rest) = match text.strip_prefix('-') {
-        Some(rest) => (true, rest),
-        None => (false, text.strip_prefix('+').unwrap_or(text)),
-    };
-    let (radix, digits) = if let Some(hex) = rest
-        .strip_prefix("0x")
-        .or_else(|| rest.strip_prefix("0X"))
-        .or_else(|| rest.strip_prefix('#'))
-    {
-        (16, hex)
-    } else if rest.len() > 1 && rest.starts_with('0') {
-        (8, &rest[1..])
-    } else {
-        (10, rest)
-    };
-    if digits.is_empty() || digits.starts_with(['-', '+']) {
-        return None;
-    }
-    let magnitude = i64::from_str_radix(digits, radix).ok()?;
-    i32::try_from(if negative { -magnitude } else { magnitude }).ok()
 }
 
 /// `GlobalSettings.isMultiFileConcatenation`: whether `raw` is `a.ext+b.ext`
@@ -796,7 +734,12 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
             Some((name, value)) => (name, Some(value.to_string())),
             None => (arg, None),
         };
-        let Some(&(name, takes_value, _)) = EXTRA_FLAGS.iter().find(|(n, _, _)| *n == name) else {
+        // The aliases of the router settings belong to the engine
+        // (`rewrite_aliases`, K02.5); their values pass through as arguments.
+        let Some(&(name, takes_value, _)) = EXTRA_FLAGS
+            .iter()
+            .find(|(n, _, _)| *n == name && !ALIAS_FLAGS.iter().any(|(a, _)| a == n))
+        else {
             rest.push(argv[i].clone());
             i += 1;
             continue;
@@ -836,39 +779,6 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
                     .usage_errors
                     .push(format!("--seed: '{value}' is not a number")),
             },
-            "--result-json" => rest.push(format!("--router.result_json={value}")),
-            "--max-passes" => {
-                if java_decode_int(&value).is_some() {
-                    rest.push(format!("--router.autorouter.max_passes={value}"));
-                } else {
-                    out.usage_errors
-                        .push(format!("--max-passes: '{value}' is not an integer"));
-                }
-            }
-            "--threads" => match value.trim().parse::<i32>() {
-                Ok(n) if n >= 1 => {
-                    rest.push(format!("--router.autorouter.max_threads={n}"));
-                    rest.push(format!("--router.optimizer.max_threads={n}"));
-                }
-                _ => out.usage_errors.push(format!(
-                    "--threads: '{value}' is not a thread count of 1 or more"
-                )),
-            },
-            "--timeout" => match parse_timeout_seconds(&value) {
-                Some(seconds) => {
-                    let capped = seconds.min(MAX_TIMEOUT_SECONDS);
-                    if capped != seconds {
-                        out.note(
-                            LogLevel::Warn,
-                            format!("--timeout {value} is longer than 24 hours; using 24:00:00"),
-                        );
-                    }
-                    rest.push(format!("--router.job_timeout={}", timeout_text(capped)));
-                }
-                None => out.usage_errors.push(format!(
-                    "--timeout: '{value}' is not a duration (use 90s, 10m, 2h or HH:MM:SS)"
-                )),
-            },
             _ => unreachable!("every row of EXTRA_FLAGS is handled"),
         }
     }
@@ -878,16 +788,16 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
 /// Parses the arguments after the program name.
 pub fn parse(argv: &[String]) -> Args {
     let mut out = Args::default();
-    let rewritten = rewrite_extras(argv, &mut out);
+    let own = rewrite_extras(argv, &mut out);
+    let rewritten = rewrite_aliases(&own, &mut out.usage_errors, &mut out.log);
     let argv = rewritten.as_slice();
     out.config = ConfigChoice::from_args(argv);
-    let cli = parse_cli_arguments(argv);
+    let cli = parse_router_flags_rewritten(argv);
     out.patch = cli.patch;
     out.parsed_arguments = cli.parsed_arguments;
     for warning in cli.warnings {
         out.note(LogLevel::Warn, warning);
     }
-    apply_escaped_inc(argv, &mut out);
 
     let mut i = 0;
     while i < argv.len() {
@@ -997,66 +907,6 @@ pub fn parse(argv: &[String]) -> Args {
         } + 1;
     }
     out
-}
-
-/// The names of `-inc VALUE` with `\,` keeping a comma. Java's `split(",")`
-/// removes trailing empty strings; each name is trimmed as `FIELDS` lists are.
-pub fn split_net_classes(value: &str) -> Vec<String> {
-    let mut names = Vec::new();
-    let mut current = String::new();
-    let mut chars = value.chars().peekable();
-    while let Some(c) = chars.next() {
-        match c {
-            '\\' if chars.peek() == Some(&',') => {
-                chars.next();
-                current.push(',');
-            }
-            ',' => names.push(std::mem::take(&mut current)),
-            other => current.push(other),
-        }
-    }
-    names.push(current);
-    while names.last().is_some_and(String::is_empty) {
-        names.pop();
-    }
-    names.into_iter().map(|n| n.trim().to_string()).collect()
-}
-
-/// Re-reads the last `-inc VALUE` of the command line when its value has a
-/// `\,` in it, and replaces the patch's `ignore_net_classes` by the names
-/// [`split_net_classes`] gives. The walk is `CliSettings`': a value is taken
-/// only when the next argument does not start with `-`.
-fn apply_escaped_inc(argv: &[String], out: &mut Args) {
-    let mut last: Option<&str> = None;
-    let mut i = 0;
-    while i < argv.len() {
-        let arg = argv[i].as_str();
-        if arg.starts_with("--") {
-            i += 1;
-            continue;
-        }
-        if let Some(flag) = arg.strip_prefix('-') {
-            let value = if i + 1 < argv.len() && !argv[i + 1].starts_with('-') {
-                i += 1;
-                argv[i].as_str()
-            } else {
-                ""
-            };
-            if flag == "inc" {
-                last = Some(value);
-            }
-        }
-        i += 1;
-    }
-    if let Some(value) = last
-        && value.contains("\\,")
-    {
-        out.patch.autorouter.ignore_net_classes = Some(split_net_classes(value));
-        out.parsed_arguments.insert(
-            "router.autorouter.ignore_net_classes".to_string(),
-            value.to_string(),
-        );
-    }
 }
 
 #[cfg(test)]

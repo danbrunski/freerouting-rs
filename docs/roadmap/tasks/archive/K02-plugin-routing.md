@@ -7,7 +7,7 @@ progress, a way to stop and keep the best board, a result summary, the
 "route in the GUI" mode the Java plugin has, and proof on real boards. This
 checklist is the report's PLG-2, plus KRT's per-board settings persistence
 (KRT report §8). It completes item 6 of "What 'complete' means" in
-[port-completion.md](../port-completion.md): the plugin routes a real board
+[port-completion.md](../../port-completion.md): the plugin routes a real board
 end to end, on Windows through the native build.
 
 **Prerequisites:**
@@ -71,7 +71,7 @@ on real boards; the Windows end-to-end check.
 
 ## Checklist
 
-- [ ] **K02.1 — Route options, saved per board.**
+- [x] **K02.1 — Route options, saved per board.**
   - `options.py`: `RouteOptions { max_passes (-mp, 0–9999), threads (-mt,
     0–1024), optimizer (on/off, `--router.optimizer.enabled`), improvement
     threshold (-oit), ignore_net_classes (-inc, comma list), seed (--seed),
@@ -93,7 +93,9 @@ on real boards; the Windows end-to-end check.
     - one integration test (in `test_cli_integration.py`, K02.3) passes all
       options to the real CLI on a small fixture and gets exit 0.
 
-- [ ] **K02.2 — Live progress.**
+  *Done 2026-10-16:* `options.py` (`RouteOptions`, `to_args`, `load`/`save`, `from_dict`, `from_form`), the dialog's option form and `route-options.json` (`"schema": 1`) in `plugin.py`. Deviations from the text above: the flags are `--max-passes` (the alias of `-mp`; `-mp` makes the router log a deprecation warning) and `--threads` (`-mt` is a flat setting no stage reads headless), the net classes use `--router.autorouter.ignore_net_classes=a,b` (`-inc a\,b` only when a name has a comma), the optimizer threshold range is 1 to 100 percent (the router multiplies a value in (0, 1) by 100), `--seed` is passed only when not 0 and the CLI accepts only 0 today, the width flag is always passed (D8). `test_options.py` (36 tests): golden argument lists for the defaults (`[]`, and `--router.min_trace_width_um=150` with a board minimum) and for each option and all of them in a fixed order; `test_save_load_save_gives_equal_json`; `test_a_damaged_stored_dict_restores_defaults_without_an_exception` (removed key, unknown key, out-of-range, `"schema": 99`); `test_cli_integration.py::test_all_options_reach_the_real_cli_and_it_exits_0` passes passes, threads, optimizer off, threshold, ignored class, min width and timeout to the real CLI on `Issue026-J2_reference.dsn`: exit 0, no "Unknown"/"Deprecated" log line, and the manifest's `settings_snapshot` has every value. `test_route_dialog.py::test_the_options_are_saved_and_reach_the_router` runs the dialog code (stub wx): saved, passed, restored by a new dialog.
+
+- [x] **K02.2 — Live progress.**
   - `progress.py`: `parse_line(text) -> event | None` for C08's lines and a
     `ProgressState` that keeps the last phase, pass, routed, failed,
     incomplete and elapsed time. The dialog replaces the pulsing bar with
@@ -105,7 +107,9 @@ on real boards; the Windows end-to-end check.
     lines are skipped without an exception; K01.4's thread test still
     passes.
 
-- [ ] **K02.3 — Stop and keep, or Abort.**
+  *Done 2026-10-16:* `progress.py` (`parse_line`, `ProgressState`, `format_log_event`, `pump_lines`, the reader thread's body), `routing.RouteRun` (queue drained on the UI thread by the dialog's `wx.Timer`), `RouteProgressDialog` in `plugin.py` (phase, pass, routed/failed/incomplete, elapsed, a log pane for the router's log and for non-JSON lines). Recordings from the real CLI (`--progress json --result-json`): `tests/data/progress-j2.jsonl` (`Issue026-J2_reference.dsn`, `-mp 2`, 34 lines, complete) and `progress-bm01.jsonl` (`Issue508-DAC2020_bm01.dsn`, `--max-passes 1`, 59 lines, 49 incomplete), with `result-j2.json` and `result-bm01.json`. `test_progress.py` (33 tests incl. `test_a_recording_replays_to_the_state_of_its_done_event` for both, malformed and cut-off lines, bad values); `test_threads.py` now scans every module for thread targets (the reader thread lives in `routing.py`), keeps its negative controls (lambda calling pcbnew, a helper reaching `wx.Yield`, a thread in `plugin.py`, `wx.CallAfter` allowed) and passes (5 tests).
+
+- [x] **K02.3 — Stop and keep, or Abort.**
   - Stop writes `stop\n` to the process's stdin (`stdin=PIPE` from now on)
     and waits; the dialog then imports the SES as after a normal finish.
     Abort kills the process and imports nothing.
@@ -118,7 +122,9 @@ on real boards; the Windows end-to-end check.
     - a kill at the same point leaves no `.ses` file and no temp file in the
       output folder.
 
-- [ ] **K02.4 — Result summary.**
+  *Done 2026-10-16:* `tools.start_route` (stdin is a pipe), `tools.stop_route`, `RouteRun.stop`/`abort`, the dialog's buttons. `test_cli_integration.py` against the real CLI (debug build via `FREEROUTING_RS_BIN`; skips with a message when none is found): `test_stop_after_the_first_route_event_keeps_a_loadable_board` (`Issue508-DAC2020_bm01.dsn`, `--max-passes 50`, `stop` sent at the first `route` event: exit 0, state completed, a SES that `freerouting -de dsn ses -drc` loads ("SES file loaded for DRC: N wires, M vias imported", no "Failed"/"rror" in its log), only the dsn, ses and manifest left) and `test_abort_at_the_same_point_leaves_no_ses_and_no_temp_file` (kill at the same point: no `.ses`, no `.tmp`). Fake-router tests in `test_routing.py` and the dialog flows in `test_route_dialog.py` (`test_stop_keeps_the_best_board`, `test_abort_discards_everything`). The C08.5 remainder (Ctrl-C and SIGTERM through `ctrlc`) was done here; see the archived C08.
+
+- [x] **K02.4 — Result summary.**
   - Pass `--result-json <work dir>/<board>.result.json`. `summary.py` turns
     the manifest into the text shown after import: routed and incomplete
     connections, vias, total length, time, and a warning when incomplete
@@ -128,7 +134,9 @@ on real boards; the Windows end-to-end check.
     manifest's incomplete count equals that of `freerouting -de <dsn> <ses>
     -drc` on the written SES.
 
-- [ ] **K02.5 — Route in the GUI.**
+  *Done 2026-10-16:* `summary.py` (`format_summary`, `load_manifest`), `--result-json <work dir>/<board>.result.json` in `RouteRun`, the message after the import. `test_summary.py` (8 tests) checks the exact text of the two recorded manifests: complete (`Connections: 33 of 33 routed, 0 incomplete`, no warning) and incomplete (`Connections: 146 of 195 routed, 49 incomplete`, ..., `WARNING: 49 connections are not routed. Check the board before you use it.`). `test_cli_integration.py::test_the_summary_matches_the_drc_of_the_written_session`: the manifest's `normalized_score` equals `qualityScore` of `freerouting -de <dsn> <ses> -drc` on the written SES for a complete board (J2, 0 incomplete, no unconnected item) and an incomplete one (bm01, 1 pass, 49 incomplete). The DRC report has no incomplete count of its own (its `unconnectedItems` lists split nets: 43 entries for bm01's 49 connections), but its score is the router score computed from that count and the violations, so equal scores mean equal counts.
+
+- [x] **K02.5 — Route in the GUI.**
   - A "Route in GUI" button launches `freerouting-gui -de x.dsn -do x.ses`,
     the command the Java plugin uses with `--gui.enabled=true`
     (`integrations/KiCad/kicad-freerouting/plugins/router_dsn.py`
@@ -144,7 +152,9 @@ on real boards; the Windows end-to-end check.
     is reached; with a fake that exits without writing, no import happens
     and a message says so. The real GUI part is in K02.8.
 
-- [ ] **K02.6 — Non-ASCII names round trip.**
+  *Done 2026-10-16:* `routing.GuiRun`, `tools.start_gui`, `GuiWaitDialog` and the "Route in GUI" button; the options go to the GUI as `--max-passes`, `--threads`, `--router.*` (not `--seed`). `test_gui_mode.py` (7 tests; `fake_bin/fake_gui.py` and the stub wx/pcbnew): `test_a_gui_that_writes_the_session_is_imported` (command line `-de x.dsn -do x.ses --router.min_trace_width_um=150`, import reached on the written file), `test_a_gui_that_exits_without_a_session_imports_nothing` (message "...closed (exit code 0) without writing b.ses"), Terminate, an old session not imported, the Java plugin's text. Operator decision (option A): the CLI's argument-to-`SettingsPatch` mapping moved into the engine (`freerouting::settings::cli_flags`: `rewrite_aliases`, `parse_router_flags`, `router_flag_span`, `apply_escaped_inc`, the timeout and `Integer.decode` helpers), the CLI's `args.rs` uses it with its tests unchanged (`cargo test -p freerouting-cli`: all pass, 58 in `args_java`), and the GUI's front-end mode reads the same flags (`-mt`, `-oit`, `-inc`, `--router.*`, `--max-passes`, ...) into `FrontEndOptions::router`, laid over the job's settings: `args::tests::router_flags_reach_the_patch_as_on_the_cli`, `ui_files.rs::frontend_takes_the_routers_flags_of_the_cli`. The real GUI window is K02.8. DIVERGENCES, "freerouting-gui", names the flag set (and `-mp -1`, now an unknown option as on the CLI).
+
+- [x] **K02.6 — Non-ASCII names round trip.**
   - `tools/kicad-oracle/roundtrip_names.py` runs in KiCad's Python on a
     copy of the `interf_u` demo (its nets carry Ω, as in fixture
     `Issue093-interf_u`) and on a copy of one board edited to add nets and
@@ -156,7 +166,9 @@ on real boards; the Windows end-to-end check.
     (C05 writer) or the DSN lexer owner with the failing name, and the
     item stays partial until fixed.
 
-- [ ] **K02.7 — Graded runs on real boards.**
+  *Done 2026-10-16:* `tools/kicad-oracle/roundtrip_names.py` (details and results in `kicad-plugin.md`, "K02.6"). KiCad 10's `interf_u` demo has no Omega in any name (the old board behind `Issue093-interf_u` has Chinese text), so the script renames nets and references on the copies: `interf_u` gets Omega on 8 nets and 11 references, `ecc83-pp` mu and Phi on 3 nets and 6 references. Run with the release CLI, `--max-passes 3`, KiCad 10.0.7: `interf_u: ok: 789 tracks and vias imported, 8 non-ASCII nets routed ... shorting_items 0`; `edited: ok: 33 tracks and vias imported, 2 non-ASCII nets routed (Net-(P3-P1)Φ, Net-(U1A-G)µ), shorting_items 0`. Every routed track's net name is a net of the original, the names are in the DSN and (for routed nets) the SES as they are, no reference changed; no sanitizing anywhere. `pgrep -x kicad; pgrep -x pcbnew` empty before and after. Not run in Windows KiCad 10.0.5.
+
+- [~] **K02.7 — Graded runs on real boards.**
   - `tools/bench/sets/kicad-demos.txt` lists the five demos and
     `canary-pwr` by path (out of the repo, skipped when missing).
   - For each board, run the plugin's path headless (export with the K01.2
@@ -169,7 +181,9 @@ on real boards; the Windows end-to-end check.
     a pad; any other difference is explained. `pgrep -x kicad; pgrep -x pcbnew` shows the
     same KiCad processes before and after.
 
-- [ ] **K02.8 — Windows end to end with the native build.** *Manual, Dan.*
+  *Partial 2026-10-16:* `tools/bench/sets/kicad-demos.txt`, `tools/bench/k02-graded-runs.sh`, `tools/kicad-oracle/via_in_pad.py`, `graded_table.py`; the table and the explanations are in `kicad-plugin.md`, "K02.7". Done: five of six boards, both engines, graded by `grade.sh` (KiCad 10.0.7): `ecc83-pp` and `complex_hierarchy` no router-caused item in either engine; `CM5_MINIMA_3` the two sessions are line for line the same (38 items, all shared); `interf_u` Rust 5 `starved_thermal`, Java 4; `kit-dev-coldfire-xilinx_5213` Rust has one `clearance` item (a via 0.04 mm from the copper text `MOD0`, which the DSN export does not carry; Java missed it by chance) and Java has 190 tracks under the board's minimum width, Rust none. No via in a pad in any graded run. Same KiCad processes before and after (none). **Remaining: `canary-pwr`, Rust.** The CLI panics at HEAD with the plugin's options (`expect("item on the board")`, `basic_board.rs:227`, from `normalize_pass` in the fanout stage; with the fanout off it panics with a minimum width and routes without one). That is an engine bug owned by the A series (A14, the board parity gate, which owns the fanout and trace-insertion fixes); Java's `canary-pwr` row is in the table. Re-run `tools/bench/k02-graded-runs.sh ... canary-pwr` once it is fixed, then tick.
+
+- [~] **K02.8 — Windows end to end with the native build.** *Manual, Dan.*
   - The orchestrator rebuilds the Windows exes natively (`kicad-plugin.md`,
     mingw `bin` on PATH, viewer closed) and reinstalls the plugin. Dan
     routes `canary-pwr` and one demo from inside KiCad: Route with
@@ -177,3 +191,5 @@ on real boards; the Windows end-to-end check.
   - **Accept:** Dan's results (what worked, routed and incomplete counts,
     times) are recorded with the date in `kicad-plugin.md` "Verified".
     Until then the item is partial with "needs Dan".
+
+  *Partial 2026-10-16:* needs Dan, on Windows, inside KiCad 10.0.5. The exact steps (options saved, Route with progress, Stop, Abort, Route in GUI with Terminate, a demo board) and what to record are in `kicad-plugin.md`, "K02.8: what Dan checks". Before that the orchestrator rebuilds the Windows exes natively (mingw `bin` on PATH, viewer closed, `cargo build --release -p freerouting-gui -p freerouting-cli`) and reinstalls the plugin (`install.py --bin-dir target\release`, Refresh Plugins). Same Windows reinstall as K01.6. Nothing of K02 has run inside KiCad; all of it runs headless against the stub `wx`/`pcbnew`, the fake and the real CLI.

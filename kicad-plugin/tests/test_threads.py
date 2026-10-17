@@ -3,7 +3,9 @@ Windows 11 (KiCadRoutingTools issue #688). Worker threads may only run and
 read the subprocess. This test reads plugin.py with `ast`, finds every
 function passed as `threading.Thread(target=...)` (a name, `self.method` or a
 lambda), follows the calls it makes inside the package, and fails if any
-path reaches `pcbnew.*` or `wx.*` other than `wx.CallAfter`."""
+path reaches `pcbnew.*` or `wx.*` other than `wx.CallAfter`. Every module of
+the package is searched for threads (K02: the reader thread lives in
+routing.py and runs progress.pump_lines)."""
 
 import ast
 import shutil
@@ -47,9 +49,9 @@ def thread_targets(tree):
     return out
 
 
-def violations(package, root_module="plugin"):
+def violations(package):
     """List of (module, line, text) for forbidden references reachable from
-    worker-thread targets, and the number of targets found."""
+    worker-thread targets of any module, and the number of targets found."""
     funcs = {m: index_functions(t) for m, t in package.items()}
     found, seen = [], set()
 
@@ -81,13 +83,13 @@ def violations(package, root_module="plugin"):
                 seen.add(id(f))
                 visit(mod, f)
 
-    roots = thread_targets(package[root_module])
-    for target in roots:
+    roots = [(module, target) for module, tree in package.items() for target in thread_targets(tree)]
+    for module, target in roots:
         if isinstance(target, ast.Lambda):
-            visit(root_module, target)
+            visit(module, target)
         else:
-            visit(root_module, ast.Expression(body=target))
-            follow(root_module, target)
+            visit(module, ast.Expression(body=target))
+            follow(module, target)
     return found, len(roots)
 
 
@@ -97,32 +99,41 @@ def test_routing_worker_never_touches_pcbnew_or_wx():
     assert found == []
 
 
-def plant(tmp_path, old, new):
+def plant(tmp_path, old, new, module="routing.py"):
     copy = tmp_path / "freerouting_rs"
     shutil.copytree(PLUGIN_SRC, copy, ignore=shutil.ignore_patterns("__pycache__"))
-    src = (copy / "plugin.py").read_text(encoding="utf-8")
+    src = (copy / module).read_text(encoding="utf-8")
     assert old in src
-    (copy / "plugin.py").write_text(src.replace(old, new), encoding="utf-8")
+    (copy / module).write_text(src.replace(old, new), encoding="utf-8")
     return copy
 
 
+READER = "target=progress.pump_lines,"
+
+
 def test_negative_control_lambda_worker_calling_pcbnew(tmp_path):
-    copy = plant(tmp_path, "result.update(r=tools.finish_route(self.router, proc))", "pcbnew.Refresh()")
+    copy = plant(tmp_path, READER, "target=lambda: pcbnew.Refresh(),")
     found, _ = violations(load_package(copy))
     assert [f[2] for f in found] == ["pcbnew.Refresh"]
 
 
 def test_negative_control_reaches_through_helpers_and_tools(tmp_path):
-    copy = plant(tmp_path, "tools.finish_route(self.router, proc)", "self.helper()")
-    src = (copy / "plugin.py").read_text(encoding="utf-8")
-    src = src.replace("    def on_view(self, _evt):", "    def helper(self):\n        return tools.sneaky()\n\n    def on_view(self, _evt):")
-    (copy / "plugin.py").write_text(src, encoding="utf-8")
+    copy = plant(tmp_path, READER, "target=self.helper,")
+    src = (copy / "routing.py").read_text(encoding="utf-8")
+    src = src.replace("    def stop(self):", "    def helper(self):\n        return tools.sneaky()\n\n    def stop(self):", 1)
+    (copy / "routing.py").write_text(src, encoding="utf-8")
     with open(copy / "tools.py", "a", encoding="utf-8") as f:
         f.write("\n\ndef sneaky():\n    return wx.Yield()\n")
     found, _ = violations(load_package(copy))
     assert [f[2] for f in found] == ["wx.Yield"]
 
 
+def test_negative_control_a_thread_in_the_plugin_module(tmp_path):
+    copy = plant(tmp_path, "def import_ses(board, ses):", "def sneaky_thread():\n    threading.Thread(target=lambda: pcbnew.Refresh()).start()\n\n\ndef import_ses(board, ses):", module="plugin.py")
+    found, _ = violations(load_package(copy))
+    assert [f[2] for f in found] == ["pcbnew.Refresh"]
+
+
 def test_wx_callafter_is_allowed(tmp_path):
-    copy = plant(tmp_path, "result.update(r=tools.finish_route(self.router, proc))", "wx.CallAfter(print, 1)")
+    copy = plant(tmp_path, READER, "target=lambda: wx.CallAfter(print, 1),")
     assert violations(load_package(copy))[0] == []

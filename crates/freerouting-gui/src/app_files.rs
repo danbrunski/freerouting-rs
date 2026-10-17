@@ -108,6 +108,9 @@ impl App {
     /// `App::build` before the load starts).
     pub(crate) fn init_files(&mut self, args: &Args) {
         self.files.frontend.options = args.frontend.clone();
+        for warning in &args.frontend.router_warnings {
+            self.log.push(Level::Warning, warning.clone());
+        }
         if args.open.is_empty() {
             return;
         }

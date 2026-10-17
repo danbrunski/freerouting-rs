@@ -19,16 +19,14 @@
 //! first is `stop`, the second aborts the run (the job ends `Cancelled`,
 //! nothing is written, exit 130). A stop that arrives while the board is
 //! still loading also ends the run as `Cancelled`, with nothing written
-//! (`run_job`). Installing the signal handlers needs the `ctrlc` crate, a
-//! `NEW DEP` the operator has not approved, so nothing calls
-//! [`Interrupts::interrupt`] from a signal yet; the test hook
-//! ([`TEST_INTERRUPT_VAR`]) injects interrupts instead, and a signal still
-//! kills the process as before (C07's temporary-file write leaves no partial
-//! output).
+//! (`run_job`). [`install_signals`] connects the signals to it through the
+//! `ctrlc` crate (feature `termination`: SIGINT, SIGTERM and SIGHUP on Unix,
+//! Ctrl-C and Ctrl-Break on Windows). The test hook ([`TEST_INTERRUPT_VAR`])
+//! injects interrupts through the same function without a signal.
 
 use std::io::BufRead;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, Once};
 use std::thread::JoinHandle;
 
 use freerouting::autoroute::events::{CancelToken, Phase};
@@ -142,6 +140,36 @@ impl Interrupts {
     pub fn count(&self) -> u32 {
         self.count.load(Ordering::Acquire)
     }
+}
+
+/// What the signal handler acts on, and who hears about it.
+type Listener = Box<dyn Fn(Interrupt) + Send>;
+static ACTIVE: Mutex<Option<(Arc<Interrupts>, Listener)>> = Mutex::new(None);
+static HANDLER: Once = Once::new();
+
+/// Makes Ctrl-C and SIGTERM call [`Interrupts::interrupt`] on `interrupts`,
+/// and `on_interrupt` with what it did. The handler is installed once per
+/// process (the `ctrlc` crate allows one); a later call replaces the run it
+/// acts on, so repeated in-process runs, as the tests make, are fine.
+/// Returns the reason when the operating system refuses the handler; the run
+/// then goes on without signal handling, and a signal kills the process as
+/// before (the temporary-file write leaves no partial output).
+pub fn install_signals(
+    interrupts: Arc<Interrupts>,
+    on_interrupt: impl Fn(Interrupt) + Send + 'static,
+) -> Result<(), String> {
+    *ACTIVE.lock().unwrap_or_else(|p| p.into_inner()) = Some((interrupts, Box::new(on_interrupt)));
+    let mut result = Ok(());
+    HANDLER.call_once(|| {
+        result = ctrlc::set_handler(|| {
+            let guard = ACTIVE.lock().unwrap_or_else(|p| p.into_inner());
+            if let Some((interrupts, listener)) = guard.as_ref() {
+                listener(interrupts.interrupt());
+            }
+        })
+        .map_err(|e| e.to_string());
+    });
+    result
 }
 
 /// When the test hook fires.

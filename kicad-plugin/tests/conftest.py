@@ -39,6 +39,27 @@ def make_fake_router(tmp_path):
 
 
 @pytest.fixture
+def make_fake_gui(tmp_path):
+    """Returns make(mode) -> path of an executable that behaves like
+    fake_bin/fake_gui.py in `mode`."""
+
+    def make(mode):
+        script = FAKE_BIN / "fake_gui.py"
+        d = tmp_path / f"fakegui-{mode}"
+        d.mkdir(exist_ok=True)
+        if os.name == "nt":
+            exe = d / "freerouting-gui.cmd"
+            exe.write_text(f'@"{sys.executable}" "{script}" {mode} %*\r\n')
+        else:
+            exe = d / "freerouting-gui"
+            exe.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{script}" {mode} "$@"\n')
+            exe.chmod(exe.stat().st_mode | stat.S_IXUSR)
+        return exe
+
+    return make
+
+
+@pytest.fixture
 def isolated_env(tmp_path, monkeypatch):
     """No settings.json, no FREEROUTING_RS_BIN, an empty PATH and home."""
     import tools

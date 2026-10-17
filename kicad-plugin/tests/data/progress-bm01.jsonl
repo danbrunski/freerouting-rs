@@ -1,0 +1,58 @@
+{"event":"start","schema_version":1,"mode":"route"}
+{"event":"progress","phase":"load","pass":null,"routed":null,"failed":null,"ripped":null,"incomplete":null,"violations":null,"score":null,"pass_end":false,"elapsed_ms":0}
+{"event":"log","level":"debug","text":"Applied copper-to-edge clearance override: 250.0 um (2500 board units)."}
+{"event":"log","level":"debug","text":"Applied plane_as_obstacle override: false"}
+{"event":"log","level":"debug","text":"Applied clearance tolerance: 1.0 um."}
+{"event":"log","level":"info","text":"Effective start_ripup_costs: 100 (source: defaults)"}
+{"event":"progress","phase":"fanout","pass":1,"routed":0,"failed":0,"ripped":0,"incomplete":195,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":7}
+{"event":"progress","phase":"fanout","pass":1,"routed":50,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":180}
+{"event":"progress","phase":"fanout","pass":1,"routed":99,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":405}
+{"event":"progress","phase":"fanout","pass":1,"routed":149,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":482}
+{"event":"progress","phase":"fanout","pass":2,"routed":0,"failed":0,"ripped":0,"incomplete":144,"violations":0,"score":174.36,"pass_end":false,"elapsed_ms":574}
+{"event":"progress","phase":"fanout","pass":2,"routed":5,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":623}
+{"event":"progress","phase":"fanout","pass":2,"routed":17,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":705}
+{"event":"progress","phase":"fanout","pass":2,"routed":22,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":842}
+{"event":"progress","phase":"fanout","pass":3,"routed":0,"failed":0,"ripped":0,"incomplete":142,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":858}
+{"event":"progress","phase":"fanout","pass":3,"routed":3,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":884}
+{"event":"progress","phase":"fanout","pass":3,"routed":11,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":941}
+{"event":"progress","phase":"fanout","pass":3,"routed":14,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":956}
+{"event":"progress","phase":"fanout","pass":4,"routed":0,"failed":0,"ripped":0,"incomplete":142,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":976}
+{"event":"progress","phase":"fanout","pass":4,"routed":1,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":982}
+{"event":"progress","phase":"fanout","pass":4,"routed":6,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1021}
+{"event":"progress","phase":"fanout","pass":4,"routed":7,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1026}
+{"event":"progress","phase":"fanout","pass":5,"routed":0,"failed":0,"ripped":0,"incomplete":142,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":1039}
+{"event":"progress","phase":"fanout","pass":5,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1040}
+{"event":"progress","phase":"fanout","pass":5,"routed":3,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1063}
+{"event":"progress","phase":"fanout","pass":5,"routed":4,"failed":1,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1068}
+{"event":"progress","phase":"fanout","pass":6,"routed":0,"failed":0,"ripped":0,"incomplete":142,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":1080}
+{"event":"progress","phase":"fanout","pass":6,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1082}
+{"event":"progress","phase":"fanout","pass":6,"routed":3,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1101}
+{"event":"progress","phase":"fanout","pass":6,"routed":4,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1106}
+{"event":"progress","phase":"fanout","pass":7,"routed":0,"failed":0,"ripped":0,"incomplete":142,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":1118}
+{"event":"progress","phase":"fanout","pass":7,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1119}
+{"event":"progress","phase":"fanout","pass":7,"routed":3,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1137}
+{"event":"progress","phase":"fanout","pass":7,"routed":4,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1142}
+{"event":"progress","phase":"fanout","pass":8,"routed":0,"failed":0,"ripped":0,"incomplete":142,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":1153}
+{"event":"progress","phase":"fanout","pass":8,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1154}
+{"event":"progress","phase":"fanout","pass":8,"routed":3,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1173}
+{"event":"progress","phase":"fanout","pass":8,"routed":4,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":1180}
+{"event":"progress","phase":"route","pass":1,"routed":1,"failed":0,"ripped":0,"incomplete":141,"violations":0,"score":181.20,"pass_end":false,"elapsed_ms":1211}
+{"event":"progress","phase":"route","pass":1,"routed":50,"failed":1,"ripped":19,"incomplete":105,"violations":0,"score":307.69,"pass_end":false,"elapsed_ms":1936}
+{"event":"progress","phase":"route","pass":1,"routed":85,"failed":2,"ripped":43,"incomplete":89,"violations":0,"score":391.45,"pass_end":false,"elapsed_ms":2781}
+{"event":"progress","phase":"route","pass":1,"routed":126,"failed":2,"ripped":67,"incomplete":73,"violations":0,"score":494.02,"pass_end":false,"elapsed_ms":4014}
+{"event":"progress","phase":"route","pass":1,"routed":169,"failed":2,"ripped":90,"incomplete":53,"violations":0,"score":637.61,"pass_end":false,"elapsed_ms":5435}
+{"event":"progress","phase":"route","pass":1,"routed":196,"failed":2,"ripped":113,"incomplete":49,"violations":0,"score":664.96,"pass_end":true,"elapsed_ms":6802}
+{"event":"log","level":"info","text":"Routing stages: router.autorouter.algorithm=freerouting-router, router.fanout.algorithm=freerouting-fanout, router.autorouter.ordering=freerouting-ordering, router.autorouter.connection_router=freerouting-connection, router.autorouter.ripup_policy=freerouting-ripup, router.autorouter.pass_controller=freerouting-passes, router.special.plane_taps=freerouting-plane-taps, router.special.neck_down=freerouting-neck-down, router.optimizer.algorithm=freerouting-optimizer."}
+{"event":"log","level":"info","text":"Fanout stage completed: started with 187 total SMD pins, escaped pins: 184/187 (98.4%)."}
+{"event":"log","level":"info","text":"Auto-routing stage started with baseline score 181.20 for 142 unrouted items."}
+{"event":"log","level":"info","text":"Autorouter Failed to route connection between polylinetrace, polylinetrace, via, pin #51 of component #45 and pin #13 of component #51, because the new connection could not be inserted."}
+{"event":"log","level":"info","text":"Autorouter Failed to route connection between pin #14 of component #51 and pin #69 of component #45, because the new connection could not be inserted."}
+{"event":"log","level":"info","text":"Auto-routing pass #1 on board 'd29c14ee8d522df7d5518f7d684a8e8b' was completed in 5.62 seconds with score 664.96 (49 unrouted and 0 violations)"}
+{"event":"log","level":"info","text":"Skipping optimization stage: the board has 49 unrouted connection(s) (optimizer only runs on completely routed boards)."}
+{"event":"log","level":"info","text":"Auto-routing stage completed: started with 195 unrouted nets, completed in 6.82 seconds, final score: 664.96 (49 unrouted and 0 violations)."}
+{"event":"progress","phase":"write","pass":1,"routed":null,"failed":null,"ripped":null,"incomplete":49,"violations":0,"score":664.96,"pass_end":false,"elapsed_ms":6818}
+{"event":"log","level":"info","text":"Saving output file '/work/bm01.ses' (SES)..."}
+{"event":"log","level":"info","text":"Successfully saved output file '/work/bm01.ses' (84434 bytes)."}
+{"event":"log","level":"info","text":"Job 'Issue508-DAC2020_bm01' finished with state: COMPLETED (elapsed: 6.83 seconds)."}
+{"event":"log","level":"info","text":"Routing result manifest written to: bm01.result.json"}
+{"event":"done","exit_code":0,"state":"completed","elapsed_ms":6828}

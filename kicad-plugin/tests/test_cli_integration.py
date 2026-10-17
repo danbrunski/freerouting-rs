@@ -1,0 +1,179 @@
+"""The plugin's route path against the real `freerouting` CLI (K02.1 to K02.4).
+
+Skipped, with the reason, when no `freerouting` that routes is found: the
+directory in `FREEROUTING_RS_BIN`, else `target/release` or `target/debug` of
+the repository. Boards come from `fixtures/` (small ones; each test routes
+for a few seconds, longer in a debug build).
+"""
+
+import json
+import os
+import shutil
+import subprocess
+import time
+
+import options
+import pytest
+import routing
+import summary
+import tools
+from conftest import REPO
+
+SMALL = "Issue026-J2_reference.dsn"  # routes in under a second
+BIG = "Issue508-DAC2020_bm01.dsn"  # still routing after its first progress event
+
+
+def find_router():
+    candidates = []
+    if os.environ.get("FREEROUTING_RS_BIN"):
+        candidates.append(os.environ["FREEROUTING_RS_BIN"])
+    candidates += [str(REPO / "target" / "release"), str(REPO / "target" / "debug")]
+    for d in candidates:
+        exe = os.path.join(d, "freerouting" + tools.EXE_SUFFIX)
+        if os.path.isfile(exe):
+            return exe
+    return None
+
+
+@pytest.fixture(scope="module")
+def router():
+    exe = find_router()
+    if exe is None:
+        pytest.skip("no freerouting executable (set FREEROUTING_RS_BIN or build target/release)")
+    probe = subprocess.run([exe, "--capabilities"], capture_output=True, text=True, timeout=60)
+    if probe.returncode != 0 or '"progress"' not in probe.stdout:
+        pytest.skip(f"{exe} predates C08 (--capabilities, --progress json)")
+    return tools.Tool("freerouting", exe)
+
+
+@pytest.fixture
+def board(tmp_path):
+    def make(name):
+        work = tmp_path / "freerouting-rs"
+        work.mkdir(exist_ok=True)
+        dsn = work / name
+        shutil.copy(REPO / "fixtures" / name, dsn)
+        return work, dsn, dsn.with_suffix(".ses")
+
+    return make
+
+
+def start(router, dsn, ses, work, args=()):
+    run = routing.RouteRun(router, dsn, ses, list(args), routing.manifest_path(work, dsn.stem))
+    run.start()
+    return run
+
+
+def drc(router, dsn, ses, report=None):
+    """`freerouting -de <dsn> <ses> -drc [report]`: (log text, report dict)."""
+    args = ["-de", str(dsn), str(ses), "-drc"] + ([str(report)] if report else [])
+    done = subprocess.run([str(router.exe), *args], capture_output=True, text=True, timeout=300)
+    assert done.returncode == 0, done.stdout + done.stderr
+    return done.stdout + done.stderr, json.loads(report.read_text(encoding="utf-8")) if report else None
+
+
+def wait_for_route_event(run, timeout=120):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        run.poll()
+        if run.state.phase == "route":
+            return
+        assert not run.finished, "the run ended before its first route event: " + "\n".join(run.lines[-10:])
+        time.sleep(0.02)
+    raise AssertionError("no route event")
+
+
+def test_all_options_reach_the_real_cli_and_it_exits_0(router, board):
+    work, dsn, ses = board(SMALL)
+    chosen = options.RouteOptions(
+        max_passes=2,
+        threads=2,
+        optimizer=False,
+        improvement_threshold=5.0,
+        ignore_net_classes=["NoSuchClass"],
+        seed=0,
+        min_trace_width_um=150.0,
+        timeout="10m",
+    )
+    run = start(router, dsn, ses, work, chosen.to_args(board_min_trace_width_um=100.0))
+    assert run.wait(timeout=300) == 0, "\n".join(run.lines[-15:])
+    assert run.state.done and run.state.state == "completed" and run.ses_written()
+    assert not any("Unknown" in line or "Deprecated" in line for line in run.lines), run.lines
+    manifest = run.manifest()
+    snapshot = manifest["settings_snapshot"]
+    assert snapshot["autorouter"]["max_passes"] == 2
+    assert snapshot["autorouter"]["max_threads"] == 2 and snapshot["optimizer"]["max_threads"] == 2
+    assert snapshot["optimizer"]["enabled"] is False and snapshot["optimizer"]["improvement_threshold"] == 5.0
+    assert snapshot["autorouter"]["ignore_net_classes"] == ["NoSuchClass"]
+    assert snapshot["job_timeout"] == "00:10:00"
+
+
+def test_an_escaped_comma_in_a_net_class_name_reaches_the_cli(router, board):
+    work, dsn, ses = board(SMALL)
+    chosen = options.RouteOptions(max_passes=1, ignore_net_classes=["Power,Default", "GND"])
+    run = start(router, dsn, ses, work, chosen.to_args())
+    assert run.wait(timeout=300) == 0, "\n".join(run.lines[-15:])
+    assert run.manifest()["settings_snapshot"]["autorouter"]["ignore_net_classes"] == ["Power,Default", "GND"]
+
+
+def test_stop_after_the_first_route_event_keeps_a_loadable_board(router, board):
+    work, dsn, ses = board(BIG)
+    run = start(router, dsn, ses, work, ["--max-passes", "50"])
+    wait_for_route_event(run)
+    assert not run.finished
+    assert run.stop() is True
+    assert run.wait(timeout=600) == 0, "\n".join(run.lines[-15:])
+    assert run.stopped and run.state.state == "completed" and run.ses_written()
+    # `freerouting -de dsn ses -drc` loads the session with no import error.
+    log, _ = drc(router, dsn, ses)
+    assert "SES file loaded for DRC:" in log and "Failed to load" not in log and "rror" not in log, log
+    # The plugin never leaves a temp file behind.
+    assert sorted(p.name for p in work.iterdir()) == sorted([dsn.name, ses.name, f"{dsn.stem}.result.json"])
+
+
+def test_abort_at_the_same_point_leaves_no_ses_and_no_temp_file(router, board):
+    work, dsn, ses = board(BIG)
+    run = start(router, dsn, ses, work, ["--max-passes", "50"])
+    wait_for_route_event(run)
+    run.abort()
+    run.wait(timeout=60)
+    assert run.aborted and run.returncode != 0
+    assert not ses.exists()
+    leftover = sorted(p.name for p in work.iterdir())
+    assert not any(n.endswith((".ses", ".tmp")) or ".tmp" in n for n in leftover), leftover
+    assert set(leftover) <= {dsn.name, f"{dsn.stem}.result.json"}, leftover
+
+
+def test_the_summary_matches_the_drc_of_the_written_session(router, board, tmp_path):
+    """The manifest's incomplete count against `-drc` on the SES. The DRC
+    report has no incomplete count of its own (its `unconnectedItems` lists
+    split nets, at most one entry per net), but its `qualityScore` is the
+    router's V2 score computed from that count and the violations, so equal
+    scores mean equal counts; on a complete board the list is empty too."""
+    for name, passes in ((SMALL, "2"), (BIG, "1")):
+        work, dsn, ses = board(name)
+        run = start(router, dsn, ses, work, ["--max-passes", passes])
+        assert run.wait(timeout=600) == 0, "\n".join(run.lines[-15:])
+        manifest = run.manifest()
+        _, report = drc(router, dsn, ses, tmp_path / f"{dsn.stem}.drc.json")
+        assert manifest["normalized_score"] == pytest.approx(report["qualityScore"], abs=0.005), name
+        incomplete = summary.incomplete_count(manifest)
+        assert (incomplete == 0) == (report["unconnectedItems"] == []), (name, incomplete)
+        text = run.summary_text()
+        assert f"{incomplete} incomplete" in text
+        assert ("WARNING" in text) == (incomplete > 0)
+        shutil.rmtree(work)
+        os.makedirs(work)
+
+
+def test_progress_events_arrive_while_the_router_runs(router, board):
+    work, dsn, ses = board(BIG)
+    run = start(router, dsn, ses, work, ["--max-passes", "2"])
+    phases = []
+    while not run.finished:
+        for kind, payload in run.poll():
+            if kind == "event" and payload["event"] == "progress" and payload["phase"] not in phases:
+                phases.append(payload["phase"])
+        time.sleep(0.02)
+    assert run.returncode == 0
+    assert phases[0] == "load" and "route" in phases and phases[-1] == "write", phases

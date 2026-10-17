@@ -918,9 +918,6 @@ pub const FANOUT_TOOLTIP: &str = "The fanout stage creates initial vias and shor
 pub const AUTOROUTE_TOOLTIP: &str = "During the Auto-routing stage, the Autorouter establishes electrical connections by placing traces and vias.";
 pub const OPTIMIZATION_TOOLTIP: &str =
     "During the optimization stage, the initial routes are refined to improve the overall design.";
-/// Port-only: the optimizer stage is O06.
-pub const OPTIMIZATION_NOT_PORTED: &str =
-    "The optimizer is not ported yet (O06); the stage does nothing.";
 pub const VIAS_ALLOWED_TOOLTIP: &str = "Allow the Autorouter to change layers by placing vias.";
 pub const VIA_COSTS_TOOLTIP: &str = "Cost of changing layers with a via. Higher values keep the router on the current layer longer.";
 pub const PLANE_VIA_COSTS_TOOLTIP: &str =

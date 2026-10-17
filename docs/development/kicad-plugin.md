@@ -5,11 +5,27 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
 
 ## How it works
 
-- `freerouting_rs/plugin.py`: the dialog. **Route** exports the board with
-  `pcbnew.ExportSpecctraDSN`, runs `freerouting -de board.dsn -do board.ses` and imports the
-  SES with `pcbnew.ImportSpecctraSES`. **Open in viewer** exports and launches
-  `freerouting-gui board.dsn [board.ses]`. **Import SES...** imports any session file. Files go
-  in a `freerouting-rs/` folder next to the `.kicad_pcb`.
+- `freerouting_rs/plugin.py`: the dialog. **Route** saves the options, exports the board with
+  `pcbnew.ExportSpecctraDSN`, runs `freerouting -de board.dsn -do board.ses --progress json
+  --result-json board.result.json <options>` and imports the SES with `pcbnew.ImportSpecctraSES`
+  (K02). A progress dialog shows the phase, pass and routed/failed/incomplete counts live, the
+  router's log lines, **Stop and keep result** and **Abort**; a summary follows the import.
+  **Route in GUI** runs `freerouting-gui -de board.dsn -do board.ses <options>` and imports the
+  session the window writes. **Open in viewer** exports and launches `freerouting-gui board.dsn
+  [board.ses]`. **Import SES...** imports any session file. Files go in a `freerouting-rs/` folder
+  next to the `.kicad_pcb`.
+- K02 modules (all pure Python except `plugin.py`): `options.py` (the route options, per board in
+  `freerouting-rs/route-options.json`, `"schema": 1`, defensive restore; `to_args()` builds the
+  flags in a fixed order and always passes `--router.min_trace_width_um` from Board Setup's
+  minimum track width, D8), `progress.py` (`parse_line` for C08's JSON lines, `ProgressState`,
+  `pump_lines` = the reader thread's body), `summary.py` (the text after the import, from the
+  `--result-json` manifest), `routing.py` (`RouteRun`: process, reader thread, queue, `stop`,
+  `abort`; `GuiRun`: the front-end GUI process, `should_import`).
+- **Stop keeps, Abort discards.** Stop writes `stop\n` to the router's stdin (the router ends the
+  step it is in, writes the best board, exits 0). Abort kills the process; the CLI writes outputs
+  to a temporary file and renames it, so an aborted run leaves no `.ses`. Only C08's JSON lines
+  are parsed; any other line is shown in the log pane as it is. pcbnew and wx are called on the
+  UI thread only: the reader thread fills a `queue.Queue`, a `wx.Timer` in the dialog drains it.
 - `freerouting_rs/tools.py`: finds the executables (no pcbnew/wx imports). Order: `bin_dir`
   in `settings.json`, `FREEROUTING_RS_BIN`, PATH, `~/.cargo/bin`, then on Windows
   `wsl_bin_dir` (a Linux build run through `wsl.exe`, paths translated to `/mnt/c/...`).
@@ -31,8 +47,10 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   `3rdparty/plugins`, or a folder with our identifier) to `<KiCad user dir>/disabled_pcm_plugins/<version>/`
   (`--keep-pcm` refuses instead). The Java plugin (`app.freerouting.kicad-plugin`) is never
   touched. `OUR_IDENTIFIERS` is a placeholder until K03 fixes the PCM identifier.
-- Route only reports "routing is not implemented yet" (exit 2 from the CLI) until the
-  autorouter is ported. When the CLI gains `-de/-do`, the plugin needs no change.
+- Route in GUI needs the GUI's front-end mode (G08.4): the window counts down 5 s, routes, and
+  writes `-do` when routing ends or the window closes. The router flags (`--max-passes`,
+  `--threads`, `--router.*`, ...) are the CLI's (K02.5, `settings::cli_flags`); `--seed` is not
+  passed to the GUI.
 
 ## Dan's machine (Windows 11, KiCad 10.0)
 
@@ -77,6 +95,17 @@ dev-only dependency). `conftest.py` puts `freerouting_rs/` on `sys.path`, so `to
 (`FREEROUTING_RS_KICAD_PYTHON`, or a system `python3` that imports `pcbnew`) on a copy of
 `../canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb` (`CANARY_PCB` overrides) and skips
 when either is missing. GitHub CI is disabled (Dan, 2026-10-15); run the suite by hand.
+
+K02 tests: `test_options.py` (golden argument lists, save/load round trip, damaged files),
+`test_progress.py` and `test_summary.py` (replay `tests/data/progress-{j2,bm01}.jsonl` and
+`result-{j2,bm01}.json`, recorded from the real CLI with `--progress json --result-json`),
+`test_routing.py` (`RouteRun` and `GuiRun` against `fake_bin/fake_freerouting.py` modes `route`,
+`route-slow`, `route-fail`, `route-noise` and `fake_bin/fake_gui.py`), `test_route_dialog.py` and
+`test_gui_mode.py` (plugin.py's Route and Route in GUI flows with the stub `wx`/`pcbnew` of
+`tests/stub_ui.py`: real dialog code, modal loops driven by their timers), and
+`test_cli_integration.py` (the real CLI: all options, Stop, Abort, summary against `-drc`).
+The last one uses `FREEROUTING_RS_BIN` (a directory), else `target/release` or `target/debug`, and
+skips with the reason when no `freerouting` with `--capabilities` is found.
 
 ## SWIG, IPC API and KiCad versions (K01.5)
 
@@ -135,22 +164,133 @@ Checked 2026-10-15 against KiCad's GitLab (`gitlab.com/kicad/code/kicad`).
 - Headless (KiCad's Python): DSN export, router call, viewer launch, both native and via WSL.
 - Five KiCad 10 demo boards (ecc83-pp, interf_u, complex_hierarchy, kit-dev-coldfire,
   CM5_MINIMA_3) exported to DSN and loaded by `build_board` without parse errors.
+- 2026-10-16 (K02, headless, WSL KiCad 10.0.7): the plugin's Route path against the real CLI (all
+  options, Stop, Abort, summary: `test_cli_integration.py`), non-ASCII net and reference names
+  through export, route and import (K02.6), and the five demos graded against Java (K02.7). Not
+  yet run inside KiCad (K02.8).
 - Native viewer renders CM5_MINIMA_3 fitted, and ecc83-pp with reference designators.
 
 ## What's left
 
 - **K01.6, Dan:** after the orchestrator reinstalls the plugin (`install.py --bin-dir target\release`,
   then Tools > External Plugins > Refresh Plugins, no restart), check in KiCad 10.0.5: the toolbar
-  button, the dialog with both versions ("Router version: unknown" until C08 adds `--version`),
-  Open in viewer, Import SES, and on `canary-pwr` that `freerouting-rs/plugin.log` names the
-  fan inlet (`keepout -> place_keepout`). Record the date and what he saw under "Verified".
-  Nothing in K01.2/K01.3 has run inside KiCad yet; only headless (pcbnew in a plain Python,
-  fake pcbnew in tests).
-- Dan to refresh plugins in KiCad and confirm the button and dialog work in the editor.
-- Route becomes useful when the autorouter and CLI `-de/-do` land. Then exercise SES import
-  on a real routed board, and consider passing options (passes, threads) through.
+  button, the dialog with both versions, Open in viewer, Import SES, and on `canary-pwr` that
+  `freerouting-rs/plugin.log` names the fan inlet (`keepout -> place_keepout`). Record the date and
+  what he saw under "Verified". Nothing in K01.2/K01.3 has run inside KiCad yet; only headless
+  (pcbnew in a plain Python, fake pcbnew in tests).
+- **K02.8, Dan (Windows, inside KiCad):** see "K02.8: what Dan checks" below.
 - Real silkscreen in the viewer would need the plugin to export extra data from the board
   alongside the DSN (offered to Dan, not requested).
+
+## K02.6: non-ASCII names round trip
+
+`tools/kicad-oracle/roundtrip_names.py --router target/release/freerouting` (run with a python3 that
+imports `pcbnew`; KiCad 10.0.7 here). For each case it strips the tracks of a copy, exports the DSN
+with `ExportSpecctraDSN`, routes it with the CLI (`-de x.dsn -do x.ses`, nothing sanitised),
+imports the SES with `ImportSpecctraSES` into the stripped copy and compares: every track and via of
+the routed board has a net name that is a net name of the original, the non-ASCII names are in the
+DSN as they are, every imported non-ASCII net is in the SES as it is, no footprint reference
+changed, and `kicad-cli pcb drc` reports no `shorting_items`.
+
+KiCad 10's `interf_u` demo has plain ASCII names (the older board behind fixture
+`Issue093-interf_u` has Chinese text, not Omega), so both cases rename: `interf_u` gets Omega on
+8 nets and on 11 references (`R`/`C` become `RΩ`/`CΩ`), `ecc83-pp` gets mu and Phi on 3
+nets and 6 references.
+
+Result, 2026-10-16, `--max-passes 3`, release CLI at this tree, KiCad 10.0.7 (WSL):
+
+| case | tracks and vias imported | non-ASCII nets routed | name differences | `shorting_items` |
+|---|---|---|---|---|
+| `interf_u` (Omega) | 789 | 8 (`/8MH-OUTΩ`, `/BIT0Ω`, ...) | 0 | 0 |
+| `ecc83-pp` (mu, Phi) | 33 | 2 (`Net-(P3-P1)Φ`, `Net-(U1A-G)µ`) | 0 | 0 |
+
+`GNDµ` has no wires (a zone net), so it is in the DSN and not in the SES. Not run in Windows
+KiCad 10.0.5; `pgrep -x kicad; pgrep -x pcbnew` printed nothing before and after.
+
+## K02.7: graded runs on real boards
+
+`tools/bench/k02-graded-runs.sh tools/bench/sets/kicad-demos.txt OUT target/release/freerouting
+~/code/freerouting/logs/jars/freerouting-a773a70ec.jar` (set file: the five demos and `canary-pwr`,
+out of the repo, skipped when missing). Each engine gets the same `grade.sh` export (tracks and
+vias stripped, DSN exported by KiCad 10.0.7, footprint-only rule areas removed, which is what the
+K01.2 rewrite achieves) and the same `--router.min_trace_width_um` = the board's Board Setup
+minimum track width (D8; the DSN does not carry it). Rust runs the plugin's default options and
+nothing else; Java runs `a773a70ec` with `--gui.enabled=false --router.optimizer.enabled=false`
+(its optimizer still depends on thread scheduling, J01). Both end by their own stop rule (no pass
+limit). Graded by KiCad's own DRC (`grade.sh`, items the unrouted input does not already have),
+vias inside pads counted by `tools/kicad-oracle/via_in_pad.py`. 2026-10-16, WSL, KiCad 10.0.7,
+release CLI of this tree (with other sessions' uncommitted engine work in it), `pgrep -x kicad;
+pgrep -x pcbnew` empty before and after:
+
+| board | engine | DRC violations caused by the router | unconnected / input | vias | tracks | length mm | vias in pads | below board min. | engine s |
+|---|---|---|---|---|---|---|---|---|---|
+| ecc83-pp | rust | none | 0 / 14 | 0 | 33 | 161.8 | 0 | 0 | 0.02 |
+| ecc83-pp | java | none | 0 / 14 | 0 | 33 | 161.8 | 0 | 0 | 3.2 |
+| interf_u | rust | starved_thermal 5 | 10 / 164 | 43 | 1021 | 4478.5 | 0 | 0 | 15.4 |
+| interf_u | java | starved_thermal 4 | 11 / 164 | 45 | 1029 | 4470.2 | 0 | 0 | 14.7 |
+| complex_hierarchy | rust | none | 80 / 87 | 1 | 28 | 112.6 | 0 | 0 | 0.07 |
+| complex_hierarchy | java | none | 80 / 87 | 1 | 28 | 112.6 | 0 | 0 | 3.3 |
+| kit-dev-coldfire-xilinx_5213 | rust | clearance 1, shorting_items 1, via_dangling 48 | 87 / 478 | 240 | 1650 | 5072.6 | 0 | 0 | 446 |
+| kit-dev-coldfire-xilinx_5213 | java | shorting_items 1, track_dangling 1, track_width 190, via_dangling 43 | 85 / 478 | 236 | 1748 | 4876.5 | 0 | 190 | 591 |
+| CM5_MINIMA_3 | rust | clearance 1, copper_edge_clearance 24, hole_clearance 2, isolated_copper 10, track_dangling 1 | 22 / 208 | 187 | 1319 | 2646.0 | 0 | 0 | 99 |
+| CM5_MINIMA_3 | java | the same | 22 / 208 | 187 | 1319 | 2646.0 | 0 | 0 | 252 |
+| canary-pwr | rust | **not graded: the CLI panics** | | | | | | | |
+| canary-pwr | java | copper_edge_clearance 2, starved_thermal 2, track_dangling 1, track_width 2, via_dangling 32 | 71 / 174 | 119 | 787 | 1049.2 | 0 | 2 | 213 |
+
+Differences explained:
+
+- `CM5_MINIMA_3`: the two sessions have the same 187 wires and vias, line for line (the CM5 board
+  has no Board Setup minimum track width, so 0 was passed).
+- `kit-dev`: Rust's one `clearance` item is a via 0.04 mm from the copper text `MOD0` on
+  `Top_layer`. KiCad's DSN export has no copper text, so neither router can see it; Java's route
+  happened to miss it. Both engines have the same `shorting_items` (a track through the copper
+  text `JTAG_EN`). Java has 190 tracks narrower than the board minimum (0.198 mm), Rust none (D8).
+  `via_dangling` 48 against 43 and 87 against 85 unconnected are the two routes ending in
+  different places after 18 passes each.
+- `interf_u`: one more `starved_thermal` (a pour effect, not a clearance) in Rust.
+- Vias in pads: 0 in every graded run.
+
+**canary-pwr, Rust: engine bug, not graded.** `freerouting -de canary-pwr.dsn -do x.ses` panics at
+HEAD (`0ab934a`) in `BasicBoard` `expect("item on the board")` (`basic_board.rs:227`), reached from
+`normalize_pass` <- `normalize_traces` <- `insert_segments` <- `finish_connection` <-
+`fanout_pin::route_attempts` (fanout stage), with or without `--router.min_trace_width_um`. With
+the fanout off it routes if no minimum width is given, and panics again with a minimum width
+(`--router.min_trace_width_um=150 --router.fanout.enabled=false`). The DSN is the grade.sh export of
+`canary-pwr.kicad_pcb` (strip, export, remove the fan inlet keepout). Java's row above is
+`a773a70ec` with the same export and width. K02.7 stays partial until the engine panic is fixed
+(an A-series item); then re-run `k02-graded-runs.sh ... canary-pwr`.
+
+## K02.8: what Dan checks (Windows, inside KiCad)
+
+Nothing of K02 has run inside KiCad yet; the dialogs are tested against a stub `wx`/`pcbnew`
+(`tests/stub_ui.py`) and the router against the real CLI. Needs a native Windows rebuild first
+(the orchestrator does that, "Native Windows toolchain" above: mingw `bin` on PATH, viewer closed,
+`cargo build --release -p freerouting-gui -p freerouting-cli`) and a reinstall
+(`install.py --bin-dir target\release`, then Tools > External Plugins > Refresh Plugins).
+
+In KiCad 10.0.5 open `canary-pwr` (save it once if KiCad asks), start the plugin, and check:
+
+1. **Options.** Change Maximum passes to 5 and the time limit to `10m`, press Route, close the
+   dialog after it ends and open it again: the values are still there.
+   `freerouting-rs\route-options.json` exists next to the board. The "Minimum trace width" box
+   shows the Board Setup value as its hint.
+2. **Route with progress.** The progress dialog shows `Loading`, `Fanout`, `Routing, pass N: x
+   routed, y failed, z incomplete (t s)` changing about every second, and the router's log lines.
+   When it ends the board has the new tracks and a message shows routed/incomplete connections,
+   vias, length and time, with a WARNING line when connections are left.
+3. **Stop.** Route again; press "Stop and keep result" after the first pass appears. The dialog
+   ends within a pass or two, the board gets the tracks so far and the message starts "Stopped
+   early".
+4. **Abort.** Route again; press Abort (or the window's close button) after the first pass. The
+   board is unchanged, `freerouting-rs\canary-pwr.ses` does not exist.
+5. **Route in GUI.** Press "Route in GUI". The freerouting-gui window opens with the board, counts
+   down 5 s and routes; close it after routing (or let it finish). The plugin imports the session.
+   Run it once more and press Terminate in the wait dialog: the window closes, nothing is imported.
+6. **A demo board.** Repeat 2 on one demo (for example `ecc83-pp`, which routes in about a second).
+
+Record the date, KiCad version, what worked, the routed/incomplete counts and times for
+`canary-pwr` and the demo, and anything odd (a frozen dialog, a Stop that did not return, a window
+that stayed behind) under "Verified" above. The item stays partial until then.
 
 ## Direct `.kicad_pcb` input (K07)
 

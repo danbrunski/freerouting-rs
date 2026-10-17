@@ -736,9 +736,10 @@ plugin_flags}.rs`)
   stage). It is also written when the run fails (`a_failed_load_still_writes_the_manifest`).
 - Stopping: a stdin reader acts on `stop` (stop everything) and `stop-router` (Java's
   `requestStopAutoRouter`); end of input is not a stop (`stdin_eof_is_not_a_stop`). Java's CLI
-  has no such channel. Ctrl-C and SIGTERM are not handled yet (the `ctrlc` crate is a pending
-  `NEW DEP`); a signal kills the process as before and C07's temporary-file write leaves no
-  partial file.
+  has no such channel. Ctrl-C and SIGTERM (SIGINT, SIGTERM and SIGHUP on Unix, Ctrl-C and
+  Ctrl-Break on Windows, through the `ctrlc` crate) are handled: the first is `stop`, the
+  second aborts with exit 130 and no output (`sigint_and_sigterm_are_a_stop`,
+  `two_signals_abort`); Java's CLI has no such two-level stop.
 
 ## freerouting-gui
 
@@ -929,7 +930,7 @@ users would notice is listed. Texts follow the English Java bundles.)
   and the board tuning of the layer costs come first, then the values the user applied (only values
   that differ from them are kept between runs). Java's window has no control for `start_pass` and
   `speed` (its bundle has the labels), so the dialog has none. The "Optimization" stage checkbox is
-  disabled until the batch optimizer (O06) is ported. Fields without a control are listed with a
+  enabled (the batch optimizer, O06, is ported). Fields without a control are listed with a
   reason in `CLI_ONLY` (`every_router_setting_has_a_control`).
 - The routing summary is a window, not a modal dialog, and has no sponsor message or button (G00
   question 2). "Vias Added" is the board's via count and the trace length the board's total, as in
@@ -961,10 +962,15 @@ users would notice is listed. Texts follow the English Java bundles.)
   `rules_next_to_dsn_imported_after_confirm`, `dr_flag_imports_without_asking`,
   `file_open_does_not_look_for_rules`. The import is an edit of the board's rules, which like every
   rule edit is not in the undo history (Java's `RulesReader` is not undoable either).
-- Front-end flags: `-de`, `-do`, `-dr`, `-dct`, `-di` keep Java's meaning; `-mp` is the one router
-  flag read, and any other single-dash flag is refused with exit 2 (Java's GUI applies all of the
-  CLI's settings flags; K02.5 decides which the plugin passes). `--autoroute` is `-dct 0`. Java
-  writes only the first `-do` file; so does the port.
+- Front-end flags: `-de`, `-do`, `-dr`, `-dct`, `-di` keep Java's meaning. The router flags are
+  the CLI's, read by the same engine code (`settings::cli_flags::parse_router_flags`, K02.5): `-mp`,
+  `-mt`, `-inc`, `-oit`, the scoring flags, `--router.<path>=`, `--optimizer.<path>=` and the
+  aliases `--max-passes`, `--threads`, `--timeout`, `--result-json`; they are laid over the job's
+  settings (over the saved ones). `--result-json` and `--timeout` are read but the interactive
+  job writes no manifest and stops on no time limit; `--seed` (a CLI flag) is not read and any
+  other unknown flag is refused with exit 2. `-mp` is clamped to 0..=9999 as in Java, and a value
+  never starts with `-` (`-mp -1` is an unknown option, as on the CLI). `--autoroute` is
+  `-dct 0`. Java writes only the first `-do` file; so does the port.
 - The process exits with 1 when the front-end write failed or the design did not load, and with 0
   after a written file. Java's `exportBoardToFile` exits 0 after "not overwriting" a 0-byte
   result and does not exit at all after an exception. The window stays open after a failed load so

@@ -140,16 +140,56 @@ def find_tool(name):
     return None
 
 
-def start_route(tool, dsn, ses):
+def route_args(dsn, ses, extra_args=(), result_json=None, progress=False):
+    """The router's argument list: files, then `--progress json` and
+    `--result-json` when asked for, then the option flags (K02)."""
+    args = ["-de", Path(dsn), "-do", Path(ses)]
+    if progress:
+        args += ["--progress", "json"]
+    if result_json:
+        args += ["--result-json", Path(result_json)]
+    return args + list(extra_args)
+
+
+def start_route(tool, dsn, ses, extra_args=(), result_json=None, progress=False):
     """Starts headless routing of `dsn` into `ses`. Collect the result with
-    `finish_route` once the process has exited (or been killed)."""
+    `finish_route` once the process has exited (or been killed), or read
+    `proc.stdout` line by line while it runs (`routing.RouteRun`).
+
+    Standard input is a pipe: `stop_route` writes the router's `stop` line to
+    it. Standard output carries stderr too (`--progress json` events and the
+    human log)."""
     return subprocess.Popen(
-        tool.command(["-de", Path(dsn), "-do", Path(ses)]),
+        tool.command(route_args(dsn, ses, extra_args, result_json, progress)),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.PIPE,
         creationflags=NO_WINDOW,
     )
+
+
+def stop_route(proc):
+    """Asks the router to finish the step it is in, write its best board and
+    exit 0 (`stop` on standard input, C08.5). Returns False when the pipe is
+    already closed (the process has ended)."""
+    try:
+        proc.stdin.write(b"stop\n")
+        proc.stdin.flush()
+        return True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def start_gui(tool, dsn, ses, extra_args=()):
+    """Starts the GUI in front-end mode, `freerouting-gui -de x.dsn -do x.ses`
+    (K02.5), without waiting for it. Its window routes after the countdown
+    and writes `ses` when routing ends or the window closes."""
+    kwargs = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    if IS_WINDOWS:
+        kwargs["creationflags"] = NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        kwargs["start_new_session"] = True
+    return subprocess.Popen(tool.command(route_args(dsn, ses, extra_args)), **kwargs)
 
 
 def finish_route(tool, proc):

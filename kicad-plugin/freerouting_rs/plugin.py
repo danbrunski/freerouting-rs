@@ -1,21 +1,27 @@
 """KiCad PCB editor action plugin for freerouting-rs.
 
 Exports the open board to Specctra DSN, routes it with the freerouting-rs
-command line, imports the resulting SES session, and opens boards in the
-freerouting-rs viewer. Files go in a `freerouting-rs` folder next to the
-.kicad_pcb file.
+command line (live progress, Stop and keep, Abort, a result summary) or in
+the GUI window ("Route in GUI"), imports the resulting SES session, and opens
+boards in the freerouting-rs viewer. Files go in a `freerouting-rs` folder
+next to the .kicad_pcb file. The route options are saved per board in
+`freerouting-rs/route-options.json` (options.py).
+
+Every pcbnew and wx call happens here, on KiCad's UI thread. The router's
+output is read by one thread (progress.pump_lines, started by
+routing.RouteRun) that only fills a queue; the dialogs' timers drain it.
 """
 
-import threading
 import time
 from pathlib import Path
 
 import pcbnew
 import wx
 
-from . import kicad_areas, rule_areas, tools, version
+from . import kicad_areas, options, progress, routing, rule_areas, tools, version
 
 TITLE = "freerouting-rs"
+TICK_MS = 100
 
 
 def export_dsn(board, dsn):
@@ -39,6 +45,16 @@ def import_ses(board, ses):
     return bool(ok)
 
 
+def board_min_track_width_um(board):
+    """The Board Setup minimum track width in micrometres, or None. The DSN
+    does not carry it (D8), so it is passed to the router explicitly."""
+    try:
+        nm = board.GetDesignSettings().m_TrackMinWidth
+        return nm / 1000.0 if nm and nm > 0 else None
+    except Exception:  # an older KiCad without that attribute
+        return None
+
+
 def fix_rule_areas(board, dsn, work_dir):
     """Rewrites the rule-area keepouts in the exported DSN (see rule_areas).
     pcbnew is read here, on the UI thread. Returns the log lines; a failure is
@@ -57,6 +73,95 @@ def fix_rule_areas(board, dsn, work_dir):
     return lines
 
 
+class RouteProgressDialog(wx.Dialog):
+    """Shows a running `routing.RouteRun`: the figures, the router's log, Stop
+    and Abort. A timer on the UI thread drains the reader's queue. The dialog
+    ends itself when the run has finished."""
+
+    def __init__(self, parent, run):
+        super().__init__(parent, title=TITLE + ": routing", style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self.run = run
+        self.status = wx.StaticText(self, label="Starting...")
+        self.gauge = wx.Gauge(self, range=100, style=wx.GA_HORIZONTAL)
+        self.log = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL, size=(560, 220))
+        self.stop = wx.Button(self, label="Stop and keep result")
+        self.abort = wx.Button(self, label="Abort")
+        self.stop.SetToolTip("Finish the current step, write the best board so far and import it")
+        self.abort.SetToolTip("Kill the router and discard the run")
+        self.stop.Bind(wx.EVT_BUTTON, self.on_stop)
+        self.abort.Bind(wx.EVT_BUTTON, self.on_abort)
+        self.Bind(wx.EVT_CLOSE, self.on_abort)
+        buttons = wx.BoxSizer(wx.HORIZONTAL)
+        buttons.Add(self.stop, 0, wx.RIGHT, 6)
+        buttons.Add(self.abort)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.status, 0, wx.ALL | wx.EXPAND, 12)
+        sizer.Add(self.gauge, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 12)
+        sizer.Add(self.log, 1, wx.ALL | wx.EXPAND, 12)
+        sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.ALIGN_RIGHT, 12)
+        self.SetSizerAndFit(sizer)
+        self.CentreOnParent()
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_tick, self.timer)
+        self.timer.Start(TICK_MS)
+
+    def append_log(self, text):
+        self.log.AppendText(text + "\n")
+
+    def on_tick(self, _evt):
+        for kind, payload in self.run.poll():
+            if kind == "log":
+                self.append_log(payload)
+            elif payload.get("event") == "log" and payload.get("level") != "debug":
+                self.append_log(progress.format_log_event(payload))
+        self.status.SetLabel(self.run.state.text())
+        self.gauge.Pulse()
+        if self.run.finished:
+            self.timer.Stop()
+            self.EndModal(wx.ID_OK)
+
+    def on_stop(self, _evt):
+        self.run.stop()
+        self.stop.Disable()
+        self.status.SetLabel("Stopping: finishing the current step...")
+
+    def on_abort(self, _evt):
+        self.timer.Stop()
+        self.run.abort()
+        self.EndModal(wx.ID_CANCEL)
+
+
+class GuiWaitDialog(wx.Dialog):
+    """Waits for the GUI process of "Route in GUI". It ends when the process
+    exits; Terminate kills it."""
+
+    def __init__(self, parent, run):
+        super().__init__(parent, title=TITLE + ": routing in the GUI", style=wx.DEFAULT_DIALOG_STYLE)
+        self.run = run
+        text = wx.StaticText(self, label=run.MESSAGE)
+        terminate = wx.Button(self, label="Terminate")
+        terminate.Bind(wx.EVT_BUTTON, self.on_terminate)
+        self.Bind(wx.EVT_CLOSE, self.on_terminate)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(text, 1, wx.ALL | wx.EXPAND, 16)
+        sizer.Add(terminate, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.ALIGN_RIGHT, 16)
+        self.SetSizerAndFit(sizer)
+        self.CentreOnParent()
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_tick, self.timer)
+        self.timer.Start(250)
+
+    def on_tick(self, _evt):
+        if self.run.finished:
+            self.timer.Stop()
+            self.EndModal(wx.ID_OK)
+
+    def on_terminate(self, _evt):
+        self.timer.Stop()
+        self.run.terminate()
+        self.EndModal(wx.ID_CANCEL)
+
+
 class Dialog(wx.Dialog):
     def __init__(self, parent, board):
         super().__init__(parent, title=TITLE, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
@@ -65,8 +170,12 @@ class Dialog(wx.Dialog):
         self.work_dir = pcb.parent / "freerouting-rs"
         self.dsn = self.work_dir / (pcb.stem + ".dsn")
         self.ses = self.work_dir / (pcb.stem + ".ses")
+        self.result_json = routing.manifest_path(self.work_dir, pcb.stem)
         self.router = tools.find_tool(tools.ROUTER)
         self.viewer = tools.find_tool(tools.VIEWER)
+        self.gui = tools.find_tool(tools.VIEWER)  # the same executable: front-end mode
+        self.board_min_um = board_min_track_width_um(board)
+        saved = options.load_for_board(self.work_dir, tools.load_board_settings(self.work_dir))
 
         def found(tool):
             return tool.describe() if tool else "not found"
@@ -86,32 +195,73 @@ class Dialog(wx.Dialog):
                 f"Board files: {self.work_dir}\n"
                 f"Router: {found(self.router)}\n"
                 f"Router version: {router_ver}    Plugin version: {version.__version__}{notice}\n"
-                f"Viewer: {found(self.viewer)}\n\n"
-                "freerouting-rs does not route yet: Route will report that until\n"
-                "the autorouter is ported. Viewing and SES import work today."
+                f"Viewer: {found(self.viewer)}"
             ),
         )
         route = wx.Button(self, label="Route")
+        route_gui = wx.Button(self, label="Route in GUI")
         view = wx.Button(self, label="Open in viewer")
         imp = wx.Button(self, label="Import SES...")
         close = wx.Button(self, wx.ID_CANCEL, "Close")
         route.Enable(self.router is not None and self.version_status != version.MISMATCH)
-        self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
-        self.fix_areas.SetValue(tools.load_board_settings(self.work_dir).get("fix_rule_areas", True))
-        self.fix_areas.Bind(wx.EVT_CHECKBOX, self.on_fix_areas)
+        route_gui.Enable(self.gui is not None)
         view.Enable(self.viewer is not None)
         route.Bind(wx.EVT_BUTTON, self.on_route)
+        route_gui.Bind(wx.EVT_BUTTON, self.on_route_gui)
         view.Bind(wx.EVT_BUTTON, self.on_view)
         imp.Bind(wx.EVT_BUTTON, self.on_import)
 
+        form = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
+        form.AddGrowableCol(1)
+        self.passes = wx.SpinCtrl(self, min=options.MAX_PASSES_RANGE[0], max=options.MAX_PASSES_RANGE[1])
+        self.passes.SetValue(saved.max_passes)
+        self.passes.SetToolTip("Maximum routing passes (-mp); 0 means no limit")
+        self.threads = wx.SpinCtrl(self, min=options.THREADS_RANGE[0], max=options.THREADS_RANGE[1])
+        self.threads.SetValue(saved.threads)
+        self.threads.SetToolTip("Worker threads (--threads); 0 lets the router choose")
+        self.optimizer = wx.CheckBox(self, label="Run the optimizer after routing")
+        self.optimizer.SetValue(saved.optimizer)
+        self.threshold = wx.TextCtrl(self, value="" if saved.improvement_threshold is None else str(saved.improvement_threshold))
+        self.threshold.SetHint("router default (2.5)")
+        self.threshold.SetToolTip("Stop the optimizer when a pass improves the score by less than this percentage (1 to 100)")
+        self.classes = wx.TextCtrl(self, value=options.join_net_classes(saved.ignore_net_classes))
+        self.classes.SetHint("none")
+        self.classes.SetToolTip("Net classes the router skips (-inc), comma separated; \\, keeps a comma in a name")
+        self.timeout = wx.TextCtrl(self, value=saved.timeout)
+        self.timeout.SetHint("none, e.g. 10m")
+        self.timeout.SetToolTip("Time limit (--timeout): 90s, 10m, 2h or HH:MM:SS")
+        self.seed = wx.SpinCtrl(self, min=0, max=2147483647)
+        self.seed.SetValue(saved.seed)
+        self.seed.SetToolTip("Seed (--seed). This router version accepts only 0, and the GUI ignores it")
+        self.min_width = wx.TextCtrl(
+            self, value="" if saved.min_trace_width_um is None else str(saved.min_trace_width_um)
+        )
+        self.min_width.SetHint("from Board Setup: " + (f"{self.board_min_um:g}" if self.board_min_um else "not set"))
+        self.min_width.SetToolTip("Minimum trace width in micrometres (--router.min_trace_width_um); empty uses the Board Setup value")
+        self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
+        self.fix_areas.SetValue(saved.rule_area_fixup)
+        for label, ctrl in (
+            ("Maximum passes", self.passes),
+            ("Threads", self.threads),
+            ("", self.optimizer),
+            ("Optimizer threshold (%)", self.threshold),
+            ("Ignore net classes", self.classes),
+            ("Time limit", self.timeout),
+            ("Seed", self.seed),
+            ("Minimum trace width (um)", self.min_width),
+            ("", self.fix_areas),
+        ):
+            form.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+            form.Add(ctrl, 1, wx.EXPAND)
+
         buttons = wx.BoxSizer(wx.HORIZONTAL)
-        for b in (route, view, imp):
+        for b in (route, route_gui, view, imp):
             buttons.Add(b, 0, wx.RIGHT, 6)
         buttons.AddStretchSpacer()
         buttons.Add(close)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(info, 1, wx.ALL | wx.EXPAND, 12)
-        sizer.Add(self.fix_areas, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        sizer.Add(info, 0, wx.ALL | wx.EXPAND, 12)
+        sizer.Add(form, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
         self.CentreOnParent()
@@ -119,58 +269,93 @@ class Dialog(wx.Dialog):
     def error(self, msg):
         wx.MessageBox(msg, TITLE, wx.OK | wx.ICON_ERROR, self)
 
-    def on_fix_areas(self, _evt):
-        settings = tools.load_board_settings(self.work_dir)
-        settings["fix_rule_areas"] = self.fix_areas.GetValue()
-        tools.save_board_settings(self.work_dir, settings)
+    def read_options(self):
+        """The options in the controls, saved for this board. None (after a
+        message) when a field is invalid."""
+        chosen, errors = options.from_form(
+            {
+                "max_passes": self.passes.GetValue(),
+                "threads": self.threads.GetValue(),
+                "optimizer": self.optimizer.GetValue(),
+                "improvement_threshold": self.threshold.GetValue(),
+                "ignore_net_classes": self.classes.GetValue(),
+                "seed": self.seed.GetValue(),
+                "min_trace_width_um": self.min_width.GetValue(),
+                "timeout": self.timeout.GetValue(),
+                "rule_area_fixup": self.fix_areas.GetValue(),
+            }
+        )
+        if errors:
+            self.error("Fix these route options first:\n\n" + "\n".join(errors))
+            return None
+        try:
+            options.save(options.options_path(self.work_dir), chosen)
+        except OSError as e:
+            tools.log_line(self.work_dir, f"could not save the route options: {e}")
+        return chosen
 
-    def export(self):
+    def export(self, fix_areas):
         if export_dsn(self.board, self.dsn):
-            if self.fix_areas.GetValue():
+            if fix_areas:
                 fix_rule_areas(self.board, self.dsn, self.work_dir)
             return True
         self.error(f"KiCad could not export the board to\n{self.dsn}")
         return False
 
     def on_route(self, _evt):
-        if not self.export():
+        chosen = self.read_options()
+        if chosen is None or not self.export(chosen.rule_area_fixup):
             return
         self.ses.unlink(missing_ok=True)
+        self.result_json.unlink(missing_ok=True)
+        run = routing.RouteRun(
+            self.router, self.dsn, self.ses, chosen.to_args(self.board_min_um), self.result_json
+        )
         try:
-            proc = tools.start_route(self.router, self.dsn, self.ses)
+            run.start()
         except OSError as e:
             self.error(f"Could not start {self.router.describe()}:\n{e}")
             return
-        result = {}
-        worker = threading.Thread(target=lambda: result.update(r=tools.finish_route(self.router, proc)))
-        worker.start()
-        progress = wx.ProgressDialog(
-            TITLE, "Routing...", parent=self, style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
-        )
-        cancelled = False
-        while worker.is_alive():
-            keep_going, _ = progress.Pulse()
-            if not keep_going:
-                cancelled = True
-                proc.kill()
-                break
-            wx.Yield()
-            time.sleep(0.1)
-        worker.join()
-        progress.Destroy()
-        if cancelled:
+        with RouteProgressDialog(self, run) as progress_dialog:
+            progress_dialog.ShowModal()
+        tools.log_line(self.work_dir, f"{time.strftime('%Y-%m-%d %H:%M:%S')} route: " + run.state.text())
+        if run.aborted:
+            wx.MessageBox("Routing aborted. The board was not changed.", TITLE, wx.OK, self)
             return
-        code, output = result["r"]
-        if code != 0 or not self.ses.is_file():
-            self.error(f"Routing failed (exit code {code}).\n\n{output or 'No output.'}")
+        if run.returncode != 0 or not run.ses_written():
+            self.error(run.failure_text())
             return
-        if import_ses(self.board, self.ses):
-            wx.MessageBox("Routed and imported the result into the board.", TITLE, wx.OK, self)
+        self.finish_import(self.ses, run.summary_text(), stopped=run.stopped)
+
+    def on_route_gui(self, _evt):
+        chosen = self.read_options()
+        if chosen is None or not self.export(chosen.rule_area_fixup):
+            return
+        self.ses.unlink(missing_ok=True)
+        run = routing.GuiRun(self.gui, self.dsn, self.ses, chosen.to_args(self.board_min_um, for_gui=True))
+        try:
+            run.start()
+        except OSError as e:
+            self.error(f"Could not start {self.gui.describe()}:\n{e}")
+            return
+        with GuiWaitDialog(self, run) as wait_dialog:
+            wait_dialog.ShowModal()
+        if run.should_import():
+            self.finish_import(self.ses, "", stopped=False)
         else:
-            self.error(f"KiCad could not import\n{self.ses}")
+            wx.MessageBox(run.outcome_text(), TITLE, wx.OK | wx.ICON_INFORMATION, self)
+
+    def finish_import(self, ses, summary_text, stopped):
+        if not import_ses(self.board, ses):
+            self.error(f"KiCad could not import\n{ses}")
+            return
+        head = "Stopped early; imported the best board so far." if stopped else "Routed and imported the result into the board."
+        text = head + ("\n\n" + summary_text if summary_text else "")
+        icon = wx.ICON_EXCLAMATION if "WARNING" in summary_text else wx.ICON_INFORMATION
+        wx.MessageBox(text, TITLE, wx.OK | icon, self)
 
     def on_view(self, _evt):
-        if not self.export():
+        if not self.export(self.fix_areas.GetValue()):
             return
         ses = self.ses if self.ses.is_file() else None
         try:

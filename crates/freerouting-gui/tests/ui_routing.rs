@@ -204,9 +204,9 @@ fn power_layers_disabled() {
     );
     let signal = h.get_by_label("Active: F.Cu");
     assert!(!signal.accesskit_node().is_disabled());
-    // The optimizer stage is disabled until O06 lands.
+    // The optimizer stage is a live control since O06 landed.
     assert!(
-        h.get_by_label("Optimization")
+        !h.get_by_label("Optimization")
             .accesskit_node()
             .is_disabled()
     );

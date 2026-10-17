@@ -3,7 +3,10 @@
 //! [--screenshot out.png] [--exit] [--control-dir dir]
 //! [--bench-synthetic 4x4 board.dsn]`, and Java's front-end flags (G08.4):
 //! `-de board.dsn [board.ses] [board.rules]`, `-do out.ses`, `-dr board.rules`,
-//! `-dct seconds`, `-mp passes` (and `-di dir`, which is read and ignored).
+//! `-dct seconds` (and `-di dir`, which is read and ignored), plus the router
+//! flags of the CLI (K02.5): `-mp`, `-mt`, `-inc`, `-oit`, `--router.<path>=`,
+//! `--optimizer.<path>=`, the scoring flags and the aliases `--max-passes`,
+//! `--threads`, `--timeout`, `--result-json`.
 //!
 //! The front-end flags are those of `GlobalSettings.applyCommandLineArguments`
 //! (at the pin): `-de` takes the files up to the next `-...` argument and sorts
@@ -12,10 +15,24 @@
 //! takes the output files up to the next `-...` argument, the first is the
 //! output and the others are only reported; `-dct` is the auto-start
 //! countdown in seconds (a value of 0 or less means no countdown). `--autoroute`
-//! is `-dct 0`. Of the CLI's router flags only `-mp` is read here.
+//! is `-dct 0`.
+//!
+//! **Router flags** are not parsed here: they are collected and handed to the
+//! engine's `freerouting::settings::parse_router_flags`, the same mapping the
+//! CLI uses, so `freerouting-gui -de d.dsn -do o.ses -mt 4 -oit 0.05` and the
+//! CLI mean the same. The result is [`FrontEndOptions::router`], laid over the
+//! settings of the job (over the saved ones from the settings window, as on
+//! the CLI's command line). A bad value is an error (exit 2). `-mp` is
+//! clamped to 0..=9999 as Java's GUI does. `--result-json` and `--timeout`
+//! are read but the interactive job does not write a manifest or stop on a
+//! timeout. `-mp -1` is not a value (a value never starts with `-`, as in the
+//! CLI), so it is an unknown option.
 
 use std::ffi::OsString;
 use std::path::PathBuf;
+
+use freerouting::settings::SettingsPatch;
+use freerouting::settings::cli_flags::{parse_router_flags, router_flag_span};
 
 /// Frames a `--bench` run counts when `--frames` is not given.
 pub const DEFAULT_FRAMES: usize = 600;
@@ -48,7 +65,7 @@ pub const DEFAULT_CONFIRMATION_TIMEOUT: u32 = 5;
 
 /// The front-end flags (`-do`, `-dr`, `-dct`): what the KiCad plugin's "Route
 /// in GUI" passes. `-de` fills [`Args::open`].
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FrontEndOptions {
     /// `-do`: the file the session is written to when routing ends.
     pub output: Option<PathBuf>,
@@ -58,9 +75,13 @@ pub struct FrontEndOptions {
     pub rules: Option<PathBuf>,
     /// `-dct`: seconds of the auto-start countdown; 0 starts at once.
     pub confirmation_timeout: u32,
-    /// `-mp`: the pass limit of the job (0 is no limit), clamped to 0..=9999
-    /// as in Java.
-    pub max_passes: Option<i32>,
+    /// The router flags of the command line (`-mp`, `-mt`, `--router.*`, ...)
+    /// as a settings patch; `autorouter.max_passes` (`-mp`, 0 is no limit) is
+    /// clamped to 0..=9999 as in Java.
+    pub router: SettingsPatch,
+    /// Warnings of reading the router flags (deprecated flags, capped
+    /// values), for the log window.
+    pub router_warnings: Vec<String>,
     /// True if a design file was named (by `-de` or positionally), which
     /// Java needs, with `-do`, to auto-start.
     pub design_given: bool,
@@ -73,7 +94,8 @@ impl Default for FrontEndOptions {
             additional_outputs: Vec::new(),
             rules: None,
             confirmation_timeout: DEFAULT_CONFIRMATION_TIMEOUT,
-            max_passes: None,
+            router: SettingsPatch::default(),
+            router_warnings: Vec::new(),
             design_given: false,
         }
     }
@@ -92,7 +114,7 @@ const DE_EXTENSIONS: &[&str] = &[".dsn", ".ses", ".rules", ".kicad_pcb"];
 /// `DO_VALID_EXTENSIONS`.
 const DO_EXTENSIONS: &[&str] = &[".ses", ".dsn", ".scr", ".rules", ".json", ".drc"];
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Args {
     pub open: Vec<PathBuf>,
     pub bench: Option<BenchScript>,
@@ -124,8 +146,18 @@ impl Args {
             ..Args::default()
         };
         let argv: Vec<OsString> = args.into_iter().collect();
+        let text: Vec<String> = argv
+            .iter()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
+        let mut router_args: Vec<String> = Vec::new();
         let mut i = 0;
         while i < argv.len() {
+            if let Some(span) = router_flag_span(&text, i) {
+                router_args.extend(text[i..i + span].iter().cloned());
+                i += span;
+                continue;
+            }
             let arg = argv[i].clone();
             i += 1;
             match arg.to_string_lossy().as_ref() {
@@ -192,15 +224,6 @@ impl Args {
                     out.frontend.additional_outputs.extend(files);
                 }
                 "-dr" => out.frontend.rules = Some(PathBuf::from(take(&argv, &mut i, "-dr")?)),
-                "-mp" => {
-                    let passes = take(&argv, &mut i, "-mp")?;
-                    let passes: i64 = passes
-                        .to_string_lossy()
-                        .trim()
-                        .parse()
-                        .map_err(|_| "-mp needs a whole number of passes".to_string())?;
-                    out.frontend.max_passes = Some(passes.clamp(0, 9999) as i32);
-                }
                 "-di" => {
                     take(&argv, &mut i, "-di")?;
                 }
@@ -220,6 +243,15 @@ impl Args {
             }
         }
         out.frontend.design_given = out.open.first().is_some_and(|p| is_design(p));
+        let flags = parse_router_flags(&router_args);
+        if let Some(error) = flags.usage_errors.first() {
+            return Err(error.clone());
+        }
+        out.frontend.router = flags.parse.patch;
+        if let Some(passes) = out.frontend.router.autorouter.max_passes.as_mut() {
+            *passes = (*passes).clamp(0, 9999);
+        }
+        out.frontend.router_warnings = flags.log.into_iter().map(|l| l.text).collect();
         Ok(out)
     }
 }
@@ -351,7 +383,8 @@ mod tests {
         assert_eq!(f.rules, Some(PathBuf::from("c.rules")));
         assert_eq!(f.output, Some(PathBuf::from("out.ses")));
         assert_eq!(f.additional_outputs, [PathBuf::from("x.dsn")]);
-        assert_eq!((f.confirmation_timeout, f.max_passes), (3, Some(2)));
+        assert_eq!(f.confirmation_timeout, 3);
+        assert_eq!(f.router.autorouter.max_passes, Some(2));
         assert!(f.auto_start());
         // The defaults, Java's 5 seconds; `-dct` of 0 or less, and the alias.
         assert_eq!(parse(&["a.dsn"]).unwrap().frontend.confirmation_timeout, 5);
@@ -370,11 +403,10 @@ mod tests {
                 .confirmation_timeout,
             0
         );
-        assert_eq!(
-            parse(&["-mp", "70000"]).unwrap().frontend.max_passes,
-            Some(9999)
-        );
-        assert_eq!(parse(&["-mp", "-1"]).unwrap().frontend.max_passes, Some(0));
+        let passes = |args: &[&str]| parse(args).unwrap().frontend.router.autorouter.max_passes;
+        assert_eq!(passes(&["-mp", "70000"]), Some(9999));
+        assert_eq!(passes(&["-mp", "0"]), Some(0));
+        assert_eq!(passes(&["a.dsn"]), None);
         // Concatenation with `+` splits when no such file exists.
         let a = parse(&["-de", "a.dsn+b.ses+c.rules", "-do", "o.ses+o.rules"]).unwrap();
         assert_eq!(a.open, [PathBuf::from("a.dsn"), PathBuf::from("b.ses")]);
@@ -392,11 +424,77 @@ mod tests {
     }
 
     #[test]
+    fn router_flags_reach_the_patch_as_on_the_cli() {
+        let a = parse(&[
+            "-de",
+            "a.dsn",
+            "-do",
+            "o.ses",
+            "-mt",
+            "4",
+            "-oit",
+            "0.05",
+            "-inc",
+            "Power\\,Default,GND",
+            "--router.optimizer.enabled=false",
+            "--max-passes=7",
+            "--threads",
+            "2",
+            "--timeout",
+            "10m",
+            "-dct",
+            "0",
+        ])
+        .unwrap();
+        let r = &a.frontend.router;
+        assert_eq!(r.autorouter.max_passes, Some(7));
+        assert_eq!(r.optimizer.enabled, Some(false));
+        assert_eq!(
+            r.autorouter.ignore_net_classes,
+            Some(vec!["Power,Default".to_string(), "GND".to_string()])
+        );
+        assert!(r.optimizer.improvement_threshold.is_some());
+        assert_eq!(a.frontend.confirmation_timeout, 0);
+        assert_eq!(a.open, [PathBuf::from("a.dsn")]);
+        // `-oit` and `-inc` are deprecated flags: the CLI's warning is kept.
+        assert!(
+            a.frontend
+                .router_warnings
+                .iter()
+                .any(|w| w.contains("-oit") && w.contains("deprecated")),
+            "{:?}",
+            a.frontend.router_warnings
+        );
+        // The same arguments through the engine give the CLI's patch.
+        let router: Vec<String> = [
+            "-mt",
+            "4",
+            "-oit",
+            "0.05",
+            "-inc",
+            "Power\\,Default,GND",
+            "--router.optimizer.enabled=false",
+            "--max-passes=7",
+            "--threads",
+            "2",
+            "--timeout",
+            "10m",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+        assert_eq!(parse_router_flags(&router).parse.patch, *r);
+    }
+
+    #[test]
     fn rejects_bad_front_end_flags() {
         assert!(parse(&["-de", "a.txt"]).is_err());
         assert!(parse(&["-dct", "soon"]).is_err());
         assert!(parse(&["-dct"]).is_err());
-        assert!(parse(&["-mt", "4"]).is_err());
+        // A value never starts with `-` (as in the CLI), so `-1` is unknown.
+        assert!(parse(&["-mp", "-1"]).is_err());
+        assert!(parse(&["--timeout", "soon"]).is_err());
+        assert!(parse(&["--threads", "0"]).is_err());
     }
 
     #[test]

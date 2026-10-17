@@ -3,9 +3,19 @@
 An action plugin for the KiCad PCB editor (tested with KiCad 10.0 on Windows).
 Its toolbar button opens a dialog that:
 
-- **Route**: exports the board to Specctra DSN, runs `freerouting -de board.dsn -do board.ses`,
-  and imports the session back into the board. The Rust autorouter is not ported yet, so for
-  now this reports "routing is not implemented yet".
+- **Route**: exports the board to Specctra DSN, runs `freerouting -de board.dsn -do board.ses
+  --progress json --result-json board.result.json` with the options of the dialog, shows the
+  router's progress live, and imports the session back into the board. **Stop and keep result**
+  finishes the current step and imports the best board so far; **Abort** kills the router and
+  imports nothing. A summary (connections routed and incomplete, vias, length, time) follows the
+  import, with a warning when connections are left.
+- **Route in GUI**: the same export, then `freerouting-gui -de board.dsn -do board.ses` with the
+  options; the window routes after its countdown and writes the session when routing ends or the
+  window closes, and the plugin imports it. **Terminate** kills the window and imports nothing.
+- **Options** (maximum passes, threads, optimizer on/off and its threshold, net classes to ignore,
+  time limit, seed, minimum trace width) are saved per board in
+  `freerouting-rs/route-options.json`. The minimum trace width defaults to the Board Setup
+  minimum track width, which the DSN does not carry.
 - **Open in viewer**: exports the board and opens it (plus the last `.ses`, if any) in
   `freerouting-gui`.
 - **Import SES...**: imports any Specctra session file into the board.

@@ -1,0 +1,34 @@
+{"event":"start","schema_version":1,"mode":"route"}
+{"event":"log","level":"warn","text":"Deprecated settings path 'router.max_passes'; use 'router.autorouter.max_passes' instead. The old path will be removed in a future release."}
+{"event":"progress","phase":"load","pass":null,"routed":null,"failed":null,"ripped":null,"incomplete":null,"violations":null,"score":null,"pass_end":false,"elapsed_ms":0}
+{"event":"log","level":"debug","text":"Applied copper-to-edge clearance override: 250.0 um (2500 board units)."}
+{"event":"log","level":"debug","text":"Applied plane_as_obstacle override: false"}
+{"event":"log","level":"debug","text":"Applied clearance tolerance: 1.0 um."}
+{"event":"log","level":"info","text":"Effective start_ripup_costs: 100 (source: defaults)"}
+{"event":"progress","phase":"fanout","pass":1,"routed":0,"failed":0,"ripped":0,"incomplete":33,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":3}
+{"event":"progress","phase":"fanout","pass":1,"routed":38,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":125}
+{"event":"progress","phase":"fanout","pass":2,"routed":0,"failed":0,"ripped":0,"incomplete":16,"violations":0,"score":353.54,"pass_end":false,"elapsed_ms":137}
+{"event":"progress","phase":"fanout","pass":2,"routed":1,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":150}
+{"event":"progress","phase":"fanout","pass":3,"routed":0,"failed":0,"ripped":0,"incomplete":16,"violations":0,"score":353.54,"pass_end":false,"elapsed_ms":153}
+{"event":"progress","phase":"fanout","pass":3,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":0.00,"pass_end":false,"elapsed_ms":158}
+{"event":"progress","phase":"route","pass":1,"routed":1,"failed":0,"ripped":0,"incomplete":15,"violations":0,"score":353.54,"pass_end":false,"elapsed_ms":169}
+{"event":"progress","phase":"route","pass":1,"routed":16,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":true,"elapsed_ms":241}
+{"event":"progress","phase":"route","pass":2,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":true,"elapsed_ms":243}
+{"event":"progress","phase":"optimize","pass":1,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":false,"elapsed_ms":251}
+{"event":"progress","phase":"optimize","pass":1,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":true,"elapsed_ms":388}
+{"event":"log","level":"info","text":"Routing stages: router.autorouter.algorithm=freerouting-router, router.fanout.algorithm=freerouting-fanout, router.autorouter.ordering=freerouting-ordering, router.autorouter.connection_router=freerouting-connection, router.autorouter.ripup_policy=freerouting-ripup, router.autorouter.pass_controller=freerouting-passes, router.special.plane_taps=freerouting-plane-taps, router.special.neck_down=freerouting-neck-down, router.optimizer.algorithm=freerouting-optimizer."}
+{"event":"log","level":"info","text":"Fanout stage completed: started with 51 total SMD pins, escaped pins: 39/51 (76.5%)."}
+{"event":"log","level":"info","text":"Auto-routing stage started with baseline score 353.54 for 16 unrouted items."}
+{"event":"log","level":"info","text":"Auto-routing pass #1 on board '6db37130f789f9bbd84e029fa41cacc3' was completed in 0.08 seconds with score 1000.00 (0 unrouted and 0 violations)"}
+{"event":"log","level":"info","text":"Auto-routing pass #2 on board '6db37130f789f9bbd84e029fa41cacc3' was completed in 0.00 seconds with score 1000.00 (0 unrouted and 0 violations)"}
+{"event":"log","level":"info","text":"Optimization stage started. Baseline router score: 1000.00, optimizer score: 553.89, incomplete connections: 0, clearance violations: 0."}
+{"event":"log","level":"info","text":"Optimizer pass #1: optimizer score 553.89 -> 554.88 (IMPROVED, 0.1792%), router score: 1000.00, incomplete connections: 0, clearance violations: 0."}
+{"event":"log","level":"info","text":"Stopping optimizer because the improvement in this pass (0.1792%) is below the threshold (2.50%)."}
+{"event":"log","level":"info","text":"Optimization stage completed: Baseline router score: 1000.00, baseline optimizer score: 553.89, final router score: 1000.00, final optimizer score: 554.88."}
+{"event":"log","level":"info","text":"Auto-routing stage completed: started with 33 unrouted nets, completed in 0.39 seconds, final score: 1000.00 (0 unrouted and 0 violations)."}
+{"event":"progress","phase":"write","pass":2,"routed":null,"failed":null,"ripped":null,"incomplete":0,"violations":0,"score":1000.00,"pass_end":false,"elapsed_ms":393}
+{"event":"log","level":"info","text":"Saving output file '/work/j2.ses' (SES)..."}
+{"event":"log","level":"info","text":"Successfully saved output file '/work/j2.ses' (14980 bytes)."}
+{"event":"log","level":"info","text":"Job 'Issue026-J2_reference' finished with state: COMPLETED (elapsed: 0.40 seconds)."}
+{"event":"log","level":"info","text":"Routing result manifest written to: j2.result.json"}
+{"event":"done","exit_code":0,"state":"completed","elapsed_ms":396}

@@ -22,8 +22,8 @@
 //!
 //! **Not in the window.** Java's labels `start_pass` and `speed` exist in
 //! its bundle but no control uses them (the window at `cda540f` has none),
-//! so the dialog has none either. The optimization stage is a control, but
-//! disabled while the engine has no optimizer ([`OPTIMIZER_PORTED`], O06).
+//! so the dialog has none either. The optimization stage is a control, enabled
+//! now that the batch optimizer is ported ([`OPTIMIZER_PORTED`], O06).
 
 pub mod timeout;
 
@@ -33,9 +33,9 @@ use freerouting::settings::{FIELDS, FieldValue, RouterSettings, SettingsPatch, f
 use crate::commands::Command;
 use timeout::{TimeoutUnit, decompose_timeout};
 
-/// False until the batch optimizer (O06) is ported: the "Optimization"
-/// stage checkbox is disabled with a tooltip.
-pub const OPTIMIZER_PORTED: bool = false;
+/// True since the batch optimizer (O06) is ported: the "Optimization" stage
+/// checkbox is enabled. Set it to false to disable the checkbox again.
+pub const OPTIMIZER_PORTED: bool = true;
 
 /// Fields with a control in the window, with the control's name. The layer
 /// rows edit the two per-layer cost arrays and the `layers` member.
@@ -590,11 +590,7 @@ pub fn ui(ui: &mut egui::Ui, draft: &mut Draft, layers: &[LayerInfo]) -> DialogO
             crate::text::AUTOROUTE_TOOLTIP,
             true,
         );
-        let tip = if OPTIMIZER_PORTED {
-            crate::text::OPTIMIZATION_TOOLTIP
-        } else {
-            crate::text::OPTIMIZATION_NOT_PORTED
-        };
+        let tip = crate::text::OPTIMIZATION_TOOLTIP;
         bool_control(
             ui,
             draft,

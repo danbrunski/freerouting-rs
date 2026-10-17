@@ -5,10 +5,13 @@
 //! `crates/freerouting/tests/java_ports.rs` (A08.5); here the two levels are
 //! driven by the stdin commands.
 //!
-//! Signals (Ctrl-C, SIGTERM) need the `ctrlc` crate, which is not approved
-//! (`NEW DEP`), so the second interrupt is injected through the test hook
-//! `FREEROUTING_TEST_INTERRUPT` (`stop::TestHook`), which calls the same
-//! `Interrupts::interrupt` a signal handler would.
+//! Signals (Ctrl-C, SIGTERM) go through the `ctrlc` crate (K02, the operator
+//! approved the `NEW DEP`): `sigint_and_sigterm_are_a_stop` and
+//! `two_signals_abort` send real signals to the binary (Unix only; Windows
+//! uses the same handler for Ctrl-C and Ctrl-Break). The in-process tests
+//! inject the interrupts through the test hook `FREEROUTING_TEST_INTERRUPT`
+//! (`stop::TestHook`), which calls the same `Interrupts::interrupt` the
+//! handler does.
 
 mod common;
 
@@ -297,4 +300,78 @@ fn a_manifest_of_an_aborted_run_says_so() {
     );
     // Silence the unused import of the enum under the stop module.
     let _ = StopCommand::Stop;
+}
+
+// ---- real signals (C08.5 remainder, K02) -----------------------------------
+
+/// Runs the binary on `BIG` with `--progress json` and sends each of `signals`
+/// (as `kill -SIG`, back to back) when the first `route` event arrives.
+/// Returns the stderr lines, the exit status and the directory.
+#[cfg(unix)]
+fn run_with_signals(
+    name: &str,
+    signals: &[&str],
+) -> (Vec<String>, std::process::ExitStatus, std::path::PathBuf) {
+    let (mut child, dir) = spawn(name, BIG, &["-mp", "50", "--progress", "json"], &[]);
+    let _stdin = child.stdin.take(); // stays open: EOF is not a stop either way
+    let reader = BufReader::new(child.stderr.take().unwrap());
+    let mut lines = Vec::new();
+    let mut sent = false;
+    for line in reader.lines() {
+        let line = line.unwrap();
+        if !sent && line.contains("\"phase\":\"route\"") {
+            for signal in signals {
+                let status = Command::new("kill")
+                    .arg(format!("-{signal}"))
+                    .arg(child.id().to_string())
+                    .status()
+                    .expect("kill runs");
+                assert!(status.success(), "kill -{signal}");
+            }
+            sent = true;
+        }
+        lines.push(line);
+    }
+    assert!(sent, "no route event: {lines:#?}");
+    let status = child.wait().unwrap();
+    (lines, status, dir)
+}
+
+/// The first Ctrl-C or SIGTERM is `stop`: the best board is written, exit 0.
+#[cfg(unix)]
+#[test]
+fn sigint_and_sigterm_are_a_stop() {
+    for signal in ["INT", "TERM"] {
+        let (lines, status, dir) = run_with_signals(&format!("stop-sig-{signal}"), &[signal]);
+        assert_eq!(status.code(), Some(0), "SIG{signal}: {lines:#?}");
+        let done = JsonValue::parse(lines.last().unwrap()).unwrap();
+        assert_eq!(
+            string_of(member(&done, "state")).as_deref(),
+            Some("completed"),
+            "SIG{signal}"
+        );
+        let passes = lines
+            .iter()
+            .filter(|l| l.contains("Auto-routing pass #"))
+            .count();
+        assert!(passes <= 1, "SIG{signal}: {passes} passes");
+        let ses = std::fs::read_to_string(dir.join("out.ses")).unwrap();
+        let bytes = std::fs::read(dir.join(BIG)).unwrap();
+        let BoardReadResult::Success { mut board, .. } = read_board(&bytes) else {
+            panic!("{BIG} does not load");
+        };
+        let summary = read_session(&mut board, &ses).expect("the SES is a session file");
+        assert_eq!(summary.errors_encountered, 0);
+        assert_eq!(names_in(&dir), [BIG, "out.ses"], "SIG{signal}");
+    }
+}
+
+/// The second signal aborts: exit 130, no output file, no temporary file.
+#[cfg(unix)]
+#[test]
+fn two_signals_abort() {
+    let (lines, status, dir) = run_with_signals("stop-sig-two", &["INT", "INT"]);
+    assert_eq!(status.code(), Some(130), "{lines:#?}");
+    assert_eq!(names_in(&dir), [BIG], "{lines:#?}");
+    assert!(lines.iter().any(|l| l.contains("CANCELLED")), "{lines:#?}");
 }

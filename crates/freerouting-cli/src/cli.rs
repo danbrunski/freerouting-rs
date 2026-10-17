@@ -332,6 +332,22 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
             )]);
         });
     }
+    {
+        let printer = printer.clone();
+        let installed = stop::install_signals(Arc::clone(&interrupts), move |what| {
+            let text = match what {
+                stop::Interrupt::Stop => "Interrupted: stopping and keeping the best board.",
+                stop::Interrupt::Abort => "Interrupted again: aborting without output.",
+            };
+            printer.print(&[line(LogLevel::Info, text)]);
+        });
+        if let Err(e) = installed {
+            log_lines.push(line(
+                LogLevel::Debug,
+                format!("Signal handling is off: {e}"),
+            ));
+        }
+    }
     let hook = std::env::var(TEST_INTERRUPT_VAR)
         .ok()
         .and_then(|spec| TestHook::parse(&spec));

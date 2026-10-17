@@ -60,6 +60,7 @@
 pub mod autoroute_scope;
 pub mod board;
 pub mod cli_args;
+pub mod cli_flags;
 pub mod config_path;
 pub mod dump;
 pub mod env;
@@ -77,6 +78,7 @@ pub mod validate;
 use std::time::Duration;
 
 pub use cli_args::{CliParse, parse_cli_arguments};
+pub use cli_flags::{RouterFlags, parse_router_flags};
 pub use dump::dump;
 pub use fields::{FIELDS, RouterSettings, SECTIONS, SettingsPatch, default_patch, field_by_path};
 pub use merge::{ResolveContext, Resolved, Source, defaults, resolve};
