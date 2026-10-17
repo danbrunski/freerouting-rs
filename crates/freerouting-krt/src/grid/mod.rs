@@ -25,6 +25,9 @@
 //! ([`router`], X05) routes one connection on the raster and inserts the
 //! path ([`path`]) behind the exact DRC; [`register`] adds it to a registry,
 //! where `router.autorouter.connection_router = krt-grid` selects it.
+//! The `krt-astar` bundle ([`bundle`], X06) wraps it with Freerouting's
+//! pull-tight of the changed area; [`regions`] (X06) classes a board's
+//! connections as `pin-field` or `open` for its measurement.
 
 use std::collections::BTreeSet;
 
@@ -33,10 +36,12 @@ use freerouting::board::BasicBoard;
 use freerouting::board::items::ItemId;
 use freerouting::job::overrides::um_to_board_units;
 
+pub mod bundle;
 pub mod frame;
 pub mod frontier;
 pub mod path;
 pub mod raster;
+pub mod regions;
 pub mod router;
 pub mod terminals;
 

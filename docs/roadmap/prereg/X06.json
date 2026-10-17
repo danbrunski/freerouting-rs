@@ -1,0 +1,79 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X06.3-krt-astar-by-region",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/archive/X06-grid-astar-with-pull-tight.md",
+  "question": "Graded after the optimizer, does the krt-astar bundle (krt-grid connection router, then Freerouting's pull-tight of the changed area after each connection, then Freerouting's optimizer) leave fewer or more unrouted connections than the default bundle, split by region class (pin-field, open), on X01's five boards and four benchmark boards, without new clearance violations or vias in pads?",
+  "hypothesis": "krt-astar completes fewer pin-field connections than the default on every board (preregistered in the X06 checklist; algorithms.md 'Grid A* followed by pull-tight')",
+  "arms": {
+    "default": {
+      "engine": "freerouting-rs at the commit that lands X06, after P04's default-tree decision, in-process through freerouting-krt's harness (the CLI does not call freerouting_krt::register before C07)",
+      "command": "X06_DSN={DSN} X06_SES={SES} X06_ALGO=freerouting-router cargo test --release -p freerouting-krt --test astar_bundle route_one_dsn -- --ignored --exact --nocapture",
+      "settings": {
+        "autorouter.algorithm": "freerouting-router",
+        "everything else": "the defaults (optimizer enabled, 20 passes)"
+      }
+    },
+    "krt-astar": {
+      "engine": "the same commit and harness",
+      "command": "X06_DSN={DSN} X06_SES={SES} X06_ALGO=krt-astar cargo test --release -p freerouting-krt --test astar_bundle route_one_dsn -- --ignored --exact --nocapture",
+      "settings": {
+        "autorouter.algorithm": "krt-astar",
+        "everything else": "the defaults (optimizer enabled, 20 passes)"
+      }
+    }
+  },
+  "baseline_arm": "default",
+  "candidate_arm": "krt-astar",
+  "boards": {
+    "set": "tools/bench/sets/x06-grid.txt",
+    "x01_set": "tools/bench/sets/x01-h2h.txt",
+    "x01": "canary-pwr at canary 9511d9a and the KiCad 10.0.7 demos pic_programmer, interf_u, kit-dev-coldfire-xilinx_5213 and video, prepared as X01 prepared them (tools/krt-h2h/prep_board.py: tracks and vias stripped, zones kept and refilled); the DSN is the one tools/kicad-oracle/grade.sh exports from the prepared board ({DSN} of the arm command); canary-pwr's DSN is fixtures/canary-pwr/canary-pwr-9511d9a.dsn as in X01",
+    "files": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn": "e7af5da592bd5c5d19e0082ddedacea2ba4da2a264b7cfb57c336a0c9c4a80d2",
+      "fixtures/Issue508-DAC2020_bm02.dsn": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
+      "fixtures/Issue690-sonde_xilinx.dsn": "633bd6bba64d23dc39e011caa3c44a8382f94818367bc30254d6aaca698dd380",
+      "fixtures/Issue508-DAC2020_bm07.dsn": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85"
+    },
+    "demo_dsns": "the four exported demo DSNs' sha256 are added in an amendment before the first engine run (they depend on the prepared boards, as in X01)"
+  },
+  "eligibility": "every board of both sets; a board where neither arm leaves a connection of a class unrouted is neutral for that class, printed; a board not graded (exit 2 of the grader, a crash, a timeout) fails that board for the arm that was not graded and is never a pass",
+  "region_classes": "freerouting_krt::grid::regions (X06.2) on the input board the arms route (the DSN after the job's load sequence), before any run: pin-field when an end pad is fine-pitch (a pin of the same component within 0.65 mm centre to centre, or a pad side under 0.35 mm, or a component of at least 32 pins with a pitch of at most 0.8 mm; 1 um tolerance on both distances), open otherwise. If the operator amends X06.2's rule before the run, the amended rule is used and named in an amendment.",
+  "grading": {
+    "x01_demos": "tools/kicad-oracle/grade.sh on the prepared board with the arm's command as ENGINE_COMMAND: the board's original rules, copper severities forced to error, the input board's DRC subtracted, KiCad 10.0.7; drc_real, kicad_unconnected and via_in_pad from the grader",
+    "canary-pwr": "the SES of each arm goes to the CANary layout session (canary-23) as in X01; until its grade exists canary-pwr counts as not graded for both arms: no win for either",
+    "benchmark": "the four x06-grid.txt fixtures have no .kicad_pcb in the repository: graded by Rust's DRC inside the harness (all_clearance_violations of the routed board; drc_new counts the violations with an item the run created) and its via-in-pad test",
+    "region_split": "on every board from the harness's region tally (route_one_dsn's printed RegionTally): the input board's connections of each class that are not complete on the routed board"
+  },
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "hard", "kind": "int", "direction": "lower", "source": "the KiCad grader on X01's demos; drc_new from Rust's DRC on the benchmark boards"},
+    {"name": "unrouted_pin_field", "role": "score", "kind": "int", "direction": "lower"},
+    {"name": "unrouted_open", "role": "score", "kind": "int", "direction": "lower"},
+    {"name": "unrouted_total", "role": "guard", "kind": "int", "direction": "lower", "source": "kicad_unconnected on the KiCad-graded boards, the routed board's airlines otherwise"},
+    {"name": "vias", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "length", "role": "guard", "kind": "float", "direction": "lower", "tol": 1e-06},
+    {"name": "wall_seconds", "role": "guard", "kind": "float", "direction": "lower", "compared": false},
+    {"name": "raster_share", "role": "report", "kind": "float", "direction": "lower", "compared": false, "source": "raster_share_on_a_set on the benchmark boards: window, raster and terminal cells against the grid search, per pass-1 connection on the input board; decides whether X04.6 (incremental stamps) is reopened"}
+  ],
+  "metric_definitions": {
+    "unrouted_pin_field": "connections of class pin-field on the input board whose two ends are not in one connected set on the routed board (regions::tally incomplete); unknown ends (no anchor left) are printed and not counted",
+    "unrouted_open": "the same for class open",
+    "unrouted_total": "printed beside the split: two input connections may share one remaining gap, so the split can sum to more than the total"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "krt-astar stays a selectable implementation only if, on one region class, it leaves fewer unrouted connections than the default on at least N-1 of the graded boards and on no board more, and on the other class it leaves no more than the default on any board; the hard metrics are 0 for krt-astar on every board. Otherwise X06.1's bundle code is removed (X05's krt-grid stage stays) and the numbers stay in X06.3's done note. Either way krt-astar is never a default from this run.",
+  "hypothesis_rule": "the hypothesis holds if krt-astar's unrouted_pin_field is greater than the default's on every graded board; it fails otherwise, and the boards where it fails are printed",
+  "decision_table": {
+    "keep": "krt-astar stays selectable (off by default); X06.4 states the split and whether a hybrid (grid for open connections, the maze search for pin-field) is worth a checklist",
+    "reject": "the bundle code goes; X06.4 records the numbers and the hybrid verdict"
+  },
+  "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'); the X06 done notes give a pre-P04 dry run at the landing commit, labelled as such, not this registration's result",
+  "amendments": []
+}

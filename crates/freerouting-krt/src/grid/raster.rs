@@ -24,8 +24,9 @@
 //! else the rule's first. `r_via(L)` is the largest distance from the via's
 //! centre to its pad on `L`. A cell is via-blocked if, on a layer of the via's
 //! span, it is closer than `c_via + r_via(L) + h` to an item that is a via
-//! obstacle ([`is_via_obstacle`]), or closer than `r_via(L) + h` to any pad of
-//! any net. The second rule keeps the via's copper out of every pad (D8; the
+//! obstacle ([`is_via_obstacle`], or for the net's own pads and vias
+//! [`is_own_via_obstacle`], Java's rule for a via with attach off), or closer
+//! than `r_via(L) + h` to any pad of any net. The second rule keeps the via's copper out of every pad (D8; the
 //! gate's `via_in_pad_count` counts any overlap), and is KRT's extra margin
 //! around pads, widened from half a step to `h`.
 //!
@@ -189,6 +190,22 @@ pub fn is_via_obstacle(board: &BasicBoard, item: &Item, net: i32) -> bool {
     }
 }
 
+/// Java's via obstacle rule for an item of the via's own net (`Via`'s
+/// branch of `Item.isObstacle`, `basic_board.rs` `is_obstacle`): own traces
+/// are not obstacles; an own pin is one unless the via allows attaching
+/// and the pin is on a single layer; an own via always is. So with
+/// `(attach off)` a via keeps its clearance from the pads of its own net
+/// (X06 found the via-side gap: `clearance_violations` of the new via does
+/// not see it, the pin's does).
+pub fn is_own_via_obstacle(board: &BasicBoard, via: &ViaChoice, item: &Item) -> bool {
+    let attach = board.rules.via_infos.get(via.info).attach_smd_allowed;
+    match &item.kind {
+        ItemKind::Pin(_) => !attach || item.first_layer() != item.last_layer(),
+        ItemKind::Via(_) => true,
+        _ => false,
+    }
+}
+
 /// The trace inflation `c + hw(L)` of `item` on `layer` for `rules` (the
 /// raster adds `h`).
 pub fn trace_keepout(board: &BasicBoard, rules: &NetRules, item: &Item, layer: i32) -> i32 {
@@ -343,7 +360,9 @@ pub fn build_raster(board: &BasicBoard, task: &GridTask, frame: &Frame) -> Raste
                 stamped = true;
             }
             if let Some(via) = via_on_layer {
-                let inflate = if is_via_obstacle(board, item, task.net) {
+                let inflate = if is_via_obstacle(board, item, task.net)
+                    || is_own_via_obstacle(board, via, item)
+                {
                     Some(via_keepout(board, via, item, l) + h)
                 } else if item.is_pin() {
                     Some(via.radius[layer] + h)

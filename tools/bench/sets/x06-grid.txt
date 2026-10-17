@@ -1,0 +1,10 @@
+# X06 measurement by region class (docs/roadmap/tasks/archive/X06-grid-astar-with-pull-tight.md),
+# registered in docs/roadmap/prereg/X06.json. The benchmark boards of the run: four boards
+# from tools/bench/sets/benchmark.txt with KiCad-exported DSNs, small enough for three steps
+# of grid A* per failing connection in every pass. X01's five boards (tools/bench/sets/x01-h2h.txt)
+# are the other half of the run; they are graded by KiCad through tools/kicad-oracle.
+# Paths are relative to the repository root. See tools/bench/README.md.
+fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn           # 21 connections, KiCad demo ecc83
+fixtures/Issue508-DAC2020_bm02.dsn                            # 34
+fixtures/Issue690-sonde_xilinx.dsn                            # 67, KiCad demo sonde
+fixtures/Issue508-DAC2020_bm07.dsn                            # 86

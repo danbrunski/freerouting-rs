@@ -33,7 +33,9 @@
 //! via info of the net's via rule whose padstack spans both layers. All of
 //! it is inserted in one B09 transaction ([`RoutingBoard::try_change`],
 //! new items checked): the closure fails if a connector to a trace cannot
-//! be made, if a new via's copper overlaps any pin's pad (D8), or if the
+//! be made, if a new via's copper overlaps any pin's pad (D8), if a
+//! new via is within clearance of a pin only the pin's side of the DRC sees
+//! (a same-net SMD pad with attach off, [`pin_side_violations`]), or if the
 //! net has no fewer connected sets afterwards (the insert joined nothing;
 //! items are compared by set count because the board's trace normalization
 //! may replace the end items); the transaction then
@@ -545,6 +547,44 @@ pub fn via_in_pad(board: &BasicBoard, via: &Item) -> bool {
     })
 }
 
+/// The clearance violations between the new vias `vias` and pins that
+/// only the pin's side reports, as `(first item, second item, layer)`,
+/// sorted. A same-net via with attach off must keep its clearance from an
+/// SMD pad (Java's `Via` branch of `isObstacle`), but the pin's branch
+/// does not see a same-net via, so `clearance_violations` of the via, and
+/// the transaction's [`CheckPolicy::NewItemsOnly`], miss the pair; the
+/// board's full DRC reports it from the pin (found by X06 on bm07).
+fn pin_side_violations(board: &BasicBoard, vias: &[ItemId]) -> Vec<(ItemId, ItemId, i32)> {
+    let mut out = Vec::new();
+    for &id in vias {
+        let Some(drill) = board.item(id).and_then(Item::drill) else {
+            continue;
+        };
+        for layer in drill.first_layer..=drill.last_layer {
+            let reach = f64::from(board.rules.clearance_matrix.max_value_on_layer(layer));
+            let probe = TileShape::IntBox(drill.bounding_box().offset(reach));
+            let pins: BTreeSet<ItemId> = board
+                .overlapping_tree_entries(&probe, layer)
+                .iter()
+                .filter(|e| board.item(e.item).is_some_and(Item::is_pin))
+                .map(|e| e.item)
+                .collect();
+            for pin in pins {
+                out.extend(
+                    board
+                        .clearance_violations(pin)
+                        .into_iter()
+                        .filter(|v| v.first_item == id || v.second_item == id)
+                        .map(|v| (v.first_item, v.second_item, v.layer)),
+                );
+            }
+        }
+    }
+    out.sort_unstable();
+    out.dedup();
+    out
+}
+
 /// A connector with the end it belongs to.
 struct End {
     connector: Connector,
@@ -730,6 +770,13 @@ fn insert(
                 .any(|&id| b.item(id).is_some_and(|via| via_in_pad(b, via)))
             {
                 return Err(Rejection::ViaInPad);
+            }
+            let pin_side = pin_side_violations(b, &new_vias);
+            if let Some(&first) = pin_side.first() {
+                return Err(Rejection::Clearance {
+                    count: pin_side.len(),
+                    first,
+                });
             }
             if b.connected_sets(net).len() >= components_before {
                 return Err(Rejection::NotConnected);

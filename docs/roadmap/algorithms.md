@@ -155,6 +155,29 @@ advance:
 Grade after the optimizer, because the conservative raster leaves slack that
 pull-tight reclaims.
 
+**Measured split (X06).** The `krt-astar` bundle (X06.1) and the region
+classes (X06.2: `pin-field` where an end pad is fine-pitch by KRT's rule,
+`open` otherwise) are in `freerouting-krt`; the registered measurement
+([`prereg/X06.json`](prereg/X06.json)) waits for P04. A pre-P04 dry run
+(X06.3's done note: 14 boards, default settings, Rust DRC, no KiCad grading)
+gives no new clearance item and no via in a pad for either arm, and this
+split of unrouted connections, default against `krt-astar`:
+- `pin-field`: only 3 boards have such connections; `krt-astar` leaves 2 of
+  6 unrouted on Issue508-SMD where the default leaves none, and ties on
+  CONGFLOCK (5 of 5 for both) and bm07 (0 of 39 for both);
+- `open`: a tie on 12 of the 13 boards with open connections; on sonde
+  `krt-astar` leaves 18 of 20 unrouted against the default's 11.
+
+It wins on no class on any board. It uses fewer vias on 4 boards and more on
+4, is shorter on 6 boards and longer on 5, and takes no longer on 7 boards
+but up to 900 times as long on the other 7 (Issue508-SMD 92 s against 0.1 s;
+sonde 105 s against 0.3 s, mostly rebuilding the rasters of the connections
+that fail at every step in every pass). **A hybrid (grid for `open`
+connections, the maze search for `pin-field`) is not worth a checklist on
+these numbers:** the grid never completes an open connection the maze search
+misses. Reopen the question only if the registered run shows `krt-astar`
+winning on `open` connections on N−1 boards.
+
 ## Licensing
 
 KRT is MIT ("Copyright (c) 2026 drandyhaas"); freerouting-rs is GPL-3.0-only.
