@@ -9,5 +9,7 @@
 {"event":"progress","phase":"route","pass":1,"routed":1,"failed":0,"ripped":0,"incomplete":15,"violations":0,"score":353.54,"pass_end":false}
 {"event":"progress","phase":"route","pass":1,"routed":16,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":true}
 {"event":"progress","phase":"route","pass":2,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":true}
+{"event":"progress","phase":"optimize","pass":1,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":false}
+{"event":"progress","phase":"optimize","pass":1,"routed":0,"failed":0,"ripped":0,"incomplete":0,"violations":0,"score":1000.00,"pass_end":true}
 {"event":"progress","phase":"write","pass":2,"routed":null,"failed":null,"ripped":null,"incomplete":0,"violations":0,"score":1000.00,"pass_end":false}
 {"event":"done","exit_code":0,"state":"completed"}

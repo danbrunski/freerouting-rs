@@ -238,11 +238,10 @@ impl StageRegistry {
             .insert("freerouting-neck-down", |_| Box::new(FreeroutingNeckDown));
         r.fanout
             .insert(DEFAULT_FANOUT, |_| Box::new(FreeroutingFanout));
-        r.optimizer.insert(DEFAULT_OPTIMIZER_ALGORITHM, |_| {
-            Box::new(NotPorted {
-                id: DEFAULT_OPTIMIZER_ALGORITHM,
-                owner: "O06",
-            })
+        r.optimizer.insert(DEFAULT_OPTIMIZER_ALGORITHM, |s| {
+            Box::new(crate::optimize::batch::FreeroutingOptimizer::from_settings(
+                s,
+            ))
         });
         r
     }

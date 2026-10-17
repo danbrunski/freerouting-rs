@@ -30,6 +30,8 @@ set over, so nobody runs the tests against a half-written tree.
 | `fixtures/reference/load/<board>.json` | Result of `DsnReader.readBoard` (`success`, `outline_missing`, `parse_error`, or `exception`) and the board's `BoardStatistics`: layers, item counts by type, components, pads, nets, incomplete connections, clearance violations, bounds. |
 | `fixtures/reference/route/<board>.json` | The batch autorouter's result with the optimizer off, bounded by work (below): `result` (the job state), `routeMillis`, `freeroutingVersion`, `javaRuntime`, `maxPasses`, `maxItems`, `safetyTimeout`, `settings` (the merged `RouterSettings`) and `effective` (per-layer costs, via and ripup costs), `passes` (each pass's board hash and score line), `workLimitCutoffs`, the `BoardStatistics` after routing and the router score. |
 | `fixtures/reference/route/<board>.ses` | The SES session file the Java router wrote. |
+| `fixtures/reference/optimize/<board>.json`, `<board>.t1.ses`, `<board>.t7.ses` | Mode `optimize` (O06.7, `run.sh <pin-worktree> optimize [NAME_FILTER]`): the batch optimizer (`BatchOptimizer.create(job).runBatchLoop()`, `max_passes` 3, `max_items` 200, SEQUENTIAL, no timeout, a no-op `job.thread`) on a Java-routed session with every trace and via unfixed (`SesReader` imports them user fixed, and no user-fixed item is a candidate), once with `max_threads` 1 and once with 7. Per run: the statistics before, at the start of each pass and after, the optimizer ranking and router scores, the board hash and the run time; the pin, the JDK and `workerFix` (false at the pin: worker boards are reused). Boards: `Issue508-DAC2020_bm08` (with `fixtures/Issue508-DAC2020_bm08-routed.ses`), `Issue026-J2_reference`, `Issue508-DAC2020_bm05` and the three smallest fully routed route references with at least two vias, `Issue954-circle`, `Issue508-SMD-routing-issue-demo` and `Issue269-min_fr_test/min_fr_test_no_quotes` (each with its route-reference session). At `a773a70ec` the t1 and t7 sessions are equal on all six. Java accepts no pass on bm05 (14 incompletes, so guard G1 bypasses the optimizer), on `Issue508-SMD-routing-issue-demo` or on `min_fr_test_no_quotes`: those three give no evidence of the optimizer's moves. Compared by `crates/freerouting/tests/reference_optimize.rs`. |
+| `fixtures/reference/optimize/candidates/<board>.jsonl` | Probe `optimize-candidates` (`probes/board/OptimizeCandidatesProbe.java`, O06.2 and O06.3; see Probes). |
 
 ### Route bounds
 
@@ -131,6 +133,16 @@ git -C ../freerouting worktree remove --force <scratchpad>/java-pin
     of whole boards with the costs, on the `pull-tight` board set. One command:
     `TMPDIR=<scratch> tools/java-reference/probes/board/generate.sh <pin-worktree> opt-vias`
     (then `find fixtures/reference/probe/opt-vias -type d -empty -delete`).
+  - `optimize-candidates` (`OptimizeCandidatesProbe.java`, O06.2, O06.3): on the board loaded as
+    the job does with its routed session imported and every trace and via unfixed, the batch
+    optimizer's SEQUENTIAL candidate ids of pass 1 (ten boards), and on O06.7's six boards the
+    first 20 candidates each rerouted by `optRouteItemOnBoard` with pass 1's parameters on a fresh
+    `deepCopy()` of the baseline (every `ItemRouteResult` field). Its output lives in
+    `fixtures/reference/optimize/candidates/`, not `probe/`, and bm08 takes
+    `fixtures/Issue508-DAC2020_bm08-routed.ses`, so it is run per board rather than through
+    `generate.sh` (which would write `probe/optimize-candidates/`):
+    `TMPDIR=<scratch> tools/java-reference/probe.sh <pin-worktree> tools/java-reference/probes/board/OptimizeCandidatesProbe.java fixtures/<board>.dsn <session> fixtures/reference/optimize/candidates/<board>.jsonl`
+    with `<session>` = `fixtures/reference/route/<board>.ses` (bm05 takes about 3 minutes).
   - `route-script` (`RouteScriptProbe.java`, I01): interactive routing through
     `gui.interactive.Route` headless, with `RouteState`'s board calls transcribed: seeded starts
     at pins and traces, twelve corner steps towards the nearest target pin with a layer change

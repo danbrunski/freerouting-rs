@@ -1,5 +1,5 @@
-//! Route optimization: pull-tight (O01), later the via optimizer (O05) and
-//! the batch optimizer (O06).
+//! Route optimization: pull-tight (O01), the via optimizer (O05) and the
+//! batch optimizer (O06, [`batch`]).
 //!
 //! Port of `board.optimize.TraceTightener*` and the board entry points of
 //! `board.facade.RoutingBoardOperations` at `a773a70ec`. The tightener is one
@@ -20,3 +20,6 @@ pub use tighten::{AngleMode, LineOrigin, Outcome, Tightener, TrackedPolyline};
 pub mod via;
 
 pub use via::OPT_VIA_RECURSION_DEPTH;
+
+// O06: the batch optimizer.
+pub mod batch;

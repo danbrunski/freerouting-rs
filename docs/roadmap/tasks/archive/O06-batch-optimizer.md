@@ -5,7 +5,7 @@ rips up one via or trace at a time, reroutes it with up to six autorouter
 passes, and keeps the best improvement per pass. This checklist ports it as
 the `freerouting-optimizer` stage of the D9 pipeline. It comes after the A
 series, because each candidate is rerouted by the batch autorouter. See
-[O00](O00-optimizer-README.md) for the series rules.
+[O00](../O00-optimizer-README.md) for the series rules.
 
 **Java's optimizer is not reproducible, at the pin or at `30baad7e2`.** Its
 worker threads reuse one board per thread across candidates
@@ -123,7 +123,7 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
 
 ## Checklist
 
-- [ ] **O06.1 — Gate and preflight guards.**
+- [x] **O06.1 — Gate and preflight guards.**
   - Java: `optimizerCandidateRejectionReason` (A08.3 ports `ItemRouteResult`),
     `evaluatePreFlightGuards` (G1 incompletes > 0; G2 no vias and score
     ≥ 950 or length ≤ 1.05 × minimum; G3 score ≥ 995, or length ≤ 1.02 ×
@@ -132,8 +132,18 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
   - Rust: `optimize/batch/guards.rs`.
   - **Accept:** `BatchOptimizerCandidateGateTest` (4) and
     `BatchOptimizerPreflightGuardsTest` (14) ported and green.
+  - *Done 2026-10-16:* `optimize/batch/guards.rs` (`candidate_rejection_reason`,
+    `evaluate_preflight_guards`, `all_vias_mandatory_layer_transitions`,
+    `pass_improvement_percent`). `tests/java_ports.rs`
+    `autoroute_pipeline_batch_optimizer_gates`: `BatchOptimizerCandidateGateTest` (4, plus
+    the pin's two `passImprovementPercent` cases) and 13 of `BatchOptimizerPreflightGuardsTest`
+    green (`cargo test -p freerouting --test java_ports`: 77 passed); its 14th,
+    `runBatchLoopSetsManifestSnapshotsAndZeroPassesWhenBypassed`, is
+    `tests/batch_optimizer.rs::run_batch_loop_sets_zero_passes_when_bypassed` (green). The
+    pin's `passImprovementPercent` divides by `|before|` and gives 0 only when `before == 0`;
+    the port follows the pin, not this checklist's "0 when before <= 0".
 
-- [ ] **O06.2 — Candidate order.**
+- [x] **O06.2 — Candidate order.**
   - Java: `ReadSortedRouteItems.next` (`:1161-1243`), `prepareCandidateItems`
     (`:587-628`), the `maxItems` truncation (`:641-654`).
   - Rust: `optimize/batch/candidates.rs`, O(n log n) with the same result:
@@ -153,8 +163,17 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
     the SEQUENTIAL id list is equal; `equal_key_skips_rest_of_pass` on a
     synthetic board (two vias and one trace sharing a key; only the higher-id
     via is a candidate).
+  - *Done 2026-10-16:* `optimize/batch/candidates.rs` (`sorted_candidates`: one sort and a dedup,
+    `prepare_candidates` with PRIORITIZED). Probe
+    `tools/java-reference/probes/board/OptimizeCandidatesProbe.java` stage `order` wrote
+    `fixtures/reference/optimize/candidates/<board>.jsonl` on ten boards (O06.7's six,
+    `Issue143-rpi_splitter`, `Issue433-my-board`, `Issue413-test`, `Issue954-polygon64`);
+    `tests/reference_optimize.rs::candidate_order_matches_java`: the id list is equal on all
+    ten (82 on J2, 53 on bm08, 207 on bm05). `Issue676-ch32v-tx118s` was replaced: Java's
+    `SesReader` imports none of its wires (existing DIVERGENCES line), so its lists differ for
+    a reason outside O06. `tests/batch_optimizer.rs::equal_key_skips_rest_of_pass` green.
 
-- [ ] **O06.3 — One candidate.**
+- [x] **O06.3 — One candidate.**
   - Java: `optRouteItemOnBoard` (`:852-942`).
   - Rust: `optimize/batch/item.rs`, `opt_route_item(board, item, baseline_len,
     with_preferred_directions, use_increased_ripup, settings) ->
@@ -176,8 +195,17 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
       baseline, dump the `ItemRouteResult` fields. Equal for every
       candidate once A14's board-parity gate passes on these boards; before
       that the item is `[~]` and the note gives the match rate per field.
+  - *Done 2026-10-16:* `optimize/batch/item.rs::opt_route_item`. `BatchOptimizerTraceMetricTest`
+    (3): the two board cases are
+    `batch_optimizer::worker_uses_the_weighted_trace_metric_from_its_board_snapshot` and
+    `zero_baseline_fallback_derives_from_board_snapshot`, the board-free one is
+    `java_ports::...::trace_only_improvement_is_accepted_when_canonical_metric_decreases`.
+    Probe stage `items`: `tests/reference_optimize.rs::candidate_items_match_java` in release
+    (`cargo test --release -p freerouting --test reference_optimize`, 190 s): every field of
+    every candidate equal on all six boards (circle 2/2, SMD demo 17/17, min_fr_test 8/8, J2
+    20/20, bm08 20/20, bm05 20/20); the debug gate skips bm05.
 
-- [ ] **O06.4 — Parallel evaluation with an ordered merge.**
+- [x] **O06.4 — Parallel evaluation with an ordered merge.**
   - Java: `optRoutePass` (`:630-822`), `OptimizeCandidateTask`,
     `WorkerBoardState`.
   - Rust: `optimize/batch/worker.rs` (see the decisions above).
@@ -204,8 +232,18 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
       enough to fire cuts off after the same number of visits whether it
       runs alone, after nine other candidates on the same thread, or on
       `--threads 8`; the per-candidate result log is equal in all three.
+  - *Done 2026-10-16:* `optimize/batch/worker.rs` (`evaluate_chunk` on `std::thread::scope`,
+    `evaluate_pass` with Java's consumption rules; each candidate on its own stop token,
+    relayed from the job's, with a stop a candidate requests applied in candidate order).
+    `tests/batch_optimizer.rs`: `optimizer_is_thread_count_independent` (bm08 + routed SES and
+    J2 + its route-reference SES, threads 1/2/4/8: result log, winners and `state_hash` equal),
+    `optimizer_is_thread_count_independent_bm05` (`#[ignore]`, release 154.74 s; guards off
+    because the reference has 14 incompletes; 1 pass, 8 items, winner 168 for all four counts),
+    `chunk_size_does_not_change_results` (1, 8, 64), `candidate_copy_equals_deep_copy`,
+    `candidates_leave_the_baseline_untouched`, `work_limit_is_per_candidate_not_per_thread`
+    (meter units equal alone, after nine others and on 8 threads); all green.
 
-- [ ] **O06.5 — The pass loop.**
+- [x] **O06.5 — The pass loop.**
   - Java: `runBatchLoop` (`:279-517`), `restoreIncumbentBoard`.
   - Rust: `optimize/batch/mod.rs`.
   - Orders (exact): baseline statistics and guards; incumbent = deep copy;
@@ -228,8 +266,23 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
     bm08-routed: no new violations or incompletes), and the optimizer half of
     `MaxFanoutOptimizerSettingsTest` (2) ported and green;
     `first_pass_without_winner_stops` pins the quirk.
+  - *Done 2026-10-16:* `optimize/batch/mod.rs::run_batch_optimizer`. `BatchOptimizerDeterminismTest`:
+    `cross_thread_optimization_produces_identical_results` (bm01 routed by the Rust
+    autorouter, 1 vs 4 threads, 1 pass, 6 items: equal hash and statistics; bm01's optimizer
+    score is 636.36 before and after, the one pass is rejected with
+    `OptimizerScoreNotImproved`, so no pass is accepted and the case is trivially equal, as
+    expected) and `initial_board_state_preserved_when_optimization_does_not_improve`
+    (`max_passes = 0`); `BatchOptimizerStrategyTest` as
+    `optimizer_does_not_degrade_fully_routed_board` (on bm08-routed with its session
+    unfixed: SEQUENTIAL x 1, 2, 4 threads and PRIORITIZED x 1, 4; no new incompletes or
+    violations) plus Java's own variant with the session left user fixed,
+    `optimizer_on_a_fixed_session_changes_nothing`;
+    `optimizer_max_passes_and_max_items` (the optimizer half of
+    `MaxFanoutOptimizerSettingsTest`); `first_pass_without_winner_stops`. All green
+    (`cargo test -p freerouting --test batch_optimizer`: 20 passed, 1 ignored). DIVERGENCES
+    "Batch optimizer" block added.
 
-- [ ] **O06.6 — Stage registration and events.**
+- [x] **O06.6 — Stage registration and events.**
   - Implement A10's `Optimizer` trait as id `freerouting-optimizer` (Java's
     `BatchOptimizer.getId`), selected by `router.optimizer.algorithm`.
   - Events through A08.4's sink: `Progress` with phase `optimize` after each
@@ -240,8 +293,16 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
     chunk.
   - **Accept:** `optimizer_event_order` unit test; the registry resolves
     `freerouting-optimizer` to this stage.
+  - *Done 2026-10-16:* `FreeroutingOptimizer` implements `Optimizer` as `freerouting-optimizer`; the
+    registry factory builds it (`stages/registry.rs`), and the pipeline arms
+    `optimizer.timeout` as a `StopLevel::All` stop around it (`autoroute/pipeline.rs`).
+    `batch_optimizer::optimizer_event_order`, `registry_resolves_the_optimizer` and
+    `optimizer_timeout_is_a_full_stop` green. Adoption and restores are reported with
+    `RouterEvents::replaced` (the whole board), not a journal `Delta`: the winner is another
+    board object. The CLI golden `progress_j2_mp2.jsonl` gained exactly the two optimizer
+    progress lines (regenerated with `UPDATE_GOLDEN=1`).
 
-- [ ] **O06.7 — Optimizer references (`fixtures/reference/optimize/`).**
+- [x] **O06.7 — Optimizer references (`fixtures/reference/optimize/`).**
   - Java: `ReferenceDump` mode `optimize` (O06's own; append only). For each
     board: load the DSN with `HeadlessBoardManager.loadFromSpecctraDsn`,
     import the Java-routed SES from `fixtures/reference/route/` (J01: work
@@ -267,8 +328,21 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
     - after the fix is re-pinned: Java t1 ≡ t7 (checked by the test), and
       the Rust SES equals Java's by F02.2 `ses-diff`. Until then this
       item is `[~]` with the aggregate table in the note.
+  - *Done 2026-10-16:* `ReferenceDump optimize` (appended `OptimizeMode`, its `case` arm and the
+    `MODES` entry) wrote `fixtures/reference/optimize/<board>.{json,t1.ses,t7.ses}` for the six
+    boards (README lists them and the boards with no accepted pass: bm05, bypassed by G1 with
+    14 incompletes, `Issue508-SMD-routing-issue-demo` and `min_fr_test_no_quotes`). At the pin
+    Java's t1 and t7 sessions are byte-identical on all six, so the after-fix acceptance holds
+    already: `tests/reference_optimize.rs::optimizer_runs_match_java` checks the aggregates
+    (incompletes, violations <= Java t1; vias, weighted length within the t1/t7 spread + 2 %)
+    and that the Rust session equals Java's t1 byte for byte where Java's t1 == t7: equal on
+    all six. Aggregates (Rust = Java t1 = t7): bm08 vias 0, weighted length 2492685, score
+    850.08 -> 903.22, 2 passes; J2 vias 16 -> 14, 11909158 -> 11074338, 553.89 -> 656.78, 3
+    passes; bm05 bypassed (28 vias, 14 incompletes); circle 3 -> 0 vias, score -15404.88 ->
+    1000, 3 passes; SMD demo and min_fr_test unchanged, 2 passes. Java's worker fix is not
+    at the pin; a re-pin that adds it keeps this test as is.
 
-- [ ] **O06.8 — Determinism under threads and load.**
+- [x] **O06.8 — Determinism under threads and load.**
   - `examples/optimize_board.rs <dsn> <ses> <out.ses> --threads N
     --max-passes P --max-items I` writes the SES with C05's writer.
   - **Accept:**
@@ -279,3 +353,11 @@ modes and J01.3 changes `route`. The `optimize` mode is O06's own: add a
       per core;
     - once C07 wires the optimizer into the CLI, the same pair through
       `freerouting -de … -do …` is byte-identical (until then `[~]`).
+  - *Done 2026-10-16:* `examples/optimize_board.rs` (release): `--threads 1` and `--threads 8`
+    (8 cores) give byte-identical SES files and per-candidate logs on all six boards, and the
+    SES equals Java's t1 (bm08 0.69 s / 0.11 s, J2 3.02 s / 0.45 s, SMD demo 0.12 / 0.03 s,
+    min_fr_test 0.05 / 0.01 s, circle and bm05 under 0.01 s). `tools/determinism-check.sh
+    -- optimize_board ... --threads 8` reports `identical` on bm08 and J2 (8 burners). The CLI
+    runs the optimizer through the pipeline: `freerouting -de <board>.dsn -do <out>.ses
+    --router.optimizer.max_threads=1` and `=8` are byte-identical on J2 (optimizer score
+    553.89 -> 554.88) and bm08.

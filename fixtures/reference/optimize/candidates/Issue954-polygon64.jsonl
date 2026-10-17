@@ -1,0 +1,2 @@
+{"kind":"optimize-candidates","board":"Issue954-polygon64","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"order","ses":"fixtures/reference/route/Issue954-polygon64.ses","count":2,"ids":[9,8]}

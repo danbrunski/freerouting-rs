@@ -56,9 +56,8 @@
 //! `freerouting-ripup` (A10.5), `freerouting-passes` (A10.3),
 //! `freerouting-unrouted-report` (A10.7), `freerouting-connection` (A11.1),
 //! `freerouting-plane-taps` and `freerouting-neck-down` (A11.2);
-//! `freerouting-fanout` (A12.3); `freerouting-optimizer` (O06) is
-//! registered as a [`NotPorted`] placeholder until that checklist replaces
-//! the factory. The registry, the selection and the placeholders are in the
+//! `freerouting-fanout` (A12.3); `freerouting-optimizer` (O06,
+//! `optimize::batch::FreeroutingOptimizer`). The registry, the selection and the placeholders are in the
 //! `registry` submodule (`stages/registry.rs`), re-exported here.
 
 use std::collections::BTreeSet;
@@ -360,12 +359,22 @@ pub struct FanoutSummary {
     pub timed_out: bool,
 }
 
-/// What an optimizer run reports (O06 extends it).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+/// What an optimizer run reports.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct OptimizerSummary {
     /// Passes completed.
     pub passes: u32,
+    /// Passes the gate accepted (O06).
+    pub accepted_passes: u32,
+    /// Items attempted (Java `totalItemsOptimized`, O06).
+    pub items: u32,
+    /// True if a preflight guard skipped the stage (O06).
+    pub bypassed: bool,
+    /// True if the incumbent was restored at the end (O06).
+    pub restored_best: bool,
+    /// Java's job log lines of the stage, in order (O06).
+    pub log: Vec<crate::job::LogLine>,
 }
 
 /// Where a [`BoardStage`] runs.

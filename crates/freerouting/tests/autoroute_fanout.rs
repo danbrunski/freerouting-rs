@@ -15,9 +15,9 @@
 //! `fixtures.Dac2020Bm11FanoutTraceTest` and
 //! `fixtures.WorkLimitDeterminismTest`. A job here is A13's `run_pipeline`
 //! (the fanout stage, the batch loop with its restores, the optimizer when
-//! on). Not ported: `Issue952FanoutIgnoredNetClassTest`
-//! cases 5 and 6 (the optimizer's candidate filter, O06) and
-//! `Dac2020Bm11FanoutTraceTest.dac2020Bm11FanoutEscapeRate` (the same run and
+//! on). `Issue952FanoutIgnoredNetClassTest` cases 5 and 6 (the
+//! optimizer's candidate filter) are in `tests/batch_optimizer.rs` (O06).
+//! Not ported: `Dac2020Bm11FanoutTraceTest.dac2020Bm11FanoutEscapeRate` (the same run and
 //! bound as `dac2020Bm11FanoutTrace`, plus a print).
 
 mod autoroute_common;

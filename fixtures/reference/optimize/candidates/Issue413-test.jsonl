@@ -1,0 +1,2 @@
+{"kind":"optimize-candidates","board":"Issue413-test","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"order","ses":"fixtures/reference/route/Issue413-test.ses","count":12,"ids":[54,53,64,55,63,65,39,66,38,67,40,50]}

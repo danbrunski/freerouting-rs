@@ -432,6 +432,34 @@ methods of `io.specctra.parser`; tests `tests/dsn_writer.rs`, `tests/dsn_round_t
   `ViaOptimizer.optViaLocation` throws an `ArrayIndexOutOfBoundsException`
   (`short_trace_costs_leave_a_via_between_traces`). The router always passes one entry per layer.
 
+**Batch optimizer** (`optimize::batch`, O06; tests `tests/batch_optimizer.rs`,
+`tests/reference_optimize.rs`)
+- Determinism: every candidate is rerouted on a fresh copy of the pass baseline
+  (`snapshot.restore()` plus the transient reset, which is `deep_copy`), and results are
+  merged in candidate order. Java reuses one worker board per thread (`WorkerBoardState`),
+  whose undo restores neither the id generator nor the trace half-width bounds nor the
+  ledger, so its result depends on the thread count and the scheduling; the port's does not
+  (`optimizer_is_thread_count_independent`, `chunk_size_does_not_change_results`,
+  `candidate_copy_equals_deep_copy`). Compared with Java on aggregates until Java's worker
+  fix is pinned (`fixtures/reference/optimize/`, O06.7).
+- Stops a candidate requests: when a candidate's inner autorouter reaches
+  `autorouter.max_items` it requests a full stop (Java `AutoroutePassRunner`
+  `requestStop` on the shared job thread, which the candidates running at that moment on
+  other threads see too). The port gives each candidate its own stop token, relays the job's
+  stops to it, and applies a stop a candidate requested in candidate order: the later
+  candidates of the chunk are skipped, as single-threaded Java would
+  (`cross_thread_optimization_produces_identical_results`).
+- Time: Java forces a candidate to "not improved" once the optimizer deadline has passed
+  (`optRouteItemOnBoard`); the port reads no clock there. `optimizer.timeout` is armed by the
+  pipeline as a full stop (`StopLevel::All`), checked before each pass and each chunk, and
+  the pass it lands in adopts no unfinished winner (`optimizer_timeout_is_a_full_stop`).
+- Java bugs kept on purpose (`optimize::batch` module docs): a first pass without a winner,
+  or whose winner has an `improvement_percentage` of 0 (`ItemRouteResult`'s integer
+  division), clears the increased ripup costs inside the pass, so the loop stops after one
+  pass (`first_pass_without_winner_stops`); the candidate order skips every item whose key
+  equals an earlier one for the whole pass (`equal_key_skips_rest_of_pass`); an improvement
+  threshold in (0, 0.1) is multiplied by 100.
+
 **Autoroute room graph** (`autoroute::session`, A02; tests `tests/autoroute_probe_start_rooms.rs` and
 `autoroute::session::tests`)
 - Any-angle room graph (`autoroute::session::neighbours_any`, A07.4): a neighbour that touches

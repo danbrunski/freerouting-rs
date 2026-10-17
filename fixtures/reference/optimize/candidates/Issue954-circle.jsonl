@@ -1,0 +1,5 @@
+{"kind":"optimize-candidates","board":"Issue954-circle","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"order","ses":"fixtures/reference/route/Issue954-circle.ses","count":2,"ids":[9,8]}
+{"stage":"items","baseline":"0x4115c95400000000","count":2}
+{"item":9,"improved":true,"viasBefore":3,"viasAfter":0,"lengthBefore":"0x4115c95400000000","lengthAfter":"0x0000000000000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3f800000","hash":"ac16ccebc0e9d98ef3b4610db7e95905"}
+{"item":8,"improved":true,"viasBefore":3,"viasAfter":2,"lengthBefore":"0x4115c95400000000","lengthAfter":"0x4113ce29e0000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3f0ba3b3","hash":"b45cf898c1a1b03d5b4b4d81eed9a7d7"}

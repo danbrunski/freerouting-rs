@@ -1,0 +1,173 @@
+(session "Issue508-SMD-routing-issue-demo"
+  (base_design "Issue508-SMD-routing-issue-demo")
+  (placement
+    (resolution um 10)
+    (component "MiniQFN-6"
+      (place U1 750000.0 -450000.0 front 0)
+    )
+    (component "0603"
+      (place R1 200000.0 -350000.0 front 0)
+      (place R2 1300000.0 -350000.0 front 0)
+      (place R3 200000.0 -550000.0 front 0)
+      (place R4 1300000.0 -550000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "freerouting-test")
+      (host_version "1.0")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle Top 6000 0 0)
+        )
+        (shape
+          (circle Bottom 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net "NET_CROSS_A"
+        (wire
+          (path Top 2000
+            1308500 -350000
+            1308500 -341983
+          )
+        )
+        (wire
+          (path Top 2000
+            1308500 -341983
+            824017 -341983
+            739090 -426910
+          )
+        )
+        (wire
+          (path Top 1500
+            739090 -426910
+            726767 -439233
+            726767 -446000
+          )
+        )
+        (wire
+          (path Top 1500
+            720000 -446000
+            726767 -446000
+          )
+        )
+      )
+      (net "NET_CROSS_B"
+        (via "Via[0-1]_600:300_um" 745650.0 -446000.0
+        )
+        (wire
+          (path Top 1500
+            780000 -446000
+            773233 -446000
+          )
+        )
+        (wire
+          (path Top 2000
+            191500 -350000
+            191500 -341983
+          )
+        )
+        (via "Via[0-1]_600:300_um" 641633.0 -341983.0
+        )
+        (wire
+          (path Top 2000
+            641633 -341983
+            191500 -341983
+          )
+        )
+        (wire
+          (path Bottom 2000
+            745650 -446000
+            641633 -341983
+          )
+        )
+        (wire
+          (path Top 1500
+            773233 -446000
+            745650 -446000
+          )
+        )
+      )
+      (net "NET_LOCAL_LEFT_MID"
+        (wire
+          (path Top 2000
+            208500 -350000
+            208500 -358017
+          )
+        )
+        (wire
+          (path Top 1500
+            569653 -450000
+            720000 -450000
+          )
+        )
+        (wire
+          (path Top 2000
+            208500 -358017
+            300483 -450000
+            569653 -450000
+          )
+        )
+      )
+      (net "NET_LOCAL_LEFT_BOT"
+        (wire
+          (path Top 2000
+            208500 -550000
+            624000 -550000
+            718733 -455267
+          )
+        )
+        (wire
+          (path Top 1500
+            718733 -455267
+            720000 -454000
+          )
+        )
+      )
+      (net "NET_LOCAL_RIGHT_MID"
+        (wire
+          (path Top 2000
+            1291500 -350000
+            1291500 -358017
+          )
+        )
+        (wire
+          (path Top 1500
+            787019 -450000
+            780000 -450000
+          )
+        )
+        (wire
+          (path Top 2000
+            1291500 -358017
+            1199517 -450000
+            787019 -450000
+          )
+        )
+      )
+      (net "NET_LOCAL_RIGHT_BOT"
+        (wire
+          (path Top 2000
+            1291500 -550000
+            876000 -550000
+            781267 -455267
+          )
+        )
+        (wire
+          (path Top 1500
+            781267 -455267
+            780000 -454000
+          )
+        )
+      )
+    )
+  )
+)

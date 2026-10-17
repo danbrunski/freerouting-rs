@@ -18,7 +18,10 @@
 //! 4. the optimizer stage of the registry (`runOptimizationStage`,
 //!    `:130-142`) when `optimizer.enabled` and no **full** stop was
 //!    requested: it runs after a router-only stop (max passes, stagnation)
-//!    and not after `max_items`, a timeout or a cancel;
+//!    and not after `max_items`, a timeout or a cancel. The
+//!    `optimizer.timeout` limit is armed when the stage starts, as a full
+//!    stop ([`StopLevel::All`]), and disarmed when it ends; the stage's log
+//!    lines go into the job log;
 //! 5. [`RouterEvents::finished`] hands the board to the listener by move;
 //!    with no listener the board comes back in [`PipelineOutcome::board`].
 //!
@@ -266,7 +269,18 @@ pub fn run_pipeline_with(
         events: job.events,
     };
     if settings.run_optimizer() && !cancel.is_stop_requested() {
-        outcome.optimizer = Some(pipeline.optimizer.run(&mut board, &mut ctx));
+        // C07.8 / O06: `optimizer.timeout` counts from the start of the
+        // stage and only requests a full stop.
+        let deadline = settings
+            .deadlines()
+            .optimizer
+            .map(|limit| watcher.arm(limit, StopLevel::All));
+        let summary = pipeline.optimizer.run(&mut board, &mut ctx);
+        if let Some(id) = deadline {
+            watcher.disarm(id);
+        }
+        log.extend(summary.log.iter().cloned());
+        outcome.optimizer = Some(summary);
     }
     for stage in pipeline.board_stages.iter_mut() {
         if stage.phase() == StagePhase::AfterOptimizer {

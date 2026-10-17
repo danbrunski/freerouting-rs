@@ -132,7 +132,13 @@ fn a_routed_run_writes_every_key() {
         Some(pass_lines as i64)
     );
     assert!(member(autorouter, "before").is_some_and(|v| *v != JsonValue::Null));
-    assert!(member(autorouter, "after").is_some_and(|v| *v != JsonValue::Null));
+    // The final board's snapshot is the optimizer's `after` once the
+    // optimizer ran (O06), else the autorouter's (DIVERGENCES, C08).
+    let optimizer = member(phases, "optimizer").unwrap();
+    let optimizer_ran =
+        member(optimizer, "passes_completed").is_some_and(|v| *v != JsonValue::Null);
+    let final_phase = if optimizer_ran { optimizer } else { autorouter };
+    assert!(member(final_phase, "after").is_some_and(|v| *v != JsonValue::Null));
 
     // The statistics have Java's keys: the same key tree as the reference
     // load dump of the same board (a routed board has the same shape).

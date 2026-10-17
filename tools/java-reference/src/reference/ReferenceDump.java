@@ -484,7 +484,8 @@ public final class ReferenceDump {
   /** The C01 modes. Kept in one nested class so edits to the older modes never touch it. */
   static final class ExtraModes {
 
-    static final Set<String> MODES = Set.of("settings", "argv", "ses", "dsn", "rules", "clirun");
+    static final Set<String> MODES =
+        Set.of("settings", "argv", "ses", "dsn", "rules", "clirun", "optimize");
 
     /** Plain Gson: full-precision doubles, nulls kept (GsonProvider.GSON rounds to 2 decimals). */
     static final Gson PLAIN = new GsonBuilder().serializeNulls().create();
@@ -506,6 +507,7 @@ public final class ReferenceDump {
                 fixtures,
                 out,
                 args.length > 4 ? args[4] : null);
+        case "optimize" -> OptimizeMode.run(fixtures, out, extra);
         default -> boardModes(mode, fixtures, out, extra);
       }
     }
@@ -1588,6 +1590,136 @@ public final class ReferenceDump {
 
     static String normalizeStageLine(String line) {
       return line.replaceAll("[0-9]+(\\.[0-9]+)?", "<t>");
+    }
+  }
+
+  /**
+   * Mode {@code optimize} (O06.7): the batch optimizer on fully routed boards.
+   *
+   * <pre>ReferenceDump optimize FIXTURES_DIR OUT_DIR [NAME_FILTER|-]</pre>
+   *
+   * <p>For each of {@link #BOARDS}: the board loads as the routing job does ({@code
+   * ExtraModes.prepare} with the default settings), the Java-routed session is imported with
+   * {@code SesReader} and every trace and via is unfixed ({@code SesReader} imports them user
+   * fixed, and a user-fixed item is never a candidate). Then {@code
+   * BatchOptimizer.create(job).runBatchLoop()} runs with {@code max_passes = 3}, {@code max_items
+   * = 200}, SEQUENTIAL, no timeout and a no-op {@code job.thread}, once with {@code max_threads =
+   * 1} and once with 7. Writes {@code optimize/<board>.t1.ses}, {@code <board>.t7.ses} and
+   * {@code <board>.json}: per run the statistics at the start of each pass (the pass's first
+   * board-updated event; later ones are throttled by the clock), the final statistics, the
+   * optimizer ranking score, the router score and the run time; the pin, the JDK and whether
+   * the pin has Java's worker fix (it doesn't: worker boards are reused, so t1 and t7 may differ).
+   */
+  static final class OptimizeMode {
+    /** Board (below fixtures/, without .dsn) and its routed session (below fixtures/). */
+    static final String[][] BOARDS = {
+      {"Issue508-DAC2020_bm08", "Issue508-DAC2020_bm08-routed.ses"},
+      {"Issue026-J2_reference", "reference/route/Issue026-J2_reference.ses"},
+      {"Issue508-DAC2020_bm05", "reference/route/Issue508-DAC2020_bm05.ses"},
+      {"Issue954-circle", "reference/route/Issue954-circle.ses"},
+      {"Issue508-SMD-routing-issue-demo", "reference/route/Issue508-SMD-routing-issue-demo.ses"},
+      {
+        "Issue269-min_fr_test/min_fr_test_no_quotes",
+        "reference/route/Issue269-min_fr_test/min_fr_test_no_quotes.ses"
+      },
+    };
+
+    static final int[] THREADS = {1, 7};
+
+    private OptimizeMode() {}
+
+    static void run(Path fixtures, Path out, String filter) throws Exception {
+      for (String[] b : BOARDS) {
+        if (filter != null && !filter.equals("-") && !b[0].contains(filter)) {
+          continue;
+        }
+        System.out.println("optimize: " + b[0]);
+        JsonObject result = new JsonObject();
+        result.addProperty("board", b[0]);
+        result.addProperty("session", b[1]);
+        result.addProperty("javaCommit", app.freerouting.constants.Constants.FREEROUTING_VERSION);
+        result.addProperty("jdk", System.getProperty("java.version"));
+        result.addProperty("workerFix", false);
+        result.addProperty("maxPasses", 3);
+        result.addProperty("maxItems", 200);
+        result.addProperty("strategy", "SEQUENTIAL");
+        JsonObject runs = new JsonObject();
+        for (int threads : THREADS) {
+          Path ses = out.resolve("optimize").resolve(b[0] + ".t" + threads + ".ses");
+          runs.add("t" + threads, runOnce(fixtures, b, threads, ses));
+        }
+        result.add("runs", runs);
+        Path target = out.resolve("optimize").resolve(b[0] + ".json");
+        Files.createDirectories(target.getParent());
+        Files.writeString(target, GSON.toJson(result) + "\n", StandardCharsets.UTF_8);
+      }
+    }
+
+    private static JsonObject runOnce(Path fixtures, String[] b, int threads, Path sesOut)
+        throws Exception {
+      ExtraModes.Prep p =
+          ExtraModes.prepare(fixtures.resolve(b[0] + ".dsn"), ExtraModes.protoDefault());
+      if (p.failure != null) {
+        return p.failure;
+      }
+      try (InputStream in = new FileInputStream(fixtures.resolve(b[1]).toFile())) {
+        SesReader.read(in, p.board);
+      }
+      for (app.freerouting.board.model.items.Item item : p.board.getItems()) {
+        if (item instanceof app.freerouting.board.model.items.Trace
+            || item instanceof app.freerouting.board.model.items.Via) {
+          item.unfix();
+        }
+      }
+      RouterSettings settings = p.job.routerSettings;
+      settings.optimizer.enabled = true;
+      settings.optimizer.maxPasses = 3;
+      settings.optimizer.maxItems = 200;
+      settings.optimizer.maxThreads = threads;
+      settings.optimizer.itemSelectionStrategy =
+          app.freerouting.autoroute.ItemSelectionStrategy.SEQUENTIAL;
+      settings.optimizer.timeoutString = null;
+      p.job.thread = new NoOpThread();
+      JsonObject run = new JsonObject();
+      BoardStatistics before = p.board.getStatistics();
+      run.add("before", statistics(before));
+      run.addProperty("optimizerScoreBefore", before.getOptimizerRankingScore(settings));
+      app.freerouting.autoroute.pipeline.BatchOptimizer optimizer =
+          app.freerouting.autoroute.pipeline.BatchOptimizer.create(p.job);
+      Map<Integer, JsonObject> passes = new TreeMap<>();
+      optimizer.addBoardUpdatedEventListener(
+          e -> {
+            if (e.getRouterCounters() != null
+                && !passes.containsKey(e.getRouterCounters().passCount)) {
+              JsonObject pass = new JsonObject();
+              pass.addProperty("pass", e.getRouterCounters().passCount);
+              pass.add("statistics", statistics(e.getBoardStatistics()));
+              passes.put(e.getRouterCounters().passCount, pass);
+            }
+          });
+      long start = System.nanoTime();
+      optimizer.runBatchLoop();
+      run.addProperty("optimizeMillis", (System.nanoTime() - start) / 1_000_000);
+      JsonArray passList = new JsonArray();
+      passes.values().forEach(passList::add);
+      run.add("passStarts", passList);
+      RoutingBoard board = p.job.board;
+      BoardStatistics after = board.getStatistics();
+      run.add("statistics", statistics(after));
+      run.addProperty("optimizerScore", after.getOptimizerRankingScore(settings));
+      run.addProperty("routerScore", after.getRouterScore(settings));
+      run.addProperty("hash", board.getHash());
+      ByteArrayOutputStream ses = new ByteArrayOutputStream();
+      SesWriter.write(board, ses, p.name);
+      Files.createDirectories(sesOut.getParent());
+      Files.write(sesOut, ses.toByteArray());
+      return run;
+    }
+
+    /** A stop thread nothing stops ({@code BatchOptimizerDeterminismTest.NoOpStoppableThread}). */
+    static final class NoOpThread extends app.freerouting.core.StoppableThread {
+      @Override
+      protected void threadAction() {}
     }
   }
 }

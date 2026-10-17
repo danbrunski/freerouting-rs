@@ -27,7 +27,7 @@ after the A series, because it reroutes items with the batch autorouter.
 | [O03](archive/O03-shove-checks.md) ✅ | Shove checks without item changes: entry sides, `ShapeTraceEntries` (incl. cutouts), `TraceShover.check` (both), spring-over, drill/pad/via checks, `check_forced_trace_polyline` | L / high | B01 (incl. B01.6 ledger, B01.8 shove-failing state), B02 (incl. B02.6 `reuse_entries_after_cutout`), B04; J01 for O03.7's limit probe only |
 | [O04](archive/O04-shove-insert.md) ✅ | Shove insert: `TraceShover.insert`, drill moves, forced pads and vias, `insert_forced_trace_polyline/segment`, `forced_via`, `move_drill_item`; `Issue954CircularKeepoutInsertionTest` | L / high | O01, O03, B05; O02 for the any-angle cases of O04.6 |
 | [O05](archive/O05-via-optimizer.md) ✅ | `ViaOptimizer` and the full `opt_changed_area` with trace costs | M / medium | O04, A01 (`ExpansionCostFactor`) |
-| [O06](O06-batch-optimizer.md) | Deterministic parallel batch optimizer, ordered merge, Java-identical candidate order and gates; `optimize` reference mode | L / high | O05, A08, A10, A11, B01, B06, C02, C05 |
+| [O06](archive/O06-batch-optimizer.md) ✅ | Deterministic parallel batch optimizer, ordered merge, Java-identical candidate order and gates; `optimize` reference mode | L / high | O05, A08, A10, A11, B01, B06, C02, C05 |
 
 ## Order and critical path
 

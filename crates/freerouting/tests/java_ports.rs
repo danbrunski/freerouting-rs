@@ -1734,3 +1734,228 @@ mod board_actions_component_item_transform {
         assert_eq!(board.normal_contacts(ids[0]).len(), 1);
     }
 }
+
+/// `autoroute.pipeline.BatchOptimizerCandidateGateTest` (all 6),
+/// `fixtures.BatchOptimizerPreflightGuardsTest` (13 of 14) and the board-free case of
+/// `autoroute.pipeline.BatchOptimizerTraceMetricTest` (O06.1, O06.3): the optimizer's gates on
+/// plain figures (`optimize::batch::guards`). Java's guard tests build a job on the routed bm08
+/// only to call `evaluatePreFlightGuards` with hand-made statistics (its `getOptimizerScore`
+/// overridden), and mock the vias of `areAllViasMandatoryLayerTransitions`; both port as plain
+/// values. Ported elsewhere: `runBatchLoopSetsManifestSnapshotsAndZeroPassesWhenBypassed` and
+/// the two board cases of `BatchOptimizerTraceMetricTest` (they run the optimizer on a board)
+/// in `tests/batch_optimizer.rs`. Not ported: `BatchOptimizerFactoryTest` (Java's three
+/// factory methods return the same class; the port has one stage factory, checked by
+/// `registry_resolves_the_optimizer` there).
+mod autoroute_pipeline_batch_optimizer_gates {
+    use freerouting::autoroute::item_route_result::ItemRouteResult;
+    use freerouting::board::items::ItemId;
+    use freerouting::optimize::batch::guards::{
+        BypassReason, ContactKind, GateFigures, GuardFigures, RejectionReason, ViaContacts,
+        all_vias_mandatory_layer_transitions, candidate_rejection_reason,
+        evaluate_preflight_guards, pass_improvement_percent,
+    };
+
+    fn gate(incomplete: usize, violations: usize, score: f32) -> GateFigures {
+        GateFigures {
+            incomplete,
+            violations,
+            score,
+        }
+    }
+
+    #[test]
+    fn connectivity_regression_vetoes_higher_optimizer_score() {
+        let reason = candidate_rejection_reason(&gate(0, 0, 500.0), &gate(1, 0, 900.0));
+        assert_eq!(reason, Some(RejectionReason::ConnectivityRegression));
+        assert_eq!(reason.unwrap().as_str(), "CONNECTIVITY_REGRESSION");
+    }
+
+    #[test]
+    fn clearance_regression_vetoes_higher_optimizer_score() {
+        let reason = candidate_rejection_reason(&gate(0, 0, 500.0), &gate(0, 1, 900.0));
+        assert_eq!(reason.unwrap().as_str(), "DRC_COUNT_REGRESSION");
+    }
+
+    #[test]
+    fn more_complete_uglier_candidate_is_rejected() {
+        let reason = candidate_rejection_reason(&gate(1, 0, 500.0), &gate(0, 0, 400.0));
+        assert_eq!(reason.unwrap().as_str(), "OPTIMIZER_SCORE_NOT_IMPROVED");
+    }
+
+    #[test]
+    fn candidate_with_no_veto_and_higher_optimizer_score_is_accepted() {
+        assert_eq!(
+            candidate_rejection_reason(&gate(1, 1, 500.0), &gate(0, 0, 600.0)),
+            None
+        );
+    }
+
+    #[test]
+    fn candidate_better_than_an_incumbent_below_zero_is_accepted() {
+        assert_eq!(
+            candidate_rejection_reason(&gate(0, 0, -31.0), &gate(0, 0, -20.0)),
+            None
+        );
+    }
+
+    #[test]
+    fn pass_improvement_is_relative_to_the_score_magnitude() {
+        assert!((pass_improvement_percent(500.0, 550.0) - 10.0).abs() < 0.001);
+        assert!((pass_improvement_percent(-40.0, -20.0) - 50.0).abs() < 0.001);
+        assert!((pass_improvement_percent(-20.0, -30.0) + 50.0).abs() < 0.001);
+        assert!((pass_improvement_percent(0.0, 5.0) - 0.0).abs() < 0.001);
+    }
+
+    /// Java's `new BoardStatistics()` with the fields a test sets.
+    fn figures(incomplete: usize, vias: usize, score: f32) -> GuardFigures {
+        GuardFigures {
+            incomplete,
+            via_count: vias,
+            optimizer_score: score,
+            ..GuardFigures::default()
+        }
+    }
+
+    fn guards(f: &GuardFigures) -> Option<String> {
+        evaluate_preflight_guards(f, true, || false).map(|r| r.to_string())
+    }
+
+    #[test]
+    fn guard1_bypasses_optimizer_when_board_has_incompletes() {
+        let reason = guards(&figures(5, 10, 0.0)).unwrap();
+        assert!(reason.contains("unrouted connection(s)"), "{reason}");
+    }
+
+    #[test]
+    fn guard2_bypasses_optimizer_when_board_has_zero_vias_and_high_optimizer_score() {
+        let reason = guards(&figures(0, 0, 960.0)).unwrap();
+        assert!(reason.contains("no vias to eliminate"), "{reason}");
+        assert!(reason.contains("950.00"), "{reason}");
+    }
+
+    #[test]
+    fn guard2_bypasses_optimizer_when_board_has_zero_vias_and_trace_length_near_bound() {
+        let mut f = figures(0, 0, 900.0);
+        f.min_trace_length_mm = Some(100.0);
+        f.total_length_mm = Some(104.0);
+        let reason = guards(&f).unwrap();
+        assert!(
+            reason.contains("within 5% of theoretical minimum"),
+            "{reason}"
+        );
+    }
+
+    #[test]
+    fn guard2_does_not_bypass_when_zero_vias_but_trace_length_suboptimal() {
+        let mut f = figures(0, 0, 800.0);
+        f.min_trace_length_mm = Some(100.0);
+        f.total_length_mm = Some(130.0);
+        assert_eq!(guards(&f), None);
+    }
+
+    #[test]
+    fn guard3_bypasses_optimizer_when_score_at_or_above_ceiling() {
+        let reason = guards(&figures(0, 10, 996.5)).unwrap();
+        assert!(reason.contains("995.00"), "{reason}");
+        assert_eq!(
+            evaluate_preflight_guards(&figures(0, 10, 996.5), true, || false),
+            Some(BypassReason::ScoreCeiling(996.5))
+        );
+    }
+
+    #[test]
+    fn guard3_bypasses_optimizer_when_trace_length_within_2_percent_of_theoretical_min() {
+        let mut f = figures(0, 10, 900.0);
+        f.min_trace_length_mm = Some(100.0);
+        f.min_via_count = Some(10);
+        f.total_length_mm = Some(101.5);
+        let reason = guards(&f).unwrap();
+        assert!(reason.contains("theoretical minimum"), "{reason}");
+    }
+
+    #[test]
+    fn guard3_does_not_bypass_when_trace_length_near_bound_but_excess_vias_remain() {
+        let mut f = figures(0, 10, 900.0);
+        f.min_trace_length_mm = Some(100.0);
+        f.min_via_count = Some(2);
+        f.total_length_mm = Some(101.5);
+        assert_eq!(guards(&f), None);
+    }
+
+    #[test]
+    fn guards_can_be_disabled_via_settings() {
+        assert_eq!(
+            evaluate_preflight_guards(&figures(5, 0, 0.0), false, || true),
+            None
+        );
+    }
+
+    #[test]
+    fn guard4_reports_mandatory_vias_last() {
+        assert_eq!(
+            evaluate_preflight_guards(&figures(0, 1, 100.0), true, || true),
+            Some(BypassReason::MandatoryVias)
+        );
+    }
+
+    fn smd(layer: i32) -> ContactKind {
+        ContactKind::Pin {
+            first_layer: layer,
+            last_layer: layer,
+        }
+    }
+
+    fn via(connected: Vec<ContactKind>) -> ViaContacts {
+        ViaContacts {
+            user_fixed: false,
+            net_count: 1,
+            connected,
+        }
+    }
+
+    #[test]
+    fn are_all_vias_mandatory_layer_transitions_returns_false_when_no_vias() {
+        assert!(!all_vias_mandatory_layer_transitions(&[]));
+    }
+
+    #[test]
+    fn are_all_vias_mandatory_layer_transitions_returns_true_for_single_via_across_smd_layers() {
+        let v = via(vec![ContactKind::SameVia, smd(0), smd(1)]);
+        assert!(all_vias_mandatory_layer_transitions(&[v]));
+    }
+
+    #[test]
+    fn are_all_vias_mandatory_layer_transitions_returns_false_when_smd_pins_on_same_layer() {
+        let v = via(vec![ContactKind::SameVia, smd(0), smd(0)]);
+        assert!(!all_vias_mandatory_layer_transitions(&[v]));
+    }
+
+    #[test]
+    fn are_all_vias_mandatory_layer_transitions_returns_false_when_multiple_vias_in_component() {
+        let v = via(vec![
+            ContactKind::SameVia,
+            ContactKind::OtherVia,
+            smd(0),
+            smd(1),
+        ]);
+        assert!(!all_vias_mandatory_layer_transitions(&[v]));
+    }
+
+    #[test]
+    fn are_all_vias_mandatory_layer_transitions_returns_false_when_connected_to_through_hole_pin() {
+        let through_hole = ContactKind::Pin {
+            first_layer: 0,
+            last_layer: 3,
+        };
+        let v = via(vec![ContactKind::SameVia, through_hole, smd(1)]);
+        assert!(!all_vias_mandatory_layer_transitions(&[v]));
+    }
+
+    /// `BatchOptimizerTraceMetricTest.traceOnlyImprovementIsAcceptedWhenCanonicalMetricDecreases`.
+    #[test]
+    fn trace_only_improvement_is_accepted_when_canonical_metric_decreases() {
+        let result = ItemRouteResult::new(ItemId(1), 2, 2, 100.0, 90.0, 0, 0);
+        assert!(result.improved());
+        assert!((result.length_reduced() - 10.0).abs() < 0.001);
+    }
+}

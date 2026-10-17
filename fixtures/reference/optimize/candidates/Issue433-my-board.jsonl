@@ -1,0 +1,2 @@
+{"kind":"optimize-candidates","board":"Issue433-my-board","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"order","ses":"fixtures/reference/route/Issue433-my-board.ses","count":23,"ids":[59,53,58,52,60,55,34,47,54,48,49,38,45,44,42,62,61,43,41,40,64,39,63]}

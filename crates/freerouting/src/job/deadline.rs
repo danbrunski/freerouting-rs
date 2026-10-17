@@ -15,8 +15,8 @@
 //! start of their stage, so the pipeline arms them when the stage starts
 //! (`Watcher::arm`): the fanout limit with [`StopLevel::Router`], the
 //! optimizer limit with [`StopLevel::All`]. The pipeline reads the fanout
-//! limit itself (`FanoutRun::new`); the optimizer stage is a placeholder
-//! until O06, which arms its limit then.
+//! limit itself (`FanoutRun::new`) and arms the optimizer limit around the
+//! optimizer stage (O06).
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};

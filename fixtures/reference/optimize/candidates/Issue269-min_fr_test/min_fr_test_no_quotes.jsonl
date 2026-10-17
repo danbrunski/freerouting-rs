@@ -1,0 +1,11 @@
+{"kind":"optimize-candidates","board":"Issue269-min_fr_test/min_fr_test_no_quotes","javaCommit":"a773a70ec","jdk":"25.0.2","format":1}
+{"stage":"order","ses":"fixtures/reference/route/Issue269-min_fr_test/min_fr_test_no_quotes.ses","count":8,"ids":[48,49,40,41,51,44,43,50]}
+{"stage":"items","baseline":"0x4122a48d00000000","count":8}
+{"item":48,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4121436c80000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3d1788b8","hash":"337a4ba84520ef750f461865ace96aba"}
+{"item":49,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4121436c80000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3d1788b8","hash":"337a4ba84520ef750f461865ace96aba"}
+{"item":40,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4122385e60000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3c39b157","hash":"5849daddd18174cdfce97f87384b67bb"}
+{"item":41,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4122385e60000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3c39b157","hash":"5849daddd18174cdfce97f87384b67bb"}
+{"item":51,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4121436c80000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3d1788b8","hash":"337a4ba84520ef750f461865ace96aba"}
+{"item":44,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4122974ba0000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3ab6055a","hash":"6c35e75474379e264374cab8e06cdbdd"}
+{"item":43,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4122974ba0000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3ab6055a","hash":"6c35e75474379e264374cab8e06cdbdd"}
+{"item":50,"improved":true,"viasBefore":4,"viasAfter":4,"lengthBefore":"0x4122a48d00000000","lengthAfter":"0x4121436c80000000","incompleteBefore":0,"incompleteAfter":0,"percent":"3d1788b8","hash":"337a4ba84520ef750f461865ace96aba"}

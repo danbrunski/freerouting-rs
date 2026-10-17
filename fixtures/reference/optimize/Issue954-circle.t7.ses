@@ -1,0 +1,29 @@
+(session "Issue954-circle"
+  (base_design "Issue954-circle")
+  (placement
+    (resolution um 10)
+    (component "physical_hole"
+      (place P0 100000.0 -100000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+    )
+    (library_out 
+      (padstack Via560
+        (shape
+          (circle F.Cu 5600 0 0)
+        )
+        (shape
+          (circle B.Cu 5600 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+    )
+  )
+)
