@@ -20,7 +20,7 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 | [K05](archive/K05-kicad-pcb-board-structure.md) ✅ | Layers, nets and net classes (`.kicad_pro`), board outline, footprints and pads, as a DSN syntax tree | L / medium | K04 |
 | [K06](archive/K06-kicad-pcb-rule-areas-and-copper.md) ✅ | Rule areas to keepout kinds, zones, tracks and arcs, vias | M / medium | K05 |
 | [K07](archive/K07-kicad-pcb-entry-points-and-parity.md) ✅ | `.kicad_pcb` opens in the CLI and the GUI; parity against KiCad's DSN export on the corpus; `.kicad_dru` subset; the coordinate-frame check | M / medium | K06; C07 (CLI `-de`); G01 (GUI `Session`) |
-| [K08](K08-kicad-pcb-writer.md) | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG | M / medium | K07, C05; Dan's go-ahead (question 5) |
+| [K08](archive/K08-kicad-pcb-writer.md) ✅ | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG (`-do routed.kicad_pcb`; KiCad's DRC grades it like `ImportSpecctraSES` on three boards; K08.4 `[~]`: Dan to accept an `f32` sum-order difference in the round-trip statistics) | M / medium | K07, C05; Dan's go-ahead (question 5, given 2026-10-17) |
 
 The report's PLG-1 is K01, PLG-2 is K02, PLG-1.5 (PCM) grew into K03, and
 KIC-1 is split over K04–K07. KRT's proposed K01–K10 are folded in: its
@@ -40,7 +40,7 @@ K01–K03. Its numbering is not used.
   K07. They can run in parallel with anything. port-completion.md puts the
   importer outside "complete", so schedule them after K02 unless Dan wants
   them sooner. K01.2 already covers the rule-area lesson for exported DSNs.
-- **K08 only on Dan's go-ahead.**
+- **K08 only on Dan's go-ahead** (given 2026-10-17; done the same day).
 
 ## Parallel lanes and file ownership
 
@@ -177,7 +177,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
    plugin needs `ExportSpecctraDSN` and `ImportSpecctraSES`, which are SWIG
    calls. *Recommendation:* K01.5 records the facts; decide on K08 (direct
    writer) or an IPC-API plugin once KiCad 11's release date is known.
-   *Accepted by Dan 2026-10-15.*
+   *Accepted by Dan 2026-10-15.* Dan gave the go-ahead for K08 on 2026-10-17.
 6. **What the reader adds beyond KiCad's export.** KiCad's exporter writes
    non-default net classes in `std::unordered_map` order (not
    reproducible), turns placement-only rule areas into full keepouts, and

@@ -30,15 +30,39 @@
 //! [`ReadOptions::apply_design_rules`]; the default is off, because KiCad's
 //! DSN export ignores that file and applying it changes routing (K00
 //! question 7).
+//!
+//! # Writing the routed copper back (K08)
+//!
+//! [`write_kicad_board`] writes a routed board into a copy of the
+//! `.kicad_pcb` it was read from, without `ImportSpecctraSES`: it reads the
+//! input again ([`read_kicad_bytes`]: the copper index of
+//! [`freerouting_kicad::write`]), maps the board's traces and vias to KiCad
+//! layers, nets and via sizes ([`final_copper`]), diffs them against the
+//! file's copper by exact geometry in board units, cuts out what the board no
+//! longer has and adds the rest before the final `)`, with deterministic
+//! UUIDs. Every other byte stays as it was; zones are not refilled. It refuses
+//! to overwrite its input ([`same_file`]) and, with the hash recorded at read
+//! time ([`KicadInput::source`], [`write_kicad_board_checked`]), a file that
+//! changed since. The CLI's `-do routed.kicad_pcb` goes through
+//! [`render_kicad_board`].
 
 use std::path::{Path, PathBuf};
 
+use freerouting_geometry::jmath::round_to_i32;
 pub use freerouting_kicad as reader;
 pub use freerouting_kicad::dru::DruReport;
+use freerouting_kicad::legacy::Pt;
+pub use freerouting_kicad::write::WriteSummary;
+use freerouting_kicad::write::{
+    BPt, BoardFrame, CopperIndex, FinalItem, FinalTrace, FinalVia, fnv1a128,
+};
 pub use freerouting_kicad::{Extras, KicadError, ReadOptions, ReadReport};
 
 use super::specctra::{BoardReadResult, build_board, read_board};
+use crate::board::BasicBoard;
+use crate::board::items::ItemKind;
 use crate::dsn::ast::Pcb;
+use crate::io::CoordinateTransform;
 
 /// Which reader a design file name selects.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -75,9 +99,24 @@ pub struct KicadInput {
     pub project_file: Option<PathBuf>,
     /// The `<stem>.kicad_dru` that was read, if the file exists.
     pub rules_file: Option<PathBuf>,
+    /// The board file that was read.
+    pub board_file: PathBuf,
+    /// FNV-1a 128 of the board file's bytes as read; the writer refuses a
+    /// file that changed since (K08.4).
+    pub source_hash: u128,
+    /// The file's tracks and vias with their byte spans (K08.1).
+    pub copper_index: reader::write::CopperIndex,
 }
 
 impl KicadInput {
+    /// The board file and its hash, for [`write_kicad_board_checked`].
+    pub fn source(&self) -> KicadSource {
+        KicadSource {
+            path: self.board_file.clone(),
+            hash: self.source_hash,
+        }
+    }
+
     /// The read report as log lines: the rule areas, the counts, then one
     /// line per `.kicad_dru` rule constraint.
     pub fn report_lines(&self) -> Vec<String> {
@@ -136,7 +175,17 @@ pub fn read_kicad_input(path: &Path, options: ReadOptions) -> Result<KicadInput,
             path.display()
         ))
     })?;
-    let text = freerouting_kicad::sexpr::decode(&bytes)
+    read_kicad_bytes(path, &bytes, options)
+}
+
+/// [`read_kicad_input`] on bytes already read from `path` (the files next to
+/// it are read from disk).
+pub fn read_kicad_bytes(
+    path: &Path,
+    bytes: &[u8],
+    options: ReadOptions,
+) -> Result<KicadInput, KicadReadError> {
+    let text = freerouting_kicad::sexpr::decode(bytes)
         .map_err(|e| KicadReadError::Refused(e.to_string()))?;
     let pro_path = sibling(path, "kicad_pro");
     let dru_path = sibling(path, "kicad_dru");
@@ -157,6 +206,9 @@ pub fn read_kicad_input(path: &Path, options: ReadOptions) -> Result<KicadInput,
         extras: read.extras,
         project_file: pro.is_some().then_some(pro_path),
         rules_file: dru.is_some().then_some(dru_path),
+        board_file: path.to_path_buf(),
+        source_hash: reader::write::fnv1a128(bytes),
+        copper_index: read.copper_index,
     })
 }
 
@@ -242,4 +294,246 @@ pub fn read_design(path: &Path) -> Result<DesignRead, String> {
             }),
         },
     }
+}
+
+// ---- writing routed copper back (K08.4) ------------------------------------
+
+/// The `.kicad_pcb` a board was built from and the FNV-1a 128 of its bytes
+/// at that time ([`KicadInput::source`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KicadSource {
+    pub path: PathBuf,
+    pub hash: u128,
+}
+
+/// The board's coordinate transform as a [`BoardFrame`]: nanometres to board
+/// units exactly as the board builder maps the reader's tree (`um`, Y
+/// negated, then the transform and `round`), and back on the grid.
+struct TransformFrame {
+    transform: CoordinateTransform,
+    nm_per_unit: i64,
+}
+
+impl TransformFrame {
+    fn of(board: &BasicBoard) -> Result<TransformFrame, String> {
+        let transform = board.communication.coordinate_transform;
+        let scale = transform.scale_factor();
+        let nm_per_unit = (1000.0 / scale).round();
+        let origin = transform.dsn_to_board_point(0.0, 0.0);
+        if !(nm_per_unit >= 1.0 && nm_per_unit * scale == 1000.0)
+            || origin.x != 0.0
+            || origin.y != 0.0
+        {
+            return Err(format!(
+                "the board's resolution ({scale} units per DSN unit) is not the KiCad reader's \
+                 whole-nanometre grid"
+            ));
+        }
+        Ok(TransformFrame {
+            transform,
+            nm_per_unit: nm_per_unit as i64,
+        })
+    }
+}
+
+impl BoardFrame for TransformFrame {
+    fn to_board(&self, p: Pt) -> BPt {
+        let d = freerouting_kicad::units::map_pt(i64::from(p.0), i64::from(p.1));
+        let b = self.transform.dsn_to_board_point(d.x, d.y).round();
+        (i64::from(b.x), i64::from(b.y))
+    }
+    fn half_width(&self, width_nm: i32) -> i64 {
+        let um = freerouting_kicad::units::um(i64::from(width_nm));
+        i64::from(round_to_i32(self.transform.dsn_to_board(um / 2.0)))
+    }
+    fn to_nm(&self, b: BPt) -> Pt {
+        (
+            (b.0 * self.nm_per_unit) as i32,
+            (-b.1 * self.nm_per_unit) as i32,
+        )
+    }
+    fn length_nm(&self, units: i64) -> i64 {
+        units * self.nm_per_unit
+    }
+}
+
+/// The traces and vias of `board`, in its item order, in the terms of the
+/// file's copper index (KiCad layer positions, net codes, via sizes).
+pub fn final_copper(board: &BasicBoard, index: &CopperIndex) -> Result<Vec<FinalItem>, String> {
+    let layer_of = |l: i32| -> Result<usize, String> {
+        let name = usize::try_from(l)
+            .ok()
+            .and_then(|l| board.layer_structure.layers.get(l))
+            .map(|l| l.name.as_str())
+            .unwrap_or("");
+        index
+            .layer_of(name)
+            .ok_or_else(|| format!("board layer '{name}' is not a copper layer of the file"))
+    };
+    let codes: std::collections::BTreeMap<&str, u32> = index
+        .dsn_net_names
+        .iter()
+        .enumerate()
+        .rev()
+        .filter_map(|(code, name)| Some((name.as_deref()?, code as u32)))
+        .collect();
+    let mut out = Vec::new();
+    for item in board.items() {
+        let Some(&net_number) = item.net_numbers().first() else {
+            continue;
+        };
+        let name = board
+            .rules
+            .nets
+            .get(net_number)
+            .map(|n| n.name.as_str())
+            .unwrap_or("");
+        let net = match &item.kind {
+            ItemKind::Trace(_) | ItemKind::Via(_) => codes
+                .get(name)
+                .copied()
+                .ok_or_else(|| format!("net '{name}' is not a net of the file"))?,
+            _ => continue,
+        };
+        match &item.kind {
+            ItemKind::Trace(trace) => {
+                let corners = trace
+                    .polyline
+                    .corners()
+                    .iter()
+                    .map(|c| match c.as_int() {
+                        Some(p) => (i64::from(p.x), i64::from(p.y)),
+                        None => {
+                            let f = c.to_float();
+                            (i64::from(round_to_i32(f.x)), i64::from(round_to_i32(f.y)))
+                        }
+                    })
+                    .collect();
+                out.push(FinalItem::Trace(FinalTrace {
+                    layer: layer_of(trace.layer)?,
+                    net,
+                    half_width: i64::from(trace.half_width),
+                    corners,
+                }));
+            }
+            ItemKind::Via(via) => {
+                let padstack = board
+                    .library
+                    .padstacks
+                    .get(via.drill.padstack)
+                    .map(|p| p.name.as_str())
+                    .unwrap_or("");
+                let def = index.via_def(padstack).ok_or_else(|| {
+                    format!("via padstack '{padstack}' is not one the KiCad reader made")
+                })?;
+                out.push(FinalItem::Via(FinalVia {
+                    at: (i64::from(via.drill.center.x), i64::from(via.drill.center.y)),
+                    net,
+                    top: def.top,
+                    bottom: def.bottom,
+                    diameter: def.diameter,
+                    drill: def.drill,
+                }));
+            }
+            _ => {}
+        }
+    }
+    Ok(out)
+}
+
+/// Whether two paths name the same file (after canonicalization; a path that
+/// does not exist yet is compared by its canonical directory and name).
+pub fn same_file(a: &Path, b: &Path) -> bool {
+    fn canonical(p: &Path) -> Option<PathBuf> {
+        if let Ok(c) = std::fs::canonicalize(p) {
+            return Some(c);
+        }
+        let name = p.file_name()?;
+        let dir = match p.parent() {
+            Some(d) if !d.as_os_str().is_empty() => d,
+            _ => Path::new("."),
+        };
+        Some(std::fs::canonicalize(dir).ok()?.join(name))
+    }
+    match (canonical(a), canonical(b)) {
+        (Some(x), Some(y)) => x == y,
+        _ => a == b,
+    }
+}
+
+/// The text of `input_path` with the copper of `board` written into it
+/// (K08): the input is read again, its copper diffed against the board's,
+/// the removed blocks cut out and the new ones added before the final `)`.
+/// With `expected_hash`, a file whose bytes no longer hash to it is refused
+/// (it changed since the board was built).
+pub fn render_kicad_board(
+    input_path: &Path,
+    board: &BasicBoard,
+    expected_hash: Option<u128>,
+) -> Result<(String, WriteSummary), String> {
+    let bytes = std::fs::read(input_path).map_err(|e| {
+        format!(
+            "Couldn't load the input file '{}': {e}",
+            input_path.display()
+        )
+    })?;
+    let hash = fnv1a128(&bytes);
+    if expected_hash.is_some_and(|h| h != hash) {
+        return Err(format!(
+            "'{}' changed since the board was read; read it again before writing",
+            input_path.display()
+        ));
+    }
+    let input =
+        read_kicad_bytes(input_path, &bytes, ReadOptions::default()).map_err(|e| e.to_string())?;
+    let index = &input.copper_index;
+    let frame = TransformFrame::of(board)?;
+    let items = final_copper(board, index)?;
+    let diff = freerouting_kicad::write::diff(index, &items, &frame);
+    let text = freerouting_kicad::sexpr::decode(&bytes).map_err(|e| e.to_string())?;
+    freerouting_kicad::write::render(text, index, &diff, hash).map_err(|e| e.to_string())
+}
+
+/// [`write_kicad_board_checked`] without the change check.
+pub fn write_kicad_board(
+    input_path: &Path,
+    board: &BasicBoard,
+    out_path: &Path,
+) -> Result<WriteSummary, String> {
+    write_kicad_board_checked(input_path, board, out_path, None)
+}
+
+/// Writes the copper of `board` into a copy of `input_path` at `out_path`
+/// ([`render_kicad_board`]). Refuses an `out_path` that is the input; writes
+/// `.<name>.<pid>.tmp` next to `out_path` and renames it into place.
+pub fn write_kicad_board_checked(
+    input_path: &Path,
+    board: &BasicBoard,
+    out_path: &Path,
+    expected_hash: Option<u128>,
+) -> Result<WriteSummary, String> {
+    if same_file(input_path, out_path) {
+        return Err(format!(
+            "refusing to overwrite the input board '{}'; write to another file",
+            input_path.display()
+        ));
+    }
+    let (text, summary) = render_kicad_board(input_path, board, expected_hash)?;
+    let name = out_path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "board.kicad_pcb".to_owned());
+    let temp = out_path.with_file_name(format!(".{name}.{}.tmp", std::process::id()));
+    let io = |e: std::io::Error| {
+        format!(
+            "Couldn't save the output file '{}': {e}",
+            out_path.display()
+        )
+    };
+    std::fs::write(&temp, text.as_bytes()).map_err(io)?;
+    if let Err(e) = std::fs::rename(&temp, out_path) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(io(e));
+    }
+    Ok(summary)
 }

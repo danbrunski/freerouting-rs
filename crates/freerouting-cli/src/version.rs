@@ -119,7 +119,7 @@ pub fn capabilities() -> JsonValue {
         ("java_pin".to_string(), JsonValue::string(JAVA_PIN)),
         (
             "output_formats".to_string(),
-            strings([".ses", ".dsn", ".rules", ".drc", ".drc.json"]),
+            strings([".ses", ".dsn", ".rules", ".drc", ".drc.json", ".kicad_pcb"]),
         ),
         ("input_formats".to_string(), strings([".dsn", ".kicad_pcb"])),
         (

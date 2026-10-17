@@ -65,6 +65,9 @@ pub struct KicadRead {
     /// What became of each `.kicad_dru` rule ([`crate::dru`], K07.5); empty
     /// (`present == false`) when no rules file was given.
     pub rules: DruReport,
+    /// The file's tracks and vias with their byte spans, for the writer
+    /// ([`crate::write`], K08.1).
+    pub copper_index: crate::write::CopperIndex,
 }
 
 /// Options of the reader.
@@ -444,7 +447,8 @@ pub fn read_with_rules(
         .as_ref()
         .map(|c| c.values)
         .unwrap_or_else(|| table.values_of_name("Default"));
-    let mut via_defs: Vec<(String, i32, usize, usize)> = vec![(
+    // (name, diameter, top, bottom, drill)
+    let mut via_defs: Vec<(String, i32, usize, usize, i32)> = vec![(
         via_name(
             0,
             copper - 1,
@@ -454,11 +458,12 @@ pub fn read_with_rules(
         default_values.via_diameter,
         0,
         copper - 1,
+        default_values.via_drill,
     )];
     for c in in_use.iter().filter(|c| c.name != "Default") {
         let n = via_name(0, copper - 1, c.values.via_diameter, c.values.via_drill);
         if !via_defs.iter().any(|(m, ..)| *m == n) {
-            via_defs.push((n, c.values.via_diameter, 0, copper - 1));
+            via_defs.push((n, c.values.via_diameter, 0, copper - 1, c.values.via_drill));
         }
     }
 
@@ -476,7 +481,7 @@ pub fn read_with_rules(
     let board_vias = read_vias(board, &layers, &nets, &mut warnings);
     for v in &board_vias {
         if !via_defs.iter().any(|(m, ..)| *m == v.name) {
-            via_defs.push((v.name.clone(), v.diameter, v.top, v.bottom));
+            via_defs.push((v.name.clone(), v.diameter, v.top, v.bottom, v.drill));
         }
     }
     report.wires = wires.len();
@@ -484,7 +489,7 @@ pub fn read_with_rules(
 
     // library padstacks: pads in KiCad's set order, then the vias
     let mut padstacks = padstack_set.into_padstacks();
-    for (n, dia, top, bottom) in &via_defs {
+    for (n, dia, top, bottom, _) in &via_defs {
         padstacks.push(freerouting_dsn::ast::Padstack {
             name: n.clone(),
             shapes: (*top..=*bottom)
@@ -658,6 +663,24 @@ pub fn read_with_rules(
         },
         None => DruReport::default(),
     };
+    let copper_index = crate::write::build_index(
+        &tree,
+        board,
+        &layers,
+        &nets,
+        via_defs
+            .iter()
+            .map(
+                |(name, diameter, top, bottom, drill)| crate::write::ViaDef {
+                    name: name.clone(),
+                    diameter: *diameter,
+                    drill: *drill,
+                    top: *top,
+                    bottom: *bottom,
+                },
+            )
+            .collect(),
+    );
     let host_version = match &hdr.generator_version {
         Some(v) => format!("{v} (freerouting-kicad)"),
         None => "(freerouting-kicad)".to_owned(),
@@ -698,6 +721,7 @@ pub fn read_with_rules(
         extras,
         report,
         rules,
+        copper_index,
     })
 }
 

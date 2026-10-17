@@ -32,6 +32,7 @@ use freerouting::drc::{DrcRunOptions, run_drc};
 use freerouting::job::outputs::{self, OutputFormat};
 use freerouting::job::prepare::{
     DesignKind, JobInput, KicadReadError, ReadOptions, RulesChoice, design_kind, read_kicad_input,
+    same_file,
 };
 use freerouting::job::run::{JobContext, JobObserver, JobOutcome, run_job};
 use freerouting::job::{LogLevel, LogLine};
@@ -309,6 +310,29 @@ fn write_manifest(parsed: &Args, printer: &Printer, finish: &mut Finish) {
     }
 }
 
+/// Why a `.kicad_pcb` output (K08) cannot be written: it needs a
+/// `.kicad_pcb` input, and it must not be the input itself (the job deletes
+/// an old primary output before it starts).
+fn kicad_output_problem(design: &str, specs: &[outputs::OutputSpec]) -> Option<String> {
+    let design_path = Path::new(design);
+    for spec in specs.iter().filter(|s| s.format == OutputFormat::KicadPcb) {
+        if design_kind(design_path) != DesignKind::KicadPcb {
+            return Some(format!(
+                "Unsupported output file '{}': a .kicad_pcb output needs a .kicad_pcb input \
+                 (-de board.kicad_pcb)",
+                spec.path.display()
+            ));
+        }
+        if same_file(design_path, &spec.path) {
+            return Some(format!(
+                "Refusing to overwrite the input board '{design}': write the routed board to \
+                 another file"
+            ));
+        }
+    }
+    None
+}
+
 /// Everything from the usage checks to the end of the job.
 fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     let (Some(design), Some(output)) = (&parsed.design_file, &parsed.output_file) else {
@@ -327,6 +351,9 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
         Ok(specs) => specs,
         Err(e) => return usage_error(printer, e.to_string()),
     };
+    if let Some(message) = kicad_output_problem(design, &specs) {
+        return usage_error(printer, message);
+    }
     for file in [Some(design), parsed.session_file.as_ref()]
         .into_iter()
         .flatten()

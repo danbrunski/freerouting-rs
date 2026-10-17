@@ -45,7 +45,7 @@ use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
 use crate::dsn::ast::{Pcb, RulesFile};
 pub use crate::io::kicad::{
-    DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input,
+    DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input, same_file,
 };
 use crate::io::specctra::{
     BoardReadResult, SesImportSummary, apply_rules_file, build_board, read_board_from_str,
@@ -103,6 +103,9 @@ pub struct JobInput {
     pub cli: Option<SettingsPatch>,
     /// Further sources, for example `(Source::Testing, java_fixture_test())`.
     pub extra_sources: Vec<(Source, SettingsPatch)>,
+    /// The `.kicad_pcb` the design was read from ([`set_kicad`](Self::set_kicad)),
+    /// for a `.kicad_pcb` output (K08).
+    pub kicad_source: Option<crate::io::kicad::KicadSource>,
 }
 
 impl JobInput {
@@ -122,6 +125,7 @@ impl JobInput {
             environment: None,
             cli: None,
             extra_sources: Vec::new(),
+            kicad_source: None,
         }
     }
 
@@ -140,6 +144,7 @@ impl JobInput {
             text,
         });
         self.read_log = warnings.chain(report).collect();
+        self.kicad_source = Some(read.source());
         self.pcb = Some(read.pcb);
     }
 

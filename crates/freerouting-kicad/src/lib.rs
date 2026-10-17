@@ -32,6 +32,10 @@
 //!   ([`zones::make_plane`]); [`tracks`] merges segments and arcs into wires;
 //!   [`vias`] reads vias and their padstacks. [`report`] says what the reader
 //!   decided ([`ReadReport`], in [`KicadRead::report`]).
+//! - K08 adds [`write`]: the copper index of the file
+//!   ([`KicadRead::copper_index`]), the geometry diff against a routed board,
+//!   and the text splice that writes the routed copper into a copy of the
+//!   file with deterministic UUIDs.
 //!
 //! Rule areas are the main departure from KiCad's export, which makes a full
 //! `keepout` of any area that bans neither tracks nor vias. The reader maps by
@@ -101,6 +105,7 @@ pub mod sexpr;
 pub mod tracks;
 pub mod units;
 pub mod vias;
+pub mod write;
 pub mod zones;
 
 pub use error::{ErrorKind, KicadError, Warning};

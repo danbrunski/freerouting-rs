@@ -21,9 +21,10 @@ PARAMETERS
   -do <output.ses>[+<other output>]
       Save the result. The first file is the main output; others are extra
       outputs. Written formats: .ses, .dsn, .rules, .drc and .drc.json (the
-      design rules check report). Anything else (.frb, .scr, .json,
-      .kicad_pcb) is refused before any work. A file is written whole or not
-      at all, and never with 0 bytes.
+      design rules check report), and .kicad_pcb for a .kicad_pcb input: a
+      copy of the input with the routed tracks and vias (never the input
+      itself). Anything else (.frb, .scr, .json) is refused before any work.
+      A file is written whole or not at all, and never with 0 bytes.
   -drc [report.json]
       Check the design rules of the design (and session) and write the
       report, to standard output without a file. Nothing is routed.

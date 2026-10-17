@@ -463,6 +463,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
     }
 
     let design_name = input.design_name.clone();
+    let kicad_source = input.kicad_source.clone();
 
     // 2. The load sequence.
     let load_scope = crate::run_stats::stage("load", 0);
@@ -629,6 +630,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
             board: final_board,
             design_name: &design_name,
             settings: &settings,
+            kicad_source: kicad_source.as_ref(),
         };
         write_outputs(outputs, &source, ctx, &mut written, &mut log);
         write_scope.finish();

@@ -6,8 +6,9 @@
 //!
 //! - **Formats.** `.ses` ([`write_ses_to`]), `.dsn` ([`write_dsn_to`]),
 //!   `.rules` ([`write_rules`]) and `.drc` / `.drc.json` (the DRC report) are
-//!   written. `.frb`, `.scr`, `.json`, `.kicad_pcb` and everything else are
-//!   rejected by [`classify`] **before** any work. Java's `-do x.xyz` writes
+//!   written, and `.kicad_pcb` (K08: the routed copper written into a copy of
+//!   the `.kicad_pcb` input, [`render_kicad_board`]). `.frb`, `.scr`, `.json`
+//!   and everything else are rejected by [`classify`] **before** any work. Java's `-do x.xyz` writes
 //!   the SES text into `x.xyz` and exits 0, `-do x.frb`, `.scr` and
 //!   `.kicad_pcb` produce a 0-byte file or nothing; `.drc.json` is read as
 //!   plain `.json` there, so Java writes a KiCad design JSON under that name.
@@ -25,6 +26,7 @@ use std::path::{Path, PathBuf};
 
 use crate::board::BasicBoard;
 use crate::drc::DesignRulesChecker;
+use crate::io::kicad::{KicadSource, render_kicad_board};
 use crate::io::specctra::dsn_writer::write_dsn_to;
 use crate::io::specctra::rules_writer::write_rules;
 use crate::io::specctra::ses_writer::{SesStyle, write_ses_to};
@@ -41,6 +43,8 @@ pub enum OutputFormat {
     Rules,
     /// The design rules check report (KiCad's DRC JSON).
     DrcReport,
+    /// A copy of the `.kicad_pcb` input with the routed copper (K08).
+    KicadPcb,
 }
 
 impl OutputFormat {
@@ -52,6 +56,7 @@ impl OutputFormat {
             OutputFormat::Dsn => "DSN",
             OutputFormat::Rules => "RULES",
             OutputFormat::DrcReport => "DRC_JSON",
+            OutputFormat::KicadPcb => "KICAD_PCB",
         }
     }
 
@@ -71,7 +76,8 @@ impl OutputFormat {
             "ses" => Ok(OutputFormat::Ses),
             "dsn" => Ok(OutputFormat::Dsn),
             "rules" => Ok(OutputFormat::Rules),
-            "frb" | "scr" | "json" | "kicad_pcb" => Err(OutputError::Unsupported {
+            "kicad_pcb" => Ok(OutputFormat::KicadPcb),
+            "frb" | "scr" | "json" => Err(OutputError::Unsupported {
                 path: path.to_path_buf(),
                 reason: format!(
                     "the .{extension} format cannot be produced here (Java writes an empty or \
@@ -110,7 +116,7 @@ impl fmt::Display for OutputError {
             OutputError::Unsupported { path, reason } => write!(
                 f,
                 "Unsupported output file '{}': {reason}. Supported: .ses, .dsn, .rules, .drc, \
-                 .drc.json",
+                 .drc.json, .kicad_pcb",
                 path.display()
             ),
             OutputError::Empty { path, format } => write!(
@@ -153,6 +159,8 @@ pub struct OutputSource<'a> {
     pub design_name: &'a str,
     /// The final settings, written into a rules file's `autoroute_settings`.
     pub settings: &'a RouterSettings,
+    /// The `.kicad_pcb` the board was read from, for a `.kicad_pcb` output.
+    pub kicad_source: Option<&'a KicadSource>,
 }
 
 /// Writes `format` of the source to `out` (not flushed past the format's own
@@ -176,6 +184,17 @@ pub fn serialize<W: Write>(
             let mut checker = DesignRulesChecker::new(source.board);
             let report = checker.generate_report(source.design_name, "mm");
             out.write_all(report.to_json().as_bytes())?;
+            out.flush()
+        }
+        OutputFormat::KicadPcb => {
+            let Some(src) = source.kicad_source else {
+                return Err(io::Error::other(
+                    "a .kicad_pcb output needs a .kicad_pcb input (-de board.kicad_pcb)",
+                ));
+            };
+            let (text, _) = render_kicad_board(&src.path, source.board, Some(src.hash))
+                .map_err(io::Error::other)?;
+            out.write_all(text.as_bytes())?;
             out.flush()
         }
     }
@@ -297,15 +316,9 @@ mod tests {
         assert_eq!(of("a.drc").unwrap(), OutputFormat::DrcReport);
         assert_eq!(of("a.drc.json").unwrap(), OutputFormat::DrcReport);
         assert_eq!(of("A.DRC.JSON").unwrap(), OutputFormat::DrcReport);
-        for rejected in [
-            "a.frb",
-            "a.scr",
-            "a.json",
-            "a.kicad_pcb",
-            "a.xyz",
-            "noext",
-            ".ses.x",
-        ] {
+        assert_eq!(of("a.kicad_pcb").unwrap(), OutputFormat::KicadPcb);
+        assert_eq!(of("A.KICAD_PCB").unwrap(), OutputFormat::KicadPcb);
+        for rejected in ["a.frb", "a.scr", "a.json", "a.xyz", "noext", ".ses.x"] {
             assert!(
                 matches!(of(rejected), Err(OutputError::Unsupported { .. })),
                 "{rejected}"

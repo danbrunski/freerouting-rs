@@ -730,8 +730,8 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
   `comma_split_warns_when_it_looks_like_a_mistake` on `Issue558-dev-board.dsn`).
 - No 0-byte outputs (`no_zero_byte_outputs`). Java's `-do x.xyz` writes the SES text into
   `x.xyz` and exits 0, and a format it cannot produce headless (`.frb`, `.scr`, `.kicad_pcb`) gives
-  a 0-byte file or nothing. Rust refuses every format except `.ses`, `.dsn`, `.rules`, `.drc` and
-  `.drc.json` before any work and exits 2 (a usage error, "Exit codes" below). (Java at `cda540f`
+  a 0-byte file or nothing. Rust refuses every format except `.ses`, `.dsn`, `.rules`, `.drc`,
+  `.drc.json` and `.kicad_pcb` before any work and exits 2 (a usage error, "Exit codes" below). (Java at `cda540f`
   also wrote a 0-byte `x.dsn` and exited 1; `a773a70ec` writes a DSN, and so does Rust.)
 - `-do a.ses+b.drc.json`: Java reads `.drc.json` as plain `.json` and writes a KiCad design JSON
   under that name; Rust writes the DRC report there (`.drc` too, also as the main output).
@@ -758,6 +758,12 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
   printed before the job's own log, and a file the reader refuses (KiCad 5 or older) exits 1 with
   its one-line message (`crates/freerouting-cli/tests/cli_kicad.rs`). The session names the board
   by its file stem, as for a DSN.
+- `-de board.kicad_pcb -do routed.kicad_pcb` writes the routed tracks and vias into a copy of the
+  input (K08, `io::kicad::write_kicad_board`): the copper the board no longer has is cut out by
+  byte span, new copper goes in before the final `)` with deterministic UUIDs, every other byte is
+  kept and zones are not refilled. Java writes nothing for `.kicad_pcb`. A `.kicad_pcb` output of a
+  DSN input, or one that is the input file itself, is refused with exit 2 before any work
+  (`crates/freerouting-cli/tests/cli_kicad_write.rs`, `crates/freerouting/tests/kicad_write.rs`).
 
 **Plugin-facing CLI extras** (C08; `freerouting-cli::{exit, version, progress, manifest, stop}`;
 tests `crates/freerouting-cli/tests/{exit_codes, version, progress_json, result_json, stop,

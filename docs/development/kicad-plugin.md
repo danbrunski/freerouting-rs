@@ -442,3 +442,52 @@ reader's board to the same 494 tracks, vias and arcs, largest endpoint distance 
 nanometres round to 0.1 um board units, at most 50 nm per coordinate; on this board every pad centre is on
 the grid and the largest distance of a track end to its pad centre is 0 nm (171 ends). A finer resolution is
 not worth a change until a board shows a connection lost to it.
+
+## Direct `.kicad_pcb` writer (K08)
+
+`freerouting -de board.kicad_pcb -do routed.kicad_pcb` (and `freerouting::io::kicad::write_kicad_board`)
+writes the routed board into a **copy** of the `.kicad_pcb` without `ImportSpecctraSES`, so together with
+the K07 reader neither direction needs KiCad's Specctra code (`crates/freerouting-kicad/src/write/`).
+
+**What it changes.** Only copper blocks. The file's `(segment)`, `(arc)` and `(via)` items are compared
+with the routed board by exact geometry in 0.1 um board units: an original segment or arc stays, byte for
+byte, when the board's traces of the same layer, net and width still cover it; a via stays when the board
+has a via with its position, net, span, diameter and drill; locked items and copper the reader did not
+route (no net, not a copper layer) always stay. Everything else is cut out with its line. What the board
+has beyond the kept copper is added before the final `)` as `(segment)` and `(via [blind|buried|micro])`
+blocks in KiCad 10's multi-line layout, with the file's net dialect (`(net 3)` or `(net "GND")`), its uuid
+token (`tstamp` in KiCad 7 files) and canonical layer names (`In1.Cu`); new vias carry no tenting token, so
+they take the board's `(setup (tenting ...))`. Coordinates are written from nanometres by integer
+formatting; an added end that is the board image of an original track end or via centre is written at
+that original's exact nanometres. UUIDs are version-8 FNV-1a hashes of the input's own hash and the item,
+so the same input and routed board give the same bytes (no `uuid4`: KiCad tie-breaks equal-priority zones
+by KIID, so random UUIDs made KiCadRoutingTools' fills unstable).
+
+**What it never changes.** Footprints, pads, zones (fills go stale; grade with `kicad-cli pcb drc
+--refill-zones`), graphics, text, `(setup)`, the `.kicad_pro` and `.kicad_dru`, and the input file itself:
+`-do` naming the input (after canonicalization) exits 2, as does a `.kicad_pcb` output of a DSN input, and
+`write_kicad_board_checked` refuses a file whose FNV-1a hash differs from the one recorded when the board
+was read. The output is parsed again and must have balanced parentheses before it is renamed into place.
+Unlike KRT's writer it does not move copper text, strip Edge.Cuts lines or touch `.kicad_pro` DRC floors.
+
+**Graded by KiCad** (`tools/kicad-reader/write-check.sh <board> <session.ses> [outdir]`, K08.5;
+2026-10-17, WSL KiCad 10.0.7, release CLI of this tree, `pgrep -x kicad; pgrep -x pcbnew` empty before
+and after). Path A is `LoadBoard` + `ImportSpecctraSES` + `SaveBoard`, path B the writer from the same
+session; both are graded by `kicad-cli pcb drc --refill-zones --severity-all`:
+
+| board | session | A: DRC by type, unconnected | B | copper |
+|---|---|---|---|---|
+| `Issue558-dev-board` | Java `a773a70ec` (`dev-board.kicad10.java.ses`, 231 wires, 35 vias) | copper_edge_clearance 22, hole_clearance 4, lib_footprint_issues 4, lib_footprint_mismatch 16, silk_edge_clearance 5; 0 unconnected | the same | 459 segments and 35 vias each |
+| `Issue180-Test` | Rust route of the reader's board (79 wires, 3 vias: the router added nothing) | lib_footprint_issues 24, lib_footprint_mismatch 1; 0 unconnected | the same | B is the input byte for byte; A rewrote the unlocked tracks as 110 overlapping pieces of the same 102 segments (20.3 mm more length, every piece on a B segment) |
+| `canary-pwr` | Rust route of the reader's board (212 s, 374 wires, 89 vias, 94 unrouted) | copper_edge_clearance 2, lib_footprint_issues 4, lib_footprint_mismatch 6, starved_thermal 1, track_dangling 2, via_dangling 30; 70 unconnected | the same | 813 segments and 130 vias each, 1154.1893 mm of track each |
+
+No board here has track arcs; the writer keeps an arc the router left alone and replaces a changed one by
+segments, where `ImportSpecctraSES` gets every arc as the session's chords.
+
+**Using it from the plugin on KiCad 11** (not done; the plugin still imports the SES, K02). KiCad master
+removed SWIG (K01.5), so `pcbnew.ImportSpecctraSES` goes away. The plugin could instead save the board,
+run `freerouting -de <board>.kicad_pcb -do <board>.routed.kicad_pcb` (the capabilities JSON lists
+`.kicad_pcb` in `output_formats`), and have KiCad open or revert to the routed copy; through the IPC API
+it would have to reload the board from disk, because the writer edits the file, not the open document.
+The plugin must replace the board itself (the writer never overwrites its input) and only after the user
+accepts the result.
