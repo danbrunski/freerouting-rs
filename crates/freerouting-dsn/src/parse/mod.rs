@@ -5,14 +5,27 @@
 //! the matching closing bracket. Unknown scopes are skipped, like the Java
 //! reader's `skipScope`. Problems the Java reader logs and recovers from are
 //! recorded as [`Warning`]s; problems it cannot recover from are [`Error`]s.
+//!
+//! A skipped named scope warns once per keyword per file (Q09.6), except the
+//! scopes in [`QUIET_SKIPS`]: KiCad writes them into every design and they
+//! carry no constraint, so a warning would only be noise. The list is
+//! `property` inside `layer` (KiCad's `(property (index N))`, the layer's
+//! position in its own stack-up, which Java's `Structure` also skips).
 
 mod common;
 mod dsn;
 mod rules;
 mod ses;
 
+use std::collections::BTreeSet;
+
 use crate::error::{Error, Pos, Result, Warning};
 use crate::lexer::{Atom, Lexer, Mode, Token, TokenKind, parse_f64, parse_i32};
+
+/// Skipped scopes that never warn, as `(enclosing scope, keyword)`: KiCad
+/// scopes that carry no constraint (Q09.6). Everything else that is skipped
+/// warns once per keyword per file.
+const QUIET_SKIPS: &[(&str, &str)] = &[("layer", "property")];
 
 pub(crate) use dsn::parse_pcb;
 pub(crate) use rules::parse_rules;
@@ -49,6 +62,8 @@ pub(crate) fn canonical_keyword(text: &str) -> String {
 pub(crate) struct Parser<'a> {
     lexer: Lexer<'a>,
     warnings: Vec<Warning>,
+    /// The unknown scope keywords warned about so far (Q09.6: once each).
+    skipped_keywords: BTreeSet<String>,
 }
 
 impl<'a> Parser<'a> {
@@ -56,6 +71,7 @@ impl<'a> Parser<'a> {
         Parser {
             lexer: Lexer::new(src),
             warnings: Vec::new(),
+            skipped_keywords: BTreeSet::new(),
         }
     }
 
@@ -163,10 +179,23 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    /// Skips an unknown scope.
+    /// Skips an unknown scope. A scope without a keyword warns each time, as
+    /// Java's `skipScope` does; a named one warns the first time its keyword
+    /// is skipped in the file (Q09.6), unless it is one of the
+    /// [`QUIET_SKIPS`].
     fn skip_unknown(&mut self, keyword: &str, pos: Pos, context: &str) -> Result<()> {
         if keyword.is_empty() {
             self.warn(pos, format!("scope without keyword in {context} skipped"));
+        } else if !QUIET_SKIPS.contains(&(context, keyword))
+            && self.skipped_keywords.insert(keyword.to_string())
+        {
+            self.warn(
+                pos,
+                format!(
+                    "unknown scope '{keyword}' in {context} skipped (reported once per file, \
+                     at its first position)"
+                ),
+            );
         }
         self.skip_scope()
     }

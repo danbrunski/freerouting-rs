@@ -8,6 +8,14 @@
 //! look at the library) is a method of [`crate::board::BasicBoard`] taking an
 //! [`ItemId`].
 //!
+//! [`AreaKind::TraceObstacle`] (Q09) has no Java class: a keepout for the
+//! traces of every net that lets vias through, the board's reading of a
+//! Specctra `wire_keepout` with `router.wire_keepout = "traces_only"`
+//! (`io::specctra::wire_keepout`). Its predicates are in
+//! [`crate::board::BasicBoard::is_obstacle`] and
+//! [`crate::board::BasicBoard::is_trace_obstacle`]; the statistics count it as
+//! an `ObstacleArea`.
+//!
 //! Java computes derived data (pin centers and shapes, absolute keepout
 //! areas, drill layers) lazily and caches it in the item; the port computes
 //! it when the item is created and whenever its placement changes.
@@ -236,6 +244,12 @@ pub enum AreaKind {
     Obstacle,
     /// `ViaObstacleArea`: a keepout for vias.
     ViaObstacle,
+    /// A keepout for traces of every net that lets vias through (Q09): the
+    /// counterpart of `ViaObstacleArea`, and what Specctra's `wire_keepout`
+    /// means. Java has no such class (it reads `wire_keepout` as `keepout`);
+    /// the board builder makes one only with `router.wire_keepout =
+    /// "traces_only"`.
+    TraceObstacle,
     /// `ComponentObstacleArea`: a keepout for component placement.
     ComponentObstacle,
     /// `ConductionArea`: copper of a net.
@@ -795,7 +809,8 @@ impl Item {
                 AreaKind::Conduction { .. } => BoardItemType::ConductionArea,
                 AreaKind::ViaObstacle => BoardItemType::ViaObstacleArea,
                 AreaKind::ComponentObstacle => BoardItemType::ComponentObstacleArea,
-                AreaKind::Obstacle => BoardItemType::ObstacleArea,
+                // A keepout in the statistics, as Java counts a `wire_keepout`.
+                AreaKind::Obstacle | AreaKind::TraceObstacle => BoardItemType::ObstacleArea,
             },
             ItemKind::ComponentOutline(_) => BoardItemType::ComponentOutline,
             ItemKind::BoardOutline(_) => BoardItemType::BoardOutline,
@@ -1025,7 +1040,8 @@ impl Item {
         self.is_connectable_kind() && !self.net_numbers.is_empty()
     }
 
-    /// Java `Item.isDrillable(int)`.
+    /// Java `Item.isDrillable(int)`. A trace-only keepout (Q09) lets every
+    /// net's vias through.
     pub fn is_drillable(&self, net_number: i32) -> bool {
         match &self.kind {
             ItemKind::Trace(_) => self.contains_net(net_number),
@@ -1033,6 +1049,10 @@ impl Item {
                 kind: AreaKind::Conduction { is_obstacle, .. },
                 ..
             }) => !is_obstacle || self.contains_net(net_number),
+            ItemKind::Area(ObstacleArea {
+                kind: AreaKind::TraceObstacle,
+                ..
+            }) => true,
             _ => false,
         }
     }
@@ -1091,6 +1111,7 @@ impl Item {
             ItemKind::Area(area) => match area.kind {
                 AreaKind::Obstacle => "obstaclearea",
                 AreaKind::ViaObstacle => "viaobstaclearea",
+                AreaKind::TraceObstacle => "traceobstaclearea",
                 AreaKind::ComponentObstacle => "componentobstaclearea",
                 AreaKind::Conduction { .. } => "conductionarea",
             },

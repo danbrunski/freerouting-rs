@@ -33,6 +33,7 @@ fn java_type(item: &Item) -> &'static str {
         ItemKind::Area(area) => match area.kind {
             AreaKind::Obstacle => "ObstacleArea",
             AreaKind::ViaObstacle => "ViaObstacleArea",
+            AreaKind::TraceObstacle => "TraceObstacleArea",
             AreaKind::ComponentObstacle => "ComponentObstacleArea",
             AreaKind::Conduction { .. } => "ConductionArea",
         },

@@ -70,6 +70,8 @@ fn defaults_with_eight_cores() {
         ("plane_nets", empty_list()),
         ("plane_as_obstacle", b(false)),
         ("plane_obstacle_net_classes", None),
+        ("plane_obstacle_block", None),
+        ("wire_keepout", None),
         ("neck_width_um", f64v(0.0)),
         ("min_trace_width_um", None),
         ("strict_drc", b(false)),

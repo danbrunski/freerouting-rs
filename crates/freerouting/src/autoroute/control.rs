@@ -157,6 +157,11 @@ pub struct AutorouteControl {
     /// net's own plane but no other net is routed across it (Java
     /// `ownPlaneLayers`, `7f56b062d`, after the pin; Q01.7).
     pub own_plane_layers: Vec<bool>,
+    /// True if the board may have trace obstacles that let vias through
+    /// (Q09: a trace-only keepout, or the pour guard's `traces` mode), so a
+    /// drill may pass a layer where only those cover its location. False on
+    /// the parity path, where the maze search is Java's.
+    pub vias_pass_trace_only_areas: bool,
     pub via_clearance_class: i32,
     pub via_infos: Vec<ViaMask>,
     pub via_lower_bound: i32,
@@ -271,6 +276,7 @@ impl AutorouteControl {
             merged_via_rule: None,
             net_number: 0,
             own_plane_layers: vec![false; layer_count],
+            vias_pass_trace_only_areas: false,
             via_clearance_class: 0,
             via_infos: Vec::new(),
             via_lower_bound: 0,
@@ -332,6 +338,7 @@ impl AutorouteControl {
         }
         self.rebuild_via_info(board, via_costs, net_number)?;
         self.own_plane_layers = own_plane_layers(board, net_number);
+        self.vias_pass_trace_only_areas = board.may_let_vias_through();
         Ok(())
     }
 

@@ -229,7 +229,14 @@ fn rules_via_with_stripped_padstack_name_resolves_to_decimal_padstack() {
             .is_some(),
         "the via padstack stays registered"
     );
-    assert!(outcome.log.is_empty(), "{:?}", warnings(&outcome));
+    // Q09.6: the skipped `via` scope is reported once (Java logs nothing).
+    assert_eq!(
+        warnings(&outcome),
+        [
+            "line 3, column 6: unknown scope 'via' in rule skipped (reported once per file, at its \
+          first position)"
+        ]
+    );
 
     // The Java test is weaker than its name: a `via` inside a `rule` scope is
     // skipped, and the padstack was a via padstack already. A `via` scope that

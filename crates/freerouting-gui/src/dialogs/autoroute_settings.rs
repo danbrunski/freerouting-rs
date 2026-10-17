@@ -96,6 +96,11 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "plane_obstacle_net_classes",
         "quality option without a Java control",
     ),
+    (
+        "plane_obstacle_block",
+        "quality option without a Java control",
+    ),
+    ("wire_keepout", "quality option without a Java control"),
     ("neck_width_um", "quality option without a Java control"),
     (
         "min_trace_width_um",

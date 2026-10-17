@@ -186,6 +186,8 @@ impl ShapeTraceEntries {
             if let ItemKind::Area(area) = &item.kind {
                 match area.kind {
                     AreaKind::ViaObstacle if !is_pad_check => continue,
+                    // A trace-only keepout (Q09) lets the via pad through.
+                    AreaKind::TraceObstacle if is_pad_check => continue,
                     AreaKind::ComponentObstacle => continue,
                     _ => {}
                 }
@@ -195,7 +197,11 @@ impl ShapeTraceEntries {
             if let Some(area) = item.as_conduction_area()
                 && (contains_own_net
                     || !(area.conduction_is_obstacle()
-                        || board.area_policy_blocks_any_net(item, &self.own_net_nos)))
+                        || if is_pad_check {
+                            board.area_policy_blocks_any_net_vias(item, &self.own_net_nos)
+                        } else {
+                            board.area_policy_blocks_any_net(item, &self.own_net_nos)
+                        }))
             {
                 continue;
             }

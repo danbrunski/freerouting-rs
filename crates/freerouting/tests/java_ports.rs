@@ -930,7 +930,7 @@ fn every_board_item_exposes_neutral_semantic_metadata() {
                 AreaKind::Conduction { .. } => BoardItemType::ConductionArea,
                 AreaKind::ViaObstacle => BoardItemType::ViaObstacleArea,
                 AreaKind::ComponentObstacle => BoardItemType::ComponentObstacleArea,
-                AreaKind::Obstacle => BoardItemType::ObstacleArea,
+                AreaKind::Obstacle | AreaKind::TraceObstacle => BoardItemType::ObstacleArea,
             },
             ItemKind::ComponentOutline(_) => BoardItemType::ComponentOutline,
             ItemKind::BoardOutline(_) => BoardItemType::BoardOutline,

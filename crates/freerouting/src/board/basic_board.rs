@@ -78,6 +78,12 @@ pub struct BasicBoard {
     pub(crate) ledger: RoutingLedger,
     /// The change journal while journaling (B01.7).
     pub(crate) journal: Option<Box<Journal>>,
+    /// The keepouts the DSN reader built from a Specctra `wire_keepout`, in
+    /// insertion order (Q09.3). They are `AreaKind::Obstacle`, as Java builds
+    /// them, until `router.wire_keepout = "traces_only"` makes them
+    /// [`AreaKind::TraceObstacle`] ([`Self::make_wire_keepouts_trace_only`]).
+    /// Not part of a [`BoardSnapshot`].
+    pub(crate) wire_keepouts: Vec<ItemId>,
 }
 
 impl BasicBoard {
@@ -111,6 +117,7 @@ impl BasicBoard {
             ledger: RoutingLedger::default(),
             journal: None,
             autoroute_log: None,
+            wire_keepouts: Vec::new(),
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -282,6 +289,7 @@ impl BasicBoard {
             ledger: RoutingLedger::default(),
             journal: None,
             autoroute_log: None,
+            wire_keepouts: Vec::new(),
         };
         board.insert_all_into_trees();
         board
@@ -1442,6 +1450,33 @@ impl BasicBoard {
         !base1.is_empty() && base1 == base2
     }
 
+    /// The keepouts built from a Specctra `wire_keepout` (Q09.3), in
+    /// insertion order.
+    pub fn wire_keepouts(&self) -> &[ItemId] {
+        &self.wire_keepouts
+    }
+
+    /// Q09.3: makes every keepout built from a `wire_keepout` that is still
+    /// an [`AreaKind::Obstacle`] a [`AreaKind::TraceObstacle`] (traces of
+    /// every net are kept out, vias pass). The search trees hold the same
+    /// shapes for both kinds, so nothing is reinserted. Returns the number
+    /// of areas changed.
+    pub fn make_wire_keepouts_trace_only(&mut self) -> usize {
+        let mut changed = 0;
+        for id in self.wire_keepouts.clone() {
+            let Some(ItemKind::Area(area)) = self.items.get_mut(&id).map(|i| &mut i.kind) else {
+                continue;
+            };
+            if area.kind != AreaKind::Obstacle {
+                continue;
+            }
+            area.set_kind(AreaKind::TraceObstacle);
+            self.note_changed(id);
+            changed += 1;
+        }
+        changed
+    }
+
     /// Java `Item.isObstacle(Item)`: true if `other` may not overlap
     /// `item`.
     pub fn is_obstacle(&self, item: &Item, other: &Item) -> bool {
@@ -1481,7 +1516,11 @@ impl BasicBoard {
                     return false;
                 }
                 if let Some(area) = other.as_area() {
-                    if area.kind == AreaKind::ComponentObstacle {
+                    // A trace-only keepout (Q09) lets vias through.
+                    if matches!(
+                        area.kind,
+                        AreaKind::ComponentObstacle | AreaKind::TraceObstacle
+                    ) {
                         return false;
                     }
                     if area.is_conduction_area()
@@ -1521,6 +1560,8 @@ impl BasicBoard {
                         && Self::obstacle_area_is_obstacle(item, other)
                 }
                 AreaKind::ViaObstacle => !other.shares_net(item) && other.is_via(),
+                // Q09: traces of every net, never vias.
+                AreaKind::TraceObstacle => !other.shares_net(item) && other.is_trace(),
                 AreaKind::ComponentObstacle => {
                     other.id() != item.id()
                         && other
@@ -1566,7 +1607,7 @@ impl BasicBoard {
                     (is_obstacle || self.area_policy_blocks_net(item, net_number))
                         && !item.contains_net(net_number)
                 }
-                AreaKind::Obstacle => !item.contains_net(net_number),
+                AreaKind::Obstacle | AreaKind::TraceObstacle => !item.contains_net(net_number),
             },
             ItemKind::BoardOutline(_) => {
                 !(net_number > 0 && self.edge_pin_nets().contains(&net_number))

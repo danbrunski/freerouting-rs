@@ -345,7 +345,7 @@ fn every_item_of_every_probe_board_has_geometry() {
                 ItemKind::Via(_) => BoardItemType::Via,
                 ItemKind::Trace(_) => BoardItemType::Trace,
                 ItemKind::Area(a) => match a.kind {
-                    AreaKind::Obstacle => BoardItemType::ObstacleArea,
+                    AreaKind::Obstacle | AreaKind::TraceObstacle => BoardItemType::ObstacleArea,
                     AreaKind::ViaObstacle => BoardItemType::ViaObstacleArea,
                     AreaKind::ComponentObstacle => BoardItemType::ComponentObstacleArea,
                     AreaKind::Conduction { .. } => BoardItemType::ConductionArea,

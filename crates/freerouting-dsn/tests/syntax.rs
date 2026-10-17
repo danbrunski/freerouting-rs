@@ -447,7 +447,145 @@ fn unknown_scopes_and_stray_words_are_skipped() {
         .iter()
         .map(|w| (w.pos.line, w.pos.column))
         .collect();
-    assert_eq!(positions, [(3, 3), (4, 45)]);
+    // Q09.6: the named unknown scope `foo` (pcb) warns too, besides the stray
+    // word and the scope without keyword; KiCad's `property` inside `layer`
+    // is on the quiet list and does not.
+    assert_eq!(positions, [(2, 4), (3, 3), (4, 45)]);
+    assert!(warnings[0].message.contains("'foo' in pcb"), "{warnings:?}");
+    assert!(
+        warnings.iter().all(|w| !w.message.contains("property")),
+        "{warnings:?}"
+    );
+}
+
+/// Q09.6: the quiet list is keyed by the enclosing scope as well as the
+/// keyword. `property` inside `layer` (KiCad's stack-up index, no
+/// constraint) is skipped silently; the same keyword anywhere else warns.
+#[test]
+fn only_listed_kicad_scopes_skip_without_a_warning() {
+    let quiet = "(pcb x (structure (layer A (property (index 0))) (layer B (property (index 1)))))";
+    let (_, warnings) = Pcb::parse_with_warnings(quiet).unwrap();
+    assert!(warnings.is_empty(), "{warnings:?}");
+
+    let loud = "(pcb x (structure (property (index 0)) (layer A (property (index 0)))))";
+    let (_, warnings) = Pcb::parse_with_warnings(loud).unwrap();
+    assert_eq!(warnings.len(), 1, "{warnings:?}");
+    assert!(
+        warnings[0].message.contains("'property' in structure"),
+        "{warnings:?}"
+    );
+}
+
+/// Q09.6: an invented `(foo_keepout ...)` in the structure scope gets one
+/// warning naming `foo_keepout` and `structure`, at its first position; a
+/// second one in the same file is not reported again. What is read does not
+/// change.
+#[test]
+fn an_unknown_keepout_warns_once_naming_keyword_and_scope() {
+    let src = "(pcb x\n  (structure\n    (layer A)\n    (foo_keepout (rect A 0 0 1 1))\n    \
+               (keepout (rect A 0 0 2 2))\n    (foo_keepout (rect A 0 0 3 3))))";
+    let (pcb, warnings) = Pcb::parse_with_warnings(src).unwrap();
+    assert_eq!(warnings.len(), 1, "{warnings:?}");
+    let warning = &warnings[0];
+    assert!(warning.message.contains("'foo_keepout'"), "{warning}");
+    assert!(warning.message.contains("in structure"), "{warning}");
+    assert_eq!((warning.pos.line, warning.pos.column), (4, 6));
+    let structure = pcb.structure.unwrap();
+    assert_eq!(structure.keepouts.len(), 1);
+    assert_eq!(structure.keepouts[0].kind, KeepoutKind::Keepout);
+    // The same text without the invented scopes reads the same tree.
+    let plain = Pcb::parse("(pcb x\n  (structure\n    (layer A)\n    (keepout (rect A 0 0 2 2))))")
+        .unwrap();
+    assert_eq!(plain.structure.unwrap().keepouts, structure.keepouts);
+}
+
+fn fixture_text(name: &str) -> String {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures")
+        .join(name);
+    decode(&std::fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))).into_owned()
+}
+
+/// Q09.1: `Issue754-avionics_hub.dsn` round-trips with its `wire_keepout`
+/// intact: read as `WireKeepout`, written back as `wire_keepout`, and read
+/// again to the same tree.
+#[test]
+fn issue754_round_trips_its_wire_keepout() {
+    let pcb = Pcb::parse(&fixture_text("Issue754-avionics_hub.dsn")).unwrap();
+    let kinds: Vec<_> = pcb
+        .structure
+        .as_ref()
+        .unwrap()
+        .keepouts
+        .iter()
+        .map(|k| k.kind)
+        .collect();
+    assert_eq!(kinds, [KeepoutKind::WireKeepout]);
+    let written = pcb.to_dsn();
+    assert_eq!(written.matches("(wire_keepout").count(), 1);
+    assert_eq!(written.matches("(keepout").count(), 0);
+    let again = Pcb::parse(&written).unwrap();
+    assert_eq!(again, pcb);
+}
+
+/// Q09.6's tally: the unknown scope keywords of every DSN, SES and rules file
+/// under `fixtures/`, with the number of files each is reported in. Run with
+/// `--ignored --nocapture`; the result is in the Q09.6 done note.
+#[test]
+#[ignore = "prints the tally of unknown scopes across the fixtures"]
+fn tally_unknown_scopes_across_fixtures() {
+    fn collect(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        let mut entries: Vec<_> = std::fs::read_dir(dir).unwrap().flatten().collect();
+        entries.sort_by_key(|e| e.path());
+        for entry in entries {
+            let path = entry.path();
+            if path.is_dir() {
+                if path.file_name().is_some_and(|n| n == "reference") {
+                    continue;
+                }
+                collect(&path, out);
+            } else {
+                out.push(path);
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
+    let mut files = Vec::new();
+    collect(&root, &mut files);
+    let mut tally: std::collections::BTreeMap<String, usize> = Default::default();
+    let mut scanned = 0;
+    for path in files {
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        let Ok(bytes) = std::fs::read(&path) else {
+            continue;
+        };
+        let text = decode(&bytes);
+        let warnings = match ext {
+            "dsn" => Pcb::parse_with_warnings(&text).map(|(_, w)| w),
+            "ses" => Session::parse_with_warnings(&text).map(|(_, w)| w),
+            "rules" => RulesFile::parse_with_warnings(&text).map(|(_, w)| w),
+            _ => continue,
+        };
+        let Ok(warnings) = warnings else {
+            continue;
+        };
+        scanned += 1;
+        for w in warnings {
+            if let Some(rest) = w.message.strip_prefix("unknown scope '") {
+                let (keyword, rest) = rest.split_once('\'').unwrap();
+                let scope = rest
+                    .trim_start_matches(" in ")
+                    .split(' ')
+                    .next()
+                    .unwrap_or("");
+                *tally.entry(format!("{ext} {scope}/{keyword}")).or_default() += 1;
+            }
+        }
+    }
+    println!("{scanned} files scanned");
+    for (key, count) in &tally {
+        println!("{count:5}  {key}");
+    }
 }
 
 #[test]
@@ -522,8 +660,16 @@ fn invalid_shapes_are_skipped_with_a_warning() {
         }][..]
     );
     // The short rect, the bad path and the odd polygon; `polyline` is an
-    // unknown scope and is skipped silently, as in Java.
-    assert_eq!(warnings.len(), 3);
+    // unknown scope, skipped as in Java, with a warning since Q09.6.
+    assert_eq!(warnings.len(), 4);
+    assert_eq!(
+        warnings
+            .iter()
+            .filter(|w| w.message.contains("unknown scope 'polyline' in boundary"))
+            .count(),
+        1,
+        "{warnings:?}"
+    );
 }
 
 #[test]

@@ -36,7 +36,7 @@ pub fn item_info(board: &BasicBoard, id: ItemId) -> String {
             AreaKind::Conduction { .. } => text::CONDUCTION_AREA.to_string(),
             AreaKind::ViaObstacle => text::VIA_KEEPOUT.to_string(),
             AreaKind::ComponentObstacle => text::COMPONENT_KEEPOUT.to_string(),
-            AreaKind::Obstacle => text::KEEPOUT.to_string(),
+            AreaKind::Obstacle | AreaKind::TraceObstacle => text::KEEPOUT.to_string(),
         },
         ItemKind::BoardOutline(_) => text::BOARD_OUTLINE.to_string(),
         ItemKind::ComponentOutline(_) => text::UNKNOWN.to_string(),

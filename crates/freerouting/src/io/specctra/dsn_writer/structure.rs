@@ -252,6 +252,8 @@ fn planes_and_keepouts(cx: &Cx) -> (Vec<Plane>, Vec<Keepout>) {
                     kind: match kind {
                         AreaKind::ViaObstacle => KeepoutKind::ViaKeepout,
                         AreaKind::ComponentObstacle => KeepoutKind::PlaceKeepout,
+                        // Q09: a trace-only keepout is what `wire_keepout` means.
+                        AreaKind::TraceObstacle => KeepoutKind::WireKeepout,
                         _ => KeepoutKind::Keepout,
                     },
                     area: DsnArea {

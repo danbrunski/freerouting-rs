@@ -454,6 +454,7 @@ impl<'a> DesignRulesChecker<'a> {
                 AreaKind::Conduction { .. } => "Conduction Area",
                 AreaKind::Obstacle => "ObstacleArea",
                 AreaKind::ViaObstacle => "ViaObstacleArea",
+                AreaKind::TraceObstacle => "TraceObstacleArea",
                 AreaKind::ComponentObstacle => "ComponentObstacleArea",
             },
             ItemKind::ComponentOutline(_) => "ComponentOutline",
@@ -665,6 +666,7 @@ impl<'a> DesignRulesChecker<'a> {
                 AreaKind::Conduction { .. } => "ConductionArea",
                 AreaKind::Obstacle => "ObstacleArea",
                 AreaKind::ViaObstacle => "ViaObstacleArea",
+                AreaKind::TraceObstacle => "TraceObstacleArea",
                 AreaKind::ComponentObstacle => "ComponentObstacleArea",
             }
             .into(),

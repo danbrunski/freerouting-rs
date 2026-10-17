@@ -285,7 +285,7 @@ impl TraceShover<'_> {
                     is_obstacle || board.area_policy_blocks_any_net(item, net_numbers)
                 }
                 AreaKind::ViaObstacle | AreaKind::ComponentObstacle => false,
-                AreaKind::Obstacle => !item.is_routable(),
+                AreaKind::Obstacle | AreaKind::TraceObstacle => !item.is_routable(),
             },
             ItemKind::BoardOutline(_) => board.outline_blocks_nets(net_numbers),
             ItemKind::Trace(_) => {

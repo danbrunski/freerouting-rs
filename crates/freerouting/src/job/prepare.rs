@@ -396,6 +396,10 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let settings = crate::quality::neckdown::ledger::with_strict_report(
         RouterSettings::from_patch(&patch, ctx.cores),
     );
+    // Q09.3: `router.wire_keepout`; Java's reading unless `traces_only`.
+    let wire = crate::io::specctra::wire_keepout::apply(&mut board, &settings)
+        .map_err(JobError::Settings)?;
+    log.extend(wire);
     // 8. The pour guard (Q01), on the board as loaded; off unless
     // `router.plane_obstacle_net_classes` lists a class.
     let guard = pour_guard::install(&mut board, &settings)
@@ -482,6 +486,11 @@ pub fn prepare_board_for_routing(
     board.reduce_nets_of_route_items();
     for warning in apply_net_class_exclusions(patch, board) {
         push(&mut log, LogLevel::Warn, warning);
+    }
+    // Q09.3: `router.wire_keepout`; an unknown value is logged and ignored.
+    match crate::io::specctra::wire_keepout::apply(board, &settings) {
+        Ok(line) => log.extend(line),
+        Err(e) => push(&mut log, LogLevel::Error, e),
     }
     // The pour guard (Q01); an unknown class is logged and leaves it off.
     match pour_guard::install(board, &settings) {

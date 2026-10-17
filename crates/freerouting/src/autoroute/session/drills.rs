@@ -27,6 +27,13 @@
 //! in Java's descending id order), and the room scan of
 //! `calculate_expansion_rooms`.
 //!
+//! Q09: when the control says the board may have trace obstacles that let
+//! vias through (`vias_pass_trace_only_areas`, false on the parity path), a
+//! layer on which no room can be completed at the drill's location because
+//! only such obstacles cover it keeps no room (`None`): a via may pass the
+//! layer, but the search does not expand onto it. The via is checked there
+//! against the drill's shape (`layers.rs`, `check_drill_layer`).
+//!
 //! A page whose split into convex pieces is stopped keeps an empty drill
 //! list for the session's net and is not recomputed, as in Java (the net
 //! number and the empty list are set before the split).
@@ -681,6 +688,13 @@ impl Session<'_> {
                     doors: Vec::new(),
                 });
                 let new_rooms = self.complete_expansion_room(room)?;
+                if new_rooms.is_empty()
+                    && self.control.vias_pass_trace_only_areas
+                    && self.only_via_passable_obstacles_at(&search_shape, layer)
+                {
+                    // Q09: the via passes this layer; no room on it.
+                    continue;
+                }
                 if new_rooms.len() != 1 {
                     // An obstacle in the compensated tree at the location.
                     return Ok(false);
@@ -690,6 +704,32 @@ impl Session<'_> {
             self.drills[drill.0 as usize].rooms[(layer - first_layer) as usize] = found;
         }
         Ok(true)
+    }
+
+    /// True if every trace obstacle of the session's net in the autoroute
+    /// tree at `shape` on `layer` lets the net's vias through, and there is
+    /// at least one (Q09).
+    fn only_via_passable_obstacles_at(&self, shape: &TileShape, layer: i32) -> bool {
+        let mut passable = false;
+        for object in self
+            .tree()
+            .overlapping_objects(shape, layer, &[], &self.board.items)
+        {
+            let TreeObject::Item(id) = object else {
+                continue;
+            };
+            let Some(item) = self.board.item(id) else {
+                continue;
+            };
+            if !self.board.is_trace_obstacle(item, self.net) {
+                continue;
+            }
+            if !self.board.lets_vias_through(item, self.net) {
+                return false;
+            }
+            passable = true;
+        }
+        passable
     }
 
     /// One layer of the scan in `calculateExpansionRooms` (`:62-75`).

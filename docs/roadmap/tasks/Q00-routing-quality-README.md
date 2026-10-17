@@ -22,7 +22,7 @@ implementation is never edited, so default results stay byte-identical.
 | [Q06](archive/Q06-failure-attribution-and-verdicts.md) ✅ | Blocking nets per failed connection; one verdict per incomplete connection | M / low: report only | rung 3; A04 failure record; Q03; C08 |
 | [Q07](Q07-first-pass-ordering.md) | Pass-1 conflict-round and inside-out orderings | S / medium | rung 3; A10 |
 | [Q08](Q08-earned-budget-extension.md) | One more maze budget only when the search is still closing in | S / medium: changes where limits cut | rung 3; A04 budget hook; B02 WorkMeter |
-| [Q09](Q09-trace-only-keepouts.md) | Specctra `wire_keepout` as trace-only (vias allowed) behind a setting; a trace-only mode for Q01's plane policy | M / medium: changes routing on Issue754 when on | rung 3; B09.4; Q01; C02; K06; F03 |
+| [Q09](archive/Q09-trace-only-keepouts.md) ✅ | Specctra `wire_keepout` as trace-only (vias allowed) behind a setting; a trace-only mode for Q01's plane policy | M / medium: changes routing on Issue754 when on | rung 3; B09.4; Q01; C02; K06; F03 |
 | [Q10](Q10-add-only-completion-sweep.md) | Add-only completion sweep after the best-board restore (Java's two-run "freeze and add" flow, in-engine), also after the optimizer | S / low: only adds copper | rung 3; A10, A13; B01; Q06 |
 | [Q11](Q11-transactional-ripup.md) | Transactional rip-up: re-route ripped victims at once, roll back if they don't re-land; a rip-cost sweep first | S–M / medium | rung 3; A10, A11; B01; Q05.1 |
 | [Q12](Q12-pass-1-portfolio.md) | Pass-1 portfolio: K deterministic orders on board clones in parallel, keep the best; squeaky-wheel restarts; per-board order spread | S / medium: memory × K | rung 3; A10; B01; O06; Q07.1–Q07.3 |

@@ -1,0 +1,74 @@
+(pcb q09-plane-island.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic Q09 fixture: a +12V island (net P12, class Pwr) over all of In1.Cu; GND from an F.Cu pad to a B.Cu pad needs a via through the island; S has two F.Cu pads either side of a wall on F.Cu and B.Cu, so its shortest way is a trace across the island")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer In1.Cu (type signal) (property (index 1)))
+    (layer B.Cu (type signal) (property (index 2)))
+    (boundary
+      (path pcb 0  0 0  40000 0  40000 30000  0 30000  0 0)
+    )
+    (plane P12 (polygon In1.Cu 0  0 0  40000 0  40000 30000  0 30000))
+    (keepout "" (rect F.Cu 19000 0 21000 30000))
+    (keepout "" (rect B.Cu 19000 0 21000 30000))
+    (via "Via[0-2]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "FPAD"
+      (place G1 5000 15000 front 0)
+      (place S1 5000 5000 front 0)
+      (place S2 35000 5000 front 0)
+      (place P1 5000 25000 front 0)
+    )
+    (component "BPAD"
+      (place G2 15000 15000 front 0)
+    )
+  )
+  (library
+    (image "FPAD"
+      (pin FrontPad 1 0 0)
+    )
+    (image "BPAD"
+      (pin BackPad 1 0 0)
+    )
+    (padstack FrontPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack BackPad
+      (shape (rect B.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-2]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net GND (pins G1-1 G2-1))
+    (net S (pins S1-1 S2-1))
+    (net P12 (pins P1-1))
+    (class kicad_default "" GND S
+      (circuit (use_via "Via[0-2]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+    (class Pwr P12
+      (circuit (use_via "Via[0-2]_600:300_um"))
+      (rule (width 500) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

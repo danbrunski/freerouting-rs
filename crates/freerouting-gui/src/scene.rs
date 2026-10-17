@@ -594,7 +594,7 @@ impl<'a> Flattener<'a> {
             }
             ItemKind::Area(area) => {
                 let kind = match area.kind {
-                    AreaKind::Obstacle => Kind::Keepout,
+                    AreaKind::Obstacle | AreaKind::TraceObstacle => Kind::Keepout,
                     AreaKind::ViaObstacle => Kind::ViaKeepout,
                     AreaKind::ComponentObstacle => Kind::PlaceKeepout,
                     AreaKind::Conduction { .. } => Kind::Plane,

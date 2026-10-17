@@ -61,6 +61,12 @@ branch 3 in IntOctagon's box cutout.
 - The syntax tree keeps `wire_keepout` as its own kind (`KeepoutKind::WireKeepout`, test
   `wire_keepout_keeps_its_kind`); Java lexes it as `keepout`. The board builds it as a
   keepout, as Java does (`issue754_item_ids_do_not_change`, `issue754_ground_area_still_blocks_vias`).
+- Every unknown named scope is reported once per keyword per file, with the keyword, the
+  enclosing scope and its first position (Q09.6), except a quiet list of KiCad scopes that carry
+  no constraint: `property` inside `layer` (`only_listed_kicad_scopes_skip_without_a_warning`).
+  Java's `skipScope` warns only for a scope without a keyword. What is read does not change, and the board reader does not pass these
+  warnings on, so the warnings compared with Java's are unchanged; the warnings of a rules file
+  reach the job log (`an_unknown_keepout_warns_once_naming_keyword_and_scope`).
 
 ## freerouting (board model)
 
@@ -221,6 +227,20 @@ branch 3 in IntOctagon's box cutout.
   signal-layer pours obstacles for the nets with no pin or input via inside them, through the
   B09 area policy; an unknown class name fails the job, naming it and the board's classes; with
   `plane_as_obstacle` set it changes nothing (`tests/quality_pour_guard.rs`).
+- `plane_obstacle_block` (Q09.4) is a settings field Java does not have, unset by default
+  (`traces_and_vias`, Q01's rule). `traces` makes a listed pour bar the traces of the foreign
+  nets it blocks and let their vias through, so the maze search lets a drill pass a layer where
+  only such pours cover its location; any other value fails the job, naming it
+  (`tests/trace_obstacle.rs`, `traces_mode_lets_a_foreign_gnd_via_through_the_island`).
+- `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
+  Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
+  `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which
+  Java has no class for: an obstacle to the traces of every net and to no via. The maze search
+  then lets a drill pass a layer on which only such areas cover its location (the layer keeps no
+  room, the via is checked against the drill's shape there), and the DSN writer writes the area
+  back as `wire_keepout`. It changes routes on `Issue754-avionics_hub` (its Ground layer accepts
+  vias) and on canary-pwr's `in2-open-wirekeepout` variant; an image-level `wire_keepout` stays a
+  keepout (`tests/trace_obstacle.rs`). Off by default until Q09.5's measurement.
 - The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
   (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
   `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the

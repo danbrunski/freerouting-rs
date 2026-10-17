@@ -1,0 +1,64 @@
+(pcb q09-wire-keepout.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic Q09 fixture: a wire_keepout over all of In1.Cu, net A from an F.Cu pad to a B.Cu pad, so A needs a via through In1.Cu; a plain keepout on B.Cu away from the route")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer In1.Cu (type signal) (property (index 1)))
+    (layer B.Cu (type signal) (property (index 2)))
+    (boundary
+      (path pcb 0  0 0  40000 0  40000 30000  0 30000  0 0)
+    )
+    (wire_keepout "" (polygon In1.Cu 0  0 0  40000 0  40000 30000  0 30000))
+    (keepout "" (rect B.Cu 30000 24000 34000 28000))
+    (via "Via[0-2]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "FPAD"
+      (place A1 5000 15000 front 0)
+    )
+    (component "BPAD"
+      (place A2 35000 15000 front 0)
+    )
+  )
+  (library
+    (image "FPAD"
+      (pin FrontPad 1 0 0)
+    )
+    (image "BPAD"
+      (pin BackPad 1 0 0)
+    )
+    (padstack FrontPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack BackPad
+      (shape (rect B.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-2]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net A (pins A1-1 A2-1))
+    (class kicad_default "" A
+      (circuit (use_via "Via[0-2]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

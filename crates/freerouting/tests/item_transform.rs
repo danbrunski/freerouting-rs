@@ -47,6 +47,7 @@ fn java_type(item: &Item) -> &'static str {
         ItemKind::Trace(_) => "PolylineTrace",
         ItemKind::Area(area) => match area.kind {
             AreaKind::Obstacle => "ObstacleArea",
+            AreaKind::TraceObstacle => "TraceObstacleArea",
             AreaKind::ViaObstacle => "ViaObstacleArea",
             AreaKind::ComponentObstacle => "ComponentObstacleArea",
             AreaKind::Conduction { .. } => "ConductionArea",

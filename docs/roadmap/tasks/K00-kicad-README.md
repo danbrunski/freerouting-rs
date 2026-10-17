@@ -143,7 +143,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
    still built as a full keepout) and reports each such area as a warning.
    Making it trace-only becomes a measured Q-series divergence after board
    parity, measured on Issue754 and the `canary-pwr` variants. It needs a
-   new Q checklist: [Q09](Q09-trace-only-keepouts.md).
+   new Q checklist: [Q09](archive/Q09-trace-only-keepouts.md).
 2. **KiCad's coordinate resolution.** KiCad's DSN declares
    `(resolution um 10)` (tenths of µm) and writes coordinates in µm.
    Placements keep KiCad's nm precision (`133199.999` at

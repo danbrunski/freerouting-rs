@@ -27,6 +27,12 @@
 //! - **D8.** A signal-layer pour of a net that has a power-layer plane is
 //!   dropped by the DSN reader (it would make the net's pads look
 //!   connected), so it is never listed.
+//! - **Block mode** (Q09.4, `router.plane_obstacle_block`): `traces_and_vias`
+//!   (unset; the rule above) or `traces`, where a listed pour bars the
+//!   traces of the foreign nets it would block and lets their vias through
+//!   ([`PlaneBlock`]). A via that passes keeps Java's clearances to every
+//!   other item; to the pour itself it is what a via is to any plane that is
+//!   no obstacle (the pour is refilled around it).
 //! - **Off.** With the key unset or empty, or with `router.plane_as_obstacle`
 //!   set (Java's rule then wins and the key changes nothing), no policy is
 //!   installed and routing is Java's.
@@ -46,12 +52,48 @@ use crate::settings::RouterSettings;
 /// The settings key, as the CLI and the JSON file name it.
 pub const SETTINGS_KEY: &str = "router.plane_obstacle_net_classes";
 
+/// The block mode's settings key (Q09.4).
+pub const BLOCK_KEY: &str = "router.plane_obstacle_block";
+
+/// What a listed pour blocks for the foreign nets it is an obstacle to
+/// (Q09.4).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PlaneBlock {
+    /// Their traces and their vias (Q01).
+    #[default]
+    TracesAndVias,
+    /// Their traces only; their vias pass.
+    Traces,
+}
+
+impl PlaneBlock {
+    /// The mode of a setting value; unset is [`PlaneBlock::TracesAndVias`].
+    pub fn parse(value: Option<&str>) -> Result<PlaneBlock, PourGuardError> {
+        match value.map(str::trim) {
+            None | Some("") | Some("traces_and_vias") => Ok(PlaneBlock::TracesAndVias),
+            Some("traces") => Ok(PlaneBlock::Traces),
+            Some(other) => Err(PourGuardError::UnknownBlockMode(other.to_string())),
+        }
+    }
+
+    /// The setting value.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            PlaneBlock::TracesAndVias => "traces_and_vias",
+            PlaneBlock::Traces => "traces",
+        }
+    }
+}
+
 /// A settings error of the pour guard.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PourGuardError {
     /// A listed class name is not a net class of the board; with the
     /// board's class names, in board order.
     UnknownNetClass { name: String, known: Vec<String> },
+    /// `router.plane_obstacle_block` is neither `traces` nor
+    /// `traces_and_vias` (Q09.4).
+    UnknownBlockMode(String),
 }
 
 impl fmt::Display for PourGuardError {
@@ -61,6 +103,10 @@ impl fmt::Display for PourGuardError {
                 f,
                 "{SETTINGS_KEY}: the board has no net class '{name}' (its classes: {})",
                 known.join(", ")
+            ),
+            PourGuardError::UnknownBlockMode(value) => write!(
+                f,
+                "{BLOCK_KEY}: unknown value '{value}' (expected 'traces' or 'traces_and_vias')"
             ),
         }
     }
@@ -74,6 +120,8 @@ pub struct ExemptionTable {
     /// Per listed conduction area (in `ItemId` order): the exempt nets,
     /// ascending.
     areas: BTreeMap<ItemId, Vec<i32>>,
+    /// What a listed pour blocks (Q09.4).
+    block: PlaneBlock,
 }
 
 impl ExemptionTable {
@@ -124,7 +172,20 @@ impl ExemptionTable {
             }
             areas.insert(id, exempt.into_iter().collect());
         }
-        Ok(ExemptionTable { areas })
+        Ok(ExemptionTable {
+            areas,
+            block: PlaneBlock::TracesAndVias,
+        })
+    }
+
+    /// The table with block mode `block` (Q09.4).
+    pub fn with_block(self, block: PlaneBlock) -> ExemptionTable {
+        ExemptionTable { block, ..self }
+    }
+
+    /// The block mode.
+    pub fn block(&self) -> PlaneBlock {
+        self.block
     }
 
     /// The number of listed pours.
@@ -159,6 +220,14 @@ impl AreaObstaclePolicy for ExemptionTable {
         self.areas
             .get(&area)
             .is_some_and(|exempt| exempt.binary_search(&net).is_err())
+    }
+
+    fn blocks_vias(&self, area: ItemId, net: i32) -> bool {
+        self.block == PlaneBlock::TracesAndVias && self.blocks(area, net)
+    }
+
+    fn lets_vias_through(&self) -> bool {
+        self.block == PlaneBlock::Traces && !self.areas.is_empty()
     }
 }
 
@@ -241,9 +310,14 @@ pub fn install(
             ),
         }));
     }
-    let table = ExemptionTable::build(board, classes)?;
+    let block = PlaneBlock::parse(settings.plane_obstacle_block.as_deref())?;
+    let table = ExemptionTable::build(board, classes)?.with_block(block);
+    let blocked = match block {
+        PlaneBlock::TracesAndVias => "block",
+        PlaneBlock::Traces => "block the traces (not the vias) of",
+    };
     let text = format!(
-        "Pour guard: {} pour(s) of net classes {} block the nets with no pin or via inside \
+        "Pour guard: {} pour(s) of net classes {} {blocked} the nets with no pin or via inside \
          them ({} exemptions).",
         table.len(),
         classes.join(", "),

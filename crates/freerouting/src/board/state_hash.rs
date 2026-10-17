@@ -162,6 +162,7 @@ fn encode_item(h: &mut Fnv128, item: &Item) {
                 AreaKind::ViaObstacle => 14,
                 AreaKind::ComponentObstacle => 15,
                 AreaKind::Conduction { .. } => 16,
+                AreaKind::TraceObstacle => 19,
             });
             h.debug_digest(area);
         }

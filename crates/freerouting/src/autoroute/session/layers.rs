@@ -330,6 +330,10 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
             let sorting_value =
                 expansion_value + self.s.distance.calculate_point(&middle, to_layer);
             let next_room = self.s.drill(drill).rooms[index];
+            if next_room.is_none() && control.vias_pass_trace_only_areas {
+                // Q09: a layer the via only passes.
+                continue;
+            }
             let new_element = MazeListElement {
                 door: ExpandableRef::Drill(drill),
                 section: index,
@@ -355,10 +359,16 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
         layer: i32,
     ) -> Result<CheckDrillResult, RoomError> {
         let d = self.s.drill(drill);
-        let room = d.rooms[(layer - d.first_layer) as usize].ok_or(RoomError::NullPointer {
-            at: "MazeExpansionEngine.expandToOtherLayers",
-        })?;
-        let shape = self.room_shape(room)?.clone();
+        let shape = match d.rooms[(layer - d.first_layer) as usize] {
+            Some(room) => self.room_shape(room)?.clone(),
+            // Q09: a layer the via only passes is checked against the drill.
+            None if self.s.control.vias_pass_trace_only_areas => d.shape.clone(),
+            None => {
+                return Err(RoomError::NullPointer {
+                    at: "MazeExpansionEngine.expandToOtherLayers",
+                });
+            }
+        };
         let result = self.check_layer_with_any_matching_via(drill, layer, &shape);
         if result == CheckDrillResult::NotDrillable
             && let Some(blocker) = self.s.board.shove_failing_obstacle()

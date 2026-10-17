@@ -12,6 +12,7 @@ pub mod rules_reader;
 pub mod rules_writer;
 mod ses_reader;
 pub mod ses_writer;
+pub mod wire_keepout;
 
 pub use dsn_reader::{BoardReadResult, build_board, read_board, read_board_from_str};
 pub use rules_reader::{RulesError, RulesOutcome, apply_rules_file, read_rules};

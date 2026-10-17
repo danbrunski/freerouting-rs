@@ -1,0 +1,75 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q09.5-trace-only-keepouts",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/Q09-trace-only-keepouts.md",
+  "question": "Does building Specctra wire_keepout as a trace-only keepout (router.wire_keepout=traces_only) leave fewer unrouted connections than Java's reading (a full keepout) on at least N-1 of the eligible boards, with none worse, no new DRC errors, no via in a pad and no copper below its class width? The second candidate, the pour guard's traces mode (plane_traces), is judged the same way against the same baseline with candidate_arm set to plane_traces (a second gate run on this file's arms; the registration's hash covers both).",
+  "arms": {
+    "keepout": {
+      "engine": "freerouting-rs at the commit that lands P04's default-tree decision, with Q09 (router.wire_keepout unset)",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150",
+      "settings": {
+        "wire_keepout": "unset (keepout)",
+        "plane_obstacle_net_classes": "unset"
+      }
+    },
+    "traces_only": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 --router.wire_keepout=traces_only",
+      "settings": {
+        "wire_keepout": "traces_only",
+        "plane_obstacle_net_classes": "unset"
+      }
+    },
+    "plane_traces": {
+      "engine": "freerouting-rs at the same commit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} -mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 --router.plane_obstacle_net_classes={CLASSES} --router.plane_obstacle_block=traces",
+      "settings": {
+        "wire_keepout": "unset (keepout)",
+        "plane_obstacle_net_classes": {
+          "canary-pwr-9511d9a-in2-open": "Power_High",
+          "canary-pwr-9511d9a-in2-open-wirekeepout": "Power_High",
+          "Issue754-avionics_hub": "none (no signal-layer pour): not eligible for this arm"
+        },
+        "plane_obstacle_block": "traces",
+        "classes_rule": "the net classes of the islands the wire_keepouts cover, decided from the input (canary-pwr: +12V_BUS and +5V_PI, class Power_High)"
+      }
+    }
+  },
+  "baseline_arm": "keepout",
+  "candidate_arm": "traces_only",
+  "boards": {
+    "set": "tools/bench/sets/q09-wire-keepouts.txt",
+    "eligibility": "traces_only: a board with at least one structure-level wire_keepout (Issue754, canary-pwr in2-open-wirekeepout); plane_traces: a board with a signal-layer pour of a listed class (both canary-pwr in2-open variants). Decided from the inputs. Every benchmark-set board is ineligible for both (no wire_keepout, no listed pour) and is run only as the identity check: each arm's session must be byte-identical to the keepout arm's there.",
+    "identity_set": "tools/bench/sets/benchmark.txt",
+    "canary_grouping": "the two canary-pwr rows are one board (gate collect --group canary-pwr=canary-pwr)",
+    "files": {
+      "fixtures/Issue754-avionics_hub.dsn": "c31613660d0bc393ed7a9996efd74d65f0942fcc75fcfff6ceb3f6aa93c658cc",
+      "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn": "7b876b9d50c4f6ce0f407334ff74c0914108bfdaba6a85ec24bb285d013a51e1",
+      "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open.dsn": "17020c17431bb7e3e3d8354df551f04213ad3e736d3846b2b95f7261990967ff"
+    }
+  },
+  "grading": "canary-pwr by canary-23's ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py and inner_tracks.py run with In2 (Power.Cu) allowed for signals (the in2-open variants route on it by design); Issue754 has no .kicad_pcb and is graded by freerouting-dev ses-diff statistics only (not a KiCad grade, so it can't be the deciding row)",
+  "metrics": [
+    { "name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "drc_real", "role": "guard", "kind": "int", "direction": "lower" },
+    { "name": "unrouted", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "foreign_island_mm", "role": "score", "kind": "float", "direction": "lower", "tol": 0.01 },
+    { "name": "vias", "role": "report", "kind": "int", "direction": "lower", "compared": false },
+    { "name": "length_mm", "role": "report", "kind": "float", "direction": "lower", "compared": false },
+    { "name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false }
+  ],
+  "metric_definitions": {
+    "unrouted": "KiCad unconnected_items after ses_import and refill (canary-pwr); freerouting-dev ses-diff incomplete connections (Issue754)",
+    "foreign_island_mm": "summed length of the trace segments of every net inside a conduction area of another net of a listed class on the same layer (canary-pwr: the +12V_BUS and +5V_PI planes on Power.Cu); 166 mm on in2-open with Java 46bf9e2ef is the number to beat"
+  },
+  "pass_rule": { "min_boards": 3, "improve_all_but": 1, "max_regress": 0 },
+  "decision_table": {
+    "pass": "make the candidate's value the default; DIVERGENCES line with the numbers",
+    "fail": "the setting stays opt-in (the KiCad plugin can pass it for boards that need it); the numbers go in Q09.5's done note",
+    "note": "with two eligible boards (Issue754 and the canary-pwr group) the pass rule's three-board minimum can't be met, so the defaults can't change on this set; a third eligible board (a real board with a tracks-only rule area, read directly from .kicad_pcb by K06 or exported) goes in an amendment before its first number"
+  },
+  "timing": "measured only after P04's default-tree decision (Q00 README, 'Order and critical path'); a pre-P04 dry run on canary-pwr is recorded in Q09.5's note as a dry run, not judged",
+  "amendments": []
+}

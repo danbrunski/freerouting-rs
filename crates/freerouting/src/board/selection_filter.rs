@@ -164,7 +164,8 @@ impl Item {
             ItemKind::Via(_) => SelectableChoice::Vias,
             ItemKind::Trace(_) => SelectableChoice::Traces,
             ItemKind::Area(area) => match area.kind {
-                AreaKind::Obstacle => SelectableChoice::Keepout,
+                // A trace-only keepout (Q09) is a keepout to the filter.
+                AreaKind::Obstacle | AreaKind::TraceObstacle => SelectableChoice::Keepout,
                 AreaKind::ViaObstacle => SelectableChoice::ViaKeepout,
                 AreaKind::ComponentObstacle => SelectableChoice::ComponentKeepout,
                 AreaKind::Conduction { .. } => SelectableChoice::Conduction,

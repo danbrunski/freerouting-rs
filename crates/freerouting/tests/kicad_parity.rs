@@ -112,6 +112,7 @@ fn kind_label(item: &Item) -> String {
         ItemKind::Area(a) => match a.kind {
             AreaKind::Obstacle => "area:keepout".into(),
             AreaKind::ViaObstacle => "area:via_keepout".into(),
+            AreaKind::TraceObstacle => "area:wire_keepout".into(),
             AreaKind::ComponentObstacle => "area:place_keepout".into(),
             AreaKind::Conduction { .. } => "area:plane".into(),
         },

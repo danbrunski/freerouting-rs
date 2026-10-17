@@ -138,7 +138,7 @@ impl BasicBoard {
                         self.push_shape_info(item, &mut fields);
                         self.push_connectable(item, &mut fields);
                     }
-                    AreaKind::Obstacle => {
+                    AreaKind::Obstacle | AreaKind::TraceObstacle => {
                         if item.component_id() > 0 {
                             self.push_component(item, &mut fields);
                         }

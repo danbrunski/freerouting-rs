@@ -21,14 +21,17 @@
 //! The reader follows the Java reader's grammar: keywords are matched without
 //! regard to case and with the same aliases (`clear`, `circ`, `rectangle`,
 //! `prefered_direction`, ...); names are read with the same
-//! token rules; unknown scopes are skipped. Errors and warnings carry the
-//! line and column where they were found.
+//! token rules; unknown scopes are skipped, each unknown keyword with one
+//! warning per file except KiCad's constraint-free `property` inside `layer`
+//! (Q09.6; Java warns only for a scope without a keyword).
+//! Errors and warnings carry the line and column where they were found.
 //!
 //! `wire_keepout` (KiCad's tracks-only rule area) is not an alias: the tree
 //! keeps it as [`ast::KeepoutKind::WireKeepout`] and writes it back as
 //! `wire_keepout`. Java's lexer reads it as `keepout`, and the engine's board
-//! builder does the same. Inside a `(place ...)` scope, which holds names only,
-//! it is read as `keepout`.
+//! builder does the same unless `router.wire_keepout = "traces_only"` (Q09.3).
+//! Inside a `(place ...)` scope, which holds names only, it is read as
+//! `keepout`.
 //!
 //! # Writing
 //!

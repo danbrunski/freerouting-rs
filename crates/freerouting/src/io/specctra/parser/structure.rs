@@ -15,6 +15,7 @@ use super::layer::{DsnLayer, DsnLayerStructure};
 use super::shape::{DsnArea, DsnShape, DsnShapeKind, rectangle_to_board, transform_area_to_board};
 use super::{NetKey, PlaneInfo, ReadContext};
 use crate::board::RoutingBoard;
+use crate::board::items::ItemId;
 use crate::board::state::{Communication, SpecctraParserInfo};
 use crate::board::structure::{AngleRestriction, FixedState, Layer, LayerStructure};
 use crate::datastructures::ItemIdGenerator;
@@ -123,8 +124,9 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
     }
     info.default_rules.extend(structure.rules.iter().cloned());
 
-    // Keepouts, grouped by kind as Java inserts them.
-    let mut keepouts: [Vec<DsnArea>; 3] = Default::default();
+    // Keepouts, grouped by kind as Java inserts them; each with whether it
+    // is a `wire_keepout` (Q09.3).
+    let mut keepouts: [Vec<(DsnArea, bool)>; 3] = Default::default();
     for keepout in &structure.keepouts {
         let index = match keepout.kind {
             ast::KeepoutKind::Keepout => 0,
@@ -140,7 +142,9 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
             ast::KeepoutKind::PlaceKeepout => 2,
         };
         match DsnArea::resolve(&keepout.area, Some(&ctx.layer_structure), false) {
-            Some(area) => keepouts[index].push(area),
+            Some(area) => {
+                keepouts[index].push((area, keepout.kind == ast::KeepoutKind::WireKeepout))
+            }
             // Java keeps a null area here and fails with an exception when
             // it inserts the keepouts.
             None => ctx.log("Shape.read_area_scope: could not read shape of keepout"),
@@ -183,8 +187,8 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
         ctx.board().components.set_flip_style_rotate_first(true);
     }
     for (index, list) in keepouts.iter().enumerate() {
-        for area in list {
-            if !insert_keepout(ctx, area, index) {
+        for (area, wire) in list {
+            if !insert_keepout(ctx, area, index, *wire) {
                 return false;
             }
         }
@@ -323,7 +327,10 @@ fn insert_missing_power_planes(ctx: &mut ReadContext, layer_info: &[DsnLayer]) {
 
 /// Java `Structure.insertKeepout`. `kind` is 0 for keepouts, 1 for via
 /// keepouts and 2 for place keepouts.
-fn insert_keepout(ctx: &mut ReadContext, area: &DsnArea, kind: usize) -> bool {
+/// Inserts a keepout of group `kind` on its layers; a `wire` keepout (a
+/// Specctra `wire_keepout`, built as a keepout) is also recorded in the
+/// board's `wire_keepouts` (Q09.3).
+fn insert_keepout(ctx: &mut ReadContext, area: &DsnArea, kind: usize, wire: bool) -> bool {
     let transform = ctx.coordinate_transform;
     let Some(keepout_area) = transform_area_to_board(&area.shapes, &transform) else {
         ctx.log("Shape.transform_area_to_board: keepout area could not be converted");
@@ -350,11 +357,17 @@ fn insert_keepout(ctx: &mut ReadContext, area: &DsnArea, kind: usize) -> bool {
             .collect();
         for i in signal_layers {
             if (i as usize) < ctx.board().layer_count() {
-                insert_keepout_on_layer(ctx.board(), &keepout_area, i, area, kind);
+                let id = insert_keepout_on_layer(ctx.board(), &keepout_area, i, area, kind);
+                if wire {
+                    ctx.board().wire_keepouts.push(id);
+                }
             }
         }
     } else if layer.no >= 0 {
-        insert_keepout_on_layer(ctx.board(), &keepout_area, layer.no, area, kind);
+        let id = insert_keepout_on_layer(ctx.board(), &keepout_area, layer.no, area, kind);
+        if wire {
+            ctx.board().wire_keepouts.push(id);
+        }
     } else {
         ctx.log("Structure.insert_keepout: unknown layer name");
         return false;
@@ -368,7 +381,7 @@ fn insert_keepout_on_layer(
     layer: i32,
     area: &DsnArea,
     kind: usize,
-) {
+) -> ItemId {
     let clearance_class = match &area.clearance_class {
         None => {
             let default = board.rules.default_net_class();
@@ -396,7 +409,7 @@ fn insert_keepout_on_layer(
         1 => board.insert_via_obstacle(area, layer, clearance_class, FixedState::SystemFixed),
         2 => board.insert_component_obstacle(area, layer, clearance_class, FixedState::SystemFixed),
         _ => board.insert_obstacle(area, layer, clearance_class, FixedState::SystemFixed),
-    };
+    }
 }
 
 /// Java `Structure.promotePowerLayersWithoutPlane`: a power layer without

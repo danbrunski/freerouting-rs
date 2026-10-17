@@ -180,7 +180,8 @@ fn bounding_radius(shape: &ConvexShape) -> i32 {
 pub fn is_via_obstacle(board: &BasicBoard, item: &Item, net: i32) -> bool {
     match &item.kind {
         ItemKind::Area(area) => match area.kind {
-            AreaKind::ComponentObstacle => false,
+            // A trace-only keepout (Q09) lets vias through.
+            AreaKind::ComponentObstacle | AreaKind::TraceObstacle => false,
             AreaKind::Obstacle | AreaKind::ViaObstacle => !item.contains_net(net),
             AreaKind::Conduction { .. } => board.is_trace_obstacle(item, net),
         },

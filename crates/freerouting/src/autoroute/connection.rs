@@ -397,6 +397,7 @@ pub fn java_item_text(item: &Item) -> String {
         ItemKind::Area(area) => match area.kind {
             AreaKind::Obstacle => "obstaclearea",
             AreaKind::ViaObstacle => "viaobstaclearea",
+            AreaKind::TraceObstacle => "traceobstaclearea",
             AreaKind::ComponentObstacle => "componentobstaclearea",
             AreaKind::Conduction { .. } => "conductionarea",
         },

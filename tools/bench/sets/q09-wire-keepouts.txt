@@ -1,0 +1,7 @@
+# Q09.5: boards with a Specctra wire_keepout (arm traces_only) or a signal-layer power island
+# (arm plane_traces), for the registration tools/ab/q09-trace-only-keepouts.json. The benchmark
+# set (tools/bench/sets/benchmark.txt) is run with every arm as the identity check only: none of
+# its boards has a wire_keepout, so the arms must give byte-identical sessions there.
+fixtures/Issue754-avionics_hub.dsn                                  # wire_keepout over all of Ground
+fixtures/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn     # wire_keepouts over +12V_BUS, +5V_PI on Power.Cu
+fixtures/canary-pwr/canary-pwr-9511d9a-in2-open.dsn                 # the same board without them (plane_traces arm)
