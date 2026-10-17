@@ -48,7 +48,7 @@ grading below):
 
 | Board | Flags | Freerouting | KiCad |
 |---|---|---|---|
-| 9511d9a | `-mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150` | 102 / 40 (all 40 in the input); 1 `WORK_LIMIT_CUTOFF` (`pull_tight`) and 3 `normalizeTraces` 2000-iteration guards, so not a zero-cut-off parity target | 41 unconnected with a CAN_WAKE track on In1; **42** with it stripped (2 starved thermals, no errors): the result to beat (canary `9b7a5fe`) |
+| 9511d9a | `-mp 1 --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150` | 102 / 40 (all 40 in the input); 1 `WORK_LIMIT_CUTOFF` (`pull_tight`) and 3 `normalizeTraces` 2000-iteration guards, so not a zero-cut-off parity target | 41 unconnected with a CAN_WAKE track on In1; **42** with it stripped (2 starved thermals, no errors; canary `9b7a5fe`): the 46bf9e2ef baseline, superseded by 40 below |
 | 9511d9a-in2-open | same | 94 unrouted | 28 unconnected, 2 clearance, 8 starved thermals, 0 vias in pads: not a valid result (clearance errors) |
 | 9511d9a-addonly | not recorded in the handover | not recorded | `routed36` is 37 without its In1 track and still has a clearance error, so not valid |
 
