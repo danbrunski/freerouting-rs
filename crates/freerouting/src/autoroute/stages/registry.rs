@@ -514,6 +514,11 @@ impl StageSelection {
                     id: id.clone(),
                     from_default: false,
                 })
+                .chain(sp.length_matching.iter().map(|id| StageChoice {
+                    key: "router.special.length_matching",
+                    id: id.clone(),
+                    from_default: false,
+                }))
                 .collect(),
             diagnostics: sp
                 .diagnostics

@@ -1,0 +1,11 @@
+# X07.6: boards with length targets for the krt-meander stage (docs/roadmap/prereg/X07.json).
+# `groups=` in the comment lists the row's router.length_matching.groups, `;`-separated
+# (decided from the net names of the input, before any number). The synthetic boards are
+# committed; the corpus boards are F03.3's out-of-repo corpus (tools/bench/sets/kicad-corpus.txt),
+# skipped while missing. Run by crates/freerouting-krt/tests/length.rs measurement_records_on_a_set.
+crates/freerouting-krt/tests/data/x07-group.dsn   # synthetic, 3 nets, groups=G=A|B|C@100um
+crates/freerouting-krt/tests/data/x07-measure.dsn   # synthetic, class minimum 100 mm on N
+crates/freerouting-krt/tests/data/x07-tight.dsn   # synthetic, class minimum 60 mm on A, no room
+target/corpus/prepped/picodvi-picodvi.dsn   # 4 layers, DVI and USB pairs, BSD-3-Clause, groups=DVI=/DVI_*@100um;USB=/USB_D?@100um
+target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn   # 4 layers, PCIe lanes, MIT, groups=RX=PCIE_RX*@100um;TX=PCIE_TX*@100um
+target/corpus/prepped/mydevboard-rp2040dev.dsn   # 2 layers, USB pair, LicenseRef-none, groups=USB=USB_D?@100um

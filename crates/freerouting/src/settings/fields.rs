@@ -419,8 +419,15 @@ settings_table! {
             (strict, bool, opt, None, None, "strict", [], Flat::No, true,
                 "Strict sizes: neck-down stages don't narrow; exit 3 if copper ships under its class width."),
         }
+        length_matching, LengthMatchingPatch, LengthMatchingSettings, "lengthMatching",
+        "Length and time matching targets (X07.2; not a Java section)." {
+            (groups, Vec<String>, opt, None, None, "groups", [], Flat::No, true,
+                "Matched groups `NAME=GLOB[|GLOB...][@TOL]` (TOL `<n>um`, `<n>mm` or `<n>ps`; default 100um)."),
+        }
         special, SpecialPatch, SpecialSettings, "special",
         "Stage selection for the special stages (A10.2; not a Java section)." {
+            (length_matching, String, opt, None, None, "lengthMatching", [], Flat::No, true,
+                "Length matching stage id (X07: `krt-meander`), run last; unset runs none."),
             (plane_taps, String, opt, None, None, "planeTaps", [], Flat::No, true,
                 "Plane tap policy id; unset uses the `autorouter.algorithm` bundle's."),
             (neck_down, String, opt, None, None, "neckDown", [], Flat::No, true,

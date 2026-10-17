@@ -41,3 +41,12 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   `_path_to_segments_vias` and so is GPL-3.0-only AND MIT), exact connectors to
   the pins, and one DRC-checked transaction per attempt; on failure the
   frontier's blocking items. The other X05 files are written from KRT ideas.
+- `length` (X07): length and time matching, the `krt-meander` board stage
+  (`router.special.length_matching = krt-meander`, groups in
+  `router.length_matching.groups`), run after the optimizer: net lengths with
+  via barrels and pad-to-die from the KiCad reader's stackup (`length/measure.rs`,
+  which ports KRT's barrel and route-length sums), delays per layer from εr
+  (`length/timing.rs`, which ports KRT's `impedance.py` delay functions; both
+  GPL-3.0-only AND MIT), and trombone bumps on straight runs, each inserted in one
+  DRC-checked transaction (`length/meander.rs`, `length/matching.rs`,
+  `length/targets.rs`, written from KRT ideas).

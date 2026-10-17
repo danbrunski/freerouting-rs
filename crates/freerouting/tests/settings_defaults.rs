@@ -160,6 +160,9 @@ fn defaults_with_eight_cores() {
         ("optimizer_scoring.difficulty_scale_floor", f32v(1.0)),
         // Q02.2: strict sizes, unset (off; not a Java key, so not dumped).
         ("neck_down.strict", None),
+        // X07: no length matching unless selected.
+        ("length_matching.groups", None),
+        ("special.length_matching", None),
         // The A10.2 stage keys: no default.
         ("autorouter.ordering", None),
         ("autorouter.connection_router", None),

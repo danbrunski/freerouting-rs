@@ -1,0 +1,60 @@
+(pcb x07-group.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic X07.4 fixture: three pre-routed nets A, B, C of 50, 60 and 70 mm on F.Cu, 20 mm apart, with room for meanders")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  100000 0  100000 60000  0 60000  0 0)
+    )
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "SMD"
+      (place A1 10000 10000 front 0)
+      (place A2 60000 10000 front 0)
+      (place B1 10000 30000 front 0)
+      (place B2 70000 30000 front 0)
+      (place C1 10000 50000 front 0)
+      (place C2 80000 50000 front 0)
+    )
+  )
+  (library
+    (image "SMD"
+      (pin Smd 1 0 0)
+    )
+    (padstack Smd
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net A (pins A1-1 A2-1))
+    (net B (pins B1-1 B2-1))
+    (net C (pins C1-1 C2-1))
+    (class kicad_default "" A B C
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 250  10000 10000  60000 10000) (net A) (type normal))
+    (wire (path F.Cu 250  10000 30000  70000 30000) (net B) (type normal))
+    (wire (path F.Cu 250  10000 50000  80000 50000) (net C) (type normal))
+  )
+)

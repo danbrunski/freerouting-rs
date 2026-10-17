@@ -1,0 +1,60 @@
+(pcb x07-time.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic X07.5 fixture: net T1 of 70 mm with two vias (F.Cu, B.Cu, F.Cu), net T2 of 60 mm on F.Cu, 25 mm apart")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  100000 0  100000 60000  0 60000  0 0)
+    )
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "SMD"
+      (place T1A 10000 10000 front 0)
+      (place T1B 80000 10000 front 0)
+      (place T2A 10000 35000 front 0)
+      (place T2B 70000 35000 front 0)
+    )
+  )
+  (library
+    (image "SMD"
+      (pin Smd 1 0 0)
+    )
+    (padstack Smd
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net T1 (pins T1A-1 T1B-1))
+    (net T2 (pins T2A-1 T2B-1))
+    (class kicad_default "" T1 T2
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 250  10000 10000  30000 10000) (net T1) (type normal))
+    (via "Via[0-1]_600:300_um" 30000 10000 (net T1) (type normal))
+    (wire (path B.Cu 250  30000 10000  60000 10000) (net T1) (type normal))
+    (via "Via[0-1]_600:300_um" 60000 10000 (net T1) (type normal))
+    (wire (path F.Cu 250  60000 10000  80000 10000) (net T1) (type normal))
+    (wire (path F.Cu 250  10000 35000  70000 35000) (net T2) (type normal))
+  )
+)

@@ -25,7 +25,7 @@ board parity (rung 3).
 | [X04](archive/X04-grid-obstacle-raster.md) ✅ | Board items → conservative obstacle raster with per-item stamps and an audit | M / high: correctness of inflation | X03; F04 |
 | [X05](archive/X05-grid-connection-router-stage.md) ✅ | `krt-grid` connection router: exact pin connectors, path → copper, exact DRC before insert | M / high | X04; A10; B05; B09 (transaction) |
 | [X06](X06-grid-astar-with-pull-tight.md) | `krt-astar` bundle: grid path then pull-tight and via optimizer; measured by region class | S / medium: expected to lose in pin fields | X05; O01, O05, O06 |
-| [X07](X07-length-and-time-matching.md) | Trombone meanders to length and time targets, each bump DRC-checked | M / medium | rung 3; K05.1 (stackup); O01; B09; F04 |
+| [X07](archive/X07-length-and-time-matching.md) ✅ | Trombone meanders to length and time targets, each bump DRC-checked | M / medium | rung 3; K05.1 (stackup); O01; B09; F04 |
 | [X08](X08-diff-pairs-routing.md) | Pair model, centreline at compound width, P/N offset | L / high | rung 3; K05.3, K07.5; A04 width hook; A06; B09; F04 |
 | [X09](X09-diff-pairs-vias-and-optimizer.md) | Coupled via pairs, pair-aware optimizer, measurement | M / high | X08; O01, O06 |
 | [X10](X10-qfn-escape.md) | QFN/QFP escape stubs as a fanout stage, paired with Q02 | S–M / medium | rung 3; A10; B05; B09; Q02; F04 |

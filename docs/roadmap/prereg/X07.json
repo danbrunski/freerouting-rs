@@ -1,0 +1,91 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X07.6-krt-meander-length-matching",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/archive/X07-length-and-time-matching.md",
+  "question": "On boards with length targets (class minimum lengths or matched groups decided from the net names), does the krt-meander stage (run last, after the optimizer) bring every targeted net into its window, or report each net's shortfall, without a new clearance violation, a via in a pad, a new unrouted connection or a new Java length violation? The stage stays a selectable stage if that holds; it is off by default either way.",
+  "arms": {
+    "off": {
+      "engine": "freerouting-rs at the commit that lands X07, freerouting-krt's in-process harness (the CLI does not call freerouting_krt::register yet, C07)",
+      "command": "X07_SET=tools/bench/sets/x07-length.txt X07_RECORDS=<out>/records.json cargo test --release -p freerouting-krt --test length measurement_records_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "special.length_matching": "unset (the stage is not selected)",
+        "all other settings": "the defaults (optimizer on, as the CLI)"
+      }
+    },
+    "on": {
+      "engine": "the same commit and harness; the stage runs on the off arm's final board, which is what selecting it does (it is the last stage)",
+      "command": "the same run; one records file holds both arms",
+      "settings": {
+        "special.length_matching": "krt-meander",
+        "length_matching.groups": "the row's groups= list in tools/bench/sets/x07-length.txt"
+      }
+    }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "on",
+  "boards": {
+    "set": "tools/bench/sets/x07-length.txt",
+    "dsn": "the three synthetic boards in crates/freerouting-krt/tests/data and three boards of F03.3's out-of-repo corpus (target/corpus/prepped, tools/corpus/prep.sh)",
+    "files": {
+      "crates/freerouting-krt/tests/data/x07-group.dsn": "d5cdd3bbd64e1e4b6cd022637751ab1238fb30376a25b61cf7ed2a267adaf48e",
+      "crates/freerouting-krt/tests/data/x07-measure.dsn": "bbd554eef8ccd624881efc6713e70f446d6a4d31a92a4abfa5f02c7b066c85b3",
+      "crates/freerouting-krt/tests/data/x07-tight.dsn": "3480bd8cc344c7461f3e8a35569f293348aa066e1c28151dd967ccfe3744c168",
+      "target/corpus/prepped/picodvi-picodvi.dsn": "004fd6f348739b6ad5a1314534ebeb5ea005f22f49809fa3386928c7afc45378",
+      "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn": "7c909c58c3f9de9c4972b6b5fddc0c4820131c6d0cbd54eb41e78ad8b8dea4ce",
+      "target/corpus/prepped/mydevboard-rp2040dev.dsn": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753"
+    }
+  },
+  "eligibility": "decided from the inputs: a committed synthetic board with a class minimum or a group, or a corpus board with at least two nets matched by a group glob written from its net names before any run (DVI and USB pairs on picodvi, PCIe RX and TX lanes on pcie-active-backplane, the USB pair on mydevboard-rp2040dev). A row whose groups resolve to no net, or whose off arm leaves every net in tolerance, is neutral and printed.",
+  "grading": "Rust's DRC (DesignRulesChecker: clearance violations, incompletes, Java's length-violation count) and the via-in-pad test of crates/freerouting-krt/tests/length.rs, on both arms; KiCad grading (F02.6) of the corpus rows' sessions is a second step once the harness writes their SES (not graded is never a pass)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "java_length_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "nets_out_of_tolerance",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "vias whose centre lies in a pin's pad on a shared layer",
+    "clearance_violations": "DesignRulesChecker::all_clearance_violations on the final board",
+    "unrouted": "DesignRulesChecker::incomplete_count (airlines) on the final board",
+    "java_length_violations": "DesignRulesChecker::length_violation_count (Java NetIncompletes.calcLengthViolation)",
+    "nets_out_of_tolerance": "off: the nets the stage would give a target (a group member below longest - tolerance, or a net below its class minimum); on: the nets the stage reports as not met (shortfall, conflict or stopped)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "decision_table": {
+    "pass": "keep krt-meander as a selectable stage (off by default); X07.6 ticks and DIVERGENCES.md gets no line (no default changes)",
+    "fail": "a guard regression is a bug to fix before the stage is kept; a board where nets stay out of tolerance with their shortfall reported is not a failure (the Accept clause allows it)"
+  },
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'): the off arm routes, so its numbers depend on the tree",
+  "amendments": []
+}

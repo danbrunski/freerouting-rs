@@ -316,6 +316,14 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "strict sizes (Q02.2), set with the CLI or a settings file",
     ),
     (
+        "length_matching.groups",
+        "length-matching groups (X07), set with the CLI or a settings file",
+    ),
+    (
+        "special.length_matching",
+        "stage selection (X07), set with the CLI or a settings file",
+    ),
+    (
         "special.plane_taps",
         "stage selection (A10), set with the CLI or a settings file",
     ),

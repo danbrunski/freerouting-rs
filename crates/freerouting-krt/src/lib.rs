@@ -17,10 +17,13 @@
 //! - [`grid`] (X04, X05): the conservative obstacle raster of one
 //!   connection for the vendored grid A* (`krt-grid-router`), and the
 //!   `krt-grid` connection router on it.
+//! - [`length`] (X07): length and time matching with trombone meanders,
+//!   the `krt-meander` board stage.
 
 use freerouting::autoroute::stages::StageRegistry;
 
 pub mod grid;
+pub mod length;
 pub mod planes;
 
 /// Registers this crate's stages on `registry`. Each X checklist appends
@@ -28,4 +31,5 @@ pub mod planes;
 pub fn register(registry: &mut StageRegistry) {
     planes::register(registry);
     grid::register(registry);
+    length::register(registry);
 }
