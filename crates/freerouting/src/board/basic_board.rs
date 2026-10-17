@@ -1480,7 +1480,10 @@ impl BasicBoard {
                     if area.kind == AreaKind::ComponentObstacle {
                         return false;
                     }
-                    if area.is_conduction_area() && !area.conduction_is_obstacle() {
+                    if area.is_conduction_area()
+                        && !area.conduction_is_obstacle()
+                        && !self.area_policy_blocks_item(other, item)
+                    {
                         return false;
                     }
                 }
@@ -1501,7 +1504,7 @@ impl BasicBoard {
                         AreaKind::ViaObstacle | AreaKind::ComponentObstacle => return false,
                         AreaKind::Conduction {
                             is_obstacle: false, ..
-                        } => return false,
+                        } if !self.area_policy_blocks_item(other, item) => return false,
                         _ => {}
                     }
                 }
@@ -1510,7 +1513,8 @@ impl BasicBoard {
             ItemKind::Area(area) => match area.kind {
                 AreaKind::Obstacle => Self::obstacle_area_is_obstacle(item, other),
                 AreaKind::Conduction { is_obstacle, .. } => {
-                    is_obstacle && Self::obstacle_area_is_obstacle(item, other)
+                    (is_obstacle || self.area_policy_blocks_item(item, other))
+                        && Self::obstacle_area_is_obstacle(item, other)
                 }
                 AreaKind::ViaObstacle => !other.shares_net(item) && other.is_via(),
                 AreaKind::ComponentObstacle => {
@@ -1555,7 +1559,8 @@ impl BasicBoard {
             ItemKind::Area(area) => match area.kind {
                 AreaKind::ViaObstacle | AreaKind::ComponentObstacle => false,
                 AreaKind::Conduction { is_obstacle, .. } => {
-                    is_obstacle && !item.contains_net(net_number)
+                    (is_obstacle || self.area_policy_blocks_net(item, net_number))
+                        && !item.contains_net(net_number)
                 }
                 AreaKind::Obstacle => !item.contains_net(net_number),
             },

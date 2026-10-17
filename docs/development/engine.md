@@ -148,6 +148,17 @@ Engine API added for the desktop app (B08, 2026-10-16), all on `BasicBoard` (so 
 If the GUI needs something else from the engine, add it to the engine crate. Don't
 put board logic in the GUI.
 
+Board services for algorithm stages (B09, 2026-10-16), none used on the parity path:
+- `RoutingBoard::try_change(closure, CheckPolicy)`: insert, check, commit or revert
+  with Java's undo semantics (`board::transaction`);
+- `RoutingBoard::net_obstacles(net, layer, window, half_width)`: the compensated tree
+  shapes a net's trace centreline must avoid, inflated (`board::obstacle_view`);
+- `drc::conduction_fill(board, area)` (islands, boundary rings, anchors) and
+  `drc::net_components(board, net, stop_at_plane)` (`drc::fill_model`);
+- `BoardRules::area_obstacle_policy`: the per-(area, net) obstacle hook Q01 fills,
+  consulted in the conduction branches of `is_trace_obstacle` and `is_obstacle`
+  (`rules::area_policy`).
+
 ## Next stages
 
 1. **Autorouter** (~18k Java lines, `autoroute.*`): expansion rooms and doors,

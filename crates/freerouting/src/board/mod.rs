@@ -52,3 +52,11 @@ pub use gui_ops::DetachError;
 pub mod item_info;
 
 pub use item_info::{InfoField, ItemInfo};
+
+// B09: board services for algorithm stages (in their own files).
+pub mod transaction;
+
+pub use transaction::{CheckPolicy, TransactionResult};
+pub mod obstacle_view;
+
+pub use obstacle_view::ObstacleShape;

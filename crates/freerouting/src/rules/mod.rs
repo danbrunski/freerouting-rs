@@ -6,10 +6,14 @@
 //! [`ViaInfoId`]). Removing an entry only drops it from the ordered list, so
 //! ids held elsewhere stay valid, as Java references to a removed object do.
 
+pub mod area_policy;
 mod clearance_matrix;
 pub mod edit;
 
+pub use area_policy::AreaObstaclePolicy;
 pub use clearance_matrix::{CLEARANCE_SAFETY_MARGIN, ClearanceMatrix, ClearanceRow};
+
+use std::sync::Arc;
 
 use crate::board::structure::{AngleRestriction, LayerStructure};
 use crate::library::{PadstackId, Padstacks};
@@ -890,6 +894,9 @@ pub struct BoardRules {
     hole_clearance: i32,
     /// Clearance violations smaller than this are tolerated (micrometers).
     pub clearance_tolerance_um: f64,
+    /// The per-net obstacle hook for conduction areas (B09.4); `None`, the
+    /// parity path, keeps Java's per-area rule. Cloned by `Arc`.
+    pub area_obstacle_policy: Option<Arc<dyn AreaObstaclePolicy>>,
 }
 
 impl BoardRules {
@@ -909,6 +916,7 @@ impl BoardRules {
             use_slow_autoroute_algorithm: false,
             hole_clearance: 0,
             clearance_tolerance_um: 1.0,
+            area_obstacle_policy: None,
         }
     }
 
