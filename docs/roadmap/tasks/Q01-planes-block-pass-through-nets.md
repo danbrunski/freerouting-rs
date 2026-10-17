@@ -155,22 +155,30 @@ per job, the predicate that uses it, a pour-cut report, and the measurement.
   run (4336133) and Java `46bf9e2ef` route signal nets on `Gnd.Cu`, which the DSN
   declares `(type power)` with a GND plane. Rust: `/Holdup/LTC_PFI` (7.0 mm at
   y=67.33) and `/Supervisor/CAN_WAKE`; Java: the same CAN_WAKE path. KiCad's DRC
-  does not flag it, but the track cuts the GND plane. Cause under investigation
-  by the Java session: `expandToRoomDoors` (`MazeSearchAlgo.java`, Rust
-  `autoroute/session/search.rs`) expands only target doors on an inactive layer
-  and refuses a drill on a foreign conduction area, so the trace likely enters
-  through a start or target door on `Gnd.Cu` or a later stage; Java `ddbfdee07`
-  (2026-10-14, accept results that end on power layers) may have exposed it. Port
-  the Java fix when it lands, then add the D8 rule below.
-  Rust design: under D8 (board rules are hard limits), a power-type layer is
-  routable only for the nets of its planes; a foreign net may cross it only in
-  a via. Behind a setting that defaults on, with "off means identical" to Java
-  (Q01.2's pattern), and a `// PARITY(divergence):` note.
+  does not flag it, but the track cuts the GND plane.
+  **Fixed in Java as `7f56b062d`** ("Route only a power layer's own plane nets on it", after
+  the pin; ledger row "Port: yes"; jar `~/code/freerouting/logs/jars/freerouting-7f56b062d.jar`).
+  Cause: `expandToRoomDoors` returned early on an inactive layer only for signal layers. On
+  9511d9a the search started from one existing CAN_WAKE via's target door on `Gnd.Cu`, found
+  the other via in the same free room (the GND plane is no obstacle to foreign nets) and
+  joined them there; the foreign-conduction-area drill check never ran because neither end
+  was a new drill. Java's fix: `AutorouteControl.ownPlaneLayers[layer]` is true when the net
+  has a conduction area on that power layer; otherwise `expandToRoomDoors` returns without
+  expanding. Plane nets keep the old behaviour (`PlaneFanoutViaTest` unchanged). Java's
+  numbers against `588320207`: foreign-net wires on power layers 1/1/5/2 → 0 on 9511d9a,
+  9511d9a-in2-open-wirekeepout, Smoothieboard and CPU-85; unrouted 9511d9a 102 → 109, CPU-85
+  58 → 57, 11 other plane boards unchanged. Test: `PowerLayerForeignNetTest` with
+  `fixtures/PowerLayer-foreign-via-pair.dsn`.
+  Rust design: port `7f56b062d` (the `own_plane_layers` control field and the
+  `expand_to_room_doors` check) with its test and fixture, after A14's parity gate at the
+  current pin, and regenerate the route references of the plane boards it changes (or
+  re-pin past it).
   - **Accept:**
     - A fixture assertion: no trace of a net without a plane on that layer lies
       on a power-type layer, on canary-pwr 9511d9a and on every `fixtures/`
       board with a `(type power)` layer.
-    - With the setting off, the route-parity SES set is unchanged.
+    - `PowerLayerForeignNetTest` ported and green; the route references of the boards the
+      fix changes are regenerated at a Java commit that has it, and the rest are unchanged.
     - canary-23 grades a canary-pwr SES with no In1/In2 tracks; the
       unconnected count is recorded here (Java 41 and Rust 44 include the In1
       tracks).
