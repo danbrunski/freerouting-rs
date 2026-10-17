@@ -1,0 +1,131 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "registered": "DRAFT (freerouting-rs-f1, 2026-10-17): not registered, no sha256 pinned; the orchestrator edits and registers",
+  "boards": {
+    "eligibility": "every board of tools/bench/sets/benchmark.txt, owner.txt and the 2-layer medium/hard rows of kicad-corpus.txt on which the unchanged engine at the registration commit (arm mp1) leaves at least one incomplete connection; the list is written here before any candidate arm runs. canary-pwr-9511d9a and pours1..3 count as one board (grouped, as in Q01.json).",
+    "files": "sha256 of every eligible DSN and .kicad_pcb, filled at registration"
+  },
+  "grading": "tools/kicad-oracle/grade.sh where a .kicad_pcb exists (copper severities forced to error, input DRC subtracted, refill on); canary-pwr by canary-23 (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pour_lost_pins",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "work_units",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "timing": "measured only after P04's default-tree decision",
+  "amendments": [],
+  "id": "Q10-add-only-sweep",
+  "checklist": "Q10 (draft): target/orchestrator/algo-research/PROPOSALS.md section 3",
+  "question": "Does an add-only completion sweep after the best pass (rip-up off) leave fewer incomplete connections and fewer KiCad-unconnected items than the same run without it on at least N-1 eligible boards, with none worse, no new DRC errors, no via in a pad and no pour pins lost; and on canary-pwr-9511d9a at most 40 KiCad-unconnected (Java 7f56b062d add-only)?",
+  "arms": {
+    "mp1": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "what": "baseline: pass 1 only"
+    },
+    "mpdef": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150",
+      "what": "baseline: default passes with restores"
+    },
+    "mp1+sweep-fixed": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=fixed --router.autorouter.sweep_passes=2",
+      "what": "pass 1, then sweeps with pass-1 wiring frozen"
+    },
+    "mp1+sweep-free": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "what": "pass 1, then sweeps, wiring unfrozen"
+    },
+    "mp1+opt+sweep+opt": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_after_optimizer=true",
+      "what": "pass 1, optimizer, sweep, optimizer"
+    },
+    "mpdef+sweep": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 --router.autorouter.sweep=free",
+      "what": "default passes, then sweeps"
+    }
+  },
+  "baseline_arm": [
+    "mp1",
+    "mpdef"
+  ],
+  "candidate_arm": [
+    "mp1+sweep-fixed",
+    "mp1+sweep-free",
+    "mp1+opt+sweep+opt",
+    "mpdef+sweep"
+  ],
+  "decision_table": {
+    "pass": "keep the best passing arm as a setting (off by default); DIVERGENCES line with the numbers; propose a default change only by the Q00 rules",
+    "fail": "remove quality/sweep.rs; numbers in Q10.4's done note"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "registered": "DRAFT (freerouting-rs-f1, 2026-10-17): not registered, no sha256 pinned; the orchestrator edits and registers",
+  "boards": {
+    "eligibility": "every board of tools/bench/sets/benchmark.txt, owner.txt and the 2-layer medium/hard rows of kicad-corpus.txt on which the unchanged engine at the registration commit (arm mp1) leaves at least one incomplete connection; the list is written here before any candidate arm runs. canary-pwr-9511d9a and pours1..3 count as one board (grouped, as in Q01.json).",
+    "files": "sha256 of every eligible DSN and .kicad_pcb, filled at registration"
+  },
+  "grading": "tools/kicad-oracle/grade.sh where a .kicad_pcb exists (copper severities forced to error, input DRC subtracted, refill on); canary-pwr by canary-23 (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pour_lost_pins",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "work_units",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "timing": "measured only after P04's default-tree decision",
+  "amendments": [],
+  "id": "Q11-transactional-ripup",
+  "checklist": "Q11 (draft): target/orchestrator/algo-research/PROPOSALS.md section 3",
+  "question": "Does committing a rip-up only when its victims re-land (arm strict) or when the incomplete count strictly falls (arm count) leave fewer KiCad-unconnected items after pass 1 than Java's rip-up on at least N-1 eligible boards, with none worse, no new DRC errors and no via in a pad; and does it still win when both arms are followed by an Q10 sweep?",
+  "arms": {
+    "mp1": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "what": "baseline: Java rip-up, pass 1"
+    },
+    "ripcost-best": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.scoring.start_ripup_costs={Q11.1}",
+      "what": "the best start_ripup_costs of Q11.1's no-code sweep {1500, 5000, 20000, off}, chosen and written here before any wrapper arm runs"
+    },
+    "strict": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict",
+      "what": "transaction, every victim must re-land"
+    },
+    "count": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=count",
+      "what": "transaction, incomplete count must fall"
+    },
+    "depth1": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=count --router.transaction.depth=1",
+      "what": "transaction, victims may rip once"
+    },
+    "strict+ripfactor": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict --router.transaction.rip_factor=2",
+      "what": "strict plus rip-count protection (1+2k)"
+    }
+  },
+  "also": "each arm is also run followed by --router.autorouter.sweep=free (Q10); those rows are a second comparison against mp1+sweep-free",
+  "baseline_arm": [
+    "mp1",
+    "ripcost-best"
+  ],
+  "candidate_arm": [
+    "strict",
+    "count",
+    "depth1",
+    "strict+ripfactor"
+  ],
+  "extra_reported": [
+    "rip-stats: rips, victims re-landed, transactions rolled back"
+  ],
+  "decision_table": {
+    "pass": "keep the best passing arm as a setting (off by default); DIVERGENCES line",
+    "fail": "remove quality/transaction.rs and the ripup_factor hook; Q11.1's table and the numbers stay in Q11.6's done note"
+  }
+}

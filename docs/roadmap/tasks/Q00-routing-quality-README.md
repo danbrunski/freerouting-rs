@@ -23,6 +23,9 @@ implementation is never edited, so default results stay byte-identical.
 | [Q07](Q07-first-pass-ordering.md) | Pass-1 conflict-round and inside-out orderings | S / medium | rung 3; A10 |
 | [Q08](Q08-earned-budget-extension.md) | One more maze budget only when the search is still closing in | S / medium: changes where limits cut | rung 3; A04 budget hook; B02 WorkMeter |
 | [Q09](Q09-trace-only-keepouts.md) | Specctra `wire_keepout` as trace-only (vias allowed) behind a setting; a trace-only mode for Q01's plane policy | M / medium: changes routing on Issue754 when on | rung 3; B09.4; Q01; C02; K06; F03 |
+| [Q10](Q10-add-only-completion-sweep.md) | Add-only completion sweep after the best-board restore (Java's two-run "freeze and add" flow, in-engine), also after the optimizer | S / low: only adds copper | rung 3; A10, A13; B01; Q06 |
+| [Q11](Q11-transactional-ripup.md) | Transactional rip-up: re-route ripped victims at once, roll back if they don't re-land; a rip-cost sweep first | S–M / medium | rung 3; A10, A11; B01; Q05.1 |
+| [Q12](Q12-pass-1-portfolio.md) | Pass-1 portfolio: K deterministic orders on board clones in parallel, keep the best; squeaky-wheel restarts; per-board order spread | S / medium: memory × K | rung 3; A10; B01; O06; Q07.1–Q07.3 |
 
 Sizes: S under about 1k lines of Rust, M 1–3k, L more.
 
@@ -42,6 +45,14 @@ Sizes: S under about 1k lines of Rust, M 1–3k, L more.
    - Q05.2–Q05.4 only if Q05.1 and Q06 show congestion on at least three
      boards;
    - Q07 and Q08, as experiments.
+   - Q10, Q11 and Q12 (added 2026-10-17 from freerouting-rs-f1's research, at
+     Dan's request): on `canary-pwr` Q06.5 found 83 of 109 incomplete
+     connections routable on the final board, 73 of them routed and then ripped
+     in pass 1. These three stop that loss. Q10 first, then Q11 (its no-code
+     rip-cost sweep first), then Q12 after Q07's orders exist. Their code may
+     land before P04; they are measured after P04 as one preregistration
+     family, because they compose (portfolio of transactional pass 1, then
+     sweep, optimizer, sweep).
 3. Q01.6 (narrowness cost) waits for Q05.2's lattice and the A04 cost hook.
 
 The critical path into Q is the port's: J01 → B → O → A (rung 3) → the F03
@@ -68,6 +79,9 @@ Those two files and `docs/DIVERGENCES.md` are append-only shared files.
 | Q06 | `quality/attribution.rs`, `quality/verdict.rs`, `docs/development/verdicts.md` | `quality/mod.rs`, `quality/register.rs` |
 | Q07 | `quality/ordering/*.rs` | `quality/mod.rs`, `quality/register.rs` |
 | Q08 | `quality/budget.rs` | `quality/mod.rs`, `quality/register.rs` |
+| Q10 | `quality/sweep.rs` | `quality/mod.rs`, `quality/register.rs`, the C02 settings struct |
+| Q11 | `quality/transaction.rs` | `quality/mod.rs`, `quality/register.rs`; one `ripup_factor` hook on `RipupPolicy` (Q11.5, default 1, not consulted in the parity path) |
+| Q12 | `quality/portfolio/{mod,arms}.rs` | `quality/mod.rs`, `quality/register.rs`, the C02 settings struct, the pipeline's stage list (one call) |
 
 Q01, Q02, Q04, Q07 and Q08 touch disjoint files and can run in parallel after
 rung 3. Q05 and Q06 share nothing but Q06's output type, which Q05 reads.
@@ -143,3 +157,25 @@ These add to the shared rules in [README.md](README.md).
    instrumentation and Q06 first; build history costs only if more than half
    of the unrouted connections on at least three boards are `blocked_by`
    routed nets.
+
+## Gated candidates (research, 2026-10-17)
+
+freerouting-rs-f1's survey (`docs/roadmap/research/2026-10-17-routing-algorithms.md`,
+sections 4–5, with sources) also sketched eight candidates. None is a checklist
+yet; each opens as Q13+ only when its gate holds:
+
+| Candidate | Gate |
+|---|---|
+| Shove before rip (Mighty's weak modification) | Q11 measured; code after P04.1 |
+| Acute-angle and acid-trap cleanup (optimizer stage, geometry only) | a report-only count shows acute corners on Dan's boards |
+| Spread and centre DFM pass | Dan wants DFM work |
+| Exact assignment (min-cost flow, DP) in the X10/X12 escape planners | X10/X12 measured after P04 |
+| SAT window repair of the last unrouted connections (new dependency) | Q10–Q12 and shove-before-rip leave ≥ 5 `blocked_by`/`found` per board on 3 boards |
+| Specctra-style conflict-tolerant passes (negotiated congestion) | Q10–Q12 and shove-before-rip recover under half of the `found` failures |
+| Soft layer pre-assignment from a crossing graph (max-cut) | experiment only; mixed evidence |
+| CDT topological feasibility report, then corridors | the report shows ≥ 30 % of `unrouted` feasible-but-failed on 3 boards |
+
+Not recommended, with reasons in the survey: a full topological router,
+coarse or LP global routing, RL/ML routers, GPU lattice routers, teardrops and
+stitching (KiCad does them). PCBWorld-Bench D3-C (arXiv 2607.05915) is a
+candidate for F03.3's corpus once its board licences are checked.

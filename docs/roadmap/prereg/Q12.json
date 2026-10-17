@@ -1,0 +1,130 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "registered": "DRAFT (freerouting-rs-f1, 2026-10-17): not registered, no sha256 pinned; the orchestrator edits and registers",
+  "boards": {
+    "eligibility": "every board of tools/bench/sets/benchmark.txt, owner.txt and the 2-layer medium/hard rows of kicad-corpus.txt on which the unchanged engine at the registration commit (arm mp1) leaves at least one incomplete connection; the list is written here before any candidate arm runs. canary-pwr-9511d9a and pours1..3 count as one board (grouped, as in Q01.json).",
+    "files": "sha256 of every eligible DSN and .kicad_pcb, filled at registration"
+  },
+  "grading": "tools/kicad-oracle/grade.sh where a .kicad_pcb exists (copper severities forced to error, input DRC subtracted, refill on); canary-pwr by canary-23 (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "pour_lost_pins",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "work_units",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "timing": "measured only after P04's default-tree decision",
+  "amendments": [],
+  "id": "Q12-pass1-portfolio",
+  "checklist": "Q12 (draft): target/orchestrator/algo-research/PROPOSALS.md section 3",
+  "question": "Does the best of K=4 deterministic pass-1 orders (Java order, Q07 conflict-rounds, Q07 inside-out, seeded shuffle 1), optionally with 2 squeaky-wheel restarts, leave fewer KiCad-unconnected items than the default passes at no more than 1.5x their work on at least N-1 eligible boards, with none worse, no new DRC errors and no via in a pad?",
+  "arms": {
+    "mp1": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "what": "baseline: pass 1 only"
+    },
+    "mpdef": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150",
+      "what": "baseline: default passes"
+    },
+    "portfolio4": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.portfolio=4",
+      "what": "best of 4 pass-1 orders"
+    },
+    "portfolio4+restart2": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.portfolio=4 --router.autorouter.restarts=2",
+      "what": "plus 2 squeaky-wheel generations"
+    },
+    "portfolio4+Q10+Q11": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.portfolio=4 --router.autorouter.connection_router=transactional-ripup --router.autorouter.sweep=free",
+      "what": "portfolio of transactional pass 1, then sweep"
+    }
+  },
+  "baseline_arm": [
+    "mpdef",
+    "mp1"
+  ],
+  "candidate_arm": [
+    "portfolio4",
+    "portfolio4+restart2",
+    "portfolio4+Q10+Q11"
+  ],
+  "extra_reported": [
+    "order spread per board: min/median/max of unrouted and kicad_unconnected over the 4 arms (Q12.4)",
+    "work_units relative to mpdef"
+  ],
+  "guard_extra": "work_units at most 1.5x mpdef's on every board",
+  "decision_table": {
+    "pass": "keep as a setting (off by default); DIVERGENCES line; Q12.4's spread table proposed to F03 as the per-board quantum",
+    "fail": "remove quality/portfolio/; the spread table stays in Q12.4's done note (it is a finding either way)"
+  }
+}
