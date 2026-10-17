@@ -149,3 +149,28 @@ per job, the predicate that uses it, a pour-cut report, and the measurement.
   linearly from the boundary to 0 at depth W (default 2 mm).
   - **Accept:** measured, with Q01.4's losses falling on at least N−1 boards
     and unrouted rising on none. Otherwise removed, with the numbers here.
+
+- [ ] **Q01.7 — No foreign-net traces on power-type layers (D8).**
+  Found by canary-23 grading the A13 canary-pwr SES (2026-10-16): both the Rust
+  run (4336133) and Java `46bf9e2ef` route signal nets on `Gnd.Cu`, which the DSN
+  declares `(type power)` with a GND plane. Rust: `/Holdup/LTC_PFI` (7.0 mm at
+  y=67.33) and `/Supervisor/CAN_WAKE`; Java: the same CAN_WAKE path. KiCad's DRC
+  does not flag it, but the track cuts the GND plane. Cause under investigation
+  by the Java session: `expandToRoomDoors` (`MazeSearchAlgo.java`, Rust
+  `autoroute/session/search.rs`) expands only target doors on an inactive layer
+  and refuses a drill on a foreign conduction area, so the trace likely enters
+  through a start or target door on `Gnd.Cu` or a later stage; Java `ddbfdee07`
+  (2026-10-14, accept results that end on power layers) may have exposed it. Port
+  the Java fix when it lands, then add the D8 rule below.
+  Rust design: under D8 (board rules are hard limits), a power-type layer is
+  routable only for the nets of its planes; a foreign net may cross it only in
+  a via. Behind a setting that defaults on, with "off means identical" to Java
+  (Q01.2's pattern), and a `// PARITY(divergence):` note.
+  - **Accept:**
+    - A fixture assertion: no trace of a net without a plane on that layer lies
+      on a power-type layer, on canary-pwr 9511d9a and on every `fixtures/`
+      board with a `(type power)` layer.
+    - With the setting off, the route-parity SES set is unchanged.
+    - canary-23 grades a canary-pwr SES with no In1/In2 tracks; the
+      unconnected count is recorded here (Java 41 and Rust 44 include the In1
+      tracks).
