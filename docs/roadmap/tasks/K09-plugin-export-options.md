@@ -113,13 +113,3 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
       `dsn_export.py`'s DSN (`ses-diff` against the 97d10d6 / Java 7f56b062d
       session);
     - `kicad-plugin.md` documents the options and the preset.
-- [ ] **K09.9 — Class clearances reach the DSN.** canary-7a's placement runs
-  (2026-10-17) had router clearance errors that were rule gaps, not geometry: a
-  `+12V_BUS` via close to an `LTC_INTVCC` track, and a `VCAP` via against U7 pad 14.
-  The `Power_High` class's 0.25 mm clearance wasn't in the DSN (K00 question 6
-  again). Option `class_clearances: {CLASS: mm}`, filled by default from the
-  board's net classes, written as the class's `(rule (clearance ...))`.
-  - **Accept:**
-    - a unit test writes one class's clearance;
-    - on `canary-pwr` with the preset, KiCad reports no clearance error that the
-      router's own DRC missed.
