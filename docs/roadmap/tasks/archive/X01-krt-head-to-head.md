@@ -148,7 +148,7 @@ Findings:
 
 ## Checklist
 
-- [~] **X01.1 — Preregistration.**
+- [x] **X01.1 — Preregistration.**
   Write the F03.4 file before any run: boards with their source paths and
   sha256 (the prepared inputs' hashes are added by X01.4 as an amendment
   before the first engine run), arms with exact commands and settings, the
@@ -177,9 +177,8 @@ Findings:
     `/usr/bin/python3`; nothing changed, recorded). Pinned at
     `32a86ec80839cfe81522f8102cbcb0e13f513ac802869d1e5d9e4c79c14e4638` by
     `crates/freerouting-dev/tests/prereg_x01.rs` (`cargo test -p freerouting-dev --test
-    prereg_x01`: 2 passed). Remains: the commit order (the registration and its test in
-    a commit before the one carrying `tools/krt-h2h/results/x01-demos.json`). That is the
-    orchestrator's, because this agent does not commit.
+    prereg_x01`: 2 passed). *Done 2026-10-16:* the registration and its test are commit
+    `d6a7d36`, before `9fe3be1`, which carries `tools/krt-h2h/results/x01-demos.json`.
 
 - [x] **X01.2 — KRT in its own environment.**
   `setup-krt.sh`:
@@ -348,7 +347,7 @@ Findings:
     end): Java's DSN model counts the pour as a connection that KiCad's refill does not
     make (canary LESSONS 3).
 
-- [~] **X01.8 — Results and the order.**
+- [x] **X01.8 — Results and the order.**
   Commit `results/x01-demos.json` (demo boards only; `canary-pwr` numbers go
   in the done note), apply the preregistered decision table, and rewrite
   X00's "Order and critical path" with the outcome and a link to this item.
@@ -384,6 +383,16 @@ Findings:
     failures" fired at 195/217 = 89.9 %. `grid-first` did not (krt fewer unrouted on 3
     boards, not 4, and more `drc_real` on pic_programmer). `neck-first` (0 %) and
     `escape-first` (2.3 %) did not. X00's "Order and critical path" has been rewritten.
-    Not graded: canary-pwr for both arms, pending canary-23. Remains: canary-23's grades of
-    canary-pwr, and the orchestrator's and Dan's confirmation of the order before X02 or
-    X03 starts.
+    *Done 2026-10-16:* canary-23 graded canary-pwr 9511d9a under the committed rules
+    (Windows KiCad 10.0.5, `--schematic-parity --refill-zones --severity-all`, then
+    `via_in_pad.py` and `inner_tracks.py`). **Neither arm is a valid result.**
+    - java `a773a70ec` (18 passes): 47 unconnected; clearance 0, track width 4 (0.10–0.12 mm
+      on LTC_PFI and PRIV_SDA: the canary runs' `--router.min_trace_width_um=150` prevents
+      them), annular 0, via-in-pad 0, 4 starved thermals; 2 inner-layer tracks (LM_FB on
+      Gnd.Cu, the power-layer bug Java fixed in `7f56b062d`, Q01.7).
+    - krt `0486e799`: 35 unconnected; clearance, width and annular 0, 1 starved thermal, but
+      22 vias in pads and 701 inner-layer tracks (299 on Gnd.Cu, 402 on Power.Cu: KRT routes
+      both planes as signal layers). Its lower count comes from using the planes and pads.
+    The canary result to beat stays 40 (Java `7f56b062d` add-only, clean). The order
+    `planes-first` was confirmed by the orchestrator under Dan's standing instruction to take
+    the recommended answer (`target/orchestrator/operator-decisions.md`).
