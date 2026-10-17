@@ -785,30 +785,46 @@ fn without_do_nothing_is_written_or_started() {
 fn countdown_starts_routing() {
     let dir = scratch("countdown");
     let mut h = frontend(&dir, &[]);
-    wait_loaded(&mut h);
+    // The harness advances the GUI clock by a quarter second per step. Its
+    // builder already runs frames, and on a busy machine the load can finish
+    // and the countdown start inside them, so the first labels may pass
+    // unseen: the labels seen are the end of the countdown, each shown for
+    // one second of GUI time.
+    let start = Instant::now();
     let mut labels: Vec<String> = Vec::new();
-    // The harness advances the GUI clock by a quarter second per step.
-    for _ in 0..30 {
+    let mut changed_at: Vec<f64> = Vec::new();
+    let mut steps_after_load = 0;
+    while steps_after_load < 30 {
         h.step();
         if let Some(label) = h.state().autostart_label() {
             if labels.last().map(String::as_str) != Some(label) {
                 labels.push(label.to_string());
+                changed_at.push(h.ctx.input(|i| i.time));
             }
         }
         if h.state().is_routing() {
             break;
         }
+        if h.state().is_loading() {
+            assert!(start.elapsed() < Duration::from_secs(300), "no load");
+            std::thread::sleep(Duration::from_millis(5));
+        } else {
+            steps_after_load += 1;
+        }
     }
-    assert_eq!(
-        labels,
-        [
-            "Start Now (5)",
-            "Start Now (4)",
-            "Start Now (3)",
-            "Start Now (2)",
-            "Start Now (1)"
-        ]
-    );
+    assert!(h.state().error().is_none(), "{:?}", h.state().error());
+    let expected = [
+        "Start Now (5)",
+        "Start Now (4)",
+        "Start Now (3)",
+        "Start Now (2)",
+        "Start Now (1)",
+    ];
+    assert!(labels.len() >= 3, "{labels:?}");
+    assert_eq!(labels, expected[expected.len() - labels.len()..]);
+    for pair in changed_at.windows(2).skip(1) {
+        assert!((pair[1] - pair[0] - 1.0).abs() < 1e-6, "{changed_at:?}");
+    }
     assert!(
         h.state().is_routing(),
         "the countdown did not start the job"
