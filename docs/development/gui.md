@@ -231,7 +231,7 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `view.rs` | `tessellate_item` triangulates one scene item; `Tessellation` holds the board's chunks (`canvas::chunks::ChunkSet`) behind a mutex that the GPU callback shares. `Camera` handles pan and zoom. `paint()` makes the draw plan and draws it on the GPU path or, as the fallback, with `paint_cpu`; `Renderer` picks the path. Also the colours and the label drawing. |
 | `canvas/` | The GPU board canvas (G02): `chunks.rs` (chunks, grid, patching), `gpu.rs` (pipelines, buffers, paint callback), `board.wgsl`, `hairline.wgsl`. See "Renderer" below. |
 | `bench_synthetic.rs` | The 4x4 stress board of `--bench-synthetic`. |
-| `panels/`, `menu.rs` | The side panel sections (`layers`, `board_stats`) and the warnings window, each a function `ui(ui, ..) -> Vec<Command>`; the menu bar. |
+| `panels/`, `menu.rs`, `chrome.rs` | The side panel sections (`layers`, `board_stats`) and the warnings window, each a function `ui(ui, ..) -> Vec<Command>`; the menu bar; the look of the menu bar and the toolbar (icons, the coloured buttons, segmented groups, the board chip). |
 | `settings.rs` | `PersistedSettings`, stored under one key with a schema version. |
 | `analysis.rs`, `lists.rs`, `selection.rs`, `text.rs`, `toolbar.rs`, `drc_export.rs`, `app_analysis.rs` | G03: the background ratsnest and DRC with their result tags; the Info list windows and how their rows are built; `Selection` (a `BTreeSet<ItemId>`); the Java texts; the toolbar; the DRC report export; `App`'s G03 commands (selection, zoom to selection, delete all, undo and redo). |
 | `overlays/` | Ratsnest, violation markers and selection highlight, drawn with egui shapes after the canvas. `Frame` converts board coordinates to the millimetres of the scene. `draw` returns what it drew (`stats.overlay`). |
@@ -317,8 +317,8 @@ cargo fmt -p freerouting-gui
 
 - The tests: unit tests in the modules (scene building, picking, labels,
   session loading against the engine, the bench script, argument parsing) and
-  egui_kittest tests in `tests/`: `ui_viewer.rs` (loading, the side panel, a
-  snapshot), `ui_input.rs` (Java's mouse and keys), `ui_settings.rs`
+  egui_kittest tests in `tests/`: `ui_viewer.rs` (loading, the side panel,
+  snapshots of the window, the File menu and the toolbar idle and routing), `ui_input.rs` (Java's mouse and keys), `ui_settings.rs`
   (persistence, Open Recent), `ui_windows.rs` (G04: the nets, component and library
   lists, the visibility sliders, virtual layers, hover under rotation and mirroring,
   units, colours, the status bar counters, the log and About; four snapshots), `ui_drc.rs` (G03: selection and zoom, the
@@ -689,6 +689,14 @@ Other gaps:
 - Widget style: the panels use egui's default dark style. Dan asked about
   native Windows looks, which turned out to be about the title bar only (now
   fixed). A Windows-like light theme is an open offer, not a request.
+- The menu bar and the toolbar have a look of their own (`chrome.rs`, asked
+  for by Dan on 2026-10-17): the app's icon at the left, an icon column and
+  right-aligned shortcuts in the File and View menus, a green Autoroute (red
+  Cancel while routing), Mode and Unit as segmented groups, toggles filled while
+  on, a red Delete All icon, and the open board in a chip at the right. The icons
+  are glyphs of egui's default fonts painted into space the button keeps
+  (`Atom::custom`), so the accessible labels the tests look up stay the texts;
+  pick a new glyph from those fonts (check the font's charset) or it shows as a box.
 
 ## Working rules
 

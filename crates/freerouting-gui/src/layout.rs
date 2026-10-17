@@ -4,6 +4,7 @@
 use eframe::egui;
 
 use crate::app::App;
+use crate::chrome;
 use crate::commands::Command;
 use crate::menu;
 use crate::overlays;
@@ -18,24 +19,28 @@ const DEFAULT_PANEL_WIDTH: f32 = 203.0;
 impl App {
     pub(crate) fn panels(&mut self, ctx: &egui::Context) -> (Vec<Command>, CanvasOut) {
         let mut commands = Vec::new();
-        egui::TopBottomPanel::top("menu").show(ctx, |ui| {
-            commands.extend(menu::ui(
-                ui,
-                self.loaded.as_ref(),
-                &self.settings.recent_files,
-            ));
-        });
-        egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
-            commands.extend(toolbar::ui(
-                ui,
-                self.overlay,
-                self.loaded.is_some(),
-                self.view.unit,
-                self.tools.mode,
-                self.editor_busy(),
-                self.routing.is_some(),
-            ));
-        });
+        egui::TopBottomPanel::top("menu")
+            .frame(chrome::menu_bar_frame(&ctx.style()))
+            .show(ctx, |ui| {
+                commands.extend(menu::ui(
+                    ui,
+                    self.loaded.as_ref(),
+                    &self.settings.recent_files,
+                ));
+            });
+        egui::TopBottomPanel::top("toolbar")
+            .frame(chrome::toolbar_frame(&ctx.style()))
+            .show(ctx, |ui| {
+                commands.extend(toolbar::ui(
+                    ui,
+                    self.overlay,
+                    self.loaded.is_some(),
+                    self.view.unit,
+                    self.tools.mode,
+                    self.editor_busy(),
+                    self.routing.is_some(),
+                ));
+            });
         // The status bar is laid out before the canvas, so the hover of the
         // last frame is what it shows.
         let hover = viewport::hover_of(ctx);

@@ -19,7 +19,7 @@
 //! | [`files`] | writing: Save As (SES, DSN, rules), the front-end output, the content checksum (G08; `app_files.rs` is `App`'s side) |
 //! | [`routing`] | the autorouter job: its thread, events, the frame's merged deltas, the scene patch (G07; `app_routing.rs` is `App`'s side) |
 //! | [`bench_synthetic`] | the tiled stress board for `--bench-synthetic` |
-//! | [`panels`], [`menu`] | side panel sections, warnings window, menu bar |
+//! | [`panels`], [`menu`], [`toolbar`], [`chrome`] | side panel sections, warnings window, menu bar, toolbar, and the look of the last two |
 //! | [`tools`] | inspect mode, selection operations, safe edits, context menus, keepout construction (G05); the editor host, route, drag, pin swap and move (G09) |
 //! | [`settings`] | persisted preferences |
 //! | [`stats`], [`bench`], [`capture`], [`args`] | frame statistics, `--bench`, `--screenshot` |
@@ -35,6 +35,7 @@ mod bench_drag;
 pub mod bench_synthetic;
 pub mod canvas;
 pub mod capture;
+pub mod chrome;
 pub mod commands;
 pub mod dialogs;
 pub mod drc_export;
