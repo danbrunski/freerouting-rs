@@ -1,0 +1,11 @@
+# X11.4: boards with buses for the krt-bus ordering and attraction (docs/roadmap/tasks/X11-bus-ordering-and-attraction.md),
+# registered in docs/roadmap/prereg/X11.json. Eligibility is decided from the inputs: the board has
+# at least one bus group of freerouting_krt::bus::detect (two-pin nets whose start pins and end pins
+# lie pairwise within 5 mm, at least 3 nets) running between connectors or memory and bus parts; the
+# groups after each row, from bus_groups_on_a_set (crates/freerouting-krt/tests/bus.rs) at e837fce
+# plus X11. Paths are relative to the repository root.
+fixtures/Issue508-DAC2020_bm01.dsn                  # 7 groups: port buses PA0-7, PC0-7, PL0-7 (4 each), PD7/PG0/PG1
+fixtures/Issue113-Protein.dsn                       # 8 groups: data bus DA2-DA13 (4 of 3), B_DRA0-5, DC10-DC15 (6)
+fixtures/Issue039-bug-design.dsn                    # 4 groups: DATA1-4, DATA*_R/BCK_R/LRCK_R (6), SCK/BCK/LRCK
+fixtures/Issue208-freerouting.dsn                   # 30 groups: connector J7 rows (11 each) and others
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn  # 17 groups: XIL_D data, GPT0-3, DDAT0-2; KiCad demo

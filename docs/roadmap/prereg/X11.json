@@ -1,0 +1,77 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X11.4-krt-bus",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/X11-bus-ordering-and-attraction.md",
+  "question": "With the default pipeline otherwise, does routing bus groups (two-pin nets whose start and end pins lie pairwise within 5 mm, at least 3 nets) as middle-out blocks in pass 1 (krt-bus ordering), with each member drawn to its routed neighbour by a non-negative maze-search cost (krt-bus bundle), lower the vias or the trace length on bus nets against Freerouting, without leaving more connections unrouted, new clearance violations or vias in pads?",
+  "hypothesis": "none registered: the X11 checklist names no expected direction; the measurement decides whether the stages stay registered",
+  "arms": {
+    "freerouting": {
+      "engine": "freerouting-rs at the commit that lands X11, after P04's default-tree decision, in-process through freerouting-krt's harness (the CLI does not call freerouting_krt::register before C07)",
+      "command": "X11_DSN={DSN} X11_ARMS=freerouting X11_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test bus bus_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "everything": "the defaults (optimizer enabled, 20 passes)"
+      }
+    },
+    "krt-bus-order": {
+      "engine": "the same commit and harness",
+      "command": "X11_DSN={DSN} X11_ARMS=krt-bus-order X11_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test bus bus_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "autorouter.ordering": "krt-bus",
+        "everything else": "the defaults"
+      }
+    },
+    "krt-bus": {
+      "engine": "the same commit and harness",
+      "command": "X11_DSN={DSN} X11_ARMS=krt-bus X11_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test bus bus_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "autorouter.algorithm": "krt-bus (the krt-bus ordering and the krt-bus-attraction connection router with AttractionParams::default: weight 1, cap 5 mm, any layer, two-sided, pass 1)",
+        "everything else": "the defaults"
+      }
+    }
+  },
+  "baseline_arm": "freerouting",
+  "candidate_arm": "krt-bus",
+  "second_candidate_arm": "krt-bus-order",
+  "boards": {
+    "set": "tools/bench/sets/x11-bus.txt",
+    "eligibility_rule": "a board with at least one bus group of freerouting_krt::bus::detect on the input board (bus_groups_on_a_set), running between connectors, memory or bus parts",
+    "files": {
+      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "fixtures/Issue113-Protein.dsn": "c400fb8dd163e2b4c5f5ea93959da3b64d3ff96a8365b9b9a4978751def0b174",
+      "fixtures/Issue039-bug-design.dsn": "94763bd157266c5502ce3c25f88027d6eca32fee9bf812b56166d4e8404c500a",
+      "fixtures/Issue208-freerouting.dsn": "a552e42e23d3748c45d229f56309aa5a5b43e21ddb295f2c03ad71e76aee3539",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452"
+    }
+  },
+  "eligibility": "every board of the set; a board where a candidate and the baseline have equal bus vias and bus length within 0.1 mm is neutral, printed; a board not graded (a crash, a timeout, exit 2 of a grader) fails that board for the arm that was not graded and is never a pass",
+  "grading": {
+    "coldfire": "tools/kicad-oracle/grade.sh on the KiCad demo kit-dev-coldfire-xilinx_5213 prepared as X01 prepared it, with the arm's command as ENGINE_COMMAND: drc_real, kicad_unconnected and via_in_pad from the grader; if the grader cannot run, Rust's DRC grades it and the amendment says so",
+    "others": "no .kicad_pcb in the repository: graded by Rust's DRC inside the harness (drc_new: all_clearance_violations of the routed board with an item the run created) and its via-in-pad test"
+  },
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "hard", "kind": "int", "direction": "lower", "source": "the KiCad grader where it runs; drc_new from Rust's DRC otherwise"},
+    {"name": "unrouted", "role": "guard", "kind": "int", "direction": "lower", "source": "kicad_unconnected on KiCad-graded boards; the routed board's airlines (DesignRulesChecker::all_airlines) otherwise; any increase is a regression"},
+    {"name": "bus_vias", "role": "score", "kind": "int", "direction": "lower", "source": "vias on a net of a detected bus group"},
+    {"name": "bus_length_mm", "role": "score", "kind": "float", "direction": "lower", "tol": 0.1, "source": "trace length on bus nets"},
+    {"name": "spacing_um", "role": "report", "kind": "float", "direction": "lower", "compared": false, "source": "X11.3's spacing: same-layer centreline distance between physical neighbours over their common length"},
+    {"name": "vias", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "improve": "bus_vias lower, or bus_length_mm lower by more than tol with bus_vias not higher",
+    "max_regress": 0,
+    "regress": "unrouted higher, or a hard metric above 0"
+  },
+  "keep_rule": "each candidate arm is judged on its own (krt-bus as candidate_arm, then krt-bus-order with the same rules in a second gate run): it stays registered (off by default) only if bus vias or bus length improve on N-1 of the graded boards, unrouted regresses on none, and via_in_pad and drc_real are 0 on every board. Otherwise its registration and code are removed (krt-bus-order without the attraction: bus/attraction.rs, the bundle and the engine cost hook go; neither: the bus module goes) and the numbers stay in X11.4's note. Either way it is never a default from this run.",
+  "decision_table": {
+    "keep": "the arm stays registered; docs/DIVERGENCES.md gets its line (a selectable ordering or connection router Java does not have)",
+    "reject": "the arm's registration and code go; X11.4 records the numbers"
+  },
+  "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'); X11.4's partial note gives a pre-P04 dry run at the landing tree, labelled as such, not this registration's result",
+  "amendments": []
+}

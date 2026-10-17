@@ -71,3 +71,11 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   and so is GPL-3.0-only AND MIT), straight escape stubs with a taper or a
   plane via, each in one DRC-checked transaction (`fanout/qfn.rs`, written from
   KRT ideas), then Freerouting's fanout on the other parts.
+- `bus` (X11): bus detection (`bus/detect.rs`, which ports KRT's
+  `detect_bus_groups` and so is GPL-3.0-only AND MIT), the `krt-bus` net
+  ordering (`router.autorouter.ordering = krt-bus`: bus groups middle out in
+  pass 1, `bus/order.rs`, which ports `get_bus_routing_order`), the
+  `krt-bus-attraction` connection router (Freerouting's with a non-negative
+  maze-search cost towards the routed neighbour, `bus/attraction.rs`, written
+  from a KRT idea) and the `krt-bus` bundle of both
+  (`router.autorouter.algorithm = krt-bus`).

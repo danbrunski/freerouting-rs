@@ -1,0 +1,89 @@
+(pcb x11-bus8.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic X11 fixture: an 8-net bus D0-D7 from a 10-pin 0.5 mm pitch connector J1 to a 6-pin J2 and a 2-pin J3 placed end to end 32 mm to the right and 5 mm lower, around a keepout; J1 pins 9 and 10 go to U2 (nets X1 and X2, not part of the bus)")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  50000 0  50000 24000  0 24000  0 0)
+    )
+    (keepout "" (rect F.Cu 18000 9000 22000 24000))
+    (keepout "" (rect B.Cu 18000 9000 22000 24000))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 250)
+    )
+  )
+  (placement
+    (component "CONN10"
+      (place J1 4000 12000 front 0)
+    )
+    (component "CONN6"
+      (place J2 36000 8000 front 0)
+    )
+    (component "CONN2"
+      (place J3 36000 6000 front 0)
+      (place U2 10000 3000 front 0)
+    )
+  )
+  (library
+    (image "CONN10"
+      (pin Pad 1 0 2250)
+      (pin Pad 2 0 1750)
+      (pin Pad 3 0 1250)
+      (pin Pad 4 0 750)
+      (pin Pad 5 0 250)
+      (pin Pad 6 0 -250)
+      (pin Pad 7 0 -750)
+      (pin Pad 8 0 -1250)
+      (pin Pad 9 0 -1750)
+      (pin Pad 10 0 -2250)
+    )
+    (image "CONN6"
+      (pin Pad 1 0 1250)
+      (pin Pad 2 0 750)
+      (pin Pad 3 0 250)
+      (pin Pad 4 0 -250)
+      (pin Pad 5 0 -750)
+      (pin Pad 6 0 -1250)
+    )
+    (image "CONN2"
+      (pin Pad 1 0 250)
+      (pin Pad 2 0 -250)
+    )
+    (padstack Pad
+      (shape (rect F.Cu -500 -125 500 125))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net D0 (pins J1-1 J2-1))
+    (net D1 (pins J1-2 J2-2))
+    (net D2 (pins J1-3 J2-3))
+    (net D3 (pins J1-4 J2-4))
+    (net D4 (pins J1-5 J2-5))
+    (net D5 (pins J1-6 J2-6))
+    (net D6 (pins J1-7 J3-1))
+    (net D7 (pins J1-8 J3-2))
+    (net X1 (pins J1-9 U2-1))
+    (net X2 (pins J1-10 U2-2))
+    (class kicad_default "" D0 D1 D2 D3 D4 D5 D6 D7 X1 X2
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 250) (clearance 250))
+    )
+  )
+  (wiring
+  )
+)

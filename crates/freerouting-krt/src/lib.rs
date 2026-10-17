@@ -25,9 +25,12 @@
 //!   offset, coupled via pairs, polarity, skew and the optimizer exclusion,
 //!   the `krt-diffpair` board stage.
 //! - [`fanout`] (X10): the `krt-qfn-escape` fanout stage.
+//! - [`bus`] (X11): bus detection, the `krt-bus` middle-out ordering and
+//!   the `krt-bus-attraction` cost, bundled as `krt-bus`.
 
 use freerouting::autoroute::stages::StageRegistry;
 
+pub mod bus;
 pub mod diffpair;
 pub mod fanout;
 pub mod grid;
@@ -43,4 +46,5 @@ pub fn register(registry: &mut StageRegistry) {
     length::register(registry);
     diffpair::register(registry);
     fanout::register(registry);
+    bus::register(registry);
 }

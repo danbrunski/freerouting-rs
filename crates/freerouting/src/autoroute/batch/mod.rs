@@ -37,6 +37,7 @@
 
 pub mod batch_loop;
 pub mod connection;
+pub mod connection_cost;
 pub mod control;
 pub mod fanout;
 pub mod fanout_rules;
