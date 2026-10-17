@@ -4,7 +4,7 @@ Grades a routed session with KiCad's own design rules check instead of
 Freerouting's board model, so a router can't pass by agreeing with itself.
 This follows KiCadRoutingTools' practice of grading with KiCad as the oracle,
 and starts from the scripts of the 2026-10-15 head-to-head
-([X01](../../docs/roadmap/tasks/X01-krt-head-to-head.md): `prep.py`,
+([X01](../../docs/roadmap/tasks/archive/X01-krt-head-to-head.md): `prep.py`,
 `import_ses.py`, `strip_placement.py`, `classwidths.py`, `stats.py`,
 `summarize.py`, `run_board.sh`).
 

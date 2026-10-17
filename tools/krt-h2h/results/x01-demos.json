@@ -1,0 +1,1797 @@
+{
+  "format": "freerouting-x01-results-1",
+  "prereg": "docs/roadmap/prereg/X01.json",
+  "prereg_sha256": "32a86ec80839cfe81522f8102cbcb0e13f513ac802869d1e5d9e4c79c14e4638",
+  "boards": {
+    "pic_programmer": {
+      "java": {
+        "board": "pic_programmer",
+        "arm": "java",
+        "rep": 1,
+        "input": "$X01_DIR/boards/pic_programmer/prepared/pic_programmer.kicad_pcb",
+        "input_sha256": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5",
+        "engine_command": "java -Xmx3g -jar $X01_DIR/java/freerouting-a773a70ec.jar -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500",
+        "environment": null,
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 9.47,
+        "engine_seconds": 3.78,
+        "peak_rss_mb": 417.7,
+        "load_before": 1.19,
+        "load_after": 1.42,
+        "load_rule": "overridden (--allow-load): load 1.19 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/pic_programmer/java/grade/work/pic_programmer.ses",
+        "output_sha256": "3dcecedb592e7acaeb920f6a1ac96f99183da06dd57907c5411a5f89cf7a935f",
+        "routed_board": "$X01_DIR/runs/pic_programmer/java/grade/routed/pic_programmer.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 2,
+        "input_unconnected": 86,
+        "drc_real": 2,
+        "drc_real_by_type": {
+          "clearance": 2
+        },
+        "below_minimum": 0,
+        "below_minimum_by_type": {
+          "track_width": 0,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 35.6,
+        "under_class_width_tracks": 17,
+        "capped_types": [],
+        "kicad_version": "10.0.7",
+        "vias": 0,
+        "length_mm": 1541.061,
+        "length_per_layer_mm": {
+          "B.Cu": 1009.929,
+          "F.Cu": 531.131
+        },
+        "via_in_pad": 0,
+        "engine_log": "$X01_DIR/runs/pic_programmer/java/grade/work/engine.log",
+        "java_log_tail": [
+          "2026-10-16 19:06:34.386 INFO   [413460\\6D5C1D] Pipeline thread limits: autorouter pass is single-threaded, optimizer.max_threads=7.",
+          "2026-10-16 19:06:34.536 INFO   [413460\\6D5C1D] Auto-routing stage started on board 'ac7688d5be04cab5ab8689ea1b45ab0d' with baseline score 222.00 for 84 unrouted items.",
+          "2026-10-16 19:06:35.088 INFO   [413460\\6D5C1D] Auto-routing pass #1 on board 'ac7688d5be04cab5ab8689ea1b45ab0d' was completed in 0.53 seconds with score 999.77 (0 unrouted and 1 violation).",
+          "2026-10-16 19:06:35.111 INFO   [413460\\6D5C1D] Auto-routing pass #2 on board 'bf71814ddf0a84151db3c42d75779092' was completed in 0.01 seconds with score 999.77 (0 unrouted and 1 violation).",
+          "2026-10-16 19:06:35.131 INFO   [413460\\6D5C1D] Auto-routing stage completed: started with 86 unrouted nets, completed in 0.74 seconds, final score: 999.77 (0 unrouted and 1 violation), using 0.00 total CPU seconds, 0.00 GB total allocated, ",
+          "2026-10-16 19:06:35.136 INFO   [413460\\6D5C1D] Skipping optimization stage: the board has no vias to eliminate and trace length (1541.06 mm) is within 5% of theoretical minimum (2092.53 mm)."
+        ]
+      },
+      "krt": {
+        "board": "pic_programmer",
+        "arm": "krt",
+        "rep": 1,
+        "input": "$X01_DIR/boards/pic_programmer/prepared/pic_programmer.kicad_pcb",
+        "input_sha256": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5",
+        "engine_command": "$X01_DIR/venv/bin/python -E -s py_router/route.py {IN} {OUT} --nets * --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper",
+        "environment": "PATH=$X01_DIR/venv/bin:$X01_DIR/nokicad-bin; KICAD_CLI unset; cwd $X01_DIR/krt",
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 16.64,
+        "engine_seconds": 16.64,
+        "peak_rss_mb": 468.5,
+        "load_before": 14.26,
+        "load_after": 15.72,
+        "load_rule": "overridden (--allow-load): load 14.26 above 1.0 after waiting 120 s",
+        "output": "$X01_DIR/runs/pic_programmer/krt/routed/pic_programmer.kicad_pcb",
+        "output_sha256": "1426144a1e0342efce5600d2451cc738a72316d7116033fa55962700c2938137",
+        "routed_board": "$X01_DIR/runs/pic_programmer/krt/routed/pic_programmer.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 0,
+        "input_unconnected": 86,
+        "drc_real": 6,
+        "drc_real_by_type": {
+          "silk_overlap": 6
+        },
+        "below_minimum": 0,
+        "below_minimum_by_type": {
+          "track_width": 0,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 0.0,
+        "under_class_width_tracks": 0,
+        "capped_types": [],
+        "kicad_version": "10.0.7",
+        "vias": 38,
+        "length_mm": 1557.476,
+        "length_per_layer_mm": {
+          "B.Cu": 105.428,
+          "F.Cu": 1452.049
+        },
+        "via_in_pad": 0,
+        "engine_log": "$X01_DIR/runs/pic_programmer/krt/engine.log",
+        "krt_fallbacks": [
+          "Fallback: attempting orphaned pad 0 directly from connected copper",
+          "Fallback: attempting orphaned pad 2 directly from connected copper",
+          "Fallback: attempting orphaned pad 9 directly from connected copper",
+          "GND: exact-fill verdict OPEN -- bypassing the model-credit already-routed skip (#572)",
+          "KiCad-oracle recheck: deterministic exact-fill link source (pcbnew refill)",
+          "KiCad-oracle recheck: fetching exact fill islands (pcbnew refill)...",
+          "Oracle forced links (#572): 1 exact-fill link(s) on GND -- routing the oracle's own endpoints, not derived ones",
+          "Plane fragility: exact-fill geometry (1 filled island(s) from KiCad refill)",
+          "Routing 1 exact-fill oracle link(s) (#572 forced edges)",
+          "WARNING: kicad-cli NOT FOUND. This is not a supported mode -- every KiCad-oracle leg becomes a NO-OP (not a degraded pass): the plane-finalize audit, the #589 re-audit and the oracle-summary check all",
+          "exact fill: 1 island(s) across 1 zone-layer(s)"
+        ],
+        "krt_oracle_check": [
+          "disabled",
+          "skipped"
+        ]
+      }
+    },
+    "interf_u": {
+      "java": {
+        "board": "interf_u",
+        "arm": "java",
+        "rep": 1,
+        "input": "$X01_DIR/boards/interf_u/prepared/interf_u.kicad_pcb",
+        "input_sha256": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1",
+        "engine_command": "java -Xmx3g -jar $X01_DIR/java/freerouting-a773a70ec.jar -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500",
+        "environment": null,
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 50.95,
+        "engine_seconds": 45.71,
+        "peak_rss_mb": 2676.3,
+        "load_before": 1.42,
+        "load_after": 4.64,
+        "load_rule": "overridden (--allow-load): load 1.42 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/interf_u/java/grade/work/interf_u.ses",
+        "output_sha256": "12bdd9cb5b9fa96ad9716dd0c4cd4077c660dbd41ae7b3af70c60a8e7f2c2691",
+        "routed_board": "$X01_DIR/runs/interf_u/java/grade/routed/interf_u.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 13,
+        "input_unconnected": 164,
+        "drc_real": 11,
+        "drc_real_by_type": {
+          "starved_thermal": 11
+        },
+        "below_minimum": 0,
+        "below_minimum_by_type": {
+          "track_width": 0,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 161.6,
+        "under_class_width_tracks": 149,
+        "capped_types": [],
+        "kicad_version": "10.0.7",
+        "vias": 75,
+        "length_mm": 4979.273,
+        "length_per_layer_mm": {
+          "B.Cu": 2100.05,
+          "F.Cu": 2879.223
+        },
+        "via_in_pad": 0,
+        "engine_log": "$X01_DIR/runs/interf_u/java/grade/work/engine.log",
+        "java_log_tail": [
+          "2026-10-16 19:09:26.085 INFO   [F0AF43\\79E13A] Optimizer pass #2 on board 'b8d392bc868ed3785843155ad3e1a7c2' was completed in 10.54 seconds with the score of 280.44 (0 unrouted and 0 violations).",
+          "2026-10-16 19:09:26.100 INFO   [F0AF43\\79E13A] Optimizer pass #2: optimizer score 272.90 -> 280.44 (IMPROVED, 2.7653%), router score: 1000.00, incomplete connections: 0, clearance violations: 0.",
+          "2026-10-16 19:09:36.739 INFO   [F0AF43\\79E13A] Optimizer pass #3 on board 'f3a89226f2a902db7e24584cebd77db1' was completed in 10.58 seconds with the score of 280.98 (0 unrouted and 0 violations).",
+          "2026-10-16 19:09:36.758 INFO   [F0AF43\\79E13A] Optimizer pass #3: optimizer score 280.44 -> 280.98 (IMPROVED, 0.1932%), router score: 1000.00, incomplete connections: 0, clearance violations: 0.",
+          "2026-10-16 19:09:36.759 INFO   [F0AF43\\79E13A] Stopping optimizer because the improvement in this pass (0.1932%) is below the threshold (2.50%).",
+          "2026-10-16 19:09:36.776 INFO   [F0AF43\\79E13A] Optimization stage completed:. Baseline router score: 1000.00, baseline optimizer score: 257.94, final router score: 1000.00, final optimizer score: 280.98, completed in 34.40 seconds, using 13"
+        ]
+      },
+      "krt": {
+        "board": "interf_u",
+        "arm": "krt",
+        "rep": 1,
+        "input": "$X01_DIR/boards/interf_u/prepared/interf_u.kicad_pcb",
+        "input_sha256": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1",
+        "engine_command": "$X01_DIR/venv/bin/python -E -s py_router/route.py {IN} {OUT} --nets * --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper",
+        "environment": "PATH=$X01_DIR/venv/bin:$X01_DIR/nokicad-bin; KICAD_CLI unset; cwd $X01_DIR/krt",
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 282.61,
+        "engine_seconds": 282.61,
+        "peak_rss_mb": 4117.9,
+        "load_before": 2.71,
+        "load_after": 10.74,
+        "load_rule": "overridden (--allow-load): load 2.71 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/interf_u/krt/routed/interf_u.kicad_pcb",
+        "output_sha256": "bc31e23f4f6c2ccc87378c4716e0207eb745d0ffcef2c104a97837b5f211c3b9",
+        "routed_board": "$X01_DIR/runs/interf_u/krt/routed/interf_u.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 18,
+        "input_unconnected": 164,
+        "drc_real": 9,
+        "drc_real_by_type": {
+          "silk_overlap": 1,
+          "starved_thermal": 7,
+          "track_dangling": 1
+        },
+        "below_minimum": 0,
+        "below_minimum_by_type": {
+          "track_width": 0,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 69.9,
+        "under_class_width_tracks": 32,
+        "capped_types": [],
+        "kicad_version": "10.0.7",
+        "vias": 163,
+        "length_mm": 4190.58,
+        "length_per_layer_mm": {
+          "B.Cu": 1051.388,
+          "F.Cu": 3139.192
+        },
+        "via_in_pad": 0,
+        "engine_log": "$X01_DIR/runs/interf_u/krt/engine.log",
+        "krt_fallbacks": [
+          "Fallback: attempting orphaned pad 0 directly from connected copper",
+          "Fallback: attempting orphaned pad 1 directly from connected copper",
+          "Fallback: attempting orphaned pad 10 directly from connected copper",
+          "Fallback: attempting orphaned pad 11 directly from connected copper",
+          "Fallback: attempting orphaned pad 13 directly from connected copper",
+          "Fallback: attempting orphaned pad 14 directly from connected copper",
+          "Fallback: attempting orphaned pad 15 directly from connected copper",
+          "Fallback: attempting orphaned pad 16 directly from connected copper",
+          "Fallback: attempting orphaned pad 17 directly from connected copper",
+          "Fallback: attempting orphaned pad 18 directly from connected copper",
+          "Fallback: attempting orphaned pad 19 directly from connected copper",
+          "Fallback: attempting orphaned pad 2 directly from connected copper",
+          "Fallback: attempting orphaned pad 20 directly from connected copper",
+          "Fallback: attempting orphaned pad 21 directly from connected copper",
+          "Fallback: attempting orphaned pad 22 directly from connected copper",
+          "Fallback: attempting orphaned pad 25 directly from connected copper",
+          "Fallback: attempting orphaned pad 26 directly from connected copper",
+          "Fallback: attempting orphaned pad 28 directly from connected copper",
+          "Fallback: attempting orphaned pad 29 directly from connected copper",
+          "Fallback: attempting orphaned pad 3 directly from connected copper",
+          "Fallback: attempting orphaned pad 30 directly from connected copper",
+          "Fallback: attempting orphaned pad 4 directly from connected copper",
+          "Fallback: attempting orphaned pad 5 directly from connected copper",
+          "Fallback: attempting orphaned pad 6 directly from connected copper",
+          "Fallback: attempting orphaned pad 7 directly from connected copper",
+          "Fallback: attempting orphaned pad 8 directly from connected copper",
+          "Fallback: attempting orphaned pad 9 directly from connected copper",
+          "GND: exact-fill verdict OPEN -- bypassing the model-credit already-routed skip (#572)",
+          "KiCad-oracle recheck: deterministic exact-fill link source (pcbnew refill)",
+          "KiCad-oracle recheck: fetching exact fill islands (pcbnew refill)...",
+          "Oracle forced links (#572): 1 exact-fill link(s) on GND -- routing the oracle's own endpoints, not derived ones",
+          "Plane fragility: exact-fill geometry (29 filled island(s) from KiCad refill)",
+          "Plane fragility: exact-fill geometry (30 filled island(s) from KiCad refill)",
+          "Routing 1 exact-fill oracle link(s) (#572 forced edges)",
+          "WARNING: kicad-cli NOT FOUND. This is not a supported mode -- every KiCad-oracle leg becomes a NO-OP (not a degraded pass): the plane-finalize audit, the #589 re-audit and the oracle-summary check all",
+          "exact fill: 29 island(s) across 1 zone-layer(s)"
+        ],
+        "krt_oracle_check": [
+          "disabled",
+          "skipped",
+          "skipped"
+        ]
+      }
+    },
+    "kit-dev-coldfire-xilinx_5213": {
+      "java": {
+        "board": "kit-dev-coldfire-xilinx_5213",
+        "arm": "java",
+        "rep": 1,
+        "input": "$X01_DIR/boards/kit-dev-coldfire-xilinx_5213/prepared/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "input_sha256": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83",
+        "engine_command": "java -Xmx3g -jar $X01_DIR/java/freerouting-a773a70ec.jar -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500",
+        "environment": null,
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 484.6,
+        "engine_seconds": 478.65,
+        "peak_rss_mb": 1118.8,
+        "load_before": 3.66,
+        "load_after": 4.44,
+        "load_rule": "overridden (--allow-load): load 3.66 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/kit-dev-coldfire-xilinx_5213/java/grade/work/kit-dev-coldfire-xilinx_5213.ses",
+        "output_sha256": "db50da3977dd355ae86c927dfebe71a8729fd99a8136fcfc33ae9847f2033443",
+        "routed_board": "$X01_DIR/runs/kit-dev-coldfire-xilinx_5213/java/grade/routed/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 49,
+        "input_unconnected": 478,
+        "drc_real": 218,
+        "drc_real_by_type": {
+          "shorting_items": 1,
+          "track_dangling": 2,
+          "track_width": 199,
+          "via_dangling": 16
+        },
+        "below_minimum": 301,
+        "below_minimum_by_type": {
+          "track_width": 301,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 247.8,
+        "under_class_width_tracks": 296,
+        "capped_types": [
+          "track_width"
+        ],
+        "kicad_version": "10.0.7",
+        "vias": 321,
+        "length_mm": 8017.857,
+        "length_per_layer_mm": {
+          "B.Cu": 1215.687,
+          "F.Cu": 1408.714,
+          "In1.Cu": 2636.752,
+          "In2.Cu": 2756.704
+        },
+        "via_in_pad": 0,
+        "engine_log": "$X01_DIR/runs/kit-dev-coldfire-xilinx_5213/java/grade/work/engine.log",
+        "java_log_tail": [
+          "2026-10-16 19:18:02.140 INFO   [A36110\\E2D0EB] Auto-routing pass #15 on board '0ba8c2b29ecfe38b5c23756ef170d852' was completed in 11.51 seconds with score 585.95 (168 unrouted and 0 violations), using 396.38 CPU seconds and the job allocate",
+          "2026-10-16 19:18:17.828 INFO   [A36110\\E2D0EB] Auto-routing pass #16 on board '6eafa7ab24be3189436f047c0e8c16f9' was completed in 0.00 seconds with score 945.78 (22 unrouted and 0 violations), using 411.88 CPU seconds and the job allocated ",
+          "2026-10-16 19:18:20.614 INFO   [A36110\\E2D0EB] Auto-routing pass #17 on board '6eafa7ab24be3189436f047c0e8c16f9' was completed in 2.76 seconds with score 578.56 (171 unrouted and 0 violations), using 414.92 CPU seconds and the job allocated",
+          "2026-10-16 19:18:37.097 INFO   [A36110\\E2D0EB] Auto-routing pass #18 on board 'c28770be0c8b48fe62a473b6c39c680e' was completed in 16.46 seconds with score 780.65 (89 unrouted and 0 violations), using 431.28 CPU seconds and the job allocated",
+          "2026-10-16 19:18:41.402 INFO   [A36110\\E2D0EB] Auto-routing stage completed: started with 482 unrouted nets, completed in 473.40 seconds, final score: 945.78 (22 unrouted and 0 violations), using 434.31 total CPU seconds, 233.28 GB total al",
+          "2026-10-16 19:18:42.125 INFO   [A36110\\E2D0EB] Skipping optimization stage: the board has 22 unrouted connection(s) (optimizer only runs on completely routed boards)."
+        ]
+      },
+      "krt": {
+        "board": "kit-dev-coldfire-xilinx_5213",
+        "arm": "krt",
+        "rep": 1,
+        "input": "$X01_DIR/boards/kit-dev-coldfire-xilinx_5213/prepared/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "input_sha256": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83",
+        "engine_command": "$X01_DIR/venv/bin/python -E -s py_router/route.py {IN} {OUT} --nets * --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper",
+        "environment": "PATH=$X01_DIR/venv/bin:$X01_DIR/nokicad-bin; KICAD_CLI unset; cwd $X01_DIR/krt",
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 313.4,
+        "engine_seconds": 313.4,
+        "peak_rss_mb": 3550.3,
+        "load_before": 14.09,
+        "load_after": 4.0,
+        "load_rule": "overridden (--allow-load): load 14.09 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/kit-dev-coldfire-xilinx_5213/krt/routed/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "output_sha256": "96074e495ccf98393c62946070fcb3e3fade91ddf08a1755a8cfa6375c60833f",
+        "routed_board": "$X01_DIR/runs/kit-dev-coldfire-xilinx_5213/krt/routed/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 11,
+        "input_unconnected": 478,
+        "drc_real": 10,
+        "drc_real_by_type": {
+          "silk_overlap": 4,
+          "track_dangling": 5,
+          "via_dangling": 1
+        },
+        "below_minimum": 0,
+        "below_minimum_by_type": {
+          "track_width": 0,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 205.3,
+        "under_class_width_tracks": 660,
+        "capped_types": [],
+        "kicad_version": "10.0.7",
+        "vias": 480,
+        "length_mm": 8316.002,
+        "length_per_layer_mm": {
+          "B.Cu": 1153.745,
+          "F.Cu": 4742.482,
+          "In1.Cu": 1416.891,
+          "In2.Cu": 1002.885
+        },
+        "via_in_pad": 8,
+        "engine_log": "$X01_DIR/runs/kit-dev-coldfire-xilinx_5213/krt/engine.log",
+        "krt_fallbacks": [
+          "+3.3V: (187.96,88.14)<->(189.06,87.72)  FAILED (exact-fill strap unroutable)",
+          "+3.3V: (187.96,88.14)<->(189.32,90.56)  FAILED (exact-fill strap unroutable)",
+          "+3.3V: exact-fill tier: strapping nearest approach (187.96,88.14)<->(186.80,88.05) [*.Cu]",
+          "+3.3V: exact-fill tier: strapping nearest approach (187.96,88.14)<->(189.12,88.05) [*.Cu]",
+          "+3.3V: exact-fill verdict OPEN -- bypassing the model-credit already-routed skip (#572)",
+          "3 reported-unconnected pad(s) are CONNECTED per KiCad's exact fill (model quantization): C107.2 (GND), C116.2 (GND), U102.67 (GND)",
+          "Dog-bone: 0/0 inner balls got a gap via site (0 via-in-pad fallback)",
+          "Dog-bone: 0/1 inner balls got a gap via site (1 via-in-pad fallback)",
+          "Fallback: attempting orphaned pad 0 directly from connected copper",
+          "Fallback: attempting orphaned pad 1 directly from connected copper",
+          "Fallback: attempting orphaned pad 114 directly from connected copper",
+          "Fallback: attempting orphaned pad 2 directly from connected copper",
+          "Fallback: attempting orphaned pad 22 directly from connected copper",
+          "Fallback: attempting orphaned pad 23 directly from connected copper",
+          "Fallback: attempting orphaned pad 24 directly from connected copper",
+          "Fallback: attempting orphaned pad 25 directly from connected copper",
+          "Fallback: attempting orphaned pad 3 directly from connected copper",
+          "Fallback: attempting orphaned pad 32 directly from connected copper",
+          "Fallback: attempting orphaned pad 33 directly from connected copper",
+          "Fallback: attempting orphaned pad 34 directly from connected copper",
+          "Fallback: attempting orphaned pad 35 directly from connected copper",
+          "Fallback: attempting orphaned pad 36 directly from connected copper",
+          "Fallback: attempting orphaned pad 37 directly from connected copper",
+          "Fallback: attempting orphaned pad 38 directly from connected copper",
+          "Fallback: attempting orphaned pad 39 directly from connected copper",
+          "Fallback: attempting orphaned pad 40 directly from connected copper",
+          "Fallback: attempting orphaned pad 41 directly from connected copper",
+          "Fallback: attempting orphaned pad 42 directly from connected copper",
+          "Fallback: attempting orphaned pad 43 directly from connected copper",
+          "Fallback: attempting orphaned pad 46 directly from connected copper",
+          "Fallback: attempting orphaned pad 5 directly from connected copper",
+          "Fallback: attempting orphaned pad 50 directly from connected copper",
+          "Fallback: attempting orphaned pad 51 directly from connected copper",
+          "Fallback: attempting orphaned pad 53 directly from connected copper",
+          "Fallback: attempting orphaned pad 54 directly from connected copper",
+          "Fallback: attempting orphaned pad 55 directly from connected copper",
+          "Fallback: attempting orphaned pad 56 directly from connected copper",
+          "Fallback: attempting orphaned pad 57 directly from connected copper",
+          "Fallback: attempting orphaned pad 6 directly from connected copper",
+          "Fallback: attempting orphaned pad 61 directly from connected copper"
+        ],
+        "krt_oracle_check": [
+          "disabled",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped",
+          "skipped",
+          "skipped"
+        ]
+      }
+    },
+    "video": {
+      "java": {
+        "board": "video",
+        "arm": "java",
+        "rep": 1,
+        "input": "$X01_DIR/boards/video/prepared/video.kicad_pcb",
+        "input_sha256": "7c423c022f8172e4a92de32fa1557fa82d7a21a01be519f40d5c32d66b7ef83f",
+        "engine_command": "java -Xmx3g -jar $X01_DIR/java/freerouting-a773a70ec.jar -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500",
+        "environment": null,
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 3397.42,
+        "engine_seconds": 3385.89,
+        "peak_rss_mb": 1547.9,
+        "load_before": 1.04,
+        "load_after": 3.34,
+        "load_rule": "overridden (--allow-load): load 1.04 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/video/java/grade/work/video.ses",
+        "output_sha256": "90bc26fdbe61491b92a885182892e855353ffc1bb197816399257134cb05dbff",
+        "routed_board": "$X01_DIR/runs/video/java/grade/routed/video.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 170,
+        "input_unconnected": 499,
+        "drc_real": 206,
+        "drc_real_by_type": {
+          "starved_thermal": 6,
+          "track_dangling": 1,
+          "track_width": 199
+        },
+        "below_minimum": 858,
+        "below_minimum_by_type": {
+          "track_width": 858,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 1137.0,
+        "under_class_width_tracks": 836,
+        "capped_types": [
+          "track_width"
+        ],
+        "kicad_version": "10.0.7",
+        "vias": 975,
+        "length_mm": 33569.847,
+        "length_per_layer_mm": {
+          "B.Cu": 6839.922,
+          "F.Cu": 4795.578,
+          "In1.Cu": 9330.061,
+          "In2.Cu": 12604.287
+        },
+        "via_in_pad": 0,
+        "engine_log": "$X01_DIR/runs/video/java/grade/work/engine.log",
+        "java_log_tail": [
+          "2026-10-16 17:40:14.912 INFO   [99046E\\638181] Auto-routing pass #22 on board '7c9332dc63411dce42fed89547345668' was completed in 43.77 seconds with score 970.78 (32 unrouted and 0 violations), using 3072.17 CPU seconds and the job allocate",
+          "2026-10-16 17:40:53.032 INFO   [99046E\\638181] Auto-routing pass #23 on board '485024d6fb0641d762949f270dcbbcfc' was completed in 36.02 seconds with score 973.52 (29 unrouted and 0 violations), using 3110.00 CPU seconds and the job allocate",
+          "2026-10-16 17:41:34.189 INFO   [99046E\\638181] Auto-routing pass #24 on board '245ecb3de9f8af92d2e56f96bb58577e' was completed in 0.00 seconds with score 980.82 (21 unrouted and 0 violations), using 3150.88 CPU seconds and the job allocated",
+          "2026-10-16 17:42:09.295 INFO   [99046E\\638181] Auto-routing pass #25 on board '245ecb3de9f8af92d2e56f96bb58577e' was completed in 35.05 seconds with score 974.43 (28 unrouted and 0 violations), using 3184.28 CPU seconds and the job allocate",
+          "2026-10-16 17:42:19.771 INFO   [99046E\\638181] Auto-routing stage completed: started with 1345 unrouted nets, completed in 3376.25 seconds, final score: 980.82 (21 unrouted and 0 violations), using 3195.67 total CPU seconds, 2639.17 GB tota",
+          "2026-10-16 17:42:21.798 INFO   [99046E\\638181] Skipping optimization stage: the board has 21 unrouted connection(s) (optimizer only runs on completely routed boards)."
+        ]
+      },
+      "krt": {
+        "board": "video",
+        "arm": "krt",
+        "rep": 1,
+        "input": "$X01_DIR/boards/video/prepared/video.kicad_pcb",
+        "input_sha256": "7c423c022f8172e4a92de32fa1557fa82d7a21a01be519f40d5c32d66b7ef83f",
+        "engine_command": "$X01_DIR/venv/bin/python -E -s py_router/route.py {IN} {OUT} --nets * --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper",
+        "environment": "PATH=$X01_DIR/venv/bin:$X01_DIR/nokicad-bin; KICAD_CLI unset; cwd $X01_DIR/krt",
+        "engine_exit": 0,
+        "grade_exit": 1,
+        "wall_seconds": 3824.75,
+        "engine_seconds": 3824.75,
+        "peak_rss_mb": 6351.2,
+        "load_before": 2.77,
+        "load_after": 7.75,
+        "load_rule": "overridden (--allow-load): load 2.77 above 1.0 after waiting 60 s",
+        "output": "$X01_DIR/runs/video/krt/routed/video.kicad_pcb",
+        "output_sha256": "27781371c9aebcecc82c8c8d564dfa1bb18fc3be70bd82ad43c01f2507fac4e1",
+        "routed_board": "$X01_DIR/runs/video/krt/routed/video.kicad_pcb",
+        "graded": true,
+        "kicad_unconnected": 111,
+        "input_unconnected": 499,
+        "drc_real": 41,
+        "drc_real_by_type": {
+          "clearance": 5,
+          "shorting_items": 1,
+          "starved_thermal": 8,
+          "track_dangling": 20,
+          "tracks_crossing": 1,
+          "via_dangling": 6
+        },
+        "below_minimum": 0,
+        "below_minimum_by_type": {
+          "track_width": 0,
+          "via_diameter": 0,
+          "via_drill": 0
+        },
+        "under_class_width_mm": 6.8,
+        "under_class_width_tracks": 8,
+        "capped_types": [],
+        "kicad_version": "10.0.7",
+        "vias": 1482,
+        "length_mm": 32437.18,
+        "length_per_layer_mm": {
+          "B.Cu": 11017.336,
+          "F.Cu": 11988.41,
+          "In1.Cu": 5052.775,
+          "In2.Cu": 4378.659
+        },
+        "via_in_pad": 8,
+        "engine_log": "$X01_DIR/runs/video/krt/engine.log",
+        "krt_fallbacks": [
+          "+5V: (85.09,135.89)<->(84.94,137.09)  FAILED (exact-fill strap unroutable)",
+          "+5V: (88.77,79.38)<->(87.57,78.54)  FAILED (exact-fill strap unroutable)",
+          "+5V: (92.08,120.02)<->(90.69,122.69)  FAILED (exact-fill strap unroutable)",
+          "+5V: exact-fill strap OK (escalated: 3 seg(s), 0 via(s))",
+          "+5V: exact-fill tier: strapping nearest approach (205.63,72.27)<->(205.36,73.39) [In2.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (244.22,108.95)<->(242.93,109.48) [In2.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (244.62,109.26)<->(243.24,109.08) [In2.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (270.02,82.59)<->(271.40,82.28) [In2.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (317.80,74.50)<->(317.82,75.50) [In2.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (85.09,135.89)<->(83.89,136.29) [*.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (88.77,79.38)<->(89.97,78.97) [*.Cu]",
+          "+5V: exact-fill tier: strapping nearest approach (92.08,120.02)<->(92.62,118.81) [*.Cu]",
+          "+5V: exact-fill verdict OPEN -- bypassing the model-credit already-routed skip (#572)",
+          "13 reported-unconnected pad(s) are CONNECTED per KiCad's exact fill (model quantization): U22.11 (GND), U22.23 (GND), U22.38 (GND), U11.111 (+5V), U22.12 (+5V), U22.63 (+5V), U24.100 (+5V), U11.31 (+5",
+          "Dog-bone: 0/0 inner balls got a gap via site (0 via-in-pad fallback)",
+          "Dog-bone: 0/1 inner balls got a gap via site (1 via-in-pad fallback)",
+          "Fallback: attempting orphaned pad 0 directly from connected copper",
+          "Fallback: attempting orphaned pad 1 directly from connected copper",
+          "Fallback: attempting orphaned pad 100 directly from connected copper",
+          "Fallback: attempting orphaned pad 101 directly from connected copper",
+          "Fallback: attempting orphaned pad 102 directly from connected copper",
+          "Fallback: attempting orphaned pad 104 directly from connected copper",
+          "Fallback: attempting orphaned pad 105 directly from connected copper",
+          "Fallback: attempting orphaned pad 106 directly from connected copper",
+          "Fallback: attempting orphaned pad 107 directly from connected copper",
+          "Fallback: attempting orphaned pad 108 directly from connected copper",
+          "Fallback: attempting orphaned pad 109 directly from connected copper",
+          "Fallback: attempting orphaned pad 110 directly from connected copper",
+          "Fallback: attempting orphaned pad 113 directly from connected copper",
+          "Fallback: attempting orphaned pad 114 directly from connected copper",
+          "Fallback: attempting orphaned pad 115 directly from connected copper",
+          "Fallback: attempting orphaned pad 116 directly from connected copper",
+          "Fallback: attempting orphaned pad 117 directly from connected copper",
+          "Fallback: attempting orphaned pad 118 directly from connected copper",
+          "Fallback: attempting orphaned pad 119 directly from connected copper",
+          "Fallback: attempting orphaned pad 120 directly from connected copper",
+          "Fallback: attempting orphaned pad 121 directly from connected copper",
+          "Fallback: attempting orphaned pad 122 directly from connected copper",
+          "Fallback: attempting orphaned pad 123 directly from connected copper",
+          "Fallback: attempting orphaned pad 124 directly from connected copper"
+        ],
+        "krt_oracle_check": [
+          "disabled",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped (in-memory board)",
+          "skipped",
+          "skipped",
+          "skipped"
+        ]
+      }
+    }
+  },
+  "classes": {
+    "pic_programmer": {
+      "java_unconnected": 2,
+      "krt_unconnected": 0,
+      "shared": 0,
+      "java_only": 2,
+      "krt_only": 0,
+      "java_only_by_class": {
+        "plane-net": 2,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 0
+      },
+      "java_only_examples": {
+        "plane-net": [
+          {
+            "net": "GND",
+            "ends": [
+              "P2.19",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 215.265,
+                "y": 73.66
+              },
+              {
+                "x": 223.52,
+                "y": 138.43
+              }
+            ],
+            "why": {
+              "zone_net": "GND"
+            }
+          },
+          {
+            "net": "GND",
+            "ends": [
+              "U1.4",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 179.07,
+                "y": 116.84
+              },
+              {
+                "x": 223.52,
+                "y": 138.43
+              }
+            ],
+            "why": {
+              "zone_net": "GND"
+            }
+          }
+        ]
+      },
+      "krt_only_by_class": {
+        "plane-net": 0,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 0
+      },
+      "krt_only_examples": {},
+      "shared_by_class": {
+        "plane-net": 0,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 0
+      },
+      "shared_examples": {},
+      "zone_nets": [
+        "GND"
+      ]
+    },
+    "interf_u": {
+      "java_unconnected": 13,
+      "krt_unconnected": 18,
+      "shared": 1,
+      "java_only": 12,
+      "krt_only": 17,
+      "java_only_by_class": {
+        "plane-net": 12,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 0
+      },
+      "java_only_examples": {
+        "plane-net": [
+          {
+            "net": "GND",
+            "ends": [
+              "C4.2",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 155.688,
+                "y": 52.197
+              },
+              {
+                "x": 193.675,
+                "y": 133.35
+              }
+            ],
+            "why": {
+              "zone_net": "GND"
+            }
+          },
+          {
+            "net": "GND",
+            "ends": [
+              "JP1.1",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 116.205,
+                "y": 105.41
+              },
+              {
+                "x": 193.675,
+                "y": 133.35
+              }
+            ],
+            "why": {
+              "zone_net": "GND"
+            }
+          },
+          {
+            "net": "GND",
+            "ends": [
+              "JP1.1",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 116.205,
+                "y": 105.41
+              },
+              {
+                "x": 193.675,
+                "y": 133.35
+              }
+            ],
+            "why": {
+              "zone_net": "GND"
+            }
+          }
+        ]
+      },
+      "krt_only_by_class": {
+        "plane-net": 0,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 17
+      },
+      "krt_only_examples": {
+        "other": [
+          {
+            "net": "/MA3",
+            "ends": [
+              "U5.9",
+              "U9.C2"
+            ],
+            "pos": [
+              {
+                "x": 107.315,
+                "y": 76.2
+              },
+              {
+                "x": 145.415,
+                "y": 72.39
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.4,
+              "end_pads": [
+                "U5.9",
+                "U9.C2"
+              ]
+            }
+          },
+          {
+            "net": "/MA6",
+            "ends": [
+              "U5.6",
+              "U9.F2"
+            ],
+            "pos": [
+              {
+                "x": 99.695,
+                "y": 76.2
+              },
+              {
+                "x": 145.415,
+                "y": 80.01
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.4,
+              "end_pads": [
+                "U5.6",
+                "U9.F2"
+              ]
+            }
+          },
+          {
+            "net": "/PC-A2",
+            "ends": [
+              "U9.M5",
+              "via"
+            ],
+            "pos": [
+              {
+                "x": 153.035,
+                "y": 95.25
+              },
+              {
+                "x": 120.3,
+                "y": 104.3
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.4,
+              "end_pads": [
+                "U9.M5"
+              ]
+            }
+          }
+        ]
+      },
+      "shared_by_class": {
+        "plane-net": 1,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 0
+      },
+      "shared_examples": {
+        "plane-net": [
+          {
+            "net": "GND",
+            "ends": [
+              "C2.2",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 123.805,
+                "y": 91.44
+              },
+              {
+                "x": 193.675,
+                "y": 133.35
+              }
+            ],
+            "why": {
+              "zone_net": "GND"
+            },
+            "match": "same net"
+          }
+        ]
+      },
+      "zone_nets": [
+        "GND"
+      ]
+    },
+    "kit-dev-coldfire-xilinx_5213": {
+      "java_unconnected": 49,
+      "krt_unconnected": 11,
+      "shared": 4,
+      "java_only": 45,
+      "krt_only": 7,
+      "java_only_by_class": {
+        "plane-net": 40,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 2,
+        "other": 3
+      },
+      "java_only_examples": {
+        "plane-net": [
+          {
+            "net": "+3.3V",
+            "ends": [
+              "BDM_PORT101.9",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 84.325,
+                "y": 119.2265
+              },
+              {
+                "x": 76.327,
+                "y": 116.459
+              }
+            ],
+            "why": {
+              "zone_net": "+3.3V"
+            }
+          },
+          {
+            "net": "+3.3V",
+            "ends": [
+              "C101.2",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 161.351,
+                "y": 105.537
+              },
+              {
+                "x": 168.529,
+                "y": 102.74
+              }
+            ],
+            "why": {
+              "zone_net": "+3.3V"
+            }
+          },
+          {
+            "net": "+3.3V",
+            "ends": [
+              "C113.1",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 127.7868,
+                "y": 99.5528
+              },
+              {
+                "x": 125.349,
+                "y": 98.872
+              }
+            ],
+            "why": {
+              "zone_net": "+3.3V"
+            }
+          }
+        ],
+        "dense-escape": [
+          {
+            "net": "/GPT1",
+            "ends": [
+              "U102.59",
+              "via"
+            ],
+            "pos": [
+              {
+                "x": 133.382,
+                "y": 109.148
+              },
+              {
+                "x": 119.8379,
+                "y": 121.7114
+              }
+            ],
+            "why": {
+              "pad": "U102.59",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          },
+          {
+            "net": "/QSPI_CS3",
+            "ends": [
+              "U102.12",
+              "via"
+            ],
+            "pos": [
+              {
+                "x": 135.882,
+                "y": 93.798
+              },
+              {
+                "x": 146.2597,
+                "y": 134.0716
+              }
+            ],
+            "why": {
+              "pad": "U102.12",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          }
+        ],
+        "other": [
+          {
+            "net": "/BKPT-",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 140.2295,
+                "y": 107.1402
+              },
+              {
+                "x": 82.0007,
+                "y": 104.267
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          },
+          {
+            "net": "/DTIN0",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 127.707,
+                "y": 100.473
+              },
+              {
+                "x": 126.7884,
+                "y": 103.3521
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          },
+          {
+            "net": "/IRQ-7",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 143.1565,
+                "y": 97.8735
+              },
+              {
+                "x": 136.2407,
+                "y": 116.1032
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          }
+        ]
+      },
+      "krt_only_by_class": {
+        "plane-net": 0,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 6,
+        "other": 1
+      },
+      "krt_only_examples": {
+        "dense-escape": [
+          {
+            "net": "/IRQ-1",
+            "ends": [
+              "R118.1",
+              "U301.42"
+            ],
+            "pos": [
+              {
+                "x": 191.2675,
+                "y": 105.51
+              },
+              {
+                "x": 184.6815,
+                "y": 121.158
+              }
+            ],
+            "why": {
+              "pad": "U301.42",
+              "footprint_pads": 144,
+              "pitch_mm": 0.5
+            }
+          },
+          {
+            "net": "/IRQ-1",
+            "ends": [
+              "U102.87",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 184.4,
+                "y": 121.5
+              },
+              {
+                "x": 143.057,
+                "y": 101.973
+              }
+            ],
+            "why": {
+              "pad": "U102.87",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          },
+          {
+            "net": "/PST2",
+            "ends": [
+              "BDM_PORT101.13",
+              "U102.69"
+            ],
+            "pos": [
+              {
+                "x": 76.327,
+                "y": 121.539
+              },
+              {
+                "x": 138.382,
+                "y": 109.148
+              }
+            ],
+            "why": {
+              "pad": "U102.69",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          }
+        ],
+        "other": [
+          {
+            "net": "/URTS2",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 129.3,
+                "y": 97.1
+              },
+              {
+                "x": 128.6,
+                "y": 97.5
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          }
+        ]
+      },
+      "shared_by_class": {
+        "plane-net": 4,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 0,
+        "other": 0
+      },
+      "shared_examples": {
+        "plane-net": [
+          {
+            "net": "+3.3V",
+            "ends": [
+              "LV101.2",
+              "zone"
+            ],
+            "pos": [
+              {
+                "x": 72.5,
+                "y": 145.5
+              },
+              {
+                "x": 187.96,
+                "y": 88.138
+              }
+            ],
+            "why": {
+              "zone_net": "+3.3V"
+            },
+            "match": "exact"
+          },
+          {
+            "net": "+3.3V",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 102.2115,
+                "y": 98.933
+              },
+              {
+                "x": 98.705,
+                "y": 109.728
+              }
+            ],
+            "why": {
+              "zone_net": "+3.3V"
+            },
+            "match": "exact"
+          },
+          {
+            "net": "+3.3V",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 130.1073,
+                "y": 94.9639
+              },
+              {
+                "x": 127.7868,
+                "y": 99.5528
+              }
+            ],
+            "why": {
+              "zone_net": "+3.3V"
+            },
+            "match": "exact"
+          }
+        ]
+      },
+      "zone_nets": [
+        "+3.3V",
+        "GND"
+      ]
+    },
+    "video": {
+      "java_unconnected": 170,
+      "krt_unconnected": 111,
+      "shared": 12,
+      "java_only": 158,
+      "krt_only": 99,
+      "java_only_by_class": {
+        "plane-net": 141,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 3,
+        "other": 14
+      },
+      "java_only_examples": {
+        "plane-net": [
+          {
+            "net": "+5V",
+            "ends": [
+              "C24.1",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 147.981,
+                "y": 117.0921
+              },
+              {
+                "x": 136.499,
+                "y": 116.84
+              }
+            ],
+            "why": {
+              "zone_net": "+5V"
+            }
+          },
+          {
+            "net": "+5V",
+            "ends": [
+              "C25.1",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 147.981,
+                "y": 114.935
+              },
+              {
+                "x": 147.78,
+                "y": 111.9543
+              }
+            ],
+            "why": {
+              "zone_net": "+5V"
+            }
+          },
+          {
+            "net": "+5V",
+            "ends": [
+              "C26.1",
+              "C38.1"
+            ],
+            "pos": [
+              {
+                "x": 151.791,
+                "y": 132.08
+              },
+              {
+                "x": 152.172,
+                "y": 122.936
+              }
+            ],
+            "why": {
+              "zone_net": "+5V"
+            }
+          }
+        ],
+        "dense-escape": [
+          {
+            "net": "/DQ2",
+            "ends": [
+              "U23.11",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 143.1718,
+                "y": 108.4038
+              },
+              {
+                "x": 100.58,
+                "y": 94.993
+              }
+            ],
+            "why": {
+              "pad": "U23.11",
+              "footprint_pads": 100,
+              "pitch_mm": 0.65
+            }
+          },
+          {
+            "net": "/TVRAM10",
+            "ends": [
+              "U18.53",
+              "U22.35"
+            ],
+            "pos": [
+              {
+                "x": 297.2645,
+                "y": 72.922
+              },
+              {
+                "x": 210.82,
+                "y": 74.295
+              }
+            ],
+            "why": {
+              "pad": "U22.35",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          },
+          {
+            "net": "/TVRAM17",
+            "ends": [
+              "U18.5",
+              "U22.44"
+            ],
+            "pos": [
+              {
+                "x": 297.2645,
+                "y": 77.422
+              },
+              {
+                "x": 276.86,
+                "y": 74.295
+              }
+            ],
+            "why": {
+              "pad": "U22.44",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          }
+        ],
+        "other": [
+          {
+            "net": "/DQ2",
+            "ends": [
+              "U3.4",
+              "U8.14"
+            ],
+            "pos": [
+              {
+                "x": 164.133,
+                "y": 108.458
+              },
+              {
+                "x": 326.517,
+                "y": 122.809
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": [
+                "U3.4",
+                "U8.14"
+              ]
+            }
+          },
+          {
+            "net": "/DQ2",
+            "ends": [
+              "U8.14",
+              "U9.16"
+            ],
+            "pos": [
+              {
+                "x": 326.517,
+                "y": 122.809
+              },
+              {
+                "x": 330.835,
+                "y": 112.395
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": [
+                "U8.14",
+                "U9.16"
+              ]
+            }
+          },
+          {
+            "net": "/TVRAM10",
+            "ends": [
+              "U12.53",
+              "U14.53"
+            ],
+            "pos": [
+              {
+                "x": 210.82,
+                "y": 109.855
+              },
+              {
+                "x": 210.82,
+                "y": 118.745
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": [
+                "U12.53",
+                "U14.53"
+              ]
+            }
+          }
+        ]
+      },
+      "krt_only_by_class": {
+        "plane-net": 0,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 77,
+        "other": 22
+      },
+      "krt_only_examples": {
+        "dense-escape": [
+          {
+            "net": "//PCRD",
+            "ends": [
+              "U23.46",
+              "U24.133"
+            ],
+            "pos": [
+              {
+                "x": 126.48,
+                "y": 83.29
+              },
+              {
+                "x": 114.63,
+                "y": 83.293
+              }
+            ],
+            "why": {
+              "pad": "U23.46",
+              "footprint_pads": 100,
+              "pitch_mm": 0.65
+            }
+          },
+          {
+            "net": "//PCWR",
+            "ends": [
+              "U11.74",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 156.73,
+                "y": 120.665
+              },
+              {
+                "x": 160.7,
+                "y": 111.8
+              }
+            ],
+            "why": {
+              "pad": "U11.74",
+              "footprint_pads": 160,
+              "pitch_mm": 0.65
+            }
+          },
+          {
+            "net": "/ACCES_RAM-",
+            "ends": [
+              "U22.21",
+              "U6.19"
+            ],
+            "pos": [
+              {
+                "x": 202.389,
+                "y": 134.366
+              },
+              {
+                "x": 300.927,
+                "y": 66.7595
+              }
+            ],
+            "why": {
+              "pad": "U22.21",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            }
+          }
+        ],
+        "other": [
+          {
+            "net": "/DQ0",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 141.9,
+                "y": 114.3
+              },
+              {
+                "x": 146.5,
+                "y": 114.9
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          },
+          {
+            "net": "/DQ0",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 331.85,
+                "y": 110.875
+              },
+              {
+                "x": 329.9,
+                "y": 91.5
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          },
+          {
+            "net": "/DQ10",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 153.0,
+                "y": 114.3
+              },
+              {
+                "x": 152.5,
+                "y": 113.1
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": []
+            }
+          }
+        ]
+      },
+      "shared_by_class": {
+        "plane-net": 8,
+        "wide-at-fine-pitch": 0,
+        "dense-escape": 3,
+        "other": 1
+      },
+      "shared_examples": {
+        "plane-net": [
+          {
+            "net": "+5V",
+            "ends": [
+              "track",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 103.18,
+                "y": 78.743
+              },
+              {
+                "x": 108.9298,
+                "y": 82.2312
+              }
+            ],
+            "why": {
+              "zone_net": "+5V"
+            },
+            "match": "exact"
+          },
+          {
+            "net": "+5V",
+            "ends": [
+              "C19.1",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 142.52,
+                "y": 73.66
+              },
+              {
+                "x": 151.892,
+                "y": 68.4129
+              }
+            ],
+            "why": {
+              "zone_net": "+5V"
+            },
+            "match": "same net"
+          },
+          {
+            "net": "+5V",
+            "ends": [
+              "C21.1",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 99.8815,
+                "y": 87.193
+              },
+              {
+                "x": 123.164,
+                "y": 90.805
+              }
+            ],
+            "why": {
+              "zone_net": "+5V"
+            },
+            "match": "same net"
+          }
+        ],
+        "dense-escape": [
+          {
+            "net": "/TVRAM13",
+            "ends": [
+              "U22.40",
+              "track"
+            ],
+            "pos": [
+              {
+                "x": 297.2645,
+                "y": 75.422
+              },
+              {
+                "x": 200.66,
+                "y": 65.405
+              }
+            ],
+            "why": {
+              "pad": "U22.40",
+              "footprint_pads": 100,
+              "pitch_mm": 0.5
+            },
+            "match": "exact"
+          },
+          {
+            "net": "/DQ2",
+            "ends": [
+              "RR7.4",
+              "U23.11"
+            ],
+            "pos": [
+              {
+                "x": 100.58,
+                "y": 94.993
+              },
+              {
+                "x": 92.075,
+                "y": 112.395
+              }
+            ],
+            "why": {
+              "pad": "U23.11",
+              "footprint_pads": 100,
+              "pitch_mm": 0.65
+            },
+            "match": "same net"
+          },
+          {
+            "net": "/DQ2",
+            "ends": [
+              "U10.94",
+              "U9.16"
+            ],
+            "pos": [
+              {
+                "x": 330.835,
+                "y": 112.395
+              },
+              {
+                "x": 331.182,
+                "y": 91.452
+              }
+            ],
+            "why": {
+              "pad": "U10.94",
+              "footprint_pads": 160,
+              "pitch_mm": 0.65
+            },
+            "match": "same net"
+          }
+        ],
+        "other": [
+          {
+            "net": "/TVRAM17",
+            "ends": [
+              "U13.5",
+              "U14.5"
+            ],
+            "pos": [
+              {
+                "x": 276.86,
+                "y": 127.635
+              },
+              {
+                "x": 276.86,
+                "y": 118.745
+              }
+            ],
+            "why": {
+              "class_width_mm": 0.2,
+              "end_pads": [
+                "U13.5",
+                "U14.5"
+              ]
+            },
+            "match": "same net"
+          }
+        ]
+      },
+      "zone_nets": [
+        "+5V",
+        "GND"
+      ]
+    }
+  },
+  "java_only_by_class_total": {
+    "plane-net": 195,
+    "wide-at-fine-pitch": 0,
+    "dense-escape": 5,
+    "other": 17
+  },
+  "decision": {
+    "krt_fewer_unrouted_boards": 3,
+    "boards_where_krt_has_more_drc_real": [
+      "pic_programmer"
+    ],
+    "grid_first": false,
+    "java_only_total": 217,
+    "java_only_share": {
+      "plane-net": 0.8986,
+      "wide-at-fine-pitch": 0.0,
+      "dense-escape": 0.023,
+      "other": 0.0783
+    },
+    "fired": [
+      "planes-first"
+    ],
+    "outcome": [
+      "planes-first"
+    ]
+  },
+  "omitted": [
+    "canary-pwr-9511d9a"
+  ]
+}

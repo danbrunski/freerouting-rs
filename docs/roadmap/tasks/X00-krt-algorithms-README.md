@@ -19,7 +19,7 @@ board parity (rung 3).
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [X01](X01-krt-head-to-head.md) | Java jar vs KRT on `canary-pwr` + 4 KiCad demos, graded by KiCad DRC; failure causes; the X order | M / medium: two toolchains, KiCad from WSL | F02.6 (with the KRT report's grading rules and a grade-only entry); F03.4; no port work |
+| [X01](archive/X01-krt-head-to-head.md) ✅ | Java jar vs KRT on `canary-pwr` + 4 KiCad demos, graded by KiCad DRC; failure causes; the X order | M / medium: two toolchains, KiCad from WSL | F02.6 (with the KRT report's grading rules and a grade-only entry); F03.4; no port work |
 | [X02](X02-plane-taps-and-region-repair.md) | Plane-tap verification under D8; MST straps re-joining split pour islands | M / medium | rung 3; Q01.4; A06; B09; F04 |
 | [X03](X03-vendor-krt-grid-router.md) | `crates/krt-grid-router`: KRT's Rust core with the Python binding removed, MIT | S / low | rung 3; X01's decision; F04; `NEW DEP: rustc-hash` |
 | [X04](X04-grid-obstacle-raster.md) | Board items → conservative obstacle raster with per-item stamps and an audit | M / high: correctness of inflation | X03; F04 |
@@ -41,17 +41,36 @@ and X02), then the grid router (X03 → X04 → X05 → X06), then length matchi
 (X07) and differential pairs (X08 → X09), then the escape planners and bus
 routing (X10, X11, X12).
 
-**X01's preregistered decision table may reorder this.** Its outcome is
-written into this section by X01.8. Examples of what it can decide:
-- KRT completes more than Java on at least N−1 boards with no more
-  `drc_real`: the grid router moves ahead of X02;
-- wide nets at fine-pitch pins are the largest class of Java-only failures:
-  Q02 and X10 move up;
-- plane nets are the largest class: X02 and Q01 move up;
-- KRT is worse on every board: the grid router moves to last, and X03–X06
-  are reconsidered after parity.
+**X01's outcome (2026-10-16, [X01.8](archive/X01-krt-head-to-head.md)): `planes-first`.**
+Registered rule ([`docs/roadmap/prereg/X01.json`](../prereg/X01.json)):
+"plane-net is at least 30 % of Java-only failures → X02 (and Q01) first".
+Plane nets were 195 of the 217 Java-only unconnected items (89.9 %) summed
+over the four graded demos. No other rule fired:
+- `grid-first` did not: KRT left fewer unconnected items on 3 boards, not 4
+  (pic_programmer 0 vs 2, coldfire 11 vs 49, video 111 vs 170; interf_u 18
+  vs 13). It also had more `drc_real` on pic_programmer (6 silk overlaps
+  against 2 clearance items). canary-pwr waits for canary-23's grading and
+  counts as no win.
+- `neck-first` did not: wide-at-fine-pitch was 0 %.
+- `escape-first` did not: dense-escape was 2.3 %.
 
-Critical path: X01 now. Then the port's own path (J01 → B → O → A to rung 3),
+The order is therefore the D9 default, with plane handling at its head:
+1. Q01 and X02 (plane taps and region repair).
+2. Q02–Q03.
+3. The grid router, X03 → X04 → X05 → X06.
+4. X07, then X08 → X09.
+5. X10, X11, X12.
+
+The orchestrator and Dan confirm this before X02 or X03 starts.
+
+Two findings for the grid-router lane. KRT put 8 vias in pads on coldfire
+and on video, through its dog-bone "via-in-pad fallback", even with
+`--same-net-pad-clearance 0.1`. Java put tracks below the board minimum on
+the same two boards (301 and 858 tracks by geometry; KiCad caps its `track_width`
+count at 199). So neither engine
+met D8's hard limits on the two 4-layer boards.
+
+Critical path: X01 has run (its order awaits confirmation). Then the port's own path (J01 → B → O → A to rung 3),
 F04 (provenance) and the K reader (K05, K07) for X07–X09.
 
 ## Parallel lanes and file ownership

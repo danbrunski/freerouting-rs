@@ -340,7 +340,7 @@ What this adds:
     - The originals' checksums are unchanged.
     - The scripts written for the 2026-10-15 head-to-head
       (`scratchpad/h2h/scripts/`, summarized in
-      [X01](../X01-krt-head-to-head.md)) are the starting point, not a separate
+      [X01](X01-krt-head-to-head.md)) are the starting point, not a separate
       tool.
   *Done 2026-10-15:* `tools/kicad-oracle/` (`grade.sh`, `grade-set.sh`,
   `kicad_steps.py` for pcbnew, `oracle_lib.py` pure Python, `README.md`,

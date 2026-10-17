@@ -1,0 +1,13 @@
+# X01 head-to-head (docs/roadmap/tasks/archive/X01-krt-head-to-head.md), registered in
+# docs/roadmap/prereg/X01.json. Source boards; tools/krt-h2h/prep_board.py writes the
+# prepared copies (tracks and vias stripped, zones kept and refilled) under $X01_DIR/boards,
+# and the arms route those. KiCad 10.0.7 (WSL-native); never mix KiCad versions.
+#
+# Dan's board as it stands at canary 9511d9a (hand-laid copper kept; read-only, copied).
+# Graded only by the CANary layout session (canary-23) through Windows KiCad.
+~/code/canary/hardware/canary-pwr-rev1.0
+# KiCad's bundled demos (/usr/share/kicad/demos of KiCad 10.0.7).
+/usr/share/kicad/demos/pic_programmer
+/usr/share/kicad/demos/interf_u
+/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213
+/usr/share/kicad/demos/video
