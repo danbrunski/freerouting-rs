@@ -58,6 +58,7 @@
 pub mod candidates;
 pub mod guards;
 pub mod item;
+mod lookahead;
 pub mod worker;
 
 use std::collections::BTreeMap;

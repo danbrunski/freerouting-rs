@@ -888,3 +888,55 @@ fn issue952_mixed_net_connection_with_ignored_net_is_protected_from_optimizer_ri
     );
     assert_eq!(loaded.board.vias().len(), vias);
 }
+
+/// P03.2: the workers run up to a window of candidates ahead of the ordered merge. A pass
+/// that the failure limit ends early, with candidates already running past the stop, consumes
+/// the same candidates with the same results and work as one candidate at a time on one
+/// thread, and adopts the same winner.
+#[test]
+fn lookahead_past_an_early_stop_changes_nothing() {
+    let mut stopped_early = false;
+    for loaded in [
+        routed(BM08, BM08_SES, TestingProfile::default()),
+        routed(J2, &reference_ses(J2), TestingProfile::default()),
+    ] {
+        let ids: Vec<ItemId> = sorted_candidates(&loaded.board)
+            .iter()
+            .map(|c| c.id)
+            .collect();
+        let run = |threads: usize, chunk_size: usize, failures: i32| {
+            let cancel = CancelToken::new();
+            let pass_setup = PassSetup {
+                chunk_size,
+                max_consecutive_failures: failures,
+                ..setup(&loaded, &cancel, threads)
+            };
+            let (mut results, mut total) = (BTreeMap::new(), 0);
+            let pass = evaluate_pass(&loaded.board, &ids, &pass_setup, &mut results, &mut total);
+            let winner = pass
+                .winner
+                .as_ref()
+                .map(|(result, board)| (*result, board.state_hash()));
+            (
+                pass.consumed,
+                pass.consumed_work,
+                pass.early_stop,
+                winner,
+                results,
+                total,
+            )
+        };
+        for failures in [1, 12] {
+            let reference = run(1, 1, failures);
+            stopped_early |= reference.2 && reference.0.len() < ids.len();
+            for (threads, chunk) in [(8, 8), (8, 64), (3, 5), (2, 1)] {
+                assert_eq!(
+                    run(threads, chunk, failures),
+                    reference,
+                    "{threads} threads, chunk {chunk}, failure limit {failures}"
+                );
+            }
+        }
+    }
+    assert!(stopped_early, "no pass ended early at the failure limit");
+}

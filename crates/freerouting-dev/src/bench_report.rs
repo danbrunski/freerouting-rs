@@ -152,6 +152,7 @@ pub fn to_json(result: &BenchResult) -> JsonValue {
                 .map_or(JsonValue::Null, JsonValue::String),
         ),
         ("runs_per_board".to_string(), JsonValue::int(o.runs as i64)),
+        ("jobs".to_string(), JsonValue::int(o.jobs as i64)),
         ("optimizer".to_string(), JsonValue::Bool(o.optimize)),
         ("max_load".to_string(), optional(o.max_load, 2)),
         (
@@ -229,11 +230,19 @@ pub fn to_markdown(result: &BenchResult) -> String {
     let o = &result.options;
     let mut out = String::new();
     out.push_str(&format!(
-        "# Bench: {}\n\n{} run(s) per board and engine, optimizer {}, load limit {}. {}\n\n",
+        "# Bench: {}\n\n{} run(s) per board and engine, optimizer {}, load limit {}{}. {}\n\n",
         o.set_file.display(),
         o.runs,
         if o.optimize { "on" } else { "off" },
         o.max_load.map_or("off".to_string(), |l| format!("{l:.2}")),
+        if o.jobs > 1 {
+            format!(
+                ", {} boards at once (not timings: the load is not checked)",
+                o.jobs
+            )
+        } else {
+            String::new()
+        },
         o.java_version.as_deref().unwrap_or("")
     ));
     out.push_str(

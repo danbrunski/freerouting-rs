@@ -484,6 +484,11 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
             };
         }
     };
+    // P03: the analyses (statistics, DRC, airlines) of this job run on at
+    // most `autorouter.max_threads` threads; no result depends on it.
+    let _threads = crate::parallel::ThreadBudget::set(
+        usize::try_from(prepared.settings.autorouter_max_threads(ctx.resolve.cores)).unwrap_or(1),
+    );
     log.extend(prepared.log.iter().cloned());
     log.extend(settings_lines(&prepared));
     report.result_json = prepared.settings.result_json.clone();

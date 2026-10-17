@@ -60,13 +60,12 @@ pub struct ItemPassParams {
 }
 
 /// The via count and the weighted trace length of `board` (the cheap
-/// statistics: no clearance check, no connection count).
+/// statistics: no clearance check, no connection count). Only these two
+/// fields of Java's `BoardStatistics` are read, so only they are computed
+/// (P03.2), with the same bits.
 fn cheap_figures(board: &BasicBoard) -> (i32, f64) {
-    let stats = BoardStatistics::with_options(board, Unit::Mm, false, false);
-    (
-        i32::try_from(stats.items.via_count).unwrap_or(i32::MAX),
-        f64::from(stats.traces.total_weighted_length),
-    )
+    let (vias, length) = BoardStatistics::via_count_and_weighted_length(board, Unit::Mm);
+    (i32::try_from(vias).unwrap_or(i32::MAX), f64::from(length))
 }
 
 fn incomplete_count(board: &BasicBoard) -> i32 {

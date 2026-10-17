@@ -11,8 +11,9 @@
 //! trees' work meter reports each query.
 //!
 //! **What is counted** ([`Counter`]), summed over every thread (the
-//! optimizer's workers included, so a total never depends on the thread
-//! count):
+//! optimizer's workers included; a candidate's counts are added when the
+//! optimizer's merge consumes it, never for a candidate evaluated ahead and
+//! dropped, so a total never depends on the thread count):
 //! - connections the batch router, the fanout and the optimizer attempted,
 //!   routed and failed;
 //! - the maze search's queue pops, pushes, refused pushes (the drop-on-equal
@@ -23,8 +24,10 @@
 //!   ([`Counter::TreeWorkUnits`], D5's unit, the work limits' meter);
 //! - items ripped up by connections.
 //!
-//! **Stages** ([`stage`]): `load`, `fanout`, one `pass` per autorouter pass,
-//! one `optimizer_pass` per optimizer pass, `drc` and `write`. A stage's
+//! **Stages** ([`stage`]): `load`, `fanout`, one `pass` per autorouter pass
+//! followed by its `statistics` (the board statistics the loop scores the
+//! pass with, P03.1), one `optimizer_pass` per optimizer pass, `drc` and
+//! `write`. A stage's
 //! record is the counters' change between its start and its end, plus its
 //! wall time. Stages do not nest and run on one thread; the counters they
 //! read are process-wide.
@@ -156,9 +159,47 @@ fn lock_records() -> std::sync::MutexGuard<'static, Vec<StageRecord>> {
     RECORDS.lock().unwrap_or_else(|e| e.into_inner())
 }
 
+thread_local! {
+    /// Counts held back on this thread by [`capture`].
+    static CAPTURED: std::cell::RefCell<Option<Counts>> =
+        const { std::cell::RefCell::new(None) };
+}
+
 fn add(counter: Counter, n: u64) {
     if n > 0 {
-        CELLS[counter as usize].fetch_add(n, Ordering::Relaxed);
+        let held = CAPTURED.with(|c| match c.borrow_mut().as_mut() {
+            Some(counts) => {
+                counts.0[counter as usize] += n;
+                true
+            }
+            None => false,
+        });
+        if !held {
+            CELLS[counter as usize].fetch_add(n, Ordering::Relaxed);
+        }
+    }
+}
+
+/// Runs `f` with this thread's counts held back from the process-wide
+/// counters and returns them with `f`'s result; [`add_counts`] adds them
+/// later. The optimizer evaluates candidates ahead of its ordered merge
+/// (P03.2) and adds a candidate's counts only when the merge consumes it,
+/// so the work of candidates evaluated past a stop and dropped is never
+/// counted, and a total doesn't depend on the thread count.
+pub(crate) fn capture<R>(f: impl FnOnce() -> R) -> (R, Counts) {
+    if !enabled() {
+        return (f(), Counts::default());
+    }
+    let previous = CAPTURED.with(|c| c.replace(Some(Counts::default())));
+    let result = f();
+    let counts = CAPTURED.with(|c| c.replace(previous)).unwrap_or_default();
+    (result, counts)
+}
+
+/// Adds counts that [`capture`] held back.
+pub(crate) fn add_counts(counts: &Counts) {
+    for counter in COUNTERS {
+        add(counter, counts.get(counter));
     }
 }
 
@@ -201,9 +242,10 @@ impl Counts {
 /// One stage's record.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StageRecord {
-    /// `load`, `fanout`, `pass`, `optimizer_pass`, `drc` or `write`.
+    /// `load`, `fanout`, `pass`, `statistics`, `optimizer_pass`, `drc` or
+    /// `write`.
     pub kind: &'static str,
-    /// The pass number for `pass` and `optimizer_pass`, else 0.
+    /// The pass number for `pass`, `statistics` and `optimizer_pass`, else 0.
     pub index: u32,
     /// Wall time of the stage.
     pub wall_seconds: f64,

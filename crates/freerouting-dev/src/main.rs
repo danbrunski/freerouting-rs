@@ -18,7 +18,7 @@ const USAGE: &str = "usage:
   freerouting-dev ses-diff board.dsn a.ses b.ses [--json out.json]
   freerouting-dev bench --set <file> --java <jar> [--rust <bin>] [--runs N] --out <dir>
       [--optimize] [--max-passes N] [--bounds <tsv>] [--max-load L|off] [--load-wait S]
-      [--timeout S] [--java-bin <java>] [--rip-stats]
+      [--timeout S] [--java-bin <java>] [--rip-stats] [--jobs N]
   freerouting-dev microbench board.dsn [--runs N] [--kernel overlap,complete_shape,maze,pull_tight,drc]
       [--json out.json]
   freerouting-dev feasibility board.dsn [--json out.json] [--all-pins] [--step-um N]
@@ -180,6 +180,7 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
             "load-wait",
             "timeout",
             "java-bin",
+            "jobs",
         ],
         &["optimize", "rip-stats"],
     )?;
@@ -226,6 +227,10 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
         Some(path) => Some(PathBuf::from(path)),
         None => default_bounds_file.is_file().then_some(default_bounds_file),
     };
+    let jobs: usize = parsed(&options, "jobs", 1)?;
+    if jobs == 0 {
+        return Err(format!("--jobs must be at least 1\n{USAGE}"));
+    }
     let bench_options = BenchOptions {
         set_file,
         out_dir: out_dir.clone(),
@@ -242,6 +247,7 @@ fn bench(args: &[String]) -> Result<ExitCode, String> {
         timeout: Duration::from_secs(parsed(&options, "timeout", DEFAULT_TIMEOUT_SECONDS)?),
         java_version,
         rip_stats: option(&options, "rip-stats").is_some(),
+        jobs,
     };
     let result = match run_bench(bench_options) {
         Ok(result) => result,

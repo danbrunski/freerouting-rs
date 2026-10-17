@@ -403,7 +403,9 @@ impl Run {
             for text in &result.log {
                 self.outcome.info(text.clone());
             }
+            let statistics_scope = crate::run_stats::stage("statistics", pass);
             figures = executor.figures(board, settings);
+            statistics_scope.finish();
             let report = PassReport {
                 pass,
                 continue_routing: result.continue_routing,

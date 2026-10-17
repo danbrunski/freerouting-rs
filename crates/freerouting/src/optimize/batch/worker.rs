@@ -19,9 +19,13 @@
 //! into the next on that thread, so Java's result depends on scheduling.
 //! The port's result never does (DIVERGENCES, "Determinism").
 //!
-//! **Ordered merge.** A chunk of candidates (`max(4 × threads, 8)` by
-//! default) runs on `threads` scoped threads; the results are consumed in
-//! candidate order with Java's single-thread rules: every consumed result
+//! **Ordered merge.** `threads` scoped threads evaluate the candidates in
+//! candidate order, up to a window ahead of the merge
+//! ([`lookahead_window`]: a chunk, at least 16 per thread; P03.2's
+//! lookahead, which replaced a barrier at the end of every chunk). The
+//! merge walks them in chunks (`max(4 × threads, 8)` by default) and
+//! consumes the results in candidate order with Java's single-thread
+//! rules: every consumed result
 //! counts towards `max_items` and goes into the result map; an improved
 //! one resets the failure counter and replaces the winner when it is
 //! strictly better ([`ItemRouteResult::improved_over`]); any other counts a
@@ -51,6 +55,7 @@ use freerouting_geometry::FloatPoint;
 
 use super::candidates::item_position;
 use super::item::{ItemPassParams, opt_route_item};
+use super::lookahead::Lookahead;
 use crate::autoroute::events::{CancelToken, NullEvents};
 use crate::autoroute::item_route_result::ItemRouteResult;
 use crate::autoroute::stages::StageCtx;
@@ -112,7 +117,7 @@ impl CandidateOutcome {
 /// How often the thread that waits for a chunk relays the job's stop
 /// requests to the running candidates. Only the latency of a stop depends
 /// on it, never a result.
-const STOP_RELAY_INTERVAL: Duration = Duration::from_millis(20);
+pub(super) const STOP_RELAY_INTERVAL: Duration = Duration::from_millis(20);
 
 /// A candidate's own token at the job token's current level.
 fn local_token(job: &CancelToken) -> CancelToken {
@@ -122,7 +127,7 @@ fn local_token(job: &CancelToken) -> CancelToken {
 }
 
 /// Raises `local` to `job`'s level.
-fn relay(job: &CancelToken, local: &CancelToken) {
+pub(super) fn relay(job: &CancelToken, local: &CancelToken) {
     if job.is_stop_requested() {
         local.stop_all();
     } else if job.is_router_stop_requested() {
@@ -154,7 +159,7 @@ pub fn evaluate_candidate(
 }
 
 /// [`evaluate_candidate`] routing under `token`, the candidate's own.
-fn evaluate_with_token(
+pub(super) fn evaluate_with_token(
     snapshot: &BoardSnapshot,
     item: ItemId,
     setup: &PassSetup<'_>,
@@ -214,6 +219,8 @@ pub fn evaluate_chunk(
             let done = done_tx.clone();
             let (next, slots, tokens) = (&next, &slots, &tokens);
             scope.spawn(move || {
+                // P03: a candidate's analyses run inline on its thread.
+                let _budget = crate::parallel::ThreadBudget::set(1);
                 loop {
                     let index = next.fetch_add(1, Ordering::Relaxed);
                     let Some(item) = items.get(index) else {
@@ -282,25 +289,66 @@ pub fn evaluate_pass(
     total_items: &mut i32,
 ) -> PassEvaluation {
     let snapshot = baseline.snapshot();
+    let chunk_size = setup.chunk_size.max(1);
+    let lookahead = Lookahead::new(&snapshot, items, setup, lookahead_window(setup));
+    std::thread::scope(|scope| {
+        lookahead.spawn(scope, setup.threads);
+        let pass = merge_pass(&lookahead, items, chunk_size, setup, results, total_items);
+        lookahead.end();
+        pass
+    })
+}
+
+/// How many candidates may run past the merge: a chunk, and at least
+/// [`LOOKAHEAD_PER_THREAD`] per thread (P03.2).
+pub fn lookahead_window(setup: &PassSetup<'_>) -> usize {
+    setup
+        .chunk_size
+        .max(LOOKAHEAD_PER_THREAD * setup.threads)
+        .max(1)
+}
+
+/// Candidates per thread the workers may run past the merge. A candidate's
+/// time varies a lot, and while a slow one holds the merge the others go
+/// on only inside the window. Measured on `Issue508-DAC2020_bm10` (3
+/// passes, 200 items, 8 threads, median of 3, load 3 to 8): a window of 16
+/// candidates 13.3 s, 32 11.2 s, 64 9.3 s, 128 8.4 s, 256 8.4 s; the old
+/// chunk barrier (32) 13.6 s. Improved candidates keep their boards until
+/// the merge takes them, so the window also bounds that memory.
+pub const LOOKAHEAD_PER_THREAD: usize = 16;
+
+/// [`evaluate_pass`]'s merge: the outcomes in candidate order, chunk by
+/// chunk, with Java's rules (see the module docs).
+fn merge_pass(
+    lookahead: &Lookahead<'_>,
+    items: &[ItemId],
+    chunk_size: usize,
+    setup: &PassSetup<'_>,
+    results: &mut BTreeMap<ItemId, ItemRouteResult>,
+    total_items: &mut i32,
+) -> PassEvaluation {
     let mut pass = PassEvaluation::default();
     let mut winner: Option<CandidateOutcome> = None;
-    let chunk_size = setup.chunk_size.max(1);
-    'chunks: for chunk in items.chunks(chunk_size) {
+    'chunks: for (number, chunk) in items.chunks(chunk_size).enumerate() {
         // PARITY: :720-729, a stop (the deadline is one) before a chunk.
         if setup.cancel.is_stop_requested() {
             pass.stopped = true;
             break;
         }
         let mut stop_seen = false;
-        for mut outcome in evaluate_chunk(&snapshot, chunk, setup) {
-            if stop_seen {
+        for (offset, item) in chunk.iter().enumerate() {
+            let outcome = if stop_seen {
                 // PARITY: :1054-1057, a task that starts after a stop.
-                outcome = CandidateOutcome::skipped(outcome.result.item_id());
-            } else if outcome.requested_stop {
-                // PARITY: AutoroutePassRunner.java:113, `thread.requestStop()`.
-                setup.cancel.stop_all();
-                stop_seen = true;
-            }
+                CandidateOutcome::skipped(*item)
+            } else {
+                let outcome = lookahead.take(number * chunk_size + offset);
+                if outcome.requested_stop {
+                    // PARITY: AutoroutePassRunner.java:113, `thread.requestStop()`.
+                    setup.cancel.stop_all();
+                    stop_seen = true;
+                }
+                outcome
+            };
             *total_items = total_items.wrapping_add(1);
             results.insert(outcome.result.item_id(), outcome.result);
             pass.consumed.push(outcome.result);

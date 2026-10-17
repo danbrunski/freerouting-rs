@@ -21,11 +21,23 @@
 //!   shares, the passes). The diagnostic changes no route but costs time, so
 //!   time such runs apart from plain ones.
 //!
+//! - With `--jobs N` (P03.3) N boards route at once, each engine run
+//!   limited to `max(1, cores / N)` threads
+//!   (`--router.autorouter.max_threads` and `--router.optimizer.max_threads`,
+//!   which change no route). The boards are handed out in set order and the
+//!   results merged in set order, so the report lists them as `--jobs 1`
+//!   does. Concurrent runs load the machine, so their wall times are not
+//!   timings: `--jobs` above 1 skips the load check and is for correctness
+//!   and parity sweeps; timing runs keep `--jobs 1` and the quiet-machine
+//!   rule.
+//!
 //! The report (`bench.json` and `bench.md`) is written by
 //! [`crate::bench_report`].
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use crate::ses_diff::{SessionStatistics, parse_session};
@@ -233,6 +245,22 @@ impl Engine {
     }
 }
 
+/// The arguments that limit one engine run to `threads` threads when
+/// boards route in parallel (`bench --jobs`): the autorouter's analyses and
+/// the optimizer's candidates. Neither changes a route.
+pub fn thread_arguments(threads: usize) -> Vec<String> {
+    vec![
+        format!("--router.autorouter.max_threads={threads}"),
+        format!("--router.optimizer.max_threads={threads}"),
+    ]
+}
+
+/// The threads each of `jobs` concurrent boards gets on `cores` cores
+/// (at least 1).
+pub fn thread_share(cores: usize, jobs: usize) -> usize {
+    (cores / jobs.max(1)).max(1)
+}
+
 /// What one run produced.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RunRecord {
@@ -375,6 +403,9 @@ pub struct BenchOptions {
     /// Q05.1: run the Rust engine with the `rip-stats` diagnostic and keep
     /// its report in the run records.
     pub rip_stats: bool,
+    /// P03.3: boards routed at once (at least 1). Above 1 nothing is timed
+    /// on a quiet machine: the load check is skipped.
+    pub jobs: usize,
 }
 
 /// The results of one board and engine.
@@ -457,7 +488,8 @@ const RUST_NOT_ROUTING: &str = "the Rust CLI does not route yet (exit 2, no SES)
 
 /// Runs the benchmark. Refuses (an error, nothing timed) when the machine
 /// is busy before the first run; stops early, keeping what was measured,
-/// when it gets busy later.
+/// when it gets busy later. With `jobs` above 1 the boards route in
+/// parallel and no load is checked (see the module docs).
 pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
     let set_text = std::fs::read_to_string(&options.set_file)
         .map_err(|e| format!("{}: {e}", options.set_file.display()))?;
@@ -468,13 +500,10 @@ pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
         )?,
         None => Vec::new(),
     };
-    let quiet = |opts: &BenchOptions| match opts.max_load {
-        Some(max) => {
-            wait_for_quiet(load_average, max, opts.load_wait, Duration::from_secs(5)).map(|_| ())
-        }
-        None => Ok(()),
-    };
-    quiet(&options)?;
+    let parallel = options.jobs > 1;
+    if !parallel {
+        quiet(&options)?;
+    }
     std::fs::create_dir_all(&options.out_dir)
         .map_err(|e| format!("{}: {e}", options.out_dir.display()))?;
     let (present, missing): (Vec<SetEntry>, Vec<SetEntry>) = read_set(&set_text, &root)
@@ -489,84 +518,159 @@ pub fn run_bench(options: BenchOptions) -> Result<BenchResult, String> {
         missing,
         aborted: None,
     };
-    let mut rust_unavailable: Option<String> = None;
-    'boards: for entry in present {
-        let bounds = bounds_for(&bounds_table, &entry, options.default_bounds);
-        let board = load_board(&entry.path);
-        let dir = options.out_dir.join(file_name_for(&entry));
-        std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-        let mut board_result = BoardResult {
-            entry: entry.clone(),
-            bounds,
-            engines: Vec::new(),
-        };
-        for engine in &options.engines {
-            let mut engine_result = EngineResult {
-                engine: engine.name,
-                runs: Vec::new(),
-                skipped: None,
-            };
-            if engine.name == "rust"
-                && let Some(reason) = &rust_unavailable
-            {
-                engine_result.skipped = Some(reason.clone());
-                board_result.engines.push(engine_result);
-                continue;
+    let rust_unavailable = Mutex::new(None);
+    if !parallel {
+        for entry in present {
+            let bounds = bounds_for(&bounds_table, &entry, options.default_bounds);
+            let (board_result, aborted) =
+                run_board(&options, entry, bounds, None, &rust_unavailable)?;
+            result.boards.push(board_result);
+            if aborted.is_some() {
+                result.aborted = aborted;
+                break;
             }
-            for run in 1..=options.runs {
-                if let Err(e) = quiet(&options) {
-                    result.aborted = Some(e);
-                    board_result.engines.push(engine_result);
-                    result.boards.push(board_result);
-                    break 'boards;
-                }
-                let stem = format!("{}-run{run}", engine.name);
-                let ses = dir.join(format!("{stem}.ses"));
-                let log = dir.join(format!("{stem}.log"));
-                let _ = std::fs::remove_file(&ses);
-                let mut args = engine.arguments(&entry.path, &ses, bounds, options.optimize);
-                let result_json = dir.join(format!("{stem}.result.json"));
-                let rip_stats = options.rip_stats && engine.name == "rust";
-                if rip_stats {
-                    let _ = std::fs::remove_file(&result_json);
-                    args.extend(rip_stats_arguments(&result_json));
-                }
-                eprintln!("bench: {} {} run {run}", entry.written, engine.name);
-                let load_before = load_average();
-                let (wall_seconds, exit_status, timed_out) =
-                    run_timed(&args, &dir, &log, options.timeout)?;
-                let load_after = load_average();
-                let log_text = std::fs::read_to_string(&log).unwrap_or_default();
-                if engine.name == "rust" && exit_status == Some(2) && !ses.is_file() {
-                    rust_unavailable = Some(RUST_NOT_ROUTING.into());
-                    engine_result.skipped = rust_unavailable.clone();
-                    break;
-                }
-                let measured = match &board {
-                    Ok(board) => measure(board, &ses),
-                    Err(e) => Err(format!("board doesn't load: {e}")),
-                };
-                let widths = match (&board, &measured) {
-                    (Ok(board), Ok(_)) => measure_widths(board, &ses).ok(),
-                    _ => None,
-                };
-                engine_result.runs.push(RunRecord {
-                    run,
-                    wall_seconds,
-                    load_before,
-                    load_after,
-                    exit_status,
-                    timed_out,
-                    work_limit_cutoffs: count_cutoffs(&log_text),
-                    note: measured.as_ref().err().cloned(),
-                    statistics: measured.ok(),
-                    rip_stats: rip_stats.then(|| read_rip_stats(&result_json)).flatten(),
-                    widths,
-                });
-            }
-            board_result.engines.push(engine_result);
         }
-        result.boards.push(board_result);
+        return Ok(result);
+    }
+    let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let share = thread_share(cores, options.jobs);
+    let next = AtomicUsize::new(0);
+    let slots: Vec<Mutex<Option<Result<BoardResult, String>>>> =
+        present.iter().map(|_| Mutex::new(None)).collect();
+    std::thread::scope(|scope| {
+        for _ in 0..options.jobs.min(present.len()) {
+            scope.spawn(|| {
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(entry) = present.get(index) else {
+                        break;
+                    };
+                    let bounds = bounds_for(&bounds_table, entry, options.default_bounds);
+                    let outcome = run_board(
+                        &options,
+                        entry.clone(),
+                        bounds,
+                        Some(share),
+                        &rust_unavailable,
+                    )
+                    .map(|(board, _)| board);
+                    *slots[index].lock().unwrap_or_else(|e| e.into_inner()) = Some(outcome);
+                }
+            });
+        }
+    });
+    for slot in slots {
+        let outcome = slot.into_inner().unwrap_or_else(|e| e.into_inner());
+        if let Some(outcome) = outcome {
+            result.boards.push(outcome?);
+        }
     }
     Ok(result)
+}
+
+/// Waits for a quiet machine if the options ask for one.
+fn quiet(options: &BenchOptions) -> Result<(), String> {
+    match options.max_load {
+        Some(max) => {
+            wait_for_quiet(load_average, max, options.load_wait, Duration::from_secs(5)).map(|_| ())
+        }
+        None => Ok(()),
+    }
+}
+
+/// Routes one board with every engine. `threads` limits each run when
+/// boards route in parallel, which also skips the load check. Returns the
+/// board's results and, when the machine got busy, why the bench stops.
+fn run_board(
+    options: &BenchOptions,
+    entry: SetEntry,
+    bounds: Bounds,
+    threads: Option<usize>,
+    rust_unavailable: &Mutex<Option<String>>,
+) -> Result<(BoardResult, Option<String>), String> {
+    let board = load_board(&entry.path);
+    let dir = options.out_dir.join(file_name_for(&entry));
+    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let mut board_result = BoardResult {
+        entry: entry.clone(),
+        bounds,
+        engines: Vec::new(),
+    };
+    let unavailable = || {
+        rust_unavailable
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    };
+    for engine in &options.engines {
+        let mut engine_result = EngineResult {
+            engine: engine.name,
+            runs: Vec::new(),
+            skipped: None,
+        };
+        if engine.name == "rust"
+            && let Some(reason) = unavailable()
+        {
+            engine_result.skipped = Some(reason);
+            board_result.engines.push(engine_result);
+            continue;
+        }
+        for run in 1..=options.runs {
+            if threads.is_none()
+                && let Err(e) = quiet(options)
+            {
+                board_result.engines.push(engine_result);
+                return Ok((board_result, Some(e)));
+            }
+            let stem = format!("{}-run{run}", engine.name);
+            let ses = dir.join(format!("{stem}.ses"));
+            let log = dir.join(format!("{stem}.log"));
+            let _ = std::fs::remove_file(&ses);
+            let mut args = engine.arguments(&entry.path, &ses, bounds, options.optimize);
+            if let Some(threads) = threads {
+                args.extend(thread_arguments(threads));
+            }
+            let result_json = dir.join(format!("{stem}.result.json"));
+            let rip_stats = options.rip_stats && engine.name == "rust";
+            if rip_stats {
+                let _ = std::fs::remove_file(&result_json);
+                args.extend(rip_stats_arguments(&result_json));
+            }
+            eprintln!("bench: {} {} run {run}", entry.written, engine.name);
+            let load_before = load_average();
+            let (wall_seconds, exit_status, timed_out) =
+                run_timed(&args, &dir, &log, options.timeout)?;
+            let load_after = load_average();
+            let log_text = std::fs::read_to_string(&log).unwrap_or_default();
+            if engine.name == "rust" && exit_status == Some(2) && !ses.is_file() {
+                *rust_unavailable.lock().unwrap_or_else(|e| e.into_inner()) =
+                    Some(RUST_NOT_ROUTING.into());
+                engine_result.skipped = Some(RUST_NOT_ROUTING.into());
+                break;
+            }
+            let measured = match &board {
+                Ok(board) => measure(board, &ses),
+                Err(e) => Err(format!("board doesn't load: {e}")),
+            };
+            let widths = match (&board, &measured) {
+                (Ok(board), Ok(_)) => measure_widths(board, &ses).ok(),
+                _ => None,
+            };
+            engine_result.runs.push(RunRecord {
+                run,
+                wall_seconds,
+                load_before,
+                load_after,
+                exit_status,
+                timed_out,
+                work_limit_cutoffs: count_cutoffs(&log_text),
+                note: measured.as_ref().err().cloned(),
+                statistics: measured.ok(),
+                rip_stats: rip_stats.then(|| read_rip_stats(&result_json)).flatten(),
+                widths,
+            });
+        }
+        board_result.engines.push(engine_result);
+    }
+    Ok((board_result, None))
 }

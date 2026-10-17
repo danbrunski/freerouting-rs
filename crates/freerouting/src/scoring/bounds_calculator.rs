@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::board::BasicBoard;
-use crate::board::items::ItemKind;
+use crate::board::items::{Item, ItemKind};
 use crate::board::structure::Unit;
 
 /// Lower bounds for trace length, vias and bends.
@@ -80,12 +80,31 @@ impl LayerGroups {
     }
 }
 
-fn terminals(board: &BasicBoard, net_number: i32) -> Vec<Terminal> {
+/// `net_terminal_items` of every net, from one scan of the board: per net
+/// the items in board order, as `net_terminal_items` lists them.
+fn terminal_items_by_net(board: &BasicBoard) -> BTreeMap<i32, Vec<&Item>> {
+    let mut result: BTreeMap<i32, Vec<&Item>> = BTreeMap::new();
+    for item in board
+        .items()
+        .filter(|i| i.is_connectable_kind() && !i.is_routable())
+    {
+        for &net in item.net_numbers() {
+            if net <= 0 {
+                continue;
+            }
+            let items = result.entry(net).or_default();
+            // An item that lists a net twice is in its list once.
+            if items.last().is_none_or(|last| last.id() != item.id()) {
+                items.push(item);
+            }
+        }
+    }
+    result
+}
+
+fn terminals(board: &BasicBoard, items: &[&Item]) -> Vec<Terminal> {
     let mut result = Vec::new();
-    for id in board.net_terminal_items(net_number) {
-        let Some(item) = board.item(id) else {
-            continue;
-        };
+    for &item in items {
         let mut signal_layers = BTreeSet::new();
         let mut add = |layer: i32| {
             if layer >= 0
@@ -226,10 +245,16 @@ fn minimum_via_count(board: &BasicBoard, net_number: i32, terminals: &[Terminal]
 /// Calculates the routing lower bounds of `board`.
 ///
 /// Port of `BoardStatisticsBoundsCalculator.calculate` (without its cache).
+/// The terminal items of all nets come from one scan of the board, where
+/// Java's `getNetTerminalItems` scans it once per net (P03.1: 1.66 ms to
+/// 0.08 ms on `Issue093-interf_u`, too little left to share out on
+/// threads); the nets are then measured and summed in net order, as Java
+/// does.
 pub fn calculate_bounds(board: &BasicBoard) -> BoardStatisticsBounds {
     let resolution = board.communication.resolution;
     let to_mm = Unit::scale(1.0, board.communication.unit, Unit::Mm)
         / f64::from(if resolution > 0 { resolution } else { 1 });
+    let by_net = terminal_items_by_net(board);
     let mut min_trace_length = 0.0;
     let mut min_via_count = 0;
     let mut min_bend_count = 0;
@@ -237,7 +262,8 @@ pub fn calculate_bounds(board: &BasicBoard) -> BoardStatisticsBounds {
         if board.rules.nets.get(net_number).is_none() {
             continue;
         }
-        let terminals = terminals(board, net_number);
+        let items = by_net.get(&net_number).map_or(&[][..], Vec::as_slice);
+        let terminals = terminals(board, items);
         if terminals.len() < 2 {
             continue;
         }

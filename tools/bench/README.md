@@ -40,6 +40,14 @@ target/release/freerouting-dev bench --set tools/bench/sets/benchmark.txt \
   written and the report says `Stopped early`. The load before and after each
   run is recorded with its wall time. `--max-load off` times regardless.
   Never benchmark while builds or tests run.
+- **Boards in parallel (P03.3).** `--jobs N` routes N boards at once, for
+  correctness and parity sweeps only. Each run gets
+  `--router.autorouter.max_threads=S --router.optimizer.max_threads=S` with
+  `S = max(1, cores / N)` (its share of the cores; neither setting changes a
+  route), the load is not checked, and the report says the wall times are
+  not timings. The boards are handed out in set order and listed in set
+  order, so `bench.json` and `bench.md` read as with `--jobs 1`. Timing runs
+  keep the default `--jobs 1` and the quiet-machine rule.
 - **Safety stop.** `--timeout` (seconds, default 1800) kills a run that takes
   longer; it is recorded as `timeout`. It only stops work.
 - **Measurements.** Every SES is imported into the board and measured with
