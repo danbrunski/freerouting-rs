@@ -1,51 +1,33 @@
-//! Bakes the git commit into the binary for `--version` and the result
-//! manifest (C08.2). No dependency: it runs `git`.
+//! Windows only (R01.5): embeds the icon and the version resource (file properties) into the exe.
 //!
-//! `FREEROUTING_GIT_SHA` overrides the lookup (Java reads the same
-//! variable); without git, or outside a checkout, the value is `unknown`.
-
-use std::path::{Path, PathBuf};
-use std::process::Command;
+//! It runs for MSVC targets, or for any Windows target when `FREEROUTING_WINRES=1`. The
+//! default skips the gnu toolchain, so the local KiCad loop (mingw, which may have no `windres`)
+//! builds as before. Without the resource the exe is the same program with a generic icon. The
+//! version in the properties is the Cargo package version (`winresource` reads it itself).
 
 fn main() {
-    println!("cargo:rerun-if-env-changed=FREEROUTING_GIT_SHA");
-    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default());
-    let root = manifest_dir.join("../..");
-    watch_head(&root);
-    let sha = std::env::var("FREEROUTING_GIT_SHA")
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .or_else(|| git_sha(&root))
-        .unwrap_or_else(|| "unknown".to_string());
-    println!("cargo:rustc-env=FREEROUTING_GIT_SHA={sha}");
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=../freerouting-gui/icons/icon.ico");
+    println!("cargo:rerun-if-env-changed=FREEROUTING_WINRES");
+    #[cfg(windows)]
+    embed();
 }
 
-/// `git rev-parse --short=9 HEAD` in `root`.
-fn git_sha(root: &Path) -> Option<String> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--short=9", "HEAD"])
-        .current_dir(root)
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
+#[cfg(windows)]
+fn embed() {
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let forced = std::env::var("FREEROUTING_WINRES").is_ok_and(|v| v == "1");
+    if target_os != "windows" || !(target_env == "msvc" || forced) {
+        return;
     }
-    let sha = String::from_utf8(output.stdout).ok()?.trim().to_string();
-    (!sha.is_empty()).then_some(sha)
-}
-
-/// Rebuild when HEAD moves: `.git/HEAD` changes on a checkout, the ref it
-/// names on a commit.
-fn watch_head(root: &Path) {
-    let head = root.join(".git/HEAD");
-    println!("cargo:rerun-if-changed={}", head.display());
-    if let Ok(text) = std::fs::read_to_string(&head)
-        && let Some(reference) = text.trim().strip_prefix("ref: ")
-    {
-        println!(
-            "cargo:rerun-if-changed={}",
-            root.join(".git").join(reference).display()
-        );
+    let mut res = winresource::WindowsResource::new();
+    res.set_icon("../freerouting-gui/icons/icon.ico");
+    res.set("ProductName", "freerouting-rs");
+    res.set("FileDescription", "freerouting-rs command line");
+    res.set("LegalCopyright", "GPL-3.0-only");
+    if let Err(error) = res.compile() {
+        // Never fail the build over a cosmetic resource.
+        println!("cargo:warning=could not embed the Windows resource: {error}");
     }
 }

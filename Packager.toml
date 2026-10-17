@@ -1,0 +1,48 @@
+# cargo-packager 0.11.8 (R01.3): MSI (WiX) on Windows, .app and .dmg on macOS. The Linux AppImage
+# is built by tools/release/make_appimage.sh instead: cargo-packager's AppImage (linuxdeploy)
+# produced a GUI binary that hung on start (see the script).
+#
+#   cargo install cargo-packager --version 0.11.8 --locked
+#   cargo build --release --locked -p freerouting-cli -p freerouting-gui
+#   cargo packager -c "$PWD/Packager.toml" --formats wix      # or app,dmg
+#
+# `-c` takes an absolute path (a relative one makes 0.11.8 fail on set_current_dir("")), and
+# `name` must be set: without it 0.11.8 looks up the package name by changing into the config
+# *file* and errors with "Not a directory", which its auto-detection swallows as "no config".
+#
+# `version` must equal the workspace version in Cargo.toml: tools/release/check_version.py checks
+# it, with the plugin's version, before any release build. docs/development/release.md has the
+# release steps.
+name = "freerouting-rs"
+product-name = "freerouting-rs"
+version = "0.1.0"
+identifier = "com.github.danbrunski.freerouting-rs"
+description = "PCB autorouter and viewer, a Rust port of Freerouting"
+long-description = "freerouting-rs routes printed circuit boards from Specctra DSN files and writes Specctra session files; the viewer shows the board, the routing and the design-rule check."
+authors = ["Dan Brunski"]
+publisher = "Dan Brunski"
+copyright = "Copyright (C) the freerouting-rs authors, GPL-3.0-only"
+license-file = "LICENSE"
+out-dir = "dist/packager"
+binaries-dir = "target/release"
+icons = [
+  "crates/freerouting-gui/icons/icon-32.png",
+  "crates/freerouting-gui/icons/icon-128.png",
+  "crates/freerouting-gui/icons/icon-256.png",
+  "crates/freerouting-gui/icons/icon-512.png",
+  "crates/freerouting-gui/icons/icon.ico",
+  "crates/freerouting-gui/icons/icon.icns",
+]
+resources = ["THIRD_PARTY_NOTICES.md", "LICENSES"]
+
+# The GUI is the app; the command-line router rides along in the same directory.
+[[binaries]]
+path = "freerouting-gui"
+main = true
+
+[[binaries]]
+path = "freerouting"
+main = false
+
+[macos]
+minimum-system-version = "11.0"

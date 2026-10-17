@@ -54,3 +54,18 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install pytest
       - run: python -m pytest kicad-plugin/tests
+
+  # R01.1: the version in Cargo.toml, the plugin's version.py and metadata.json must agree
+  # (a mismatch fails here in seconds, not minutes into a release build). The release workflow
+  # (docs/development/release-workflow.yml) runs the same script first, with the tag.
+  version-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python3 tools/release/check_version.py
+      - run: python3 -m pip install pytest
+      - run: python3 -m pytest tools/release

@@ -254,7 +254,7 @@ Each rung uses the reference data and harness in
 | **P** Performance | [performance.md](performance.md) | [P00](tasks/P00-performance-README.md) | profiling harness now; optimization after parity |
 | **Q** Routing quality beyond Java | [routing-quality.md](routing-quality.md) | [Q00](tasks/Q00-routing-quality-README.md) | after board parity |
 | **X** Algorithms from KiCadRoutingTools | [algorithms.md](algorithms.md) | [X00](tasks/X00-krt-algorithms-README.md) | head-to-head now; ports after board parity |
-| **R** Release builds | [desktop-app.md](desktop-app.md) | [R01](tasks/R01-release-builds.md) | after the CLI routes |
+| **R** Release builds | [desktop-app.md](desktop-app.md) | [R01](tasks/archive/R01-release-builds.md) | after the CLI routes |
 | **S** Server and job management | this file ("Later") | [S00](tasks/S00-server-README.md) | after "complete", when Dan asks |
 
 The critical path is J01 → B (router prerequisites) → O (shared board

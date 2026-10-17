@@ -14,7 +14,7 @@ __version__ = "0.1.0"
 
 _VERSION_LINE = re.compile(
     r"^freerouting\s+(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(?P<pre>[-+][0-9A-Za-z.+-]*)?"
-    r"(?:\s+\((?P<sha>[0-9A-Za-z]+)\))?$"
+    r"(?:\s+\((?:git\s+)?(?P<sha>[0-9A-Za-z]+)\))?$"
 )
 
 OK = "ok"

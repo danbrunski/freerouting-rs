@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- freerouting-rs icon (R01.3): two routed nets on a dark green board, one copper and one
+     blue, with 45-degree bends. Original artwork, plain shapes only so any SVG renderer
+     draws it the same. Licensed like the rest of the repository (GPL-3.0-only). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="32" y="32" width="960" height="960" rx="200" ry="200" fill="#0f3d33"/>
+  <rect x="32" y="32" width="960" height="960" rx="200" ry="200" fill="none" stroke="#1d6b58" stroke-width="16"/>
+  <g fill="none" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="230,780 230,600 400,430 700,430 794,336" stroke="#f2b441"/>
+    <polyline points="400,830 560,830 690,700 800,700" stroke="#7fd1e8"/>
+  </g>
+  <g>
+    <circle cx="230" cy="780" r="78" fill="#f2b441"/>
+    <circle cx="230" cy="780" r="28" fill="#0f3d33"/>
+    <circle cx="794" cy="336" r="78" fill="#f2b441"/>
+    <circle cx="794" cy="336" r="28" fill="#0f3d33"/>
+    <circle cx="400" cy="830" r="78" fill="#7fd1e8"/>
+    <circle cx="400" cy="830" r="28" fill="#0f3d33"/>
+    <circle cx="800" cy="700" r="78" fill="#7fd1e8"/>
+    <circle cx="800" cy="700" r="28" fill="#0f3d33"/>
+  </g>
+</svg>

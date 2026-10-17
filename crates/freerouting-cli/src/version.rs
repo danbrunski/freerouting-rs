@@ -2,8 +2,9 @@
 //! pins on (K01.4, K02).
 //!
 //! `--version` prints one line, `freerouting <crate version> (git <sha>)`,
-//! where the sha comes from `build.rs` (`FREEROUTING_GIT_SHA`, else `git
-//! rev-parse --short=9 HEAD`, else `unknown`). `--capabilities` prints JSON:
+//! where the sha comes from the engine's `build.rs` (R01.2:
+//! `FREEROUTING_GIT_SHA`, else `git rev-parse --short=12 HEAD`, else
+//! `unknown`) through [`freerouting::build_info`]. `--capabilities` prints JSON:
 //! the version, the output formats, every flag from the tables in
 //! [`args`](crate::args), the exit codes, the schema versions of the
 //! progress stream and the result manifest, and the registered stage ids.
@@ -13,11 +14,11 @@ use freerouting::drc::json::JsonValue;
 
 use crate::args::{EXTRA_FLAGS, FLAGS, LONG_FLAGS, Matching, Setting};
 
-/// The crate version.
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The crate version (the workspace version, as the engine reports it).
+pub const VERSION: &str = freerouting::build_info::VERSION;
 
-/// The git commit the binary was built from, or `unknown`.
-pub const GIT_SHA: &str = env!("FREEROUTING_GIT_SHA");
+/// The git commit the binary was built from (12 hex digits), or `unknown`.
+pub const GIT_SHA: &str = freerouting::build_info::GIT_SHA;
 
 /// The Java commit the port follows.
 pub const JAVA_PIN: &str = "a773a70ec";
@@ -169,7 +170,7 @@ mod tests {
         assert!(version.split('.').all(|p| p.parse::<u32>().is_ok()));
         let sha = rest.strip_suffix(')').unwrap();
         assert!(
-            sha == "unknown" || (sha.len() == 9 && sha.chars().all(|c| c.is_ascii_hexdigit())),
+            sha == "unknown" || (sha.len() == 12 && sha.chars().all(|c| c.is_ascii_hexdigit())),
             "{line}"
         );
     }

@@ -6,7 +6,7 @@ use common::*;
 use freerouting::drc::json::JsonValue;
 use freerouting_cli::args::{EXTRA_FLAGS, FLAGS, LONG_FLAGS};
 
-/// `^freerouting \d+\.\d+\.\d+ \(git ([0-9a-f]{9}|unknown)\)$`, by hand (the
+/// `^freerouting \d+\.\d+\.\d+ \(git ([0-9a-f]{12}|unknown)\)$`, by hand (the
 /// workspace has no regex crate in the CLI).
 fn matches_version_line(line: &str) -> bool {
     let Some(rest) = line.strip_prefix("freerouting ") else {
@@ -23,7 +23,8 @@ fn matches_version_line(line: &str) -> bool {
     let Some(sha) = rest.strip_suffix(')') else {
         return false;
     };
-    let sha_ok = sha == "unknown" || (sha.len() == 9 && sha.bytes().all(|b| b.is_ascii_hexdigit()));
+    let sha_ok =
+        sha == "unknown" || (sha.len() == 12 && sha.bytes().all(|b| b.is_ascii_hexdigit()));
     numeric && sha_ok
 }
 
@@ -45,11 +46,13 @@ fn version_prints_one_line() {
 
 #[test]
 fn the_version_line_matcher_rejects_other_lines() {
-    assert!(matches_version_line("freerouting 0.1.0 (git abcdef123)"));
+    assert!(matches_version_line("freerouting 0.1.0 (git abcdef123456)"));
     assert!(matches_version_line("freerouting 12.3.45 (git unknown)"));
-    assert!(!matches_version_line("freerouting 0.1 (git abcdef123)"));
-    assert!(!matches_version_line("freerouting 0.1.0 (git abcdef12)"));
-    assert!(!matches_version_line("freerouting 0.1.0 (git ABCDEFG12)"));
+    assert!(!matches_version_line("freerouting 0.1 (git abcdef123456)"));
+    assert!(!matches_version_line("freerouting 0.1.0 (git abcdef12345)"));
+    assert!(!matches_version_line(
+        "freerouting 0.1.0 (git ABCDEFG12345)"
+    ));
     assert!(!matches_version_line("freerouting 0.1.0"));
 }
 

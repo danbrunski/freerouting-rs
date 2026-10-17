@@ -11,7 +11,7 @@ in [desktop-app.md](../desktop-app.md).
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [R01](R01-release-builds.md) | Version gate, build stamp, icons, `release.yml` with Linux (AppImage, tar), Windows (MSI, zip) and macOS (universal DMG, tar) jobs, checksums, draft release, release docs | M / medium: young tooling, needs pushes | F01.2, F04.1; C08 (`--version`); K01.3 and K03 for the plugin parts |
+| [R01](archive/R01-release-builds.md) ✅ | Version gate, build stamp, icons, `release.yml` with Linux (AppImage, tar), Windows (MSI, zip) and macOS (universal DMG, tar) jobs, checksums, draft release, release docs | M / medium: young tooling, needs pushes | F01.2, F04.1; C08 (`--version`); K01.3 and K03 for the plugin parts |
 | [R02](R02-signing.md) | *Optional.* Developer ID signing and notarization on macOS, Authenticode on Windows | S / low, but costs money and needs secrets | R01; Dan's decision |
 
 ## Order

@@ -17,6 +17,9 @@ def test_parse_router_version():
     assert version.parse_router_version("freerouting 1.22.3") == (1, 22, 3, None)
     assert version.parse_router_version("\nfreerouting 0.1.0-rc1 (deadbee)") == (0, 1, 0, "deadbee")
     assert version.parse_router_version("freerouting 0.1.0 (abc1234)\nmore") == (0, 1, 0, "abc1234")
+    # C08's real line: "(git <sha>)".
+    line = "freerouting 0.1.0 (git 813663cea882)"
+    assert version.parse_router_version(line) == (0, 1, 0, "813663cea882")
     for bad in ("", None, "Usage: freerouting", "freerouting 0.1 (x)", "other 0.1.0 (x)", "freerouting x.y.z"):
         assert version.parse_router_version(bad) is None
 

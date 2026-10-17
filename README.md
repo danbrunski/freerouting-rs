@@ -17,6 +17,15 @@ for the module map, crate layout and porting order.
 | `freerouting-cli` | The `freerouting` command-line tool |
 | `freerouting-gui` | The `freerouting-gui` desktop app (egui/eframe) |
 
+## Install
+
+There is no release yet: build from source as below. Releases will put builds for Windows (MSI
+and zip), macOS (universal DMG and tar.gz) and Linux (AppImage and tar.gz) on the
+[releases page](https://github.com/danbrunski/freerouting-rs/releases), with a `SHA256SUMS`
+file. They will not be signed at first, so Windows shows a SmartScreen warning and macOS asks for
+"Open Anyway" on the first launch. What each file is, the Linux requirements and how to verify
+the download: [docs/development/release.md](docs/development/release.md).
+
 ## Board viewer
 
 ```

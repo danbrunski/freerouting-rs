@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+authors.workspace = true
+description.workspace = true
+build = "build.rs"
 
 [lib]
 path = "src/lib.rs"
@@ -30,3 +33,7 @@ winit = { version = "0.30", default-features = false, features = ["x11"] }
 
 [dev-dependencies]
 egui_kittest = { version = "=0.32.3", features = ["eframe", "wgpu", "snapshot"] }
+
+# R01.5: the icon and version resource of the Windows exes (build.rs; only runs for msvc targets).
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"

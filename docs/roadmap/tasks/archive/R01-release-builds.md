@@ -1,14 +1,14 @@
 # R01 — Release builds for Windows, macOS and Linux
 
 Opened 2026-10-15. "Complete" includes release builds for Windows, macOS
-(universal) and Linux (item 7 in [port-completion.md](../port-completion.md)).
+(universal) and Linux (item 7 in [port-completion.md](../../port-completion.md)).
 Today there are none: Dan builds the Windows exes by hand with the gnu
 toolchain, and nothing is versioned beyond `0.1.0` in `Cargo.toml`. This
 checklist adds one tag-triggered workflow that builds, packages, checks and
 drafts a GitHub release, plus the version gate and version stamp it needs.
 It is the GUI report's REL-1 with KRT's "version gate first" amendment
 (KRT report, "R and C — Release and settings"). CI itself (fmt, clippy,
-tests on three systems) is F01.2; signing is [R02](R02-signing.md).
+tests on three systems) is F01.2; signing is [R02](../R02-signing.md).
 
 **Prerequisites:**
 - F01.2: CI installed, with the action versions it pins (reuse them here).
@@ -79,7 +79,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
 
 ## Checklist
 
-- [ ] **R01.1 — Version gate.**
+- [x] **R01.1 — Version gate.**
   - `check_version.py [--tag vX.Y.Z]` reads the workspace version from
     `Cargo.toml`, `kicad-plugin/freerouting_rs/version.py` (K01.3),
     `kicad-plugin/metadata.json`'s single version entry and the suffix of
@@ -94,7 +94,22 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     tag) fails and names the file; `0.1.0.1` fails; a planted mismatch in a
     temp copy of the repo fails the gate (negative control).
 
-- [ ] **R01.2 — Build stamp.**
+  *Done 2026-10-17:* `tools/release/check_version.py [--tag vX.Y.Z] [--root DIR]` reads the
+  workspace version, `Packager.toml`'s version (added: the MSI/DMG carry it), `version.py`,
+  `metadata.json`'s single entry and its `download_url` (both "not yet present" until K03), and the tag;
+  exits 1 naming the file on any difference or a non-`MAJOR.MINOR.PATCH` version. Tests
+  `tools/release/test_check_version.py` (plain `unittest`, so `python3 -m pytest tools/release`
+  collects them too; pytest is not installed on this machine, so they ran as
+  `python3 -m unittest discover -s tools/release -p 'test_*.py'`: 29 tests in total across the five test files, OK):
+  all equal passes; each single mismatch (workspace, packager, plugin, metadata, download_url, tag) fails and
+  names its file (`test_each_single_mismatch_fails_and_names_the_file`); `0.1.0.1` and `0.1.0-rc1` fail;
+  negative control `test_planted_mismatch_in_a_copy_of_the_repository_fails` copies the real `Cargo.toml`,
+  `Packager.toml` and plugin package into a temp dir, plants 9.9.9 in `version.py` and the script exits 1.
+  `python3 tools/release/check_version.py --tag v0.1.0` on the repo: ok. The CI step is the `version-gate`
+  job appended to `docs/development/ci-workflow.yml` (CI is disabled by Dan, so no `.github/`; a green
+  GitHub run is not claimed); the release workflow draft's first job (`gate`) runs it with the tag.
+
+- [x] **R01.2 — Build stamp.**
   - `crates/freerouting/build.rs` sets `FREEROUTING_GIT_SHA` from the
     environment variable of the same name if CI sets it, else from
     `git rev-parse --short=12 HEAD`, else `unknown`; it reruns when
@@ -106,7 +121,25 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     and that `GIT_SHA` is 12 hex digits or `unknown`; building from a
     source tarball without `.git` gives `unknown` and does not fail.
 
-- [ ] **R01.3 — Packager config and icons.**
+  *Done 2026-10-17:* `crates/freerouting/build.rs` (`FREEROUTING_GIT_SHA` if >= 12 hex digits, truncated
+  to 12; else `git rev-parse --short=12 HEAD` only when the root has its own `.git`; else `unknown`;
+  reruns on `.git/HEAD` and its ref, worktrees included; debug-profile builds do not watch HEAD so a commit
+  does not recompile the engine) and `crates/freerouting/src/build_info.rs` (`VERSION`, `GIT_SHA`,
+  `version_with_sha()`; `pub mod build_info` in `lib.rs`). C08 had already landed a CLI-local `build.rs`
+  (9 digits): reused, not duplicated: it is deleted and `freerouting-cli/src/version.rs` now re-exports
+  `freerouting::build_info` (the `--version` line is `freerouting 0.1.0 (git 813663cea882)`, 12 digits
+  instead of 9; `tests/version.rs` and the unit test in `version.rs` updated). Tests:
+  `cargo test -p freerouting --lib build_info` 4 passed (VERSION == CARGO_PKG_VERSION, GIT_SHA is 12 hex or
+  `unknown`); `tools/release/test_build_stamp.py` compiles `build.rs` on its own and checks: no `.git` ->
+  `unknown`, a tarball unpacked inside another repo -> `unknown`, a checkout -> HEAD[:12], CI override
+  truncated, bad override ignored, a linked worktree, the debug profile. A real tarball copy (no `.git`,
+  workspace crates only) builds and `cargo test --locked -p freerouting --lib build_info` passes there.
+  `cargo test -p freerouting-cli`: all pass. Behaviour: the stamp is read only by `build_info`, the CLI's
+  `--version`/`--capabilities`/manifest; the SES of `Issue159-setonix_2hp-pcb.dsn` (`-mp 2 -mt 1`) from
+  two release CLIs stamped `813663cea882` and `000000000000` is byte-identical (`cmp`).
+  G04.8's About does not exist yet; it should print `freerouting::build_info::version_with_sha()`.
+
+- [~] **R01.3 — Packager config and icons.**
   - An original icon: `crates/freerouting-gui/icons/icon.svg`, rendered to
     PNG at 16–1024 px, `icon.ico` and `icon.icns` (the commands that render
     them are in `icons/README.md`). It also feeds K03.1's 64 px PNG.
@@ -122,7 +155,31 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     G01.5 lands, `--version` is the check. Dan approves the icon (R00
     question 3).
 
-- [ ] **R01.4 — Linux release job.**
+  *Partial 2026-10-17:* done: `crates/freerouting-gui/icons/icon.svg` (original: two routed nets with
+  45-degree bends on a dark green board; plain shapes), `render.py` + `README.md` (ImageMagick `convert` draws
+  the SVG once at 1024 px, Pillow scales and writes `icon-{16,32,48,64,128,256,512,1024}.png`, `icon.ico`
+  with 7 sizes, `icon.icns` written by hand; deterministic, a re-run changes no file; 270 KB in total);
+  root `Packager.toml` (product `freerouting-rs`, identifier `com.github.danbrunski.freerouting-rs`, both
+  binaries with the GUI as `main`, icons, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `LICENSES/`; workspace
+  `authors` and `description` added to `Cargo.toml` and inherited by the GUI and CLI crates). cargo-packager
+  0.11.8 installed into a private root; with the config it builds a `.deb` correctly here and parses
+  everything (two 0.11.8 quirks recorded in `Packager.toml` and `release.md`: `-c` needs an absolute path,
+  `name` must be set). Remaining: (1) **the AppImage accept clause is not met as written**: `cargo packager
+  -f appimage` produced an AppImage whose GUI binary hung before the first frame (linuxdeploy rewrote it to
+  18 MB from 32 MB; plain `strip`, `patchelf` and `NO_STRIP=1` did not explain or avoid it; cause not
+  found). The checklist's fallback applies: `tools/release/make_appimage.sh` (appimagetool, hash-pinned,
+  own AppDir with a shell `AppRun`) produces `freerouting-rs-0.1.0-linux-x86_64.AppImage` (14.5 MB) and
+  under `xvfb-run -a` with `WGPU_BACKEND=vulkan` and `APPIMAGE_EXTRACT_AND_RUN=1`
+  `AppImage --screenshot shot.png --exit fixtures/Issue159-setonix_2hp-pcb.dsn` exits 0 in 0.19 s and writes a
+  98,952-byte PNG (identical size to the unpackaged binary's). I opened it: the viewer window, 1280x800,
+  menu bar (File..Help), a toolbar (Autoroute, Inspect, Route, Drag, Ratsnest, Violations, Undo, Redo,
+  mm), a layer panel (F.Cu red, B.Cu blue), the board panel (9.6 x 108.5 mm, 15 components, 9 nets) and the
+  long narrow board with LED, switch and jack outlines, yellow ratsnest lines, "Incomplete connections: 23". The
+  icon is not visible in that shot (the window does not set it yet). (2) **Dan approves the icon** (R00
+  question 3); the GUI does not yet use `icon-*.png` as its window icon (G-series). (3) K03.1's 64 px PNG:
+  `icons/icon-64.png` is ready to copy.
+
+- [~] **R01.4 — Linux release job.**
   - `release.yml` on tags `v*`, job `linux` on `ubuntu-22.04`: release
     build; `freerouting-rs-<ver>-linux-x86_64.tar.gz` with both binaries,
     `kicad-plugin/`, `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`; the
@@ -138,7 +195,20 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
       most 2.35.
     - The tar listing contains `THIRD_PARTY_NOTICES.md` (F04.1's check).
 
-- [ ] **R01.5 — Windows release job.**
+  *Partial 2026-10-17:* needs a GitHub run, "CI disabled by Dan": no `.github/`; the workflow is the
+  draft `docs/development/release-workflow.yml` (jobs `gate`, `linux`, `linux-smoke`; tags `v*`,
+  `permissions: contents: read`; pins in `release.md`; YAML parses). Local evidence on this Ubuntu 24.04
+  box with the local release build: `tools/release/package_archive.py --platform linux-x86_64` makes
+  `freerouting-rs-0.1.0-linux-x86_64.tar.gz` (14.8 MB, reproducible: `test_archive_is_reproducible`) with
+  both binaries, `kicad-plugin/`, `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `LICENSES/`;
+  `tar tzf | grep THIRD_PARTY_NOTICES.md` -> 1. AppImage as in R01.3. `freerouting --version` runs in an
+  `ubuntu:22.04` container (`docker run`: `freerouting 0.1.0 (git 813663cea882)`). The glibc check
+  (`tools/release/glibc_floor.sh 2.35 ...`): CLI highest `GLIBC_2.35` (ok); GUI `GLIBC_2.39` -> the script
+  fails, as designed, because this box builds on glibc 2.39; whether the GUI stays <= 2.35 when built on
+  `ubuntu-22.04` is unverified. Remaining (needs the test tag of R01.7 and Dan's push; screenshot flag from G01.5): a green run on a test tag, the `ubuntu-24.04` smoke job with the
+  uploaded screenshot, the 22.04 glibc number.
+
+- [~] **R01.5 — Windows release job.**
   - Job `windows` on `windows-latest`, target `x86_64-pc-windows-msvc`,
     static CRT. Icon and version resource for both exes through
     `winresource` (`NEW DEP`, build-dependency, Windows only).
@@ -154,7 +224,19 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     - The exe's file properties carry the version (PowerShell
       `(Get-Item …).VersionInfo.ProductVersion`).
 
-- [ ] **R01.6 — macOS release job.**
+  *Partial 2026-10-17:* written, not run ("CI disabled by Dan"; no Windows runner here, no windows
+  target installed, so not even `cargo check --target`). Draft job `windows` in `release-workflow.yml`
+  (MSVC, `-C target-feature=+crt-static`, dumpbin dependents check, `ProductVersion` check, zip via
+  `package_archive.py`, MSI via `cargo packager -c "$PWD\Packager.toml" --formats wix`, msiexec install,
+  `freerouting.exe --version`, uninstall check). `NEW DEP: winresource 0.1 (Windows-only
+  build-dependency of freerouting-gui and freerouting-cli, for the icon and version resource; Cargo.lock
+  +42 lines: winresource, toml, serde_spanned, toml_writer, winnow 1.0.4, ...)`; both `build.rs` files run it for msvc
+  targets only (or `FREEROUTING_WINRES=1`), so Dan's gnu loop is unchanged, and a failed resource is a
+  warning, not an error. The `build.rs` files compile and do nothing on Linux (clippy clean).
+  Remaining (a Windows runner via the test tag of R01.7; signing is R02): everything that runs on Windows, the WiX build, the install path the MSI picks (the job
+  searches `%ProgramFiles%` and `%LOCALAPPDATA%\Programs`).
+
+- [~] **R01.6 — macOS release job.**
   - Job `macos` on `macos-14` (arm64): build both targets, `lipo -create`
     both binaries, make `freerouting-rs.app` (`Info.plist`, `icon.icns`)
     and a `.dmg` through cargo-packager (`-f app,dmg`), fallback `hdiutil
@@ -169,7 +251,16 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     - The Gatekeeper behaviour for a downloaded (quarantined) app is
       recorded, with K03.6's subprocess check.
 
-- [ ] **R01.7 — Checksums and draft release.**
+  *Partial 2026-10-17:* written, not run ("CI disabled by Dan"; no macOS here). Draft job `macos` on
+  `macos-14`: both targets, `lipo -create` with an `x86_64 arm64` check, tar.gz via `package_archive.py`,
+  `cargo packager --formats app,dmg --binaries-dir universal` with `tools/release/macos_dmg.sh`
+  (hand-made `.app` + `hdiutil create -format UDZO`, `bash -n` clean) as the automatic fallback, ad-hoc
+  `codesign` + `Signature=adhoc` check, DMG mount and `Contents/MacOS/freerouting --version` (the GUI has
+  no `--version`; it would open a window). Unverified: all of it, and the Gatekeeper behaviour of a
+  quarantined app (K03.6's check); `release.md` states the "Open Anyway" steps from the GUI report, not
+  seen on a Mac.
+
+- [~] **R01.7 — Checksums and draft release.**
   - Job `release` (needs all build jobs; `permissions: contents: write`
     only here): download the artifacts, write `SHA256SUMS`, add the PCM zip
     and the patched `metadata.json` (K03.2, K03.4) when K03 exists, and
@@ -181,7 +272,16 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     `metadata.json`. `sha256sum -c SHA256SUMS` passes on the downloaded
     assets. The release URL is in the done note.
 
-- [ ] **R01.8 — Release documentation.**
+  *Partial 2026-10-17:* written, not run ("CI disabled by Dan"; no draft release was created and nothing
+  was pushed or uploaded). Draft job `release` (needs all build jobs, tag-only, `permissions: contents:
+  write` only there): downloads the artifacts, a K03 step that runs `kicad-plugin/package.py` and
+  `update_metadata.py` only if they exist (K03 has not landed: skipped with a note), `SHA256SUMS`, then
+  `gh release create --draft --verify-tag`. Local: `tools/release/sha256sums.py` on the local dist dir
+  writes a file that `sha256sum -c SHA256SUMS` accepts for the tar.gz and the AppImage
+  (`test_sums_verify_with_sha256sum` also checks that a tampered file fails). Remaining: a test tag, the
+  draft release URL, the downloaded-asset check, the PCM zip and `metadata.json` after K03.
+
+- [~] **R01.8 — Release documentation.**
   - `docs/development/release.md`: how to cut a release (bump the
     workspace version, run the gate, tag, push, review and publish the
     draft); what each asset is; the Linux glibc floor; the Windows
@@ -192,3 +292,9 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
   - `README.md`: a short "Install" section pointing at the releases page.
   - **Accept:** the document exists, and its release steps were followed
     once for the test tag in R01.7 (the done note says so).
+
+  *Partial 2026-10-17:* `docs/development/release.md` (how to cut a release, the asset table, verifying
+  `SHA256SUMS`, the glibc floor, SmartScreen, macOS "Open Anyway", tool pins, the AppImage finding, the
+  build stamp) and a README "Install" section exist. Remaining: its release steps have not been followed
+  for a real test tag (R01.7 owns the tag), and the macOS 15 claim (Control-click removed) is from the GUI report, not
+  checked on a machine (the quarantined-app check on a Mac is K03.6's manual step).

@@ -1,0 +1,298 @@
+# DISABLED at Dan's request (2026-10-15, no GitHub CI): this file lives in docs/development/ so
+# GitHub never runs it. To enable releases, move it to .github/workflows/release.yml (pushing a
+# workflow file needs the `workflow` scope or SSH; see docs/development/release.md).
+#
+# R01: on a tag vX.Y.Z, check the version first, build and package on Linux, Windows and macOS,
+# then make a DRAFT GitHub release with SHA256SUMS. Nothing is published until Dan publishes the
+# draft. No signing yet (R02). The tools are pinned here and listed in release.md.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # A branch run builds and packages everything but makes no release (the `release` job is
+  # tag-only), so the pipeline can be tried without a tag.
+  workflow_dispatch:
+
+# Build jobs only read the repository. Only the `release` job gets contents: write.
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_PACKAGER_VERSION: "0.11.8"
+  # The build stamp for `freerouting --version` (R01.2): 12 hex digits of the commit.
+  FREEROUTING_GIT_SHA: ${{ github.sha }}
+
+jobs:
+  # The version gate first (R01.1): a mismatch between the tag, Cargo.toml, Packager.toml and the
+  # plugin fails here in seconds, not after the builds.
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Version gate
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            python3 tools/release/check_version.py --tag "${GITHUB_REF_NAME}"
+          else
+            python3 tools/release/check_version.py
+          fi
+      - name: Release script tests
+        run: python3 -m unittest discover -s tools/release -p 'test_*.py'
+
+  # ---------------------------------------------------------------- Linux (R01.4)
+  linux:
+    needs: gate
+    # glibc 2.35 floor: the binaries run on Ubuntu 22.04 and newer, Debian 12 and newer.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2.9.2
+      - name: Build
+        run: cargo build --release --locked -p freerouting-cli -p freerouting-gui
+      - name: glibc floor (at most 2.35)
+        run: tools/release/glibc_floor.sh 2.35 target/release/freerouting target/release/freerouting-gui
+      - name: tar.gz
+        run: python3 tools/release/package_archive.py --platform linux-x86_64 --bin-dir target/release --out dist
+      - name: "AppImage (appimagetool; why not cargo-packager is in tools/release/make_appimage.sh)"
+        # No system library is bundled: X11, Wayland, xkbcommon, Vulkan and EGL come from the host
+        # at run time. The runner has no FUSE, so the tool runs with --appimage-extract-and-run.
+        run: tools/release/make_appimage.sh target/release dist
+      - name: Listing check (F04.1)
+        run: |
+          tar tzf dist/freerouting-rs-*-linux-x86_64.tar.gz | tee /tmp/tar-listing
+          grep -q THIRD_PARTY_NOTICES.md /tmp/tar-listing
+      - name: freerouting --version in ubuntu:22.04
+        run: |
+          mkdir unpacked && tar xzf dist/freerouting-rs-*-linux-x86_64.tar.gz -C unpacked --strip-components=1
+          docker run --rm -v "$PWD/unpacked:/w:ro" ubuntu:22.04 /w/freerouting --version
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: linux
+          path: dist/freerouting-rs-*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: bin-linux-x86_64
+          path: |
+            target/release/freerouting
+            target/release/freerouting-gui
+          if-no-files-found: error
+
+  # The AppImage must start on a newer system with software Vulkan and write a screenshot.
+  linux-smoke:
+    needs: linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: linux
+          path: dist
+      - name: Packages
+        run: sudo apt-get update && sudo apt-get install -y xvfb mesa-vulkan-drivers libvulkan1 libxkbcommon-x11-0 libegl1
+      - name: Screenshot under Xvfb (lavapipe)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          # GL panicked with "Invalid surface" under Xvfb; Vulkan (lavapipe) works.
+          WGPU_BACKEND: vulkan
+        run: |
+          chmod +x dist/*.AppImage
+          xvfb-run -a dist/*.AppImage --screenshot shot.png --exit fixtures/Issue159-setonix_2hp-pcb.dsn
+          test -s shot.png
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: linux-screenshot
+          path: shot.png
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------- Windows (R01.5)
+  windows:
+    needs: gate
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      # Static C runtime: users need no Visual C++ redistributable.
+      RUSTFLAGS: "-C target-feature=+crt-static"
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2.9.2
+      - name: Build
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc -p freerouting-cli -p freerouting-gui
+      - name: Dependents (no VCRUNTIME or MSVCP)
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Where-Object { $_.FullName -match 'Hostx64\\x64' } | Select-Object -First 1
+          foreach ($exe in "freerouting.exe", "freerouting-gui.exe") {
+            $deps = & $dumpbin.FullName /dependents "target\x86_64-pc-windows-msvc\release\$exe"
+            $deps | Write-Host
+            if ($deps -match 'VCRUNTIME|MSVCP') { throw "$exe depends on the Visual C++ runtime" }
+          }
+      - name: File properties carry the version
+        run: |
+          $want = python tools/release/check_version.py | Select-String '^workspace\s+(\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }
+          foreach ($exe in "freerouting.exe", "freerouting-gui.exe") {
+            $got = (Get-Item "target\x86_64-pc-windows-msvc\release\$exe").VersionInfo.ProductVersion
+            Write-Host "$exe ProductVersion $got"
+            if (-not $got.StartsWith($want)) { throw "$exe ProductVersion $got, want $want" }
+          }
+      - name: zip
+        run: python tools/release/package_archive.py --platform windows-x86_64 --bin-dir target/x86_64-pc-windows-msvc/release --out dist
+      - name: Install cargo-packager
+        run: cargo install cargo-packager --version $env:CARGO_PACKAGER_VERSION --locked
+      - name: MSI
+        # Fallback if cargo-packager's wix step fails: `cargo install cargo-wix --version 0.3.9
+        # --locked`, `cargo wix` (WiX v3 is preinstalled on windows-latest), see release.md.
+        run: |
+          cargo packager -c "$PWD\Packager.toml" --formats wix --binaries-dir target/x86_64-pc-windows-msvc/release
+          $version = python tools/release/check_version.py | Select-String '^workspace\s+(\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }
+          $msi = Get-ChildItem dist\packager\*.msi | Select-Object -First 1
+          Move-Item $msi.FullName "dist\freerouting-rs-$version-windows-x86_64.msi"
+          Get-ChildItem dist
+      - name: Install, run, uninstall the MSI
+        run: |
+          $msi = (Get-ChildItem dist\freerouting-rs-*.msi | Select-Object -First 1).FullName
+          Start-Process msiexec -ArgumentList "/i `"$msi`" /qn /l*v install.log" -Wait -NoNewWindow
+          $exe = Get-ChildItem "$env:ProgramFiles", "$env:LOCALAPPDATA\Programs" -Recurse -Filter freerouting.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Get-Content install.log -Tail 60; throw "freerouting.exe not installed" }
+          & $exe.FullName --version
+          if ($LASTEXITCODE -ne 0) { throw "--version exited $LASTEXITCODE" }
+          $dir = $exe.DirectoryName
+          Start-Process msiexec -ArgumentList "/x `"$msi`" /qn" -Wait -NoNewWindow
+          if (Test-Path $dir) { throw "$dir still exists after uninstall" }
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: windows
+          path: dist/freerouting-rs-*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: bin-windows-x86_64
+          path: |
+            target/x86_64-pc-windows-msvc/release/freerouting.exe
+            target/x86_64-pc-windows-msvc/release/freerouting-gui.exe
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------- macOS (R01.6)
+  macos:
+    needs: gate
+    # One universal build from the arm64 runner (macos-13 Intel runners queue for 30+ minutes):
+    # x86_64 is cross-compiled.
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2.9.2
+      - name: Build both architectures
+        run: |
+          cargo build --release --locked --target aarch64-apple-darwin -p freerouting-cli -p freerouting-gui
+          cargo build --release --locked --target x86_64-apple-darwin -p freerouting-cli -p freerouting-gui
+      - name: lipo
+        run: |
+          mkdir -p universal
+          for bin in freerouting freerouting-gui; do
+            lipo -create -output "universal/$bin" "target/aarch64-apple-darwin/release/$bin" "target/x86_64-apple-darwin/release/$bin"
+            echo "$bin: $(lipo -archs "universal/$bin")"
+            test "$(lipo -archs "universal/$bin")" = "x86_64 arm64"
+          done
+      - name: tar.gz
+        run: python3 tools/release/package_archive.py --platform macos-universal --bin-dir universal --out dist
+      - name: Install cargo-packager
+        run: cargo install cargo-packager --version "${CARGO_PACKAGER_VERSION}" --locked
+      - name: App and DMG
+        # Fallback when cargo-packager fails: tools/release/macos_dmg.sh (hdiutil create -format UDZO).
+        run: |
+          cargo packager -c "$PWD/Packager.toml" --formats app,dmg --binaries-dir universal || tools/release/macos_dmg.sh universal dist/packager
+          version="$(python3 tools/release/check_version.py | awk '$1 == "workspace" {print $2}')"
+          mv dist/packager/*.dmg "dist/freerouting-rs-${version}-macos-universal.dmg"
+          ls -l dist
+      - name: Ad-hoc signature (R02 replaces it with Developer ID)
+        run: |
+          app="$(find dist/packager -name 'freerouting-rs.app' -maxdepth 2 | head -1)"
+          codesign --force --deep -s - "$app"
+          codesign -dv "$app" 2>&1 | tee /tmp/codesign.txt
+          grep -q 'Signature=adhoc' /tmp/codesign.txt
+      - name: Mount the DMG and run the app
+        run: |
+          dmg="$(ls dist/freerouting-rs-*-macos-universal.dmg)"
+          mount="$(hdiutil attach "$dmg" -nobrowse | awk -F'\t' '/\/Volumes\// {print $NF}' | head -1)"
+          # The GUI has no --version (it would open a window); the CLI beside it in the bundle does.
+          "$mount/freerouting-rs.app/Contents/MacOS/freerouting" --version
+          test -x "$mount/freerouting-rs.app/Contents/MacOS/freerouting-gui"
+          hdiutil detach "$mount"
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: macos
+          path: dist/freerouting-rs-*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: bin-macos-universal
+          path: universal/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------- Draft release (R01.7)
+  release:
+    needs: [linux, linux-smoke, windows, macos]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: "{linux,windows,macos}"
+          path: assets
+          merge-multiple: true
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: "bin-*"
+          path: bins
+      - name: PCM zip and patched metadata.json (K03; skipped until K03 lands)
+        run: |
+          if [ -f kicad-plugin/package.py ] && [ -f kicad-plugin/update_metadata.py ]; then
+            # bins/bin-<platform>/ holds the binaries of each platform; the K03.2 interface is
+            # `package.py --bin <dir per platform> --out <dir>`.
+            mkdir -p pcm
+            python3 kicad-plugin/package.py --bin bins --out pcm
+            cp kicad-plugin/metadata.json assets/metadata.json
+            python3 kicad-plugin/update_metadata.py assets/metadata.json pcm/*.zip.meta.json
+            cp pcm/*-pcm.zip assets/
+          else
+            echo "K03 has not landed: no PCM zip, no metadata.json"
+          fi
+      - name: SHA256SUMS
+        run: python3 tools/release/sha256sums.py assets
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" assets/* \
+            --draft --verify-tag --title "freerouting-rs ${GITHUB_REF_NAME}" \
+            --notes "Draft. Verify with: sha256sum -c SHA256SUMS. See docs/development/release.md for what each asset is and the first-launch steps on macOS and Windows."
