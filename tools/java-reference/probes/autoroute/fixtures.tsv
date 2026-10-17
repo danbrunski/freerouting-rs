@@ -26,3 +26,4 @@ fanout	fixtures/Issue508-SMD-routing-issue-demo.dsn	fixtures/Issue269-min_fr_tes
 fanout-cutoff	fixtures/Issue508-DAC2020_bm01.dsn
 fanout-frames	fixtures/Issue558-dev-board.dsn	crates/freerouting/tests/data/fanout-frames/Issue558-U2-rot90.dsn	crates/freerouting/tests/data/fanout-frames/Issue558-U2-back.dsn
 plane-island	crates/freerouting/tests/data/plane-island/min_fr_test-island.dsn
+last-mile	fixtures/PCBench-retroreflectors-CONGFLOCK.dsn	fixtures/Issue508-DAC2020_bm01.dsn

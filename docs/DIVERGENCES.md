@@ -144,8 +144,10 @@ branch 3 in IntOctagon's box cutout.
   picks a different representative, and the representative tail traces are not
   reported as `track_dangling`, so those two findings can differ by representatives
   while the groups are the same. `NetIncompletes` groups its items as Java does since
-  `30baad7e2` (input order, then connected-set order); at `cda540f` Java started each
-  group from a `HashSet` in identity-hash order.
+  `30baad7e2` (input order, then connected-set order), so the airline orders now match:
+  the `last-mile` probe (A13.3, `tests/autoroute_pipeline.rs`) finds Java's airlines,
+  corridors and removed blockers in Java's order; at `cda540f` Java started each group
+  from a `HashSet` in identity-hash order.
 - Copper islands (`zone_islands`): Java builds the fill with `java.awt.geom.Area` and
   takes its subpaths as islands, which assigns holes to the wrong outer subpath. The
   port computes the same fill (border minus holes, foreign and same-net clearance areas,

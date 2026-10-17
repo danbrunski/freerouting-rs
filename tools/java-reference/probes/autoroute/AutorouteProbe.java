@@ -133,6 +133,14 @@ import java.util.UUID;
  *       and a same-net island under both GND pads (crates/freerouting/tests/data/plane-island/),
  *       then per GND pin the conduction areas in its connected set, and the board's incomplete
  *       count (BoardStatistics).
+ *   <li>last-mile (A13.3): LastMileBlockerRipup.ripBlockers on the loaded board after importing
+ *       Java's routed reference SES (fixtures/reference/route/<board>.ses, SesReader.read) and
+ *       unfixing its traces and vias (SesReader inserts them user fixed). Per airline of the DRC
+ *       (getAllAirlines, in order) its net, items and corners, the corridor (the class's own
+ *       corridor, by reflection) and the overlapping items in TreeSet order, and the blockers it
+ *       added (isRemovableBlocker, by reflection) while the set holds fewer than MAX_ITEMS; then
+ *       the blockers in order. Then the real ripBlockers on a second import, its count, and
+ *       whether it left the same item ids as the replica's removeItems (replica_matches_real).
  * </ul>
  *
  * Output: one JSON object per line (keys in a fixed order, integers in decimal, doubles as "0x" +
@@ -174,6 +182,7 @@ public class AutorouteProbe {
         case "fanout-cutoff" -> fanout(out, dsn, 1L, null);
         case "fanout-frames" -> fanout(out, dsn, null, "U2");
         case "plane-island" -> planeIsland(out, dsn);
+        case "last-mile" -> lastMile(out, dsn);
         default -> throw new IllegalArgumentException("unknown kind " + kind);
       }
     } catch (Throwable t) {
@@ -2034,6 +2043,97 @@ public class AutorouteProbe {
       l.board = job.board;
       return l;
     }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // last-mile (A13.3)
+  // ------------------------------------------------------------------------------------------
+
+  /** The board of last-mile: the load, the routed reference SES imported, traces and vias unfixed. */
+  static Loaded lastMileBoard(String dsn) throws Exception {
+    Loaded l = Loaded.load(dsn);
+    Path ses = Path.of("fixtures/reference/route", board(dsn) + ".ses");
+    try (var in = Files.newInputStream(ses)) {
+      app.freerouting.io.specctra.SesReader.read(in, l.board);
+    }
+    for (Item item : l.board.getItems()) {
+      if (isRouteItem(item)) {
+        item.unfix();
+      }
+    }
+    return l;
+  }
+
+  static void lastMile(Out out, String dsn) throws Exception {
+    Class<?> ripup = Class.forName("app.freerouting.autoroute.pipeline.LastMileBlockerRipup");
+    java.lang.reflect.Method corridor =
+        ripup.getDeclaredMethod("corridor", FloatPoint.class, FloatPoint.class);
+    corridor.setAccessible(true);
+    java.lang.reflect.Method removable =
+        ripup.getDeclaredMethod("isRemovableBlocker", Item.class, int.class);
+    removable.setAccessible(true);
+    java.lang.reflect.Field maxField = ripup.getDeclaredField("MAX_ITEMS");
+    maxField.setAccessible(true);
+    int maxItems = maxField.getInt(null);
+    java.lang.reflect.Method rip = ripup.getDeclaredMethod("ripBlockers", RoutingBoard.class);
+    rip.setAccessible(true);
+
+    RoutingBoard board = lastMileBoard(dsn).board;
+    app.freerouting.drc.AirLine[] airlines =
+        new app.freerouting.drc.DesignRulesChecker(board, null).getAllAirlines();
+    out.line(new Line().str("stage", "airlines").num("count", airlines.length)
+        .num("maxItems", maxItems).end());
+    java.util.LinkedHashSet<Item> blockers = new java.util.LinkedHashSet<>();
+    for (int i = 0; i < airlines.length; i++) {
+      app.freerouting.drc.AirLine airline = airlines[i];
+      if (airline == null || airline.net == null) {
+        out.line(new Line().num("airline", i).bool("net", false).end());
+        continue;
+      }
+      IntBox box = (IntBox) corridor.invoke(null, airline.fromCorner, airline.toCorner);
+      List<Integer> overlapping = new ArrayList<>();
+      List<Integer> added = new ArrayList<>();
+      for (app.freerouting.board.searchtree.SearchTreeObject object :
+          board.overlappingObjects(box, -1)) {
+        if (!(object instanceof Item item)) {
+          continue;
+        }
+        overlapping.add(item.getId());
+        if (blockers.size() >= maxItems) {
+          break;
+        }
+        if ((Boolean) removable.invoke(null, item, airline.net.netNumber) && blockers.add(item)) {
+          added.add(item.getId());
+        }
+      }
+      out.line(new Line().num("airline", i).num("net", airline.net.netNumber)
+          .num("from", airline.fromItem.getId()).num("to", airline.toItem.getId())
+          .dbl("fromX", airline.fromCorner.x).dbl("fromY", airline.fromCorner.y)
+          .dbl("toX", airline.toCorner.x).dbl("toY", airline.toCorner.y)
+          .raw("corridor", intArray(new int[] {box.ll.x, box.ll.y, box.ur.x, box.ur.y}))
+          .raw("overlapping", ints(overlapping)).raw("added", ints(added)).end());
+      if (blockers.size() >= maxItems) {
+        break;
+      }
+    }
+    List<Integer> blockerIds = new ArrayList<>();
+    for (Item item : blockers) {
+      blockerIds.add(item.getId());
+    }
+    out.line(new Line().str("stage", "blockers").raw("ids", ints(blockerIds)).end());
+    board.removeItems(new ArrayList<>(blockers));
+    RoutingBoard real = lastMileBoard(dsn).board;
+    int removed = (Integer) rip.invoke(null, real);
+    out.line(new Line().str("stage", "real").num("removed", removed)
+        .bool("replica_matches_real", itemIds(board).equals(itemIds(real))).end());
+  }
+
+  static List<Integer> itemIds(RoutingBoard board) {
+    List<Integer> ids = new ArrayList<>();
+    for (Item item : board.getItems()) {
+      ids.add(item.getId());
+    }
+    return ids;
   }
 
   // ------------------------------------------------------------------------------------------

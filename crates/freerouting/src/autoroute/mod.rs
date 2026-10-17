@@ -71,6 +71,14 @@
 //! - [`fanout_pin`]: the escape of one SMD pin (`RoutingBoard.fanout`);
 //! - [`batch::fanout`]: the fanout passes, `FreeroutingFanout`
 //!   (`BatchFanout`).
+//!
+//! The batch loop and the routing job (A13):
+//!
+//! - [`batch::batch_loop`]: `AutorouteBatchLoop.run`, with B01 snapshots in
+//!   the history ([`batch::snapshot`]) and the last-mile ripup
+//!   ([`batch::last_mile`]);
+//! - [`pipeline`]: [`run_pipeline`](pipeline::run_pipeline), the job the
+//!   CLI, the GUI and the plugin run (`RoutingPipeline.run`).
 
 pub mod batch;
 pub mod connection;
@@ -83,6 +91,7 @@ pub mod history;
 pub mod item_route_result;
 pub mod java_ids;
 pub mod path;
+pub mod pipeline;
 pub mod probe;
 pub mod session;
 pub mod stages;

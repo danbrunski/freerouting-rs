@@ -1,0 +1,316 @@
+//! `run_pipeline`, the routing job (A13.4): `RoutingPipeline.run`
+//! (`RoutingPipeline.java:95-136` at `a773a70ec`).
+//!
+//! The CLI (C07), the GUI (G07) and the plugin route through
+//! [`run_pipeline`]:
+//!
+//! 1. the stages: [`StageSelection::resolve`] over the registry, built with
+//!    [`StageRegistry::build`] (an unknown per-stage id is an error before
+//!    anything changes);
+//! 2. the routing stage (`runRoutingStage`, `:107-128`): when the router is
+//!    enabled (`autorouter.enabled && max_passes >= 0`) and no router stop
+//!    was requested, the batch loop ([`run_batch_loop`]); otherwise, with
+//!    the fanout enabled, a fanout-only run: Java sets `max_passes = 0`
+//!    for the loop, so the loop is built from settings with that change;
+//! 3. the session dropped (`finishAutoroute`): the port keeps no autoroute
+//!    engine on the board (a session lives for one connection), so there is
+//!    nothing to drop;
+//! 4. the optimizer stage of the registry (`runOptimizationStage`,
+//!    `:130-142`) when `optimizer.enabled` and no **full** stop was
+//!    requested: it runs after a router-only stop (max passes, stagnation)
+//!    and not after `max_items`, a timeout or a cancel;
+//! 5. [`RouterEvents::finished`] hands the board to the listener by move;
+//!    with no listener the board comes back in [`PipelineOutcome::board`].
+//!
+//! `run_pipeline` writes nothing: SES writing is C05's and the job flow
+//! C07's. The board it hands back is the one after the best-board restore
+//! and the optimizer (D8: the best board is the one saved), and its figures
+//! are the [`RunSummary`]'s.
+//!
+//! **Time.** A job deadline ([`PipelineJob::deadline`]) only requests a
+//! full stop through a [`Watcher`] on the job's cancel token (D2); the
+//! batch loop then sees the job as timed out at the top of the next pass.
+//! No budget inside the router is time.
+//!
+//! **Java quirk kept.** With `autorouter.enabled` and `max_passes < 0` the
+//! router is "disabled" here, but the fanout-only run sets `max_passes = 0`
+//! (unlimited) and the batch loop then finds the router enabled, so it
+//! routes passes after the fanout (`RoutingPipeline.java:115-123` with
+//! `AutorouteBatchLoop.java:285-288`). Settings validation rejects a
+//! negative `max_passes`, so only API callers reach this.
+
+use std::fmt;
+use std::sync::Arc;
+use std::time::Duration;
+
+use crate::autoroute::batch::batch_loop::{
+    LoopOutcome, LoopStages, PassExecutor, PassRecord, run_batch_loop,
+};
+use crate::autoroute::batch::pass::PassRunner;
+use crate::autoroute::batch::report::NoRoutableLayer;
+use crate::autoroute::events::{CancelToken, CompletionStatus, RouterEvents, RunSummary};
+use crate::autoroute::stages::{
+    FanoutSummary, OptimizerSummary, StageCtx, StagePhase, StageRegistry, StageSelection,
+    StopReason, UnknownStage,
+};
+use crate::board::RoutingBoard;
+use crate::job::deadline::{StopLevel, Watcher};
+use crate::job::{LogLevel, LogLine};
+use crate::settings::RouterSettings;
+use crate::settings::board::BoardRouterSettings;
+
+/// What a routing job needs besides the board.
+pub struct PipelineJob<'a> {
+    /// The resolved settings.
+    pub settings: &'a RouterSettings,
+    /// The settings applied to the board (C03.7).
+    pub board_settings: &'a BoardRouterSettings,
+    /// The job's stop request, shared with the caller and the deadline.
+    pub cancel: Arc<CancelToken>,
+    /// Where progress and board changes go.
+    pub events: &'a dyn RouterEvents,
+    /// The job limit; when it passes, a full stop is requested.
+    pub deadline: Option<Duration>,
+    /// The stages to pick from; `None` is [`StageRegistry::builtin`].
+    pub registry: Option<&'a StageRegistry>,
+}
+
+/// Why a job could not run.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PipelineError {
+    /// A per-stage settings key names no registered stage.
+    UnknownStage(UnknownStage),
+    /// No layer is active and a signal layer (Java's
+    /// `IllegalArgumentException`).
+    NoRoutableLayer(NoRoutableLayer),
+}
+
+impl fmt::Display for PipelineError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PipelineError::UnknownStage(e) => e.fmt(f),
+            PipelineError::NoRoutableLayer(e) => e.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for PipelineError {}
+
+/// A job that could not run, with its board as it was handed in or as the
+/// error left it.
+#[derive(Debug)]
+pub struct PipelineFailure {
+    /// What went wrong.
+    pub error: PipelineError,
+    /// The board.
+    pub board: Box<RoutingBoard>,
+}
+
+/// What a routing job did.
+#[derive(Debug, Default)]
+pub struct PipelineOutcome {
+    /// The final board when no listener took it with
+    /// [`RouterEvents::finished`].
+    pub board: Option<RoutingBoard>,
+    /// What the run reports (also sent with `Finished`).
+    pub summary: RunSummary,
+    /// True if the routing stage ran the batch loop (`routerEnabled`, or
+    /// the fanout-only run).
+    pub loop_ran: bool,
+    /// The fanout's summary, if it ran.
+    pub fanout: Option<FanoutSummary>,
+    /// The pass log lines' figures.
+    pub passes: Vec<PassRecord>,
+    /// Why the pass loop stopped, if it ran passes.
+    pub stop: Option<StopReason>,
+    /// History restores during the passes.
+    pub restores: usize,
+    /// True if the final best-board restore swapped the board.
+    pub restored_best: bool,
+    /// The optimizer's summary, if it ran.
+    pub optimizer: Option<OptimizerSummary>,
+    /// True if the job deadline fired.
+    pub timed_out: bool,
+    /// Java's job log lines.
+    pub log: Vec<LogLine>,
+}
+
+/// Java's router-enabled rule (`RoutingPipeline.java:108-111`):
+/// `autorouter.enabled && (max_passes == null || max_passes >= 0)`. The
+/// port's `max_passes` is never null (its default is 0, unlimited).
+pub fn router_enabled(settings: &RouterSettings) -> bool {
+    settings.run_router() && settings.autorouter.max_passes >= 0
+}
+
+/// Runs the routing job on `board` with the real pass runner (see the
+/// module docs).
+pub fn run_pipeline(
+    board: RoutingBoard,
+    job: &PipelineJob<'_>,
+) -> Result<PipelineOutcome, Box<PipelineFailure>> {
+    run_pipeline_with(board, job, &mut |settings, board_settings| {
+        Box::new(PassRunner::for_job(settings, board_settings))
+    })
+}
+
+/// The settings and board settings a pass executor is built from.
+pub type ExecutorFactory<'f> =
+    dyn FnMut(&RouterSettings, &BoardRouterSettings) -> Box<dyn PassExecutor> + 'f;
+
+/// [`run_pipeline`] with the pass executor `executor` makes (tests use a
+/// fake one).
+pub fn run_pipeline_with(
+    mut board: RoutingBoard,
+    job: &PipelineJob<'_>,
+    executor: &mut ExecutorFactory<'_>,
+) -> Result<PipelineOutcome, Box<PipelineFailure>> {
+    let builtin;
+    let registry = match job.registry {
+        Some(registry) => registry,
+        None => {
+            builtin = StageRegistry::builtin();
+            &builtin
+        }
+    };
+    let settings = job.settings;
+    let fail = |error, board| {
+        Box::new(PipelineFailure {
+            error,
+            board: Box::new(board),
+        })
+    };
+    let selection = StageSelection::resolve(settings, registry);
+    let mut log: Vec<LogLine> = selection
+        .warnings
+        .iter()
+        .map(|text| LogLine {
+            level: LogLevel::Warn,
+            text: text.clone(),
+        })
+        .collect();
+    log.push(LogLine {
+        level: LogLevel::Info,
+        text: selection.log_line(),
+    });
+
+    // PARITY: RoutingPipeline.java:115-123, the fanout-only run sets
+    // `max_passes = 0` for the loop.
+    let cancel = &*job.cancel;
+    let enabled = router_enabled(settings);
+    let loop_settings = if !cancel.is_router_stop_requested() && enabled {
+        Some(settings.clone())
+    } else if !cancel.is_router_stop_requested() && settings.fanout.enabled {
+        let mut fanout_only = settings.clone();
+        fanout_only.autorouter.max_passes = 0;
+        Some(fanout_only)
+    } else {
+        None
+    };
+
+    let mut pipeline = match registry.build(&selection, settings) {
+        Ok(pipeline) => pipeline,
+        Err(e) => return Err(fail(PipelineError::UnknownStage(e), board)),
+    };
+    let watcher = Watcher::new(Arc::clone(&job.cancel));
+    if let Some(limit) = job.deadline {
+        watcher.arm(limit, StopLevel::All);
+    }
+    let timed_out = || watcher.fired();
+
+    let mut outcome = PipelineOutcome::default();
+    let mut loop_outcome = LoopOutcome::default();
+    if let Some(loop_settings) = &loop_settings {
+        // The loop's stages come from the settings the loop sees.
+        let mut loop_pipeline = match registry.build(&selection, loop_settings) {
+            Ok(pipeline) => pipeline,
+            Err(e) => return Err(fail(PipelineError::UnknownStage(e), board)),
+        };
+        let mut runner = executor(loop_settings, job.board_settings);
+        let mut ctx = StageCtx {
+            settings: loop_settings,
+            board_settings: job.board_settings,
+            cancel,
+            events: job.events,
+        };
+        let mut stages = LoopStages {
+            fanout: loop_pipeline.fanout.as_mut(),
+            ordering: loop_pipeline.ordering.as_mut(),
+            router: loop_pipeline.connection_router.as_mut(),
+            ripup: loop_pipeline.ripup_policy.as_mut(),
+            controller: loop_pipeline.pass_controller.as_mut(),
+            board_stages: &mut loop_pipeline.board_stages,
+        };
+        match run_batch_loop(
+            &mut board,
+            &mut stages,
+            runner.as_mut(),
+            &mut ctx,
+            &timed_out,
+        ) {
+            Ok(result) => loop_outcome = result,
+            Err(e) => {
+                drop(watcher);
+                return Err(fail(PipelineError::NoRoutableLayer(e), board));
+            }
+        }
+        outcome.loop_ran = true;
+    }
+    log.append(&mut loop_outcome.log);
+    // PARITY: :125, `finishAutoroute()`: nothing on the board to drop.
+
+    // PARITY: :130-136, the optimizer unless a full stop was requested.
+    let mut ctx = StageCtx {
+        settings,
+        board_settings: job.board_settings,
+        cancel,
+        events: job.events,
+    };
+    if settings.run_optimizer() && !cancel.is_stop_requested() {
+        outcome.optimizer = Some(pipeline.optimizer.run(&mut board, &mut ctx));
+    }
+    for stage in pipeline.board_stages.iter_mut() {
+        if stage.phase() == StagePhase::AfterOptimizer {
+            for text in stage.run(&mut board, &mut ctx).log {
+                log.push(LogLine {
+                    level: LogLevel::Info,
+                    text,
+                });
+            }
+        }
+    }
+    outcome.timed_out = watcher.finish();
+
+    let figures = if outcome.optimizer.is_some() || loop_outcome.final_figures.is_none() {
+        crate::autoroute::batch::snapshot::BoardFigures::of(&board, settings)
+    } else {
+        loop_outcome.final_figures.clone().unwrap_or_default()
+    };
+    let initial_unrouted = if outcome.loop_ran {
+        loop_outcome.initial_unrouted
+    } else {
+        board.routing_ledger().incomplete_count(&board)
+    };
+    outcome.summary = RunSummary {
+        status: if outcome.timed_out {
+            CompletionStatus::CompletedWithTimeout
+        } else if cancel.is_stop_requested() {
+            CompletionStatus::Interrupted
+        } else {
+            CompletionStatus::Completed
+        },
+        initial_unrouted,
+        passes: i32::try_from(loop_outcome.current_pass).unwrap_or(i32::MAX),
+        score: figures.score,
+        incomplete: figures.incomplete,
+        violations: figures.violations,
+        stages: selection.entries(),
+    };
+    outcome.fanout = loop_outcome.fanout;
+    outcome.passes = loop_outcome.passes;
+    outcome.stop = loop_outcome.stop;
+    outcome.restores = loop_outcome.restores;
+    outcome.restored_best = loop_outcome.restored_best;
+    outcome.log = log;
+    outcome.board = job.events.finished(board, outcome.summary.clone());
+    Ok(outcome)
+}

@@ -13,10 +13,9 @@
 //! (with the fanout), `fixtures.SmdPinFanoutRoutingTest`,
 //! `fixtures.Issue952FanoutIgnoredNetClassTest` cases 1-4,
 //! `fixtures.Dac2020Bm11FanoutTraceTest` and
-//! `fixtures.WorkLimitDeterminismTest`. Until A13 wires the stage into
-//! `run_pipeline`, a job here is the fanout stage followed by plain routing
-//! passes (no batch-loop restores, no optimizer), so the routing bounds are
-//! checked on that stand-in. Not ported: `Issue952FanoutIgnoredNetClassTest`
+//! `fixtures.WorkLimitDeterminismTest`. A job here is A13's `run_pipeline`
+//! (the fanout stage, the batch loop with its restores, the optimizer when
+//! on). Not ported: `Issue952FanoutIgnoredNetClassTest`
 //! cases 5 and 6 (the optimizer's candidate filter, O06) and
 //! `Dac2020Bm11FanoutTraceTest.dac2020Bm11FanoutEscapeRate` (the same run and
 //! bound as `dac2020Bm11FanoutTrace`, plus a print).
@@ -31,12 +30,9 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use autoroute_common::{Loaded, repo_root};
-use freerouting::autoroute::batch::connection::FreeroutingConnectionRouter;
 use freerouting::autoroute::batch::fanout::FreeroutingFanout;
-use freerouting::autoroute::batch::ordering::FreeroutingOrdering;
-use freerouting::autoroute::batch::pass::{PassRunner, PassStages};
-use freerouting::autoroute::batch::ripup_policy::FreeroutingRipupPolicy;
 use freerouting::autoroute::events::{CancelToken, NullEvents};
+use freerouting::autoroute::pipeline::{PipelineJob, run_pipeline};
 use freerouting::autoroute::stages::{FanoutStage, FanoutSummary, StageCtx};
 use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
@@ -75,51 +71,34 @@ fn load_testing(dsn: &str, mut profile: TestingProfile) -> Loaded {
     }
 }
 
-/// What the stand-in job did.
+/// What the job did.
 #[derive(Debug, Default)]
 struct JobRun {
     fanout: Option<FanoutSummary>,
+    /// The job's current pass (Java `job.getCurrentPass()`).
     passes: u32,
 }
 
-/// The stand-in for A13's `run_pipeline`: the fanout stage when it is on,
-/// then routing passes while the autorouter is on, a pass routed or failed
-/// something and `max_passes` allows (no restores, no optimizer).
+/// The job: A13's `run_pipeline` on the loaded board (the fanout stage when
+/// it is on, then the batch loop while the autorouter is on, then the
+/// optimizer when it is on), which hands the board back.
 fn run_job(loaded: &mut Loaded) -> JobRun {
-    let cancel = CancelToken::new();
-    let events = NullEvents;
-    let mut ctx = StageCtx {
+    let cancel = std::sync::Arc::new(CancelToken::new());
+    let job = PipelineJob {
         settings: &loaded.settings,
         board_settings: &loaded.router,
-        cancel: &cancel,
-        events: &events,
+        cancel,
+        events: &NullEvents,
+        deadline: None,
+        registry: None,
     };
-    let board = &mut loaded.board;
-    let mut run = JobRun::default();
-    if loaded.settings.fanout.enabled {
-        run.fanout = Some(FreeroutingFanout.run(board, &mut ctx));
+    let mut outcome =
+        run_pipeline(loaded.board.clone(), &job).unwrap_or_else(|f| panic!("{}", f.error));
+    loaded.board = outcome.board.take().expect("no listener took the board");
+    JobRun {
+        fanout: outcome.fanout,
+        passes: u32::try_from(outcome.summary.passes).unwrap_or(0),
     }
-    if !loaded.settings.run_router() {
-        return run;
-    }
-    let mut runner = PassRunner::for_job(&loaded.settings, &loaded.router);
-    let mut ordering = FreeroutingOrdering::new();
-    let mut router = FreeroutingConnectionRouter::from_settings(&loaded.settings);
-    let mut ripup = FreeroutingRipupPolicy::from_settings(&loaded.settings);
-    let mut stages = PassStages {
-        ordering: &mut ordering,
-        router: &mut router,
-        ripup: &mut ripup,
-    };
-    let max_passes = u32::try_from(loaded.settings.autorouter.max_passes).unwrap_or(0);
-    for pass in 1..=max_passes {
-        let outcome = runner.run_pass(board, pass, &mut stages, &mut ctx);
-        run.passes = pass;
-        if !outcome.continue_routing || outcome.max_items_reached || cancel.is_stop_requested() {
-            break;
-        }
-    }
-    run
 }
 
 fn net_number(board: &RoutingBoard, name: &str) -> i32 {

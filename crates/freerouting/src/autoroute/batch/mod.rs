@@ -25,16 +25,27 @@
 //!
 //! - [`fanout`]: `FreeroutingFanout`, the fanout passes (`BatchFanout`).
 //!
+//! The batch loop (A13):
+//!
+//! - [`snapshot`]: the history entries, B01 snapshots with their hash and
+//!   score;
+//! - [`batch_loop`]: `AutorouteBatchLoop.run`, the fanout, the passes with
+//!   restores, the fanout recovery and the last-mile ripup, and the finish;
+//! - [`last_mile`]: the last-mile ripup, `LastMileBlockerRipup.ripBlockers`.
+//!
 //! Java line numbers are at `a773a70ec`.
 
+pub mod batch_loop;
 pub mod connection;
 pub mod control;
 pub mod fanout;
 pub mod fanout_rules;
+pub mod last_mile;
 pub mod ordering;
 pub mod pass;
 pub mod report;
 pub mod ripup_policy;
+pub mod snapshot;
 pub mod strict_drc;
 
 /// The minimum number of passes before the stagnation rules and the

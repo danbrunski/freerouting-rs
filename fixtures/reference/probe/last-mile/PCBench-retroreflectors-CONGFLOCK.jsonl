@@ -1,0 +1,8 @@
+{"kind":"last-mile","board":"PCBench-retroreflectors-CONGFLOCK","javaCommit":"a773a70ec","format":1}
+{"stage":"airlines","count":4,"maxItems":24}
+{"airline":0,"net":3,"from":32,"to":15,"fromX":"0x4129137400000000","fromY":"0xc1202b6800000000","toX":"0x4128cd6800000000","toY":"0xc120388000000000","corridor":[810483,-533761,823931,-527603],"overlapping":[50,48,47,46,34,32,15],"added":[50]}
+{"airline":1,"net":4,"from":33,"to":8,"fromX":"0x4129137400000000","fromY":"0xc11fb02000000000","toX":"0x4128f7ac00000000","toY":"0xc11fb41800000000","corridor":[817245,-520319,822579,-518287],"overlapping":[51,50,33,8],"added":[]}
+{"airline":2,"net":4,"from":8,"to":26,"fromX":"0x4128f7ac00000000","fromY":"0xc11fb41800000000","toX":"0x4128a45400000000","toY":"0xc1206ee000000000","corridor":[802704,-543242,822896,-514668],"overlapping":[52,51,50,49,48,47,46,45,44,43,41,40,39,34,33,32,27,26,25,16,15,14,9,8,3,2],"added":[52,48,47,46,45,44,43,41,40,39]}
+{"airline":3,"net":5,"from":25,"to":23,"fromX":"0x4128f7ac00000000","fromY":"0xc1206ee000000000","toX":"0x4128ff9c00000000","toY":"0xc120d21800000000","corridor":[814959,-554355,822325,-535305],"overlapping":[52,48,27,25,23,2],"added":[]}
+{"stage":"blockers","ids":[50,52,48,47,46,45,44,43,41,40,39]}
+{"stage":"real","removed":11,"replica_matches_real":true}
