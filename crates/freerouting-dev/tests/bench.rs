@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use freerouting_dev::bench::{
     BenchOptions, BenchResult, BoardResult, Bounds, Engine, EngineResult, RunRecord, SetEntry,
     bounds_for, count_cutoffs, java_major_version, read_bounds, read_set, rip_stats_arguments,
-    rip_stats_of_manifest, wait_for_quiet,
+    rip_stats_of_manifest, run_bench, thread_arguments, thread_share, wait_for_quiet,
 };
 use freerouting_dev::bench_report::{median, spread, to_json, to_markdown};
 use freerouting_dev::json_read::Json;
@@ -223,6 +223,7 @@ fn sample_result() -> BenchResult {
         timeout: Duration::from_secs(1),
         java_version: Some("openjdk version \"25\"".into()),
         rip_stats: false,
+        jobs: 1,
     };
     let board = |name: &str| BoardResult {
         entry: SetEntry {
@@ -338,4 +339,108 @@ fn rip_stats_records_keep_the_report_without_the_net_list() {
     result.boards[0].engines[0].runs = vec![record];
     let json = to_json(&result).to_pretty_string();
     assert!(json.contains("\"rip_stats\""), "{json}");
+}
+
+#[test]
+fn parallel_boards_share_the_cores() {
+    assert_eq!(thread_share(8, 1), 8);
+    assert_eq!(thread_share(8, 4), 2);
+    assert_eq!(thread_share(8, 3), 2);
+    assert_eq!(thread_share(2, 4), 1);
+    assert_eq!(thread_share(8, 0), 8);
+    assert_eq!(
+        thread_arguments(2),
+        [
+            "--router.autorouter.max_threads=2",
+            "--router.optimizer.max_threads=2"
+        ]
+    );
+}
+
+/// P03.3: `--jobs 3` routes the boards of a set at once and lists them in set order, each run
+/// limited to a share of the cores; `--jobs 1` keeps the plain command line. The engine is a
+/// shell script that records its arguments in the board's directory and writes no session.
+#[cfg(unix)]
+#[test]
+fn jobs_route_boards_at_once_and_merge_in_set_order() {
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("bench-jobs");
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    std::fs::write(root.join("Cargo.lock"), "").unwrap();
+    let names = ["e", "a", "d", "b", "c"];
+    for name in names {
+        std::fs::write(root.join(format!("{name}.dsn")), "(pcb x)").unwrap();
+    }
+    let set = root.join("set.txt");
+    std::fs::write(
+        &set,
+        names.map(|n| format!("{n}.dsn\n")).concat() + "gone.dsn\n",
+    )
+    .unwrap();
+    let options = |jobs: usize, out: &str| BenchOptions {
+        set_file: set.clone(),
+        out_dir: root.join(out),
+        runs: 1,
+        engines: vec![Engine {
+            name: "rust",
+            command: vec![
+                "sh".into(),
+                "-c".into(),
+                "echo \"$@\" > args.txt".into(),
+                "engine".into(),
+            ],
+        }],
+        default_bounds: Bounds {
+            max_passes: 2,
+            max_items: None,
+        },
+        bounds_file: None,
+        optimize: false,
+        max_load: Some(0.0),
+        load_wait: Duration::from_millis(1),
+        timeout: Duration::from_secs(30),
+        java_version: None,
+        rip_stats: false,
+        jobs,
+    };
+    // `--jobs 3` checks no load: the limit 0.0 would refuse a `--jobs 1` run on any machine
+    // that isn't idle.
+    let parallel = run_bench(options(3, "jobs3")).expect("runs");
+    let order: Vec<&str> = parallel
+        .boards
+        .iter()
+        .map(|b| b.entry.written.as_str())
+        .collect();
+    assert_eq!(order, ["e.dsn", "a.dsn", "d.dsn", "b.dsn", "c.dsn"]);
+    assert_eq!(parallel.missing.len(), 1);
+    assert!(parallel.aborted.is_none());
+    let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
+    for name in names {
+        let args = std::fs::read_to_string(root.join(format!("jobs3/{name}/args.txt"))).unwrap();
+        assert!(args.contains(&format!("{name}.dsn")), "{args}");
+        for flag in thread_arguments(thread_share(cores, 3)) {
+            assert!(args.contains(&flag), "{args}");
+        }
+    }
+    for board in &parallel.boards {
+        let run = &board.engines[0].runs[0];
+        assert_eq!(run.exit_status, Some(0));
+        assert!(run.note.is_some(), "{run:?}");
+    }
+    let sequential = run_bench(BenchOptions {
+        max_load: None,
+        ..options(1, "jobs1")
+    })
+    .expect("runs");
+    let args = std::fs::read_to_string(root.join("jobs1/a/args.txt")).unwrap();
+    assert!(!args.contains("max_threads"), "{args}");
+    let order_1: Vec<&str> = sequential
+        .boards
+        .iter()
+        .map(|b| b.entry.written.as_str())
+        .collect();
+    assert_eq!(order_1, order);
+    let json = to_json(&parallel).to_pretty_string();
+    assert!(json.contains("\"jobs\": 3"), "{json}");
+    assert!(to_markdown(&parallel).contains("3 boards at once"));
 }

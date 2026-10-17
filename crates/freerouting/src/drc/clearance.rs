@@ -117,35 +117,10 @@ pub fn aggregate_sorted_by_severity(
     (result, smallest)
 }
 
-/// `inputs.iter().map(f)` on all cores, in input order.
+/// `inputs.iter().map(f)` on the analysis threads, in input order
+/// ([`crate::parallel::map`]).
 pub(crate) fn parallel_map<T: Sync, R: Send>(inputs: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
-    let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
-    if threads <= 1 || inputs.len() < 2 {
-        return inputs.iter().map(f).collect();
-    }
-    let next = std::sync::atomic::AtomicUsize::new(0);
-    let mut results: Vec<(usize, R)> = std::thread::scope(|scope| {
-        let workers: Vec<_> = (0..threads)
-            .map(|_| {
-                scope.spawn(|| {
-                    let mut done = Vec::new();
-                    loop {
-                        let index = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let Some(input) = inputs.get(index) else {
-                            return done;
-                        };
-                        done.push((index, f(input)));
-                    }
-                })
-            })
-            .collect();
-        workers
-            .into_iter()
-            .flat_map(|worker| worker.join().expect("worker panicked"))
-            .collect()
-    });
-    results.sort_by_key(|(index, _)| *index);
-    results.into_iter().map(|(_, r)| r).collect()
+    crate::parallel::map(inputs, f)
 }
 
 impl BasicBoard {
@@ -187,8 +162,9 @@ impl BasicBoard {
     ///
     /// Port of `DesignRulesChecker.getAllClearanceViolations`.
     ///
-    /// The items are checked on all cores; the result does not depend on
-    /// the number of threads.
+    /// The items are checked on the analysis threads
+    /// ([`crate::parallel`]); the result does not depend on the number of
+    /// threads.
     pub fn all_clearance_violations(&self) -> Vec<ClearanceViolation> {
         let ids: Vec<ItemId> = self.items().map(Item::id).collect();
         let per_item = parallel_map(&ids, |id| self.clearance_violations(*id));

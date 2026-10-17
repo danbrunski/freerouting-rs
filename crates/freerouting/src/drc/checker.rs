@@ -154,13 +154,17 @@ impl<'a> DesignRulesChecker<'a> {
     pub fn calculate_all_incompletes(&mut self) {
         let lists = net_item_lists(self.board);
         self.max_connections = max_connections(self.board, &lists);
-        let incompletes = lists
-            .iter()
-            .enumerate()
-            .map(|(i, items)| {
-                NetIncompletes::new_cached(self.board, i as i32 + 1, items, &mut self.contacts)
-            })
-            .collect();
+        // The nets on the analysis threads, each worker with its own
+        // contacts cache (pure values), merged in net order.
+        let board = self.board;
+        let nets: Vec<(i32, &Vec<ItemId>)> = (1..).zip(lists.iter()).collect();
+        let (incompletes, caches) =
+            crate::parallel::map_with(&nets, HashMap::default, |contacts, &(net, items)| {
+                NetIncompletes::new_cached(board, net, items, contacts)
+            });
+        for cache in caches {
+            self.contacts.extend(cache);
+        }
         self.net_incompletes = Some(incompletes);
     }
 

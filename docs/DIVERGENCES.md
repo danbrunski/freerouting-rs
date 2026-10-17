@@ -175,8 +175,19 @@ branch 3 in IntOctagon's box cutout.
   (`EXPECTED_ISLAND_MISMATCHES`).
 - `DesignRulesChecker::set_check_zone_islands` is a Rust addition. It turns the island
   check off, and the reference tests use it.
-- The clearance violations and island fills are computed on all cores. The results are
-  merged in item order, so the output does not depend on the thread count.
+- The clearance violations and island fills are computed on the analysis threads
+  (`freerouting::parallel`, P03.1: a job's `autorouter.max_threads`, else all cores). The
+  results are merged in item order, so the output does not depend on the thread count. So are
+  the airlines (per net, merged in net order) and the per-pass board statistics' fanout counts
+  (`drc_findings_do_not_depend_on_the_thread_budget`,
+  `statistics_do_not_depend_on_the_thread_budget` in `tests/parallel_analyses.rs`).
+- The board statistics compute Java's values with less work (P03.1): the fanout counts take
+  the pins' connectable items from one scan and each item's contacts once, where Java's
+  `getUnconnectedSet` scans the board and walks the contacts again for every SMD pin; the
+  bounds take every net's terminal items from one scan, where Java scans once per net.
+  The counts and bounds are Java's (`reference_load`,
+  `fanout_counts_equal_the_per_pin_definition`); only the search-tree work the statistics
+  add to a board's work meter is smaller. No work limit is open while they run.
 - The DRC command line (`freerouting -de board.dsn [board.ses] -drc [report.json]`)
   does the post-load processing before importing the session. Java runs the post-load
   DRC in a background thread while it imports the session. On
@@ -502,6 +513,15 @@ Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
   stops to it, and applies a stop a candidate requested in candidate order: the later
   candidates of the chunk are skipped, as single-threaded Java would
   (`cross_thread_optimization_produces_identical_results`).
+- Scheduling (P03.2): Java waits for a whole chunk of candidates before it merges it; the
+  port's threads run up to 16 candidates per thread ahead of the merge and the merge takes
+  each result as it comes, still chunk by chunk with Java's rules, so a stop or the failure
+  limit ends the pass at the same candidate and later results are dropped
+  (`lookahead_past_an_early_stop_changes_nothing`). A candidate's before and after figures
+  (Java `new BoardStatistics(board, null, false)`) compute only the via count and the
+  weighted trace length it reads, bit for bit
+  (`lean_optimizer_figures_equal_the_cheap_statistics`), so a candidate's work meter counts
+  only its routing.
 - Time: Java forces a candidate to "not improved" once the optimizer deadline has passed
   (`optRouteItemOnBoard`); the port reads no clock there. `optimizer.timeout` is armed by the
   pipeline as a full stop (`StopLevel::All`), checked before each pass and each chunk, and
@@ -796,7 +816,9 @@ plugin_flags}.rs`)
   (`usage_errors_exit_2`, `no_zero_byte_outputs`, `second_interrupt_aborts`).
 - New flags that Java lacks: `--version`, `--capabilities`, `--progress json`, `--result-json`
   (the same field as Java's `--router.result_json=`), `--timeout`, `--max-passes`, `--threads`
-  and `--seed`. The last four are aliases of settings and never add behaviour. `--seed 0`
+  and `--seed`. The last four are aliases of settings and never add behaviour. `--threads`
+  sets `autorouter.max_threads`, which Java's batch router ignores; the port sizes the job's
+  analysis threads with it (DRC, statistics, airlines; P03.1), which changes no output. `--seed 0`
   means Java's own seeds; any other value exits 2 (`seed_zero_is_accepted_and_any_other_value_is_refused`).
   A `--timeout` over 24 hours is capped with a warning.
 - `--progress json` writes every stderr line as a JSON object; the `progress` events are counted

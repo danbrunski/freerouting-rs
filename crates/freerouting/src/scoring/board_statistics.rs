@@ -7,7 +7,9 @@
 //! `getRouterScore(RouterSettings)` and `getOptimizerScore(RouterSettings)`
 //! do.
 
-use crate::util::HashMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::util::{HashMap, HashSet};
 
 use freerouting_geometry::FloatPoint;
 use freerouting_geometry::jmath::{double_stream_sum, max_f64};
@@ -15,7 +17,7 @@ use freerouting_geometry::jmath::{double_stream_sum, max_f64};
 use super::bounds_calculator::{BoardStatisticsBounds, calculate_bounds};
 use super::legacy;
 use crate::board::BasicBoard;
-use crate::board::items::{ItemId, ItemKind};
+use crate::board::items::{Item, ItemId, ItemKind};
 use crate::board::structure::{FixedState, Unit};
 use crate::drc::{ClearanceViolation, DesignRulesChecker};
 use crate::rules::BoardRules;
@@ -595,28 +597,7 @@ impl BoardStatistics {
                 }
             }
         }
-        let default_clearance_class = BoardRules::default_clearance_class();
-        for item in &traces {
-            let Some(trace) = item.as_trace() else {
-                continue;
-            };
-            let fixed = item.fixed_state();
-            if fixed == FixedState::Unfixed || fixed == FixedState::ShoveFixed {
-                let mut weighted = trace.length()
-                    * f64::from(
-                        trace.half_width
-                            + board.clearance_value(
-                                item.clearance_class(),
-                                default_clearance_class,
-                                trace.layer,
-                            ),
-                    );
-                if fixed == FixedState::ShoveFixed {
-                    weighted /= 2.0;
-                }
-                s.traces.total_weighted_length += weighted as f32;
-            }
-        }
+        s.traces.total_weighted_length = weighted_trace_length(board, &traces);
         for trace in traces.iter().filter_map(|t| t.as_trace()) {
             let polyline = &trace.polyline;
             let corner_count = polyline.corner_count();
@@ -684,30 +665,156 @@ impl BoardStatistics {
             t.total_angled_length = scale(t.total_angled_length);
         }
 
-        // The board does not change while counting, so the contacts of the
-        // items are computed once for all pins.
-        let mut contacts = HashMap::default();
-        for id in board.smd_pins() {
-            let Some(pin) = board.item(id) else {
-                continue;
-            };
-            if pin.net_count() > 0 {
-                s.fanout.total_smd_pins += 1;
-                // Java counts the pins with an empty unconnected set as
-                // already connected and reports the rest.
-                if !board
-                    .unconnected_set_cached(id, pin.net_number(0), &mut contacts)
-                    .is_empty()
-                {
-                    s.fanout.pins_to_escape += 1;
-                }
-                if is_pin_escaped(board, id) {
-                    s.fanout.escaped_count += 1;
-                }
-            }
-        }
+        s.fanout = fanout_counts(board);
         s
     }
+}
+
+/// The summed weighted length of the unfixed and shove-fixed traces among
+/// `traces`, in board units, summed in `f32` in their order as Java does.
+fn weighted_trace_length(board: &BasicBoard, traces: &[&Item]) -> f32 {
+    let default_clearance_class = BoardRules::default_clearance_class();
+    let mut total = 0.0f32;
+    for item in traces {
+        let Some(trace) = item.as_trace() else {
+            continue;
+        };
+        let fixed = item.fixed_state();
+        if fixed == FixedState::Unfixed || fixed == FixedState::ShoveFixed {
+            let mut weighted = trace.length()
+                * f64::from(
+                    trace.half_width
+                        + board.clearance_value(
+                            item.clearance_class(),
+                            default_clearance_class,
+                            trace.layer,
+                        ),
+                );
+            if fixed == FixedState::ShoveFixed {
+                weighted /= 2.0;
+            }
+            total += weighted as f32;
+        }
+    }
+    total
+}
+
+impl BoardStatistics {
+    /// `items.via_count` and `traces.total_weighted_length` of
+    /// `with_options(board, unit, false, false)`, bit for bit, without the
+    /// rest of the statistics (the fanout counts and the bounds cost most of
+    /// them). The batch optimizer reads only these two before and after
+    /// every candidate (P03.2).
+    pub fn via_count_and_weighted_length(board: &BasicBoard, unit: Unit) -> (usize, f32) {
+        let via_count = board
+            .items()
+            .filter(|i| matches!(i.kind, ItemKind::Via(_)))
+            .count();
+        let traces: Vec<&Item> = board
+            .traces()
+            .into_iter()
+            .filter_map(|id| board.item(id))
+            .collect();
+        let mut length = weighted_trace_length(board, &traces);
+        let board_unit = board.communication.unit;
+        if unit != board_unit {
+            length = Unit::scale(f64::from(length), board_unit, unit) as f32;
+        }
+        (via_count, length)
+    }
+}
+
+/// The fanout counts of the SMD pins with a net (Java's loop over
+/// `getSmdPins`), computed with the same answers but less work:
+/// - the connectable items of the pins' nets come from one scan of the
+///   board, where Java's `getUnconnectedSet` scans it once per pin;
+/// - the normal contacts of those items are computed once, on the analysis
+///   threads ([`crate::parallel`]), where Java computes them again for
+///   every pin;
+/// - then, again on the threads, each pin's `isPinEscaped` and its
+///   connected set over those contacts. A pin is to escape when some
+///   connectable item of its net is not in its connected set, which is
+///   Java's non-empty unconnected set. The set is a closure, so the order
+///   of the walk doesn't matter.
+///
+/// Every count is a sum of per-pin flags, so it doesn't depend on the
+/// thread count.
+fn fanout_counts(board: &BasicBoard) -> BoardStatisticsFanout {
+    let pins: Vec<(ItemId, i32)> = board
+        .smd_pins()
+        .into_iter()
+        .filter_map(|id| board.item(id))
+        .filter(|pin| pin.net_count() > 0)
+        .map(|pin| (pin.id(), pin.net_number(0)))
+        .collect();
+    let nets: BTreeSet<i32> = pins
+        .iter()
+        .map(|&(_, net)| net)
+        .filter(|&n| n > 0)
+        .collect();
+    // `connectable_items(net)` of every pin net, from one scan.
+    let mut net_items: BTreeMap<i32, Vec<ItemId>> = BTreeMap::new();
+    for item in board.items().filter(|i| i.is_connectable_kind()) {
+        for &net in item.net_numbers() {
+            if nets.contains(&net) {
+                net_items.entry(net).or_default().push(item.id());
+            }
+        }
+    }
+    let mut reached: Vec<ItemId> = net_items.values().flatten().copied().collect();
+    reached.sort_unstable();
+    reached.dedup();
+    let lists = crate::parallel::map(&reached, |&id| {
+        board.normal_contacts(id).into_iter().collect::<Vec<_>>()
+    });
+    let contacts: HashMap<ItemId, Vec<ItemId>> = reached.into_iter().zip(lists).collect();
+    let flags = crate::parallel::map(&pins, |&(id, net)| {
+        let to_escape = match net_items.get(&net) {
+            Some(items) => {
+                let connected = connected_closure(board, id, net, &contacts);
+                items.iter().any(|item| !connected.contains(item))
+            }
+            // A pin without a positive net: Java's own path.
+            None => !board.unconnected_set(id, net).is_empty(),
+        };
+        (to_escape, is_pin_escaped(board, id))
+    });
+    BoardStatisticsFanout {
+        total_smd_pins: pins.len(),
+        pins_to_escape: flags.iter().filter(|(to_escape, _)| *to_escape).count(),
+        escaped_count: flags.iter().filter(|(_, escaped)| *escaped).count(),
+    }
+}
+
+/// The items of `connected_set(start, net, false)` (`net` positive), walked
+/// over the precomputed normal contacts `contacts`; an item missing from
+/// them has its contacts computed.
+fn connected_closure(
+    board: &BasicBoard,
+    start: ItemId,
+    net: i32,
+    contacts: &HashMap<ItemId, Vec<ItemId>>,
+) -> HashSet<ItemId> {
+    let mut result = HashSet::default();
+    result.insert(start);
+    let mut stack = vec![start];
+    while let Some(id) = stack.pop() {
+        let computed;
+        let next = match contacts.get(&id) {
+            Some(list) => list.as_slice(),
+            None => {
+                computed = board.normal_contacts(id).into_iter().collect::<Vec<_>>();
+                computed.as_slice()
+            }
+        };
+        for &contact in next {
+            let reachable = board.item(contact).is_some_and(|i| i.contains_net(net));
+            if reachable && result.insert(contact) {
+                stack.push(contact);
+            }
+        }
+    }
+    result
 }
 
 /// Java `legacyScoringOrDefault`: the settings' `scoring` section, else

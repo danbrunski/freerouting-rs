@@ -18,6 +18,7 @@ pub mod io;
 pub mod job;
 pub mod library;
 pub mod optimize;
+pub mod parallel;
 pub mod quality;
 pub mod rules;
 pub mod run_stats;
