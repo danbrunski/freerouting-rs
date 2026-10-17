@@ -72,4 +72,10 @@ A14 (the parity gate).
   - A DIVERGENCES section, "Profile `enhanced`", that lists each difference from Java
     with its measurement.
   - `docs/development/engine.md` explains how to run in parity mode.
-  - **Accept:** the section exists and is empty until N05 adds the first entry.
+  - `README.md` ("Still in progress" and "What it does better than the Java version")
+    names the profiles: Legacy, for results identical to Java Freerouting, and Enhanced,
+    the default. It replaces "Routing profiles that go beyond Java are planned".
+  - **Accept:**
+    - the section exists and is empty until N05 adds the first entry;
+    - the README names both profiles and how to pick one in the CLI, the GUI and the
+      plugin.

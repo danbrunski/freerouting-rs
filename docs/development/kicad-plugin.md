@@ -507,4 +507,6 @@ run `freerouting -de <board>.kicad_pcb -do <board>.routed.kicad_pcb` (the capabi
 `.kicad_pcb` in `output_formats`), and have KiCad open or revert to the routed copy; through the IPC API
 it would have to reload the board from disk, because the writer edits the file, not the open document.
 The plugin must replace the board itself (the writer never overwrites its input) and only after the user
-accepts the result.
+accepts the result. Planned: [K10](../roadmap/tasks/K10-plugin-direct-board-read.md) adds the direct read as a plugin
+option and keeps the SES import, and [K11](../roadmap/tasks/K11-kicad11-ipc-plugin.md) is the KiCad 11
+plugin on the IPC API.

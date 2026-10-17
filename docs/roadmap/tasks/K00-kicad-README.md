@@ -22,6 +22,8 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 | [K07](archive/K07-kicad-pcb-entry-points-and-parity.md) ✅ | `.kicad_pcb` opens in the CLI and the GUI; parity against KiCad's DSN export on the corpus; `.kicad_dru` subset; the coordinate-frame check | M / medium | K06; C07 (CLI `-de`); G01 (GUI `Session`) |
 | [K08](archive/K08-kicad-pcb-writer.md) ✅ | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG (`-do routed.kicad_pcb`; KiCad's DRC grades it like `ImportSpecctraSES` on three boards; K08.4 `[~]`: Dan to accept an `f32` sum-order difference in the round-trip statistics) | M / medium | K07, C05; Dan's go-ahead (question 5, given 2026-10-17) |
 | [K09](K09-plugin-export-options.md) | Plugin options that reproduce canary's graded `dsn_export.py` flow: class widths, pours of listed classes kept clear, outer GND pours dropped, edge and pad keepouts, plane layers opened, add-only second run, wasted-pass stop, a canary preset | M / medium: measured on `canary-pwr` | K01, K02, K03; Q01, Q09; Q10 (K09.6); Q04 (K09.7) |
+| [K10](K10-plugin-direct-board-read.md) | An option for the plugin to snapshot the open board (`SaveBoard`) and route the `.kicad_pcb` with the reader instead of KiCad's DSN export; results still come back through `ImportSpecctraSES`; measured against the DSN path, Dan picks the default | M / medium: graded by KiCad on the K02 boards and `canary-pwr` | K02, K07; K09 (K10.4) |
+| [K11](K11-kicad11-ipc-plugin.md) | KiCad 11 has no SWIG: an IPC-API plugin that keeps the DSN/SES flow (`RunBoardJobExportSpecctraDsn`, `ImportSpecctraSession`), a dialog without wx, both plugins in one package | M / high: the API is new and unwrapped by `kipy` | K02, K03; K10 (K11.6); a KiCad 11 release candidate or release date (K11.2 onward) |
 
 The report's PLG-1 is K01, PLG-2 is K02, PLG-1.5 (PCM) grew into K03, and
 KIC-1 is split over K04–K07. KRT's proposed K01–K10 are folded in: its
@@ -42,6 +44,11 @@ K01–K03. Its numbering is not used.
   importer outside "complete", so schedule them after K02 unless Dan wants
   them sooner. K01.2 already covers the rule-area lesson for exported DSNs.
 - **K08 only on Dan's go-ahead** (given 2026-10-17; done the same day).
+- **K10 any time after K07.** It needs no router change. K10.4 waits for K09's options
+  to exist, and K10.5's answer on the default is Dan's.
+- **K11.1 now, the rest of K11 when KiCad 11 is near.** The probe runs on a nightly and
+  settles the facts. The plugin is built once there is a release candidate or a release
+  date (K11 question 2).
 
 ## Parallel lanes and file ownership
 
@@ -51,6 +58,8 @@ K01–K03. Its numbering is not used.
 | Reader (K04–K06) | `crates/freerouting-kicad/**`, `fixtures/kicad/**` | — |
 | Reader wiring (K06.1, K07) | — | `crates/freerouting-dsn/src/{ast.rs,lib.rs,parse/mod.rs,parse/dsn.rs,parse/common.rs}`, `crates/freerouting-dsn/tests/syntax.rs` and `crates/freerouting/src/io/specctra/parser/{structure,library}.rs` (one `KeepoutKind` variant, K06.1 only; coordinate with C06), `crates/freerouting/Cargo.toml`, `crates/freerouting/src/io/mod.rs`, `crates/freerouting-cli/src/` (extension dispatch), `crates/freerouting-gui/src/session.rs` (open `.kicad_pcb`) |
 | Writer (K08) | `crates/freerouting-kicad/src/write/**` | — |
+| Plugin input (K10) | `kicad-plugin/freerouting_rs/snapshot.py` | `kicad-plugin/freerouting_rs/{plugin,options,routing}.py` (after K09's edits land), `crates/freerouting-cli/src/` (K10.3, one switch) |
+| IPC plugin (K11) | `kicad-plugin/ipc/**`, `tools/kicad-ipc/**` | `kicad-plugin/{install,package}.py`, `tools/install_plugin.py` |
 
 The plugin lane and the reader lane are disjoint and can run in parallel.
 Within each lane the checklists run in order.
