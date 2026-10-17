@@ -64,7 +64,10 @@ add-only second run (`dsn_export --fix-existing`, `-mp 2`) after pass 1 on
 errors; 5 starved thermals. **The pass-1 parity target is 45**: Java `7f56b062d` pass 1, 109
 unrouted at the router, clean, 4 starved thermals. Before the fix, Java `46bf9e2ef` pass 1 gave
 41, or 42 with its In1 track stripped (canary `9b7a5fe`). Rust at `4336133` (A13, before Q01.7):
-44 as routed, 46 with its In1 tracks stripped, 3 starved thermals.
+44 as routed, 46 with its In1 tracks stripped, 3 starved thermals. Rust with Q01.7 (`aff2c68`,
+same pass-1 flags): **45**, clean, 4 starved thermals, the same unconnected nets as Java
+`7f56b062d` pass 1 and the same 1141 segments and vias item by item (canary-23, 2026-10-16):
+pass-1 parity is reached. The next step is Java's add-only second run (40).
 
 The Java route references for these boards in `fixtures/reference/route/canary-pwr/` are
 bounded runs with the harness's settings (optimizer off, `route-bounds.tsv`, no extra

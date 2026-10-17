@@ -227,7 +227,7 @@ per job, the predicate that uses it, a pour-cut report, and the measurement.
   *Partial 2026-10-16:* not started: it needs Q05.2's lattice and A04's cost hook (Q05 is
   open). No code.
 
-- [~] **Q01.7 — No foreign-net traces on power-type layers (D8).**
+- [x] **Q01.7 — No foreign-net traces on power-type layers (D8).**
   Found by canary-23 grading the A13 canary-pwr SES (2026-10-16): both the Rust
   run (4336133) and Java `46bf9e2ef` route signal nets on `Gnd.Cu`, which the DSN
   declares `(type power)` with a GND plane. Rust: `/Holdup/LTC_PFI` (7.0 mm at
@@ -299,6 +299,12 @@ per job, the predicate that uses it, a pour-cut report, and the measurement.
     --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150`, release CLI): 109
     unrouted, 40 violations (all in the input), no track on Gnd.Cu or Power.Cu (the A13 session
     had `/Holdup/LTC_PFI` and `/Supervisor/CAN_WAKE` there).
-  - Remains: canary-23's grade of that session,
-    `target/orchestrator/q01/canary/canary-pwr-9511d9a.rust-q01.ses` (flags in
-    `canary/README.txt`); Java `7f56b062d` pass 1 graded 45.
+  - canary-23 (session canary-78) graded that session,
+    `target/orchestrator/q01/canary/canary-pwr-9511d9a.rust-q01.ses` (SES sha256 `502226b0…`,
+    DSN `65186b28…`; flags in `canary/README.txt`), on 2026-10-16: **45 unconnected**, valid;
+    KiCad DRC at the committed rules: clearance 0, track width 0, annular 0, via-in-pad 0,
+    `inner_tracks.py` 0; 4 starved GND thermals (J5.9, J1.14, J4.3, J2.2), 2 dangling-track and
+    27 dangling-via warnings. Against Java `7f56b062d` pass 1 with the same flags (graded 45):
+    the same 45 unconnected nets, and the 1141 segments and vias are identical item by item
+    after stripping uuids. Pass-1 parity is reached; the number to beat stays 40 (Java's
+    add-only second run, `fixtures/canary-pwr/README.md`).
