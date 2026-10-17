@@ -21,6 +21,7 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 | [K06](archive/K06-kicad-pcb-rule-areas-and-copper.md) ✅ | Rule areas to keepout kinds, zones, tracks and arcs, vias | M / medium | K05 |
 | [K07](archive/K07-kicad-pcb-entry-points-and-parity.md) ✅ | `.kicad_pcb` opens in the CLI and the GUI; parity against KiCad's DSN export on the corpus; `.kicad_dru` subset; the coordinate-frame check | M / medium | K06; C07 (CLI `-de`); G01 (GUI `Session`) |
 | [K08](archive/K08-kicad-pcb-writer.md) ✅ | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG (`-do routed.kicad_pcb`; KiCad's DRC grades it like `ImportSpecctraSES` on three boards; K08.4 `[~]`: Dan to accept an `f32` sum-order difference in the round-trip statistics) | M / medium | K07, C05; Dan's go-ahead (question 5, given 2026-10-17) |
+| [K09](K09-plugin-export-options.md) | Plugin options that reproduce canary's graded `dsn_export.py` flow: class widths, pours of listed classes kept clear, outer GND pours dropped, edge and pad keepouts, plane layers opened, add-only second run, wasted-pass stop, a canary preset | M / medium: measured on `canary-pwr` | K01, K02, K03; Q01, Q09; Q10 (K09.6); Q04 (K09.7) |
 
 The report's PLG-1 is K01, PLG-2 is K02, PLG-1.5 (PCM) grew into K03, and
 KIC-1 is split over K04–K07. KRT's proposed K01–K10 are folded in: its
