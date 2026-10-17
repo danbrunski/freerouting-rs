@@ -1,0 +1,67 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X12.6-krt-bga-escape",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/X12-bga-escape-planner.md",
+  "question": "With the fanout stage enabled and the full pipeline after it, does krt-bga-escape (dog-bone vias in the diagonal gaps of every ball array, signal balls escaped straight out along their row or column on the layer and slot the channel planner assigns, plane balls dropped to their plane with their own via, then Freerouting's fanout on the other components and on arrays where it placed no copper) escape at least as many balls as Freerouting's fanout and leave fewer unrouted connections, without new clearance violations or vias in pads?",
+  "hypothesis": "none registered: the X12 checklist names no expected direction; the measurement decides whether the stage stays selectable",
+  "arms": {
+    "freerouting-fanout": {
+      "engine": "freerouting-rs at the commit that lands X12, after P04's default-tree decision, in-process through freerouting-krt's harness (the CLI does not call freerouting_krt::register before C07)",
+      "command": "X12_DSN={DSN} X12_ARMS=freerouting-fanout X12_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test bga_escape escape_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "fanout.enabled": "true",
+        "fanout.algorithm": "freerouting-fanout",
+        "everything else": "the defaults (optimizer enabled, 20 passes)"
+      }
+    },
+    "krt-bga-escape": {
+      "engine": "the same commit and harness",
+      "command": "X12_DSN={DSN} X12_ARMS=krt-bga-escape X12_SES_DIR={SES_DIR} cargo test --release -p freerouting-krt --test bga_escape escape_arms_on_a_set -- --ignored --exact --nocapture",
+      "settings": {
+        "fanout.enabled": "true",
+        "fanout.algorithm": "krt-bga-escape",
+        "everything else": "the defaults (optimizer enabled, 20 passes)"
+      }
+    }
+  },
+  "baseline_arm": "freerouting-fanout",
+  "candidate_arm": "krt-bga-escape",
+  "boards": {
+    "set": "tools/bench/sets/x12-bga.txt",
+    "eligibility_rule": "a board of F03.3's corpus with at least one part freerouting_krt::fanout::bga::array::analyze_array accepts (arrays_on_a_set on the input board); at registration only two corpus boards qualify, so the run waits for F03.3's manifest to gain a third (an amendment adds it with its sha256 before any run)",
+    "files": {
+      "target/corpus/prepped/pocketsdr-v3-0.dsn": "95c4a3e68534b3b2ea5585731e04403e0fbf023e3b3b3f230c63b5e80c53fb67",
+      "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn": "47fd62dc6e816e5ed218db49b4f4c32f5879d08f1b1db014b1f949143e56c71c"
+    },
+    "informational": {
+      "crates/freerouting-krt/tests/data/x12-bga-0p8.dsn": "12401c7780a3204adc745cac60d77fa89a282b50a0e73ccafb7b89f64f76039d (synthetic, X12.4's board; reported, never counted)"
+    }
+  },
+  "eligibility": "every board of the set; a board where both arms leave the same number unrouted is neutral, printed; a board not graded (a crash, a timeout, exit 2 of a grader) fails that board for the arm that was not graded and is never a pass",
+  "grading": {
+    "all": "Rust's DRC inside the harness (drc_new: all_clearance_violations of the routed board with an item the run created) and its via-in-pad test; where tools/kicad-oracle/grade.sh can grade the board's .kicad_pcb from F03.3's corpus (the corpus keeps the source projects), its drc_real, kicad_unconnected and via_in_pad replace Rust's, and the amendment says which boards were graded which way"
+  },
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "hard", "kind": "int", "direction": "lower", "source": "the KiCad grader where it runs; drc_new from Rust's DRC otherwise"},
+    {"name": "fanned", "role": "guard", "kind": "int", "direction": "higher", "source": "escape completion after the fanout stage alone (escape_arms_on_a_set's Gates.fanned: balls of the arrays with one net that has another terminal whose copper holds a via); the candidate may not have fewer than the baseline on any board"},
+    {"name": "unrouted", "role": "score", "kind": "int", "direction": "lower", "source": "kicad_unconnected on KiCad-graded boards; the routed board's airlines (DesignRulesChecker::all_airlines) otherwise"},
+    {"name": "past_box", "role": "report", "kind": "int", "direction": "higher", "compared": false},
+    {"name": "vias", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "krt-bga-escape stays a selectable fanout stage (off by default) only if, on every board, fanned is at least Freerouting's fanout's, and unrouted improves on N-1 of the graded boards and regresses on none, with via_in_pad and drc_real 0 for it on every board. Otherwise the stage registration is removed (the array, channel and via modules may stay) and the numbers stay in X12.6's done note. Either way it is never a default from this run.",
+  "decision_table": {
+    "keep": "krt-bga-escape stays registered; docs/DIVERGENCES.md gets its line (a selectable stage Java does not have)",
+    "reject": "the registration goes; X12.6 records the numbers"
+  },
+  "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
+  "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path') and for a third BGA board in F03.3's corpus; X12.6's partial note gives a pre-P04 dry run at the landing tree, labelled as such, not this registration's result",
+  "amendments": []
+}

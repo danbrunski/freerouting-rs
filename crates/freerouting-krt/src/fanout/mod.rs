@@ -1,8 +1,9 @@
-//! Escape planners as fanout stages (X10, later X12).
+//! Escape planners as fanout stages (X10, X12).
 //!
 //! - [`frame`] (X10.1): the part frame of a component and the sides of an
 //!   edge-row part (QFN, QFP, SOIC, SOP).
 //! - [`qfn`] (X10.2): the escape stubs of those parts.
+//! - [`bga`] (X12): the dense-BGA escape planner, stage `krt-bga-escape`.
 //!
 //! **Selection.** `router.fanout.algorithm = "krt-qfn-escape"` (with
 //! `fanout.enabled`) runs [`KrtQfnEscape`] in the fanout slot: stubs on
@@ -17,6 +18,7 @@ use freerouting::autoroute::batch::fanout::{FanoutRun, NoFanoutObserver};
 use freerouting::autoroute::stages::{FanoutStage, FanoutSummary, StageCtx, StageRegistry};
 use freerouting::board::RoutingBoard;
 
+pub mod bga;
 pub mod frame;
 pub mod qfn;
 
@@ -53,4 +55,5 @@ pub(crate) fn register(registry: &mut StageRegistry) {
     registry
         .fanout
         .insert(QFN_ESCAPE_ID, |_| Box::new(KrtQfnEscape::default()));
+    bga::register(registry);
 }

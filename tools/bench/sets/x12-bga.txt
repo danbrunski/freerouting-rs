@@ -1,0 +1,10 @@
+# X12.6: boards for the krt-bga-escape measurement (docs/roadmap/tasks/X12-bga-escape-planner.md),
+# registered in docs/roadmap/prereg/X12.json. Eligibility is decided from the inputs: the board
+# has a part freerouting_krt::fanout::bga::array::analyze_array accepts (a square-pitch lattice of
+# at least 6 x 6 positions, two at least half-populated outer rings, not staggered); the arrays
+# after each row, from arrays_on_a_set over F03.3's prepared corpus (30 boards) and fixtures/
+# (139 boards) at 03b2e41 plus X12. Only these two boards have one; the pass rule needs three, so
+# the registered run waits for a third BGA board in F03.3's corpus (tools/corpus/manifest.json).
+# F03.3's out-of-repo corpus: tools/corpus/fetch.sh then tools/corpus/prep.sh (target/corpus).
+target/corpus/prepped/pocketsdr-v3-0.dsn                       # U7 11x11, 121 balls, 0.8 mm; 4 layers
+target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn # U6 8x11, 67 balls, 0.5 mm; 6 layers

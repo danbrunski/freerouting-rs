@@ -70,7 +70,15 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   (`fanout/frame.rs`, which ports KRT's `analyze_qfn_layout` and `analyze_pad`
   and so is GPL-3.0-only AND MIT), straight escape stubs with a taper or a
   plane via, each in one DRC-checked transaction (`fanout/qfn.rs`, written from
-  KRT ideas), then Freerouting's fanout on the other parts.
+  KRT ideas), then Freerouting's fanout on the other parts. X12 adds the
+  `krt-bga-escape` fanout stage (`router.fanout.algorithm = krt-bga-escape`):
+  ball arrays in the part frame (`fanout/bga/array.rs`, which ports KRT's
+  `analyze_bga_grid` and so is GPL-3.0-only AND MIT), band capacity and layer
+  balancing, dog-bone vias in the diagonal gaps (never in a pad), and per ball
+  one DRC-checked transaction with the dog-bone, the via and, for a signal
+  ball, the escape out along its row or column (`channels.rs`, `vias.rs`,
+  `emit.rs`, written from KRT ideas), then Freerouting's fanout on the other
+  parts.
 - `bus` (X11): bus detection (`bus/detect.rs`, which ports KRT's
   `detect_bus_groups` and so is GPL-3.0-only AND MIT), the `krt-bus` net
   ordering (`router.autorouter.ordering = krt-bus`: bus groups middle out in

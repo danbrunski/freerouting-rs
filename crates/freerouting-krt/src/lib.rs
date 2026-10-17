@@ -24,7 +24,8 @@
 //! - [`diffpair`] (X08, X09): differential pairs, centreline and P/N
 //!   offset, coupled via pairs, polarity, skew and the optimizer exclusion,
 //!   the `krt-diffpair` board stage.
-//! - [`fanout`] (X10): the `krt-qfn-escape` fanout stage.
+//! - [`fanout`] (X10, X12): the `krt-qfn-escape` and `krt-bga-escape`
+//!   fanout stages.
 //! - [`bus`] (X11): bus detection, the `krt-bus` middle-out ordering and
 //!   the `krt-bus-attraction` cost, bundled as `krt-bus`.
 
