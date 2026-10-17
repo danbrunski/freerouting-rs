@@ -234,7 +234,7 @@ pgrep -x pcbnew` empty before and after:
 | kit-dev-coldfire-xilinx_5213 | java | shorting_items 1, track_dangling 1, track_width 190, via_dangling 43 | 85 / 478 | 236 | 1748 | 4876.5 | 0 | 190 | 591 |
 | CM5_MINIMA_3 | rust | clearance 1, copper_edge_clearance 24, hole_clearance 2, isolated_copper 10, track_dangling 1 | 22 / 208 | 187 | 1319 | 2646.0 | 0 | 0 | 99 |
 | CM5_MINIMA_3 | java | the same | 22 / 208 | 187 | 1319 | 2646.0 | 0 | 0 | 252 |
-| canary-pwr | rust | **not graded: the CLI panics** | | | | | | | |
+| canary-pwr | rust | copper_edge_clearance 2, starved_thermal 2, via_dangling 36 | 70 / 174 | 124 | 734 | 1056.9 | 0 | 0 | 199 |
 | canary-pwr | java | copper_edge_clearance 2, starved_thermal 2, track_dangling 1, track_width 2, via_dangling 32 | 71 / 174 | 119 | 787 | 1049.2 | 0 | 2 | 213 |
 
 Differences explained:
@@ -250,15 +250,15 @@ Differences explained:
 - `interf_u`: one more `starved_thermal` (a pour effect, not a clearance) in Rust.
 - Vias in pads: 0 in every graded run.
 
-**canary-pwr, Rust: engine bug, not graded.** `freerouting -de canary-pwr.dsn -do x.ses` panics at
-HEAD (`0ab934a`) in `BasicBoard` `expect("item on the board")` (`basic_board.rs:227`), reached from
-`normalize_pass` <- `normalize_traces` <- `insert_segments` <- `finish_connection` <-
-`fanout_pin::route_attempts` (fanout stage), with or without `--router.min_trace_width_um`. With
-the fanout off it routes if no minimum width is given, and panics again with a minimum width
-(`--router.min_trace_width_um=150 --router.fanout.enabled=false`). The DSN is the grade.sh export of
-`canary-pwr.kicad_pcb` (strip, export, remove the fan inlet keepout). Java's row above is
-`a773a70ec` with the same export and width. K02.7 stays partial until the engine panic is fixed
-(an A-series item); then re-run `k02-graded-runs.sh ... canary-pwr`.
+- `canary-pwr`: the same two `copper_edge_clearance` and two `starved_thermal` items in both
+  engines; Java has 2 tracks under the board minimum (0.15 mm) and one `track_dangling`, Rust none;
+  `via_dangling` 36 against 32 and 70 against 71 unconnected are the two routes ending in
+  different places. The Rust row was graded at `813663c` (2026-10-17, `ENGINES=rust`), after the
+  fix of a panic in `normalize_pass` (`8fb7e21`: a trace removed by a drill split was read after
+  its removal; Java carries on with the stale object, which the fix matches). This export
+  (KiCad 10.0.7, pours as 20 planes, no wiring) is a different board from
+  `fixtures/canary-pwr/canary-pwr-9511d9a.dsn`, so its numbers do not compare with the canary
+  grades in `fixtures/canary-pwr/README.md`.
 
 ## K02.8: what Dan checks (Windows, inside KiCad)
 

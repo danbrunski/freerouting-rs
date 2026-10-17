@@ -14,6 +14,7 @@
 #         --router.min_trace_width_um=W --router.optimizer.enabled=false
 #         (Java's optimizer still depends on thread scheduling, J01; X01 turned it off too)
 # Each run is capped by ENGINE_TIMEOUT seconds (default 3600). One kicad-cli at a time.
+# ENGINES (default "rust java") picks the engines, e.g. ENGINES=rust to redo one row.
 # OUT_DIR/<board>/{rust,java}/ holds grade.sh's output, OUT_DIR/<board>/<engine>/via_in_pad.json
 # the via-in-pad count; OUT_DIR/table.md is the table (tools/kicad-oracle/graded_table.py).
 set -uo pipefail
@@ -25,6 +26,7 @@ shift 4
 ONLY=("$@")
 KICAD_PYTHON=${KICAD_PYTHON:-python3}
 ENGINE_TIMEOUT=${ENGINE_TIMEOUT:-3600}
+read -r -a ENGINE_LIST <<< "${ENGINES:-rust java}"
 mkdir -p "$OUT" && OUT=$(cd "$OUT" && pwd)
 BEFORE=$(pgrep -x kicad; pgrep -x pcbnew)
 while IFS= read -r line <&3; do
@@ -40,7 +42,7 @@ import sys, pcbnew
 b = pcbnew.LoadBoard(sys.argv[1])
 print(b.GetDesignSettings().m_TrackMinWidth / 1000.0)" "$path" 2> /dev/null | tail -n 1)
   [[ -n "$width" ]] || { echo "$name: cannot read the board minimum track width"; continue; }
-  for engine in rust java; do
+  for engine in "${ENGINE_LIST[@]}"; do
     dir="$OUT/$name/$engine"
     if [[ $engine == rust ]]; then
       cmd=(timeout "$ENGINE_TIMEOUT" "$RUST" -de '{DSN}' -do '{SES}' --result-json '{SES}.result.json'
