@@ -1,0 +1,64 @@
+(pcb normalize_stale_trace
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+    )
+    (layer B.Cu
+      (type signal)
+    )
+    (boundary
+      (rect pcb 100000 -100000 165000 -44000)
+    )
+    (via Via_600:300_um)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component R_0603
+      (place R10 126200 -65900 front 90)
+    )
+  )
+  (library
+    (image R_0603
+      (pin Pad_800x950 1 -825 0)
+      (pin Pad_800x950 2 825 0)
+    )
+    (padstack Pad_800x950
+      (shape
+        (rect F.Cu -400 -475 400 475)
+      )
+      (attach off)
+    )
+    (padstack Via_600:300_um
+      (shape
+        (circle F.Cu 600)
+      )
+      (shape
+        (circle B.Cu 600)
+      )
+      (attach off)
+    )
+  )
+  (network
+    (net GND
+      (pins R10-2)
+    )
+  )
+  (wiring
+    (wire
+      (polyline_path F.Cu 500
+        124600 -65075 124600 -65074.9 123000 -65075 129350 -65075
+        127800 -65075 127800 -65074.9
+      )
+      (net GND)
+    )
+  )
+)

@@ -749,19 +749,34 @@ impl BasicBoard {
     }
 
     /// One normalization pass over `traces`; true if something changed.
+    ///
+    /// The normalization can remove the trace and still report no change:
+    /// when the last tree entry its split looks at is a drill on the trace,
+    /// the split cuts the trace there (replacing it by two pieces, which the
+    /// drill case does not collect) and returns the removed trace as its only
+    /// piece, as Java's `PolylineTrace.split` does. Java goes on with the
+    /// stale `PolylineTrace`: `isUserFixed` reads its field and
+    /// `removeIfCycle` returns false for a trace off the board
+    /// (`BasicBoard.normalizeTraces` and `normalizeAllTraces`). The port asks
+    /// the board instead of reading the removed item.
     fn normalize_pass(&mut self, traces: &[ItemId]) -> bool {
         let mut something_changed = false;
         for &id in traces {
             if !self.is_on_board(id) {
                 continue;
             }
-            if self.normalize_trace(id, None)
-                || (!self.item_ref(id).is_user_fixed() && self.remove_if_cycle(id))
-            {
+            if self.normalize_trace(id, None) || self.remove_if_unfixed_cycle(id) {
                 something_changed = true;
             }
         }
         something_changed
+    }
+
+    /// `!trace.isUserFixed() && removeIfCycle(trace)` of
+    /// `BasicBoard.normalizeTraces`. A trace no longer on the board is no
+    /// cycle to remove, whatever its fixed state was.
+    fn remove_if_unfixed_cycle(&mut self, id: ItemId) -> bool {
+        self.is_on_board(id) && !self.item_ref(id).is_user_fixed() && self.remove_if_cycle(id)
     }
 
     /// Normalizes the traces of net `net_number`. Gives up after
