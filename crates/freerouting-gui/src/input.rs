@@ -13,6 +13,9 @@
 //! | `,` | crosshair cursor on or off |
 //! | `Esc` | cancel (menu, keepout, zoom rectangle, selection) |
 //! | `Enter` | complete a keepout under construction |
+//! | `R` `D` `S` | without a selection: route, drag and inspect tool |
+//! | `T` `W` `P` | without a selection: start a route at the cursor, pin swap, push-and-shove on or off |
+//! | `M` `Ctrl+D` | with a selection: move, copy |
 //! | `N` `S` `E` `I` `R` `Delete` | with items selected: extend to nets, connected sets, connections; info; zoom region; delete |
 //! | `I` | without a selection: select at the cursor |
 //! | `G` | ratsnest on or off |
@@ -26,10 +29,11 @@ use eframe::egui::{InputState, Key};
 
 use crate::commands::Command;
 
-/// Java's tool keys, kept free for the checklists that add them: S, R and D
-/// (route and drag modes). G, V, U, B and W are used since G03, S (extend to
-/// connected sets while items are selected) since G05.
-pub const RESERVED: [Key; 2] = [Key::R, Key::D];
+/// Java's tool keys that were kept free until G09 added them: none left. `R`,
+/// `D` and `S` (without a selection) switch the tool, `T`, `W` and `P` start
+/// a route, a pin swap and toggle push-and-shove (`tools::route`), `M` and
+/// `Ctrl+D` move and copy the selection (`tools::move_component`).
+pub const RESERVED: [Key; 0] = [];
 
 const DIGITS: [Key; 9] = [
     Key::Num1,

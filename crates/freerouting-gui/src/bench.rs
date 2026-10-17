@@ -54,6 +54,16 @@ pub fn pan_zoom_camera(step: usize, fit: Camera, canvas: Rect) -> Camera {
     }
 }
 
+/// The pointer path of the `drag` script: the offset in millimetres from the
+/// press point at counted frame `step`, out to 0.3 mm along x and back
+/// (`0.15 (1 - cos)`), a period of 120 frames, so the component moves at most
+/// 0.016 mm per frame. 0.3 mm is the distance the bench's press point was
+/// checked to accept.
+pub fn drag_offset(step: usize) -> P {
+    let phase = std::f64::consts::TAU * step as f64 / 120.0;
+    P::new(0.15 * (1.0 - phase.cos()), 0.0)
+}
+
 /// A running `--bench`.
 pub struct Bench {
     script: BenchScript,
@@ -69,6 +79,9 @@ pub struct Bench {
     load: LoadTimings,
     first_frame_ms: Option<f64>,
     counted_from: Option<std::time::Instant>,
+    /// Full rebuilds and patches at the first counted frame and now.
+    baseline: Option<(u64, u64)>,
+    latest: (u64, u64),
 }
 
 impl Bench {
@@ -86,6 +99,8 @@ impl Bench {
             load: LoadTimings::default(),
             first_frame_ms: None,
             counted_from: None,
+            baseline: None,
+            latest: (0, 0),
         }
     }
 
@@ -112,7 +127,29 @@ impl Bench {
         let base = *self.fit.get_or_insert(fit);
         match self.script {
             BenchScript::PanZoom => pan_zoom_camera(self.step, base, canvas),
+            // The drag bench looks at the board as fitted.
+            BenchScript::Drag => base,
         }
+    }
+
+    /// The index of the coming frame when the script is `drag`.
+    pub fn drag_step(&self) -> Option<usize> {
+        (self.script == BenchScript::Drag).then_some(self.step)
+    }
+
+    /// Frames the script runs in all, warm-up included.
+    pub fn total_frames(&self) -> usize {
+        WARMUP + self.frames
+    }
+
+    /// The renderer's counters at the end of a frame: the first counted frame
+    /// fixes the baseline, so the report says how many full rebuilds and
+    /// patches the counted frames made.
+    pub fn counters(&mut self, full_rebuilds: u64, patches: u64) {
+        if self.step >= WARMUP {
+            self.baseline.get_or_insert((full_rebuilds, patches));
+        }
+        self.latest = (full_rebuilds, patches);
     }
 
     /// Records a finished frame. Returns the JSON report after the last
@@ -141,11 +178,12 @@ impl Bench {
         let wall = self.counted_from.map_or(0.0, |t| {
             t.elapsed().as_secs_f64() * 1000.0 / self.samples.len().max(1) as f64
         });
+        let base = self.baseline.unwrap_or(self.latest);
         let first = self
             .first_frame_ms
             .map_or_else(|| "null".to_string(), |ms| format!("{ms:.1}"));
         format!(
-            "{{\"script\":\"{}\",\"frames\":{},\"p50_ms\":{:.3},\"p95_ms\":{:.3},\"max_ms\":{:.3},\"frame_frames\":{},\"frame_p50_ms\":{:.3},\"frame_p95_ms\":{:.3},\"frame_max_ms\":{:.3},\"wall_ms\":{:.3},\"triangles\":{},\"draws\":{},\"uploaded_bytes\":{},\"chunks_drawn\":{},\"chunks_total\":{},\"gpu_buffer_bytes\":{},\"first_frame_ms\":{},\"load_ms\":{},\"load_avg_1m\":{:.2}}}",
+            "{{\"script\":\"{}\",\"frames\":{},\"p50_ms\":{:.3},\"p95_ms\":{:.3},\"max_ms\":{:.3},\"frame_frames\":{},\"frame_p50_ms\":{:.3},\"frame_p95_ms\":{:.3},\"frame_max_ms\":{:.3},\"wall_ms\":{:.3},\"triangles\":{},\"draws\":{},\"uploaded_bytes\":{},\"chunks_drawn\":{},\"chunks_total\":{},\"gpu_buffer_bytes\":{},\"first_frame_ms\":{},\"load_ms\":{},\"full_rebuilds\":{},\"patches\":{},\"load_avg_1m\":{:.2}}}",
             self.script.name(),
             self.samples.len(),
             percentile(self.samples.clone(), 50.0),
@@ -164,6 +202,8 @@ impl Bench {
             self.last.gpu_buffer_bytes,
             first,
             self.load.json(),
+            self.latest.0 - base.0,
+            self.latest.1 - base.1,
             load_average_1m()
         )
     }
@@ -199,6 +239,17 @@ mod tests {
         assert!((at(23).zoom - 8.0 * 1.25).abs() < 1e-9);
         assert_eq!(at(24).zoom, 8.0);
         assert_eq!(at(CYCLE).zoom, 8.0);
+    }
+
+    #[test]
+    fn drag_path_is_a_slow_sine() {
+        assert_eq!(drag_offset(0), P::new(0.0, 0.0));
+        assert!((drag_offset(60).x - 0.3).abs() < 1e-12);
+        let fastest = (0..120)
+            .map(|k| (drag_offset(k + 1).x - drag_offset(k).x).abs())
+            .fold(0.0, f64::max);
+        assert!(fastest < 0.02, "{fastest} mm per frame");
+        assert!((0..240).all(|k| (0.0..=0.3 + 1e-12).contains(&drag_offset(k).x)));
     }
 
     #[test]

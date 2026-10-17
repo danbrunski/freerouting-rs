@@ -12,8 +12,12 @@
 //!
 //! The display rows (Center display, Zoom in, Zoom out) act on the click
 //! location, not on the cursor, which has moved into the menu. Entries
-//! whose engine work has not landed (route, pin swap) are shown
-//! disabled with a tooltip naming what is missing.
+//! whose engine work has not landed are shown disabled with a tooltip naming
+//! what is missing. G09 added the menus of the sessions: while routing
+//! (`PopupMenuDynamicRoute`, `PopupMenuStitchRoute`: End route, Cancel route,
+//! Change layer and the display rows) and while a selection floats
+//! (`PopupMenuMove`: Turn, Change placement side, Reset rotation, Insert,
+//! Cancel).
 
 use eframe::egui;
 
@@ -30,6 +34,11 @@ pub struct Popup {
     pub screen: egui::Pos2,
     /// The "Create keepout" submenu is open.
     pub keepout_open: bool,
+    /// The layers of "Change layer" while routing: board index, name, and
+    /// whether the entry is enabled (a signal layer other than the current).
+    pub layers: Vec<(usize, String, bool)>,
+    /// The "Change layer" submenu is open.
+    pub layers_open: bool,
 }
 
 /// What the menu is built for.
@@ -44,6 +53,12 @@ pub enum Mode {
     Construction {
         circle: bool,
     },
+    /// G09.1: a route is under way.
+    Route,
+    /// G09.6: the selection floats (`copy`: a copy preview).
+    Float {
+        copy: bool,
+    },
 }
 
 /// One row of a menu.
@@ -56,6 +71,12 @@ pub enum Entry {
         command: Command,
         /// Why the entry is disabled, if it is.
         disabled: Option<&'static str>,
+    },
+    /// "Change layer" and one entry per signal layer (Java
+    /// `PopupMenuChangeLayer`): board index, name, enabled.
+    Layers {
+        label: &'static str,
+        items: Vec<(usize, String, bool)>,
     },
     /// "Create keepout" and its four shapes.
     Submenu {
@@ -85,15 +106,16 @@ fn display_rows(at: P) -> Vec<Entry> {
 
 /// The rows of the menu for `mode` opened at `at`, in Java's order.
 pub fn entries(mode: Mode, at: P) -> Vec<Entry> {
+    entries_for(mode, at, &[])
+}
+
+/// [`entries`] with the layers of the "Change layer" submenu.
+pub fn entries_for(mode: Mode, at: P, layers: &[(usize, String, bool)]) -> Vec<Entry> {
     match mode {
         Mode::Main { swap } => {
             let mut rows = vec![
                 item(text::POPUP_SELECT_ITEM, Command::SelectAt(at)),
-                Entry::Item {
-                    label: text::POPUP_START_ROUTE,
-                    command: Command::ClosePopup,
-                    disabled: Some(text::POPUP_NEEDS_ROUTE),
-                },
+                item(text::POPUP_START_ROUTE, Command::StartRoute { at }),
                 Entry::Submenu {
                     label: text::POPUP_CREATE_KEEPOUT,
                     items: vec![
@@ -129,11 +151,7 @@ pub fn entries(mode: Mode, at: P) -> Vec<Entry> {
                 },
             ];
             if swap {
-                rows.push(Entry::Item {
-                    label: text::POPUP_SWAP_PIN,
-                    command: Command::ClosePopup,
-                    disabled: Some(text::POPUP_NEEDS_SWAP),
-                });
+                rows.push(item(text::POPUP_SWAP_PIN, Command::StartPinSwap { at }));
             }
             rows.extend(display_rows(at));
             rows
@@ -159,6 +177,37 @@ pub fn entries(mode: Mode, at: P) -> Vec<Entry> {
             rows.extend(display_rows(at));
             rows
         }
+        Mode::Route => {
+            let mut rows = vec![
+                item(text::POPUP_END_ROUTE, Command::Complete),
+                item(text::POPUP_CANCEL_ROUTE, Command::Cancel),
+            ];
+            if !layers.is_empty() {
+                rows.push(Entry::Layers {
+                    label: text::POPUP_CHANGE_LAYER,
+                    items: layers.to_vec(),
+                });
+            }
+            rows.push(Entry::Separator);
+            rows.extend(display_rows(at));
+            rows
+        }
+        Mode::Float { copy } => {
+            let mut rows = Vec::new();
+            if !copy {
+                rows.extend([
+                    Entry::Header(text::POPUP_TURN),
+                    item(text::POPUP_TURN_90, Command::RotateSelection(90)),
+                    item(text::POPUP_TURN_180, Command::RotateSelection(180)),
+                    item(text::POPUP_TURN_270, Command::RotateSelection(270)),
+                    item(text::POPUP_CHANGE_SIDE, Command::MirrorSelection),
+                    item(text::POPUP_RESET_ROTATION, Command::ResetRotation),
+                ]);
+            }
+            rows.push(item(text::POPUP_INSERT, Command::Complete));
+            rows.push(item(text::POPUP_CANCEL, Command::Cancel));
+            rows
+        }
         Mode::Construction { circle } => vec![
             if circle {
                 item(text::POPUP_INSERT, Command::Complete)
@@ -177,7 +226,9 @@ pub fn labels(mode: Mode, at: P) -> Vec<&'static str> {
         .into_iter()
         .filter_map(|e| match e {
             Entry::Header(label) => Some(label),
-            Entry::Item { label, .. } | Entry::Submenu { label, .. } => Some(label),
+            Entry::Item { label, .. }
+            | Entry::Submenu { label, .. }
+            | Entry::Layers { label, .. } => Some(label),
             Entry::Separator => None,
         })
         .collect()
@@ -187,8 +238,9 @@ pub fn labels(mode: Mode, at: P) -> Vec<&'static str> {
 /// the popup when a command came back or the user clicked elsewhere.
 pub fn ui(ctx: &egui::Context, popup: &mut Popup, mode: Mode) -> (Vec<Command>, bool) {
     let mut out = Vec::new();
-    let rows = entries(mode, popup.at);
+    let rows = entries_for(mode, popup.at, &popup.layers);
     let mut keepout_open = popup.keepout_open;
+    let mut layers_open = popup.layers_open;
     let area = egui::Area::new(egui::Id::new("canvas-popup"))
         .order(egui::Order::Foreground)
         .fixed_pos(popup.screen)
@@ -196,11 +248,12 @@ pub fn ui(ctx: &egui::Context, popup: &mut Popup, mode: Mode) -> (Vec<Command>, 
             egui::Frame::popup(ui.style()).show(ui, |ui| {
                 ui.set_min_width(150.0);
                 for row in &rows {
-                    draw_row(ui, row, &mut keepout_open, &mut out);
+                    draw_row(ui, row, &mut keepout_open, &mut layers_open, &mut out);
                 }
             });
         });
     popup.keepout_open = keepout_open;
+    popup.layers_open = layers_open;
     let clicked_away = ctx.input(|i| i.pointer.any_pressed())
         && !area.response.contains_pointer()
         && out.is_empty();
@@ -208,8 +261,38 @@ pub fn ui(ctx: &egui::Context, popup: &mut Popup, mode: Mode) -> (Vec<Command>, 
     (out, close)
 }
 
-fn draw_row(ui: &mut egui::Ui, row: &Entry, keepout_open: &mut bool, out: &mut Vec<Command>) {
+fn draw_row(
+    ui: &mut egui::Ui,
+    row: &Entry,
+    keepout_open: &mut bool,
+    layers_open: &mut bool,
+    out: &mut Vec<Command>,
+) {
     match row {
+        Entry::Layers { label, items } => {
+            let arrow = if *layers_open { "v" } else { ">" };
+            let clicked = ui
+                .horizontal(|ui| {
+                    let button = ui.add(egui::Button::new(*label).frame(false));
+                    ui.label(arrow);
+                    button.clicked()
+                })
+                .inner;
+            if clicked {
+                *layers_open = !*layers_open;
+            }
+            if *layers_open {
+                ui.indent("layer-items", |ui| {
+                    for (index, name, enabled) in items {
+                        let response =
+                            ui.add_enabled(*enabled, egui::Button::new(name).frame(false));
+                        if response.clicked() {
+                            out.push(Command::ChangeRouteLayer(*index));
+                        }
+                    }
+                });
+            }
+        }
         Entry::Header(label) => {
             ui.label(egui::RichText::new(*label).strong().weak());
         }
@@ -248,7 +331,7 @@ fn draw_row(ui: &mut egui::Ui, row: &Entry, keepout_open: &mut bool, out: &mut V
             if *keepout_open {
                 ui.indent("keepout-items", |ui| {
                     for child in items {
-                        draw_row(ui, child, keepout_open, out);
+                        draw_row(ui, child, keepout_open, layers_open, out);
                     }
                 });
             }
@@ -320,6 +403,70 @@ mod tests {
             ]
         );
         assert_eq!(rows[5], Entry::Separator);
+    }
+
+    #[test]
+    fn route_menu_has_end_cancel_and_the_layers() {
+        let layers = vec![
+            (0, "F.Cu".to_string(), false),
+            (1, "B.Cu".to_string(), true),
+        ];
+        let rows = entries_for(Mode::Route, AT, &layers);
+        assert_eq!(rows[0], item("End route", Command::Complete));
+        assert_eq!(rows[1], item("Cancel route", Command::Cancel));
+        assert_eq!(
+            rows[2],
+            Entry::Layers {
+                label: "Change layer",
+                items: layers
+            }
+        );
+        // the display rows follow, acting on the click location
+        assert!(rows.iter().any(|e| matches!(
+            e,
+            Entry::Item { command: Command::ZoomOutAt(p), .. } if *p == AT
+        )));
+    }
+
+    #[test]
+    fn main_menu_starts_a_route_and_a_swap_at_the_click() {
+        let rows = entries(Mode::Main { swap: true }, AT);
+        for (label, command) in [
+            ("Start route (T)", Command::StartRoute { at: AT }),
+            ("Swap pin (W)", Command::StartPinSwap { at: AT }),
+        ] {
+            assert!(
+                rows.iter().any(|e| matches!(e,
+                    Entry::Item { label: l, command: c, disabled: None } if *l == label && *c == command)),
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn floating_menu_turns_flips_and_ends() {
+        let rows = entries(Mode::Float { copy: false }, AT);
+        let commands: Vec<Command> = rows
+            .iter()
+            .filter_map(|e| match e {
+                Entry::Item { command, .. } => Some(command.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            commands,
+            [
+                Command::RotateSelection(90),
+                Command::RotateSelection(180),
+                Command::RotateSelection(270),
+                Command::MirrorSelection,
+                Command::ResetRotation,
+                Command::Complete,
+                Command::Cancel
+            ]
+        );
+        // a copy preview only inserts or ends
+        assert_eq!(entries(Mode::Float { copy: true }, AT).len(), 2);
     }
 
     #[test]

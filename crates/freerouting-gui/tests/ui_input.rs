@@ -210,15 +210,28 @@ fn a_left_drag_without_f_leaves_the_view_alone_and_escape_cancels_f() {
 }
 
 #[test]
-fn reserved_keys_do_nothing_yet() {
+fn tool_keys_choose_the_tool_and_do_not_move_the_view() {
+    // S, R and D were reserved until G09; they choose the left button's tool.
+    use freerouting_gui::tools::ToolMode;
     let mut h = harness();
     let before = camera(&h);
-    for key in freerouting_gui::input::RESERVED {
+    assert_eq!(
+        h.state().tools().mode,
+        ToolMode::Route,
+        "Java starts in route mode"
+    );
+    for (key, mode) in [
+        (Key::D, ToolMode::Drag),
+        (Key::S, ToolMode::Select),
+        (Key::R, ToolMode::Route),
+    ] {
         h.key_press(key);
+        h.run();
+        assert_eq!(h.state().tools().mode, mode);
     }
-    h.run();
     let after = camera(&h);
     assert_eq!((after.center, after.zoom), (before.center, before.zoom));
+    assert!(freerouting_gui::input::RESERVED.is_empty());
 }
 
 #[test]

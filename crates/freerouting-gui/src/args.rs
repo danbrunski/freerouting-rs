@@ -1,5 +1,5 @@
 //! Command-line arguments:
-//! `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom] [--frames N]
+//! `freerouting-gui [board.dsn [board.ses]] [--bench pan-zoom|drag] [--frames N]
 //! [--screenshot out.png] [--exit] [--control-dir dir]
 //! [--bench-synthetic 4x4 board.dsn]`.
 
@@ -13,12 +13,16 @@ pub const DEFAULT_FRAMES: usize = 600;
 pub enum BenchScript {
     /// Zoom in, pan and zoom out around the board, repeated.
     PanZoom,
+    /// Drag one component back and forth with the drag tool (G09.7, FT7),
+    /// the camera fixed on the fitted board.
+    Drag,
 }
 
 impl BenchScript {
     pub fn name(self) -> &'static str {
         match self {
             BenchScript::PanZoom => "pan-zoom",
+            BenchScript::Drag => "drag",
         }
     }
 }
@@ -60,6 +64,7 @@ impl Args {
                     let name = value("--bench")?;
                     out.bench = Some(match name.to_string_lossy().as_ref() {
                         "pan-zoom" => BenchScript::PanZoom,
+                        "drag" => BenchScript::Drag,
                         other => return Err(format!("unknown bench script {other:?}")),
                     });
                 }

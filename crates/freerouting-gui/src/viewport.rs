@@ -20,6 +20,19 @@ use crate::view::{self, Camera, Labels, Orientation, Visibility};
 /// Zoom factor of the `Z` and `O` keys (Java's `c_zoom_factor`).
 pub const KEY_ZOOM: f64 = 2.0;
 
+/// What the left button does on the canvas (set by the app each frame from
+/// the tool, the selection and the editor's session).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LeftButton {
+    /// Inspect: a click picks, a drag selects a region (G05).
+    #[default]
+    Inspect,
+    /// Route mode and sessions that take clicks (G09.1).
+    Click,
+    /// Drag mode: press, move and release are a drag (G09.3).
+    Drag,
+}
+
 /// Which layers and kinds are shown, which layer is active, and the camera.
 pub struct ViewState {
     pub camera: Option<Camera>,
@@ -54,6 +67,13 @@ pub struct ViewState {
     /// The corners of the rectangle being dragged to select items (G05.1).
     pub tool_drag: Option<(Pos2, Pos2)>,
     pan_anchor: Option<Pos2>,
+    /// G09: what the left button does now.
+    pub left_button: LeftButton,
+    /// G09: a session follows the pointer, so moves become commands.
+    pub tracking: bool,
+    track_last: Option<Pos2>,
+    drag_last: Option<Pos2>,
+    drag_active: bool,
 }
 
 impl Default for ViewState {
@@ -77,6 +97,11 @@ impl Default for ViewState {
             zoom_rect_drag: None,
             tool_drag: None,
             pan_anchor: None,
+            left_button: LeftButton::Inspect,
+            tracking: false,
+            track_last: None,
+            drag_last: None,
+            drag_active: false,
         }
     }
 }
@@ -423,22 +448,43 @@ fn tool_pointer(
         view.tool_drag = None;
         return;
     }
-    if response.dragged_by(PointerButton::Primary) {
-        let from = ui.input(|i| i.pointer.press_origin());
-        if let Some((from, to)) = from.zip(response.interact_pointer_pos()) {
-            view.tool_drag = Some((from, to));
-        }
-    } else if response.drag_stopped_by(PointerButton::Primary) {
-        if let Some((from, to)) = view.tool_drag.take() {
-            commands.push(Command::SelectRegion {
-                from: cam.to_board(rect, from),
-                to: cam.to_board(rect, to),
-            });
+    // G09: a route, a move or a copy follows the pointer.
+    if view.tracking {
+        if let Some(pos) = response.hover_pos()
+            && view.track_last != Some(pos)
+        {
+            view.track_last = Some(pos);
+            commands.push(Command::PointerMoved(cam.to_board(rect, pos)));
         }
     } else {
-        view.tool_drag = None;
+        view.track_last = None;
     }
-    if response.clicked_by(PointerButton::Primary)
+    match view.left_button {
+        LeftButton::Inspect => {
+            if response.dragged_by(PointerButton::Primary) {
+                let from = ui.input(|i| i.pointer.press_origin());
+                if let Some((from, to)) = from.zip(response.interact_pointer_pos()) {
+                    view.tool_drag = Some((from, to));
+                }
+            } else if response.drag_stopped_by(PointerButton::Primary) {
+                if let Some((from, to)) = view.tool_drag.take() {
+                    commands.push(Command::SelectRegion {
+                        from: cam.to_board(rect, from),
+                        to: cam.to_board(rect, to),
+                    });
+                }
+            } else {
+                view.tool_drag = None;
+            }
+        }
+        LeftButton::Click => view.tool_drag = None,
+        LeftButton::Drag => {
+            view.tool_drag = None;
+            drag_events(ui, response, view, rect, cam, commands);
+        }
+    }
+    if view.left_button != LeftButton::Drag
+        && response.clicked_by(PointerButton::Primary)
         && let Some(pos) = response.interact_pointer_pos()
     {
         commands.push(Command::CanvasClick {
@@ -452,6 +498,37 @@ fn tool_pointer(
         commands.push(Command::OpenPopup {
             at: cam.to_board(rect, pos),
         });
+    }
+}
+
+/// Drag mode: the press, the moves with the button down and the release
+/// (Java `mousePressed`, `mouseDragged`, `mouseReleased`).
+fn drag_events(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    view: &mut ViewState,
+    rect: Rect,
+    cam: Camera,
+    commands: &mut Vec<Command>,
+) {
+    let down = ui.input(|i| i.pointer.primary_down());
+    let pos = response.interact_pointer_pos();
+    if down && response.is_pointer_button_down_on() {
+        let Some(pos) = pos else { return };
+        if !view.drag_active {
+            view.drag_active = true;
+            view.drag_last = Some(pos);
+            let origin = ui.input(|i| i.pointer.press_origin()).unwrap_or(pos);
+            commands.push(Command::DragStart(cam.to_board(rect, origin)));
+        }
+        if view.drag_last != Some(pos) {
+            view.drag_last = Some(pos);
+            commands.push(Command::DragMove(cam.to_board(rect, pos)));
+        }
+    } else if view.drag_active {
+        view.drag_active = false;
+        view.drag_last = None;
+        commands.push(Command::DragEnd);
     }
 }
 

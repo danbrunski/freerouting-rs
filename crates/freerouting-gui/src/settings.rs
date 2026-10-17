@@ -53,6 +53,82 @@ pub struct PersistedSettings {
     pub selection_layers: Option<String>,
     /// The selectable choices by Java's constant name (`TRACES`, ...).
     pub selectable_items: Option<Vec<String>>,
+    // G09.2: the interactive routing settings.
+    pub interactive: InteractiveSettings,
+}
+
+/// The interactive routing settings of Java's `WindowRouteParameter` that are
+/// not board rules (G09.2): the GUI's copy of the engine's
+/// [`EditSettings`](freerouting::interactive::EditSettings) fields that the
+/// dialog edits, with Java's defaults. The manual rules (a trace width per
+/// layer, a clearance class and a via rule) belong to a board and are kept
+/// beside this, not stored.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct InteractiveSettings {
+    /// `route_mode`: stitching (`true`) or dynamic.
+    pub stitch_route: bool,
+    /// `rule_selection`: manual (`true`) or automatic.
+    pub manual_rule_selection: bool,
+    /// `push&shove_enabled` (key `P`).
+    pub push_enabled: bool,
+    /// `drag_components_enabled`.
+    pub drag_components_enabled: bool,
+    /// `via_snap_to_smd_center`.
+    pub via_snap_to_smd_center: bool,
+    /// `highlight_routing_obstacle`.
+    pub highlight_routing_obstacle: bool,
+    /// `automatic_neckdown`.
+    pub automatic_neckdown: bool,
+    /// `pull_tight_region`: the radius in board units; `i32::MAX` is the whole
+    /// board (the maximum of Java's slider).
+    pub pull_tight_region: i32,
+    /// `pull_tight_accuracy`.
+    pub pull_tight_accuracy: i32,
+}
+
+impl Default for InteractiveSettings {
+    /// Java's `WorkspaceSettings` defaults.
+    fn default() -> Self {
+        InteractiveSettings {
+            stitch_route: false,
+            manual_rule_selection: false,
+            push_enabled: true,
+            drag_components_enabled: true,
+            via_snap_to_smd_center: true,
+            highlight_routing_obstacle: false,
+            automatic_neckdown: true,
+            pull_tight_region: i32::MAX,
+            pull_tight_accuracy: 500,
+        }
+    }
+}
+
+impl InteractiveSettings {
+    /// Anything a hand-edited file could break falls back to the default.
+    fn sanitized(mut self) -> Self {
+        let default = InteractiveSettings::default();
+        if self.pull_tight_region < 0 {
+            self.pull_tight_region = default.pull_tight_region;
+        }
+        if self.pull_tight_accuracy < 1 {
+            self.pull_tight_accuracy = default.pull_tight_accuracy;
+        }
+        self
+    }
+
+    /// Puts these settings into the engine's `settings`, leaving the layer,
+    /// the visible layers and the manual rules alone.
+    pub fn apply_to(&self, settings: &mut freerouting::interactive::EditSettings) {
+        settings.stitch_route = self.stitch_route;
+        settings.manual_rule_selection = self.manual_rule_selection;
+        settings.push_enabled = self.push_enabled;
+        settings.via_snap_to_smd_center = self.via_snap_to_smd_center;
+        settings.highlight_routing_obstacle = self.highlight_routing_obstacle;
+        settings.automatic_neckdown = self.automatic_neckdown;
+        settings.trace_tidy_width = self.pull_tight_region;
+        settings.pull_tight_accuracy = self.pull_tight_accuracy;
+    }
 }
 
 impl Default for PersistedSettings {
@@ -74,6 +150,7 @@ impl Default for PersistedSettings {
             crosshair: false,
             selection_layers: None,
             selectable_items: None,
+            interactive: InteractiveSettings::default(),
         }
     }
 }
@@ -105,6 +182,7 @@ impl PersistedSettings {
             *level = (*level).min(100);
         }
         self.dim = self.dim.map(|d| d.min(100));
+        self.interactive = self.interactive.sanitized();
         if self
             .side_panel_width
             .is_some_and(|w| !w.is_finite() || w < 0.0)

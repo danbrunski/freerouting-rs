@@ -161,6 +161,59 @@ pub enum Command {
     },
     /// Completes the tool under way (Java `complete`): `Enter`.
     Complete,
+    // G09: interactive routing and editing (`tools/{host,route,drag,move_component}.rs`).
+    /// Java's `S`, `R` and `D`: the tool of the left button.
+    SetTool(crate::tools::ToolMode),
+    /// Java's `T` and the popup's "Start route": a route from the item at
+    /// the point.
+    StartRoute {
+        at: P,
+    },
+    /// Java's `W` and the popup's "Swap pin".
+    StartPinSwap {
+        at: P,
+    },
+    /// Java's `P`: push-and-shove on or off.
+    TogglePush,
+    /// The pointer moved on the canvas while a route, a move or a copy
+    /// follows it.
+    PointerMoved(P),
+    /// Drag mode: the left button went down, moved (with it down) and went
+    /// up.
+    DragStart(P),
+    DragMove(P),
+    DragEnd,
+    /// The popup's "Change layer" while routing (a board layer index).
+    ChangeRouteLayer(usize),
+    /// Settings > Routing: the interactive fields changed.
+    UpdateInteractive(crate::settings::InteractiveSettings),
+    /// Settings > Routing: the trace width of one layer in manual rule
+    /// selection, in board units.
+    SetManualTraceWidth {
+        layer: usize,
+        half_width: i32,
+    },
+    SetManualClearanceClass(i32),
+    SetManualViaRule(i32),
+    /// G09.6: picks the selection up and moves it with the pointer (key `M`).
+    MoveSelection {
+        at: P,
+    },
+    /// Turns the floating selection by this many degrees (`+` 90, `*` 180,
+    /// `-` 270).
+    RotateSelection(i32),
+    /// Changes the placement side of the floating selection (`/`).
+    MirrorSelection,
+    ResetRotation,
+    /// Starts a copy of the selection that follows the pointer (`Ctrl+D`).
+    CopySelection {
+        at: P,
+    },
+    /// Component Movement Settings: the placement grid in board units.
+    SetComponentGrid {
+        horizontal: i32,
+        vertical: i32,
+    },
 }
 
 /// What an "extend selection" action extends to (the toolbar buttons and

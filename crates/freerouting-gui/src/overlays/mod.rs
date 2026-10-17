@@ -9,6 +9,7 @@
 pub mod construction;
 pub mod highlight;
 pub mod ratsnest;
+pub mod route;
 pub mod violations;
 
 use eframe::egui::{Painter, Rect};

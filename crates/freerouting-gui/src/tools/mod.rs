@@ -13,10 +13,16 @@
 //! refused while a keepout is under construction, as Java allows it in a
 //! menu state only.
 
+pub mod drag;
 pub mod edit;
+pub mod host;
 pub mod inspect;
 pub mod keepout;
+pub mod move_component;
 pub mod popup;
+pub mod route;
+
+pub use host::{Host, ToolMode};
 
 use std::collections::BTreeSet;
 
@@ -56,6 +62,14 @@ pub struct Tools {
     /// The nets the last undo or redo changed (the ratsnest of these is
     /// what Java updates; here the background analysis runs in full).
     pub changed_nets: BTreeSet<i32>,
+    /// G09: the tool of the left button (Java starts in route mode).
+    pub mode: ToolMode,
+    /// The interactive editor, made on its first command.
+    pub host: Option<Host>,
+    /// The manual routing rules of the open board (G09.2).
+    pub manual: Option<freerouting::interactive::ManualRules>,
+    /// The component placement grid (G09.6), board units.
+    pub component_grid: (i32, i32),
 }
 
 impl Tools {
@@ -91,9 +105,10 @@ impl App {
     /// Runs the G05 commands. The caller passes only those.
     pub(crate) fn execute_tool(&mut self, ctx: &egui::Context, command: Command) {
         match command {
-            Command::CanvasClick { at, toggle } => self.canvas_click(at, toggle),
+            Command::CanvasClick { at, toggle } => self.click_at(at, toggle, true),
             Command::SelectRegion { from, to } => self.select_region(from, to),
-            Command::SelectAt(at) => self.canvas_click(at, false),
+            // Java `MenuState.selectItems`: from any menu state.
+            Command::SelectAt(at) => self.click_at(at, false, false),
             Command::ExtendSelection(kind) => self.extend_selection(kind),
             Command::ToggleSelectionViolations => self.toggle_selection_violations(),
             Command::ShowItemInfo(ids) => {
@@ -122,7 +137,45 @@ impl App {
             Command::ZoomInAt(at) => self.zoom_at(at, crate::viewport::KEY_ZOOM),
             Command::ZoomOutAt(at) => self.zoom_at(at, 1.0 / crate::viewport::KEY_ZOOM),
             Command::StartKeepout { kind, at } => self.start_keepout(kind, at),
-            Command::Complete => self.complete_keepout(None),
+            Command::Complete => {
+                if !self.complete_session() {
+                    self.complete_keepout(None);
+                }
+            }
+            // G09: interactive routing and editing.
+            Command::SetTool(tool) => self.set_tool(tool),
+            Command::StartRoute { at } => self.start_route(at),
+            Command::StartPinSwap { at } => self.start_pin_swap(at),
+            Command::TogglePush => self.toggle_push(),
+            Command::PointerMoved(at) => self.pointer_moved(at),
+            Command::DragStart(at) => self.drag_start(at),
+            Command::DragMove(at) => self.drag_move(at),
+            Command::DragEnd => self.drag_end(),
+            Command::ChangeRouteLayer(n) => {
+                self.tools.popup = None;
+                self.editor_layer(&Command::ChangeRouteLayer(n));
+            }
+            Command::UpdateInteractive(interactive) => self.update_interactive(interactive),
+            Command::SetManualTraceWidth { layer, half_width } => {
+                self.edit_manual(|m| {
+                    if let Some(w) = m.trace_half_widths.get_mut(layer) {
+                        *w = half_width;
+                    }
+                });
+            }
+            Command::SetManualClearanceClass(class) => {
+                self.edit_manual(|m| m.clearance_class = class);
+            }
+            Command::SetManualViaRule(index) => self.edit_manual(|m| m.via_rule_index = index),
+            Command::MoveSelection { at } => self.move_selection(at),
+            Command::RotateSelection(degrees) => self.rotate_selection(degrees),
+            Command::MirrorSelection => self.mirror_selection(),
+            Command::ResetRotation => self.reset_rotation(),
+            Command::CopySelection { at } => self.copy_selection(at),
+            Command::SetComponentGrid {
+                horizontal,
+                vertical,
+            } => self.set_component_grid(horizontal, vertical),
             _ => {}
         }
         let _ = ctx;
@@ -143,6 +196,9 @@ impl App {
         if self.tools.popup.take().is_some() {
             return;
         }
+        if self.cancel_session() {
+            return;
+        }
         if self.tools.keepout.take().is_some() {
             self.notice = None;
             return;
@@ -160,12 +216,20 @@ impl App {
 
     // --- picking and selecting ---------------------------------------------
 
-    fn canvas_click(&mut self, at: P, toggle: bool) {
+    /// A click at `at`. `tool_click` is a click of the left button, which the
+    /// editor takes in route mode and during a session (G09); the popup's
+    /// "Select item" and `I` select whatever the tool.
+    fn click_at(&mut self, at: P, toggle: bool, tool_click: bool) {
         self.tools.popup = None;
         let Some(b) = &self.loaded else { return };
         let point = inspect::board_point(b.session.board.basic(), at);
         if self.tools.keepout.is_some() {
             self.keepout_click(point);
+            return;
+        }
+        // G09: a session under way, or the route tool, owns the click.
+        if tool_click && self.editor_owns_pointer() {
+            self.editor_click(at);
             return;
         }
         let board = b.session.board.basic();
@@ -193,7 +257,7 @@ impl App {
     }
 
     fn select_region(&mut self, from: P, to: P) {
-        if self.tools.keepout.is_some() {
+        if self.tools.keepout.is_some() || self.editor_busy() {
             return;
         }
         let Some(b) = &self.loaded else { return };
@@ -294,14 +358,44 @@ impl App {
             .view
             .cursor
             .unwrap_or_else(|| self.view.canvas.center());
+        let layers = self.route_popup_layers();
         self.tools.popup = Some(popup::Popup {
             at,
             screen,
             keepout_open: false,
+            layers,
+            layers_open: false,
         });
     }
 
+    /// The signal layers of the route popup's "Change layer", the current
+    /// one disabled (Java `PopupMenuChangeLayer.disableItem`).
+    fn route_popup_layers(&self) -> Vec<(usize, String, bool)> {
+        use freerouting::interactive::ModeKind;
+        if !matches!(self.editor_mode(), Some(ModeKind::Routing { .. })) {
+            return Vec::new();
+        }
+        let Some(b) = &self.loaded else {
+            return Vec::new();
+        };
+        let layers = &b.session.board.layer_structure.layers;
+        let current = self.view.active_layer;
+        layers
+            .iter()
+            .enumerate()
+            .filter(|(_, l)| l.is_signal)
+            .map(|(i, l)| (i, l.name.clone(), i != current))
+            .collect()
+    }
+
     fn popup_mode(&self) -> popup::Mode {
+        use freerouting::interactive::ModeKind;
+        match self.editor_mode() {
+            Some(ModeKind::Routing { .. }) => return popup::Mode::Route,
+            Some(ModeKind::Moving) => return popup::Mode::Float { copy: false },
+            Some(ModeKind::Copying) => return popup::Mode::Float { copy: true },
+            _ => {}
+        }
         if let Some(tool) = &self.tools.keepout {
             popup::Mode::Construction {
                 circle: tool.kind == KeepoutKind::Circle,
@@ -433,10 +527,12 @@ impl App {
         let mode = self.popup_mode();
         if let Some(popup) = self.tools.popup.as_mut() {
             let (commands, close) = popup::ui(ctx, popup, mode);
-            out.extend(commands);
+            // The menu closes first: its Cancel entry must cancel the session
+            // or the keepout, and `cancel` closes an open menu before that.
             if close {
                 out.push(Command::ClosePopup);
             }
+            out.extend(commands);
         }
         out
     }
@@ -455,6 +551,17 @@ impl App {
                 ..Drc::default()
             };
             drawn += violations::draw(painter, rect, camera, &frame, &drc, &self.view.look);
+        }
+        if let Some(overlay) = self.editor_overlay() {
+            drawn += crate::overlays::route::draw(
+                painter,
+                rect,
+                camera,
+                &frame,
+                &b.session.board,
+                overlay,
+                &self.view.look,
+            );
         }
         if let Some(tool) = &self.tools.keepout {
             let cursor = self

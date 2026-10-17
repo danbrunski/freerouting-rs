@@ -10,7 +10,6 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::time::Instant;
 
-use common::plain_harness;
 use eframe::egui::{Event, Key, Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
@@ -123,8 +122,10 @@ fn drag(h: &mut Harness<'_, App>, from: Pos2, to: Pos2) {
     settle!(h);
 }
 
+/// The G05 tests drive the inspect tool; Java (and the app since G09)
+/// starts in route mode, so they switch to inspect first.
 fn load(files: &[&str]) -> Harness<'static, App> {
-    plain_harness(files)
+    common::inspect_harness(files)
 }
 
 /// Pins (by id) that a click at their centre picks alone on the current
@@ -1378,9 +1379,9 @@ fn popup_entries_by_mode() {
     for label in &main {
         assert_eq!(buttons(&h, label), 1, "{label}");
     }
-    // The route entry waits for I01 and says so.
+    // G09 wired the route entry: it is enabled now.
     let route = h.get_by_label("Start route (T)");
-    assert!(route.accesskit_node().is_disabled());
+    assert!(!route.accesskit_node().is_disabled());
     assert_eq!(buttons(&h, "Extend selection to:"), 0);
     h.key_press(Key::Escape);
     settle!(h);

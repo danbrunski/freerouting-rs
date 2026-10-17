@@ -195,6 +195,13 @@ fn rules_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
                 text::MENU_ROUTING,
                 Command::ShowRulesDialog(RulesDialog::RouteSettings),
             );
+            // G09.6: the placement grid of a move.
+            item(
+                ui,
+                out,
+                text::MENU_MOVE_SETTINGS,
+                Command::ShowRulesDialog(RulesDialog::MoveSettings),
+            );
             // G05.2: the selection's "General Settings".
             item(
                 ui,

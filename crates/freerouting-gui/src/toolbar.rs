@@ -7,14 +7,39 @@ use freerouting::board::structure::Unit;
 use crate::commands::Command;
 use crate::overlays::OverlayState;
 use crate::text;
+use crate::tools::ToolMode;
 
 /// The units of the selector, in Java's order (`BoardToolbar`).
 pub const UNITS: [Unit; 4] = [Unit::Mil, Unit::Inch, Unit::Mm, Unit::Um];
 
 /// Draws the toolbar and returns what was clicked.
-pub fn ui(ui: &mut egui::Ui, overlay: OverlayState, board_open: bool, unit: Unit) -> Vec<Command> {
+pub fn ui(
+    ui: &mut egui::Ui,
+    overlay: OverlayState,
+    board_open: bool,
+    unit: Unit,
+    tool: ToolMode,
+    session: bool,
+) -> Vec<Command> {
     let mut out = Vec::new();
     ui.horizontal(|ui| {
+        ui.add_enabled_ui(board_open && !session, |ui| {
+            // Java's menu states: inspect (S), route (R) and drag (D).
+            for (candidate, label, tip) in [
+                (ToolMode::Select, text::TOOL_SELECT, text::TOOL_SELECT_TIP),
+                (ToolMode::Route, text::TOOL_ROUTE, text::TOOL_ROUTE_TIP),
+                (ToolMode::Drag, text::TOOL_DRAG, text::TOOL_DRAG_TIP),
+            ] {
+                if ui
+                    .selectable_label(tool == candidate, label)
+                    .on_hover_text(tip)
+                    .clicked()
+                {
+                    out.push(Command::SetTool(candidate));
+                }
+            }
+            ui.separator();
+        });
         ui.add_enabled_ui(board_open, |ui| {
             if ui
                 .selectable_label(overlay.show_ratsnest, text::RATSNEST_TOGGLE)

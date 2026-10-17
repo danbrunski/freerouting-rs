@@ -79,6 +79,10 @@ pub struct Analysis {
     forced: bool,
     /// Workers started since the app began, for tests.
     runs_started: u64,
+    /// No new worker starts while true (G09: an interactive session is
+    /// changing the board with every pointer move, and a worker's `Arc`
+    /// clone would make each of those edits copy the whole board).
+    held: bool,
 }
 
 impl Analysis {
@@ -98,6 +102,11 @@ impl Analysis {
         self.drc = None;
         self.worker = None;
         self.forced = false;
+    }
+
+    /// Holds back new runs (`true`) or lets them start again (`false`).
+    pub fn set_held(&mut self, held: bool) {
+        self.held = held;
     }
 
     /// Asks for a fresh run (Info > Run DRC, the lists' Recalculate).
@@ -142,7 +151,7 @@ impl Analysis {
         let Some(session) = session else { return };
         self.receive();
         let tag = self.tag_of(session);
-        if self.worker.is_some() {
+        if self.worker.is_some() || self.held {
             return;
         }
         let current = self.drc.as_ref().is_some_and(|(t, _)| *t == tag);

@@ -7,7 +7,7 @@ owns behaviour, the GUI owns input). It does not mirror Java's state classes.
 The engine takes commands in board coordinates and returns a response with the
 board changes, a typed status message and overlay data; the GUI maps keys and
 the mouse to commands and draws. The G series wires it into the desktop app
-later ([G09](G09-interactive-routing-and-editing.md)) and references I01–I04. The
+later ([G09](archive/G09-interactive-routing-and-editing.md)) and references I01–I04. The
 narrative is in [optimizer-and-editing.md](../optimizer-and-editing.md).
 
 ## Task index

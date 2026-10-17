@@ -1,7 +1,11 @@
-//! Settings > Routing: the board-rule part of Java's `WindowRouteParameter`
-//! (G06.6). The interactive fields (route mode, push and shove, pull-tight
-//! radius and accuracy, neckdown and the rest) are G09.2's and join this
-//! window through [`static_section`].
+//! Settings > Routing: Java's `WindowRouteParameter`. The board-rule part
+//! (G06.6) is [`static_section`]; the interactive part (G09.2) is
+//! [`interactive_section`]: route mode, rule selection with the manual rules
+//! (`ManualRulesPanel`), push-and-shove, drag components, via snap,
+//! highlight obstacle, neckdown, the pull-tight radius and accuracy. The
+//! interactive fields are the GUI's [`InteractiveSettings`], stored with its
+//! settings and passed to every editor call; they are not saved with the
+//! board.
 //!
 //! The controls and the rule each one sets, through [`RulesEdit`]:
 //!
@@ -29,6 +33,10 @@ use crate::text;
 #[derive(Default)]
 pub struct State {
     pub open: bool,
+    /// The Component Movement Settings window is open.
+    pub move_open: bool,
+    /// The layer the manual trace width applies to (`None`: all layers).
+    pub manual_layer: Option<usize>,
     /// A snap angle waiting for the answer to "change anyway?".
     pub asking: Option<AngleRestriction>,
 }
@@ -209,15 +217,299 @@ pub fn static_section(ui: &mut egui::Ui, state: &mut State, view: &RuleView<'_>)
     out
 }
 
+/// The interactive controls (G09.2). Each change returns one
+/// [`Command::UpdateInteractive`] with the whole settings, or a manual-rule
+/// command.
+pub fn interactive_section(
+    ui: &mut egui::Ui,
+    state: &mut State,
+    view: &RuleView<'_>,
+) -> Vec<Command> {
+    let mut out = Vec::new();
+    let Some(interactive) = view.interactive else {
+        return out;
+    };
+    let (current, manual) = (interactive.settings, interactive.manual);
+    let mut settings = *current;
+    ui.horizontal(|ui| {
+        ui.label(text::RP_ROUTE_MODE)
+            .on_hover_text(text::RP_ROUTE_MODE_TIP);
+        let dynamic = ui
+            .radio(!settings.stitch_route, text::RP_DYNAMIC)
+            .on_hover_text(text::RP_DYNAMIC_TIP);
+        let stitching = ui
+            .radio(settings.stitch_route, text::RP_STITCHING)
+            .on_hover_text(text::RP_STITCHING_TIP);
+        if dynamic.clicked() {
+            settings.stitch_route = false;
+        }
+        if stitching.clicked() {
+            settings.stitch_route = true;
+        }
+    });
+    ui.horizontal(|ui| {
+        ui.label(text::RP_RULE_SELECTION)
+            .on_hover_text(text::RP_RULE_SELECTION_TIP);
+        let automatic = ui
+            .radio(!settings.manual_rule_selection, text::RP_AUTOMATIC)
+            .on_hover_text(text::RP_AUTOMATIC_TIP);
+        let manual_choice = ui
+            .radio(settings.manual_rule_selection, text::RP_MANUAL)
+            .on_hover_text(text::RP_MANUAL_TIP);
+        if automatic.clicked() {
+            settings.manual_rule_selection = false;
+        }
+        if manual_choice.clicked() {
+            settings.manual_rule_selection = true;
+        }
+    });
+    if settings.manual_rule_selection {
+        out.extend(manual_rules_panel(ui, state, view, manual));
+    }
+    for (value, label, tip) in [
+        (
+            &mut settings.push_enabled,
+            text::RP_PUSH_SHOVE,
+            text::RP_PUSH_SHOVE_TIP,
+        ),
+        (
+            &mut settings.drag_components_enabled,
+            text::RP_DRAG_COMPONENTS,
+            text::RP_DRAG_COMPONENTS_TIP,
+        ),
+        (
+            &mut settings.via_snap_to_smd_center,
+            text::RP_VIA_SNAP,
+            text::RP_VIA_SNAP_TIP,
+        ),
+        (
+            &mut settings.highlight_routing_obstacle,
+            text::RP_HIGHLIGHT_OBSTACLE,
+            text::RP_HIGHLIGHT_OBSTACLE_TIP,
+        ),
+        (
+            &mut settings.automatic_neckdown,
+            text::RP_NECKDOWN,
+            text::RP_NECKDOWN_TIP,
+        ),
+    ] {
+        ui.checkbox(value, label).on_hover_text(tip);
+    }
+    // The pull-tight radius: the whole board (Java's slider maximum) or a
+    // radius in the display unit.
+    ui.horizontal(|ui| {
+        ui.label(text::RP_PULL_TIGHT_REGION)
+            .on_hover_text(text::RP_PULL_TIGHT_REGION_TIP);
+        let mut whole = settings.pull_tight_region == i32::MAX;
+        if ui
+            .checkbox(&mut whole, text::RP_PULL_TIGHT_WHOLE_BOARD)
+            .changed()
+        {
+            settings.pull_tight_region = if whole {
+                i32::MAX
+            } else {
+                (view.units.to_board(1.0).round() as i32).max(1)
+            };
+        }
+        if !whole {
+            let shown = plain_number(
+                view.units.to_display(f64::from(settings.pull_tight_region)),
+                3,
+            );
+            if let Some(typed) = text_cell(ui, Id::new("route_pull_tight_region"), &shown, 70.0)
+                && let Some(value) = parse_clearance_table_value(Input::Text(typed.trim()))
+            {
+                let board = view.units.to_board(f64::from(value)).round();
+                if board >= 1.0 && board < f64::from(i32::MAX) {
+                    settings.pull_tight_region = board as i32;
+                }
+            }
+            ui.label(text::unit_label(view.units.display));
+        }
+    });
+    ui.horizontal(|ui| {
+        ui.label(text::RP_PULL_TIGHT_ACCURACY)
+            .on_hover_text(text::RP_PULL_TIGHT_ACCURACY_TIP);
+        let shown = settings.pull_tight_accuracy.to_string();
+        if let Some(typed) = text_cell(ui, Id::new("route_pull_tight_accuracy"), &shown, 70.0)
+            && let Ok(value) = typed.trim().parse::<i32>()
+            && (1..=1_000_000).contains(&value)
+        {
+            settings.pull_tight_accuracy = value;
+        }
+    });
+    if settings != *current {
+        out.push(Command::UpdateInteractive(settings));
+    }
+    out
+}
+
+/// `ManualRulesPanel`: the via rule, the trace clearance class and the trace
+/// width on one layer or on all of them.
+fn manual_rules_panel(
+    ui: &mut egui::Ui,
+    state: &mut State,
+    view: &RuleView<'_>,
+    manual: &freerouting::interactive::ManualRules,
+) -> Vec<Command> {
+    let mut out = Vec::new();
+    let rules = &view.board.rules;
+    ui.group(|ui| {
+        ui.label(egui::RichText::new(text::MR_TITLE).strong());
+        // The via rule, by index in the board's via rules.
+        let via_names: Vec<String> = (0..rules.via_rules.count())
+            .filter_map(|i| rules.via_rules.nth(i))
+            .map(|id| rules.via_rules.get(id).name.clone())
+            .collect();
+        ui.horizontal(|ui| {
+            ui.label(text::MR_VIA_RULE)
+                .on_hover_text(text::MR_VIA_RULE_TIP);
+            let current = usize::try_from(manual.via_rule_index)
+                .ok()
+                .and_then(|i| via_names.get(i))
+                .cloned()
+                .unwrap_or_default();
+            if let Some(name) =
+                super::name_combo(ui, Id::new("manual_via_rule"), &current, &via_names)
+                && let Some(index) = via_names.iter().position(|n| *n == name)
+            {
+                out.push(Command::SetManualViaRule(index as i32));
+            }
+        });
+        let classes = view.clearance_class_names();
+        ui.horizontal(|ui| {
+            ui.label(text::MR_CLEARANCE_CLASS)
+                .on_hover_text(text::MR_CLEARANCE_CLASS_TIP);
+            let current = usize::try_from(manual.clearance_class)
+                .ok()
+                .and_then(|i| classes.get(i))
+                .cloned()
+                .unwrap_or_default();
+            if let Some(name) = super::name_combo(ui, Id::new("manual_class"), &current, &classes)
+                && let Some(index) = classes.iter().position(|n| *n == name)
+            {
+                out.push(Command::SetManualClearanceClass(index as i32));
+            }
+        });
+        let layer_names: Vec<String> = view
+            .board
+            .layer_structure
+            .layers
+            .iter()
+            .map(|l| l.name.clone())
+            .collect();
+        let mut choices = vec![text::MR_ALL_LAYERS.to_string()];
+        choices.extend(layer_names.iter().cloned());
+        ui.horizontal(|ui| {
+            ui.label(text::MR_ON_LAYER)
+                .on_hover_text(text::MR_ON_LAYER_TIP);
+            let current = state
+                .manual_layer
+                .and_then(|l| layer_names.get(l))
+                .cloned()
+                .unwrap_or_else(|| text::MR_ALL_LAYERS.to_string());
+            if let Some(name) = super::name_combo(ui, Id::new("manual_layer"), &current, &choices) {
+                state.manual_layer = layer_names.iter().position(|n| *n == name);
+            }
+        });
+        ui.horizontal(|ui| {
+            ui.label(text::MR_TRACE_WIDTH)
+                .on_hover_text(text::MR_TRACE_WIDTH_TIP);
+            let layer = state.manual_layer.unwrap_or(0);
+            let half = manual.trace_half_width(layer as i32);
+            let shown = plain_number(view.units.to_display(2.0 * f64::from(half)), 3);
+            if let Some(typed) = text_cell(ui, Id::new("manual_trace_width"), &shown, 70.0)
+                && let Some(width) = parse_clearance_table_value(Input::Text(typed.trim()))
+            {
+                // `Math.round(userToBoard(0.5 * width))`
+                let half = view.units.to_board(0.5 * f64::from(width)).round() as i32;
+                if half > 0 {
+                    let layers: Vec<usize> = match state.manual_layer {
+                        Some(l) => vec![l],
+                        None => (0..layer_names.len()).collect(),
+                    };
+                    for layer in layers {
+                        out.push(Command::SetManualTraceWidth {
+                            layer,
+                            half_width: half,
+                        });
+                    }
+                }
+            }
+            ui.label(text::unit_label(view.units.display));
+        });
+    });
+    out
+}
+
+/// `WindowMoveParameter` (G09.6): the horizontal and vertical component
+/// placement grid, in the display unit; 0 is no grid. Returns
+/// [`Command::SetComponentGrid`] when a value changed.
+pub fn move_settings(ui: &mut egui::Ui, view: &RuleView<'_>) -> Vec<Command> {
+    let mut out = Vec::new();
+    let Some(interactive) = view.interactive else {
+        return out;
+    };
+    let (mut horizontal, mut vertical) = interactive.component_grid;
+    for (label, tip, id, value) in [
+        (
+            text::MV_HORIZONTAL_GRID,
+            text::MV_HORIZONTAL_GRID_TIP,
+            "move_grid_h",
+            &mut horizontal,
+        ),
+        (
+            text::MV_VERTICAL_GRID,
+            text::MV_VERTICAL_GRID_TIP,
+            "move_grid_v",
+            &mut vertical,
+        ),
+    ] {
+        ui.horizontal(|ui| {
+            ui.label(label).on_hover_text(tip);
+            let shown = plain_number(view.units.to_display(f64::from(*value)), 3);
+            if let Some(typed) = text_cell(ui, Id::new(id), &shown, 70.0)
+                && let Some(typed) = parse_clearance_table_value(Input::Text(typed.trim()))
+                && typed >= 0.0
+            {
+                *value = view.units.to_board(f64::from(typed)).round() as i32;
+            }
+            ui.label(text::unit_label(view.units.display));
+        });
+    }
+    if (horizontal, vertical) != interactive.component_grid {
+        out.push(Command::SetComponentGrid {
+            horizontal,
+            vertical,
+        });
+    }
+    out
+}
+
 pub fn show(ctx: &egui::Context, state: &mut State, view: &RuleView<'_>) -> Vec<Command> {
     let mut out = Vec::new();
+    if state.move_open {
+        let mut open = true;
+        egui::Window::new(text::MV_TITLE)
+            .id(Id::new(("rules", RulesDialog::MoveSettings)))
+            .open(&mut open)
+            .default_size([420.0, 120.0])
+            .show(ctx, |ui| out.extend(move_settings(ui, view)));
+        state.move_open = open;
+    }
     if state.open {
         let mut open = true;
         egui::Window::new(text::RP_TITLE)
             .id(Id::new(("rules", RulesDialog::RouteSettings)))
             .open(&mut open)
             .default_size([360.0, 320.0])
-            .show(ctx, |ui| out.extend(static_section(ui, state, view)));
+            .show(ctx, |ui| {
+                out.extend(interactive_section(ui, state, view));
+                if view.interactive.is_some() {
+                    ui.separator();
+                }
+                out.extend(static_section(ui, state, view));
+            });
         state.open = open;
     }
     if let Some(target) = state.asking

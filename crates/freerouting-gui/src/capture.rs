@@ -72,6 +72,23 @@ impl Scripted {
         view.auto_fit = None;
     }
 
+    /// The index of the coming frame of a `--bench drag` run.
+    pub fn drag_step(&self) -> Option<usize> {
+        self.bench.as_ref().and_then(Bench::drag_step)
+    }
+
+    /// Frames the bench runs in all, warm-up included.
+    pub fn bench_total_frames(&self) -> Option<usize> {
+        self.bench.as_ref().map(Bench::total_frames)
+    }
+
+    /// The renderer's counters, for the bench's report.
+    pub fn bench_counters(&mut self, full_rebuilds: u64, patches: u64) {
+        if let Some(bench) = &mut self.bench {
+            bench.counters(full_rebuilds, patches);
+        }
+    }
+
     /// After the frame. `ready` is true once nothing is left to load.
     pub fn after_frame(
         &mut self,

@@ -31,8 +31,7 @@ The app is a board viewer for now. Nothing in it edits or routes.
   a crosshair, `Esc` cancels (a menu, a keepout, `F`, then the selection). `G`
   toggles the ratsnest, `V` the violation markers (or, with items selected,
   their clearance violations), `W` zooms to the selection, `U`/`Ctrl+Z` undo and
-  `B`/`Ctrl+Y` redo. `R D` are reserved for the checklists that add them
-  (`input::RESERVED`).
+  `B`/`Ctrl+Y` redo. `S R D` choose the tool of the left button (G09, below).
   The view fits again automatically when the window resizes, until the user
   pans or zooms. (Open question for Dan, G00 question 1: this is the
   recommended set; the change from "any button pans, `F` fits" awaits his
@@ -104,7 +103,7 @@ The app is a board viewer for now. Nothing in it edits or routes.
   buttons (Nets `N`, Connected Sets `S`, Connections `E`, Components), Violations (`V`), the
   three zoom buttons, and Delete (`Delete`), Fix and Unfix (decision G00 question 6; Java's
   toolbar has the first ten only). The right button opens the context menu of the mode (Select
-  item, Start route and Swap pin disabled until G09 wires I01/I03, Create keepout > Tile, Circle,
+  item, Start route and Swap pin (G09), Create keepout > Tile, Circle,
   Polygon, Hole; with items selected the extend entries; the display rows act on the click
   location). A keepout is built from clicked corners by the engine's `interactive::Construction`
   (I03.4: snapped to the board's angle restriction, concave tile corners dropped, as in Java), a
@@ -122,6 +121,37 @@ The app is a board viewer for now. Nothing in it edits or routes.
   counts the patches). FT4: a real undo of 200 removed plus 200 added items on Issue190 takes a
   median of 1.35 ms (max 2.15 ms) in `Loaded::sync_scene` in a release build (load average 21,
   not quiet; `tests/ui_edit.rs::ft4_undo_of_200_and_200_items`).
+
+- **Interactive routing and editing (G09, `tools/{host,route,drag,move_component}.rs`,
+  `overlays/route.rs`).** The app starts in route mode like Java. `S` (inspect), `R` (route) and
+  `D` (drag) choose the tool of the left button, also from the toolbar; the three keys work
+  without a selection and outside a session. The GUI holds no routing logic: a tool turns input
+  into a command of the engine's `interactive::Editor` and `tools/host.rs` runs it with
+  `Editor::apply_on`, which lends the editor the session board for one command (the board stays
+  in the `Arc` the rest of the app reads). The response's change journal patches the scene
+  (`Loaded::sync_scene_with`, `stats.patches`, no full rebuild), its status goes to the status
+  line in Java's words (`text::interactive_status`), its layer becomes the active layer, and its
+  `Overlay` is drawn by `overlays/route.rs`: the rubber band to the nearest target and the
+  targets, the swappable pins, the length-matching ellipses, the layer-change marker, the
+  obstacle a shove failed at (with "highlight routing obstacle"), the floating selection of a
+  move and the clearance violations it causes. In route mode a click on an item starts a route
+  (`T` starts one at the cursor); moving the pointer routes in dynamic mode and only moves the
+  rubber band in stitch mode; a click adds a corner; `1`-`9`, `+`, `-` and the popup's Change
+  layer change the layer with a via; Enter completes, Esc cancels (the tail is removed). In drag
+  mode a press drags the item under the cursor (a component by its pads when "drag components"
+  is on) or makes space when nothing is there; each pointer step is one editor command and one
+  patch, and the release ends it. `W` starts a pin swap (a second click completes it), `P`
+  toggles push-and-shove. The selection stays the GUI's (G05); the editor is told about it only
+  for a move (`M`: the pointer carries the selection, `+` `*` `-` turn it by 90, 180 and 270
+  degrees, `/` changes the side, a click puts it down, Esc puts it back) or a copy (`Ctrl+D`: a
+  click inserts a copy). Undo and redo run through `Editor::apply` too; the engine refuses
+  history while it holds a selection, as Java does, so the host clears the editor's selection
+  first and the GUI keeps allowing undo with a GUI selection. The background DRC waits while a
+  session is under way (`Analysis::set_held`), because its clone of the board would make every
+  pointer step copy the whole board. Settings > Routing has the interactive fields
+  (`settings::InteractiveSettings`, stored with the other settings, passed to every editor
+  call) and the manual rules; Settings > Component Movement has the placement grid of a move.
+  What differs from Java is in DIVERGENCES, "Interactive routing and editing".
 
 Screenshots from the cloud sessions are in the project's shared folder under
 `freerouting-rs/gui/`.
@@ -149,6 +179,7 @@ Screenshots from the cloud sessions are in the project's shared folder under
 | `look.rs`, `windows.rs` | G04: `Look` (the palette, the visibility levels, the dimming and the six virtual layers; `draw_color` is the one place a colour is decided) and the display windows that are plain flags (visibility, display options, colours, log, About). |
 | `panels/{nets,components,library}.rs` | G04: the rows of the Nets, Placed Components, Library Packages and Library Padstacks lists. |
 | `panels/{display,colors,status,log,about}.rs`, `panels/layers.rs` | G04: the window contents (each a function that returns commands), the status bar, the log (`Log::entries` composes the loader warnings, the engine's messages and the events) and the visibility sliders. |
+| `tools/{host,route,drag,move_component}.rs`, `overlays/route.rs`, `bench_drag.rs` | G09: the editor host (`Editor::apply_on` on the session board, scene patching, status, layer), route mode with pin swap and the interactive keys, drag mode, move and copy of the selection, the editor overlay as egui shapes, and the `--bench drag` script. |
 | `tools/{inspect,popup,keepout,edit}.rs`, `tools/mod.rs` | G05: `Tools` (the selection settings, the keepout under construction, the context menu, the shown violations, the item info windows); `App::execute_tool` runs the canvas commands (`CanvasClick`, `SelectRegion`, `ExtendSelection`, `DeleteSelection`, `OpenPopup`, `StartKeepout`, ...). `inspect.rs` has the pick, region and extend rules on the engine's queries; `popup.rs` the menu rows by mode; `keepout.rs` maps clicks onto the engine's `interactive::Construction` (I03.4); `edit.rs` maps Delete, Fix and Unfix onto `interactive::{delete_selection, fix_selection}` (I03.6). |
 | `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs` | G05: Settings > Select ("General Settings", `SelectionSettings`), the toolbar over the canvas while items are selected, the item info window (G04.3), the keepout's rubber band. |
 | `stats.rs`, `bench.rs`, `capture.rs` | Frame statistics and the `FrameClock`, the `--bench` script, the in-app screenshot. |
@@ -317,6 +348,29 @@ which is the larger part of the cost today (a bench run takes about 45 ms per
 frame wall-clock under llvmpipe). So FT0 understates what a GPU renderer
 saves. G02 did that: see "Renderer" for the re-baselined FT0 with egui's
 tessellation and upload included.
+
+### FT7: dragging a component (G09.7)
+
+`freerouting-gui --bench drag --frames 600 board.dsn` runs the drag tool instead of the camera
+script: the camera stays on the fitted board, the first pad of a placed component whose drag moves
+the component is pressed (chosen on a copy of the board, so the script measures drags the board
+accepts), and every frame is one pointer step along `bench::drag_offset` (out to 0.3 mm along x and
+back, a period of 120 frames, at most 0.016 mm per frame). Each step is one editor command and one
+scene patch from the change journal; the last frame releases. The report adds `full_rebuilds` and
+`patches` counted over the counted frames to the usual fields.
+
+**FT7, recorded 2026-10-16** (release build, Xvfb with lavapipe, Issue190, 600 frames, frame CPU
+in ms). The machine was not quiet (other sessions were building and routing; 1-minute load average
+7 to 12 on 8 cores, the target needs at most 1.0), so these are upper bounds:
+
+| Run | frame p50 | frame p95 | frame max | update p95 | patches | full rebuilds | load 1 min at the end |
+|---|---|---|---|---|---|---|---|
+| 1 | 3.270 | 5.839 | 9.278 | 5.426 | 598 | 0 | 8.3 |
+| 2 | 3.268 | 5.538 | 7.464 | 5.159 | 598 | 0 | 6.7 |
+
+Target: frame CPU p95 at most 8 ms and 0 full rebuilds. Both runs are under 8 ms even on the busy
+machine and rebuild nothing (598 patches in 600 frames). Pending: the same run on a quiet machine
+(load average at most 1.0) and on Dan's Windows GPU. The checklist box stays partial until then.
 
 ## Renderer (G02)
 
@@ -502,17 +556,17 @@ In plan order. Each item needs engine work first, so check what has landed in
    done, including the item info window.
 2. **Selection by mouse, safe edits and keepouts:** done in G05 (see "What works").
    The Hole keepout and the engine forms of keepouts, Delete, Fix and Unfix landed with
-   I03 (2026-10-16). Open: Start route and Swap pin, and moving the canvas tools onto
-   `interactive::Editor::apply` (G09); Delete still takes the push-off path (plain
-   removal) because the GUI has no push setting yet.
+   I03 (2026-10-16). Route, drag, pin swap, move and undo run on `interactive::Editor::apply`
+   since G09; the G05 tools (select, keepout, Delete, Fix) still call the engine's I03 functions
+   directly. Delete still takes the push-off path (plain removal).
 3. **Autorouter run:** start and stop the router from the GUI, with live
    progress. The board should redraw as routes land, which needs a way to
    rebuild or patch the `Scene`/`Tessellation` from engine change events
    (today they are rebuilt only on load).
 4. **Parameter dialogs:** route and autoroute settings, nets, net classes,
    the clearance matrix and via rules, as in the Java `gui.windows.*`.
-5. **Interactive routing and editing,** with the logic in the engine's
-   `interactive` module and only input mapping in the GUI.
+5. **Interactive routing and editing:** done in G09 (see "What works"). Open: the
+   FT7 numbers on a quiet machine and on Dan's Windows GPU (see "Frame numbers").
 
 Other gaps:
 

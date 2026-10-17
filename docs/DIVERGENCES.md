@@ -763,10 +763,47 @@ users would notice is listed. Texts follow the English Java bundles.)
   the toolbar's selector (Java: the design file's unit), puts a space after `padstack` in the line
   of a via, and shows the names of components, nets and padstacks as text, not as buttons that
   open their own info window. Pinned by `item_info_fields`.
-- Start route, Swap pin and the Hole keepout are listed in the context menu but disabled until the
-  interactive route session (I01) and the editor commands (I03.3, I03.4) land. Keepouts are inserted
-  with the engine's `check_shape` and `insert_obstacle` called from the GUI (`tools/keepout.rs`),
-  because the editor command I03.4 owns does not exist yet.
+- Keepouts are inserted with the engine's `check_shape` and `insert_obstacle` called from the GUI
+  (`tools/keepout.rs`), not through the editor command of I03.4; Start route and Swap pin in the
+  context menu are enabled since G09.
+
+**Interactive routing and editing** (G09, `tools/{host,route,drag,move_component}.rs`, `overlays/route.rs`; tests `tests/ui_interactive.rs`)
+- The app starts in route mode like Java, so a left click on a pin starts a route; the inspect tool is
+  `S` (or the toolbar), and the G05 tests switch to it first. The toolbar has Inspect, Route and Drag
+  buttons that Java's toolbar lacks (Java has the keys `S`, `R`, `D` only).
+- Java completes a route with Enter or Space. Space pans here (G01), so Enter is the only key. Esc
+  closes a menu first, then cancels a session, a keepout or a pending zoom rectangle, then clears the selection. `P` toggles push-and-shove and
+  `T`, `W`, `R`, `D`, `S` act only without a selection, as Java's menu states do (a selection is
+  `InspectedItemState` there, where `W` zooms and `S` extends to connected sets).
+- The GUI keeps its own selection (G05) and the engine's `Editor` holds none, except for a move or a
+  copy. Undo and redo run through `Editor::apply`, which refuses history while it holds a selection,
+  as Java does; the GUI clears the editor's selection first and keeps allowing undo with a selection
+  (the G05 line above), and refuses it, as Java does, while a route, drag, pin swap, move or copy is
+  under way. Pinned by `undo_clears_the_editors_selection_but_not_the_guis`.
+- The route popups' texts (`end_route`, `cancel_route`, `change_layer`) have no English bundle at the
+  pin; they read "End route", "Cancel route" and "Change layer". The current layer is disabled in the
+  submenu as Java's `disableLayerItem` does.
+- Make-space asks for a pointer warp when the board has no angle restriction (Java's
+  `moveMouse`); egui cannot move the operating system pointer, so the warp is ignored and the
+  drag goes on from where the pointer is. Dragging a user-fixed item shows no
+  "Please unfix item before dragging" because the editor returns no status for it; it simply does not
+  move. `E` (`ExpandTestState`, a debug state) is not ported.
+- Move (`M`) and copy (`Ctrl+D`) of the selection, `+`/`-`/`/` to turn and mirror it while it floats,
+  the popup of a floating selection and the "Component Movement Settings" are new: Java's
+  `MoveItemState` and `CopyItemState` cannot be entered at the pin (I00 decision 1, G00 question 6).
+  `*` (180 degrees) is Shift+8. The wheel setting of `WindowMoveParameter` (zoom or rotate) is not
+  ported.
+- The interactive part of Settings > Routing keeps the pull-tight radius as a checkbox ("entire board")
+  and a field in the display unit, where Java has a slider whose maximum is the whole board. The
+  manual rules (trace width per layer, clearance class, via rule) belong to the open board and are not
+  stored with the settings, as in Java's workspace settings. A trace width becomes
+  `round(userToBoard(0.5 * width))`, as in G06.
+- The pointer reaches the engine as the board point under it, unrounded; the editor rounds as Java does.
+  A frame that moves the pointer sends one move, not one per mouse event, so a fast drag takes fewer,
+  larger steps than Java's. Pinned by the drag tests, which replay the pointer positions on an
+  `Editor` that owns a copy of the board.
+- While a session is under way the background DRC and ratsnest wait (`Analysis::set_held`); they run
+  when it ends. The airlines on the screen are those of the board before the session.
 
 **Rules dialogs** (G06, `dialogs/`; tests `tests/ui_rules.rs`)
 - Net Classes > Remove checks every net for the class. Java's loop (`for i = 1; i < maxNetNumber`,

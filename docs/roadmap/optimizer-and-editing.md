@@ -127,7 +127,7 @@ GUI sends pointer and key commands in board coordinates and gets back the
 board changes (from B01's change journal), a typed status message and
 overlay data. Every command runs to completion under Java's work budgets, so
 a recorded command script replays to the same board. The G series maps input
-to commands and draws the response ([G09](tasks/G09-interactive-routing-and-editing.md)).
+to commands and draws the response ([G09](tasks/archive/G09-interactive-routing-and-editing.md)).
 
 ## How it is verified
 

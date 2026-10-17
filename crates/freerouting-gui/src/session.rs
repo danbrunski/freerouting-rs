@@ -13,8 +13,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
+use freerouting::board::{BoardChanges, RoutingBoard};
 use freerouting::dsn::{self, Pcb, Session as SesFile};
 use freerouting::io::kicad::{DesignKind, ReadOptions, design_kind, read_kicad_input};
 use freerouting::io::specctra::{BoardReadResult, SesImportSummary, build_board, import_session};
@@ -123,6 +123,13 @@ impl Loaded {
             };
         }
         let changes = board.take_changes();
+        self.sync_scene_with(changes)
+    }
+
+    /// [`sync_scene`](Self::sync_scene) for changes that the caller already
+    /// took from the journal: the editor drains the journal after each
+    /// command and returns the changes in its response (G09).
+    pub fn sync_scene_with(&mut self, changes: BoardChanges) -> SceneSync {
         if changes.overflow {
             self.rebuild_scene();
             return SceneSync {

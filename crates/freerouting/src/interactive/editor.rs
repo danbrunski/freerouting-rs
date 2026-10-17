@@ -48,7 +48,9 @@
 
 use std::collections::BTreeSet;
 
-use freerouting_geometry::{FloatPoint, IntBox, IntPoint, PolylineShapeOps};
+use freerouting_geometry::{
+    FloatPoint, IntBox, IntPoint, PolylineShape, PolylineShapeOps, TileShape,
+};
 
 use super::Status;
 use super::construct::{
@@ -66,9 +68,12 @@ use super::select::{self, Extent};
 use super::settings::EditSettings;
 use crate::board::GeometryShape;
 use crate::board::items::ItemId;
+use crate::board::state::Communication;
+use crate::board::structure::{Layer, LayerStructure};
 use crate::board::{
     BoardChanges, ItemFilter, ItemGeometry, RoutingBoard, geometry_of_item, tile_geometry,
 };
+use crate::rules::{BoardRules, ClearanceMatrix};
 
 /// The tool of a menu mode (Java's `RouteMenuState`, `DragMenuState`,
 /// `InspectMenuState`).
@@ -147,6 +152,11 @@ pub enum Command {
     ToggleSelect(FloatPoint),
     ExtendSelection(Extent),
     FilterSelection,
+    /// Replaces the selection: a non-empty set enters the inspected state,
+    /// an empty one leaves it. A host that keeps its own selection (the GUI)
+    /// uses this before a command that works on it (move, copy, undo). Only
+    /// from an idle state; a session in progress ignores it.
+    SetSelection(BTreeSet<ItemId>),
     /// Java's `startTile`, `startPolygon`, `startCircle` (popup menu).
     StartKeepout {
         kind: KeepoutKind,
@@ -338,6 +348,48 @@ impl Editor {
         }
     }
 
+    /// An editor that holds no board of its own, for a host that keeps the
+    /// board and lends it to each command ([`apply_on`](Self::apply_on)). Its
+    /// board is an empty placeholder, so [`board`](Self::board) is only
+    /// meaningful inside the commands. The GUI uses this: its session owns
+    /// the board behind an `Arc` and the editor keeps only the mode, the
+    /// selection and the sessions.
+    pub fn detached(settings: EditSettings) -> Self {
+        let layers = LayerStructure::new(vec![Layer::new("placeholder", true)]);
+        let matrix = ClearanceMatrix::default_instance(layers.count(), 0);
+        let mut rules = BoardRules::new(layers.clone(), matrix);
+        rules.create_default_net_class();
+        let outline = IntBox::new(0, 0, 1, 1);
+        let placeholder = RoutingBoard::new(
+            outline,
+            layers,
+            vec![PolylineShape::Tile(TileShape::from(outline))],
+            0,
+            rules,
+            Communication::default(),
+        );
+        Editor::new(placeholder, settings)
+    }
+
+    /// [`apply`](Self::apply) on `board`, which the host owns: the board is
+    /// swapped in for the command and out again, so the editor's sessions
+    /// (a route, a drag, a floating selection) go on across commands while
+    /// the host keeps the board between them. The change journal is turned
+    /// on for the command; its changes come back in [`Response::delta`].
+    ///
+    /// The sessions refer to items of the board by id, so the host must lend
+    /// the same board every time, or reset the editor with
+    /// `SetTool` after it changed the board in another way.
+    pub fn apply_on(&mut self, board: &mut RoutingBoard, cmd: Command) -> Response {
+        std::mem::swap(&mut self.board, board);
+        if !self.board.is_journaling() {
+            self.board.set_journaling(true);
+        }
+        let response = self.apply(cmd);
+        std::mem::swap(&mut self.board, board);
+        response
+    }
+
     pub fn board(&self) -> &RoutingBoard {
         &self.board
     }
@@ -503,6 +555,10 @@ impl Editor {
             }
             Command::Complete | Command::Cancel if !menu => {
                 self.set_selection(None);
+                Out::default()
+            }
+            Command::SetSelection(items) => {
+                self.set_selection((!items.is_empty()).then_some(items));
                 Out::default()
             }
             Command::MoveSelection { .. }

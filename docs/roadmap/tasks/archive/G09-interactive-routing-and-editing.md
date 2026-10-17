@@ -9,7 +9,7 @@ It is the report's GUI-9 (GUI, plugin and packaging report §1.7, §4) and
 where frame target FT7 is met.
 
 **Prerequisites:**
-- [G05](archive/G05-inspect-and-safe-edits.md): tools framework, context menus,
+- [G05](G05-inspect-and-safe-edits.md): tools framework, context menus,
   undo/redo with patching.
 - I01: the route session (Java `Route`/`RouteState` logic as an engine
   `RouteSession`).
@@ -25,7 +25,7 @@ where frame target FT7 is met.
 |---|---|
 | Tools framework, popup menus, patching, Java key set | G01 (`src/input.rs`), G05 (`src/tools/`, `src/tools/popup.rs`), G02.4 (`src/canvas/chunks.rs`) |
 | Low-level component moves | `Component::{turn_90_degree, rotate, change_side}` and the `Components` wrappers by `ComponentId` in `crates/freerouting/src/board/structure/component.rs` (used by I02 and I04, never by the GUI) |
-| Interactive engine | **missing** at HEAD: no `freerouting::interactive` module (I01–I04) |
+| Interactive engine | `freerouting::interactive` (I01–I04): `RouteSession`, drag and make-space, `Editor::apply` with `Command`, `Response`, `Overlay`, pin swap, history, the selection transforms and copy. G09 added `Command::SetSelection`, `Editor::detached` and `Editor::apply_on` (the GUI keeps the board in its `Arc` and lends it to each command). |
 | Java at `cda540f` | `gui/interactive/{MenuState,RouteMenuState,RouteState,DynamicRouteState,StitchRouteState,DragMenuState,DragState,DragItemState,MakeSpaceState,PinSwapState,MoveItemState,CopyItemState,CutoutRouteState}.java`, `gui/menus/{PopupMenuDynamicRoute,PopupMenuStitchRoute,PopupMenuChangeLayer,PopupMenuMove,PopupMenuCopy}.java`, `gui/windows/routing/{WindowRouteParameter,ManualRulesPanel,WindowMoveParameter}.java`, `board/actions/MoveComponent.java` |
 
 What this adds: `src/tools/route.rs`, `src/tools/drag.rs`,
@@ -92,7 +92,7 @@ Paths are under `crates/freerouting-gui/`.
 
 ## Checklist
 
-- [ ] **G09.1 — Route mode.**
+- [x] **G09.1 — Route mode.**
   - Java: `RouteMenuState.leftButtonClicked` → `RouteState.getInstance`
     (picks the start item, `generateSnapshot()`, chooses
     `DynamicRouteState` or `StitchRouteState`), `RouteState.addCorner`,
@@ -118,8 +118,22 @@ Paths are under `crates/freerouting-gui/`.
       `Layer changed to <name>.`
     - A Xvfb screenshot of a route in progress, looked at by the
       implementer and described in the done note.
+  *Done 2026-10-16:* `tools/{host,route}.rs` drive the engine's `Editor` (new `Editor::apply_on`
+  lends it the session board for one command, `Editor::detached` makes one without a board; the
+  response's journal patches the scene). `crates/freerouting-gui/tests/ui_interactive.rs`, raw pointer
+  events on J2 (two layers; the pin pair is found by running the same commands on an `Editor` that
+  owns a copy, with the pointer positions the screen gives): `route_pin_to_pin_two_layer` (A's
+  connection items reach B, incomplete count 33 -> 32), `escape_cancels_route` (item set, statistics and
+  boxes identical after Esc), `layer_key_mid_route_adds_via` (one via, status `Layer changed to B.Cu.`).
+  Also `the_app_starts_in_route_mode_like_java`, the route popup (`popup::tests`) and
+  `analysis_waits_for_the_route`. Xvfb screenshot of a route in progress (release binary, J2, click on a
+  U1 pad, two pointer moves; looked at with Read): the Route button of the new toolbar is lit and Inspect
+  and Drag are dimmed, the status bar says `Routing net /MIPI_CSI_CLK_P.`, a thick red trace leaves the
+  pad horizontally and turns 45 degrees, a thin yellow rubber band runs on to the target pad on J2, which
+  has a cyan outline; "Checks" says `Checking...` because the DRC waits while a route is under way.
+  Engine side: `tests/interactive_host.rs` (3 tests).
 
-- [ ] **G09.2 — Interactive routing settings.**
+- [x] **G09.2 — Interactive routing settings.**
   - Java: `WindowRouteParameter` (`route_mode` `dynamic`/`stitching`,
     `rule_selection` `automatic`/`manual`, `push&shove_enabled`,
     `drag_components_enabled`, `via_snap_to_smd_center`,
@@ -140,8 +154,19 @@ Paths are under `crates/freerouting-gui/`.
       pointer without clicking adds no trace segment; in dynamic mode it
       does (segment count from the route session).
     - `p_toggles_push_and_shove`.
+  *Done 2026-10-16:* `settings::InteractiveSettings` (Java's defaults, stored under the GUI's settings
+  key, `#[serde(default)]`) and the interactive section of Settings > Routing
+  (`dialogs/route_settings.rs::interactive_section`: route mode, rule selection with the manual rules panel,
+  push-and-shove, drag components, via snap, highlight obstacle, neckdown, pull-tight radius as "entire board"
+  or a length, pull-tight accuracy). The app passes it to every editor call (`tools/host.rs::edit_settings`).
+  `tests/ui_interactive.rs`: `interactive_settings_round_trip` (settings -> dialog clicks -> settings, then
+  `save` and `PersistedSettings::restore` through an in-memory `eframe::Storage`),
+  `stitch_mode_does_not_follow_cursor` (stitch: `corners_added` 0 and no trace after three moves, 1 corner
+  after a click; dynamic: a trace after one move), `p_toggles_push_and_shove` (also: ignored mid-route, and the
+  engine's settings follow). The manual rules are not stored (they belong to a board). Note: the checklist said
+  "C02's interactive settings struct"; the engine's `interactive::EditSettings` (I01.1) is that struct.
 
-- [ ] **G09.3 — Drag mode.**
+- [x] **G09.3 — Drag mode.**
   - Java: `DragMenuState.mousePressed` → `DragState.getInstance`:
     `findItemToMove` picks on the current layer first, then on every other
     visible layer in ascending order (with "select on all visible layers");
@@ -165,8 +190,19 @@ Paths are under `crates/freerouting-gui/`.
       trace pushes the trace (its geometry changes) and inserts nothing.
     - `drag_component_needs_setting`: with "drag components" off, pressing
       on a pad of a placed component drags nothing.
+  *Partial 2026-10-16:* `tools/drag.rs` and `viewport.rs` (press, move and release become `Press`, `DragTo`
+  and `Release`; each move patches the scene, `full_rebuilds` unchanged). `tests/ui_interactive.rs`:
+  `drag_via_moves_attached_traces` (the via ends where an `Editor` on a copy puts it for the same pointer
+  positions, every item the drag pushed too, the incomplete count is unchanged, one `U` restores the content
+  exactly), `drag_empty_space_makes_space` (a trace is pushed as the engine pushes it, item count unchanged,
+  no hidden-net item left), `drag_component_needs_setting` (off: nothing moves; on: the component moves).
+  The test uses J2 with its session, not `Issue754-avionics_hub.dsn`: the four Issue754 vias that have
+  traces are `SystemFixed` (DSN wiring), which `unfix` leaves alone and the engine's drag reports as
+  `DragStep::Fixed`, as Java does, so the clause cannot be met on that board. *Done 2026-10-16:* the accept
+  clause's board is amended to J2 with its session (operator decision, recommended option A, logged in
+  `target/orchestrator/operator-decisions.md`).
 
-- [ ] **G09.4 — Pin swap.**
+- [x] **G09.4 — Pin swap.**
   - Java: `MenuState.swapPins` (pick with a pins-only filter; none gives
     `no_pin_selected`) → `PinSwapState` (second click; the messages in the
     decisions). W starts it.
@@ -179,8 +215,15 @@ Paths are under `crates/freerouting-gui/`.
     - `pin_swap_completes`: on two swappable unconnected pins of one
       component, the pins' nets are exchanged and the status line is
       `Pin swap completed.`
+  *Done 2026-10-16:* `W` (and the popup's Swap pin, enabled) starts `Editor`'s `StartPinSwap`, the second
+  click completes it, the Java message is shown (`text::interactive_status`), the first pin and the swappable
+  pins are drawn (`overlays/route.rs`). `tests/ui_interactive.rs`, on rpi_splitter with the engine test's
+  logical part for J3 written to a temporary DSN: `pin_swap_completes` (two swappable J3 pins with different
+  nets exchange them; `Pin swap completed.`), `pin_swap_refused_when_connected` (with the session loaded;
+  `Pin not swapped because it is already connected.`, nets unchanged), `pin_swap_without_a_pin_says_so`
+  (`No pin selected.`).
 
-- [ ] **G09.5 — Route overlays: trace in progress and obstacle highlight.**
+- [x] **G09.5 — Route overlays: trace in progress and obstacle highlight.**
   - Java: the route states draw the trace so far and, with
     `highlight_routing_obstacle`, the item that stopped the route
     (`GraphicsContext` highlight colour).
@@ -193,8 +236,14 @@ Paths are under `crates/freerouting-gui/`.
     into a fixed pad of another net with the setting on puts that pad's id
     in the overlay's highlight list; with it off the list is empty. A
     snapshot `route_obstacle_highlight.png` passes on lavapipe.
+  *Done 2026-10-16:* `overlays/route.rs` draws the engine's `Overlay` (rubber band, targets, swap pins,
+  ellipses, layer-change marker, the obstacle, the floating selection and its violations); the committed
+  trace arrives through the journal. `tests/ui_interactive.rs::obstacle_is_highlighted` (a pad of another net
+  that stops a route, found with the engine on a copy: `highlights` is `[pad id]` with the setting on and empty
+  with it off) and `snapshot_route_obstacle_highlight` -> `tests/snapshots/route_obstacle_highlight.png`
+  (lavapipe; looked at: the pad is a brighter red than its neighbours, the airlines run to the right).
 
-- [ ] **G09.6 — Move, copy, rotate and cutout (optional).**
+- [~] **G09.6 — Move, copy, rotate and cutout (optional).**
   - Java at the pin: `MoveItemState` (rotate keys, change side, reset
     rotation, component grid, wheel rotate or zoom from
     `WindowMoveParameter`), `CopyItemState` and `CutoutRouteState` exist but
@@ -209,8 +258,18 @@ Paths are under `crates/freerouting-gui/`.
   - **Accept:** `tests/ui_interactive.rs::rotate_four_times_is_identity`:
     rotating a component by 90° four times gives the same placement and
     pad positions; one undo per rotation.
+  *Partial 2026-10-16:* `tools/move_component.rs` and `Command::{MoveSelection, RotateSelection,
+  MirrorSelection, ResetRotation, CopySelection, SetComponentGrid}`: `M` picks the selection up, `+` `-`
+  `*` (Shift+8) turn it, `/` mirrors, a click puts it down, Esc puts it back, `Ctrl+D` copies, the popup of a
+  floating selection (`popup::tests`), the floating items and their violations are drawn, and Settings >
+  Component Movement has the placement grid. `tests/ui_interactive.rs::rotate_four_times_is_identity` (a
+  component that turns four times on a copy: placement, pad positions and item boxes equal after four turns,
+  and one `U` per rotation walks back through the four states), `move_then_click_puts_the_selection_down`,
+  `escape_puts_a_moving_selection_back`, `undo_clears_the_editors_selection_but_not_the_guis`,
+  `component_movement_settings_set_the_placement_grid`. Remainder: the cutout tool (the engine has no
+  `CutoutRouteState`; I04 does not include it) and the wheel setting of `WindowMoveParameter` (zoom or rotate).
 
-- [ ] **G09.7 — Frame time while dragging (FT7).**
+- [~] **G09.7 — Frame time while dragging (FT7).**
   - `--bench drag` (added to G01.5's bench scripts) drags one component of
     `Issue190-processor.Z80` along a fixed path for 600 frames in a release
     build, with patching only.
@@ -218,3 +277,9 @@ Paths are under `crates/freerouting-gui/`.
   - **Accept:** on a quiet machine (load average ≤ 1.0, recorded), frame CPU
     p95 ≤ 8 ms and `full_rebuilds == 0` over the run; numbers in the done
     note and in `gui.md`, with a "pending" line for Dan's Windows GPU.
+  *Partial 2026-10-16:* `--bench drag` (`bench_drag.rs`, `bench::drag_offset`): Issue190, release,
+  600 frames, patching only. Frame CPU p95 5.84 and 5.54 ms, p50 3.27 ms, max 9.28 and 7.46 ms,
+  `full_rebuilds` 0, `patches` 598 (two runs; numbers and the method in `gui.md`, "FT7"). The machine was
+  not quiet (other agents routing and building: 1-minute load average 7 to 12, the clause needs at most
+  1.0), so the timing clause is not met as written. Remainder: repeat on a quiet machine (owner: P01, the
+  measurement runs) and on Dan's Windows GPU (owner: G00, "Frame targets"; pending line in `gui.md`).

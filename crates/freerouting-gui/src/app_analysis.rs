@@ -106,39 +106,29 @@ impl App {
     }
 
     /// Undo (`undo == true`) or redo of the board's last snapshot step
-    /// (Java `GuiBoardHistoryController.undo/redo`): the scene is patched
-    /// from the board's change journal, the status line says what happened,
-    /// and the changed nets are kept for the ratsnest. Refused while a
-    /// keepout is under construction (Java allows history in a menu state
-    /// only).
+    /// (Java `GuiBoardHistoryController.undo/redo`), run by the editor
+    /// (`Editor::apply`, I03.5): the scene is patched from the response's
+    /// change journal, the status line says what happened, and the changed
+    /// nets are kept for the ratsnest. Refused while a keepout is under
+    /// construction or an editor session is under way (Java allows history in
+    /// a menu state only).
+    ///
+    /// The engine also refuses history while items are selected, as Java
+    /// does. The GUI allows it (DIVERGENCES, "Undo and redo work while items
+    /// are selected"), so the selection the editor holds is cleared first:
+    /// `editor_apply` does that for every command but a move or a copy. The
+    /// GUI's own selection stays, minus the items the undo removed.
     fn undo_redo(&mut self, undo: bool) {
-        if self.tools.keepout.is_some() {
+        if self.tools.keepout.is_some() || self.editor_busy() || self.loaded.is_none() {
             return;
         }
-        let Some(b) = self.loaded.as_mut() else {
-            return;
+        let command = if undo {
+            freerouting::interactive::Command::Undo
+        } else {
+            freerouting::interactive::Command::Redo
         };
-        let mut nets = std::collections::BTreeSet::new();
-        let changed = b.session.edit(|board| {
-            if undo {
-                board.undo(Some(&mut nets))
-            } else {
-                board.redo(Some(&mut nets))
-            }
-        });
-        self.notice = Some(
-            match (changed, undo) {
-                (true, true) => text::UNDO_DONE,
-                (true, false) => text::REDO_DONE,
-                (false, true) => text::NO_MORE_UNDO,
-                (false, false) => text::NO_MORE_REDO,
-            }
-            .to_string(),
-        );
-        if changed {
-            self.tools.changed_nets = nets;
-            self.after_board_edit();
-        }
+        self.sync_tool();
+        self.editor_apply(command);
     }
 
     /// Brings the drawing up to date after an edit: the chunks that own a
@@ -146,10 +136,23 @@ impl App {
     /// patched from the board's change journal (G05.5); only a journal that
     /// overflowed makes a full rebuild.
     pub(crate) fn after_board_edit(&mut self) {
+        self.after_board_changes(None);
+    }
+
+    /// [`after_board_edit`](Self::after_board_edit) for changes the editor
+    /// already took from the journal (`Some`), else the journal is read
+    /// here.
+    pub(crate) fn after_board_changes(
+        &mut self,
+        changes: Option<freerouting::board::BoardChanges>,
+    ) {
         let Some(b) = self.loaded.as_mut() else {
             return;
         };
-        let sync = b.sync_scene();
+        let sync = match changes {
+            Some(changes) => b.sync_scene_with(changes),
+            None => b.sync_scene(),
+        };
         if !sync.rebuilt && (sync.removed > 0 || sync.added > 0) {
             self.stats.patches += 1;
         }

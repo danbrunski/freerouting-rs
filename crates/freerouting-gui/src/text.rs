@@ -106,6 +106,12 @@ pub const ISLANDS_EMPTY: &str = "No zone islands found.";
 // Side panel and the toggles (BoardToolbar_en.properties: "Toggle the
 // ratsnest display (G)").
 pub const INCOMPLETE_COUNT: &str = "Incomplete connections";
+pub const TOOL_SELECT: &str = "Inspect";
+pub const TOOL_SELECT_TIP: &str = "Inspect mode: click to select items (S)";
+pub const TOOL_ROUTE: &str = "Route";
+pub const TOOL_ROUTE_TIP: &str = "Route mode: click a pin or trace to start a route (R)";
+pub const TOOL_DRAG: &str = "Drag";
+pub const TOOL_DRAG_TIP: &str = "Drag mode: drag items, or push traces aside (D)";
 pub const RATSNEST_TOGGLE: &str = "Ratsnest";
 pub const RATSNEST_TOOLTIP: &str = "Toggle the ratsnest display (G)";
 pub const VIOLATIONS_TOGGLE: &str = "Violations";
@@ -736,8 +742,6 @@ pub const POPUP_CANCEL: &str = "Cancel (Esc)";
 pub const POPUP_CENTER_DISPLAY: &str = "Center display (C)";
 pub const POPUP_ZOOM_IN: &str = "Zoom in (Z)";
 pub const POPUP_ZOOM_OUT: &str = "Zoom out (O)";
-pub const POPUP_NEEDS_ROUTE: &str = "Needs the interactive route session (I01).";
-pub const POPUP_NEEDS_SWAP: &str = "Needs pin swapping in the editor (I03.3).";
 
 // WindowObjectInfo_en.properties and the words of Common_en.properties that
 // `Item.printInfo` puts between the values.
@@ -750,6 +754,151 @@ pub const INFO_VIAS: &str = "vias";
 pub const INFO_TRACE: &str = "trace, cumulative length";
 pub const INFO_TRACES: &str = "traces, cumulative length";
 pub const INFO_EMPTY: &str = "The list is empty.";
+
+// G09: the editor's status messages (`InteractiveState_en.properties`), the
+// route and move popups (`PopupMenuMain`, `PopupMenuMove`; the bundles of the
+// route popups are missing at the pin, so their words are Java's keys in
+// plain English) and the interactive part of `WindowRouteParameter`.
+pub const ROUTING_NET: &str = "Routing net {{net}}.";
+pub const LAYER_CHANGED_TO: &str = "Layer changed to {{layer}}.";
+pub const LAYER_NOT_CHANGED_INACTIVE: &str =
+    "Layer not changed because {{layer}} is not active for the current net.";
+pub const LAYER_NOT_CHANGED_OBSTACLE: &str =
+    "Layer not changed because of an obstacle on layer {{layer}}.";
+pub const DRAGGING_ITEM: &str = "Dragging item";
+pub const NO_PIN_SELECTED: &str = "No pin selected.";
+pub const NO_SWAPPABLE_PIN: &str = "No swappable pin found.";
+pub const CLICK_SECOND_PIN: &str = "Click the second pin with the left mouse button.";
+pub const PIN_NOT_SWAPPED_CONNECTED: &str = "Pin not swapped because it is already connected.";
+pub const PIN_NOT_SWAPPED_SECOND_CONNECTED: &str =
+    "Pin not swapped because the second pin is already connected.";
+pub const PIN_SWAP_COMPLETED: &str = "Pin swap completed.";
+pub const PIN_TO_SWAP_MISSING: &str = "The pin to swap is missing.";
+pub const INSERTION_FAILED: &str = "Insertion failed because of obstacles.";
+pub const MOVE_COMPLETED: &str = "Move completed.";
+pub const CANNOT_CHANGE_SIDE: &str = "Cannot change the placement side.";
+pub const UNFIX_BEFORE_MOVING: &str = "Unfix the selected items before moving them.";
+pub const UNROUTE_BEFORE_MOVING: &str =
+    "Unroute the selected items or extend the selection before moving.";
+pub const CANNOT_RESET_ROTATIONS: &str = "Unable to reset components with different rotations.";
+pub const SOME_ITEMS_CANNOT_BE_MOVED: &str = "Some items cannot be moved because they are fixed.";
+pub const ITEMS_NOT_INSERTED: &str = "Some items were not inserted because of obstacles.";
+pub const ITEMS_ALREADY_CONNECTED: &str =
+    "Some items were not changed because they are already connected.";
+
+/// The text of an editor status (`interactive::Status`): Java's
+/// `InteractiveState_en.properties` for the key, with its arguments
+/// filled in. A key without a text here shows as the key itself, so a new
+/// engine message is never lost.
+pub fn interactive_status(status: &freerouting::interactive::Status) -> String {
+    let args: Vec<&str> = status.args.iter().map(String::as_str).collect();
+    let template = match status.key {
+        "routing_net_message" => ROUTING_NET,
+        "layer_changed_to_message" => LAYER_CHANGED_TO,
+        "layer_not_changed_inactive_net_message" => LAYER_NOT_CHANGED_INACTIVE,
+        "layer_not_changed_obstacle_message" => LAYER_NOT_CHANGED_OBSTACLE,
+        "dragging_item" => DRAGGING_ITEM,
+        "no_pin_selected" => NO_PIN_SELECTED,
+        "no_swappable_pin_found" => NO_SWAPPABLE_PIN,
+        "please_click_second_pin_with_the_left_mouse_button" => CLICK_SECOND_PIN,
+        "pin_not_swapped_because_it_is_already_connected" => PIN_NOT_SWAPPED_CONNECTED,
+        "pin_not_swapped_because_second_pin_is_already_connected" => {
+            PIN_NOT_SWAPPED_SECOND_CONNECTED
+        }
+        "pin_swap_completed" => PIN_SWAP_COMPLETED,
+        "pin_to_swap_missing" => PIN_TO_SWAP_MISSING,
+        "insertion_failed_because_of_obstacles" => INSERTION_FAILED,
+        "move_completed" => MOVE_COMPLETED,
+        "cannot_change_placement_side" => CANNOT_CHANGE_SIDE,
+        "please_unfix_selected_items_before_moving" => UNFIX_BEFORE_MOVING,
+        "please_unroute_or_extend_selection_before_moving" => UNROUTE_BEFORE_MOVING,
+        "unable_to_reset_components_with_different_rotations" => CANNOT_RESET_ROTATIONS,
+        "some_items_cannot_be_moved_because_they_are_fixed" => SOME_ITEMS_CANNOT_BE_MOVED,
+        "some_items_not_inserted_because_of_obstacles" => ITEMS_NOT_INSERTED,
+        "some_items_are_not_changed_because_they_are_already_connected" => ITEMS_ALREADY_CONNECTED,
+        "in_inspect_mode" => IN_INSPECT_MODE,
+        "nothing_selected" => NOTHING_SELECTED,
+        "drag_left_mouse_button_to_select_items_in_region" => DRAG_TO_SELECT_REGION,
+        "some_items_are_fixed_and_could_therefore_not_be_removed" => SOME_ITEMS_FIXED,
+        "undo" => UNDO_DONE,
+        "redo" => REDO_DONE,
+        "no_more_undo_possible" => NO_MORE_UNDO,
+        "no_more_redo_possible" => NO_MORE_REDO,
+        "adding_hole_to_obstacle_area" => ADDING_HOLE,
+        "adding_hole_completed"
+        | "no_item_found_for_adding_hole"
+        | "no_obstacle_area_found_for_adding_hole"
+        | "adding_hole_to_circle_not_yet_implemented"
+        | "adding_hole_failed" => {
+            return hole_status(status.key).to_string();
+        }
+        other => return other.to_string(),
+    };
+    fill(template, &args)
+}
+
+pub const POPUP_END_ROUTE: &str = "End route";
+pub const POPUP_CANCEL_ROUTE: &str = "Cancel route";
+pub const POPUP_CHANGE_LAYER: &str = "Change layer";
+pub const POPUP_TURN: &str = "Turn";
+pub const POPUP_TURN_90: &str = "90 degrees (+)";
+pub const POPUP_TURN_180: &str = "180 degrees (*)";
+pub const POPUP_TURN_270: &str = "-90 degrees (-)";
+pub const POPUP_CHANGE_SIDE: &str = "Change placement side (/)";
+pub const POPUP_RESET_ROTATION: &str = "Reset rotation";
+pub const POPUP_MOVE_SELECTION: &str = "Move selection (M)";
+pub const POPUP_COPY_SELECTION: &str = "Copy selection (Ctrl+D)";
+
+// WindowRouteParameter_en.properties, the interactive fields.
+pub const RP_ROUTE_MODE: &str = "Route mode:";
+pub const RP_ROUTE_MODE_TIP: &str = "Switch to stitching mode when routing shove-fixed nets.";
+pub const RP_DYNAMIC: &str = "Dynamic";
+pub const RP_DYNAMIC_TIP: &str = "Route interactively while moving the mouse.";
+pub const RP_STITCHING: &str = "Stitching";
+pub const RP_STITCHING_TIP: &str = "Click to place corners and manually stitch the route.";
+pub const RP_RULE_SELECTION: &str = "Rule selection:";
+pub const RP_RULE_SELECTION_TIP: &str = "Choose manual routing rules or use the net rules.";
+pub const RP_AUTOMATIC: &str = "Automatic";
+pub const RP_AUTOMATIC_TIP: &str = "Use routing rules defined in the net settings.";
+pub const RP_MANUAL: &str = "Manual";
+pub const RP_MANUAL_TIP: &str = "Select routing rules and trace widths manually.";
+pub const RP_PUSH_SHOVE: &str = "Push-and-shove enabled";
+pub const RP_PUSH_SHOVE_TIP: &str =
+    "Allow interactive routing to displace existing traces (push-and-shove).";
+pub const RP_DRAG_COMPONENTS: &str = "Drag components enabled";
+pub const RP_DRAG_COMPONENTS_TIP: &str =
+    "Enable dragging components while holding the left mouse button.";
+pub const RP_VIA_SNAP: &str = "Vias snap to SMD pad centers";
+pub const RP_VIA_SNAP_TIP: &str =
+    "When enabled, vias attached to SMD pins snap to the centers of their pads.";
+pub const RP_HIGHLIGHT_OBSTACLE: &str = "Highlight routing obstacle";
+pub const RP_HIGHLIGHT_OBSTACLE_TIP: &str =
+    "Highlight the current routing obstacle in dynamic routing.";
+pub const RP_NECKDOWN: &str = "Automatic neckdown";
+pub const RP_NECKDOWN_TIP: &str = "When enabled, trace width is automatically reduced at pins narrower than the current trace width.";
+pub const RP_PULL_TIGHT_REGION: &str = "Pull-tight radius:";
+pub const RP_PULL_TIGHT_REGION_TIP: &str = "The radius around the cursor within which traces are straightened after each routing step. Smaller values limit cleanup to a smaller area and are faster; the maximum applies to the entire board.";
+pub const RP_PULL_TIGHT_WHOLE_BOARD: &str = "entire board (no limit)";
+pub const RP_PULL_TIGHT_ACCURACY: &str = "Pull-tight accuracy:";
+pub const RP_PULL_TIGHT_ACCURACY_TIP: &str = "Routing precision. Lower values are slower but more precise; higher values are faster but less precise.";
+// ManualRulesPanel_en.properties
+pub const MR_TITLE: &str = "Manual Rules";
+pub const MR_ALL_LAYERS: &str = "all layers";
+pub const MR_VIA_RULE: &str = "Via rule:";
+pub const MR_VIA_RULE_TIP: &str = "Via rule used for layer changes during manual routing.";
+pub const MR_CLEARANCE_CLASS: &str = "Trace clearance class:";
+pub const MR_CLEARANCE_CLASS_TIP: &str = "Clearance class used by traces during manual routing.";
+pub const MR_TRACE_WIDTH: &str = "Trace width:";
+pub const MR_TRACE_WIDTH_TIP: &str = "Trace width used for manual routing.";
+pub const MR_ON_LAYER: &str = "On layer:";
+pub const MR_ON_LAYER_TIP: &str = "Layer on which to apply the manual trace width.";
+// WindowMoveParameter_en.properties
+pub const MV_TITLE: &str = "Component Movement Settings";
+pub const MENU_MOVE_SETTINGS: &str = "Component Movement";
+pub const MV_HORIZONTAL_GRID: &str = "Horizontal component placement grid spacing:";
+pub const MV_HORIZONTAL_GRID_TIP: &str = "Horizontal spacing of the component placement grid.";
+pub const MV_VERTICAL_GRID: &str = "Vertical component placement grid spacing:";
+pub const MV_VERTICAL_GRID_TIP: &str = "Vertical spacing of the component placement grid.";
 
 #[cfg(test)]
 mod tests {

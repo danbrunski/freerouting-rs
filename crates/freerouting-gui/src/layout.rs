@@ -31,6 +31,8 @@ impl App {
                 self.overlay,
                 self.loaded.is_some(),
                 self.view.unit,
+                self.tools.mode,
+                self.editor_busy(),
             ));
         });
         // The status bar is laid out before the canvas, so the hover of the
@@ -106,6 +108,12 @@ impl App {
         };
         self.scripted
             .before_canvas(&mut self.view, self.loaded.as_ref());
+        self.view.left_button = self.left_button();
+        self.view.tracking = self
+            .tools
+            .host
+            .as_ref()
+            .is_some_and(|h| h.follows_pointer());
         let mut out = CanvasOut::default();
         let central = egui::CentralPanel::default()
             .frame(egui::Frame::NONE)

@@ -18,7 +18,7 @@
 //! | [`canvas`] | the board's geometry in chunks, the wgpu pipeline that draws it |
 //! | [`bench_synthetic`] | the tiled stress board for `--bench-synthetic` |
 //! | [`panels`], [`menu`] | side panel sections, warnings window, menu bar |
-//! | [`tools`] | inspect mode, selection operations, safe edits, context menus, keepout construction (G05) |
+//! | [`tools`] | inspect mode, selection operations, safe edits, context menus, keepout construction (G05); the editor host, route, drag, pin swap and move (G09) |
 //! | [`settings`] | persisted preferences |
 //! | [`stats`], [`bench`], [`capture`], [`args`] | frame statistics, `--bench`, `--screenshot` |
 
@@ -27,6 +27,7 @@ pub mod app;
 mod app_analysis;
 pub mod args;
 pub mod bench;
+mod bench_drag;
 pub mod bench_synthetic;
 pub mod canvas;
 pub mod capture;

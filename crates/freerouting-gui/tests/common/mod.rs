@@ -40,6 +40,20 @@ pub fn plain_harness(files: &[&str]) -> Harness<'static, App> {
     harness
 }
 
+/// [`plain_harness`] with the inspect tool chosen: the tests of the
+/// selection (G03, G05) click on the canvas, and the app starts in route mode
+/// like Java (G09).
+pub fn inspect_harness(files: &[&str]) -> Harness<'static, App> {
+    let mut harness = plain_harness(files);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().execute(
+        &ctx,
+        freerouting_gui::commands::Command::SetTool(freerouting_gui::tools::ToolMode::Select),
+    );
+    let _ = harness.run_ok();
+    harness
+}
+
 /// Like [`plain_harness`], with the wgpu renderer so `snapshot` and
 /// `render` work. On Linux a missing Vulkan adapter fails with a message
 /// naming the package to install.

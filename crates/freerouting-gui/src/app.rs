@@ -75,6 +75,8 @@ pub struct App {
     done: Vec<crate::stats::FrameCpu>,
     /// The tessellation last counted as a full build.
     seen_tess: Option<u64>,
+    /// `--bench drag`: where the press was (scene millimetres).
+    pub(crate) bench_press: Option<crate::scene::P>,
 }
 
 impl App {
@@ -149,6 +151,7 @@ impl App {
             load_started: None,
             done: Vec::new(),
             seen_tess: None,
+            bench_press: None,
         };
         if !args.open.is_empty() {
             app.start_load(ctx, args.open, None);
@@ -295,6 +298,27 @@ impl App {
 
     /// Runs one command: the single path for menus, keys and tests.
     pub fn execute(&mut self, ctx: &egui::Context, command: Command) {
+        // G09: while a route or a copy is under way the layer keys and the
+        // layers panel ask the editor to change the layer.
+        if self.editor_layer(&command) {
+            return;
+        }
+        // A command that changes the board in another way ends the session
+        // first: the session refers to items by id.
+        if self.editor_busy()
+            && matches!(
+                command,
+                Command::ConfirmDeleteAll
+                    | Command::EditRules(_)
+                    | Command::DeleteSelection
+                    | Command::FixSelection
+                    | Command::UnfixSelection
+                    | Command::StartKeepout { .. }
+                    | Command::Reload
+            )
+        {
+            self.end_editor_session();
+        }
         match command {
             Command::Open(path) => self.start_load(ctx, vec![path], self.current()),
             Command::OpenDialog => self.open_dialog(),
@@ -334,7 +358,26 @@ impl App {
             | Command::ZoomInAt(_)
             | Command::ZoomOutAt(_)
             | Command::StartKeepout { .. }
-            | Command::Complete) => self.execute_tool(ctx, command),
+            | Command::Complete
+            | Command::SetTool(_)
+            | Command::StartRoute { .. }
+            | Command::StartPinSwap { .. }
+            | Command::TogglePush
+            | Command::PointerMoved(_)
+            | Command::DragStart(_)
+            | Command::DragMove(_)
+            | Command::DragEnd
+            | Command::ChangeRouteLayer(_)
+            | Command::UpdateInteractive(_)
+            | Command::SetManualTraceWidth { .. }
+            | Command::SetManualClearanceClass(_)
+            | Command::SetManualViaRule(_)
+            | Command::MoveSelection { .. }
+            | Command::RotateSelection(_)
+            | Command::MirrorSelection
+            | Command::ResetRotation
+            | Command::CopySelection { .. }
+            | Command::SetComponentGrid { .. }) => self.execute_tool(ctx, command),
             command @ (Command::Select(_)
             | Command::ClearSelection
             | Command::ZoomSelection
@@ -497,6 +540,26 @@ impl App {
         out.extend(
             ctx.input(|i| crate::tools::inspect::key_commands(i, typing, &self.selection, cursor)),
         );
+        // G09: the interactive tools' keys.
+        out.extend(ctx.input(|i| {
+            crate::tools::route::key_commands(
+                i,
+                typing,
+                self.selection.is_empty(),
+                self.editor_busy(),
+                cursor,
+            )
+        }));
+        if self.is_moving() {
+            // `+` and `-` turn the floating selection instead of the layer.
+            out.retain(|c| !matches!(c, Command::StepActiveLayer(_)));
+            out.extend(ctx.input(|i| crate::tools::move_component::float_key_commands(i, typing)));
+        }
+        if !self.selection.is_empty() && !self.editor_busy() {
+            out.extend(
+                ctx.input(|i| crate::tools::move_component::copy_key_command(i, typing, cursor)),
+            );
+        }
         out
     }
 }
@@ -514,11 +577,13 @@ impl eframe::App for App {
             .select(frame.wgpu_render_state().map(|s| s.target_format));
         self.poll_load();
         self.count_builds();
+        self.analysis.set_held(self.editor_busy());
         self.analysis
             .poll(ctx, self.loaded.as_ref().map(|b| &b.session));
         self.poll_export();
         self.log_analysis();
         let mut commands = self.commands_this_frame(ctx);
+        commands.extend(self.bench_drag_commands());
         let (panel_commands, canvas) = self.panels(ctx);
         commands.extend(panel_commands);
         if let Some(b) = &self.loaded {
@@ -537,7 +602,16 @@ impl eframe::App for App {
         commands.extend(self.confirm_delete_ui(ctx));
         commands.extend(self.tools_ui(ctx));
         if let Some(b) = &self.loaded {
-            let view = crate::dialogs::RuleView::new(&b.session, self.view.unit);
+            let manual = self.tools.manual.clone().unwrap_or_else(|| {
+                freerouting::interactive::ManualRules::new(b.session.board.layer_count())
+            });
+            let view = crate::dialogs::RuleView::new(&b.session, self.view.unit).with_interactive(
+                crate::dialogs::InteractiveView {
+                    settings: &self.settings.interactive,
+                    manual: &manual,
+                    component_grid: self.tools.component_grid,
+                },
+            );
             commands.extend(self.dialogs.show(ctx, &view));
         }
         commands.extend(self.export_dialog.ui(ctx).map(Command::ExportDrcReport));
@@ -657,6 +731,8 @@ impl App {
             done: &self.done,
             first_frame_ms,
         };
+        self.scripted
+            .bench_counters(self.stats.full_rebuilds, self.stats.patches);
         self.scripted
             .after_frame(ctx, ready, &report, self.loaded.as_ref());
     }

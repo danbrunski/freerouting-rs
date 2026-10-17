@@ -64,12 +64,26 @@ pub enum RulesDialog {
     EditVias,
     /// `WindowRouteParameter` (Settings > Routing).
     RouteSettings,
+    /// `WindowMoveParameter` (Settings > Component Movement, G09.6).
+    MoveSettings,
 }
 
 /// What a dialog reads of the open design.
 pub struct RuleView<'a> {
     pub board: &'a BasicBoard,
     pub units: RuleUnits,
+    /// The interactive routing settings and the manual rules (G09.2); the
+    /// Routing Settings window shows its interactive part only with these.
+    pub interactive: Option<InteractiveView<'a>>,
+}
+
+/// What the interactive part of the routing settings reads (G09.2, G09.6).
+#[derive(Clone, Copy)]
+pub struct InteractiveView<'a> {
+    pub settings: &'a crate::settings::InteractiveSettings,
+    pub manual: &'a freerouting::interactive::ManualRules,
+    /// The component placement grid in board units (horizontal, vertical).
+    pub component_grid: (i32, i32),
 }
 
 impl<'a> RuleView<'a> {
@@ -84,7 +98,14 @@ impl<'a> RuleView<'a> {
                 design: comm.unit,
                 display,
             },
+            interactive: None,
         }
+    }
+
+    /// The same view with the interactive settings of Settings > Routing.
+    pub fn with_interactive(mut self, interactive: InteractiveView<'a>) -> Self {
+        self.interactive = Some(interactive);
+        self
     }
 
     /// The names of the clearance classes, in matrix order.
@@ -117,6 +138,7 @@ impl Dialogs {
             RulesDialog::ViaRules => self.via_rules.open = open,
             RulesDialog::EditVias => self.vias.open = open,
             RulesDialog::RouteSettings => self.route.open = open,
+            RulesDialog::MoveSettings => self.route.move_open = open,
         }
     }
 
@@ -128,6 +150,7 @@ impl Dialogs {
             RulesDialog::ViaRules => self.via_rules.open,
             RulesDialog::EditVias => self.vias.open,
             RulesDialog::RouteSettings => self.route.open,
+            RulesDialog::MoveSettings => self.route.move_open,
         }
     }
 
