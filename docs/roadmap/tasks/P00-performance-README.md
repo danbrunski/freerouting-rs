@@ -14,7 +14,7 @@ tree.
 | [P01](archive/P01-profiling-and-baselines.md) ✅ | Profiler recipes, a per-stage stats output, microbenchmarks with identical work counts, the first Rust-against-Java baseline, the release speed target | M / tooling | F02.3 (`bench`); the benchmark rows need the A-series board-parity gate |
 | [P02](archive/P02-parity-safe-optimizations.md) ✅ | Speed-ups that leave every routed result byte-identical, starting with an incremental-against-rebuild audit | M–L / correctness guarded by `ses-diff` | P01; the A-series board-parity gate |
 | [P03](archive/P03-parallelism.md) ✅ | Parallel work with an ordered merge where results can't depend on order | M / determinism | P01, O06 |
-| [P04](P04-order-independent-rooms.md) | Room completion independent of tree visit order (a measured divergence), then a faster search tree | L / changes routes; Q-series rules | P01, P02, the A-series board-parity gate |
+| [P04](archive/P04-order-independent-rooms.md) ✅ | Room completion independent of tree visit order (a measured divergence), then a faster search tree | L / changes routes; Q-series rules | P01, P02, the A-series board-parity gate |
 | [P05](P05-simd-and-allocator.md) | SIMD on hot data-parallel loops shown by P01; an allocator trial | M / portability | P01 |
 
 ## Order
@@ -74,3 +74,18 @@ Report-only Q items (Q03, Q01.4, Q02.1, Q06) do not wait for P04.
   *Decided by Dan 2026-10-16: as recommended, with the Java-shaped tree kept
   as a selectable mode. Recorded in "Order" above, in P04's decisions, in
   [performance.md](../performance.md) and in Q00's order.*
+- **P04's pass rule** (raised by P04, 2026-10-17). P04.1 (canonical room order)
+  and P04.2 (leaf work unit) both failed the F03.1 gate and P04's own rule:
+  routes change on most boards like a coin flip per board, so "no board
+  regresses" fails even when the totals improve. P04.1 cut total unrouted from
+  1,281 to 1,269 over 17 boards and halved the maze work, but 5 boards
+  regressed. So P04.3 did not start, and the default stays Java's tree. Options:
+  keep the rule and close P04.3; judge a divergence made for speed on totals or
+  within a noise band taken from the canary-pwr variants; or register another
+  canonical order. *Recommendation:* keep the rule and close P04.3 for now,
+  since P02 already gave the constant-factor gains. Revisit if P01.5's speed
+  target is missed. The numbers, the registrations and the patch are in
+  [P04](archive/P04-order-independent-rooms.md).
+  *Decided 2026-10-17 (orchestrator, under Dan's standing instruction to take
+  the recommended answer):* keep the rule and close P04.3; the default tree
+  stays Java's, and every measurement that waited for P04 runs against it.

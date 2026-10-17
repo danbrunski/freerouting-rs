@@ -1,0 +1,25 @@
+# P04's measurement set (P04.1, P04.2; docs/roadmap/prereg/P04.1.json and P04.2.json):
+# the 16 boards of benchmark.txt and the five in-repository canary-pwr variants of
+# owner.txt, which count as one board (gate collect --group). owner.txt's out-of-repo
+# stale snapshot is left out (kept for history only). Bounds: tools/java-reference/route-bounds.tsv.
+fixtures/Issue433-my-board.dsn
+fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn
+fixtures/Issue508-DAC2020_bm02.dsn
+fixtures/Issue690-sonde_xilinx.dsn
+fixtures/Issue508-DAC2020_bm07.dsn
+fixtures/Issue508-DAC2020_bm01.dsn
+fixtures/Issue508-DAC2020_bm10.dsn
+fixtures/Issue093-interf_u.dsn
+fixtures/Issue555-CNH_Functional_Tester_1.dsn
+fixtures/Issue269-z10_module.dsn
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn
+fixtures/Issue753-CPU-85_r104.dsn
+fixtures/Issue066-Project_GP8B.dsn
+fixtures/Issue145-smoothieboard.dsn
+fixtures/Issue219-LogicBoard_smt.dsn
+fixtures/Issue420-contribution-board.dsn
+fixtures/canary-pwr/canary-pwr-pours1.dsn
+fixtures/canary-pwr/canary-pwr-pours2.dsn
+fixtures/canary-pwr/canary-pwr-pours3.dsn
+fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn
+fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn
