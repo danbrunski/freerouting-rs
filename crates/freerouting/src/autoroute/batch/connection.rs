@@ -44,12 +44,6 @@
 //! board has a fresh meter, and no limit of this connection is checked
 //! after it, as in Java, where the rollback also comes after the search.
 //!
-//! **Not in Java: a search cost** (X11.3). [`FreeroutingConnectionRouter::with_cost`]
-//! adds a [`ConnectionCost`](super::connection_cost::ConnectionCost) to the
-//! maze search of the first attempt and its plane fallback when the cost
-//! says it applies; without one (Java's router and every built-in id) the
-//! search is called exactly as before.
-//!
 //! Not ported: Java's benchmark profile timers, its trace logging and the
 //! `Necked retry routed net ...` info line (no log channel reaches a stage).
 //! The pull-tight runs without the cancel token: [`PullTightParams::stop`]
@@ -61,7 +55,6 @@ use std::collections::BTreeSet;
 use freerouting_geometry::FloatPoint;
 use freerouting_geometry::jmath::round_to_i32;
 
-use super::connection_cost::{ConnectionCost, attempt_with_cost};
 use super::strict_drc::apply_strict_drc_after_route;
 use crate::autoroute::connection::{Ripped, RouteLimits, route_connection_counted};
 use crate::autoroute::control::AutorouteControl;
@@ -204,27 +197,6 @@ fn router_control(
     Some(control)
 }
 
-/// [`attempt`], or [`attempt_with_cost`] when a connection cost applies.
-#[allow(clippy::too_many_arguments)]
-fn attempt_main(
-    board: &mut RoutingBoard,
-    start: &BTreeSet<ItemId>,
-    dest: &BTreeSet<ItemId>,
-    control: &AutorouteControl,
-    limit: &WorkLimit,
-    ctx: &StageCtx,
-    ripped: &mut BTreeSet<ItemId>,
-    costs: &mut RipupCosts,
-    cost: Option<&mut (dyn ConnectionCost + 'static)>,
-) -> AttemptResult {
-    match cost {
-        None => attempt(board, start, dest, control, limit, ctx, ripped, costs),
-        Some(cost) => {
-            attempt_with_cost(board, start, dest, control, limit, ctx, ripped, costs, cost)
-        }
-    }
-}
-
 /// One `initAutoroute` plus `autorouteConnection` with `limit`, adding to
 /// the caller's ripped set.
 #[allow(clippy::too_many_arguments)]
@@ -274,8 +246,6 @@ pub(crate) fn pull_tight_after_connection(
 pub struct FreeroutingConnectionRouter {
     plane_taps: Box<dyn PlaneTapPolicy>,
     neck_down: Box<dyn NeckDownPolicy>,
-    /// The search cost of X11.3 (`connection_cost`); none for Java's.
-    cost: Option<Box<dyn ConnectionCost>>,
 }
 
 impl std::fmt::Debug for FreeroutingConnectionRouter {
@@ -283,7 +253,6 @@ impl std::fmt::Debug for FreeroutingConnectionRouter {
         f.debug_struct("FreeroutingConnectionRouter")
             .field("plane_taps", &self.plane_taps.id())
             .field("neck_down", &self.neck_down.id())
-            .field("cost", &self.cost.as_ref().map(|c| c.id()))
             .finish()
     }
 }
@@ -297,15 +266,7 @@ impl FreeroutingConnectionRouter {
         FreeroutingConnectionRouter {
             plane_taps,
             neck_down,
-            cost: None,
         }
-    }
-
-    /// This router with `cost` added to the maze search of each
-    /// connection it applies to (`connection_cost`, X11.3).
-    pub fn with_cost(mut self, cost: Box<dyn ConnectionCost>) -> Self {
-        self.cost = Some(cost);
-        self
     }
 
     /// The router with the plane-tap and neck-down policies `settings`
@@ -409,11 +370,6 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
             } => (start, dest, fallback),
         };
         let mut airline = calculate_airline(board, &start, &dest);
-        // X11.3: not in Java; `begin` reads the board only.
-        let use_cost = self
-            .cost
-            .as_deref_mut()
-            .is_some_and(|c| c.begin(board, task, p, &control));
         // PARITY: :83-91, the limit before the session; :94 the watermark
         // after; :99 the snapshot last.
         let meter_start = board.search_trees().work_meter().units();
@@ -427,7 +383,7 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
 
         let mut ripped = BTreeSet::new();
         let mut costs = RipupCosts::new();
-        let mut result = attempt_main(
+        let mut result = attempt(
             board,
             &start,
             &dest,
@@ -436,7 +392,6 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
             ctx,
             &mut ripped,
             &mut costs,
-            self.cost.as_deref_mut().filter(|_| use_cost),
         );
         if result.state == AttemptState::Failed
             && let Some(fallback) = fallback
@@ -444,7 +399,7 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
             // PARITY: :100-109, a new session, the same limit.
             dest = fallback;
             airline = calculate_airline(board, &start, &dest);
-            result = attempt_main(
+            result = attempt(
                 board,
                 &start,
                 &dest,
@@ -453,7 +408,6 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
                 ctx,
                 &mut ripped,
                 &mut costs,
-                self.cost.as_deref_mut().filter(|_| use_cost),
             );
         }
         if result.state == AttemptState::Routed {

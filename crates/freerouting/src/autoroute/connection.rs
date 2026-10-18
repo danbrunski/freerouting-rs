@@ -52,7 +52,7 @@ use super::path::{InsertError, Located, RipupCosts, insert_located, locate};
 use super::session::Session;
 use super::session::drills::DrillCarry;
 use super::session::search::{MazeSearch, SearchResult, SearchSettings};
-use super::session::sink::{ExtraCost, NoExtraCost, SearchSink};
+use super::session::sink::{NoExtraCost, SearchSink};
 use super::{AttemptResult, AttemptState};
 use crate::board::RoutingBoard;
 use crate::board::items::{AreaKind, Item, ItemId, ItemKind, StopConnectionOption};
@@ -133,39 +133,9 @@ pub fn route_connection_on_engine<S: SearchSink>(
     sink: S,
     engine: &mut DrillCarry,
 ) -> (AttemptResult, S) {
-    route_connection_with_cost(
-        board,
-        start,
-        dest,
-        ctrl,
-        limits,
-        ripped,
-        sink,
-        engine,
-        NoExtraCost,
-    )
-}
-
-/// [`route_connection_on_engine`] with the A04 cost hook `extra` added to
-/// the maze search's door expansion (X11.3's bus attraction). With
-/// [`NoExtraCost`] it is [`route_connection_on_engine`]: the term is not
-/// added at all.
-#[allow(clippy::too_many_arguments)]
-pub fn route_connection_with_cost<S: SearchSink, C: ExtraCost>(
-    board: &mut RoutingBoard,
-    start: &BTreeSet<ItemId>,
-    dest: &BTreeSet<ItemId>,
-    ctrl: &AutorouteControl,
-    limits: RouteLimits<'_>,
-    ripped: Ripped<'_>,
-    sink: S,
-    engine: &mut DrillCarry,
-    extra: C,
-) -> (AttemptResult, S) {
     let Ripped { items, costs } = ripped;
-    let (searched, sink) = search_and_locate(
-        board, start, dest, ctrl, limits, items, costs, sink, engine, extra,
-    );
+    let (searched, sink) =
+        search_and_locate(board, start, dest, ctrl, limits, items, costs, sink, engine);
     let (result, located) = match searched {
         Searched::InitFailed => {
             let details = format!(
@@ -283,7 +253,7 @@ pub(crate) fn finish_connection(
 /// The session part of [`route_connection`]: init, search, locate, then
 /// `clear()` unless the init failed (`:136-204`).
 #[allow(clippy::too_many_arguments)]
-fn search_and_locate<S: SearchSink, C: ExtraCost>(
+fn search_and_locate<S: SearchSink>(
     board: &mut RoutingBoard,
     start: &BTreeSet<ItemId>,
     dest: &BTreeSet<ItemId>,
@@ -293,14 +263,13 @@ fn search_and_locate<S: SearchSink, C: ExtraCost>(
     costs: Option<&mut RipupCosts>,
     sink: S,
     engine: &mut DrillCarry,
-    extra: C,
 ) -> (Searched, S) {
     let angle = board.rules.trace_angle_restriction();
     let mut session = Session::new(board, ctrl, limits.stop, limits.work_limit);
     // PARITY(quirk): the engine's drill pages (`AutorouteEngine.java:91`).
     session.install_drill_carry(std::mem::take(engine));
     let (result, sink) = {
-        let mut search = MazeSearch::new(&mut session, sink, extra, limits.settings);
+        let mut search = MazeSearch::new(&mut session, sink, NoExtraCost, limits.settings);
         // Java catches what `getInstance` throws and treats it as null.
         let initialized = search.init(start, dest).unwrap_or(false);
         // Java catches what `findConnection` throws: no result.

@@ -182,3 +182,21 @@ bottlenecks before routing" idea overlaps Q03.
   boards after P04, KiCad grading of coldfire and canary-pwr, the keep or
   reject decision, and (if kept) the `docs/DIVERGENCES.md` line; owner P04,
   then X10.4.
+  *Bias note 2026-10-17:* the dry run above built both arms through `TestingProfile::default()`
+  (`prepare` with the fanout keys), so both ran with Java's fixture-test copper-to-edge clearance
+  0, not the defaults. `tests/qfn_escape.rs` now starts from an empty patch (`default_profile()`);
+  rerun those rows before quoting them.
+  *Partial 2026-10-17 (registered run started, then stopped by the operator's priority change to
+  K09; nothing decided, no code removed):* `docs/roadmap/prereg/X10.json` was amended before the
+  first run (kit-dev-coldfire registered as the prepared X01 demo that grade.sh routes, canary-pwr
+  9511d9a graded by canary-23's tools on WSL KiCad 10.0.7 and its four variants by Rust's DRC, the
+  harness fix, a 45 min timeout per route). One route ran: DAC2020 bm01 `freerouting-fanout`
+  timed out at 2700 s (not graded; log `target/orchestrator/meas/runs/x10-engine.log`), so bm01
+  cannot count as a pass, and its `krt-qfn-escape` arm was dropped. **Remaining** (owner: this item,
+  after K09): both arms on bm10, smoothieboard, GP8B (expect long runs; the pre-P04 GP8B arm was
+  still running after 11 min), the five canary-pwr rows (9511d9a via `ses_import.py` +
+  `tools/krt-h2h/grade_routed.sh`, the variants by Rust's DRC) and kit-dev-coldfire through
+  `tools/kicad-oracle/grade.sh`; then the gate and the keep or reject decision. The exact job
+  lines are in `target/orchestrator/meas/jobs-not-run.txt` (engine wrapper `meas/engine.sh x10`).
+  With bm01 not graded at 45 min, the keep rule (improve on N−1 of 6) needs every other board to
+  improve; consider a longer timeout for bm01 through another amendment before rerunning.

@@ -194,3 +194,6 @@ uses); A06; B09; F04.
   skipped, their pins share no signal layer: vias are X09; 4 refused, the centreline at compound
   width finds no way out of the pin field). The straight-line case (a search that succeeds without
   a new trace when the terminals' stubs touch) was added for the short pair.
+  *Bias note 2026-10-17:* both smokes above built the `on` arm through `TestingProfile::default()`
+  (Java's fixture-test copper-to-edge clearance 0) and the `off` arm with the defaults, so the
+  `on` rows were not default settings. The registered X08 run, unbiased, is in X09.5's done note.

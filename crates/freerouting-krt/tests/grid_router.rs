@@ -34,6 +34,7 @@ use freerouting::board::{BasicBoard, RoutingBoard};
 use freerouting::geometry::IntPoint;
 use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
+use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
 use freerouting_krt::grid::raster::Raster;
@@ -56,7 +57,7 @@ fn repo_root() -> PathBuf {
 fn prepare(dsn: &str, testing: Option<u32>, extra: &[(&str, &str)]) -> PreparedJob {
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
-    let mut profile = TestingProfile::default();
+    let mut profile = default_profile();
     if let Some(passes) = testing {
         profile.set_optimizer_enabled(false);
         profile.set_max_passes(passes as i32);
@@ -734,5 +735,15 @@ fn write_krt_grid_sessions() {
             .to_string_lossy()
             .to_string();
         std::fs::write(out.join(format!("{stem}.ses")), ses(&board, &dsn)).unwrap();
+    }
+}
+
+/// The testing source's starting patch: empty, so every run starts from
+/// the default settings. Not `TestingProfile::default()`, which carries
+/// Java's fixture-test settings (`java_fixture_test`: copper-to-edge
+/// clearance 0) and biased the pre-P04 measurements.
+fn default_profile() -> TestingProfile {
+    TestingProfile {
+        patch: SettingsPatch::default(),
     }
 }

@@ -1,4 +1,4 @@
-//! X02: plane-tap verification and pour region repair on synthetic boards,
+//! X02: plane-tap verification on synthetic boards,
 //! routed through the whole pipeline. The boards are in `tests/data/`, not
 //! `fixtures/krt/` as the checklist planned: every DSN under `fixtures/`
 //! needs a Java reference (`reference_load.rs`), as Q01 found for its own
@@ -6,10 +6,11 @@
 //!
 //! - `x02-floating-island.dsn`: a GND pour on B.Cu with two through-hole
 //!   GND pins, and two SMD GND pins on F.Cu whose own vias land on two small
-//!   GND pours cut off from it (X02.2);
-//! - `x02-split-pour.dsn`: a GND pour on B.Cu cut in two by a pre-routed
-//!   trace of net S, with room for a strap around the trace's upper end
-//!   (X02.3, X02.4).
+//!   GND pours cut off from it (X02.2).
+//!
+//! X02.3-X02.4's region repair (`krt-region-repair`) and its split-pour
+//! board were removed after X02.5's registered run rejected it (the X02
+//! checklist's X02.5 note has the numbers).
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -17,21 +18,16 @@ use std::sync::Arc;
 use freerouting::autoroute::events::{CancelToken, NullEvents};
 use freerouting::autoroute::pipeline::{PipelineJob, run_pipeline};
 use freerouting::autoroute::stages::StageRegistry;
-use freerouting::board::items::{Item, ItemId};
 use freerouting::board::{BasicBoard, RoutingBoard};
 use freerouting::drc::DesignRulesChecker;
-#[allow(unused_imports)]
-use freerouting::geometry::{PolylineShapeOps, TileShapeOps};
 use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
+use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
-use freerouting_krt::planes::PlaneComponents;
-use freerouting_krt::planes::repair::REGION_REPAIR_ID;
 use freerouting_krt::planes::verify::{TAP_REPORT_ID, TapReport, TapStatus};
 
 const FLOATING: &str = "crates/freerouting-krt/tests/data/x02-floating-island.dsn";
-const SPLIT: &str = "crates/freerouting-krt/tests/data/x02-split-pour.dsn";
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -43,7 +39,7 @@ fn repo_root() -> PathBuf {
 fn prepare(dsn: &str, testing: bool, extra: &[(&str, &str)]) -> PreparedJob {
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
-    let mut profile = TestingProfile::default();
+    let mut profile = default_profile();
     if testing {
         profile.set_optimizer_enabled(false);
         profile.set_max_passes(10);
@@ -115,37 +111,6 @@ fn net_number(board: &BasicBoard, name: &str) -> i32 {
         .net_number
 }
 
-fn layer_number(board: &BasicBoard, name: &str) -> i32 {
-    board
-        .layer_structure
-        .layers
-        .iter()
-        .position(|l| l.name == name)
-        .unwrap_or_else(|| panic!("layer {name}")) as i32
-}
-
-/// The vias whose centre lies inside a pad of any net, on a layer both
-/// share (D8: no via in a pad).
-fn vias_in_pads(board: &BasicBoard) -> Vec<ItemId> {
-    let pins: Vec<&Item> = board.items().filter(|i| i.is_pin()).collect();
-    board
-        .items()
-        .filter(|v| v.is_via())
-        .filter(|v| {
-            let centre = v.drill().expect("a via has a drill").center;
-            pins.iter().any(|pin| {
-                (0..board.tile_shape_count(pin)).any(|i| {
-                    v.is_on_layer(pin.shape_layer(i))
-                        && board
-                            .tile_shape(pin, i)
-                            .is_some_and(|s| s.contains_float(centre.to_float()))
-                })
-            })
-        })
-        .map(Item::id)
-        .collect()
-}
-
 // ---------------------------------------------------------------------------
 // X02.2: the plane-tap report
 // ---------------------------------------------------------------------------
@@ -203,12 +168,10 @@ fn the_session_is_the_same_with_the_tap_report_on_and_off() {
 
 #[test]
 fn registering_the_stages_changes_no_session_while_they_are_unselected() {
-    for dsn in [SPLIT, FLOATING] {
-        let (builtin, _) = route_prepared(prepare(dsn, true, &[]), None);
-        let registry = krt_registry();
-        let (krt, _) = route_prepared(prepare(dsn, true, &[]), Some(&registry));
-        assert_eq!(ses(&builtin, dsn), ses(&krt, dsn), "{dsn}");
-    }
+    let (builtin, _) = route_prepared(prepare(FLOATING, true, &[]), None);
+    let registry = krt_registry();
+    let (krt, _) = route_prepared(prepare(FLOATING, true, &[]), Some(&registry));
+    assert_eq!(ses(&builtin, FLOATING), ses(&krt, FLOATING));
 }
 
 /// The stage-off sessions of every board in the set file `X02_SET`
@@ -251,95 +214,12 @@ fn default_off_sessions_on_a_set() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// X02.4: the repair on a split pour
-// ---------------------------------------------------------------------------
-
-#[test]
-fn the_split_pour_has_two_regions_and_a_floating_pin_before_repair() {
-    let board = prepare(SPLIT, true, &[]).board;
-    let (gnd, bcu) = (net_number(&board, "GND"), layer_number(&board, "B.Cu"));
-    let pc = PlaneComponents::build(&board);
-    assert_eq!(pc.islands_on(gnd, bcu).len(), 2);
-    assert_eq!(pc.regions(gnd, bcu).len(), 2);
-    let report = TapReport::from_components(&board, &pc);
-    let floating: Vec<&str> = report.floating().map(|p| p.label.as_str()).collect();
-    assert_eq!(floating, vec!["G3-1"]);
-    // Freerouting's connectivity counts the pour as one conductor: the DRC
-    // sees no incomplete connection of GND, only the zone-island finding.
-    let mut checker = DesignRulesChecker::new(&board);
-    assert_eq!(checker.incomplete_count_of(gnd), 0);
-    let islands = checker.zone_island_violations();
-    assert_eq!(islands.len(), 1);
-    assert_eq!(islands[0].kind.type_name(), "isolated_island_unconnected");
-}
-
-#[test]
-fn the_repair_joins_the_split_pour_with_one_strap() {
-    let (off, _) = route(SPLIT, "");
-    let (on, log) = route(SPLIT, REGION_REPAIR_ID);
-    let (gnd, bcu) = (net_number(&on, "GND"), layer_number(&on, "B.Cu"));
-
-    let pc = PlaneComponents::build(&on);
-    // Java's fill ignores same-net traces: still two fill islands, now one
-    // electrical group.
-    assert_eq!(pc.islands_on(gnd, bcu).len(), 2);
-    assert_eq!(pc.regions(gnd, bcu).len(), 1);
-    assert!(pc.joined(pc.islands_on(gnd, bcu)[0], pc.islands_on(gnd, bcu)[1]));
-    assert_eq!(TapReport::from_components(&on, &pc).floating().count(), 0);
-    assert_eq!(
-        PlaneComponents::build(&off).regions(gnd, bcu).len(),
-        2,
-        "routing alone leaves the pour split"
-    );
-
-    let straps: Vec<&String> = log
-        .iter()
-        .filter(|l| l.starts_with(REGION_REPAIR_ID) && l.contains("strap at width"))
-        .collect();
-    assert_eq!(straps.len(), 1, "{log:#?}");
-
-    // The DRC adds nothing: no clearance violation, no new unconnected item,
-    // and the isolated-island finding is gone.
-    let off_findings = off.design_rules_check();
-    let on_findings = on.design_rules_check();
-    assert_eq!(on_findings.clearance_violations.len(), 0);
-    assert_eq!(off_findings.clearance_violations.len(), 0);
-    assert!(on_findings.unconnected_items.len() <= off_findings.unconnected_items.len());
-    assert_eq!(off_findings.zone_islands.len(), 1);
-    assert_eq!(on_findings.zone_islands.len(), 0);
-    assert!(vias_in_pads(&on).is_empty());
-
-    // The strap is user-fixed GND copper between the two halves' pins, at
-    // the ladder's first width (2.0 mm, 20000 board units), never narrower
-    // than the class width.
-    let class_width = 2 * on.rules.trace_half_width(gnd, bcu);
-    let new_gnd_traces: Vec<&Item> = on
-        .items()
-        .filter(|i| i.is_trace() && i.contains_net(gnd))
-        .collect();
-    assert!(off.items().all(|i| !(i.is_trace() && i.contains_net(gnd))));
-    assert!(!new_gnd_traces.is_empty());
-    for t in &new_gnd_traces {
-        let width = 2 * t.as_trace().expect("a trace").half_width;
-        assert!(width >= class_width, "width {width} < {class_width}");
-        assert_eq!(width, 20000);
-        assert!(t.is_user_fixed());
+/// The testing source's starting patch: empty, so every run starts from
+/// the default settings. Not `TestingProfile::default()`, which carries
+/// Java's fixture-test settings (`java_fixture_test`: copper-to-edge
+/// clearance 0) and biased the pre-P04 measurements.
+fn default_profile() -> TestingProfile {
+    TestingProfile {
+        patch: SettingsPatch::default(),
     }
-    assert!(ses(&on, SPLIT).contains("(type protect)"));
-}
-
-/// Writes the session of the split pour routed with the repair on to
-/// `X02_SES_OUT`, for `tools/determinism-check.sh`.
-#[test]
-#[ignore = "for tools/determinism-check.sh; set X02_SES_OUT"]
-fn write_the_repaired_session() {
-    let out = std::env::var("X02_SES_OUT").expect("X02_SES_OUT");
-    let (on, log) = route(SPLIT, REGION_REPAIR_ID);
-    let mut text = ses(&on, SPLIT);
-    for line in log.iter().filter(|l| l.starts_with(REGION_REPAIR_ID)) {
-        text.push_str(line);
-        text.push('\n');
-    }
-    std::fs::write(out, text).unwrap();
 }

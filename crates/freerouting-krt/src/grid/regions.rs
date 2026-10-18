@@ -1,7 +1,8 @@
 //! Region classes of a board's connections (X06.2): `pin-field` where an
-//! end pad is fine-pitch, `open` everywhere else. X06 splits its
-//! measurement of the `krt-astar` bundle by these classes, to test the
-//! preregistered expectation that the grid router loses in pin fields.
+//! end pad is fine-pitch, `open` everywhere else. X06.3 split its
+//! measurement of the (since removed) `krt-astar` bundle by these classes,
+//! to test the preregistered expectation that the grid router loses in pin
+//! fields.
 //!
 //! Written from the X06 checklist's rule, which takes KiCadRoutingTools'
 //! fine-pitch test (`pad_is_fine_pitch` in `py_router/plane_pad_tap.py`,

@@ -41,7 +41,7 @@
       "fixtures/Issue113-Protein.dsn": "c400fb8dd163e2b4c5f5ea93959da3b64d3ff96a8365b9b9a4978751def0b174",
       "fixtures/Issue039-bug-design.dsn": "94763bd157266c5502ce3c25f88027d6eca32fee9bf812b56166d4e8404c500a",
       "fixtures/Issue208-freerouting.dsn": "a552e42e23d3748c45d229f56309aa5a5b43e21ddb295f2c03ad71e76aee3539",
-      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452"
+      "kit-dev-coldfire-xilinx_5213": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83"
     }
   },
   "eligibility": "every board of the set; a board where a candidate and the baseline have equal bus vias and bus length within 0.1 mm is neutral, printed; a board not graded (a crash, a timeout, exit 2 of a grader) fails that board for the arm that was not graded and is never a pass",
@@ -73,5 +73,22 @@
   },
   "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
   "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'); X11.4's partial note gives a pre-P04 dry run at the landing tree, labelled as such, not this registration's result",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-17",
+      "reason": "Before the first engine run of the registered run (after P04's decision, c23d8c0: the default tree stays Java's). (1) The grading clause routes kit-dev-coldfire through tools/kicad-oracle/grade.sh on the KiCad demo prepared as X01 prepared it, so the input the arms route is the DSN grade.sh exports from that prepared board, not the fixture fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn: the row is renamed kit-dev-coldfire-xilinx_5213 and registered with the prepared board's sha256 (X01's and X06's registration; target/orchestrator/x01/boards/kit-dev-coldfire-xilinx_5213/prepared). The exported DSN embeds its work path in its first line; its body hashes to 4758a3f1b85f0969f4adbc47d0bf0f3c26448677fbe7023f1e32a27068c9a6d0. (2) The harness starts from an empty settings patch (default_profile in the crate's test file), not TestingProfile::default(), whose copper-to-edge clearance 0 (java_fixture_test) biased the pre-P04 dry run. Each route runs under a 45 min timeout; a timed-out arm is not graded, which the eligibility rule already makes a failed board for that arm.",
+      "changes": {
+        "boards.files": {
+          "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": {
+            "from": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+            "to": null
+          },
+          "kit-dev-coldfire-xilinx_5213": {
+            "from": null,
+            "to": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83"
+          }
+        }
+      }
+    }
+  ]
 }

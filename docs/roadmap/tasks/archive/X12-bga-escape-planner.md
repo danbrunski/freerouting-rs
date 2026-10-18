@@ -219,3 +219,20 @@ planner is the answer to the problem it describes.
   registered run after P04, KiCad grading where the corpus project allows, the keep or reject
   decision, and (if kept) the `docs/DIVERGENCES.md` line; owners F03.3 (corpus) and P04, then
   X12.6.
+  *Bias note 2026-10-17:* the dry run above built both arms through `TestingProfile::default()`
+  (Java's fixture-test copper-to-edge clearance 0); `tests/bga_escape.rs` now starts from an empty
+  patch. The unbiased run below differs: pocketsdr Freerouting fanned 40 (53 biased), `krt-bga-escape`
+  107.6 s (964 s biased).
+  *Partial 2026-10-17 (deferred by the operator's priority change to K09; nothing decided, no code
+  removed):* the third BGA board is in: `docs/roadmap/prereg/X12.json` amendment 1 adds
+  `d3c-0677-kitspace-glasgow` (sha256 58bc2505…; `arrays_on_a_set` finds U30, 11 × 11, 121 balls,
+  0.8 mm) and grades every row by Rust's DRC. Registered-run rows so far (release, default settings
+  plus the fanout keys, log `target/orchestrator/meas/runs/x12-engine.log`), (fanned / escapable,
+  unrouted, drc_new, via_in_pad, vias, s):
+  pocketsdr `freerouting-fanout` (40 / 101, 0, 0, 0, 184, 261.4); `krt-bga-escape` (64 / 101, 0, 0,
+  0, 194, 107.6): fanned higher, unrouted neutral. miniscope `freerouting-fanout` (19 / 50, 34, 0, 0,
+  115, 433.6); its `krt-bga-escape` arm was stopped at 186 s for the priority change. **Remaining**
+  (owner: this item, after K09): miniscope's `krt-bga-escape` arm, both arms on glasgow, the
+  informational x12-bga-0p8 row, then the gate and the decision (with pocketsdr neutral, the keep
+  rule needs both miniscope and glasgow to improve). Job lines in
+  `target/orchestrator/meas/jobs-not-run.txt` (plus the stopped miniscope arm).

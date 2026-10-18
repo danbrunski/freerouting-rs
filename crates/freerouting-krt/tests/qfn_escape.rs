@@ -30,6 +30,7 @@ use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
 use freerouting::settings::ResolveContext;
 use freerouting::settings::Source;
+use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting_krt::fanout::frame::{PartFrame, PartLayout, analyze, sides};
 use freerouting_krt::fanout::qfn::{PinOutcome, PinResult, Skip, StubKind, escape};
@@ -53,7 +54,7 @@ fn prepare(dsn: &str, extra: &[(&str, &str)]) -> PreparedJob {
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
     if !extra.is_empty() {
-        let mut profile = TestingProfile::default();
+        let mut profile = default_profile();
         for (key, value) in extra {
             profile
                 .patch
@@ -647,4 +648,14 @@ fn two_escapes_of_the_same_board_write_the_same_session() {
     let (a, b) = (run(), run());
     assert!(a.contains("(wire"), "the session holds the stubs");
     assert_eq!(a, b);
+}
+
+/// The testing source's starting patch: empty, so every run starts from
+/// the default settings. Not `TestingProfile::default()`, which carries
+/// Java's fixture-test settings (`java_fixture_test`: copper-to-edge
+/// clearance 0) and biased the pre-P04 measurements.
+fn default_profile() -> TestingProfile {
+    TestingProfile {
+        patch: SettingsPatch::default(),
+    }
 }

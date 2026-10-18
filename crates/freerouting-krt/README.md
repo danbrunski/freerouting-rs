@@ -27,8 +27,9 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
 ## Contents
 
 - `planes` (X02): plane islands, anchors and main components; plane-tap
-  verification (a report); pour region repair (`krt-region-repair`). All three
-  are written from KRT ideas; no KRT code is ported.
+  verification (a report). Both are written from KRT ideas; no KRT code is
+  ported. Pour region repair (`krt-region-repair`, X02.3) was rejected by
+  X02.5's registered run and removed.
 - `grid` (X04): the conservative obstacle raster of one connection for the
   vendored grid A* (`crates/krt-grid-router`, MIT, a dependency of this
   crate): the frame and window, trace and via cells from the board's shapes,
@@ -79,11 +80,6 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   ball, the escape out along its row or column (`channels.rs`, `vias.rs`,
   `emit.rs`, written from KRT ideas), then Freerouting's fanout on the other
   parts.
-- `bus` (X11): bus detection (`bus/detect.rs`, which ports KRT's
-  `detect_bus_groups` and so is GPL-3.0-only AND MIT), the `krt-bus` net
-  ordering (`router.autorouter.ordering = krt-bus`: bus groups middle out in
-  pass 1, `bus/order.rs`, which ports `get_bus_routing_order`), the
-  `krt-bus-attraction` connection router (Freerouting's with a non-negative
-  maze-search cost towards the routed neighbour, `bus/attraction.rs`, written
-  from a KRT idea) and the `krt-bus` bundle of both
-  (`router.autorouter.algorithm = krt-bus`).
+- X11's bus module (`krt-bus` ordering, `krt-bus-attraction` and the
+  engine's search-cost hook) was rejected by X11.4's registered run and
+  removed.

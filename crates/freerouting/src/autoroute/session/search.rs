@@ -863,15 +863,9 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             + f64::from(add_costs)
             + bend_penalty
             + entry_middle.weighted_distance(from_middle, costs.horizontal, costs.vertical);
-        // The hook never changes the control flow: a door shape that cannot
-        // be built (which the parity path never asks for) adds no cost
-        // instead of ending the expansion.
-        if C::ENABLED
-            && let Ok(shape) = self.s.expandable_shape(door)
-        {
-            expansion_value += self
-                .extra
-                .section_cost(layer, &shape, from_middle, entry_middle);
+        if C::ENABLED {
+            let shape = self.s.expandable_shape(door)?;
+            expansion_value += self.extra.door_cost(layer, &shape);
         }
         let sorting_value = expansion_value + self.s.distance.calculate_point(&entry_middle, layer);
         let room_ripped = add_costs > 0 && adjustment == Adjustment::None

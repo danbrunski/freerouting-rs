@@ -192,7 +192,7 @@ revert); F04; F03.1, F03.4, F02.6.
   X02_SES_OUT={OUT} <release planes test> write_the_repaired_session --ignored --exact`:
   `identical` (idle, then 8 burners; SES plus the stage's log lines).
 
-- [~] **X02.5 — Measurement, with Q01.**
+- [x] **X02.5 — Measurement, with Q01.**
   Preregister (F03.4). Arms: default; `krt-region-repair`; Q01's rule plus
   repair. Boards: Q01's `q01-pours.txt` set and `canary-pwr` with its
   variants. Signal: islands lost (Q01.4). Guards: KiCad `unconnected_items`
@@ -210,3 +210,48 @@ revert); F04; F03.1, F03.4, F02.6.
   measurements after it), for the CLI's `freerouting_krt::register` line (C07; X00
   "Parallel lanes"), and for canary-pwr's grading by the peer session (canary-23). No
   `DIVERGENCES.md` line until the stage is kept.
+  *Done 2026-10-17 (rejected; X02.3–X02.4's code removed):* the registered run after P04's
+  default-tree decision (c23d8c0: the default tree stays Java's), in-process (the CLI does not
+  register the crate's stages, C07): engine command `route_one_dsn` (an ignored test added to
+  `tests/planes.rs` for this run, default settings plus each arm's keys, removed with the stage)
+  under `tools/kicad-oracle/grade.sh` (KiCad 10.0.7, demos stripped and exported by the grader);
+  canary-pwr routed from `fixtures/canary-pwr/canary-pwr-9511d9a.dsn` and graded by canary-23's
+  tools on WSL KiCad 10.0.7 (`ses_import.py` onto the board at canary HEAD, sha256 15aa06a3, then
+  `tools/krt-h2h/grade_routed.sh`, `via_in_pad.py`, `inner_tracks.py`; the path reproduces
+  canary-23's 41 unconnected on Java's `46bf9e2ef` session). `islands_lost` is the number of
+  electrical groups of a pour net's anchored islands minus one, per net and layer, summed
+  (`PlaneComponents::regions`; 0 when all are joined); `pour_unconnected` counts KiCad's
+  unconnected items on a zone net. Logs and summaries `target/orchestrator/meas/runs/x02/`,
+  `runs/x02-metrics.tsv`. Per board, (islands_lost, pour_unconnected, unrouted = KiCad
+  unconnected, drc_real, via_in_pad, below_minimum; straps), default → repair → q01-repair →
+  Q01.5's `on` arm:
+
+  | board | default | repair | q01-repair | Q01 on |
+  |---|---|---|---|---|
+  | interf_u | (27, 13, 13, 13, 0, 0) | (13, 9, 9, **12**, 0, 0; 18) | (13, 9, 9, 12, 0, 0; 18) | = default |
+  | pic_programmer | (5, 2, 2, 2, 0, 0) | (0, 1, 1, **5**, 0, 0; 5) | (0, 1, 1, 5, 0, 0; 5) | = default |
+  | complex_hierarchy | (82, 80, 80, 0, 0, 0) | (36, 38, 38, **7**, 0, 0; 55) | (34, 35, 35, 7, 0, 0; 56) | = default |
+  | canary-pwr (9511d9a) | (18, 14, 48, 33, 0, 3) | (1, **15**, **49**, **35**, 0, 3; 17) | not run | not run |
+  | kit-dev-coldfire | not run | not run | not run | not run |
+
+  The new KiCad items: pic_programmer 3 `shorting_items` (straps that KiCad's refilled pour
+  shorts), complex_hierarchy 4 starved thermals and 3 dangling tracks, canary-pwr 2 more dangling
+  vias. canary-pwr's `below_minimum` 3 (KiCad `track_width`) is in the default arm too.
+  `inner_tracks.py` 0 and `via_in_pad.py` 0 on canary-pwr in both arms. Decision by the
+  registered rule: islands lost fall on all four boards run, but `drc_real` rises on
+  pic_programmer, complex_hierarchy and canary-pwr, and canary-pwr's `pour_unconnected` and
+  unrouted rise by one, so three boards regress against `max_regress` 0. That is decided whatever
+  coldfire would show, so its four arms and canary-pwr's two Q01 arms were not run (a choice to
+  save about two hours of routing for X10 and X12). F03.1 gate: with the registration it refuses
+  the partial run ("board … kit-dev-coldfire … is registered but missing from the run") and writes
+  no baseline; without it (`--arms default,repair`, `runs/x02-np-*`): improved 1/4 (interf_u),
+  regressed 3, **FAIL**. The secondary comparison (Q01's rule plus repair against Q01's rule
+  alone) is moot: Q01's `on` arm equals the default on the three demos run (no listed pour is cut
+  there), and q01-repair regresses like repair. **Removed** per the decision table:
+  `crates/freerouting-krt/src/planes/repair.rs` (`krt-region-repair`, its registration in
+  `planes/mod.rs`), `crates/freerouting-krt/tests/data/x02-split-pour.dsn` and the X02.3–X02.4
+  tests on it (`the_split_pour_has_two_regions_and_a_floating_pin_before_repair`,
+  `the_repair_joins_the_split_pour_with_one_strap`, `write_the_repaired_session`). Kept: the
+  engine hook `AutorouteControl::destinations_only` (X08's centreline and leg routing use it too),
+  `planes::components` and X02.2's tap report (`krt-plane-tap-report`, off by default; the
+  decision table lets it stay). No `DIVERGENCES.md` line.

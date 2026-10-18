@@ -108,7 +108,7 @@ O05 (via optimizer); O06 (batch optimizer); A10, A11; F03.1, F03.4, F02.6.
   the 20 `connection-parity` rows equal, default-off sessions byte-identical on all 15
   boards (`cmp`), `tools/determinism-check.sh` `identical` (loads 2.51 and 3.03).
 
-- [~] **X06.2 — Region classification.**
+- [x] **X06.2 — Region classification.**
   Rust design: `grid::regions::classify(board) -> BTreeMap<ConnectionKey,
   Region>` with the rule above, in integer board units.
   - **Accept:** unit tests on a synthetic QFN and an open two-pin
@@ -138,8 +138,13 @@ O05 (via optimizer); O06 (batch optimizer); A10, A11; F03.1, F03.4, F02.6.
   them for the 1.5 mm Power_High width, not for pitch, so the Accept clause and the rule
   disagree; the test pins the rule's result. Owner: the operator (amend the Accept to 11/17,
   or add a width-relative condition to the rule), then X06.3 uses the amended rule.
+  *Done 2026-10-17:* the operator amended the Accept to the rule's result (operator decisions,
+  X06: "X06.2 accept amended to the rule's 11/17; Q03's width-infeasible pins are reported
+  separately", option a): on `canary-pwr` 11 of the 17 Q03 pins fall in `pin-field`, the six others
+  are Q03's width cases. `the_q03_pins_of_canary_pwr_by_the_rule` pins it (release, 1 passed); the
+  rule itself is unchanged, and X06.3's registered run uses it (X06.json amendment 1, item 5).
 
-- [~] **X06.3 — Measurement by region class.**
+- [x] **X06.3 — Measurement by region class.**
   Preregister (F03.4) with the hypothesis "krt-astar completes fewer
   `pin-field` connections than the default on every board". Arms: the
   default bundle and `krt-astar`. Boards: X01's five boards (graded by
@@ -199,8 +204,57 @@ O05 (via optimizer); O06 (batch optimizer); A10, A11; F03.1, F03.4, F02.6.
   connections fail at all three steps in each of 20 passes; 101.1 of 103.9 s are raster
   builds), bm07 0.25 / 0.24. The raster dominates only where the same connections fail pass
   after pass; where the grid routes, the optimizer and the insert dominate.
+  *Bias note 2026-10-17:* the dry run above went through `TestingProfile::default()` in both
+  arms (Java's fixture-test copper-to-edge clearance 0); the harness now starts from an empty
+  patch (`default_profile()`), and the run below is unbiased.
+  *Done 2026-10-17 (rejected; X06.1's bundle code removed):* the registered run after P04's
+  default-tree decision (c23d8c0: the default tree stays Java's), `docs/roadmap/prereg/X06.json`
+  with one amendment made before the first run (the four X01 demos registered by their prepared
+  board's sha256, canary-pwr's grading path, the harness fix, a 45 min timeout per route). Engine
+  `route_one_dsn` per arm (release, one route at a time, machine load 4–11 from two other agents);
+  benchmark boards graded by Rust's DRC, demos by `tools/kicad-oracle/grade.sh` (KiCad 10.0.7;
+  `via_in_pad` from the oracle's `via_in_pad.py`). Logs `target/orchestrator/meas/runs/x06/`,
+  `runs/x06-engine.log`, rows `runs/x06-rows.json`. Per board, (pin-field / open connections),
+  then default → `krt-astar`: unrouted pin-field / open / total, drc_real, via_in_pad, vias,
+  seconds:
 
-- [~] **X06.4 — Record the hybrid follow-up.**
+  | board | classes | default | krt-astar |
+  |---|---|---|---|
+  | ecc83 | 0 / 14 | 0 / 0 / 0, 0, 0, 0 vias, 0 s | 0 / 0 / 0, 0, 0, 0 vias, 0 s |
+  | bm02 | 0 / 34 | 0 / 0 / 0, 0, 0, 9 vias, 2 s | 0 / 0 / 0, 0, 0, 6 vias, 14 s |
+  | sonde | 0 / 20 | 0 / 11 / 11, 0, 0, 3 vias, 0 s | 0 / **18** / 18, 0, 0, 3 vias, 123 s |
+  | bm07 | 39 / 47 | 0 / 0 / 0, 0, 0, 24 vias, 5 s | 0 / 0 / 0, 0, 0, 16 vias, 55 s |
+  | pic_programmer (KiCad) | 0 / 86 | 0 / 0 / 2, 2, 0, 0 vias, 0 s | 0 / 0 / 0, **6**, 0, 9 vias, 5 s |
+  | interf_u (KiCad) | 0 / 161 | 0 / 0 / 10, 5, 0, 43 vias, 30 s | not graded: stopped after 640 s |
+
+  Trace length (board units) default → krt-astar: ecc83 1618278 → 1586049, bm02 2888580 → 2973274,
+  sonde 6466509 → 6453744, bm07 7795723 → 8143072, pic_programmer 15245844 → 15236615.
+  pic_programmer's `krt-astar` items are 5 clearance and 1 `shorting_items` against the default's 2
+  clearance; Rust's DRC reports no new violation for it, so KiCad sees what the grid path and
+  pull-tight leave that Freerouting's model does not. **Decision by the keep rule:** the hard
+  metric `drc_real` is not 0 for `krt-astar` on pic_programmer, and on `open` connections it leaves
+  more unrouted than the default on sonde, so it can keep on neither class; rejected. That was
+  decided by these boards, so the remaining arms were not run (interf_u's `krt-astar` arm stopped
+  by hand at 640 s against the default's 40 s; video, kit-dev-coldfire and canary-pwr not run), a
+  choice to save routing time for X10–X12. F03.1 gate with the registration: REFUSED (canary-pwr,
+  kit-dev-coldfire and video registered but missing; interf_u's `krt-astar` hard metrics null), no
+  baseline written (`runs/x06-write.txt`). **Hypothesis** ("krt-astar's unrouted_pin_field is
+  greater than the default's on every graded board"): fails; the only board run with pin-field
+  connections, bm07, ties at 0. **Raster share (X04.6):** `raster_share_on_a_set` on
+  `x06-grid.txt`: 98.6 % (2128.8 against 31.0 ms; bm07 0.992, bm02 0.986, sonde 0.975), as before;
+  with the bundle gone X04.6 stays not reopened. **Removed:** `crates/freerouting-krt/src/grid/bundle.rs`
+  (`krt-astar`, `KRT_ASTAR_BUNDLE`, its registration in `lib.rs`), the bundle's tests in
+  `tests/astar_bundle.rs` (`the_registry_selects_the_krt_astar_bundle`,
+  `registering_the_bundle_changes_no_session_while_it_is_unselected`,
+  `the_bundle_routes_the_fixtures_and_pulls_the_grid_path_tight`,
+  `the_wall_board_stays_clean_under_the_bundle`,
+  `the_bundle_pulls_the_grid_path_tight_after_the_connection`, `route_a_set`, `route_one_dsn`,
+  `stage_time_split_on_a_set`) and `tests/data/x06-detour.dsn` (used only by them). Kept: X05's
+  `krt-grid`, X06.2's `grid::regions` and its tests, the raster-share probe, X06's `krt-grid` gate
+  fixes and their tests, `tools/bench/sets/x06-grid.txt` (the registration names it). No
+  `DIVERGENCES.md` line.
+
+- [x] **X06.4 — Record the hybrid follow-up.**
   - **Accept:** a paragraph in algorithms.md ("Grid A* followed by
     pull-tight") states the measured split by region class and whether a
     hybrid (grid for `open` connections, maze search for `pin-field`) is
@@ -213,3 +267,8 @@ O05 (via optimizer); O06 (batch optimizer); A10, A11; F03.1, F03.4, F02.6.
   connection the maze search misses; reopen only if the registered run shows `krt-astar`
   winning on open connections on N−1 boards. Remainder: replace the dry-run numbers with the
   registered run's once X06.3 runs (after P04); owner X06.3.
+  *Done 2026-10-17:* `docs/roadmap/algorithms.md` ("Measured split (X06)") now gives the
+  registered run's split (X06.3's done note): pin-field ties on bm07 (0 of 39 both), open ties on
+  four boards and a loss on sonde (18 of 20 against 11), a hard-limit failure on pic_programmer,
+  and the verdict that a hybrid is not worth a checklist (the grid never completed an open
+  connection the maze search missed, in either run).

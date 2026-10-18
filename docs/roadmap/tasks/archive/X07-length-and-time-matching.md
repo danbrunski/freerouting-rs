@@ -199,7 +199,7 @@ for KiCad length rules if they are exposed (unverified); F04; F03.1, F03.4.
   has no stackup: handing the KiCad reader's extras to the stage from the CLI and the GUI is
   theirs (C07, G series).
 
-- [~] **X07.6 — Measurement.**
+- [x] **X07.6 — Measurement.**
   Preregister (F03.4). Boards: at least three with length rules or groups
   (fixtures with class min lengths, and corpus boards from F03.3 with
   matched groups). Signal: nets within tolerance. Guards: unrouted, `drc_real`,
@@ -225,3 +225,34 @@ for KiCad length rules if they are exposed (unverified); F04; F03.1, F03.4.
   off → on: x07-group (0, 0, 0, 0, 2) → (0, 0, 0, 0, 0); x07-measure (0, 0, 0, 1, 1) →
   (0, 0, 0, 1, 1) with N's 10.29 mm shortfall reported; x07-tight (0, 0, 0, 1, 1) → same, 10 mm
   shortfall reported.
+  *Bias note 2026-10-17:* this harness's `prepare_default` adds no settings source, so
+  neither the smoke above nor the run below went through `TestingProfile::default()` (Java's
+  fixture-test copper-to-edge clearance 0); not biased.
+  *Done 2026-10-17 (kept as a selectable stage, off by default):* the registered run
+  (`docs/roadmap/prereg/X07.json`, 0 amendments) after P04's default-tree decision (c23d8c0:
+  the default tree stays Java's), release, `X07_SET=tools/bench/sets/x07-length.txt
+  X07_RECORDS=… <length test> measurement_records_on_a_set --ignored --exact` (399 s, one
+  route at a time, machine load 4–11 from two other agents); log
+  `target/orchestrator/meas/logs/x07.log`, records, baseline and gate log
+  `target/orchestrator/meas/runs/x07-*`. (via_in_pad, clearance_violations, unrouted,
+  java_length_violations, nets_out_of_tolerance), off → on:
+
+  | board | off | on | stage report (on) |
+  |---|---|---|---|
+  | x07-group | (0, 0, 0, 0, 2) | (0, 0, 0, 0, **0**) | A 50 → 70.00 mm, B 60 → 70.00 mm, met |
+  | x07-measure | (0, 0, 0, 1, 1) | (0, 0, 0, 1, 1) | N 40 → 89.71 mm, shortfall 10.29 mm (no run has room) |
+  | x07-tight | (0, 0, 0, 1, 1) | (0, 0, 0, 1, 1) | A 50 mm, 426 bumps rejected, shortfall 10 mm |
+  | picodvi | (0, 0, 5, 0, 8) | (0, 0, 5, 0, 8) | 8 nets short, each with its shortfall (DVI 21.9–36.5 mm against a 38.85 mm target, USB_D+ 2.40 mm) |
+  | pcie-active-backplane | (0, 0, 0, 0, 62) | (0, 0, 0, 0, **47**) | 15 nets met, 47 with their shortfall (no run has room) |
+  | mydevboard-rp2040dev | (0, 0, 34, 0, 1) | (0, 0, 34, 0, **0**) | USB pair met |
+
+  F03.1 gate (`freerouting-dev gate --records … --prereg docs/roadmap/prereg/X07.json`, baseline
+  written from this run): 0 refusals, improved 3/6 (x07-group, pcie, rp2040dev), regressed 0,
+  neutral 3, so the generic N−1 rule prints FAIL. The registration's decision table and the
+  Accept decide instead: "a board where nets stay out of tolerance with their shortfall
+  reported is not a failure", and on the three neutral boards every net out of tolerance is
+  reported with its shortfall; no guard moved on any board (no new clearance violation,
+  unrouted connection, Java length violation or via in a pad). So `krt-meander` stays a
+  selectable stage, off by default; no `DIVERGENCES.md` line (the decision table: no default
+  changes). KiCad grading of the corpus rows still waits for C07 to register the stage in the
+  CLI (the harness is in-process and writes no SES); not a condition of this Accept.

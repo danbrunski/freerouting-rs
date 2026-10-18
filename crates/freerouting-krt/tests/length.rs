@@ -27,6 +27,7 @@ use freerouting::geometry::TileShapeOps;
 use freerouting::io::kicad::reader::layers::StackupLayer;
 use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
+use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
 use freerouting_krt::length::{
@@ -48,7 +49,7 @@ fn repo_root() -> PathBuf {
 fn prepare(dsn: &str, extra: &[(&str, &str)]) -> PreparedJob {
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
-    let mut profile = TestingProfile::default();
+    let mut profile = default_profile();
     profile.set_optimizer_enabled(false);
     profile.set_max_passes(10);
     for (key, value) in extra {
@@ -697,4 +698,14 @@ fn measurement_records_on_a_set() {
         rows.join(", ")
     );
     std::fs::write(out, json).unwrap();
+}
+
+/// The testing source's starting patch: empty, so every run starts from
+/// the default settings. Not `TestingProfile::default()`, which carries
+/// Java's fixture-test settings (`java_fixture_test`: copper-to-edge
+/// clearance 0) and biased the pre-P04 measurements.
+fn default_profile() -> TestingProfile {
+    TestingProfile {
+        patch: SettingsPatch::default(),
+    }
 }

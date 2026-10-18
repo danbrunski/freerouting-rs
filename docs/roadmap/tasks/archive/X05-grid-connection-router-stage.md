@@ -192,7 +192,7 @@ exact DRC → commit or revert); F04.
   `the_work_of_each_connection_sums_into_the_meter`: the outcomes of every pass-1 item of
   the wall board sum to the meter's delta.
 
-- [~] **X05.6 — Determinism and the connection-level comparison.**
+- [x] **X05.6 — Determinism and the connection-level comparison.**
   - **Accept:**
     - `tools/determinism-check.sh` passes routing `connection-parity` with
       `krt-grid`;
@@ -227,3 +227,34 @@ exact DRC → commit or revert); F04.
   connected, 4 window too large (Issue413 at 25 µm). The trace connector and not-connected
   rejections come from ends on existing traces (TestSensel's pre-routed stubs end next to
   pins; diagonal traces have no integer projection), a lead for X06.
+  *Bias note 2026-10-17:* the pre-P04 report above routed both arms through
+  `TestingProfile::default()`, which carries Java's fixture-test settings
+  (`java_fixture_test`: `copper_to_edge_clearance_um = 0`). The harness now starts from an
+  empty patch (`default_profile()` in `tests/grid_router.rs`), and the registered run below
+  gives the same attempted and routed counts on all 10 boards, so the bias changed no count.
+  *Done 2026-10-17:* the registered run (`docs/roadmap/prereg/X05.json`, after P04's
+  default-tree decision c23d8c0: the default tree stays Java's), `X05_SET=tools/bench/sets/connection-parity.txt
+  <release grid_router test> connection_level_comparison_on_a_set --ignored --exact` (pass 1,
+  optimizer off, copper-to-edge clearance at its default; 12 s; machine load 4–8 from two other
+  agents), log `target/orchestrator/meas/logs/x05.log`:
+
+  | board | maze attempted / routed | maze median ms | krt-grid attempted / routed | krt-grid median ms |
+  |---|---|---|---|---|
+  | min_fr_test | 1 / 1 | 1.05 | 1 / 1 | 2.01 |
+  | Issue368-CorneyIslandWireless | 0 / 0 | – | 0 / 0 | – |
+  | Issue110 | 4 / 4 | 0.59 | 4 / 4 | 4.63 |
+  | Issue143-rpi_splitter | 6 / 6 | 0.90 | 5 / 5 | 6.30 |
+  | Issue413-test | 1 / 1 | 10.94 | 2 / 0 | 99.29 |
+  | Issue508-SMD-routing-issue-demo | 5 / 5 | 0.63 | 6 / 2 | 119.03 |
+  | TestSensel | 14 / 12 | 0.59 | 14 / 3 | 72.62 |
+  | Issue269-NoViasOnPowerPlanes | 8 / 8 | 0.98 | 8 / 8 | 26.72 |
+  | Issue433-my-board | 8 / 8 | 0.22 | 8 / 8 | 7.33 |
+  | PCBench-retroreflectors-CONGFLOCK | 7 / 0 | 0.32 | 7 / 0 | 51.39 |
+
+  `drc_new` 0 and `via_in_pad` 0 in both arms on every board. F03.1 gate (`freerouting-dev gate
+  --records … --prereg docs/roadmap/prereg/X05.json`, baseline written from this run; records,
+  baseline and gate log in `target/orchestrator/meas/runs/x05-*`): 0 refusals, improved 0/10,
+  regressed 4 (TestSensel, Issue143, Issue413, Issue508-SMD), neutral 6, **FAIL**. The
+  registration's decision table makes this a report either way ("fail: report only: the numbers go
+  in X05.6's done note; X06 decides"): `krt-grid` stays a selectable connection router, off by
+  default, and X06.3 decides the bundle.

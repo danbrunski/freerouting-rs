@@ -34,7 +34,11 @@
       "fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn": "e7af5da592bd5c5d19e0082ddedacea2ba4da2a264b7cfb57c336a0c9c4a80d2",
       "fixtures/Issue508-DAC2020_bm02.dsn": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
       "fixtures/Issue690-sonde_xilinx.dsn": "633bd6bba64d23dc39e011caa3c44a8382f94818367bc30254d6aaca698dd380",
-      "fixtures/Issue508-DAC2020_bm07.dsn": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85"
+      "fixtures/Issue508-DAC2020_bm07.dsn": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85",
+      "pic_programmer": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5",
+      "interf_u": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1",
+      "kit-dev-coldfire-xilinx_5213": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83",
+      "video": "7c423c022f8172e4a92de32fa1557fa82d7a21a01be519f40d5c32d66b7ef83f"
     },
     "demo_dsns": "the four exported demo DSNs' sha256 are added in an amendment before the first engine run (they depend on the prepared boards, as in X01)"
   },
@@ -75,5 +79,18 @@
   },
   "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
   "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path'); the X06 done notes give a pre-P04 dry run at the landing commit, labelled as such, not this registration's result",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-17",
+      "reason": "Before the first engine run of the registered run (after P04's decision, c23d8c0: the default tree stays Java's). (1) The four X01 demos are added to boards.files, keyed by row name, with the sha256 of X01's prepared board (target/orchestrator/x01/boards/<row>/prepared, as X01's amendment registered them): the DSN grade.sh exports from it embeds its own work path in its first line, so its file hash depends on the output directory. The exported DSN bodies (line 1 removed) hash to pic_programmer 1ba9034f0585144a1ff86629c39a167cbb24bd8fc011c343e787d7b66407265d, interf_u c4ee271fc01736143dac0db54150be7c2c5a2cb4b7c98c6379defc6bcd1842fd, kit-dev-coldfire-xilinx_5213 4758a3f1b85f0969f4adbc47d0bf0f3c26448677fbe7023f1e32a27068c9a6d0, video 29dc2ad5cbf53eb757abe2f9b5d6535eeb4448595f1886e3be09b56e67b33c63 (two exports of pic_programmer to different directories give the same body hash). kit-dev-coldfire-xilinx_5213 is the pin-field-rich board the operator asked for (operator decisions, X06). (2) canary-pwr is graded on WSL KiCad 10.0.7 by canary-23's tools (canary HEAD 1a7df77b: ses_import.py onto the board at sha256 15aa06a3, via_in_pad.py, inner_tracks.py) with tools/krt-h2h/grade_routed.sh for drc_real and unconnected items (input DRC subtracted); the canary-23 session is not involved. (3) The harness starts from an empty settings patch (default_profile in crates/freerouting-krt/tests/astar_bundle.rs), not TestingProfile::default(), whose copper-to-edge clearance 0 biased the pre-P04 dry run. (4) Each route runs under a 45 min timeout; a timed-out arm is not graded, which the eligibility rule already makes a failed board for that arm. (5) The region rule is X06.2's unamended rule; the operator amended X06.2's Accept to its 11 of 17 Q03 pins, not the rule.",
+      "changes": {
+        "boards.files": {
+          "pic_programmer": {"from": null, "to": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5"},
+          "interf_u": {"from": null, "to": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1"},
+          "kit-dev-coldfire-xilinx_5213": {"from": null, "to": "5ef4ad9f1f34d099ab6a175a29ac20d3f1a8e39e4e3c20a9375403c9efb10d83"},
+          "video": {"from": null, "to": "7c423c022f8172e4a92de32fa1557fa82d7a21a01be519f40d5c32d66b7ef83f"}
+        }
+      }
+    }
+  ]
 }

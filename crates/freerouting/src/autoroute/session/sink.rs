@@ -18,7 +18,7 @@
 
 use std::sync::mpsc::Sender;
 
-use freerouting_geometry::{FloatPoint, TileShape};
+use freerouting_geometry::TileShape;
 
 use super::drills::DrillPageId;
 use super::queue::{MazeListElement, QueueKey};
@@ -528,24 +528,6 @@ pub trait ExtraCost {
 
     /// The cost added to the expansion value of a door section on `layer`.
     fn door_cost(&mut self, layer: i32, door_shape: &TileShape) -> f64;
-
-    /// The cost added to the expansion value of the door section entered
-    /// at `entry` (the middle of its entry line, where the path crosses
-    /// the door) from `from` (the middle of the entry line of the element
-    /// expanded, X11.3). The search calls this; the default is
-    /// [`door_cost`](Self::door_cost), so a cost that only needs the door
-    /// implements that alone.
-    #[inline]
-    fn section_cost(
-        &mut self,
-        layer: i32,
-        door_shape: &TileShape,
-        from: FloatPoint,
-        entry: FloatPoint,
-    ) -> f64 {
-        let _ = (from, entry);
-        self.door_cost(layer, door_shape)
-    }
 }
 
 /// No extra cost (the parity default).

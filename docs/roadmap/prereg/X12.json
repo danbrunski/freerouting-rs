@@ -32,7 +32,8 @@
     "eligibility_rule": "a board of F03.3's corpus with at least one part freerouting_krt::fanout::bga::array::analyze_array accepts (arrays_on_a_set on the input board); at registration only two corpus boards qualify, so the run waits for F03.3's manifest to gain a third (an amendment adds it with its sha256 before any run)",
     "files": {
       "target/corpus/prepped/pocketsdr-v3-0.dsn": "95c4a3e68534b3b2ea5585731e04403e0fbf023e3b3b3f230c63b5e80c53fb67",
-      "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn": "47fd62dc6e816e5ed218db49b4f4c32f5879d08f1b1db014b1f949143e56c71c"
+      "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn": "47fd62dc6e816e5ed218db49b4f4c32f5879d08f1b1db014b1f949143e56c71c",
+      "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn": "58bc25055135cdc810fded2d0bbbe9a268026b2e16154ab8493448244a43dcdc"
     },
     "informational": {
       "crates/freerouting-krt/tests/data/x12-bga-0p8.dsn": "12401c7780a3204adc745cac60d77fa89a282b50a0e73ccafb7b89f64f76039d (synthetic, X12.4's board; reported, never counted)"
@@ -63,5 +64,18 @@
   },
   "stop_rule": "one run per board and arm; no re-run except for a crash or a not-graded board, which is re-run once and reported",
   "timing": "the registered run waits for P04's default-tree decision (P00 README 'Order', Q00 README 'Order and critical path') and for a third BGA board in F03.3's corpus; X12.6's partial note gives a pre-P04 dry run at the landing tree, labelled as such, not this registration's result",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-17",
+      "reason": "Before any engine run of the registered run (after P04's decision, c23d8c0: the default tree stays Java's). (1) The third BGA board the eligibility rule waits for: d3c-0677-kitspace-glasgow from tools/corpus/pcbworld-d3c.json (GlasgowEmbedded/glasgow at 406e06fae5, 0BSD; U30, iCE40 BG121, 11 x 11 at 0.8 mm), prepped at target/corpus-d3c/prepped. arrays_on_a_set on it (load only, before any route): 1 array, U30 (11x11, 121 balls, pitch 800 um); J1-J3, U1 not SMD on one layer, J5 no lattice, U19 and U5 not square. (2) Every row is graded by Rust's DRC inside the harness: the corpus DSNs were exported by tools/corpus/prep.sh, and grade.sh would route its own export, a different input from the registered DSN. (3) The harness starts from an empty settings patch (default_profile in the crate's test file), not TestingProfile::default(), whose copper-to-edge clearance 0 (java_fixture_test) biased the pre-P04 dry run. Each route runs under a 45 min timeout; a timed-out arm is not graded, which the eligibility rule already makes a failed board for that arm.",
+      "changes": {
+        "boards.files": {
+          "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn": {
+            "from": null,
+            "to": "58bc25055135cdc810fded2d0bbbe9a268026b2e16154ab8493448244a43dcdc"
+          }
+        }
+      }
+    }
+  ]
 }

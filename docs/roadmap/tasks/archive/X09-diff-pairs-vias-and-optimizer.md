@@ -133,7 +133,7 @@ X09.4); F03.1, F03.4, F02.6.
   violations, log "skew 0.3993 mm → 0.0001 mm with 1 bump(s) on net 3", coupled share 97.3 % (99.0 %
   without the bump); a tolerance above the built-in skew leaves the pair alone.
 
-- [~] **X09.5 — Measurement.**
+- [x] **X09.5 — Measurement.**
   Preregister (F03.4). Boards: at least three with differential pairs in
   their KiCad net classes (from F03.3's corpus; `x09-pairs.txt`). Arms: no
   pair stage (pairs routed as single nets) and `krt-diffpair`. Signal: the
@@ -162,3 +162,53 @@ X09.4); F03.1, F03.4, F02.6.
   `x09-skew` and `rp2040dev`, fails on `picodvi` and `pcie`; no new violation and no via in a pad
   anywhere; single-ended completion regresses on `picodvi` (3 → 4). So the stage stays off by
   default (it is). Remaining: the registered run after P04, and KiCad grading.
+  *Bias note 2026-10-17:* the smoke above (and X08's smoke) built the `on` arm through
+  `TestingProfile::default()` (`prepare_default` with extra keys), so only that arm ran with
+  Java's fixture-test copper-to-edge clearance 0; the `off` arm (no extra keys) ran the
+  defaults. The harnesses now start from an empty patch (`default_profile()` in
+  `tests/diffpair.rs` and `tests/diffpair_vias.rs`); the rows below are unbiased.
+  *Done 2026-10-17 (fails the registered rule: the stage stays selectable and off by default):*
+  the registered runs after P04's default-tree decision (c23d8c0: the default tree stays
+  Java's), release, one route at a time, machine load 4–11 from two other agents; logs
+  `target/orchestrator/meas/logs/x0{8,9}.log`, records, baselines and gate logs
+  `target/orchestrator/meas/runs/x0{8,9}-*`.
+  **X08** (`docs/roadmap/prereg/X08.json`, `X08_SET=tools/bench/sets/x08-diffpairs.txt <diffpair
+  test> measurement_records_on_a_set`, 664 s), (via_in_pad, clearance_violations, unrouted,
+  pairs_coupled, coupled_share_mean) off → on:
+
+  | board | off | on |
+  |---|---|---|
+  | x08-straight | (0, 0, 0, 0, 0) | (0, 0, 0, 1, 0.9939) |
+  | x08-connector | (0, 0, 0, 0, 0) | (0, 0, 0, 1, 0.9940) |
+  | picodvi | (0, 0, 5, 0, 0) | (0, 0, **9**, 1, 0.0729) |
+  | pcie-active-backplane | (0, 0, 0, 0, 0) | (0, 0, 0, 7, 0.2425) |
+  | mydevboard-rp2040dev | (0, 0, 34, 0, 0) | (0, 0, 33, 1, 0.9111) |
+
+  F03.1 gate (`--prereg docs/roadmap/prereg/X08.json`): 0 refusals, improved 4/5, regressed 1
+  (picodvi, unrouted 5 → 9), **FAIL**; X08's decision table: a guard regression is a bug to fix
+  before the stage is kept as passing, and the stage stays selectable, off by default, either way.
+  **X09** (`docs/roadmap/prereg/X09.json`, `X09_SET=tools/bench/sets/x09-pairs.txt <diffpair_vias
+  test> measurement_records_on_a_set`, 651 s), (coupled_share, unrouted_single_ended,
+  clearance_violations, via_in_pad; unrouted, pairs_coupled) off → on:
+
+  | board | off | on | per-board rule |
+  |---|---|---|---|
+  | x08-connector | (0, 0, 0, 0; 0, 0) | (0.9940, 0, 0, 0; 0, 1) | pass |
+  | x09-two-layer | (0, 0, 0, 0; 0, 0) | (0.9285, 0, 0, 0; 0, 1) | pass |
+  | x09-skew | (0, 0, 0, 0; 0, 0) | (0.9729, 0, 0, 0; 0, 1) | pass |
+  | picodvi | (0, 3, 0, 0; 5, 0) | (0.0360, **4**, 0, 0; 9, 0) | fail: share, single-ended 3 → 4 |
+  | pcie-active-backplane | (0, 0, 0, 0; 0, 0) | (0.2813, 0, 0, 0; 0, 0) | fail: share |
+  | mydevboard-rp2040dev | (0, 33, 0, 0; 34, 0) | (0.9111, 33, 0, 0; 33, 1) | pass |
+
+  picodvi's 10 pairs: 5 crossing (X09.2), 4 centreline searches failed, 1 routed; pcie's 33: 16
+  routed with coupled vias (7 at setback 0, 9 at the 4 mm setback), 15 refused at the connectors
+  by the DRC, 1 crossing, 1 skipped (4 P pins). F03.1 gate (`--prereg docs/roadmap/prereg/X09.json`):
+  0 refusals, improved 5/6, regressed 1 (picodvi), **FAIL**; by the registration's per-board rule
+  the ≥ 90 % share holds on 4 of 6 boards (fails on picodvi and pcie) and single-ended completion
+  regresses on picodvi (3 → 4), so the Accept's "otherwise" applies: the stage stays off by
+  default, selectable, with these numbers; no `DIVERGENCES.md` line (no default changes). The
+  numbers match the pre-P04 smoke except rp2040dev's single-ended count (31 then, 33 now; the
+  smoke's `on` arm had the copper-to-edge bias above). The picodvi guard regression is the bug to
+  fix before the stage could be a default-on candidate (X09 follow-ups in the operator log:
+  crossing pairs, failed centreline searches, uncoupled 4 mm setback connectors). KiCad grading of
+  the corpus rows waits for C07 to register the stage in the CLI.

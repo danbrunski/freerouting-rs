@@ -1,5 +1,6 @@
-//! X06: the `krt-astar` bundle (grid A* path, then Freerouting's pull-tight
-//! and optimizer) and the region classes that measure it.
+//! X06: the region classes (X06.2), the raster-share probe (X04.6's
+//! question) and X06's findings in `krt-grid`. X06.1's `krt-astar` bundle
+//! and its tests were removed after X06.3's registered run rejected it.
 //!
 //! Boards: X05's synthetic fixtures in `tests/data/`, and
 //! `x06-regions.dsn` (a 32-pin 0.5 mm pitch QFN U1, a 32-pin 0.8 mm pitch
@@ -7,8 +8,7 @@
 //! resistors R1 and R2; nets Q = U1-1 to J1-1, L = U2-1 to J1-3, O = R1-1 to
 //! R2-1). Not under `fixtures/`: every DSN there needs a Java reference.
 //!
-//! The ignored tests are release runs over a board set (X06.1's gates,
-//! X06.3's pre-P04 dry run).
+//! The ignored test is a release run over a board set (the raster share).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -20,24 +20,21 @@ use freerouting::autoroute::batch::ordering::select_items;
 use freerouting::autoroute::events::{CancelToken, NullEvents};
 use freerouting::autoroute::pipeline::{PipelineJob, run_pipeline};
 use freerouting::autoroute::stages::{
-    ConnectionParams, DEFAULT_ROUTER_ALGORITHM, Destinations, PlaneTapPolicy, RouteTask, StageCtx,
-    StageRegistry, StageSelection,
+    ConnectionParams, Destinations, PlaneTapPolicy, RouteTask, StageCtx, StageRegistry,
 };
-use freerouting::board::items::{Item, ItemId};
+use freerouting::board::items::Item;
 use freerouting::board::structure::ComponentId;
 use freerouting::board::{BasicBoard, RoutingBoard};
-use freerouting::datastructures::IdGenerator;
-use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
+use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
-use freerouting_krt::grid::bundle::{KRT_ASTAR_BUNDLE, KRT_ASTAR_ID};
 use freerouting_krt::grid::frame::window_for;
 use freerouting_krt::grid::raster::Raster;
 use freerouting_krt::grid::regions::{self, Region};
 use freerouting_krt::grid::router::{
-    GridRun, HEURISTIC_WEIGHT, KRT_GRID_ID, KrtGrid, MAX_FRAME_CELLS, Rejection, StepResult,
-    TURN_COST, VIA_PROXIMITY_COST, via_cost_units, via_in_pad,
+    GridRun, HEURISTIC_WEIGHT, KrtGrid, MAX_FRAME_CELLS, Rejection, StepResult, TURN_COST,
+    VIA_PROXIMITY_COST, via_cost_units,
 };
 use freerouting_krt::grid::{
     DEFAULT_GRID_STEP_UM, FINER_GRID_STEPS_UM, GridTask, raster, step_in_board_units, terminals,
@@ -46,9 +43,7 @@ use krt_grid_router::{GridRouter, TrackMarginArg};
 
 const OPEN: &str = "crates/freerouting-krt/tests/data/x05-open-two-pin.dsn";
 const FINE: &str = "crates/freerouting-krt/tests/data/x05-fine-pitch.dsn";
-const WALL: &str = "crates/freerouting-krt/tests/data/x05-wall.dsn";
 const REGIONS: &str = "crates/freerouting-krt/tests/data/x06-regions.dsn";
-const DETOUR: &str = "crates/freerouting-krt/tests/data/x06-detour.dsn";
 const OWN_PAD_VIA: &str = "crates/freerouting-krt/tests/data/x06-own-pad-via.dsn";
 /// The board the 17 Q03 pins come from (Q03.6).
 const CANARY_Q03: &str = "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn";
@@ -63,7 +58,7 @@ fn repo_root() -> PathBuf {
 fn prepare(dsn: &str, testing: Option<u32>, extra: &[(&str, &str)]) -> PreparedJob {
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
-    let mut profile = TestingProfile::default();
+    let mut profile = default_profile();
     if let Some(passes) = testing {
         profile.set_optimizer_enabled(false);
         profile.set_max_passes(passes as i32);
@@ -83,12 +78,6 @@ fn prepare(dsn: &str, testing: Option<u32>, extra: &[(&str, &str)]) -> PreparedJ
     prepare_job(&input, &ResolveContext { cores: 1 }).unwrap_or_else(|e| panic!("{dsn}: {e}"))
 }
 
-fn krt_registry() -> StageRegistry {
-    let mut registry = StageRegistry::builtin();
-    freerouting_krt::register(&mut registry);
-    registry
-}
-
 fn route_prepared(prepared: PreparedJob, registry: Option<&StageRegistry>) -> RoutingBoard {
     let job = PipelineJob {
         settings: &prepared.settings,
@@ -100,10 +89,6 @@ fn route_prepared(prepared: PreparedJob, registry: Option<&StageRegistry>) -> Ro
     };
     let mut outcome = run_pipeline(prepared.board, &job).unwrap_or_else(|f| panic!("{}", f.error));
     outcome.board.take().expect("the routed board")
-}
-
-fn ses(board: &RoutingBoard, dsn: &str) -> String {
-    write_ses(board, &stem(dsn), SesStyle::Java)
 }
 
 fn stem(dsn: &str) -> String {
@@ -141,130 +126,6 @@ fn regions_by_label(board: &BasicBoard) -> BTreeMap<String, Region> {
 }
 
 /// What the gates count on a routed board against its input.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-struct Gates {
-    /// Clearance violations on the input board.
-    drc_input: usize,
-    /// Clearance violations on the routed board.
-    drc_routed: usize,
-    /// Of them, violations with an item the run created.
-    drc_new: usize,
-    /// Vias the run created whose copper overlaps a pin's pad.
-    via_in_pad: usize,
-    /// Vias on the routed board.
-    vias: usize,
-    /// Trace length on the routed board, in board units.
-    length: i64,
-    /// Airlines left on the routed board.
-    airlines: usize,
-}
-
-fn gates(input: &BasicBoard, routed: &BasicBoard) -> Gates {
-    let max_input_id = input.communication.id_generator.max_generated_id();
-    let violations = routed.all_clearance_violations();
-    let new = |id: ItemId| id.0 > max_input_id;
-    let mut checker = freerouting::drc::DesignRulesChecker::new(routed);
-    Gates {
-        drc_input: input.all_clearance_violations().len(),
-        drc_routed: violations.len(),
-        drc_new: violations
-            .iter()
-            .filter(|v| new(v.first_item) || new(v.second_item))
-            .count(),
-        via_in_pad: routed
-            .items()
-            .filter(|i| i.is_via() && new(i.id()) && via_in_pad(routed, i))
-            .count(),
-        vias: routed.items().filter(|i| i.is_via()).count(),
-        length: routed
-            .items()
-            .filter_map(Item::as_trace)
-            .map(|t| t.length().round() as i64)
-            .sum(),
-        airlines: checker.all_airlines().len(),
-    }
-}
-
-// ---------------------------------------------------------------------------
-// X06.1: the bundle
-// ---------------------------------------------------------------------------
-
-#[test]
-fn the_registry_selects_the_krt_astar_bundle() {
-    let registry = krt_registry();
-    let prepared = prepare(OPEN, Some(1), &[("autorouter.algorithm", KRT_ASTAR_ID)]);
-    let selection = StageSelection::resolve(&prepared.settings, &registry);
-    assert!(selection.warnings.is_empty(), "{:?}", selection.warnings);
-    assert_eq!(selection.algorithm.id, KRT_ASTAR_ID);
-    assert_eq!(selection.connection_router.id, KRT_ASTAR_ID);
-    assert!(selection.connection_router.from_default);
-    // Every other stage is Freerouting's.
-    let freerouting = StageSelection::resolve(&prepare(OPEN, Some(1), &[]).settings, &registry);
-    for (a, b) in [
-        (&selection.ordering, &freerouting.ordering),
-        (&selection.ripup_policy, &freerouting.ripup_policy),
-        (&selection.pass_controller, &freerouting.pass_controller),
-        (&selection.plane_taps, &freerouting.plane_taps),
-        (&selection.neck_down, &freerouting.neck_down),
-        (&selection.optimizer, &freerouting.optimizer),
-        (&selection.fanout, &freerouting.fanout),
-    ] {
-        assert_eq!(a.id, b.id);
-    }
-    assert_eq!(KRT_ASTAR_BUNDLE.ordering, "freerouting-ordering");
-    let pipeline = registry.build(&selection, &prepared.settings).unwrap();
-    assert_eq!(pipeline.connection_router.id(), KRT_ASTAR_ID);
-
-    // Without this crate's registration: Java's normalisation and warning.
-    let builtin = StageRegistry::builtin();
-    let selection = StageSelection::resolve(&prepared.settings, &builtin);
-    assert_eq!(selection.algorithm.id, DEFAULT_ROUTER_ALGORITHM);
-    assert_eq!(selection.connection_router.id, "freerouting-connection");
-    assert_eq!(
-        selection.warnings,
-        vec![format!(
-            "The algorithm '{KRT_ASTAR_ID}' is not supported. The default algorithm \
-             '{DEFAULT_ROUTER_ALGORITHM}' will be used instead."
-        )]
-    );
-}
-
-#[test]
-fn registering_the_bundle_changes_no_session_while_it_is_unselected() {
-    let registry = krt_registry();
-    for dsn in [OPEN, FINE, REGIONS] {
-        let builtin = route_prepared(prepare(dsn, Some(3), &[]), None);
-        let krt = route_prepared(prepare(dsn, Some(3), &[]), Some(&registry));
-        assert_eq!(ses(&builtin, dsn), ses(&krt, dsn), "{dsn}");
-    }
-}
-
-/// The bundle routes the synthetic boards completely and cleanly, and its
-/// pull-tight leaves no more trace length than `krt-grid` alone.
-#[test]
-fn the_bundle_routes_the_fixtures_and_pulls_the_grid_path_tight() {
-    let registry = krt_registry();
-    for dsn in [OPEN, FINE, REGIONS, DETOUR] {
-        let grid = prepare(
-            dsn,
-            Some(3),
-            &[("autorouter.connection_router", KRT_GRID_ID)],
-        );
-        let input = grid.board.clone();
-        let grid = route_prepared(grid, Some(&registry));
-        let astar = route_prepared(
-            prepare(dsn, Some(3), &[("autorouter.algorithm", KRT_ASTAR_ID)]),
-            Some(&registry),
-        );
-        let (g, a) = (gates(&input, &grid), gates(&input, &astar));
-        println!("{dsn}: krt-grid {g:?}; krt-astar {a:?}");
-        assert_eq!(a.airlines, 0, "{dsn}");
-        assert_eq!((a.drc_new, a.via_in_pad), (0, 0), "{dsn}");
-        assert_eq!(a.drc_routed, a.drc_input, "{dsn}");
-        assert!(a.length <= g.length, "{dsn}: {} > {}", a.length, g.length);
-    }
-}
-
 // ---------------------------------------------------------------------------
 // X06.2: region classes
 // ---------------------------------------------------------------------------
@@ -373,114 +234,6 @@ fn set_boards() -> Vec<String> {
         .filter(|l| !l.is_empty())
         .filter(|l| !skip.iter().any(|s| l.contains(s.as_str())))
         .collect()
-}
-
-fn extra_settings() -> Vec<(String, String)> {
-    std::env::var("X06_EXTRA")
-        .ok()
-        .map(|v| {
-            v.split(',')
-                .filter_map(|kv| kv.split_once('='))
-                .map(|(k, v)| (k.to_string(), v.to_string()))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-/// Every board of `X06_SET` routed with each algorithm of `X06_ARMS`
-/// (default `krt-astar`; `freerouting-router` is the default bundle), with
-/// default settings plus `X06_EXTRA`. Prints one row per board and arm:
-/// the gates and the region tally. Asserts the X06.1 gates for
-/// `krt-astar`: no clearance violation with a new item, no new via in a
-/// pad. With `X06_SES_OUT`, writes `<dir>/<stem>.<arm>.ses`.
-#[test]
-#[ignore = "a release run over a board set; set X06_SET"]
-fn route_a_set() {
-    let registry = krt_registry();
-    let arms: Vec<String> = std::env::var("X06_ARMS")
-        .unwrap_or_else(|_| KRT_ASTAR_ID.to_string())
-        .split(',')
-        .map(str::to_string)
-        .collect();
-    let out = std::env::var("X06_SES_OUT").ok().map(PathBuf::from);
-    if let Some(dir) = &out {
-        std::fs::create_dir_all(dir).unwrap();
-    }
-    println!(
-        "board\tarm\tdrc_input\tdrc_routed\tdrc_new\tvia_in_pad\tvias\tlength\tairlines\t\
-         pin_field_total\tpin_field_incomplete\tpin_field_unknown\topen_total\topen_incomplete\t\
-         open_unknown\tseconds"
-    );
-    for dsn in set_boards() {
-        for arm in &arms {
-            let mut extra = extra_settings();
-            extra.push(("autorouter.algorithm".into(), arm.clone()));
-            let extra: Vec<(&str, &str)> = extra
-                .iter()
-                .map(|(k, v)| (k.as_str(), v.as_str()))
-                .collect();
-            let prepared = prepare(&dsn, None, &extra);
-            let input = prepared.board.clone();
-            let connections = regions::connections(&input);
-            let started = Instant::now();
-            let routed = route_prepared(prepared, Some(&registry));
-            let seconds = started.elapsed().as_secs_f64();
-            let g = gates(&input, &routed);
-            let t = regions::tally(&connections, &routed);
-            let (p, o) = (t[&Region::PinField], t[&Region::Open]);
-            println!(
-                "{}\t{arm}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{seconds:.1}",
-                stem(&dsn),
-                g.drc_input,
-                g.drc_routed,
-                g.drc_new,
-                g.via_in_pad,
-                g.vias,
-                g.length,
-                g.airlines,
-                p.total,
-                p.incomplete,
-                p.unknown,
-                o.total,
-                o.incomplete,
-                o.unknown
-            );
-            if let Some(dir) = &out {
-                let path = dir.join(format!("{}.{arm}.ses", stem(&dsn)));
-                std::fs::write(path, ses(&routed, &dsn)).unwrap();
-            }
-            if arm == KRT_ASTAR_ID {
-                assert_eq!((g.drc_new, g.via_in_pad), (0, 0), "{dsn}");
-            }
-        }
-    }
-}
-
-/// One board for an external grader (`tools/kicad-oracle/grade.sh`'s
-/// ENGINE_COMMAND, X06.3's registered run): routes `X06_DSN` with
-/// `router.autorouter.algorithm = X06_ALGO` (default `krt-astar`) and
-/// default settings plus `X06_EXTRA`, writes the session to `X06_SES`, and
-/// prints the gates and the region tally as `route_a_set` does.
-#[test]
-#[ignore = "an engine command for a grader; set X06_DSN and X06_SES"]
-fn route_one_dsn() {
-    let dsn = std::env::var("X06_DSN").expect("X06_DSN");
-    let out = std::env::var("X06_SES").expect("X06_SES");
-    let algo = std::env::var("X06_ALGO").unwrap_or_else(|_| KRT_ASTAR_ID.to_string());
-    let mut extra = extra_settings();
-    extra.push(("autorouter.algorithm".into(), algo.clone()));
-    let extra: Vec<(&str, &str)> = extra
-        .iter()
-        .map(|(k, v)| (k.as_str(), v.as_str()))
-        .collect();
-    let prepared = prepare(&dsn, None, &extra);
-    let input = prepared.board.clone();
-    let connections = regions::connections(&input);
-    let routed = route_prepared(prepared, Some(&krt_registry()));
-    std::fs::write(&out, ses(&routed, &dsn)).unwrap();
-    let g = gates(&input, &routed);
-    let t = regions::tally(&connections, &routed);
-    println!("{} {algo}: {g:?} {t:?}", stem(&dsn));
 }
 
 /// The start set and the first destination set of `task`, as `krt-grid`
@@ -610,209 +363,6 @@ fn raster_share_on_a_set() {
     );
 }
 
-/// Time split of the `krt-astar` connection router in a whole run.
-#[derive(Clone, Copy, Debug, Default)]
-struct StageTimes {
-    connections: usize,
-    attempts: usize,
-    stage_ns: u128,
-    raster_ns: u128,
-    emulation_ns: u128,
-}
-
-thread_local! {
-    static STAGE_TIMES: std::cell::Cell<StageTimes> = const {
-        std::cell::Cell::new(StageTimes {
-            connections: 0,
-            attempts: 0,
-            stage_ns: 0,
-            raster_ns: 0,
-            emulation_ns: 0,
-        })
-    };
-}
-
-const TIMED_ID: &str = "x06-timed-krt-astar";
-
-/// `krt-astar` with a stopwatch (report only): before each connection the
-/// window, raster and terminal cells of every step are built once on the
-/// current board and timed; after the connection the times of the steps
-/// it attempted are added up against the connection's own time.
-struct TimedAstar(freerouting_krt::grid::bundle::KrtAstar);
-
-impl freerouting::autoroute::stages::ConnectionRouter for TimedAstar {
-    fn id(&self) -> &'static str {
-        TIMED_ID
-    }
-
-    fn route(
-        &mut self,
-        board: &mut RoutingBoard,
-        task: &RouteTask,
-        p: &ConnectionParams,
-        ctx: &mut StageCtx,
-    ) -> freerouting::autoroute::stages::ConnectionOutcome {
-        let mut raster_ns = BTreeMap::new();
-        if let Some(grid_task) = route_sets(board, task) {
-            let steps = std::iter::once(DEFAULT_GRID_STEP_UM).chain(FINER_GRID_STEPS_UM);
-            for step_um in steps {
-                let started = Instant::now();
-                let frame = window_for(board, &grid_task, step_in_board_units(board, step_um));
-                if frame.cell_count() <= MAX_FRAME_CELLS {
-                    let mut r = raster::build_raster(board, &grid_task, &frame);
-                    let (sources, targets) = terminals::for_task(board, &frame, &grid_task);
-                    terminals::mark(&mut r.map, &sources.cells);
-                    terminals::mark(&mut r.map, &targets.cells);
-                }
-                raster_ns.insert(step_um, started.elapsed().as_nanos());
-            }
-        }
-        let started = Instant::now();
-        let run = self.0.route_logged(board, task, p, ctx);
-        let stage_ns = started.elapsed().as_nanos();
-        STAGE_TIMES.with(|t| {
-            let mut v = t.get();
-            v.connections += 1;
-            v.attempts += run.attempts.len();
-            v.stage_ns += stage_ns;
-            v.emulation_ns += raster_ns.values().sum::<u128>();
-            v.raster_ns += run
-                .attempts
-                .iter()
-                .map(|a| raster_ns.get(&a.step_um).copied().unwrap_or(0))
-                .sum::<u128>();
-            t.set(v);
-        });
-        run.outcome
-    }
-}
-
-/// X04.6's question in whole `krt-astar` runs (default settings) of the
-/// boards of `X06_SET`: the raster's share of the connection router's
-/// time, and the router's share of the run. The raster times are a second
-/// build of the same windows on the same board state (module docs of
-/// `TimedAstar`); report only.
-#[test]
-#[ignore = "a release run over a board set; set X06_SET"]
-fn stage_time_split_on_a_set() {
-    let mut registry = krt_registry();
-    registry.connection_router.insert(TIMED_ID, |s| {
-        Box::new(TimedAstar(
-            freerouting_krt::grid::bundle::KrtAstar::from_settings(s),
-        ))
-    });
-    println!(
-        "board\tconnections\tattempts\trun_s\tstage_s\traster_s\traster_share_of_stage\tstage_share_of_run"
-    );
-    for dsn in set_boards() {
-        STAGE_TIMES.with(|t| t.set(StageTimes::default()));
-        let prepared = prepare(
-            &dsn,
-            None,
-            &[
-                ("autorouter.algorithm", KRT_ASTAR_ID),
-                ("autorouter.connection_router", TIMED_ID),
-            ],
-        );
-        let started = Instant::now();
-        route_prepared(prepared, Some(&registry));
-        let run_ns = started.elapsed().as_nanos();
-        let t = STAGE_TIMES.with(|t| t.get());
-        // The second raster builds ran outside the stage's stopwatch but
-        // inside the run's.
-        let run_ns = run_ns.saturating_sub(t.emulation_ns);
-        println!(
-            "{}\t{}\t{}\t{:.1}\t{:.1}\t{:.1}\t{:.3}\t{:.3}",
-            stem(&dsn),
-            t.connections,
-            t.attempts,
-            run_ns as f64 / 1e9,
-            t.stage_ns as f64 / 1e9,
-            t.raster_ns as f64 / 1e9,
-            t.raster_ns as f64 / t.stage_ns.max(1) as f64,
-            t.stage_ns as f64 / run_ns.max(1) as f64
-        );
-    }
-}
-
-#[test]
-fn the_wall_board_stays_clean_under_the_bundle() {
-    // No path exists; the bundle leaves the board as krt-grid does.
-    let registry = krt_registry();
-    let prepared = prepare(WALL, Some(2), &[("autorouter.algorithm", KRT_ASTAR_ID)]);
-    let input = prepared.board.clone();
-    let routed = route_prepared(prepared, Some(&registry));
-    let g = gates(&input, &routed);
-    assert_eq!((g.drc_new, g.via_in_pad), (0, 0));
-    assert_eq!(g.airlines, gates(&input, &input).airlines);
-    assert_eq!(g.length, gates(&input, &input).length);
-}
-
-/// Routes the first connection of `dsn` with `router` as the pass loop
-/// does (the changed area marked first, the pass's pull-tight accuracy and
-/// trace costs); returns the outcome's work, the trace length and the
-/// clearance violations after it.
-fn route_one(dsn: &str, astar: bool) -> (u64, f64, usize) {
-    use freerouting::autoroute::AttemptState;
-    use freerouting_krt::grid::bundle::KrtAstar;
-    let mut prepared = prepare(dsn, Some(1), &[]);
-    let task = select_items(&prepared.board)[0];
-    let cancel = CancelToken::new();
-    let ctx = StageCtx {
-        settings: &prepared.settings,
-        board_settings: &prepared.board_settings,
-        cancel: &cancel,
-        events: &NullEvents,
-    };
-    let p = ConnectionParams {
-        pass: 1,
-        ripup_allowed: true,
-        ripup_cost: 0,
-        via_cost: 50,
-        trace_costs: prepared.board_settings.trace_costs().to_vec(),
-        remove_unconnected_vias: false,
-        work_budget: maze_work_budget(1),
-        pull_tight_accuracy: prepared.board_settings.trace_pull_tight_accuracy(),
-        strict_check: false,
-    };
-    let board = &mut prepared.board;
-    board.start_marking_changed_area();
-    let run = if astar {
-        KrtAstar::new(KrtGrid::default()).route_logged(board, &task, &p, &ctx)
-    } else {
-        KrtGrid::default().route_logged(board, &task, &p, &ctx)
-    };
-    assert_eq!(run.outcome.state, AttemptState::Routed, "{dsn}");
-    // The bundle's pull-tight consumes the changed area; krt-grid leaves it.
-    assert_eq!(board.changed_area().is_none(), astar);
-    let length = board
-        .items()
-        .filter_map(Item::as_trace)
-        .map(|t| t.length())
-        .sum();
-    (
-        run.outcome.work.units,
-        length,
-        board.all_clearance_violations().len(),
-    )
-}
-
-/// Around the end of a keepout the conservative raster keeps the path
-/// farther out than the clearance needs; the bundle's pull-tight takes the
-/// slack back.
-#[test]
-fn the_bundle_pulls_the_grid_path_tight_after_the_connection() {
-    let (grid_work, grid_length, grid_drc) = route_one(DETOUR, false);
-    let (astar_work, astar_length, astar_drc) = route_one(DETOUR, true);
-    println!(
-        "krt-grid {grid_length:.0} ({grid_work} units), krt-astar {astar_length:.0} ({astar_work} units)"
-    );
-    assert_eq!((grid_drc, astar_drc), (0, 0));
-    assert!(astar_length < grid_length - 1000.0);
-    // The outcome's work includes the pull-tight's units.
-    assert!(astar_work > grid_work);
-}
-
 // ---------------------------------------------------------------------------
 // X06's finding in krt-grid: a via beside an SMD pad of its own net
 // ---------------------------------------------------------------------------
@@ -899,4 +449,14 @@ fn the_gate_rejects_a_via_only_the_pads_side_of_the_drc_sees() {
         }
     }
     assert!(board.items().all(|i| !i.is_via() && !i.is_trace()));
+}
+
+/// The testing source's starting patch: empty, so every run starts from
+/// the default settings. Not `TestingProfile::default()`, which carries
+/// Java's fixture-test settings (`java_fixture_test`: copper-to-edge
+/// clearance 0) and biased the pre-P04 measurements.
+fn default_profile() -> TestingProfile {
+    TestingProfile {
+        patch: SettingsPatch::default(),
+    }
 }

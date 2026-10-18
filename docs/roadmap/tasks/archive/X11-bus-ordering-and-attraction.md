@@ -159,8 +159,11 @@ pattern); F04; F03.1, F03.4.
   a probe route at inflated clearance as the attraction path) or attraction
   inside the pull-tight and optimizer; owner: a follow-up X11 item after
   X11.4 decides whether the stages stay.
+  *Moot 2026-10-17:* X11.4's registered run rejected both stages and their code is removed
+  (X11.4's note), so the 10 %-of-pitch clause will not be met and no follow-up item is opened
+  (the operator's recommendation for a rejection). Left `[~]` because its Accept never held.
 
-- [~] **X11.4 — Measurement.**
+- [x] **X11.4 — Measurement.**
   Preregister (F03.4). Boards: at least three with buses (connectors or
   memory parts with parallel nets). Signal: vias and length on bus nets.
   Guards: unrouted (no regression on any board), `drc_real`, vias in pads.
@@ -207,3 +210,34 @@ pattern); F04; F03.1, F03.4.
   the keep or reject decision per arm (reject removes the code as the keep
   rule says), and (if kept) the `docs/DIVERGENCES.md` line; owner P04, then
   X11.4.
+  *Bias note 2026-10-17:* this harness already started from an empty settings patch, so the dry
+  run above and the run below are not biased by `TestingProfile::default()`.
+  *Done 2026-10-17 (both candidate arms rejected; the bus module and the engine cost hook
+  removed):* the registered run after P04's default-tree decision (c23d8c0: the default tree
+  stays Java's), `docs/roadmap/prereg/X11.json` with one amendment before the first run
+  (kit-dev-coldfire registered as the prepared demo grade.sh routes; a 45 min timeout per route),
+  `X11_DSN=<board> X11_ARMS=<arm> <bus test> bus_arms_on_a_set` per arm (release, one route at a
+  time, machine load 4–11 from two other agents), log `target/orchestrator/meas/runs/x11-engine.log`.
+  Issue039-bug-design, the first board of the run (Rust DRC):
+
+  | arm | unrouted | drc_new | via_in_pad | vias | bus vias | bus length mm | spacing µm | s |
+  |---|---|---|---|---|---|---|---|---|
+  | freerouting | 6 | 0 | 0 | 216 | 27 | 372.50 | 2068 | 190 |
+  | krt-bus-order | **10** | 0 | 0 | 210 | 28 | 394.81 | 2470 | 313 |
+  | krt-bus | **9** | 0 | 0 | 237 | 33 | 402.31 | 1566 | 372 |
+
+  The same numbers as the pre-P04 dry run. The keep rule needs unrouted to regress on no board for
+  each arm; both arms regress on this board (6 → 10, 6 → 9), and both also lose on the score (bus
+  vias and length up), so neither can be kept whatever the other four boards show. The remaining
+  boards were therefore not run (Issue113-Protein's first arm was stopped after 15 s;
+  Issue208-freerouting, DAC2020 bm01 and kit-dev-coldfire not run), a choice to save routing time
+  for X10 and X12; the F03.1 gate would refuse the partial run (registered boards missing), so no
+  baseline was written. **Removed** per the keep rule ("neither: the bus module goes"; the
+  attraction, the bundle and the engine cost hook go with `krt-bus`): `crates/freerouting-krt/src/bus/`
+  (`detect.rs`, `order.rs`, `attraction.rs`, `mod.rs`), its registration in `lib.rs`,
+  `tests/bus.rs`, `tests/data/x11-bus8.dsn`, the two `docs/PROVENANCE.md` rows (`bus/detect.rs`,
+  `bus/order.rs`), and the engine hook X11.3 added, reverted to its state before X11
+  (`git diff 9685d7f^ 9685d7f` reversed on `autoroute/batch/connection.rs`,
+  `batch/connection_cost.rs` (deleted), `batch/mod.rs`, `autoroute/connection.rs`,
+  `session/search.rs`, `session/sink.rs`; no other code used it). Kept:
+  `tools/bench/sets/x11-bus.txt` (the registration names it). No `DIVERGENCES.md` line.

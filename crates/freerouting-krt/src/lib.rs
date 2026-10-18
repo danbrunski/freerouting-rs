@@ -13,12 +13,13 @@
 //!
 //! Modules:
 //! - [`planes`] (X02): islands, anchors and main components of plane nets,
-//!   the plane-tap report and pour region repair.
+//!   and the plane-tap report (X02.3's region repair was rejected by X02.5
+//!   and removed).
 //! - [`grid`] (X04, X05, X06): the conservative obstacle raster of one
 //!   connection for the vendored grid A* (`krt-grid-router`), the
-//!   `krt-grid` connection router on it, and the `krt-astar` bundle (grid
-//!   path, then Freerouting's pull-tight and optimizer) with the region
-//!   classes that measure it.
+//!   `krt-grid` connection router on it, and the region classes X06
+//!   measured with (X06.1's `krt-astar` bundle was rejected by X06.3 and
+//!   removed).
 //! - [`length`] (X07): length and time matching with trombone meanders,
 //!   the `krt-meander` board stage.
 //! - [`diffpair`] (X08, X09): differential pairs, centreline and P/N
@@ -26,12 +27,12 @@
 //!   the `krt-diffpair` board stage.
 //! - [`fanout`] (X10, X12): the `krt-qfn-escape` and `krt-bga-escape`
 //!   fanout stages.
-//! - [`bus`] (X11): bus detection, the `krt-bus` middle-out ordering and
-//!   the `krt-bus-attraction` cost, bundled as `krt-bus`.
+//!
+//! X11's bus ordering and attraction (`krt-bus`) were rejected by X11.4's
+//! registered run and removed, with the engine's search-cost hook.
 
 use freerouting::autoroute::stages::StageRegistry;
 
-pub mod bus;
 pub mod diffpair;
 pub mod fanout;
 pub mod grid;
@@ -43,9 +44,7 @@ pub mod planes;
 pub fn register(registry: &mut StageRegistry) {
     planes::register(registry);
     grid::register(registry);
-    grid::bundle::register(registry);
     length::register(registry);
     diffpair::register(registry);
     fanout::register(registry);
-    bus::register(registry);
 }
