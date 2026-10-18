@@ -66,6 +66,14 @@ class ProgressState:
         self.done = False
         self.exit_code = None
         self.state = None
+        self.pass_ends = []  # (pass, incomplete) at the end of each routing pass (K09.7)
+
+    def best_pass(self):
+        """The routing pass that ended with the fewest incomplete connections
+        (the earliest of equals), or None. K09.7's pass-limit hint."""
+        if not self.pass_ends:
+            return None
+        return min(self.pass_ends, key=lambda p: (p[1], p[0]))[0]
 
     def update(self, event):
         """Applies one event (from `parse_line`); unknown events and bad
@@ -87,6 +95,8 @@ class ProgressState:
             score = event.get("score")
             if isinstance(score, (int, float)) and not isinstance(score, bool):
                 self.score = float(score)
+            if event.get("pass_end") is True and phase == "route" and number and self.incomplete is not None:
+                self.pass_ends.append((number, self.incomplete))
             self._time(event)
         elif kind == "done":
             self.done = True

@@ -1135,6 +1135,25 @@ users would notice is listed. Texts follow the English Java bundles.)
   killing the process). Pinned by `frontend_failed_write_exits_with_1`,
   `frontend_writes_on_close_when_routed`, `frontend_close_again_after_a_slow_stop_quits_without_waiting`.
 
+## kicad-plugin
+
+The plugin is freerouting-rs's own (Java's KiCad plugin is separate code); these lines say where a
+plugin run routes a different DSN than KiCad's export, or imports differently than
+`ImportSpecctraSES`, under both profiles (K09, `kicad-plugin/freerouting_rs/dsn_fixups.py` and
+`export_flow.py`; the options and their defaults are in `options.py`):
+- **The board's edge clearance and pads' own clearances become keepouts** (`edge_and_pad_keepouts`,
+  on by default under both profiles: they are board rules KiCad's export leaves out). Strips along
+  the outline's bounding box and rectangles along the outline segments off it, `edge - default
+  clearance` wide, and a circle round each pad whose local clearance exceeds the default. Pinned by
+  `test_dsn_fixups.py::test_edge_and_pad_keepouts_on_a_two_layer_board` and
+  `test_outline_segments_off_the_bounding_box_get_their_own_keepouts`.
+- **Routed vias keep their session drill.** KiCad 10's `ImportSpecctraSES` drills a via with its net
+  class's drill, not its padstack's (a 0.6 mm via on a 0.4 mm-drill class got a 0.1 mm annular
+  ring on `canary-pwr`); the plugin sets the session's drill after the import
+  (`ses_vias.py`, pinned by `test_imported_vias_get_the_sessions_drill_not_the_class_drill`).
+- The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
+  are off unless chosen, and change nothing in a run with the defaults.
+
 ## Profile `enhanced`
 
 `router.profile` (N01, D10) picks the defaults a job starts from: `legacy` is Java Freerouting

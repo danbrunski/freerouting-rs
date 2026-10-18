@@ -49,12 +49,14 @@ defaults, and none of it raises.
 
 import json
 import re
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
-SCHEMA = 2
-# Schema 1 (K02.1) wrote every option and had no profile; it still loads.
-READABLE_SCHEMAS = (1, 2)
+SCHEMA = 3
+# Schema 1 (K02.1) wrote every option and had no profile; schema 2 (N01) had
+# no K09 fields. Both still load: a field a file leaves out takes the
+# profile's default (`profile_defaults`).
+READABLE_SCHEMAS = (1, 2, 3)
 OPTIONS_FILE = "route-options.json"
 
 # The router's routing profiles (N01): `legacy` is Java Freerouting's results,
@@ -65,6 +67,11 @@ PROFILE_LABELS = {"legacy": "Legacy", "enhanced": "Enhanced"}
 _STAGE_KEY = re.compile(r"^[a-z_]+(?:\.[a-z_]+)+$")
 _STAGE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
 
+AUTO = "auto"  # a fix-up list derived from the board (dsn_fixups.resolve)
+POUR_MODES = ("wires", "engine")
+SWEEPS = ("", "fixed", "free")
+RIPUP_RANGE = (1, 1000000)
+SWEEP_PASSES_RANGE = (1, 100)
 MAX_PASSES_RANGE = (0, 9999)
 THREADS_RANGE = (0, 1024)
 # The router scales a value between 0 and 1 by 100 (Java's `-oit 0.05` is 5 %),
@@ -124,19 +131,35 @@ class RouteOptions:
     rule_area_fixup: bool = True
     profile: str = DEFAULT_PROFILE
     stages: dict = field(default_factory=dict)
+    # K09: DSN fix-ups (dsn_fixups.py) and the router settings of canary's flow.
+    class_widths: object = field(default_factory=dict)  # {class: mm} or "auto"
+    fixed_pour_classes: object = field(default_factory=list)  # [class] or "auto"
+    fixed_pour_mode: str = "wires"  # "wires" (K09.2 arm b) or "engine" (arm a, Q01)
+    drop_pour_nets: object = field(default_factory=list)  # [net] or "auto"
+    edge_and_pad_keepouts: bool = True  # board rules: on under both profiles (K09.4, K09.9)
+    route_on_plane_layers: list = field(default_factory=list)
+    fix_existing: bool = False
+    start_ripup_costs: int = None
+    sweep: str = ""  # "", "fixed" or "free" (Q10)
+    sweep_passes: int = None
+    use_pass_hint: bool = False
+    pass_hint: int = None  # the pass that won last time (K09.7), written after a run
 
     # --- the argument list ---------------------------------------------------
 
-    def to_args(self, board_min_trace_width_um=None, for_gui=False):
+    def to_args(self, board_min_trace_width_um=None, for_gui=False, extra_args=()):
         """The router's option flags (without files, `--progress` and
         `--result-json`), in a fixed order. `board_min_trace_width_um` is the
         board's minimum track width, used when `min_trace_width_um` is unset.
-        `for_gui` leaves out `--seed`, which the GUI does not read."""
+        `for_gui` leaves out `--seed`, which the GUI does not read.
+        `extra_args` (the fix-ups' engine flags, `export_flow.prepare`) go
+        before the stage choices."""
         args = []
         if self.profile != DEFAULT_PROFILE:
             args += ["--profile", self.profile]
-        if self.max_passes:
-            args += ["--max-passes", str(self.max_passes)]
+        passes = self.max_passes or (self.pass_hint if self.use_pass_hint and self.pass_hint else 0)
+        if passes:
+            args += ["--max-passes", str(passes)]
         if self.threads:
             args += ["--threads", str(self.threads)]
         if not self.optimizer:
@@ -155,6 +178,13 @@ class RouteOptions:
             args.append(f"--router.min_trace_width_um={_fmt(width)}")
         if self.timeout.strip():
             args += ["--timeout", self.timeout.strip()]
+        if self.start_ripup_costs is not None:
+            args.append(f"--router.scoring.start_ripup_costs={self.start_ripup_costs}")
+        if self.sweep in SWEEPS[1:]:
+            args.append(f"--router.autorouter.sweep={self.sweep}")
+            if self.sweep_passes is not None:
+                args.append(f"--router.autorouter.sweep_passes={self.sweep_passes}")
+        args += list(extra_args)
         for key in sorted(self.stages):
             args.append(f"--router.{key}={self.stages[key]}")
         return args
@@ -166,13 +196,13 @@ class RouteOptions:
         differ from it. `stage_defaults` maps a slot key to the profile's id
         (`parse_stage_listing`); a stage choice equal to it is left out."""
         d = {"schema": SCHEMA, "profile": self.profile}
-        defaults = RouteOptions()
+        defaults = profile_defaults(self.profile)
         for f in fields(self):
             if f.name in ("profile", "stages"):
                 continue
             v = getattr(self, f.name)
             if v != getattr(defaults, f.name):
-                d[f.name] = list(v) if isinstance(v, list) else v
+                d[f.name] = list(v) if isinstance(v, list) else dict(v) if isinstance(v, dict) else v
         stages = differing_stages(self.stages, stage_defaults)
         if stages:
             d["stages"] = stages
@@ -181,14 +211,12 @@ class RouteOptions:
     @classmethod
     def from_dict(cls, data):
         """Never raises. See the module docstring for what is kept."""
-        out = cls()
         if not isinstance(data, dict) or data.get("schema") not in READABLE_SCHEMAS:
-            return out
+            return profile_defaults(DEFAULT_PROFILE)
         if isinstance(data.get("schema"), bool):
-            return out
+            return profile_defaults(DEFAULT_PROFILE)
         v = data.get("profile")
-        if v in PROFILES:
-            out.profile = v
+        out = profile_defaults(v if v in PROFILES else DEFAULT_PROFILE)
         v = data.get("stages")
         if isinstance(v, dict):
             out.stages = {
@@ -221,7 +249,135 @@ class RouteOptions:
         v = data.get("rule_area_fixup")
         if isinstance(v, bool):
             out.rule_area_fixup = v
+        _restore_k09(out, data)
         return out
+
+
+def _names(value):
+    return isinstance(value, list) and all(isinstance(n, str) and n.strip() for n in value)
+
+
+def _restore_k09(out, data):
+    """The K09 fields of a stored dict; a bad value keeps the default."""
+    v = data.get("class_widths")
+    if v == AUTO or (
+        isinstance(v, dict) and all(isinstance(k, str) and k and _number(w) and 0 < w <= 100 for k, w in v.items())
+    ):
+        out.class_widths = v if v == AUTO else {k: float(w) for k, w in v.items()}
+    for name in ("fixed_pour_classes", "drop_pour_nets"):
+        v = data.get(name)
+        if v == AUTO or _names(v):
+            setattr(out, name, v if v == AUTO else [n.strip() for n in v])
+    v = data.get("fixed_pour_mode")
+    if v in POUR_MODES:
+        out.fixed_pour_mode = v
+    v = data.get("route_on_plane_layers")
+    if _names(v):
+        out.route_on_plane_layers = [n.strip() for n in v]
+    for name in ("edge_and_pad_keepouts", "fix_existing", "use_pass_hint"):
+        v = data.get(name)
+        if isinstance(v, bool):
+            setattr(out, name, v)
+    v = data.get("start_ripup_costs")
+    if _int_in(v, *RIPUP_RANGE):
+        out.start_ripup_costs = v
+    v = data.get("sweep")
+    if v in SWEEPS:
+        out.sweep = v
+    v = data.get("sweep_passes")
+    if _int_in(v, *SWEEP_PASSES_RANGE):
+        out.sweep_passes = v
+    v = data.get("pass_hint")
+    if _int_in(v, 1, MAX_PASSES_RANGE[1]):
+        out.pass_hint = v
+
+
+# The plugin's defaults per profile (K09.9): what each profile changes from the
+# dataclass defaults above, each entry naming the measurement that accepted
+# it. `legacy` keeps the plugin's behaviour before K09, except the board's
+# own clearance rules (`edge_and_pad_keepouts`, on in the dataclass), which
+# hold under both profiles. `enhanced` is empty: no candidate of
+# docs/roadmap/prereg/K09.json passed its guards on 2026-10-17 (the `auto`
+# arms left Q13's inner-layer tracks on canary-pwr; K09.9's note).
+PROFILE_DEFAULTS = {
+    "legacy": {},
+    "enhanced": {},
+}
+
+
+def profile_defaults(profile=DEFAULT_PROFILE):
+    """The options a board starts from under `profile`."""
+    return replace(RouteOptions(), profile=profile, **PROFILE_DEFAULTS.get(profile, {}))
+
+
+# K09.8: the values canary's graded flow uses (`dsn_export.py --width ...`,
+# `-mp 1 --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150`,
+# Q10's sweep). The dialog's "Canary flow" button fills the fields with them.
+CANARY_PRESET = {
+    "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4},
+    "fixed_pour_classes": ["Power_High", "Switch_Node"],
+    "fixed_pour_mode": "wires",
+    "drop_pour_nets": ["GND"],
+    "edge_and_pad_keepouts": True,
+    "max_passes": 1,
+    "start_ripup_costs": 1500,
+    "min_trace_width_um": 150.0,
+    "sweep": "free",
+    "sweep_passes": 2,
+}
+
+
+def with_preset(opts, preset=None):
+    """`opts` with the preset's values (CANARY_PRESET by default)."""
+    return replace(opts, **(CANARY_PRESET if preset is None else preset))
+
+
+def dsn_settings(opts):
+    """The `dsn_fixups.apply` settings of `opts`. With `fixed_pour_mode`
+    `engine` the pours stay planes and the classes go to the router."""
+    return {
+        "class_widths": opts.class_widths,
+        "fixed_pour_classes": opts.fixed_pour_classes if opts.fixed_pour_mode == "wires" else [],
+        "drop_pour_nets": opts.drop_pour_nets,
+        "edge_and_pad_keepouts": opts.edge_and_pad_keepouts,
+        "route_on_plane_layers": opts.route_on_plane_layers,
+    }
+
+
+def format_class_widths(widths):
+    """`Power_High=0.3, GND=0.4`, or `auto`."""
+    if widths == AUTO:
+        return AUTO
+    return ", ".join(f"{k}={_fmt(v)}" for k, v in sorted(widths.items()))
+
+
+def parse_class_widths(text):
+    """`(widths, error)` from `CLASS=mm, CLASS=mm` or `auto`."""
+    text = text.strip()
+    if text.lower() == AUTO:
+        return AUTO, None
+    out = {}
+    for part in filter(None, (p.strip() for p in text.split(","))):
+        name, sep, value = part.partition("=")
+        try:
+            mm = float(value) if sep else None
+        except ValueError:
+            mm = None
+        if not name.strip() or mm is None or not 0 < mm <= 100:
+            return {}, f"class widths: '{part}' is not CLASS=mm (0 to 100 mm)"
+        out[name.strip()] = mm
+    return out, None
+
+
+def format_names(names):
+    return AUTO if names == AUTO else ", ".join(names)
+
+
+def parse_names(text, allow_auto=True):
+    text = text.strip()
+    if allow_auto and text.lower() == AUTO:
+        return AUTO
+    return [n.strip() for n in text.split(",") if n.strip()]
 
 
 def valid_stage(key, stage_id):
@@ -308,8 +464,11 @@ def from_form(values):
     """Options from the dialog's text boxes. `values` maps the field names to
     strings (or ints/bools for the numeric and checkbox controls). Returns
     `(options, errors)`; a field with an error keeps its default and the
-    dialog shows the messages instead of routing."""
-    options, errors = RouteOptions(), []
+    dialog shows the messages instead of routing. A field `values` leaves
+    out keeps the profile's default."""
+    errors = []
+    profile = str(values.get("profile", DEFAULT_PROFILE)).strip().lower()
+    options = profile_defaults(profile if profile in PROFILES else DEFAULT_PROFILE)
 
     def number(name, kind, lo, hi):
         text = str(values.get(name, "")).strip()
@@ -341,10 +500,8 @@ def from_form(values):
     else:
         errors.append(f"timeout: '{timeout}' is not a duration (use 90s, 10m, 2h or HH:MM:SS)")
     options.rule_area_fixup = bool(values.get("rule_area_fixup", True))
-    profile = str(values.get("profile", DEFAULT_PROFILE)).strip().lower()
-    if profile in PROFILES:
-        options.profile = profile
-    else:
+    _form_k09(options, values, errors, number)
+    if profile not in PROFILES:
         errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
     stages = values.get("stages", {})
     if isinstance(stages, dict):
@@ -356,3 +513,38 @@ def from_form(values):
             else:
                 errors.append(f"{key}: '{stage_id}' is not a stage id")
     return options, errors
+
+
+def _form_k09(options, values, errors, number):
+    """The K09 fields of the form; a field the form leaves out keeps the
+    profile's default."""
+    if "class_widths" in values:
+        widths, error = parse_class_widths(str(values["class_widths"]))
+        options.class_widths = widths
+        if error:
+            errors.append(error)
+    for name in ("fixed_pour_classes", "drop_pour_nets"):
+        if name in values:
+            setattr(options, name, parse_names(str(values[name])))
+    if "route_on_plane_layers" in values:
+        options.route_on_plane_layers = parse_names(str(values["route_on_plane_layers"]), allow_auto=False)
+    mode = str(values.get("fixed_pour_mode", options.fixed_pour_mode)).strip().lower()
+    if mode in POUR_MODES:
+        options.fixed_pour_mode = mode
+    else:
+        errors.append(f"fixed pour mode: '{mode}' is not one of {', '.join(POUR_MODES)}")
+    for name in ("edge_and_pad_keepouts", "fix_existing", "use_pass_hint"):
+        if name in values:
+            setattr(options, name, bool(values[name]))
+    if "start_ripup_costs" in values:
+        options.start_ripup_costs = number("start_ripup_costs", int, *RIPUP_RANGE)
+    sweep = str(values.get("sweep", options.sweep)).strip().lower()
+    sweep = "" if sweep in ("off", "none") else sweep
+    if sweep in SWEEPS:
+        options.sweep = sweep
+    else:
+        errors.append(f"sweep: '{sweep}' is not off, fixed or free")
+    if "sweep_passes" in values:
+        options.sweep_passes = number("sweep_passes", int, *SWEEP_PASSES_RANGE)
+    if "pass_hint" in values:
+        options.pass_hint = number("pass_hint", int, 1, MAX_PASSES_RANGE[1])

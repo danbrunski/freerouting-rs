@@ -198,6 +198,8 @@ def build_pcbnew(ui, dsn_text):
         return ui.import_ok
 
     pcbnew.ActionPlugin = ActionPlugin
+    pcbnew.F_Cu, pcbnew.B_Cu = 0, 2
+    pcbnew.ToMM = lambda nm: nm / 1e6
     pcbnew.ExportSpecctraDSN = export
     pcbnew.ImportSpecctraSES = import_ses
     pcbnew.Refresh = lambda: None
@@ -212,6 +214,9 @@ class FakeTrack:
 
     def IsLocked(self):
         return self.locked
+
+    def SetLocked(self, value):
+        self.locked = value
 
 
 class FakeBoard:
@@ -233,10 +238,16 @@ class FakeBoard:
         return self.path
 
     def GetDesignSettings(self):
-        return types.SimpleNamespace(m_TrackMinWidth=self.min_track_nm)
+        return types.SimpleNamespace(m_TrackMinWidth=self.min_track_nm, m_CopperEdgeClearance=0)
 
     def Zones(self):
         return []
+
+    def GetFootprints(self):
+        return []
+
+    def GetBoardPolygonOutlines(self, outline, *args):
+        return False
 
 
 def install(monkeypatch):

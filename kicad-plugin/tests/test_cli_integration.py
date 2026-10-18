@@ -207,3 +207,37 @@ def test_both_profiles_route_and_the_summary_names_them(router, board, profile, 
     assert run.wait(timeout=300) == 0, run.failure_text()
     assert run.ses_written()
     assert run.summary_text().startswith(f"Profile: {label}\n")
+
+
+def test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli(router, tmp_path):
+    """K09: the preset's router flags are read by the CLI (its settings snapshot), and a DSN
+    with every fix-up (class width, fixed pour wires, dropped plane, edge and pad keepouts,
+    an opened plane layer) loads and routes."""
+    import dsn_fixups
+    from test_dsn_fixups import BOARD, FOUR
+
+    text, _log = dsn_fixups.apply(
+        FOUR,
+        BOARD,
+        {
+            "class_widths": {"Power": 0.3},
+            "fixed_pour_classes": ["Power"],
+            "drop_pour_nets": ["GND"],
+            "edge_and_pad_keepouts": True,
+            "route_on_plane_layers": ["In2.Cu"],
+        },
+    )
+    work = tmp_path / "freerouting-rs"
+    work.mkdir()
+    dsn, ses = work / "k09.dsn", work / "k09.ses"
+    dsn.write_text(text, encoding="utf-8")
+    chosen = options.with_preset(options.RouteOptions())
+    run = start(router, dsn, ses, work, chosen.to_args())
+    assert run.wait(timeout=300) == 0, "\n".join(run.lines[-15:])
+    assert run.ses_written()
+    assert not any("ignored" in line or "Unknown" in line or "could not" in line for line in run.lines), run.lines
+    snapshot = run.manifest()["settings_snapshot"]
+    assert snapshot["autorouter"]["max_passes"] == 1
+    assert snapshot["autorouter"]["sweep"] == "free" and snapshot["autorouter"]["sweep_passes"] == 2
+    assert snapshot["scoring"]["start_ripup_costs"] == 1500
+    assert snapshot["min_trace_width_um"] == 150.0

@@ -18,7 +18,7 @@ from pathlib import Path
 import pcbnew
 import wx
 
-from . import dropdowns, kicad_areas, options, progress, routing, rule_areas, tools, version
+from . import dropdowns, export_flow, kicad_board, options, progress, routing, tools, version
 
 TITLE = "freerouting-rs"
 TICK_MS = 100
@@ -86,25 +86,18 @@ def board_min_track_width_um(board):
         return None
 
 
+def log_lines(work_dir, dsn, lines):
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    for line in lines:
+        tools.log_line(work_dir, f"{stamp} {dsn.name}: {line}")
+
+
 def fix_rule_areas(board, dsn, work_dir):
     """Rewrites the rule-area keepouts in the exported DSN (see rule_areas).
     pcbnew is read here, on the UI thread. Returns the log lines; a failure is
     logged and leaves the DSN as KiCad wrote it."""
-    try:
-        areas = kicad_areas.collect(board, pcbnew)
-        # open(), not Path.read_text/write_text(newline=...): read_text has no `newline`
-        # before Python 3.13, and KiCad 10 ships 3.12 (found in K03.6 on KiCad 10.0.7).
-        with open(dsn, encoding="utf-8", newline="") as f:
-            text = f.read()
-        new_text, lines = rule_areas.rewrite(text, areas)
-        if new_text != text:
-            with open(dsn, "w", encoding="utf-8", newline="") as f:
-                f.write(new_text)
-    except Exception as e:  # never block routing on the fix-up
-        lines = [f"WARNING: rule-area fix-up skipped: {e!r}"]
-    stamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    for line in lines or ["no rule areas on the board"]:
-        tools.log_line(work_dir, f"{stamp} {dsn.name}: {line}")
+    lines = export_flow.fix_rule_areas(board, pcbnew, dsn)
+    log_lines(work_dir, dsn, lines)
     return lines
 
 
@@ -283,6 +276,7 @@ class Dialog(wx.Dialog):
         self.min_width.SetToolTip("Minimum trace width in micrometres (--router.min_trace_width_um); empty uses the Board Setup value")
         self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
         self.fix_areas.SetValue(saved.rule_area_fixup)
+        self.add_k09_controls(saved)
         self.profile = wx.Choice(self, choices=[options.PROFILE_LABELS[p] for p in options.PROFILES])
         self.profile.SetSelection(options.PROFILES.index(saved.profile))
         self.profile.SetToolTip(
@@ -312,13 +306,104 @@ class Dialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(info, 0, wx.ALL | wx.EXPAND, 12)
         sizer.Add(form, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
+        sizer.Add(self.k09_group(), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(self.advanced_group(saved), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
         self.CentreOnParent()
         # KiCad 10's wxWidgets draws the selected row of a dark drop-down
         # white on white on recent Windows 11 builds (dropdowns.py).
-        dropdowns.fix_dark_lists([self.profile] + [c for c, _ in self.stage_choices.values()])
+        dropdowns.fix_dark_lists([self.profile, self.pour_mode, self.sweep] + [c for c, _ in self.stage_choices.values()])
+
+    def add_k09_controls(self, saved):
+        """The K09 fields: DSN fix-ups and the flow's router settings."""
+        self.widths = wx.TextCtrl(self, value=options.format_class_widths(saved.class_widths))
+        self.widths.SetHint("as exported, e.g. Power_High=0.3, GND=0.4, or auto")
+        self.widths.SetToolTip("Routed width per net class in mm, written into the DSN; auto caps wide classes at their narrowest SMD pad")
+        self.fixed_pours = wx.TextCtrl(self, value=options.format_names(saved.fixed_pour_classes))
+        self.fixed_pours.SetHint("none, e.g. Power_High, Switch_Node, or auto")
+        self.fixed_pours.SetToolTip("Net classes whose outer-layer pours other nets must keep out of; auto: pours above their layer's lowest zone priority")
+        self.pour_mode = wx.Choice(self, choices=list(options.POUR_MODES))
+        self.pour_mode.SetSelection(options.POUR_MODES.index(saved.fixed_pour_mode))
+        self.pour_mode.SetToolTip("wires: the fill becomes fixed copper in the DSN; engine: the router keeps foreign nets out (Q01)")
+        self.drop_pours = wx.TextCtrl(self, value=options.format_names(saved.drop_pour_nets))
+        self.drop_pours.SetHint("none, e.g. GND, or auto")
+        self.drop_pours.SetToolTip("Nets whose outer-layer pours are left out, so their pads fan out to the inner plane; auto: a net alone on an inner layer")
+        self.keepouts = wx.CheckBox(self, label="Keep the board-edge and pad clearances (keepouts)")
+        self.keepouts.SetValue(saved.edge_and_pad_keepouts)
+        self.open_layers = wx.TextCtrl(self, value=options.format_names(saved.route_on_plane_layers))
+        self.open_layers.SetHint("none, e.g. Power.Cu")
+        self.open_layers.SetToolTip("Inner plane layers the router may also route on")
+        self.fix_existing = wx.CheckBox(self, label="Keep the existing tracks (add-only run)")
+        self.fix_existing.SetValue(saved.fix_existing)
+        self.ripup = wx.TextCtrl(self, value="" if saved.start_ripup_costs is None else str(saved.start_ripup_costs))
+        self.ripup.SetHint("router default (100)")
+        self.ripup.SetToolTip("Start rip-up cost (--router.scoring.start_ripup_costs)")
+        self.sweep = wx.Choice(self, choices=["off", "fixed", "free"])
+        self.sweep.SetSelection(options.SWEEPS.index(saved.sweep))
+        self.sweep.SetToolTip("Add-only completion sweep after the passes (Q10)")
+        self.sweep_passes = wx.TextCtrl(self, value="" if saved.sweep_passes is None else str(saved.sweep_passes))
+        self.sweep_passes.SetHint("router default (2)")
+        self.pass_hint = wx.CheckBox(self, label="Stop at the pass that won last time" + (f" ({saved.pass_hint})" if saved.pass_hint else ""))
+        self.pass_hint.SetValue(saved.use_pass_hint)
+        self.saved_pass_hint = saved.pass_hint
+        self.preset = wx.Button(self, label="Canary flow")
+        self.preset.SetToolTip("Fill the fields with the values canary's graded flow uses; each can still be changed")
+        self.preset.Bind(wx.EVT_BUTTON, self.on_preset)
+
+    def k09_group(self):
+        group = wx.StaticBoxSizer(wx.VERTICAL, self, "DSN fix-ups and flow")
+        grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
+        grid.AddGrowableCol(1)
+        for label, ctrl in (
+            ("Class widths (mm)", self.widths),
+            ("Fixed pour classes", self.fixed_pours),
+            ("Fixed pours as", self.pour_mode),
+            ("Drop pours of nets", self.drop_pours),
+            ("", self.keepouts),
+            ("Route on plane layers", self.open_layers),
+            ("", self.fix_existing),
+            ("Start rip-up cost", self.ripup),
+            ("Completion sweep", self.sweep),
+            ("Sweep passes", self.sweep_passes),
+            ("", self.pass_hint),
+            ("Preset", self.preset),
+        ):
+            grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(ctrl, 1, wx.EXPAND)
+        group.Add(grid, 0, wx.EXPAND)
+        return group
+
+    def show_options(self, opts):
+        """Puts `opts` into the controls (the preset button)."""
+        self.passes.SetValue(opts.max_passes)
+        self.min_width.SetValue("" if opts.min_trace_width_um is None else options._fmt(opts.min_trace_width_um))
+        self.widths.SetValue(options.format_class_widths(opts.class_widths))
+        self.fixed_pours.SetValue(options.format_names(opts.fixed_pour_classes))
+        self.pour_mode.SetSelection(options.POUR_MODES.index(opts.fixed_pour_mode))
+        self.drop_pours.SetValue(options.format_names(opts.drop_pour_nets))
+        self.keepouts.SetValue(opts.edge_and_pad_keepouts)
+        self.ripup.SetValue("" if opts.start_ripup_costs is None else str(opts.start_ripup_costs))
+        self.sweep.SetSelection(options.SWEEPS.index(opts.sweep))
+        self.sweep_passes.SetValue("" if opts.sweep_passes is None else str(opts.sweep_passes))
+
+    def on_preset(self, _evt):
+        self.show_options(options.with_preset(options.profile_defaults()))
+
+    def k09_values(self):
+        return {
+            "class_widths": self.widths.GetValue(),
+            "fixed_pour_classes": self.fixed_pours.GetValue(),
+            "fixed_pour_mode": options.POUR_MODES[max(self.pour_mode.GetSelection(), 0)],
+            "drop_pour_nets": self.drop_pours.GetValue(),
+            "edge_and_pad_keepouts": self.keepouts.GetValue(),
+            "route_on_plane_layers": self.open_layers.GetValue(),
+            "fix_existing": self.fix_existing.GetValue(),
+            "start_ripup_costs": self.ripup.GetValue(),
+            "sweep": options.SWEEPS[max(self.sweep.GetSelection(), 0)],
+            "sweep_passes": self.sweep_passes.GetValue(),
+            "use_pass_hint": self.pass_hint.GetValue(),
+        }
 
     def advanced_group(self, saved):
         """The "Advanced" group (N01.4): one choice per stage slot of the
@@ -373,8 +458,10 @@ class Dialog(wx.Dialog):
                 "rule_area_fixup": self.fix_areas.GetValue(),
                 "profile": options.PROFILES[max(self.profile.GetSelection(), 0)],
                 "stages": self.chosen_stages(),
+                **self.k09_values(),
             }
         )
+        chosen.pass_hint = self.saved_pass_hint
         if errors:
             self.error("Fix these route options first:\n\n" + "\n".join(errors))
             return None
@@ -387,22 +474,39 @@ class Dialog(wx.Dialog):
             tools.log_line(self.work_dir, f"could not save the route options: {e}")
         return chosen
 
-    def export(self, fix_areas):
-        if export_dsn(self.board, self.dsn):
-            if fix_areas:
-                fix_rule_areas(self.board, self.dsn, self.work_dir)
-            return True
-        self.error(f"KiCad could not export the board to\n{self.dsn}")
-        return False
+    def export(self, chosen):
+        """Exports and fixes up the DSN. Returns `(ok, router_args, locked)`;
+        `locked` are the tracks `fix_existing` locked, which stay locked until
+        `kicad_board.restore_locks` after the import."""
+        ok, extra, lines, locked = export_flow.prepare(self.board, pcbnew, self.dsn, chosen, export_dsn)
+        if not ok:
+            self.error(f"KiCad could not export the board to\n{self.dsn}")
+            return False, [], []
+        log_lines(self.work_dir, self.dsn, lines)
+        return True, extra, locked
 
     def on_route(self, _evt):
         chosen = self.read_options()
-        if chosen is None or not self.export(chosen.rule_area_fixup):
+        if chosen is None:
             return
+        ok, extra, locked = self.export(chosen)
+        if not ok:
+            return
+        try:
+            self.route(chosen, extra)
+        finally:
+            kicad_board.restore_locks(locked)
+
+    def route(self, chosen, extra):
         self.ses.unlink(missing_ok=True)
         self.result_json.unlink(missing_ok=True)
         run = routing.RouteRun(
-            self.router, self.dsn, self.ses, chosen.to_args(self.board_min_um), self.result_json, chosen.profile
+            self.router,
+            self.dsn,
+            self.ses,
+            chosen.to_args(self.board_min_um, extra_args=extra),
+            self.result_json,
+            chosen.profile,
         )
         try:
             run.start()
@@ -418,14 +522,36 @@ class Dialog(wx.Dialog):
         if run.returncode != 0 or not run.ses_written():
             self.error(run.failure_text())
             return
+        self.remember_pass(chosen, run.state.best_pass())
         self.finish_import(self.ses, run.summary_text(), stopped=run.stopped)
+
+    def remember_pass(self, chosen, best):
+        """K09.7: the pass that won goes into the options file as the hint."""
+        if not best or best == chosen.pass_hint or chosen.use_pass_hint:
+            return
+        chosen.pass_hint = best
+        self.saved_pass_hint = best
+        defaults = options.stage_defaults(self.stage_listing.get(chosen.profile) or [])
+        try:
+            options.save(options.options_path(self.work_dir), chosen, defaults)
+        except OSError as e:
+            tools.log_line(self.work_dir, f"could not save the pass hint: {e}")
 
     def on_route_gui(self, _evt):
         chosen = self.read_options()
-        if chosen is None or not self.export(chosen.rule_area_fixup):
+        if chosen is None:
             return
+        ok, extra, locked = self.export(chosen)
+        if not ok:
+            return
+        try:
+            self.route_gui(chosen, extra)
+        finally:
+            kicad_board.restore_locks(locked)
+
+    def route_gui(self, chosen, extra):
         self.ses.unlink(missing_ok=True)
-        run = routing.GuiRun(self.gui, self.dsn, self.ses, chosen.to_args(self.board_min_um, for_gui=True))
+        run = routing.GuiRun(self.gui, self.dsn, self.ses, chosen.to_args(self.board_min_um, for_gui=True, extra_args=extra))
         try:
             run.start()
         except OSError as e:
@@ -442,13 +568,19 @@ class Dialog(wx.Dialog):
         if not import_ses(self.board, ses):
             self.error(f"KiCad could not import\n{ses}")
             return
+        log_lines(self.work_dir, ses, export_flow.after_import(self.board, ses))
         head = "Stopped early; imported the best board so far." if stopped else "Routed and imported the result into the board."
         text = head + ("\n\n" + summary_text if summary_text else "")
         icon = wx.ICON_EXCLAMATION if "WARNING" in summary_text else wx.ICON_INFORMATION
         wx.MessageBox(text, TITLE, wx.OK | icon, self)
 
     def on_view(self, _evt):
-        if not self.export(self.fix_areas.GetValue()):
+        chosen = self.read_options()
+        if chosen is None:
+            return
+        ok, _extra, locked = self.export(chosen)
+        kicad_board.restore_locks(locked)
+        if not ok:
             return
         ses = self.ses if self.ses.is_file() else None
         try:

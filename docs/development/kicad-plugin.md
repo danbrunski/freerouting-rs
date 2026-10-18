@@ -80,6 +80,63 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   `test_both_profiles_route_and_the_summary_names_them`). Not yet seen inside KiCad: the layout of
   the Profile choice and the Advanced group (Dan, with K02.8).
 
+## DSN fix-ups and the canary flow (K09)
+
+KiCad's export is not what canary's graded flow routed: `hardware/tools/dsn_export.py` (Dan's canary
+repo) rewrote it. The plugin now does the same transforms itself, each an option of the dialog's "DSN
+fix-ups and flow" group, saved in `route-options.json` (schema 3; schema 1 and 2 files still load, a
+field they lack takes the profile's default):
+
+| option | what it does | default |
+|---|---|---|
+| `class_widths` | `{class: mm}` written into the class's `(rule (width W))`; `auto`: a class wider than the board default is routed no wider than its narrowest SMD pad, not below the board minimum | none |
+| `fixed_pour_classes`, `fixed_pour_mode` | outer pours of these classes become fixed copper (`wires`: fixed paths covering the fill, its plane removed) or are kept clear by the router (`engine`: Q01's `router.plane_obstacle_net_classes`); `auto`: pours above their layer's lowest zone priority | none, `wires` |
+| `drop_pour_nets` | the outer pours of these nets are dropped, so their pads fan out to the inner plane; `auto`: a net alone on an inner layer | none |
+| `edge_and_pad_keepouts` | the board's copper-to-edge clearance (strips along the outline's bounding box and along every outline segment off it) and pads' own larger clearances (circles) as keepouts | **on**, both profiles |
+| `route_on_plane_layers` | these inner plane layers become signal layers | none |
+| `fix_existing` | every track and via is locked in memory before the export and through the import, so a run only adds (KiCad's import keeps locked copper); the lock states come back afterwards | off |
+| `start_ripup_costs`, `sweep`, `sweep_passes` | `--router.scoring.start_ripup_costs`, Q10's `--router.autorouter.sweep` and `sweep_passes` | router defaults |
+| `use_pass_hint`, `pass_hint` | after a run the plugin stores the routing pass that ended with the fewest incomplete connections; with the option on, the next run stops there (`--max-passes`) | off |
+
+- **Canary flow** (button, `options.CANARY_PRESET`) fills the fields with canary's values: widths
+  Power_High, Switch_Node, Power 0.3 mm and GND 0.4 mm, fixed pours Power_High and Switch_Node, GND
+  outer pours dropped, keepouts on, one pass, rip-up cost 1500, minimum width 150 um, sweep `free` x2.
+  Each field can still be changed.
+- **After the import** the plugin sets every routed via's drill from the session padstack
+  (`ses_vias.py`): KiCad 10's `ImportSpecctraSES` takes the drill from the net class, which gave
+  0.6 mm vias a 0.4 mm drill and a 0.1 mm annular ring on `canary-pwr`.
+- Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
+  `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),
+  `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`.
+  `plugin.py` and `kicad-plugin/headless_run.py` both go through `export_flow`, so a headless run
+  routes what a plugin run routes. A failing fix-up is logged as a WARNING in `plugin.log` and routing
+  goes on with the DSN as it was.
+- **Headless graded runs:** `python3 -I kicad-plugin/headless_run.py export BOARD WORK OPTIONS.json`
+  (writes `WORK/<stem>.dsn` and the router flags in `<stem>.args.json`), run the router with those
+  flags plus `--progress json --result-json`, then `headless_run.py import BOARD SES OUT OPTIONS.json`.
+  Grade OUT with `kicad-cli pcb drc --refill-zones --severity-all` (`--schematic-parity` inside the
+  project), canary's `via_in_pad.py` and `inner_tracks.py`, and `kicad-plugin/pour_crossings.py INPUT
+  OUT CLASSES` (foreign tracks through the listed pours). K09's runs used a script doing exactly this
+  (`target/orchestrator/k09/scratch/arm.sh`, not committed).
+- Tests: `test_dsn_fixups.py` (every transform on `tests/data/k09_four_layer.dsn` and
+  `k09_two_layer.dsn`, the `auto` rules, `ses_vias`, the drill fix), `test_options.py` (K09 flags,
+  round trip, bad values, the form), `test_route_dialog.py` (the preset reaches the router,
+  `fix_existing` keeps the tracks locked through the import only, the pass hint is stored and used),
+  `test_cli_integration.py::test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli`.
+- Not yet seen inside KiCad: the layout of the new group and the preset button (Dan, with K02.8).
+
+**Profile defaults (K09.9).** `options.PROFILE_DEFAULTS` holds what each profile's plugin defaults
+change from the dataclass defaults; a new board, and a field an older options file lacks, start
+from it. The engine's `ENHANCED` (`settings/profile.rs`) is not involved. An entry only lands with
+the registered measurement that accepted it (`docs/roadmap/prereg/K09.json`). Both entries are
+empty: on 2026-10-17 the `auto` candidates (derived widths, pours, ripup 1500, `-mp 1` or unlimited,
+sweep `free`) took `canary-pwr` from 76 to 36 unconnected and the four-board total from 109 to 72
+(63 unlimited), but left 2 `+5V_PI` tracks on `Power.Cu` (Q13), and without the width cap they gave 3
+clearance errors. So a default run is the legacy flow plus the board's clearances as keepouts:
+`canary-pwr` 76 unconnected, 0 edge errors. For the graded flow, use the **Canary flow** button
+(38 with the sweep, 45 without; `dsn_export.py`'s DSN of the same board gives 33, and the gap
+comes from the plugin's extra edge rectangles and place keepout, which change a chaotic route; K09.8). Once Q13 lands, rerun the candidates.
+
 ## Dan's machine (Windows 11, KiCad 10.0)
 
 - Installed at `C:\Users\thebo\Documents\KiCad\10.0\scripting\plugins\freerouting_rs`, with

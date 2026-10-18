@@ -1,0 +1,82 @@
+(pcb "k09_two_layer.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  100000 -50000  150000 -50000  150000 -90000  100000 -90000
+            100000 -50000)
+    )
+    (plane GND (polygon F.Cu 0  100000 -50000  150000 -50000  150000 -90000  100000 -90000
+            100000 -50000))
+    (plane +5V (polygon F.Cu 0  100000 -50000  110000 -50000  110000 -52000  100000 -52000
+            100000 -50000))
+    (plane GND (polygon B.Cu 0  100000 -50000  150000 -50000  150000 -90000  100000 -90000
+            100000 -50000))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+  )
+  (library
+  )
+  (network
+    (net +5V
+      (pins)
+    )
+    (net GND
+      (pins)
+    )
+    (net SIG
+      (pins)
+    )
+    (class kicad_default SIG
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+    (class Power +5V
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 1500)
+        (clearance 250)
+      )
+    )
+    (class GND GND
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 500)
+        (clearance 200)
+      )
+    )
+  )
+)

@@ -47,7 +47,7 @@ def test_the_options_are_saved_and_reach_the_router(env):
     dialog.timeout.SetValue("10m")
     dialog.on_route(None)
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 2 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
+    assert saved["schema"] == 3 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
     # The router failed to write a session ("echo"): the dialog shows its output.
     failure = ui.messages[-1][0]
     assert "Routing failed (exit code 0)" in failure
@@ -182,7 +182,7 @@ def test_every_drop_down_gets_the_dark_list_fix(env, monkeypatch):
     dialog = make_dialog("echo")
     stages = [choice for choice, _ in dialog.stage_choices.values()]
     assert len(stages) == 2
-    assert passed == [[dialog.profile] + stages]
+    assert passed == [[dialog.profile, dialog.pour_mode, dialog.sweep] + stages]
 
 
 def test_the_import_deletes_no_track_kicad_still_holds(env, tmp_path):
@@ -210,3 +210,64 @@ def test_a_failed_import_puts_the_tracks_back(env, tmp_path):
     board = stub_ui.FakeBoard(tmp_path / "x.kicad_pcb", tracks=[old])
     assert not plugin.import_ses(board, tmp_path / "x.ses")
     assert board.tracks == [old] and not old.freed
+
+
+def test_the_canary_preset_fills_the_fields_and_reaches_the_router(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    dialog.on_preset(None)
+    dialog.on_route(None)
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["class_widths"] == {"GND": 0.4, "Power": 0.3, "Power_High": 0.3, "Switch_Node": 0.3}
+    assert saved["fixed_pour_classes"] == ["Power_High", "Switch_Node"] and saved["drop_pour_nets"] == ["GND"]
+    lines = ui.messages[-1][0].splitlines()
+    for flag in (
+        "--max-passes",
+        "1",
+        "--router.min_trace_width_um=150",
+        "--router.scoring.start_ripup_costs=1500",
+        "--router.autorouter.sweep=free",
+        "--router.autorouter.sweep_passes=2",
+    ):
+        assert flag in lines, flag
+    # The stub board's DSN has none of canary's classes: the fix-up says so and routing goes on.
+    log = (work / "plugin.log").read_text(encoding="utf-8")
+    assert "WARNING: DSN fix-ups skipped: ValueError('no class GND with a width in the DSN')" in log
+
+
+def plugin_pcbnew():
+    return sys.modules["pcbnew"]
+
+
+def test_fix_existing_keeps_the_tracks_locked_through_the_import_only(env, monkeypatch):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route")
+    tracks = [stub_ui.FakeTrack("a"), stub_ui.FakeTrack("b", locked=True), stub_ui.FakeTrack("c")]
+    dialog.board.tracks = list(tracks)
+    seen = []
+    real_import = plugin_pcbnew().ImportSpecctraSES
+
+    def import_ses(board, path):
+        seen.append([t.IsLocked() for t in tracks])
+        return real_import(board, path)
+
+    monkeypatch.setattr(plugin_pcbnew(), "ImportSpecctraSES", import_ses)
+    dialog.fix_existing.SetValue(True)
+    dialog.on_route(None)
+    assert seen == [[True, True, True]]  # KiCad's import keeps locked tracks
+    assert [t.IsLocked() for t in tracks] == [False, True, False]  # and the lock states come back
+    assert all(t in dialog.board.tracks and not t.freed for t in tracks)  # the import deleted none
+    assert "fix existing: 2 track(s) and via(s) exported as fixed" in (work / "plugin.log").read_text(encoding="utf-8")
+
+
+def test_the_winning_pass_is_remembered_and_offered(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route")
+    dialog.on_route(None)
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["pass_hint"] == dialog.saved_pass_hint and saved["pass_hint"] >= 1
+    again = make_dialog("echo")
+    again.pass_hint.SetValue(True)
+    again.on_route(None)
+    lines = ui.messages[-1][0].splitlines()
+    assert lines[lines.index("--max-passes") + 1] == str(saved["pass_hint"])

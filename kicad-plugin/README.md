@@ -16,6 +16,13 @@ Its toolbar button opens a dialog that:
   time limit, seed, minimum trace width) are saved per board in
   `freerouting-rs/route-options.json`. The minimum trace width defaults to the Board Setup
   minimum track width, which the DSN does not carry.
+- **DSN fix-ups and flow** (K09, `dsn_fixups.py`, ported from canary's `dsn_export.py`): per
+  class routed widths, outer pours of listed classes kept as fixed copper (or kept clear by the
+  router), outer pours of listed nets dropped, the board-edge and pad clearances as keepouts (on by
+  default: they are board rules), inner plane layers opened to routing, an add-only run that keeps
+  the existing tracks, the start rip-up cost, Q10's completion sweep, and a remembered pass limit.
+  The **Canary flow** button fills them with the values canary's graded flow uses. After the import
+  the plugin sets each routed via's drill from the session (KiCad's import takes the net class's).
 - **Open in viewer**: exports the board and opens it (plus the last `.ses`, if any) in
   `freerouting-gui`.
 - **Import SES...**: imports any Specctra session file into the board.

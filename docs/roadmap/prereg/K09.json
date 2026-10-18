@@ -1,0 +1,105 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "K09.9-plugin-enhanced-defaults",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/K09-plugin-export-options.md (K09.9; K09.2, K09.5-K09.8 report on canary-pwr only)",
+  "question": "Which DSN fix-ups and router settings should the plugin's enhanced profile turn on by default, so that a plugin run with default options gets canary's graded flow (canary-pwr <= 33 KiCad-unconnected, no edge-clearance or inner-layer errors) without making the other boards worse beyond noise?",
+  "rule": "totals",
+  "rule_text": "N02 (docs/roadmap/tasks/N02-keep-rule-for-defaults.md), computed by hand because freerouting-dev gate has no --rule totals yet: a candidate passes against the baseline arm when (1) the KiCad-unconnected total over the boards improves by more than sqrt(sum of noise^2) and (2) no board regresses by more than twice its noise; hard guards via_in_pad = 0, inner_tracks = 0 on canary-pwr, no new DRC errors (drc_real) and copper_edge_clearance = 0 on canary-pwr; D2 holds for every engine run (deterministic CLI). pass_rule below is the parser's paired rule, kept only so the file validates; it does not decide.",
+  "noise": {
+    "canary-pwr": 10,
+    "formula": "max(2, 0.05 * the unconnected count of the unrouted input board, by KiCad's DRC)",
+    "source": "N02: canary-pwr variants' +-10; the other boards by the formula until Q12.4 measures them"
+  },
+  "arms": {
+    "plugin-0": {
+      "engine": "freerouting-rs release CLI at the tree that lands K09, through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "options": {"schema": 3, "profile": "enhanced", "edge_and_pad_keepouts": false},
+      "what": "the plugin's defaults before K09 (836dac3: rule-area fix-up, no pass limit, optimizer on, board minimum width); canary-pwr only, to calibrate against Dan's 68"
+    },
+    "legacy": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy"},
+      "what": "baseline: plugin-0 plus the board's own clearances as keepouts (edge_and_pad_keepouts, on under both profiles); what a default run gets without K09.9"
+    },
+    "enh-auto-mp1": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "fixed_pour_classes": "auto", "drop_pour_nets": "auto", "class_widths": "auto", "start_ripup_costs": 1500, "max_passes": 1, "sweep": "free", "sweep_passes": 2},
+      "what": "keepouts, pours derived from the board (fixed wires for pours above their layer's lowest priority, outer pours dropped for a net alone on an inner layer), class widths capped at the narrowest SMD pad (not below the board minimum), ripup 1500, pass 1, Q10 sweep free x2"
+    },
+    "enh-auto-mpdef": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "fixed_pour_classes": "auto", "drop_pour_nets": "auto", "class_widths": "auto", "start_ripup_costs": 1500, "sweep": "free", "sweep_passes": 2},
+      "what": "enh-auto-mp1 without the pass limit"
+    },
+    "enh-auto-nowidth-mp1": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "fixed_pour_classes": "auto", "drop_pour_nets": "auto", "start_ripup_costs": 1500, "max_passes": 1, "sweep": "free", "sweep_passes": 2},
+      "what": "enh-auto-mp1 with the exported class widths"
+    },
+    "preset-wires": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4}, "fixed_pour_classes": ["Power_High", "Switch_Node"], "fixed_pour_mode": "wires", "drop_pour_nets": ["GND"], "max_passes": 1, "start_ripup_costs": 1500, "min_trace_width_um": 150, "sweep": "free", "sweep_passes": 2},
+      "what": "K09.8 canary preset, K09.2 arm (b); canary-pwr only"
+    },
+    "preset-engine": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4}, "fixed_pour_classes": ["Power_High", "Switch_Node"], "fixed_pour_mode": "engine", "drop_pour_nets": ["GND"], "max_passes": 1, "start_ripup_costs": 1500, "min_trace_width_um": 150, "sweep": "free", "sweep_passes": 2},
+      "what": "K09.2 arm (a): the preset with Q01's router.plane_obstacle_net_classes instead of fixed wires; canary-pwr only"
+    },
+    "preset-nosweep": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4}, "fixed_pour_classes": ["Power_High", "Switch_Node"], "drop_pour_nets": ["GND"], "max_passes": 1, "start_ripup_costs": 1500, "min_trace_width_um": 150},
+      "what": "K09.8 without Q10's sweep (the 45 flow); then K09.6: a second plugin run on its imported board with fix_existing and -mp 2 (the 37 flow); canary-pwr only"
+    },
+    "preset-in2-open": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4}, "fixed_pour_classes": ["Power_High", "Switch_Node"], "drop_pour_nets": ["GND"], "max_passes": 1, "start_ripup_costs": 1500, "min_trace_width_um": 150, "route_on_plane_layers": ["Power.Cu"], "stages": {}},
+      "router_extra": "--router.plane_obstacle_net_classes=Power_High --router.plane_obstacle_block=traces",
+      "what": "K09.5: Power.Cu opened, islands keep traces out (Q09); report foreign_island_mm; canary-pwr only"
+    },
+    "pass-hint": {
+      "engine": "as plugin-0",
+      "options": {"schema": 3, "profile": "legacy", "use_pass_hint": true, "pass_hint": "the best pass of the legacy run on the same board"},
+      "what": "K09.7: legacy with the remembered pass limit; canary-pwr only; wall time against legacy"
+    }
+  },
+  "baseline_arm": "legacy",
+  "candidate_arm": "enh-auto-mp1",
+  "candidates": ["enh-auto-mp1", "enh-auto-mpdef", "enh-auto-nowidth-mp1"],
+  "boards": {
+    "procedure": "canary-pwr: git archive of canary HEAD e21ee05e hardware/canary-pwr-rev1.0 (board blob c6c3cf31, unchanged since dbfe7b67 = 9511d9a), routed as committed (its hand-laid copper is locked), graded with --schematic-parity. Demos: /usr/share/kicad/demos (KiCad 10.0.7) with tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip; the hashes are of the stripped boards (sources: interf_u a740ce7f, CM5_MINIMA_3 123e209e, pic_programmer 1ca70b62)",
+    "files": {
+      "canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "demos/interf_u.kicad_pcb (stripped)": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "demos/CM5_MINIMA_3.kicad_pcb (stripped)": "031b7497386e84c3345d180c8b1c36b07910eb075b81ac6d793ba6f21558449a",
+      "demos/pic_programmer.kicad_pcb (stripped)": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49"
+    }
+  },
+  "grading": "kicad-cli pcb drc --refill-zones --severity-all --format json on the board ImportSpecctraSES saved (canary-pwr also --schematic-parity, inside its HEAD project copy, = canary's grade.sh with a .kicad_pcb); canary's via_in_pad.py and inner_tracks.py (WSL KiCad python). drc_real = error-severity violations other than unconnected_items and starved_thermal, minus the same types on the unrouted input",
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "inner_tracks", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "copper_edge_clearance", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "kicad_unconnected", "role": "score", "kind": "int", "direction": "lower"},
+    {"name": "starved_thermal", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "pass_rule": {"min_boards": 3, "improve_all_but": 1, "max_regress": 0},
+  "keep_rule": "among the candidates that pass the totals rule against legacy, the one with the fewest kicad_unconnected summed over the four boards, ties by the smaller summed wall time, becomes options.PROFILE_DEFAULTS['enhanced'] (minus the profile key); if none passes, enhanced keeps legacy's defaults and K09.9's done note gives the numbers and the cause. inner_tracks counts only on canary-pwr (its inner layers are planes); on the demos it is reported.",
+  "stop_rule": "one registered run per arm per board; no reruns with other settings; the inner-layer track bug is Q13's and is reported, not fixed here",
+  "amendments": [
+    {
+      "date": "2026-10-17",
+      "after": "the first runs of plugin-0, legacy and preset-wires on canary-pwr (the legacy run is void: the run script was edited while it ran, router exit 127)",
+      "change": "the plugin now sets each imported via's drill from the session padstack (export_flow.after_import, ses_vias.py), because KiCad 10's ImportSpecctraSES takes the drill from the net class: preset-wires had 4 annular_width errors (0.6 mm Power_High vias drilled 0.4 mm) that canary's ses_import.py does not make. Every arm is run, or run again, with it; plugin-0 stays the plugin before K09 and keeps its run. Arms, boards, metrics and the rule are unchanged."
+    },
+    {
+      "date": "2026-10-17",
+      "after": "one run of every arm on every board (kept as round 1 in the done notes, not judged)",
+      "change": "edge_and_pad_keepouts also covers outline segments that are not on a side of the outline's bounding box (rounded or angled corners, notches, cut-outs) with a rectangle reaching the strip width on both sides, because CM5_MINIMA_3's legacy run had 12 copper_edge_clearance errors more than its input along such Edge.Cuts segments: the board's edge clearance is a board rule the plugin must honour (K09.9). This changes every arm's DSN (canary-pwr gains 60 corner rectangles per signal layer), so every arm runs again on every board and only this second round is judged. Arms, boards, metrics and the rule are unchanged."
+    }
+  ]
+}

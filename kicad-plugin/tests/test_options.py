@@ -93,7 +93,7 @@ def test_save_load_save_gives_equal_json(tmp_path):
     assert loaded == chosen
     options.save(second, loaded)
     assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")
-    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == 2
+    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 3
 
 
 def test_defaults_round_trip_too(tmp_path):
@@ -231,7 +231,7 @@ def test_the_options_file_stores_only_the_differences(tmp_path):
     path = tmp_path / "route-options.json"
     # Everything at the profile's value: only the schema and the profile.
     options.save(path, RouteOptions(stages={"autorouter.connection_router": "freerouting-connection"}), defaults)
-    assert json.loads(path.read_text(encoding="utf-8")) == {"schema": 2, "profile": "enhanced"}
+    assert json.loads(path.read_text(encoding="utf-8")) == {"schema": options.SCHEMA, "profile": "enhanced"}
     assert options.load(path) == RouteOptions()
     # One option and one stage differ: only those are stored.
     chosen = RouteOptions(
@@ -241,7 +241,7 @@ def test_the_options_file_stores_only_the_differences(tmp_path):
     )
     options.save(path, chosen, defaults)
     assert json.loads(path.read_text(encoding="utf-8")) == {
-        "schema": 2,
+        "schema": options.SCHEMA,
         "profile": "legacy",
         "max_passes": 12,
         "stages": {"autorouter.connection_router": "x-grid"},
@@ -276,3 +276,110 @@ def test_a_bad_profile_or_stage_is_dropped_on_load_and_refused_by_the_form():
         "profile: 'best' is not a profile (use legacy or enhanced)",
         "autorouter.ordering: 'a b' is not a stage id",
     ]
+
+
+# --- K09 ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({"start_ripup_costs": 1500}, ["--router.scoring.start_ripup_costs=1500"]),
+        ({"sweep": "free"}, ["--router.autorouter.sweep=free"]),
+        ({"sweep": "fixed", "sweep_passes": 2}, ["--router.autorouter.sweep=fixed", "--router.autorouter.sweep_passes=2"]),
+        ({"sweep_passes": 2}, []),  # passes without a sweep do nothing
+        ({"pass_hint": 3}, []),  # remembered, used only when asked
+        ({"pass_hint": 3, "use_pass_hint": True}, ["--max-passes", "3"]),
+        ({"pass_hint": 3, "use_pass_hint": True, "max_passes": 5}, ["--max-passes", "5"]),
+        ({"class_widths": {"Power": 0.3}, "fixed_pour_classes": ["Power"], "drop_pour_nets": ["GND"]}, []),
+        ({"fix_existing": True, "route_on_plane_layers": ["In2.Cu"], "edge_and_pad_keepouts": False}, []),
+    ],
+)
+def test_each_k09_option_has_its_golden_argument_list(kwargs, expected):
+    assert RouteOptions(**kwargs).to_args() == expected
+
+
+def test_the_fix_ups_engine_flags_go_before_the_stages():
+    args = RouteOptions(sweep="free", stages={"autorouter.connection_router": "x"}).to_args(
+        150, extra_args=["--router.plane_obstacle_net_classes=Power_High"]
+    )
+    assert args == [
+        "--router.min_trace_width_um=150",
+        "--router.autorouter.sweep=free",
+        "--router.plane_obstacle_net_classes=Power_High",
+        "--router.autorouter.connection_router=x",
+    ]
+
+
+def test_the_k09_options_round_trip(tmp_path):
+    chosen = options.with_preset(RouteOptions(), dict(options.CANARY_PRESET, fix_existing=True, pass_hint=4))
+    chosen.route_on_plane_layers = ["Power.Cu"]
+    chosen.fixed_pour_mode = "engine"
+    path = tmp_path / "route-options.json"
+    options.save(path, chosen)
+    assert options.load(path) == chosen
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored["class_widths"] == {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4}
+    assert stored["fixed_pour_classes"] == ["Power_High", "Switch_Node"] and stored["pass_hint"] == 4
+    # "auto" round-trips as itself
+    auto = RouteOptions(class_widths="auto", fixed_pour_classes="auto", drop_pour_nets="auto")
+    options.save(path, auto)
+    assert options.load(path) == auto
+
+
+def test_bad_k09_values_keep_the_profile_default():
+    bad = {
+        "schema": 3,
+        "profile": "legacy",
+        "class_widths": {"Power": -1},
+        "fixed_pour_classes": "some",
+        "fixed_pour_mode": "magic",
+        "drop_pour_nets": [1],
+        "edge_and_pad_keepouts": "yes",
+        "start_ripup_costs": 0,
+        "sweep": "always",
+        "sweep_passes": 0,
+        "pass_hint": True,
+    }
+    assert RouteOptions.from_dict(bad) == options.profile_defaults("legacy")
+
+
+def test_schema_2_files_load_and_take_the_new_defaults():
+    old = {"schema": 2, "profile": "enhanced"}
+    assert RouteOptions.from_dict(old) == options.profile_defaults("enhanced")
+    assert options.profile_defaults("enhanced").edge_and_pad_keepouts  # a board rule
+    assert options.profile_defaults("legacy").edge_and_pad_keepouts
+
+
+def test_the_form_reads_the_k09_fields():
+    chosen, errors = options.from_form(
+        {
+            "class_widths": "Power_High=0.3, GND=0.4",
+            "fixed_pour_classes": "Power_High, Switch_Node",
+            "fixed_pour_mode": "engine",
+            "drop_pour_nets": "auto",
+            "edge_and_pad_keepouts": False,
+            "route_on_plane_layers": "Power.Cu",
+            "fix_existing": True,
+            "start_ripup_costs": "1500",
+            "sweep": "free",
+            "sweep_passes": "2",
+            "use_pass_hint": True,
+        }
+    )
+    assert errors == []
+    assert chosen.class_widths == {"Power_High": 0.3, "GND": 0.4}
+    assert chosen.fixed_pour_classes == ["Power_High", "Switch_Node"] and chosen.drop_pour_nets == "auto"
+    assert (chosen.fixed_pour_mode, chosen.edge_and_pad_keepouts, chosen.route_on_plane_layers) == ("engine", False, ["Power.Cu"])
+    assert (chosen.fix_existing, chosen.start_ripup_costs, chosen.sweep, chosen.sweep_passes, chosen.use_pass_hint) == (
+        True, 1500, "free", 2, True,
+    )  # fmt: skip
+    _, errors = options.from_form({"class_widths": "Power_High", "sweep": "sometimes", "start_ripup_costs": "x"})
+    assert len(errors) == 3
+
+
+def test_class_widths_text_round_trips():
+    widths, error = options.parse_class_widths(options.format_class_widths({"GND": 0.4, "Power_High": 0.3}))
+    assert error is None and widths == {"GND": 0.4, "Power_High": 0.3}
+    assert options.parse_class_widths("AUTO") == ("auto", None)
+    assert options.parse_class_widths("") == ({}, None)
