@@ -26,6 +26,10 @@
 //!   connection an engine leaves unrouted next to the human-routed original's
 //!   layers, vias, widths and clearance headroom, tagged `router gap`,
 //!   `no human route` or `infeasible` (Q03) ([`failed_vs_human`], F03.2).
+//! - `power-traces board.dsn [session.ses]`: the traces on power layers of a
+//!   net without a plane there (Q01.7) or of a plane's net outside its plane
+//!   (Q13.2), one line each; exit status 1 when there is one
+//!   ([`power_traces`]).
 //!
 //! - `microbench board.dsn [--runs N] [--kernel a,b] [--json out.json]`: the
 //!   hot kernels (overlap queries, room completion, one maze search,
@@ -66,6 +70,7 @@ pub mod gate_selftest;
 pub mod gate_totals;
 pub mod json_read;
 pub mod microbench;
+pub mod power_traces;
 pub mod ses_diff;
 pub mod session_geometry;
 pub mod tidy;

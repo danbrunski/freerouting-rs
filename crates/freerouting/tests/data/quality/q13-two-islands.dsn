@@ -1,0 +1,60 @@
+(pcb q13-two-islands.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic Q13 fixture: two plane islands on the power layer In1.Cu, PA left and PB right; PA's through-hole pin A1 lies between them, outside both, so Java's rule joins it to PA's island with a trace on In1.Cu")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer In1.Cu (type power) (property (index 1)))
+    (layer B.Cu (type signal) (property (index 2)))
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 -20000  0 -20000  0 0)
+    )
+    (plane PA (polygon In1.Cu 0  2000 -2000  10000 -2000  10000 -18000  2000 -18000))
+    (plane PB (polygon In1.Cu 0  20000 -2000  28000 -2000  28000 -18000  20000 -18000))
+    (via "Via[0-2]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "THT"
+      (place A1 15000 -10000 front 0)
+      (place A2 6000 -10000 front 0)
+      (place B1 24000 -10000 front 0)
+      (place B2 15000 -4000 front 0)
+    )
+  )
+  (library
+    (image "THT"
+      (pin RoundPad 1 0 0)
+    )
+    (padstack RoundPad
+      (shape (circle F.Cu 1600))
+      (shape (circle In1.Cu 1600))
+      (shape (circle B.Cu 1600))
+      (attach off)
+    )
+    (padstack "Via[0-2]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net PA (pins A1-1 A2-1))
+    (net PB (pins B1-1 B2-1))
+    (class kicad_default "" PA PB
+      (circuit (use_via "Via[0-2]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

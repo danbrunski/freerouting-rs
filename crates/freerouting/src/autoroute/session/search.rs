@@ -592,6 +592,39 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             .any(|id| board.item(id).is_some_and(|i| !i.contains_net(net)))
     }
 
+    /// Q13 (`router.power_layer_traces = own_plane`): false if expanding
+    /// from `element` to `connection_point` on `layer` would lay a trace on
+    /// a power layer outside the net's own planes. True under Java's rule
+    /// and on signal layers; otherwise the entry segment and the connection
+    /// point must lie in one convex piece of one of the net's planes on
+    /// `layer`, in the board's own geometry
+    /// ([`points_in_one_piece`](crate::autoroute::power_layer_traces::points_in_one_piece)).
+    /// A hop without length is no exception: the search's target shapes
+    /// are enlarged by the clearance compensation, so a via just outside
+    /// the plane meets it with no length, and the path's insertion then
+    /// lays a trace from the via into the plane (m-fc-g474, Q13.3).
+    fn trace_stays_in_own_plane(
+        &self,
+        layer: i32,
+        element: &MazeListElement,
+        connection_point: FloatPoint,
+    ) -> bool {
+        let Some(own) = self.s.control.own_plane_areas.as_ref() else {
+            return true;
+        };
+        let board = &*self.s.board;
+        if board.layer_structure.layers[layer as usize].is_signal {
+            return true;
+        }
+        let points = [
+            element.shape_entry.a.round().into(),
+            element.shape_entry.b.round().into(),
+            connection_point.round().into(),
+        ];
+        let areas = own.get(layer as usize).map_or(&[][..], Vec::as_slice);
+        crate::autoroute::power_layer_traces::points_in_one_piece(board, areas, &points)
+    }
+
     /// `completeNeighbourRooms` with the hook for each completed room.
     fn complete_neighbours(&mut self, room: RoomId) -> Result<(), RoomError> {
         let before = self.s.complete.len();
@@ -661,6 +694,11 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
                     at: "MazeSearchEngine.expandToTargetDoors",
                 });
             };
+            if !self.trace_stays_in_own_plane(layer, element, connection_point) {
+                // Q13 (`own_plane`): the hop would lay a trace on a power
+                // layer outside the net's own planes there.
+                continue;
+            }
             if !next_room_is_thick {
                 // Check the line from the entry to the nearest point.
                 let from = entry_middle.round();

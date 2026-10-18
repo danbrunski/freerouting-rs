@@ -117,6 +117,7 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("clearance_tolerance_um", f64v(1.0)),
         ("plane_nets", empty_list()),
         ("plane_as_obstacle", b(false)),
+        ("power_layer_traces", None),
         ("plane_obstacle_net_classes", None),
         ("plane_obstacle_block", None),
         ("wire_keepout", None),

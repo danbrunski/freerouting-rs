@@ -31,6 +31,12 @@
 //! [`AutorouteControl::merged_via_rule`] holds that list, and every reader
 //! of the via rule goes through [`AutorouteControl::via_rule_vias`].
 //!
+//! **Beyond Java (Q13).** Under `router.power_layer_traces = own_plane`
+//! [`AutorouteControl::own_plane_areas`] lists the net's planes per power
+//! layer, and the maze search lays a trace there only inside one of them
+//! ([`power_layer_traces`](super::power_layer_traces)); the default is
+//! Java's per-layer rule ([`AutorouteControl::own_plane_layers`]).
+//!
 //! Java's `settings` field and the debug-only `fanoutStartPinName` are not
 //! carried; the settings a search reads are copied into the fields here.
 //! Where Java throws (a missing net, no via rule at all, a net class
@@ -164,6 +170,15 @@ pub struct AutorouteControl {
     /// net's own plane but no other net is routed across it (Java
     /// `ownPlaneLayers`, `7f56b062d`, after the pin; Q01.7).
     pub own_plane_layers: Vec<bool>,
+    /// Q13 (`router.power_layer_traces = own_plane`): per layer, the
+    /// current net's conduction areas on that power layer, inside which
+    /// alone the maze search may lay its trace there
+    /// ([`power_layer_traces`](super::power_layer_traces)). `None` under
+    /// Java's rule (`layer`).
+    pub own_plane_areas: Option<Vec<Vec<ItemId>>>,
+    /// `router.power_layer_traces` is `own_plane`; [`init_net`](Self::init_net)
+    /// reads it to set [`Self::own_plane_areas`].
+    pub power_layer_traces_own_plane: bool,
     /// True if the board may have trace obstacles that let vias through
     /// (Q09: a trace-only keepout, or the pour guard's `traces` mode), so a
     /// drill may pass a layer where only those cover its location. False on
@@ -291,6 +306,9 @@ impl AutorouteControl {
             merged_via_rule: None,
             net_number: 0,
             own_plane_layers: vec![false; layer_count],
+            own_plane_areas: None,
+            power_layer_traces_own_plane: settings.power_layer_traces()
+                == crate::autoroute::power_layer_traces::PowerLayerTraces::OwnPlane,
             vias_pass_trace_only_areas: false,
             via_clearance_class: 0,
             net_class_via_clearance_class: None,
@@ -359,6 +377,9 @@ impl AutorouteControl {
         }
         self.rebuild_via_info(board, via_costs, net_number)?;
         self.own_plane_layers = own_plane_layers(board, net_number);
+        self.own_plane_areas = self
+            .power_layer_traces_own_plane
+            .then(|| super::power_layer_traces::own_plane_areas(board, net_number));
         self.vias_pass_trace_only_areas = board.may_let_vias_through();
         Ok(())
     }

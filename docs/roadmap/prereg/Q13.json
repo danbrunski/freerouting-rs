@@ -1,0 +1,157 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q13.3-power-layer-traces-own-plane",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/Q13-plane-nets-stay-in-their-island.md (Q13.3)",
+  "question": "With router.power_layer_traces=own_plane, does no plane net's trace lie outside its own plane on a power layer, with no new DRC errors, no via in a pad, and the KiCad-unconnected total within N02's totals rule of the same run with layer (Java's rule)?",
+  "rule": "totals",
+  "totals_rule": {
+    "source": "docs/roadmap/tasks/N02-keep-rule-for-defaults.md (D10); N02.1's `freerouting-dev gate --rule totals` does not exist at registration, so the verdict is computed by hand from the graded numbers and written into Q13.3's done note",
+    "signal": "kicad_unconnected summed over the rows of a pair",
+    "accept": [
+      "hard: outside_own_plane is 0 and foreign_power_traces is 0 on every row for the candidate arm of every pair",
+      "hard: via_in_pad 0 and below_minimum 0 on every row for the candidate arm of every pair (D8)",
+      "guard: drc_real and inner_tracks no higher than the pair's baseline on every row",
+      "totals: the verdict pair's candidate total kicad_unconnected is at most its baseline total plus the set's noise, sqrt(sum of the per-row bands squared) (a correctness fix is accepted within noise; it need not improve)",
+      "per row: no row's kicad_unconnected rises by more than twice its band"
+    ],
+    "noise_bands": {
+      "canary-pwr rows (all four)": "10 (N02: the canary-pwr variants' spread)",
+      "target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb": "max(2, 5 % of the connections of the unrouted board, the router's 'started with N unrouted' count of arm plugin, rounded up)",
+      "target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb": "max(2, 5 % of the connections of the unrouted board, the router's 'started with N unrouted' count of arm plugin, rounded up)"
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at origin/main 506264f with this checklist's diff and Q14's patch (target/orchestrator/q14/q14.patch, router.via_clearance) applied, one release build for every arm; with both settings unset it routes as origin/main (checked: arm mp1 on canary-pwr-9511d9a must be byte-identical to Q10's mp1.ses, target/canary-handoff/2026-10-17-q10/, else the run stops and is reported)",
+  "arms": {
+    "plugin": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.min_trace_width_um={MIN}",
+      "what": "baseline: the KiCad plugin's default argument list (K02.1: no flag but the board's Board Setup minimum track width); Java's power-layer rule"
+    },
+    "plugin+ownplane": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.min_trace_width_um={MIN} --router.power_layer_traces=own_plane",
+      "what": "candidate: the plugin's defaults with Q13's rule"
+    },
+    "plugin+netclass": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.min_trace_width_um={MIN} --router.via_clearance=net_class",
+      "what": "the plugin's defaults with Q14's via clearance (canary plugin row only; for Q14.3)"
+    },
+    "plugin+netclass+ownplane": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.min_trace_width_um={MIN} --router.via_clearance=net_class --router.power_layer_traces=own_plane",
+      "what": "the plugin's defaults with Q14's and Q13's rules (canary plugin row only)"
+    },
+    "mp1": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "what": "baseline: canary's pass-1 flags (canary rows except the plugin row)"
+    },
+    "mp1+ownplane": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.power_layer_traces=own_plane",
+      "what": "pass 1 with Q13's rule"
+    },
+    "mp1+sweep": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "what": "baseline: canary's best CLI flags (33 unconnected, official), canary-pwr-9511d9a only"
+    },
+    "mp1+sweep+ownplane": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2 --router.power_layer_traces=own_plane",
+      "what": "the best CLI flags with Q13's rule"
+    },
+    "mp1+netclass": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.via_clearance=net_class",
+      "what": "pass 1 with Q14's rule (canary-pwr-9511d9a only; Q14.3 measured 48 with 2 inner tracks)"
+    },
+    "mp1+netclass+ownplane": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.via_clearance=net_class --router.power_layer_traces=own_plane",
+      "what": "pass 1 with Q14's and Q13's rules"
+    },
+    "mp1+sweep+netclass": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2 --router.via_clearance=net_class",
+      "what": "the best CLI flags with Q14's rule (Q14.3 measured 33 with 4 inner tracks)"
+    },
+    "mp1+sweep+netclass+ownplane": {
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2 --router.via_clearance=net_class --router.power_layer_traces=own_plane",
+      "what": "the best CLI flags with Q14's and Q13's rules"
+    }
+  },
+  "baseline_arm": "plugin",
+  "candidate_arm": "plugin+ownplane",
+  "pairs": {
+    "verdict": {
+      "arms": ["plugin", "plugin+ownplane"],
+      "rows": ["canary plugin row", "m-fc-g474", "microzed"]
+    },
+    "reported": [
+      {"arms": ["mp1", "mp1+ownplane"], "rows": ["canary-pwr-9511d9a", "canary-pwr-9511d9a-in2-open", "canary-pwr-9511d9a-in2-open-wirekeepout"]},
+      {"arms": ["mp1+sweep", "mp1+sweep+ownplane"], "rows": ["canary-pwr-9511d9a"]},
+      {"arms": ["mp1+netclass", "mp1+netclass+ownplane"], "rows": ["canary-pwr-9511d9a"]},
+      {"arms": ["mp1+sweep+netclass", "mp1+sweep+netclass+ownplane"], "rows": ["canary-pwr-9511d9a"]},
+      {"arms": ["plugin+netclass", "plugin+netclass+ownplane"], "rows": ["canary plugin row"]}
+    ]
+  },
+  "pairs_rule": "the verdict pair is judged by totals_rule; every reported pair must meet totals_rule's hard and guard clauses (a reported pair that fails one is named in the done note and fails the verdict), and its totals are reported; pass_rule below is the paired rule the gate parser requires and is reported, not the verdict",
+  "boards": {
+    "set": "tools/bench/sets/q13-power-layer-traces.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "rows": {
+      "canary plugin row": "crates/freerouting/tests/data/canary-pwr-q13/plugin-e21ee05e-unrouted.dsn, {MIN} 150 (canary-pwr's Board Setup min_track_width 0.15 mm)",
+      "canary-pwr-9511d9a": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+      "canary-pwr-9511d9a-in2-open": "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open.dsn",
+      "canary-pwr-9511d9a-in2-open-wirekeepout": "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn",
+      "m-fc-g474": "target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb, {MIN} 150 (its Board Setup min_track_width)",
+      "microzed": "target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb, {MIN} 88.9 (its Board Setup min_track_width)"
+    },
+    "why": "power-type layers with more than one plane on a layer, where the rule can bite: canary-pwr's Power.Cu (+5V_PI island, +12V_BUS, GND); m-fc-g474's In2.Cu (+3V3_CORE, +3V3_SENS, +5V, VBUS); microzed's In2.Cu (two VCCIO planes) and In1/In3/In4 (two GND planes each). In the in2-open rows Power.Cu is a signal layer (Q09.5's export), so only Gnd.Cu is a power layer there",
+    "board_flags": "the canary rows are routed from their DSN by the arm command and graded with canary's hardware/tools/grade.sh steps against canary-pwr-rev1.0 at canary HEAD e21ee05e (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py; WSL KiCad 10.0.7 through Q14's path shim); the corpus rows run through tools/kicad-oracle/grade.sh (strips tracks and vias, exports the DSN) with the arm command as the engine, and via_in_pad.py and inner_tracks.py on its routed board; outside_own_plane and foreign_power_traces come from `freerouting-dev power-traces <DSN> <SES>` on the routed DSN and session",
+    "files": {
+      "crates/freerouting/tests/data/canary-pwr-q13/plugin-e21ee05e-unrouted.dsn": "5bc34813d7fafa44c479e902076824efd560e5355c8d00b593adf20b5b5e7136",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open.dsn": "17020c17431bb7e3e3d8354df551f04213ad3e736d3846b2b95f7261990967ff",
+      "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn": "7b876b9d50c4f6ce0f407334ff74c0914108bfdaba6a85ec24bb285d013a51e1",
+      "target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb": "2f944a91d2d3ed83069d3653ddd1f667678e6fde3a947dac3e4f1926191dd621",
+      "target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb": "529c36213c1d8321b7284c66793d309c9fb3ac34d1ce59b3dd01a1314ce3ff8a"
+    }
+  },
+  "grading": "WSL KiCad 10.0.7 for every row, one job at a time; canary calibrated by Q10's mp1.ses grading 45 (Q10.4, Q14.3). When a pair's two sessions are byte-identical, the candidate's numbers are the baseline's by construction and the session is graded once. The canary SESs, their sha256 and flags go to target/canary-handoff/2026-10-17-q13/ for canary's official grade",
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "outside_own_plane", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "foreign_power_traces", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "inner_tracks", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "kicad_unconnected", "role": "score", "kind": "int", "direction": "lower"},
+    {"name": "unrouted", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "vias", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "metric_definitions": {
+    "outside_own_plane": "traces on a power layer of a net with a plane there that leave every plane of their net on that layer (`freerouting-dev power-traces`, the engine's power_layer_breaches: a corner or a segment middle outside the plane)",
+    "foreign_power_traces": "traces on a power layer of a net without a plane there (Q01.7's breach, same tool)",
+    "inner_tracks": "canary's inner_tracks.py count on the routed board: every track on an inner copper layer, inside a plane or not",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session (canary: the count canary's grade prints; corpus: kicad-oracle's unconnected_items of the routed board)",
+    "drc_real": "canary: KiCad copper errors other than unconnected items and starved thermals; corpus: kicad-oracle's drc_real (new copper errors the unrouted input does not have)",
+    "below_minimum": "canary: KiCad track_width errors; corpus: kicad-oracle's copper.below_minimum"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "accept own_plane (N05 then makes it enhanced's default) only if the verdict pair passes the totals rule and every pair meets the hard and guard clauses; it stays an off-by-default setting either way",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings",
+  "not_registered": [
+    "canary-pwr placement variants a and a+b (canary-7a's inputs): only their add-only DSNs exist outside canary, with Java 7f56b062d's pass-1 routing fixed in (run a's +5V_PI tracks are in that fixed input, so no setting can remove them), and their placements are not in canary's git, so a pass-1 DSN and a grading board need canary-7a's export on Windows KiCad. Q13.2 checks their sessions instead",
+    "before registration, one timing run of arm plugin's argument list without the width flag on target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn (30.0 s) sized the arms; its routing numbers were not read"
+  ],
+  "decision_table": {
+    "pass": "Q13.3 [x]; DIVERGENCES line with the numbers; N05 adds router.power_layer_traces=own_plane to enhanced",
+    "fail": "keep the setting off by default; numbers and the failing clause in Q13.3's done note; operator decision"
+  },
+  "amendments": [
+    {
+      "date": "2026-10-17",
+      "what": "the candidate engine is fixed and every candidate arm (each arm with own_plane) is run again on every row; the baseline arms are not rerun (their code path is unchanged, the setting being off)",
+      "why": "the registered run of plugin+ownplane on m-fc-g474 failed the hard clause outside_own_plane (1: +3V3_CORE on In2.Cu from a via 54 um outside the plane's outline into it). Cause, a bug in the candidate, not a tuning choice: the maze-search check let a hop without length pass unchecked, and the search measures that length on target shapes enlarged by the clearance compensation, so a via just outside the plane met it with no length and the path's insertion then laid the trace. The fix checks every hop, that one included, in the board's own geometry. The first run's numbers are kept in Q13.3's done note"
+    }
+  ]
+}

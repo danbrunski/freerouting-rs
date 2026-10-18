@@ -72,6 +72,12 @@
 //! - [`batch::fanout`]: the fanout passes, `FreeroutingFanout`
 //!   (`BatchFanout`).
 //!
+//! Beyond Java (Q13):
+//!
+//! - [`power_layer_traces`]: `router.power_layer_traces`, whether a plane
+//!   net's trace may lie anywhere on its power layer (Java) or only inside
+//!   its own plane there.
+//!
 //! The batch loop and the routing job (A13):
 //!
 //! - [`batch::batch_loop`]: `AutorouteBatchLoop.run`, with B01 snapshots in
@@ -97,6 +103,7 @@ pub mod item_route_result;
 pub mod java_ids;
 pub mod path;
 pub mod pipeline;
+pub mod power_layer_traces;
 pub mod probe;
 pub mod session;
 pub mod stages;

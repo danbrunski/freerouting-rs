@@ -391,3 +391,53 @@ fn the_gate_pins_legacy_beside_a_dummy_enhanced_difference() {
     });
     let _ = std::fs::remove_dir_all(&out);
 }
+
+/// Q13.2: the D8 report's power-layer lines flag a new trace of a plane's own net that
+/// leaves its plane (`trace of <net> outside its plane on power layer <layer>`), on the
+/// canary-pwr sessions that showed it, and pass on the control.
+///
+/// - The default-options KiCad plugin run at canary `e21ee05e` (profile `enhanced`, which
+///   equals `legacy` there), against its input with the earlier routing taken out
+///   (`plugin-e21ee05e-unrouted.dsn`): `+5V_PI` on Power.Cu from (106.66, 56.44) to its
+///   island's border at (107.89, 54.99). The island is x 107.3-112.2, y 45.2-55.0.
+/// - canary-7a's placement run a+b, add-only by Java `7f56b062d`: `+5V_PI` on Power.Cu
+///   along (108.2, 53.2) -> (105.7, 53.9).
+/// - The control: Q10's pass-1 session of `canary-pwr-9511d9a.dsn`, which KiCad grades at
+///   45 with no inner-layer track (`inner_tracks.py` 0).
+///
+/// Run a's tracks are fixed in its add-only input, so they are not new; the engine's
+/// check finds them (`tests/power_layer_traces.rs`).
+#[test]
+fn d8_flags_a_plane_net_trace_outside_its_plane() {
+    use freerouting::io::specctra::import_session;
+
+    const DATA: &str = "crates/freerouting/tests/data/canary-pwr-q13";
+    let root = repo_root();
+    let lines = |dsn: &str, ses: &str| {
+        let input = autoroute_common::load(dsn).board;
+        let text = std::fs::read_to_string(root.join(ses)).expect("the session");
+        let session = ses_diff::parse_session(&text).expect("the session parses");
+        let mut routed = input.clone();
+        import_session(&mut routed, &session);
+        board_parity::d8_breaches(&routed, &input)
+            .into_iter()
+            .filter(|line| line.starts_with("trace of "))
+            .collect::<Vec<_>>()
+    };
+    let outside = "trace of +5V_PI outside its plane on power layer Power.Cu".to_string();
+    let plugin = lines(
+        &format!("{DATA}/plugin-e21ee05e-unrouted.dsn"),
+        &format!("{DATA}/plugin-e21ee05e.ses"),
+    );
+    assert_eq!(plugin, std::slice::from_ref(&outside), "the plugin run");
+    let ab = lines(
+        &format!("{DATA}/exp-ab-addonly.dsn"),
+        &format!("{DATA}/exp-ab-addonly.7f56b062d.ses"),
+    );
+    assert_eq!(ab, [outside], "placement run a+b");
+    let control = lines(
+        "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        &format!("{DATA}/9511d9a-q10-mp1.ses"),
+    );
+    assert_eq!(control, Vec::<String>::new(), "the control");
+}

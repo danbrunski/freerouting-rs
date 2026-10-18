@@ -223,6 +223,7 @@ pub struct BoardRouterSettings {
     fanout_min_escape_length_mm: f64,
     fanout_max_escape_length_mm: f64,
     fallback_to_board_vias: bool,
+    power_layer_traces: crate::autoroute::power_layer_traces::PowerLayerTraces,
     trace_pull_tight_accuracy: i32,
     neck_width_um: f64,
     min_trace_width_um: f64,
@@ -272,6 +273,9 @@ impl BoardRouterSettings {
             fanout_min_escape_length_mm: settings.fanout.min_escape_length_mm,
             fanout_max_escape_length_mm: settings.fanout.max_escape_length_mm,
             fallback_to_board_vias: settings.fanout.fallback_to_board_vias,
+            power_layer_traces: crate::autoroute::power_layer_traces::PowerLayerTraces::of(
+                settings,
+            ),
             trace_pull_tight_accuracy: settings.trace_pull_tight_accuracy,
             neck_width_um: if crate::quality::neckdown::ledger::is_strict(settings) {
                 0.0
@@ -376,6 +380,12 @@ impl BoardRouterSettings {
     /// `fanout.fallback_to_board_vias`.
     pub fn fallback_to_board_vias(&self) -> bool {
         self.fallback_to_board_vias
+    }
+
+    /// `router.power_layer_traces` (Q13): where a plane net's traces may
+    /// lie on a power layer.
+    pub fn power_layer_traces(&self) -> crate::autoroute::power_layer_traces::PowerLayerTraces {
+        self.power_layer_traces
     }
 
     /// `tracePullTightAccuracy`.

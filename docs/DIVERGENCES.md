@@ -248,6 +248,18 @@ branch 3 in IntOctagon's box cutout.
   nets it blocks and let their vias through, so the maze search lets a drill pass a layer where
   only such pours cover its location; any other value fails the job, naming it
   (`tests/trace_obstacle.rs`, `traces_mode_lets_a_foreign_gnd_via_through_the_island`).
+- `power_layer_traces` (Q13, `autoroute::power_layer_traces`) is a settings field Java does not
+  have, unset by default (`layer`: Java `7f56b062d`'s rule, a net with a plane on a power layer
+  may route anywhere on that layer). `own_plane` lets the maze search lay a trace of net N on a
+  power layer only inside one of N's planes there: the one-room hop from the entry to a target
+  door is expanded only when the entry segment and the connection point lie in one convex piece
+  of N's plane, in the board's own geometry (a via landing in the plane is such a hop); room
+  shapes are unchanged. On `tests/data/quality/q13-two-islands.dsn` Java's rule joins PB's outer pin to its
+  island with a trace on In1.Cu that leaves the island, and `own_plane` routes it on B.Cu with a
+  via landing in the island (`tests/power_layer_traces.rs`); an unknown value fails the job,
+  naming the key. Off by default; Q13.3 measured it within N02's totals rule with the plugin's
+  default flags (KiCad unconnected canary-pwr 68 → 68, m-fc-g474 5 → 5, microzed 0 → 0; plane-net
+  traces outside their plane 5 → 0), so N05 makes it `enhanced`'s default.
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which

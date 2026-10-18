@@ -85,6 +85,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "board override of the job, set with the CLI or a settings file",
     ),
     (
+        "power_layer_traces",
+        "quality option without a Java control",
+    ),
+    (
         "plane_obstacle_net_classes",
         "quality option without a Java control",
     ),

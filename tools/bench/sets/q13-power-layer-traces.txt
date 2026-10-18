@@ -1,0 +1,11 @@
+# Q13.3: the boards of the power-layer-trace measurement
+# (docs/roadmap/tasks/archive/Q13-plane-nets-stay-in-their-island.md), registered in
+# docs/roadmap/prereg/Q13.json. Every board has power-type layers. The four canary-pwr rows
+# count as one board (variants of one placement); the two corpus rows are KiCad projects
+# graded by tools/kicad-oracle/grade.sh.
+crates/freerouting/tests/data/canary-pwr-q13/plugin-e21ee05e-unrouted.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a-in2-open.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn
+target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb
+target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb

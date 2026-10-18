@@ -402,6 +402,8 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let settings = crate::quality::neckdown::ledger::with_strict_report(
         RouterSettings::from_patch(&patch, ctx.cores),
     );
+    // Q13: `router.power_layer_traces`; an unknown value fails the job.
+    crate::autoroute::power_layer_traces::validate(&settings).map_err(JobError::Settings)?;
     // Q09.3: `router.wire_keepout`; Java's reading unless `traces_only`.
     let wire = crate::io::specctra::wire_keepout::apply(&mut board, &settings)
         .map_err(JobError::Settings)?;
@@ -494,6 +496,11 @@ pub fn prepare_board_for_routing(
     board.reduce_nets_of_route_items();
     for warning in apply_net_class_exclusions(patch, board) {
         push(&mut log, LogLevel::Warn, warning);
+    }
+    // Q13: `router.power_layer_traces`; an unknown value is logged and
+    // reads as Java's rule.
+    if let Err(e) = crate::autoroute::power_layer_traces::validate(&settings) {
+        push(&mut log, LogLevel::Error, e);
     }
     // Q09.3: `router.wire_keepout`; an unknown value is logged and ignored.
     match crate::io::specctra::wire_keepout::apply(board, &settings) {

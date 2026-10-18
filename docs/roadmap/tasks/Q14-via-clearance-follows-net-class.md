@@ -176,3 +176,16 @@ Prerequisites: C02 (the settings model); N01 (the fix goes into `enhanced`, and
   with `own_plane`. On canary-pwr's baseline there was no class-via error to fix (the errors
   canary-7a reported came from placement variants a/b and older runs), so acceptance there
   rests on variants a/b once their pass-1 DSNs are available.
+  *Note from Q13.3 (2026-10-17), not a verdict:* Q14's two invalid canary results (inner tracks
+  2 and 4, `+5V_PI` on Power.Cu leaving its island) are Q13's bug, and Q13's
+  `--router.power_layer_traces=own_plane` removes them. Same engine for both (origin/main
+  `506264f` + Q13's diff + Q14's patch), `canary-pwr-9511d9a.dsn`, canary's `grade.sh` steps on
+  WSL KiCad 10.0.7: `mp1+netclass+ownplane` **49** unconnected, 3 starved thermals, 0 copper
+  errors, via-in-pad 0, inner tracks 0 (against `mp1+netclass` 48 with 2 inner tracks);
+  `mp1+sweep+netclass+ownplane` **33**, 8 starved, 0 copper errors, via-in-pad 0, inner tracks 0
+  (against 33 with 4). This run's `mp1+netclass` and `mp1+sweep+netclass` grade as Q14.3's did
+  (48 / 6 starved / inner 2, 33 / 9 starved / inner 4). On the KiCad plugin's own export
+  (`tests/data/canary-pwr-q13/plugin-e21ee05e-unrouted.dsn`, the plugin's default flags)
+  `net_class` changes nothing: its session is byte-identical with and without it, with or without
+  `own_plane`. Sessions in `target/canary-handoff/2026-10-17-q13/`; registration
+  `docs/roadmap/prereg/Q13.json` (reported pairs). Q14.3's acceptance stays with the orchestrator.

@@ -1,0 +1,55 @@
+(pcb q13-via-at-border.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic Q13 fixture: a fixed via of PB whose centre is 50 um outside PB's island on the power layer In1.Cu (its copper overlaps the island, its centre does not), wired on F.Cu to PB's SMD pad")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer In1.Cu (type power) (property (index 1)))
+    (layer B.Cu (type signal) (property (index 2)))
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 -20000  0 -20000  0 0)
+    )
+    (plane PB (polygon In1.Cu 0  20000 -2000  28000 -2000  28000 -18000  20000 -18000))
+    (via "Via[0-2]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "SMD"
+      (place B1 10000 -10000 front 0)
+    )
+  )
+  (library
+    (image "SMD"
+      (pin RectPad 1 0 0)
+    )
+    (padstack RectPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-2]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net PB (pins B1-1))
+    (class kicad_default "" PB
+      (circuit (use_via "Via[0-2]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 250  10000 -10000  19950 -10000) (net PB) (type fix))
+    (via "Via[0-2]_600:300_um" 19950 -10000 (net PB) (type fix))
+  )
+)

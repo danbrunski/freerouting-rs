@@ -415,9 +415,10 @@ fn smd_pins(board: &BasicBoard) -> Vec<ItemId> {
 /// The D8 breaches `board` adds to `input` (the board as loaded): a new via without attach
 /// on an SMD pad of its layer (`via x,y on pin #id`), and an SMD pad of a plane net that
 /// reaches the plane and is chained by copper to another SMD pad of its net, where the
-/// input did not chain them (`pins #a #b`), and a new trace on a power layer of a net that
+/// input did not chain them (`pins #a #b`), a new trace on a power layer of a net that
 /// has no plane on that layer (`trace of <net> on power layer <layer>`, Q01.7, Java
-/// `7f56b062d`). The text uses positions, net names and the ids of input items, so Rust's
+/// `7f56b062d`), and a new trace of a plane's net that leaves its planes on that layer
+/// (`trace of <net> outside its plane on power layer <layer>`, Q13.2). The text uses positions, net names and the ids of input items, so Rust's
 /// and Java's boards give comparable lines.
 pub fn d8_breaches(board: &BasicBoard, input: &BasicBoard) -> Vec<String> {
     let input_ids: BTreeSet<ItemId> = input.items().map(|i| i.id()).collect();
@@ -488,33 +489,31 @@ pub fn d8_breaches(board: &BasicBoard, input: &BasicBoard) -> Vec<String> {
 }
 
 /// The traces not in the input that lie on a power layer without a plane of their net there
-/// (Q01.7), in item order, one line per (net, layer).
+/// (`trace of <net> on power layer <layer>`, Q01.7), or with one that they leave (`trace of
+/// <net> outside its plane on power layer <layer>`, Q13.2), in item order, one line per
+/// (net, layer, kind). The engine's [`power_layer_breaches`] decides both.
+///
+/// [`power_layer_breaches`]: freerouting::autoroute::power_layer_traces::power_layer_breaches
 fn foreign_traces_on_power_layers(board: &BasicBoard, input_ids: &BTreeSet<ItemId>) -> Vec<String> {
-    let planes: Vec<&freerouting::board::items::Item> = board
-        .conduction_areas()
-        .into_iter()
-        .filter_map(|id| board.item(id))
-        .collect();
+    use freerouting::autoroute::power_layer_traces::{PowerLayerTrace, power_layer_breaches};
     let mut seen = BTreeSet::new();
-    for trace in board
-        .items()
-        .filter(|i| i.is_trace() && !input_ids.contains(&i.id()))
-    {
+    for (id, kind) in power_layer_breaches(board) {
+        if input_ids.contains(&id) {
+            continue;
+        }
+        let Some(trace) = board.item(id) else {
+            continue;
+        };
         let layer = trace.first_layer();
-        if board.layer_structure.layers[layer as usize].is_signal {
-            continue;
-        }
-        let own_plane = planes.iter().any(|plane| {
-            plane.first_layer() == layer
-                && trace.net_numbers().iter().any(|n| plane.contains_net(*n))
-        });
-        if own_plane {
-            continue;
-        }
         let net = trace.net_numbers().first().copied().unwrap_or(0);
         let net_name = board.rules.nets.get(net).map_or("?", |n| n.name.as_str());
         let layer_name = &board.layer_structure.layers[layer as usize].name;
-        seen.insert(format!("trace of {net_name} on power layer {layer_name}"));
+        seen.insert(match kind {
+            PowerLayerTrace::Foreign => format!("trace of {net_name} on power layer {layer_name}"),
+            PowerLayerTrace::OutsideOwnPlane => {
+                format!("trace of {net_name} outside its plane on power layer {layer_name}")
+            }
+        });
     }
     seen.into_iter().collect()
 }
