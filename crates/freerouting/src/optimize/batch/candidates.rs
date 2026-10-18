@@ -18,7 +18,9 @@
 //!   order, which is highest id first), and the first of each distinct key
 //!   is kept: Java needs a strictly greater key for every next pick, so
 //!   every other item with that key is skipped for the whole pass (kept on
-//!   purpose: DIVERGENCES, "Java bugs kept on purpose");
+//!   purpose: DIVERGENCES, "Java bugs kept on purpose").
+//!   `router.java_quirks.opt_equal_key_skip = false` (N06.9) keeps every
+//!   candidate in that order instead;
 //! - Java's scan starts above `(Integer.MIN_VALUE, Integer.MIN_VALUE, -1)`
 //!   and only takes keys below `(Integer.MAX_VALUE, Integer.MAX_VALUE,
 //!   Integer.MAX_VALUE)`; keys outside never come up, here as there.

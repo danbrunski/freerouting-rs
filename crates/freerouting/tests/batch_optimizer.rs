@@ -38,7 +38,7 @@ use freerouting::board::{BoardSnapshot, RoutingBoard};
 use freerouting::geometry::{IntPoint, Point, Polyline};
 use freerouting::io::read_session;
 use freerouting::job::prepare::{JobInput, RulesChoice, prepare_job};
-use freerouting::optimize::batch::candidates::sorted_candidates;
+use freerouting::optimize::batch::candidates::{Candidate, prepare_candidates, sorted_candidates};
 use freerouting::optimize::batch::item::{ItemPassParams, opt_route_item};
 use freerouting::optimize::batch::worker::{
     PassSetup, candidate_start_board, evaluate_chunk, evaluate_pass,
@@ -49,7 +49,9 @@ use freerouting::optimize::batch::{
 use freerouting::scoring::BoardStatistics;
 use freerouting::settings::board::BoardRouterSettings;
 use freerouting::settings::profiles::TestingProfile;
-use freerouting::settings::{ItemSelectionStrategy, ResolveContext, RouterSettings, Source};
+use freerouting::settings::{
+    ItemSelectionStrategy, JavaQuirks, ResolveContext, RouterSettings, Source,
+};
 
 const BM01: &str = "fixtures/Issue508-DAC2020_bm01.dsn";
 const BM05: &str = "fixtures/Issue508-DAC2020_bm05.dsn";
@@ -178,10 +180,28 @@ fn fingerprint(run: &OptimizerRun, board: &RoutingBoard) -> String {
 // O06.2: the candidate order
 // ---------------------------------------------------------------------------
 
-/// Two vias and one trace with the same key: only the via that comes first in the item
-/// list (the higher id) is a candidate; the other via and the trace are skipped for the pass.
-#[test]
-fn equal_key_skips_rest_of_pass() {
+/// bm08 routed, plus two vias and one trace with the same key at `p`.
+struct EqualKeys {
+    loaded: Loaded,
+    p: IntPoint,
+    high: ItemId,
+    low: ItemId,
+    trace: ItemId,
+}
+
+impl EqualKeys {
+    /// The candidates whose key is `p` on layer 0, in order.
+    fn at_p(&self, candidates: &[Candidate]) -> Vec<ItemId> {
+        let p = self.p;
+        candidates
+            .iter()
+            .filter(|c| c.key.x == f64::from(p.x) && c.key.y == f64::from(p.y) && c.key.layer == 0)
+            .map(|c| c.id)
+            .collect()
+    }
+}
+
+fn equal_keys() -> EqualKeys {
     let mut loaded = routed(BM08, BM08_SES, TestingProfile::default());
     let board = &mut loaded.board;
     let rules = &board.rules;
@@ -207,14 +227,24 @@ fn equal_key_skips_rest_of_pass() {
         .find(|id| !before.contains(id))
         .expect("the trace");
     assert!(high.0 > low.0);
-    let candidates = sorted_candidates(board);
-    let at_p: Vec<ItemId> = candidates
-        .iter()
-        .filter(|c| c.key.x == f64::from(p.x) && c.key.y == f64::from(p.y) && c.key.layer == 0)
-        .map(|c| c.id)
-        .collect();
+    EqualKeys {
+        loaded,
+        p,
+        high,
+        low,
+        trace,
+    }
+}
+
+/// Two vias and one trace with the same key: only the via that comes first in the item
+/// list (the higher id) is a candidate; the other via and the trace are skipped for the pass.
+#[test]
+fn equal_key_skips_rest_of_pass() {
+    let setup = equal_keys();
+    let (high, low, trace) = (setup.high, setup.low, setup.trace);
+    let candidates = sorted_candidates(&setup.loaded.board);
     assert_eq!(
-        at_p,
+        setup.at_p(&candidates),
         vec![high],
         "only the higher-id via has that key's slot"
     );
@@ -224,6 +254,49 @@ fn equal_key_skips_rest_of_pass() {
         let (a, b) = (pair[0].key, pair[1].key);
         assert!((a.x, a.y, a.layer) < (b.x, b.y, b.layer), "{a:?} {b:?}");
     }
+}
+
+/// N06.9 `router.java_quirks.opt_equal_key_skip = false`: every sorted candidate stays, in
+/// the same (key, vias first, item-list order) order, so the three items at `p` come up as
+/// the higher-id via, the lower-id via, then the trace; Java's list (`true`, the test above)
+/// is this list with each key's first candidate only.
+#[test]
+fn equal_key_switch_keeps_every_candidate() {
+    let mut setup = equal_keys();
+    let java = sorted_candidates(&setup.loaded.board);
+    let quirks = JavaQuirks::JAVA.with("opt_equal_key_skip", false).unwrap();
+    setup.loaded.board.set_java_quirks(quirks);
+    let fixed = sorted_candidates(&setup.loaded.board);
+    assert_eq!(setup.at_p(&fixed), vec![setup.high, setup.low, setup.trace]);
+    // Non-decreasing keys, and Java's list is the first of each key.
+    let mut first_of_each: Vec<Candidate> = Vec::new();
+    for pair in fixed.windows(2) {
+        let (a, b) = (pair[0].key, pair[1].key);
+        assert!((a.x, a.y, a.layer) <= (b.x, b.y, b.layer), "{a:?} {b:?}");
+    }
+    for candidate in &fixed {
+        let same = first_of_each.last().is_some_and(|prev| {
+            (prev.key.x, prev.key.y, prev.key.layer)
+                == (candidate.key.x, candidate.key.y, candidate.key.layer)
+        });
+        if !same {
+            first_of_each.push(*candidate);
+        }
+    }
+    assert_eq!(first_of_each, java);
+    assert!(
+        fixed.len() >= java.len() + 2,
+        "{} {}",
+        fixed.len(),
+        java.len()
+    );
+    // The pass's candidate list follows the switch.
+    let ids = prepare_candidates(
+        &setup.loaded.board,
+        ItemSelectionStrategy::Sequential,
+        &mut BTreeMap::new(),
+    );
+    assert_eq!(ids, fixed.iter().map(|c| c.id).collect::<Vec<_>>());
 }
 
 // ---------------------------------------------------------------------------
@@ -680,6 +753,100 @@ fn first_pass_without_winner_stops() {
     };
     assert_eq!(loaded.board.state_hash(), deep);
     let _ = hash;
+}
+
+/// N06.9 `router.java_quirks.opt_first_pass_stops`: the pass of
+/// `first_pass_without_winner_stops` (no candidate improves). `true` stops after it; `false`
+/// goes on for one pass at normal ripup costs, which finds no winner either and stops on the
+/// threshold.
+#[test]
+fn first_pass_switch_both_behaviours() {
+    let profile = || {
+        let mut profile = optimizer_profile(10, 400);
+        profile.patch.optimizer.max_autoroute_passes = Some(0);
+        profile
+    };
+    let mut java = routed(BM08, BM08_SES, profile());
+    assert!(java.router.java_quirks().opt_first_pass_stops);
+    let java_run = run(&mut java, 2);
+    assert_eq!(java_run.passes, 1, "{:?}", java_run.log);
+
+    let mut fixed = routed(BM08, BM08_SES, profile());
+    let quirks = JavaQuirks::JAVA
+        .with("opt_first_pass_stops", false)
+        .unwrap();
+    fixed.router = fixed.router.with_java_quirks(quirks);
+    let fixed_run = run(&mut fixed, 2);
+    assert_eq!(fixed_run.passes, 2, "{:?}", fixed_run.log);
+    // The first pass is Java's, bit for bit.
+    assert_eq!(fixed_run.pass_log[0], java_run.pass_log[0]);
+    let second = &fixed_run.pass_log[1];
+    assert!(second.winner.is_none());
+    assert!(!second.results.is_empty());
+    assert!(second.results.iter().all(|r| !r.improved()));
+    let stops: Vec<&str> = fixed_run
+        .log
+        .iter()
+        .map(|l| l.text.as_str())
+        .filter(|t| t.starts_with("Stopping optimizer because the improvement"))
+        .collect();
+    assert_eq!(stops.len(), 1, "{:?}", fixed_run.log);
+    // Both runs end on the incumbent, the routed board.
+    assert_eq!(fixed.board.state_hash(), java.board.state_hash());
+}
+
+/// N06.9's correction of the `opt_first_pass_stops` notes: an improved result has an
+/// `improvement_percentage` of exactly 0 when the board had no vias (or no length) before,
+/// not because of the integer via ratio. With vias, the integer ratio gives 0 only when the
+/// two ratios sum to exactly 2 (here: a connection routed with the old length).
+#[test]
+fn zero_improvement_needs_a_board_without_vias() {
+    let lengths = [1000.0, 999.0, 900.0, 500.0, 1001.0, 1500.0, 2500.0];
+    let mut zero_with_vias = Vec::new();
+    for vias_before in 0..=6 {
+        for vias_after in 0..=13 {
+            for &length_after in &lengths {
+                for (incomplete_before, incomplete_after) in [(1, 1), (1, 0)] {
+                    let r = ItemRouteResult::new(
+                        ItemId(1),
+                        vias_before,
+                        vias_after,
+                        1000.0,
+                        length_after,
+                        incomplete_before,
+                        incomplete_after,
+                    );
+                    if !r.improved() || r.improvement_percentage() != 0.0 {
+                        continue;
+                    }
+                    if vias_before != 0 {
+                        zero_with_vias.push((vias_before, vias_after, length_after));
+                    }
+                }
+            }
+        }
+    }
+    // The coincidences: via ratio 1 (truncated) and the same length; nothing else.
+    assert!(!zero_with_vias.is_empty());
+    for (before, after, length) in &zero_with_vias {
+        assert_eq!(*length, 1000.0, "{before} {after}");
+        assert_eq!(after / before, 1, "{before} {after}");
+    }
+    // Without vias every improved result is 0 %.
+    let r = ItemRouteResult::new(ItemId(1), 0, 0, 1000.0, 900.0, 1, 1);
+    assert!(r.improved());
+    assert_eq!(r.improvement_percentage(), 0.0);
+    // With vias, fewer vias or a shorter length is never 0 %.
+    for (before, after, length) in [
+        (3, 2, 1000.0),
+        (2, 1, 1001.0),
+        (4, 4, 999.0),
+        (1, 0, 1500.0),
+    ] {
+        let r = ItemRouteResult::new(ItemId(1), before, after, 1000.0, length, 1, 1);
+        assert!(r.improved(), "{before} {after} {length}");
+        assert_ne!(r.improvement_percentage(), 0.0, "{before} {after} {length}");
+    }
 }
 
 // ---------------------------------------------------------------------------

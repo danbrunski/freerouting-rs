@@ -767,11 +767,17 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   pipeline as a full stop (`StopLevel::All`), checked before each pass and each chunk, and
   the pass it lands in adopts no unfinished winner (`optimizer_timeout_is_a_full_stop`).
 - Java bugs kept on purpose (`optimize::batch` module docs): a first pass without a winner,
-  or whose winner has an `improvement_percentage` of 0 (`ItemRouteResult`'s integer
-  division), clears the increased ripup costs inside the pass, so the loop stops after one
-  pass (`first_pass_without_winner_stops`); the candidate order skips every item whose key
-  equals an earlier one for the whole pass (`equal_key_skips_rest_of_pass`); an improvement
-  threshold in (0, 0.1) is multiplied by 100.
+  or whose winner has an `improvement_percentage` of 0 (which needs a board without vias:
+  `ItemRouteResult`'s guard, not its integer division,
+  `zero_improvement_needs_a_board_without_vias`), clears the increased ripup costs inside the
+  pass, so the loop stops after one pass (`first_pass_without_winner_stops`); the candidate
+  order skips every item whose key equals an earlier one for the whole pass
+  (`equal_key_skips_rest_of_pass`); an improvement threshold in (0, 0.1) is multiplied by 100.
+  N06.9 puts the first two behind `router.java_quirks.opt_first_pass_stops` and
+  `opt_equal_key_skip` (both `true`, Java's, in both profiles until their measurement):
+  `false` goes on for one pass at normal ripup costs after such a clear, as Java's comment
+  intends (`first_pass_switch_both_behaviours`, `pass_end_decision_both_behaviours`), and
+  keeps every sorted candidate (`equal_key_switch_keeps_every_candidate`).
 
 **Autoroute room graph** (`autoroute::session`, A02; tests `tests/autoroute_probe_start_rooms.rs` and
 `autoroute::session::tests`)

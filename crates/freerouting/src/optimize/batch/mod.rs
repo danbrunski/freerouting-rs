@@ -20,9 +20,8 @@
 //! scaled by 100 in (0, 0.1); passes run while `pass < max_passes`, `items <
 //! max_items` and no full stop is requested; odd passes use the preferred
 //! directions. After a pass the winner is adopted, a pass without an
-//! adopted improvement (or a winner whose `improvement_percentage` is 0,
-//! which the integer division of `ItemRouteResult` makes common) clears the
-//! increased ripup costs; the result is gated against the incumbent
+//! adopted improvement (or a winner whose `improvement_percentage` is 0)
+//! clears the increased ripup costs; the result is gated against the incumbent
 //! (accepted: a new incumbent; rejected: a deep copy of the incumbent comes
 //! back); the improvement is `(after − before) / |before| × 100` of the
 //! ranking scores; the loop goes on once if the increased costs were still
@@ -30,12 +29,30 @@
 //! the threshold. At the end the incumbent comes back if the final score is
 //! lower (D8: the best board is the one kept).
 //!
-//! **Kept Java quirks** (DIVERGENCES, "Java bugs kept on purpose"): a first
-//! pass whose adopted winner has an `improvement_percentage` of 0 (or that
-//! has no winner) clears the increased ripup costs inside the pass, so the
-//! loop sees an improvement below the threshold and stops after one pass
-//! (`first_pass_without_winner_stops`); the equal-key skip of the candidate
-//! order; the threshold auto-scale for values in (0, 0.1).
+//! **A winner of 0 %.** `improvement_percentage` is exactly 0 for an
+//! improved result only when the board had no vias (or no trace length)
+//! before the candidate, `ItemRouteResult`'s guard. The integer division of
+//! its via ratio does not make it 0: fewer vias truncate the ratio to 0 and
+//! give a percentage near 0.5, a ratio that truncates to 1 with a shorter
+//! length a positive one; 0 needs a sum of the two ratios of exactly 2, such
+//! as a routed connection with exactly the old length, a coincidence
+//! (`zero_improvement_needs_a_board_without_vias`).
+//! So the clear inside a pass is mostly a pass without a winner.
+//!
+//! **Kept Java quirks** (DIVERGENCES, "Java bugs kept on purpose"), each
+//! behind its `router.java_quirks` switch (N06.9), `true` = Java:
+//! - `opt_first_pass_stops`: a pass with the increased ripup costs that has
+//!   no adopted winner (or a winner of 0 %) clears the costs inside the
+//!   pass, so the loop sees an improvement below the threshold and stops
+//!   (`first_pass_without_winner_stops`). `false` goes on for one more pass
+//!   at normal costs, as Java's comment says (`pass_end_decision`;
+//!   `first_pass_switch_both_behaviours`).
+//! - `opt_equal_key_skip`: the candidate order skips every item whose key
+//!   equals an earlier one for the whole pass (`equal_key_skips_rest_of_pass`);
+//!   `false` keeps every sorted candidate
+//!   (`equal_key_switch_keeps_every_candidate`).
+//! - `opt_threshold_fraction`: the threshold auto-scale for values in
+//!   (0, 0.1) (N06.12).
 //!
 //! **Stops and time.** A full stop (cancel, or the optimizer or job
 //! deadline, which the pipeline arms with `StopLevel::All`) is checked
@@ -216,6 +233,39 @@ fn effective_threshold(threshold: f32, java_fraction_heuristic: bool) -> (f32, O
     }
 }
 
+/// What the pass loop does after a pass, before the threshold.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PassEnd {
+    /// One more pass at normal ripup costs, whatever the improvement.
+    ContinueAtNormalCosts,
+    /// Go on only if the improvement reaches the threshold.
+    Threshold,
+}
+
+/// Java `runBatchLoop`'s `:462-469`: a pass that ran with the increased
+/// ripup costs and did not raise the score goes on once at normal costs.
+///
+/// `cleared_in_pass` is true when `optRoutePass` cleared the increased costs
+/// itself (no adopted winner, or a winner of 0 %) and
+/// `router.java_quirks.opt_first_pass_stops` is `false` (N06.9). Java's
+/// `optRoutePass` then returns `-1` "to keep the optimizer going with lower
+/// ripup costs", as Freerouting 1.x's loop did (`route_improved < 0` kept it
+/// going), but the loop at the pin ignores the return value and sees the
+/// costs already off, so it stops below the threshold. The fix restores the
+/// documented intent: one more pass at normal costs, unconditionally.
+fn pass_end_decision(
+    use_increased_ripup_costs: bool,
+    cleared_in_pass: bool,
+    score_before: f32,
+    score_after: f32,
+) -> PassEnd {
+    if cleared_in_pass || use_increased_ripup_costs && score_after <= score_before {
+        PassEnd::ContinueAtNormalCosts
+    } else {
+        PassEnd::Threshold
+    }
+}
+
 /// The pass loop's state (Java's `BatchOptimizer` fields).
 struct Loop<'s, 'c> {
     ctx: &'s StageCtx<'c>,
@@ -356,9 +406,10 @@ impl Loop<'_, '_> {
             evaluation.winner_result = Some(result);
         }
         // PARITY(quirk, java_quirks.opt_first_pass_stops): :812-815, no
-        // adopted improvement (or a 0 % improvement) ends the increased ripup
-        // costs, and the loop then stops below the threshold; `false` lets the
-        // loop go on once at normal costs.
+        // adopted improvement (or a 0 % one, which needs a board without
+        // vias) ends the increased ripup costs, and the loop then stops below
+        // the threshold; `false` makes the loop go on once at normal costs
+        // (`pass_end_decision`).
         if self.use_increased_ripup_costs && route_improved == 0.0 {
             self.use_increased_ripup_costs = false;
             self.cleared_in_pass = !self.ctx.board_settings.java_quirks().opt_first_pass_stops;
@@ -502,10 +553,13 @@ pub fn run_batch_optimizer(
             break;
         }
         // PARITY: :462-480.
-        let increased =
-            state.use_increased_ripup_costs || std::mem::take(&mut state.cleared_in_pass);
-        let continue_once = increased && score_after <= score_before;
-        if continue_once {
+        let decision = pass_end_decision(
+            state.use_increased_ripup_costs,
+            std::mem::take(&mut state.cleared_in_pass),
+            score_before,
+            score_after,
+        );
+        if decision == PassEnd::ContinueAtNormalCosts {
             state.use_increased_ripup_costs = false;
         } else if improvement < f64::from(threshold) {
             state.info(format!(
@@ -590,7 +644,41 @@ impl Optimizer for FreeroutingOptimizer {
 
 #[cfg(test)]
 mod tests {
-    use super::effective_threshold;
+    use super::{PassEnd, effective_threshold, pass_end_decision};
+
+    /// N06.9 `opt_first_pass_stops`. Under `true` the clear inside the pass
+    /// never reaches the loop (`cleared_in_pass` stays false), so a pass whose
+    /// costs `optRoutePass` turned off goes to the threshold; under `false`
+    /// the clear goes on once, whether the score rose or not.
+    #[test]
+    fn pass_end_decision_both_behaviours() {
+        use PassEnd::{ContinueAtNormalCosts as Go, Threshold};
+        // (costs still increased, cleared in the pass, before, after) -> decision.
+        let cases = [
+            // Java's own continue: the costs were on and the score did not rise.
+            ((true, false, 10.0, 10.0), Go),
+            ((true, false, 10.0, 9.0), Go),
+            ((true, false, 10.0, 11.0), Threshold),
+            // Normal costs: the threshold decides.
+            ((false, false, 10.0, 10.0), Threshold),
+            ((false, false, 10.0, 11.0), Threshold),
+            // Cleared in the pass (only under `false`): one more pass.
+            ((false, true, 10.0, 10.0), Go),
+            ((false, true, 10.0, 11.0), Go),
+            ((false, true, 10.0, 9.0), Go),
+        ];
+        for ((on, cleared, before, after), want) in cases {
+            assert_eq!(
+                pass_end_decision(on, cleared, before, after),
+                want,
+                "{on} {cleared} {before} {after}"
+            );
+        }
+        // The pass that Java stops after: costs cleared inside, score unchanged.
+        let java = pass_end_decision(false, false, 10.0, 10.0);
+        let fixed = pass_end_decision(false, true, 10.0, 10.0);
+        assert_eq!((java, fixed), (Threshold, Go));
+    }
 
     /// N06 `opt_threshold_fraction`: `true` reads 0.05 as 5 %, `false` as 0.05 %.
     #[test]

@@ -1,0 +1,16 @@
+# N06.9: batch O, the batch optimizer's kept Java bugs (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.9.json: router.java_quirks.opt_first_pass_stops and
+# opt_equal_key_skip, each alone and both, against Java's behaviour (both unset).
+# The optimizer runs only on a board the router completes (preflight guard 1), so two DSN
+# fixtures the router completes are rows next to the KiCad demos and canary-pwr.
+#
+# canary-pwr through the plugin's DSN and argument list (N05.3's canary-plugin45 row):
+crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn
+# DSN fixtures (Freerouting's board model grades them; no KiCad board):
+fixtures/Issue508-DAC2020_bm01.dsn
+fixtures/Issue508-DAC2020_bm02.dsn
+# KiCad 10.0.7 demos, tracks and vias stripped (outside the repository; K09.json's boards and
+# hashes), routed and graded by tools/kicad-oracle/grade.sh:
+#   /usr/share/kicad/demos/interf_u/interf_u.kicad_pcb
+#   /usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
+#   /usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb

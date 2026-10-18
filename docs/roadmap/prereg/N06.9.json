@@ -1,0 +1,258 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.9-batch-optimizer",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.9, batch O)",
+  "question": "Do the batch optimizer's two Java-bug fixes, router.java_quirks.opt_first_pass_stops=false (a pass that clears the increased ripup costs inside itself, no adopted winner or a 0 % one, goes on for one more pass at normal ripup costs, as Java's comment intends) and router.java_quirks.opt_equal_key_skip=false (every sorted candidate is tried, not only the first of each (x, y, layer) key), each alone and both together, keep the unrouted total within N02's totals rule (accept no-regress: correctness fixes) of Java's behaviour, with no via in a pad, no copper below the minimum and no new clearance or DRC error, and what do they cost in optimizer passes and time?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10,
+      "interf_u": 8.2,
+      "pic_programmer": 4.3,
+      "CM5_MINIMA_3": 10.4
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at origin/main 7a4f73b with N06.9's diff, one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks), the optimizer on (the default), so the arms differ only in the two router.java_quirks keys",
+  "arms": {
+    "java": {
+      "engine": "freerouting-rs at origin/main 7a4f73b with N06.9's diff, one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks), the optimizer on (the default), so the arms differ only in the two router.java_quirks keys",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --result-json {OUT}/result.json {ROW_FLAGS}",
+      "settings": {},
+      "what": "baseline: both keys unset (true), Java's optimizer"
+    },
+    "first_pass": {
+      "engine": "freerouting-rs at origin/main 7a4f73b with N06.9's diff, one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks), the optimizer on (the default), so the arms differ only in the two router.java_quirks keys",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --result-json {OUT}/result.json {ROW_FLAGS} --router.java_quirks.opt_first_pass_stops=false",
+      "settings": {
+        "router.java_quirks.opt_first_pass_stops": false
+      },
+      "what": "opt_first_pass_stops fixed alone"
+    },
+    "equal_key": {
+      "engine": "freerouting-rs at origin/main 7a4f73b with N06.9's diff, one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks), the optimizer on (the default), so the arms differ only in the two router.java_quirks keys",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --result-json {OUT}/result.json {ROW_FLAGS} --router.java_quirks.opt_equal_key_skip=false",
+      "settings": {
+        "router.java_quirks.opt_equal_key_skip": false
+      },
+      "what": "opt_equal_key_skip fixed alone"
+    },
+    "both": {
+      "engine": "freerouting-rs at origin/main 7a4f73b with N06.9's diff, one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks), the optimizer on (the default), so the arms differ only in the two router.java_quirks keys",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --result-json {OUT}/result.json {ROW_FLAGS} --router.java_quirks.opt_first_pass_stops=false --router.java_quirks.opt_equal_key_skip=false",
+      "settings": {
+        "router.java_quirks.opt_first_pass_stops": false,
+        "router.java_quirks.opt_equal_key_skip": false
+      },
+      "what": "candidate: batch O, both fixes"
+    }
+  },
+  "baseline_arm": "java",
+  "candidate_arm": "both",
+  "pairs": {
+    "verdict": {
+      "arms": [
+        "java",
+        "both"
+      ],
+      "rows": "all"
+    },
+    "reported": [
+      {
+        "arms": [
+          "java",
+          "first_pass"
+        ],
+        "rows": "all"
+      },
+      {
+        "arms": [
+          "java",
+          "equal_key"
+        ],
+        "rows": "all"
+      }
+    ]
+  },
+  "pairs_rule": "the verdict pair is judged by the totals block with the hard and guard metrics below; the two reported pairs are judged by the same rule and their verdicts go in N06.9's note (N06's decisions: one switch per bug; a failing batch is bisected switch by switch, and these pairs are that bisection, run up front as N06.9 asks)",
+  "boards": {
+    "set": "tools/bench/sets/n06-o.txt",
+    "eligibility": "every row; no row is dropped after a number. Chosen before any number: canary-pwr through the plugin's DSN and argument list (N06's 'canary-pwr through the plugin path'), K09's three stripped demos, and the two DAC2020 fixtures that Java's PORT_LEDGER reports fully routed or optimized (bm01 'fully routed, 5 optimizer passes', bm02), because the optimizer's preflight guard 1 skips the stage on a board with an unrouted connection",
+    "rows": {
+      "canary-plugin45": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "ROW_FLAGS": "--max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps against canary-pwr-rev1.0 at canary b1994423 (N05.3's canary-plugin45 grading)",
+        "why": "Dan's plugin run (N05.3's row). The plugin path leaves connections unrouted on this board, so guard 1 is expected to skip the optimizer in every arm; optimizer_bypassed says whether it did, and then the four sessions must be byte-identical"
+      },
+      "bm01": {
+        "board": "bm01",
+        "input": "fixtures/Issue508-DAC2020_bm01.dsn",
+        "ROW_FLAGS": "",
+        "grade": "freerouting-dev gate collect's statistics of the imported SES (no KiCad board): unrouted, clearance_violations, vias, length_mm, via_in_pad; below_minimum from freerouting-dev widths; drc_real not graded"
+      },
+      "bm02": {
+        "board": "bm02",
+        "input": "fixtures/Issue508-DAC2020_bm02.dsn",
+        "ROW_FLAGS": "",
+        "grade": "as bm01"
+      },
+      "interf_u": {
+        "board": "interf_u",
+        "input": "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb",
+        "ROW_FLAGS": "",
+        "grade": "tools/kicad-oracle/grade.sh <input> -- <arm command> (strips tracks and vias, exports the DSN, routes, grades with kicad-cli), plus tools/kicad-oracle/via_in_pad.py on the routed board"
+      },
+      "pic_programmer": {
+        "board": "pic_programmer",
+        "input": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
+        "ROW_FLAGS": "",
+        "grade": "as interf_u"
+      },
+      "CM5_MINIMA_3": {
+        "board": "CM5_MINIMA_3",
+        "input": "/usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb",
+        "ROW_FLAGS": "",
+        "grade": "as interf_u"
+      }
+    },
+    "procedure": "demos: tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip (K09.json's boards; the hashes below are of the stripped boards)",
+    "files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "bm01": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "bm02": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
+      "interf_u": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "pic_programmer": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49",
+      "CM5_MINIMA_3": "031b7497386e84c3345d180c8b1c36b07910eb075b81ac6d793ba6f21558449a"
+    }
+  },
+  "grading": "WSL KiCad 10.0.7 for the demo and canary rows, one job at a time; the DSN rows by Freerouting's board model. When two arms' sessions are byte-identical the session is graded once, the earlier arm's grade (order java, first_pass, equal_key, both). The canary sessions go to target/canary-handoff/ for canary's official grade",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "optimizer_score",
+      "role": "report",
+      "kind": "float",
+      "direction": "higher",
+      "compared": false
+    },
+    {
+      "name": "optimizer_bypassed",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "optimizer_passes",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "optimizer_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "demos and canary: tools/kicad-oracle/via_in_pad.py on the routed board (session vias only); DSN rows: freerouting-dev gate collect's count on the imported SES",
+    "below_minimum": "demos and canary: KiCad track_width errors; DSN rows: the nets with copper under their class width in freerouting-dev widths <DSN> <SES> (under_mm > 0), the board model's version of the same limit",
+    "clearance_violations": "the router's clearance violations of the final board (result.json board_statistics; gate collect's clearance_violations)",
+    "drc_real": "KiCad error-severity items other than unconnected items and starved thermals, minus the same types on the unrouted input; DSN rows: not graded",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session; DSN rows fall back to unrouted (the totals signal)",
+    "unrouted": "the router's final unrouted count (result.json board_statistics connections.incomplete_count)",
+    "vias": "vias in the session",
+    "length_mm": "the session's total trace length (gate collect's length_mm)",
+    "optimizer_score": "result.json's optimizer_score of the final board",
+    "optimizer_bypassed": "1 if the job log has 'Skipping optimization stage' (a preflight guard skipped the optimizer), else 0",
+    "optimizer_passes": "result.json phases.optimizer.passes_completed (0 when bypassed); opt_first_pass_stops=false adds at most one pass where a pass cleared the increased ripup costs inside itself",
+    "optimizer_seconds": "result.json phases.optimizer.duration_seconds",
+    "wall_seconds": "the CLI process's wall time; time is reported, not judged (D2: routing is deterministic, wall time is not); N06.9 asks that the registration records it because opt_first_pass_stops adds a pass"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "N06's accept rule for (b) fixes: a batch is accepted when the hard guards hold, no board regresses by more than twice its noise band and the total is not worse than the set's noise; a neutral fix stays in. If the verdict pair passes, N06.13 turns both keys off in ENHANCED through N05; if it fails, the reported pairs say which switch to keep, and a switch whose own pair passes may still be accepted alone",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings",
+  "not_registered": [
+    "the A14 exact set: legacy keeps both keys true, so A14 is unaffected; N06.3's A14 run covers the defaults",
+    "canary-pwr through canary's graded CLI flow (Q10's 33): the plugin row stands for canary-pwr, as N06 asks",
+    "a run with the optimizer's preflight guards off (they decide whether the optimizer runs at all; not a batch-O question)"
+  ],
+  "seen_before_registration": "only the unit and fixture tests of N06.9: on bm08 with its routed session unfixed and no autoroute pass per candidate (every candidate fails), opt_first_pass_stops=true runs 1 optimizer pass and false runs 2 (tests/batch_optimizer.rs first_pass_switch_both_behaviours); opt_equal_key_skip=false adds the two items given an equal key by equal_key_switch_keeps_every_candidate. No routed number of any registered row, under any arm",
+  "decision_table": {
+    "pass": "N06.9's measurement [x]; N06.13 turns opt_first_pass_stops and opt_equal_key_skip off in ENHANCED (N05) with their DIVERGENCES 'Profile enhanced' lines",
+    "fail": "the failing switch stays true in both profiles, with these numbers in N06.9 and N06.13; the other switch is judged by its own reported pair"
+  },
+  "amendments": []
+}

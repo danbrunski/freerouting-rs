@@ -398,7 +398,7 @@ These are marked or look like quirks but keep no bug:
     trace;
   - the prefix/suffix identity case of the reviewed list: confirm it is unreachable, or add it.
   - **Accept:** the batch is measured.
-- [ ] **N06.9 — Batch O, batch optimizer:** `opt_first_pass_stops` (a clear inside a pass
+- [~] **N06.9 — Batch O, batch optimizer:** `opt_first_pass_stops` (a clear inside a pass
   allows one more pass at normal ripup costs), `opt_equal_key_skip` (keep every sorted
   candidate).
   - This is the batch most likely to move `canary-pwr`, because it runs in every default run.
@@ -407,6 +407,68 @@ These are marked or look like quirks but keep no bug:
   - Correct the `optimize::batch` module docs and DIVERGENCES: 0 % winners come from boards
     without vias, not from the int division.
   - **Accept:** the three arms are measured.
+  - *Partial 2026-10-18:* code, tests, docs and the registration are done; heavy run pending
+    (the three arms against `java`, commands below).
+    - [x] `opt_first_pass_stops` fix: the loop's after-pass decision is
+      `optimize::batch::pass_end_decision`. Under `false` a pass in which `opt_route_pass`
+      cleared the increased ripup costs goes on for exactly one more pass at normal costs,
+      whatever the score did. That is the intent of Java's `routeImproved = -1; // to keep the
+      optimizer going with lower ripup costs` (`BatchOptimizer.java:812-815`; 1.x's loop went on
+      for `route_improved < 0`). N06.3's wiring went on only when the score had not risen. Under
+      `true` nothing changes: `cleared_in_pass` stays false, and the decision is Java's
+      `:462-469`. Tests: `optimize::batch::tests::pass_end_decision_both_behaviours` (8 cases),
+      and `tests/batch_optimizer.rs::first_pass_switch_both_behaviours`. In that test, on bm08
+      with every candidate failing, `true` runs 1 pass and `false` 2: pass 1 is bit-identical,
+      pass 2 has no winner and one threshold stop, and both runs end on the same board hash.
+      `first_pass_without_winner_stops` is unchanged and still the `true` half.
+    - [x] `opt_equal_key_skip` (wired in N06.3, `candidates.rs`): the `false` half is
+      `equal_key_switch_keeps_every_candidate`. At the shared key it gives [higher-id via,
+      lower-id via, trace]; the keys are non-decreasing; Java's list is exactly the first of
+      each key; `prepare_candidates` follows the switch. `equal_key_skips_rest_of_pass` is the
+      `true` half (its setup moved into the shared `equal_keys()` helper).
+    - [x] Docs corrected: the `optimize::batch` module docs (a new "A winner of 0 %" paragraph,
+      and the kept quirks listed with their switches and tests), the `candidates` module docs,
+      and the DIVERGENCES "Batch optimizer" kept-on-purpose line. An improved result is 0 %
+      exactly when the board had no vias (or no length) before. The integer via ratio gives 0
+      only when the two ratios sum to exactly 2 (a connection routed at exactly the old
+      length). Pinned by `zero_improvement_needs_a_board_without_vias`; it agrees with Java's
+      probe row `[9, 0, 1, 1000, 900, 1, 0] -> improved, 0x0` in `item_route_result.rs`.
+    - [x] Registered before any number: `docs/roadmap/prereg/N06.9.json` (sha256
+      `b8be8b1aae14f390d3a2de0a52f72853d525a13bf7881f03fced9541df8ec449`) and
+      `tools/bench/sets/n06-o.txt`.
+      - Arms: `java` (baseline), `first_pass`, `equal_key` and `both` (the candidate, the
+        verdict pair); the two single-switch pairs are reported.
+      - Rule: totals, no-regress.
+      - Rows: canary-pwr through the plugin DSN `plugin-b1994423.dsn`, bm01 and bm02, and
+        K09's stripped interf_u, pic_programmer and CM5_MINIMA_3.
+      - Metrics include `optimizer_passes`, `optimizer_seconds` and `wall_seconds`.
+      - Pinned by `crates/freerouting-dev/tests/prereg_n06_9.rs` (4 tests).
+    - [x] Defaults unchanged. With every switch at its default, the fast subset in release
+      (private target) gives exact 7 boards, 7 pass, 0 fail, 7 SES byte-identical. The command
+      is `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting
+      --test autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1`.
+      The optimizer's `true` paths are pinned by the unchanged `tests/batch_optimizer.rs`,
+      `tests/reference_optimize.rs` and `java_ports.rs` tests in the workspace run
+      (`cargo test --workspace --no-fail-fast`, private target: 230 suites, 2421 passed,
+      0 failed, 53 ignored).
+    - [ ] Heavy run pending (orchestrator, one job at a time; release build of this tree):
+      - Each row and each arm runs `freerouting -de {DSN} -do {SES} --gui.enabled=false
+        --result-json {OUT}/result.json {ROW_FLAGS} {ARM_FLAGS}`. `{ARM_FLAGS}` is empty for
+        `java`, `--router.java_quirks.opt_first_pass_stops=false` for `first_pass`,
+        `--router.java_quirks.opt_equal_key_skip=false` for `equal_key`, and both flags for
+        `both`.
+      - How each row is graded:
+        - demos: `tools/kicad-oracle/grade.sh <demo .kicad_pcb> -- <that command>`, then
+          `via_in_pad.py`;
+        - canary: `ROW_FLAGS` from the registration, then canary's grade.sh steps;
+        - bm01 and bm02: `freerouting-dev widths <DSN> <SES>` plus `gate collect`'s statistics.
+      - Then `freerouting-dev gate --records <records> --prereg docs/roadmap/prereg/N06.9.json`
+        for the verdict pair and each reported pair.
+      - Note before running: preflight guard 1 skips the optimizer on any board left with an
+        unrouted connection. So on canary-pwr, which the plugin path does not complete, every
+        arm should give the same session. The registration records `optimizer_bypassed` per
+        row. The claim that batch O "most likely moves canary-pwr" holds only where the
+        router completes.
 - [ ] **N06.10 — Batch I, inputs and reports:** the five DSN and SES rows, `stats_line_ab_length`,
   `route_result_int_via_ratio`, `drc_units_10000_per_mm`.
   - **Accept:**
