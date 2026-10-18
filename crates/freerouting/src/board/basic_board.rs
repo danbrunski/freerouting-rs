@@ -286,6 +286,7 @@ impl BasicBoard {
             search_config: self.search_trees.search_config(),
             contact_rule: self.contact_rule,
             java_quirks: self.java_quirks,
+            clearance_compensation_used: self.search_trees.is_clearance_compensation_used(),
         }
     }
 
@@ -321,6 +322,12 @@ impl BasicBoard {
         };
         board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();
+        // PARITY(quirk, java_quirks.snapshot_drops_compensation): Java readObject
+        // discards the GUI compensation mode. Preserve it only for the fixed arm.
+        if snapshot.clearance_compensation_used && !snapshot.java_quirks.snapshot_drops_compensation
+        {
+            board.set_clearance_compensation_used(true);
+        }
         board
     }
 

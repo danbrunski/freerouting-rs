@@ -25,12 +25,11 @@
 //! search-tree nodes, D5) and its stop request; the search never resets
 //! the limit.
 //!
-//! **Section identity.** Java keeps a reference to the popped section and
-//! writes the occupation through it after the expansion, even when the
-//! expansion reallocated the door's section array
-//! (`ExpansionDoor.java:197`). The port keeps the section's slot in the
-//! flat section array, which the reallocation leaves in place, so the write
-//! lands where Java's lands (`// PARITY(quirk):`).
+//! **Section identity.** N06.2 resolves the section again after expansion so
+//! occupation reaches the current door range if expansion resized it. With no
+//! reallocation, the range `(start, len)` is unchanged and the arena only appends,
+//! so this is exactly the slot saved at pop time. Drill ranges and target-door
+//! slots are stable; drill-page pops return before this occupation write.
 //!
 //! The queue keys hold the Java id of the door at the time of the push.
 //! Java's `TreeSet` compares the ids at comparison time, and a drill page's
@@ -362,10 +361,9 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             // The occupation is delayed by a ripup, or nothing was expanded.
             return Ok((Step::Continue, popped, skipped));
         }
-        // PARITY(quirk): MazeSearchEngine.java:394 writes through the
-        // section popped, even if the expansion reallocated the door's
-        // sections.
-        self.s.slot_state_mut(slot).occupied = true;
+        // PARITY(quirk): MazeSearchEngine.java:394 writes to the old range.
+        // N06.2: use the current range; absent reallocation this is `slot`.
+        self.s.occupy_current_section(element.door, element.section);
         Ok((Step::Continue, popped, skipped))
     }
 
@@ -1098,6 +1096,14 @@ impl Session<'_> {
             ExpandableRef::DrillPage(page) => self.built_drill_pages()?.page(page).sections,
         };
         (section < len as usize).then(|| SectionSlot::Flat(start as usize + section))
+    }
+
+    /// Occupy a surviving section after expansion may have resized its door.
+    /// A section removed by shrinking no longer has a state to occupy.
+    pub(crate) fn occupy_current_section(&mut self, object: ExpandableRef, section: usize) {
+        if let Some(slot) = self.section_slot(object, section) {
+            self.slot_state_mut(slot).occupied = true;
+        }
     }
 
     pub(crate) fn slot_state(&self, slot: SectionSlot) -> &super::SectionState {

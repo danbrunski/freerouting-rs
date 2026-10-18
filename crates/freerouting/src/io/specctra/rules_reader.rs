@@ -22,7 +22,8 @@
 //! - a `layer` scope naming an unknown layer applies to **all** layers
 //!   (`applyRules` keeps `layerIndex = -1`);
 //! - the clearance matrix is changed in place and the search trees are not
-//!   rebuilt;
+//!   rebuilt; disabling `java_quirks.rules_matrix_trees_not_rebuilt` refreshes
+//!   every tree after applying the scopes;
 //! - a header name that differs from the design name is only a warning;
 //! - `autoroute_settings` are read against the board's layers, with every
 //!   layer routable and `autoroute` and `postroute` on unless the scope says
@@ -164,6 +165,8 @@ pub fn apply_rules_file(
         .iter()
         .map(|l| l.name.clone())
         .collect();
+    let old_matrix = (!board.java_quirks().rules_matrix_trees_not_rebuilt)
+        .then(|| board.rules.clearance_matrix.clone());
     let log_start = board.log.len();
     let mut ctx = ReadContext::new();
     ctx.coordinate_transform = board.communication.coordinate_transform;
@@ -210,7 +213,23 @@ pub fn apply_rules_file(
         }
     }
 
-    let board = ctx.board.take().expect("the board stays in the context");
+    let mut board = ctx.board.take().expect("the board stays in the context");
+    // PARITY(quirk, java_quirks.rules_matrix_trees_not_rebuilt): Java leaves
+    // compensated shapes cached against the old clearance matrix.
+    if let Some(old) = old_matrix {
+        let matrix = &board.rules.clearance_matrix;
+        let changed = old.class_count() != matrix.class_count()
+            || (0..matrix.class_count() as i32).any(|a| {
+                (0..matrix.class_count() as i32).any(|b| {
+                    (0..matrix.layer_count() as i32).any(|layer| {
+                        old.get_value(a, b, layer, false) != matrix.get_value(a, b, layer, false)
+                    })
+                })
+            });
+        if changed {
+            board.reinsert_tree_items();
+        }
+    }
     let log = board.log[log_start..]
         .iter()
         .map(|text| LogLine {

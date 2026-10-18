@@ -808,3 +808,39 @@ fn actionable_hints(
     }
     hints
 }
+
+#[cfg(test)]
+mod n06_tests {
+    use super::*;
+
+    #[test]
+    fn drc_units_switch_uses_the_actual_board_scale() {
+        let text = include_str!("../../../../fixtures/scoring-perfect-two-pin.dsn");
+        for resolution in [1, 10, 100] {
+            let text = text.replace(
+                "(resolution um 10)",
+                &format!("(resolution um {resolution})"),
+            );
+            let crate::io::specctra::BoardReadResult::Success { board, .. } =
+                crate::io::specctra::read_board_from_str(&text)
+            else {
+                panic!("fixture")
+            };
+            let mut board = *board;
+            for java in [true, false] {
+                board.set_java_quirks(
+                    crate::settings::JavaQuirks::JAVA
+                        .with("drc_units_10000_per_mm", java)
+                        .unwrap(),
+                );
+                let checker = DesignRulesChecker::new(&board);
+                let expected = if java {
+                    10000.0
+                } else {
+                    f64::from(resolution) * 1000.0
+                };
+                assert!((checker.board_units_per_mm() - expected).abs() < expected * 1e-12);
+            }
+        }
+    }
+}

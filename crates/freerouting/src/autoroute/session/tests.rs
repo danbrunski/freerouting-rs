@@ -232,20 +232,67 @@ fn a_door_whose_section_count_changes_loses_its_state() {
     let sections = s.section_segments(door, 10.0).unwrap().len();
     assert!(sections > 1);
     assert_eq!(s.door_section_reallocations(), 0);
-    s.door_sections_mut(door)[0].occupied = true;
-    // The same count keeps the state.
+    // Keep the historical test name as the regression entry point.
+    let expected = SectionState {
+        occupied: true,
+        backtrack: Some((ExpandableRef::Door(door), 0)),
+        room_ripped: true,
+        adjustment: doors::Adjustment::Right,
+        ripup_cost: 123,
+    };
+    s.door_sections_mut(door)[0] = expected.clone();
+    let object = ExpandableRef::Door(door);
+    let initial_slot = s.section_slot(object, 0).unwrap();
+    let initial_range = s.door(door).sections;
+    let initial_arena_len = s.sections.len();
+    // Another door's append cannot change the slot of this one.
+    let other = s.new_door_of_shapes(a, b).unwrap();
+    s.section_segments(other, 10.0).unwrap();
+    let other_states = s.door_sections(other).to_vec();
+    assert_eq!(s.section_slot(object, 0), Some(initial_slot));
+    assert!(s.sections.len() > initial_arena_len);
+    let arena_len = s.sections.len();
     assert_eq!(s.section_segments(door, 10.0).unwrap().len(), sections);
-    assert!(s.door_sections(door)[0].occupied);
+    assert_eq!(s.door(door).sections, initial_range);
+    assert_eq!(s.sections.len(), arena_len);
+    assert_eq!(s.door_sections(door)[0], expected);
     assert_eq!(s.door_section_reallocations(), 0);
-    // Another count replaces the sections (ExpansionDoor.java:193-201).
+    // Shrinking retains every field of surviving sections.
     let fewer = s.section_segments(door, 100.0).unwrap().len();
-    assert_ne!(fewer, sections);
+    assert!(fewer < sections);
     assert_eq!(s.door_section_reallocations(), 1);
     assert_eq!(s.door_sections(door).len(), fewer);
+    assert_eq!(s.door_sections(door)[0], expected);
+    // Expansion during a pop must occupy the NEW slot, not the old arena range.
+    s.door_sections_mut(door)[0].occupied = false;
+    let popped_slot = s.section_slot(object, 0).unwrap();
+    assert_eq!(s.section_segments(door, 10.0).unwrap().len(), sections);
+    assert_eq!(s.door_section_reallocations(), 2);
+    assert_ne!(s.section_slot(object, 0), Some(popped_slot));
+    assert!(!s.door_sections(door)[0].occupied);
+    s.occupy_current_section(object, 0);
+    assert_eq!(s.door_sections(door)[0], expected);
+    assert!(!s.slot_state(popped_slot).occupied);
     assert!(
-        !s.door_sections(door)[0].occupied,
-        "the occupied flag is lost"
+        s.door_sections(door)[fewer..]
+            .iter()
+            .all(|state| *state == SectionState::default())
     );
+    assert_eq!(s.door_sections(other), other_states);
+    // A popped section removed by a shrink must not occupy a different index.
+    s.door_sections_mut(door)[sections - 1] = expected.clone();
+    s.section_segments(door, 100.0).unwrap();
+    let retained = s.door_sections(door).to_vec();
+    s.occupy_current_section(object, sections - 1);
+    assert_eq!(s.door_sections(door), retained);
+    s.section_segments(door, 10.0).unwrap();
+    assert_eq!(s.door_sections(door)[sections - 1], SectionState::default());
+    // Emptying the range drops all states; a later allocation starts fresh.
+    s.allocate_sections(door, 0);
+    assert!(s.door_sections(door).is_empty());
+    s.occupy_current_section(object, 0);
+    s.allocate_sections(door, 1);
+    assert_eq!(s.door_sections(door), [SectionState::default()]);
 }
 
 /// Java's orthogonal calculation gives up on a room that is not a box

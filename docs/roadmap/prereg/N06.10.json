@@ -1,0 +1,141 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.10",
+  "registered": "2026-10-18",
+  "rule": "totals",
+  "question": "Do input and report fixes preserve registered routing sessions?",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "dsn_via_alias": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=false --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "dsn_class_class_pairs": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=false --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "dsn_shape_bbox": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=false --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "dsn_unit_ignored": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=false --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "ses_reader_scale": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=false --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "stats_line_ab_length": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=false --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "route_result_int_via_ratio": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=false --router.java_quirks.drc_units_10000_per_mm=true"
+    },
+    "drc_units_10000_per_mm": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=true --router.java_quirks.dsn_class_class_pairs=true --router.java_quirks.dsn_shape_bbox=true --router.java_quirks.dsn_unit_ignored=true --router.java_quirks.ses_reader_scale=true --router.java_quirks.stats_line_ab_length=true --router.java_quirks.route_result_int_via_ratio=true --router.java_quirks.drc_units_10000_per_mm=false"
+    },
+    "all": {
+      "engine": "freerouting-rs at the implementing commit",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy -mp 2 --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.dsn_via_alias=false --router.java_quirks.dsn_class_class_pairs=false --router.java_quirks.dsn_shape_bbox=false --router.java_quirks.dsn_unit_ignored=false --router.java_quirks.ses_reader_scale=false --router.java_quirks.stats_line_ab_length=false --router.java_quirks.route_result_int_via_ratio=false --router.java_quirks.drc_units_10000_per_mm=false"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "all",
+  "boards": {
+    "set": "tools/bench/sets/n06-i.txt",
+    "files": {
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5",
+      "fixtures/Issue676-ch32v-tx118s.dsn": "7270f70a8d1964801fc476826291a83d82d00bee00a346aea01fe55b2b63359e",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a"
+    }
+  },
+  "metrics": [
+    {
+      "name": "session_differences",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "route_result_zero_test_changes",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 4,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "Unit tests pin both behaviors of all eight switches.",
+    "Legacy reference_load, reference_optimize and kicad_parity keep Java values.",
+    "Issue676 round-trips with ses_reader_scale=false.",
+    "Sessions byte-identical across every arm. DSN counters identify each reached branch per board. Any reached branch requires totals measurement, with N02 hard guards, no board above twice its band and totals no worse than set noise.",
+    "route_result_zero_test_changes=0 in every run.",
+    "Complete canary-pwr through the plugin path, with no new real DRC, via-in-pad or below-minimum errors."
+  ],
+  "stop_rule": "One run per arm per board. No heavy run by implementer.",
+  "orchestrator": "Execute orchestrator_command serially; summary.json identifies DSN branches reached by each board and zero-test changes; perform the separate plugin grade.",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted"
+    ],
+    "noise": {
+      "fixtures/Issue026-J2_reference.dsn": 2,
+      "fixtures/Issue508-DAC2020_bm08.dsn": 2,
+      "fixtures/Issue676-ch32v-tx118s.dsn": 2,
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": 2
+    },
+    "min_boards": 4
+  },
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.10.json --out target/orchestrator/n06-i",
+  "corpus_counter_command": "N06_INPUT_COUNTERS_OUT=target/orchestrator/n06-i-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test n06_reachability dsn_corpus_branch_inventory -- --ignored --test-threads=1",
+  "legacy_optimizer_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test reference_optimize",
+  "noise_note": "The registered numeric bands are 2 per board, fixed before any results; the plugin grade uses N02 hard guards. Exact-session equality is an additional stricter guard.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the additional exact-session and reachability guards.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, original KiCad project matching canary 9511d9a; supplied by orchestrator; never edit the source project. The checked-in DSN run is additional batch evidence and does not replace this plugin run.",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN. Use the generated <stem>.args.json args verbatim, then append --router.profile=legacy and the arm's explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. The same exported input and plugin args serve every arm. Compare each session with the plugin baseline, not with the separate fixture-DSN run.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "Grade the imported copy with canary hardware/tools/grade.sh (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); N02 hard guards and no new real DRC; plugin kicad_unconnected total no worse than baseline plus canary noise 10, per board no rise above twice that band. Retain export/import logs, versions, source hashes and grades. If a matching original project is unavailable, leave this acceptance clause pending."
+  }
+}

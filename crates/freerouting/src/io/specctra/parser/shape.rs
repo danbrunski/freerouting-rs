@@ -156,6 +156,15 @@ impl DsnShape {
     /// `java_quirk` is `router.java_quirks.dsn_shape_bbox` (N06): `false` sorts a rectangle's coordinates, takes half a circle's diameter as
     /// its radius and adds a path's half width to each x.
     pub fn bounding_box_with(&self, java_quirk: bool) -> Option<[f64; 4]> {
+        if crate::run_stats::enabled()
+            && self.bounding_box_impl(true) != self.bounding_box_impl(false)
+        {
+            crate::run_stats::record_n06(crate::run_stats::Counter::DsnShapeBbox);
+        }
+        self.bounding_box_impl(java_quirk)
+    }
+
+    fn bounding_box_impl(&self, java_quirk: bool) -> Option<[f64; 4]> {
         let c = &self.coor;
         match self.kind {
             // PARITY(quirk, java_quirks.dsn_shape_bbox): Rectangle.java:25,

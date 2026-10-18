@@ -97,10 +97,22 @@ pub enum Counter {
     MazeBudgetExtensions,
     /// The units those extensions granted.
     MazeBudgetExtraUnits,
+    /// Restores requested for snapshots taken with clearance compensation on (N06.11).
+    CompensatedSnapshotRestores,
+    /// N06.10 reachability measurement.
+    DsnViaAlias,
+    /// N06.10 reachability measurement.
+    DsnClassClassPairs,
+    /// N06.10 reachability measurement.
+    DsnShapeBbox,
+    /// N06.10 reachability measurement.
+    DsnUnitIgnored,
+    /// N06.10 reachability measurement.
+    RouteResultZeroTestChanges,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 20] = [
+pub const COUNTERS: [Counter; 26] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -121,6 +133,12 @@ pub const COUNTERS: [Counter; 20] = [
     Counter::DoorSectionReallocations,
     Counter::MazeBudgetExtensions,
     Counter::MazeBudgetExtraUnits,
+    Counter::CompensatedSnapshotRestores,
+    Counter::DsnViaAlias,
+    Counter::DsnClassClassPairs,
+    Counter::DsnShapeBbox,
+    Counter::DsnUnitIgnored,
+    Counter::RouteResultZeroTestChanges,
 ];
 
 impl Counter {
@@ -147,6 +165,12 @@ impl Counter {
             Counter::DoorSectionReallocations => "door_section_reallocations",
             Counter::MazeBudgetExtensions => "maze_budget_extensions",
             Counter::MazeBudgetExtraUnits => "maze_budget_extra_units",
+            Counter::CompensatedSnapshotRestores => "compensated_snapshot_restores",
+            Counter::DsnViaAlias => "dsn_via_alias_reached",
+            Counter::DsnClassClassPairs => "dsn_class_class_pairs_reached",
+            Counter::DsnShapeBbox => "dsn_shape_bbox_reached",
+            Counter::DsnUnitIgnored => "dsn_unit_ignored_reached",
+            Counter::RouteResultZeroTestChanges => "route_result_zero_test_changes",
         }
     }
 }
@@ -480,6 +504,19 @@ pub fn counts_only(records: &[StageRecord]) -> Vec<(&'static str, u32, Counts)> 
         .collect()
 }
 
+/// Count an N06 branch when statistics are enabled, in either switch arm.
+pub(crate) fn record_n06(counter: Counter) {
+    if enabled() {
+        add(counter, 1);
+    }
+}
+
+pub(crate) fn record_compensated_snapshot_restore() {
+    if enabled() {
+        add(Counter::CompensatedSnapshotRestores, 1);
+    }
+}
+
 /// N06 reachability counters, carried through optimizer statistics capture.
 pub(crate) fn record_door_section_reallocation() {
     if enabled() {
@@ -515,6 +552,30 @@ mod tests {
         assert!(records[0].counts.get(Counter::TreeQueries) >= 2);
         assert!(records[0].counts.get(Counter::TreeWorkUnits) >= 9);
         assert!(Counts::now().get(Counter::TreeWorkUnits) >= 14);
+        reset();
+    }
+
+    #[test]
+    fn n06_via_ratio_counter_observes_the_actual_zero_test() {
+        let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        enable();
+        let result = crate::autoroute::item_route_result::ItemRouteResult::new(
+            crate::board::items::ItemId(1),
+            2,
+            1,
+            100.0,
+            200.0,
+            0,
+            0,
+        );
+        assert_eq!(result.improvement_percentage(), 0.0);
+        assert_ne!(
+            result.with_int_via_ratio(false).improvement_percentage(),
+            0.0
+        );
+        result.record_via_ratio_zero_test();
+        assert!(Counts::now().get(Counter::RouteResultZeroTestChanges) >= 1);
+        disable();
         reset();
     }
 

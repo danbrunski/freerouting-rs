@@ -96,6 +96,25 @@ impl ItemRouteResult {
         }
     }
 
+    /// Whether real division changes the optimizer's equality-to-zero test.
+    /// Observes both formulas without changing this result.
+    pub(crate) fn record_via_ratio_zero_test(&self) {
+        if crate::run_stats::enabled() {
+            let zero = |java| {
+                improvement_percentage(
+                    self.via_count_before,
+                    self.via_count_after,
+                    self.trace_length_before,
+                    self.trace_length_after,
+                    java,
+                ) == 0.0
+            };
+            if zero(true) != zero(false) {
+                crate::run_stats::record_n06(crate::run_stats::Counter::RouteResultZeroTestChanges);
+            }
+        }
+    }
+
     /// Ranks two results, better first (Java `compareTo`, `:69-90`): fewer
     /// incomplete connections after routing, then fewer vias after, then a
     /// shorter trace length after, then the lower item id.

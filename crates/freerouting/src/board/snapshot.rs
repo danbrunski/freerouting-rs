@@ -16,9 +16,11 @@
 //! journal off and an empty log. The rebuild order decides the tree shape and
 //! so the work counts of every later search (decision D5).
 //!
-//! A restore drops clearance compensation and every compensated tree, as
-//! Java's does, even when the GUI turned compensation on (kept on purpose in
-//! the parity phase; B00 open question 3).
+//! With `java_quirks.snapshot_drops_compensation` (the default), restores drop
+//! compensation as Java does. With it off, the snapshot stores and restores
+//! compensation on the rebuilt default tree; auxiliary trees remain transient.
+//! `compensated_snapshot_restores` counts every request taken with compensation
+//! on, including memo hits and explicit rebuilds, regardless of the switch.
 //!
 //! [`RoutingBoard::deep_copy`] is `snapshot().restore()` followed by
 //! [`RoutingBoard::clear_transient_autoroute_state`]. Java's copy also clears
@@ -105,6 +107,7 @@ pub struct BoardSnapshot {
     /// The board's `router.java_quirks.*` switches (N06), which a restored board
     /// and a deep copy keep.
     pub(crate) java_quirks: crate::settings::JavaQuirks,
+    pub(crate) clearance_compensation_used: bool,
 }
 
 /// The restore memo of a [`BoardSnapshot`] (P02.4).
@@ -133,14 +136,15 @@ impl BoardSnapshot {
     /// From the third restore of a snapshot (or of its clones) on, this
     /// clones the board the second one built (P02.4, module docs).
     pub fn restore(&self) -> RoutingBoard {
+        self.record_restore();
         if self.memo.restores.fetch_add(1, Ordering::Relaxed) == 0 {
-            return self.rebuild();
+            return self.rebuild_unrecorded();
         }
         // The memo keeps a clone, which holds no spare capacity; the restore
         // that fills it returns the board it built.
         let mut built = None;
         let memoized = self.memo.board.get_or_init(|| {
-            let board = self.rebuild();
+            let board = self.rebuild_unrecorded();
             let compact = board.clone();
             built = Some(board);
             compact
@@ -151,6 +155,17 @@ impl BoardSnapshot {
     /// [`restore`](Self::restore) without the memo: always builds the board
     /// from the item list.
     pub fn rebuild(&self) -> RoutingBoard {
+        self.record_restore();
+        self.rebuild_unrecorded()
+    }
+
+    fn record_restore(&self) {
+        if self.clearance_compensation_used {
+            crate::run_stats::record_compensated_snapshot_restore();
+        }
+    }
+
+    fn rebuild_unrecorded(&self) -> RoutingBoard {
         let mut board = RoutingBoard::from_basic(BasicBoard::from_snapshot(self));
         *board.failure_log_mut() = self.failure_log.clone();
         board

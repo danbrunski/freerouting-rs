@@ -232,7 +232,7 @@ These are marked or look like quirks but keep no bug:
     - The two geometry cutout rows were confirmed by hand: `Simplex.java:860` assigns
       `nextDivisionLine = prevDivisionLine`, and `IntOctagon.java`'s branch 3 rebuilds the
       octagon with its old `topY`.
-- [~] **N06.2 — The (a) fixes.** Fix the 12 (a) rows outright, each with a test of the
+- [x] **N06.2 — The (a) fixes.** Fix the 12 (a) rows outright, each with a test of the
   corrected value. Before fixing `door_section_realloc`, add a counter that the A14 run
   reports; the fix lands only if it reads 0. Correct the doc at `geometry/line.rs:495`: the overflow starts at ~46k units
   axis-aligned, ~32k only at 45°.
@@ -282,7 +282,7 @@ These are marked or look like quirks but keep no bug:
       java-failure 3/3 as listed; 0 D8 breaches added. `n06-counters.json`:
       `door_section_reallocations` = 0 over 118 boards. Summary:
       `target/orchestrator/n06-2/parity/summary.md`.
-    - [ ] `door_section_realloc`: the counter reads 0, so the fix may land. A change confined to
+    - [x] `door_section_realloc`: the counter reads 0, so the fix may land. A change confined to
       the reallocation branch of `allocate_sections` cannot change any A14 session, since that
       branch never runs there, so it needs its unit test, not another A14 run. N06.2 is
       ticked when it lands.
@@ -294,6 +294,32 @@ These are marked or look like quirks but keep no bug:
           needs a short argument that without a reallocation the resolution gives the same
           slot as today.
         - If that argument is in any doubt, rerun A14 with the command above.
+  - *Done 2026-10-18:* final door fix in worktree `target/orchestrator/codex-n06`, branch
+    `codex/n06-door` (from `origin/main` at `7a4f73b`). The A14 prerequisite above was also
+    checked against `target/orchestrator/n06-2/parity/n06-counters.json`: 0 over 118 boards.
+    - `allocate_sections` preserves all fields of the surviving prefix, initializes newly
+      added sections and drops removed sections. All changed executable allocation lines
+      are inside the existing `len != 0` branch; initial allocation and same-count reuse
+      follow the original paths. The counter is retained.
+    - Queue-pop occupation now calls `occupy_current_section`, resolving the surviving
+      section after expansion. **No-reallocation argument:** a popped door already has
+      a nonempty range. Its `(start, len)` can change only in the counted reallocation
+      branch, so with zero reallocations the second lookup returns exactly the original
+      `SectionSlot::Flat(start + section)`. Appending other objects does not move arena
+      indices. Drill ranges and target-door slots are stable during a pop; drill-page
+      pops return before this occupation write. Removed indices can be skipped only
+      after a reallocation. Thus the new lookup writes the same field of the same slot
+      on every no-reallocation execution, with the same queue order and work budget.
+      `path/locate45.rs` is unchanged. No further A14 is needed under this dispatch's rule.
+    - Regression (historical name retained):
+      `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test -p freerouting --lib a_door_whose_section_count_changes_loses_its_state`:
+      **1 passed**, 307 filtered out. Covers complete state retention, stable reuse slots,
+      appends for another door, shrink/grow/defaults, occupation of the current rather
+      than obsolete range, removed indices, and emptying/reallocating a range.
+      Log (relative to the worktree): `target/orchestrator/n06-door/unit.log`.
+    - Additional checks passed: `cargo fmt --all --check`,
+      `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo clippy -p freerouting --lib -- -D warnings`,
+      `git diff --check`, and `python3 tools/roadmap/checklists.py status --strict`.
 - [~] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
   that might be fixed, and the `JavaQuirks` value carried as the decisions say. Wire each
   switch to its site, keeping Java's code path when the switch is `true`.
@@ -303,8 +329,14 @@ These are marked or look like quirks but keep no bug:
       `true` half);
     - the keys round-trip through a settings file and `--router.java_quirks.<id>=false`;
     - the board's quirks survive `deep_copy` and snapshot restore.
-  - *Partial 2026-10-18:* the plumbing, 26 of the 42 read sites, and the tests below. Heavy
-    run pending: the A14 exact set with every switch `true` (the command in A14's done note).
+  - *Partial 2026-10-18:* the plumbing, 26 of the 42 read sites, and the tests below. N06.10
+    and N06.11 wired six more (`dsn_unit_ignored` and the five U rows); the G and (c) read
+    sites below remain.
+    - [x] A14 with every switch `true` (orchestrator, 2026-10-18): full A14 on origin/main
+      `7a4f73b` (release, `--test-threads=1`, `PARITY_SUBDIRS=1`; log
+      `target/orchestrator/heavy/a14-7a4f73b.log`): 1 passed, 138 boards (120 exact, 15 cutoff,
+      3 Java failures), every SES byte-identical except the known Issue684 and Issue721
+      (expected), Issue110-RelayModule (non-ASCII name only) and the Java-failure boards.
     - [x] The switches: 42 `opt` bool keys in a `java_quirks` section of `settings/fields.rs`
       (31 (b) + 11 (c), the inventory's ids and order), unset = `true` = Java in both profiles,
       so Java's settings dump and `legacy` are unchanged and `ENHANCED` stays empty.
@@ -332,7 +364,7 @@ These are marked or look like quirks but keep no bug:
       `any_angle_skip_length_squared`, `route_connect_inner_break`. Each carries
       `// PARITY(quirk, java_quirks.<id>):`; every older `PARITY(quirk)` marker of a (b)/(c) row
       got its id (the (a) rows' markers are N06.2's).
-    - [ ] Read sites deferred (16; the switch exists and reaches the code, `false` changes
+    - [ ] Read sites deferred (16, now 10 after N06.10 and N06.11 wired theirs; the switch exists and reaches the code, `false` changes
       nothing yet, and its doc line says so): `simplex_prev_division_line`,
       `octagon_box_cutout_branch3` (both reach the cutouts, N06.4 writes the fixes after its
       invariant test; the search tree's area shapes in `board/search/mod.rs` still call
@@ -469,7 +501,7 @@ These are marked or look like quirks but keep no bug:
         arm should give the same session. The registration records `optimizer_bypassed` per
         row. The claim that batch O "most likely moves canary-pwr" holds only where the
         router completes.
-- [ ] **N06.10 — Batch I, inputs and reports:** the five DSN and SES rows, `stats_line_ab_length`,
+- [~] **N06.10 — Batch I, inputs and reports:** the five DSN and SES rows, `stats_line_ab_length`,
   `route_result_int_via_ratio`, `drc_units_10000_per_mm`.
   - **Accept:**
     - a unit test of both behaviours for each;
@@ -481,7 +513,40 @@ These are marked or look like quirks but keep no bug:
     - with every fix of the batch on, every registered board's session is byte-identical, and a
       counter shows how often `route_result_int_via_ratio` changes the `== 0.0` test (expected:
       never).
-- [ ] **N06.11 — Batch U, GUI and interactive:** `snapshot_drops_compensation` (the snapshot
+  - *Partial 2026-10-18:* Code and both-behavior tests complete. DSN units now
+    honor PCB coordinate units and placement units (precision is not a coordinate
+    multiplier); the other seven switches' implementations are exercised by
+    `via_alias_switch_keeps_first_class_vias_separate`,
+    `class_class_switch_applies_all_three_pairs`,
+    `bounding_box_switch_both_behaviours`,
+    `pcb_unit_and_placement_resolution_switch_use_physical_units`,
+    `issue676_round_trips_with_reader_scale_fixed`,
+    `trace_length_statistics_both_behaviours`,
+    `route_result_via_ratio_both_behaviours`, and
+    `drc_units_switch_uses_the_actual_board_scale` (all passed).
+    `run_stats::tests::n06_via_ratio_counter_observes_the_actual_zero_test`
+    pins a positive zero-test difference; the isolated `n06_reachability` test
+    observes all four DSN counters in both arms. The actual optimizer reader
+    counts adopted winners while increased ripup costs are active.
+    Release gate: 418 tests passed across the engine lib, `board_snapshot`,
+    `interactive_editor`, `interactive_route`, `kicad_parity`, `n06_inputs`,
+    `n06_reachability`, `reference_load`, `reference_shove_insert`, `rules_reader`,
+    `ses_round_trip`, and `settings_java_quirks`; 5 intentional ignores.
+    `reference_optimize::candidate_order_matches_java` also passed. Full
+    `reference_optimize` reroutes candidates/boards, so it is reserved for the
+    orchestrator. Clippy for engine/CLI all targets, formatting and checklist
+    validation passed. Defaults remain Java in both profiles.
+    Registration: `prereg/N06.10.json` and `tools/bench/sets/n06-i.txt`, baseline,
+    each fix alone and all fixes; includes plugin canary export/import procedure.
+    heavy run pending: `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.10.json --out target/orchestrator/n06-i`.
+    Also run the corpus counter inventory (reads only):
+    `N06_INPUT_COUNTERS_OUT=target/orchestrator/n06-i-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test n06_reachability dsn_corpus_branch_inventory -- --ignored --test-threads=1`,
+    then the optimizer reference gate:
+    `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test reference_optimize`.
+    Check per-board DSN reachability, byte-identical sessions and zero
+    `route_result_zero_test_changes`; complete the separate plugin canary run
+    and grade before accepting or promoting. Any reached DSN fix needs N02 totals.
+- [~] **N06.11 — Batch U, GUI and interactive:** `snapshot_drops_compensation` (the snapshot
   stores the compensation flag), `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`,
   `route_change_layer_no_via`, `route_connect_inner_break`, `select_extension_ignores_filter`.
   The GUI's profile selector (N01) reaches them.
@@ -489,6 +554,24 @@ These are marked or look like quirks but keep no bug:
     - a test of both behaviours for each (kittest where it is a GUI flow);
     - a counter shows that a batch run over the registered set never restores a snapshot with
       compensation on. The other five are interactive code that batch runs never call.
+  - *Partial 2026-10-18:* All six switches now have both-behavior tests:
+    `snapshot_compensation_switch_including_memo_restores`,
+    `rules_matrix_refresh_switch_updates_compensated_shapes`,
+    `move_drill_item_finite_tidy_skips_pull_tight`,
+    `layer_change_without_spanning_via_quirk`,
+    `failed_first_corner_pair_switch_stops_disconnected_second_leg`, and
+    `extension_filter_switch_exits_empty_inspection` passed. The isolated
+    `n06_reachability` test pins compensated-restore counting including memo hits
+    and explicit rebuilds (10 requests across both arms). Snapshot, selection,
+    rules, drill and layer tests ran in release; the private connection test ran
+    with `cargo test -p freerouting --lib failed_first_corner_pair_switch`.
+    Registration: `prereg/N06.11.json`, `tools/bench/sets/n06-u.txt`, baseline,
+    each fix alone and all fixes; defaults remain Java in both profiles.
+    heavy run pending: `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.11.json --out target/orchestrator/n06-u`.
+    Check every run's `compensated_snapshot_restores` for zero and complete the
+    separate canary-pwr plugin grade before accepting or promoting. The final
+    release gate above also covers every U regression and legacy interactive
+    comparison; no new UI code is involved (the GUI delegates to these engine APIs).
 - [ ] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
   its row.
   - `ripup_pass_no_unset` gets its own registration.

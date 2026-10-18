@@ -156,7 +156,7 @@ fn move_drill_item_finite_tidy_skips_pull_tight() {
     for id in board.traces().into_iter().chain(vias.iter().copied()) {
         board.set_fixed_state(id, FixedState::Unfixed);
     }
-    let (mut moves, mut pulled) = (0, 0);
+    let (mut moves, mut pulled, mut fixed_pulled) = (0, 0, 0);
     for via in vias {
         for (dx, dy) in [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1)] {
             let vector = Vector::Int(IntVector {
@@ -183,6 +183,16 @@ fn move_drill_item_finite_tidy_skips_pull_tight() {
                 item_dump::dump(&plain),
                 "via {via:?} by ({dx}, {dy}): a finite tidy width must not pull tight"
             );
+            let mut fixed = board.clone();
+            fixed.set_java_quirks(
+                freerouting::settings::JavaQuirks::JAVA
+                    .with("move_drill_tidy_region", false)
+                    .unwrap(),
+            );
+            assert!(fixed.move_drill_item(via, &vector, 20, 8, 1000, 500, 0));
+            if item_dump::dump(&fixed) != item_dump::dump(&plain) {
+                fixed_pulled += 1;
+            }
             moves += 1;
             if item_dump::dump(&unbounded) != item_dump::dump(&plain) {
                 pulled += 1;
@@ -190,7 +200,7 @@ fn move_drill_item_finite_tidy_skips_pull_tight() {
         }
     }
     assert!(
-        moves > 0 && pulled > 0,
+        moves > 0 && pulled > 0 && fixed_pulled > 0,
         "moves {moves}, pulled tight {pulled}"
     );
 }

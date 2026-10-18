@@ -1,0 +1,4 @@
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+fixtures/Issue676-ch32v-tx118s.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn

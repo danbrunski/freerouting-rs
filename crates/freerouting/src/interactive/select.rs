@@ -19,7 +19,8 @@
 //! - After the filter of an extension Java ignores the filter's result and
 //!   stays in the inspect state, so the selection may be empty there
 //!   (`extentToWholeNets` returns `this` after `filter()`). Only an empty set
-//!   *before* the filter leaves the state.
+//!   *before* the filter leaves the state. Disabling
+//!   `java_quirks.select_extension_ignores_filter` also exits after the filter.
 //! - [`select_in_region`]: `overlapping_items` of the box on layer −1 with
 //!   "select on all visible layers", else the current layer, through the
 //!   filter; with all visible layers the items on no visible layer are
@@ -100,7 +101,7 @@ pub fn extend_to_nets(
         .into_iter()
         .flat_map(|net| board.connectable_items(net))
         .collect();
-    (!items.is_empty()).then(|| filter.filter(board, &items))
+    extension_filter(board, items, filter)
 }
 
 /// Java `extentToWholeComponents` (no filter afterwards).
@@ -132,7 +133,7 @@ pub fn extend_to_connected_sets(
         .filter(|id| is_connectable(board, **id))
         .flat_map(|id| board.connected_set(*id, -1, false))
         .collect();
-    (!items.is_empty()).then(|| filter.filter(board, &items))
+    extension_filter(board, items, filter)
 }
 
 /// Java `extentToWholeConnections`.
@@ -146,7 +147,21 @@ pub fn extend_to_connections(
         .filter(|id| is_connectable(board, **id))
         .flat_map(|id| board.connection_items(*id, StopConnectionOption::None))
         .collect();
-    (!items.is_empty()).then(|| filter.filter(board, &items))
+    extension_filter(board, items, filter)
+}
+
+fn extension_filter(
+    board: &BasicBoard,
+    items: BTreeSet<ItemId>,
+    filter: &ItemFilter,
+) -> Option<BTreeSet<ItemId>> {
+    if items.is_empty() {
+        return None;
+    }
+    let items = filter.filter(board, &items);
+    // PARITY(quirk, java_quirks.select_extension_ignores_filter): Java ignores
+    // the return state of filter(). The fixed arm exits an empty inspection.
+    (board.java_quirks().select_extension_ignores_filter || !items.is_empty()).then_some(items)
 }
 
 /// One of the four extensions.

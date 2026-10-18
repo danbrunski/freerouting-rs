@@ -11,8 +11,8 @@
 //!
 //! The maze search state of a door is one [`SectionState`] per section, in
 //! the session's flat section array. `section_segments` allocates the
-//! sections; when their count changes, the door gets new ones and the old
-//! state is lost, as Java replaces `sectionArr` (`:193-201`).
+//! sections. N06.2 preserves the state of surviving section indices when
+//! their count changes; newly added sections start with default state.
 
 use freerouting_geometry::jmath::d2i;
 use freerouting_geometry::{FloatLine, Point, PolylineShapeOps, Simplex, TileShape, TileShapeOps};
@@ -178,10 +178,18 @@ impl Session<'_> {
         if len != 0 {
             self.door_section_reallocations += 1;
             crate::run_stats::record_door_section_reallocation();
+            // PARITY(quirk): ExpansionDoor.java:197 loses the old states.
+            // N06.2: keep surviving indices; only new sections start fresh.
+            let (old_start, _) = self.door(door).sections;
+            let start = self.sections.len() as u32;
+            let retained = (len as usize).min(count);
+            self.sections
+                .extend_from_within(old_start as usize..old_start as usize + retained);
+            self.sections
+                .resize_with(start as usize + count, SectionState::default);
+            self.doors[door.0 as usize].sections = (start, count as u32);
+            return;
         }
-        // PARITY(quirk): ExpansionDoor.java:197 replaces the section array
-        // when the count differs, so the occupation and backtrack state of
-        // the old sections are lost.
         let start = self.sections.len() as u32;
         self.sections
             .resize_with(self.sections.len() + count, SectionState::default);

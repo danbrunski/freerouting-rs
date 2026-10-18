@@ -21,7 +21,10 @@
 //! each neckdown try and for each corner pair of a target connection, and the
 //! 2000 nominal ms pull-tight limit. The clock is never read.
 //!
-//! Kept Java quirks (DIVERGENCES, "Java bugs kept on purpose"):
+//! The following Java quirks are switchable through `java_quirks`
+//! (`route_change_layer_no_via` and `route_connect_inner_break`, respectively);
+//! disabling them rejects a missing via and stops at the first blocked pair.
+//! Defaults preserve Java (DIVERGENCES, "Java bugs kept on purpose"):
 //! - a layer change without a via of the rule spanning both layers "succeeds"
 //!   (`Route.changeLayer` returns true without changing the route's layer),
 //!   and the session still switches its current layer and takes a snapshot
@@ -822,4 +825,58 @@ fn angled_connection(board: &RoutingBoard, from: IntPoint, to: IntPoint) -> Vec<
     corners.extend(corner);
     corners.push(to);
     corners
+}
+
+#[cfg(test)]
+mod n06_tests {
+    use super::*;
+    use crate::board::structure::FixedState;
+    use crate::interactive::EditSettings;
+    use freerouting_geometry::{IntBox, Shape};
+
+    #[test]
+    fn failed_first_corner_pair_switch_stops_disconnected_second_leg() {
+        let text = include_str!("../../../../fixtures/scoring-perfect-two-pin.dsn");
+        for java in [true, false] {
+            let crate::io::specctra::BoardReadResult::Success { board, .. } =
+                crate::io::specctra::read_board_from_str(text)
+            else {
+                panic!("fixture")
+            };
+            let mut board = *board;
+            board.set_java_quirks(
+                crate::settings::JavaQuirks::JAVA
+                    .with("route_connect_inner_break", java)
+                    .unwrap(),
+            );
+            board
+                .rules
+                .set_trace_angle_restriction(AngleRestriction::NinetyDegree);
+            let from = IntPoint::new(10000, 10000);
+            let to = IntPoint::new(40000, 40000);
+            let corners = angled_connection(&board, from, to);
+            assert_eq!(corners.len(), 3);
+            let corner = corners[1];
+            // Cover the start of the first pair, leaving the added corner and
+            // second pair clear. The first insert must return unchanged.
+            board.insert_obstacle(
+                Area::from(Shape::from(IntBox::new(9000, 9000, 11000, 11000))),
+                0,
+                0,
+                FixedState::UserFixed,
+            );
+            let settings = EditSettings::for_board(&board);
+            let mut route = RouteSession::make_space(&board, &settings, from.to_float());
+            route.depths = ShoveDepths::for_push(false);
+            route.net_numbers = vec![1];
+            board.generate_snapshot();
+            assert!(!route.connect(&mut board, from, to, RouteBudget::UNLIMITED));
+            assert_eq!(route.prev_corner, from);
+            assert_eq!(
+                !board.traces().is_empty(),
+                java,
+                "second pair {corner:?} -> {to:?}"
+            );
+        }
+    }
 }

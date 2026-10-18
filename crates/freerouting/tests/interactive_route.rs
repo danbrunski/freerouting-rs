@@ -529,27 +529,41 @@ fn cancel_removes_tail_only() {
 /// the route state still moves the current layer and takes a snapshot.
 #[test]
 fn layer_change_without_spanning_via_quirk() {
-    let mut board = j2();
-    let (start, _) = j2_start_and_target(&mut board);
-    let settings = EditSettings::for_board(&board);
-    let (mut session, info) = RouteSession::start(&mut board, &settings, start).expect("start");
-    let rule = info.params.via_rule.expect("J2 has a via rule");
-    // a via rule whose vias span no layer pair: clear it
-    let vias: Vec<_> = board.rules.via_rules.get(rule).vias().to_vec();
-    for via in vias {
-        board.rules.via_rules.get_mut(rule).remove_via(via);
+    for java in [true, false] {
+        let mut board = j2();
+        board.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("route_change_layer_no_via", java)
+                .unwrap(),
+        );
+        let (start, _) = j2_start_and_target(&mut board);
+        let settings = EditSettings::for_board(&board);
+        let (mut session, info) = RouteSession::start(&mut board, &settings, start).expect("start");
+        let rule = info.params.via_rule.expect("J2 has a via rule");
+        // a via rule whose vias span no layer pair: clear it
+        let vias: Vec<_> = board.rules.via_rules.get(rule).vias().to_vec();
+        for via in vias {
+            board.rules.via_rules.get_mut(rule).remove_via(via);
+        }
+        let items_before = item_dump::dump(&board);
+        let depth_before = undo_depth(&board);
+        let to = next_signal_layer(&board, session.current_layer());
+        assert_ne!(to, session.layer());
+        let (change, status) = session.change_layer(&mut board, to, RouteBudget::JAVA);
+        if !java {
+            assert!(matches!(change, LayerChange::Failed { .. }));
+            assert_eq!(session.current_layer(), info.layer);
+            assert_eq!(undo_depth(&board), depth_before);
+            assert_eq!(item_dump::dump(&board), items_before);
+            continue;
+        }
+        assert_eq!(change, LayerChange::Changed { via: false });
+        assert_eq!(session.layer(), info.layer, "the route stays on its layer");
+        assert_eq!(session.current_layer(), to, "the current layer moves");
+        assert_eq!(undo_depth(&board), depth_before + 1, "a snapshot is taken");
+        assert_eq!(item_dump::dump(&board), items_before, "no via");
+        assert_eq!(status.expect("status").key, "layer_changed_to_message");
     }
-    let items_before = item_dump::dump(&board);
-    let depth_before = undo_depth(&board);
-    let to = next_signal_layer(&board, session.current_layer());
-    assert_ne!(to, session.layer());
-    let (change, status) = session.change_layer(&mut board, to, RouteBudget::JAVA);
-    assert_eq!(change, LayerChange::Changed { via: false });
-    assert_eq!(session.layer(), info.layer, "the route stays on its layer");
-    assert_eq!(session.current_layer(), to, "the current layer moves");
-    assert_eq!(undo_depth(&board), depth_before + 1, "a snapshot is taken");
-    assert_eq!(item_dump::dump(&board), items_before, "no via");
-    assert_eq!(status.expect("status").key, "layer_changed_to_message");
 }
 
 /// I01.4: a layer change with a spanning via inserts it, moves both layers

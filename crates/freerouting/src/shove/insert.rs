@@ -29,7 +29,8 @@
 //!
 //! Kept Java quirk: `DrillItemMover.insert` unions the translated shapes into
 //! its own copy of the tidy region (`tidyRegion = tidyRegion.union(..)`), so
-//! the caller's region never grows; the port computes nothing there (see
+//! the caller's region never grows. With `java_quirks.move_drill_tidy_region`
+//! off, the insertion returns that union through a mutable region (see
 //! [`RoutingBoard::move_drill_item`](crate::board::RoutingBoard)).
 
 use std::collections::BTreeSet;
@@ -320,13 +321,31 @@ impl TraceShover<'_> {
     /// or a shove failed (the board may then be damaged).
     ///
     /// Java's tidy region argument is only grown in the callee's copy, so
-    /// it is not ported (module docs).
+    /// the public wrapper discards it. `move_drill_item` uses the internal
+    /// mutable-region variant when its quirk is disabled (module docs).
     pub fn insert_drill_item_move(
         &mut self,
         drill: ItemId,
         vector: &Vector,
         max_recursion_depth: i32,
         max_via_recursion_depth: i32,
+    ) -> bool {
+        self.insert_drill_item_move_with_region(
+            drill,
+            vector,
+            max_recursion_depth,
+            max_via_recursion_depth,
+            None,
+        )
+    }
+
+    pub(crate) fn insert_drill_item_move_with_region(
+        &mut self,
+        drill: ItemId,
+        vector: &Vector,
+        max_recursion_depth: i32,
+        max_via_recursion_depth: i32,
+        mut tidy_region: Option<&mut freerouting_geometry::IntOctagon>,
     ) -> bool {
         let Some(item) = self.board.item(drill) else {
             return false;
@@ -359,6 +378,11 @@ impl TraceShover<'_> {
                     None => continue,
                 }
             };
+            if let Some(region) = tidy_region.as_deref_mut()
+                && let Some(octagon) = tile.bounding_octagon()
+            {
+                *region = region.union_octagon(&octagon);
+            }
             let from_side = ShapeEntrySide::from_point(&Point::Int(center), &tile);
             if !self.forced_pad(
                 &tile,

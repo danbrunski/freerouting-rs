@@ -29,6 +29,7 @@ use freerouting::dsn::ast::RulesFile;
 use freerouting::io::specctra::{RulesOutcome, apply_rules_file, read_rules};
 use freerouting::job::prepare::{JobInput, RulesChoice, find_rules_file, prepare_job};
 use freerouting::settings::{ResolveContext, RouterSettings, parse_cli_arguments};
+use freerouting_geometry::PolylineShapeOps;
 use freerouting_geometry::jmath::round_to_i32;
 
 fn repo(path: &str) -> PathBuf {
@@ -600,4 +601,39 @@ fn an_explicit_rules_file_is_applied_by_prepare_job() {
         "{:?}",
         job.log
     );
+}
+
+#[test]
+fn rules_matrix_refresh_switch_updates_compensated_shapes() {
+    for java in [true, false] {
+        let mut board = board("Issue029-hw48na.dsn");
+        board.set_clearance_compensation_used(true);
+        board.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("rules_matrix_trees_not_rebuilt", java)
+                .unwrap(),
+        );
+        let shapes = |b: &RoutingBoard| {
+            b.items()
+                .map(|item| {
+                    b.search_trees()
+                        .default_tree()
+                        .tree_shapes(item, &b.shape_context())
+                        .iter()
+                        .map(|s| s.as_ref().map(|s| s.bounding_box()))
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>()
+        };
+        let before = shapes(&board);
+        let (board, _) = read(board, "(rules PCB test (rule (clear 3333.3)))", "test");
+        let mut rebuilt = board.clone();
+        rebuilt.reinsert_tree_items();
+        assert_ne!(
+            before,
+            shapes(&rebuilt),
+            "the fixture must exercise compensation"
+        );
+        assert_eq!(shapes(&board), if java { before } else { shapes(&rebuilt) });
+    }
 }

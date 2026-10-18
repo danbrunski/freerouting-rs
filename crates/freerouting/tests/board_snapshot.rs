@@ -278,3 +278,45 @@ fn failure_log_rolls_back_with_snapshot() {
     assert_eq!(restored.failure_log().failure_count(id), 1);
     assert_eq!(board.deep_copy().failure_log(), board.failure_log());
 }
+
+#[test]
+fn snapshot_compensation_switch_including_memo_restores() {
+    for java in [true, false] {
+        let mut board = two_pin_board();
+        board.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("snapshot_drops_compensation", java)
+                .unwrap(),
+        );
+        for compensated in [false, true] {
+            board.set_clearance_compensation_used(compensated);
+            let snapshot = board.snapshot();
+            let expected = compensated && !java;
+            for copy in [
+                board.deep_copy(),
+                snapshot.rebuild(),
+                snapshot.restore(),
+                snapshot.restore(),
+                snapshot.restore(),
+            ] {
+                assert_eq!(
+                    copy.search_trees().is_clearance_compensation_used(),
+                    expected
+                );
+                assert_eq!(
+                    copy.search_trees()
+                        .default_tree()
+                        .compensated_clearance_class(),
+                    i32::from(expected)
+                );
+                let mut rebuilt = copy.clone();
+                rebuilt.reinsert_tree_items();
+                assert_eq!(
+                    tree_shape(copy.search_trees().default_tree()),
+                    tree_shape(rebuilt.search_trees().default_tree())
+                );
+            }
+            assert!(snapshot.is_memoized());
+        }
+    }
+}

@@ -1585,3 +1585,41 @@ fn a_logical_part_survives_an_undo() {
     assert!(board.undo(None));
     assert_eq!(board.swappable_pins(pin).len(), 14);
 }
+
+#[test]
+fn extension_filter_switch_exits_empty_inspection() {
+    for java in [true, false] {
+        let mut board = j2_with_part();
+        board.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("select_extension_ignores_filter", java)
+                .unwrap(),
+        );
+        let pin = pin_id(&board, pin_at(&board, "U1", "2"));
+        let item = board.item(pin).unwrap();
+        let from = item.drill().unwrap().center;
+        let net = item.net_numbers()[0];
+        let to = freerouting::geometry::IntPoint::new(from.x + 1000, from.y);
+        let line = freerouting::geometry::Polyline::from_points(&[from.into(), to.into()]);
+        let trace = board
+            .insert_trace_without_cleaning(line, 0, 10, &[net], 0, FixedState::Unfixed)
+            .unwrap();
+        let selection = [trace].into();
+        let traces = ItemFilter::only(freerouting::board::SelectableChoice::Vias);
+        for extent in [Extent::Nets, Extent::ConnectedSets, Extent::Connections] {
+            assert_eq!(
+                select::extend(&board, &selection, extent, &traces),
+                java.then(BTreeSet::new)
+            );
+            assert!(
+                select::extend(&board, &selection, extent, &ItemFilter::default())
+                    .is_some_and(|s| s.contains(&trace))
+            );
+        }
+        assert!(
+            select::extend(&board, &[pin].into(), Extent::Components, &traces)
+                .unwrap()
+                .contains(&pin)
+        );
+    }
+}

@@ -402,6 +402,9 @@ impl Loop<'_, '_> {
             *board = winner;
             self.replaced(board);
             self.progress(board, pass, false);
+            if self.use_increased_ripup_costs {
+                result.record_via_ratio_zero_test();
+            }
             route_improved = result.improvement_percentage();
             evaluation.winner_result = Some(result);
         }

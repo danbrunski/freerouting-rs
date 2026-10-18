@@ -152,7 +152,9 @@ impl RouteSession {
         }
         let (min_layer, max_layer) = (self.layer.min(to), self.layer.max(to));
         let vias: Vec<_> = board.rules.via_rules.get(rule).vias().to_vec();
-        let mut result = true;
+        // PARITY(quirk, java_quirks.route_change_layer_no_via): no spanning via
+        // must fail in the fixed arm, including an empty via rule.
+        let mut result = board.java_quirks().route_change_layer_no_via;
         let mut via_found = false;
         for id in vias {
             let info = board.rules.via_infos.get(id).clone();

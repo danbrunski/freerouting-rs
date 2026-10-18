@@ -880,9 +880,16 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 - Java bug fixed outright in N06.2: rebuilding a via rule resets the layer radii and
   maximum radius before computing costs (`control_rebuild_resets_the_via_radii`).
   Java retained radii from larger rules; routing's rebuilds only grow the rule.
-- N06.2 leaves `door_section_realloc` unchanged until the orchestrator's A14 run reports
-  zero `door_section_reallocations`. `PARITY_N06_COUNTERS=1` writes that counter in
-  `n06-counters.json`; the existing state-loss test also pins the counter.
+- Java bug fixed outright in N06.2: resizing a door's section range preserves every field
+  of surviving section indices, initializes new indices, and drops removed ones. Queue-pop
+  occupation resolves the current range, so it cannot write to an obsolete allocation.
+  `a_door_whose_section_count_changes_loses_its_state` retains its historical name and now
+  tests the correction, including shrink/grow, another door's storage, removed sections,
+  and the post-expansion occupation write. The orchestrator measured zero reallocations
+  over 118 A14 boards. Without reallocation the range and section index stay unchanged,
+  so the post-expansion lookup selects the exact same arena slot as the saved pop slot;
+  drill ranges and target slots are stable, and drill-page pops return before this write.
+  Both profiles get this correction. `PARITY_N06_COUNTERS=1` still reports reallocations.
 
 **Interactive routing** (`interactive`, I01, port of `gui.interactive.Route`, `RouteState`,
 `DynamicRouteState`, `StitchRouteState` and `GuiBoardRoutingSettings`; tests
@@ -1423,3 +1430,65 @@ checks that this list and the table agree.
   tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice and CM5_MINIMA_3 (set noise
   42.70; canary-pwr 36 → 41), net-class via clearance errors 2 → 1 (canary-pwr's `+12V_PROT`
   via 1 → 0), no via in a pad, copper below the minimum or power-layer trace.
+
+**N06.11 interactive fixes (explicit opt-in; promotion pending)**
+
+All six switches still default to `true` in both profiles. Setting the named
+`router.java_quirks` key to `false` selects these corrections instead of the
+kept Java behavior documented above:
+- `snapshot_drops_compensation`: snapshots capture the compensation flag and
+  restore the default tree with that flag, including memoized restores. Auxiliary
+  trees remain transient. `snapshot_compensation_switch_including_memo_restores`.
+- `rules_matrix_trees_not_rebuilt`: rules application rebuilds the trees against
+  the updated matrix. `rules_matrix_refresh_switch_updates_compensated_shapes`.
+- `move_drill_tidy_region`: drill insertion returns the union of translated pad
+  bounds to the caller, enabling finite clipped pull-tight after the move.
+  `move_drill_item_finite_tidy_skips_pull_tight` tests both arms.
+- `route_change_layer_no_via`: a rule without a spanning via fails without
+  switching the editor layer or adding a snapshot. `layer_change_without_spanning_via_quirk`.
+- `route_connect_inner_break`: the first failed corner pair stops the connection;
+  no disconnected second leg is drawn.
+  `failed_first_corner_pair_switch_stops_disconnected_second_leg`.
+- `select_extension_ignores_filter`: an empty filtered extension exits inspection,
+  matching an explicit filter operation. Components still bypass the filter.
+  `extension_filter_switch_exits_empty_inspection`.
+
+`run_stats` counts every `compensated_snapshot_restores` request even in the Java
+arm and on memo hits. Registered batch evidence and plugin canary grading remain
+pending under N06.11; these changes do not promote any enhanced defaults.
+
+**N06.10 input and report fixes (explicit opt-in; promotion pending)**
+
+All eight `router.java_quirks` switches still default to `true` in both profiles.
+With the named switch `false`:
+- `dsn_via_alias` copies the first class's via names; later classes cannot add
+  vias to its rule (`via_alias_switch_keeps_first_class_vias_separate`).
+- `dsn_class_class_pairs` applies every unordered pair of known classes
+  (`class_class_switch_applies_all_three_pairs`).
+- `dsn_shape_bbox` sorts rectangle bounds, uses half the circle diameter and
+  applies path half-width once to each coordinate extent
+  (`bounding_box_switch_both_behaviours`).
+- `dsn_unit_ignored` honors the PCB coordinate unit, converts the resolution to
+  preserve its physical grid, and converts placement positions from a declared
+  placement unit to the PCB unit. Placement precision is not a coordinate multiplier;
+  package-local geometry remains in PCB units
+  (`pcb_unit_and_placement_resolution_switch_use_physical_units`).
+- `ses_reader_scale` multiplies by the writer's divisor, making import the inverse
+  of export even when overflow reduced the board scale
+  (`issue676_round_trips_with_reader_scale_fixed`).
+- `stats_line_ab_length` sums actual trace segments instead of defining points of
+  lines (`trace_length_statistics_both_behaviours`).
+- `route_result_int_via_ratio` divides via counts as real numbers
+  (`route_result_via_ratio_both_behaviours`). The optimizer's actual equality-to-zero
+  reader counts differences between both formulas while increased ripup costs are
+  active; rejected candidates do not inflate this count.
+- `drc_units_10000_per_mm` uses the board's physical scale for summary messages,
+  congestion zones and hints (`drc_units_switch_uses_the_actual_board_scale`).
+
+The DSN counters observe both switch arms: an aliased first via list with a later
+nonempty list, a class-pair scope with at least three names, a shape box whose
+formulas differ, and a unit or placement-resolution mismatch. The pair and unit
+counters are conservative: unknown class names and precision-only placement
+changes can count even when geometry does not change. `dsn_corpus_branch_inventory`
+produces a per-input JSON report without routing. Registered sessions, the optimizer
+reference run, and the plugin canary grade remain pending under N06.10.

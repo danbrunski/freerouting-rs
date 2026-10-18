@@ -428,3 +428,36 @@ fn endpoint_snaps_never_fire() {
         "snapping fires; update the module docs of ses_writer"
     );
 }
+
+/// N06.10: the written SES is the inverse transform, including Issue676's
+/// overflow-reduced DSN-to-board scale. Java's old mismatch remains pinned above.
+#[test]
+fn issue676_round_trips_with_reader_scale_fixed() {
+    let route = root()
+        .join("fixtures/reference/route")
+        .join(format!("{ISSUE676}.ses"));
+    for java in [true, false] {
+        let mut first = load(&format!("{ISSUE676}.dsn"));
+        first.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("ses_reader_scale", java)
+                .unwrap(),
+        );
+        first.delete_all_traces_and_vias();
+        read_session(&mut first, &std::fs::read_to_string(&route).unwrap()).unwrap();
+        let written = write_ses(&first, ISSUE676, SesStyle::Java);
+        let mut second = load(&format!("{ISSUE676}.dsn"));
+        second.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("ses_reader_scale", java)
+                .unwrap(),
+        );
+        second.delete_all_traces_and_vias();
+        read_session(&mut second, &written).unwrap();
+        let differences = statistics_differences(
+            &BoardStatistics::new(&first),
+            &BoardStatistics::new(&second),
+        );
+        assert_eq!(differences.is_empty(), !java, "{differences:?}");
+    }
+}

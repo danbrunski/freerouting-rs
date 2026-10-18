@@ -172,11 +172,32 @@ fn read_scopes(ctx: &mut ReadContext, pcb: &Pcb) -> bool {
     }
     // PARITY(quirk, java_quirks.dsn_unit_ignored): only the pcb `resolution` is
     // read; the placement `resolution` and the pcb-level `unit` are ignored, as
-    // in Java (`Placement.java`). The reader carries the switch in
-    // `ctx.java_quirks`; N06.10 reads them under `false`.
+    // in Java (`Placement.java`). In the fixed arm `unit` selects the DSN
+    // coordinate unit and resolution is converted to preserve its physical grid.
+    // Placement coordinates are converted separately in insert_components.
     if let Some(resolution) = pcb.resolution {
         ctx.unit = Unit::from(resolution.unit);
         ctx.resolution = resolution.value;
+    }
+    let placement_resolution = pcb.placement.as_ref().and_then(|p| p.resolution);
+    if pcb.unit.is_some_and(|u| Unit::from(u) != ctx.unit)
+        || placement_resolution
+            .is_some_and(|r| Unit::from(r.unit) != ctx.unit || r.value != ctx.resolution)
+    {
+        crate::run_stats::record_n06(crate::run_stats::Counter::DsnUnitIgnored);
+    }
+    if !ctx.java_quirks.dsn_unit_ignored
+        && let Some(unit) = pcb.unit
+    {
+        let unit = Unit::from(unit);
+        if pcb.resolution.is_some() {
+            ctx.resolution = freerouting_geometry::jmath::round_to_i32(Unit::scale(
+                f64::from(ctx.resolution),
+                unit,
+                ctx.unit,
+            ));
+        }
+        ctx.unit = unit;
     }
     if let Some(structure) = &pcb.structure
         && !read_structure(ctx, structure)

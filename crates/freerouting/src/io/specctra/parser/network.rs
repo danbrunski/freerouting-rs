@@ -123,6 +123,9 @@ pub(crate) fn read_network(ctx: &mut ReadContext, network: &ast::Network) -> boo
     // Java appends the `use_via` lists of the classes to the via padstack
     // names. Without a structure via scope it takes the first class's list
     // itself, so the later classes' vias also end up in that class.
+    if ctx.via_padstack_names.is_none() && classes.iter().skip(1).any(|c| !c.use_via.is_empty()) {
+        crate::run_stats::record_n06(crate::run_stats::Counter::DsnViaAlias);
+    }
     let mut aliased_class: Option<usize> = None;
     for i in 0..classes.len() {
         let use_via = classes[i].use_via.clone();
@@ -750,6 +753,9 @@ fn insert_class_pairs(ctx: &mut ReadContext, class_classes: &[ast::ClassClass]) 
     let java_pairs = ctx.java_quirks.dsn_class_class_pairs;
     let board = ctx.board();
     for class_class in class_classes {
+        if class_class.classes.len() >= 3 {
+            crate::run_stats::record_n06(crate::run_stats::Counter::DsnClassClassPairs);
+        }
         if !java_pairs {
             insert_all_class_pairs(board, class_class, &transform);
             continue;
@@ -932,9 +938,32 @@ pub(crate) fn insert_components(ctx: &mut ReadContext, placement: Option<&ast::P
         .into_iter()
         .map(|(pin, nets)| (pin.clone(), nets.into_iter().cloned().collect()))
         .collect();
+    // Placement resolution declares its own unit; its integer is grid
+    // precision, not a multiplier on DSN coordinates. Package-local offsets
+    // remain in the PCB unit and are not converted here.
+    let factor = if ctx.java_quirks.dsn_unit_ignored {
+        1.0
+    } else {
+        placement.resolution.map_or(1.0, |r| {
+            crate::board::structure::Unit::scale(
+                1.0,
+                crate::board::structure::Unit::from(r.unit),
+                ctx.unit,
+            )
+        })
+    };
     for component in &placement.components {
         for place in &component.places {
-            insert_component(ctx, place, &component.image, &nets_by_pin);
+            if factor == 1.0 {
+                insert_component(ctx, place, &component.image, &nets_by_pin);
+            } else {
+                let mut converted = place.clone();
+                if let Some(location) = &mut converted.location {
+                    location.at.x *= factor;
+                    location.at.y *= factor;
+                }
+                insert_component(ctx, &converted, &component.image, &nets_by_pin);
+            }
         }
     }
 }

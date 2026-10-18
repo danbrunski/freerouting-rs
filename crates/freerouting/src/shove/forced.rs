@@ -488,7 +488,9 @@ impl RoutingBoard {
     /// purpose"): `DrillItemMover.insert` grows only its own copy of the tidy
     /// region, so with a finite `tidy_width` the region stays
     /// `IntOctagon.EMPTY` and the pull-tight is skipped; only
-    /// `tidy_width == i32::MAX` (no clip) pull-tightens after a move.
+    /// `tidy_width == i32::MAX` (no clip) pull-tightens after a move. With
+    /// `java_quirks.move_drill_tidy_region` off, the moved shapes grow the
+    /// caller's region and finite positive tidy widths pull-tighten within it.
     #[allow(clippy::too_many_arguments)]
     pub fn move_drill_item(
         &mut self,
@@ -513,11 +515,19 @@ impl RoutingBoard {
             (None, false)
         };
         self.start_marking_changed_area();
-        if !TraceShover::new(self).insert_drill_item_move(
+        // PARITY(quirk, java_quirks.move_drill_tidy_region): Java grows only
+        // a local copy. The fixed arm returns the union to this caller.
+        let keep_local = self.java_quirks().move_drill_tidy_region;
+        if !TraceShover::new(self).insert_drill_item_move_with_region(
             drill,
             vector,
             max_recursion_depth,
             max_via_recursion_depth,
+            if keep_local {
+                None
+            } else {
+                tidy_region.as_mut()
+            },
         ) {
             return false;
         }
