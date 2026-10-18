@@ -347,3 +347,89 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     options that respect their Board Setup minimum (no plugin45 `min_trace_width_um`), (b) takes
     the connected-graph guard if it is adopted, and (c) judges `solder_mask_bridge` without KiCad's
     pair-picking noise (for example by aperture, or by grading twice). Q16 stays open.
+- [~] **Q16.5 — Connected contacts, measured on fresh boards.** Q16.4 failed on its options (the
+  plugin45 width below two demos' Board Setup minimum), on a via its guard kept though its removal
+  splits nothing, and on KiCad's `solder_mask_bridge` noise; the operator's decision of 2026-10-18
+  is Q16.4's "Remains".
+  - **Accept:**
+    - the guard asks that the removed item's overlap contacts be connected through each other, not
+      that every pair touch;
+    - a fixture with Q16.4's kit-dev case (a via whose three contacts A, B, C have B and C meeting
+      only through A) shows the via is removed, and that the cleanup still never disconnects
+      anything;
+    - a new registration on boards Q16.3 and Q16.4 did not use, with options that respect each
+      board's Board Setup minimum (no plugin45 `min_trace_width_um=150` and class widths on
+      demos), and `solder_mask_bridge` graded twice with the minimum taken (or `drc_real`
+      excluding it, but say which before any number);
+    - the same hard guards as Q16.4;
+    - if accepted, N05 adds `cleanup.remove_stubs` to `enhanced`.
+
+  *Partial 2026-10-18:* the guard, the fixtures and the registration are in; the registered
+  measurement is pending (heavy run pending: the heavy slot is Q10.4's).
+  - Code: `quality::stubs::contacts_are_connected` (new, public) replaces
+    `contacts_touch_each_other`: the removed item's overlap contacts must form a connected graph
+    whose edges are the pairs `quality::stub_contacts::touches` joins (a search from the first
+    contact in id order; the answer does not depend on the order). Any path through the item then
+    goes round it through its contacts, so no complete connection becomes incomplete. Module docs
+    of both modules and the DIVERGENCES line (freerouting, `cleanup.remove_stubs`) updated. Nothing
+    runs with the setting unset, so `legacy`, `enhanced` and A14 do not move.
+  - Fixtures, `tests/stub_contacts.rs` on `tests/data/quality/q16-overlap-stubs.dsn` (two nets
+    added; 9 passed): `a_via_whose_contacts_meet_only_through_one_another_goes` (`HUB`, the kit-dev
+    `Net-(D101-K)` case: a via used on F.Cu only, trace B from its centre to pin B7, a 290 um trace
+    A from its centre to a point inside the pad where trace C from pin A7 ends; A touches B and C,
+    B and C do not touch; the via is a removable stub, it goes and the three traces stay, the net
+    complete before and after; `contacts_are_connected` is true for {A, B, C} and {C} and the empty
+    set, false for {B, C}); `a_via_joining_two_groups_of_contacts_is_kept` (`SPLIT`: a via whose four
+    contacts are two touching pairs that meet only at the via, so each contact touches another and
+    the graph is still not connected; the via is kept and the net's copper unchanged). Written
+    first and failing on the old guard (`is_removable_stub` false for `HUB`'s via). Changed
+    expectation: `the_cleanup_completes_nothing_less_and_is_deterministic` now counts 5 vias and 4
+    traces removed (was 4 and 4: `HUB`'s via is the added one), the incomplete count still equal,
+    the same ids twice. Q16.2's `tests/stub_cleanup.rs` passes unchanged (12).
+  - Registration before any number: `docs/roadmap/prereg/Q16-5.json` (sha256
+    `0408cd5a07c87033cee3758b54e1acccbf77cac94eba3a72c0404e5051423a6b`, pinned by
+    `crates/freerouting-dev/tests/prereg_q16_5.rs`, 3 passed): N02 totals, `accept: no-regress`,
+    every band N02's default from the input's KiCad unconnected count; arms `enhanced-default`
+    and `enhanced-default+cleanup` (plus `--router.cleanup.remove_stubs=true`), both the plugin's
+    default enhanced options `{"schema": 4, "profile": "enhanced"}` (so the router gets the
+    board's Board Setup `min_track_width` and `sweep=free`, no class widths, pour fix-ups, pass
+    limit or ripup cost); engine main `1dac842` plus this diff. Boards: canary-pwr at canary
+    `d6199b48` (variant C, the coordinator's board base; git archive, routed as it is, plugin path,
+    `--schematic-parity`; Board Setup minimum 0.15 mm; its hand-laid copper, among it a locked
+    0.15 mm VCC2P5 track inside U1's courtyard, is input copper the cleanup never removes; the
+    coordinator's 136 unconnected unrouted and 18 routed on the plugin path are recorded under
+    `seen_before_registration`) and four KiCad 10.0.7 demos stripped by `tools/kicad-oracle/kicad_steps.py
+    strip`: One-Air-Max (4 layers, no minimum), tinytapeout-demo (4 layers, 0.16 mm), sonde-xilinx
+    (2 layers, 0.2032 mm; `sonde xilinx` renamed without the space) and complex_hierarchy (2
+    layers, 0.2032 mm). `solder_mask_bridge`: **graded twice, the minimum taken** (two KiCad DRC
+    runs on two copies of the imported project, the inputs graded the same way); every other
+    number is the first grading's. Hard guards as Q16.4: unconnected and drc_real not above the
+    baseline on any board, via_in_pad and below_minimum 0, `via_dangling_dsn` and
+    `track_dangling_dsn` 0 in the candidate, determinism. Each CLI run under `timeout -k 10 3600`;
+    a timeout leaves the measurement incomplete (no gate).
+  - Inputs prepared (light): the canary archive in
+    `/home/thebo/code/freerouting-rs/target/orchestrator/q165/scratch/canary-d6199b48/` (board
+    `25395aeb…`), the stripped demos in `/home/thebo/code/freerouting-rs/target/orchestrator/q165/scratch/boards/`
+    (hashes as registered; sonde xilinx stripped twice gave the same bytes). Scripts there:
+    `q165-arm.sh` (sha256 `9fc364d1…`; Q16.4's `q164-arm.sh` with Q16.5's worktree and CLI, the
+    archive's canary tools, `default-options.json`, the double grading, quoted paths and the
+    timeout), `input165.sh` (`5296798f…`) and `analyze165.py` (`6fe3ddf9…`; checks the input hashes
+    against the registration and exits 1 on a mismatch, a router failure or a timeout's exit code).
+  - Heavy run pending, one at a time (`Q=/home/thebo/code/freerouting-rs/target/orchestrator/q165/scratch`):
+    1. `cd /home/thebo/code/freerouting-rs/target/orchestrator/q165/wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0
+       CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/q165/target cargo build --release
+       -p freerouting-cli -p freerouting-dev` (the worktree with this diff; if it has landed, a worktree of the
+       landing commit, with `K` in `q165-arm.sh` pointed at it);
+    2. the inputs: `for b in canary-pwr One-Air-Max tinytapeout-demo sonde-xilinx complex_hierarchy; do
+       $Q/input165.sh $b; done` (prints each hash, which must equal the registration's, and both
+       gradings' unconnected and `solder_mask_bridge` counts);
+    3. `for b in canary-pwr One-Air-Max tinytapeout-demo sonde-xilinx complex_hierarchy; do $Q/q165-arm.sh
+       q165-base $b; for a in q165-cleanup q165-cleanup-rerun; do $Q/q165-arm.sh $a $b --
+       --router.cleanup.remove_stubs=true; done; cmp $Q/runs/q165-cleanup/$b/work/$b.ses
+       $Q/runs/q165-cleanup-rerun/$b/work/$b.ses && echo "CMP $b identical"; done` (the `cmp` is the
+       determinism guard; a `TIMEOUT` line stops the measurement);
+    4. `cd /home/thebo/code/freerouting-rs/target/orchestrator/q165/wt && python3 -I $Q/analyze165.py
+       docs/roadmap/prereg/Q16-5.json $Q/records-q165.json`, then
+       `../target/release/freerouting-dev gate --records $Q/records-q165.json --baseline $Q/baseline-q165.json
+       --prereg docs/roadmap/prereg/Q16-5.json --write-baseline` and the same without
+       `--write-baseline` for the verdict.

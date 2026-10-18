@@ -36,10 +36,16 @@
 //!   DSN outline, not the zone fill KiCad pours inside it, so a trace that
 //!   ends inside the outline where KiCad's fill does not reach stays, and
 //!   KiCad reports it dangling (Q16.3, CM5_MINIMA_3);
-//! - whose removal joins nothing apart: its contacts all touch one another
-//!   (their copper meets). Without that guard a via whose two traces end on
-//!   one layer at different points of its pad would be removed and split
-//!   them. Such a via stays, dangling.
+//! - whose removal joins nothing apart: its contacts are connected through
+//!   one another ([`contacts_are_connected`], Q16.5), that is the graph on
+//!   its contacts whose edges are the pairs that touch
+//!   ([`stub_contacts::touches`]) is connected. Any path through the item
+//!   then has a way round it through its contacts. Without that guard a via
+//!   whose two traces end on one layer at different points of its pad would
+//!   be removed and split them; such a via stays, dangling. Q16.4 asked that
+//!   every two contacts touch, which kept a via whose contacts B and C met
+//!   only through a third, A (kit-dev-coldfire-xilinx_5213's
+//!   `Net-(D101-K)`), though its removal splits nothing.
 //!
 //! So the cleanup removes only the router's copper, and only copper whose
 //! removal cannot make a complete connection incomplete: the unconnected
@@ -129,18 +135,31 @@ pub fn is_removable_stub(board: &BasicBoard, id: ItemId, keep: &BTreeSet<ItemId>
         ItemKind::Via(_) => stub_contacts::via_contact_layers(board, item).len() <= 1,
         _ => false,
     };
-    dangling && contacts_touch_each_other(board, &stub_contacts::overlap_contacts(board, id))
+    dangling && contacts_are_connected(board, &stub_contacts::overlap_contacts(board, id))
 }
 
-/// True if the copper of every two of `contacts` meets, so that removing
-/// the item they all touch keeps them joined.
-fn contacts_touch_each_other(board: &BasicBoard, contacts: &BTreeSet<ItemId>) -> bool {
+/// True if `contacts` are connected through one another: the graph on them
+/// whose edges are the pairs whose copper meets
+/// ([`stub_contacts::touches`]) is connected, so that removing the item they
+/// all touch keeps them joined. No contact or one is connected. The answer
+/// does not depend on the order of the search, which runs in id order.
+pub fn contacts_are_connected(board: &BasicBoard, contacts: &BTreeSet<ItemId>) -> bool {
     let items: Vec<&Item> = contacts.iter().filter_map(|id| board.item(*id)).collect();
-    items.iter().enumerate().all(|(i, a)| {
-        items[i + 1..]
-            .iter()
-            .all(|b| stub_contacts::touches(board, a, b))
-    })
+    let mut reached = vec![false; items.len()];
+    let mut stack = Vec::with_capacity(items.len());
+    if !items.is_empty() {
+        reached[0] = true;
+        stack.push(0);
+    }
+    while let Some(i) = stack.pop() {
+        for j in 0..items.len() {
+            if !reached[j] && stub_contacts::touches(board, items[i], items[j]) {
+                reached[j] = true;
+                stack.push(j);
+            }
+        }
+    }
+    reached.iter().all(|r| *r)
 }
 
 /// Removes every stub of `board` that is not in `keep`, round after round

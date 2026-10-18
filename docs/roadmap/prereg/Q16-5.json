@@ -1,0 +1,129 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q16.5-remove-stubs-connected-contacts",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/Q16-no-dangling-stubs.md (Q16.5)",
+  "question": "With router.cleanup.remove_stubs=true, the stub test counting contacts as KiCad does (Q16.4) and the guard asking only that the removed item's contacts be connected through one another (Q16.5), does a plugin run with the plugin's default enhanced options leave no dangling via or track visible from the DSN on canary-pwr at canary d6199b48 and four KiCad demos Q16.3 and Q16.4 did not use, each routed with its own Board Setup rules, without raising any board's KiCad-unconnected count, adding a DRC error, or losing determinism?",
+  "rule": "totals",
+  "rule_text": "N02 (docs/roadmap/tasks/N02-keep-rule-for-defaults.md) with accept no-regress, as Q16-4.json: the candidate passes against the baseline arm when the KiCad-unconnected total over the distinct boards is not worse than the set's noise (sqrt of the sum of the per-board bands squared, each band the gate's default from the row's connections). Hard guards, each on every board, the same as Q16-4.json: kicad_unconnected of the candidate not above the baseline's (a rise of 1 fails, whatever the noise), drc_real not above the baseline's, via_in_pad = 0, below_minimum = 0, via_dangling_dsn = 0 and track_dangling_dsn = 0 in the candidate; determinism (D2): the candidate's CLI run on each board is run twice and the two SES files are byte-identical. via_dangling_dsn and track_dangling_dsn are KiCad's via_dangling and track_dangling minus the findings tools/kicad-oracle/dangling_visible.py classifies as the plane-fill limit, as Q16-4.json. solder_mask_bridge is graded twice (Q16.4's cause 3: KiCad picks a different item pair per bridged aperture between gradings of the same session): every run's imported board is graded by two KiCad DRC runs on two copies of the project, and drc_real counts the smaller of the two solder_mask_bridge counts; every other number is the first grading's. The unrouted inputs are graded the same way. pass_rule below is the parser's paired rule, kept only so the file validates; it does not decide.",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected"
+    ],
+    "min_boards": 3
+  },
+  "noise": {
+    "formula": "max(2, ceil(0.05 * the unconnected count of the unrouted input board, by KiCad's DRC)), given to the gate as each row's connections; no registered band (canary-pwr's band of 10 in Q16.json and Q16-4.json was measured on an earlier revision of the board)",
+    "source": "N02's default band"
+  },
+  "arms": {
+    "enhanced-default": {
+      "engine": "freerouting-rs release CLI at main 1dac842 plus Q16.5's diff (the stub cleanup's guard on its contacts' touch graph being connected, quality::stubs::contacts_are_connected), built from target/orchestrator/q165/wt; profile enhanced as it is there; through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "options": {
+        "schema": 4,
+        "profile": "enhanced"
+      },
+      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --result-json {RESULT} {ARGS}, where {ARGS} is the argument list kicad-plugin/headless_run.py export writes for the options above (RouteOptions.to_args: --router.min_trace_width_um=<the board's Board Setup min_track_width> when above 0, then --router.autorouter.sweep=free; no class widths, fixed pours, dropped pours, pass limit or ripup cost)",
+      "what": "baseline: the plugin's default enhanced options (profile_defaults('enhanced'), the options a new board starts from), the cleanup unset"
+    },
+    "enhanced-default+cleanup": {
+      "engine": "as enhanced-default",
+      "options": {
+        "schema": 4,
+        "profile": "enhanced"
+      },
+      "router_extra": "--router.cleanup.remove_stubs=true",
+      "command": "as enhanced-default, then --router.cleanup.remove_stubs=true",
+      "what": "candidate: the baseline plus Q16's final stub cleanup with Q16.4's contacts and Q16.5's connected-contacts guard"
+    }
+  },
+  "baseline_arm": "enhanced-default",
+  "candidate_arm": "enhanced-default+cleanup",
+  "boards": {
+    "procedure": "canary-pwr: git archive of canary d6199b48 (variant C; hardware/canary-pwr-rev1.0 and hardware/tools) into target/orchestrator/q165/scratch/canary-d6199b48, routed as it is: its hand-laid copper (115 tracks and vias in the file, among them a locked 0.15 mm VCC2P5 track inside U1's courtyard) is input copper, which the cleanup never removes, through the plugin path, graded with --schematic-parity; the project's own freerouting-rs/route-options.json (the plugin45 options) is not used, the arms pass the options above. The demos are KiCad 10.0.7's /usr/share/kicad/demos with tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip into target/orchestrator/q165/scratch/boards/<name>/ (zones kept; reproducible: sonde xilinx stripped twice gave the same bytes), each with its own .kicad_pro copied as <name>.kicad_pro: One-Air-Max (openair-max, 4 copper layers, 655 pads, 413 vias in the routed demo), tinytapeout-demo (tiny_tapeout, 4 layers, 757 pads, 405 vias), sonde-xilinx (sonde xilinx, renamed without the space for the harness, 2 layers, 108 pads, 3 vias) and complex_hierarchy (2 layers, 165 pads, no vias). Board Setup minimum track widths: canary-pwr 0.15 mm, One-Air-Max 0 (no minimum, so no width flag), tinytapeout-demo 0.16 mm, sonde-xilinx 0.2032 mm, complex_hierarchy 0.2032 mm; no option narrows a class below them. Chosen before any number of this registration: the demos Q16.1, Q16.3 and Q16.4 did not use, of a size that routes in minutes, with the multi-layer demos with vias first; video, vme-wren and jetson-agx-thor-baseboard are left out for their size, ecc83 and microwave for having almost nothing to route. None has a prior graded Rust run known to this registration.",
+    "files": {
+      "canary@d6199b48/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb": "25395aeb984d7016010b7309f4a65df57c1292e13f0dc32aba2df49eb1444929",
+      "demos/openair-max/One-Air-Max.kicad_pcb (stripped)": "08e0fbf80ff08f11c6204b179195eb2f587d649807230cc0df21a674f1b8e410",
+      "demos/tiny_tapeout/tinytapeout-demo.kicad_pcb (stripped)": "e63a56131077e0f6e81ac2f54a6aeebb8f1f74018101ddb71e19be0d519d5650",
+      "demos/sonde xilinx/sonde xilinx.kicad_pcb (stripped)": "d069f60656c4722e8fa4fe431b1f5d120dd5ff8508ba7f30a1ef8ac297935644",
+      "demos/complex_hierarchy/complex_hierarchy.kicad_pcb (stripped)": "c01d7d83138fd5946d233e637cf748470659e366aac5005c3df19bd459310e52"
+    }
+  },
+  "grading": "kicad-cli pcb drc --refill-zones --save-board --severity-all --format json on the board ImportSpecctraSES saved (canary-pwr also --schematic-parity), twice, on two copies of the project made after the import; canary's via_in_pad.py and inner_tracks.py from the d6199b48 archive (WSL KiCad python); tools/kicad-oracle/dangling_visible.py on the first saved board, its DRC report and the DSN of the run. drc_real = error-severity violations other than unconnected_items and starved_thermal, minus the same types on the unrouted input (graded the same way, twice), with solder_mask_bridge taken as the smaller count of the two gradings on both sides; below_minimum = the track_width errors",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "via_dangling_dsn",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "track_dangling_dsn",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "via_dangling",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "track_dangling",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "starved_thermal",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "if the candidate passes, N05 adds cleanup.remove_stubs = true to ENHANCED with these numbers (profile.rs entry, the settings_profile test, the DIVERGENCES line, the help text, an N05.3 line); if it fails, the setting stays unset in both profiles and Q16.5's note gives the numbers and the cause of each failing guard",
+  "stop_rule": "one registered run per arm per board, plus the candidate's determinism rerun; no reruns with other settings and no board dropped. Each CLI run is under timeout -k 10 3600 (the default options set no pass limit); if any run hits it, the measurement is incomplete, the gate is not run, and Q16.5's note reports which run",
+  "amendments": [],
+  "seen_before_registration": "no routing number of either arm on these boards under this registration's engine. Before the registration: the coordinator's report that canary d6199b48 has 136 KiCad unconnected unrouted and routes to 18 on the plugin path (engine and options not given to this registration); the Board Setup minimums and class widths above (read from the .kicad_pro files), the stripped boards' hashes and the routed demos' pad and via counts (from the files). Q16.4's graded runs (other boards, other options) motivated the guard change and the double grading."
+}

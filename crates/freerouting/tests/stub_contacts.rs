@@ -16,7 +16,17 @@
 //! - `TOUCH` and `GAP`: a fixed strip and a via whose pad meets the strip's
 //!   copper exactly at its border (425 um from its centre line, the pad's
 //!   radius 300 plus the half width 125), and one 0.1 um (one board unit)
-//!   further, then the chain to pin B5 / B6.
+//!   further, then the chain to pin B5 / B6;
+//! - `HUB` (Q16.5, kit-dev-coldfire-xilinx_5213's `Net-(D101-K)` via of
+//!   Q16.4): a via used on F.Cu only, with three contacts there: trace `B`
+//!   from its centre to pin B7, a short trace `A` from its centre to a point
+//!   290 um off it (inside the pad), and trace `C` from pin A7 ending at that
+//!   point. `B` and `C` meet only through `A` (their square caps stay 40 um
+//!   apart), so not every two contacts touch, but they are all joined;
+//! - `SPLIT` (Q16.5): a via used on F.Cu only whose contacts are two joined
+//!   pairs, pins A8 and C8 meeting at a point 290 um left of its centre and
+//!   pins B8 and D8 at one 290 um right of it, with no copper between the
+//!   pairs but the via.
 //!
 //! Java's normal contacts see none of `STRIP`'s, `TEE`'s, `PAD_VIA`'s or
 //! `TOUCH`'s joints, so Q16.3's test removed them; KiCad connects them all.
@@ -31,7 +41,7 @@ use freerouting::board::items::ItemId;
 use freerouting::board::{BasicBoard, RoutingBoard};
 use freerouting::job::prepare::{JobInput, RulesChoice, prepare_job};
 use freerouting::quality::stub_contacts::{overlap_contacts, touches, via_contact_layers};
-use freerouting::quality::stubs::{is_removable_stub, remove_stubs};
+use freerouting::quality::stubs::{contacts_are_connected, is_removable_stub, remove_stubs};
 use freerouting::scoring::BoardStatistics;
 use freerouting::settings::ResolveContext;
 use freerouting::settings::Source;
@@ -207,10 +217,79 @@ fn the_cleanup_completes_nothing_less_and_is_deterministic() {
     let before = board();
     let mut board = board();
     let summary = remove_stubs(&mut board, &BTreeSet::new());
-    // OPEN: 2 vias, 2 traces; GAP: 2 vias, 2 traces.
-    assert_eq!((summary.vias, summary.traces), (4, 4), "{summary:?}");
+    // OPEN: 2 vias, 2 traces; GAP: 2 vias, 2 traces; HUB: its via (Q16.5).
+    assert_eq!((summary.vias, summary.traces), (5, 4), "{summary:?}");
     assert_eq!(incomplete(&board), incomplete(&before));
     let again = cleaned();
     let ids = |b: &RoutingBoard| b.items().map(|i| i.id()).collect::<Vec<_>>();
     assert_eq!(ids(&again), ids(&board));
+}
+
+/// The traces of net `name` in id order.
+fn traces(board: &BasicBoard, name: &str) -> Vec<ItemId> {
+    copper(board, name)
+        .into_iter()
+        .filter(|id| board.item(*id).is_some_and(|i| i.is_trace()))
+        .collect()
+}
+
+/// True if net `name` has no incomplete connection.
+fn net_complete(board: &BasicBoard, name: &str) -> bool {
+    let net = net_number(board, name);
+    freerouting::drc::DesignRulesChecker::new(board).incomplete_count_of(net) == 0
+}
+
+#[test]
+fn a_via_whose_contacts_meet_only_through_one_another_goes() {
+    let before = board();
+    let hub = via_at(&before, "HUB", 20000.0, -42000.0);
+    let item = |id| before.item(id).expect("an item");
+    let [c, a, b] = traces(&before, "HUB")[..] else {
+        panic!("HUB has three traces");
+    };
+    assert_eq!(via_contact_layers(&before, item(hub)).len(), 1);
+    assert_eq!(overlap_contacts(&before, hub), BTreeSet::from([c, a, b]));
+    assert!(touches(&before, item(a), item(b)));
+    assert!(touches(&before, item(a), item(c)));
+    assert!(
+        !touches(&before, item(b), item(c)),
+        "B and C meet only through A"
+    );
+    assert!(contacts_are_connected(&before, &BTreeSet::from([a, b, c])));
+    assert!(!contacts_are_connected(&before, &BTreeSet::from([b, c])));
+    assert!(contacts_are_connected(&before, &BTreeSet::from([c])));
+    assert!(contacts_are_connected(&before, &BTreeSet::new()));
+    assert!(is_removable_stub(&before, hub, &BTreeSet::new()));
+    let board = cleaned();
+    assert_eq!(counts(&board, "HUB"), (0, 3));
+    assert_eq!(traces(&board, "HUB"), [c, a, b]);
+    assert!(net_complete(&before, "HUB") && net_complete(&board, "HUB"));
+}
+
+#[test]
+fn a_via_joining_two_groups_of_contacts_is_kept() {
+    let before = board();
+    let split = via_at(&before, "SPLIT", 30000.0, -50000.0);
+    let item = |id| before.item(id).expect("an item");
+    let [c1, d1, c2, d2] = traces(&before, "SPLIT")[..] else {
+        panic!("SPLIT has four traces");
+    };
+    assert_eq!(via_contact_layers(&before, item(split)).len(), 1);
+    assert_eq!(
+        overlap_contacts(&before, split),
+        BTreeSet::from([c1, d1, c2, d2])
+    );
+    // Each contact touches another, but the two pairs meet only at the via.
+    assert!(touches(&before, item(c1), item(d1)));
+    assert!(touches(&before, item(c2), item(d2)));
+    for (x, y) in [(c1, c2), (c1, d2), (d1, c2), (d1, d2)] {
+        assert!(!touches(&before, item(x), item(y)), "{x:?} and {y:?}");
+    }
+    assert!(!contacts_are_connected(
+        &before,
+        &BTreeSet::from([c1, d1, c2, d2])
+    ));
+    assert!(!is_removable_stub(&before, split, &BTreeSet::new()));
+    let board = cleaned();
+    assert_eq!(copper(&board, "SPLIT"), copper(&before, "SPLIT"));
 }

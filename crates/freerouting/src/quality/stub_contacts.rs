@@ -33,8 +33,8 @@
 //! Java's contacts are a subset of these (an end corner at a via's centre,
 //! a common end corner, an end inside a plane all make copper meet), so a
 //! stub here is a stub for Java's connectivity as well, and the cleanup's
-//! guard (its contacts all touch one another) keeps every connection that
-//! is complete for the router or for KiCad.
+//! guard (its contacts connected through one another, Q16.5) keeps every
+//! connection that is complete for the router or for KiCad.
 
 use std::collections::BTreeSet;
 

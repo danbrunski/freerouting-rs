@@ -305,7 +305,8 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
   that phase's board stages, also after a stop: every trace or via the router inserted during
   the run (no item of the board as handed to `run_pipeline` is ever removed, locked or not, so a
   designer's unfinished track stays) that is unfixed, of one net, dangling as KiCad counts it
-  and whose contacts all touch one another is removed, in item-id order, round after round until
+  and whose contacts are connected through one another (Q16.5: the graph of which contacts touch
+  is connected; Q16.4 asked that every two touch) is removed, in item-id order, round after round until
   a round removes nothing; fixed and protected copper stays, and no complete connection becomes
   incomplete (`tests/stub_cleanup.rs` on `tests/data/quality/q16-stubs.dsn`). Dangling is read on
   KiCad's contacts, not Java's normal contacts (Q16.4, `quality::stub_contacts`): copper of a net
@@ -317,8 +318,9 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
   a contact, so a via stitching a trace to its plane stays. Known limit: a plane is its DSN
   outline, not KiCad's zone fill, so a trace ending inside the outline where the fill does not
   reach stays and KiCad reports it dangling (Q16.3, CM5_MINIMA_3). Q16.3 measured the first
-  version (`docs/roadmap/prereg/Q16.json`, rejected); Q16.4 measures this one
-  (`docs/roadmap/prereg/Q16-4.json`); N05 decides `enhanced`.
+  version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
+  (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one
+  (`docs/roadmap/prereg/Q16-5.json`); N05 decides `enhanced`.
 - `autorouter.connection_router = transactional-ripup` (Q11, `quality::transaction`) is a
   connection router Java does not have, selected by no profile (unset is Java's
   `freerouting-connection`), with the settings fields `transaction.{rule, depth, rip_factor}`
