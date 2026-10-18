@@ -33,6 +33,9 @@
 //!   pin: `Trace.getNormalContacts` admits a drill item only when the trace corner equals its
 //!   centre, and the snap then returns `None` because the distance 0 is at most 0.5. The test
 //!   `endpoint_snaps_never_fire` (tests/ses_round_trip.rs) counts the snaps on every fixture.
+//!   Under `router.pad_contacts = inside_pad` (N04) a trace end off a pin's centre is a contact
+//!   and the snap would fire, so it is off there: the session keeps the copper as it is
+//!   (`tests/pad_contacts.rs`).
 //! * The outer-quote fix of `java_ident`, see [`freerouting_dsn::write::java_style`].
 //!
 //! # Java behaviour kept
@@ -545,7 +548,15 @@ fn wire(board: &BasicBoard, item: &Item, transform: &CoordinateTransform) -> Wir
 ///
 /// Contacts are visited in item id order (Java's hash order is not defined; the first drill
 /// item whose rule applies decides, and at most one can contain the corner).
+///
+/// Always `None` under `router.pad_contacts = inside_pad` (N04): a trace end inside a pin's pad
+/// is a contact there, and the session must carry the copper KiCad already sees connected, not
+/// move it to the centre. Under Java's rule the snap cannot fire (module docs), so this changes
+/// no session.
 pub fn snapped_endpoint(board: &BasicBoard, trace: ItemId, start_side: bool) -> Option<FloatPoint> {
+    if board.contact_rule() == crate::board::contact_rule::ContactRule::InsidePad {
+        return None;
+    }
     let item = board.item(trace)?;
     let trace_data = item.as_trace()?;
     let corner = if start_side {

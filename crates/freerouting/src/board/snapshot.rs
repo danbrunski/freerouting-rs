@@ -100,6 +100,8 @@ pub struct BoardSnapshot {
     /// The room order and work unit of the board's trees (P04), which a
     /// restored board keeps.
     pub(crate) search_config: crate::board::search::SearchConfig,
+    /// The board's contact rule (N04), which a restored board keeps.
+    pub(crate) contact_rule: crate::board::contact_rule::ContactRule,
 }
 
 /// The restore memo of a [`BoardSnapshot`] (P02.4).

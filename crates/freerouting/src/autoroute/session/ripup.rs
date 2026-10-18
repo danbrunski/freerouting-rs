@@ -123,7 +123,7 @@ fn walk_connection(board: &BasicBoard, start: ItemId) -> Option<Connection> {
         let Some(contact) = board.item(first_contact) else {
             continue;
         };
-        let Some(mut prev_point) = item.normal_contact_point(contact) else {
+        let Some(mut prev_point) = board.normal_contact_point(item, contact) else {
             // No unique contact point.
             continue;
         };
@@ -166,7 +166,7 @@ fn walk_connection(board: &BasicBoard, start: ItemId) -> Option<Connection> {
                 if tmp_layer < 0 {
                     continue;
                 }
-                let Some(tmp_point) = current_item.normal_contact_point(tmp_item) else {
+                let Some(tmp_point) = board.normal_contact_point(current_item, tmp_item) else {
                     fork = true;
                     break;
                 };

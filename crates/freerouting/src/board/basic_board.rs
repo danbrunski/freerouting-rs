@@ -84,6 +84,9 @@ pub struct BasicBoard {
     /// [`AreaKind::TraceObstacle`] ([`Self::make_wire_keepouts_trace_only`]).
     /// Not part of a [`BoardSnapshot`].
     pub(crate) wire_keepouts: Vec<ItemId>,
+    /// Where a trace end connects to a pin (N04, `router.pad_contacts`;
+    /// [`crate::board::contact_rule`]). A [`BoardSnapshot`] keeps it.
+    pub(crate) contact_rule: crate::board::contact_rule::ContactRule,
 }
 
 impl BasicBoard {
@@ -118,6 +121,7 @@ impl BasicBoard {
             journal: None,
             autoroute_log: None,
             wire_keepouts: Vec::new(),
+            contact_rule: Default::default(),
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -261,6 +265,7 @@ impl BasicBoard {
             memo: Default::default(),
             shape_memo: self.search_trees.shape_memo().clone(),
             search_config: self.search_trees.search_config(),
+            contact_rule: self.contact_rule,
         }
     }
 
@@ -291,6 +296,7 @@ impl BasicBoard {
             journal: None,
             autoroute_log: None,
             wire_keepouts: Vec::new(),
+            contact_rule: snapshot.contact_rule,
         };
         board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();
@@ -1737,6 +1743,8 @@ impl BasicBoard {
                 result.insert(other_id);
             }
         }
+        // N04: under `inside_pad` the traces ending inside a pin's pad.
+        self.add_pad_trace_contacts(item, &mut result);
         result
     }
 
@@ -1770,6 +1778,8 @@ impl BasicBoard {
                 result.insert(other_id);
             }
         }
+        // N04: under `inside_pad` the pins whose pad the end's cap overlaps.
+        self.add_trace_end_pad_contacts(item, point, ignore_net, &mut result);
         result
     }
 
@@ -2122,7 +2132,8 @@ impl BasicBoard {
         }
         for start_contact in contacts {
             let mut current_id = start_contact;
-            let Some(mut prev_contact_point) = item.normal_contact_point(self.item_ref(current_id))
+            let Some(mut prev_contact_point) =
+                self.normal_contact_point(item, self.item_ref(current_id))
             else {
                 continue;
             };
@@ -2163,7 +2174,7 @@ impl BasicBoard {
                     if tmp_layer < 0 {
                         continue;
                     }
-                    let Some(tmp_point) = current.normal_contact_point(tmp) else {
+                    let Some(tmp_point) = self.normal_contact_point(current, tmp) else {
                         fork_found = true;
                         break;
                     };

@@ -408,6 +408,10 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let wire = crate::io::specctra::wire_keepout::apply(&mut board, &settings)
         .map_err(JobError::Settings)?;
     log.extend(wire);
+    // N04: `router.pad_contacts`; an unknown value fails the job.
+    let contacts =
+        crate::board::contact_rule::apply(&mut board, &settings).map_err(JobError::Settings)?;
+    log.extend(contacts);
     // Q14: `router.via_clearance`; an unknown value fails the job.
     crate::autoroute::via_clearance::validate(&settings).map_err(JobError::Settings)?;
     // N03.1: `router.room_order` and `router.work_unit`; an unknown value
@@ -509,6 +513,15 @@ pub fn prepare_board_for_routing(
     match crate::io::specctra::wire_keepout::apply(board, &settings) {
         Ok(line) => log.extend(line),
         Err(e) => push(&mut log, LogLevel::Error, e),
+    }
+    // N04: `router.pad_contacts`; an unknown value is logged and reads as
+    // Java's rule.
+    match crate::board::contact_rule::apply(board, &settings) {
+        Ok(line) => log.extend(line),
+        Err(e) => {
+            board.set_contact_rule(Default::default());
+            push(&mut log, LogLevel::Error, e);
+        }
     }
     // Q14: `router.via_clearance`; an unknown value is logged and reads as
     // Java's rule.

@@ -363,6 +363,25 @@ IntOctagon's box cutout.
   under `canonical`, not under `tree`); an unknown value fails the job, naming the key. A
   non-Java pair logs `Search trees: room order <o>, work unit <u>`. Not in `enhanced` until
   N03.3's measurement accepts an arm (through N05).
+- `pad_contacts` (N04, `board::contact_rule`) is a settings field Java does not have, unset by
+  default and unset in profile `legacy` (`center`: Java's `Trace.getNormalContacts` and
+  `DrillItem.getNormalContacts`, a trace end touches a pin only at the pin's exact centre).
+  `inside_pad` also connects a trace end to a pin of a common net when the end's cap (the disc of
+  half the trace's width around the end point) overlaps the pin's pad shape on the trace's layer,
+  borders included, by the board's own shape intersection (`Shape::intersects_circle`) in integer
+  units with no added tolerance; an end at a rational point tests the point alone. This is how
+  KiCad connects a track whose copper meets a pad. Only connectivity changes, never copper: the
+  incompletes, the routing ledger, the DRC's dangling traces, trace tails, the batch optimizer's
+  connected sets, pull-tight's end contacts, the rip-up walk and the maze shover's end match all
+  read the rule, and the SES writer's endpoint snap (`snapped_endpoint`, which cannot fire under
+  Java's rule) is off, so the session carries the ends as they are. Vias keep Java's rule, and a
+  trace end on another trace's segment or inner corner (a T junction) is no contact (N04.4). On
+  KiCad's ecc83-pp demo with its tracks (`fixtures/Issue690-ecc83.dsn`) the open connections
+  before routing go 10 → 1 and 16 off-centre ends touch their pins, some 15-89 µm outside the pad;
+  the one left is a T junction, which KiCad connects (`tests/pad_contacts.rs`). Pull-tight can
+  still straighten a connected track onto the pin's centre (Java's split at a drill centre; one
+  end on ecc83). An unknown value fails the job, naming the key; a board copy keeps the rule. Not
+  in `enhanced` until N04.3's measurement accepts it (through N05).
 - The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
   (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
   `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the

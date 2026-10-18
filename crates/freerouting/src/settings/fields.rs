@@ -267,6 +267,8 @@ settings_table! {
             "Room completion order (N03.1): `tree` (Java's, the default) or `canonical` (independent of the search tree's shape)."),
         (work_unit, String, opt, None, None, "workUnit", [], Flat::No, true,
             "Work limit unit (N03.1): `nodes` (Java's search-tree nodes visited, the default) or `leaves` (leaves returned)."),
+        (pad_contacts, String, opt, None, None, "padContacts", [], Flat::No, true,
+            "Where a trace end connects to a pin (N04): `center` (unset, Java: only at the pin's centre) or `inside_pad` (wherever the trace's round end overlaps the pin's pad on the trace's layer, KiCad's rule)."),
     }
     sections {
         autorouter, AutorouterPatch, AutorouterSettings, "autorouter",

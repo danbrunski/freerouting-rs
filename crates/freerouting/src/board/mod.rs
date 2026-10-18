@@ -5,6 +5,7 @@
 
 pub mod autoroute_log;
 pub mod basic_board;
+pub mod contact_rule;
 pub mod items;
 pub mod journal;
 pub mod routing_board;

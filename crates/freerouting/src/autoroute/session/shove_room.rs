@@ -54,7 +54,12 @@ fn end_points_matching(board: &BasicBoard, trace: ItemId, from_item: ItemId) -> 
     }
     if let Some(drill) = from.drill() {
         let center = Point::Int(drill.center);
-        center == t.first_corner() || center == t.last_corner()
+        center == t.first_corner()
+            || center == t.last_corner()
+            // N04: under `inside_pad` an end whose cap overlaps a pin's pad
+            // meets it too.
+            || board.pad_touches_trace_end(from, &t.first_corner(), t.layer, t.half_width)
+            || board.pad_touches_trace_end(from, &t.last_corner(), t.layer, t.half_width)
     } else if let Some(f) = from.as_trace() {
         t.first_corner() == f.first_corner()
             || t.first_corner() == f.last_corner()
