@@ -1,0 +1,69 @@
+# Q07's measurement set (docs/roadmap/prereg/Q07.json, conflict-rounds, and
+# docs/roadmap/prereg/Q07-inside-out.json): P04's set (the 16 benchmark boards and the five
+# in-repository canary-pwr variants, which count as one board: gate collect --group), the
+# PCBWorld-Bench D3-C boards (pcbworld-d3c.txt, out of the repository under target/corpus-d3c)
+# and the F03.3 corpus (kicad-corpus.txt, out of the repository under target/corpus). Boards are
+# skipped with a note while missing. Bounds: tools/java-reference/route-bounds.tsv for the
+# fixtures, bench's default of 5 passes for the others.
+fixtures/Issue433-my-board.dsn
+fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn
+fixtures/Issue508-DAC2020_bm02.dsn
+fixtures/Issue690-sonde_xilinx.dsn
+fixtures/Issue508-DAC2020_bm07.dsn
+fixtures/Issue508-DAC2020_bm01.dsn
+fixtures/Issue508-DAC2020_bm10.dsn
+fixtures/Issue093-interf_u.dsn
+fixtures/Issue555-CNH_Functional_Tester_1.dsn
+fixtures/Issue269-z10_module.dsn
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn
+fixtures/Issue753-CPU-85_r104.dsn
+fixtures/Issue066-Project_GP8B.dsn
+fixtures/Issue145-smoothieboard.dsn
+fixtures/Issue219-LogicBoard_smt.dsn
+fixtures/Issue420-contribution-board.dsn
+fixtures/canary-pwr/canary-pwr-pours1.dsn
+fixtures/canary-pwr/canary-pwr-pours2.dsn
+fixtures/canary-pwr/canary-pwr-pours3.dsn
+fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn
+fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn
+target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn   # 2 layers, 39 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn   # 2 layers, 44 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn   # 2 layers, 31 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn   # 2 layers, 38 footprints, CC-BY-SA-4.0, hard.test
+target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn   # 2 layers, 37 footprints, GPL-3.0, hard.test
+target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn   # 2 layers, 28 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn   # 2 layers, 68 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn   # 2 layers, 77 footprints, GPL-2.0, hard.test
+target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn   # 4 layers, 67 footprints, MIT, hard.train
+target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn   # 2 layers, 52 footprints, LicenseRef-none, hard.test
+target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn   # 4 layers, 267 footprints, 0BSD, hard.train, BGA U30 11x11@0.8
+target/corpus/prepped/picodebugger-picoprobetester.dsn   # 2 layers, easy, 10 footprints, MIT
+target/corpus/prepped/pcietestpcb-pcietest.dsn   # 2 layers, easy, 22 footprints, CC0-1.0
+target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn   # 2 layers, easy, 25 footprints, CERN-OHL-W-2.0
+target/corpus/prepped/cc1101-module-cc1101-module.dsn   # 2 layers, easy, 27 footprints, LicenseRef-none
+target/corpus/prepped/mydevboard-rp2040dev.dsn   # 2 layers, medium, 36 footprints, LicenseRef-none
+target/corpus/prepped/slice-dcmt-bread-slice.dsn   # 2 layers, medium, 38 footprints, GPL-3.0
+target/corpus/prepped/flight-computer-core-board.dsn   # 2 layers, medium, 39 footprints, CERN-OHL-S-2.0
+target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn   # 2 layers, medium, 47 footprints, CERN-OHL-W-2.0
+target/corpus/prepped/vfo-controller-catvfoctrl.dsn   # 2 layers, medium, 55 footprints, MIT
+target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn   # 2 layers, medium, 60 footprints, MIT
+target/corpus/prepped/eprom-card-80bus.dsn   # 2 layers, medium, 79 footprints, CERN-OHL-S-2.0
+target/corpus/prepped/rio-iceshield-rio-iceshield.dsn   # 2 layers, hard, 94 footprints, LicenseRef-none
+target/corpus/prepped/macroprocessor-diode-matrix-rom-dip.dsn   # 4 layers, easy, 29 footprints, planes, MIT
+target/corpus/prepped/vna-usb-pd.dsn   # 4 layers, medium, 32 footprints, planes, LicenseRef-none
+target/corpus/prepped/picodvi-picodvi.dsn   # 4 layers, medium, 37 footprints, planes, BSD-3-Clause
+target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn   # 4 layers, medium, 47 footprints, planes, MIT
+target/corpus/prepped/solarmeshtasticnode-meshtasticnode-bq25185.dsn   # 4 layers, medium, 49 footprints, planes, CERN-OHL-S-2.0
+target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn   # 4 layers, medium, 56 footprints, planes, CERN-OHL-S-2.0
+target/corpus/prepped/wisweep-driver-board.dsn   # 4 layers, medium, 58 footprints, planes, MIT
+target/corpus/prepped/nudac-nudac.dsn   # 4 layers, medium, 62 footprints, planes, MIT
+target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn   # 4 layers, hard, 94 footprints, planes, LicenseRef-none
+target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn   # 4 layers, hard, 112 footprints, planes, MIT
+target/corpus/prepped/moteus-moteus-c1.dsn   # 4 layers, hard, 125 footprints, planes, Apache-2.0
+target/corpus/prepped/pocketsdr-v3-0.dsn   # 4 layers, hard, 158 footprints, planes, BSD-2-Clause
+target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn   # 6 layers, medium, 55 footprints, planes, LicenseRef-none
+target/corpus/prepped/overlord-overlord.dsn   # 6 layers, medium, 58 footprints, planes, CERN-OHL-S-2.0
+target/corpus/prepped/fc-rom-vomitter-nescart.dsn   # 6 layers, hard, 84 footprints, planes, MIT
+target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn   # 6 layers, hard, 111 footprints, planes, GPL-3.0
+target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn   # 6 layers, hard, 116 footprints, planes, CC0-1.0
+target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn   # 6 layers, hard, 124 footprints, planes, MIT

@@ -1,0 +1,965 @@
+{
+  "format": "freerouting-gate-baseline-1",
+  "rows": {
+    "fixtures/Issue066-Project_GP8B.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 16281.89,
+          "unrouted": 66,
+          "via_in_pad": 0,
+          "vias": 669,
+          "wall_seconds": 284.58
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 16161.49,
+          "unrouted": 61,
+          "via_in_pad": 0,
+          "vias": 690,
+          "wall_seconds": 398.77
+        }
+      },
+      "board": "fixtures/Issue066-Project_GP8B.dsn",
+      "input_sha256": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue145-smoothieboard.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 210,
+          "length_mm": 6575.7,
+          "unrouted": 34,
+          "via_in_pad": 42,
+          "vias": 500,
+          "wall_seconds": 169.072
+        },
+        "java": {
+          "clearance_violations": 210,
+          "length_mm": 6902.54,
+          "unrouted": 19,
+          "via_in_pad": 42,
+          "vias": 530,
+          "wall_seconds": 167.232
+        }
+      },
+      "board": "fixtures/Issue145-smoothieboard.dsn",
+      "input_sha256": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue219-LogicBoard_smt.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 9671.38,
+          "unrouted": 310,
+          "via_in_pad": 0,
+          "vias": 942,
+          "wall_seconds": 289.611
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 9940.69,
+          "unrouted": 285,
+          "via_in_pad": 0,
+          "vias": 938,
+          "wall_seconds": 399.457
+        }
+      },
+      "board": "fixtures/Issue219-LogicBoard_smt.dsn",
+      "input_sha256": "bffe922b51a45ea7816166f94488d37d6d3415c919d018af727e2d05257b76fc",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue269-z10_module.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 375,
+          "length_mm": 3671.59,
+          "unrouted": 37,
+          "via_in_pad": 0,
+          "vias": 221,
+          "wall_seconds": 114.944
+        },
+        "java": {
+          "clearance_violations": 375,
+          "length_mm": 3671.59,
+          "unrouted": 37,
+          "via_in_pad": 0,
+          "vias": 221,
+          "wall_seconds": 130.949
+        }
+      },
+      "board": "fixtures/Issue269-z10_module.dsn",
+      "input_sha256": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue508-DAC2020_bm01.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 3034.51,
+          "unrouted": 40,
+          "via_in_pad": 0,
+          "vias": 130,
+          "wall_seconds": 10.722
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 3571,
+          "unrouted": 24,
+          "via_in_pad": 0,
+          "vias": 126,
+          "wall_seconds": 12.937
+        }
+      },
+      "board": "fixtures/Issue508-DAC2020_bm01.dsn",
+      "input_sha256": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue508-DAC2020_bm10.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 3404.77,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 147,
+          "wall_seconds": 6.725
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 3354.24,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 150,
+          "wall_seconds": 6.036
+        }
+      },
+      "board": "fixtures/Issue508-DAC2020_bm10.dsn",
+      "input_sha256": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 1056,
+          "length_mm": 18918.6,
+          "unrouted": 181,
+          "via_in_pad": 6,
+          "vias": 506,
+          "wall_seconds": 522.764
+        },
+        "java": {
+          "clearance_violations": 1056,
+          "length_mm": 18918.6,
+          "unrouted": 181,
+          "via_in_pad": 6,
+          "vias": 506,
+          "wall_seconds": 550.509
+        }
+      },
+      "board": "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn",
+      "input_sha256": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue753-CPU-85_r104.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 76,
+          "length_mm": 12704.45,
+          "unrouted": 65,
+          "via_in_pad": 0,
+          "vias": 162,
+          "wall_seconds": 53.786
+        },
+        "java": {
+          "clearance_violations": 76,
+          "length_mm": 13525.41,
+          "unrouted": 57,
+          "via_in_pad": 0,
+          "vias": 183,
+          "wall_seconds": 57.838
+        }
+      },
+      "board": "fixtures/Issue753-CPU-85_r104.dsn",
+      "input_sha256": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 322,
+          "length_mm": 3368.42,
+          "unrouted": 107,
+          "via_in_pad": 0,
+          "vias": 192,
+          "wall_seconds": 302.934
+        },
+        "java": {
+          "clearance_violations": 322,
+          "length_mm": 3371.39,
+          "unrouted": 107,
+          "via_in_pad": 0,
+          "vias": 193,
+          "wall_seconds": 304.271
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "34cbcd4395de90aa8533620c1b2bcb8138d761af2f1ed9f5773ba4d4daf2c1ef",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 21,
+          "length_mm": 1042.9,
+          "unrouted": 77,
+          "via_in_pad": 0,
+          "vias": 146,
+          "wall_seconds": 80.35
+        },
+        "java": {
+          "clearance_violations": 21,
+          "length_mm": 1124.15,
+          "unrouted": 71,
+          "via_in_pad": 0,
+          "vias": 149,
+          "wall_seconds": 87.017
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours1.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 70,
+          "length_mm": 1378.7,
+          "unrouted": 121,
+          "via_in_pad": 0,
+          "vias": 136,
+          "wall_seconds": 96.961
+        },
+        "java": {
+          "clearance_violations": 70,
+          "length_mm": 1460.64,
+          "unrouted": 120,
+          "via_in_pad": 0,
+          "vias": 137,
+          "wall_seconds": 98.064
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours2.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 42,
+          "length_mm": 1407.28,
+          "unrouted": 123,
+          "via_in_pad": 0,
+          "vias": 138,
+          "wall_seconds": 109.443
+        },
+        "java": {
+          "clearance_violations": 42,
+          "length_mm": 1486.58,
+          "unrouted": 116,
+          "via_in_pad": 0,
+          "vias": 138,
+          "wall_seconds": 110.086
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours3.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 42,
+          "length_mm": 1449.98,
+          "unrouted": 125,
+          "via_in_pad": 0,
+          "vias": 129,
+          "wall_seconds": 84.429
+        },
+        "java": {
+          "clearance_violations": 42,
+          "length_mm": 1588.22,
+          "unrouted": 115,
+          "via_in_pad": 0,
+          "vias": 133,
+          "wall_seconds": 89.786
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 988.93,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 41,
+          "wall_seconds": 1.415
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1004.44,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 39,
+          "wall_seconds": 1.546
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn",
+      "input_sha256": "92e97bca65b4e76f28c72a07090c1e2e8732835d5ed33b7c122cebc90b4228f9",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 9,
+          "length_mm": 516.28,
+          "unrouted": 19,
+          "via_in_pad": 0,
+          "vias": 61,
+          "wall_seconds": 4.772
+        },
+        "java": {
+          "clearance_violations": 9,
+          "length_mm": 499.05,
+          "unrouted": 16,
+          "via_in_pad": 0,
+          "vias": 72,
+          "wall_seconds": 4.807
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn",
+      "input_sha256": "cf70ae4c9833df6c4eec02691e0d87b368aca2a90f57c5fe27b43aed6cf34041",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 895.6,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 62,
+          "wall_seconds": 1.978
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 909.47,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 61,
+          "wall_seconds": 1.492
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn",
+      "input_sha256": "cc5a76a25cca83983029d2d69041ef61ccabf0f2dc7f18e844e60f25314c2ba1",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 2291.42,
+          "unrouted": 175,
+          "via_in_pad": 0,
+          "vias": 290,
+          "wall_seconds": 961.297
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2432.55,
+          "unrouted": 162,
+          "via_in_pad": 0,
+          "vias": 295,
+          "wall_seconds": 897.52
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn",
+      "input_sha256": "58bc25055135cdc810fded2d0bbbe9a268026b2e16154ab8493448244a43dcdc",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/cc1101-module-cc1101-module.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 100.73,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 11,
+          "wall_seconds": 1.031
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 113.82,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 12,
+          "wall_seconds": 0.784
+        }
+      },
+      "board": "target/corpus/prepped/cc1101-module-cc1101-module.dsn",
+      "input_sha256": "b3e6c385895a8bcdb2f00768413d680e70b35bf32786a385abaad5bfc6a257d6",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 300.08,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 13,
+          "wall_seconds": 0.857
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 304.01,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 13,
+          "wall_seconds": 0.546
+        }
+      },
+      "board": "target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn",
+      "input_sha256": "04cd3b9c2996c149a73efa7bc50b2b5ded50a29d6b62ab859b365afbffef9d91",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 2,
+          "length_mm": 862.83,
+          "unrouted": 9,
+          "via_in_pad": 0,
+          "vias": 61,
+          "wall_seconds": 13.562
+        },
+        "java": {
+          "clearance_violations": 2,
+          "length_mm": 903.21,
+          "unrouted": 7,
+          "via_in_pad": 0,
+          "vias": 60,
+          "wall_seconds": 22.469
+        }
+      },
+      "board": "target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn",
+      "input_sha256": "d9b2cd2931f261fd045614c9f623db4e0a1b551e02eb5c841951f8f01def0f35",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/fc-rom-vomitter-nescart.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 7029.66,
+          "unrouted": 62,
+          "via_in_pad": 0,
+          "vias": 481,
+          "wall_seconds": 1222.488
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 5627.79,
+          "unrouted": 59,
+          "via_in_pad": 0,
+          "vias": 413,
+          "wall_seconds": 484.47
+        }
+      },
+      "board": "target/corpus/prepped/fc-rom-vomitter-nescart.dsn",
+      "input_sha256": "fcdb8ea31414bcecd2acac6e129d66c056aea7580bb4963cdb0c81582f6505a3",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/flight-computer-core-board.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 606.99,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 24,
+          "wall_seconds": 0.574
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 607.04,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 24,
+          "wall_seconds": 0.548
+        }
+      },
+      "board": "target/corpus/prepped/flight-computer-core-board.dsn",
+      "input_sha256": "e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 6,
+          "length_mm": 1120.1,
+          "unrouted": 27,
+          "via_in_pad": 0,
+          "vias": 116,
+          "wall_seconds": 132.602
+        },
+        "java": {
+          "clearance_violations": 6,
+          "length_mm": 1196.65,
+          "unrouted": 26,
+          "via_in_pad": 0,
+          "vias": 120,
+          "wall_seconds": 155.513
+        }
+      },
+      "board": "target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn",
+      "input_sha256": "ec10e1c2e9bba4dca9f5caf5bcb83cee5508937c5a719689510ff0e02a59ada3",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 1228.54,
+          "unrouted": 33,
+          "via_in_pad": 0,
+          "vias": 110,
+          "wall_seconds": 54.079
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1205.97,
+          "unrouted": 34,
+          "via_in_pad": 0,
+          "vias": 110,
+          "wall_seconds": 77.047
+        }
+      },
+      "board": "target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn",
+      "input_sha256": "636ce0fa8e43df5496411b4d98fb761fed37988b8ef649de8ab5cccf17a325ec",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 1050.68,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 140,
+          "wall_seconds": 20.181
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1025.48,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 133,
+          "wall_seconds": 22.64
+        }
+      },
+      "board": "target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn",
+      "input_sha256": "2e49060a0515896a765926f173d00cad970f52b73ac69244c3c83fbe8e0af2f3",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 6214.4,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 243,
+          "wall_seconds": 237.276
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 6137.48,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 244,
+          "wall_seconds": 245.741
+        }
+      },
+      "board": "target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn",
+      "input_sha256": "80fd1c8ca176a1110ab5c1674d137b820f7d54c4f39fb7692ec8cecb5ce9caf6",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 777.44,
+          "unrouted": 36,
+          "via_in_pad": 0,
+          "vias": 111,
+          "wall_seconds": 176.291
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 791.63,
+          "unrouted": 41,
+          "via_in_pad": 0,
+          "vias": 113,
+          "wall_seconds": 350.979
+        }
+      },
+      "board": "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn",
+      "input_sha256": "47fd62dc6e816e5ed218db49b4f4c32f5879d08f1b1db014b1f949143e56c71c",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/moteus-moteus-c1.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 13,
+          "length_mm": 1036.8,
+          "unrouted": 42,
+          "via_in_pad": 0,
+          "vias": 113,
+          "wall_seconds": 64.006
+        },
+        "java": {
+          "clearance_violations": 13,
+          "length_mm": 1072.16,
+          "unrouted": 39,
+          "via_in_pad": 0,
+          "vias": 114,
+          "wall_seconds": 148.603
+        }
+      },
+      "board": "target/corpus/prepped/moteus-moteus-c1.dsn",
+      "input_sha256": "8f0fe7d8675ea29e54dcf9a29abde4eb5e826bf15b41a9e8dd6d2f99566712d3",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/mydevboard-rp2040dev.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 604.45,
+          "unrouted": 47,
+          "via_in_pad": 0,
+          "vias": 37,
+          "wall_seconds": 18.244
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 510.62,
+          "unrouted": 40,
+          "via_in_pad": 0,
+          "vias": 35,
+          "wall_seconds": 18.938
+        }
+      },
+      "board": "target/corpus/prepped/mydevboard-rp2040dev.dsn",
+      "input_sha256": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/nudac-nudac.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 867.45,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 102,
+          "wall_seconds": 11.666
+        },
+        "java": {
+          "clearance_violations": 4,
+          "length_mm": 887.92,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 100,
+          "wall_seconds": 13.477
+        }
+      },
+      "board": "target/corpus/prepped/nudac-nudac.dsn",
+      "input_sha256": "a11ddbb1ebfac3d4eaf1df695cc26c8ba66c0f6f92e566e8547e89c57c0442f4",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 1439.47,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 115,
+          "wall_seconds": 9.86
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1502.64,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 118,
+          "wall_seconds": 12.136
+        }
+      },
+      "board": "target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn",
+      "input_sha256": "fbf5dd4d8ae9e3765af703d8f1fab57edcd9a91149842c4ea1ce7005780e2195",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/overlord-overlord.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 12,
+          "length_mm": 1423.13,
+          "unrouted": 5,
+          "via_in_pad": 0,
+          "vias": 73,
+          "wall_seconds": 59.374
+        },
+        "java": {
+          "clearance_violations": 12,
+          "length_mm": 1496.78,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 75,
+          "wall_seconds": 115.455
+        }
+      },
+      "board": "target/corpus/prepped/overlord-overlord.dsn",
+      "input_sha256": "a8645c7e6f6d317bba8700f3f7f54ab4fd6c6aef50e85d08e07ef2a290c3e0cc",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 2444.86,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 184,
+          "wall_seconds": 60.088
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2452.1,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 180,
+          "wall_seconds": 64.693
+        }
+      },
+      "board": "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn",
+      "input_sha256": "7c909c58c3f9de9c4972b6b5fddc0c4820131c6d0cbd54eb41e78ad8b8dea4ce",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/pcietestpcb-pcietest.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 14,
+          "length_mm": 3259.66,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 24,
+          "wall_seconds": 8.891
+        },
+        "java": {
+          "clearance_violations": 21,
+          "length_mm": 3470.66,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 27,
+          "wall_seconds": 7.667
+        }
+      },
+      "board": "target/corpus/prepped/pcietestpcb-pcietest.dsn",
+      "input_sha256": "87f2f2f1f22c1acf2076930defda5f33f90a8385e42b5a6aded41e0c3d3ecd03",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/picodvi-picodvi.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 23,
+          "length_mm": 372.78,
+          "unrouted": 11,
+          "via_in_pad": 0,
+          "vias": 59,
+          "wall_seconds": 17.306
+        },
+        "java": {
+          "clearance_violations": 20,
+          "length_mm": 433.87,
+          "unrouted": 10,
+          "via_in_pad": 0,
+          "vias": 57,
+          "wall_seconds": 19.562
+        }
+      },
+      "board": "target/corpus/prepped/picodvi-picodvi.dsn",
+      "input_sha256": "004fd6f348739b6ad5a1314534ebeb5ea005f22f49809fa3386928c7afc45378",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/pocketsdr-v3-0.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 2393.46,
+          "unrouted": 6,
+          "via_in_pad": 0,
+          "vias": 176,
+          "wall_seconds": 99.647
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2422.77,
+          "unrouted": 5,
+          "via_in_pad": 0,
+          "vias": 179,
+          "wall_seconds": 230.785
+        }
+      },
+      "board": "target/corpus/prepped/pocketsdr-v3-0.dsn",
+      "input_sha256": "95c4a3e68534b3b2ea5585731e04403e0fbf023e3b3b3f230c63b5e80c53fb67",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 2306.69,
+          "unrouted": 21,
+          "via_in_pad": 0,
+          "vias": 58,
+          "wall_seconds": 27.938
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2502.4,
+          "unrouted": 14,
+          "via_in_pad": 0,
+          "vias": 55,
+          "wall_seconds": 25.846
+        }
+      },
+      "board": "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn",
+      "input_sha256": "f390902a0b873eff6340805faad1185277f5ab3bee6eb22d186d5cb4821235e4",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/vfo-controller-catvfoctrl.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 2,
+          "length_mm": 718.84,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 31,
+          "wall_seconds": 0.996
+        },
+        "java": {
+          "clearance_violations": 2,
+          "length_mm": 723.76,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 26,
+          "wall_seconds": 0.863
+        }
+      },
+      "board": "target/corpus/prepped/vfo-controller-catvfoctrl.dsn",
+      "input_sha256": "4896cc4b6a640c482cdd2c7e8a2e88e3ef86d5b1e811a19446c4a39fd3ff12a4",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/vna-usb-pd.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 0,
+          "length_mm": 207.3,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 10,
+          "wall_seconds": 2.456
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 205.11,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 11,
+          "wall_seconds": 4.844
+        }
+      },
+      "board": "target/corpus/prepped/vna-usb-pd.dsn",
+      "input_sha256": "1ba306142c9d62a37d0005fa6b99daa09d814bebe0dc1053127189bb85fc087a",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/wisweep-driver-board.dsn": {
+      "arms": {
+        "inside-out": {
+          "clearance_violations": 13,
+          "length_mm": 541.26,
+          "unrouted": 24,
+          "via_in_pad": 0,
+          "vias": 57,
+          "wall_seconds": 29.693
+        },
+        "java": {
+          "clearance_violations": 13,
+          "length_mm": 643.24,
+          "unrouted": 17,
+          "via_in_pad": 0,
+          "vias": 63,
+          "wall_seconds": 31.77
+        }
+      },
+      "board": "target/corpus/prepped/wisweep-driver-board.dsn",
+      "input_sha256": "938cb5635fccd177c90cfaf0c1966e5b029c1b96af3eef75afe626ca239ca81e",
+      "mark": "regress",
+      "rejected": true
+    }
+  }
+}

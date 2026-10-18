@@ -1,0 +1,1469 @@
+{
+  "format": "freerouting-gate-baseline-1",
+  "rows": {
+    "fixtures/Issue066-Project_GP8B.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 16152.61,
+          "unrouted": 69,
+          "via_in_pad": 0,
+          "vias": 659,
+          "wall_seconds": 251.28
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 16161.49,
+          "unrouted": 61,
+          "via_in_pad": 0,
+          "vias": 690,
+          "wall_seconds": 398.77
+        }
+      },
+      "board": "fixtures/Issue066-Project_GP8B.dsn",
+      "input_sha256": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue093-interf_u.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 168,
+          "length_mm": 10206.45,
+          "unrouted": 19,
+          "via_in_pad": 0,
+          "vias": 168,
+          "wall_seconds": 2.588
+        },
+        "java": {
+          "clearance_violations": 168,
+          "length_mm": 10206.45,
+          "unrouted": 19,
+          "via_in_pad": 0,
+          "vias": 168,
+          "wall_seconds": 1.417
+        }
+      },
+      "board": "fixtures/Issue093-interf_u.dsn",
+      "input_sha256": "73a6eb52f27fa3316a791db5f647de0be5d8a369d8c1faf6e275e3c9d1464baa",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue145-smoothieboard.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 210,
+          "length_mm": 6659.78,
+          "unrouted": 30,
+          "via_in_pad": 42,
+          "vias": 505,
+          "wall_seconds": 159.432
+        },
+        "java": {
+          "clearance_violations": 210,
+          "length_mm": 6902.54,
+          "unrouted": 19,
+          "via_in_pad": 42,
+          "vias": 530,
+          "wall_seconds": 167.232
+        }
+      },
+      "board": "fixtures/Issue145-smoothieboard.dsn",
+      "input_sha256": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue219-LogicBoard_smt.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 9742.33,
+          "unrouted": 300,
+          "via_in_pad": 0,
+          "vias": 931,
+          "wall_seconds": 263.358
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 9940.69,
+          "unrouted": 285,
+          "via_in_pad": 0,
+          "vias": 938,
+          "wall_seconds": 399.457
+        }
+      },
+      "board": "fixtures/Issue219-LogicBoard_smt.dsn",
+      "input_sha256": "bffe922b51a45ea7816166f94488d37d6d3415c919d018af727e2d05257b76fc",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue269-z10_module.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 375,
+          "length_mm": 3671.59,
+          "unrouted": 37,
+          "via_in_pad": 0,
+          "vias": 221,
+          "wall_seconds": 138.628
+        },
+        "java": {
+          "clearance_violations": 375,
+          "length_mm": 3671.59,
+          "unrouted": 37,
+          "via_in_pad": 0,
+          "vias": 221,
+          "wall_seconds": 130.949
+        }
+      },
+      "board": "fixtures/Issue269-z10_module.dsn",
+      "input_sha256": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue420-contribution-board.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 10245.97,
+          "unrouted": 42,
+          "via_in_pad": 0,
+          "vias": 788,
+          "wall_seconds": 691.34
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 9970.08,
+          "unrouted": 57,
+          "via_in_pad": 0,
+          "vias": 775,
+          "wall_seconds": 642.898
+        }
+      },
+      "board": "fixtures/Issue420-contribution-board.dsn",
+      "input_sha256": "2b062515781ff5876c3cd851d844748a0acf48fd26e2b3c6c143fb457b2ce5a8",
+      "mark": "improve",
+      "rejected": true
+    },
+    "fixtures/Issue433-my-board.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 145.24,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 3,
+          "wall_seconds": 0.201
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 147.41,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 4,
+          "wall_seconds": 0.083
+        }
+      },
+      "board": "fixtures/Issue433-my-board.dsn",
+      "input_sha256": "36ce022caadc2e375e7faa5ecd0325f45671df6a1cbe71c13e3f10bed7086b50",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue508-DAC2020_bm01.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 3271.61,
+          "unrouted": 33,
+          "via_in_pad": 0,
+          "vias": 116,
+          "wall_seconds": 10.801
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 3571,
+          "unrouted": 24,
+          "via_in_pad": 0,
+          "vias": 126,
+          "wall_seconds": 12.937
+        }
+      },
+      "board": "fixtures/Issue508-DAC2020_bm01.dsn",
+      "input_sha256": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue508-DAC2020_bm02.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 293.4,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 13,
+          "wall_seconds": 0.458
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 293.63,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 13,
+          "wall_seconds": 0.161
+        }
+      },
+      "board": "fixtures/Issue508-DAC2020_bm02.dsn",
+      "input_sha256": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue508-DAC2020_bm07.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 790.61,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 26,
+          "wall_seconds": 0.738
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 762.21,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 27,
+          "wall_seconds": 0.544
+        }
+      },
+      "board": "fixtures/Issue508-DAC2020_bm07.dsn",
+      "input_sha256": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue508-DAC2020_bm10.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 3364.58,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 144,
+          "wall_seconds": 9.849
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 3354.24,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 150,
+          "wall_seconds": 6.036
+        }
+      },
+      "board": "fixtures/Issue508-DAC2020_bm10.dsn",
+      "input_sha256": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue555-CNH_Functional_Tester_1.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 6,
+          "length_mm": 5864.76,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 23,
+          "wall_seconds": 11.347
+        },
+        "java": {
+          "clearance_violations": 6,
+          "length_mm": 5967.39,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 15,
+          "wall_seconds": 6.63
+        }
+      },
+      "board": "fixtures/Issue555-CNH_Functional_Tester_1.dsn",
+      "input_sha256": "4ba02ac7147bbef2ba00e3348392cc1339deca7b762ca5c975ba20d99e053d9e",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 161.86,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 0,
+          "wall_seconds": 0.067
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 161.83,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 0,
+          "wall_seconds": 0.042
+        }
+      },
+      "board": "fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn",
+      "input_sha256": "e7af5da592bd5c5d19e0082ddedacea2ba4da2a264b7cfb57c336a0c9c4a80d2",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 1056,
+          "length_mm": 18918.6,
+          "unrouted": 181,
+          "via_in_pad": 6,
+          "vias": 506,
+          "wall_seconds": 541.572
+        },
+        "java": {
+          "clearance_violations": 1056,
+          "length_mm": 18918.6,
+          "unrouted": 181,
+          "via_in_pad": 6,
+          "vias": 506,
+          "wall_seconds": 550.509
+        }
+      },
+      "board": "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn",
+      "input_sha256": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/Issue690-sonde_xilinx.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 6,
+          "length_mm": 1284.41,
+          "unrouted": 11,
+          "via_in_pad": 0,
+          "vias": 6,
+          "wall_seconds": 1.211
+        },
+        "java": {
+          "clearance_violations": 6,
+          "length_mm": 1284.41,
+          "unrouted": 11,
+          "via_in_pad": 0,
+          "vias": 6,
+          "wall_seconds": 0.423
+        }
+      },
+      "board": "fixtures/Issue690-sonde_xilinx.dsn",
+      "input_sha256": "633bd6bba64d23dc39e011caa3c44a8382f94818367bc30254d6aaca698dd380",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/Issue753-CPU-85_r104.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 76,
+          "length_mm": 13261.1,
+          "unrouted": 58,
+          "via_in_pad": 0,
+          "vias": 169,
+          "wall_seconds": 49.465
+        },
+        "java": {
+          "clearance_violations": 76,
+          "length_mm": 13525.41,
+          "unrouted": 57,
+          "via_in_pad": 0,
+          "vias": 183,
+          "wall_seconds": 57.838
+        }
+      },
+      "board": "fixtures/Issue753-CPU-85_r104.dsn",
+      "input_sha256": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 322,
+          "length_mm": 3368.25,
+          "unrouted": 107,
+          "via_in_pad": 0,
+          "vias": 192,
+          "wall_seconds": 301.343
+        },
+        "java": {
+          "clearance_violations": 322,
+          "length_mm": 3371.39,
+          "unrouted": 107,
+          "via_in_pad": 0,
+          "vias": 193,
+          "wall_seconds": 304.271
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "34cbcd4395de90aa8533620c1b2bcb8138d761af2f1ed9f5773ba4d4daf2c1ef",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 21,
+          "length_mm": 1062.43,
+          "unrouted": 73,
+          "via_in_pad": 0,
+          "vias": 145,
+          "wall_seconds": 81.6
+        },
+        "java": {
+          "clearance_violations": 21,
+          "length_mm": 1124.15,
+          "unrouted": 71,
+          "via_in_pad": 0,
+          "vias": 149,
+          "wall_seconds": 87.017
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours1.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 70,
+          "length_mm": 1537.39,
+          "unrouted": 114,
+          "via_in_pad": 0,
+          "vias": 138,
+          "wall_seconds": 95.138
+        },
+        "java": {
+          "clearance_violations": 70,
+          "length_mm": 1460.64,
+          "unrouted": 120,
+          "via_in_pad": 0,
+          "vias": 137,
+          "wall_seconds": 98.064
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "mark": "improve",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours2.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 42,
+          "length_mm": 1444.98,
+          "unrouted": 120,
+          "via_in_pad": 0,
+          "vias": 139,
+          "wall_seconds": 108.446
+        },
+        "java": {
+          "clearance_violations": 42,
+          "length_mm": 1486.58,
+          "unrouted": 116,
+          "via_in_pad": 0,
+          "vias": 138,
+          "wall_seconds": 110.086
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "mark": "regress",
+      "rejected": true
+    },
+    "fixtures/canary-pwr/canary-pwr-pours3.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 42,
+          "length_mm": 1472.1,
+          "unrouted": 113,
+          "via_in_pad": 0,
+          "vias": 130,
+          "wall_seconds": 84.109
+        },
+        "java": {
+          "clearance_violations": 42,
+          "length_mm": 1588.22,
+          "unrouted": 115,
+          "via_in_pad": 0,
+          "vias": 133,
+          "wall_seconds": 89.786
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 580.46,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 27,
+          "wall_seconds": 0.523
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 596.68,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 26,
+          "wall_seconds": 0.503
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn",
+      "input_sha256": "17d6cb7f1cd1ba60527b52f42ad18eb97085b0bd7c4f4cf4bcb852ab25bf9005",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 525.03,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 32,
+          "wall_seconds": 0.543
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 529.86,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 36,
+          "wall_seconds": 0.744
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn",
+      "input_sha256": "1192e795f21e68fd4f0bb554029ccb0974855598804ca9cd2cd09bb014fbe552",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1507.58,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 65,
+          "wall_seconds": 2.72
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1473.28,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 72,
+          "wall_seconds": 3.592
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn",
+      "input_sha256": "52baf19c9f577ba22b6bbd97823267f8a6071a0750c0b48b16d8c3834c2fc01e",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 936.19,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 46,
+          "wall_seconds": 1.412
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1004.44,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 39,
+          "wall_seconds": 1.546
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn",
+      "input_sha256": "92e97bca65b4e76f28c72a07090c1e2e8732835d5ed33b7c122cebc90b4228f9",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 7,
+          "length_mm": 539.24,
+          "unrouted": 13,
+          "via_in_pad": 0,
+          "vias": 74,
+          "wall_seconds": 5.318
+        },
+        "java": {
+          "clearance_violations": 9,
+          "length_mm": 499.05,
+          "unrouted": 16,
+          "via_in_pad": 0,
+          "vias": 72,
+          "wall_seconds": 4.807
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn",
+      "input_sha256": "cf70ae4c9833df6c4eec02691e0d87b368aca2a90f57c5fe27b43aed6cf34041",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 817.48,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 23,
+          "wall_seconds": 0.783
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 868.82,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 22,
+          "wall_seconds": 0.845
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn",
+      "input_sha256": "757d56a178090552ec6a144448d22399ca2eb2e767cbba2474ec4c93009530d5",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1482.54,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 3,
+          "wall_seconds": 0.361
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1484.15,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 2,
+          "wall_seconds": 0.382
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn",
+      "input_sha256": "308f07f5b546199522a274e985eb55befc661e3d1ab9c5ffca790bd1ca1dc296",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 957.21,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 55,
+          "wall_seconds": 2.353
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 992.03,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 57,
+          "wall_seconds": 2.27
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn",
+      "input_sha256": "c6129878b79be1e463155f3a9d9f533518e640a3bf7788897878ba70184bc344",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 905.72,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 60,
+          "wall_seconds": 1.568
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 909.47,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 61,
+          "wall_seconds": 1.492
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn",
+      "input_sha256": "cc5a76a25cca83983029d2d69041ef61ccabf0f2dc7f18e844e60f25314c2ba1",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1091.43,
+          "unrouted": 6,
+          "via_in_pad": 0,
+          "vias": 21,
+          "wall_seconds": 4.003
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1118.1,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 22,
+          "wall_seconds": 3.841
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn",
+      "input_sha256": "adb60a7d37ca61746a35aa0a8f206a4ebb79b5fe41cc11adb3aea9fc85f9422b",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 2375.11,
+          "unrouted": 173,
+          "via_in_pad": 0,
+          "vias": 306,
+          "wall_seconds": 898.332
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2432.55,
+          "unrouted": 162,
+          "via_in_pad": 0,
+          "vias": 295,
+          "wall_seconds": 897.52
+        }
+      },
+      "board": "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn",
+      "input_sha256": "58bc25055135cdc810fded2d0bbbe9a268026b2e16154ab8493448244a43dcdc",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/cc1101-module-cc1101-module.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 142.94,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 11,
+          "wall_seconds": 0.824
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 113.82,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 12,
+          "wall_seconds": 0.784
+        }
+      },
+      "board": "target/corpus/prepped/cc1101-module-cc1101-module.dsn",
+      "input_sha256": "b3e6c385895a8bcdb2f00768413d680e70b35bf32786a385abaad5bfc6a257d6",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 303.04,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 14,
+          "wall_seconds": 0.647
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 304.01,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 13,
+          "wall_seconds": 0.546
+        }
+      },
+      "board": "target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn",
+      "input_sha256": "04cd3b9c2996c149a73efa7bc50b2b5ded50a29d6b62ab859b365afbffef9d91",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 2,
+          "length_mm": 878.57,
+          "unrouted": 8,
+          "via_in_pad": 0,
+          "vias": 61,
+          "wall_seconds": 18.429
+        },
+        "java": {
+          "clearance_violations": 2,
+          "length_mm": 903.21,
+          "unrouted": 7,
+          "via_in_pad": 0,
+          "vias": 60,
+          "wall_seconds": 22.469
+        }
+      },
+      "board": "target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn",
+      "input_sha256": "d9b2cd2931f261fd045614c9f623db4e0a1b551e02eb5c841951f8f01def0f35",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/eprom-card-80bus.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 1,
+          "length_mm": 16022.94,
+          "unrouted": 16,
+          "via_in_pad": 0,
+          "vias": 288,
+          "wall_seconds": 72.736
+        },
+        "java": {
+          "clearance_violations": 1,
+          "length_mm": 15198.6,
+          "unrouted": 25,
+          "via_in_pad": 0,
+          "vias": 252,
+          "wall_seconds": 86.297
+        }
+      },
+      "board": "target/corpus/prepped/eprom-card-80bus.dsn",
+      "input_sha256": "199e96972cb3b4651f1131154382da47eda7f2ba3bdfb03b34991e4a7b44264b",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/fc-rom-vomitter-nescart.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 6935.45,
+          "unrouted": 66,
+          "via_in_pad": 0,
+          "vias": 460,
+          "wall_seconds": 387.706
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 5627.79,
+          "unrouted": 59,
+          "via_in_pad": 0,
+          "vias": 413,
+          "wall_seconds": 484.47
+        }
+      },
+      "board": "target/corpus/prepped/fc-rom-vomitter-nescart.dsn",
+      "input_sha256": "fcdb8ea31414bcecd2acac6e129d66c056aea7580bb4963cdb0c81582f6505a3",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/flight-computer-core-board.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 571.85,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 22,
+          "wall_seconds": 0.567
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 607.04,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 24,
+          "wall_seconds": 0.548
+        }
+      },
+      "board": "target/corpus/prepped/flight-computer-core-board.dsn",
+      "input_sha256": "e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 6,
+          "length_mm": 1194.86,
+          "unrouted": 22,
+          "via_in_pad": 0,
+          "vias": 116,
+          "wall_seconds": 116.201
+        },
+        "java": {
+          "clearance_violations": 6,
+          "length_mm": 1196.65,
+          "unrouted": 26,
+          "via_in_pad": 0,
+          "vias": 120,
+          "wall_seconds": 155.513
+        }
+      },
+      "board": "target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn",
+      "input_sha256": "ec10e1c2e9bba4dca9f5caf5bcb83cee5508937c5a719689510ff0e02a59ada3",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1180.42,
+          "unrouted": 35,
+          "via_in_pad": 0,
+          "vias": 112,
+          "wall_seconds": 49.307
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1205.97,
+          "unrouted": 34,
+          "via_in_pad": 0,
+          "vias": 110,
+          "wall_seconds": 77.047
+        }
+      },
+      "board": "target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn",
+      "input_sha256": "636ce0fa8e43df5496411b4d98fb761fed37988b8ef649de8ab5cccf17a325ec",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1062.55,
+          "unrouted": 6,
+          "via_in_pad": 0,
+          "vias": 138,
+          "wall_seconds": 19.478
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1025.48,
+          "unrouted": 4,
+          "via_in_pad": 0,
+          "vias": 133,
+          "wall_seconds": 22.64
+        }
+      },
+      "board": "target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn",
+      "input_sha256": "2e49060a0515896a765926f173d00cad970f52b73ac69244c3c83fbe8e0af2f3",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/macroprocessor-diode-matrix-rom-dip.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1051.69,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 2,
+          "wall_seconds": 0.805
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1065.71,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 3,
+          "wall_seconds": 1.165
+        }
+      },
+      "board": "target/corpus/prepped/macroprocessor-diode-matrix-rom-dip.dsn",
+      "input_sha256": "4acbb72d25d1e3f0fafbba8723cea9ceed087e69e6f8de9fc388faa503574fb1",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 37.75,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 0,
+          "wall_seconds": 0.041
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 37.75,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 0,
+          "wall_seconds": 0.024
+        }
+      },
+      "board": "target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn",
+      "input_sha256": "c7bc16b327a495e34e6c457f6d5d79df5bad46beb55c15b304494cf8273c946f",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 6170.84,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 248,
+          "wall_seconds": 207.872
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 6137.48,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 244,
+          "wall_seconds": 245.741
+        }
+      },
+      "board": "target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn",
+      "input_sha256": "80fd1c8ca176a1110ab5c1674d137b820f7d54c4f39fb7692ec8cecb5ce9caf6",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 748.67,
+          "unrouted": 43,
+          "via_in_pad": 0,
+          "vias": 104,
+          "wall_seconds": 143.324
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 791.63,
+          "unrouted": 41,
+          "via_in_pad": 0,
+          "vias": 113,
+          "wall_seconds": 350.979
+        }
+      },
+      "board": "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn",
+      "input_sha256": "47fd62dc6e816e5ed218db49b4f4c32f5879d08f1b1db014b1f949143e56c71c",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/moteus-moteus-c1.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 13,
+          "length_mm": 1041.4,
+          "unrouted": 43,
+          "via_in_pad": 0,
+          "vias": 112,
+          "wall_seconds": 60.798
+        },
+        "java": {
+          "clearance_violations": 13,
+          "length_mm": 1072.16,
+          "unrouted": 39,
+          "via_in_pad": 0,
+          "vias": 114,
+          "wall_seconds": 148.603
+        }
+      },
+      "board": "target/corpus/prepped/moteus-moteus-c1.dsn",
+      "input_sha256": "8f0fe7d8675ea29e54dcf9a29abde4eb5e826bf15b41a9e8dd6d2f99566712d3",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/mydevboard-rp2040dev.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 456.84,
+          "unrouted": 49,
+          "via_in_pad": 0,
+          "vias": 24,
+          "wall_seconds": 16.638
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 510.62,
+          "unrouted": 40,
+          "via_in_pad": 0,
+          "vias": 35,
+          "wall_seconds": 18.938
+        }
+      },
+      "board": "target/corpus/prepped/mydevboard-rp2040dev.dsn",
+      "input_sha256": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/nudac-nudac.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 908.16,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 102,
+          "wall_seconds": 13.813
+        },
+        "java": {
+          "clearance_violations": 4,
+          "length_mm": 887.92,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 100,
+          "wall_seconds": 13.477
+        }
+      },
+      "board": "target/corpus/prepped/nudac-nudac.dsn",
+      "input_sha256": "a11ddbb1ebfac3d4eaf1df695cc26c8ba66c0f6f92e566e8547e89c57c0442f4",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1518.22,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 113,
+          "wall_seconds": 8.714
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1502.64,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 118,
+          "wall_seconds": 12.136
+        }
+      },
+      "board": "target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn",
+      "input_sha256": "fbf5dd4d8ae9e3765af703d8f1fab57edcd9a91149842c4ea1ce7005780e2195",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/overlord-overlord.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 12,
+          "length_mm": 1505.43,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 76,
+          "wall_seconds": 32.298
+        },
+        "java": {
+          "clearance_violations": 12,
+          "length_mm": 1496.78,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 75,
+          "wall_seconds": 115.455
+        }
+      },
+      "board": "target/corpus/prepped/overlord-overlord.dsn",
+      "input_sha256": "a8645c7e6f6d317bba8700f3f7f54ab4fd6c6aef50e85d08e07ef2a290c3e0cc",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 2441.41,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 191,
+          "wall_seconds": 84.989
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2452.1,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 180,
+          "wall_seconds": 64.693
+        }
+      },
+      "board": "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn",
+      "input_sha256": "7c909c58c3f9de9c4972b6b5fddc0c4820131c6d0cbd54eb41e78ad8b8dea4ce",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/pcietestpcb-pcietest.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 22,
+          "length_mm": 3383.08,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 28,
+          "wall_seconds": 5.952
+        },
+        "java": {
+          "clearance_violations": 21,
+          "length_mm": 3470.66,
+          "unrouted": 1,
+          "via_in_pad": 0,
+          "vias": 27,
+          "wall_seconds": 7.667
+        }
+      },
+      "board": "target/corpus/prepped/pcietestpcb-pcietest.dsn",
+      "input_sha256": "87f2f2f1f22c1acf2076930defda5f33f90a8385e42b5a6aded41e0c3d3ecd03",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/picodebugger-picoprobetester.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1332.13,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 0,
+          "wall_seconds": 0.281
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1318.02,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 0,
+          "wall_seconds": 0.262
+        }
+      },
+      "board": "target/corpus/prepped/picodebugger-picoprobetester.dsn",
+      "input_sha256": "66065dfce4febff239503c2670316e35de8c38ec430da597a0652d9177c65dda",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/picodvi-picodvi.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 20,
+          "length_mm": 368.76,
+          "unrouted": 13,
+          "via_in_pad": 0,
+          "vias": 58,
+          "wall_seconds": 14.742
+        },
+        "java": {
+          "clearance_violations": 20,
+          "length_mm": 433.87,
+          "unrouted": 10,
+          "via_in_pad": 0,
+          "vias": 57,
+          "wall_seconds": 19.562
+        }
+      },
+      "board": "target/corpus/prepped/picodvi-picodvi.dsn",
+      "input_sha256": "004fd6f348739b6ad5a1314534ebeb5ea005f22f49809fa3386928c7afc45378",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/pocketsdr-v3-0.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 2512.56,
+          "unrouted": 3,
+          "via_in_pad": 0,
+          "vias": 176,
+          "wall_seconds": 73.836
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2422.77,
+          "unrouted": 5,
+          "via_in_pad": 0,
+          "vias": 179,
+          "wall_seconds": 230.785
+        }
+      },
+      "board": "target/corpus/prepped/pocketsdr-v3-0.dsn",
+      "input_sha256": "95c4a3e68534b3b2ea5585731e04403e0fbf023e3b3b3f230c63b5e80c53fb67",
+      "mark": "improve",
+      "rejected": true
+    },
+    "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 2200.52,
+          "unrouted": 28,
+          "via_in_pad": 0,
+          "vias": 57,
+          "wall_seconds": 23.832
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 2502.4,
+          "unrouted": 14,
+          "via_in_pad": 0,
+          "vias": 55,
+          "wall_seconds": 25.846
+        }
+      },
+      "board": "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn",
+      "input_sha256": "f390902a0b873eff6340805faad1185277f5ab3bee6eb22d186d5cb4821235e4",
+      "mark": "regress",
+      "rejected": true
+    },
+    "target/corpus/prepped/slice-dcmt-bread-slice.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 1239.36,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 8,
+          "wall_seconds": 0.363
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 1259.68,
+          "unrouted": 2,
+          "via_in_pad": 0,
+          "vias": 8,
+          "wall_seconds": 0.548
+        }
+      },
+      "board": "target/corpus/prepped/slice-dcmt-bread-slice.dsn",
+      "input_sha256": "864260cbe7f5b10e66dfca1eb72d5992142ab9c31aba2911408dbbca871b8074",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/solarmeshtasticnode-meshtasticnode-bq25185.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 598.45,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 50,
+          "wall_seconds": 1.35
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 598.94,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 50,
+          "wall_seconds": 1.684
+        }
+      },
+      "board": "target/corpus/prepped/solarmeshtasticnode-meshtasticnode-bq25185.dsn",
+      "input_sha256": "df9a73e2ded1b1164a90e5bbd3e291584bed6c421913af8635ce3a761ec1dbfa",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/vfo-controller-catvfoctrl.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 2,
+          "length_mm": 732.13,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 25,
+          "wall_seconds": 0.891
+        },
+        "java": {
+          "clearance_violations": 2,
+          "length_mm": 723.76,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 26,
+          "wall_seconds": 0.863
+        }
+      },
+      "board": "target/corpus/prepped/vfo-controller-catvfoctrl.dsn",
+      "input_sha256": "4896cc4b6a640c482cdd2c7e8a2e88e3ef86d5b1e811a19446c4a39fd3ff12a4",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/vna-usb-pd.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 0,
+          "length_mm": 205.39,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 11,
+          "wall_seconds": 1.882
+        },
+        "java": {
+          "clearance_violations": 0,
+          "length_mm": 205.11,
+          "unrouted": 0,
+          "via_in_pad": 0,
+          "vias": 11,
+          "wall_seconds": 4.844
+        }
+      },
+      "board": "target/corpus/prepped/vna-usb-pd.dsn",
+      "input_sha256": "1ba306142c9d62a37d0005fa6b99daa09d814bebe0dc1053127189bb85fc087a",
+      "mark": "neutral",
+      "rejected": true
+    },
+    "target/corpus/prepped/wisweep-driver-board.dsn": {
+      "arms": {
+        "conflict-rounds": {
+          "clearance_violations": 13,
+          "length_mm": 612.81,
+          "unrouted": 24,
+          "via_in_pad": 0,
+          "vias": 56,
+          "wall_seconds": 27.036
+        },
+        "java": {
+          "clearance_violations": 13,
+          "length_mm": 643.24,
+          "unrouted": 17,
+          "via_in_pad": 0,
+          "vias": 63,
+          "wall_seconds": 31.77
+        }
+      },
+      "board": "target/corpus/prepped/wisweep-driver-board.dsn",
+      "input_sha256": "938cb5635fccd177c90cfaf0c1966e5b029c1b96af3eef75afe626ca239ca81e",
+      "mark": "regress",
+      "rejected": true
+    }
+  }
+}

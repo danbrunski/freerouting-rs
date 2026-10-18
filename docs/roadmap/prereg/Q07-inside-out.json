@@ -1,0 +1,133 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q07.3-inside-out",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/Q07-first-pass-ordering.md",
+  "question": "Does the inside-out pass-1 order (router.autorouter.ordering=inside-out; later passes Freerouting's) route at least as well as Java's item order: no via in a pad, no new clearance violation, no drc_real rise, unrouted after the full run lower on at least N-1 of the N distinct eligible boards and higher on none?",
+  "arms": {
+    "java": {
+      "engine": "freerouting-rs Q07 working tree on c23d8c0 (release), the CLI",
+      "command": "freerouting-dev bench --set <part> --rust <wrapper> --runs 1 --max-load off --timeout 7200 --out <dir>, in two parts of tools/bench/sets/q07.txt (A: the 21 P04 rows and d3c-0677-kitspace-glasgow with --jobs 1; B: the other 40 rows with --jobs 2, which changes no route, P03.3), whose bench.json files are joined board by board; Rust only; the wrapper runs the release CLI of the Q07 build (sha256 5886585c...) with --router.autorouter.ordering=<id> --stats json; bounds from tools/java-reference/route-bounds.tsv, else bench's 5 passes; the optimizer off, bench's default",
+      "settings": {
+        "router.autorouter.ordering": "freerouting-ordering",
+        "everything else": "bench's command line and the route bounds"
+      }
+    },
+    "inside-out": {
+      "engine": "freerouting-rs Q07 working tree on c23d8c0 (release), the CLI",
+      "command": "freerouting-dev bench --set <part> --rust <wrapper> --runs 1 --max-load off --timeout 7200 --out <dir>, in two parts of tools/bench/sets/q07.txt (A: the 21 P04 rows and d3c-0677-kitspace-glasgow with --jobs 1; B: the other 40 rows with --jobs 2, which changes no route, P03.3), whose bench.json files are joined board by board; Rust only; the wrapper runs the release CLI of the Q07 build (sha256 5886585c...) with --router.autorouter.ordering=<id> --stats json; bounds from tools/java-reference/route-bounds.tsv, else bench's 5 passes; the optimizer off, bench's default",
+      "settings": {
+        "router.autorouter.ordering": "inside-out",
+        "everything else": "bench's command line and the route bounds"
+      }
+    }
+  },
+  "baseline_arm": "java",
+  "candidate_arm": "inside-out",
+  "boards": {
+    "set": "tools/bench/sets/q07.txt",
+    "dsn": "the eligible rows of tools/bench/sets/q07.txt; the five canary-pwr variants count as one board (gate collect --group fixtures/canary-pwr/=canary-pwr)",
+    "files": {
+      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "fixtures/Issue508-DAC2020_bm10.dsn": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "fixtures/Issue753-CPU-85_r104.dsn": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "fixtures/Issue145-smoothieboard.dsn": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "fixtures/Issue219-LogicBoard_smt.dsn": "bffe922b51a45ea7816166f94488d37d6d3415c919d018af727e2d05257b76fc",
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
+      "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn": "34cbcd4395de90aa8533620c1b2bcb8138d761af2f1ed9f5773ba4d4daf2c1ef",
+      "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn": "92e97bca65b4e76f28c72a07090c1e2e8732835d5ed33b7c122cebc90b4228f9",
+      "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn": "cf70ae4c9833df6c4eec02691e0d87b368aca2a90f57c5fe27b43aed6cf34041",
+      "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn": "cc5a76a25cca83983029d2d69041ef61ccabf0f2dc7f18e844e60f25314c2ba1",
+      "target/corpus-d3c/prepped/d3c-0677-kitspace-glasgow.dsn": "58bc25055135cdc810fded2d0bbbe9a268026b2e16154ab8493448244a43dcdc",
+      "target/corpus/prepped/pcietestpcb-pcietest.dsn": "87f2f2f1f22c1acf2076930defda5f33f90a8385e42b5a6aded41e0c3d3ecd03",
+      "target/corpus/prepped/ch32v003-usb-devboard-ch32v003-usb-devboard.dsn": "04cd3b9c2996c149a73efa7bc50b2b5ded50a29d6b62ab859b365afbffef9d91",
+      "target/corpus/prepped/cc1101-module-cc1101-module.dsn": "b3e6c385895a8bcdb2f00768413d680e70b35bf32786a385abaad5bfc6a257d6",
+      "target/corpus/prepped/mydevboard-rp2040dev.dsn": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753",
+      "target/corpus/prepped/flight-computer-core-board.dsn": "e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86",
+      "target/corpus/prepped/vfo-controller-catvfoctrl.dsn": "4896cc4b6a640c482cdd2c7e8a2e88e3ef86d5b1e811a19446c4a39fd3ff12a4",
+      "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn": "f390902a0b873eff6340805faad1185277f5ab3bee6eb22d186d5cb4821235e4",
+      "target/corpus/prepped/vna-usb-pd.dsn": "1ba306142c9d62a37d0005fa6b99daa09d814bebe0dc1053127189bb85fc087a",
+      "target/corpus/prepped/picodvi-picodvi.dsn": "004fd6f348739b6ad5a1314534ebeb5ea005f22f49809fa3386928c7afc45378",
+      "target/corpus/prepped/pcie-active-backplane-pcie-active-backplane-x16-4layer.dsn": "7c909c58c3f9de9c4972b6b5fddc0c4820131c6d0cbd54eb41e78ad8b8dea4ce",
+      "target/corpus/prepped/openmuscle-flexgrid-om-flexgrid-rigid-pcb.dsn": "fbf5dd4d8ae9e3765af703d8f1fab57edcd9a91149842c4ea1ce7005780e2195",
+      "target/corpus/prepped/wisweep-driver-board.dsn": "938cb5635fccd177c90cfaf0c1966e5b029c1b96af3eef75afe626ca239ca81e",
+      "target/corpus/prepped/nudac-nudac.dsn": "a11ddbb1ebfac3d4eaf1df695cc26c8ba66c0f6f92e566e8547e89c57c0442f4",
+      "target/corpus/prepped/loratracker-hardware-loratracker-hat.dsn": "636ce0fa8e43df5496411b4d98fb761fed37988b8ef649de8ab5cccf17a325ec",
+      "target/corpus/prepped/m-fc-g474-rev-a-m-fc.dsn": "2e49060a0515896a765926f173d00cad970f52b73ac69244c3c83fbe8e0af2f3",
+      "target/corpus/prepped/moteus-moteus-c1.dsn": "8f0fe7d8675ea29e54dcf9a29abde4eb5e826bf15b41a9e8dd6d2f99566712d3",
+      "target/corpus/prepped/pocketsdr-v3-0.dsn": "95c4a3e68534b3b2ea5585731e04403e0fbf023e3b3b3f230c63b5e80c53fb67",
+      "target/corpus/prepped/cm4-edge-ai-carrier-cm4-edge-ai-carrier.dsn": "d9b2cd2931f261fd045614c9f623db4e0a1b551e02eb5c841951f8f01def0f35",
+      "target/corpus/prepped/overlord-overlord.dsn": "a8645c7e6f6d317bba8700f3f7f54ab4fd6c6aef50e85d08e07ef2a290c3e0cc",
+      "target/corpus/prepped/fc-rom-vomitter-nescart.dsn": "fcdb8ea31414bcecd2acac6e129d66c056aea7580bb4963cdb0c81582f6505a3",
+      "target/corpus/prepped/miniscope-v4-miniscope-v4-rigid-flex.dsn": "47fd62dc6e816e5ed218db49b4f4c32f5879d08f1b1db014b1f949143e56c71c",
+      "target/corpus/prepped/microzed-carrier-board-microzed-carrier-board-v4.dsn": "80fd1c8ca176a1110ab5c1674d137b820f7d54c4f39fb7692ec8cecb5ce9caf6",
+      "target/corpus/prepped/healthypi-move-hw-pc-healthypi-move-sensor-v9.dsn": "ec10e1c2e9bba4dca9f5caf5bcb83cee5508937c5a719689510ff0e02a59ada3"
+    }
+  },
+  "eligibility": "decided from the inputs before any number (crates/freerouting/tests/quality_ordering.rs report_pass_one_orders on the loaded boards): a row is eligible when it has a dense part (a component with at least 16 pins and a pin pitch of at most 0.65 mm + 1 um); without one inside-out is Java's order by construction (tests/quality_ordering.rs inside_out_keeps_java_order_without_a_dense_part). Ineligible rows, printed as neutral by construction and not run for this arm: fixtures/Issue433-my-board.dsn, fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn, fixtures/Issue508-DAC2020_bm02.dsn, fixtures/Issue690-sonde_xilinx.dsn, fixtures/Issue508-DAC2020_bm07.dsn, fixtures/Issue093-interf_u.dsn, fixtures/Issue555-CNH_Functional_Tester_1.dsn, fixtures/Issue420-contribution-board.dsn, target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn, target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn, target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn, target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn, target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn, target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn, target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn, target/corpus/prepped/picodebugger-picoprobetester.dsn, target/corpus/prepped/slice-dcmt-bread-slice.dsn, target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn, target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn, target/corpus/prepped/eprom-card-80bus.dsn, target/corpus/prepped/macroprocessor-diode-matrix-rom-dip.dsn, target/corpus/prepped/solarmeshtasticnode-meshtasticnode-bq25185.dsn. No eligible board is dropped after a number exists; a missing board fails the run.",
+  "grading": "Freerouting's board model through bench (ses-diff statistics) and gate collect's via_in_pad on every board. KiCad's DRC (F02.6, tools/kicad-oracle/grade.sh per project with stdin from /dev/null, KiCad 10.0.7 WSL) on every eligible board that has a .kicad_pcb: the D3-C projects (target/corpus-d3c/grade-set.txt), the F03.3 corpus projects (target/corpus/grade-set.txt), and, as P04 did, the KiCad demos ecc83, interf_u, kit-dev-coldfire-xilinx_5213, sonde and canary-pwr rev1.0. grade.sh's engine command is a wrapper that grades the bench's own session when the DSN grade.sh exports equals the bench input except its first line (the pcb name), and otherwise routes with the arm's CLI at --router.autorouter.max_passes=5 --router.optimizer.enabled=false (the demos and canary-pwr rev1.0, whose fixtures are older exports). drc_real and kicad_unconnected per arm are a second table; drc_real is a guard: a board whose drc_real rises is a regression for the keep rule. A project that is not graded (exit 2) is reported and counts as not passed for that board.",
+  "extra_reported": "Reported, not judged: unrouted after pass 1 (the 'Auto-routing pass #1 ... (N unrouted' line of each run's log), per board and arm, and the counters of --stats json. Q12 reuses these orders as portfolio arms, so the pass-1 table is kept whether or not an arm is kept.",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower"
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower"
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "gate collect: vias whose copper overlaps an SMD pad on the imported SES, minus those in the input",
+    "clearance_violations": "bench statistics (ses-diff's import): clearance violations of the routed board",
+    "unrouted": "bench statistics: incomplete connections after the full run (the route bounds)",
+    "vias": "bench statistics",
+    "length_mm": "bench statistics",
+    "wall_seconds": "bench median wall time (one run, other sessions' load, --jobs 2 in part B: not comparable)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "Q07.4 and routing-quality.md: the arm is kept only if it improves on at least N-1 of the N distinct eligible boards and regresses on none (no via in a pad, no new clearance violation, no drc_real rise, unrouted not higher), as the gate's verdict. Otherwise its code is removed and the numbers stay in Q07.4's note; a rejected order still has its pass-1 table recorded for Q12.",
+  "stop_rule": "one run per board and arm (routing is deterministic, D2); a crash or timeout is re-run once and reported. Every eligible board is run for each arm even after a regression exists, because Q12 reuses the per-board numbers.",
+  "notes": [
+    "Before this registration one smoke run checked the CLI flag: fixtures/Issue508-DAC2020_bm01.dsn with --router.autorouter.max_passes=3 (not the route bound) gave unrouted 24 (java), 33 (conflict-rounds), 64 (inside-out). It decided nothing here: the boards, arms, rules and bounds were fixed by the checklist before it."
+  ],
+  "amendments": []
+}
