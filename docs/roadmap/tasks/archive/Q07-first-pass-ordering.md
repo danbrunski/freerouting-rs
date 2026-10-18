@@ -115,8 +115,8 @@ leave congestion failures (Q06's verdicts say).
     `FreeroutingOrdering`, a restore does not bring pass 1 back; registered as
     `conflict-rounds` under `router.autorouter.ordering` (no settings-table
     change: the key exists since A10.2). The whole implementation (with
-    `inside-out` and the tests) is parked on
-    branch `rejected/q07-orderings` (379b413, on top of `c23d8c0`).
+    `inside-out` and the tests) is kept under
+    tag `archive/q07-orderings` (379b413, on top of `c23d8c0`).
   - **Unit tests** (in that patch): `four_nets_give_the_hand_derived_order`
     (nets 1–4, conflicts 1–2 and 1–3: round 1 picks 4, then 3 over 2 by MST
     length, pushing 1; order 3, 4, 2, 1),
@@ -154,7 +154,7 @@ leave congestion failures (Q06's verdicts say).
 
   *Done 2026-10-17 (rejected by Q07.4: the gate failed, the code is removed, the
   numbers stay in Q07.4's note):*
-  - **What was built** (on branch `rejected/q07-orderings`):
+  - **What was built** (tag `archive/q07-orderings`):
     `quality/ordering/inside_out.rs` (F04 header, KRT `order_nets_inside_out`):
     `dense_parts(board)`: components with at least 16 pins whose smallest
     non-zero pin-centre distance is at most 0.65 mm + 1 µm (KRT's `_DIST_TOL`,
@@ -252,8 +252,8 @@ leave congestion failures (Q06's verdicts say).
     orders leave more connections open and so fewer DRC items.
   - **Outcome.** Both orders, the conflict graph and the `PassOneOrdering`
     wrapper are removed (no DIVERGENCES or PROVENANCE line: no ported file
-    remains); the implementation is parked on branch
-    `rejected/q07-orderings` (379b413) for Q12's portfolio arms. The baseline files
+    remains); the implementation is kept under tag
+    `archive/q07-orderings` (379b413) for Q12's portfolio arms. The baseline files
     `tools/bench/baselines/Q07.json` (61 rows) and `Q07-inside-out.json` (40
     rows) keep every row with `"rejected": true`; the gate run on them reports
     `rejected: 61 row(s)` and `40 row(s)` and no DRIFT.
