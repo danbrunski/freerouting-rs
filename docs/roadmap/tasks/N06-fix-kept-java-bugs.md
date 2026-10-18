@@ -501,7 +501,7 @@ These are marked or look like quirks but keep no bug:
         arm should give the same session. The registration records `optimizer_bypassed` per
         row. The claim that batch O "most likely moves canary-pwr" holds only where the
         router completes.
-- [~] **N06.10 — Batch I, inputs and reports:** the five DSN and SES rows, `stats_line_ab_length`,
+- [x] **N06.10 — Batch I, inputs and reports:** the five DSN and SES rows, `stats_line_ab_length`,
   `route_result_int_via_ratio`, `drc_units_10000_per_mm`.
   - **Accept:**
     - a unit test of both behaviours for each;
@@ -559,7 +559,20 @@ These are marked or look like quirks but keep no bug:
       `optimizer_runs_match_java`, `candidate_items_match_java`), 160 s.
     Small parity checks on 7e70541: `connection-parity` 7/7 and `PARITY_MAX_JAVA_S=20` 57/57 exact
     boards byte-identical, D8 0. Remaining: the canary-pwr plugin-path grade.
-- [~] **N06.11 — Batch U, GUI and interactive:** `snapshot_drops_compensation` (the snapshot
+  *Done 2026-10-18:* every **Accept:** clause is met: the switch tests above, the runs above
+    and the plugin grade.
+    Plugin path: canary-pwr at canary 9511d9a (`git archive`, source unedited), exported with
+    `headless_run.py export` and `canary-graded-flow.json` (KiCad 10.0.7), routed once per arm
+    with the exported args plus `--router.profile=legacy` and the arm's flags
+    (`target/orchestrator/n06-plugin/route_arms.py`): all 18 N06.10 and N06.11 arms give one SES
+    (sha256 978a5e39…), every reachability counter 0.
+    The canary-pwr plugin-path grade (canary-7a, canary `grade.sh` with `GRADE_REV=9511d9a`,
+    KiCad 10.0.5; canary 34c43d3) of that one session: 38 unconnected, 4 clearance errors
+    (+12V_BUS vias at 0.2 mm instead of 0.25), 0 via-in-pad, 0 below-minimum, 2 inner tracks
+    (+12V_BUS on Power.Cu, 12.94 mm), 22 dangling vias and 1 dangling track. These are the
+    legacy profile's errors (no `power_layer_traces=none`, no `via_clearance=net_class`), and
+    every arm has them identically, so no arm adds a real DRC, via-in-pad or below-minimum error.
+- [x] **N06.11 — Batch U, GUI and interactive:** `snapshot_drops_compensation` (the snapshot
   stores the compensation flag), `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`,
   `route_change_layer_no_via`, `route_connect_inner_break`, `select_extension_ignores_filter`.
   The GUI's profile selector (N01) reaches them.
@@ -590,6 +603,9 @@ These are marked or look like quirks but keep no bug:
   *Partial 2026-10-18 (registered runs):* the orchestrator ran `prereg/N06.11.json` at 298af02:
     32 runs (4 boards × 8 arms), `session_differences` 0 and `compensated_snapshot_restores` 0 in
     every run. Remaining: the canary-pwr plugin-path grade.
+  *Done 2026-10-18:* every **Accept:** clause is met: the switch tests above, the 32 runs
+    above, and the shared N06.10 plugin-path run and grade (one SES for all 18 arms; no arm adds
+    a real DRC, via-in-pad or below-minimum error).
 - [ ] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
   its row.
   - `ripup_pass_no_unset` gets its own registration.
