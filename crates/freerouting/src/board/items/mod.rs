@@ -596,16 +596,18 @@ impl BoardOutline {
         }
     }
 
-    /// The geometry transforms of the outline (`BoardOutline.java:265-302`,
-    /// B05.1). Java's loops assign the transformed shape to the loop
-    /// variable only (`currentShape = currentShape.translateBy(vector)`), so
-    /// the outline shapes stay where they are; only the generated keepout
-    /// area moves. That Java bug is kept: it decides the tree shapes of an
-    /// outline with a generated keepout. The board invalidates its edge-pin
-    /// cache, as Java's `invalidateEdgePinNets` does.
-    pub(crate) fn transform_keepout(&mut self, transform: impl FnOnce(&Area) -> Area) {
+    /// Transform both the stored outline and its generated keepout. Java only
+    /// stored the keepout transform, leaving the outline itself behind.
+    pub(crate) fn transform_shapes(
+        &mut self,
+        transform: impl Fn(&PolylineShape) -> PolylineShape,
+        transform_area: impl FnOnce(&Area) -> Area,
+    ) {
+        for shape in &mut self.shapes {
+            *shape = transform(shape);
+        }
         if let Some(area) = &self.keepout_area {
-            let moved = transform(area);
+            let moved = transform_area(area);
             self.keepout_piece_count = moved.split_to_convex().map_or(0, |pieces| pieces.len());
             self.keepout_area = Some(moved);
         }

@@ -11,7 +11,7 @@
 //!    enabled (`autorouter.enabled && max_passes >= 0`) and no router stop
 //!    was requested, the batch loop ([`run_batch_loop`]); otherwise, with
 //!    the fanout enabled, a fanout-only run: Java sets `max_passes = 0`
-//!    for the loop, so the loop is built from settings with that change;
+//!    for the loop; the port also disables the router explicitly (N06.2);
 //! 3. the session dropped (`finishAutoroute`): the port keeps no autoroute
 //!    engine on the board (a session lives for one connection), so there is
 //!    nothing to drop;
@@ -35,12 +35,8 @@
 //! batch loop then sees the job as timed out at the top of the next pass.
 //! No budget inside the router is time.
 //!
-//! **Java quirk kept.** With `autorouter.enabled` and `max_passes < 0` the
-//! router is "disabled" here, but the fanout-only run sets `max_passes = 0`
-//! (unlimited) and the batch loop then finds the router enabled, so it
-//! routes passes after the fanout (`RoutingPipeline.java:115-123` with
-//! `AutorouteBatchLoop.java:285-288`). Settings validation rejects a
-//! negative `max_passes`, so only API callers reach this.
+//! A fanout-only run explicitly disables the autorouter, including when an API
+//! caller supplies a negative `max_passes`.
 
 use std::fmt;
 use std::sync::Arc;
@@ -224,6 +220,7 @@ pub fn run_pipeline_with(
     } else if !cancel.is_router_stop_requested() && settings.fanout.enabled {
         let mut fanout_only = settings.clone();
         fanout_only.autorouter.max_passes = 0;
+        fanout_only.autorouter.enabled = false;
         Some(fanout_only)
     } else {
         None

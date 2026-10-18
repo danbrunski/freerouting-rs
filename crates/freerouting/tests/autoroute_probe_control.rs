@@ -569,7 +569,7 @@ fn control_missing_net_falls_back() {
 }
 
 #[test]
-fn control_rebuild_only_grows_the_via_radii() {
+fn control_rebuild_resets_the_via_radii() {
     use freerouting::rules::ViaRule;
     let mut loaded = unit_board();
     let net = net_number(&loaded, "THTNET");
@@ -582,7 +582,6 @@ fn control_rebuild_only_grows_the_via_radii() {
     };
     let mut control =
         AutorouteControl::for_net_default(&loaded.board, net, &loaded.router).unwrap();
-    let radii = control.via_radii.clone();
     let max_radius = control.max_via_radius;
     // The rule with only the small via, built fresh, has smaller radii.
     let class = loaded.board.rules.nets.get(net).unwrap().net_class();
@@ -601,16 +600,16 @@ fn control_rebuild_only_grows_the_via_radii() {
         "{} < {max_radius}",
         fresh.max_via_radius
     );
-    // PARITY(quirk): a rebuild with the small rule keeps the larger radii.
+    // A rebuild must match a fresh control using the same smaller rule.
     control.via_rule = small;
     control
         .rebuild_via_info(&loaded.board, loaded.router.via_costs(), net)
         .unwrap();
     assert_eq!(control.via_infos.len(), 1);
-    assert_eq!(control.via_radii, radii);
-    assert_eq!(control.max_via_radius, max_radius);
+    assert_eq!(control.via_radii, fresh.via_radii);
+    assert_eq!(control.max_via_radius, fresh.max_via_radius);
     assert_eq!(
         control.min_normal_via_cost,
-        f64::from(loaded.router.via_costs()) * max_radius
+        f64::from(loaded.router.via_costs()) * fresh.max_via_radius
     );
 }

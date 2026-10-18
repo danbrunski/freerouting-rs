@@ -489,10 +489,8 @@ impl ProgressState {
 /// fresh (Java builds a new `BatchAutorouter`); unconnected vias are
 /// removed in every pass.
 ///
-/// Returns Java's count: the passes run, minus one when the last pass found
-/// nothing to route. So a board that is complete before pass 1 gives 1, one
-/// that pass 1 completes gives 2 (pass 2 finds nothing), and one that never
-/// completes gives `max_passes + 1`.
+/// Returns the number of nonempty routing passes performed. A pass that finds
+/// nothing to route is not counted.
 pub fn route_passes_for_optimizer(
     board: &mut RoutingBoard,
     max_passes: u32,
@@ -562,9 +560,12 @@ pub fn route_passes_for_optimizer(
         pass += 1;
     }
     runner.remove_tails(board, StopConnectionOption::None);
-    // PARITY(quirk): BatchAutorouter.java:285-287, Java's off-by-one.
-    if !still_unrouted {
-        pass -= 1;
+    // PARITY(quirk): BatchAutorouter.java:285-287 returns one too many.
+    // Fixed outright in N06.2; the optimizer discards this count.
+    let completed = pass - 1;
+    if still_unrouted {
+        completed
+    } else {
+        completed.saturating_sub(1)
     }
-    pass
 }

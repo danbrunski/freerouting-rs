@@ -1,5 +1,6 @@
 //! Differential tests: the expected strings were produced by running the Java
-//! `app.freerouting.geometry.planar` classes on the same inputs.
+//! `app.freerouting.geometry.planar` classes on the same inputs. N06.2 deliberately
+//! corrects the unused function-of-y stair helper; that expectation is geometric.
 
 use freerouting_geometry::{
     FloatPoint, IntBox, IntOctagon, IntPoint, LineSegment, Point, PolygonShape, Polyline,
@@ -60,11 +61,11 @@ fn stair_approximations_like_java() {
         stair(&ls.stair_approximation_45(7.0, true)),
         "[(3,7), (15,7), (22,14), (34,14), (41,21), (53,21), (60,28), (72,28), (79,35), (91,35), (98,42), (100,42), (101,43)]"
     );
-    // The function-of-y case keeps the Java bug (function_value_approx evaluated at y).
+    // N06 fixes the unused function-of-y helper: use the inverse function.
     let ls2 = LineSegment::from_polyline(&Polyline::from_points(&pts(&[3, 7, 41, 103])), 1);
     assert_eq!(
         stair(&ls2.stair_approximation_45(9.0, false)),
-        "[(3,7), (3,-42), (75,30), (75,-5), (133,53), (133,18), (191,76), (191,40), (250,99), (250,-106), (41,103)]"
+        "[(3,7), (3,21), (12,30), (12,44), (21,53), (21,67), (30,76), (30,90), (39,99), (39,101), (41,103)]"
     );
 }
 

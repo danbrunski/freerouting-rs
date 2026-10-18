@@ -25,10 +25,6 @@
 //! change log (B02.8) as [`AutorouteChange::InfoCleared`].
 //!
 //! Java behaviour kept on purpose:
-//! - `PolylineTrace.rotateApprox` does not call `clearDerivedData`.
-//! - `BoardOutline`'s transforms assign the moved shape to the loop variable
-//!   only, so the outline shapes never move; only a generated keepout area
-//!   does.
 //! - A pin's `translateBy` moves its cached centre, but its shapes come from
 //!   the component, which the caller moves first (`MoveComponent`). Java's
 //!   centre is `null` until first read; the port always has it, so a
@@ -182,8 +178,8 @@ impl BasicBoard {
     }
 
     /// Applies `transform` to `item`, which need not be on the board, and
-    /// recomputes its derived data. Returns how many times Java calls
-    /// `clearDerivedData` for it.
+    /// recomputes its derived data. Returns the number of derived-info
+    /// invalidations to record (including N06.2's corrected trace rotation).
     pub fn transform_detached(&self, item: &mut Item, transform: &ItemTransform) -> usize {
         let layer_count = self.layer_count();
         let rotate_first = self.components.flip_style_rotate_first();
@@ -252,7 +248,7 @@ impl BasicBoard {
                     pole,
                 } => {
                     trace.rotate_approx(*angle_in_degree, *pole);
-                    0
+                    1
                 }
                 ItemTransform::ChangeSide { pole } => {
                     trace.change_placement_side(*pole, layer_count);
@@ -291,22 +287,26 @@ impl BasicBoard {
             }
             ItemKind::BoardOutline(outline) => {
                 match transform {
-                    ItemTransform::Translate(vector) => {
-                        outline.transform_keepout(|a| a.translate_by(vector))
-                    }
-                    ItemTransform::Turn90 { factor, pole } => {
-                        outline.transform_keepout(|a| a.turn_90_degree(*factor, *pole))
-                    }
+                    ItemTransform::Translate(vector) => outline
+                        .transform_shapes(|s| s.translate_by(vector), |a| a.translate_by(vector)),
+                    ItemTransform::Turn90 { factor, pole } => outline.transform_shapes(
+                        |s| s.turn_90_degree(*factor, *pole),
+                        |a| a.turn_90_degree(*factor, *pole),
+                    ),
                     ItemTransform::Rotate {
                         angle_in_degree,
                         pole,
                     } => {
                         let angle = angle_in_degree.to_radians();
-                        outline.transform_keepout(|a| a.rotate_approx(angle, *pole))
+                        outline.transform_shapes(
+                            |s| s.rotate_approx(angle, *pole),
+                            |a| a.rotate_approx(angle, *pole),
+                        )
                     }
-                    ItemTransform::ChangeSide { pole } => {
-                        outline.transform_keepout(|a| a.mirror_vertical(*pole))
-                    }
+                    ItemTransform::ChangeSide { pole } => outline.transform_shapes(
+                        |s| s.mirror_vertical(*pole),
+                        |a| a.mirror_vertical(*pole),
+                    ),
                 }
                 0
             }

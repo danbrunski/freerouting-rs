@@ -399,9 +399,8 @@ impl LineSegment {
                 )
             } else {
                 let y = start_point.y.wrapping_add(i.wrapping_mul(stair_width));
-                // Java bug kept: function_value_approx instead of function_in_y_value_approx.
                 IntPoint::new(
-                    round_to_i32(self.get_line().function_value_approx(f64::from(y))),
+                    round_to_i32(self.get_line().function_in_y_value_approx(f64::from(y))),
                     y,
                 )
             };
@@ -665,6 +664,28 @@ mod tests {
             assert!(w[1].difference_by_int(w[0]).is_multiple_of_45_degree());
         }
         assert_eq!(seg(0, 0, 10, 0).stair_approximation(2.0, true).len(), 2);
+    }
+
+    #[test]
+    fn steep_stairs_are_the_transpose_of_shallow_stairs() {
+        let shallow = seg(3, 7, 101, 43);
+        let steep = seg(7, 3, 43, 101);
+        for right in [false, true] {
+            let expected: Vec<_> = shallow
+                .stair_approximation_45(7.0, right)
+                .into_iter()
+                .map(|p| IntPoint::new(p.y, p.x))
+                .collect();
+            assert_eq!(steep.stair_approximation_45(7.0, !right), expected);
+            for pair in expected.windows(2) {
+                assert!(
+                    pair[1]
+                        .difference_by_int(pair[0])
+                        .is_multiple_of_45_degree()
+                );
+                assert!(pair[1].y >= pair[0].y);
+            }
+        }
     }
 
     #[test]

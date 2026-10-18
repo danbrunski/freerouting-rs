@@ -475,17 +475,19 @@ fn disabled_router_with_fanout_runs_the_fanout_alone() {
 }
 
 /// Java's quirk: `max_passes = -1` with the router enabled is "disabled"
-/// for the pipeline, but the fanout-only run sets `max_passes = 0`, and the
-/// loop then routes (unlimited passes).
+/// for the pipeline. The fanout-only run must keep the router disabled.
 #[test]
-fn negative_max_passes_with_fanout_routes_as_javas_fanout_only_run() {
+fn negative_max_passes_with_fanout_does_not_route() {
     let mut profile = TestingProfile::default();
     profile.set_fanout_enabled(true);
     let mut loaded = load_testing(J2, profile);
     loaded.settings.autorouter.max_passes = -1;
     let (outcome, _, _) = route(loaded);
     assert!(outcome.loop_ran);
-    assert!(!outcome.passes.is_empty(), "the loop routes");
+    assert!(
+        outcome.passes.is_empty(),
+        "fanout must not reenable routing"
+    );
     // Without the fanout nothing runs.
     let mut profile = TestingProfile::default();
     profile.set_fanout_enabled(false);

@@ -232,7 +232,7 @@ These are marked or look like quirks but keep no bug:
     - The two geometry cutout rows were confirmed by hand: `Simplex.java:860` assigns
       `nextDivisionLine = prevDivisionLine`, and `IntOctagon.java`'s branch 3 rebuilds the
       octagon with its old `topY`.
-- [ ] **N06.2 — The (a) fixes.** Fix the 12 (a) rows outright, each with a test of the
+- [~] **N06.2 — The (a) fixes.** Fix the 12 (a) rows outright, each with a test of the
   corrected value. Before fixing `door_section_realloc`, add a counter that the A14 run
   reports; the fix lands only if it reads 0. Correct the doc at `geometry/line.rs:495`: the overflow starts at ~46k units
   axis-aligned, ~32k only at 45°.
@@ -240,6 +240,60 @@ These are marked or look like quirks but keep no bug:
     - the A14 exact set stays byte-identical (a heavy run: leave the command in a `[~]` note);
     - the B02, B03 and A04 probes are unchanged;
     - each row's DIVERGENCES entry moves from "kept on purpose" to the fixed Java bugs.
+  - *Partial 2026-10-17:* Eleven corrections implemented and verified by the gates
+    below; `door_section_realloc` deliberately retains Java behavior until A14 proves
+    its new counter is zero. The session counter distinguishes initial allocation,
+    reuse, and replacement; the existing state-loss regression test pins these values.
+    `PARITY_N06_COUNTERS=1` makes A14 write `n06-counters.json` beside its summaries and
+    refuses cached/resumed records. No heavy run was started.
+    - [x] Four geometry helpers corrected; private-target `cargo test -p freerouting-geometry`
+      passed 111 unit tests, 5 reference tests and 3 predicate tests, including the
+      steep-stair transpose regression (`target/orchestrator/n06/geometry-tests.log`).
+    - [x] Outline transforms, trace rotation journal, pass count, via-radius rebuild and
+      fanout-only routing corrected; focused `autoroute_pass`, `autoroute_pipeline`,
+      `autoroute_probe_control` and `item_transform` tests passed (55 tests before the
+      additional trace-rotation regression test).
+    - [x] Pull-tight contact-pin restoration and single-removal regression:
+      `keep_point_smoothing_restores_contact_pins` passes in release in the private target;
+      it asserts that smoothing split at the interior keep point, restored the saved pins,
+      and logged one removal of the original trace.
+    - [x] Private-target release B02/B03/A04 and pull-tight probes: 26 tests passed,
+      2 timing/debug tests ignored. Command (with `CARGO_BUILD_JOBS=2` and
+      `CARGO_TARGET_DIR=target/orchestrator/n06-target`):
+      `cargo test --release -p freerouting --test board_probe_tree --test board_probe_tree_ops --test board_probe_tree_visits --test autoroute_search_sinks --test reference_pull_tight --test autoroute_probe_control`.
+      Log: `target/orchestrator/n06/probes-release.log`. Existing Java expected mismatches
+      are unchanged; no comparison was loosened.
+    - [x] `cargo fmt --all --check` and `python3 tools/roadmap/checklists.py status --strict`.
+    - [x] Private-target `cargo clippy --workspace --all-targets -- -D warnings`
+      passed with `CARGO_BUILD_JOBS=2`; log `target/orchestrator/n06/clippy-final.log`.
+    - [x] CLI statistics regression (`cargo test -p freerouting-cli --test stats`,
+      private target): 3 passed. The total tree-work assertion now reads parsed JSON,
+      rather than relying on `tree_nodes_visited` being the last counter field; it also
+      checks that the new reallocation counter is present. SES equality and repeatability
+      assertions are unchanged.
+    - [x] Final private-target `cargo test --workspace` passed: 2197 tests passed,
+      56 intentionally ignored, zero failures across 203 test/doc-test suites.
+      Log: `target/orchestrator/n06/workspace-tests-final.log`.
+    - [x] A14 (orchestrator, 2026-10-18, on `df655e1`, release, `PARITY_N06_COUNTERS=1`, 3996 s):
+      `test result: ok`. exact 105 boards: 103 pass, 2 expected (Issue684, Issue721), 0 fail,
+      102 SES byte-identical and 103 equivalent (Issue110-RelayModule differs only in a
+      non-ASCII component name, which Java's scanner drops); cutoff 10/10 pass, all
+      byte-identical, class sums identical (771 unrouted, 1528 violations, 3971 vias);
+      java-failure 3/3 as listed; 0 D8 breaches added. `n06-counters.json`:
+      `door_section_reallocations` = 0 over 118 boards. Summary:
+      `target/orchestrator/n06-2/parity/summary.md`.
+    - [ ] `door_section_realloc`: the counter reads 0, so the fix may land. A change confined to
+      the reallocation branch of `allocate_sections` cannot change any A14 session, since that
+      branch never runs there, so it needs its unit test, not another A14 run. N06.2 is
+      ticked when it lands.
+      - **Condition for skipping A14 (reviewer checks it):** every changed line must run
+        only after `allocate_sections`' `len != 0` branch has fired in that session.
+        - A fix to "the pop writes to the old one" (`search.rs:33/360/719`,
+          `locate45.rs:14/314`) that makes every pop resolve sections through the door's
+          current `(start, len)` runs on every pop, so it is not covered by the counter. It
+          needs a short argument that without a reallocation the resolution gives the same
+          slot as today.
+        - If that argument is in any doubt, rerun A14 with the command above.
 - [ ] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
   that might be fixed, and the `JavaQuirks` value carried as the decisions say. Wire each
   switch to its site, keeping Java's code path when the switch is `true`.

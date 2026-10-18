@@ -15,12 +15,12 @@
 //! Kept Java quirks (DIVERGENCES, "Java bugs kept on purpose"):
 //! - the end-corner smoothing removes the trace before it inserts the
 //!   smoothed one and doesn't put it back when the insertion fails (a
-//!   polyline with fewer than two corners, or of length 0), and it removes
-//!   the old trace a second time (a no-op);
-//! - when a keep-point split ends the smoothing early, the tightener's
-//!   contact pins are not restored (Java's early `return true`);
+//!   polyline with fewer than two corners, or of length 0);
 //! - `pull_tight_trace` returns true for a changed polyline even when
 //!   `change_trace` finds the lines unchanged and returns early.
+//!
+//! N06.2 removes the duplicate removal of the old trace and restores saved
+//! contact pins on a keep-point early return in both profiles.
 //!
 //! Fixed copper: `pull_tight_trace` and the end-corner smoothing return
 //! before they touch a shove-fixed trace, as Java does, so they never move
@@ -178,7 +178,6 @@ impl RoutingBoard {
                 break;
             };
             result = true;
-            self.remove_item(current); // Java removes it again: a no-op
             current = new_id;
             let nets = self.item_ref(current).net_numbers().to_vec();
             for net in nets {
@@ -188,7 +187,7 @@ impl RoutingBoard {
                 // port's normalization has no failure path.
                 self.normalize_traces(net);
                 if self.split_at_keep_point(tightener) {
-                    // Java returns without restoring the contact pins.
+                    tightener.set_contact_pins(saved_pins);
                     return true;
                 }
             }

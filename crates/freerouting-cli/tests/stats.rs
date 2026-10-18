@@ -4,6 +4,7 @@
 mod common;
 
 use common::*;
+use freerouting::drc::json::JsonValue;
 
 const FIXTURES: [&str; 3] = [
     "Issue413-test.dsn",
@@ -85,10 +86,22 @@ fn stats_change_no_session_and_the_counts_repeat() {
             assert!(stages.iter().any(|s| s == stage), "{fixture}: {stages:?}");
         }
         assert!(a.contains("\"connections_attempted\": "), "{a}");
+        // Read the total instead of depending on the last counter's comma.
+        // A load-only stage may legitimately have zero tree visits.
+        let report = JsonValue::parse(&a).expect("valid statistics JSON");
+        let total = member(&report, "total").expect("total statistics");
+        let counts = member(total, "counts").expect("total counters");
+        let Some(JsonValue::Number(visited)) = member(counts, "tree_nodes_visited") else {
+            panic!("{fixture}: missing tree-work count");
+        };
         assert!(
-            !a.contains("\"tree_nodes_visited\": 0,\n"),
+            visited.parse::<u64>().unwrap() > 0,
             "{fixture}: no tree work counted"
         );
+        assert!(matches!(
+            member(counts, "door_section_reallocations"),
+            Some(JsonValue::Number(_))
+        ));
         for name in [
             "a.ses",
             "b.ses",

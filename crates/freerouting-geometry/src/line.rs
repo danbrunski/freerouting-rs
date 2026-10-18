@@ -493,13 +493,12 @@ impl Line {
 
     /// The Euclidean distance between the two defining points, as a `float`.
     ///
-    /// Faithful to Java, the squared length is computed in (wrapping) `int`
-    /// arithmetic, so it overflows for points more than about 32767 apart.
+    /// Deltas are computed in floating point to avoid Java's wrapping `int`
+    /// square (overflow above ~46k units axis-aligned, ~32k at 45 degrees).
     pub fn length(&self) -> f32 {
-        let dx = self.b.x.wrapping_sub(self.a.x);
-        let dy = self.b.y.wrapping_sub(self.a.y);
-        let sq = dx.wrapping_mul(dx).wrapping_add(dy.wrapping_mul(dy));
-        f64::from(sq).sqrt() as f32
+        let dx = f64::from(self.b.x) - f64::from(self.a.x);
+        let dy = f64::from(self.b.y) - f64::from(self.a.y);
+        dx.hypot(dy) as f32
     }
 }
 
@@ -693,8 +692,13 @@ mod tests {
         assert_eq!(l.function_value_approx(1.0), 3.0);
         assert_eq!(l.function_in_y_value_approx(3.0), 1.0);
         assert_eq!(Line::from_coords(0, 0, 3, 4).length(), 5.0);
-        // Faithful Java int overflow.
-        assert!(Line::from_coords(0, 0, 50_000, 0).length().is_nan());
+        // Java overflows its squared integer distance here.
+        assert_eq!(Line::from_coords(0, 0, 50_000, 0).length(), 50_000.0);
+        assert_eq!(Line::from_coords(0, 0, 30_000, 40_000).length(), 50_000.0);
+        assert_eq!(
+            Line::from_coords(i32::MIN, 0, i32::MAX, 0).length(),
+            (f64::from(i32::MAX) - f64::from(i32::MIN)) as f32,
+        );
     }
 
     #[test]

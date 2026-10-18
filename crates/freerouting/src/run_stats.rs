@@ -82,10 +82,12 @@ pub enum Counter {
     TreeQueries,
     /// Search-tree nodes visited by those queries (D5's work unit).
     TreeWorkUnits,
+    /// Existing door section storage replaced with a different count (N06.2).
+    DoorSectionReallocations,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 14] = [
+pub const COUNTERS: [Counter; 15] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -100,6 +102,7 @@ pub const COUNTERS: [Counter; 14] = [
     Counter::SearchWorkUnits,
     Counter::TreeQueries,
     Counter::TreeWorkUnits,
+    Counter::DoorSectionReallocations,
 ];
 
 impl Counter {
@@ -120,6 +123,7 @@ impl Counter {
             Counter::SearchWorkUnits => "maze_work_units",
             Counter::TreeQueries => "tree_queries",
             Counter::TreeWorkUnits => "tree_nodes_visited",
+            Counter::DoorSectionReallocations => "door_section_reallocations",
         }
     }
 }
@@ -421,6 +425,13 @@ pub fn counts_only(records: &[StageRecord]) -> Vec<(&'static str, u32, Counts)> 
         .collect()
 }
 
+/// N06 reachability counters, carried through optimizer statistics capture.
+pub(crate) fn record_door_section_reallocation() {
+    if enabled() {
+        add(Counter::DoorSectionReallocations, 1);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -460,6 +471,22 @@ mod tests {
         record_tree_query(5);
         stage("fanout", 0).finish();
         assert!(records().is_empty());
+    }
+
+    #[test]
+    fn door_reallocations_are_reported_only_while_counting() {
+        let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        enable();
+        let (_, counts) = capture(|| {
+            record_door_section_reallocation();
+            record_door_section_reallocation();
+        });
+        assert_eq!(counts.get(Counter::DoorSectionReallocations), 2);
+        disable();
+        let before = Counts::now().get(Counter::DoorSectionReallocations);
+        record_door_section_reallocation();
+        assert_eq!(Counts::now().get(Counter::DoorSectionReallocations), before);
+        reset();
     }
 
     #[test]

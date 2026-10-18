@@ -352,11 +352,8 @@ impl PolygonShape {
     }
 
     /// The area of the shape.
-    ///
-    /// Faithful to a Java bug: the method returns 0 whenever `dimension() <= 2`, which
-    /// is always the case.
     pub fn area(&self) -> f64 {
-        if self.dimension() <= 2 {
+        if self.dimension() < 2 {
             return 0.0;
         }
         let corners = self.corners();
@@ -729,8 +726,7 @@ mod tests {
         assert!(shape.is_convex());
         assert_eq!(shape.dimension(), 2);
         assert_eq!(shape.bounding_box(), IntBox::new(0, 0, 10, 10));
-        // Faithful to the Java bug.
-        assert_eq!(shape.area(), 0.0);
+        assert_eq!(shape.area(), 100.0);
     }
 
     #[test]
@@ -748,6 +744,7 @@ mod tests {
         assert_eq!(pieces.len(), 2);
         let total: f64 = pieces.iter().map(|p| p.area()).sum();
         assert_eq!(total, 300.0);
+        assert_eq!(shape.area(), total);
         assert!(shape.contains(&Point::Int(IntPoint::new(5, 15))));
         assert!(shape.contains(&Point::Int(IntPoint::new(15, 5))));
         assert!(!shape.contains(&Point::Int(IntPoint::new(15, 15))));

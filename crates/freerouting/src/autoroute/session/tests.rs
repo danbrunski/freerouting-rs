@@ -231,13 +231,16 @@ fn a_door_whose_section_count_changes_loses_its_state() {
     assert_eq!(s.door(door).dimension, 1);
     let sections = s.section_segments(door, 10.0).unwrap().len();
     assert!(sections > 1);
+    assert_eq!(s.door_section_reallocations(), 0);
     s.door_sections_mut(door)[0].occupied = true;
     // The same count keeps the state.
     assert_eq!(s.section_segments(door, 10.0).unwrap().len(), sections);
     assert!(s.door_sections(door)[0].occupied);
+    assert_eq!(s.door_section_reallocations(), 0);
     // Another count replaces the sections (ExpansionDoor.java:193-201).
     let fewer = s.section_segments(door, 100.0).unwrap().len();
     assert_ne!(fewer, sections);
+    assert_eq!(s.door_section_reallocations(), 1);
     assert_eq!(s.door_sections(door).len(), fewer);
     assert!(
         !s.door_sections(door)[0].occupied,

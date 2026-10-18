@@ -14,10 +14,8 @@
 //! - `init_net`: the net class, or for a missing net the fallback (clearance
 //!   class 1 and the first via rule); the trace half widths (net 0 uses
 //!   net 1), the compensated widths, and the class's inactive layers;
-//! - `rebuild_via_info`: the via radii and the via costs. **Java never
-//!   resets `viaRadii` or `maxViaRadius` between calls**, so a rebuild can
-//!   only grow them (`RoutingBoard.fanout` rebuilds up to three times). The
-//!   port keeps that.
+//! - `rebuild_via_info`: the via radii and the via costs, reset before
+//!   rebuilding so a smaller rule cannot retain stale radii (N06.2).
 //!
 //! **Beyond Java (Q14).** Under `router.via_clearance = net_class` every via
 //! the search checks or inserts takes the net class's via clearance class
@@ -415,6 +413,9 @@ impl AutorouteControl {
             Some(via) => self.via_info_clearance_class(rules.via_infos.get(*via)),
             None => 1,
         };
+        // N06.2: a rebuild must also handle shrinking rules.
+        self.via_radii.fill(0.0);
+        self.max_via_radius = 0.0;
         self.via_infos = Vec::with_capacity(vias.len());
         self.attach_smd_allowed = false;
         for &via_id in &vias {
@@ -433,8 +434,8 @@ impl AutorouteControl {
                     .ok()
                     .and_then(|j| self.via_radii.get_mut(j))
                     .ok_or(ControlError::LayerOutOfRange(j))?;
-                // PARITY(quirk): AutorouteControl.java:268, `viaRadii` is never
-                // reset, so a rebuild can only grow it.
+                // PARITY(quirk): AutorouteControl.java:268 never resets viaRadii;
+                // N06.2 fixes that outright by clearing it before this loop.
                 *slot = max_f64(*slot, radius);
             }
             self.via_infos.push(ViaMask {
@@ -446,8 +447,8 @@ impl AutorouteControl {
         let pure_smd_net = is_pure_smd_net(board, net_number);
         for j in 0..self.layer_count {
             self.via_radii[j] = max_f64(self.via_radii[j], f64::from(self.trace_half_width[j]));
-            // PARITY(quirk): AutorouteControl.java:278, `maxViaRadius` is
-            // never reset either.
+            // PARITY(quirk): AutorouteControl.java:278 never resets maxViaRadius;
+            // N06.2 fixes that outright before rebuilding the masks.
             self.max_via_radius = max_f64(self.max_via_radius, self.via_radii[j]);
         }
         // PARITY: AutorouteControl.java:280-287, this operation order.

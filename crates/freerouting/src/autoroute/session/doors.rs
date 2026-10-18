@@ -175,6 +175,10 @@ impl Session<'_> {
         if len as usize == count {
             return;
         }
+        if len != 0 {
+            self.door_section_reallocations += 1;
+            crate::run_stats::record_door_section_reallocation();
+        }
         // PARITY(quirk): ExpansionDoor.java:197 replaces the section array
         // when the count differs, so the occupation and backtrack state of
         // the old sections are lost.

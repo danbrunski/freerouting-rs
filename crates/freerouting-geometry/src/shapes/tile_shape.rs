@@ -321,14 +321,10 @@ pub trait TileShapeOps: PolylineShapeOps {
     }
 
     /// The number of the corner nearest to `from_point`.
-    ///
-    /// Faithful to a Java bug: the minimum is initialised with `Double.MIN_VALUE` (the
-    /// smallest positive double), so the result is the first corner at distance exactly
-    /// 0, and 0 if there is none.
     fn index_of_nearest_corner(&self, from_point: &Point) -> usize {
         let from_point_f = from_point.to_float();
         let mut result = 0;
-        let mut min_dist = f64::from_bits(1);
+        let mut min_dist = f64::INFINITY;
         for i in 0..self.border_line_count() {
             let current_distance = self.corner_approx(i).distance(from_point_f);
             if current_distance < min_dist {
@@ -1170,5 +1166,23 @@ impl TileShape {
             return None;
         }
         Some(self.cutout_polyline(polyline))
+    }
+}
+
+#[cfg(test)]
+mod nearest_corner_tests {
+    use super::*;
+
+    #[test]
+    fn nearest_corner_uses_the_smallest_distance() {
+        let shape = TileShape::from(IntBox::new(0, 0, 100, 100));
+        for (point, expected) in [
+            (IntPoint::new(99, 2), 1),
+            (IntPoint::new(101, 101), 2),
+            (IntPoint::new(0, 100), 3),
+            (IntPoint::new(50, 50), 0),
+        ] {
+            assert_eq!(shape.index_of_nearest_corner(&Point::from(point)), expected);
+        }
     }
 }

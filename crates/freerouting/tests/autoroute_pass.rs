@@ -554,22 +554,22 @@ fn remove_tails_takes_the_stop_option() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn route_passes_for_optimizer_counts_as_java() {
-    // Pass 1 completes the board, pass 2 finds nothing: Java returns 2.
+fn route_passes_for_optimizer_counts_nonempty_passes() {
+    // Pass 1 completes the board, pass 2 finds nothing: one routing pass.
     let mut loaded = load(MIN_FR_TEST);
     let cancel = CancelToken::new();
     let settings = loaded.settings.clone();
     let passes = with_ctx(&mut loaded, &cancel, |board, ctx| {
         route_passes_for_optimizer(board, 5, 100, 500, true, &settings, ctx)
     });
-    assert_eq!(passes, 2);
-    // Nothing left before pass 1: 1.
+    assert_eq!(passes, 1);
+    // Nothing left before pass 1: zero routing passes.
     let passes = with_ctx(&mut loaded, &cancel, |board, ctx| {
         route_passes_for_optimizer(board, 5, 100, 500, false, &settings, ctx)
     });
-    assert_eq!(passes, 1);
+    assert_eq!(passes, 0);
 
-    // No routing layer: every pass fails, Java returns max_passes + 1.
+    // No routing layer: every attempted pass counts.
     let mut loaded = load_with(MIN_FR_TEST, |s| {
         for layer in s.layers.iter_mut().flatten() {
             layer.routable = Some(false);
@@ -579,7 +579,7 @@ fn route_passes_for_optimizer_counts_as_java() {
     let passes = with_ctx(&mut loaded, &cancel, |board, ctx| {
         route_passes_for_optimizer(board, 3, 100, 500, true, &settings, ctx)
     });
-    assert_eq!(passes, 4);
+    assert_eq!(passes, 3);
 }
 
 #[test]

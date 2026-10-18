@@ -10,6 +10,12 @@ Each crate's docs carry the full detail; this file is the index.
 ## freerouting-geometry
 
 **Java bugs fixed**
+- N06.2 (both profiles): `Line::length` uses floating-point deltas and cannot overflow
+  Java's squared `int`; `stair_approximation_45` uses the inverse function in its y branch;
+  `index_of_nearest_corner` starts its minimum at infinity; `PolygonShape::area` computes
+  the area of 2-D polygons. Tests: `function_values_and_length`,
+  `stair_approximations_like_java`, `nearest_corner_uses_the_smallest_distance`,
+  `normalizes_orientation_and_start_corner` and `l_shape_is_split_into_convex_pieces`.
 - Polygon-vs-polygon `intersects` tests the convex pieces; Java recursed forever.
 - `TileShape::rotate_approx` with two corners uses segment index 1; Java used index 0
   and threw a `NullPointerException`.
@@ -33,11 +39,10 @@ Each crate's docs carry the full detail; this file is the index.
 - `sin`/`cos` may differ from Java's `Math` by one ulp.
 
 **Java bugs kept on purpose** (changing them would change routing results; N06 sorts every
-kept bug and schedules its fix under profile `enhanced`): `RationalPoint.perpendicularProjection`, the int
-overflow in `Line.length`, `stairApproximation45` evaluating `functionValueApprox` for
-the function-of-y case, the `index_of_nearest_corner` quirk, `PolygonShape.area`
-returning 0, `Simplex.cutoutFrom` never setting its previous division line, the no-op
-branch 3 in IntOctagon's box cutout.
+kept bug and schedules its fix under profile `enhanced`; see
+[N06](roadmap/tasks/N06-fix-kept-java-bugs.md)): `RationalPoint.perpendicularProjection`,
+`Simplex.cutoutFrom` never setting its previous division line, the no-op branch 3 in
+IntOctagon's box cutout.
 
 ## freerouting-dsn
 
@@ -93,6 +98,10 @@ branch 3 in IntOctagon's box cutout.
   shares one iterator).
 
 **Board model**
+- Java bugs fixed outright in N06.2: outline transforms store the transformed shapes as
+  well as the generated keepout (`edge_pin_cache_invalidated_on_outline_transform`);
+  approximate trace rotation clears derived autoroute info
+  (`trace_rotation_clears_derived_autoroute_info`). Both profiles use these corrections.
 - Items live in an arena keyed by `ItemId`; the methods of `Item` and its subclasses
   that need the board are `BasicBoard` methods taking an id. Observers and the
   graphics update box are replaced by the change journal (`board::journal`), which a
@@ -529,11 +538,11 @@ Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
   `any_angle_tightener_cycle` in `tests/java_ports.rs`.
 - Java bugs kept on purpose (`optimize::pull_tight` module docs): the end-corner smoothing
   removes the trace before it inserts the smoothed copy and leaves it removed when the
-  insertion fails (fewer than two corners, or zero length and unfixed), then removes the old
-  trace a second time (a no-op); a keep-point split that ends the smoothing early leaves the
-  tightener's contact pins unrestored; `pull_tight_trace` reports a change when
-  `change_trace` finds every line reused and returns early. No probe board reaches the first
-  two; the `pull-tight` probe compares the paths around them.
+  insertion fails (fewer than two corners, or zero length and unfixed); `pull_tight_trace` reports a change when
+  `change_trace` finds every line reused and returns early. N06.8 owns these fixes.
+- Java bugs fixed outright in N06.2: end-corner smoothing removes the old trace once and
+  restores the saved contact pins when a keep-point split ends smoothing early
+  (`keep_point_smoothing_restores_contact_pins`).
 - Via optimizer (`optimize::via`, O05; `tests/reference_opt_vias.rs`): a trace-cost array without
   an entry for a contact trace's layer leaves a via between two traces unchanged, where Java's
   `ViaOptimizer.optViaLocation` throws an `ArrayIndexOutOfBoundsException`
@@ -657,6 +666,11 @@ Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
 - Java's `Necked retry routed net ...` info line and its trace logging are not written; the pass
   runner returns the `Max items limit reached` and `Autorouter <details>` job log lines in
   `PassOutcome::log`.
+- Java bugs fixed outright in N06.2: the optimizer's helper returns the number of
+  nonempty routing passes rather than Java's count plus one
+  (`route_passes_for_optimizer_counts_nonempty_passes`); a fanout-only run explicitly
+  disables the autorouter, including for negative API `max_passes`
+  (`negative_max_passes_with_fanout_does_not_route`). The optimizer discards the pass count.
 
 **Fanout** (`autoroute::{fanout_pin, batch::fanout}`, A12; tests `tests/autoroute_fanout.rs`,
 `fanout_matches_java`)
@@ -669,6 +683,12 @@ Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
 - `fanout.timeout` is read once when the stage starts, as a deadline that only stops work; Java's
   progress throttle (one update a second) is not ported: a `Progress` goes out at the start of a
   pass, after each pin and at its end, while someone listens.
+- Java bug fixed outright in N06.2: rebuilding a via rule resets the layer radii and
+  maximum radius before computing costs (`control_rebuild_resets_the_via_radii`).
+  Java retained radii from larger rules; routing's rebuilds only grow the rule.
+- N06.2 leaves `door_section_realloc` unchanged until the orchestrator's A14 run reports
+  zero `door_section_reallocations`. `PARITY_N06_COUNTERS=1` writes that counter in
+  `n06-counters.json`; the existing state-loss test also pins the counter.
 
 **Interactive routing** (`interactive`, I01, port of `gui.interactive.Route`, `RouteState`,
 `DynamicRouteState`, `StitchRouteState` and `GuiBoardRoutingSettings`; tests

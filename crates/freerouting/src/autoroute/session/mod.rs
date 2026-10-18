@@ -340,6 +340,8 @@ pub struct Session<'b> {
     pub(crate) doors: Vec<Door>,
     pub(crate) target_doors: Vec<TargetDoor>,
     pub(crate) sections: Vec<SectionState>,
+    /// Existing door section ranges replaced with a different count (N06.2).
+    door_section_reallocations: u64,
     /// `incompleteExpansionRooms`, in list order.
     pub(crate) incomplete: Vec<RoomId>,
     /// `completeExpansionRooms`, in list order.
@@ -365,6 +367,11 @@ pub struct Session<'b> {
 }
 
 impl<'b> Session<'b> {
+    /// How often a door's allocated section count changed in this session.
+    pub fn door_section_reallocations(&self) -> u64 {
+        self.door_section_reallocations
+    }
+
     /// A session for the net of `control` on `board` (Java `new
     /// AutorouteEngine` with `initConnection`, and the `MazeSearchEngine`
     /// constructor's destination distance). The autoroute tree of the
@@ -395,6 +402,7 @@ impl<'b> Session<'b> {
             doors: Vec::new(),
             target_doors: Vec::new(),
             sections: Vec::new(),
+            door_section_reallocations: 0,
             incomplete: Vec::new(),
             complete: Vec::new(),
             by_java_id: BTreeMap::new(),

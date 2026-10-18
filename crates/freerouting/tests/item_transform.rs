@@ -476,18 +476,17 @@ fn edge_pin_cache_invalidated_on_outline_transform() {
         &|b| b.rotate_approx(outline, 30.0, FloatPoint::ZERO),
         &|b| b.change_placement_side(outline, pole),
     ];
-    let shapes_before = board.item(outline).expect("outline").bounding_box();
     for step in steps {
+        let shapes_before = board.item(outline).expect("outline").bounding_box();
         let _ = board.edge_pin_nets();
         assert!(board.edge_pin_nets_cached());
         assert!(step(&mut board));
         assert!(!board.edge_pin_nets_cached());
+        assert_ne!(
+            board.item(outline).expect("outline").bounding_box(),
+            shapes_before
+        );
     }
-    // Java's loops never store the moved outline shapes (kept on purpose).
-    assert_eq!(
-        board.item(outline).expect("outline").bounding_box(),
-        shapes_before
-    );
 }
 
 // ---------------------------------------------------------------------------
@@ -954,4 +953,18 @@ fn back_side_mirror_first_reflection_uses_world_direction() {
     board.components.change_side(c, zero);
     assert!(board.change_placement_side(pin, zero));
     assert_eq!(center(&board, pin), expected);
+}
+
+#[test]
+fn trace_rotation_clears_derived_autoroute_info() {
+    use freerouting::board::AutorouteChange;
+    let mut board = j2();
+    let id = board.traces()[0];
+    board.set_autoroute_change_log(true);
+    assert!(board.rotate_approx(id, 30.0, FloatPoint::ZERO));
+    assert!(
+        board
+            .take_autoroute_changes()
+            .contains(&AutorouteChange::InfoCleared(id))
+    );
 }

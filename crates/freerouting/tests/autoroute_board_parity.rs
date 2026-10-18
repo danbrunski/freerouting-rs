@@ -164,6 +164,14 @@ fn selected(all: Vec<Reference>) -> Vec<Reference> {
 fn autoroute_board_parity() {
     let out = out_dir();
     let resume = std::env::var("PARITY_RESUME").is_ok_and(|v| v == "1");
+    let n06_counters = std::env::var("PARITY_N06_COUNTERS").is_ok_and(|v| v == "1");
+    if n06_counters {
+        assert!(
+            !resume,
+            "N06 counters require fresh routing, not cached records"
+        );
+        freerouting::run_stats::enable();
+    }
     let sink = match std::env::var("PARITY_SINK").as_deref() {
         Ok("counters") => Sink::Counters,
         _ => Sink::Noop,
@@ -190,6 +198,21 @@ fn autoroute_board_parity() {
         };
         eprintln!("parity: {}", record.one_line());
         records.push(record);
+    }
+    if n06_counters {
+        use freerouting::run_stats::{self, Counter, Counts};
+        let reallocations = Counts::now().get(Counter::DoorSectionReallocations);
+        let report = format!(
+            "{{\"door_section_reallocations\":{reallocations},\"boards\":{}}}\n",
+            boards.len()
+        );
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(out.join("n06-counters.json"), report).unwrap();
+        eprintln!(
+            "N06: door_section_reallocations={reallocations} across {} boards",
+            boards.len()
+        );
+        run_stats::disable();
     }
     records.sort_by(|a, b| a.name.cmp(&b.name));
     let verdicts = class_check(&mut records, EXPECTED_MISMATCHES, JAVA_FAILURES);
