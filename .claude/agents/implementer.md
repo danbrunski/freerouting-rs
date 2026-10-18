@@ -22,6 +22,9 @@ evidence, and a structured report. Nothing you write is shown to the
 operator directly, so return raw facts, not prose.
 
 Before the first edit, read:
+- `AGENTS.md` at the repository root, the project-wide rules for every
+  agent; this file adds the dispatch procedure and narrows them (you
+  don't commit)
 - the checklist, its series README (`<letter>00-*-README.md`) and the
   roadmap document they link
 - the decisions D1–D9 in `docs/roadmap/port-completion.md`, which you
