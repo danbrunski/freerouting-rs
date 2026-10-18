@@ -237,6 +237,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("quantum_stop.checks", None),
         ("quantum_stop.quantum_abs", None),
         ("quantum_stop.quantum_pct", None),
+        // Q04.5: unset, which is off.
+        ("quantum_stop.repeat", None),
         ("special.plane_taps", None),
         ("special.neck_down", None),
         ("special.stages", None),

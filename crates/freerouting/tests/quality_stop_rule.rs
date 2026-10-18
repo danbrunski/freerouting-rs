@@ -368,24 +368,39 @@ fn quantum_stop_is_registered_and_selected_by_the_pass_controller_key() {
 const TWO_PIN: &str = "fixtures/scoring-perfect-two-pin.dsn";
 
 fn prepare(controller: Option<&str>) -> PreparedJob {
-    let path = repo_root().join(TWO_PIN);
-    let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{TWO_PIN}: {e}"));
+    prepare_board(TWO_PIN, controller, None, 60)
+}
+
+/// `dsn` with the optimizer and fanout off; `max_passes` 0 is unlimited.
+fn prepare_board(
+    dsn: &str,
+    controller: Option<&str>,
+    repeat: Option<bool>,
+    max_passes: i32,
+) -> PreparedJob {
+    let path = repo_root().join(dsn);
+    let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
     let mut profile = TestingProfile::default();
     profile.set_optimizer_enabled(false);
     profile.set_fanout_enabled(false);
-    profile.set_max_passes(60);
+    profile.set_max_passes(max_passes);
     profile.patch.autorouter.pass_controller = controller.map(str::to_string);
-    let mut input = JobInput::new(bytes, JobInput::design_name_of(TWO_PIN));
+    profile.patch.quantum_stop.repeat = repeat;
+    let mut input = JobInput::new(bytes, JobInput::design_name_of(dsn));
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
     input.extra_sources = vec![(Source::Testing, profile.patch)];
-    prepare_job(&input, &ResolveContext { cores: 1 }).unwrap_or_else(|e| panic!("{TWO_PIN}: {e}"))
+    prepare_job(&input, &ResolveContext { cores: 1 }).unwrap_or_else(|e| panic!("{dsn}: {e}"))
 }
 
 /// A pass runner that adds a trace each pass (so every pass leaves a new
 /// board and session) and scores the board it leaves with `script(pass)`.
 struct ScriptedRunner {
     script: fn(u32) -> f32,
+    /// The last pass that changes the board (`u32::MAX`: all of them).
+    changes_until: u32,
+    /// The pass that finds nothing left to route (`u32::MAX`: none).
+    completes_at: u32,
     scores: Rc<RefCell<BTreeMap<u128, f32>>>,
 }
 
@@ -397,6 +412,13 @@ impl PassExecutor for ScriptedRunner {
         _: &mut PassStages<'_>,
         _: &mut StageCtx,
     ) -> PassOutcome {
+        if pass > self.changes_until {
+            return PassOutcome {
+                continue_routing: pass != self.completes_at,
+                routed: 1,
+                ..PassOutcome::default()
+            };
+        }
         let pins: Vec<_> = board
             .items()
             .filter(|i| i.is_pin())
@@ -441,7 +463,19 @@ struct Arm {
 }
 
 fn run_arm(controller: Option<&str>, script: fn(u32) -> f32) -> Arm {
-    let prepared = prepare(controller);
+    run_scripted(prepare(controller), script, u32::MAX)
+}
+
+fn run_scripted(prepared: PreparedJob, script: fn(u32) -> f32, changes_until: u32) -> Arm {
+    run_scripted_done(prepared, script, changes_until, u32::MAX)
+}
+
+fn run_scripted_done(
+    prepared: PreparedJob,
+    script: fn(u32) -> f32,
+    changes_until: u32,
+    completes_at: u32,
+) -> Arm {
     let job = PipelineJob {
         settings: &prepared.settings,
         board_settings: &prepared.board_settings,
@@ -454,6 +488,8 @@ fn run_arm(controller: Option<&str>, script: fn(u32) -> f32) -> Arm {
     let mut factory = |_: &RouterSettings, _: &_| {
         Box::new(ScriptedRunner {
             script,
+            changes_until,
+            completes_at,
             scores: Rc::clone(&scores),
         }) as Box<dyn PassExecutor>
     };
@@ -540,4 +576,121 @@ fn the_default_pass_controller_is_java_s() {
         .build(&selection, &prepared.settings)
         .expect("builds");
     assert_eq!(pipeline.pass_controller.id(), "freerouting-passes");
+}
+
+// ---------------------------------------------------------------------------
+// Q04.5: `quantum_stop.repeat`
+// ---------------------------------------------------------------------------
+
+fn repeat_arm(repeat: Option<bool>, changes_until: u32) -> Arm {
+    // Pass 1 is the best, the later passes are worse: Java stops late.
+    let script: fn(u32) -> f32 = |p| if p == 1 { 100.0 } else { 50.0 + (p % 3) as f32 };
+    run_scripted(
+        prepare_board(TWO_PIN, None, repeat, 60),
+        script,
+        changes_until,
+    )
+}
+
+/// The passes change the board up to pass 3; pass 4 starts with the board
+/// pass 3 left and leaves it unchanged: the first repeat. Unset, the loop is
+/// Java's and goes on to its stagnation stop; set, it stops at 4
+/// with `StopReason::Repeat`, logs it, and the saved session is the same
+/// (the final best-board restore is unchanged).
+#[test]
+fn the_first_repeated_board_state_stops_the_loop() {
+    let off = repeat_arm(None, 3);
+    let on = repeat_arm(Some(true), 3);
+    assert!(matches!(
+        off.outcome.stop,
+        Some(StopReason::Stagnation | StopReason::GlobalStagnation)
+    ));
+    // Java's stagnation stop, long after the repeat (the scripted score map
+    // is keyed by board hash, so the unchanged board re-scores itself).
+    assert!(stop_pass(&off) > 10, "{}", stop_pass(&off));
+    assert_eq!(on.outcome.stop, Some(StopReason::Repeat));
+    assert_eq!(stop_pass(&on), 4);
+    assert!(
+        on.outcome.log.iter().any(|l| l
+            .text
+            .ends_with("Stopping the auto-router (quantum-stop repeat).")),
+        "the stop is logged"
+    );
+    assert_eq!(on.ses, off.ses, "the same saved board");
+}
+
+/// A board that changes every pass never repeats: `repeat` set or not, the
+/// run and its session are the same; and `Some(false)` is unset.
+#[test]
+fn a_board_that_changes_every_pass_never_repeats() {
+    let off = repeat_arm(None, u32::MAX);
+    let on = repeat_arm(Some(true), u32::MAX);
+    let false_ = repeat_arm(Some(false), u32::MAX);
+    assert_eq!(on.outcome.stop, off.outcome.stop);
+    assert_ne!(on.outcome.stop, Some(StopReason::Repeat));
+    assert_eq!(stop_pass(&on), stop_pass(&off));
+    assert_eq!(on.ses, off.ses);
+    assert_eq!(false_.ses, off.ses);
+    let late = repeat_arm(Some(false), 3);
+    assert_eq!(late.outcome.stop, repeat_arm(None, 3).outcome.stop);
+    assert!(stop_pass(&late) > 10, "false is off");
+}
+
+/// A repeat on the second pass stops there (pass 2 starts with pass 1's
+/// board and leaves it).
+#[test]
+fn a_repeat_on_the_second_pass_stops_there() {
+    let script: fn(u32) -> f32 = |p| 10.0 + p as f32;
+    let arm = run_scripted(prepare_board(TWO_PIN, None, Some(true), 3), script, 1);
+    assert_eq!(arm.outcome.stop, Some(StopReason::Repeat));
+    assert_eq!(stop_pass(&arm), 2);
+}
+
+/// The controller's own stop wins over the repeat: a pass with nothing left
+/// to route that also leaves the board alone ends as `Completed`.
+#[test]
+fn the_controller_s_stop_wins_over_the_repeat() {
+    let script: fn(u32) -> f32 = |p| 10.0 + p as f32;
+    // A pass that changes nothing repeats on pass 1 ...
+    let repeated = run_scripted(prepare_board(TWO_PIN, None, Some(true), 3), script, 0);
+    assert_eq!(repeated.outcome.stop, Some(StopReason::Repeat));
+    // ... unless the controller's pass 1 stop (nothing left to route) wins.
+    let arm = run_scripted_done(prepare_board(TWO_PIN, None, Some(true), 3), script, 0, 1);
+    assert_eq!(arm.outcome.stop, Some(StopReason::Completed));
+}
+
+const INTERF_U: &str = "fixtures/Issue093-interf_u.dsn";
+
+/// The real router on `Issue093-interf_u`, whose 18 passes all leave one
+/// and the same board (Q04.2's short check): with `repeat` the loop stops at
+/// the first repeat and the saved session is the one the full run saves.
+#[test]
+fn issue093_interf_u_stops_at_the_first_repeat_with_an_identical_session() {
+    let route = |repeat| {
+        let prepared = prepare_board(INTERF_U, None, repeat, 0);
+        let board = prepared.board.clone();
+        let job = PipelineJob {
+            settings: &prepared.settings,
+            board_settings: &prepared.board_settings,
+            cancel: Arc::new(CancelToken::new()),
+            events: &NullEvents,
+            deadline: None,
+            registry: None,
+        };
+        let mut outcome = freerouting::autoroute::pipeline::run_pipeline(board, &job)
+            .unwrap_or_else(|f| panic!("{}", f.error));
+        let board = outcome.board.take().expect("board");
+        let ses = write_ses(&board, "interf_u", SesStyle::Java);
+        (outcome, ses)
+    };
+    let (off, off_ses) = route(None);
+    let (on, on_ses) = route(Some(true));
+    let hashes: std::collections::BTreeSet<u128> = off.passes.iter().map(|r| r.hash).collect();
+    assert_eq!(off.passes.len(), 18, "the full run");
+    assert_eq!(hashes.len(), 1, "all passes leave one board");
+    assert_eq!(on.stop, Some(StopReason::Repeat));
+    // Pass 1 starts with the input board and leaves the board every pass
+    // leaves; pass 2 starts with it and leaves it: the first repeat.
+    assert_eq!(on.passes.len(), 2, "{:?}", on.passes);
+    assert_eq!(on_ses, off_ses, "byte-identical session");
 }

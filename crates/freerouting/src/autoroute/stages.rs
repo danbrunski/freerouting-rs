@@ -284,6 +284,9 @@ pub enum StopReason {
     /// Q04's stop rule (`quantum-stop`, not Java): the restore checks
     /// stopped gaining a quantum of score.
     Quantum,
+    /// Q04.5 (`quantum_stop.repeat`, not Java): a pass left the board with
+    /// the state hash it started with.
+    Repeat,
 }
 
 impl StopReason {

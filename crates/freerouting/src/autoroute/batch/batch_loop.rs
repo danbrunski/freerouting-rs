@@ -20,7 +20,10 @@
 //!    sent, the ordering reset, the statistics recomputed; no board means
 //!    stop), the fanout recovery (`remove_tails(NONE)`), the last-mile
 //!    ripup ([`rip_blockers`]), a stop. The pass number advances only on
-//!    [`PassDecision::Continue`];
+//!    [`PassDecision::Continue`]. With `quantum_stop.repeat` (Q04.5, not
+//!    Java) a pass that leaves the board with the state hash it started
+//!    with ends the loop ([`StopReason::Repeat`]) unless the controller
+//!    already stops;
 //! 5. the finish (`:607-642`): the history's best board when it beats the
 //!    final score (`Replaced` sent), Q04.3's output guard when
 //!    `router.autorouter.output_guard` is on (not Java; it may swap in a
@@ -440,7 +443,17 @@ impl Run {
                 history_size: self.history.len(),
                 history_max_score: self.history.max_score(),
             };
-            let decision = stages.controller.after_pass(&report);
+            let mut decision = stages.controller.after_pass(&report);
+            // Q04.5: `quantum_stop.repeat`, off by default. A pass that
+            // leaves the board with the state hash it started with ends the
+            // loop, in place of any decision but the controller's own stop.
+            // The finish's best-board restore is unchanged.
+            if settings.quantum_stop.repeat == Some(true)
+                && !matches!(decision, PassDecision::Stop(_))
+                && board.state_hash() == hash
+            {
+                decision = PassDecision::Stop(StopReason::Repeat);
+            }
             let (stop, after) = self.decide(board, stages, executor, ctx, pass, decision, figures);
             figures = after;
             self.flush(board, ctx);
@@ -610,6 +623,15 @@ impl Run {
                     "The router's score ({}) gained less than the quantum at the last restore \
                      checks ({} item{} still unconnected). Stopping the auto-router \
                      (quantum-stop).",
+                    log::decimal_format_0_00(f64::from(figures.score)),
+                    figures.incomplete,
+                    if figures.incomplete == 1 { "" } else { "s" }
+                ));
+            }
+            StopReason::Repeat => {
+                self.outcome.info(format!(
+                    "The auto-router pass left the board in the state it started with (score {}, \
+                     {} item{} still unconnected). Stopping the auto-router (quantum-stop repeat).",
                     log::decimal_format_0_00(f64::from(figures.score)),
                     figures.incomplete,
                     if figures.incomplete == 1 { "" } else { "s" }

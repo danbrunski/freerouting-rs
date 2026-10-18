@@ -212,7 +212,7 @@ run after the first restore that can't beat pass 1 would have saved about
     a DIVERGENCES line with the time saved on `canary-pwr`.
 
   *Partial 2026-10-18:* preregistered, not measured. `docs/roadmap/prereg/Q04.json` (sha256
-  8b587d03a724cc9f6e03c7f32beb3e28e9134982196cc39256d7fc49807e3679, pinned by
+  8b587d03a724cc9f6e03c7f32beb3e28e9134982196cc39256d7fc49807e3679 at registration (amendment 1 of Q04.5 changed it, see there), pinned by
   `crates/freerouting-dev/tests/prereg_q04.rs`, 3 passed): arms `default` and `quantum-stop`
   (CLI, optimizer off, passes unlimited), N02's totals rule with the speed clause (signal
   `unrouted` within noise, `wall_seconds` down >= 20 %), guards `unrouted`, `vias` and
@@ -225,12 +225,47 @@ run after the first restore that can't beat pass 1 would have saved about
   the amendment, then per arm and board the registered commands on a quiet machine, `freerouting-dev
   gate collect` and `freerouting-dev gate --prereg docs/roadmap/prereg/Q04.json`; if kept, the
   DIVERGENCES line with canary-pwr's time saved, and N05 decides `enhanced`.
-- [ ] **Q04.5 — Repeat stop.** Added 2026-10-18 from Q04.2's short check: on boards whose
+- [x] **Q04.5 — Repeat stop.** Added 2026-10-18 from Q04.2's short check: on boards whose
   passes leave the same board (`Issue093-interf_u`: 18 passes, one board; CNH: 4 distinct
   boards), the history never holds 8 boards, so no restore check runs and `quantum-stop` saves
   nothing. An opt-in `quantum_stop` option stops when a pass leaves the board with the state
-  hash it started with; the session is byte-identical by construction.
+  hash it started with; the session is byte-identical where the later passes would also have left the board alone (not by construction: see the done note).
   - **Accept:**
     - a fixture whose passes repeat stops at the first repeat with an identical session;
     - unset, routing is unchanged;
     - registered as a Q04.json amendment before it is measured in Q04.4.
+
+  *Done 2026-10-18:* setting `quantum_stop.repeat` (`bool`, `opt`, unset = off, in no profile;
+  CLI `--router.quantum_stop.repeat=true`; listed in the catalog's pass controller slot and in
+  `tests/settings_defaults.rs`). It lives in the batch loop (`autoroute/batch/batch_loop.rs`,
+  `Run::passes`), not in `QuantumStop`, so it works with any pass controller: after
+  `after_pass`, if the board's `state_hash()` (the one the history and the pass log line use, no
+  second hash) equals the hash taken before the pass and the controller did not already decide
+  `Stop`, the decision becomes the new `StopReason::Repeat` (requests a router stop; logged
+  "The auto-router pass left the board in the state it started with (score ..., N items still
+  unconnected). Stopping the auto-router (quantum-stop repeat)."). The final best-board restore is
+  unchanged. Unset it costs nothing (no hash after the pass). Tests (`cargo test -p freerouting
+  --test quality_stop_rule`: 14 passed, 5 new): `the_first_repeated_board_state_stops_the_loop`
+  (scripted runner, board changes to pass 3: stops at pass 4 with `Repeat`, the log line, SES
+  equal to the run without it, which goes on to Java's stagnation stop past pass 10),
+  `a_board_that_changes_every_pass_never_repeats` (same stop, passes and SES; `Some(false)` is
+  off), `a_repeat_on_the_second_pass_stops_there` and `the_controller_s_stop_wins_over_the_repeat`
+  (a pass that repeats and finds nothing left to route ends as `Completed`), and **`issue093_interf_u_stops_at_the_first_repeat_with_an_identical_session`**
+  (real router, `fixtures/Issue093-interf_u.dsn`, fanout and optimizer off, passes unlimited:
+  18 passes with one board hash in the full run, with `repeat` 2 passes, `StopReason::Repeat`,
+  SES byte-identical). Release CLI spot check (`freerouting -de <dsn> -do <ses>
+  --router.optimizer.enabled=false [--router.quantum_stop.repeat=true]`, machine under load, so
+  walls are not timings), passes and wall, off / on: `Issue093-interf_u` 18 / 2, 1.28 s / 0.22 s,
+  **SES identical**; `Issue433-my-board` 3 / 3, `Issue649-kicad_ecc83` 2 / 2, `Issue690-sonde_xilinx`
+  18 / 18 (never repeats): identical SES, equal passes, the option changes nothing; and
+  **`Issue555-CNH_Functional_Tester_1` 18 / 4, 6.1 s / 5.2 s, SES differs**: pass 4 repeats pass
+  3's board (score 993.10, 1 unrouted), but the full run changes the board at pass 12 (same
+  score, other hash), so the repeat is not a fixed point there; that board is a Q04.4 row. So the
+  option is "byte-identical by construction" only where the passes stay put, which the
+  checklist's wording overstated; the DIVERGENCES line says so. Registered as amendment 1 of
+  `docs/roadmap/prereg/Q04.json` before any Q04.4 number (the `quantum-stop` arm's command gains
+  `--router.quantum_stop.repeat=true`; sha256 now
+  291de123ff9857d10a64ddfdf3bc09abe37130c9510d94949c56eb74400ba0e7, pinned by
+  `crates/freerouting-dev/tests/prereg_q04.rs`, amendments == 1). DIVERGENCES line next to the
+  quantum-stop one. Remainder for Q04.2: `q04-heavy.sh` (outside the repository) must add the
+  flag to its `qs` arm before the heavy run reads the amended candidate.

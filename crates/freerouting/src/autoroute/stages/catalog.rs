@@ -131,6 +131,7 @@ pub const SLOTS: &[SlotDesc] = &[
             "quantum_stop.checks",
             "quantum_stop.quantum_abs",
             "quantum_stop.quantum_pct",
+            "quantum_stop.repeat",
             "autorouter.output_guard",
         ],
     },

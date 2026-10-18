@@ -326,6 +326,19 @@ IntOctagon's box cutout.
   (`a_stop_after_the_last_improvement_saves_the_same_session`; `Issue690-sonde_xilinx`: 12 passes
   instead of 18, byte-identical SES). An invalid value fails the job before routing, naming the
   key. Q04.4 measures it (`docs/roadmap/prereg/Q04.json`).
+- `quantum_stop.repeat` (Q04.5, `autoroute::batch::batch_loop`) is a settings field Java does not
+  have, unset by default and in both profiles (off: Java runs on to its own stops; its same-hash
+  stop is commented out). It is independent of the pass controller. On, a pass that leaves the
+  board with the state hash it started with (`RoutingBoard::state_hash`, the hash the history
+  and the pass log line use) ends the loop (`StopReason::Repeat`, logged "Stopping the
+  auto-router (quantum-stop repeat)."), in place of any decision but the controller's own stop;
+  the finish's best-board restore is Java's, and a router stop is requested (no final tail
+  removal), as for the other stops. The session equals the full run's only if the passes after the
+  repeat would also have left the board alone: `Issue093-interf_u` stops at pass 2 of 18 with a
+  byte-identical SES (`tests/quality_stop_rule.rs`), while `Issue555-CNH_Functional_Tester_1`
+  repeats at pass 4 and its default run later changes the board at pass 12 (same score, other
+  hash), so its SES differs. Q04.4 measures it with the `quantum-stop` arm
+  (`docs/roadmap/prereg/Q04.json`, amendment 1).
 - `autorouter.output_guard` (Q04.3, `quality::output_guard`) is a settings field Java does not
   have, unset by default and in both profiles (off: Java saves the best board of the run whatever
   the input was). On, the batch loop keeps a B01 snapshot of the board it was handed and, in its

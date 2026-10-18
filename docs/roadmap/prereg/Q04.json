@@ -44,13 +44,14 @@
     },
     "quantum-stop": {
       "engine": "as default",
-      "command": "freerouting -de {DSN} -do {SES} --router.optimizer.enabled=false --router.autorouter.pass_controller=quantum-stop",
+      "command": "freerouting -de {DSN} -do {SES} --router.optimizer.enabled=false --router.autorouter.pass_controller=quantum-stop --router.quantum_stop.repeat=true",
       "settings": {
         "router.autorouter.pass_controller": "quantum-stop",
-        "router.quantum_stop.*": "unset (the registered defaults)",
+        "router.quantum_stop.grace/checks/quantum_abs/quantum_pct": "unset (the registered defaults)",
+        "router.quantum_stop.repeat": "true (amendment 1, Q04.5)",
         "router.autorouter.max_passes": "0 (unlimited, the default)"
       },
-      "what": "candidate: Q04.1's stop rule around Java's controller"
+      "what": "candidate: Q04.1's stop rule around Java's controller, plus Q04.5's repeat stop (amendment 1)"
     }
   },
   "baseline_arm": "default",
@@ -123,5 +124,11 @@
   },
   "keep_rule": "if the candidate passes, docs/DIVERGENCES.md gets a line with the time saved on canary-pwr and the setting stays opt-in (unset in both profiles) until N05 decides enhanced; if it fails, Q04.4's note keeps the numbers and the cause, and quantum-stop stays an opt-in pass controller only if N02's keep-or-delete rule allows it",
   "stop_rule": "one registered run per arm per board, plus the candidate's determinism rerun on canary-pwr-pours1; tuning the defaults needs an amendment before a new run, never after a number of that run",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "what": "arm quantum-stop also sets router.quantum_stop.repeat=true (Q04.5): its command gains --router.quantum_stop.repeat=true and its settings list the option; the candidate is therefore Q04.1's restore-check rule plus the repeat stop, and Q04.2's table of rows (the boards where the candidate stopped before the default run's last score improvement) is read with that command. Nothing else changes: the defaults, the guards, the rule, the pool of boards and the speed clause stay as registered",
+      "why": "Q04.2's short check found boards whose passes leave one and the same board (Issue093-interf_u: 18 passes, one board; CNH_Functional_Tester_1: 4 distinct boards), where the history never holds 8 boards, Java runs no restore check and quantum-stop alone saves nothing. The repeat stop (a pass that leaves the board with the state hash it started with ends the loop, StopReason::Repeat, logged 'Stopping the auto-router (quantum-stop repeat).') is the cheapest rule for them: on Issue093-interf_u it stops at pass 2 of 18 with a byte-identical session (tests/quality_stop_rule.rs, issue093_interf_u_stops_at_the_first_repeat_with_an_identical_session). The amendment is written before any Q04.4 number exists: no row of the Q04.4 table has been measured. Which of the two rules ended a run is read from its log line, so the numbers can still be attributed"
+    }
+  ]
 }

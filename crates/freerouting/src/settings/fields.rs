@@ -478,6 +478,8 @@ settings_table! {
                 "Smallest score gain between restore checks that counts (unset: 1.0)."),
             (quantum_pct, f64, opt, None, None, "quantumPct", [], Flat::No, true,
                 "Smallest gain as a fraction of the best score, if larger than `quantum_abs` (unset: 0.01)."),
+            (repeat, bool, opt, None, None, "repeat", [], Flat::No, true,
+                "Stop the passes when a pass leaves the board with the state hash it started with (Q04.5; unset: off; independent of the pass controller)."),
         }
         cleanup, CleanupPatch, CleanupSettings, "cleanup",
         "The final cleanup after the last routing or optimizer step (Q16; not a Java section)." {
