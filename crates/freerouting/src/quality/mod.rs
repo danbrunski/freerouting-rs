@@ -12,6 +12,7 @@ pub mod pour_audit;
 pub mod pour_guard;
 pub mod register;
 pub mod stop_rule;
+pub mod stub_contacts;
 pub mod stubs;
 pub mod sweep;
 pub mod transaction;

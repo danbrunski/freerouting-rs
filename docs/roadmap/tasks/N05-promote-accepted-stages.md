@@ -131,6 +131,18 @@ Prerequisites: N01; each candidate's own accepted measurement.
     `net_class`) count at 33, the number to beat, and `sweep + net_class` is clean, which is the
     case for `net_class` once its cost on the plugin path (37 → 44) is closed.
 
+  - **2026-10-18, rejected (stays unset): `router.cleanup.remove_stubs = true`** (Q16.3).
+    Registration `docs/roadmap/prereg/Q16.json` (`83d71ce1…` before any number; amended once
+    before any Q16.3 number to `d3d20814…`, because `enhanced` gained `power_layer_traces = none`),
+    pinned by `crates/freerouting-dev/tests/prereg_q16.rs`; N02 totals, `accept: no-regress`,
+    plugin45 options against plugin45 plus the setting, canary-pwr (plugin path and the plugin45
+    handoff DSN), interf_u, CM5_MINIMA_3, pic_programmer. `freerouting-dev gate`: **FAIL** on two
+    hard guards: canary-pwr (plugin path) KiCad unconnected 37 → 38, CM5_MINIMA_3 `track_dangling`
+    1 → 1. via_dangling 15 → 0, 16 → 0 (handoff), 9 → 0 (interf_u); drc_real 1 → 0 on both canary
+    rows; totals 121 → 122 against noise 18.08; determinism byte-identical. Causes and numbers in
+    Q16.3: the stage's contact test (Java's normal contacts) misses a via crossing a fixed pour
+    strip mid-segment, and a trace ending in a plane's outline outside KiCad's fill.
+
   Sessions for canary's official grade: `target/canary-handoff/2026-10-18-n05/` (8 SESs, the
   plugin DSN, `SHA256SUMS`, `README.txt` with flags and the self-grade).
 

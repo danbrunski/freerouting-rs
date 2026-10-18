@@ -32,13 +32,13 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
 
 ## Checklist
 
-- [~] **Q16.1 — Where the stubs come from.** On `canary-pwr` (the plugin45 handoff DSN and
+- [x] **Q16.1 — Where the stubs come from.** On `canary-pwr` (the plugin45 handoff DSN and
   the default plugin flags) and two corpus boards, attribute each dangling via and track that
   KiCad reports to the stage that inserted it (last pass, sweep, optimizer) using the
   routing ledger or the verdicts.
   - **Accept:** a table in this file, with a count per stage.
 
-  *Partial 2026-10-18:* heavy run pending (the heavy-job slot was held by N05; nothing was run). The
+  *Done 2026-10-18:* the table is at the end of this note; the runs followed the steps below. The
   scripts are in `/home/thebo/code/freerouting-rs/target/orchestrator/q16/scratch/` (outside the repository): `route-grade.sh NAME ARGS...` routes
   the plugin45 handoff DSN (`target/canary-handoff/2026-10-17-plugin45/canary-pwr.dsn`) with Q16's
   release CLI and grades the SES with K09's `grade_ses.sh` (KiCad 10.0.7 DRC, `--schematic-parity
@@ -64,14 +64,41 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
      arm's extra flags of steps 3-5 beyond the options>` (`--router.autorouter.sweep=off
      --router.optimizer.enabled=false` for pass1, `--router.optimizer.enabled=false` for sweep,
      none for plugin45); each run's `summary.json` holds the DRC counts, `drc.json` the positions.
-- [~] **Q16.2 — The cleanup stage.** `router.cleanup.remove_stubs = true | false`, unset by
+
+  Runs (origin/main `17431c4`, release CLI sha256 `589b0fd3…`, WSL KiCad 10.0.7; enhanced is
+  `power_layer_traces = none` there, neck-down is not on main). KiCad's `via_dangling` /
+  `track_dangling` per arm, then each finding of the last arm attributed to the first arm with a
+  finding of the same type at the same position (`dangling.py`):
+
+  | board | pass 1 only | + sweep | + optimizer (plugin45) | last pass | sweep | optimizer |
+  |---|---|---|---|---|---|---|
+  | canary-pwr, plugin45 handoff DSN | 22 / 0 | 16 / 0 | 16 / 0 | 16 vias | 0 | 0 |
+  | interf_u (plugin path) | 9 / 0 | 9 / 0 | 9 / 0 | 9 vias | 0 | 0 |
+  | pic_programmer (plugin path) | 0 / 0 | 0 / 0 | 0 / 0 | 0 | 0 | 0 |
+  | CM5_MINIMA_3 (plugin path, extra) | 4 / 1 | 0 / 1 | 0 / 1 | 1 track | 0 | 0 |
+
+  Count per stage over the four boards: **last pass 26 vias and 1 track, sweep 0, optimizer
+  0**. Every stub left at the end is copper the first (and, with `--max-passes 1`, last) pass
+  inserted; the sweep removes some of them (canary 22 → 16, CM5 4 → 0 vias) and adds none. The
+  optimizer never ran: it skips a board with unrouted connections (canary 95, interf_u 4, CM5 8),
+  so on canary the `sweep` and `plugin45` sessions are byte-identical (`04de8e96…`), as are all
+  three interf_u sessions (`f5b27354…`) and pic_programmer's (`3dcecedb…`). KiCad unconnected
+  on the handoff DSN: 48 (pass 1), 37, 37. The `plugin45` session differs from Dan's
+  (`5ad40948…`, the Windows build, N05.3's amendment) at byte 9964. The canary stubs are on
+  supervisor and holdup signals (`/Holdup/LTC_CAPRTN` 2, `LTC_PFO` 2, `MCU_SCL` 2,
+  `/Supervisor/CAN_FAULT_N` 2, and one each on `/Holdup/VCAP`, `/Holdup/LTC_CFP`,
+  `LTC_SMBALERT`, `BUCK_PG`, `+3V3_AON`, `/Pi_Interface/PI_NRST`, `/Supervisor/LED_BANK`,
+  `/Pi_Interface/I2C_READY`). CM5's pass-1 run is `8fa5b64a…`; its sweep run is the plugin45
+  run (`384f05df…`, the `q163-base` session of Q16.3). Runs:
+  `target/orchestrator/q16/scratch/runs/{pass1,sweep,plugin45,q161-*,q163-base}`.
+- [x] **Q16.2 — The cleanup stage.** `router.cleanup.remove_stubs = true | false`, unset by
   default and set in no profile until Q16.3 measures it.
   - **Accept:**
     - fixtures: a via pair on a failed connection is removed; a via onto its own plane is
       kept; a fixed via is kept; a three-stub chain goes in one call;
     - with the setting unset, A14 is unchanged.
 
-  *Partial 2026-10-18:* the stage is in; the full A14 run is pending.
+  *Done 2026-10-18:* the stage is in and the full A14 with the setting unset is unchanged.
   - Code: settings field `cleanup.remove_stubs` (new section `cleanup`, `opt` bool, unset, in no
     profile), `quality::stubs` (`remove_stubs`, `is_removable_stub`, `input_copper`), called by
     `run_pipeline` last (after the optimizer and the `AfterOptimizer` board stages, also after a
@@ -98,12 +125,15 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     --test-threads=1`: 60 boards, all 57 `exact` boards `bytes true` (the SES byte-identical to
     Java's), test ok in 39.6 s; `PARITY_SET=tools/bench/sets/connection-parity.txt`: 7 exact,
     all `bytes true`.
-  - Remains: heavy run pending, the full A14 with the setting unset:
-    `cd /home/thebo/code/freerouting-rs/target/orchestrator/q16/wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/q16/target PARITY_SUBDIRS=1 PARITY_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/q16/scratch/parity-full cargo test --release
-    -p freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
-    --test-threads=1 --nocapture > /home/thebo/code/freerouting-rs/target/orchestrator/q16/scratch/a14.log 2>&1; echo "EXIT $?" >> /home/thebo/code/freerouting-rs/target/orchestrator/q16/scratch/a14.log`
-    (about 1.5 h; accept: EXIT 0, i.e. every exact board equal to Java's or in
-    `EXPECTED_MISMATCHES` as at `d7d7a6d`).
+  - Unset, full A14 (release, on origin/main `17431c4` plus this change's docs, which touch no
+    engine code): `CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 PARITY_SUBDIRS=1
+    PARITY_OUT=target/orchestrator/q16/a14/parity-full cargo test --release -p freerouting --test
+    autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1 --nocapture`:
+    `test result: ok. 1 passed`, EXIT 0, 5108 s. `summary.md`: exact 122 boards, 120 pass, 2
+    expected (Issue684, Issue721, as at `d7d7a6d`), 0 fail, 119 SES byte-identical and 120
+    equivalent (Issue110-RelayModule differs only in the non-ASCII component name, as in N06's
+    A14); cutoff 15/15 pass, all byte-identical (class sums 1316 unrouted, 1743 violations, 4670
+    vias, Java = Rust); java-failure 3/3; 0 D8 breaches added.
 - [~] **Q16.3 — Measure under N02 (no-regress).** Register first: `canary-pwr` via the plugin
   path plus the K09 boards.
   - **Accept:**
@@ -111,8 +141,8 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     - unconnected does not rise on any board;
     - if accepted, N05 adds the setting to `enhanced`.
 
-  *Partial 2026-10-18:* heavy run pending; nothing was run (the heavy-job slot was held by N05).
-  Registered before any number: `docs/roadmap/prereg/Q16.json` (sha256
+  *Partial 2026-10-18:* measured as registered; the gate **fails** on two hard guards, so the
+  setting stays unset in both profiles (the registration's keep rule). Registered before any number: `docs/roadmap/prereg/Q16.json` (sha256
   83d71ce12b22a3aba7f3fd6bc33339d86e0911afbbfd5b200c6c173181438c82, pinned by
   `crates/freerouting-dev/tests/prereg_q16.rs`): N02's totals rule with `accept: no-regress`,
   arms `plugin45` (the plugin45 options) and `plugin45+cleanup` (plus
@@ -134,3 +164,136 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
   --router.autorouter.sweep_passes=2 --router.cleanup.remove_stubs=true`, run twice (second name
   `plugin45-cleanup-rerun`, then `cmp` the two `route.ses`), against Q16.1's `plugin45` (with
   `B` as in Q16.1 step 2). If accepted, N05 adds `cleanup.remove_stubs = true` to `ENHANCED`.
+
+  - Amendment, before any Q16.3 number: `enhanced` at the measured tree is
+    `power_layer_traces = none` (N05, `f010b1e`, after the registration); both arms run under it
+    unchanged; neck-down is not on origin/main (`17431c4`) and is in neither arm. New sha256
+    `d3d20814b910f432e799b2262218f8dbe4b700e408a6b2323787b7bdd0a24493`, pinned by
+    `crates/freerouting-dev/tests/prereg_q16.rs` (1 amendment).
+  - Runs as registered (one release build, CLI `589b0fd3…`, WSL KiCad 10.0.7, the commands above);
+    records `target/orchestrator/q16/scratch/records-q163.json` (`analyze163.py`; drc_real per the
+    registration against K09's `_input` grades; each row's `connections` is its unrouted input's
+    KiCad unconnected count, for the registered default band). `freerouting-dev gate --records
+    records-q163.json --baseline baseline-q163.json --prereg docs/roadmap/prereg/Q16.json`
+    (baseline written from the same records): 0 refusals, **gate: FAIL** (exit 1), totals 121 →
+    122 against set noise 18.08, rejected on the hard guards
+    `canary-pwr.kicad_pcb.kicad_unconnected 37 -> 38` and `CM5_MINIMA_3.track_dangling = 1`.
+
+    | row | KiCad unconnected | via_dangling | track_dangling | drc_real | starved | wall s |
+    |---|---|---|---|---|---|---|
+    | canary-pwr (plugin path) | 37 → **38** | 15 → 0 | 0 → 0 | 1 → 0 | 5 → 5 | 164.2 → 162.5 |
+    | canary-pwr (handoff DSN) | 37 → 37 | 16 → 0 | 0 → 0 | 1 → 0 | 5 → 4 | 107.2 → 106.3 |
+    | interf_u | 18 → 18 | 9 → 0 | 0 → 0 | 0 → 0 | 9 → 9 | 6.4 → 6.3 |
+    | CM5_MINIMA_3 | 27 → 27 | 0 → 0 | 1 → **1** | 49 → 49 | 0 → 0 | 29.4 → 29.4 |
+    | pic_programmer | 2 → 2 | 0 → 0 | 0 → 0 | 2 → 2 | 0 → 0 | 0.3 → 0.3 |
+
+    via_in_pad and below_minimum are 0 in every run. Determinism: the candidate's two runs are
+    byte-identical on every board (`cmp`: canary-pwr `be9ce10b…`, handoff `f417d59f…`, interf_u,
+    CM5 `384f05df…` (= the baseline: 0 removed), pic_programmer). Engine log of the candidate:
+    canary-pwr 16 vias and 11 traces removed in 3 rounds, handoff 17 and 14, interf_u 9 and 6,
+    CM5 and pic_programmer 0.
+  - Cause 1, the unconnected rise on canary-pwr: the cleanup removed the `+12V_PROT` via at
+    (136.355, 68.960) mm and its B.Cu trace to D5 pad 2. On F.Cu the via sits inside the
+    `+12V_PROT` pour, which the plugin exports as fixed wires (`fixed_pour_classes` Power_High:
+    `(wire (path F.Cu 250 136325 -67127 136325 -71964) ... (type fix))`), crossing that strip
+    mid-segment. The stage counts contacts as Java's normal contacts (`BasicBoard::normal_contacts`,
+    `contact_at_point`), where a via touches a trace only when an end corner of the trace is the
+    via's center, so the via had one contact (the B.Cu trace) and went; KiCad counts
+    any overlap, so the via joined D5 pad 2 to the pour (it was not in KiCad's `via_dangling`) and
+    its removal adds the `+12V_PROT` item D5 pad 2 ↔ pour (1 → 2 on that net, the only net that
+    changed). The same via goes on the handoff row (`+12V_PROT` 1 → 2 there too), where a GND
+    thermal that its removal frees (GND 8 → 7, starved 5 → 4) hides the rise. This via is also the
+    one clearance error of both baselines (0.245 mm from an `LTC_INTVCC` track, Q14).
+  - Cause 2, CM5's kept `track_dangling`: a `+3V3_PI` B.Cu trace of 0.555 mm from R102 pad 1
+    (123.93, 62.98) to (124.485, 62.98), inserted by the first pass (Q16.1). Its open end lies
+    inside the DSN's `+3V3_PI` B.Cu plane polygon (the zone outline, `(polygon B.Cu 0 127150
+    -63200 126560 -62600 124410 -62600 124410 -63140 ...)`), so the router and the cleanup see a
+    plane contact and keep it (neither input copper nor a fixed item nor the contact guard: the
+    plane contact itself); KiCad's refilled zone does not reach the point (`ZONE.Outline().
+    Contains` true, `HitTestFilledArea` false at the end), so KiCad reports the end as open. The
+    stage cannot see this from the DSN: the plane is the zone's outline, not its fill.
+  - Remains: Q16.4. The operator decided on 2026-10-18: (1) the stub test counts contacts as KiCad
+    does (any same-net copper overlapping on a shared layer, by the board's exact shapes);
+    (2) cause 2 is out of the stage's scope and a known limit (the DSN's plane is the zone outline,
+    not KiCad's fill), and the hard clause becomes "no dangling via or track visible from the DSN";
+    (3) a new registration on boards Q16.3 did not use. Sessions with and without the setting:
+    `target/canary-handoff/2026-10-18-q16/`.
+- [~] **Q16.4 — Contacts counted as KiCad counts them, measured again.** Q16.3 failed on two
+  stubs the stage judged by Java's normal contacts and by the DSN's plane outlines; the operator's
+  decisions are in Q16.3's "Remains".
+  - **Accept:**
+    - the stub test counts any same-net copper overlapping the item on a shared layer as a contact
+      (a fixture: a via inside a fixed pour strip, crossing it mid-segment, is kept);
+    - the CM5 case (a trace ending inside a plane's outline outside KiCad's fill) is a known limit,
+      recorded here and in DIVERGENCES;
+    - a new registration on boards Q16.3 did not use, then: KiCad's `via_dangling` and
+      `track_dangling` visible from the DSN are 0 on every board, unconnected does not rise on any
+      board, no new DRC error, deterministic; if accepted, N05 adds the setting to `enhanced`.
+
+  *Partial 2026-10-18:* the code, the fixtures, the known limit and the registration are in; the
+  registered measurement is pending (heavy run pending: the heavy slot went to a full A14).
+  - Code: `quality::stub_contacts` (new): an item's copper per layer (`pieces`: a trace's segment
+    shapes at its half width, a via's or pin's pad shapes, a conduction area's tile shapes),
+    `touches` (a common net and two pieces on one layer that intersect, `Shape::intersects`,
+    borders included, no tolerance), `overlap_contacts`, `end_has_contact` (N04's end cap: the disc
+    of half the width around the end, `Shape::intersects_circle`) and `via_contact_layers`.
+    `quality::stubs::is_removable_stub` now calls a trace a stub when an end has no contact and a
+    via when its pad meets copper of its net on at most one layer, and its guard asks that the
+    overlap contacts all touch one another; `remove_stubs` follows the removed item's overlap
+    contacts into the next round. N04's helpers in `board/contact_rule.rs` are gated on
+    `pad_contacts = inside_pad`, so the stage reuses its end-cap test (`Shape::intersects_circle`
+    on an integer centre, the point alone on a rational one) rather than the functions. Independent
+    of `router.pad_contacts`; nothing runs with the setting unset, so `legacy` and A14 do not move.
+    Module docs (both modules) and the DIVERGENCES line (freerouting, `cleanup.remove_stubs`) name
+    the known limit.
+  - Unset, nothing moves: A14 subset (dev profile) `PARITY_MAX_JAVA_S=20 cargo test -p freerouting
+    --test autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1`: exact 57
+    boards, 57 pass, 57 SES byte-identical, java-failure 3/3, test ok in 48.5 s;
+    `PARITY_SET=tools/bench/sets/connection-parity.txt`: exact 7, all byte-identical.
+  - Fixtures, `tests/stub_contacts.rs` on `tests/data/quality/q16-overlap-stubs.dsn` (7 passed):
+    `java_sees_stubs_where_kicad_sees_joints` (each of the four joints is a Java tail and no stub
+    here), `a_via_crossing_a_fixed_strip_mid_segment_is_kept` (Q16.3's canary via: STRIP 2 vias and
+    3 traces before and after), `a_trace_ending_on_a_trace_body_is_kept`,
+    `a_via_off_a_pad_centre_is_kept`, `copper_that_touches_nothing_still_goes` (OPEN 0 and 0),
+    `the_border_counts_and_one_unit_off_does_not` (a pad meeting the strip's copper exactly at its
+    border is kept, one board unit (0.1 um) further it and its chain go),
+    `the_cleanup_completes_nothing_less_and_is_deterministic` (4 vias and 4 traces removed,
+    incomplete count equal, same ids twice). Q16.2's `tests/stub_cleanup.rs` passes unchanged (12).
+  - Known limit, measured on Q16.3's runs by `tools/kicad-oracle/dangling_visible.py` (new; KiCad
+    python on the saved board, its DRC report and the run's DSN): CM5_MINIMA_3's candidate
+    `track_dangling` 1 → `track_dangling_dsn` 0 (the `+3V3_PI` end at (124.485, 62.98) mm on B.Cu
+    is inside the DSN plane, outside the fill); canary-pwr base 15 → 15 and interf_u 9 → 9 (all
+    visible from the DSN).
+    Unit tests of its DSN plane reader: `tools/kicad-oracle/tests/test_dangling_visible.py` (3;
+    `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'`: 12 OK).
+  - Registration before any number: `docs/roadmap/prereg/Q16-4.json` (sha256
+    `45a2679297b0ce5cc0684f98d9d90c14e965b2fdf8955d3dc04679964cebbf2d`, pinned by
+    `crates/freerouting-dev/tests/prereg_q16_4.rs`): N02 totals, `accept: no-regress`, arms
+    `plugin45` and `plugin45+cleanup` under the current `enhanced` (`power_layer_traces = none`,
+    `neck_width_um = 300`, origin/main `27d7409`), boards canary-pwr (plugin path) and the stripped
+    KiCad 10.0.7 demos kit-dev-coldfire-xilinx_5213, StickHub, RoyalBlue54L-Feather,
+    multichannel_mixer (from `multichannel_mixer-unrouted.kicad_pcb`), stripped into
+    `target/orchestrator/q16/scratch/boards/`; hard guards `via_dangling_dsn` and
+    `track_dangling_dsn` 0, unconnected and drc_real not above the baseline on any board,
+    via_in_pad and below_minimum 0, determinism.
+  - Heavy run pending, one at a time (`S=/home/thebo/code/freerouting-rs/target/orchestrator/q16/scratch`,
+    `O=/home/thebo/code/freerouting-rs/target/canary-handoff/2026-10-17-plugin45/route-options.json`):
+    1. `cd /home/thebo/code/freerouting-rs/target/orchestrator/q16/wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0
+       CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/q16/target cargo build --release -p freerouting-cli -p freerouting-dev`;
+    2. the inputs: `for b in kit-dev-coldfire-xilinx_5213 StickHub RoyalBlue54L-Feather
+       multichannel_mixer; do sha256sum $S/boards/$b/$b.kicad_pcb; mkdir -p $S/runs/_input164/$b;
+       cp -r $S/boards/$b/. $S/runs/_input164/$b/; kicad-cli pcb drc --refill-zones --severity-all
+       --format json -o $S/runs/_input164/$b/drc.json $S/runs/_input164/$b/$b.kicad_pcb; done`
+       (the hashes must equal the registration's; canary-pwr's input grade is K09's
+       `runs/_input/canary-pwr/drc.json`);
+    3. `for b in canary-pwr kit-dev-coldfire-xilinx_5213 StickHub RoyalBlue54L-Feather
+       multichannel_mixer; do timeout -k 10 3600 $S/q164-arm.sh q164-base $b $O; for a in
+       q164-cleanup q164-cleanup-rerun; do timeout -k 10 3600 $S/q164-arm.sh $a $b $O --
+       --router.cleanup.remove_stubs=true; done; cmp $S/runs/q164-cleanup/$b/work/$b.ses
+       $S/runs/q164-cleanup-rerun/$b/work/$b.ses && echo "CMP $b identical"; done` (`q164-arm.sh`,
+       sha256 `822508fe…`, is Q16.3's `arm.sh` with the demos from `$S/boards` and
+       `dangling_visible.py` after the DRC, its counts in `summary.json`);
+    4. `python3 -I $S/analyze164.py docs/roadmap/prereg/Q16-4.json $S/records-q164.json`, then
+       `../target/release/freerouting-dev gate --records $S/records-q164.json --baseline
+       $S/baseline-q164.json --prereg docs/roadmap/prereg/Q16-4.json --write-baseline` and the same
+       without `--write-baseline` for the verdict.

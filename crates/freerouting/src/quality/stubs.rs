@@ -21,16 +21,25 @@
 //!   the router's;
 //! - is unfixed (`Item.isRoutable`, so `type fix` and `type protect` copper
 //!   stays), of exactly one net, and its deletion is not forbidden;
-//! - connects fewer than two of its net's items, counted as the DRC counts
-//!   them (Java `Item.isTail`, the DRC's `track_dangling` and
-//!   `via_dangling`): a trace with an end without contact, a via with at
-//!   most one contact or with all its contacts on the same layers. A plane
-//!   of the net is a contact, so a via that stitches a trace to its plane is
-//!   two contacts on two layers and stays;
+//! - connects fewer than two of its net's items, counted as KiCad counts
+//!   them ([`stub_contacts`], Q16.4): a trace with an end whose cap meets
+//!   no other copper of its net (KiCad's `track_dangling`), a via whose pad
+//!   meets copper of its net on at most one layer (KiCad's `via_dangling`).
+//!   Copper meets copper wherever their shapes intersect on a layer, by the
+//!   board's exact shape intersection: a via on a trace's body, a trace end
+//!   on another trace's body, a via off a pad's centre all touch. Java's
+//!   normal contacts (an end corner at a via's centre, a common end corner)
+//!   are a subset; Q16.3 counted those alone and removed a via that sat on
+//!   a fixed pour strip, which KiCad counted as a connection. A plane of
+//!   the net is a contact, so a via that stitches a trace to its plane
+//!   touches it on two layers and stays. **Known limit:** a plane is its
+//!   DSN outline, not the zone fill KiCad pours inside it, so a trace that
+//!   ends inside the outline where KiCad's fill does not reach stays, and
+//!   KiCad reports it dangling (Q16.3, CM5_MINIMA_3);
 //! - whose removal joins nothing apart: its contacts all touch one another
-//!   (each pair is in normal contact one way or the other). Without that
-//!   guard a via whose two traces end on one layer at different points of
-//!   its pad would be removed and split them. Such a via stays, dangling.
+//!   (their copper meets). Without that guard a via whose two traces end on
+//!   one layer at different points of its pad would be removed and split
+//!   them. Such a via stays, dangling.
 //!
 //! So the cleanup removes only the router's copper, and only copper whose
 //! removal cannot make a complete connection incomplete: the unconnected
@@ -52,7 +61,8 @@
 use std::collections::BTreeSet;
 
 use crate::board::BasicBoard;
-use crate::board::items::{Item, ItemId};
+use crate::board::items::{Item, ItemId, ItemKind};
+use crate::quality::stub_contacts;
 use crate::settings::RouterSettings;
 
 /// The settings key, without `router.`.
@@ -111,29 +121,26 @@ pub fn is_removable_stub(board: &BasicBoard, id: ItemId, keep: &BTreeSet<ItemId>
     if !item.is_routable() || item.net_count() != 1 || board.is_deletion_forbidden(item) {
         return false;
     }
-    if !board.is_tail(id) {
-        return false;
-    }
-    contacts_touch_each_other(board, &board.normal_contacts(id))
+    let dangling = match &item.kind {
+        ItemKind::Trace(trace) => {
+            !stub_contacts::end_has_contact(board, item, &trace.first_corner())
+                || !stub_contacts::end_has_contact(board, item, &trace.last_corner())
+        }
+        ItemKind::Via(_) => stub_contacts::via_contact_layers(board, item).len() <= 1,
+        _ => false,
+    };
+    dangling && contacts_touch_each_other(board, &stub_contacts::overlap_contacts(board, id))
 }
 
-/// True if every two of `contacts` are in normal contact, so that removing
+/// True if the copper of every two of `contacts` meets, so that removing
 /// the item they all touch keeps them joined.
 fn contacts_touch_each_other(board: &BasicBoard, contacts: &BTreeSet<ItemId>) -> bool {
-    if contacts.len() <= 1 {
-        return true;
-    }
-    let ids: Vec<ItemId> = contacts.iter().copied().collect();
-    let neighbours: Vec<BTreeSet<ItemId>> =
-        ids.iter().map(|id| board.normal_contacts(*id)).collect();
-    for (i, a) in ids.iter().enumerate() {
-        for (j, b) in ids.iter().enumerate().skip(i + 1) {
-            if !neighbours[i].contains(b) && !neighbours[j].contains(a) {
-                return false;
-            }
-        }
-    }
-    true
+    let items: Vec<&Item> = contacts.iter().filter_map(|id| board.item(*id)).collect();
+    items.iter().enumerate().all(|(i, a)| {
+        items[i + 1..]
+            .iter()
+            .all(|b| stub_contacts::touches(board, a, b))
+    })
 }
 
 /// Removes every stub of `board` that is not in `keep`, round after round
@@ -152,7 +159,7 @@ pub fn remove_stubs(board: &mut BasicBoard, keep: &BTreeSet<ItemId>) -> StubClea
             if !is_removable_stub(board, id, keep) {
                 continue;
             }
-            let contacts = board.normal_contacts(id);
+            let contacts = stub_contacts::overlap_contacts(board, id);
             let is_via = board.item(id).is_some_and(Item::is_via);
             if !board.remove_item(id) {
                 continue;

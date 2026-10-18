@@ -1,0 +1,168 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q16.4-remove-stubs-kicad-contacts",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/Q16-no-dangling-stubs.md (Q16.4)",
+  "question": "With router.cleanup.remove_stubs=true and the stub test counting contacts as KiCad does (any same-net copper overlap on a shared layer, Q16.4), does a plugin run with the plugin45 options leave no dangling via or track visible from the DSN on canary-pwr and four KiCad demos Q16.3 did not use, without raising any board's KiCad-unconnected count, adding a DRC error, or losing determinism?",
+  "rule": "totals",
+  "rule_text": "N02 (docs/roadmap/tasks/N02-keep-rule-for-defaults.md) with accept no-regress, as Q16.json: the candidate passes against the baseline arm when the KiCad-unconnected total over the distinct boards is not worse than the set's noise (sqrt of the sum of the per-board bands squared). Hard guards, each on every board: kicad_unconnected of the candidate not above the baseline's (a rise of 1 fails, whatever the noise), drc_real not above the baseline's, via_in_pad = 0, below_minimum = 0, via_dangling_dsn = 0 and track_dangling_dsn = 0 in the candidate; determinism (D2): the candidate's CLI run on each board is run twice and the two SES files are byte-identical. via_dangling_dsn and track_dangling_dsn are KiCad's via_dangling and track_dangling minus the findings tools/kicad-oracle/dangling_visible.py classifies as the plane-fill limit (the via centre or a track end inside a DSN plane polygon of its net on that layer and outside KiCad's fill of the net there: the router sees a plane contact the DSN shows and KiCad's fill does not, which no stage can know; the operator's decision of 2026-10-18). A board whose baseline has no dangling copper still counts in the totals and the guards. pass_rule below is the parser's paired rule, kept only so the file validates; it does not decide.",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "canary-pwr": 10
+    },
+    "min_boards": 3
+  },
+  "noise": {
+    "canary-pwr": 10,
+    "formula": "max(2, 0.05 * the unconnected count of the unrouted input board, by KiCad's DRC), given to the gate as each row's connections",
+    "source": "as Q16.json"
+  },
+  "arms": {
+    "plugin45": {
+      "engine": "freerouting-rs release CLI at origin/main 27d7409 plus Q16.4's diff (the stub test on overlap contacts; nothing else of the engine changes), profile enhanced as it is there (power_layer_traces=none, neck_width_um=300), through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "options": {
+        "schema": 3,
+        "profile": "enhanced",
+        "max_passes": 1,
+        "min_trace_width_um": 150.0,
+        "class_widths": {
+          "GND": 0.4,
+          "Power": 0.3,
+          "Power_High": 0.3,
+          "Switch_Node": 0.3
+        },
+        "fixed_pour_classes": [
+          "Power_High",
+          "Switch_Node"
+        ],
+        "drop_pour_nets": [
+          "GND"
+        ],
+        "start_ripup_costs": 1500,
+        "sweep": "free",
+        "sweep_passes": 2
+      },
+      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "what": "baseline: the plugin45 options under the current enhanced, the cleanup unset"
+    },
+    "plugin45+cleanup": {
+      "engine": "as plugin45",
+      "options": {
+        "schema": 3,
+        "profile": "enhanced",
+        "max_passes": 1,
+        "min_trace_width_um": 150.0,
+        "class_widths": {
+          "GND": 0.4,
+          "Power": 0.3,
+          "Power_High": 0.3,
+          "Switch_Node": 0.3
+        },
+        "fixed_pour_classes": [
+          "Power_High",
+          "Switch_Node"
+        ],
+        "drop_pour_nets": [
+          "GND"
+        ],
+        "start_ripup_costs": 1500,
+        "sweep": "free",
+        "sweep_passes": 2
+      },
+      "router_extra": "--router.cleanup.remove_stubs=true",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2 --router.cleanup.remove_stubs=true",
+      "what": "candidate: plugin45 plus Q16's final stub cleanup with Q16.4's contacts"
+    }
+  },
+  "baseline_arm": "plugin45",
+  "candidate_arm": "plugin45+cleanup",
+  "boards": {
+    "procedure": "canary-pwr as Q16.json (the git archive of canary HEAD e21ee05e hardware/canary-pwr-rev1.0, the plugin path, --schematic-parity). The demos are KiCad 10.0.7's /usr/share/kicad/demos with tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip (hashes of the stripped boards; the strip is reproducible, StickHub stripped twice gave the same bytes), each with its own .kicad_pro: kit-dev-coldfire-xilinx_5213 (4 copper layers; K02.7's graded Rust run had 48 via_dangling), StickHub (2 layers), RoyalBlue54L-Feather (8 layers) and multichannel_mixer (2 layers, from multichannel_mixer-unrouted.kicad_pcb with multichannel_mixer.kicad_pro). Chosen before any number of this registration: the multi-layer demos with vias that Q16.1 and Q16.3 did not use, of a size that routes in minutes; ecc83-pp and complex_hierarchy are left out because K02.7's runs had no dangling copper on them, jetson-agx-thor-baseboard, vme-wren and video for their size. Only kit-dev-coldfire-xilinx_5213 is known to have dangling vias in a baseline (K02.7, other options); the others have no prior grade.",
+    "files": {
+      "canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "demos/kit-dev-coldfire-xilinx_5213.kicad_pcb (stripped)": "69baa47ad32d6d072d7955a41607f524a8305e3b96f234ce9ae77183a0e9ca67",
+      "demos/StickHub.kicad_pcb (stripped)": "9c81b06ea34342daa1c9bf7dad5b500b826758cdb2dfe2ddfc5c7d2521b38fe7",
+      "demos/RoyalBlue54L-Feather.kicad_pcb (stripped)": "9243135bd738e7a4efd38feed7f6a0b4a01b052c9306b4da4235d478ad17b969",
+      "demos/multichannel_mixer-unrouted.kicad_pcb (stripped)": "451db5bdbd60ba591ec0af916935545db5327e1ce2d1d4f201dbc3027786f4f9"
+    }
+  },
+  "grading": "kicad-cli pcb drc --refill-zones --save-board --severity-all --format json on the board ImportSpecctraSES saved (canary-pwr also --schematic-parity, inside the canary HEAD project copy); canary's via_in_pad.py (WSL KiCad python); tools/kicad-oracle/dangling_visible.py on the saved board, that DRC report and the DSN of the run. drc_real = error-severity violations other than unconnected_items and starved_thermal, minus the same types on the unrouted input (its own DRC with the same flags); below_minimum = the track_width errors",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "via_dangling_dsn",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "track_dangling_dsn",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "via_dangling",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "track_dangling",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "starved_thermal",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "if the candidate passes, N05 adds cleanup.remove_stubs = true to ENHANCED with these numbers (profile.rs entry, the settings_profile test, the DIVERGENCES line, the help text, an N05.3 line); if it fails, the setting stays unset in both profiles and Q16.4's note gives the numbers and the cause of each failing guard",
+  "stop_rule": "one registered run per arm per board, plus the candidate's determinism rerun; no reruns with other settings",
+  "amendments": []
+}

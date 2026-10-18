@@ -303,13 +303,21 @@ IntOctagon's box cutout.
   board). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
   that phase's board stages, also after a stop: every trace or via the router inserted during
   the run (no item of the board as handed to `run_pipeline` is ever removed, locked or not, so a
-  designer's unfinished track stays) that is unfixed, of one net, a tail (Java `Item.isTail`,
-  the DRC's `track_dangling` and `via_dangling`; a plane of the net is a contact, so a via
-  stitching a trace to its plane stays) and whose contacts all touch one another is removed, in
-  item-id order, round after round until a round removes nothing; fixed and protected copper
-  stays, and no complete connection becomes incomplete (`tests/stub_cleanup.rs` on
-  `tests/data/quality/q16-stubs.dsn`). Q16.3 measures it (`docs/roadmap/prereg/Q16.json`); N05
-  decides `enhanced`.
+  designer's unfinished track stays) that is unfixed, of one net, dangling as KiCad counts it
+  and whose contacts all touch one another is removed, in item-id order, round after round until
+  a round removes nothing; fixed and protected copper stays, and no complete connection becomes
+  incomplete (`tests/stub_cleanup.rs` on `tests/data/quality/q16-stubs.dsn`). Dangling is read on
+  KiCad's contacts, not Java's normal contacts (Q16.4, `quality::stub_contacts`): copper of a net
+  touches wherever the board's exact shapes intersect on a common layer (a via on a trace's body,
+  a trace end on another trace's body, a via off a pad's centre), so a trace with an end whose cap
+  meets no other copper of its net, or a via whose pad meets copper of its net on at most one
+  layer, is a stub (`tests/stub_contacts.rs` on `tests/data/quality/q16-overlap-stubs.dsn`; Q16.3
+  measured Java's contacts and removed a via KiCad counted as a connection). A plane of the net is
+  a contact, so a via stitching a trace to its plane stays. Known limit: a plane is its DSN
+  outline, not KiCad's zone fill, so a trace ending inside the outline where the fill does not
+  reach stays and KiCad reports it dangling (Q16.3, CM5_MINIMA_3). Q16.3 measured the first
+  version (`docs/roadmap/prereg/Q16.json`, rejected); Q16.4 measures this one
+  (`docs/roadmap/prereg/Q16-4.json`); N05 decides `enhanced`.
 - `autorouter.connection_router = transactional-ripup` (Q11, `quality::transaction`) is a
   connection router Java does not have, selected by no profile (unset is Java's
   `freerouting-connection`), with the settings fields `transaction.{rule, depth, rip_factor}`

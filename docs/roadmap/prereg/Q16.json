@@ -58,5 +58,11 @@
   "pass_rule": {"min_boards": 3, "improve_all_but": 1, "max_regress": 0},
   "keep_rule": "if the candidate passes, N05 adds cleanup.remove_stubs = true to ENHANCED with these numbers; if it fails, the setting stays unset in both profiles and Q16.3's note gives the numbers and the cause (a dangling via the cleanup keeps is named with its net and why: input copper, a fixed item, or the contact guard)",
   "stop_rule": "one registered run per arm per board, plus the candidate's determinism rerun; no reruns with other settings",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "after": "registration, before any Q16.3 number (Q16.1's attribution runs had not started either)",
+      "change": "profile enhanced at the tree that lands Q16 is no longer empty: N05 (f010b1e, after this registration) gave it router.power_layer_traces = none. Both arms run under it unchanged (no flag added, the options and commands stand), so the baseline plugin45 is the plugin45 options on that tree, not Dan's 2026-10-17 session byte-for-byte; Q16.1's plugin45 cmp reports the difference. Neck-down (neck_width_um) has not landed on origin/main (17431c4) and is in neither arm. Arms, boards, metrics, guards and the rule are unchanged."
+    }
+  ]
 }

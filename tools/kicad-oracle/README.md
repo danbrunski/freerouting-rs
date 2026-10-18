@@ -112,6 +112,8 @@ comparison.
 | `grade-set.sh` | bash | `grade.sh` over a set file, `grades.tsv` |
 | `kicad_steps.py` | KiCad's python (`pcbnew`) | strip, export, import, copper statistics, pad list (tests) |
 | `oracle_lib.py` | plain python3 | keepout fix, SES placement strip, class widths, severity forcing, pre-existing subtraction, summary |
+| `dangling_visible.py` | KiCad's python (`pcbnew`) | splits KiCad's `via_dangling`/`track_dangling` into what the DSN shows and the plane-fill limit (a via or track end inside a DSN plane of its net, outside KiCad's fill), Q16.4 |
+| `tests/test_dangling_visible.py` | plain python3 | unit tests of its DSN plane reader and point-in-polygon test |
 | `tests/test_oracle_lib.py` | plain python3 | unit tests: `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` |
 | `tests/run-oracle-tests.sh` | bash + KiCad + Java | end-to-end checks (via in pad, graze under a warning-level clearance, pre-existing edge item, missing `kicad-cli`, KiCad processes and checksums) |
 | `tests/inject.py`, `tests/make_edge_board.py` | python3 / KiCad's python | session edits and the synthetic edge board for those checks |
