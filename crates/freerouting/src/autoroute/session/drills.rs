@@ -563,9 +563,13 @@ impl Session<'_> {
             PolylineShape::from(page_shape),
             holes.into_iter().map(PolylineShape::from).collect(),
         );
-        // N06 batch G: the cutouts' `router.java_quirks.*` switches.
-        let Some(drill_shapes) = area.split_to_convex_with(self.stop, self.control.quirks.split())
-        else {
+        // N06 batch G: the cutouts' `router.java_quirks.*` switches, and their
+        // reachability counts (N06.4).
+        let mut reach = freerouting_geometry::SplitReach::default();
+        let drill_shapes =
+            area.split_to_convex_counted(self.stop, self.control.quirks.split(), &mut reach);
+        crate::run_stats::record_split_reach(&reach);
+        let Some(drill_shapes) = drill_shapes else {
             // A stopped or failed split leaves the page empty for this net.
             return Ok(Vec::new());
         };

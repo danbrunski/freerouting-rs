@@ -1,0 +1,232 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.4-geometry-cutouts",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.4, batch G)",
+  "question": "Do the geometry cutout fixes, router.java_quirks.octagon_box_cutout_branch3=false (branch 3 of IntOctagon::cutout_from_box trims the upper right octagon to the widened upper box, so the drill-page pieces no longer overlap) and router.java_quirks.simplex_prev_division_line=false (Simplex::cutout_from assigns its previous division line; inert by construction), each alone and both, keep the unrouted total within N02's totals rule (accept no-regress: correctness fixes) of Java's cutouts, with no via in a pad, no copper below the minimum and no new clearance or DRC error, and how often does a run reach the two branches?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": 10
+    },
+    "min_boards": 3
+  },
+  "noise_note": "canary-pwr's band is routing-quality.md's 10; every other board's band is the totals rule's default max(2, ceil(5 % of connections)) from the record's connections",
+  "engine": "freerouting-rs at the implementing commit (main b93bcd0 with N06.4's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at the implementing commit (main b93bcd0 with N06.4's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.simplex_prev_division_line=true --router.java_quirks.octagon_box_cutout_branch3=true",
+      "settings": {},
+      "what": "both keys set to true: Java's cutouts"
+    },
+    "simplex_prev_division_line": {
+      "engine": "freerouting-rs at the implementing commit (main b93bcd0 with N06.4's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.simplex_prev_division_line=false --router.java_quirks.octagon_box_cutout_branch3=true",
+      "settings": {
+        "router.java_quirks.simplex_prev_division_line": false
+      },
+      "what": "the simplex fix alone; inert by construction (Simplex::cutout_from_counted), so its sessions must equal the baseline's"
+    },
+    "octagon_box_cutout_branch3": {
+      "engine": "freerouting-rs at the implementing commit (main b93bcd0 with N06.4's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.simplex_prev_division_line=true --router.java_quirks.octagon_box_cutout_branch3=false",
+      "settings": {
+        "router.java_quirks.octagon_box_cutout_branch3": false
+      },
+      "what": "the branch-3 trim alone"
+    },
+    "all": {
+      "engine": "freerouting-rs at the implementing commit (main b93bcd0 with N06.4's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys",
+      "command": "target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.simplex_prev_division_line=false --router.java_quirks.octagon_box_cutout_branch3=false",
+      "settings": {
+        "router.java_quirks.simplex_prev_division_line": false,
+        "router.java_quirks.octagon_box_cutout_branch3": false
+      },
+      "what": "candidate: batch G, both fixes; its sessions must equal octagon_box_cutout_branch3's"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "all",
+  "pairs": {
+    "verdict": {
+      "arms": [
+        "baseline",
+        "all"
+      ],
+      "rows": "all"
+    },
+    "reported": [
+      {
+        "arms": [
+          "baseline",
+          "octagon_box_cutout_branch3"
+        ],
+        "rows": "all"
+      },
+      {
+        "arms": [
+          "baseline",
+          "simplex_prev_division_line"
+        ],
+        "rows": "all"
+      }
+    ]
+  },
+  "pairs_rule": "the verdict pair is judged by the totals block with the hard and guard metrics below; the reported pairs are the switch-by-switch bisection (N06's decisions: one switch per bug), run up front. The simplex pair must show session_differences 0 on every row, and the all arm must give octagon_box_cutout_branch3's sessions byte for byte; either failing is a bug in N06.4's diff, not a verdict",
+  "boards": {
+    "set": "tools/bench/sets/n06-g.txt",
+    "eligibility": "every row; no row is dropped after a number. Chosen before any number: the four DSN fixtures of N06.10 and N06.11 (their hashes), which route with vias, so every pass reads drill pages; canary-pwr also goes through the KiCad plugin path (plugin_canary)",
+    "files": {
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5",
+      "fixtures/Issue676-ch32v-tx118s.dsn": "7270f70a8d1964801fc476826291a83d82d00bee00a346aea01fe55b2b63359e",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a"
+    }
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "simplex_prev_division_line_reached",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "octagon_box_cutout_branch3_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drills_computed",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "freerouting-dev gate collect's count on the imported SES; plugin canary: tools/kicad-oracle/via_in_pad.py",
+    "below_minimum": "the nets with copper under their class width in freerouting-dev widths <DSN> <SES> (under_mm > 0); plugin canary: KiCad track_width errors",
+    "simplex_prev_division_line_reached": "STATS total.counts.simplex_prev_division_line_reached; 0 by construction in every arm",
+    "clearance_violations": "the router's clearance violations of the final board (RESULT board_statistics; gate collect's clearance_violations)",
+    "drc_real": "plugin canary only: KiCad error-severity items other than unconnected items",
+    "kicad_unconnected": "plugin canary only: KiCad's unconnected items after the import (canary grade.sh); the totals signal where it is a number",
+    "unrouted": "gate collect's unrouted (connections.incomplete_count) of the final board; the totals signal of the DSN rows, which have no KiCad board",
+    "session_differences": "n06_run.py: 1 when the arm's SES differs from the baseline's",
+    "octagon_box_cutout_branch3_reached": "STATS total.counts.octagon_box_cutout_branch3_reached: the drill-page and tie-pin cutouts whose branch 3 changes a piece, counted in both arms",
+    "drills_computed": "STATS total.counts.drills_computed",
+    "vias": "gate collect's vias",
+    "length_mm": "gate collect's length_mm",
+    "wall_seconds": "STATS total wall_seconds"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress",
+  "keep_rule": "N06's accept rule for (b) fixes: a batch is accepted when the hard guards hold, no board regresses by more than twice its noise band and the total is not worse than the set's noise; a neutral fix stays in. If the verdict pair passes, N06.13 turns octagon_box_cutout_branch3 off in ENHANCED through N05; simplex_prev_division_line changes nothing and is promoted or left by N06.13's decision on inert switches",
+  "accept": [
+    "Unit and invariant tests pin both behaviours of both switches (tests/cutout_invariant.rs, box_cutout_branch3_switch_both_behaviours).",
+    "simplex_prev_division_line_reached = 0 in every run, and the simplex arm's sessions equal the baseline's.",
+    "The verdict pair passes the totals rule (no-regress) with the hard and guard metrics.",
+    "Grade canary-pwr through the KiCad plugin path; no new real DRC, via-in-pad or below-minimum errors."
+  ],
+  "stop_rule": "one registered run per arm per board; no reruns with other settings. No heavy run by the implementer.",
+  "orchestrator": "Build the release CLI in the worktree with CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target; run orchestrator_command (it exits non-zero when sessions differ, which is expected for this batch, after writing summary.json with every run's counters); then grade each SES with gate collect and freerouting-dev widths, and judge the pairs with freerouting-dev gate --rule totals",
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.4.json --out target/orchestrator/n06-g",
+  "corpus_counter_command": "N06_CUTOUT_COUNTERS_OUT=<absolute path>/n06-g-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1",
+  "corpus_counter_note": "read-only: how often the search trees' area and outline-keepout splits, which keep Java's code in every arm, reach the two branches per corpus board. A nonzero branch-3 count on a registered board means the arms measure the drill pages only there",
+  "plugin_canary": {
+    "required": true,
+    "source": "canary-pwr-rev1.0, the original KiCad project at canary 9511d9a; supplied by the orchestrator; never edit the source project",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then the arm's explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. The same exported input serves every arm",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "canary grade.sh steps (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); kicad_unconnected joins canary-pwr's row of the totals; no new real DRC, via-in-pad or below-minimum error"
+  },
+  "not_registered": [
+    "the A14 exact set: legacy keeps both keys true, so A14 is unaffected",
+    "the search trees' area and outline-keepout splits: they keep Java's code in every arm (corpus_counter_command says where that matters)"
+  ],
+  "seen_before_registration": "only N06.4's unit and invariant tests: on fixtures/Issue269-min_fr_test (not a row), pass 1 reaches branch 3 7 times in both arms and the simplex merge 0 times (tests/n06_cutout_reach.rs). No routed number of any registered row, under any arm",
+  "decision_table": {
+    "pass": "N06.4's measurement [x]; N06.13 turns octagon_box_cutout_branch3 off in ENHANCED (N05) with its DIVERGENCES 'Profile enhanced' line",
+    "fail": "octagon_box_cutout_branch3 stays true in both profiles, with these numbers in N06.4 and N06.13"
+  },
+  "amendments": []
+}

@@ -1,0 +1,10 @@
+# N06.4: batch G, the geometry cutouts' kept Java bugs (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.4.json: router.java_quirks.octagon_box_cutout_branch3 and
+# simplex_prev_division_line, each alone and both, against Java's cutouts (both true).
+# Every pass that reads drill pages runs the cutouts, so the four DSN fixtures of N06.10 and N06.11,
+# which route with vias, are the rows; canary-pwr also goes through the KiCad plugin path
+# (the registration's plugin_canary block).
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+fixtures/Issue676-ch32v-tx118s.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn

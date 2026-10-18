@@ -397,7 +397,7 @@ These are marked or look like quirks but keep no bug:
       target): `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p
       freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
       --test-threads=1`: exact 7 boards, 7 pass, 0 fail, 7 SES byte-identical.
-- [ ] **N06.4 — Batch G, geometry cutouts:** `simplex_prev_division_line`,
+- [~] **N06.4 — Batch G, geometry cutouts:** `simplex_prev_division_line`,
   `octagon_box_cutout_branch3`.
   - First, an invariant test that fails on Java's code: over random holes in boxes and
     simplexes, the piece areas sum to outer minus inner, with no two pieces overlapping.
@@ -405,6 +405,85 @@ These are marked or look like quirks but keep no bug:
   - **Accept:** the invariant holds with both switches `false`, and the batch is measured
     under the decisions' accept rule. The drill pages change on most boards, so this is likely
     the largest geometry effect.
+  - *Partial 2026-10-18:* code, tests, counters and registration done (worktree
+    `target/orchestrator/n06g/wt`, branch `land/n06-4`, on main `b93bcd0`); heavy run pending.
+    Its verdict (N02's totals rule) feeds N06.13's promotion through N05; wiring the search
+    trees' splits (below) joins N06.3's deferred read sites.
+    - [x] Invariant first: `crates/freerouting-geometry/tests/cutout_invariant.rs`, 5 tests,
+      all pass. 600 seeded (`JavaRandom`) cases per outer/inner pair of box, octagon and simplex.
+      The domain is holes inside the outer shape whose corners, as a simplex, are integer
+      points: 1584 cutouts. With Java's code (`SplitQuirks::JAVA`) 111 of them break the
+      invariant, every one a box minus an octagon with overlapping pieces; with both switches
+      `false` 0 (`fixed_cutouts_tile_the_rest_of_the_outer_shape`,
+      `java_breaks_the_invariant_only_through_branch_3`). Overlaps at most 1.5 units wide are
+      not counted: an odd-parity octagon keeps an edge of length -1 after `normalize`, and the
+      pieces beside it share a one-unit strip in both arms.
+    - [x] `octagon_box_cutout_branch3` fixed: under `false` branch 3 trims the upper right
+      octagon's top to the widened upper box (`int_octagon.rs`, as branch 2 does on the left).
+      `box_cutout_branch3_switch_both_behaviours` pins both values on a hand-made case.
+    - [x] `simplex_prev_division_line`: the inventory's fix (`prevDivisionLine =
+      nextDivisionLine`) is under `false`, and it is **inert**. The assigned line is the
+      corner's own first division line `D[i][0]`. Both merge tests then fail: the sharp piece's
+      is `det(D[i][0], D[i][0]) = 0`, and `calc_division_lines` keeps a second line only while
+      `det(D[i][0], D[i][1]) >= 0`. The proof is in `Simplex::cutout_from_counted`'s docs.
+      `the_simplex_switch_changes_no_piece` finds identical pieces under both values in all
+      5400 cases (3000 involve a simplex), with the merge counter at 0. The overlaps that the
+      inventory row blames on this line come from elsewhere (next bullet). One alternative,
+      `prev = D[i-1][last]`, does fire, but it opened gaps on 10 contained simplex-minus-simplex
+      cases, so it was not kept.
+    - [x] Two Java failures outside both rows, pinned under all four switch values by
+      `java_breaks_the_invariant_outside_the_two_rows` and not fixed (candidate new rows):
+      - a hole crossing the outer border loses pieces, because its corners on the border are
+        not integer points and get no division line (a triangle across a box: half the rest
+        is missing);
+      - an odd-parity octagon cut out of a simplex: its half-integer corner (12761.5,
+        -2288.5) counts as a border corner, so nothing is divided there and pieces overlap by
+        755,786 units².
+    - [x] Reachability counters: `SplitReach`, filled by the new `_counted` variants
+      (`PolylineArea::split_to_convex_counted`, `TileShape::cutout_counted`,
+      `Simplex::cutout_from_counted`, `IntOctagon::cutout_from_box_counted`). Both arms count
+      the branch-3 firings that change a piece, and the merges the simplex fix would add.
+      The run statistics expose them as `octagon_box_cutout_branch3_reached` and
+      `simplex_prev_division_line_reached`. They are recorded at the drill-page split
+      (`autoroute/session/drills.rs`) and at the tie-pin cutout
+      (`BasicBoard::reduce_trace_shape_at_tie_pin`).
+      - `the_branch_3_counter_counts_the_changed_cutouts`: 247 random cutouts change and 247
+        are counted.
+      - `tests/n06_cutout_reach.rs::drill_page_splits_report_both_counters_in_both_arms`:
+        pass 1 of `Issue269-min_fr_test` reaches branch 3 7 times in each arm, and the simplex
+        merge 0 times.
+    - [ ] Not wired: the search trees' shapes of obstacle and conduction areas and of the
+      outline's generated keepout still split with Java's code in every arm. Those sites are
+      `board/search/mod.rs` `item_tree_shapes`/`board_outline_tree_shapes` and
+      `BoardOutline::keepout_piece_count` in `board/items/mod.rs`. They are outside this row's
+      files: the trees take a `ShapeContext`, which `shove/cutout.rs` also builds, and the
+      board's switches are set only after the reader inserts the items, so the tree shapes
+      would need a rebuild. `unwired_area_splits_corpus_inventory` (ignored, read-only)
+      reports per corpus board how often those splits reach the two branches.
+    - [x] Registered before any number: `docs/roadmap/prereg/N06.4.json` (sha256
+      `392f0310ee74989380bf1e8a5fb4f57f470cdeab0e3e98a238ee4d710d3dd598`) and
+      `tools/bench/sets/n06-g.txt`.
+      - Arms: `baseline`, `simplex_prev_division_line`, `octagon_box_cutout_branch3`, `all`.
+        All run the default profile and default passes, and every arm sets both keys
+        explicitly.
+      - Rule: totals, no-regress. Rows: the four DSN fixtures of N06.10 and N06.11, plus
+        canary-pwr through the plugin path.
+      - Hard checks: the simplex arm must equal the baseline byte for byte, and `all` must
+        equal the branch-3 arm.
+      - Pinned by `crates/freerouting-dev/tests/prereg_n06_4.rs` (4 tests, pass).
+    - [x] Defaults unchanged: both keys unset are `true` in both profiles, and Java's path is
+      the `true` branch at both `PARITY(quirk, java_quirks.<id>)` markers.
+      `cargo test -p freerouting-geometry -p freerouting --no-fail-fast` (private target):
+      134 suites, 1508 passed, 0 failed, 33 ignored. No parity set was run (dispatch rule).
+    - [ ] Heavy run pending (orchestrator, one job at a time):
+      `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.4.json --out target/orchestrator/n06-g`.
+      - `n06_run.py` exits non-zero when sessions differ, which is expected for the branch-3
+        arms. It writes `summary.json` with every run's counters first.
+      - Then grade each SES with `gate collect` and `freerouting-dev widths`, and judge the
+        pairs with `freerouting-dev gate --rule totals`.
+      - Then the plugin canary run and grade, per the registration's `plugin_canary` block.
+      - Also the corpus inventory (read-only; the path must be absolute):
+        `N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
 - [ ] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
   `session.clear()` before `InitFailed`, which also makes the rekey dead under `enhanced`),
   `failed_attempt_ripped_carryover` (snapshot and restore the set per attempt),

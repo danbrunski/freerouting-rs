@@ -510,9 +510,9 @@ settings_table! {
         java_quirks, JavaQuirksPatch, JavaQuirksSettings, "javaQuirks",
         "The Java bugs kept for parity, one switch each (N06; not a Java section). Unset is `true`, Java's behaviour, in both profiles." {
             (simplex_prev_division_line, bool, opt, None, None, "simplexPrevDivisionLine", [], Flat::No, true,
-                "Simplex cutout keeps the previous division line null (pieces at sharp inner corners may overlap): `true` (unset) keeps this Java bug; its fix (N06.4) has not landed, so `false` changes nothing yet."),
+                "Simplex cutout keeps the previous division line null: `true` (unset) keeps this Java bug, `false` assigns it as the inventory proposed (N06.4). That fix never passes a merge test, so both values give the same pieces."),
             (octagon_box_cutout_branch3, bool, opt, None, None, "octagonBoxCutoutBranch3", [], Flat::No, true,
-                "Octagon-box cutout branch 3 rebuilds the octagon untrimmed (pieces overlap): `true` (unset) keeps this Java bug; its fix (N06.4) has not landed, so `false` changes nothing yet."),
+                "Octagon-box cutout branch 3 rebuilds the octagon untrimmed (pieces overlap): `true` (unset) keeps this Java bug, `false` trims it to the moved box (N06.4)."),
             (init_failure_room_leak, bool, opt, None, None, "initFailureRoomLeak", [], Flat::No, true,
                 "A failed maze-search init leaves the completed start rooms as obstacles: `true` (unset) keeps this Java bug, `false` fixes it (N06.5)."),
             (failed_attempt_ripped_carryover, bool, opt, None, None, "failedAttemptRippedCarryover", [], Flat::No, true,

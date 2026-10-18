@@ -8,7 +8,7 @@ use crate::line_segment::LineSegment;
 use crate::point::{IntPoint, Point};
 use crate::polygon::Polygon;
 use crate::polyline::Polyline;
-use crate::quirks::SplitQuirks;
+use crate::quirks::{SplitQuirks, SplitReach};
 use crate::side::Side;
 use crate::vector::Vector;
 
@@ -1026,33 +1026,54 @@ impl TileShape {
 
     /// [`Self::cutout`] with the switches of the cutouts (N06 batch G).
     pub fn cutout_with(&self, shape: &TileShape, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
+        self.cutout_counted(shape, quirks, &mut SplitReach::default())
+    }
+
+    /// [`Self::cutout_with`], adding to `reach` where the switches change a piece
+    /// ([`SplitReach`]).
+    pub fn cutout_counted(
+        &self,
+        shape: &TileShape,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<TileShape>> {
         match self {
             TileShape::IntBox(d) => {
-                let tmp = shape.cutout_from_box(d, quirks)?;
+                let tmp = shape.cutout_from_box(d, quirks, reach)?;
                 Some(tmp.iter().map(TileShape::simplify).collect())
             }
-            TileShape::IntOctagon(d) => shape.cutout_from_octagon(d, quirks),
-            TileShape::Simplex(d) => shape.cutout_from_simplex(d, quirks),
+            TileShape::IntOctagon(d) => shape.cutout_from_octagon(d, quirks, reach),
+            TileShape::Simplex(d) => shape.cutout_from_simplex(d, quirks, reach),
         }
     }
 
-    fn cutout_from_box(&self, d: &IntBox, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
+    fn cutout_from_box(
+        &self,
+        d: &IntBox,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<TileShape>> {
         Some(match self {
             TileShape::IntBox(c) => c.cutout_from_box(d).into_iter().map(Into::into).collect(),
             TileShape::IntOctagon(c) => c
-                .cutout_from_box_with(d, quirks)
+                .cutout_from_box_counted(d, quirks, reach)
                 .into_iter()
                 .map(Into::into)
                 .collect(),
             TileShape::Simplex(c) => c
-                .cutout_from_with(&d.to_simplex(), quirks)?
+                .cutout_from_counted(&d.to_simplex(), quirks, reach)?
                 .into_iter()
                 .map(Into::into)
                 .collect(),
         })
     }
 
-    fn cutout_from_octagon(&self, d: &IntOctagon, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
+    fn cutout_from_octagon(
+        &self,
+        d: &IntOctagon,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<TileShape>> {
         Some(match self {
             TileShape::IntBox(c) => c
                 .to_int_octagon()
@@ -1066,14 +1087,19 @@ impl TileShape {
                 .map(Into::into)
                 .collect(),
             TileShape::Simplex(c) => c
-                .cutout_from_with(&d.to_simplex(), quirks)?
+                .cutout_from_counted(&d.to_simplex(), quirks, reach)?
                 .into_iter()
                 .map(Into::into)
                 .collect(),
         })
     }
 
-    fn cutout_from_simplex(&self, d: &Simplex, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
+    fn cutout_from_simplex(
+        &self,
+        d: &Simplex,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<TileShape>> {
         let inner = match self {
             TileShape::IntBox(c) => c.to_simplex(),
             TileShape::IntOctagon(c) => c.to_simplex(),
@@ -1081,7 +1107,7 @@ impl TileShape {
         };
         Some(
             inner
-                .cutout_from_with(d, quirks)?
+                .cutout_from_counted(d, quirks, reach)?
                 .into_iter()
                 .map(Into::into)
                 .collect(),

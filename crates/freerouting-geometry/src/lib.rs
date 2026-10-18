@@ -39,7 +39,7 @@ pub use placement_transform::PlacementTransform;
 pub use point::{IntPoint, Point, RationalPoint};
 pub use polygon::Polygon;
 pub use polyline::Polyline;
-pub use quirks::SplitQuirks;
+pub use quirks::{SplitQuirks, SplitReach};
 pub use shapes::{
     Area, Circle, ConvexShape, IntBox, IntOctagon, PolygonShape, PolylineArea, PolylineShape,
     PolylineShapeOps, RegularTileShape, Shape, ShapeBoundingDirections, Simplex, TileShape,

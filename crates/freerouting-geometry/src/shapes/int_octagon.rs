@@ -8,7 +8,7 @@ use crate::jmath::{d2i, round_to_i32};
 use crate::limits::{CRIT_INT, SQRT2};
 use crate::line::Line;
 use crate::point::{IntPoint, Point};
-use crate::quirks::SplitQuirks;
+use crate::quirks::{SplitQuirks, SplitReach};
 use crate::side::Side;
 use crate::vector::Vector;
 
@@ -634,6 +634,17 @@ impl IntOctagon {
 
     /// [`Self::cutout_from_box`] with the switches of the cutouts (N06 batch G).
     pub fn cutout_from_box_with(&self, d: &IntBox, quirks: SplitQuirks) -> Vec<IntOctagon> {
+        self.cutout_from_box_counted(d, quirks, &mut SplitReach::default())
+    }
+
+    /// [`Self::cutout_from_box_with`], adding to `reach` the cutouts whose branch 3
+    /// (`octagon_box_cutout_branch3`) changes the upper right octagon.
+    pub fn cutout_from_box_counted(
+        &self,
+        d: &IntBox,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Vec<IntOctagon> {
         let c = self.intersection_box(d);
         if self.is_empty() || c.dimension() < self.dimension() {
             return vec![d.to_int_octagon()];
@@ -749,10 +760,18 @@ impl IntOctagon {
         if b.ur.y.wrapping_sub(b.ll.y) > o.right_x.wrapping_sub(o.left_x) {
             boxes[3] = IntBox::new(b.ll.x, b.ll.y, o.right_x, b.ur.y);
             // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): IntOctagon.java:1206-1223
-            // rebuilds the octagon unchanged, so it overlaps the moved box. N06.4 adds the
-            // trim under `false`; until then both values keep Java's.
-            let _java_branch3 = quirks.octagon_box_cutout_branch3;
-            octagons[3] = with(&o, o.left_x, o.bottom_y, o.right_x, o.top_y);
+            // rebuilds the octagon unchanged, so it overlaps the moved box. Under `false` the
+            // octagon's top moves down to the box's bottom, as branch 2 does for the upper
+            // left octagon.
+            if o.top_y != b.ll.y {
+                reach.octagon_box_cutout_branch3 += 1;
+            }
+            let top_y = if quirks.octagon_box_cutout_branch3 {
+                o.top_y
+            } else {
+                b.ll.y
+            };
+            octagons[3] = with(&o, o.left_x, o.bottom_y, o.right_x, top_y);
         }
         let (b, o) = (boxes[1], octagons[3]);
         if b.ur.x.wrapping_sub(b.ll.x) > o.top_y.wrapping_sub(o.bottom_y) {
@@ -1413,6 +1432,45 @@ mod tests {
             IntOctagon::new(5, 5, 0, 0, 0, 0, 0, 0).normalize(),
             IntOctagon::EMPTY
         );
+    }
+
+    /// N06.4, `octagon_box_cutout_branch3`: an octagon in the lower middle of a box with
+    /// its upper right corner cut. Branch 3 (`IntOctagon.java:1206-1223`) widens the
+    /// upper box to the right edge; Java keeps the upper right octagon's top, so the two
+    /// overlap, and the fix trims the octagon to the box's bottom.
+    #[test]
+    fn box_cutout_branch3_switch_both_behaviours() {
+        let d = IntBox::new(0, 0, 100, 100);
+        let hole = IntOctagon::new(40, 10, 60, 30, 10, 50, 50, 80).normalize();
+        let overlap_and_total = |quirks: SplitQuirks| {
+            let mut reach = SplitReach::default();
+            let pieces: Vec<TileShape> = hole
+                .cutout_from_box_counted(&d, quirks, &mut reach)
+                .into_iter()
+                .filter(|p| p.dimension() == 2)
+                .map(TileShape::IntOctagon)
+                .collect();
+            let mut overlap = 0.0;
+            for (i, a) in pieces.iter().enumerate() {
+                for b in &pieces[i + 1..] {
+                    let c = a.intersection(b);
+                    if c.dimension() == 2 {
+                        overlap += c.area();
+                    }
+                }
+            }
+            let total: f64 = pieces.iter().map(TileShapeOps::area).sum();
+            (overlap, total, reach.octagon_box_cutout_branch3)
+        };
+        let rest = 10_000.0 - hole.area();
+        let (overlap, total, reached) = overlap_and_total(SplitQuirks::JAVA);
+        assert_eq!(reached, 1);
+        assert!(overlap > 0.0 && total > rest, "{overlap} {total} {rest}");
+        let fixed = SplitQuirks {
+            octagon_box_cutout_branch3: false,
+            ..SplitQuirks::JAVA
+        };
+        assert_eq!(overlap_and_total(fixed), (0.0, rest, 1));
     }
 
     #[test]

@@ -5,7 +5,7 @@ use std::sync::{Arc, OnceLock};
 
 use crate::float_point::FloatPoint;
 use crate::point::{IntPoint, Point};
-use crate::quirks::SplitQuirks;
+use crate::quirks::{SplitQuirks, SplitReach};
 use crate::stoppable::Stoppable;
 use crate::vector::Vector;
 
@@ -158,6 +158,19 @@ impl PolylineArea {
         stoppable: Option<&dyn Stoppable>,
         quirks: SplitQuirks,
     ) -> Option<Vec<TileShape>> {
+        self.split_to_convex_counted(stoppable, quirks, &mut SplitReach::default())
+    }
+
+    /// [`Self::split_to_convex_with`], adding to `reach` where the switches change a
+    /// piece of the cutouts this call computes ([`SplitReach`]). A split served from
+    /// the cache computes no cutout and adds nothing; a failed or stopped split adds
+    /// the cutouts it made.
+    pub fn split_to_convex_counted(
+        &self,
+        stoppable: Option<&dyn Stoppable>,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<TileShape>> {
         let cache = &self.inner.convex_pieces[quirks.cache_slot()];
         if let Some(pieces) = cache.get() {
             return Some(pieces.clone());
@@ -175,7 +188,7 @@ impl PolylineArea {
                     if stoppable.is_some_and(|s| s.is_stop_requested()) {
                         return None;
                     }
-                    for piece in divide_piece.cutout_with(hole_piece, quirks)? {
+                    for piece in divide_piece.cutout_counted(hole_piece, quirks, reach)? {
                         if piece.dimension() == 2 {
                             new_pieces.push(piece);
                         }

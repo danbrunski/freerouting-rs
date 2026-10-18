@@ -117,10 +117,16 @@ pub enum Counter {
     ShoveStoreTraceClassFlips,
     /// N06.7: end-corner entry points that `rational_perp_projection` changes.
     ShoveRationalProjectionFlips,
+    /// N06.4: simplex cutout pieces where `simplex_prev_division_line` would add a
+    /// line (always 0: the fix is inert, see `Simplex::cutout_from_counted`).
+    SimplexPrevDivisionLine,
+    /// N06.4: octagon-from-box cutouts whose branch 3 changes the upper right octagon
+    /// (`octagon_box_cutout_branch3`).
+    OctagonBoxCutoutBranch3,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 30] = [
+pub const COUNTERS: [Counter; 32] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -151,6 +157,8 @@ pub const COUNTERS: [Counter; 30] = [
     Counter::ShoveInFrontOfPadFlankFlips,
     Counter::ShoveStoreTraceClassFlips,
     Counter::ShoveRationalProjectionFlips,
+    Counter::SimplexPrevDivisionLine,
+    Counter::OctagonBoxCutoutBranch3,
 ];
 
 impl Counter {
@@ -187,6 +195,8 @@ impl Counter {
             Counter::ShoveInFrontOfPadFlankFlips => "shove_in_front_of_pad_flank_flips",
             Counter::ShoveStoreTraceClassFlips => "shove_store_trace_class_flips",
             Counter::ShoveRationalProjectionFlips => "shove_rational_projection_flips",
+            Counter::SimplexPrevDivisionLine => "simplex_prev_division_line_reached",
+            Counter::OctagonBoxCutoutBranch3 => "octagon_box_cutout_branch3_reached",
         }
     }
 }
@@ -524,6 +534,21 @@ pub fn counts_only(records: &[StageRecord]) -> Vec<(&'static str, u32, Counts)> 
 pub(crate) fn record_n06(counter: Counter) {
     if enabled() {
         add(counter, 1);
+    }
+}
+
+/// N06.4: the cutouts' reachability counts ([`freerouting_geometry::SplitReach`]) of
+/// one split or cutout, in either switch arm.
+pub(crate) fn record_split_reach(reach: &freerouting_geometry::SplitReach) {
+    if enabled() {
+        add(
+            Counter::SimplexPrevDivisionLine,
+            reach.simplex_prev_division_line,
+        );
+        add(
+            Counter::OctagonBoxCutoutBranch3,
+            reach.octagon_box_cutout_branch3,
+        );
     }
 }
 

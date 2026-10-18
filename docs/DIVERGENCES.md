@@ -42,7 +42,7 @@ Each crate's docs carry the full detail; this file is the index.
 kept bug and schedules its fix under profile `enhanced`; see
 [N06](roadmap/tasks/N06-fix-kept-java-bugs.md)): `RationalPoint.perpendicularProjection`,
 `Simplex.cutoutFrom` never setting its previous division line, the no-op branch 3 in
-IntOctagon's box cutout.
+IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" below).
 
 ## freerouting-dsn
 
@@ -1413,6 +1413,25 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 Fixes of kept Java bugs behind `router.java_quirks.<id>`: unset (`true`) is Java's
 behaviour in both profiles, `false` the fix. Not part of `enhanced` until N06.13 promotes
 them ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md)).
+
+**N06.4 geometry cutout fixes (explicit opt-in; promotion pending)**
+
+Both switches still default to `true` in both profiles. With the named switch `false`:
+- `octagon_box_cutout_branch3`: branch 3 of `IntOctagon::cutout_from_box` (the upper
+  right divide line switched to horizontal, `IntOctagon.java:1206-1223`) trims the upper
+  right octagon's top to the widened upper box, as branch 2 does on the left; Java's
+  pieces overlap there. `box_cutout_branch3_switch_both_behaviours`, and
+  `tests/cutout_invariant.rs`: inside the outer shape the pieces then tile it.
+- `simplex_prev_division_line`: `Simplex::cutout_from` assigns its previous division
+  line (`prevDivisionLine = nextDivisionLine`, the reverse of `Simplex.java:860`). That
+  line is the corner's own first division line, so neither merge test passes and the
+  pieces are Java's (`the_simplex_switch_changes_no_piece`). The switch is inert.
+
+The drill pages' split (`autoroute/session/drills.rs`) and the tie-pin trace cutout
+(`BasicBoard::reduce_trace_shape_at_tie_pin`) follow the switches; the search trees'
+area and outline-keepout shapes still split with Java's code. Run statistics count
+`octagon_box_cutout_branch3_reached` and `simplex_prev_division_line_reached` in both
+arms. Registered batch evidence remains pending under N06.4.
 
 **N06.11 interactive fixes (explicit opt-in; promotion pending)**
 

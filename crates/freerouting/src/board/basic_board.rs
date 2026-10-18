@@ -2555,8 +2555,12 @@ impl BasicBoard {
         if trace_shape.intersection(&pin_shape).dimension() < 2 {
             return false;
         }
-        // N06 batch G: the cutouts' `router.java_quirks.*` switches.
-        let Some(pieces) = trace_shape.cutout_with(&pin_shape, self.java_quirks.split()) else {
+        // N06 batch G: the cutouts' `router.java_quirks.*` switches, and their
+        // reachability counts (N06.4).
+        let mut reach = freerouting_geometry::SplitReach::default();
+        let pieces = trace_shape.cutout_counted(&pin_shape, self.java_quirks.split(), &mut reach);
+        crate::run_stats::record_split_reach(&reach);
+        let Some(pieces) = pieces else {
             return false;
         };
         let mut new_shape: Option<TileShape> = None;

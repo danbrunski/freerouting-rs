@@ -9,7 +9,7 @@ use crate::jmath::d2i;
 use crate::limits::CRIT_INT;
 use crate::line::Line;
 use crate::point::{IntPoint, Point};
-use crate::quirks::SplitQuirks;
+use crate::quirks::{SplitQuirks, SplitReach};
 use crate::side::Side;
 use crate::vector::Vector;
 
@@ -451,6 +451,35 @@ impl Simplex {
         outer_simplex: &Simplex,
         quirks: SplitQuirks,
     ) -> Option<Vec<Simplex>> {
+        self.cutout_from_counted(outer_simplex, quirks, &mut SplitReach::default())
+    }
+
+    /// [`Self::cutout_from_with`], adding to `reach` the pieces where
+    /// `simplex_prev_division_line` could matter.
+    ///
+    /// Java never assigns `prevDivisionLine` (`Simplex.java:860` assigns
+    /// `nextDivisionLine = prevDivisionLine` instead), so both merges of the previous
+    /// division line are dead code. The `false` path assigns it the other way round: at
+    /// corner `i` the previous division line is `D[i][0]`, the first division line of
+    /// corner `i` itself (the previous iteration's next division line). Neither merge
+    /// test can pass with it:
+    /// - the sharp-corner piece tests `det(D[i][0], prev) > 0`, which is
+    ///   `det(D[i][0], D[i][0]) = 0`;
+    /// - the edge piece tests `det(D[i][last], prev) > 0`. With one division line that
+    ///   is again `det(D[i][0], D[i][0]) = 0`. With two, `calc_division_lines` accepts a
+    ///   second projection only while `det(D[i][0], D[i][1]) >= 0` (a negative value
+    ///   breaks off with "the angle would already be bigger than 180 degrees"), so
+    ///   `det(D[i][1], D[i][0]) <= 0`.
+    ///
+    /// So the fix that the inventory names gives Java's pieces; `reach` counts the
+    /// merges it makes, which stay 0, and `tests/cutout_invariant.rs` checks both values
+    /// give the same pieces.
+    pub fn cutout_from_counted(
+        &self,
+        outer_simplex: &Simplex,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<Simplex>> {
         if self.dimension() < 2 {
             return None;
         }
@@ -469,22 +498,33 @@ impl Simplex {
         let mut check_cross_first_line = false;
         // PARITY(quirk, java_quirks.simplex_prev_division_line): Java declares
         // `prevDivisionLine` but never assigns it a value (the statement at the end of the
-        // loop assigns to another local, `Simplex.java:860`), so it stays `null`; this port
-        // keeps that behaviour. N06.4 adds the fix under `false`; until then both values
-        // keep Java's.
-        let _java_prev_division_line = quirks.simplex_prev_division_line;
-        let prev_division_line: Option<Line> = None;
+        // loop, `Simplex.java:860`, is `nextDivisionLine = prevDivisionLine`, backwards), so
+        // it stays `null` and a piece at a sharp inner corner can overlap its predecessor.
+        // Under `true` it stays `None`; under `false` it is the previous corner's next
+        // division line (`fixed_prev_division_line`, kept in both arms for `reach`).
+        let mut fixed_prev_division_line: Option<Line> = None;
         let first_division_line = division_line_arr[0][0];
         let first_direction = first_division_line.int_direction();
         let mut result_list = Vec::new();
 
         for inner_corner_no in 0..inner_corner_count {
+            let prev_division_line = if quirks.simplex_prev_division_line {
+                None
+            } else {
+                fixed_prev_division_line
+            };
+            let fixed_merge = |dir: IntDirection| {
+                fixed_prev_division_line.is_some_and(|p| dir.determinant(&p.int_direction()) > 0.0)
+            };
             let next_corner_no = (inner_corner_no + 1) % inner_corner_count;
             let next_division_line = division_line_arr[next_corner_no][0];
             let current_division_lines = &division_line_arr[inner_corner_no];
             if current_division_lines.len() == 2 {
                 // Two division lines are necessary (sharp corner).
                 let current_direction = current_division_lines[0].int_direction();
+                if fixed_merge(current_direction) {
+                    reach.simplex_prev_division_line += 1;
+                }
                 let merge_prev_division_line = prev_division_line
                     .is_some_and(|p| current_direction.determinant(&p.int_direction()) > 0.0);
                 let mut merge_first_division_line = false;
@@ -515,6 +555,9 @@ impl Simplex {
             let last_curr_dir = last_curr_division_line.int_direction();
             let merge_last_curr_division_line =
                 last_curr_division_line.b != last_curr_division_line.a;
+            if fixed_merge(last_curr_dir) {
+                reach.simplex_prev_division_line += 1;
+            }
             let merge_prev_division_line = prev_division_line
                 .is_some_and(|p| last_curr_dir.determinant(&p.int_direction()) > 0.0);
             let mut merge_first_division_line = false;
@@ -547,6 +590,7 @@ impl Simplex {
                 piece_lines.push(Line::new(first_division_line.b, first_division_line.a));
             }
             result_list.push(Simplex::new(piece_lines).intersection_simplex(outer_simplex));
+            fixed_prev_division_line = Some(next_division_line);
         }
         Some(result_list)
     }
