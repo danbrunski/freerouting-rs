@@ -1200,6 +1200,7 @@ version = "0.1.0"
 dependencies = [
  "ctrlc",
  "freerouting",
+ "freerouting-stages",
  "winresource",
 ]
 
@@ -1231,6 +1232,7 @@ dependencies = [
  "eframe",
  "egui_kittest",
  "freerouting",
+ "freerouting-stages",
  "png",
  "serde",
  "wgpu",
@@ -1255,6 +1257,14 @@ version = "0.1.0"
 dependencies = [
  "freerouting",
  "krt-grid-router",
+]
+
+[[package]]
+name = "freerouting-stages"
+version = "0.1.0"
+dependencies = [
+ "freerouting",
+ "freerouting-krt",
 ]
 
 [[package]]

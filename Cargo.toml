@@ -16,6 +16,7 @@ freerouting-geometry = { path = "crates/freerouting-geometry" }
 freerouting-dsn = { path = "crates/freerouting-dsn" }
 freerouting-kicad = { path = "crates/freerouting-kicad" }
 freerouting = { path = "crates/freerouting" }
+freerouting-stages = { path = "crates/freerouting-stages" }
 
 # Opt-level 1: `cargo test --workspace` warm takes 26 s instead of 181 s; overflow checks and debug assertions stay on.
 [profile.dev]

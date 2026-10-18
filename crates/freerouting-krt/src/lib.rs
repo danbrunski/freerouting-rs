@@ -2,9 +2,10 @@
 //! pipeline (decision D9, the X series).
 //!
 //! Each stage implements a trait of [`freerouting::autoroute::stages`] and is
-//! registered by [`register`] under its id. The CLI and the GUI call
-//! [`register`] once on their [`StageRegistry`]; a job then selects a stage
-//! with A10's settings keys. Nothing here runs unless a job selects it, so
+//! registered by [`register`] under its id. The `freerouting-stages` crate
+//! calls [`register`] once on a [`StageRegistry`] (this crate depends on the
+//! engine, so the engine cannot) and the CLI and the GUI route with that
+//! registry (N05.1); a job then selects a stage with A10's settings keys. Nothing here runs unless a job selects it, so
 //! default results stay Freerouting's.
 //!
 //! Licence: GPL-3.0-only for code written here, MIT for files carrying KRT

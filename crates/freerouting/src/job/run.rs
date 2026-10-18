@@ -51,6 +51,7 @@ use crate::autoroute::events::{
 use crate::autoroute::pipeline::{
     PipelineError, PipelineJob, PipelineOutcome, router_enabled, run_pipeline,
 };
+use crate::autoroute::stages::StageRegistry;
 use crate::board::items::ItemId;
 use crate::board::{BoardSnapshot, RoutingBoard};
 use crate::scoring::BoardStatistics;
@@ -125,6 +126,12 @@ pub struct JobContext {
     /// [`JobOutcome::report`] (the result manifest, C08.4). They take about
     /// as long as a design rules check, so they are off by default.
     pub collect_report: bool,
+    /// The stage registry the pipeline builds from. `None` is
+    /// [`StageRegistry::builtin`] (Freerouting's own stages); a binary that
+    /// also wants the KRT stages passes the registry `freerouting-stages`
+    /// builds (N05.1). Registering a stage selects nothing: a job runs only
+    /// the stages its settings name.
+    pub registry: Option<Arc<StageRegistry>>,
 }
 
 impl JobContext {
@@ -137,6 +144,7 @@ impl JobContext {
             before_rename: None,
             observer: None,
             collect_report: false,
+            registry: None,
         }
     }
 
@@ -539,7 +547,7 @@ pub fn run_job(input: JobInput, outputs: &[OutputSpec], ctx: &JobContext) -> Job
         cancel: Arc::clone(&ctx.cancel),
         events: &sink,
         deadline: job_deadline,
-        registry: None,
+        registry: ctx.registry.as_deref(),
     };
     let mut state = JobState::Running;
     let mut final_board = None;

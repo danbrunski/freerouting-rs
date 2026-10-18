@@ -64,4 +64,4 @@ K09 (plugin export options) are the expected big wins on `canary-pwr`.
 | N02 | — | `crates/freerouting-dev/src/gate*.rs`, `docs/roadmap/routing-quality.md` (the rule section) |
 | N03 | the restored canonical-order code (from `target/orchestrator/p04/p04-rejected-canonical-leaves.patch`), a new tree module | `board/search/complete_shape.rs`, `work.rs`, P04's files |
 | N04 | — | `board/basic_board.rs` (contacts), its tests |
-| N05 | — | the profile table (N01), `crates/freerouting-cli` (`freerouting_krt::register`, the C07 TODO) |
+| N05 | — | the profile table (N01), `crates/freerouting-stages` (`freerouting_krt::register`, N05.1) |

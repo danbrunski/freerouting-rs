@@ -19,6 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 freerouting.workspace = true
+freerouting-stages.workspace = true
 ctrlc = { version = "3.5", features = ["termination"] }
 
 # R01.5: the icon and version resource of the Windows exes (build.rs; only runs for msvc targets).

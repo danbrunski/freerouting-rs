@@ -4,20 +4,41 @@ Opened 2026-10-17 (D10). Every Q, X and K candidate is built off by default, wit
 its measurement registered. When a measurement accepts a candidate, it joins
 profile `enhanced` through this checklist: one entry in the profile table, one
 DIVERGENCES line, and the measurement it rests on. The CLI must also be able to
-reach the KRT stages at all: today it does not call `freerouting_krt::register`
-(the C07 TODO).
+reach the KRT stages at all: since N05.1 it does, through `freerouting-stages`.
 
 Prerequisites: N01; each candidate's own accepted measurement.
 
 ## Checklist
 
-- [ ] **N05.1 — The CLI, GUI and plugin register the KRT stages.** Call
+- [x] **N05.1 — The CLI, GUI and plugin register the KRT stages.** Call
   `freerouting_krt::register` in each binary.
   - **Accept:**
     - `--router.autorouter.connection_router=krt-astar` (and every other KRT id)
       is accepted by the CLI;
     - the version JSON lists the registered stage ids;
     - with no KRT key set, every session is byte-identical.
+
+  *Done 2026-10-18:* design (c'), a variant of the checklist's (b): the engine cannot register
+  the KRT stages (`freerouting-krt` depends on `freerouting`; a feature-gated dependency back is a
+  cycle), and `cli`/`gui` must not depend on `freerouting-krt`. New crate `crates/freerouting-stages`
+  (`registry()` = `StageRegistry::builtin()` + `freerouting_krt::register`; `shared_registry()`)
+  sits above both; `cli` and `gui` depend on `freerouting` and `freerouting-stages` only, so a new
+  stage family changes that crate and no binary. The engine gained `JobContext::registry`
+  (`None` = built-in, as before); the CLI sets it (`cli.rs`), and `--capabilities`/`--list-stages`
+  and the GUI (`routing.rs`, the Algorithms dialog) use `freerouting_stages::registry()`. The rule is
+  amended in `docs/PORT_PLAN.md` and `docs/development/engine.md`. The plugin needs no change: it
+  gets the stage ids from the CLI's `--list-stages=json`. Note `krt-astar` no longer exists (X06.3
+  removed it); the ids are `krt-grid`, `krt-meander`, `krt-diffpair`, `krt-qfn-escape`,
+  `krt-bga-escape`. Tests: `freerouting-cli/tests/krt_stages.rs` (4: capabilities lists every
+  registered id with `krt-grid`/`krt-qfn-escape`/`krt-meander`; `--list-stages` too;
+  `--router.autorouter.connection_router=krt-grid` routes J2 with exit 0 and `krt-nonesuch` is
+  refused; the CLI's default SES equals the in-process built-in-registry SES),
+  `freerouting-stages/tests/registry.rs` (3: registry = builtin + KRT; default SES byte-identical
+  with and without the registry; `krt-grid` unknown without it),
+  `freerouting-gui/tests/ui_routing.rs::the_algorithms_section_offers_the_krt_stages`.
+  Heavy run pending: A14 full gate, `cargo test -p freerouting --release --test
+  autoroute_board_parity -- --ignored` (the engine path is unchanged: `registry: None` is the same
+  call as before).
 - [x] **N05.2 — The promotion procedure.**
   - A short section in `docs/development/engine.md` gives the steps: the profile
     table entry, the DIVERGENCES line, a test that `enhanced` sets the key, and the
@@ -102,6 +123,13 @@ Prerequisites: N01; each candidate's own accepted measurement.
     On canary `net_class` removes the plugin run's last clearance error but costs 7 and 4
     unconnected on two rows. Operator decision (see the N05 report): a new registration whose
     metric counts only netclass-rule violations, on boards it has not seen.
+  - **2026-10-18, official grade (canary-7a, `grade.sh`, KiCad 10.0.5, canary b1994423)** of both
+    entries' canary sessions (`target/canary-handoff/2026-10-18-n05/`): every count agrees with the
+    self-grade except plugin45 `layer`, 2 clearance errors (self-grade 4). Dangling vias 16-31 on
+    every session (Q16). plugin45 `none` (37) does not count yet: its one error is a `+12V_PROT`
+    via 0.245 mm from an `LTC_INTVCC` track (Q14). Both `mp1sweep` rows (with and without
+    `net_class`) count at 33, the number to beat, and `sweep + net_class` is clean, which is the
+    case for `net_class` once its cost on the plugin path (37 → 44) is closed.
 
   Sessions for canary's official grade: `target/canary-handoff/2026-10-18-n05/` (8 SESs, the
   plugin DSN, `SHA256SUMS`, `README.txt` with flags and the self-grade).

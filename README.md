@@ -147,6 +147,7 @@ OpenGL driver). Under WSL it runs through WSLg.
 | `freerouting-kicad` | Direct `.kicad_pcb` reading and writing |
 | `freerouting` | The routing engine: board, rules, DRC, autorouter, optimizer |
 | `freerouting-krt`, `krt-grid-router` | Routing stages ported from KiCadRoutingTools |
+| `freerouting-stages` | The full stage registry (engine plus KRT stages) the CLI and GUI route with |
 | `freerouting-cli` | The `freerouting` command line |
 | `freerouting-gui` | The `freerouting-gui` desktop app (egui/eframe, wgpu) |
 | `freerouting-dev` | Developer tools: benchmarks, parity checks, the board corpus |

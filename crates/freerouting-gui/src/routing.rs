@@ -189,6 +189,7 @@ fn run_job_thread(
         inner: sink,
         statistics: std::sync::Mutex::new(None),
     };
+    let registry = freerouting_stages::registry();
     let job = PipelineJob {
         settings: &ready.settings,
         board_settings: &ready.board_settings,
@@ -196,7 +197,7 @@ fn run_job_thread(
         events: &statistics,
         // A job limit only requests a full stop (D2).
         deadline: ready.settings.deadlines().job,
-        registry: None,
+        registry: Some(&registry),
     };
     let end = match run_pipeline(board, &job) {
         Ok(outcome) => JobEnd::Finished {

@@ -418,6 +418,7 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     // Standard input can stop the run from here on, even during the load.
     let mut ctx = JobContext::new(ResolveContext::from_machine());
     ctx.collect_report = wants_manifest;
+    ctx.registry = Some(freerouting_stages::shared_registry());
     let interrupts = Arc::new(Interrupts::new(ctx.clone()));
     {
         let printer = printer.clone();

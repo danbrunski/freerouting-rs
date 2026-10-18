@@ -19,7 +19,6 @@
 
 use std::path::Path;
 
-use freerouting::autoroute::stages::StageRegistry;
 use freerouting::autoroute::stages::catalog::{SlotArity, StageSlot, catalog};
 use freerouting::drc::json::JsonValue;
 use freerouting::job::prepare::{
@@ -169,7 +168,7 @@ pub fn list_stages(
     let ctx = ResolveContext::from_machine();
     let resolved = resolve(&sources(config, environment, parsed, &ctx), &ctx);
     let profile = resolved.profile.map_err(|e| e.to_string())?;
-    let slots = catalog(&StageRegistry::builtin(), profile, ctx.cores);
+    let slots = catalog(&freerouting_stages::registry(), profile, ctx.cores);
     Ok(match format {
         ListFormat::Table => stages_table(profile, &slots),
         ListFormat::Json => format!("{}\n", stages_json(profile, &slots).to_pretty_string()),

@@ -1001,3 +1001,27 @@ fn an_option_reset_returns_the_profile_value() {
         "blank clears an optional option"
     );
 }
+
+/// N05.1: the Algorithms section offers the KRT stages besides Freerouting's.
+#[test]
+fn the_algorithms_section_offers_the_krt_stages() {
+    let mut h = plain_harness(&[ISSUE159]);
+    exec(&mut h, Command::ShowAutorouteSettings);
+    h.get_by_label("Algorithms").click();
+    let _ = h.run_ok();
+    let slots = dialog(&h).stage_slots();
+    let ids_of = |kind: &str| -> Vec<String> {
+        slots
+            .iter()
+            .filter(|s| s.desc.kind == kind)
+            .flat_map(|s| s.ids.iter().map(|id| id.to_string()))
+            .collect()
+    };
+    let routers = ids_of("connection_router");
+    assert!(routers.iter().any(|id| id == "krt-grid"), "{routers:?}");
+    assert!(
+        routers.iter().any(|id| id == "freerouting-connection"),
+        "{routers:?}"
+    );
+    assert!(ids_of("fanout").iter().any(|id| id == "krt-bga-escape"));
+}

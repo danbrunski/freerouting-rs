@@ -9,7 +9,6 @@
 //! [`args`](crate::args), the exit codes, the schema versions of the
 //! progress stream and the result manifest, and the registered stage ids.
 
-use freerouting::autoroute::stages::StageRegistry;
 use freerouting::drc::json::JsonValue;
 
 use crate::args::{EXTRA_FLAGS, FLAGS, LONG_FLAGS, Matching, Setting};
@@ -64,12 +63,13 @@ pub fn flag_names() -> Vec<&'static str> {
         .collect()
 }
 
-/// The stage ids of the built-in registry, by kind.
+/// The stage ids of the registry the binary routes with (Freerouting's and
+/// the KRT stages, N05.1), by kind.
 fn stages_json() -> JsonValue {
     fn ids<T>(map: &std::collections::BTreeMap<&'static str, T>) -> JsonValue {
         strings(map.keys().copied())
     }
-    let registry = StageRegistry::builtin();
+    let registry = freerouting_stages::registry();
     JsonValue::Object(vec![
         ("algorithm".to_string(), ids(&registry.bundles)),
         ("fanout".to_string(), ids(&registry.fanout)),

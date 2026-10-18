@@ -162,7 +162,9 @@ The app is a board viewer for now. Nothing in it edits or routes.
   that returns it to the profile's value. The profile and the Algorithms rows are controls, so they are
   kept between runs like the others (`control_paths`); a front-end `--profile` moves the draft first.
   Tests: `ui_routing.rs::{profile_selector_covers_both_profiles, an_algorithm_stage_changes_and_resets,
-  an_option_reset_returns_the_profile_value}`. Not yet looked at by Dan: the layout and the look of the
+  an_option_reset_returns_the_profile_value, the_algorithms_section_offers_the_krt_stages}`. The
+  GUI routes and lists stages with `freerouting_stages::registry()` (N05.1: Freerouting's stages plus
+  the KRT ones; the GUI does not depend on `freerouting-krt`). Not yet looked at by Dan: the layout and the look of the
   new rows.
 - **Autorouter (G07, `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`,
   `panels/{progress,routing_summary}.rs`, `overlays/routing.rs`).** The toolbar's Autoroute button

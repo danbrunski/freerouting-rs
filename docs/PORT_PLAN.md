@@ -85,6 +85,8 @@ freerouting-rs/
     freerouting-dsn/         # Specctra DSN/SES/rules lexer, parser, AST, writer
     freerouting/             # engine library: board, rules, drc, autoroute,
                              #   optimize, interactive editing, settings
+    freerouting-krt/         # KRT routing stages (depends on freerouting)
+    freerouting-stages/      # the full stage registry: freerouting + krt (N05.1)
     freerouting-cli/         # `freerouting` headless binary
     freerouting-gui/         # `freerouting-gui` desktop app (eframe/egui)
   fixtures/                  # DSN boards copied from upstream (~170)
@@ -92,7 +94,14 @@ freerouting-rs/
 ```
 
 Dependency direction: `geometry` and `dsn` depend on nothing in the workspace,
-`freerouting` on both, `cli` and `gui` only on `freerouting`. The engine never depends
+`freerouting` on both, `cli` and `gui` only on the engine: `freerouting` and
+`freerouting-stages`. Stage crates (`freerouting-krt`, the X series) depend on `freerouting`,
+so the engine cannot register their stages itself (a dependency back would be a cycle, even
+behind a feature). `freerouting-stages` is the one crate above both: its `registry()` is
+`StageRegistry::builtin()` plus every stage crate's `register`, and the binaries pass it to
+the job (`JobContext::registry`, `PipelineJob::registry`). The CLI and the GUI never name a
+stage crate, so a new stage family changes `freerouting-stages` and no binary (N05.1).
+The engine never depends
 on a GUI crate, which is the same rule the Java project enforces with ArchUnit, but here
 the compiler enforces it.
 

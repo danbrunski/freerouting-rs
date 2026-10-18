@@ -15,7 +15,6 @@
 //! the paths it covers are [`algorithm_paths`].
 
 use eframe::egui;
-use freerouting::autoroute::stages::StageRegistry;
 use freerouting::autoroute::stages::catalog::{SLOTS, SlotArity, StageSlot, catalog};
 use freerouting::settings::profile::rebase;
 use freerouting::settings::{FieldKind, FieldValue, Profile, SettingsPatch, field_by_path};
@@ -70,7 +69,7 @@ impl Draft {
 
     /// The stage slots with the draft profile's defaults.
     pub fn stage_slots(&self) -> Vec<StageSlot> {
-        catalog(&StageRegistry::builtin(), self.profile(), self.cores)
+        catalog(&freerouting_stages::registry(), self.profile(), self.cores)
     }
 
     /// The ids a slot runs now: its key's value, else the profile's choice.
