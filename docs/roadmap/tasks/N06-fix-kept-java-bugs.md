@@ -572,6 +572,8 @@ These are marked or look like quirks but keep no bug:
     separate canary-pwr plugin grade before accepting or promoting. The final
     release gate above also covers every U regression and legacy interactive
     comparison; no new UI code is involved (the GUI delegates to these engine APIs).
+    The heavy run is queued with the orchestrator; an accepted switch joins `enhanced` through
+    N05 (see N06.13).
 - [ ] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
   its row.
   - `ripup_pass_no_unset` gets its own registration.
