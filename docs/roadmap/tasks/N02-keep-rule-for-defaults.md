@@ -33,6 +33,19 @@ The rule for a change to profile `enhanced`:
   rejected under the old rule can be judged again only by a new registration on
   boards or variants it hasn't been measured on, such as the PCBWorld D3-C set
   (`tools/bench/sets/pcbworld-d3c.txt`).
+- **A rejected candidate is kept as an opt-in or deleted** (proposed 2026-10-17). It
+  stays as an option, off by default and listed under "Experimental" in the
+  algorithm settings (N01.4), only when all three hold:
+  1. **it wins on a class of board you can name** (layer count, pin density, BGA
+     fanout, planes, size), shown by the measurement's own per-board table. Its
+     help text names the class and gives the numbers;
+  2. **it passes the hard guards** above;
+  3. **it is cheap to keep:** a self-contained stage or setting, not a hook through
+     the engine's cost or search code.
+
+  Otherwise its code is removed. Its numbers stay in its checklist, and git
+  history keeps the code. The kept Java bugs (N06) are not candidates: `legacy`
+  needs them, so they always stay switchable.
 
 ## Checklist
 
@@ -51,3 +64,9 @@ The rule for a change to profile `enhanced`:
   keep the paired rule as the rule for stages that are opt-in, and use the totals
   rule for changes to `enhanced`. Record the reason, with P04.1's numbers.
   - **Accept:** the amendment is in the doc, dated, with a pointer to D10.
+- [ ] **N02.4 — Sort the rejected candidates.** Apply the keep-or-delete rule to
+  every rejection so far: Q07 conflict-rounds and inside-out, P04's rejected arms,
+  and X02, X06 and X11, which are already removed. For each one record the board
+  class it wins on, or that there is none.
+  - **Accept:** a table in this file. Each kept option is under "Experimental" with
+    its help text; nothing else rejected is left in the code.
