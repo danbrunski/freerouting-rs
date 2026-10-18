@@ -18,6 +18,8 @@ Modes (the first argument after the script):
              leaves nothing
   route-fail prints an error log event and exits 1 without output
   route-noise like `route`, with a plain text line and a cut-off JSON line
+
+`--list-stages=json` prints a small stage listing in every mode but `fail`.
 """
 
 import json
@@ -60,6 +62,26 @@ def write_outputs(incomplete=0):
 
 mode = sys.argv[1]
 args = sys.argv[2:]
+
+# `--list-stages=json` (N01.4) in every mode but `fail`: a small listing with a
+# second connection router, an optional slot and a list slot.
+if "--list-stages=json" in args and mode != "fail":
+    profile = args[args.index("--profile") + 1] if "--profile" in args else "enhanced"
+    print(json.dumps({
+        "profile": profile,
+        "profiles": [{"name": "legacy"}, {"name": "enhanced"}],
+        "slots": [
+            {"kind": "connection_router", "label": "Connection router",
+             "key": "router.autorouter.connection_router", "arity": "one",
+             "ids": ["freerouting-connection", "x-grid"], "default": ["freerouting-connection"], "options": []},
+            {"kind": "length_matching", "label": "Length matching",
+             "key": "router.special.length_matching", "arity": "optional",
+             "ids": ["krt-meander"], "default": [], "options": []},
+            {"kind": "diagnostics", "label": "Diagnostics", "key": "router.special.diagnostics",
+             "arity": "list", "ids": ["verdicts"], "default": [], "options": []},
+        ],
+    }))
+    sys.exit(0)
 
 if mode in ("route", "route-slow", "route-fail", "route-noise") and "--version" in args:
     print("freerouting 0.1.0 (abc1234)")

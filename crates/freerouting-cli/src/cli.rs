@@ -11,7 +11,8 @@
 //! for a run that was aborted before it wrote an output.
 //!
 //! **Plugin extras** (C08): `--version` and `--capabilities` print and exit
-//! ([`version`](crate::version)); `--progress json` turns every stderr line
+//! ([`version`](crate::version)), and so do `--list-stages` and
+//! `--dump-settings` (N01.4, [`listing`](crate::listing)); `--progress json` turns every stderr line
 //! into a JSON event ([`progress`](crate::progress)); `--result-json PATH`
 //! writes the result manifest when the run ends ([`manifest`](crate::manifest));
 //! a route run reads `stop` and `stop-router` lines on standard input
@@ -159,6 +160,9 @@ fn dispatch(parsed: &Args, printer: &Printer) -> Finish {
         printer.print(&lines);
         return Finish::of(Code::usage());
     }
+    if parsed.list_stages.is_some() || parsed.dump_settings.is_some() {
+        return Finish::of(run_listing(parsed, printer));
+    }
     if parsed.drc {
         Finish::of(run_drc_mode(parsed, printer))
     } else {
@@ -190,6 +194,34 @@ fn abort_before_rename(_temp: &Path) {
 }
 
 /// `-drc`: checks the design and writes the report.
+/// `--list-stages` and `--dump-settings` (N01.4): print and exit 0; a bad
+/// settings file or profile is a usage error, a design that does not load
+/// exit 1.
+fn run_listing(parsed: &Args, printer: &Printer) -> Code {
+    let mut log_lines = Vec::new();
+    let (config, environment) = match settings_sources(parsed, &mut log_lines) {
+        Ok(sources) => sources,
+        Err(e) => {
+            printer.print(&log_lines);
+            return usage_error(printer, e).code;
+        }
+    };
+    printer.print(&log_lines);
+    let text = match (parsed.list_stages, parsed.dump_settings) {
+        (Some(format), _) => crate::listing::list_stages(parsed, config, environment, format),
+        (None, Some(format)) => crate::listing::dump_settings(parsed, config, environment, format),
+        (None, None) => unreachable!("run_listing runs for one of the two flags"),
+    };
+    match text {
+        Ok(text) => {
+            print!("{text}");
+            Code::success()
+        }
+        Err(e) if e.starts_with("router.profile:") => usage_error(printer, e).code,
+        Err(e) => fail(printer, e),
+    }
+}
+
 fn run_drc_mode(parsed: &Args, printer: &Printer) -> Code {
     let Some(design) = &parsed.design_file else {
         printer.print(&[line(

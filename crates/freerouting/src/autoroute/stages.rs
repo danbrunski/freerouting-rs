@@ -682,6 +682,7 @@ pub trait Optimizer {
     fn run(&mut self, board: &mut RoutingBoard, ctx: &mut StageCtx) -> OptimizerSummary;
 }
 
+pub mod catalog;
 mod registry;
 
 pub use registry::{

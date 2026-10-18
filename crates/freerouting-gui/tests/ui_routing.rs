@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 
 use common::{fixtures, plain_harness, rendering_enabled};
 use eframe::egui;
+use eframe::egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use freerouting::autoroute::events::{CompletionStatus, Phase, Progress};
@@ -22,7 +23,7 @@ use freerouting_gui::canvas::chunks::{ChunkSet, kind_index, slot_index};
 use freerouting_gui::commands::Command;
 use freerouting_gui::dialogs::Input;
 use freerouting_gui::dialogs::autoroute_settings::{
-    CLI_ONLY, CONTROLS, Draft, has_control, uncovered_fields,
+    CLI_ONLY, CONTROLS, Draft, control_paths, has_control, uncovered_fields,
 };
 use freerouting_gui::overlays::Frame;
 use freerouting_gui::overlays::routing::{RoutingShape, shapes};
@@ -139,10 +140,10 @@ fn settings_round_trip() {
     let want = RouterSettings::from_patch(&patch, CORES);
     let mut draft = Draft::new(default_patch(CORES), CORES);
     // The controls take their values through the dialog's own setters...
-    for (path, _) in CONTROLS {
+    for path in control_paths() {
         let value = FIELDS
             .iter()
-            .find(|f| f.path == *path)
+            .find(|f| f.path == path)
             .and_then(|f| (f.get)(&patch));
         if let Some(value) = value {
             draft.set(path, value);
@@ -898,4 +899,105 @@ impl eframe::Storage for MemStorage {
         self.0.insert(key.to_string(), value);
     }
     fn flush(&mut self) {}
+}
+
+// ---------------------------------------------------------------------------
+// N01.3, N01.4: the profile selector and the "Algorithms" section
+// ---------------------------------------------------------------------------
+
+fn dialog(h: &Harness<'_, App>) -> Draft {
+    h.state()
+        .autoroute()
+        .dialog
+        .clone()
+        .expect("the dialog is open")
+}
+
+#[test]
+fn profile_selector_covers_both_profiles() {
+    use freerouting::settings::Profile;
+    let mut h = plain_harness(&[ISSUE159]);
+    exec(&mut h, Command::ShowAutorouteSettings);
+    assert_eq!(dialog(&h).profile(), Profile::Enhanced, "the default");
+    // Pick Legacy in the selector.
+    h.get_by_role_and_label(Role::ComboBox, "Profile").click();
+    let _ = h.run_ok();
+    h.get_by_label("Legacy").click();
+    let _ = h.run_ok();
+    let draft = dialog(&h);
+    assert_eq!(draft.profile(), Profile::Legacy);
+    assert_eq!(draft.patch.profile.as_deref(), Some("legacy"));
+    // Applied, the profile is kept between runs like any control.
+    exec(
+        &mut h,
+        Command::ApplyAutorouteSettings(Box::new(draft.patch)),
+    );
+    let kept: BTreeMap<_, _> = h
+        .state()
+        .settings_snapshot()
+        .autoroute
+        .into_iter()
+        .collect();
+    assert_eq!(kept.get("profile").map(String::as_str), Some("legacy"));
+    // And back to Enhanced.
+    exec(&mut h, Command::ShowAutorouteSettings);
+    h.get_by_role_and_label(Role::ComboBox, "Profile").click();
+    let _ = h.run_ok();
+    h.get_by_label("Enhanced").click();
+    let _ = h.run_ok();
+    assert_eq!(dialog(&h).profile(), Profile::Enhanced);
+}
+
+#[test]
+fn an_algorithm_stage_changes_and_resets() {
+    let mut h = plain_harness(&[ISSUE159]);
+    exec(&mut h, Command::ShowAutorouteSettings);
+    h.get_by_label("Algorithms").click();
+    let _ = h.run_ok();
+    assert!(h.query_by_label("Reset Differential pairs").is_none());
+    // Every slot of the catalog has a row.
+    for slot in dialog(&h).stage_slots() {
+        assert!(
+            h.query_all_by_label(slot.desc.label).next().is_some(),
+            "{} has no row",
+            slot.desc.label
+        );
+    }
+    // Change one stage: run the unrouted report as the differential-pair stage.
+    h.get_by_role_and_label(Role::ComboBox, "Differential pairs")
+        .click();
+    let _ = h.run_ok();
+    h.get_by_label("freerouting-unrouted-report").click();
+    let _ = h.run_ok();
+    let draft = dialog(&h);
+    assert_eq!(
+        draft.get("special.diff_pairs"),
+        Some(FieldValue::Str("freerouting-unrouted-report".to_string()))
+    );
+    assert!(draft.differs_from_profile("special.diff_pairs"));
+    // Reset returns it to the profile's value (unset: no stage).
+    h.get_by_label("Reset Differential pairs").click();
+    let _ = h.run_ok();
+    let draft = dialog(&h);
+    assert_eq!(draft.get("special.diff_pairs"), None);
+    assert!(!draft.differs_from_profile("special.diff_pairs"));
+    assert!(h.query_by_label("Reset Differential pairs").is_none());
+}
+
+#[test]
+fn an_option_reset_returns_the_profile_value() {
+    let mut draft = Draft::new(default_patch(CORES), CORES);
+    draft.set_option_text("fanout.max_passes", "3");
+    assert!(draft.differs_from_profile("fanout.max_passes"));
+    draft.set_option_text("fanout.max_passes", "not a number");
+    assert_eq!(draft.get("fanout.max_passes"), Some(FieldValue::Int(3)));
+    draft.reset_to_profile("fanout.max_passes");
+    assert_eq!(draft.get("fanout.max_passes"), Some(FieldValue::Int(20)));
+    draft.set_option_text("fanout.timeout", "1:00");
+    draft.set_option_text("fanout.timeout", " ");
+    assert_eq!(
+        draft.get("fanout.timeout"),
+        None,
+        "blank clears an optional option"
+    );
 }

@@ -180,6 +180,12 @@ class Dialog(wx.Dialog):
         self.gui = tools.find_tool(tools.VIEWER)  # the same executable: front-end mode
         self.board_min_um = board_min_track_width_um(board)
         saved = options.load_for_board(self.work_dir, tools.load_board_settings(self.work_dir))
+        # The router's stage slots and each profile's choices (N01.4); empty
+        # for a router without `--list-stages`.
+        self.stage_listing = {
+            p: options.parse_stage_listing(tools.query_stages(self.router, p) if self.router else None)
+            for p in options.PROFILES
+        }
 
         def found(tool):
             return tool.describe() if tool else "not found"
@@ -246,7 +252,14 @@ class Dialog(wx.Dialog):
         self.min_width.SetToolTip("Minimum trace width in micrometres (--router.min_trace_width_um); empty uses the Board Setup value")
         self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
         self.fix_areas.SetValue(saved.rule_area_fixup)
+        self.profile = wx.Choice(self, choices=[options.PROFILE_LABELS[p] for p in options.PROFILES])
+        self.profile.SetSelection(options.PROFILES.index(saved.profile))
+        self.profile.SetToolTip(
+            "Routing profile (--profile): Legacy gives results identical to Java Freerouting; "
+            "Enhanced (the default) adds the accepted improvements. The settings below start from it."
+        )
         for label, ctrl in (
+            ("Profile", self.profile),
             ("Maximum passes", self.passes),
             ("Threads", self.threads),
             ("", self.optimizer),
@@ -268,9 +281,44 @@ class Dialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(info, 0, wx.ALL | wx.EXPAND, 12)
         sizer.Add(form, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
+        sizer.Add(self.advanced_group(saved), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
         self.CentreOnParent()
+
+    def advanced_group(self, saved):
+        """The "Advanced" group (N01.4): one choice per stage slot of the
+        router, preset to the saved choice or the profile's."""
+        group = wx.StaticBoxSizer(wx.VERTICAL, self, "Advanced")
+        slots = self.stage_listing.get(saved.profile) or []
+        self.stage_choices = {}
+        if not slots:
+            group.Add(wx.StaticText(self, label="This router does not list its stages (no --list-stages)."))
+            return group
+        group.Add(wx.StaticText(self, label="Stages start at the profile's choice; pick another to change one."))
+        grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
+        grid.AddGrowableCol(1)
+        for key, label, ids, default in slots:
+            choice = wx.Choice(self, choices=[i or "(none)" for i in ids])
+            picked = saved.stages.get(key, default)
+            if picked not in ids:
+                picked = default if default in ids else ids[0]
+            choice.SetSelection(ids.index(picked))
+            choice.SetToolTip(f"router.{key}; the profile's choice is {default or '(none)'}")
+            self.stage_choices[key] = (choice, ids)
+            grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(choice, 1, wx.EXPAND)
+        group.Add(grid, 0, wx.EXPAND)
+        return group
+
+    def chosen_stages(self):
+        """`{key: id}` of the Advanced choices."""
+        out = {}
+        for key, (choice, ids) in self.stage_choices.items():
+            index = choice.GetSelection()
+            if 0 <= index < len(ids):
+                out[key] = ids[index]
+        return out
 
     def error(self, msg):
         wx.MessageBox(msg, TITLE, wx.OK | wx.ICON_ERROR, self)
@@ -289,13 +337,18 @@ class Dialog(wx.Dialog):
                 "min_trace_width_um": self.min_width.GetValue(),
                 "timeout": self.timeout.GetValue(),
                 "rule_area_fixup": self.fix_areas.GetValue(),
+                "profile": options.PROFILES[max(self.profile.GetSelection(), 0)],
+                "stages": self.chosen_stages(),
             }
         )
         if errors:
             self.error("Fix these route options first:\n\n" + "\n".join(errors))
             return None
+        # A stage at the profile's choice follows the profile: not passed, not kept.
+        defaults = options.stage_defaults(self.stage_listing.get(chosen.profile) or [])
+        chosen.stages = options.differing_stages(chosen.stages, defaults)
         try:
-            options.save(options.options_path(self.work_dir), chosen)
+            options.save(options.options_path(self.work_dir), chosen, defaults)
         except OSError as e:
             tools.log_line(self.work_dir, f"could not save the route options: {e}")
         return chosen
@@ -315,7 +368,7 @@ class Dialog(wx.Dialog):
         self.ses.unlink(missing_ok=True)
         self.result_json.unlink(missing_ok=True)
         run = routing.RouteRun(
-            self.router, self.dsn, self.ses, chosen.to_args(self.board_min_um), self.result_json
+            self.router, self.dsn, self.ses, chosen.to_args(self.board_min_um), self.result_json, chosen.profile
         )
         try:
             run.start()

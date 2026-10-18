@@ -49,6 +49,35 @@ Java is the regression baseline. On routes without a work-limit cut-off it is an
 exact target (D4). A difference from Java is either a bug in the port or a
 deliberate fix, and every deliberate one is listed in `DIVERGENCES.md`.
 
+### Parity mode: `router.profile = legacy` (N01, D10)
+
+Java is the baseline of the `legacy` routing profile only. The default profile,
+`enhanced`, may carry accepted improvements (`ENHANCED` in
+`crates/freerouting/src/settings/profile.rs`, each with its line in
+DIVERGENCES, "Profile `enhanced`"); until N05 adds the first it equals `legacy`.
+The profile only sets defaults: the merge (`settings::resolve`) adds its
+differences as a source at priority 5, after Java's defaults and before the
+settings file, so any explicit key wins.
+
+To run in parity mode, pin `legacy` explicitly:
+- CLI: `freerouting --profile legacy ...` (or `--router.profile=legacy`,
+  `FREEROUTING__ROUTER__PROFILE=legacy`, `"router": {"profile": "legacy"}` in a
+  settings file); `freerouting --dump-settings --profile legacy` shows every
+  effective value and its source, `--list-stages` the stages and options each
+  profile starts with.
+- Tests: add `settings::profile::legacy_pin()` as a source (the A14 harness
+  `tests/board_parity/mod.rs::job_input` and the probe loader
+  `tests/autoroute_common/mod.rs::load` do, at the testing priority) and check
+  the result with `settings::profile::require_legacy`, which fails loudly when
+  the pin is missing. The CLI tests that compare with Java's `clirun` rows add
+  `--profile legacy` (`ClirunRow::args`). `reference_load` and `reference_drc`
+  read no router settings, so no profile reaches them.
+- A new parity test or gate pins `legacy` the same way.
+  `profile::with_enhanced_differences` gives `enhanced` a test-only difference
+  on the current thread; `autoroute_board_parity.rs::the_gate_pins_legacy_beside_a_dummy_enhanced_difference`
+  and `settings_defaults.rs::java_defaults_are_the_legacy_profile` use it to
+  prove the pins hold.
+
 ### Regenerating the reference
 
 ```sh

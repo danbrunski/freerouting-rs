@@ -21,17 +21,30 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `min_trace_width_um` | `--router.min_trace_width_um=X` | above 0, unset = from the board |
 | `timeout` | `--timeout T` | `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS`, seconds; empty = none |
 | `rule_area_fixup` | (plugin side, K01.2) | on |
+| `profile` | `--profile legacy` (N01.3) | `legacy` or `enhanced` (default, no flag) |
+| `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
+
+`profile` is the routing profile: `legacy` gives results identical to Java
+Freerouting, `enhanced` (the router's default) the accepted improvements.
+`stages` maps a stage slot's settings key (`autorouter.connection_router`) to
+the stage id picked in the dialog's "Advanced" group; the slots and the
+profile's choices come from the router's `--list-stages=json`
+(`parse_stage_listing`). A choice equal to the profile's is not kept, so a
+board follows the profile until the user picks something else.
 
 The GUI's front-end mode (`for_gui=True`) takes the same flags except
 `--seed`. `--threads` is used rather than `-mt`: the router reads `-mt` into a flat
 setting that no stage reads headless, so it would do nothing.
 
 The options live in `<board dir>/freerouting-rs/route-options.json` with
-`"schema": 1`, not in `settings.json` (executable locations, rewritten by
-install.py). Restoring is defensive (KRT's lesson): unknown keys are ignored,
-a value of the wrong type or outside its range keeps the default for that
-field, a file that is not JSON or has another `schema` gives the defaults, and
-none of it raises.
+`"schema": 2`, not in `settings.json` (executable locations, rewritten by
+install.py). The file stores the profile and only the values that differ
+from it: an option at its default and a stage choice equal to the profile's
+are left out. A schema 1 file (every option written out, no profile) still
+loads, as `enhanced`. Restoring is defensive (KRT's lesson): unknown keys are
+ignored, a value of the wrong type or outside its range keeps the default for
+that field, a file that is not JSON or has another `schema` gives the
+defaults, and none of it raises.
 """
 
 import json
@@ -39,8 +52,18 @@ import re
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
-SCHEMA = 1
+SCHEMA = 2
+# Schema 1 (K02.1) wrote every option and had no profile; it still loads.
+READABLE_SCHEMAS = (1, 2)
 OPTIONS_FILE = "route-options.json"
+
+# The router's routing profiles (N01): `legacy` is Java Freerouting's results,
+# `enhanced` the router's default.
+PROFILES = ("legacy", "enhanced")
+DEFAULT_PROFILE = "enhanced"
+PROFILE_LABELS = {"legacy": "Legacy", "enhanced": "Enhanced"}
+_STAGE_KEY = re.compile(r"^[a-z_]+(?:\.[a-z_]+)+$")
+_STAGE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 MAX_PASSES_RANGE = (0, 9999)
 THREADS_RANGE = (0, 1024)
@@ -99,6 +122,8 @@ class RouteOptions:
     min_trace_width_um: float = None
     timeout: str = ""
     rule_area_fixup: bool = True
+    profile: str = DEFAULT_PROFILE
+    stages: dict = field(default_factory=dict)
 
     # --- the argument list ---------------------------------------------------
 
@@ -108,6 +133,8 @@ class RouteOptions:
         board's minimum track width, used when `min_trace_width_um` is unset.
         `for_gui` leaves out `--seed`, which the GUI does not read."""
         args = []
+        if self.profile != DEFAULT_PROFILE:
+            args += ["--profile", self.profile]
         if self.max_passes:
             args += ["--max-passes", str(self.max_passes)]
         if self.threads:
@@ -128,23 +155,45 @@ class RouteOptions:
             args.append(f"--router.min_trace_width_um={_fmt(width)}")
         if self.timeout.strip():
             args += ["--timeout", self.timeout.strip()]
+        for key in sorted(self.stages):
+            args.append(f"--router.{key}={self.stages[key]}")
         return args
 
     # --- persistence ---------------------------------------------------------
 
-    def to_dict(self):
-        d = {"schema": SCHEMA}
+    def to_dict(self, stage_defaults=None):
+        """The stored form: the schema, the profile, and only the values that
+        differ from it. `stage_defaults` maps a slot key to the profile's id
+        (`parse_stage_listing`); a stage choice equal to it is left out."""
+        d = {"schema": SCHEMA, "profile": self.profile}
+        defaults = RouteOptions()
         for f in fields(self):
+            if f.name in ("profile", "stages"):
+                continue
             v = getattr(self, f.name)
-            d[f.name] = list(v) if isinstance(v, list) else v
+            if v != getattr(defaults, f.name):
+                d[f.name] = list(v) if isinstance(v, list) else v
+        stages = differing_stages(self.stages, stage_defaults)
+        if stages:
+            d["stages"] = stages
         return d
 
     @classmethod
     def from_dict(cls, data):
         """Never raises. See the module docstring for what is kept."""
         out = cls()
-        if not isinstance(data, dict) or data.get("schema") != SCHEMA:
+        if not isinstance(data, dict) or data.get("schema") not in READABLE_SCHEMAS:
             return out
+        if isinstance(data.get("schema"), bool):
+            return out
+        v = data.get("profile")
+        if v in PROFILES:
+            out.profile = v
+        v = data.get("stages")
+        if isinstance(v, dict):
+            out.stages = {
+                k: s for k, s in v.items() if isinstance(k, str) and isinstance(s, str) and valid_stage(k, s)
+            }
         v = data.get("max_passes")
         if _int_in(v, *MAX_PASSES_RANGE):
             out.max_passes = v
@@ -175,6 +224,46 @@ class RouteOptions:
         return out
 
 
+def valid_stage(key, stage_id):
+    """True for a slot key such as `autorouter.connection_router` and a
+    stage id such as `freerouting-connection`."""
+    return bool(_STAGE_KEY.match(key)) and bool(_STAGE_ID.match(stage_id))
+
+
+def differing_stages(stages, stage_defaults=None):
+    """The stage choices that differ from the profile's, sorted by key."""
+    defaults = stage_defaults or {}
+    return {k: stages[k] for k in sorted(stages) if stages[k] != defaults.get(k)}
+
+
+def parse_stage_listing(data):
+    """The stage slots of the router's `--list-stages=json` (a dict): a list
+    of `(key, label, ids, default)` for the slots that take one stage, the key
+    without `router.`, `default` the profile's id ("" for none). Slots that
+    take a list are left out. A damaged listing gives what can be read."""
+    slots = []
+    if not isinstance(data, dict) or not isinstance(data.get("slots"), list):
+        return slots
+    for slot in data["slots"]:
+        if not isinstance(slot, dict) or slot.get("arity") not in ("one", "optional"):
+            continue
+        key, label = slot.get("key"), slot.get("label")
+        if not isinstance(key, str) or not key.startswith("router.") or not isinstance(label, str):
+            continue
+        ids = [i for i in slot.get("ids", []) if isinstance(i, str) and _STAGE_ID.match(i)]
+        if slot["arity"] == "optional":
+            ids = [""] + ids
+        default = slot.get("default")
+        default = default[0] if isinstance(default, list) and default and isinstance(default[0], str) else ""
+        slots.append((key[len("router."):], label, ids, default))
+    return slots
+
+
+def stage_defaults(slots):
+    """`{key: default id}` of `parse_stage_listing`'s slots."""
+    return {key: default for key, _, _, default in slots}
+
+
 def _fmt(number):
     """`2.5`, `150`, `0.05`: no trailing zeros, no exponent."""
     text = f"{float(number):.6f}".rstrip("0").rstrip(".")
@@ -190,11 +279,11 @@ def load(path):
         return RouteOptions()
 
 
-def save(path, options):
+def save(path, options, stage_defaults=None):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(options.to_dict(), f, indent=2)
+        json.dump(options.to_dict(stage_defaults), f, indent=2)
         f.write("\n")
 
 
@@ -252,4 +341,18 @@ def from_form(values):
     else:
         errors.append(f"timeout: '{timeout}' is not a duration (use 90s, 10m, 2h or HH:MM:SS)")
     options.rule_area_fixup = bool(values.get("rule_area_fixup", True))
+    profile = str(values.get("profile", DEFAULT_PROFILE)).strip().lower()
+    if profile in PROFILES:
+        options.profile = profile
+    else:
+        errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
+    stages = values.get("stages", {})
+    if isinstance(stages, dict):
+        for key, stage_id in stages.items():
+            if stage_id in ("", None):
+                continue
+            if valid_stage(str(key), str(stage_id)):
+                options.stages[str(key)] = str(stage_id)
+            else:
+                errors.append(f"{key}: '{stage_id}' is not a stage id")
     return options, errors

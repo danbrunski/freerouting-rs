@@ -1,6 +1,11 @@
 //! Builds a board from every fixture DSN and compares it with what Java's
 //! `DsnReader` and `BoardStatistics` produced for the same file
 //! (`fixtures/reference/load/<path>.json`, see `tools/java-reference/`).
+//!
+//! **Profile (N01.2).** This comparison reads no router settings: the board
+//! load and the DRC take none, so `router.profile` cannot reach it and it is
+//! `legacy` by construction. A board-level behaviour that a profile switches
+//! (N04's contacts inside pads) must be pinned to `legacy` here.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

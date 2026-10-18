@@ -52,8 +52,15 @@ impl App {
             draft.apply_overrides(&self.settings.autoroute);
             // The router flags of the front-end mode (`-mp`, `-mt`, `--router.*`,
             // ...; G08.4, K02.5) win over the saved settings, as the command
-            // line does over a settings file.
-            draft.patch.apply_from(&self.files.frontend.options.router);
+            // line does over a settings file. A `--profile` moves the values
+            // that are still the profile's first (N01.3).
+            let router = &self.files.frontend.options.router;
+            if router.profile.is_some()
+                && let Ok(profile) = freerouting::settings::Profile::of_patch(router)
+            {
+                draft.set_profile(profile);
+            }
+            draft.patch.apply_from(router);
             self.autoroute.baseline = Some(baseline);
             self.autoroute.applied = Some(draft.patch);
         }

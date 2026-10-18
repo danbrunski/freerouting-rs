@@ -18,6 +18,14 @@ Status: version 0.1.0.
 
 ## What it does better than the Java version
 
+**Two routing profiles.** **Enhanced**, the default, routes with the improvements over Java that
+a measurement has accepted; **Legacy** gives results identical to Java Freerouting. Below the
+profile every stage (fanout, net ordering, connection router, rip-up policy, optimizer, the
+special stages) and every option can still be set on its own. Pick one with `--profile legacy`
+on the command line, the Profile selector in the desktop app's autoroute settings, or the
+Profile choice in the KiCad plugin's dialog. Until the first improvement is accepted the two
+route the same.
+
 **Speed**
 - **No JVM.** Each tool is one native executable that starts in milliseconds. Java spends about
   3 s on start-up and class loading before routing begins. Small boards therefore finish 7× to
@@ -53,6 +61,8 @@ Status: version 0.1.0.
 - **The CLI accepts Java's flags and adds:**
   - `--progress json` and `--result-json` for machine-readable progress and results;
   - `--version`, `--capabilities`, `--threads` and `--timeout`;
+  - `--profile legacy|enhanced`, `--list-stages` (the stages, their ids and options) and
+    `--dump-settings` (every effective setting and where it came from);
   - a stop request on standard input that keeps the best result so far;
   - distinct exit codes.
 - **No half-written files.** An output file is written whole or not at all, and never as 0 bytes.
@@ -64,7 +74,8 @@ Status: version 0.1.0.
 - **Interactive routing and editing**, undo and redo, the rules dialogs and the Info lists, all
   ported from Java's GUI.
 
-**Still in progress.** Routing profiles that go beyond Java are planned. Stages ported from
+**Still in progress.** The Enhanced profile has no accepted improvement yet, so it still routes
+like Legacy (Java Freerouting); each improvement joins it once its measurement accepts it. Stages ported from
 KiCadRoutingTools are merged but not yet enabled in the command line or the app: differential
 pairs, length matching, BGA and QFN fanout, and bus routing. Their measurements are next. See
 [docs/roadmap/](docs/roadmap/).

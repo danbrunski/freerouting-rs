@@ -21,7 +21,8 @@ use freerouting::dsn::Session;
 use freerouting::io::specctra::{SesStyle, import_session, write_ses};
 use freerouting::job::prepare::{JobInput, RulesChoice, prepare_job};
 use freerouting::settings::board::BoardRouterSettings;
-use freerouting::settings::{ResolveContext, RouterSettings, SettingsPatch, Source};
+use freerouting::settings::profile::{legacy_pin, require_legacy};
+use freerouting::settings::{ResolveContext, RouterSettings, Source};
 
 use crate::ses_diff::{STATISTIC_FIELDS, SesDiff, parse_session};
 
@@ -219,16 +220,16 @@ pub struct Loaded {
 
 /// J01.3's `route` mode: the defaults, the DSN's settings and the adjacent rules file
 /// (`prepare_job`), then the optimizer off and the reference's bounds at the testing
-/// priority.
-pub fn load(root: &Path, reference: &Reference) -> Result<Loaded, String> {
+/// priority, with `router.profile = legacy` (N01.2: the gate compares Java's behaviour).
+pub fn job_input(root: &Path, reference: &Reference) -> Result<JobInput, String> {
     let path = root.join(&reference.dsn);
     let bytes = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("board");
     let design = JobInput::design_name_of(file_name);
-    let mut input = JobInput::new(bytes, design.clone());
+    let mut input = JobInput::new(bytes, design);
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
-    let mut patch = SettingsPatch::default();
+    let mut patch = legacy_pin();
     patch.optimizer.enabled = Some(false);
     patch.autorouter.max_passes = reference.max_passes;
     patch.autorouter.max_items = reference.max_items;
@@ -237,7 +238,15 @@ pub fn load(root: &Path, reference: &Reference) -> Result<Loaded, String> {
         patch.debug.audit_incremental = Some(true);
     }
     input.extra_sources.push((Source::Testing, patch));
+    Ok(input)
+}
+
+/// [`job_input`], prepared. Fails when the settings are not pinned to `legacy`.
+pub fn load(root: &Path, reference: &Reference) -> Result<Loaded, String> {
+    let input = job_input(root, reference)?;
+    let design = input.design_name.clone();
     let prepared = prepare_job(&input, &ResolveContext { cores: 8 }).map_err(|e| e.to_string())?;
+    require_legacy(&prepared.settings)?;
     Ok(Loaded {
         board: prepared.board,
         settings: prepared.settings,

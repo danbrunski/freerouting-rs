@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use super::fields::{FIELDS, RouterSettings, SettingsPatch, default_patch};
+use super::profile::{self, Profile, UnknownProfile};
 use super::types::LayerSettings;
 use super::validate::validate;
 
@@ -12,6 +13,9 @@ use super::validate::validate;
 pub enum Source {
     /// `DefaultSettings` (priority 0).
     Defaults,
+    /// The differences of the chosen routing profile (5; N01, not Java).
+    /// [`resolve`] adds it; a caller never passes it.
+    Profile(Profile),
     /// `freerouting.json` (10).
     ConfigFile,
     /// The DSN's `autoroute_settings` (20).
@@ -35,6 +39,7 @@ impl Source {
     pub fn priority(&self) -> i32 {
         match self {
             Source::Defaults => 0,
+            Source::Profile(_) => 5,
             Source::ConfigFile => 10,
             Source::Dsn => 20,
             Source::RulesFile => 40,
@@ -50,6 +55,8 @@ impl Source {
     pub fn label(&self) -> &str {
         match self {
             Source::Defaults => "defaults",
+            Source::Profile(Profile::Legacy) => "profile legacy",
+            Source::Profile(Profile::Enhanced) => "profile enhanced",
             Source::ConfigFile => "config file",
             Source::Dsn => "DSN",
             Source::RulesFile => "rules file",
@@ -65,6 +72,8 @@ impl Source {
     pub fn name(&self) -> &str {
         match self {
             Source::Defaults => "Default Settings",
+            Source::Profile(Profile::Legacy) => "Profile legacy",
+            Source::Profile(Profile::Enhanced) => "Profile enhanced",
             Source::ConfigFile => "freerouting.json",
             Source::Dsn => "DSN file",
             Source::RulesFile => "RULES file",
@@ -112,6 +121,8 @@ pub struct Resolved {
     /// The core count the merge was resolved with (it normalises
     /// `max_threads`).
     pub cores: usize,
+    /// The routing profile the sources chose (N01), or why none applies.
+    pub profile: Result<Profile, UnknownProfile>,
 }
 
 impl Resolved {
@@ -211,9 +222,28 @@ impl SettingsPatch {
 /// `SettingsMerger.merge()`: sorts the sources by priority (a stable sort,
 /// so ties keep their order), clones the first as the base, applies the rest
 /// in order and validates.
+///
+/// Not Java: first the routing profile (N01, [`profile`]) the sources name is
+/// added as [`Source::Profile`] at priority 5, when it changes anything. An
+/// unknown profile adds nothing and is reported in [`Resolved::profile`] and
+/// as a warning; `prepare_job` turns it into an error.
 pub fn resolve(sources: &[(Source, SettingsPatch)], ctx: &ResolveContext) -> Resolved {
     let mut warnings = Vec::new();
+    let chosen = profile::chosen(sources);
+    let profile_source = match &chosen {
+        Ok(profile) => {
+            let patch = profile.patch();
+            (patch != SettingsPatch::default()).then_some((Source::Profile(*profile), patch))
+        }
+        Err(e) => {
+            warnings.push(e.to_string());
+            None
+        }
+    };
     let mut sorted: Vec<&(Source, SettingsPatch)> = sources.iter().collect();
+    if let Some(source) = profile_source.as_ref() {
+        sorted.push(source);
+    }
     sorted.sort_by_key(|(source, _)| source.priority());
 
     let mut provenance = BTreeMap::new();
@@ -244,6 +274,7 @@ pub fn resolve(sources: &[(Source, SettingsPatch)], ctx: &ResolveContext) -> Res
         provenance,
         warnings,
         cores: ctx.cores,
+        profile: chosen,
     }
 }
 

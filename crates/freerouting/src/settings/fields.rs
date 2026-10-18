@@ -219,6 +219,8 @@ fn default_threads(cores: usize) -> i32 {
 settings_table! {
     cores cores;
     top {
+        (profile, String, opt, None, None, "profile", [], Flat::No, true,
+            "Routing profile (N01): `legacy` (Java Freerouting's results) or `enhanced` (unset; the accepted improvements)."),
         (job_timeout, String, opt, Some("12:00:00".to_string()), None, "jobTimeoutString", [], Flat::No, true,
             "Maximum job duration as `HH:mm:ss`, `mm:ss` or `ss`; capped at 24 h."),
         (trace_pull_tight_accuracy, i32, req, Some(500), 0, "tracePullTightAccuracy",

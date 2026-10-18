@@ -7,8 +7,10 @@
 //! route (Java at `cda540f`). The steps run in Java's order, including the
 //! step that looks redundant:
 //!
-//! 1. the first merge ([`resolve`]): defaults, config file, DSN, environment,
-//!    CLI (and any extra sources, for example a testing profile);
+//! 1. the first merge ([`resolve`]): defaults, the routing profile (N01; an
+//!    unknown one is a [`JobError::Settings`]), config file, DSN,
+//!    environment, CLI (and any extra sources, for example a testing
+//!    profile);
 //! 2. read the board;
 //! 3. `set_layer_count` if the counts differ, then the board-specific cost
 //!    tuning, the net-class exclusions and the five overrides. **The costs
@@ -289,6 +291,10 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     }
     sources.extend(input.extra_sources.iter().cloned());
     let merged = resolve(&sources, ctx);
+    // N01: an unknown `router.profile` is a settings error.
+    if let Err(e) = &merged.profile {
+        return Err(JobError::Settings(e.to_string()));
+    }
     for warning in &merged.warnings {
         push(&mut log, LogLevel::Warn, warning.clone());
     }

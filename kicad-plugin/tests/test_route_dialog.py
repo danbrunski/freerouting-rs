@@ -46,7 +46,7 @@ def test_the_options_are_saved_and_reach_the_router(env):
     dialog.timeout.SetValue("10m")
     dialog.on_route(None)
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 1 and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
+    assert saved["schema"] == 2 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
     # The router failed to write a session ("echo"): the dialog shows its output.
     failure = ui.messages[-1][0]
     assert "Routing failed (exit code 0)" in failure
@@ -125,3 +125,49 @@ def test_a_stale_session_is_removed_before_routing(env):
     (work / "b.ses").write_text("(session stale)", encoding="utf-8")
     dialog.on_route(None)
     assert not (work / "b.ses").exists() and ui.imports == []
+
+
+def test_the_profile_and_the_advanced_stages_reach_the_router(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    # The defaults: Enhanced, each stage at the profile's choice.
+    assert dialog.profile.GetStringSelection() == "Enhanced"
+    assert sorted(dialog.stage_choices) == ["autorouter.connection_router", "special.length_matching"]
+    assert dialog.chosen_stages() == {"autorouter.connection_router": "freerouting-connection", "special.length_matching": ""}
+    dialog.profile.SetStringSelection("Legacy")
+    choice, ids = dialog.stage_choices["autorouter.connection_router"]
+    choice.SetSelection(ids.index("x-grid"))
+    dialog.on_route(None)
+    lines = ui.messages[-1][0].splitlines()
+    for flag in ("--profile", "legacy", "--router.autorouter.connection_router=x-grid"):
+        assert flag in lines, flag
+    assert not any(l.startswith("--router.special.length_matching") for l in lines)
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["profile"] == "legacy"
+    assert saved["stages"] == {"autorouter.connection_router": "x-grid"}
+    # Restored by a new dialog.
+    again = make_dialog("echo")
+    assert again.profile.GetStringSelection() == "Legacy"
+    choice, ids = again.stage_choices["autorouter.connection_router"]
+    assert ids[choice.GetSelection()] == "x-grid"
+    # Back at the profile's choice, nothing is kept.
+    choice.SetSelection(ids.index("freerouting-connection"))
+    again.on_route(None)
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert "stages" not in saved
+
+
+@pytest.mark.parametrize("label", ["Legacy", "Enhanced"])
+def test_the_summary_names_the_profile(env, label):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route")
+    dialog.profile.SetStringSelection(label)
+    dialog.on_route(None)
+    assert f"Profile: {label}" in ui.messages[-1][0].splitlines()
+
+
+def test_a_router_without_a_stage_listing_has_no_choices(env):
+    make_dialog, _, _ = env
+    dialog = make_dialog("fail")  # `--list-stages=json` exits 3
+    assert dialog.stage_choices == {}
+    assert dialog.chosen_stages() == {}

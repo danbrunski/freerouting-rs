@@ -337,3 +337,57 @@ fn bm10_fanout_connects_to_the_removed_start_trace_like_java() {
         .expect("the pass line");
     assert_eq!(pass, BM10_JAVA_PASS);
 }
+
+/// N01.2: the gate pins `router.profile = legacy`. With a dummy difference in `enhanced`
+/// (the fanout's pass limit), J2 still loads with Java's settings and routes to Java's
+/// session; the same harness without the pin would take the dummy and is refused.
+#[test]
+fn the_gate_pins_legacy_beside_a_dummy_enhanced_difference() {
+    use freerouting::job::prepare::prepare_job;
+    use freerouting::settings::ResolveContext;
+    use freerouting::settings::profile::{Difference, require_legacy, with_enhanced_differences};
+
+    const DUMMY: &[Difference] = &[Difference {
+        path: "fanout.max_passes",
+        value: "7",
+        measurement: "test-only dummy (N01.2)",
+    }];
+    let root = repo_root();
+    let reference = references(&root, JAVA_FAILURES)
+        .into_iter()
+        .find(|r| r.name == "Issue026-J2_reference")
+        .expect("J2 has a route reference");
+    assert_eq!(reference.class, Class::Exact);
+    let plain = board_parity::load(&root, &reference).expect("J2 loads");
+    let out = root.join(format!(
+        "target/parity-profile-selftest-{}",
+        std::process::id()
+    ));
+    with_enhanced_differences(DUMMY, || {
+        let pinned = board_parity::load(&root, &reference).expect("J2 loads pinned");
+        assert_eq!(
+            pinned.settings, plain.settings,
+            "the pin keeps Java's settings"
+        );
+        assert_eq!(pinned.settings.fanout.max_passes, 20);
+
+        // Without the pin the dummy would reach the gate, and `load` refuses it.
+        let mut input = board_parity::job_input(&root, &reference).expect("the input");
+        for (_, patch) in &mut input.extra_sources {
+            patch.profile = None;
+        }
+        let unpinned = prepare_job(&input, &ResolveContext { cores: 8 }).expect("loads");
+        assert_eq!(unpinned.settings.fanout.max_passes, 7, "the dummy is live");
+        assert!(require_legacy(&unpinned.settings).is_err());
+
+        // The routed session still equals Java's.
+        let record = route_board(&root, &reference, &out, Sink::Noop);
+        assert_eq!(record.rust_result, "completed", "{}", record.error);
+        assert!(
+            record.equivalent && record.byte_equal,
+            "J2 under the pin: {}",
+            record.one_line()
+        );
+    });
+    let _ = std::fs::remove_dir_all(&out);
+}

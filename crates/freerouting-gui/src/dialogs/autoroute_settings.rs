@@ -25,6 +25,7 @@
 //! so the dialog has none either. The optimization stage is a control, enabled
 //! now that the batch optimizer is ported ([`OPTIMIZER_PORTED`], O06).
 
+pub mod algorithms;
 pub mod timeout;
 
 use eframe::egui;
@@ -40,6 +41,7 @@ pub const OPTIMIZER_PORTED: bool = true;
 /// Fields with a control in the window, with the control's name. The layer
 /// rows edit the two per-layer cost arrays and the `layers` member.
 pub const CONTROLS: &[(&str, &str)] = &[
+    ("profile", "Profile"),
     ("fanout.enabled", "Fanout"),
     ("autorouter.enabled", "Auto-routing"),
     ("optimizer.enabled", "Optimization"),
@@ -61,17 +63,11 @@ pub const CONTROLS: &[(&str, &str)] = &[
 ];
 
 /// Every other field, with why it has no control. Java's window has the
-/// controls above and nothing else; these are set with the CLI, a JSON
-/// settings file, the environment or a rules file.
+/// controls above and nothing else; the "Algorithms" section (N01.4,
+/// [`algorithms::algorithm_paths`]) has the stage keys and their options;
+/// these are set with the CLI, a JSON settings file, the environment or a
+/// rules file.
 pub const CLI_ONLY: &[(&str, &str)] = &[
-    (
-        "trace_pull_tight_accuracy",
-        "not in Java's window (the interactive pull-tight accuracy is in Settings > Routing)",
-    ),
-    (
-        "automatic_neckdown",
-        "not in Java's window (the interactive setting is in Settings > Routing)",
-    ),
     (
         "copper_to_edge_clearance_um",
         "board override of the job, set with the CLI or a settings file",
@@ -82,10 +78,6 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
     ),
     (
         "clearance_tolerance_um",
-        "board override of the job, set with the CLI or a settings file",
-    ),
-    (
-        "plane_nets",
         "board override of the job, set with the CLI or a settings file",
     ),
     (
@@ -101,45 +93,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "quality option without a Java control",
     ),
     ("wire_keepout", "quality option without a Java control"),
-    ("neck_width_um", "quality option without a Java control"),
-    (
-        "min_trace_width_um",
-        "quality option without a Java control",
-    ),
-    ("strict_drc", "quality option without a Java control"),
     ("result_json", "a file path for the CLI's result manifest"),
-    (
-        "autorouter.algorithm",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    ("autorouter.max_items", "work limit without a Java control"),
-    (
-        "autorouter.max_threads",
-        "never read by the batch router; the window edits `max_threads`",
-    ),
     (
         "autorouter.save_intermediate_stages",
         "debugging option without a Java control",
-    ),
-    (
-        "autorouter.ignore_net_classes",
-        "set with the CLI; the Net Classes window has the per-class switch",
-    ),
-    (
-        "autorouter.ordering",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "autorouter.connection_router",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "autorouter.ripup_policy",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "autorouter.pass_controller",
-        "stage selection (A10), set with the CLI or a settings file",
     ),
     ("autorouter.sweep", "quality option without a Java control"),
     (
@@ -150,24 +107,6 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "autorouter.sweep_after_optimizer",
         "quality option without a Java control",
     ),
-    ("fanout.max_passes", "fanout tuning without a Java control"),
-    ("fanout.max_items", "fanout tuning without a Java control"),
-    (
-        "fanout.max_milliseconds_per_pin",
-        "fanout work budget without a Java control",
-    ),
-    (
-        "fanout.ripup_allowed",
-        "fanout tuning without a Java control",
-    ),
-    (
-        "fanout.min_escape_length_mm",
-        "fanout tuning without a Java control",
-    ),
-    (
-        "fanout.max_escape_length_mm",
-        "fanout tuning without a Java control",
-    ),
     (
         "fanout.start_via_diameter_mm",
         "fanout tuning without a Java control",
@@ -175,39 +114,6 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
     (
         "fanout.end_via_diameter_mm",
         "fanout tuning without a Java control",
-    ),
-    (
-        "fanout.pin_sorting_order",
-        "fanout tuning without a Java control",
-    ),
-    (
-        "fanout.fallback_to_board_vias",
-        "fanout tuning without a Java control",
-    ),
-    ("fanout.timeout", "stage time limit without a Java control"),
-    (
-        "fanout.algorithm",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "optimizer.algorithm",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "optimizer.max_passes",
-        "optimizer tuning without a Java control",
-    ),
-    (
-        "optimizer.max_items",
-        "optimizer tuning without a Java control",
-    ),
-    (
-        "optimizer.max_threads",
-        "optimizer tuning without a Java control",
-    ),
-    (
-        "optimizer.improvement_threshold",
-        "optimizer tuning without a Java control",
     ),
     (
         "optimizer.enable_preflight_guards",
@@ -242,22 +148,6 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "not read from JSON in Java either",
     ),
     (
-        "optimizer.timeout",
-        "stage time limit without a Java control",
-    ),
-    (
-        "scoring.default_preferred_direction_trace_cost",
-        "the layer rows edit the per-layer costs",
-    ),
-    (
-        "scoring.default_undesired_direction_trace_cost",
-        "the layer rows edit the per-layer costs",
-    ),
-    (
-        "scoring.default_bend_cost",
-        "the layer rows edit the per-layer bend cost",
-    ),
-    (
         "scoring.unrouted_net_penalty",
         "score weight without a Java control",
     ),
@@ -270,18 +160,6 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "score weight without a Java control",
     ),
     (
-        "router_scoring.version",
-        "score weight without a Java control",
-    ),
-    (
-        "router_scoring.unrouted_connection_weight",
-        "score weight without a Java control",
-    ),
-    (
-        "router_scoring.unrouted_free_fraction",
-        "score weight without a Java control",
-    ),
-    (
         "router_scoring.unrouted_first_half_weight",
         "score weight without a Java control",
     ),
@@ -290,19 +168,7 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "score weight without a Java control",
     ),
     (
-        "router_scoring.clearance_violation_count_weight",
-        "score weight without a Java control",
-    ),
-    (
-        "router_scoring.clearance_violation_depth_weight",
-        "score weight without a Java control",
-    ),
-    (
         "router_scoring.clearance_violation_depth_scale",
-        "score weight without a Java control",
-    ),
-    (
-        "optimizer_scoring.version",
         "score weight without a Java control",
     ),
     (
@@ -326,54 +192,26 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "score weight without a Java control",
     ),
     (
-        "neck_down.strict",
-        "strict sizes (Q02.2), set with the CLI or a settings file",
-    ),
-    (
-        "length_matching.groups",
-        "length-matching groups (X07), set with the CLI or a settings file",
-    ),
-    (
-        "special.length_matching",
-        "stage selection (X07), set with the CLI or a settings file",
-    ),
-    (
-        "diff_pairs.infer_from_names",
-        "differential pair naming (X08), set with the CLI or a settings file",
-    ),
-    (
-        "diff_pairs.skew_um",
-        "differential pair skew tolerance (X09), set with the CLI or a settings file",
-    ),
-    (
-        "special.diff_pairs",
-        "stage selection (X08), set with the CLI or a settings file",
-    ),
-    (
-        "special.plane_taps",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "special.neck_down",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "special.stages",
-        "stage selection (A10), set with the CLI or a settings file",
-    ),
-    (
-        "special.diagnostics",
-        "report-only diagnostics (Q06), set with the CLI or a settings file",
-    ),
-    (
         "debug.audit_incremental",
         "engine self-check (P02.1), set with the CLI or a settings file",
     ),
 ];
 
-/// True if the window has a control for the field `path`.
+/// True if the window has a control for the field `path`: one of
+/// [`CONTROLS`] or a row of the "Algorithms" section.
 pub fn has_control(path: &str) -> bool {
-    CONTROLS.iter().any(|(p, _)| *p == path)
+    CONTROLS.iter().any(|(p, _)| *p == path) || algorithms::algorithm_paths().contains(&path)
+}
+
+/// Every path with a control, [`CONTROLS`] first, each once.
+pub fn control_paths() -> Vec<&'static str> {
+    let mut paths: Vec<&'static str> = CONTROLS.iter().map(|(p, _)| *p).collect();
+    for path in algorithms::algorithm_paths() {
+        if !paths.contains(&path) {
+            paths.push(path);
+        }
+    }
+    paths
 }
 
 /// The fields that have neither a control nor a reason: empty when the
@@ -466,10 +304,16 @@ impl Draft {
     /// and Java's text of the value: what the app keeps between runs. The
     /// layer rows belong to a board and are not kept.
     pub fn overrides_against(&self, baseline: &SettingsPatch) -> Vec<(String, String)> {
-        CONTROLS
-            .iter()
-            .filter(|(path, _)| !path.ends_with("trace_cost"))
-            .filter_map(|(path, _)| {
+        control_paths()
+            .into_iter()
+            .filter(|path| {
+                !matches!(
+                    *path,
+                    "scoring.preferred_direction_trace_cost"
+                        | "scoring.undesired_direction_trace_cost"
+                )
+            })
+            .filter_map(|path| {
                 let field = field_by_path(path)?;
                 let now = (field.get)(&self.patch)?;
                 ((field.get)(baseline).as_ref() != Some(&now))
@@ -479,9 +323,15 @@ impl Draft {
     }
 
     /// Puts kept overrides on the draft. A path or text that does not parse
-    /// is ignored (a settings file written by another version).
+    /// is ignored (a settings file written by another version). A kept
+    /// profile is switched to first, so the other values land on it.
     pub fn apply_overrides(&mut self, overrides: &[(String, String)]) {
-        for (path, text) in overrides {
+        if let Some((_, text)) = overrides.iter().find(|(path, _)| path == "profile")
+            && let Ok(profile) = freerouting::settings::Profile::parse(text)
+        {
+            self.set_profile(profile);
+        }
+        for (path, text) in overrides.iter().filter(|(path, _)| path != "profile") {
             if has_control(path) {
                 let _ = self.patch.set_path(path, text);
             }
@@ -618,6 +468,9 @@ fn cost_rows(ui: &mut egui::Ui, draft: &mut Draft, layers: &[LayerInfo]) {
 /// The body of the window. Returns the commands of the buttons.
 pub fn ui(ui: &mut egui::Ui, draft: &mut Draft, layers: &[LayerInfo]) -> DialogOut {
     let mut out = DialogOut::default();
+    algorithms::profile_selector(ui, draft);
+    algorithms::algorithms(ui, draft);
+    ui.separator();
     ui.label("Layer");
     layer_rows(ui, draft, layers);
     ui.separator();

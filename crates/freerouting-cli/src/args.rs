@@ -335,6 +335,7 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
     ),
     ("--result-json", true, Setting::Paths(&["result_json"])),
     ("--timeout", true, Setting::Paths(&["job_timeout"])),
+    ("--profile", true, Setting::Paths(&["profile"])),
     (
         "--max-passes",
         true,
@@ -360,7 +361,26 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
         false,
         Setting::CliOnly("prints what this build can do, as JSON"),
     ),
+    (
+        "--list-stages",
+        false,
+        Setting::CliOnly("prints the stage slots, their ids and options (`=json` for JSON)"),
+    ),
+    (
+        "--dump-settings",
+        false,
+        Setting::CliOnly("prints the effective settings and their sources (`=json` for JSON)"),
+    ),
 ];
+
+/// The output of `--list-stages` and `--dump-settings` (N01.4): a table, or
+/// JSON with `=json`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ListFormat {
+    #[default]
+    Table,
+    Json,
+}
 
 /// What `--progress` selects.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -427,6 +447,10 @@ pub struct Args {
     pub version: bool,
     /// `--capabilities` was given (C08.2).
     pub capabilities: bool,
+    /// `--list-stages[=json|table]` (N01.4).
+    pub list_stages: Option<ListFormat>,
+    /// `--dump-settings[=json|table]` (N01.4).
+    pub dump_settings: Option<ListFormat>,
     /// Bad values of the C08 flags, each a complete message. A command line
     /// with any is a usage error (exit 2).
     pub usage_errors: Vec<String>,
@@ -745,6 +769,25 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
             continue;
         };
         i += 1;
+        if matches!(name, "--list-stages" | "--dump-settings") {
+            let format = match inline.as_deref().map(str::to_lowercase).as_deref() {
+                None | Some("table") => ListFormat::Table,
+                Some("json") => ListFormat::Json,
+                Some(_) => {
+                    out.usage_errors.push(format!(
+                        "{name}: '{}' is not a format (use {name} or {name}=json)",
+                        inline.unwrap_or_default()
+                    ));
+                    continue;
+                }
+            };
+            if name == "--list-stages" {
+                out.list_stages = Some(format);
+            } else {
+                out.dump_settings = Some(format);
+            }
+            continue;
+        }
         let value = if !takes_value {
             None
         } else if inline.is_some() {

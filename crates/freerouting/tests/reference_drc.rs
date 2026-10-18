@@ -5,6 +5,11 @@
 //! input, as digested in `tests/data/java_drc_digest.tsv` (see
 //! `tests/data/java_drc_digest.py` for the format).
 //!
+//! **Profile (N01.2).** This comparison reads no router settings: the board
+//! load and the DRC take none, so `router.profile` cannot reach it and it is
+//! `legacy` by construction. A board-level behaviour that a profile switches
+//! (N04's contacts inside pads) must be pinned to `legacy` here.
+//!
 //! Compared exactly: the clearance and hole clearance violations and the
 //! dangling vias (descriptions, item ids and positions, in report order),
 //! the unconnected item groups (as sets: Java picks a group's

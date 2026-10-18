@@ -9,7 +9,8 @@
 //!   `-mp`, `-mt`, `-inc`, `-oit`, the scoring flags and
 //!   `--router.<path>=` / `--optimizer.<path>=`;
 //! - [`rewrite_aliases`]: the long forms of C08, which are not Java's.
-//!   `--max-passes`, `--threads`, `--timeout` and `--result-json` become the
+//!   `--max-passes`, `--threads`, `--timeout`, `--result-json` and
+//!   `--profile` (N01) become the
 //!   `--router.*` flags that set the same fields, so an alias can never do
 //!   more than the settings do. A bad value is a *usage error* (the CLI exits
 //!   2 on it; the GUI refuses to start);
@@ -29,6 +30,7 @@ pub const ALIAS_FLAGS: &[(&str, &str)] = &[
     ("--result-json", "--router.result_json"),
     ("--timeout", "--router.job_timeout"),
     ("--max-passes", "--router.autorouter.max_passes"),
+    ("--profile", "--router.profile"),
     (
         "--threads",
         "--router.autorouter.max_threads and --router.optimizer.max_threads",
@@ -157,6 +159,10 @@ pub fn rewrite_aliases(
         };
         match name {
             "--result-json" => rest.push(format!("--router.result_json={value}")),
+            "--profile" => match super::profile::Profile::parse(&value) {
+                Ok(profile) => rest.push(format!("--router.profile={profile}")),
+                Err(e) => usage_errors.push(format!("--profile: {e}")),
+            },
             "--max-passes" => {
                 if java_decode_int(&value).is_some() {
                     rest.push(format!("--router.autorouter.max_passes={value}"));

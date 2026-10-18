@@ -1050,7 +1050,7 @@ mod plugin_flags {
         assert!(a.usage_errors.is_empty());
         assert_eq!(a.design_file.as_deref(), Some("a.dsn"));
         assert_eq!(a.output_file.as_deref(), Some("a.ses"));
-        assert_eq!(EXTRA_FLAGS.len(), 8);
+        assert_eq!(EXTRA_FLAGS.len(), 11);
     }
 
     /// The settings file path stays together with its flag.

@@ -117,7 +117,11 @@ impl ClirunRow {
         member(&self.row, "texts").and_then(|t| string_of(member(t, name)))
     }
 
+    /// Java's arguments of the row, plus `--profile legacy`: the rows compare
+    /// with Java, so they pin the parity profile (N01.2).
     pub fn args(&self) -> Vec<&str> {
-        self.args.iter().map(String::as_str).collect()
+        let mut args: Vec<&str> = self.args.iter().map(String::as_str).collect();
+        args.extend(["--profile", "legacy"]);
+        args
     }
 }

@@ -14,6 +14,7 @@ def manifest(name):
 def test_a_complete_run_has_no_warning():
     # Elapsed time from the recorded `done` event of progress-j2.jsonl (396 ms).
     assert summary.format_summary(manifest("j2"), elapsed_ms=396) == (
+        "Profile: Enhanced\n"
         "Connections: 33 of 33 routed, 0 incomplete\n"
         "Vias: 16\n"
         "Total trace length: 371.2 mm\n"
@@ -23,6 +24,7 @@ def test_a_complete_run_has_no_warning():
 
 def test_an_incomplete_run_ends_with_a_warning():
     assert summary.format_summary(manifest("bm01"), elapsed_ms=6841) == (
+        "Profile: Enhanced\n"
         "Connections: 146 of 195 routed, 49 incomplete\n"
         "Vias: 120\n"
         "Total trace length: 2726.7 mm\n"
@@ -66,7 +68,7 @@ def test_other_states_and_violations_are_named():
 def test_a_damaged_manifest_reads_as_unknown_never_as_an_exception():
     assert summary.format_summary(None).startswith("No result summary")
     assert summary.format_summary({}) == (
-        "Connections: unknown\nVias: unknown\nTotal trace length: unknown\nTime: unknown"
+        "Profile: Enhanced\nConnections: unknown\nVias: unknown\nTotal trace length: unknown\nTime: unknown"
     )
     text = summary.format_summary({"board_statistics": {"connections": "x", "vias": [], "traces": None}, "phases": 3})
     assert "Connections: unknown" in text and "Vias: unknown" in text
@@ -82,3 +84,15 @@ def test_load_manifest_handles_missing_and_bad_files(tmp_path):
     good = tmp_path / "good.json"
     good.write_text(json.dumps({"final_state": "COMPLETED"}), encoding="utf-8")
     assert summary.load_manifest(good) == {"final_state": "COMPLETED"}
+
+
+def test_the_summary_names_the_profile():
+    m = manifest("j2")
+    # Asked for, the manifest silent: the plugin's profile.
+    assert summary.format_summary(m, 396, profile="legacy").startswith("Profile: Legacy\n")
+    assert summary.format_summary(m, 396, profile="enhanced").startswith("Profile: Enhanced\n")
+    # The manifest's settings snapshot wins (the router's own word).
+    m["settings_snapshot"] = {"profile": "legacy"}
+    assert summary.format_summary(m, 396, profile="enhanced").startswith("Profile: Legacy\n")
+    m["settings_snapshot"] = {"profile": 3}
+    assert summary.format_summary(m, 396).startswith("Profile: Enhanced\n")

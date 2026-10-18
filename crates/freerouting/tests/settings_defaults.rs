@@ -1,4 +1,6 @@
 //! C02.1: the settings field table, `SettingsPatch` and `RouterSettings`.
+//! Java's defaults are the `legacy` profile's (N01.2): the merged defaults
+//! are checked pinned to `legacy`.
 //!
 //! Ports `BendCostSettingsTest.nullScoringSafety` (the settings half; the
 //! board half is C03's) and `ScoringVersionSettingsTest` defaults.
@@ -10,6 +12,7 @@ use std::collections::BTreeSet;
 use std::fmt::Debug;
 
 use freerouting::scoring::{OptimizerScoreSettings, RouterScoreSettings};
+use freerouting::settings::profile::{Difference, legacy_pin, with_enhanced_differences};
 use freerouting::settings::{
     FIELDS, FieldKind, FieldValue, OptimizerScoringVersion, ResolveContext, RouterScoringVersion,
     RouterSettings, SettingsPatch, Source, default_patch, resolve,
@@ -55,9 +58,54 @@ fn empty_list() -> Option<FieldValue> {
 /// machine with 8 cores.
 #[test]
 fn defaults_with_eight_cores() {
-    let patch = default_patch(CORES);
+    check_java_defaults(&default_patch(CORES), "DefaultSettings");
+}
+
+/// N01.2: Java's defaults are the `legacy` profile's. The merge pinned to
+/// `legacy` gives every default of [`check_java_defaults`], also when
+/// `enhanced` has a (test-only) difference; unpinned, the difference shows.
+#[test]
+fn java_defaults_are_the_legacy_profile() {
+    const DUMMY: &[Difference] = &[Difference {
+        path: "fanout.max_passes",
+        value: "7",
+        measurement: "test-only dummy (N01.2)",
+    }];
+    let pinned = || {
+        let mut patch = resolve(
+            &[
+                (Source::Defaults, default_patch(CORES)),
+                (Source::Testing, legacy_pin()),
+            ],
+            &ctx(),
+        )
+        .patch;
+        assert_eq!(patch.profile.as_deref(), Some("legacy"));
+        patch.profile = None;
+        patch
+    };
+    check_java_defaults(&pinned(), "pinned to legacy");
+    with_enhanced_differences(DUMMY, || {
+        check_java_defaults(
+            &pinned(),
+            "pinned to legacy beside a dummy enhanced difference",
+        );
+        let unpinned = resolve(&[(Source::Defaults, default_patch(CORES))], &ctx()).patch;
+        assert_eq!(
+            value(&unpinned, "fanout.max_passes"),
+            i(7),
+            "the dummy is live"
+        );
+    });
+}
+
+/// Every default of C02.1, written out independently of the table, for a
+/// machine with 8 cores, checked on `patch`.
+fn check_java_defaults(patch: &SettingsPatch, what: &str) {
     let threads = i(7);
     let expected: Vec<(&str, Option<FieldValue>)> = vec![
+        // N01: unset, which is `enhanced`; Java has no profile.
+        ("profile", None),
         // Top level.
         ("job_timeout", s("12:00:00")),
         ("trace_pull_tight_accuracy", i(500)),
@@ -189,14 +237,14 @@ fn defaults_with_eight_cores() {
     let listed: BTreeSet<&str> = expected.iter().map(|(p, _)| *p).collect();
     assert_eq!(tabled, listed, "this test must list every table entry");
     for (path, want) in expected {
-        assert_eq!(value(&patch, path), want, "default of {path}");
+        assert_eq!(value(patch, path), want, "{what}: default of {path}");
     }
     // `FieldDesc::default` agrees with `default_patch`.
     for field in FIELDS {
         assert_eq!(
             (field.default)(CORES),
-            (field.get)(&patch),
-            "{}",
+            (field.get)(patch),
+            "{what}: {}",
             field.path
         );
     }

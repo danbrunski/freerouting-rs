@@ -233,6 +233,11 @@ branch 3 in IntOctagon's box cutout.
   Java.
 - `min_trace_width_um` (Java fork commit `46bf9e2ef`, after the pin) is a settings
   field, unset by default.
+- `profile` (`router.profile`, N01) is a settings field Java does not have: `legacy` or
+  `enhanced`, unset is `enhanced`. The merge adds the chosen profile's differences as a source at
+  priority 5, between the defaults and the settings file, so any explicit key wins; an unknown
+  name is a settings error naming the valid ones. With `legacy` (and while `enhanced` has no
+  entries) the merge is Java's (`tests/settings_profile.rs`); see "Profile `enhanced`".
 - `plane_obstacle_net_classes` (Q01, `quality::pour_guard`) is a settings field Java does not
   have, unset by default (no policy, Java's routing). Listing net classes makes their
   signal-layer pours obstacles for the nets with no pin or input via inside them, through the
@@ -861,6 +866,11 @@ plugin_flags}.rs`)
   Ctrl-Break on Windows, through the `ctrlc` crate) are handled: the first is `stop`, the
   second aborts with exit 130 and no output (`sigint_and_sigterm_are_a_stop`,
   `two_signals_abort`); Java's CLI has no such two-level stop.
+- `--profile legacy|enhanced` (N01.3) is the routing profile (`router.profile`, see "Profile
+  `enhanced`"); Java has no such flag, and `--profile.<key>=<value>` (Java's user profile) is still
+  accepted and ignored. `--list-stages[=json]` and `--dump-settings[=json]` (N01.4) print the stage
+  slots with their registered ids and options, and the effective settings with their sources, and
+  exit 0; Java has neither (`tests/profiles.rs`).
 - `--stats json` and `--stats-out <file>` (P01.2) are developer flags that Java lacks. They are
   taken out of the command line before the Java parsers see it, so they are not plugin flags and
   not in `--capabilities`. They write per-stage work counts and times and change no result: the
@@ -1058,6 +1068,11 @@ users would notice is listed. Texts follow the English Java bundles.)
   `speed` (its bundle has the labels), so the dialog has none. The "Optimization" stage checkbox is
   enabled (the batch optimizer, O06, is ported). Fields without a control are listed with a
   reason in `CLI_ONLY` (`every_router_setting_has_a_control`).
+- The dialog adds what Java's window lacks (N01.3, N01.4): a Profile selector (Legacy / Enhanced;
+  switching moves the values that still have the old profile's value) and an "Algorithms"
+  section with one row per stage slot (the registered ids to pick from, then the slot's options),
+  each marked "changed" when it differs from the profile, with a Reset to the profile's value
+  (`profile_selector_covers_both_profiles`, `an_algorithm_stage_changes_and_resets`).
 - The routing summary is a window, not a modal dialog, and has no sponsor message or button (G00
   question 2). "Vias Added" is the board's via count and the trace length the board's total, as in
   Java; the figures are computed by the job thread from the returned board.
@@ -1110,3 +1125,17 @@ users would notice is listed. Texts follow the English Java bundles.)
   without waiting and writes nothing, so the plugin imports nothing (Java has no way out short of
   killing the process). Pinned by `frontend_failed_write_exits_with_1`,
   `frontend_writes_on_close_when_routed`, `frontend_close_again_after_a_slow_stop_quits_without_waiting`.
+
+## Profile `enhanced`
+
+`router.profile` (N01, D10) picks the defaults a job starts from: `legacy` is Java Freerouting
+at the pin (every section above still holds for it, and every parity test and gate pins it),
+`enhanced` is the default and adds the improvements a measurement accepted. A profile only
+changes defaults: any key set in a settings file, the design, the environment or on the command
+line wins, so a settings file that sets every key routes the same under both. The table is
+`ENHANCED` in `crates/freerouting/src/settings/profile.rs`; each entry below names its settings
+key, its `enhanced` value and the measurement that accepted it (N05 adds them).
+`tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line`
+checks that this list and the table agree.
+
+No entries yet: `enhanced` equals `legacy`.

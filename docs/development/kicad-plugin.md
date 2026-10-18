@@ -15,7 +15,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   [board.ses]`. **Import SES...** imports any session file. Files go in a `freerouting-rs/` folder
   next to the `.kicad_pcb`.
 - K02 modules (all pure Python except `plugin.py`): `options.py` (the route options, per board in
-  `freerouting-rs/route-options.json`, `"schema": 1`, defensive restore; `to_args()` builds the
+  `freerouting-rs/route-options.json`, `"schema": 2`, defensive restore; `to_args()` builds the
   flags in a fixed order and always passes `--router.min_trace_width_um` from Board Setup's
   minimum track width, D8), `progress.py` (`parse_line` for C08's JSON lines, `ProgressState`,
   `pump_lines` = the reader thread's body), `summary.py` (the text after the import, from the
@@ -52,6 +52,33 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   writes `-do` when routing ends or the window closes. The router flags (`--max-passes`,
   `--threads`, `--router.*`, ...) are the CLI's (K02.5, `settings::cli_flags`); `--seed` is not
   passed to the GUI.
+
+## Routing profile and Advanced stages (N01)
+
+- **Profile** (a choice in the dialog, `RouteOptions.profile`): **Enhanced** (the default, no
+  flag) routes with the accepted improvements over Java; **Legacy** passes `--profile legacy`
+  for results identical to Java Freerouting. Until N05 accepts the first improvement the two route
+  the same. The summary after the import starts with `Profile: Legacy` or `Profile: Enhanced`
+  (the manifest's `settings_snapshot.profile` when the router wrote one, else the profile the
+  plugin asked for).
+- **Advanced** (a group below the options): one choice per stage slot that takes one stage, read
+  from the router with `freerouting --list-stages=json --profile <p>` for each profile when the
+  dialog opens (`tools.query_stages`, `options.parse_stage_listing`). Each choice starts at the
+  saved one or the profile's; one that differs passes `--router.<key>=<id>` (sorted by key). A
+  router without `--list-stages` gives an empty group with a note. Slots that take a list
+  (`special.stages`, `special.diagnostics`) are not offered; the CLI sets them.
+- **The options file** (`route-options.json`, `"schema": 2`) stores the profile and only what
+  differs from it: options at their defaults and stage choices equal to the profile's are left
+  out, so a board follows the profile until the user picks something else. A schema 1 file
+  (every option written out) still loads, as Enhanced. An unknown profile or a malformed stage
+  key or id is dropped on load and refused by the form.
+- Tests: `test_options.py` (both profiles' flags, stage flags in key order, the listing parser,
+  `test_the_options_file_stores_only_the_differences`, schema 1), `test_route_dialog.py` (profile
+  and stages reach the fake router and are restored, the summary names each profile, a router with
+  no listing), `test_summary.py`, and against the real CLI `test_cli_integration.py`
+  (`test_the_stage_listing_has_every_registered_id`,
+  `test_both_profiles_route_and_the_summary_names_them`). Not yet seen inside KiCad: the layout of
+  the Profile choice and the Advanced group (Dan, with K02.8).
 
 ## Dan's machine (Windows 11, KiCad 10.0)
 

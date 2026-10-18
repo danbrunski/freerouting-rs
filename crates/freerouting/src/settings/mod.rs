@@ -28,6 +28,7 @@
 //! | Source | Priority |
 //! |---|---|
 //! | Defaults | 0 |
+//! | Profile ([`profile`], N01; not Java) | 5 |
 //! | Config file | 10 |
 //! | DSN | 20 |
 //! | Rules file (first merge only through `-dr`) | 40 |
@@ -69,6 +70,7 @@ pub mod json_file;
 pub mod layers;
 pub mod merge;
 pub mod path;
+pub mod profile;
 pub mod profiles;
 pub mod text;
 pub mod timespan;
@@ -83,6 +85,7 @@ pub use dump::dump;
 pub use fields::{FIELDS, RouterSettings, SECTIONS, SettingsPatch, default_patch, field_by_path};
 pub use merge::{ResolveContext, Resolved, Source, defaults, resolve};
 pub use path::SetError;
+pub use profile::{Profile, UnknownProfile};
 pub use types::{
     BoardUpdateStrategy, FieldDesc, FieldKind, FieldValue, Flat, ItemSelectionStrategy,
     LayerSettings, OptimizerScoringVersion, RouterScoringVersion,

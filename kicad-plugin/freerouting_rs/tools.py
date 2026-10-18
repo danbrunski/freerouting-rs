@@ -306,6 +306,43 @@ def query_version(tool, timeout=10):
     return version.parse_router_version(raw.decode("utf-8", errors="replace"))
 
 
+def _run_json(tool, args, timeout):
+    """Runs `<tool> <args>` and returns its standard output as JSON, or None
+    when it fails, times out, cannot be started, or prints no JSON object."""
+    try:
+        proc = subprocess.Popen(
+            tool.command(list(args)),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            creationflags=NO_WINDOW,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    try:
+        raw, _ = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        if proc.stdout:
+            proc.stdout.close()
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(raw.decode("utf-8", errors="replace"))
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def query_stages(tool, profile, timeout=10):
+    """The router's stage listing for `profile` (`--list-stages=json
+    --profile <profile>`, N01.4) as a dict, or None (an older router that has
+    no such flag, a failure, a timeout)."""
+    return _run_json(tool, ["--list-stages=json", "--profile", profile], timeout)
+
+
 def open_viewer(tool, dsn, ses=None):
     """Starts the viewer without waiting for it to close."""
     args = [Path(dsn)] + ([Path(ses)] if ses else [])

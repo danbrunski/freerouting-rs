@@ -75,6 +75,26 @@ class CheckBox(Control):
         super().__init__(*args, value=False, **kwargs)
 
 
+class Choice(Control):
+    def __init__(self, *args, choices=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.choices = list(choices)
+        self.value = 0
+
+    def GetSelection(self):
+        return self.value
+
+    def SetSelection(self, index):
+        self.value = index
+
+    def GetStringSelection(self):
+        return self.choices[self.value] if 0 <= self.value < len(self.choices) else ""
+
+    def SetStringSelection(self, text):
+        if text in self.choices:
+            self.value = self.choices.index(text)
+
+
 class Timer:
     def __init__(self, owner):
         self.running = False
@@ -134,9 +154,10 @@ def build_wx(ui):
     wx.SpinCtrl = Control
     wx.TextCtrl = TextControl
     wx.CheckBox = CheckBox
+    wx.Choice = Choice
     for name in ("Button", "StaticText", "Gauge"):
         setattr(wx, name, Control)
-    for name in ("BoxSizer", "FlexGridSizer"):
+    for name in ("BoxSizer", "FlexGridSizer", "StaticBoxSizer"):
         setattr(wx, name, Sizer)
     wx.Timer = Timer
     wx.EVT_BUTTON, wx.EVT_TIMER, wx.EVT_CLOSE = "EVT_BUTTON", "EVT_TIMER", "EVT_CLOSE"

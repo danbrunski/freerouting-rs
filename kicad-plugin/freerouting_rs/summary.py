@@ -10,6 +10,10 @@ Fields used (Java's `RoutingResultManifest` names):
 `board_statistics.clearance_violations.total_count`, `final_state`, and for
 the time the sum of `phases.*.duration_seconds` unless the caller has the
 `done` event's `elapsed_ms`.
+
+The first line names the routing profile (N01.3): `settings_snapshot.profile`
+of the manifest when the router wrote it, else the profile the plugin asked
+for, else the router's default, Enhanced.
 """
 
 import json
@@ -62,8 +66,22 @@ def elapsed_seconds(manifest, elapsed_ms=None):
     return sum(times) if times else None
 
 
-def format_summary(manifest, elapsed_ms=None):
-    """The summary text, several lines. `manifest` None gives a one-line note."""
+PROFILE_LABELS = {"legacy": "Legacy", "enhanced": "Enhanced"}
+
+
+def profile_label(manifest, profile=None):
+    """`Legacy` or `Enhanced`: the manifest's profile, else `profile`, else
+    the default."""
+    named = _get(manifest, "settings_snapshot", "profile")
+    for candidate in (named, profile):
+        if isinstance(candidate, str) and candidate.strip().lower() in PROFILE_LABELS:
+            return PROFILE_LABELS[candidate.strip().lower()]
+    return PROFILE_LABELS["enhanced"]
+
+
+def format_summary(manifest, elapsed_ms=None, profile=None):
+    """The summary text, several lines. `manifest` None gives a one-line note.
+    `profile` is the profile the run was started with (see the module docs)."""
     if manifest is None:
         return "No result summary: the router wrote no result file."
     maximum = _int(_get(manifest, "board_statistics", "connections", "maximum_count"))
@@ -74,7 +92,7 @@ def format_summary(manifest, elapsed_ms=None):
     seconds = elapsed_seconds(manifest, elapsed_ms)
     state = _get(manifest, "final_state")
 
-    lines = []
+    lines = [f"Profile: {profile_label(manifest, profile)}"]
     if maximum is not None and incomplete is not None:
         routed = max(maximum - incomplete, 0)
         lines.append(f"Connections: {routed} of {maximum} routed, {incomplete} incomplete")

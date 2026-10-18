@@ -177,3 +177,33 @@ def test_progress_events_arrive_while_the_router_runs(router, board):
         time.sleep(0.02)
     assert run.returncode == 0
     assert phases[0] == "load" and "route" in phases and phases[-1] == "write", phases
+
+
+def test_the_stage_listing_has_every_registered_id(router):
+    """N01.4: the plugin's Advanced choices, read from the real router, name
+    every stage id the router registers (`--capabilities` lists them)."""
+    probe = subprocess.run(router.command(["--capabilities"]), capture_output=True, text=True, timeout=60)
+    registered = json.loads(probe.stdout).get("stages")
+    if not isinstance(registered, dict):
+        pytest.skip("this router lists no stages in --capabilities")
+    for profile in options.PROFILES:
+        listing = tools.query_stages(router, profile)
+        if listing is None:
+            pytest.skip("this router predates --list-stages (N01.4)")
+        assert listing["profile"] == profile
+        offered = {i for _, _, ids, _ in options.parse_stage_listing(listing) for i in ids}
+        for kind, ids in registered.items():
+            for stage_id in ids:
+                assert stage_id in offered, f"{kind}: {stage_id}"
+
+
+@pytest.mark.parametrize("profile, label", [("legacy", "Legacy"), ("enhanced", "Enhanced")])
+def test_both_profiles_route_and_the_summary_names_them(router, board, profile, label):
+    work, dsn, ses = board(SMALL)
+    result = work / "r.json"
+    chosen = options.RouteOptions(profile=profile)
+    run = routing.RouteRun(router, dsn, ses, chosen.to_args(), result, profile)
+    run.start()
+    assert run.wait(timeout=300) == 0, run.failure_text()
+    assert run.ses_written()
+    assert run.summary_text().startswith(f"Profile: {label}\n")

@@ -153,6 +153,17 @@ The app is a board viewer for now. Nothing in it edits or routes.
   call) and the manual rules; Settings > Component Movement has the placement grid of a move.
   What differs from Java is in DIVERGENCES, "Interactive routing and editing".
 
+- **Routing profile and Algorithms (N01.3, N01.4, `dialogs/autoroute_settings/algorithms.rs`).** The
+  autoroute settings dialog opens with a Profile selector (Legacy / Enhanced, default Enhanced; switching
+  moves the values that still have the old profile's value, `profile::rebase`) and an "Algorithms"
+  section: one row per stage slot of the engine's catalog (`autoroute::stages::catalog`) with the
+  registered ids to pick from (a list slot is one checkbox per id), then the slot's options. A value that
+  differs from the profile's is marked "changed" with a Reset button (accessible label "Reset <row>")
+  that returns it to the profile's value. The profile and the Algorithms rows are controls, so they are
+  kept between runs like the others (`control_paths`); a front-end `--profile` moves the draft first.
+  Tests: `ui_routing.rs::{profile_selector_covers_both_profiles, an_algorithm_stage_changes_and_resets,
+  an_option_reset_returns_the_profile_value}`. Not yet looked at by Dan: the layout and the look of the
+  new rows.
 - **Autorouter (G07, `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`,
   `panels/{progress,routing_summary}.rs`, `overlays/routing.rs`).** The toolbar's Autoroute button
   (`Command::StartRouting`) starts the engine's `run_pipeline` on its own thread with the settings of

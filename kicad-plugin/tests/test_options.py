@@ -93,7 +93,7 @@ def test_save_load_save_gives_equal_json(tmp_path):
     assert loaded == chosen
     options.save(second, loaded)
     assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")
-    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == 1
+    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == 2
 
 
 def test_defaults_round_trip_too(tmp_path):
@@ -184,3 +184,95 @@ def test_valid_timeouts(text):
 @pytest.mark.parametrize("text", ["soon", "-5", "1:2:3:4", "m", "1.5h", None, 5])
 def test_invalid_timeouts(text):
     assert not options.valid_timeout(text)
+
+
+# --- the profile and the stage choices (N01.3, N01.4) -------------------------
+
+LISTING = {
+    "slots": [
+        {"key": "router.autorouter.connection_router", "label": "Connection router", "arity": "one",
+         "ids": ["freerouting-connection", "x-grid"], "default": ["freerouting-connection"]},
+        {"key": "router.special.length_matching", "label": "Length matching", "arity": "optional",
+         "ids": ["krt-meander"], "default": []},
+        {"key": "router.special.diagnostics", "label": "Diagnostics", "arity": "list", "ids": ["verdicts"]},
+    ]
+}  # fmt: skip
+
+
+@pytest.mark.parametrize("profile, expected", [("legacy", ["--profile", "legacy"]), ("enhanced", [])])
+def test_each_profile_has_its_argument_list(profile, expected):
+    assert RouteOptions(profile=profile).to_args() == expected
+    assert RouteOptions(profile=profile).to_args(for_gui=True) == expected
+
+
+def test_stage_choices_become_router_flags_in_key_order():
+    chosen = RouteOptions(profile="legacy", max_passes=3, stages={"special.length_matching": "krt-meander", "autorouter.connection_router": "x-grid"})
+    assert chosen.to_args() == [
+        "--profile", "legacy",
+        "--max-passes", "3",
+        "--router.autorouter.connection_router=x-grid",
+        "--router.special.length_matching=krt-meander",
+    ]  # fmt: skip
+
+
+def test_the_listing_gives_the_single_choice_slots():
+    slots = options.parse_stage_listing(LISTING)
+    assert slots == [
+        ("autorouter.connection_router", "Connection router", ["freerouting-connection", "x-grid"], "freerouting-connection"),
+        ("special.length_matching", "Length matching", ["", "krt-meander"], ""),
+    ]  # fmt: skip
+    assert options.stage_defaults(slots) == {"autorouter.connection_router": "freerouting-connection", "special.length_matching": ""}
+    for junk in (None, [], {"slots": 3}, {"slots": [3, {"key": 5}, {"arity": "one"}]}):
+        assert options.parse_stage_listing(junk) == []
+
+
+def test_the_options_file_stores_only_the_differences(tmp_path):
+    defaults = options.stage_defaults(options.parse_stage_listing(LISTING))
+    path = tmp_path / "route-options.json"
+    # Everything at the profile's value: only the schema and the profile.
+    options.save(path, RouteOptions(stages={"autorouter.connection_router": "freerouting-connection"}), defaults)
+    assert json.loads(path.read_text(encoding="utf-8")) == {"schema": 2, "profile": "enhanced"}
+    assert options.load(path) == RouteOptions()
+    # One option and one stage differ: only those are stored.
+    chosen = RouteOptions(
+        profile="legacy",
+        max_passes=12,
+        stages={"autorouter.connection_router": "x-grid", "special.length_matching": ""},
+    )
+    options.save(path, chosen, defaults)
+    assert json.loads(path.read_text(encoding="utf-8")) == {
+        "schema": 2,
+        "profile": "legacy",
+        "max_passes": 12,
+        "stages": {"autorouter.connection_router": "x-grid"},
+    }
+    loaded = options.load(path)
+    assert loaded == RouteOptions(profile="legacy", max_passes=12, stages={"autorouter.connection_router": "x-grid"})
+    # Saved again, the file is the same.
+    first = path.read_text(encoding="utf-8")
+    options.save(path, loaded, defaults)
+    assert path.read_text(encoding="utf-8") == first
+
+
+def test_a_schema_1_file_loads_as_enhanced():
+    old = {"schema": 1, "max_passes": 7, "threads": 0, "optimizer": True, "improvement_threshold": None,
+           "ignore_net_classes": [], "seed": 0, "min_trace_width_um": None, "timeout": "", "rule_area_fixup": False}  # fmt: skip
+    restored = RouteOptions.from_dict(old)
+    assert restored == RouteOptions(max_passes=7, rule_area_fixup=False)
+    assert restored.profile == "enhanced"
+
+
+def test_a_bad_profile_or_stage_is_dropped_on_load_and_refused_by_the_form():
+    restored = RouteOptions.from_dict(
+        {"schema": 2, "profile": "best", "stages": {"autorouter.connection_router": "x grid", "BAD": "a", "special.diff_pairs": "krt-diffpair"}}
+    )
+    assert restored.profile == "enhanced"
+    assert restored.stages == {"special.diff_pairs": "krt-diffpair"}
+    chosen, errors = options.from_form({"profile": "Legacy", "stages": {"autorouter.connection_router": "x-grid", "special.length_matching": ""}})
+    assert errors == [] and chosen.profile == "legacy"
+    assert chosen.stages == {"autorouter.connection_router": "x-grid"}
+    _, errors = options.from_form({"profile": "best", "stages": {"autorouter.ordering": "a b"}})
+    assert errors == [
+        "profile: 'best' is not a profile (use legacy or enhanced)",
+        "autorouter.ordering: 'a b' is not a stage id",
+    ]

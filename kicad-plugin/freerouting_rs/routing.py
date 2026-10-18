@@ -36,8 +36,9 @@ def manifest_path(work_dir, board_stem):
 class RouteRun:
     """One headless routing run of `dsn` into `ses`."""
 
-    def __init__(self, tool, dsn, ses, option_args=(), result_json=None):
+    def __init__(self, tool, dsn, ses, option_args=(), result_json=None, profile=None):
         self.tool = tool
+        self.profile = profile  # the routing profile asked for, for the summary
         self.dsn = Path(dsn)
         self.ses = Path(ses)
         self.option_args = list(option_args)
@@ -152,7 +153,7 @@ class RouteRun:
         return summary.load_manifest(self.result_json) if self.result_json else None
 
     def summary_text(self):
-        return summary.format_summary(self.manifest(), self.state.elapsed_ms)
+        return summary.format_summary(self.manifest(), self.state.elapsed_ms, self.profile)
 
     def failure_text(self):
         """What to show when the run failed: the exit code and the last

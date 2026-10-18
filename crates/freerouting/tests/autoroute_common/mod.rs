@@ -4,7 +4,8 @@
 //! - [`ladder`] and [`kind_fixtures`] read `fixtures.tsv`;
 //! - [`load`] loads a board as the Java probe does (J01's `route` mode:
 //!   the default settings and the DSN's, through `prepare_job`, which is
-//!   Java's headless load sequence);
+//!   Java's headless load sequence), pinned to `router.profile = legacy`
+//!   (N01.2) so a probe never compares `enhanced` with Java;
 //! - [`sample`] is the connection sampler every A checklist reuses: nets in
 //!   ascending order, the first connectable item (highest id first) with a
 //!   non-empty unconnected set and no ignored nets, at most
@@ -29,7 +30,8 @@ use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
 use freerouting::job::prepare::{JobInput, RulesChoice, prepare_job};
 use freerouting::settings::board::BoardRouterSettings;
-use freerouting::settings::{ResolveContext, RouterSettings};
+use freerouting::settings::profile::{legacy_pin, require_legacy};
+use freerouting::settings::{ResolveContext, RouterSettings, Source};
 
 /// At most this many connections per board (the sampler, step 6).
 pub const MAX_CONNECTIONS: usize = 200;
@@ -85,7 +87,8 @@ pub struct Loaded {
 }
 
 /// Loads `dsn` (a path below the repository root) with the default
-/// settings, the DSN's settings and the adjacent rules file: `prepare_job`.
+/// settings, the DSN's settings and the adjacent rules file: `prepare_job`,
+/// with the `legacy` profile pinned at the testing priority.
 pub fn load(dsn: &str) -> Loaded {
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
@@ -93,8 +96,10 @@ pub fn load(dsn: &str) -> Loaded {
     let mut input = JobInput::new(bytes, JobInput::design_name_of(file_name));
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
+    input.extra_sources.push((Source::Testing, legacy_pin()));
     let prepared = prepare_job(&input, &ResolveContext { cores: CORES })
         .unwrap_or_else(|e| panic!("{dsn}: {e}"));
+    require_legacy(&prepared.settings).unwrap_or_else(|e| panic!("{dsn}: {e}"));
     Loaded {
         board: prepared.board,
         settings: prepared.settings,

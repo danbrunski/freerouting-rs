@@ -3,9 +3,17 @@ USAGE
   freerouting -de <design.dsn> -drc [report.json] [PARAMETERS]
 
 Settings are read from, in order of priority (the last wins): the built-in
-defaults, the settings file, the DSN file, FREEROUTING__ROUTER__* environment
-variables, then the command line. Router flags set the settings named under
-them; the names are the JSON paths of the settings table.
+defaults, the routing profile, the settings file, the DSN file,
+FREEROUTING__ROUTER__* environment variables, then the command line. Router
+flags set the settings named under them; the names are the JSON paths of the
+settings table.
+
+ROUTING PROFILES
+  --profile enhanced (the default) routes with the accepted improvements
+  over Java Freerouting; --profile legacy gives results identical to Java
+  Freerouting. A profile only sets defaults: every stage and option can
+  still be set on its own, and an explicit setting always wins.
+  --list-stages shows the stages and options each profile starts with.
 
 PARAMETERS
   -de <design.dsn>[+<session.ses>][+<design.rules>]
@@ -74,7 +82,8 @@ LONG FLAGS
       The same as -ll.
   --gui.*, --api_server.*, --mcp_server.*, --usage_and_diagnostic_data.*,
   --feature_flags.*, --profile.*, --debug.*, --logging.*
-      Accepted and ignored.
+      Accepted and ignored (--profile.<key>=<value> is Java's user profile;
+      --profile <name> is the routing profile).
 
 NOT SUPPORTED
   --compare-boards=<a>,<b> and --calculate-benchmark-scores exit 2; use
@@ -107,6 +116,21 @@ PLUGIN FLAGS (not in Java)
       Setting: autorouter.max_threads, optimizer.max_threads
   --seed <number>
       Reserved. 0 means Java's own seeds; any other value is refused.
+  --profile <legacy|enhanced>
+      The routing profile: legacy for results identical to Java Freerouting,
+      enhanced (the default) for the accepted improvements. The same as
+      --router.profile=<name>; any other name is a usage error.
+      Setting: profile
+  --list-stages[=json]
+      Print every routing stage slot (fanout, net ordering, connection
+      router, rip-up policy, pass controller, plane taps, neck-down, the
+      special stages, optimizer, diagnostics), the stage ids registered for
+      it, the id the profile starts with and the slot's options with the
+      profile's defaults, as a table or as JSON, and exit.
+  --dump-settings[=json]
+      Print every setting with its effective value and the source that set
+      it, marking the values set by the profile and those that differ from
+      the profile's, and exit. With -de the design is loaded as for a run.
 
 DEVELOPER FLAGS (not in Java; not in --capabilities)
   --stats json
@@ -129,6 +153,6 @@ EXIT CODES
   1    failure with no output: a load error, an engine error, a write failure
   2    usage error found before any work: missing -de or -do, an unsupported
        file format, a missing or malformed --settings file, a bad value for
-       --progress, --timeout, --max-passes, --threads or --seed, a Java
-       command that is not supported
+       --progress, --timeout, --max-passes, --threads, --seed or --profile, a
+       Java command that is not supported
   130  aborted before an output was written
