@@ -825,6 +825,11 @@ impl Tightener {
                 return Err(());
             }
             let other = &contact_trace.polyline;
+            // N04.4: under `inside_pad` a trace this end meets in its middle
+            // (a T junction) has no end here to smoothen with.
+            if other.first_corner() != *end_corner && other.last_corner() != *end_corner {
+                return Err(());
+            }
             if !at_start && other.corner_count() <= 2 {
                 continue;
             }

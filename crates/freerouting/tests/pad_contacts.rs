@@ -6,8 +6,10 @@
 //! (`fixtures/Issue690-ecc83.dsn`; its wires are byte-identical to the
 //! export in the N04 notes). Its tracks end off the pad centre on 16 pins,
 //! some just outside the pad, so Java's centre rule leaves 10 connections
-//! open on a board KiCad calls fully connected; `inside_pad` leaves 1, a T
-//! junction (N04.4).
+//! open on a board KiCad calls fully connected. `inside_pad` leaves none, as
+//! KiCad: with N04.4 a trace end whose cap overlaps a same-net trace's copper
+//! (a T junction: on Net-(U1A-K) a track ends on an inner corner of another)
+//! is a contact too.
 //!
 //! - N04.1: the incompletes, the routing ledger and the DRC agree under each
 //!   rule; the contacts are symmetric; unset and `legacy` keep Java's rule;
@@ -16,6 +18,12 @@
 //!   onto the pin's centre), the router and optimizer keep them, trace tails
 //!   keep the traces, and the SES writes the ends unchanged and reads back to
 //!   the same contacts.
+//! - N04.4: the T junction is a contact of both traces, every contact of the
+//!   board is symmetric, a walk along a connection stops at the junction as
+//!   at a fork, the end cap test has no tolerance (an end just out of reach
+//!   is no contact), and pull-tight splits a trace at a junction on its
+//!   centre line (Java's end-to-end contact) and leaves it alone at one off
+//!   it.
 
 mod autoroute_common;
 
@@ -41,7 +49,7 @@ const ECC83: &str = "fixtures/Issue690-ecc83.dsn";
 const INSIDE: &[(&str, &str)] = &[("pad_contacts", "inside_pad")];
 const LEGACY: &[(&str, &str)] = &[("profile", "legacy")];
 /// The DRC's unconnected items (dangling traces) of ecc83 under `inside_pad`.
-const DANGLING_INSIDE: usize = 1;
+const DANGLING_INSIDE: usize = 0;
 
 fn prepare(dsn: &str, extra: &[(&str, &str)]) -> Result<PreparedJob, JobError> {
     let path = repo_root().join(dsn);
@@ -133,6 +141,22 @@ fn off_centre_ends(board: &BasicBoard) -> BTreeSet<OffCentreEnd> {
     result
 }
 
+/// The T junction of ecc83 (N04.4): on Net-(U1A-K) a track ends here, on
+/// an inner corner of another track.
+const T_JUNCTION: (i32, i32) = (1371600, -1155700);
+
+/// The traces of `board` with an end corner at `at`.
+fn traces_ending_at(board: &BasicBoard, at: (i32, i32)) -> usize {
+    board
+        .traces()
+        .into_iter()
+        .filter(|id| {
+            let t = board.item(*id).and_then(|i| i.as_trace()).expect("trace");
+            int_xy(&t.first_corner()) == at || int_xy(&t.last_corner()) == at
+        })
+        .count()
+}
+
 /// True if `end` is kept ([`end_kept`]) or a trace of `board` touches
 /// `end.pin` at the pin's centre instead.
 fn end_held(board: &BasicBoard, end: &OffCentreEnd) -> bool {
@@ -185,27 +209,10 @@ fn inside_pad_connects_ecc83s_off_centre_track_ends() {
     // round end overlaps it (Net-(P1-PM), Net-(P4-P1), Net-(U1A-K)).
     let ends = off_centre_ends(&inside.board);
     assert_eq!(ends.len(), 16, "{ends:?}");
-    // The one left is not a pad contact: on Net-(U1A-K) a track ends on an
-    // inner corner of another track (a T junction, N04.4). KiCad connects it.
-    assert_eq!(incompletes(&inside.board), 1);
+    // KiCad's 0: the last one, on Net-(U1A-K), is the T junction of N04.4
+    // (a track ends on an inner corner of another track).
+    assert_eq!(incompletes(&inside.board), 0);
     assert_eq!(dangling(&inside.board), DANGLING_INSIDE);
-    let open: BTreeSet<String> = inside
-        .board
-        .incompletes()
-        .iter()
-        .filter(|n| n.count() > 0)
-        .map(|n| {
-            inside
-                .board
-                .rules
-                .nets
-                .get(n.net_number)
-                .expect("net")
-                .name
-                .clone()
-        })
-        .collect();
-    assert_eq!(open, BTreeSet::from(["Net-(U1A-K)".to_string()]));
 }
 
 #[test]
@@ -265,7 +272,7 @@ fn a_board_copy_keeps_the_rule_and_its_contacts() {
     let inside = ecc83(INSIDE);
     let copy = inside.board.deep_copy();
     assert_eq!(copy.contact_rule(), ContactRule::InsidePad);
-    assert_eq!(incompletes(&copy), 1);
+    assert_eq!(incompletes(&copy), 0);
     assert_eq!(off_centre_ends(&copy), off_centre_ends(&inside.board));
 }
 
@@ -276,7 +283,7 @@ fn routing_ecc83_under_inside_pad_keeps_its_tracks_connected() {
     let prepared = ecc83(INSIDE);
     let ends = off_centre_ends(&prepared.board);
     let routed = route(prepared);
-    assert_eq!(incompletes(&routed), 1);
+    assert_eq!(incompletes(&routed), 0);
     // The router and the optimizer keep every off-centre end and its
     // contact (the DSN's tracks load user-fixed).
     for end in &ends {
@@ -313,6 +320,11 @@ fn pull_tight_keeps_off_centre_ends_inside_the_pad() {
     for end in &ends {
         assert!(end_held(&inside.board, end), "{end:?} lost its pin");
     }
+    // N04.4: the track whose inner corner the T junction is was split there
+    // before it was pulled tight, so three tracks now end at the junction
+    // (Java's fork) and the net stays complete.
+    assert_eq!(traces_ending_at(&inside.board, T_JUNCTION), 3);
+    assert_eq!(incompletes(&inside.board), 0);
     // Bump every straight axis-parallel track at an off-centre end 0.2 mm
     // sideways in its middle, so pull-tight has work to do on it.
     let mut kinked = Vec::new();
@@ -366,7 +378,8 @@ fn pull_tight_keeps_off_centre_ends_inside_the_pad() {
             .expect("the kinked track is inserted");
         kinked.push((new_id, end.clone()));
     }
-    assert_eq!(kinked.len(), 3, "{} kinked", kinked.len());
+    // The fourth is a piece of the track split at the T junction.
+    assert_eq!(kinked.len(), 4, "{} kinked", kinked.len());
     let mut changed = 0;
     for (id, end) in &kinked {
         assert!(
@@ -389,7 +402,8 @@ fn pull_tight_keeps_off_centre_ends_inside_the_pad() {
     for (_, end) in &kinked {
         assert!(end_kept(&inside.board, end), "{end:?} moved by pull-tight");
     }
-    assert_eq!(incompletes(&inside.board), 1);
+    assert_eq!(traces_ending_at(&inside.board, T_JUNCTION), 3);
+    assert_eq!(incompletes(&inside.board), 0);
 }
 
 #[test]
@@ -403,31 +417,18 @@ fn off_centre_tracks_are_not_trace_tails() {
         prepared.board
     };
     let mut inside = unfixed(INSIDE);
-    // The ends on the three nets left open are on connections whose other
-    // end is open (a real tail); the rest are on complete nets.
-    let open: BTreeSet<i32> = inside
-        .incompletes()
-        .iter()
-        .filter(|n| n.count() > 0)
-        .map(|n| n.net_number)
-        .collect();
-    let ends: BTreeSet<OffCentreEnd> = off_centre_ends(&inside)
-        .into_iter()
-        .filter(|end| {
-            !inside
-                .item(end.pin)
-                .expect("pin")
-                .net_numbers()
-                .iter()
-                .any(|n| open.contains(n))
-        })
-        .collect();
-    assert_eq!(ends.len(), 13);
+    // Every net is complete (N04.4's T junction included), so no off-centre
+    // end is on a real tail.
+    assert_eq!(incompletes(&inside), 0);
+    let ends = off_centre_ends(&inside);
+    assert_eq!(ends.len(), 16);
     inside.remove_trace_tails(-1, StopConnectionOption::None);
     for end in &ends {
         assert!(end_kept(&inside, end), "{end:?} removed as a tail");
     }
-    assert_eq!(incompletes(&inside), 1);
+    // The track ending on the other track's corner is no tail either.
+    assert_eq!(traces_ending_at(&inside, T_JUNCTION), 1);
+    assert_eq!(incompletes(&inside), 0);
     // Under Java's rule the same tracks are tails, and go.
     let mut legacy = unfixed(LEGACY);
     let ends_at = |board: &BasicBoard| {
@@ -479,5 +480,168 @@ fn the_ses_writes_off_centre_ends_unchanged() {
     back.delete_all_traces_and_vias();
     read_session(&mut back, &ses).expect("session reads");
     assert_eq!(off_centre_ends(&back), ends);
-    assert_eq!(incompletes(&back), 1);
+    assert_eq!(incompletes(&back), 0);
+}
+
+// ---------------------------------------------------------------------
+// N04.4: a trace end on a same-net trace (a T junction)
+// ---------------------------------------------------------------------
+
+/// The two traces of ecc83's T junction: the one ending at [`T_JUNCTION`]
+/// and the one with an inner corner there.
+fn t_junction_traces(board: &BasicBoard) -> (ItemId, ItemId) {
+    let at = |id: ItemId| {
+        let t = board.item(id).and_then(|i| i.as_trace()).expect("trace");
+        let corners: Vec<(i32, i32)> = t.polyline.corners().iter().map(int_xy).collect();
+        let n = corners.len();
+        (
+            corners[0] == T_JUNCTION || corners[n - 1] == T_JUNCTION,
+            corners[1..n - 1].contains(&T_JUNCTION),
+        )
+    };
+    let ending: Vec<ItemId> = board.traces().into_iter().filter(|id| at(*id).0).collect();
+    let cornered: Vec<ItemId> = board.traces().into_iter().filter(|id| at(*id).1).collect();
+    assert_eq!(
+        (ending.len(), cornered.len()),
+        (1, 1),
+        "{ending:?} {cornered:?}"
+    );
+    (ending[0], cornered[0])
+}
+
+#[test]
+fn a_track_ending_on_a_track_corner_connects_both_ways() {
+    let inside = ecc83(INSIDE);
+    let board = &inside.board;
+    let (ending, cornered) = t_junction_traces(board);
+    let t = board
+        .item(ending)
+        .and_then(|i| i.as_trace())
+        .expect("trace");
+    let end_contacts = if int_xy(&t.first_corner()) == T_JUNCTION {
+        board.trace_start_contacts(ending)
+    } else {
+        board.trace_end_contacts(ending)
+    };
+    assert!(end_contacts.contains(&cornered), "{end_contacts:?}");
+    // The other trace sees the junction as a contact, not at its ends.
+    assert!(board.normal_contacts(cornered).contains(&ending));
+    assert!(!board.trace_start_contacts(cornered).contains(&ending));
+    assert!(!board.trace_end_contacts(cornered).contains(&ending));
+    let (a, b) = (board.item(ending).unwrap(), board.item(cornered).unwrap());
+    let point = board.normal_contact_point(a, b).expect("a contact point");
+    assert_eq!(int_xy(&point), T_JUNCTION);
+    assert_eq!(board.normal_contact_point(b, a), Some(point));
+    // A walk along either connection stops at the junction, as at Java's
+    // fork of three traces.
+    let stop = StopConnectionOption::None;
+    assert!(!board.connection_items(ending, stop).contains(&cornered));
+    assert!(!board.connection_items(cornered, stop).contains(&ending));
+
+    // Java's rule: no contact either way.
+    let legacy = ecc83(LEGACY);
+    let board = &legacy.board;
+    assert_eq!(t_junction_traces(board), (ending, cornered));
+    assert!(!board.normal_contacts(ending).contains(&cornered));
+    assert!(!board.normal_contacts(cornered).contains(&ending));
+    let (a, b) = (board.item(ending).unwrap(), board.item(cornered).unwrap());
+    assert_eq!(board.normal_contact_point(a, b), None);
+}
+
+/// Every contact of the board is seen from both sides, at the same point,
+/// so the incompletes and the ledger cannot go one-sided.
+#[test]
+fn every_contact_is_symmetric_under_inside_pad() {
+    let inside = ecc83(INSIDE);
+    let board = &inside.board;
+    let ids: Vec<ItemId> = board.items().map(|i| i.id()).collect();
+    let mut pairs = 0;
+    for &id in &ids {
+        for other in board.normal_contacts(id) {
+            assert!(
+                board.normal_contacts(other).contains(&id),
+                "{id:?} sees {other:?}, not back"
+            );
+            let (a, b) = (board.item(id).unwrap(), board.item(other).unwrap());
+            assert_eq!(
+                board.normal_contact_point(a, b),
+                board.normal_contact_point(b, a),
+                "{id:?} {other:?}"
+            );
+            pairs += 1;
+        }
+    }
+    assert!(pairs > 0);
+}
+
+/// Inserts an unfixed vertical trace of `like`'s net, layer and width on
+/// ecc83, from `(x, y)` up 2 mm.
+fn insert_vertical(board: &mut BasicBoard, like: ItemId, x: i32, y: i32) -> ItemId {
+    let item = board.item(like).expect("trace").clone();
+    let trace = item.as_trace().expect("trace");
+    let points = [(x, y), (x, y + 20000)].map(|(x, y)| Point::Int(IntPoint::new(x, y)));
+    board
+        .insert_trace_without_cleaning(
+            Polyline::from_points(&points),
+            trace.layer,
+            trace.half_width,
+            item.net_numbers(),
+            item.clearance_class(),
+            FixedState::Unfixed,
+        )
+        .expect("the trace is inserted")
+}
+
+/// The end cap test is the board's exact shape intersection: an end whose
+/// cap just reaches the other track's copper connects, one unit further it
+/// does not. Pull-tight leaves a track alone that a trace ends on off its
+/// centre line, and splits it at a junction on the centre line.
+#[test]
+fn the_t_junction_end_cap_test_has_no_tolerance() {
+    let mut inside = ecc83(INSIDE);
+    let (_, cornered) = t_junction_traces(&inside.board);
+    let t = inside
+        .board
+        .item(cornered)
+        .and_then(|i| i.as_trace())
+        .unwrap();
+    // The corner's horizontal segment, to (1435000, -1155700).
+    assert_eq!(int_xy(&t.polyline.corner(2)), (1435000, T_JUNCTION.1));
+    let reach = 2 * t.half_width;
+    let x = 1400000;
+    let touching = insert_vertical(&mut inside.board, cornered, x, T_JUNCTION.1 + reach);
+    assert!(inside.board.normal_contacts(cornered).contains(&touching));
+    assert!(
+        inside
+            .board
+            .trace_start_contacts(touching)
+            .contains(&cornered)
+    );
+    let apart = insert_vertical(
+        &mut inside.board,
+        cornered,
+        x - 20000,
+        T_JUNCTION.1 + reach + 1,
+    );
+    assert!(!inside.board.normal_contacts(cornered).contains(&apart));
+    assert!(inside.board.trace_start_contacts(apart).is_empty());
+
+    // Off the centre line no split joins the ends: pull-tight keeps it.
+    inside.board.unfix(cornered);
+    let accuracy = inside.settings.trace_pull_tight_accuracy;
+    let corners = |board: &BasicBoard| {
+        let t = board
+            .item(cornered)
+            .and_then(|i| i.as_trace())
+            .expect("kept");
+        t.polyline.corners().iter().map(int_xy).collect::<Vec<_>>()
+    };
+    let before = corners(&inside.board);
+    assert!(!inside.board.pull_tight_own_net(cornered, accuracy));
+    assert_eq!(corners(&inside.board), before);
+    // With only the junction on its corner left, it is split there.
+    assert!(inside.board.remove_item(touching));
+    assert!(inside.board.pull_tight_own_net(cornered, accuracy));
+    assert!(inside.board.item(cornered).is_none());
+    assert_eq!(traces_ending_at(&inside.board, T_JUNCTION), 3);
 }

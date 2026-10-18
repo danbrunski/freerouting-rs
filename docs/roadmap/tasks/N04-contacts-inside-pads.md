@@ -72,8 +72,10 @@ Prerequisites: N01.
   `an_unknown_pad_contacts_value_fails_the_job`, `a_board_copy_keeps_the_rule_and_its_contacts`,
   `routing_ecc83_under_inside_pad_keeps_its_tracks_connected` (after routing, 20 passes: `legacy`
   6, `inside_pad` 1). **Remaining:**
-  - First clause (KiCad's 0): 1 left, the T junction on Net-(U1A-K), where a track ends on an
-    inner corner of another track. That is N04.4.
+  - First clause (KiCad's 0): reached with N04.4 (2026-10-18). The last one was the T junction on
+    Net-(U1A-K), where a track ends on an inner corner of another track; `inside_pad` now leaves
+    **0** before routing and 0 after routing (`inside_pad_connects_ecc83s_off_centre_track_ends`,
+    `routing_ecc83_under_inside_pad_keeps_its_tracks_connected`).
   - Second clause, heavy run pending: with `legacy` nothing changes by construction, because every
     new path checks `contact_rule == InsidePad` (the SES snap guard too). On origin/main 9c49979
     `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting --test
@@ -149,9 +151,65 @@ Prerequisites: N01.
   the router (`router_initial_unrouted` under `inside_pad`) leaves it open. Those boards decide
   whether vias get the rule. If the verdict passes, N05 adds `pad_contacts = inside_pad` to
   `ENHANCED` (N05.2's procedure).
-- [ ] **N04.4 — A trace end on a same-net trace is connected (T junction).** Under
+- [~] **N04.4 — A trace end on a same-net trace is connected (T junction).** Under
   `inside_pad`, a trace end that lies on a segment or an inner corner of another trace of a
   common net on the same layer is a normal contact, as KiCad connects it. The walkers of N04.2
   agree, and copper is not changed.
   - **Accept:** ecc83-pp exported with its tracks reaches KiCad's 0 unconnected in the router
     before routing; with `legacy` the A14 exact set is unchanged.
+
+  *Partial 2026-10-18:* the test is N04.1's end-cap test against the other trace's copper: under
+  `inside_pad` a trace end connects to a trace of a common net on its layer when the end's cap
+  (radius half its width) overlaps one of that trace's segment shapes (`Polyline::offset_shape` at
+  its half width, `TileShape::intersects_circle`, borders included, no tolerance; a rational end
+  tests the point), and the end is none of that trace's ends (Java's contact). In
+  `board/contact_rule.rs`: `trace_end_touches_trace`, `add_trace_end_trace_contacts` (from
+  `trace_normal_contacts`, so the end's own list has the other trace) and
+  `add_trace_body_contacts` (from `normal_contacts` of the other trace, at none of its ends), so the
+  contact is symmetric; `normal_contact_point` of two traces answers the one end of either whose
+  cap meets the other (none with several). **Decision, representation:** symmetric contacts, not a
+  split at load, because the end-cap rule also connects ends that meet the other trace's copper
+  off its centre line, where no split joins the ends, and because a split would change loaded
+  copper's traces and the session's wires. The walkers that assume a trace contact ends at the
+  same point are guarded: `connection_items` and the rip-up walk stop at a trace reached in its
+  middle, as at Java's fork of the split trace (`is_trace_body_contact`); the end-corner smoothing
+  (diag45, any-angle) and `swap_connection_to_pin` skip it. **Pull-tight splits** a trace at the
+  junctions first when they all lie on its centre line (`t_junctions`, `split_trace_at_point`; the
+  pieces are pulled tight in turn), so they become Java's end-to-end contacts, which pull-tight
+  keeps; with one off the centre line it leaves the trace unchanged. Only an unfixed trace that
+  pull-tight would move is split; loaded user-fixed copper never is. Legacy is unchanged by
+  construction: every new path checks `contact_rule == InsidePad`. Tests in
+  `crates/freerouting/tests/pad_contacts.rs` (12 green, `cargo test --release -p freerouting
+  --test pad_contacts`):
+  - first clause: `inside_pad_connects_ecc83s_off_centre_track_ends`, ecc83 before routing
+    `inside_pad` **0** (was 1), the DRC and the ledger agreeing (`incompletes` asserts it), the
+    DRC's dangling traces 1 → 0; after routing 0 (`routing_ecc83_under_inside_pad_...`);
+  - `a_track_ending_on_a_track_corner_connects_both_ways`: the ending trace's end contacts and the
+    other trace's `normal_contacts` hold each other, the contact point is the junction from both
+    sides, neither connection walk crosses it; under `legacy` no contact;
+  - `every_contact_is_symmetric_under_inside_pad`: every `normal_contacts` pair of ecc83 is seen
+    from both sides at the same point;
+  - `the_t_junction_end_cap_test_has_no_tolerance`: an end at the other track's copper border
+    (centre line + 2 half widths) connects, one unit further it does not; pull-tight leaves the
+    track unchanged with the off-centre-line end on it, then splits it at the corner junction (3
+    traces end there);
+  - `pull_tight_keeps_off_centre_ends_inside_the_pad` (unfixed): the junction's track is split, 3
+    traces end at the junction before and after the kinks (now 4 kinked: a piece of the split
+    track), incompletes 0; `off_centre_tracks_are_not_trace_tails`: 16 ends kept, incompletes 0;
+    `the_ses_writes_off_centre_ends_unchanged`: read back, incompletes 0.
+
+  `docs/roadmap/prereg/N04.json` amendment 2 (before any graded number) names the T junction;
+  sha256 `f96e590d…` pinned by `crates/freerouting-dev/tests/prereg_n04.rs`. **Remaining:** second
+  clause, the full A14 exact set under `legacy` (heavy run, `cargo test -p freerouting --release
+  --test autoroute_board_parity -- --ignored`, shared with N04.1). On this diff
+  `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting --test
+  autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1` passes (1 passed,
+  7 boards `[exact] ... bytes true`, 0.34 s), and with
+  `PARITY_BOARDS=Issue690-ecc83,Issue163-pic_programmer,Issue690-sonde_xilinx` all three are
+  `[exact] ... bytes true` (0.87 s).
+  *Open risk for N04.3 (orchestrator, 2026-10-18):* on boards whose tracks load unfixed, shove,
+  the optimizer's rip-up or cycle removal can move or delete a trace B under a T junction (on
+  ecc83, trace 370 has both end caps on pin 228, which `trace_is_cycle` would see as a cycle).
+  The junction then opens, and the incompletes count it. N04.3's graded run must report
+  `inside_pad`'s unconnected count on the rows with unfixed input tracks separately, so a loss
+  there shows.

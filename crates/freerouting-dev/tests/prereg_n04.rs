@@ -4,10 +4,11 @@
 //! boards with existing tracks plus canary-pwr, graded with the tracks kept.
 //!
 //! Registered 2026-10-18 before any graded number as
-//! `docs/roadmap/prereg/N04.json`, and amended once the same day, still before
-//! any graded number: the rule was widened to end-cap overlap (its
-//! `amendments`). It is now sha256
-//! 940e56c8caedf01f6c36fe1ed5c84f2b6ba6c548d2be8704bf689b76bc70fc98. The
+//! `docs/roadmap/prereg/N04.json`, and amended twice the same day, still before
+//! any graded number (its `amendments`): the rule was widened to end-cap
+//! overlap, then to T junctions (a trace end whose cap overlaps a same-net
+//! trace's copper, N04.4). It is now sha256
+//! f96e590d3217af1f9cb8e14b108ad0d8596d1f2dcc14d3d63f97f2c4aac00da1. The
 //! numbers seen before (N04.1's correctness test on ecc83) are named in its
 //! `seen_before_registration`. A later change goes in the file's
 //! `amendments` with the reason and updates the hash here in the same
@@ -102,6 +103,6 @@ fn the_pad_contacts_inputs_are_the_registered_ones() {
 fn the_n04_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().0.sha256,
-        "940e56c8caedf01f6c36fe1ed5c84f2b6ba6c548d2be8704bf689b76bc70fc98"
+        "f96e590d3217af1f9cb8e14b108ad0d8596d1f2dcc14d3d63f97f2c4aac00da1"
     );
 }

@@ -3,7 +3,7 @@
   "id": "N04.3-pad-contacts-inside-pad",
   "registered": "2026-10-18",
   "checklist": "docs/roadmap/tasks/N04-contacts-inside-pads.md (N04.3)",
-  "question": "Does router.pad_contacts = inside_pad (a trace end whose cap, the disc of half the trace width around the end point, overlaps a same-net pin's pad on that layer connects to the pin, KiCad's rule) keep the KiCad-unconnected total within N02's totals rule (accept no-regress, a correctness fix: the router's connectivity disagrees with KiCad's on boards laid out in KiCad) of center (Java's rule), on boards routed with their existing tracks kept, with no via in a pad, no copper below the minimum and no new DRC error?",
+  "question": "Does router.pad_contacts = inside_pad (a trace end whose cap, the disc of half the trace width around the end point, overlaps a same-net pin's pad on that layer connects to the pin, and one whose cap overlaps a same-net trace's copper on that layer, a T junction, connects to the trace, KiCad's rule) keep the KiCad-unconnected total within N02's totals rule (accept no-regress, a correctness fix: the router's connectivity disagrees with KiCad's on boards laid out in KiCad) of center (Java's rule), on boards routed with their existing tracks kept, with no via in a pad, no copper below the minimum and no new DRC error?",
   "rule": "totals",
   "totals": {
     "accept": "no-regress",
@@ -16,10 +16,10 @@
     },
     "min_boards": 3
   },
-  "engine": "freerouting-rs at origin/main 9c49979 with N04's diff (router.pad_contacts), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
+  "engine": "freerouting-rs at origin/main 1939d8b (N04.1-N04.3, router.pad_contacts) with N04.4's diff (T junctions), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
   "arms": {
     "center": {
-      "engine": "freerouting-rs at origin/main 9c49979 with N04's diff (router.pad_contacts), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
+      "engine": "freerouting-rs at origin/main 1939d8b (N04.1-N04.3, router.pad_contacts) with N04.4's diff (T junctions), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
       "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.pad_contacts=center",
       "settings": {
         "router.pad_contacts": "center"
@@ -27,12 +27,12 @@
       "what": "baseline: Java's rule, a trace end touches a pin only at its centre (unset)"
     },
     "inside_pad": {
-      "engine": "freerouting-rs at origin/main 9c49979 with N04's diff (router.pad_contacts), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
+      "engine": "freerouting-rs at origin/main 1939d8b (N04.1-N04.3, router.pad_contacts) with N04.4's diff (T junctions), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
       "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.pad_contacts=inside_pad",
       "settings": {
         "router.pad_contacts": "inside_pad"
       },
-      "what": "candidate: KiCad's rule for pins, the end's cap overlapping the pad (vias keep Java's)"
+      "what": "candidate: KiCad's rule for pins and trace T junctions, the end's cap overlapping the pad or the other trace's copper (vias keep Java's)"
     }
   },
   "baseline_arm": "center",
@@ -443,7 +443,7 @@
     "the via half of N04's rule (a trace end inside a via's pad, a via centre inside a pin's pad): not implemented until KiCad's connectivity on the demo boards is checked",
     "boards routed from scratch (tracks stripped): the rule can matter only where tracks the router did not lay end off a pin's centre"
   ],
-  "seen_before_registration": "N04.1's correctness test on fixtures/Issue690-ecc83.dsn (the demo-ecc83-pp row's export, wires byte-identical): the router's count before routing, center 10, inside_pad 3 under the first rule (end inside the pad) and 1 under the amended rule (end cap overlaps the pad); after routing with tests/pad_contacts.rs' settings (20 passes, optimizer on, a Testing profile, not this registration's command) center 6, inside_pad 1 under both rules. No KiCad grade, and no other board, under either arm",
+  "seen_before_registration": "N04.1's correctness test on fixtures/Issue690-ecc83.dsn (the demo-ecc83-pp row's export, wires byte-identical): the router's count before routing, center 10, inside_pad 3 under the first rule (end inside the pad) and 1 under the amended rule (end cap overlaps the pad); after routing with tests/pad_contacts.rs' settings (20 passes, optimizer on, a Testing profile, not this registration's command) center 6, inside_pad 1 under both rules. No KiCad grade, and no other board, under either arm. Under amendment 2's rule (T junctions, N04.4) the same test gives inside_pad 0 before routing (KiCad's 0) and 0 after routing; center unchanged",
   "decision_table": {
     "pass": "enhanced gets pad_contacts=inside_pad; N05.3 line; DIVERGENCES Profile enhanced entry",
     "fail": "pad_contacts stays off in both profiles, numbers in N04.3"
@@ -453,6 +453,11 @@
       "date": "2026-10-18",
       "reason": "rule widened to end-cap overlap before any graded number (operator decision 2026-10-18: the first rule, the end inside the pad, left two ecc83 ends 15 and 28 um outside their pads open that KiCad connects)",
       "changes": "question and the inside_pad arm's description name the end-cap rule; engine base moved from origin/main 17431c4 to 9c49979 (Q04.5, neck-down in ENHANCED, Q17 docs); seen_before_registration adds the amended rule's ecc83 numbers; rows, metrics and the totals block unchanged"
+    },
+    {
+      "date": "2026-10-18",
+      "reason": "rule widened again before any graded number (N04.4): a trace end whose cap overlaps a same-net trace's copper on its layer (a T junction) connects to that trace, as KiCad connects it; the amended rule left ecc83's last open connection, a track ending on another track's inner corner",
+      "changes": "question and the inside_pad arm's description name the T junction; engine base moved from origin/main 9c49979 with N04's diff to origin/main 1939d8b (N04.1-N04.3 committed) with N04.4's diff; seen_before_registration adds the T-junction rule's ecc83 numbers; rows, metrics, arms' commands and the totals block unchanged"
     }
   ]
 }

@@ -296,6 +296,11 @@ impl RoutingBoard {
         if contact_item.fixed_state() != FixedState::ShoveFixed {
             return false;
         }
+        // N04.4: a stub this end meets in its middle (a T junction) does not
+        // end here, so there is nothing to swap.
+        if self.is_trace_body_contact(contact_item, &trace_polyline.first_corner()) {
+            return false;
+        }
         let contact_polyline = contact_trace.polyline.clone();
         let contact_lines = contact_polyline.lines();
         let contact_last_line = contact_lines[contact_lines.len() - 2];

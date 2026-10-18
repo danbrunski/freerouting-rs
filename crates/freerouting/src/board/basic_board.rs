@@ -1721,6 +1721,9 @@ impl BasicBoard {
             ItemKind::Trace(trace) => {
                 let mut result = self.trace_normal_contacts(id, &trace.first_corner(), false);
                 result.extend(self.trace_normal_contacts(id, &trace.last_corner(), false));
+                // N04.4: under `inside_pad` the traces ending on this one (a
+                // T junction), so that both traces see the contact.
+                self.add_trace_body_contacts(item, &mut result);
                 result
             }
             ItemKind::Area(area) if area.is_conduction_area() => {
@@ -1778,8 +1781,10 @@ impl BasicBoard {
                 result.insert(other_id);
             }
         }
-        // N04: under `inside_pad` the pins whose pad the end's cap overlaps.
+        // N04: under `inside_pad` the pins whose pad the end's cap overlaps,
+        // and (N04.4) the traces of a common net whose copper it overlaps.
         self.add_trace_end_pad_contacts(item, point, ignore_net, &mut result);
+        self.add_trace_end_trace_contacts(item, point, &mut result);
         result
     }
 
@@ -2148,7 +2153,11 @@ impl BasicBoard {
             }
             loop {
                 let current = self.item_ref(current_id);
-                if !current.is_routable() {
+                // N04.4: a trace reached in its middle (a T junction) is a
+                // fork, as the split trace is in Java.
+                if !current.is_routable()
+                    || self.is_trace_body_contact(current, &prev_contact_point)
+                {
                     break;
                 }
                 if current.is_via() {

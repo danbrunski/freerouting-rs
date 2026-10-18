@@ -29,11 +29,33 @@
 //! ledger, the batch optimizer's connected sets, pull-tight's end contacts,
 //! trace tails, the DRC's dangling-trace check and the rip-up walk.
 //!
+//! **T junctions (N04.4).** Under `inside_pad` a trace end also connects to
+//! a trace of a common net on the same layer when its cap overlaps that
+//! trace's copper (the shapes of its segments, the same exact test): a
+//! track ending on another track's segment or inner corner, as KiCad
+//! connects it. Java has no such contact (its router splits a trace where
+//! another ends on it, so all its trace contacts are end to end). The
+//! contact is symmetric: the ending trace has the other in the contacts of
+//! that end ([`BasicBoard::trace_normal_contacts`]), and the other has it in
+//! its [`BasicBoard::normal_contacts`] but at none of its own ends. So:
+//! - the incompletes, the ledger, trace tails and the DRC's dangling traces
+//!   see the junction;
+//! - a walk along a connection (`connection_items`, the rip-up walk) that
+//!   reaches a trace in its middle stops there, as at Java's fork of three
+//!   traces ([`BasicBoard::is_trace_body_contact`]);
+//! - the end-corner smoothing and `swap_connection_to_pin` don't treat the
+//!   other trace as ending there;
+//! - pull-tight splits a trace that others end on at those points first
+//!   when they all lie on its centre line ([`BasicBoard::t_junctions`],
+//!   `split_trace_at_point`), so the junctions become Java's end-to-end
+//!   contacts, which pull-tight keeps. It leaves the trace as it is when
+//!   one of them meets its copper off the centre line, where no split joins
+//!   the ends. The split happens only there, so loaded copper keeps its
+//!   traces (and the SES its wires) until pull-tight would move one.
+//!
 //! **Vias keep Java's rule.** A trace end inside a via's pad but off its
 //! centre, and a via centre inside a pin's pad, connect in KiCad as well;
-//! N04.3's graded run checks KiCad's via connectivity first. A trace end on
-//! another trace's segment or inner corner (a T junction) is not a contact
-//! either (N04.4).
+//! N04.3's graded run checks KiCad's via connectivity first.
 //!
 //! The job sets the rule from the settings ([`apply`], in
 //! `job::prepare`), after the board is read: the DSN and SES readers use
@@ -41,12 +63,21 @@
 
 use std::collections::BTreeSet;
 
-use freerouting_geometry::{Circle, IntBox, Point, TileShape};
+use freerouting_geometry::{Circle, IntBox, Point, PolylineShapeOps, TileShape, TileShapeOps};
 
 use crate::board::BasicBoard;
-use crate::board::items::{Item, ItemId, ItemKind};
+use crate::board::items::{Item, ItemId, ItemKind, PolylineTrace};
 use crate::job::{LogLevel, LogLine};
 use crate::settings::RouterSettings;
+
+/// The T junctions on a trace ([`BasicBoard::t_junctions`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum TJunctions {
+    /// Every one lies on the trace's centre line, at these points.
+    Split(Vec<Point>),
+    /// One meets the trace's copper off its centre line.
+    Keep,
+}
 
 /// The settings key, as the CLI and the JSON file name it.
 pub const SETTINGS_KEY: &str = "router.pad_contacts";
@@ -206,15 +237,172 @@ impl BasicBoard {
         }
     }
 
+    /// True if, under [`ContactRule::InsidePad`], the cap of a trace end at
+    /// `end` (the disc of radius `half_width` around it) overlaps the copper
+    /// of trace `other`, one of the shapes of its segments
+    /// (`Polyline::offset_shape` at its half width), by the board's own
+    /// shape intersection (`TileShape::intersects_circle`, borders
+    /// included). An end at a rational point tests the point alone. False
+    /// when `end` is an end corner of `other` (Java's contact, which the
+    /// callers find), under Java's rule and for items that are no traces.
+    /// The caller checks the layer and the nets.
+    pub(crate) fn trace_end_touches_trace(
+        &self,
+        end: &Point,
+        half_width: i32,
+        other: &Item,
+    ) -> bool {
+        if self.contact_rule != ContactRule::InsidePad {
+            return false;
+        }
+        let Some(trace) = other.as_trace() else {
+            return false;
+        };
+        if *end == trace.first_corner() || *end == trace.last_corner() {
+            return false;
+        }
+        (0..trace.tile_shape_count())
+            .filter_map(|i| trace.polyline.offset_shape(trace.half_width, i))
+            .any(|shape| end_cap_meets(&shape, end, half_width))
+    }
+
+    /// Under [`ContactRule::InsidePad`], adds to `result` the traces of a
+    /// common net on `trace_item`'s layer whose copper the cap of its end
+    /// `end` overlaps ([`Self::trace_end_touches_trace`]): a T junction,
+    /// where the end lies on another trace's segment or inner corner, or
+    /// near enough that the copper meets. The traces ending at `end` are
+    /// Java's contacts and found by the caller.
+    pub(crate) fn add_trace_end_trace_contacts(
+        &self,
+        trace_item: &Item,
+        end: &Point,
+        result: &mut BTreeSet<ItemId>,
+    ) {
+        if self.contact_rule != ContactRule::InsidePad {
+            return;
+        }
+        let Some(trace) = trace_item.as_trace() else {
+            return;
+        };
+        let region = TileShape::get_instance_point(end).offset(f64::from(trace.half_width));
+        for other_id in self.overlapping_objects(&TileShape::IntBox(region), trace.layer) {
+            let other = self.item_ref(other_id);
+            if other_id == trace_item.id()
+                || other.as_trace().is_none_or(|t| t.layer != trace.layer)
+                || !other.shares_net(trace_item)
+            {
+                continue;
+            }
+            if self.trace_end_touches_trace(end, trace.half_width, other) {
+                result.insert(other_id);
+            }
+        }
+    }
+
+    /// Under [`ContactRule::InsidePad`], adds to `result` the traces of a
+    /// common net on `trace_item`'s layer with an end whose cap overlaps
+    /// `trace_item`'s copper: the other side of
+    /// [`Self::add_trace_end_trace_contacts`], so that a T junction is in
+    /// both traces' [`normal_contacts`](Self::normal_contacts). These are
+    /// no contacts at an end of `trace_item`
+    /// ([`Self::trace_normal_contacts`] leaves them out).
+    pub(crate) fn add_trace_body_contacts(&self, trace_item: &Item, result: &mut BTreeSet<ItemId>) {
+        if self.contact_rule != ContactRule::InsidePad {
+            return;
+        }
+        let Some(trace) = trace_item.as_trace() else {
+            return;
+        };
+        let reach = f64::from(self.max_trace_half_width());
+        for index in 0..trace.tile_shape_count() {
+            let Some(shape) = trace.polyline.offset_shape(trace.half_width, index) else {
+                continue;
+            };
+            let region = TileShape::IntBox(shape.bounding_box().offset(reach));
+            for other_id in self.overlapping_objects(&region, trace.layer) {
+                if other_id == trace_item.id() || result.contains(&other_id) {
+                    continue;
+                }
+                let other = self.item_ref(other_id);
+                let Some(other_trace) = other.as_trace() else {
+                    continue;
+                };
+                if other_trace.layer != trace.layer || !other.shares_net(trace_item) {
+                    continue;
+                }
+                let touches = |end: &Point| {
+                    *end != trace.first_corner()
+                        && *end != trace.last_corner()
+                        && end_cap_meets(&shape, end, other_trace.half_width)
+                };
+                if touches(&other_trace.first_corner()) || touches(&other_trace.last_corner()) {
+                    result.insert(other_id);
+                }
+            }
+        }
+    }
+
+    /// Under [`ContactRule::InsidePad`], the T junctions on trace `id`: the
+    /// ends of other traces whose cap overlaps its copper
+    /// ([`Self::add_trace_body_contacts`]). `None` without any;
+    /// [`TJunctions::Split`] with their points (in contact order) when each
+    /// lies on the trace's centre line, so that splitting the trace there
+    /// makes them Java's end-to-end contacts; [`TJunctions::Keep`] when one
+    /// does not (the copper meets off the centre line, where no split
+    /// joins the ends).
+    pub(crate) fn t_junctions(&self, id: ItemId) -> Option<TJunctions> {
+        if self.contact_rule != ContactRule::InsidePad {
+            return None;
+        }
+        let item = self.item(id)?;
+        let trace = item.as_trace()?;
+        let mut body = BTreeSet::new();
+        self.add_trace_body_contacts(item, &mut body);
+        let mut points: Vec<Point> = Vec::new();
+        for other_id in body {
+            let other = self.item_ref(other_id).as_trace().expect("a trace contact");
+            for end in [other.first_corner(), other.last_corner()] {
+                if !self.trace_end_touches_trace(&end, other.half_width, item) {
+                    continue;
+                }
+                if !matches!(end, Point::Int(_)) || !trace.polyline.contains(&end) {
+                    return Some(TJunctions::Keep);
+                }
+                if !points.contains(&end) {
+                    points.push(end);
+                }
+            }
+        }
+        (!points.is_empty()).then_some(TJunctions::Split(points))
+    }
+
+    /// True if, under [`ContactRule::InsidePad`], `point` lies on trace
+    /// `item` but is none of its end corners: a walk along the contacts
+    /// that reaches the trace there meets it at a T junction, which ends
+    /// the connection as a fork does (Java has the trace split at that
+    /// point, so three traces meet there).
+    pub fn is_trace_body_contact(&self, item: &Item, point: &Point) -> bool {
+        self.contact_rule == ContactRule::InsidePad
+            && item
+                .as_trace()
+                .is_some_and(|t| *point != t.first_corner() && *point != t.last_corner())
+    }
+
     /// Java `Item.normalContactPoint` under the board's contact rule: where
     /// `a` and `b` meet, if they are in normal contact. Under
     /// [`ContactRule::InsidePad`] a trace and a pin that meet at the pin's
     /// pad meet at the trace's end there (its first corner if both ends
-    /// touch the pad).
+    /// touch the pad), and two traces that meet at a T junction meet at the
+    /// end whose cap overlaps the other trace, if exactly one end of the
+    /// two does (else there is no unique point, as in Java for two traces
+    /// that share both ends).
     pub fn normal_contact_point(&self, a: &Item, b: &Item) -> Option<Point> {
         let java = a.normal_contact_point(b);
         if java.is_some() || self.contact_rule != ContactRule::InsidePad {
             return java;
+        }
+        if let (ItemKind::Trace(ta), ItemKind::Trace(tb)) = (&a.kind, &b.kind) {
+            return self.trace_trace_contact_point(a, ta, b, tb);
         }
         let (trace_item, pin) = match (&a.kind, &b.kind) {
             (ItemKind::Trace(_), ItemKind::Pin(_)) => (a, b),
@@ -225,6 +413,45 @@ impl BasicBoard {
         [trace.first_corner(), trace.last_corner()]
             .into_iter()
             .find(|end| self.pad_touches_trace_end(pin, end, trace.layer, trace.half_width))
+    }
+
+    /// The T junction point of traces `a` and `b` (N04.4): the one end of
+    /// either whose cap overlaps the other's copper, the same for both
+    /// argument orders; `None` without one or with several.
+    fn trace_trace_contact_point(
+        &self,
+        a: &Item,
+        ta: &PolylineTrace,
+        b: &Item,
+        tb: &PolylineTrace,
+    ) -> Option<Point> {
+        if ta.layer != tb.layer || !a.shares_net(b) {
+            return None;
+        }
+        let mut points: Vec<Point> = Vec::new();
+        for (trace, other) in [(ta, b), (tb, a)] {
+            for end in [trace.first_corner(), trace.last_corner()] {
+                if !points.contains(&end)
+                    && self.trace_end_touches_trace(&end, trace.half_width, other)
+                {
+                    points.push(end);
+                }
+            }
+        }
+        match points.as_slice() {
+            [point] => Some(point.clone()),
+            _ => None,
+        }
+    }
+}
+
+/// True if the cap of a trace end at `end` (radius `half_width`) overlaps
+/// `shape`, borders included; an end at a rational point tests the point
+/// alone (a disc needs an integer centre).
+fn end_cap_meets(shape: &TileShape, end: &Point, half_width: i32) -> bool {
+    match end {
+        Point::Int(centre) => shape.intersects_circle(&Circle::new(*centre, half_width)),
+        _ => shape.contains(end),
     }
 }
 

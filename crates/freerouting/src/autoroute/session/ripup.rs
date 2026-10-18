@@ -139,6 +139,9 @@ fn walk_connection(board: &BasicBoard, start: ItemId) -> Option<Connection> {
             }
             steps_left -= 1;
             let current_item = board.item(current)?;
+            // N04.4: a trace reached in its middle (a T junction) ends the
+            // connection, as the fork at the split trace does in Java.
+            fork = fork || board.is_trace_body_contact(current_item, &prev_point);
             if !current_item.is_routable() || fork {
                 // The connection ends.
                 match &start_point {

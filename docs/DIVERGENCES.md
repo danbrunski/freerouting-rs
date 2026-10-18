@@ -374,11 +374,17 @@ IntOctagon's box cutout.
   incompletes, the routing ledger, the DRC's dangling traces, trace tails, the batch optimizer's
   connected sets, pull-tight's end contacts, the rip-up walk and the maze shover's end match all
   read the rule, and the SES writer's endpoint snap (`snapped_endpoint`, which cannot fire under
-  Java's rule) is off, so the session carries the ends as they are. Vias keep Java's rule, and a
-  trace end on another trace's segment or inner corner (a T junction) is no contact (N04.4). On
-  KiCad's ecc83-pp demo with its tracks (`fixtures/Issue690-ecc83.dsn`) the open connections
-  before routing go 10 → 1 and 16 off-centre ends touch their pins, some 15-89 µm outside the pad;
-  the one left is a T junction, which KiCad connects (`tests/pad_contacts.rs`). Pull-tight can
+  Java's rule) is off, so the session carries the ends as they are. Vias keep Java's rule. A
+  trace end whose cap overlaps the copper of a trace of a common net on the same layer (a T
+  junction: the end on the other trace's segment or inner corner, or near enough that the copper
+  meets; same exact test, N04.4) is a contact as well, which Java's end-to-end trace contacts
+  never are. It is in both traces' `normal_contacts` (the ending trace's contacts at that end,
+  the other trace's at none of its ends); a connection walk stops at it as at Java's fork, and
+  pull-tight first splits a trace at the junctions on its centre line (making them Java's
+  end-to-end contacts) and leaves it unchanged when one meets it off the centre line. On KiCad's
+  ecc83-pp demo with its tracks (`fixtures/Issue690-ecc83.dsn`) the open connections before
+  routing go 10 → 0, KiCad's count: 16 off-centre ends touch their pins, some 15-89 µm outside the
+  pad, and a track ends on another track's inner corner (`tests/pad_contacts.rs`). Pull-tight can
   still straighten a connected track onto the pin's centre (Java's split at a drill centre; one
   end on ecc83). An unknown value fails the job, naming the key; a board copy keeps the rule. Not
   in `enhanced` until N04.3's measurement accepts it (through N05).

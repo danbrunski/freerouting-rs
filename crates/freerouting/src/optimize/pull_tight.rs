@@ -36,6 +36,7 @@ use freerouting_geometry::{IntOctagon, Polyline, PolylineShapeOps, TileShape};
 
 use crate::autoroute::control::ExpansionCostFactor;
 use crate::board::RoutingBoard;
+use crate::board::contact_rule::TJunctions;
 use crate::board::items::ItemId;
 use crate::board::selection_filter::{ItemFilter, SelectableChoice};
 use crate::board::structure::AngleRestriction;
@@ -88,6 +89,23 @@ impl RoutingBoard {
                 .is_none_or(|n| self.rules.net_classes.get(n.net_class()).pull_tight());
             if !pull_tight {
                 return false;
+            }
+        }
+        // N04.4: under `inside_pad` a trace that other traces end on (a T
+        // junction) is split there first, so that the junctions become end
+        // contacts that pull-tight keeps; the pieces are pulled tight in
+        // turn. One it cannot split there stays as it is.
+        match self.t_junctions(id) {
+            None => {}
+            Some(TJunctions::Keep) => return false,
+            Some(TJunctions::Split(points)) => {
+                let Some(pieces) = self.split_trace_at_point(id, &points[0]) else {
+                    return false;
+                };
+                for piece in pieces.into_iter().flatten() {
+                    self.pull_tight_trace(piece, tightener);
+                }
+                return true;
             }
         }
         let (layer, half_width, class) = (trace.layer, trace.half_width, item.clearance_class());
