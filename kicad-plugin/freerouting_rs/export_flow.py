@@ -11,14 +11,26 @@ KiCad's UI thread only.
 `prepare_snapshot` is the K10 form: the board snapshot the router reads
 directly, with none of those DSN steps (`snapshot.py`).
 
-Order: KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), then the
+Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), then the
 K09 fix-ups (`dsn_fixups`). After `ImportSpecctraSES`, `after_import` sets the
 drills KiCad's import takes from the net class instead of the session. A fix-up that fails is logged with a WARNING and
 leaves the DSN as it was before that step; it never blocks routing.
 """
 
+import hashlib
+import json
+from pathlib import Path
+
 try:  # inside the plugin package
-    from . import dsn_fixups, kicad_areas, kicad_board, options, rule_areas, ses_vias, snapshot
+    from . import (
+        dsn_fixups,
+        kicad_areas,
+        kicad_board,
+        options,
+        rule_areas,
+        ses_vias,
+        snapshot,
+    )
 except ImportError:  # tests and headless scripts put this folder on sys.path
     import dsn_fixups
     import kicad_areas
@@ -39,6 +51,49 @@ def _read(path):
 def _write(path, text):
     with open(path, "w", encoding="utf-8", newline="") as f:
         f.write(text)
+
+
+def refill(board, pcbnew, phase="before routing export"):
+    """Refresh the live copper before either export path, without saving.
+
+    Fixed pour wires must describe the current board, not the fill cached
+    before its last edit. A failed fill stops preparation instead of silently
+    routing a different board from the command-line flow.
+    """
+    if not any(not zone.GetIsRuleArea() for zone in board.Zones()):
+        return []
+    filler = pcbnew.ZONE_FILLER(board)
+    if not filler.Fill(board.Zones()):
+        raise RuntimeError("KiCad could not refill the copper zones")
+    return [f"zones refilled {phase}"]
+
+
+def router_args(board, opts, extra_args=(), for_gui=False):
+    """The current Board Setup minimum and options, shared by both frontends."""
+    try:
+        nm = board.GetDesignSettings().m_TrackMinWidth
+        minimum = nm / 1000.0 if nm and nm > 0 else None
+    except Exception:  # older pcbnew without the attribute
+        minimum = None
+    return opts.to_args(minimum, for_gui=for_gui, extra_args=extra_args)
+
+
+def save_arguments(board, pcbnew, design, opts, extra_args=(), lines=()):
+    """Record the exact prepared input and CLI arguments for reproduction.
+
+    This is also headless_run's input: scripts consume the same arguments
+    as Route instead of maintaining a second set of router flags.
+    """
+    design = Path(design)
+    data = {
+        "args": router_args(board, opts, extra_args),
+        "log": list(lines),
+        "kicad": pcbnew.GetBuildVersion(),
+        "input_sha256": hashlib.sha256(design.read_bytes()).hexdigest(),
+    }
+    path = design.with_suffix(".args.json")
+    _write(path, json.dumps(data, indent=2) + "\n")
+    return path
 
 
 def fix_rule_areas(board, pcbnew, dsn):
@@ -87,11 +142,17 @@ def prepare(board, pcbnew, dsn, opts, export):
     writes it as fixed copper; the caller keeps the returned tracks locked
     through the import and then calls `kicad_board.restore_locks`.
     Returns `(ok, router_args, log_lines, locked_tracks)`."""
-    locked = kicad_board.lock_tracks(board) if opts.fix_existing else []
-    if not export(board, dsn):
+    locked = []
+    try:
+        lines = refill(board, pcbnew)
+        locked = kicad_board.lock_tracks(board) if opts.fix_existing else []
+        if not export(board, dsn):
+            raise RuntimeError("KiCad's DSN export failed")
+    except Exception as e:
         kicad_board.restore_locks(locked)
-        return False, [], [], []
-    lines = fix_rule_areas(board, pcbnew, dsn) if opts.rule_area_fixup else []
+        return False, [], [f"ERROR: routing preparation failed: {e}"], []
+    if opts.rule_area_fixup:
+        lines += fix_rule_areas(board, pcbnew, dsn)
     args, more = fix_dsn(board, pcbnew, dsn, opts)
     if locked:
         more.append(f"fix existing: {len(locked)} track(s) and via(s) exported as fixed")
@@ -106,8 +167,13 @@ def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
     options that need one off. `fixed_pour_mode = engine` with named classes
     is the one K09 option that works here, because it is an engine flag.
     Returns `(ok, router_args, log_lines, locked_tracks)`."""
+    try:
+        filled = refill(board, pcbnew)
+    except Exception as e:
+        return False, [], [f"ERROR: routing preparation failed: {e}"], []
     locked = kicad_board.lock_tracks(board) if opts.fix_existing else []
     ok, lines = snapshot.take(board, pcbnew, work_dir, stem, board_dir)
+    lines = filled + lines
     if not ok:
         kicad_board.restore_locks(locked)
         return False, [], lines, []
@@ -121,11 +187,20 @@ def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
     return True, args, lines, locked
 
 
-def after_import(board, ses):
+def after_import(board, ses, pcbnew=None):
     """Corrects what KiCad's `ImportSpecctraSES` gets wrong (`ses_vias`):
     the drill of routed vias. Returns the log lines; never raises."""
+    lines = []
     try:
         changed = kicad_board.fix_via_drills(board, ses_vias.vias(_read(ses)))
     except Exception as e:  # the import itself succeeded; keep it
-        return [f"WARNING: via drill check skipped: {e!r}"]
-    return [f"via drills: {changed} via(s) set to their session padstack's drill"] if changed else []
+        lines.append(f"WARNING: via drill check skipped: {e!r}")
+    else:
+        if changed:
+            lines.append(f"via drills: {changed} via(s) set to their session padstack's drill")
+    if pcbnew is not None:
+        try:
+            lines += refill(board, pcbnew, "after session import")
+        except Exception as e:
+            lines.append(f"WARNING: zones could not be refilled after session import: {e}")
+    return lines

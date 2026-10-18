@@ -1,0 +1,2 @@
+fixtures/kicad/Issue558-dev-board-autoroute-demo/dev-board.kicad_pcb
+/home/thebo/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb

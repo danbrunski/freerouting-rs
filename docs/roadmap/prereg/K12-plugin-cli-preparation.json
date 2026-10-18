@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-18",
+  "purpose": "Verify common plugin/script preparation; no claim of routing-quality improvement or profile promotion.",
+  "board_set": "tools/bench/sets/K12-plugin-cli-preparation.txt",
+  "procedure": "On immutable copies, compare export_flow.prepare used by the editor with headless_run export using identical options and KiCad. Remove cached zone fills in a separate input to check refill freshness. Require equal DSN tokens and arguments; input filenames/PCB header path may be normalized for comparison. Route only the small Issue558 fixture through headless_run route and the same prepared input directly with the same binary/args, then compare sessions after normalizing output session names. CANary is export-only, not a routing batch.",
+  "accept": "No source board save. Fresh and stale-fill copies prepare equivalent routing geometry and arguments; SHA256 matches each recorded input. Small-board plugin RouteRun and scripted invocation produce equivalent sessions. Preserve edge and pad clearance transforms.",
+  "limits": "Historical external canary dsn_export.py is a separate older exporter; use the shared CLI entry to obtain plugin-equivalent preparation. No Windows installation or live KiCad interaction. No heavy routing measurement."
+}

@@ -2,6 +2,7 @@
 stub wx/pcbnew: options saved and passed, progress shown, Stop keeps, Abort
 discards, the summary after the import."""
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -37,6 +38,17 @@ def test_route_imports_and_summarizes(env):
     assert "Connections: 10 of 10 routed, 0 incomplete" in text and "WARNING" not in text
     assert (work / "b.result.json").is_file()
     assert "route:" in (work / "plugin.log").read_text(encoding="utf-8")
+
+
+def test_route_uses_and_records_the_current_board_rules(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    dialog.board.min_track_nm = 225000
+    dialog.on_route(None)
+    recipe = json.loads((work / "b.args.json").read_text(encoding="utf-8"))
+    assert "--router.min_trace_width_um=225" in recipe["args"]
+    assert "--router.min_trace_width_um=225" in ui.messages[-1][0].splitlines()
+    assert recipe["input_sha256"] == hashlib.sha256((work / "b.dsn").read_bytes()).hexdigest()
 
 
 def test_the_options_are_saved_and_reach_the_router(env):

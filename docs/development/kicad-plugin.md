@@ -63,6 +63,23 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
 
 ## Routing profile and Advanced stages (N01)
 
+**Shared command-line board flow (K12).** `headless_run.py route BOARD WORK
+OPTIONS.json ROUTER` uses `export_flow` and `routing.RouteRun`, the same functions
+as the editor's Route button. Both DSN and snapshot inputs refill live zones
+before export; failed filling stops preparation. This closes the stale-fill
+difference from CANary's `autoroute.sh`, which refills before export. Neither
+preparation path saves the source board. SES import corrects drills and refills
+zones in both frontends. `export_flow.router_args` reads the current Board Setup
+minimum at invocation, rather than the minimum cached when the dialog opened.
+Each export writes `<stem>.args.json` with `args`, `log`, `kicad` and
+`input_sha256`. Compare prepared geometry and these arguments before comparing
+completion counts, and hold the router binary, configuration/environment and
+KiCad version fixed. The historical external `canary/hardware/tools/dsn_export.py`
+is not this entry point: it omits off-bounding-box outline strips and drops the
+footprint-only fan rule area that the plugin turns into `place_keepout`. Those
+objects remain in the shared flow. No engine profile or routing-quality
+promotion is made here; historical 33-versus-39 counts are not an accepted A/B.
+
 - **Profile** (a choice in the dialog, `RouteOptions.profile`): **Enhanced** (the default, no
   flag) routes with the accepted improvements over Java; **Legacy** passes `--profile legacy`
   for results identical to Java Freerouting. Until N05 accepts the first improvement the two route

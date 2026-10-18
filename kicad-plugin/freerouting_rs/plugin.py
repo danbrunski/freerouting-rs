@@ -677,8 +677,15 @@ class Dialog(wx.Dialog):
         else:
             ok, extra, lines, locked = export_flow.prepare(self.board, pcbnew, self.dsn, chosen, export_dsn)
             if not ok:
-                self.error(f"KiCad could not export the board to\n{self.dsn}")
+                log_lines(self.work_dir, self.design, lines)
+                self.error(f"KiCad could not export the board to\n{self.dsn}\n\n" + "\n".join(lines))
                 return False, [], []
+        try:
+            export_flow.save_arguments(self.board, pcbnew, self.design, chosen, extra, lines)
+        except OSError as e:
+            kicad_board.restore_locks(locked)
+            self.error(f"Could not save routing arguments:\n{e}")
+            return False, [], []
         log_lines(self.work_dir, self.design, lines)
         return True, extra, locked
 
@@ -701,7 +708,7 @@ class Dialog(wx.Dialog):
             self.router,
             self.design,
             self.ses,
-            chosen.to_args(self.board_min_um, extra_args=extra),
+            export_flow.router_args(self.board, chosen, extra),
             self.result_json,
             chosen.profile,
         )
@@ -752,7 +759,7 @@ class Dialog(wx.Dialog):
         self.ses.unlink(missing_ok=True)
         if snapshot.wanted(chosen) and chosen.apply_kicad_rules:
             log_lines(self.work_dir, self.design, ["Route in GUI reads the .kicad_dru but does not apply it (use Route)"])
-        run = routing.GuiRun(self.gui, self.design, self.ses, chosen.to_args(self.board_min_um, for_gui=True, extra_args=extra))
+        run = routing.GuiRun(self.gui, self.design, self.ses, export_flow.router_args(self.board, chosen, extra, for_gui=True))
         try:
             run.start()
         except OSError as e:
@@ -769,7 +776,8 @@ class Dialog(wx.Dialog):
         if not import_ses(self.board, ses):
             self.error(f"KiCad could not import\n{ses}")
             return
-        log_lines(self.work_dir, ses, export_flow.after_import(self.board, ses))
+        log_lines(self.work_dir, ses, export_flow.after_import(self.board, ses, pcbnew))
+        pcbnew.Refresh()
         head = "Stopped early; imported the best board so far." if stopped else "Routed and imported the result into the board."
         text = head + ("\n\n" + summary_text if summary_text else "")
         icon = wx.ICON_EXCLAMATION if "WARNING" in summary_text else wx.ICON_INFORMATION

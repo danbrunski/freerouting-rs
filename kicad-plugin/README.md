@@ -37,6 +37,41 @@ Its toolbar button opens a dialog that:
 The DSN and SES files go in a `freerouting-rs` folder next to the `.kicad_pcb`. The board
 must be saved once so that folder has somewhere to live.
 
+## Use the same flow from the command line
+
+From a source checkout, run with a Python that has KiCad's `pcbnew`:
+
+```
+python3 -I kicad-plugin/headless_run.py route board.kicad_pcb out route-options.json /absolute/path/to/freerouting
+```
+
+Use the board's `freerouting-rs/route-options.json` to reproduce its dialog choices.
+This command and the plugin share zone refill, DSN/snapshot preparation, minimum
+width, router arguments and process invocation. The command writes `out/board.ses`
+and `out/board.result.json`; it leaves the source board on disk untouched. To
+apply the session to a copy:
+
+```
+python3 -I kicad-plugin/headless_run.py import board.kicad_pcb out/board.ses routed/board.kicad_pcb route-options.json
+```
+
+Create the destination directory first and keep the matching `.kicad_pro` and
+`.kicad_dru` alongside the copy when checking it with KiCad. Import corrects via
+drills and refills zones, as the plugin does. The result summary is the router's
+connection count; use KiCad DRC for its post-fill unconnected count.
+
+Both frontends refill zones before export, stop if filling fails, and record
+`board.args.json` with the exact router arguments, KiCad version and prepared
+input SHA256. This avoids routing stale pour fills after an edit. Use the same
+saved board, KiCad version, router binary, options and router configuration/environment
+when comparing runs; save unsaved editor changes first.
+
+Older external exporters, including CANary's `hardware/tools/dsn_export.py`,
+remain separate implementations. Their DSNs can differ even with matching router
+flags. This shared command replaces that preparation for plugin comparisons;
+it retains the plugin's rounded-corner edge protection and placement keepouts.
+The historical CANary 33-unconnected result has not been reproduced by this change.
+
 ## Install
 
 **From the plugin manager (a release).** KiCad > Plugin and Content Manager > Install from
@@ -99,4 +134,5 @@ reinstalled one) without restarting KiCad.
 python3 -m pytest kicad-plugin/tests
 ```
 
-No KiCad needed (plain Python 3 and pytest; `pcbnew` and `wx` are never imported).
+Most tests use plain Python and stubs. Real KiCad/CLI integration tests skip when
+their tools are unavailable; `FREEROUTING_RS_BIN` selects the router's directory.

@@ -314,6 +314,7 @@ def build_pcbnew(ui, dsn_text):
     pcbnew.ActionPlugin = ActionPlugin
     pcbnew.F_Cu, pcbnew.B_Cu = 0, 2
     pcbnew.ToMM = lambda nm: nm / 1e6
+    pcbnew.GetBuildVersion = lambda: "test KiCad"
     pcbnew.ExportSpecctraDSN = export
     pcbnew.ImportSpecctraSES = import_ses
     pcbnew.Refresh = lambda: None
