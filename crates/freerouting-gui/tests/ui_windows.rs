@@ -816,3 +816,19 @@ fn status_bar_names_the_layer() {
     let name = h.state().loaded().unwrap().scene.layers[1].name.clone();
     h.get_by_label(&format!("Current layer: {name}"));
 }
+
+/// The app stays dark under a light OS theme: eframe starts the context at
+/// `ThemePreference::System` and passes the OS theme in with the first frame.
+/// (A kittest harness sets its own theme after creating the app, so this
+/// runs the context directly.)
+#[test]
+fn the_app_stays_dark_when_the_os_is_light() {
+    let ctx = eframe::egui::Context::default();
+    let _app = App::build(&ctx, None, Args::default());
+    let input = eframe::egui::RawInput {
+        system_theme: Some(eframe::egui::Theme::Light),
+        ..Default::default()
+    };
+    let _ = ctx.run(input, |_| {});
+    assert!(ctx.style().visuals.dark_mode);
+}

@@ -96,7 +96,10 @@ impl App {
 
     /// The app for a command line, with settings from `storage`.
     pub fn build(ctx: &egui::Context, storage: Option<&dyn eframe::Storage>, args: Args) -> Self {
-        ctx.set_visuals(egui::Visuals::dark());
+        // Dark whatever the OS theme. eframe passes the OS theme in with the
+        // first frame, and under egui's default `ThemePreference::System` a
+        // light OS would switch the widgets to light under the dark chrome.
+        ctx.set_theme(egui::Theme::Dark);
         // A scripted run (bench, screenshot) must not read the user's settings.
         let settings = if args.scripted() {
             PersistedSettings::default()
