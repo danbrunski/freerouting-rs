@@ -21,6 +21,9 @@ from conftest import REPO
 
 SMALL = "Issue026-J2_reference.dsn"  # routes in under a second
 BIG = "Issue508-DAC2020_bm01.dsn"  # still routing after its first progress event
+# Its fanout spends minutes in one pin (the GND net's normalization oscillates);
+# before 2026-10-18 a Stop there waited for the pin to end.
+LONG_STEP = "Issue690-kit-dev-coldfire-xilinx_5213.dsn"
 
 
 def find_router():
@@ -243,3 +246,33 @@ def test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli(router, tmp_path):
     assert snapshot["autorouter"]["sweep"] == "free" and snapshot["autorouter"]["sweep_passes"] == 2
     assert snapshot["scoring"]["start_ripup_costs"] == 1500
     assert snapshot["min_trace_width_um"] == 150.0
+
+
+def test_stop_inside_a_long_fanout_step_ends_within_seconds(router, board):
+    """Stop and keep 3 s into coldfire's long fanout pin (its last progress
+    event before the pin is pass 2 with 155 pins routed): the router stops,
+    writes the board and exits 0 within seconds. Before the normalization
+    checked the stop (2026-10-18) the pin ran on for about 280 s."""
+    work, dsn, ses = board(LONG_STEP)
+    run = start(router, dsn, ses, work)
+    deadline = time.monotonic() + 300
+    state = run.state
+    while not (state.phase == "fanout" and state.pass_number == 2 and (state.routed or 0) >= 155):
+        run.poll()
+        assert not run.finished, "the run ended before the long pin: " + "\n".join(run.lines[-10:])
+        assert time.monotonic() < deadline, "no fanout event of pass 2 with 155 pins routed"
+        time.sleep(0.02)
+    in_pin = time.monotonic()
+    while time.monotonic() - in_pin < 3:
+        run.poll()
+        time.sleep(0.05)
+    assert not run.finished, "the run ended in its fanout: " + "\n".join(run.lines[-10:])
+    stopped_at = time.monotonic()
+    assert run.stop() is True
+    code = run.wait(timeout=60)
+    latency = time.monotonic() - stopped_at
+    if code is None:
+        run.abort()
+    assert code == 0, f"no exit {latency:.0f} s after Stop: " + "\n".join(run.lines[-15:])
+    assert latency < 15, f"the stop took {latency:.1f} s"
+    assert run.stopped and run.state.state == "completed" and run.ses_written()

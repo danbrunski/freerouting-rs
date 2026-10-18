@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 use crate::util::HashMap;
 
 use freerouting_geometry::{
-    IntOctagon, Line, LineSegment, Point, Polyline, PolylineShapeOps, TileShape,
+    IntOctagon, Line, LineSegment, Point, Polyline, PolylineShapeOps, Stoppable, TileShape,
 };
 
 use crate::board::autoroute_log::AutorouteChange;
@@ -761,9 +761,16 @@ impl BasicBoard {
     /// `removeIfCycle` returns false for a trace off the board
     /// (`BasicBoard.normalizeTraces` and `normalizeAllTraces`). The port asks
     /// the board instead of reading the removed item.
-    fn normalize_pass(&mut self, traces: &[ItemId]) -> bool {
+    ///
+    /// `stop` ends the pass at the next trace once it asks (see
+    /// [`normalize_traces_until`](Self::normalize_traces_until)); the pass
+    /// then reports what it changed so far.
+    fn normalize_pass(&mut self, traces: &[ItemId], stop: Option<&dyn Stoppable>) -> bool {
         let mut something_changed = false;
         for &id in traces {
+            if stop.is_some_and(|s| s.is_stop_requested()) {
+                break;
+            }
             if !self.is_on_board(id) {
                 continue;
             }
@@ -784,6 +791,24 @@ impl BasicBoard {
     /// Normalizes the traces of net `net_number`. Gives up after
     /// [`MAX_NORMALIZE_ITERATIONS`] passes and skips the net from then on.
     pub fn normalize_traces(&mut self, net_number: i32) -> bool {
+        self.normalize_traces_until(net_number, None)
+    }
+
+    /// [`normalize_traces`](Self::normalize_traces) that also ends when
+    /// `stop` asks. The first pass always runs to its end, so a new trace is
+    /// normalized once; a stop ends a later pass at its next trace and
+    /// leaves the traces as they are, as the iteration limit does, without
+    /// suppressing the net. Without a stop request the result is
+    /// `normalize_traces`'s.
+    ///
+    /// Java's `normalizeTraces` has no stop check: a net whose split and
+    /// combine oscillate runs all [`MAX_NORMALIZE_ITERATIONS`] passes, which
+    /// on a large net is minutes (DIVERGENCES.md, "Stopping").
+    pub fn normalize_traces_until(
+        &mut self,
+        net_number: i32,
+        stop: Option<&dyn Stoppable>,
+    ) -> bool {
         if self.normalize_suppressed().contains(&net_number) {
             return false;
         }
@@ -799,8 +824,12 @@ impl BasicBoard {
                 self.normalize_suppressed().insert(net_number);
                 break;
             }
+            let later_pass_stop = stop.filter(|_| iteration_count > 1);
+            if later_pass_stop.is_some_and(|s| s.is_stop_requested()) {
+                break;
+            }
             let traces = self.net_traces(net_number);
-            if !self.normalize_pass(&traces) {
+            if !self.normalize_pass(&traces, later_pass_stop) {
                 break;
             }
             result = true;
@@ -839,7 +868,7 @@ impl BasicBoard {
                     ));
                     break;
                 }
-                if !self.normalize_pass(&net_traces) {
+                if !self.normalize_pass(&net_traces, None) {
                     break;
                 }
                 result = true;

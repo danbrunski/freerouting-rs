@@ -1108,6 +1108,15 @@ plugin_flags}.rs`)
   Ctrl-Break on Windows, through the `ctrlc` crate) are handled: the first is `stop`, the
   second aborts with exit 130 and no output (`sigint_and_sigterm_are_a_stop`,
   `two_signals_abort`); Java's CLI has no such two-level stop.
+- A stop request also ends a trace normalization (`BasicBoard::normalize_traces_until`, from the
+  insertion after a route and from pull-tight): the first pass runs to its end, a later pass ends
+  at its next trace and the traces stay as they are, as at the iteration limit, but the net is not
+  suppressed. Java's `normalizeTraces` has no stop check, so a net whose split and combine
+  oscillate runs all 2000 passes after a stop: on `Issue690-kit-dev-coldfire-xilinx_5213` the GND
+  net held one fanout pin for about 280 s, and a SIGTERM took over 5 minutes. Without a stop request
+  the result is Java's (`tests/normalize_stop.rs`). A portfolio arm and a sweep pass, which route
+  on their own token, also get the job's stop while a connection runs (`with_stop_relay`, every
+  20 ms), where Java has no such stages.
 - `--profile legacy|enhanced` (N01.3) is the routing profile (`router.profile`, see "Profile
   `enhanced`"); Java has no such flag, and `--profile.<key>=<value>` (Java's user profile) is still
   accepted and ignored. `--list-stages[=json]` and `--dump-settings[=json]` (N01.4) print the stage

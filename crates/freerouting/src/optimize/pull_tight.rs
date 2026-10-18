@@ -219,8 +219,9 @@ impl RoutingBoard {
                 self.split_traces(&adjusted.first_corner(), layer, net);
                 self.split_traces(&adjusted.last_corner(), layer, net);
                 // Java logs and ignores a normalization exception; the
-                // port's normalization has no failure path.
-                self.normalize_traces(net);
+                // port's normalization has no failure path. A stop request
+                // may end it early.
+                self.normalize_traces_until(net, tightener.stop_request());
                 if self.split_at_keep_point(tightener) {
                     tightener.set_contact_pins(saved_pins);
                     return true;

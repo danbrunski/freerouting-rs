@@ -29,7 +29,7 @@
 //! Java's unconditional trace logging (`if (true) FRLogger.trace(...)`) and
 //! the fanout diagnostics of pins named `U27-*` are dropped.
 
-use freerouting_geometry::{FloatPoint, IntPoint, Point, Polyline};
+use freerouting_geometry::{FloatPoint, IntPoint, Point, Polyline, Stoppable};
 
 use super::locate::{Located, ResultItem};
 use super::locate45::calculate_additional_corner;
@@ -67,10 +67,14 @@ pub enum InsertError {
 
 /// Java `FoundConnectionInserter.getInstance(connection, board, ctrl)`
 /// (`:40-63`): inserts the traces and vias of `located`.
+///
+/// `stop` is the search's stop request: it may end the net's normalization
+/// early ([`BasicBoard::normalize_traces_until`](crate::board::BasicBoard::normalize_traces_until)).
 pub fn insert_located(
     board: &mut RoutingBoard,
     ctrl: &AutorouteControl,
     located: &Located,
+    stop: Option<&dyn Stoppable>,
 ) -> Result<Inserted, InsertError> {
     insert_segments(
         board,
@@ -80,6 +84,7 @@ pub fn insert_located(
         located.start_layer,
         located.target_layer,
         &located.items,
+        stop,
     )
 }
 
@@ -87,7 +92,9 @@ pub fn insert_located(
 /// segment a via from the current layer to its layer at its first corner,
 /// then the trace; then a via to the start layer at the last corner; then
 /// the connections to a target and a start trace; then the net's traces are
-/// normalized.
+/// normalized, until `stop` asks
+/// ([`BasicBoard::normalize_traces_until`](crate::board::BasicBoard::normalize_traces_until)).
+#[allow(clippy::too_many_arguments)]
 pub fn insert_segments(
     board: &mut RoutingBoard,
     ctrl: &AutorouteControl,
@@ -96,6 +103,7 @@ pub fn insert_segments(
     start_layer: i32,
     target_layer: i32,
     segments: &[ResultItem],
+    stop: Option<&dyn Stoppable>,
 ) -> Result<Inserted, InsertError> {
     // PARITY(quirk, java_quirks.insert_stale_trace_object): Java holds the start and target items as objects
     // (`:108-137`); a trace the insertion splits or removes leaves the board,
@@ -146,7 +154,7 @@ pub fn insert_segments(
         let half_width = half_width_at(ctrl, start_stub_layer);
         board.connect_to_trace_object(corner, &trace, half_width, class);
     }
-    board.normalize_traces(net);
+    board.normalize_traces_until(net, stop);
     Ok(done)
 }
 

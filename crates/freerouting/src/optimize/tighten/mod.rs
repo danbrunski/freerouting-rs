@@ -290,6 +290,13 @@ impl Tightener {
         limit.exceeded_logging(board.search_trees.work_meter(), context, &mut board.log)
     }
 
+    /// The stop request alone, without the work limit: what may end a
+    /// normalization early
+    /// ([`BasicBoard::normalize_traces_until`](crate::board::BasicBoard::normalize_traces_until)).
+    pub(crate) fn stop_request(&self) -> Option<&dyn Stoppable> {
+        self.stop.as_deref().map(|s| s as &dyn Stoppable)
+    }
+
     /// The calls of [`is_stop_requested`](Self::is_stop_requested) so far.
     pub fn stop_checks(&self) -> u64 {
         self.stop_checks

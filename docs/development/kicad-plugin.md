@@ -420,6 +420,14 @@ uploaded:** the KiCad repository submission and the GitHub release need the owne
 
 ## Gotchas
 
+- **Stop and keep waits for the router's step (fixed 2026-10-18).** Stop writes `stop` to the
+  router's stdin; the CLI then ends at its next stop check. Before 2026-10-18 the trace
+  normalization after each route had no check, and a net whose split and combine oscillate runs
+  2000 passes: on `Issue690-kit-dev-coldfire-xilinx_5213` one fanout pin took about 280 s, so the
+  dialog sat at "Stopping: finishing the current step..." for minutes (a SIGTERM took over 5
+  minutes too). Now a stop ends within about 0.1-0.5 s on the fixtures measured
+  (`test_stop_inside_a_long_fanout_step_ends_within_seconds`; engine side
+  `crates/freerouting/tests/normalize_stop.rs`). Abort still kills the process at once.
 - **Never close, restart or kill KiCad, and don't touch the Java Freerouting plugin**
   (`3rdparty\plugins\app_freerouting_kicad-plugin`) or its Java processes; the owner runs it
   alongside this one.

@@ -181,6 +181,7 @@ fn route_connection_hooked<S: SearchSink>(
     // attempt keeps what its locate added to the ripped set, so the next attempt
     // rips the earlier path's items too; `false` restores the set as it was.
     let items_before = (!ctrl.quirks.failed_attempt_ripped_carryover).then(|| items.clone());
+    let stop = limits.stop;
     let (searched, sink) = search_and_locate(
         board, start, dest, ctrl, limits, items, costs, sink, engine, widths, budget,
     );
@@ -198,7 +199,8 @@ fn route_connection_hooked<S: SearchSink>(
         }
         Searched::Done { result, located } => (result, located),
     };
-    let result = finish_connection(board, start, dest, ctrl, result.is_some(), located, items);
+    let found = result.is_some();
+    let result = finish_connection(board, start, dest, ctrl, found, located, items, stop);
     if result.state != AttemptState::Routed
         && let Some(before) = items_before
     {
@@ -264,7 +266,9 @@ pub(crate) fn route_connection_counted(
 
 /// The part of `autorouteConnection` after the session is cleared
 /// (`:206-261`): the checks of the search result and the located path, then
-/// the rip of `ripped` and the insert.
+/// the rip of `ripped` and the insert. `stop` is the search's stop request,
+/// which may end the insert's normalization early.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn finish_connection(
     board: &mut RoutingBoard,
     start: &BTreeSet<ItemId>,
@@ -273,6 +277,7 @@ pub(crate) fn finish_connection(
     found: bool,
     located: Option<Located>,
     ripped: &BTreeSet<ItemId>,
+    stop: Option<&dyn Stoppable>,
 ) -> AttemptResult {
     let failed = |board: &RoutingBoard, reason: &str| {
         let details = format!(
@@ -300,7 +305,7 @@ pub(crate) fn finish_connection(
     // Java's `connectionItems == null` (`:233-238`, SKIPPED) cannot happen:
     // the locator always returns a list, possibly empty, which is inserted.
     rip_connections(board, ripped, ctrl.remove_unconnected_vias);
-    match insert_located(board, ctrl, &located) {
+    match insert_located(board, ctrl, &located, stop) {
         Ok(_) => AttemptResult::new(AttemptState::Routed),
         Err(InsertError::Failed) => {
             failed(board, ", because the new connection could not be inserted")
@@ -551,6 +556,7 @@ mod tests {
             true,
             Some(located(Vec::new(), 1, 0)),
             &ripped,
+            None,
         );
         assert_eq!(result.state, AttemptState::Failed);
         assert!(
@@ -586,6 +592,7 @@ mod tests {
             true,
             Some(located(Vec::new(), 0, 0)),
             &empty,
+            None,
         );
         assert_eq!(result, AttemptResult::new(AttemptState::Routed));
         assert_eq!(item_ids(&board), before);
@@ -603,6 +610,7 @@ mod tests {
             true,
             Some(located(Vec::new(), 1, 0)),
             &empty,
+            None,
         );
         assert_eq!(result, AttemptResult::new(AttemptState::Failed));
     }
@@ -612,13 +620,17 @@ mod tests {
         let (mut board, control, net) = board_and_control();
         let start: BTreeSet<ItemId> = [pin_of_net(&board, net)].into_iter().collect();
         let empty = BTreeSet::new();
-        let none = finish_connection(&mut board, &start, &empty, &control, false, None, &empty);
+        let none = finish_connection(
+            &mut board, &start, &empty, &control, false, None, &empty, None,
+        );
         assert_eq!(
             none.details,
             "Failed to route connection between pin of component #2 and , because no \
              connection was found between their nets."
         );
-        let unlocated = finish_connection(&mut board, &start, &empty, &control, true, None, &empty);
+        let unlocated = finish_connection(
+            &mut board, &start, &empty, &control, true, None, &empty, None,
+        );
         assert_eq!(
             unlocated.details,
             "Failed to route connection between pin of component #2 and ."
@@ -635,7 +647,7 @@ mod tests {
             corners: vec![IntPoint::new(20000, 20000), IntPoint::new(20000, 60000)],
             layer: 0,
         };
-        let result = insert_segments(&mut board, &control, None, None, 0, 0, &[trace]);
+        let result = insert_segments(&mut board, &control, None, None, 0, 0, &[trace], None);
         assert_eq!(result, Err(InsertError::Failed));
         assert_eq!(board.rules.pin_edge_to_turn_dist(), 55.0);
     }

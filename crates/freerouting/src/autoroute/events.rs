@@ -47,8 +47,9 @@
 //! ends everything. Its [`Stoppable`] implementation has the full-stop
 //! meaning, which is what Java's maze search and pull-tight check.
 
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::mpsc::{Receiver, SyncSender, TrySendError, sync_channel};
+use std::time::Duration;
 
 use freerouting_geometry::{FloatPoint, Stoppable};
 
@@ -393,6 +394,62 @@ impl Stoppable for CancelToken {
     }
 }
 
+/// How often [`with_stop_relay`] raises a local token to the job's level.
+/// Only the latency of a stop depends on it, never a result.
+pub const STOP_RELAY_INTERVAL: Duration = Duration::from_millis(20);
+
+/// Which of the job's stops [`with_stop_relay`] passes on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RelayLevels {
+    /// A full stop only.
+    FullStop,
+    /// A full stop and a router stop.
+    Both,
+}
+
+/// Runs `work` on this thread while a helper thread raises `local` to
+/// `job`'s stop level every [`STOP_RELAY_INTERVAL`] (`levels` says which
+/// stops pass). For work on a board copy with its own token (a portfolio
+/// arm, a sweep pass) whose router copies the job's stop into the token only
+/// when a connection starts: with the relay a stop also ends the connection
+/// in progress (its maze search, its insertion's normalization). Without a
+/// stop request on `job` the helper never touches `local`, so the result is
+/// the same.
+pub fn with_stop_relay<R>(
+    job: &CancelToken,
+    local: &CancelToken,
+    levels: RelayLevels,
+    work: impl FnOnce() -> R,
+) -> R {
+    /// Ends the helper also when `work` panics, so the scope can join it.
+    struct Finish<'a>(&'a AtomicBool, std::thread::Thread);
+    impl Drop for Finish<'_> {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Release);
+            self.1.unpark();
+        }
+    }
+    let done = AtomicBool::new(false);
+    std::thread::scope(|scope| {
+        let helper = std::thread::Builder::new()
+            .name("stop-relay".to_string())
+            .spawn_scoped(scope, || {
+                while !done.load(Ordering::Acquire) {
+                    if job.is_stop_requested() {
+                        local.stop_all();
+                    } else if levels == RelayLevels::Both && job.is_router_stop_requested() {
+                        local.stop_router();
+                    }
+                    std::thread::park_timeout(STOP_RELAY_INTERVAL);
+                }
+            });
+        // Without a helper thread a stop still arrives when the next
+        // connection starts, as before.
+        let _finish = helper.map(|h| Finish(&done, h.thread().clone()));
+        work()
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -403,6 +460,71 @@ mod tests {
 
     use super::*;
     use crate::io::{BoardReadResult, read_board};
+
+    /// Spins until `local` shows `stop`, at most 5 s; true if it did.
+    fn wait_for(stop: impl Fn() -> bool) -> bool {
+        let start = std::time::Instant::now();
+        while start.elapsed() < Duration::from_secs(5) {
+            if stop() {
+                return true;
+            }
+            thread::sleep(Duration::from_millis(1));
+        }
+        false
+    }
+
+    #[test]
+    fn the_relay_passes_a_job_stop_to_running_work() {
+        let job = CancelToken::new();
+        let local = CancelToken::new();
+        let seen = with_stop_relay(&job, &local, RelayLevels::FullStop, || {
+            job.stop_all();
+            wait_for(|| local.is_stop_requested())
+        });
+        assert!(seen, "the local token got the full stop while the work ran");
+    }
+
+    #[test]
+    fn the_relay_passes_only_the_levels_asked_for() {
+        let job = CancelToken::new();
+        let local = CancelToken::new();
+        with_stop_relay(&job, &local, RelayLevels::FullStop, || {
+            job.stop_router();
+            thread::sleep(STOP_RELAY_INTERVAL * 5);
+        });
+        assert!(
+            !local.is_router_stop_requested(),
+            "a router stop is not relayed"
+        );
+
+        let local = CancelToken::new();
+        let seen = with_stop_relay(&job, &local, RelayLevels::Both, || {
+            wait_for(|| local.is_router_stop_requested())
+        });
+        assert!(
+            seen && !local.is_stop_requested(),
+            "a router stop stays one"
+        );
+    }
+
+    #[test]
+    fn the_relay_without_a_stop_leaves_the_token_alone() {
+        let job = CancelToken::new();
+        let local = CancelToken::new();
+        let value = with_stop_relay(&job, &local, RelayLevels::Both, || 42);
+        assert_eq!(value, 42);
+        assert!(!local.is_router_stop_requested());
+    }
+
+    #[test]
+    fn the_relay_ends_when_the_work_panics() {
+        let job = CancelToken::new();
+        let local = CancelToken::new();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            with_stop_relay(&job, &local, RelayLevels::Both, || panic!("work failed"))
+        }));
+        assert!(result.is_err());
+    }
 
     fn load(name: &str) -> RoutingBoard {
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))

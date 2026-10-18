@@ -67,7 +67,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::autoroute::batch::batch_loop::{LoopOutcome, LoopStages, PassExecutor};
 use crate::autoroute::batch::pass::{PassOutcome, PassStages};
 use crate::autoroute::batch::snapshot::BoardFigures;
-use crate::autoroute::events::{CancelToken, Phase};
+use crate::autoroute::events::{CancelToken, Phase, RelayLevels, with_stop_relay};
 use crate::autoroute::stages::{
     ConnectionOutcome, ConnectionParams, ConnectionRouter, Optimizer, RipupPolicy, RouteTask,
     StageCtx, StopReason, UnknownStage,
@@ -570,7 +570,10 @@ pub fn run_sweep(
                 router: &mut router,
                 ripup: &mut ripup,
             };
-            executor.run_pass(board, pass, &mut sweep_stages, &mut local_ctx)
+            // A job stop also ends the connection in progress.
+            with_stop_relay(ctx.cancel, &local, RelayLevels::FullStop, || {
+                executor.run_pass(board, pass, &mut sweep_stages, &mut local_ctx)
+            })
         };
         scope.finish();
         outcome.log.extend(result.log.iter().cloned());

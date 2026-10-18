@@ -82,7 +82,7 @@ use crate::autoroute::batch::batch_loop::{
 use crate::autoroute::batch::pass::PassRunner;
 use crate::autoroute::batch::report::NoRoutableLayer;
 use crate::autoroute::batch::snapshot::BoardFigures;
-use crate::autoroute::events::{CancelToken, NullEvents};
+use crate::autoroute::events::{CancelToken, NullEvents, RelayLevels, with_stop_relay};
 use crate::autoroute::stages::{StageCtx, StageRegistry, StageSelection, UnknownStage};
 use crate::board::RoutingBoard;
 use crate::settings::RouterSettings;
@@ -499,14 +499,17 @@ impl Portfolio<'_> {
                 controller: pipeline.pass_controller.as_mut(),
                 board_stages: &mut pipeline.board_stages,
             };
-            continue_batch_loop(
-                start.for_arm(),
-                &mut board,
-                &mut stages,
-                &mut runner,
-                &mut ctx,
-                self.timed_out,
-            )
+            // A job stop also ends the connection in progress.
+            with_stop_relay(self.job, &local, RelayLevels::Both, || {
+                continue_batch_loop(
+                    start.for_arm(),
+                    &mut board,
+                    &mut stages,
+                    &mut runner,
+                    &mut ctx,
+                    self.timed_out,
+                )
+            })
         };
         let figures = outcome
             .final_figures
