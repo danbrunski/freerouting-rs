@@ -24,7 +24,7 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
 
 ## Checklist
 
-- [~] **N03.1 — Restore the code behind settings.** `router.room_order = tree |
+- [x] **N03.1 — Restore the code behind settings.** `router.room_order = tree |
   canonical` and `router.work_unit = nodes | leaves`, rebased onto main. `legacy`
   pins `tree` and `nodes`.
   - **Accept:**
@@ -36,6 +36,10 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
   (N03.1, the A14 boards not yet run, 1 exact + 6 cutoff):
   `PARITY_BOARDS=Issue690-kit-dev-coldfire-xilinx_5213,Issue269-z10_module,Issue753-CPU-85_r104,Issue066-Project_GP8B,Issue145-smoothieboard,Issue219-LogicBoard_smt,Issue420-contribution-board cargo test --release -p freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1 --nocapture`
   (want: exact 1 of 1 and cutoff 6 of 6 pass and byte-identical, as N01.2).
+  *Done 2026-10-18:* the remainder ran on `f13ac02` (release, `--test-threads=1`):
+  coldfire (exact) and z10, CPU-85, GP8B, smoothieboard, LogicBoard, contribution-board
+  (cutoff) all pass, `eq true bytes true`, 0 nets differ, D8 breaches as Java's; 1 passed,
+  0 failed in 2,284 s. Accept 1 now holds for all 16 exact boards and the probes.
   - **Code.** `target/orchestrator/p04/p04-rejected-canonical-leaves.patch`
     applied to `84ad1a3` with `git apply --3way`, every file cleanly. On top:
     the settings fields `room_order` and `work_unit` (`settings/fields.rs`,
