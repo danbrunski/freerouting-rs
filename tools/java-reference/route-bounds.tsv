@@ -181,6 +181,7 @@ PCBench-Box0-hv-analog-breakout	100		natural stop at pass 3 (completed, 2 s)
 PCBench-retroreflectors-CONGFLOCK	100		natural stop at pass 30 (completed, 0 s)
 canary-pwr/canary-pwr-2026-10-15-1747-unpoured	3		pass 1 did not finish in 60 s; 3 passes
 canary-pwr/canary-pwr-9511d9a-addonly	3		pass 1 did not finish in 60 s; 3 passes
+canary-pwr/canary-pwr-1a7df77-addonly	2		add-only input (Java 7f56b062d's -mp 2 second run graded 37); no route reference yet
 canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout	3		pass 1 did not finish in 60 s; 3 passes
 canary-pwr/canary-pwr-9511d9a-in2-open	3		passes seen 1 in 36 s, 1 fit 45 s
 canary-pwr/canary-pwr-9511d9a	3		pass 1 did not finish in 60 s; 3 passes
