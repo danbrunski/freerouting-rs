@@ -303,6 +303,12 @@ settings_table! {
                 "Run the sweep after the optimizer, then optimize again (Q10.3); unset is false."),
             (output_guard, bool, opt, None, None, "outputGuard", [], Flat::No, true,
                 "Never end worse than the input on completed connections or unconnected pins: fall back to the best history board that isn't, else the input (Q04.3; unset: off)."),
+            (portfolio, i32, opt, None, None, "portfolio", [], Flat::No, true,
+                "Pass-1 portfolio: route K pass-1 orders on board clones and keep the best (Q12); unset or 0 is off."),
+            (restarts, i32, opt, None, None, "restarts", [], Flat::No, true,
+                "Squeaky-wheel restarts after the portfolio: the winner's order with its failed and ripped nets first (Q12.2); unset is 0."),
+            (portfolio_memory_mb, i32, opt, None, None, "portfolioMemoryMb", [], Flat::No, true,
+                "Memory the portfolio's concurrent arms may use, in MiB; fewer arms run at once above it, never fewer arms (Q12.3); unset is 2048."),
         }
         fanout, FanoutPatch, FanoutSettings, "fanout",
         "Configuration of the SMD-pin fanout pre-pass." {

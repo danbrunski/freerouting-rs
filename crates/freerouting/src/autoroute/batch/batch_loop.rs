@@ -207,6 +207,9 @@ pub struct LoopOutcome {
     pub sweep: Option<crate::quality::sweep::SweepOutcome>,
     /// Q04.3: the output guard, if `router.autorouter.output_guard` was on.
     pub output_guard: Option<crate::quality::output_guard::GuardOutcome>,
+    /// Q12: the pass-1 portfolio, if `router.autorouter.portfolio` or
+    /// `restarts` was on.
+    pub portfolio: Option<crate::quality::portfolio::PortfolioOutcome>,
 }
 
 impl LoopOutcome {
@@ -234,6 +237,49 @@ pub fn run_batch_loop(
     ctx: &mut StageCtx,
     timed_out: &dyn Fn() -> bool,
 ) -> Result<LoopOutcome, NoRoutableLayer> {
+    let start = start_batch_loop(board, stages, ctx)?;
+    Ok(continue_batch_loop(
+        start, board, stages, executor, ctx, timed_out,
+    ))
+}
+
+/// The loop's state after the fanout: what [`start_batch_loop`] hands to
+/// [`continue_batch_loop`]. Q12's portfolio continues several copies of it,
+/// each on its own clone of the board ([`LoopStart::for_arm`]).
+pub struct LoopStart {
+    run: Run,
+}
+
+impl LoopStart {
+    /// The outcome so far: the initial unrouted count, the fanout's summary
+    /// and the log lines of the fanout and its board stages.
+    pub fn outcome(&self) -> &LoopOutcome {
+        &self.run.outcome
+    }
+
+    /// A copy that continues on another board without events: the history
+    /// is empty (no pass has run), the output guard's input board is
+    /// shared by value, and nothing is sent to the job's listener.
+    pub fn for_arm(&self) -> LoopStart {
+        LoopStart {
+            run: Run {
+                outcome: self.run.outcome.clone(),
+                history: SnapshotHistory::new(),
+                listening: false,
+                guard: self.run.guard.clone(),
+            },
+        }
+    }
+}
+
+/// The first part of [`run_batch_loop`]: the routable-layer check, the
+/// initial unrouted count, the ordering's reset, the fanout and the board
+/// stages around it.
+pub fn start_batch_loop(
+    board: &mut RoutingBoard,
+    stages: &mut LoopStages<'_>,
+    ctx: &mut StageCtx,
+) -> Result<LoopStart, NoRoutableLayer> {
     check_routable_layers(board, ctx.board_settings)?;
     let mut run = Run {
         outcome: LoopOutcome::default(),
@@ -250,7 +296,20 @@ pub fn run_batch_loop(
     run.fanout(board, stages, ctx);
     run.board_stages(board, stages, ctx, StagePhase::AfterFanout);
     run.flush(board, ctx);
+    Ok(LoopStart { run })
+}
 
+/// The rest of [`run_batch_loop`] after [`start_batch_loop`]: the passes,
+/// the finish, Q10's sweep and the after-routing board stages.
+pub fn continue_batch_loop(
+    start: LoopStart,
+    board: &mut RoutingBoard,
+    stages: &mut LoopStages<'_>,
+    executor: &mut dyn PassExecutor,
+    ctx: &mut StageCtx,
+    timed_out: &dyn Fn() -> bool,
+) -> LoopOutcome {
+    let mut run = start.run;
     let settings = ctx.settings;
     // PARITY: :285-288, `getRunRouter() && (maxPasses == null || maxPasses >= 0)`.
     let router_enabled = settings.run_router() && settings.autorouter.max_passes >= 0;
@@ -282,7 +341,7 @@ pub fn run_batch_loop(
         board.set_journaling(false);
     }
     run.outcome.final_figures = Some(figures);
-    Ok(run.outcome)
+    run.outcome
 }
 
 /// The state of one loop run.

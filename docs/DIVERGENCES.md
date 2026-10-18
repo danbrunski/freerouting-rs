@@ -334,6 +334,25 @@ IntOctagon's box cutout.
   nets in pass 1 where Java needs pass 2 (`tests/quality_transaction.rs`). Its tally goes into
   the job log ("Transactional rip-up ..."). An invalid value fails the job before routing,
   naming the key. Q11.6 measures it (`docs/roadmap/prereg/Q11.json`).
+- `autorouter.portfolio`, `autorouter.restarts` and `autorouter.portfolio_memory_mb` (Q12,
+  `quality::portfolio`) are settings fields Java does not have, unset by default and in no
+  profile (Java's batch loop). With `portfolio = K` (or `restarts > 0`, which runs `K = 1`) the
+  job runs the batch loop's start (the fanout) once, then the rest of the loop (passes, finish,
+  Q10's sweep if on) on K clones of the post-fanout board, one per arm of a fixed list: the
+  configured ordering, Q07's `conflict-rounds` and `inside-out` pass-1 orders (re-applied from
+  tag `archive/q07-orderings`, never registered as orderings of their own), and Java's pass-1
+  list with its signal nets shuffled by `java.util.Random` seeds 1, 2, …; it keeps the arm with
+  the fewest incomplete connections, then the higher router score, then the lower index. Each
+  restart routes pass 1 in the current best's order with its failed nets first and its ripped
+  nets next, and the best of all is kept; the optimizer runs once on it. Arms run on up to
+  `autorouter.max_threads` threads and merge in arm order, and the memory guard only lowers how
+  many run at once, so no result depends on threads or memory. `portfolio = 1` gives the job's
+  SES byte for byte; on `Issue433-my-board.dsn` arm 1 (`conflict-rounds`) routes the connection
+  Java's order leaves; on `tests/data/quality/q12-channel.dsn` a restart routes the failed net B
+  first and completes the board (`tests/quality_portfolio.rs`). While the arms route, no
+  progress or board delta is sent, report-only diagnostics see no arm's connections, and the
+  P02.1 audit covers no arm. A negative value fails the job before routing, naming the key.
+  Q12.5 measures it (`docs/roadmap/prereg/Q12.json`).
 - `transaction.rip_factor` (Q11.5) is rip-count protection Java does not have: with factor
   `f > 0` the transactional router hands the maze search, through
   `ConnectionParams::ripup_factors` and `AutorouteControl::ripup_factors`, a factor `1 + f * k`

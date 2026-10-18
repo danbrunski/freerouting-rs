@@ -114,6 +114,18 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "quality option without a Java control",
     ),
     (
+        "autorouter.portfolio",
+        "quality option without a Java control",
+    ),
+    (
+        "autorouter.restarts",
+        "quality option without a Java control",
+    ),
+    (
+        "autorouter.portfolio_memory_mb",
+        "quality option without a Java control",
+    ),
+    (
         "fanout.start_via_diameter_mm",
         "fanout tuning without a Java control",
     ),
