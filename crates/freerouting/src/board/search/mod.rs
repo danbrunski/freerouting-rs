@@ -12,6 +12,14 @@
 //! limits count the nodes visited. [`fingerprint`] hashes the shape so a
 //! probe can compare it with Java's.
 //!
+//! **Beyond Java (N03.1, P04).** [`SearchConfig`] can untie the router from
+//! the tree's shape: `router.room_order = canonical` completes rooms in an
+//! order that depends only on the tree's contents ([`RoomOrder`]), and
+//! `router.work_unit = leaves` counts work in leaves returned instead of
+//! nodes visited ([`WorkUnit`]). The defaults, and the `legacy` profile,
+//! are Java's (`tree`, `nodes`); neither key is in profile `enhanced` until
+//! N03.3's measurement accepts it (through N05).
+//!
 //! Java stores the tree shapes and leaves of an item in the item
 //! (`ItemSearchTreesInfo`); here each tree keeps them in a map keyed by
 //! [`ItemId`], and the rooms in a map keyed by [`RoomId`].
@@ -50,11 +58,76 @@ use crate::datastructures::{LeafId, ShapeTree, UndoableObjects};
 use crate::library::Padstacks;
 use crate::rules::{BoardRules, ClearanceMatrix};
 
+pub use complete_shape::RoomOrder;
 pub use entries::{TraceChange, TraceMerge};
 pub use fingerprint::TreeFingerprint;
 pub use memo::{MemoCounts, ShapeMemo};
 pub use tree_object::{ObjectEntry, RoomEntry, RoomId, TreeObject};
-pub use work::{UNITS_PER_NOMINAL_MS, WorkLimit, WorkMeter};
+pub use work::{LEAF_UNITS_PER_NOMINAL_MS, UNITS_PER_NOMINAL_MS, WorkLimit, WorkMeter, WorkUnit};
+
+/// The settings key of [`RoomOrder`] (N03.1).
+pub const ROOM_ORDER_KEY: &str = "router.room_order";
+
+/// The settings key of [`WorkUnit`] (N03.1).
+pub const WORK_UNIT_KEY: &str = "router.work_unit";
+
+/// How a board's search trees order room completion and count work
+/// (N03.1, from P04.1 and P04.2): `router.room_order` and
+/// `router.work_unit`. The default is Java's (tree order, nodes visited);
+/// the routing pipeline sets it from the settings
+/// ([`SearchConfig::from_settings`]) and the job's load sequence refuses an
+/// unknown value. Board copies, snapshots and restores keep it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SearchConfig {
+    pub room_order: RoomOrder,
+    pub work_unit: WorkUnit,
+    /// Test hook: whole-tree builds (autoroute trees, rebuilds) insert the
+    /// items in reverse item-list order, which gives trees of the same
+    /// contents and another shape.
+    #[doc(hidden)]
+    pub reversed_builds: bool,
+}
+
+impl SearchConfig {
+    /// The configuration `router.room_order` and `router.work_unit` ask
+    /// for; unset or blank values are the defaults. An unknown value is an
+    /// error naming the key and the valid values.
+    pub fn from_settings(settings: &crate::settings::RouterSettings) -> Result<Self, String> {
+        let mut config = SearchConfig::default();
+        if let Some(name) = setting_value(&settings.room_order) {
+            config.room_order = RoomOrder::parse(name).ok_or_else(|| {
+                format!("{ROOM_ORDER_KEY}: unknown value '{name}' (expected 'tree' or 'canonical')")
+            })?;
+        }
+        if let Some(name) = setting_value(&settings.work_unit) {
+            config.work_unit = WorkUnit::parse(name).ok_or_else(|| {
+                format!("{WORK_UNIT_KEY}: unknown value '{name}' (expected 'nodes' or 'leaves')")
+            })?;
+        }
+        Ok(config)
+    }
+
+    /// True for Java's order and unit (`tree`, `nodes`), the defaults and
+    /// the `legacy` profile's; the test hook is ignored.
+    pub fn is_java(&self) -> bool {
+        self.room_order == RoomOrder::Tree && self.work_unit == WorkUnit::Nodes
+    }
+
+    /// The log line of a routing job: `Search trees: room order <o>, work
+    /// unit <u>`.
+    pub fn log_line(&self) -> String {
+        format!(
+            "Search trees: room order {}, work unit {}",
+            self.room_order.name(),
+            self.work_unit.name()
+        )
+    }
+}
+
+/// A string setting without its surrounding blanks; unset or blank is `None`.
+fn setting_value(value: &Option<String>) -> Option<&str> {
+    value.as_deref().map(str::trim).filter(|v| !v.is_empty())
+}
 
 /// The extra margin added to the drill hole clearance.
 const DRILL_HOLE_CLEARANCE_MARGIN: f64 = 10.0;
@@ -110,6 +183,8 @@ pub struct ShapeSearchTree {
     /// The board's trace-shape memo (P02.5); `None` for a tree of its own,
     /// which computes every shape.
     memo: Option<Arc<ShapeMemo>>,
+    /// The obstacle order of room completion (P04.1).
+    room_order: RoomOrder,
 }
 
 impl ShapeSearchTree {
@@ -125,7 +200,18 @@ impl ShapeSearchTree {
             entries: BTreeMap::new(),
             rooms: BTreeMap::new(),
             memo: None,
+            room_order: RoomOrder::Tree,
         }
+    }
+
+    /// The obstacle order of room completion (P04.1).
+    pub fn room_order(&self) -> RoomOrder {
+        self.room_order
+    }
+
+    /// Completes rooms in `order` from now on.
+    pub fn set_room_order(&mut self, order: RoomOrder) {
+        self.room_order = order;
     }
 
     /// An empty tree of the same kind and class, counting on the same meter
@@ -134,6 +220,7 @@ impl ShapeSearchTree {
         let mut tree = ShapeSearchTree::new(self.kind, self.compensated_clearance_class);
         tree.tree.set_meter(self.tree.meter().clone());
         tree.memo = self.memo.clone();
+        tree.room_order = self.room_order;
         tree
     }
 
@@ -928,6 +1015,8 @@ pub struct SearchTreeManager {
     /// The trace-shape memo of the trees (P02.5), shared with the board's
     /// copies, snapshots and restores.
     memo: Arc<ShapeMemo>,
+    /// Room order and work unit (P04).
+    config: SearchConfig,
 }
 
 impl Default for SearchTreeManager {
@@ -950,6 +1039,7 @@ impl Clone for SearchTreeManager {
             clearance_compensation_used: self.clearance_compensation_used,
             meter,
             memo: self.memo.clone(),
+            config: self.config,
         }
     }
 }
@@ -966,10 +1056,26 @@ impl SearchTreeManager {
             clearance_compensation_used: false,
             meter: Arc::new(WorkMeter::new()),
             memo,
+            config: SearchConfig::default(),
         };
         let tree = manager.new_tree(TreeKind::Plain, 0);
         manager.trees.push(tree);
         manager
+    }
+
+    /// Room order and work unit of the trees (P04).
+    pub fn search_config(&self) -> SearchConfig {
+        self.config
+    }
+
+    /// Sets the room order of every tree, now and later, and the meter's
+    /// unit. Set it before a limit starts (see [`WorkMeter::set_unit`]).
+    pub fn set_search_config(&mut self, config: SearchConfig) {
+        self.config = config;
+        self.meter.set_unit(config.work_unit);
+        for tree in &mut self.trees {
+            tree.room_order = config.room_order;
+        }
     }
 
     /// The trace-shape memo of the trees (P02.5).
@@ -988,6 +1094,7 @@ impl SearchTreeManager {
         let mut tree = ShapeSearchTree::new(kind, class);
         tree.tree.set_meter(self.meter.clone());
         tree.memo = Some(self.memo.clone());
+        tree.room_order = self.config.room_order;
         tree
     }
 
@@ -1188,8 +1295,15 @@ impl SearchTreeManager {
             AngleRestriction::None => TreeKind::Plain,
         };
         let mut tree = self.new_tree(kind, clearance_class);
-        for (_, item) in items.iter() {
-            tree.insert_memoized(item, ctx);
+        if self.config.reversed_builds {
+            let all: Vec<&Item> = items.iter().map(|(_, item)| item).collect();
+            for item in all.into_iter().rev() {
+                tree.insert_memoized(item, ctx);
+            }
+        } else {
+            for (_, item) in items.iter() {
+                tree.insert_memoized(item, ctx);
+            }
         }
         self.trees.push(tree);
         self.trees.last().expect("tree just pushed")
@@ -1216,8 +1330,16 @@ impl SearchTreeManager {
                     tree.remove(*id);
                 }
             }
-            for (_, item) in items.iter().filter(|(_, i)| i.is_on_the_board()) {
-                tree.insert_memoized(item, ctx);
+            let on_board = items.iter().filter(|(_, i)| i.is_on_the_board());
+            if self.config.reversed_builds {
+                let all: Vec<&Item> = on_board.map(|(_, item)| item).collect();
+                for item in all.into_iter().rev() {
+                    tree.insert_memoized(item, ctx);
+                }
+            } else {
+                for (_, item) in on_board {
+                    tree.insert_memoized(item, ctx);
+                }
             }
         }
     }

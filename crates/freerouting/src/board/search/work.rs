@@ -20,29 +20,116 @@
 //!
 //! User stops stay on `freerouting_geometry::Stoppable`; wall time never
 //! changes the work done.
+//!
+//! **The unit (P04.2, restored by N03.1; off by default and in `legacy`).**
+//! Java's unit, nodes visited, depends on the tree's
+//! shape: two trees with the same contents built in another order count
+//! differently, so a limit cuts off at another point. [`WorkUnit::Leaves`]
+//! counts the leaves an overlap query returns (its result set) and, in room
+//! completion, the leaves that meet the room's bound at their turn in the
+//! canonical order (P04.1); both depend only on the tree's contents. A meter
+//! counts in one unit, set per board ([`WorkMeter::set_unit`],
+//! `router.work_unit`); [`WorkUnit::Nodes`] is the default and Java's.
+//! A limit of `n` nominal milliseconds allows `n` times the unit's
+//! [`WorkUnit::units_per_nominal_ms`]: 64,000 nodes, or
+//! [`LEAF_UNITS_PER_NOMINAL_MS`] leaves, calibrated on `benchmark` so that a
+//! nominal millisecond is about the same work in both units.
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
 /// Work units per nominal millisecond (Java
-/// `WorkLimit.UNITS_PER_NOMINAL_MILLISECOND`).
+/// `WorkLimit.UNITS_PER_NOMINAL_MILLISECOND`), in [`WorkUnit::Nodes`].
 pub const UNITS_PER_NOMINAL_MS: u64 = 64_000;
+
+/// Work units per nominal millisecond in [`WorkUnit::Leaves`] (P04.2): the
+/// nodes rate times the leaves returned per node visited, measured on the
+/// `benchmark` set (see `docs/DIVERGENCES.md`).
+pub const LEAF_UNITS_PER_NOMINAL_MS: u64 = 3_000;
+
+/// What a [`WorkMeter`] counts (P04.2).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WorkUnit {
+    /// Search-tree nodes visited, Java's unit (D5); depends on the tree's
+    /// shape.
+    #[default]
+    Nodes,
+    /// Leaves returned by overlap queries and leaves restraining a room in
+    /// completion; depends only on the tree's contents.
+    Leaves,
+}
+
+impl WorkUnit {
+    /// The setting value: `nodes` or `leaves`.
+    pub fn name(self) -> &'static str {
+        match self {
+            WorkUnit::Nodes => "nodes",
+            WorkUnit::Leaves => "leaves",
+        }
+    }
+
+    /// The unit named `name` (`nodes` or `leaves`).
+    pub fn parse(name: &str) -> Option<WorkUnit> {
+        match name {
+            "nodes" => Some(WorkUnit::Nodes),
+            "leaves" => Some(WorkUnit::Leaves),
+            _ => None,
+        }
+    }
+
+    /// Units per nominal millisecond of a [`WorkLimit`].
+    pub fn units_per_nominal_ms(self) -> u64 {
+        match self {
+            WorkUnit::Nodes => UNITS_PER_NOMINAL_MS,
+            WorkUnit::Leaves => LEAF_UNITS_PER_NOMINAL_MS,
+        }
+    }
+
+    fn code(self) -> u8 {
+        match self {
+            WorkUnit::Nodes => 0,
+            WorkUnit::Leaves => 1,
+        }
+    }
+
+    fn from_code(code: u8) -> WorkUnit {
+        if code == 1 {
+            WorkUnit::Leaves
+        } else {
+            WorkUnit::Nodes
+        }
+    }
+}
 
 static NEXT_METER_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Counts units of work, search-tree nodes visited (Java `WorkMeter`).
+/// Counts units of work, search-tree nodes visited (Java `WorkMeter`) or
+/// leaves returned (P04.2, [`WorkUnit`]).
 #[derive(Debug)]
 pub struct WorkMeter {
     id: u64,
     units: AtomicU64,
+    unit: AtomicU8,
 }
 
 impl WorkMeter {
-    /// A new meter at zero.
+    /// A new meter at zero, counting nodes.
     pub fn new() -> Self {
         WorkMeter {
             id: NEXT_METER_ID.fetch_add(1, Ordering::Relaxed),
             units: AtomicU64::new(0),
+            unit: AtomicU8::new(WorkUnit::Nodes.code()),
         }
+    }
+
+    /// What this meter counts.
+    pub fn unit(&self) -> WorkUnit {
+        WorkUnit::from_code(self.unit.load(Ordering::Relaxed))
+    }
+
+    /// Counts in `unit` from now on. Set it before any limit starts: a
+    /// limit's allowance is fixed when it is created.
+    pub fn set_unit(&self, unit: WorkUnit) {
+        self.unit.store(unit.code(), Ordering::Relaxed);
     }
 
     /// Records `units` units of work.
@@ -51,6 +138,22 @@ impl WorkMeter {
             self.units.fetch_add(units, Ordering::Relaxed);
             // P01.2: one load of a flag while the statistics are off.
             crate::run_stats::record_tree_query(units);
+        }
+    }
+
+    /// Records a tree query that visited `nodes` nodes and returned
+    /// `leaves` leaves, in this meter's unit. The run statistics (P01.2)
+    /// get both counts whatever the unit.
+    pub fn add_query(&self, nodes: u64, leaves: u64) {
+        let units = match self.unit() {
+            WorkUnit::Nodes => nodes,
+            WorkUnit::Leaves => leaves,
+        };
+        if units > 0 {
+            self.units.fetch_add(units, Ordering::Relaxed);
+        }
+        if nodes > 0 {
+            crate::run_stats::record_tree_query_counts(nodes, leaves);
         }
     }
 
@@ -77,6 +180,7 @@ impl Clone for WorkMeter {
         WorkMeter {
             id: NEXT_METER_ID.fetch_add(1, Ordering::Relaxed),
             units: AtomicU64::new(self.units()),
+            unit: AtomicU8::new(self.unit().code()),
         }
     }
 }
@@ -94,8 +198,9 @@ pub struct WorkLimit {
 
 impl WorkLimit {
     /// A limit of `ms` nominal milliseconds of work on `meter`, starting
-    /// now. Negative values count as 0; the unit count saturates at
-    /// `i64::MAX` as Java's `long` does.
+    /// now, in the meter's unit ([`WorkUnit::units_per_nominal_ms`]).
+    /// Negative values count as 0; the unit count saturates at `i64::MAX`
+    /// as Java's `long` does.
     pub fn nominal_ms(meter: &WorkMeter, ms: i64) -> Self {
         Self::with_site(meter, ms, "")
     }
@@ -104,10 +209,11 @@ impl WorkLimit {
     /// guarded algorithm for the cut-off line.
     pub fn with_site(meter: &WorkMeter, ms: i64, site: &'static str) -> Self {
         let ms = ms.max(0) as u64;
-        let max_units = if ms > i64::MAX as u64 / UNITS_PER_NOMINAL_MS {
+        let rate = meter.unit().units_per_nominal_ms();
+        let max_units = if ms > i64::MAX as u64 / rate {
             i64::MAX as u64
         } else {
-            ms * UNITS_PER_NOMINAL_MS
+            ms * rate
         };
         WorkLimit {
             meter_id: meter.id,

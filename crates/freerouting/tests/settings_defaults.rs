@@ -126,6 +126,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("min_trace_width_um", None),
         ("strict_drc", b(false)),
         ("result_json", None),
+        ("room_order", None),
+        ("work_unit", None),
         // autorouter.
         ("autorouter.enabled", b(true)),
         ("autorouter.algorithm", s("freerouting-router")),

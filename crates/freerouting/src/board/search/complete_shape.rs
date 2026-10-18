@@ -16,9 +16,32 @@
 //! variant collects every leaf against the start bound first and visits
 //! them sorted (`ShapeTree::overlaps`'s order).
 //!
+//! **Canonical order (P04.1, restored by N03.1; a deliberate divergence, off
+//! by default and in profile `legacy`).** With
+//! [`RoomOrder::Canonical`] (`router.room_order = canonical`) the 45° and
+//! 90° variants restrain the room by the obstacles in the order (distance
+//! of the leaf's bounding shape from the shape the room must contain, then
+//! the leaf's key and shape index), skipping a leaf that misses the bound
+//! of the moment, exactly as the tree order skips it. The walk is
+//! [`ShapeTree::best_first`]: the distance (`octagon_gap`, `box_gap`) never
+//! decreases from a node to its children, so the leaves come in that order
+//! whatever the tree's shape, and a pruned subtree holds no leaf that would
+//! meet the (only shrinking) bound at its turn. The rooms then depend only on
+//! the tree's contents. The checklist's first idea, all overlapping leaves
+//! sorted by key alone, gives the same independence but must visit every
+//! leaf that meets the start shape, which is usually the whole board on all
+//! layers; nearest first keeps the pruning (the test
+//! `canonical_order_is_the_sorted_fold_and_ignores_insertion_order` checks
+//! the walk against the sorted fold). The plain variant already collects
+//! and sorts, so it has one order.
+//!
 //! Work: every node popped is one unit on the tree's work meter, as
-//! `WorkMeter.tick()` in the three Java loops (B03.7); the count is added
-//! once per call.
+//! `WorkMeter.tick()` in the three Java loops (B03.7); in
+//! [`WorkUnit::Leaves`](super::WorkUnit::Leaves) (P04.2) every leaf that meets
+//! the bound of the moment is, which in the canonical order depends only on
+//! the contents. The count is added once per call.
+//!
+//! [`ShapeTree::best_first`]: crate::datastructures::ShapeTree::best_first
 //!
 //! Where Java warns and returns an empty list (no contained shape, a start
 //! shape of the wrong type, an empty tree) the port returns an empty list
@@ -36,6 +59,7 @@ use super::rooms::IncompleteRoom;
 use super::{ShapeSearchTree, TreeKind, TreeObject, restrain45, restrain90};
 use crate::board::basic_board::BasicBoard;
 use crate::board::items::ItemId;
+use crate::datastructures::BestFirstHeap;
 
 /// Reusable buffers of room completion: the depth-first stack and the
 /// room list being built after each obstacle. Java keeps the same stack
@@ -44,7 +68,40 @@ use crate::board::items::ItemId;
 #[derive(Clone, Debug, Default)]
 pub struct CompletionScratch {
     stack: Vec<usize>,
+    heap: BestFirstHeap<TreeObject>,
     spare: Vec<IncompleteRoom>,
+}
+
+/// The order in which room completion restrains a room by the obstacles
+/// (P04.1, `router.room_order`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RoomOrder {
+    /// Java's: the tree's depth-first order (D5), so the rooms depend on
+    /// the tree's shape.
+    #[default]
+    Tree,
+    /// By distance from the shape the room must contain, then by key and
+    /// shape index: the rooms depend only on the tree's contents.
+    Canonical,
+}
+
+impl RoomOrder {
+    /// The setting value: `tree` or `canonical`.
+    pub fn name(self) -> &'static str {
+        match self {
+            RoomOrder::Tree => "tree",
+            RoomOrder::Canonical => "canonical",
+        }
+    }
+
+    /// The order named `name` (`tree` or `canonical`).
+    pub fn parse(name: &str) -> Option<RoomOrder> {
+        match name {
+            "tree" => Some(RoomOrder::Tree),
+            "canonical" => Some(RoomOrder::Canonical),
+            _ => None,
+        }
+    }
 }
 
 impl CompletionScratch {
@@ -308,61 +365,44 @@ impl ShapeSearchTree {
             Some(TileShape::IntOctagon(to_contain)),
         )];
         let mut new_result = std::mem::take(&mut scratch.spare);
-        let popped = self
-            .tree
-            .depth_first(&mut scratch.stack, |node_bounds, leaf| {
-                // PARITY: a node is descended into only if it intersects the
-                // bound of the moment, which shrinks after every obstacle.
-                if !regular_intersects_octagon(node_bounds, &bound) {
-                    return false;
-                }
-                let Some((object, index)) = leaf else {
-                    return true;
-                };
-                let Some(obstacle) = self.obstacle_shape(query, object, index) else {
-                    return false;
-                };
-                let Some(obstacle) = obstacle.bounding_octagon() else {
-                    return false;
-                };
-                let is_room = matches!(object, TreeObject::Room(_));
-                new_result.clear();
-                let mut new_bound = IntOctagon::EMPTY;
-                for current in result.drain(..) {
-                    let current_shape = octagon_of(&current);
-                    if !current_shape.overlaps(&obstacle) {
-                        new_bound = new_bound.union_octagon(&current_shape);
-                        new_result.push(current);
-                        continue;
-                    }
-                    if is_room && let Some(ignore_shape) = query.ignore_shape {
-                        let intersection = current_shape.intersection_octagon(&obstacle);
-                        if ignore_shape.contains_shape(&intersection) {
-                            // PARITY: `:211-231`, the room is kept unless the
-                            // ignore shape contains it.
-                            if !ignore_shape.contains_shape(&current_shape) {
-                                new_bound = new_bound.union_octagon(&current_shape);
-                                new_result.push(current);
-                            }
-                            continue;
-                        }
-                    }
-                    // Java unions every room of the new list after each restrain;
-                    // octagon unions are exact minima and maxima, so the union
-                    // of the rooms appended is the same bound.
-                    let first_new = new_result.len();
-                    restrain45::restrain_45(&current, &obstacle, &mut new_result);
-                    for tmp in &new_result[first_new..] {
-                        new_bound = new_bound.union_octagon(&octagon_of(tmp));
-                    }
-                }
-                std::mem::swap(&mut result, &mut new_result);
-                bound = new_bound;
-                false
-            });
+        let mut active = 0u64;
+        let mut visit = |node_bounds: &RegularTileShape, leaf: Option<(TreeObject, usize)>| {
+            // PARITY: a node is descended into only if it intersects the
+            // bound of the moment, which shrinks after every obstacle.
+            if !regular_intersects_octagon(node_bounds, &bound) {
+                return false;
+            }
+            let Some((object, index)) = leaf else {
+                return true;
+            };
+            active += 1;
+            if let Some(obstacle) = self.obstacle_shape(query, object, index)
+                && let Some(obstacle) = obstacle.bounding_octagon()
+            {
+                bound = restrain_rooms_45(
+                    &mut result,
+                    &mut new_result,
+                    &obstacle,
+                    matches!(object, TreeObject::Room(_)),
+                    query.ignore_shape,
+                );
+            }
+            false
+        };
+        let popped = match self.room_order {
+            RoomOrder::Tree => self.tree.depth_first(&mut scratch.stack, visit),
+            RoomOrder::Canonical => {
+                let near = to_contain;
+                self.tree.best_first(
+                    &mut scratch.heap,
+                    |node_bounds| octagon_gap(node_bounds, &near),
+                    &mut visit,
+                )
+            }
+        };
         new_result.clear();
         scratch.spare = new_result;
-        self.tree.meter().add(popped);
+        self.tree.meter().add_query(popped, active);
         let mut result = divide_large_room(result, &query.board_box);
         // PARITY: `divideLargeRoom`'s override (`:311-322`): every shape and
         // contained shape becomes its bounding octagon.
@@ -412,51 +452,37 @@ impl ShapeSearchTree {
             Some(TileShape::IntBox(to_contain)),
         )];
         let mut new_result = std::mem::take(&mut scratch.spare);
-        let popped = self
-            .tree
-            .depth_first(&mut scratch.stack, |node_bounds, leaf| {
-                if !regular_intersects_box(node_bounds, &bound) {
-                    return false;
-                }
-                let Some((object, index)) = leaf else {
-                    return true;
-                };
-                let Some(obstacle) = self.obstacle_shape(query, object, index) else {
-                    return false;
-                };
-                let obstacle = obstacle.bounding_box();
-                let is_room = matches!(object, TreeObject::Room(_));
-                new_result.clear();
-                let mut new_bound = IntBox::EMPTY;
-                for current in result.drain(..) {
-                    let current_shape = box_of(&current);
-                    if !current_shape.overlaps(&obstacle) {
-                        new_bound = new_bound.union_box(&current_shape);
-                        new_result.push(current);
-                        continue;
-                    }
-                    if is_room && let Some(ignore_shape) = query.ignore_shape {
-                        let intersection = current_shape.intersection_box(&obstacle);
-                        if ignore_shape.contains_shape(&intersection) {
-                            // PARITY: unlike the 45° variant the room is dropped
-                            // (`:130-145`).
-                            continue;
-                        }
-                    }
-                    // As in the 45° variant, the union of the rooms appended.
-                    let first_new = new_result.len();
-                    restrain90::restrain_90(&current, &obstacle, &mut new_result);
-                    for tmp in &new_result[first_new..] {
-                        new_bound = new_bound.union_box(&box_of(tmp));
-                    }
-                }
-                std::mem::swap(&mut result, &mut new_result);
-                bound = new_bound;
-                false
-            });
+        let mut active = 0u64;
+        let mut visit = |node_bounds: &RegularTileShape, leaf: Option<(TreeObject, usize)>| {
+            if !regular_intersects_box(node_bounds, &bound) {
+                return false;
+            }
+            let Some((object, index)) = leaf else {
+                return true;
+            };
+            active += 1;
+            if let Some(obstacle) = self.obstacle_shape(query, object, index) {
+                bound = restrain_rooms_90(
+                    &mut result,
+                    &mut new_result,
+                    &obstacle.bounding_box(),
+                    matches!(object, TreeObject::Room(_)),
+                    query.ignore_shape,
+                );
+            }
+            false
+        };
+        let popped = match self.room_order {
+            RoomOrder::Tree => self.tree.depth_first(&mut scratch.stack, visit),
+            RoomOrder::Canonical => self.tree.best_first(
+                &mut scratch.heap,
+                |node_bounds| box_gap(node_bounds, &to_contain),
+                &mut visit,
+            ),
+        };
         new_result.clear();
         scratch.spare = new_result;
-        self.tree.meter().add(popped);
+        self.tree.meter().add_query(popped, active);
         // PARITY: no `divideLargeRoom` and no `removeIf` (`:196-210`).
         result
     }
@@ -477,6 +503,132 @@ fn box_of(room: &IncompleteRoom) -> IntBox {
         Some(other) => other.bounding_box(),
         None => IntBox::EMPTY,
     }
+}
+
+/// Restrains every room of `result` by `obstacle`, one obstacle of the 45°
+/// completion (`ShapeSearchTree45Degree.completeShape`, `:180-262`), and
+/// returns the new bound: the union of the rooms. `new_result` is scratch.
+fn restrain_rooms_45(
+    result: &mut Vec<IncompleteRoom>,
+    new_result: &mut Vec<IncompleteRoom>,
+    obstacle: &IntOctagon,
+    is_room: bool,
+    ignore_shape: Option<&TileShape>,
+) -> IntOctagon {
+    new_result.clear();
+    let mut new_bound = IntOctagon::EMPTY;
+    for current in result.drain(..) {
+        let current_shape = octagon_of(&current);
+        if !current_shape.overlaps(obstacle) {
+            new_bound = new_bound.union_octagon(&current_shape);
+            new_result.push(current);
+            continue;
+        }
+        if is_room && let Some(ignore_shape) = ignore_shape {
+            let intersection = current_shape.intersection_octagon(obstacle);
+            if ignore_shape.contains_shape(&intersection) {
+                // PARITY: `:211-231`, the room is kept unless the
+                // ignore shape contains it.
+                if !ignore_shape.contains_shape(&current_shape) {
+                    new_bound = new_bound.union_octagon(&current_shape);
+                    new_result.push(current);
+                }
+                continue;
+            }
+        }
+        // Java unions every room of the new list after each restrain;
+        // octagon unions are exact minima and maxima, so the union
+        // of the rooms appended is the same bound.
+        let first_new = new_result.len();
+        restrain45::restrain_45(&current, obstacle, new_result);
+        for tmp in &new_result[first_new..] {
+            new_bound = new_bound.union_octagon(&octagon_of(tmp));
+        }
+    }
+    std::mem::swap(result, new_result);
+    new_bound
+}
+
+/// [`restrain_rooms_45`] for the 90° completion
+/// (`ShapeSearchTree90Degree.completeShape`, `:117-170`).
+fn restrain_rooms_90(
+    result: &mut Vec<IncompleteRoom>,
+    new_result: &mut Vec<IncompleteRoom>,
+    obstacle: &IntBox,
+    is_room: bool,
+    ignore_shape: Option<&TileShape>,
+) -> IntBox {
+    new_result.clear();
+    let mut new_bound = IntBox::EMPTY;
+    for current in result.drain(..) {
+        let current_shape = box_of(&current);
+        if !current_shape.overlaps(obstacle) {
+            new_bound = new_bound.union_box(&current_shape);
+            new_result.push(current);
+            continue;
+        }
+        if is_room && let Some(ignore_shape) = ignore_shape {
+            let intersection = current_shape.intersection_box(obstacle);
+            if ignore_shape.contains_shape(&intersection) {
+                // PARITY: unlike the 45° variant the room is dropped
+                // (`:130-145`).
+                continue;
+            }
+        }
+        // As in the 45° variant, the union of the rooms appended.
+        let first_new = new_result.len();
+        restrain90::restrain_90(&current, obstacle, new_result);
+        for tmp in &new_result[first_new..] {
+            new_bound = new_bound.union_box(&box_of(tmp));
+        }
+    }
+    std::mem::swap(result, new_result);
+    new_bound
+}
+
+/// The canonical order's distance (P04.1) of a node's bounding shape from
+/// the octagon `near`: the largest gap between the two along the four
+/// directions of an octagon, the diagonal gaps (in `x ± y`) against twice
+/// the axis gaps, 0 if they intersect. Exact in `i64`, and it never
+/// decreases from a node to its children, whose bounds lie inside.
+fn octagon_gap(node: &RegularTileShape, near: &IntOctagon) -> i64 {
+    let o = match node {
+        RegularTileShape::IntOctagon(o) => *o,
+        RegularTileShape::IntBox(b) => b.to_int_octagon(),
+    };
+    let gap = |lo1: i32, hi1: i32, lo2: i32, hi2: i32| -> i64 {
+        (i64::from(lo1.max(lo2)) - i64::from(hi1.min(hi2))).max(0)
+    };
+    let x = gap(o.left_x, o.right_x, near.left_x, near.right_x);
+    let y = gap(o.bottom_y, o.top_y, near.bottom_y, near.top_y);
+    let sum = gap(
+        o.lower_left_diagonal_x,
+        o.upper_right_diagonal_x,
+        near.lower_left_diagonal_x,
+        near.upper_right_diagonal_x,
+    );
+    let difference = gap(
+        o.upper_left_diagonal_x,
+        o.lower_right_diagonal_x,
+        near.upper_left_diagonal_x,
+        near.lower_right_diagonal_x,
+    );
+    (2 * x).max(2 * y).max(sum).max(difference)
+}
+
+/// [`octagon_gap`] for the 90° tree: the larger of the x and y gaps
+/// between a node's bounding box and the box `near`.
+fn box_gap(node: &RegularTileShape, near: &IntBox) -> i64 {
+    let b = match node {
+        RegularTileShape::IntBox(b) => *b,
+        RegularTileShape::IntOctagon(o) => o.bounding_box(),
+    };
+    let gap = |lo1: i32, hi1: i32, lo2: i32, hi2: i32| -> i64 {
+        (i64::from(lo1.max(lo2)) - i64::from(hi1.min(hi2))).max(0)
+    };
+    let x = gap(b.ll.x, b.ur.x, near.ll.x, near.ur.x);
+    let y = gap(b.ll.y, b.ur.y, near.ll.y, near.ur.y);
+    x.max(y)
 }
 
 /// Java `boundingOctagon()`, which is never null for the bounded shapes
@@ -692,6 +844,178 @@ mod tests {
         };
         assert_eq!((shape.left_x, shape.right_x), (310, 400));
         assert_eq!((shape.bottom_y, shape.top_y), (-1000, 1000));
+    }
+
+    use freerouting_geometry::jmath::JavaRandom;
+
+    /// A 45° (or 90°) tree of `count` random rooms on layer 0, inserted in
+    /// the order `order` gives the indexes.
+    fn random_tree(
+        kind: TreeKind,
+        boxes: &[IntBox],
+        order: impl Iterator<Item = usize>,
+    ) -> ShapeSearchTree {
+        let mut tree = ShapeSearchTree::new(kind, 0);
+        tree.set_room_order(RoomOrder::Canonical);
+        for i in order {
+            let shape = match kind {
+                TreeKind::NinetyDegree => TileShape::IntBox(boxes[i]),
+                _ => TileShape::IntOctagon(boxes[i].to_int_octagon()),
+            };
+            tree.insert_room(RoomId(i as i32 + 1), shape, 0);
+        }
+        tree
+    }
+
+    fn random_box(random: &mut JavaRandom, size: i32) -> IntBox {
+        let x = random.next_int(10_000);
+        let y = random.next_int(10_000);
+        IntBox::new(
+            x,
+            y,
+            x + 1 + random.next_int(size),
+            y + 1 + random.next_int(size),
+        )
+    }
+
+    fn room_text(rooms: &[IncompleteRoom]) -> String {
+        rooms
+            .iter()
+            .map(|r| format!("{:?} {:?} {}", r.shape, r.contained, r.layer))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// The canonical order by its definition: every leaf, sorted by
+    /// (distance, key, shape index), restraining the rooms if it meets the
+    /// bound of the moment. The best-first walk must give the same rooms.
+    fn reference_45(tree: &ShapeSearchTree, board_box: IntBox, contained: IntOctagon) -> String {
+        let mut leaves: Vec<_> = tree
+            .tree
+            .to_array()
+            .into_iter()
+            .map(|leaf| {
+                let bounds = tree.tree.leaf_bounds(leaf);
+                let (object, index) = tree.tree.leaf(leaf);
+                (octagon_gap(&bounds, &contained), object, index, bounds)
+            })
+            .collect();
+        leaves.sort_by_key(|&(gap, object, index, _)| (gap, object, index));
+        let start = board_box.to_int_octagon();
+        let mut bound = start;
+        let mut result = vec![IncompleteRoom::new(
+            Some(TileShape::IntOctagon(start)),
+            0,
+            Some(TileShape::IntOctagon(contained)),
+        )];
+        let mut scratch = Vec::new();
+        for (_, object, _, bounds) in leaves {
+            if !regular_intersects_octagon(&bounds, &bound) {
+                continue;
+            }
+            let id = object.room().unwrap();
+            let obstacle = tree.rooms[&id].shape.bounding_octagon().unwrap();
+            bound = restrain_rooms_45(&mut result, &mut scratch, &obstacle, true, None);
+        }
+        let mut result = divide_large_room(result, &board_box);
+        for current in &mut result {
+            current.shape = Some(TileShape::IntOctagon(bounding_octagon_of(
+                current.shape.as_ref(),
+            )));
+            current.contained = Some(TileShape::IntOctagon(bounding_octagon_of(
+                current.contained.as_ref(),
+            )));
+        }
+        result.retain(|r| match (&r.contained, &r.shape) {
+            (Some(contained), Some(shape)) => !contained.contains_shape(shape),
+            _ => true,
+        });
+        room_text(&result)
+    }
+
+    #[test]
+    fn canonical_order_is_the_sorted_fold_and_ignores_insertion_order() {
+        let board_box = IntBox::new(-100, -100, 10_200, 10_200);
+        let mut random = JavaRandom::new(20261017);
+        for case in 0..60 {
+            let count = 5 + random.next_int(60) as usize;
+            let boxes: Vec<IntBox> = (0..count).map(|_| random_box(&mut random, 900)).collect();
+            let mut shuffled: Vec<usize> = (0..count).collect();
+            for i in (1..count).rev() {
+                shuffled.swap(i, random.next_int(i as i32 + 1) as usize);
+            }
+            let contained = random_box(&mut random, 40);
+            for kind in [TreeKind::FortyfiveDegree, TreeKind::NinetyDegree] {
+                let forward = random_tree(kind, &boxes, 0..count);
+                let other = random_tree(kind, &boxes, shuffled.iter().copied());
+                let contained_shape = match kind {
+                    TreeKind::NinetyDegree => TileShape::IntBox(contained),
+                    _ => TileShape::IntOctagon(contained.to_int_octagon()),
+                };
+                let room = IncompleteRoom::new(None, 0, Some(contained_shape));
+                let complete = |tree: &ShapeSearchTree| {
+                    let before = tree.tree.meter().units();
+                    tree.tree.meter().set_unit(super::super::WorkUnit::Leaves);
+                    let rooms = tree.complete_shape(
+                        board_box,
+                        &room,
+                        None,
+                        None,
+                        &mut CompletionScratch::new(),
+                        |_, _| None,
+                    );
+                    (room_text(&rooms), tree.tree.meter().units() - before)
+                };
+                let (a, a_units) = complete(&forward);
+                let (b, b_units) = complete(&other);
+                assert_eq!(a, b, "case {case} {kind:?}: rooms of two insertion orders");
+                assert_eq!(a_units, b_units, "case {case} {kind:?}: leaf counts");
+                if kind == TreeKind::FortyfiveDegree {
+                    let reference = reference_45(&forward, board_box, contained.to_int_octagon());
+                    assert_eq!(
+                        a, reference,
+                        "case {case}: best first against the sorted fold"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_gap_never_shrinks_inside_a_bound() {
+        let mut random = JavaRandom::new(7);
+        for _ in 0..2_000 {
+            let inner = random_box(&mut random, 500);
+            let grow = |random: &mut JavaRandom| random.next_int(300);
+            let outer = IntBox::new(
+                inner.ll.x - grow(&mut random),
+                inner.ll.y - grow(&mut random),
+                inner.ur.x + grow(&mut random),
+                inner.ur.y + grow(&mut random),
+            );
+            let near = random_box(&mut random, 50);
+            let o = |b: IntBox| RegularTileShape::IntOctagon(b.to_int_octagon());
+            let gap_inner = octagon_gap(&o(inner), &near.to_int_octagon());
+            let gap_outer = octagon_gap(&o(outer), &near.to_int_octagon());
+            assert!(gap_outer <= gap_inner);
+            let bx = |b: IntBox| RegularTileShape::IntBox(b);
+            assert!(box_gap(&bx(outer), &near) <= box_gap(&bx(inner), &near));
+            if inner.intersects_box(&near) {
+                assert_eq!(gap_inner, 0);
+            }
+        }
+        // Exact at the coordinate limits.
+        let far = IntBox::new(i32::MIN + 1, i32::MIN + 1, i32::MIN + 2, i32::MIN + 2);
+        let near = IntBox::new(i32::MAX - 2, i32::MAX - 2, i32::MAX - 1, i32::MAX - 1);
+        let gap = octagon_gap(
+            &RegularTileShape::IntOctagon(far.to_int_octagon()),
+            &near.to_int_octagon(),
+        );
+        assert!(gap > i64::from(i32::MAX));
+        assert_eq!(
+            box_gap(&RegularTileShape::IntBox(far), &near),
+            i64::from(i32::MAX - 2) - i64::from(i32::MIN + 2)
+        );
     }
 
     #[test]

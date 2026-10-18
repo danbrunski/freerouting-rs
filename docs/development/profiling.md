@@ -160,8 +160,11 @@ The file has, per stage (`load`, `fanout`, each autorouter `pass`, each
 `connections_attempted`, `connections_routed`, `connections_failed`,
 `ripped_items`, `maze_queue_pops`, `maze_queue_pushes`,
 `maze_drop_on_equal_skips`, `maze_skipped_occupied`, `rooms_completed`,
-`doors_expanded`, `drills_computed`, `maze_work_units`, `tree_queries` (overlap
-queries and room completions) and `tree_nodes_visited` (D5's work unit), plus
+`doors_expanded`, `drills_computed`, `maze_work_units`, `maze_work_limit_hits`
+and `fanout_work_limit_hits` (connections and fanout pins whose work limit was
+exceeded), `tree_queries` (overlap queries and room completions),
+`tree_leaves_returned` (N03.1's `leaves` unit, counted in either unit) and
+`tree_nodes_visited` (D5's work unit), plus
 `unit_costs`: microseconds per connection, per room, per tree query and per
 1000 tree nodes. A `total` block sums the stages. `-drc --stats json` gives
 `load` and `drc`.

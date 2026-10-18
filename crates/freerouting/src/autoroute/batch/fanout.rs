@@ -316,6 +316,9 @@ impl FanoutRun {
                     continue;
                 }
                 let outcome = fanout_one(board, pin.pin, effective_ripup, &limit, ctx);
+                if limit.exceeded(board.search_trees().work_meter()) {
+                    crate::run_stats::record_work_limit_hit(true);
+                }
                 self.count(&mut report, component.component, pin.pin, &outcome.result);
                 observer.after_pin(board, component.component, pin.pin, &outcome);
                 flush_journal(board, ctx.events);

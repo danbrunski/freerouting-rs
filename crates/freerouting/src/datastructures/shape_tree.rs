@@ -4,6 +4,13 @@ use freerouting_geometry::{RegularTileShape, ShapeBoundingDirections, TileShape,
 
 use crate::board::search::WorkMeter;
 
+/// The scratch heap of [`ShapeTree::best_first`]: (priority, the leaf's key
+/// and shape index or `None` for an inner node, node index), smallest first.
+/// `None` orders before every leaf, so inner nodes come first at equal
+/// priority.
+pub type BestFirstHeap<K> =
+    std::collections::BinaryHeap<std::cmp::Reverse<(i64, Option<(K, usize)>, usize)>>;
+
 /// Handle of a leaf in a [`ShapeTree`]. Valid until the leaf is removed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LeafId(u32);
@@ -257,7 +264,10 @@ impl<K: Ord + Copy> ShapeTree<K> {
     /// key and then by shape index.
     ///
     /// Every node popped off the traversal stack, leaf or inner, hit or
-    /// miss, is one unit of work; the count is added to the meter once.
+    /// miss, is one unit of work (Java's); in [`WorkUnit::Leaves`] every
+    /// leaf returned is (P04.2). The count is added to the meter once.
+    ///
+    /// [`WorkUnit::Leaves`]: crate::board::search::work::WorkUnit::Leaves
     pub fn overlaps(&self, shape: &RegularTileShape) -> Vec<LeafId> {
         let mut found: Vec<(K, usize, LeafId)> = Vec::new();
         let Some(root) = self.root else {
@@ -282,7 +292,7 @@ impl<K: Ord + Copy> ShapeTree<K> {
                 }
             }
         }
-        self.meter.add(visited);
+        self.meter.add_query(visited, found.len() as u64);
         // A key and shape index identify a leaf, so the order is total.
         found.sort_unstable_by_key(|&(key, index, _)| (key, index));
         found.into_iter().map(|(_, _, leaf)| leaf).collect()
@@ -393,6 +403,61 @@ impl<K: Ord + Copy> ShapeTree<K> {
                     if visit(&node.bounds, None) {
                         stack.push(first);
                         stack.push(second);
+                    }
+                }
+            }
+        }
+        popped
+    }
+
+    /// Walks the tree best first, for room completion in the canonical
+    /// order (P04.1): nodes come off a min-heap ordered by `priority` of
+    /// their bounding shape, inner nodes before leaves of the same
+    /// priority, leaves by priority, then key, then shape index. `visit`
+    /// gets the bounding shape and, for a leaf, its key and shape index; if
+    /// it returns true for an inner node, both children are pushed.
+    ///
+    /// If `priority` never decreases from a node to its children (a
+    /// distance to a fixed shape does, since a child's bounds lie inside
+    /// its parent's), the leaves come in the order (priority, key, shape
+    /// index) whatever the tree's shape, and a subtree pruned because it
+    /// misses a bound that only shrinks holds no leaf that would meet the
+    /// bound at its turn. `heap` is reusable scratch. Returns the nodes
+    /// popped; the caller adds the count to the meter.
+    pub fn best_first(
+        &self,
+        heap: &mut BestFirstHeap<K>,
+        priority: impl Fn(&RegularTileShape) -> i64,
+        mut visit: impl FnMut(&RegularTileShape, Option<(K, usize)>) -> bool,
+    ) -> u64 {
+        heap.clear();
+        let Some(root) = self.root else {
+            return 0;
+        };
+        let entry = |idx: usize| {
+            let node = self.node(idx);
+            let leaf = match node.kind {
+                NodeKind::Leaf {
+                    object,
+                    shape_index,
+                } => Some((object, shape_index)),
+                NodeKind::Inner { .. } => None,
+            };
+            std::cmp::Reverse((priority(&node.bounds), leaf, idx))
+        };
+        heap.push(entry(root));
+        let mut popped = 0u64;
+        while let Some(std::cmp::Reverse((_, leaf, current))) = heap.pop() {
+            popped += 1;
+            let node = self.node(current);
+            match node.kind {
+                NodeKind::Leaf { .. } => {
+                    visit(&node.bounds, leaf);
+                }
+                NodeKind::Inner { first, second } => {
+                    if visit(&node.bounds, None) {
+                        heap.push(entry(first));
+                        heap.push(entry(second));
                     }
                 }
             }

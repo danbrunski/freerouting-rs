@@ -97,6 +97,9 @@ pub struct BoardSnapshot {
     /// The board's trace-shape memo (P02.5), handed to every restored
     /// board.
     pub(crate) shape_memo: Arc<ShapeMemo>,
+    /// The room order and work unit of the board's trees (P04), which a
+    /// restored board keeps.
+    pub(crate) search_config: crate::board::search::SearchConfig,
 }
 
 /// The restore memo of a [`BoardSnapshot`] (P02.4).

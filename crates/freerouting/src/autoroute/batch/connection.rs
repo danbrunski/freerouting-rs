@@ -420,6 +420,9 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
                 units: meter.units().wrapping_sub(meter_start),
             };
             let work_limit_hit = limit.exceeded(meter);
+            if work_limit_hit {
+                crate::run_stats::record_work_limit_hit(false);
+            }
             let mut outcome = ConnectionOutcome::new(result.state, result.details);
             outcome.ripped = ripped;
             outcome.ripped_costs = costs;

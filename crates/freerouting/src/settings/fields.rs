@@ -263,6 +263,10 @@ settings_table! {
             "Reject connections that introduce clearance violations."),
         (result_json, String, opt, None, None, "resultJsonPath", [], Flat::No, true,
             "Path of a machine-readable routing result manifest."),
+        (room_order, String, opt, None, None, "roomOrder", [], Flat::No, true,
+            "Room completion order (N03.1): `tree` (Java's, the default) or `canonical` (independent of the search tree's shape)."),
+        (work_unit, String, opt, None, None, "workUnit", [], Flat::No, true,
+            "Work limit unit (N03.1): `nodes` (Java's search-tree nodes visited, the default) or `leaves` (leaves returned)."),
     }
     sections {
         autorouter, AutorouterPatch, AutorouterSettings, "autorouter",

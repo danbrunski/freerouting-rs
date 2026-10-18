@@ -105,6 +105,8 @@ pub const SLOTS: &[SlotDesc] = &[
             "trace_pull_tight_accuracy",
             "automatic_neckdown",
             "strict_drc",
+            "room_order",
+            "work_unit",
         ],
     },
     SlotDesc {

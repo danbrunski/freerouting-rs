@@ -53,6 +53,7 @@ use crate::autoroute::stages::{
     StopReason, UnknownStage, lock_diagnostics,
 };
 use crate::board::RoutingBoard;
+use crate::board::search::SearchConfig;
 use crate::board::search::audit::AuditReport;
 use crate::job::deadline::{StopLevel, Watcher};
 use crate::job::{LogLevel, LogLine};
@@ -83,6 +84,9 @@ pub enum PipelineError {
     /// No layer is active and a signal layer (Java's
     /// `IllegalArgumentException`).
     NoRoutableLayer(NoRoutableLayer),
+    /// A search-tree setting (N03.1: `router.room_order`,
+    /// `router.work_unit`) has an unknown value.
+    BadSearchSetting(String),
 }
 
 impl fmt::Display for PipelineError {
@@ -90,6 +94,7 @@ impl fmt::Display for PipelineError {
         match self {
             PipelineError::UnknownStage(e) => e.fmt(f),
             PipelineError::NoRoutableLayer(e) => e.fmt(f),
+            PipelineError::BadSearchSetting(e) => e.fmt(f),
         }
     }
 }
@@ -210,6 +215,25 @@ pub fn run_pipeline_with(
         level: LogLevel::Info,
         text: selection.log_line(),
     });
+    // N03.1 (P04): the room order and work unit, set before any work limit
+    // starts. Logged only when they differ from Java's, so a `legacy` run
+    // logs what Java logs.
+    match SearchConfig::from_settings(settings) {
+        Ok(config) => {
+            let reversed_builds = board.search_trees.search_config().reversed_builds;
+            board.search_trees.set_search_config(SearchConfig {
+                reversed_builds,
+                ..config
+            });
+            if !config.is_java() {
+                log.push(LogLine {
+                    level: LogLevel::Info,
+                    text: config.log_line(),
+                });
+            }
+        }
+        Err(e) => return Err(fail(PipelineError::BadSearchSetting(e), board)),
+    }
 
     // PARITY: RoutingPipeline.java:115-123, the fanout-only run sets
     // `max_passes = 0` for the loop.

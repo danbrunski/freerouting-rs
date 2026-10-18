@@ -291,6 +291,18 @@ IntOctagon's box cutout.
   0.25 mm class's net 0.2322 mm from another net, and `net_class` keeps 0.25 mm
   (`tests/via_clearance_net_class.rs`); an unknown value fails the job, naming the key. Off by
   default until Q14.3's measurement; N05 decides `enhanced`.
+- `room_order` and `work_unit` (N03.1, restored from P04.1 and P04.2, `board::search`) are
+  settings fields Java does not have, unset by default and unset in profile `legacy` (`tree`
+  and `nodes`: Java's depth-first room completion and its search-tree nodes-visited work unit,
+  D5). `room_order = canonical` completes 45° and 90° rooms best first by (the leaf bound's
+  distance from the shape the room must contain, the leaf's key, its shape index), so rooms
+  and routes depend only on the trees' contents, not on their shape; `work_unit = leaves`
+  counts the leaves an overlap query returns (and the leaves meeting a completion's bound) at
+  3,000 per nominal millisecond instead of 64,000 nodes. Both change routes
+  (`tests/search_order_independence.rs`: a board built in reversed item order routes the same
+  under `canonical`, not under `tree`); an unknown value fails the job, naming the key. A
+  non-Java pair logs `Search trees: room order <o>, work unit <u>`. Not in `enhanced` until
+  N03.3's measurement accepts an arm (through N05).
 - The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
   (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
   `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the

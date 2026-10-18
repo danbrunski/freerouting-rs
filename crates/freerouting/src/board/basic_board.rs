@@ -260,6 +260,7 @@ impl BasicBoard {
             failure_log: FailureLog::new(),
             memo: Default::default(),
             shape_memo: self.search_trees.shape_memo().clone(),
+            search_config: self.search_trees.search_config(),
         }
     }
 
@@ -291,6 +292,7 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
         };
+        board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();
         board
     }
@@ -2521,6 +2523,13 @@ impl BasicBoard {
         self.search_trees
             .tree_by_class_mut(tree_class)
             .is_some_and(|tree| tree.change_item_shape(trace, shape_no, new_shape))
+    }
+
+    /// Sets how the search trees order room completion and count work
+    /// (P04; the routing job sets it from `router.room_order` and
+    /// `router.work_unit`).
+    pub fn set_search_config(&mut self, config: crate::board::search::SearchConfig) {
+        self.search_trees.set_search_config(config);
     }
 
     /// The search tree compensated for `clearance_class`, created and

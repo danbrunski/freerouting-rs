@@ -410,6 +410,9 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     log.extend(wire);
     // Q14: `router.via_clearance`; an unknown value fails the job.
     crate::autoroute::via_clearance::validate(&settings).map_err(JobError::Settings)?;
+    // N03.1: `router.room_order` and `router.work_unit`; an unknown value
+    // fails the job.
+    crate::board::search::SearchConfig::from_settings(&settings).map_err(JobError::Settings)?;
     // 8. The pour guard (Q01), on the board as loaded; off unless
     // `router.plane_obstacle_net_classes` lists a class.
     let guard = pour_guard::install(&mut board, &settings)
@@ -510,6 +513,11 @@ pub fn prepare_board_for_routing(
     // Q14: `router.via_clearance`; an unknown value is logged and reads as
     // Java's rule.
     if let Err(e) = crate::autoroute::via_clearance::validate(&settings) {
+        push(&mut log, LogLevel::Error, e);
+    }
+    // N03.1: `router.room_order` and `router.work_unit`; an unknown value is
+    // logged here and the routing pipeline refuses it.
+    if let Err(e) = crate::board::search::SearchConfig::from_settings(&settings) {
         push(&mut log, LogLevel::Error, e);
     }
     // The pour guard (Q01); an unknown class is logged and leaves it off.

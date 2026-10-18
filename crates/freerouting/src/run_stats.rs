@@ -78,8 +78,15 @@ pub enum Counter {
     DrillsComputed,
     /// Work units the maze searches consumed (the meter's change).
     SearchWorkUnits,
+    /// Connections whose maze-search work limit was exceeded (N03.1).
+    MazeWorkLimitHits,
+    /// Fanout pins whose per-pin work limit was exceeded (N03.1).
+    FanoutWorkLimitHits,
     /// Search-tree queries: overlap queries and room completions.
     TreeQueries,
+    /// Leaves those queries returned (N03.1's `leaves` work unit), counted
+    /// whatever unit the meter uses.
+    TreeLeavesReturned,
     /// Search-tree nodes visited by those queries (D5's work unit).
     TreeWorkUnits,
     /// Existing door section storage replaced with a different count (N06.2).
@@ -87,7 +94,7 @@ pub enum Counter {
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 15] = [
+pub const COUNTERS: [Counter; 18] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -100,7 +107,10 @@ pub const COUNTERS: [Counter; 15] = [
     Counter::DoorsExpanded,
     Counter::DrillsComputed,
     Counter::SearchWorkUnits,
+    Counter::MazeWorkLimitHits,
+    Counter::FanoutWorkLimitHits,
     Counter::TreeQueries,
+    Counter::TreeLeavesReturned,
     Counter::TreeWorkUnits,
     Counter::DoorSectionReallocations,
 ];
@@ -121,7 +131,10 @@ impl Counter {
             Counter::DoorsExpanded => "doors_expanded",
             Counter::DrillsComputed => "drills_computed",
             Counter::SearchWorkUnits => "maze_work_units",
+            Counter::MazeWorkLimitHits => "maze_work_limit_hits",
+            Counter::FanoutWorkLimitHits => "fanout_work_limit_hits",
             Counter::TreeQueries => "tree_queries",
+            Counter::TreeLeavesReturned => "tree_leaves_returned",
             Counter::TreeWorkUnits => "tree_nodes_visited",
             Counter::DoorSectionReallocations => "door_section_reallocations",
         }
@@ -304,6 +317,30 @@ pub(crate) fn record_tree_query(units: u64) {
     if enabled() {
         add(Counter::TreeQueries, 1);
         add(Counter::TreeWorkUnits, units);
+    }
+}
+
+/// A search-tree query that visited `nodes` nodes and returned `leaves`
+/// leaves (called by the work meter, N03.1).
+#[inline]
+pub(crate) fn record_tree_query_counts(nodes: u64, leaves: u64) {
+    if enabled() {
+        add(Counter::TreeQueries, 1);
+        add(Counter::TreeWorkUnits, nodes);
+        add(Counter::TreeLeavesReturned, leaves);
+    }
+}
+
+/// A work limit was exceeded: a connection's maze search (`fanout` false)
+/// or a fanout pin's (`fanout` true).
+pub(crate) fn record_work_limit_hit(fanout: bool) {
+    if enabled() {
+        let counter = if fanout {
+            Counter::FanoutWorkLimitHits
+        } else {
+            Counter::MazeWorkLimitHits
+        };
+        add(counter, 1);
     }
 }
 
