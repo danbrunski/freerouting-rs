@@ -31,7 +31,7 @@ totals rule), N05 (the promotion recipe).
 
 ## Checklist
 
-- [~] **Q17.1 — A width policy in the maze search** (Q02.3's remainder, step 1).
+- [x] **Q17.1 — A width policy in the maze search** (Q02.3's remainder, step 1).
   A `WidthPolicy` trait in the A04 search, `fn half_width(&self, room, layer) -> i32`,
   read at every site that now reads `AutorouteControl::trace_half_width` or
   `compensated_trace_half_width`: room completion, `door_is_small`, the start and
@@ -69,6 +69,7 @@ totals rule), N05 (the promotion recipe).
   Remainder: the full A14 exact set, heavy run pending: `cargo test --release -p freerouting
   --test autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1`
   (owner Q17, in the heavy slot).
+  *Done 2026-10-18:* full A14 on origin/main 81fcef7 (release, `--test-threads=1`, then the 21 subdirectory references with `PARITY_SUBDIRS=1`; logs `target/orchestrator/heavy/a14-81fcef7*.log`): 1 passed, 0 failed, 138 boards (120 exact, 15 cutoff, 3 Java failures), every SES byte-identical except the known Issue684 and Issue721 (expected), Issue110-RelayModule (non-ASCII name only) and the Java-failure boards.
 - [x] **Q17.2 — The `bounded-neck` stage** (Q02.3's remainder, steps 2–3).
   `BoundedNeck::retry` builds the policy from the connection's start-set and
   destination-set pins, in that order: the neck width within D of a pin, the class

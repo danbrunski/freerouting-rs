@@ -41,7 +41,7 @@ Prerequisites: N01.
 
 ## Checklist
 
-- [~] **N04.1 — The contact rule.** Under `enhanced`, `contact_at_point` (or a
+- [x] **N04.1 — The contact rule.** Under `enhanced`, `contact_at_point` (or a
   profile-aware variant) accepts a trace end inside a same-net pad shape. The
   incompletes, the routing ledger and the optimizer all use it.
   - **Accept:**
@@ -83,6 +83,7 @@ Prerequisites: N01.
     passed). With `PARITY_BOARDS=Issue690-ecc83,Issue163-pic_programmer,Issue690-sonde_xilinx`
     all three are `[exact] ... bytes true`. The full A14 exact set needs `cargo test -p freerouting --release --test
     autoroute_board_parity -- --ignored` (long run).
+  - *Done 2026-10-18:* the second clause holds for N04.1 and N04.4 (both on 81fcef7): full A14 on origin/main 81fcef7 (release, `--test-threads=1`, then the 21 subdirectory references with `PARITY_SUBDIRS=1`; logs `target/orchestrator/heavy/a14-81fcef7*.log`): 1 passed, 0 failed, 138 boards (120 exact, 15 cutoff, 3 Java failures), every SES byte-identical except the known Issue684 and Issue721 (expected), Issue110-RelayModule (non-ASCII name only) and the Java-failure boards.
 - [x] **N04.2 — Everything that walks connectivity agrees.** This covers
   pull-tight, trace tails (`remove_trace_tails`), the optimizer's connected sets,
   the DRC's dangling-trace check and the SES writer's endpoint handling (C05).
@@ -151,14 +152,14 @@ Prerequisites: N01.
   the router (`router_initial_unrouted` under `inside_pad`) leaves it open. Those boards decide
   whether vias get the rule. If the verdict passes, N05 adds `pad_contacts = inside_pad` to
   `ENHANCED` (N05.2's procedure).
-- [~] **N04.4 — A trace end on a same-net trace is connected (T junction).** Under
+- [x] **N04.4 — A trace end on a same-net trace is connected (T junction).** Under
   `inside_pad`, a trace end that lies on a segment or an inner corner of another trace of a
   common net on the same layer is a normal contact, as KiCad connects it. The walkers of N04.2
   agree, and copper is not changed.
   - **Accept:** ecc83-pp exported with its tracks reaches KiCad's 0 unconnected in the router
     before routing; with `legacy` the A14 exact set is unchanged.
 
-  *Partial 2026-10-18:* the test is N04.1's end-cap test against the other trace's copper: under
+  *Done 2026-10-18:* the full A14 exact set under `legacy` passes on 81fcef7 (see N04.1; every SES byte-identical but the known cases). Earlier note: *Partial 2026-10-18:* the test is N04.1's end-cap test against the other trace's copper: under
   `inside_pad` a trace end connects to a trace of a common net on its layer when the end's cap
   (radius half its width) overlaps one of that trace's segment shapes (`Polyline::offset_shape` at
   its half width, `TileShape::intersects_circle`, borders included, no tolerance; a rational end

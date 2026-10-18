@@ -87,8 +87,7 @@ evidence.
       named), `without_a_rip_the_router_routes_as_java`; the fast parity subset
       `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting
       --test autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1`:
-      "exact: 7 boards, 7 pass, 0 expected, 0 fail, 7 SES byte-identical". The full A14 gate
-      is pending (heavy slot);
+      "exact: 7 boards, 7 pass, 0 expected, 0 fail, 7 SES byte-identical"; full A14 on origin/main 81fcef7 (release, `--test-threads=1`, then the 21 subdirectory references with `PARITY_SUBDIRS=1`; logs `target/orchestrator/heavy/a14-81fcef7*.log`): 1 passed, 0 failed, 138 boards (120 exact, 15 cutoff, 3 Java failures), every SES byte-identical except the known Issue684 and Issue721 (expected), Issue110-RelayModule (non-ASCII name only) and the Java-failure boards;
     - determinism: `every_arm_is_deterministic` (SES and log, two fixtures, 3 passes, every
       arm); canary-pwr-9511d9a pass 1 with `rule=strict` twice: the same SES (sha256
       `062a1baeb0d0…`).
