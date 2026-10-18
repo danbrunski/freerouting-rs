@@ -1,0 +1,156 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q08.3-earned-budget",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/Q08-earned-budget-extension.md (Q08.3)",
+  "question": "With router.autorouter.connection_router=earned-budget (Q08.1: Java's connection router whose maze search gets one more base budget, at most E = 4 times per search, when its closest destination-distance estimate fell by at least max(2 * trace width, 2 % of the estimate at the start of the budget) during the budget just spent), does the unrouted total over the eligible benchmark boards and canary-pwr fall by more than the set noise against Java's router, with no via in a pad, no board with more vias or clearance violations, and a median wall time at most 25 % above the default's?",
+  "rule": "totals",
+  "rule_text": "N02 (docs/roadmap/tasks/N02-keep-rule-for-defaults.md, D10) with accept improve, as the orchestrator instructed on 2026-10-18 in place of the checklist's paired wording ('improves on N-1 boards and regresses on none'): the candidate passes when the unrouted total over the distinct eligible boards improves by more than the set noise (sqrt of the sum of the per-board bands squared; a band is the registered noise, else max(2, ceil(5 % of the board's connections))), no board is worse than twice its band, via_in_pad is 0 in the candidate on every row, vias and clearance_violations are nowhere above the default's (the checklist's guards: vias, drc_real), and the wall-time clause of keep_rule holds. The canary-pwr rows count as one board. pass_rule below is the parser's paired rule, kept only so the file validates; it does not decide.",
+  "totals": {
+    "accept": "improve",
+    "signal": [
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10
+    },
+    "min_boards": 3
+  },
+  "noise": {
+    "canary-pwr": 10,
+    "formula": "max(2, ceil(5 % of connections)) for the other boards (gate_totals' default band)",
+    "source": "N02's canary-pwr variants' +-10"
+  },
+  "defaults": {
+    "E": "4 (quality::budget::DEFAULT_MAX_EXTENSIONS), fixed here before any number; no other value is registered",
+    "quantum": "max(2 * trace width, estimate_at_start / 50), integer board units (the estimate truncated)"
+  },
+  "arms": {
+    "default": {
+      "engine": "freerouting-rs release CLI at the tree that lands Q08.1-Q08.2 (one Linux build for both arms), the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.optimizer.enabled=false --stats json",
+      "settings": {
+        "router.autorouter.connection_router": "unset (freerouting-connection, Java's)",
+        "router.autorouter.max_passes": "0 (unlimited, the default)"
+      },
+      "what": "baseline: Java's connection router; its maze search stops at the work limit"
+    },
+    "earned-budget": {
+      "engine": "as default",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --router.optimizer.enabled=false --stats json --router.autorouter.connection_router=earned-budget",
+      "settings": {
+        "router.autorouter.connection_router": "earned-budget",
+        "router.autorouter.max_passes": "0 (unlimited, the default)"
+      },
+      "what": "candidate: Q08.1's earned budget extension around Java's connection router"
+    }
+  },
+  "baseline_arm": "default",
+  "candidate_arm": "earned-budget",
+  "boards": {
+    "set": "tools/bench/sets/benchmark.txt and the in-repository rows of tools/bench/sets/owner.txt (the canary-pwr variants; the stale snapshot outside the repository is not a row)",
+    "eligibility": "the checklist's 'benchmark boards where J01 recorded work-limit cut-offs': J01's route references (fixtures/reference/route/<board>.json, workLimitCutoffs, lines capped at 50) show no maze_search line on any benchmark board at their route-bounds passes (pull_tight lines only: z10_module 11, CPU-85 2, GP8B 7, smoothieboard 8, LogicBoard_smt 74 of which 50 listed, contribution-board 128 of which 50 listed), so the record cannot choose them. A benchmark board is a row when the default arm's own run counts at least one maze work-limit hit (the --stats JSON's total maze_work_limit_hits > 0, which also counts a connection whose pull-tight ran the meter past the limit); the canary-pwr rows are rows whatever their count. The default arm runs on every board first; before any earned-budget run, one amendment narrows 'files' to the rows, quoting each board's maze_work_limit_hits, and nothing else may change in it. If fewer than 3 distinct boards remain the gate cannot pass (min_boards 3): the numbers go in Q08.3's note and the decision table's fail row applies.",
+    "files": {
+      "fixtures/Issue433-my-board.dsn": "36ce022caadc2e375e7faa5ecd0325f45671df6a1cbe71c13e3f10bed7086b50",
+      "fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn": "e7af5da592bd5c5d19e0082ddedacea2ba4da2a264b7cfb57c336a0c9c4a80d2",
+      "fixtures/Issue508-DAC2020_bm02.dsn": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
+      "fixtures/Issue690-sonde_xilinx.dsn": "633bd6bba64d23dc39e011caa3c44a8382f94818367bc30254d6aaca698dd380",
+      "fixtures/Issue508-DAC2020_bm07.dsn": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85",
+      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "fixtures/Issue508-DAC2020_bm10.dsn": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
+      "fixtures/Issue093-interf_u.dsn": "73a6eb52f27fa3316a791db5f647de0be5d8a369d8c1faf6e275e3c9d1464baa",
+      "fixtures/Issue555-CNH_Functional_Tester_1.dsn": "4ba02ac7147bbef2ba00e3348392cc1339deca7b762ca5c975ba20d99e053d9e",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "fixtures/Issue753-CPU-85_r104.dsn": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "fixtures/Issue145-smoothieboard.dsn": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "fixtures/Issue219-LogicBoard_smt.dsn": "bffe922b51a45ea7816166f94488d37d6d3415c919d018af727e2d05257b76fc",
+      "fixtures/Issue420-contribution-board.dsn": "2b062515781ff5876c3cd851d844748a0acf48fd26e2b3c6c143fb457b2ce5a8",
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
+      "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn": "34cbcd4395de90aa8533620c1b2bcb8138d761af2f1ed9f5773ba4d4daf2c1ef"
+    }
+  },
+  "grading": "freerouting-dev ses-diff statistics of each SES imported into its DSN (gate collect: unrouted = connections.incomplete_count, vias = vias.total_count, clearance_violations = clearance_violations.total_count, the router's own DRC: the drc_real of a DSN row) and gate collect's via_in_pad; wall_seconds is the CLI run's wall time on a quiet machine (1-minute load average at most 1.0 before each run); maze_budget_extensions, maze_budget_extra_units and tree_nodes_visited are the --stats JSON's totals",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "vias",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_budget_extensions",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_budget_extra_units",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "tree_nodes_visited",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "earned-budget is accepted when (1) freerouting-dev gate --prereg passes on the records (the totals block, the hard metric 0, the guards not worse than the default on any row) and (2) the median over the rows of earned-budget's wall_seconds divided by the default's is at most 1.25. Then it stays an opt-in connection router (unset by default and in no profile) with its DIVERGENCES line and these numbers, until N05 decides enhanced. Otherwise it is removed (quality/budget.rs, the session's budget hook, WorkLimit::extend, the run_stats counters, the registry entry and the DIVERGENCES line), with the numbers in Q08.3's note.",
+  "stop_rule": "one registered run per arm per row, plus the candidate's determinism rerun on canary-pwr-pours1 (tools/determinism-check.sh, byte-identical SES); no reruns with another E, quantum or budget; a change needs an amendment before a new run, never after a number of that run",
+  "not_registered": [
+    "other values of E or of the quantum",
+    "KRT's grace variant (measured worse in KRT: zynq7020 30 open plus 2 DRC; duodyne 3.6x CPU)",
+    "the neck-down retry's search, which keeps Java's stop"
+  ],
+  "decision_table": {
+    "pass": "keep as an opt-in connection router; DIVERGENCES line with the numbers; N05 decides enhanced",
+    "fail": "remove the router and its hook (see keep_rule); the numbers stay in Q08.3's note"
+  },
+  "seen_before_registration": "Disclosed by amendment 1. Before this file was written, the implementer ran release spot runs of both arms (the registered commands' router flag, Q08.2's settings, not graded) on five benchmark boards: Issue433-my-board, Issue649-kicad_ecc83-pp_input_board_v1, Issue508-DAC2020_bm02, Issue690-sonde_xilinx and Issue508-DAC2020_bm07. All five gave byte-identical sessions in both arms, 0 maze work limit hits and 0 extensions. A second batch (bm01, bm10, interf_u, CNH, z10) was killed before any number was read; its one partial stats file was deleted unread. No KiCad grade, no unrouted count compared between arms, no other board.",
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "reason": "disclosure, before any registered number: release spot runs of both arms on five benchmark boards preceded the registration (operator decision 2026-10-18); they showed no effect (identical sessions, no limit hit), so nothing in the question, arms, rows, metrics or rules changes",
+      "changes": "adds seen_before_registration; nothing else"
+    }
+  ]
+}

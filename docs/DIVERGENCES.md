@@ -625,6 +625,22 @@ maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
   (`a_22mm_run_with_one_pinch_is_narrow_only_at_the_pinch_and_its_tapers`); it adds no DRC item
   (`widen_back_adds_no_drc_items_on_any_fixture`).
 
+**Earned budget extension** (`quality::budget`, the maze search's `autoroute::session::budget`,
+Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
+- New, with no Java counterpart: `router.autorouter.connection_router=earned-budget` (not a Java
+  id, unset by default and in no profile) runs Java's connection router, but when the maze
+  search's work limit fires it grants one more base budget if the smallest destination-distance
+  estimate of the elements popped fell during the budget just spent by at least
+  `max(2 * trace width, estimate_at_start / 50)` (integer board units), at most 4 times per
+  search (the connection's and its plane fallback's; the neck-down retry keeps Java's stop).
+  Where no limit fires the session is Java's (`where_no_limit_fires_the_job_routes_like_java`);
+  with a 1 ms budget on `Issue143-rpi_splitter` it grants 8 extensions and routes the 2
+  connections Java's cut-off leaves (`earned_budget_extends_tight_searches_deterministically`).
+  Without a policy the search never consults the hook, and a policy that always stops routes
+  like Java (`a_policy_that_always_stops_routes_like_java`). `--stats json` counts the
+  extensions (`maze_budget_extensions`, `maze_budget_extra_units`; 0 with Java's router). Q08.3
+  measures it (`docs/roadmap/prereg/Q08.json`).
+
 **Add-only completion sweep** (`quality::sweep`, Q10; tests `tests/quality_sweep.rs`)
 - New, with no Java counterpart (Java reaches it only with a second run on frozen wiring, through
   KiCad's exporter): with `router.autorouter.sweep=fixed|free` the job runs Java's pass again

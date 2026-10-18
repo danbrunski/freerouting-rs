@@ -23,6 +23,8 @@
 //!   and room completions together) and the tree nodes they visited
 //!   ([`Counter::TreeWorkUnits`], D5's unit, the work limits' meter);
 //! - items ripped up by connections.
+//! - maze-search work limits a budget policy extended, and the units
+//!   granted (Q08's `earned-budget`; always 0 with Java's router).
 //!
 //! **Stages** ([`stage`]): `load`, `fanout`, one `pass` per autorouter pass
 //! followed by its `statistics` (the board statistics the loop scores the
@@ -91,10 +93,14 @@ pub enum Counter {
     TreeWorkUnits,
     /// Existing door section storage replaced with a different count (N06.2).
     DoorSectionReallocations,
+    /// Maze-search work limits a budget policy extended (Q08; 0 without one).
+    MazeBudgetExtensions,
+    /// The units those extensions granted.
+    MazeBudgetExtraUnits,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 18] = [
+pub const COUNTERS: [Counter; 20] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -113,6 +119,8 @@ pub const COUNTERS: [Counter; 18] = [
     Counter::TreeLeavesReturned,
     Counter::TreeWorkUnits,
     Counter::DoorSectionReallocations,
+    Counter::MazeBudgetExtensions,
+    Counter::MazeBudgetExtraUnits,
 ];
 
 impl Counter {
@@ -137,6 +145,8 @@ impl Counter {
             Counter::TreeLeavesReturned => "tree_leaves_returned",
             Counter::TreeWorkUnits => "tree_nodes_visited",
             Counter::DoorSectionReallocations => "door_section_reallocations",
+            Counter::MazeBudgetExtensions => "maze_budget_extensions",
+            Counter::MazeBudgetExtraUnits => "maze_budget_extra_units",
         }
     }
 }
@@ -341,6 +351,14 @@ pub(crate) fn record_work_limit_hit(fanout: bool) {
             Counter::MazeWorkLimitHits
         };
         add(counter, 1);
+    }
+}
+
+/// A budget policy extended a maze search's work limit by `units` (Q08).
+pub(crate) fn record_budget_extension(units: u64) {
+    if enabled() {
+        add(Counter::MazeBudgetExtensions, 1);
+        add(Counter::MazeBudgetExtraUnits, units);
     }
 }
 

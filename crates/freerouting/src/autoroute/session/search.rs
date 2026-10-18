@@ -313,6 +313,11 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             skipped += 1;
         };
         self.pops += 1;
+        if self.s.has_budget_policy() {
+            // Q08: the element's destination-distance estimate.
+            self.s
+                .observe_estimate(key.sorting_value - key.expansion_value);
+        }
         {
             let state = self.s.slot_state_mut(slot);
             state.backtrack = element.backtrack;

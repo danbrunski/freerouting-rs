@@ -61,6 +61,7 @@
 //!   (`MazeExpansionEngine`), [`ripup`] (`MazeRipupResolver`, `Connection`)
 //!   and [`shove_room`] (`MazeTraceShover`).
 
+pub mod budget;
 pub mod doors;
 pub mod drills;
 mod incomplete45;
@@ -367,6 +368,12 @@ pub struct Session<'b> {
     pub(crate) drills: Vec<drills::ExpansionDrill>,
     /// The width policy (Q17.1); `None` reads the control's widths.
     pub(crate) widths: Option<&'b dyn WidthPolicy>,
+    /// The budget policy (Q08); `None` (every Java path) stops at the limit.
+    budget: Option<&'b mut dyn budget::BudgetPolicy>,
+    /// The estimates of the first and of the closest element popped, kept
+    /// only with a budget policy.
+    first_estimate: Option<f64>,
+    best_estimate: Option<f64>,
 }
 
 impl<'b> Session<'b> {
@@ -421,6 +428,9 @@ impl<'b> Session<'b> {
             drill_pages: None,
             drills: Vec::new(),
             widths: None,
+            budget: None,
+            first_estimate: None,
+            best_estimate: None,
         }
     }
 
@@ -433,6 +443,42 @@ impl<'b> Session<'b> {
     /// The width policy, if any.
     pub fn width_policy(&self) -> Option<&'b dyn WidthPolicy> {
         self.widths
+    }
+
+    /// Asks `policy` whenever the work limit fires (Q08, see [`budget`]);
+    /// `None` (the default, every Java path) stops at the limit. A policy is
+    /// told the base budget and the trace width at once.
+    pub fn set_budget_policy(&mut self, policy: Option<&'b mut dyn budget::BudgetPolicy>) {
+        self.budget = policy;
+        if let Some(policy) = self.budget.as_mut() {
+            let control = self.control;
+            let half_width = (0..control.layer_count.min(control.trace_half_width.len()))
+                .filter(|&layer| control.layer_active.get(layer).copied().unwrap_or(false))
+                .map(|layer| control.trace_half_width[layer])
+                .max()
+                .unwrap_or(0);
+            policy.on_start(budget::BudgetStart {
+                base_units: self.work_limit.as_ref().map_or(0, WorkLimit::max_units),
+                trace_width: 2 * i64::from(half_width),
+            });
+        }
+    }
+
+    /// True if a budget policy is set.
+    #[inline]
+    pub fn has_budget_policy(&self) -> bool {
+        self.budget.is_some()
+    }
+
+    /// Records the destination-distance estimate of a popped element for
+    /// the budget policy.
+    pub(crate) fn observe_estimate(&mut self, estimate: f64) {
+        if self.first_estimate.is_none() {
+            self.first_estimate = Some(estimate);
+        }
+        if self.best_estimate.is_none_or(|best| estimate < best) {
+            self.best_estimate = Some(estimate);
+        }
     }
 
     /// The trace half width on layer index `layer` of a room with shape
@@ -577,6 +623,22 @@ impl<'b> Session<'b> {
     pub fn is_stop_requested(&mut self) -> bool {
         if let Some(limit) = self.work_limit.as_mut() {
             let meter = self.board.search_trees().work_meter();
+            // Q08: a budget policy may extend the limit before it stops the
+            // search; without one this is Java's check.
+            if let Some(policy) = self.budget.as_mut()
+                && limit.exceeded(meter)
+            {
+                let progress = budget::BudgetProgress {
+                    first_estimate: self.first_estimate,
+                    best_estimate: self.best_estimate,
+                    units_done: limit.units_done(meter),
+                    max_units: limit.max_units(),
+                };
+                if let budget::LimitDecision::Extend(units) = policy.on_limit(progress) {
+                    limit.extend(units);
+                    crate::run_stats::record_budget_extension(units);
+                }
+            }
             if limit.exceeded_logging(meter, String::new, &mut self.cutoff_log) {
                 return true;
             }
