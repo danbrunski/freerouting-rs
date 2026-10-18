@@ -88,10 +88,63 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
     clean; `cargo clippy --workspace --all-targets -- -D warnings` clean;
     `cargo test --workspace --no-fail-fast`: 206 test binaries, 2,245 passed, 0
     failed, 56 ignored; `tools/check-provenance.sh`: provenance ok.
-- [ ] **N03.2 — The GP8B violations.** Find out why the canonical order adds 2
+- [x] **N03.2 — The GP8B violations.** Find out why the canonical order adds 2
   clearance violations on GP8B, and fix it or explain it, before measuring.
   - **Accept:** the cause is in the done note; KiCad grades GP8B with the
     canonical order and no new `drc_real` items.
+  *Done 2026-10-18:* explained, not fixed: the canonical order exposes a Java shove
+  bug that fires under the tree order too. No engine code changed.
+  - **Reproduced** on `bbd1336` (release, `-de fixtures/Issue066-Project_GP8B.dsn
+    --router.autorouter.max_passes=3 --router.optimizer.enabled=false --profile legacy
+    --router.room_order=canonical`, P04's bounds): 51 unrouted, 2 violations, the SES
+    byte-identical to P04's canonical run. With `--router.strict_drc=true` the board
+    hash (`5b224094…`) and the 2 violations stay: the strict check scans only the routed
+    net's new traces and vias, and neither violating trace is of the routed net.
+  - **The violations.** Router DRC, `holeClearance`, actual 0: traces 3111339
+    (`/Connector/BREAD1_7`) and 3111321 (`/Connector/BREAD2_1`) on In1.Cu cross the
+    In1.Cu pad of via 431101 (`/NUMBER_0`, `Via[0-3]_450:200_um`) at (134.96, -55.96) mm.
+    KiCad reports it as `shorting_items` (NUMBER_0 via against the BREAD1_7 track).
+  - **Cause** (per-connection DRC diff and shove tracing, temporary instrumentation):
+    pass 3, routing net 208. `TraceShover.insert` recursion: a piece of net 206 (depth 19)
+    cuts net 204, whose piece (depth 18) cuts net 110; inserting net 110's piece shape at
+    depth 16, `shoveVias` moves via 431101 by (-484.2, +484.2) um, onto the area of the
+    two pieces of nets 204 and 206. Those pieces are not on the board yet (a piece is
+    inserted after the recursive inserts of its own shapes), so the via move's check
+    (`DrillItemMover.check`, `forcedPad`) cannot see them, and they are then inserted
+    over the via. Java's `TraceShover.insert` and `DrillItemMover.shoveVias` at
+    `a773a70ec` have the same order (no later Java commit touches either file). The room
+    order only changes which route reaches that board state.
+  - **Order-neutral.** The same event (a substitute piece inserted over a foreign via a
+    deeper level moved there) fires under the tree order: `legacy` tree, pass 3, once
+    (net 102's piece over via 710876); `enhanced` tree, pass 1, net 24's piece over via
+    17619 of the routed net 112 (pass 1 ends "1 violation", gone by pass 2). A via in a
+    piece's shape when its own insert starts fails that insert, so these vias arrived
+    during the recursion; only 431101's move was traced step by step. In those runs a
+    later rip-up removed the bad piece; in `legacy` canonical it was in the last pass.
+  - **KiCad.** GP8B has no KiCad project, so the board was built from the DSN with
+    pcbnew 10.0.7: every pin's pad shape from the engine (circles, polygon corners as
+    custom pads), the DSN nets and net classes (default 0.1801 mm, `Volt` 0.2001 mm on
+    GND, +3V3, +5V), board minimums 0, through-pin drills half the smaller pad size.
+    Each SES was graded with `tools/kicad-oracle/grade.sh` (engine command `cp SES`);
+    `drc_real` by type, KiCad unconnected:
+    - default profile (`enhanced`): tree 42 (`via_dangling` 42), 54; **canonical 35
+      (`via_dangling` 35), 39**. No new `drc_real` item, no clearance or short in either;
+      router: 56 → 42 unrouted, 0 violations both.
+    - `legacy`: Java's SES (= Rust tree) 58 (clearance 10, `via_dangling` 48), 58;
+      canonical 36 (clearance 1, **`shorting_items` 1**, `via_dangling` 34), 48. The 11
+      clearance items are all of one kind, a `Volt` via against another net at
+      0.182–0.192 mm under the 0.2001 mm class clearance (Q14; `enhanced`'s
+      `via_clearance = net_class` removes them).
+    - A prototype fix (fail the shove when a piece about to be inserted overlaps a
+      foreign via) removes the short: `legacy` canonical 64 unrouted, 0 violations, KiCad
+      44 (clearance 1, `via_dangling` 43), 61; it fired 2 times. It changes the tree
+      order's route too (`legacy` tree 61 → 59 unrouted, 0 violations, KiCad 51:
+      clearance 8, `via_dangling` 43), so it is a Java-bug fix for a
+      `router.java_quirks` switch (N06), not part of the room order. It is not landed.
+  - **For N03.3:** the bug is in both arms, so the registration keeps N02's hard guard
+    on router violations and KiCad `shorting_items`/clearance per arm, and runs the arms
+    in the profile they would join (`enhanced`). If the shove fix lands as a quirk
+    switch first, all three arms get the same value of it.
 - [ ] **N03.3 — Measure under N02's rule.**
   - Register before the first number, on boards P04 didn't use:
     - the PCBWorld D3-C set;
