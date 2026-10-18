@@ -1462,6 +1462,31 @@ All five switches still default to `true` in both profiles. With the named
 `insert_connect_to_trace_width_flips`); the registered runs are pending under N06.5
 (`prereg/N06.5.json`).
 
+**N06.6 fanout fixes (explicit opt-in; promotion pending)**
+
+All three switches still default to `true` in both profiles. With the named
+`router.java_quirks` key `false`:
+- `fanout_stale_drill_carry`: each attempt of a pin's fanout (the plane attempt, the
+  closest target, all targets) starts on fresh drill pages, as the batch router's
+  connections do; Java's one `AutorouteEngine` (`RoutingBoard.java:1074-1126`) hands a
+  retry the first attempt's occupied sections and the drills it cached for the net
+  (`stale_drill_carry_switch_both_behaviours_and_counters`: the retry computes the 25
+  page drills again, 50 against Java's 25).
+- `drill_destination_room_index`: a destination drill's room is `roomArr[section]`, not
+  `roomArr[firstLayer + section]` (`FoundConnectionLocator.java:255`); only a blind or
+  buried via's drill differs, where Java takes the wrong layer's room or fails the
+  locate past the end (`drill_destination_room_index_switch_both_behaviours_and_counter`).
+- `fanout_pin_order_names`: `fanout.pin_sorting_order` also accepts the documented
+  spellings `distance_to_closest_on_net` and `surroundings_density`; Java compares the
+  camelCase names only (`BatchFanout.java:811-846`) and sorts by pin index otherwise
+  (`fanout_pin_order_names_both_behaviours`,
+  `pin_order_names_switch_reaches_the_fanout_run_and_counter`).
+
+`run_stats` counts in either arm `fanout_retries`, `fanout_retries_succeeded`,
+`fanout_stale_drill_carries`, `drill_destination_room_index_flips` and
+`fanout_pin_order_name_flips`; the registered runs are pending under N06.6
+(`prereg/N06.6.json`).
+
 **N06.11 interactive fixes (explicit opt-in; promotion pending)**
 
 All six switches still default to `true` in both profiles. Setting the named

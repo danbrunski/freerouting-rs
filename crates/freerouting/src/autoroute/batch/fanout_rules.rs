@@ -44,7 +44,8 @@ pub enum PinSortingOrder {
     /// Any other name: pin index only. PARITY: `BatchFanout.java:811-846`
     /// compares the exact strings, so the documented spellings
     /// `distance_to_closest_on_net` and `surroundings_density` land here
-    /// (A00 open question 7: kept through rung 3).
+    /// (A00 open question 7: kept through rung 3);
+    /// `router.java_quirks.fanout_pin_order_names = false` accepts them (N06.6).
     PinIndex,
 }
 

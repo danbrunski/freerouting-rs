@@ -111,13 +111,22 @@ pub fn backtrack(
             // PARITY(quirk, java_quirks.drill_destination_room_index):
             // FoundConnectionLocator.java:255 indexes the drill's rooms by
             // `firstLayer + section`, though `roomArr` starts at the first
-            // layer. Every drill of a fixture starts at layer 0, so the index is
-            // the section's. `false` indexes by the section.
+            // layer. Every drill page's drills start at layer 0, so only a
+            // via's drill (a blind or buried via) differs: Java takes the
+            // room `first_layer` layers further, or throws past the end
+            // (a failed locate). `false` indexes by the section.
             let offset = if session.control.quirks.drill_destination_room_index {
                 i64::from(first_layer)
             } else {
                 0
             };
+            if first_layer != 0 {
+                // Counted in either arm: the destinations the switch indexes
+                // differently (N06.6).
+                crate::run_stats::record_n06(
+                    crate::run_stats::Counter::DrillDestinationRoomIndexFlips,
+                );
+            }
             let room = drill_room(session, drill, offset + destination_section as i64)?;
             if current.room_ripped {
                 for tmp in session.drill(drill).rooms.clone() {

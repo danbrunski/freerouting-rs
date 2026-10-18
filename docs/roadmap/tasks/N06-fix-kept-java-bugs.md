@@ -559,12 +559,83 @@ These are marked or look like quirks but keep no bug:
       (the registration's `plugin_canary`: export once, route the 7 arms with the exported
       args plus `--router.profile=legacy` and the arm's five flags, grade each distinct
       session with canary's `grade.sh`).
-- [ ] **N06.6 — Batch F, fanout:** `fanout_stale_drill_carry` (a fresh `DrillCarry` per
+- [~] **N06.6 — Batch F, fanout:** `fanout_stale_drill_carry` (a fresh `DrillCarry` per
   attempt, as the batch router already does), `drill_destination_room_index` (index by
   section), `fanout_pin_order_names` (accept both spellings).
   - **Accept:**
     - the batch is measured on boards with fanout on;
     - the done note gives how many fanout retries succeed before and after.
+  - *Partial 2026-10-18:* code, both-behaviour tests, counters (the retry counter included)
+    and the registration are done; heavy run pending (commands below). Defaults stay `true`
+    (Java) in both profiles; `ENHANCED` is unchanged. Every
+    `// PARITY(quirk, java_quirks.<id>)` marker is kept.
+    - [x] The three switches were wired by N06.3 and match the inventory's fixes (checked
+      against Java at `a773a70ec`: `RoutingBoard.java:1074-1126`,
+      `FoundConnectionLocator.java:255`, `BatchFanout.java:811-846`). The fanout's per-pin
+      engine is now `fanout_pin::PinEngine` (the drill pages plus an attempt count);
+      `begin_attempt` drops the pages under `false`, as before, and counts the retries.
+      The `drill_destination_room_index` comment no longer says that every fixture's drill
+      starts at layer 0: page drills do, a blind or buried via's drill does not.
+    - [x] Both behaviours, one test per switch, all pass (`tests/n06_fanout.rs`, 3 tests):
+      `stale_drill_carry_switch_both_behaviours_and_counters` (`fanout_pin` on an `F.Cu`
+      pin whose two targets are `B.Cu`-only pins, every via site refused by a 50 mm minimum
+      escape: the closest target fails, the all-targets retry runs and fails in both arms;
+      `drills_computed` 25 under Java, whose retry finds the net's page drills cached, 50
+      fixed, whose retry computes them again);
+      `drill_destination_room_index_switch_both_behaviours_and_counter` (`backtrack` from a
+      blind via's drill on layers 1-2 of 3: section 0 gives the layer-2 room under Java and
+      the layer-1 room fixed; section 1 is `IndexOutOfBounds` under Java and the layer-2
+      room fixed); `pin_order_names_switch_reaches_the_fanout_run_and_counter` (`FanoutRun::new`
+      with `distance_to_closest_on_net`: Java pin-index order `[0, 1, 2]`, fixed the
+      camelCase name's order, which differs). `settings_java_quirks.rs`
+      `fanout_pin_order_names_both_behaviours` is unchanged and passes.
+    - [x] Counters (`run_stats`, `--stats json` `total.counts`, counted in either arm, only
+      with statistics on; the configured value is always the one used; `Counts` has 43
+      now): `fanout_retries` (a pin fanout's attempts after its first),
+      `fanout_retries_succeeded` (of those, the ones that end routed or already connected:
+      the number the accept clause asks for, before = `baseline`, after =
+      `fanout_stale_drill_carry` and `all`), `fanout_stale_drill_carries` (retries whose
+      engine carried an earlier attempt's pages), `drill_destination_room_index_flips`
+      (backtracks from a destination drill not starting at layer 0),
+      `fanout_pin_order_name_flips` (fanout runs with one of the two spellings). Pinned by
+      the three tests above (1 retry, 0 succeeded, 1 carried in each arm; 4 flips for 4
+      backtracks; 1, 1 and 0 flips for the snake name in both arms and the camelCase name).
+      One fanout pass in a debug test on eight boards outside the registered set
+      (Issue269 min_fr_test, Issue508 SMD-routing-issue-demo, Issue558 dev-board, Issue153,
+      Issue690 sonde_xilinx and ecc83, Issue093, Issue753) made no retry (`fanout_retries`
+      0 on each); how many the registered rows make, over all fanout passes, is the heavy
+      run's number.
+    - [x] Registered before any number: `docs/roadmap/prereg/N06.6.json` (sha256
+      `5f49d83f452bd05a5690dbf0b52c13554aa4d46663cedade3de1dad276bf51f6`) and
+      `tools/bench/sets/n06-f.txt`, pinned by `crates/freerouting-dev/tests/prereg_n06_6.rs`
+      (4 tests pass). Arms: `baseline`, each switch alone, `all` (the verdict pair with
+      `baseline`); every command gives `--router.profile=legacy`,
+      `--router.fanout.enabled=true` and the three switches explicitly, default passes.
+      Rows, chosen by what the loaded boards hold (SMD pins, and SMD pins on a plane net,
+      whose fanout makes a plane attempt first), counted without routing: Issue676 (3 of 14
+      SMD pins on a plane net), Issue957-smoke-ldo-led (4 of 12), Issue367-Charger (44 of
+      76), Issue756-tomu-fpga (116 of 205), Issue269-z10_module (113 of 315, 4 layers) and
+      bm08 (A12's fanout probe board, no plane), plus canary-pwr through the plugin path
+      (canary 9511d9a, N06.10's procedure, with `--router.fanout.enabled=true` added). Rule:
+      reachability per switch, else N02 totals, no-regress, set noise 11.14. No registered
+      board has a blind or buried via, so `drill_destination_room_index_flips` is expected
+      to read 0, and no arm sets `fanout.pin_sorting_order`, so `fanout_pin_order_name_flips`
+      reads 0. A smoke run of the `baseline` and `all` commands (debug CLI,
+      `fixtures/scoring-perfect-two-pin.dsn`, not a registered row) exits 0, runs the
+      `fanout` stage, writes the five counters (all 0) and gives the same SES.
+    - [ ] Heavy run pending (orchestrator, release build of the measured tree, run from its
+      root, e.g. `/home/thebo/code/freerouting-rs` after landing):
+      `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 /home/thebo/code/freerouting-rs/tools/bench/n06_run.py /home/thebo/code/freerouting-rs/docs/roadmap/prereg/N06.6.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-f`
+      (30 runs; the arms call
+      `/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting`;
+      the board paths are relative, so it runs from the root; it exits non-zero after the
+      last run if a session differs, and then the totals rule applies to `summary.json`'s
+      `statistics`). Then the canary-pwr plugin row as in N06.10 (the registration's
+      `plugin_canary`: export once, route the 5 arms with the exported args plus
+      `--router.profile=legacy`, `--router.fanout.enabled=true` and the arm's three flags,
+      grade each distinct session with canary's `grade.sh`). The done note then gives
+      `fanout_retries` and `fanout_retries_succeeded` summed over the rows for `baseline`
+      and for `fanout_stale_drill_carry` and `all`.
 - [~] **N06.7 — Batch S, shove:** `in_front_of_pad_typo`, `store_trace_class_self_compare`,
   `rational_perp_projection` (the arm with `in_front_of_pad_side0_flank` follows if the batch
   is accepted).

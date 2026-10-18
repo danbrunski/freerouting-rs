@@ -36,7 +36,14 @@
 //! (`:1074-1126`). Each call clears its rooms and resets the room counter,
 //! so a fresh [`Session`](super::session::Session) per call matches it, but
 //! the ripped set accumulates: a later attempt rips what an earlier failed
-//! one collected.
+//! one collected. The engine's drill pages carry over too
+//! ([`DrillCarry`]): a retry sees the earlier attempt's occupied drill
+//! sections and drills whose rooms are gone. `router.java_quirks.fanout_stale_drill_carry
+//! = false` (N06.6) gives each attempt fresh drill pages, as the batch router
+//! gives each connection; `true` (unset, both profiles) keeps Java's engine.
+//! With statistics on, `fanout_retries`, `fanout_retries_succeeded` and
+//! `fanout_stale_drill_carries` count the retries, those that end the pin's
+//! fanout, and those that start on carried pages, in either arm.
 //!
 //! Where Java's `AutorouteControl` constructor or `rebuildViaInfo` throws
 //! (no via rule at all, a class without one) the exception would leave
@@ -137,6 +144,37 @@ fn fanout_control(
     Ok(control)
 }
 
+/// The pin's engine (Java's one `AutorouteEngine` per fanout call): the drill
+/// pages its attempts carry and how many attempts it has run.
+#[derive(Default)]
+struct PinEngine {
+    drills: DrillCarry,
+    attempts: u32,
+}
+
+impl PinEngine {
+    /// Prepares the next attempt and returns whether it is a retry (not the
+    /// pin's first attempt). Counts the retries and, in either arm, those that
+    /// would start on the earlier attempt's drill pages (N06.6).
+    fn begin_attempt(&mut self, java_quirk: bool) -> bool {
+        let retry = self.attempts > 0;
+        self.attempts += 1;
+        if retry {
+            crate::run_stats::record_n06(crate::run_stats::Counter::FanoutRetries);
+            if self.drills.carries_pages() {
+                crate::run_stats::record_n06(crate::run_stats::Counter::FanoutStaleDrillCarries);
+            }
+        }
+        // PARITY(quirk, java_quirks.fanout_stale_drill_carry): one engine for
+        // every attempt (`:1076-1078`); `false` gives each attempt fresh drill
+        // pages, as the batch router does.
+        if !java_quirk {
+            self.drills = DrillCarry::default();
+        }
+        retry
+    }
+}
+
 /// One `autorouteConnection` of the pin's engine, adding to `ripped`.
 #[allow(clippy::too_many_arguments)]
 fn attempt(
@@ -147,27 +185,34 @@ fn attempt(
     limit: &WorkLimit,
     ctx: &StageCtx,
     ripped: &mut BTreeSet<ItemId>,
-    engine: &mut DrillCarry,
+    engine: &mut PinEngine,
 ) -> AttemptResult {
     let limits = RouteLimits {
         settings: SearchSettings::from_router(ctx.board_settings),
         stop: Some(ctx.cancel),
         work_limit: Some(limit.clone()),
     };
-    // PARITY(quirk, java_quirks.fanout_stale_drill_carry): one engine for every
-    // attempt (`:1076-1078`); `false` gives each attempt fresh drill pages, as
-    // the batch router does.
-    if !control.quirks.fanout_stale_drill_carry {
-        *engine = DrillCarry::default();
-    }
+    let retry = engine.begin_attempt(control.quirks.fanout_stale_drill_carry);
     // PARITY: :1083-1126, `ripupCosts` is null here.
     let ripped = Ripped {
         items: ripped,
         costs: None,
     };
-    route_connection_counted(
-        board, start, dest, control, limits, ripped, engine, None, None,
-    )
+    let result = route_connection_counted(
+        board,
+        start,
+        dest,
+        control,
+        limits,
+        ripped,
+        &mut engine.drills,
+        None,
+        None,
+    );
+    if retry && connected(&result) {
+        crate::run_stats::record_n06(crate::run_stats::Counter::FanoutRetriesSucceeded);
+    }
+    result
 }
 
 /// True if a plane or closest-target attempt ended the fanout.
@@ -277,7 +322,7 @@ fn route_attempts(
     let net = control.net_number;
     // PARITY(quirk, java_quirks.fanout_stale_drill_carry): one engine for every attempt (`:1076-1078`), so the
     // later attempts see the drill pages the earlier ones used.
-    let mut engine = DrillCarry::default();
+    let mut engine = PinEngine::default();
     let engine = &mut engine;
     let plane_targets = board.power_plane_areas(unconnected.iter().copied());
     if !plane_targets.is_empty() {

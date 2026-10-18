@@ -1,0 +1,22 @@
+# N06.6: batch F, the fanout's kept Java bugs (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.6.json: router.java_quirks.fanout_stale_drill_carry,
+# drill_destination_room_index and fanout_pin_order_names, each alone and together, against
+# Java's behaviour (all three true). DSN files, routed by tools/bench/n06_run.py under profile
+# legacy with the fanout on (--router.fanout.enabled=true, the default given explicitly).
+# Chosen before any number by what the board holds (SMD pins with a net, and SMD pins on a
+# net with a plane, whose fanout makes a plane attempt before its target attempts), not by
+# any routed result:
+# SMD pins 14, 3 on a plane net (N06.7's small board):
+fixtures/Issue676-ch32v-tx118s.dsn
+# SMD pins 12, 4 on a plane net:
+fixtures/Issue957-smoke-ldo-led.dsn
+# SMD pins 76, 44 on 9 plane nets:
+fixtures/Issue367-Charger.dsn
+# SMD pins 205, 116 on 6 plane nets:
+fixtures/Issue756-tomu-fpga.dsn
+# SMD pins 315 (307 with a net), 113 on 3 plane nets, 4 layers:
+fixtures/Issue269-z10_module.dsn
+# A board of A12's fanout probe without a plane (target attempts only):
+fixtures/Issue508-DAC2020_bm08.dsn
+# canary-pwr through the KiCad plugin path (the registration's plugin_canary; outside
+# n06_run.py): canary hardware/canary-pwr-rev1.0 at canary 9511d9a.

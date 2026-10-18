@@ -1,0 +1,224 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.6-batch-fanout",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.6, batch F)",
+  "question": "Do the fanout's three Java-bug fixes, router.java_quirks.fanout_stale_drill_carry=false (each attempt of a pin's fanout, the plane attempt, the closest target and all targets, starts on fresh drill pages instead of the first attempt's occupied sections and cached drills), drill_destination_room_index=false (a destination drill's room is roomArr[section], not roomArr[firstLayer + section]) and fanout_pin_order_names=false (fanout.pin_sorting_order accepts the documented spellings distance_to_closest_on_net and surroundings_density), each alone and together, keep every registered board's routing within N02's totals rule (accept no-regress: correctness fixes) of Java's behaviour, with the fanout on and no new clearance violation; how often does each branch run; and how many fanout retries succeed before and after?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "fixtures/Issue676-ch32v-tx118s.dsn": 2,
+      "fixtures/Issue957-smoke-ldo-led.dsn": 2,
+      "fixtures/Issue367-Charger.dsn": 2,
+      "fixtures/Issue756-tomu-fpga.dsn": 2,
+      "fixtures/Issue269-z10_module.dsn": 2,
+      "fixtures/Issue508-DAC2020_bm08.dsn": 2,
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at the implementing commit (main e6dc8bb, with N06.5, plus N06.6's diff), one Linux release build for every arm; profile legacy with the fanout on, so the arms differ from Java only in the three router.java_quirks keys, each given explicitly",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at the implementing commit (main e6dc8bb, with N06.5, plus N06.6's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.fanout.enabled=true --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.fanout_stale_drill_carry=true --router.java_quirks.drill_destination_room_index=true --router.java_quirks.fanout_pin_order_names=true",
+      "settings": {},
+      "what": "baseline: all three switches true, Java's fanout"
+    },
+    "fanout_stale_drill_carry": {
+      "engine": "freerouting-rs at the implementing commit (main e6dc8bb, with N06.5, plus N06.6's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.fanout.enabled=true --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.fanout_stale_drill_carry=false --router.java_quirks.drill_destination_room_index=true --router.java_quirks.fanout_pin_order_names=true",
+      "settings": {
+        "router.java_quirks.fanout_stale_drill_carry": false
+      },
+      "what": "each fanout attempt of a pin starts on fresh drill pages alone"
+    },
+    "drill_destination_room_index": {
+      "engine": "freerouting-rs at the implementing commit (main e6dc8bb, with N06.5, plus N06.6's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.fanout.enabled=true --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.fanout_stale_drill_carry=true --router.java_quirks.drill_destination_room_index=false --router.java_quirks.fanout_pin_order_names=true",
+      "settings": {
+        "router.java_quirks.drill_destination_room_index": false
+      },
+      "what": "a destination drill's room is indexed by its section alone"
+    },
+    "fanout_pin_order_names": {
+      "engine": "freerouting-rs at the implementing commit (main e6dc8bb, with N06.5, plus N06.6's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.fanout.enabled=true --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.fanout_stale_drill_carry=true --router.java_quirks.drill_destination_room_index=true --router.java_quirks.fanout_pin_order_names=false",
+      "settings": {
+        "router.java_quirks.fanout_pin_order_names": false
+      },
+      "what": "the documented pin-order spellings are accepted alone"
+    },
+    "all": {
+      "engine": "freerouting-rs at the implementing commit (main e6dc8bb, with N06.5, plus N06.6's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.fanout.enabled=true --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.fanout_stale_drill_carry=false --router.java_quirks.drill_destination_room_index=false --router.java_quirks.fanout_pin_order_names=false",
+      "settings": {
+        "router.java_quirks.fanout_stale_drill_carry": false,
+        "router.java_quirks.drill_destination_room_index": false,
+        "router.java_quirks.fanout_pin_order_names": false
+      },
+      "what": "candidate: the three fixes of batch F together"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "all",
+  "pairs": {
+    "verdict": [
+      "baseline",
+      "all"
+    ],
+    "reported": [
+      [
+        "baseline",
+        "fanout_stale_drill_carry"
+      ],
+      [
+        "baseline",
+        "drill_destination_room_index"
+      ],
+      [
+        "baseline",
+        "fanout_pin_order_names"
+      ]
+    ]
+  },
+  "boards": {
+    "set": "tools/bench/sets/n06-f.txt",
+    "eligibility": "every row; no row is dropped after a number. The rows were chosen before any number by what each board holds (SMD pins, and SMD pins on a net with a plane), counted on the loaded boards without routing",
+    "files": {
+      "fixtures/Issue676-ch32v-tx118s.dsn": "7270f70a8d1964801fc476826291a83d82d00bee00a346aea01fe55b2b63359e",
+      "fixtures/Issue957-smoke-ldo-led.dsn": "090e615ca832eb4aa13f76fe1ca8be36cf9f45027f48aa8126512c72580178f5",
+      "fixtures/Issue367-Charger.dsn": "7ce9353ef668555d39956b6b1b96aca5cff83091d26ab89bb4c59c3c13b62a38",
+      "fixtures/Issue756-tomu-fpga.dsn": "c5279c56697b86e9e8189ffa3ee0036eaeafaa661c07df25dbe6c066ef16a9ee",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5"
+    },
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path (plugin_canary below), outside n06_run.py"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_retries",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_retries_succeeded",
+      "role": "report",
+      "kind": "int",
+      "direction": "higher",
+      "compared": false
+    },
+    {
+      "name": "fanout_stale_drill_carries",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drill_destination_room_index_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_pin_order_name_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias": "the result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`",
+    "session_differences": "1 if the arm's SES differs byte for byte from the baseline arm's on that board",
+    "kicad_unconnected, drc_real, via_in_pad, below_minimum": "the canary-pwr plugin row's grade (canary hardware/tools/grade.sh)",
+    "fanout_* and drill_destination_room_index_flips": "run_stats counters (--stats json, total.counts), counted in either arm: fanout_retries, a pin fanout's attempts after its first (the closest target after a failed plane attempt, all targets after a failed plane or closest-target attempt; RoutingBoard.java:1074-1126); fanout_retries_succeeded, those retries that ended routed or already connected, the number the checklist asks for before (baseline) and after (fanout_stale_drill_carry and all); fanout_stale_drill_carries, retries whose engine carried an earlier attempt's drill pages (what fanout_stale_drill_carry=false drops); drill_destination_room_index_flips, backtracks from a destination drill whose first layer is not 0 (a blind or buried via's drill); fanout_pin_order_name_flips, fanout runs whose fanout.pin_sorting_order is distance_to_closest_on_net or surroundings_density"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "Reachability first: a switch whose counter is 0 in every run (fanout_stale_drill_carries for fanout_stale_drill_carry, drill_destination_room_index_flips, fanout_pin_order_name_flips) and whose arm's sessions all equal the baseline's is not reached by any registered board, and is accepted on its tests (both behaviours pinned).",
+    "Sessions identical but a counter above 0: the branch runs but decides nothing that reaches the output; that switch is neutral and accepted.",
+    "Otherwise the totals rule for the verdict pair (baseline, all): no new clearance violation on any DSN row, the plugin row's via_in_pad and below_minimum 0 and drc_real no higher than baseline's; the candidate's unrouted summed over the DSN rows plus the plugin row's kicad_unconnected at most the baseline's plus the set's noise, sqrt of the sum of the bands squared (sqrt(6*2^2 + 10^2) = 11.14); no row worse by more than twice its band.",
+    "A failed verdict pair is bisected through the three single-switch reported pairs; each switch is judged alone by the same rule.",
+    "The done note reports fanout_retries and fanout_retries_succeeded summed over the rows (and the plugin row) for baseline (before) and for fanout_stale_drill_carry and all (after). They are reported, not judged: a retry that fails under Java may now route, and the fanout's later passes then see another board.",
+    "fanout_pin_order_names is reached only when fanout.pin_sorting_order is set to one of the two spellings; every arm runs the default outer_first, so its counter is expected to read 0 and the switch to be accepted on its tests."
+  ],
+  "stop_rule": "One run per arm per row. No heavy run by the implementer.",
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.6.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-f",
+  "orchestrator": "Run orchestrator_command from the root of the measured tree: it runs each arms.command on each boards.files row (6 rows x 5 arms = 30 runs), checks the input hashes, compares each SES with the baseline's and writes summary.json (session_differences, counts, statistics). It exits non-zero when a session differs, after every run: then apply the totals rule to summary.json's statistics. Then the plugin row.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the reachability and exact-session guards above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 9511d9a (git archive, unedited), as in N06.10's plugin-path run; never edit the source project.",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then append --router.profile=legacy, --router.fanout.enabled=true, the arm's three explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. One exported input and one argument list serve every arm. Compare each session with the plugin baseline arm's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade. Retain export/import logs, versions, source hashes and grades."
+  },
+  "not_registered": "time (the fixes change no work budget: the per-pin work limit is shared by a pin's attempts in both arms); the enhanced profile (the arms run under legacy so that only the switches differ from Java); fanout_pin_order_names is reached only with a non-default fanout.pin_sorting_order, which no arm sets; drill_destination_room_index needs a blind or buried via's drill as a fanout destination, and no registered board's loaded state has a blind or buried via (fixtures/reference/load: vias.blind_count and vias.buried_count are 0 in all 131 files, the six registered rows included), so its counter is expected to read 0 unless the router inserts one"
+}

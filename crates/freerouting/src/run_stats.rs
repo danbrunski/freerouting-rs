@@ -139,10 +139,28 @@ pub enum Counter {
     MazeEdgeCornerFlips,
     /// N06.5: trace stubs whose half width `connect_to_trace_swapped_width` changes.
     InsertConnectToTraceWidthFlips,
+    /// N06.6: a pin fanout's attempts after its first (the closest target after a
+    /// failed plane attempt, all targets after a failed plane or closest-target
+    /// attempt), the attempts `fanout_stale_drill_carry` runs on the first one's
+    /// drill pages.
+    FanoutRetries,
+    /// N06.6: of [`Counter::FanoutRetries`], those that ended routed or already
+    /// connected (the attempt that ends the pin's fanout).
+    FanoutRetriesSucceeded,
+    /// N06.6: of [`Counter::FanoutRetries`], those whose engine carried an earlier
+    /// attempt's drill pages, which `fanout_stale_drill_carry = false` drops.
+    FanoutStaleDrillCarries,
+    /// N06.6: located connections ending at a drill whose first layer is not 0,
+    /// whose destination room `drill_destination_room_index` indexes differently.
+    DrillDestinationRoomIndexFlips,
+    /// N06.6: fanout runs whose `fanout.pin_sorting_order` is a documented spelling
+    /// (`distance_to_closest_on_net`, `surroundings_density`) that
+    /// `fanout_pin_order_names` reads as pin-index order.
+    FanoutPinOrderNameFlips,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 38] = [
+pub const COUNTERS: [Counter; 43] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -181,6 +199,11 @@ pub const COUNTERS: [Counter; 38] = [
     Counter::MazeEdgeSweepsWithoutNeighbours,
     Counter::MazeEdgeCornerFlips,
     Counter::InsertConnectToTraceWidthFlips,
+    Counter::FanoutRetries,
+    Counter::FanoutRetriesSucceeded,
+    Counter::FanoutStaleDrillCarries,
+    Counter::DrillDestinationRoomIndexFlips,
+    Counter::FanoutPinOrderNameFlips,
 ];
 
 impl Counter {
@@ -225,6 +248,11 @@ impl Counter {
             Counter::MazeEdgeSweepsWithoutNeighbours => "maze_edge_sweeps_without_neighbours",
             Counter::MazeEdgeCornerFlips => "maze_edge_corner_flips",
             Counter::InsertConnectToTraceWidthFlips => "insert_connect_to_trace_width_flips",
+            Counter::FanoutRetries => "fanout_retries",
+            Counter::FanoutRetriesSucceeded => "fanout_retries_succeeded",
+            Counter::FanoutStaleDrillCarries => "fanout_stale_drill_carries",
+            Counter::DrillDestinationRoomIndexFlips => "drill_destination_room_index_flips",
+            Counter::FanoutPinOrderNameFlips => "fanout_pin_order_name_flips",
         }
     }
 }

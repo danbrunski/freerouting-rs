@@ -145,6 +145,14 @@ pub struct DrillCarry {
     occupied: Vec<bool>,
 }
 
+impl DrillCarry {
+    /// True if the engine carries drill pages from an earlier search, which
+    /// the next search on it installs ([`Session::install_drill_carry`]).
+    pub fn carries_pages(&self) -> bool {
+        self.pages.is_some()
+    }
+}
+
 impl DrillPageArray {
     /// The page width limit of a board (`AutorouteEngine.java:89-90`):
     /// `max((int) (5 * defaultViaDiameter), 10000)`.
