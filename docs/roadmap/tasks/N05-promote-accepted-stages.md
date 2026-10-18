@@ -143,6 +143,21 @@ Prerequisites: N01; each candidate's own accepted measurement.
     Q16.3: the stage's contact test (Java's normal contacts) misses a via crossing a fixed pour
     strip mid-segment, and a trace ending in a plane's outline outside KiCad's fill.
 
+  - **2026-10-18, rejected again (stays unset): `router.cleanup.remove_stubs = true`** (Q16.4, the
+    stub test on KiCad's contacts). Registration `docs/roadmap/prereg/Q16-4.json` (`45a26792…`
+    before any number; amended once before any route to `c0674fb3…`: engine main b93bcd0, whose
+    `enhanced` adds `via_clearance = net_class`), pinned by
+    `crates/freerouting-dev/tests/prereg_q16_4.rs`; N02 totals, `accept: no-regress`, plugin45
+    options against plugin45 plus the setting, canary-pwr (plugin path) and four stripped KiCad
+    demos. `freerouting-dev gate`: **FAIL** on four hard guards: `below_minimum` 199 (kit-dev) and
+    58 (multichannel_mixer) in both arms (plugin45's 0.15 mm minimum under Board Setup minimums of
+    0.1981 and 0.2 mm), kit-dev `via_dangling_dsn` 11 → 1 (a via with three contacts on one
+    layer, two of which meet only through the third, kept by the every-pair guard), StickHub
+    `drc_real` 13 → 14 (one `solder_mask_bridge`; the byte-identical rerun grades 13). Totals
+    207 → 205 against noise 29.50; canary-pwr 41 → 41 unconnected, dangling vias 17 → 0;
+    determinism byte-identical. Numbers and causes in Q16.4; sessions for canary's official grade:
+    `target/canary-handoff/2026-10-18-q164/`.
+
   Sessions for canary's official grade: `target/canary-handoff/2026-10-18-n05/` (8 SESs, the
   plugin DSN, `SHA256SUMS`, `README.txt` with flags and the self-grade).
 

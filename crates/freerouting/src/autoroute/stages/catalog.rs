@@ -244,9 +244,11 @@ pub const EXPERIMENTAL: &[Experimental] = &[
         class: "boards with fixed pour strips and dangling vias (canary-pwr, interf_u)",
         help: "Removes routed vias and traces that join fewer than two items of their net \
                (Q16). Dangling vias fall 15 -> 0, 16 -> 0 (canary-pwr) and 9 -> 0 (interf_u), \
-               KiCad drc_real 1 -> 0 on canary-pwr. Kept pending Q16.4: Q16.3's gate failed on \
-               two guards (canary-pwr KiCad unconnected 37 -> 38, CM5_MINIMA_3 \
-               track_dangling 1 -> 1); Q16.4 counts contacts as KiCad does.",
+               KiCad drc_real 1 -> 0 on canary-pwr. Q16.3's gate failed on two guards \
+               (canary-pwr KiCad unconnected 37 -> 38, CM5_MINIMA_3 track_dangling 1 -> 1). \
+               Q16.4 counts contacts as KiCad does: canary-pwr 41 -> 41 unconnected, dangling \
+               vias 17 -> 0; its gate failed on four hard guards (two from its options' 0.15 mm \
+               minimum in both arms, one via its every-pair guard keeps, one KiCad grading noise).",
     },
     Experimental {
         kind: ExperimentalKind::Option,

@@ -297,3 +297,53 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
        `../target/release/freerouting-dev gate --records $S/records-q164.json --baseline
        $S/baseline-q164.json --prereg docs/roadmap/prereg/Q16-4.json --write-baseline` and the same
        without `--write-baseline` for the verdict.
+
+  *Partial 2026-10-18 (measured):* the registered run is done and the gate **fails** on four hard
+  guards, so the setting stays unset in both profiles (the keep rule); no promotion.
+  - Amendment 1 before any route (`Q16-4.json` sha256
+    `c0674fb312912cbd6d006404c2c0c0fa247281392533b66d8a908e261adcec9e`, re-pinned in
+    `prereg_q16_4.rs`, `cargo test --release -p freerouting-dev --test prereg_q16_4`: 2 passed):
+    engine main b93bcd0, whose `enhanced` adds `via_clearance = net_class`; the arms keep plugin45's
+    route options as registered (they already name `sweep = free`, `sweep_passes = 2`, so K09.9's
+    plugin default changes nothing in them); adds `seen_before_registration`. Board hashes checked:
+    the four stripped demos equal the registration's, canary-pwr's input `15aa06a3…`;
+    `q164-arm.sh` `822508fe…`. Unrouted inputs (KiCad unconnected): kit-dev 478, StickHub 128,
+    RoyalBlue54L-Feather 146, multichannel_mixer 176; canary-pwr K09's grade.
+  - Per board, baseline → candidate (KiCad 10.0.7, `records-q164.json` and `gate-q164.txt` in
+    `target/orchestrator/q16/scratch/`):
+
+    | board | unconnected | via_dangling_dsn | track_dangling_dsn | drc_real | below_minimum | determinism |
+    |---|---|---|---|---|---|---|
+    | canary-pwr (plugin path) | 41 → 41 | 17 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | identical |
+    | kit-dev-coldfire-xilinx_5213 | 33 → 33 | 11 → **1** | 0 → 0 | 200 → 200 | **199 → 199** | identical |
+    | StickHub | 31 → 30 | 7 → 0 | 0 → 0 | 13 → **14** | 0 → 0 | identical |
+    | RoyalBlue54L-Feather | 96 → 95 | 2 → 0 | 0 → 0 | 26 → 26 | 0 → 0 | identical |
+    | multichannel_mixer | 6 → 6 | 0 → 0 | 0 → 0 | 75 → 75 | **58 → 58** | identical |
+
+    KiCad's raw `via_dangling` 17 → 0, 13 → 3, 8 → 1, 4 → 2, 0 → 0 and `track_dangling` 0, 0, 0,
+    56 → 56, 0 (the rest are the plane-fill limit); via_in_pad 0 everywhere. Totals 207 → 205
+    against a set noise of 29.50. `freerouting-dev gate`: **FAIL** (totals verdict reject on the
+    hard guards). Determinism: the candidate rerun's SES is byte-identical to the registered one on
+    all five boards (`cmp`). The stage removed 17 vias and 12 traces on canary-pwr, 10 vias and 2
+    traces on kit-dev.
+  - Cause 1, `below_minimum` 199 and 58 in **both** arms: plugin45's `min_trace_width_um = 150` (with
+    `enhanced`'s neck-down) puts 0.15 mm traces on demos whose Board Setup minimum is 0.1981 mm
+    (kit-dev) and 0.2 mm (multichannel_mixer). The registration's options, not the stage: the
+    baseline breaks the same hard limit by the same count.
+  - Cause 2, kit-dev's one visible dangling via: `Net-(D101-K)` at (162.2687, 108.747) mm, a
+    through via the router left on Top_layer with three same-net contacts there: two traces that end
+    at its centre (to (162.0497, 108.966) and to (163.8948, 107.1209)) and the trace from U101 pad 4
+    ending at (162.0497, 108.966), 0.31 mm off centre, inside its 0.6 mm pad. The stage's guard asks
+    that every two contacts touch; the last two do not (they meet only through the first), so the
+    via stays, though its removal would split nothing. A guard on the contacts' touch graph being
+    connected, rather than complete, would remove it; that is an engine change after the
+    registration, so it is not in this run (stop rule).
+  - Cause 3, StickHub `drc_real` 13 → 14: one more `solder_mask_bridge`, which is KiCad's grading
+    noise: the determinism rerun's SES is byte-identical and grades 13. KiCad reports one item pair
+    per bridged mask aperture, and the pair it picks differs between gradings of the same session.
+  - canary-pwr alone passes every guard: 41 → 41 unconnected, 17 → 0 dangling vias, no new error.
+    Sessions for canary's official grade: `target/canary-handoff/2026-10-18-q164/`.
+  - Remains (operator decision): a new registration or an amendment that (a) runs the demos with
+    options that respect their Board Setup minimum (no plugin45 `min_trace_width_um`), (b) takes
+    the connected-graph guard if it is adopted, and (c) judges `solder_mask_bridge` without KiCad's
+    pair-picking noise (for example by aperture, or by grading twice). Q16 stays open.

@@ -23,7 +23,7 @@
   },
   "arms": {
     "plugin45": {
-      "engine": "freerouting-rs release CLI at origin/main 27d7409 plus Q16.4's diff (the stub test on overlap contacts; nothing else of the engine changes), profile enhanced as it is there (power_layer_traces=none, neck_width_um=300), through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "engine": "freerouting-rs release CLI at main b93bcd0 (Q16.4's stub test on overlap contacts is in it, c8a9089), profile enhanced as it is there (power_layer_traces=none, neck_width_um=300, via_clearance=net_class), through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
       "options": {
         "schema": 3,
         "profile": "enhanced",
@@ -164,5 +164,12 @@
   },
   "keep_rule": "if the candidate passes, N05 adds cleanup.remove_stubs = true to ENHANCED with these numbers (profile.rs entry, the settings_profile test, the DIVERGENCES line, the help text, an N05.3 line); if it fails, the setting stays unset in both profiles and Q16.4's note gives the numbers and the cause of each failing guard",
   "stop_rule": "one registered run per arm per board, plus the candidate's determinism rerun; no reruns with other settings",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "reason": "main moved on before any Q16.4 route: N05 gave enhanced router.via_clearance = net_class (ded6183), and the plugin's enhanced defaults add sweep = free (K09.9, 52083dd); the registered measurement is run on the tree that would take the promotion",
+      "changes": "engine base moved from origin/main 27d7409 with Q16.4's diff to main b93bcd0 (Q16.4's diff committed as c8a9089), whose enhanced is power_layer_traces=none, neck_width_um=300 and via_clearance=net_class; both arms run under it with no flag added. The arms keep plugin45's route options as registered (they already name sweep=free and sweep_passes=2, so the plugin's new enhanced default changes nothing in them). Adds seen_before_registration. Boards, metrics, guards, the rule and the arms' commands unchanged"
+    }
+  ],
+  "seen_before_registration": "no number of either arm under this registration's engine, boards or options. Before the registration: Q16.3's graded runs on canary-pwr under its own engine (origin/main 17431c4 with Q16's diff; base via_dangling 15, all visible from the DSN), and K02.7's graded Rust run of kit-dev-coldfire-xilinx_5213 under other options (48 via_dangling). StickHub, RoyalBlue54L-Feather and multichannel_mixer had no grade. Amendment 1 was written before any route of Q16.4"
 }
