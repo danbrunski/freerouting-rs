@@ -22,8 +22,11 @@
 //!    ripup ([`rip_blockers`]), a stop. The pass number advances only on
 //!    [`PassDecision::Continue`];
 //! 5. the finish (`:607-642`): the history's best board when it beats the
-//!    final score (`Replaced` sent), the final `remove_tails(NONE)` when the
-//!    router ran and was not stopped, and the history cleared.
+//!    final score (`Replaced` sent), Q04.3's output guard when
+//!    `router.autorouter.output_guard` is on (not Java; it may swap in a
+//!    history board or the input board, `Replaced` sent), the final
+//!    `remove_tails(NONE)` when the router ran and was not stopped, and the
+//!    history cleared.
 //!
 //! **Statistics once per board state.** Java builds `BoardStatistics`
 //! three or four times per pass with the same result; the loop builds it
@@ -199,6 +202,8 @@ pub struct LoopOutcome {
     pub final_tails: bool,
     /// Q10: the add-only sweep, if one ran.
     pub sweep: Option<crate::quality::sweep::SweepOutcome>,
+    /// Q04.3: the output guard, if `router.autorouter.output_guard` was on.
+    pub output_guard: Option<crate::quality::output_guard::GuardOutcome>,
 }
 
 impl LoopOutcome {
@@ -231,6 +236,8 @@ pub fn run_batch_loop(
         outcome: LoopOutcome::default(),
         history: SnapshotHistory::new(),
         listening: ctx.events.is_listening(),
+        // Q04.3: the input board, before the fanout; off by default.
+        guard: crate::quality::output_guard::OutputGuard::start(board, ctx.settings),
     };
     run.journal_on(board);
     // PARITY: AutorouteBatchLoop.java:80-82.
@@ -280,6 +287,7 @@ struct Run {
     outcome: LoopOutcome,
     history: SnapshotHistory,
     listening: bool,
+    guard: Option<crate::quality::output_guard::OutputGuard>,
 }
 
 /// What a restore produced before the controller saw its rank.
@@ -597,6 +605,16 @@ impl Run {
 
     fn stop_line(&mut self, board: &RoutingBoard, reason: StopReason, figures: &BoardFigures) {
         match reason {
+            StopReason::Quantum => {
+                self.outcome.info(format!(
+                    "The router's score ({}) gained less than the quantum at the last restore \
+                     checks ({} item{} still unconnected). Stopping the auto-router \
+                     (quantum-stop).",
+                    log::decimal_format_0_00(f64::from(figures.score)),
+                    figures.incomplete,
+                    if figures.incomplete == 1 { "" } else { "s" }
+                ));
+            }
             StopReason::Stagnation | StopReason::GlobalStagnation => {
                 let report = crate::autoroute::batch::report::unrouted_report(board);
                 self.outcome.info(format!(
@@ -642,6 +660,20 @@ impl Run {
                  routing (score {}). Restoring the best board as the final result.",
                 score_text(&figures)
             ));
+        }
+        // Q04.3: the output guard, off by default; before the tail removal,
+        // which changes neither of its axes.
+        if let Some(guard) = &self.guard {
+            let (result, replacement) = guard.check(board, &self.history);
+            for text in &result.log {
+                self.outcome.info(text.clone());
+            }
+            if let Some(saved) = replacement {
+                self.swap(board, saved, ctx);
+                executor.audit(board, AuditPoint::Restore);
+                figures = executor.figures(board, settings);
+            }
+            self.outcome.output_guard = Some(result);
         }
         // PARITY: :635-639.
         self.outcome.final_tails = decision.remove_tails;

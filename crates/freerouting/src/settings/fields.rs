@@ -299,6 +299,8 @@ settings_table! {
                 "Most add-only sweep passes; unset is 2 (Q10)."),
             (sweep_after_optimizer, bool, opt, None, None, "sweepAfterOptimizer", [], Flat::No, true,
                 "Run the sweep after the optimizer, then optimize again (Q10.3); unset is false."),
+            (output_guard, bool, opt, None, None, "outputGuard", [], Flat::No, true,
+                "Never end worse than the input on completed connections or unconnected pins: fall back to the best history board that isn't, else the input (Q04.3; unset: off)."),
         }
         fanout, FanoutPatch, FanoutSettings, "fanout",
         "Configuration of the SMD-pin fanout pre-pass." {
@@ -465,6 +467,17 @@ settings_table! {
                 "Extra board stage ids, run at each stage's phase in list order."),
             (diagnostics, Vec<String>, opt, None, None, "diagnostics", [], Flat::No, true,
                 "Report-only diagnostics ids (Q06 `verdicts` and rip-stats (Q05)); they change no routes."),
+        }
+        quantum_stop, QuantumStopPatch, QuantumStopSettings, "quantumStop",
+        "The `quantum-stop` pass controller's stop rule (Q04.1; not a Java section)." {
+            (grace, i32, opt, None, None, "grace", [], Flat::No, true,
+                "Restore checks that never count toward the stop (unset: 0)."),
+            (checks, i32, opt, None, None, "checks", [], Flat::No, true,
+                "Consecutive restore checks without a gain that stop the passes (unset: 2)."),
+            (quantum_abs, f64, opt, None, None, "quantumAbs", [], Flat::No, true,
+                "Smallest score gain between restore checks that counts (unset: 1.0)."),
+            (quantum_pct, f64, opt, None, None, "quantumPct", [], Flat::No, true,
+                "Smallest gain as a fraction of the best score, if larger than `quantum_abs` (unset: 0.01)."),
         }
         cleanup, CleanupPatch, CleanupSettings, "cleanup",
         "The final cleanup after the last routing or optimizer step (Q16; not a Java section)." {

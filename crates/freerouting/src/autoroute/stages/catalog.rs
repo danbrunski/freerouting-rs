@@ -127,6 +127,11 @@ pub const SLOTS: &[SlotDesc] = &[
             "router_scoring.unrouted_free_fraction",
             "router_scoring.clearance_violation_count_weight",
             "router_scoring.clearance_violation_depth_weight",
+            "quantum_stop.grace",
+            "quantum_stop.checks",
+            "quantum_stop.quantum_abs",
+            "quantum_stop.quantum_pct",
+            "autorouter.output_guard",
         ],
     },
     SlotDesc {

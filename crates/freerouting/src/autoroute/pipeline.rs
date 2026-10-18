@@ -140,6 +140,8 @@ pub struct PipelineOutcome {
     pub optimizer: Option<OptimizerSummary>,
     /// Q16's stub cleanup, if `router.cleanup.remove_stubs` was on.
     pub stubs: Option<crate::quality::stubs::StubCleanup>,
+    /// Q04.3's output guard, if `router.autorouter.output_guard` was on.
+    pub output_guard: Option<crate::quality::output_guard::GuardOutcome>,
     /// True if the job deadline fired.
     pub timed_out: bool,
     /// Java's job log lines.
@@ -266,6 +268,10 @@ pub fn run_pipeline_with(
     };
     // Q10: an unknown `router.autorouter.sweep` value fails before routing.
     if let Err(e) = crate::quality::sweep::check_settings(settings) {
+        return Err(fail(PipelineError::UnknownStage(e), board));
+    }
+    // Q04.1: an invalid `router.quantum_stop` value fails before routing.
+    if let Err(e) = crate::quality::stop_rule::check_settings(settings) {
         return Err(fail(PipelineError::UnknownStage(e), board));
     }
     let watcher = Watcher::new(Arc::clone(&job.cancel));
@@ -419,6 +425,7 @@ pub fn run_pipeline_with(
     outcome.stop = loop_outcome.stop;
     outcome.restores = loop_outcome.restores;
     outcome.restored_best = loop_outcome.restored_best;
+    outcome.output_guard = loop_outcome.output_guard;
     outcome.log = log;
     outcome.board = job.events.finished(board, outcome.summary.clone());
     Ok(outcome)

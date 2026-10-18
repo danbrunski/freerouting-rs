@@ -281,6 +281,9 @@ pub enum StopReason {
     Stagnation,
     /// No pass improved the global best score for the limit.
     GlobalStagnation,
+    /// Q04's stop rule (`quantum-stop`, not Java): the restore checks
+    /// stopped gaining a quantum of score.
+    Quantum,
 }
 
 impl StopReason {

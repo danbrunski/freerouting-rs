@@ -1,0 +1,61 @@
+(pcb q04-prerouted.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q04 synthetic fixture")
+    (host_version "one layer; nets B and C are routed walls whose pads sit 0.2 mm from the outline; net A has A1-A2 routed and A3, A4, A5 beyond the walls")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (boundary
+      (path pcb 0  0 0  40000 0  40000 20000  0 20000  0 0)
+    )
+    (via "Via[0-0]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "PAD"
+      (place A1 3000 10000 front 0)
+      (place A2 8000 10000 front 0)
+      (place A3 18000 10000 front 0)
+      (place A4 30000 10000 front 0)
+      (place A5 35000 10000 front 0)
+      (place B1 12000 700 front 0)
+      (place B2 12000 19300 front 0)
+      (place C1 24000 700 front 0)
+      (place C2 24000 19300 front 0)
+    )
+  )
+  (library
+    (image "PAD"
+      (pin RectPad 1 0 0)
+    )
+    (padstack RectPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-0]_600:300_um"
+      (shape (circle F.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net A (pins A1-1 A2-1 A3-1 A4-1 A5-1))
+    (net B (pins B1-1 B2-1))
+    (net C (pins C1-1 C2-1))
+    (class kicad_default "" A B C
+      (circuit (use_via "Via[0-0]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 250  3000 10000  8000 10000) (net A))
+    (wire (path F.Cu 250  12000 700  12000 19300) (net B))
+    (wire (path F.Cu 250  24000 700  24000 19300) (net C))
+  )
+)

@@ -25,4 +25,11 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::neckdown::DIAGNOSTIC_ID, |s| {
             Box::new(super::neckdown::WidthDiagnostics::from_settings(s))
         });
+    // Q04.1: the `quantum-stop` pass controller
+    // (`router.autorouter.pass_controller`).
+    registry
+        .pass_controller
+        .insert(super::stop_rule::CONTROLLER_ID, |s| {
+            Box::new(super::stop_rule::QuantumStop::from_settings(s))
+        });
 }

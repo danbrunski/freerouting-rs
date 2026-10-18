@@ -74,7 +74,7 @@ run after the first restore that can't beat pass 1 would have saved about
 
 ## Checklist
 
-- [ ] **Q04.1 — `QuantumStop` pass controller.**
+- [x] **Q04.1 — `QuantumStop` pass controller.**
   Java source for the wrapped behaviour: `AutorouteBatchLoop.run` lines
   around 331–613 at cda540f (restore check, stagnation, final restore).
   Rust design: `quality::stop_rule::QuantumStop { inner:
@@ -91,7 +91,34 @@ run after the first restore that can't beat pass 1 would have saved about
     the quantum at every check never stops early; a rise just below the
     quantum counts as no gain; an inner `Stop` passes through unchanged.
 
-- [ ] **Q04.2 — Byte-identical where it only saves time.**
+  *Done 2026-10-18:* `crates/freerouting/src/quality/stop_rule.rs`: `QuantumStop { inner:
+  FreeroutingPassController, rule: StopRule { grace, checks, quantum_abs, quantum_pct }, ... }`,
+  id `quantum-stop` (registered in `quality/register.rs`, listed by the stage catalog's pass
+  controller slot), new `StopReason::Quantum` (requests a router stop like Java's stagnation
+  stops; the loop logs "... Stopping the auto-router (quantum-stop)."). Settings: new section
+  `quantum_stop.{grace, checks, quantum_abs, quantum_pct}` (all `opt`, unset = 0, 2, 1.0, 0.01,
+  in no profile; `tests/settings_defaults.rs` lists them), checked before routing
+  (`stop_rule::check_settings`: grace < 0, checks < 1, a negative or non-finite quantum fail the
+  job naming the key). The rule runs only where Java's periodic restore check runs (history >= 8,
+  pass >= 8, pass % 4 == 0), after the inner decision, in `f32`: best = max(history best, this
+  pass's score), gain against the best at the previous check (the first: the score after pass
+  1), a miss when gain < max(q_abs, q_pct * |best|). One refinement of the design: besides
+  `Continue` and `Restore`, a `FanoutRecovery` or `LastMileRipup` decided at the firing pass is
+  replaced by the stop too (they only prepare the next pass; ripping first would leave the final
+  restore without this pass's board, which is not in the history yet). Tests
+  `crates/freerouting/tests/quality_stop_rule.rs` (`cargo test -p freerouting --test
+  quality_stop_rule`: 9 passed, Q04.1 and Q04.2 parts): `the_rule_over_synthetic_score_sequences`
+  (9 rows: flat stops at pass 12; rising by 10 per pass and +11 per check equal Java decision for
+  decision; +9 per check, just below 1 % of ~1030, stops at 16; quantum_abs 9 with gain 9 counts,
+  9.001 does not; grace 1 stops at 16; checks 1 at 8; nothing left to route at pass 12 gives
+  `Stop(Completed)`, the inner stop winning; every decision before the stop is Java's),
+  `a_flat_score_stops_at_the_second_check_not_at_pass_18` (Java alone: `Stop(Stagnation)` at 18;
+  Java's last-mile ripup at 12 becomes the stop), `a_restore_at_the_firing_check_becomes_the_stop`,
+  `the_inner_controller_sees_every_pass`, `the_rule_reads_its_settings_and_refuses_bad_values`,
+  `quantum_stop_is_registered_and_selected_by_the_pass_controller_key`. DIVERGENCES line under
+  "freerouting (board model)" with the other settings fields.
+
+- [~] **Q04.2 — Byte-identical where it only saves time.**
   For each board in `benchmark` and `owner`, route with the default controller
   and with `quantum-stop`, and record the pass of the last score improvement
   in the default run.
@@ -103,7 +130,32 @@ run after the first restore that can't beat pass 1 would have saved about
       Q04.4);
     - `tools/determinism-check.sh` passes on `canary-pwr`.
 
-- [ ] **Q04.3 — Two-axis output guard.**
+  *Partial 2026-10-18:* heavy run pending (another agent held the heavy-job slot; only runs
+  under 2 minutes were allowed). Done: the test file `crates/freerouting/tests/quality_stop_rule.rs`
+  (Q04.2 part, the batch loop with a scripted pass runner): `a_stop_after_the_last_improvement_saves_the_same_session`
+  (pass 1 best, later passes worse: Java restores and stops at pass 18, quantum-stop at 12 with
+  `StopReason::Quantum`, both end with the final best-board restore and the SES is equal),
+  `a_stop_before_the_last_improvement_changes_the_result` (improvement at pass 14: the sessions
+  differ, the Q04.4 case), `the_default_pass_controller_is_java_s`. Short release check (110 s
+  limit per run, CLI of this tree, optimizer off; wall times under load, about 3.4, so not
+  timings), default / quantum-stop passes and seconds, default last improvement, SES:
+  `Issue433-my-board` 3/3, 0.04/0.05 s, 2, identical; `ecc83` 2/2, 1, identical; `bm02` 2/2, 1,
+  identical; **`Issue690-sonde_xilinx` 18/12, 0.37/0.26 s, last improvement 1, quantum-stop fired
+  at 12, identical**; `bm07` 3/3, identical; `bm01` 11/11, 35.4/35.3 s, identical; `bm10` 5/5,
+  identical; `Issue093-interf_u` 18/18, 1.55/1.61 s, last improvement 1, identical, the rule never
+  checked (its 18 passes leave one and the same board, so the history never holds 8 boards and
+  Java runs no restore check); `CNH_Functional_Tester_1` 18/18, last improvement 3, identical (4
+  distinct boards, no check). `Issue269-z10_module` and `kit-dev-coldfire-xilinx_5213` did not
+  finish the default arm in 110 s; the larger boards and canary-pwr were not run. No board so far
+  stopped before its last improvement. Remainder, with the release CLI of the tree that lands Q04:
+  `/home/thebo/code/freerouting-rs/target/orchestrator/q04/q04-heavy.sh target/release/freerouting <out> 7200 tools/bench/sets/benchmark.txt tools/bench/sets/owner.txt`
+  (`/home/thebo/code/freerouting-rs/target/orchestrator/q04/q04-heavy.sh` (outside the repository; it routes each board of the sets with the default controller, with `--router.autorouter.pass_controller=quantum-stop` and, with `GUARD=1`, with `--router.autorouter.output_guard=true`, optimizer off, passes unlimited, one run at a time, and prints passes, wall seconds, the default run's last score improvement, where quantum-stop stopped, and `cmp` of the SES files)), then
+  `tools/determinism-check.sh --out <out>/det -- target/release/freerouting -de fixtures/canary-pwr/canary-pwr-pours1.dsn -do {OUT} --router.optimizer.enabled=false --router.autorouter.pass_controller=quantum-stop`;
+  the boards where quantum-stop stops before the last improvement go to Q04.4 (an amendment of
+  `docs/roadmap/prereg/Q04.json` narrows its rows), and the plugin's stop option (K09.7) waits for
+  canary-pwr's row.
+
+- [~] **Q04.3 — Two-axis output guard.**
   Source: KRT `improvement_gate.py` (#600; on spartan6_4layer a run lost 36
   nets and gained 43 while disconnected pads went from 83 to 154).
   Rust design: `quality::output_guard::OutputGuard` wraps any
@@ -118,7 +170,39 @@ run after the first restore that can't beat pass 1 would have saved about
     - on every `benchmark` board (no input wiring) the guard never fires
       and the SES is identical.
 
-- [ ] **Q04.4 — Measurement where the stop changes results.**
+  *Partial 2026-10-18:* the guard is in and the fixture clause holds; the run over every
+  `benchmark` board is pending (heavy-job slot; N05 decides `enhanced`). Code:
+  `crates/freerouting/src/quality/output_guard.rs` (`OutputGuard`, `PinGroups`, `Axes`,
+  `GuardOutcome`), on with the new settings field `autorouter.output_guard` (`opt` bool, unset is
+  off, in no profile). It is not a `PassController` wrapper: A10's controller sees no board, so the
+  batch loop keeps the input board (a B01 snapshot before the fanout) when the setting is on and
+  calls the guard in its finish, after the controller's best-board restore and before the final
+  tail removal; the history is read best first without changing it
+  (`BoardHistory::best_first`); combinable with `quantum-stop` (a setting next to the controller
+  id). The axes come from `BasicBoard::connected_set` per pin (the guard needs which pins are
+  joined; `drc::incompletes` gives only counts). The fixture is
+  `crates/freerouting/tests/data/quality/q04-prerouted.dsn` (the repository's convention since
+  Q06, not `fixtures/quality/`): one layer, nets B and C routed as walls, net A with A1-A2 routed
+  and A3-A5 beyond them. Tests `crates/freerouting/tests/quality_output_guard.rs` (`cargo test -p
+  freerouting --test quality_output_guard`: 9 passed):
+  `the_batch_run_rips_the_walls_and_the_guard_saves_the_input_wiring` (the real router with `-mp
+  1` rips both walls and never restores them: lost 2, gained 3, unconnected pins 3 -> 4, the
+  routed board scores better so Java keeps it; with the guard the log has "Output guard: the routed
+  board against the input: completed connections lost 2, gained 3; unconnected pins 3 -> 4." and
+  the board before pass 1 is saved, worse on neither axis),
+  `with_more_passes_the_guarded_run_is_never_worse_than_the_input` (`-mp` 2, 3, 5),
+  `in_the_loop_the_guard_saves_a_board_not_worse_than_the_input` (scripted pass),
+  `the_guard_takes_the_best_history_board_worse_on_neither_axis`,
+  `with_no_history_board_the_guard_saves_the_input`, `a_board_worse_on_neither_axis_is_kept`,
+  `the_axes_count_lost_and_gained_connections_and_unconnected_pins`,
+  `the_input_has_one_connection_of_a_and_the_two_walls`,
+  `without_input_wiring_the_guard_never_fires` (two-pin board and `Issue433-my-board`, SES equal).
+  Release CLI, nine `benchmark` boards (433, ecc83, bm02, sonde, bm07, bm01, bm10, interf_u, CNH):
+  the guard kept the routed board on all nine and every SES equals the unguarded one. Remainder:
+  `GUARD=1 /home/thebo/code/freerouting-rs/target/orchestrator/q04/q04-heavy.sh target/release/freerouting <out> 7200 tools/bench/sets/benchmark.txt`
+  (columns `guard_identical` and `guard_kept` must be `yes` on all 16 rows).
+
+- [~] **Q04.4 — Measurement where the stop changes results.**
   Only boards where Q04.2 found an earlier stop. Preregister (F03.4): arms
   default and `quantum-stop`; signal: wall time; guards: unrouted, vias,
   `drc_real`.
@@ -126,3 +210,27 @@ run after the first restore that can't beat pass 1 would have saved about
     saved reported per board. If unrouted rises anywhere, tune only through a
     preregistration amendment, or reject and keep the numbers here. If kept,
     a DIVERGENCES line with the time saved on `canary-pwr`.
+
+  *Partial 2026-10-18:* preregistered, not measured. `docs/roadmap/prereg/Q04.json` (sha256
+  8b587d03a724cc9f6e03c7f32beb3e28e9134982196cc39256d7fc49807e3679, pinned by
+  `crates/freerouting-dev/tests/prereg_q04.rs`, 3 passed): arms `default` and `quantum-stop`
+  (CLI, optimizer off, passes unlimited), N02's totals rule with the speed clause (signal
+  `unrouted` within noise, `wall_seconds` down >= 20 %), guards `unrouted`, `vias` and
+  `clearance_violations` (the router's DRC stands for `drc_real`: the boards are DSN files) not
+  rising on any board, `via_in_pad` hard, the defaults (0, 2, 1.0, 0.01) stated. Rows: the pool is
+  the 16 `benchmark` boards and the five in-repository canary-pwr variants with their hashes; an
+  amendment narrows it to the boards Q04.2 finds stopping before their last improvement, before
+  any Q04.4 number. The registration was written after the sonde check and while the short Q04.2
+  check ran, before any of its rows was read; no Q04.4 number exists. Remainder: Q04.2's heavy run,
+  the amendment, then per arm and board the registered commands on a quiet machine, `freerouting-dev
+  gate collect` and `freerouting-dev gate --prereg docs/roadmap/prereg/Q04.json`; if kept, the
+  DIVERGENCES line with canary-pwr's time saved, and N05 decides `enhanced`.
+- [ ] **Q04.5 — Repeat stop.** Added 2026-10-18 from Q04.2's short check: on boards whose
+  passes leave the same board (`Issue093-interf_u`: 18 passes, one board; CNH: 4 distinct
+  boards), the history never holds 8 boards, so no restore check runs and `quantum-stop` saves
+  nothing. An opt-in `quantum_stop` option stops when a pass leaves the board with the state
+  hash it started with; the session is byte-identical by construction.
+  - **Accept:**
+    - a fixture whose passes repeat stops at the first repeat with an identical session;
+    - unset, routing is unchanged;
+    - registered as a Q04.json amendment before it is measured in Q04.4.

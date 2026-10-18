@@ -234,6 +234,19 @@ impl<S: HistoryEntry> BoardHistory<S> {
     pub fn restore_best(&mut self) -> Option<S::Board> {
         self.restore(0)
     }
+
+    /// The stored entries with their scores, best first in the order
+    /// [`restore`](Self::restore) sorts them (a stable sort by Java's
+    /// `Float.compare`), without changing the list or a restore count. Not
+    /// Java: Q04.3's output guard reads the history this way.
+    pub fn best_first(&self) -> Vec<(&S, f32)> {
+        let mut stored: Vec<&Stored<S>> = self.boards.iter().collect();
+        stored.sort_by(|a, b| java_float_compare(b.score, a.score));
+        stored
+            .into_iter()
+            .map(|stored| (&stored.entry, stored.score))
+            .collect()
+    }
 }
 
 /// Java's `Float.compare(a, b)` as an [`Ordering`].

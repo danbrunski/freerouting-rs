@@ -310,6 +310,34 @@ IntOctagon's box cutout.
   stays, and no complete connection becomes incomplete (`tests/stub_cleanup.rs` on
   `tests/data/quality/q16-stubs.dsn`). Q16.3 measures it (`docs/roadmap/prereg/Q16.json`); N05
   decides `enhanced`.
+- `autorouter.pass_controller = quantum-stop` (Q04.1, `quality::stop_rule`) is a pass controller
+  Java does not have, selected by no profile (unset is Java's `freerouting-passes`), with the
+  settings fields `quantum_stop.{grace, checks, quantum_abs, quantum_pct}` (unset: 0, 2, 1.0,
+  0.01). It wraps Java's controller and adds one stop: at each of Java's periodic restore checks
+  (pass >= 8, pass % 4 == 0, at least 8 history boards) the gain is the best score (the history's
+  best or this pass's) minus the best at the previous check (at the first: the score after pass
+  1); a gain below `max(quantum_abs, quantum_pct * |best|)` in `f32` is a miss, the first `grace`
+  checks never count, and `checks` consecutive misses stop the loop (`StopReason::Quantum`,
+  logged "Stopping the auto-router (quantum-stop)."), in place of any decision Java's controller
+  made at that pass except its own stop, which wins. The stop requests a router stop like Java's
+  stagnation stops (no final tail removal), and the finish's best-board restore is Java's. A flat
+  score stops at pass 12 where Java stops at 18 (`tests/quality_stop_rule.rs`); where the stop
+  falls after the last score improvement the saved session is Java's
+  (`a_stop_after_the_last_improvement_saves_the_same_session`; `Issue690-sonde_xilinx`: 12 passes
+  instead of 18, byte-identical SES). An invalid value fails the job before routing, naming the
+  key. Q04.4 measures it (`docs/roadmap/prereg/Q04.json`).
+- `autorouter.output_guard` (Q04.3, `quality::output_guard`) is a settings field Java does not
+  have, unset by default and in both profiles (off: Java saves the best board of the run whatever
+  the input was). On, the batch loop keeps a B01 snapshot of the board it was handed and, in its
+  finish after the best-board restore and before the final tail removal, compares the board
+  with it on two axes: completed connections lost against gained (per net, pins minus groups of
+  connected pins, measured against the groups both boards share) and unconnected pins (pins of a
+  net with two or more pins that touch no other pin of their net). If either axis is worse it
+  saves instead the first history board, best first, that is worse on neither, or the input
+  board, sends `Replaced` and logs both axes ("Output guard: ..."). On
+  `tests/data/quality/q04-prerouted.dsn` with `-mp 1` the router rips two routed walls, loses 2
+  connections and gains 3 with unconnected pins 3 -> 4, and the guard saves the board before
+  pass 1 (`tests/quality_output_guard.rs`); a board with no input wiring never fires it.
 - `room_order` and `work_unit` (N03.1, restored from P04.1 and P04.2, `board::search`) are
   settings fields Java does not have, unset by default and unset in profile `legacy` (`tree`
   and `nodes`: Java's depth-first room completion and its search-tree nodes-visited work unit,
