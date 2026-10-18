@@ -120,6 +120,7 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("plane_obstacle_net_classes", None),
         ("plane_obstacle_block", None),
         ("wire_keepout", None),
+        ("via_clearance", None),
         ("neck_width_um", f64v(0.0)),
         ("min_trace_width_um", None),
         ("strict_drc", b(false)),

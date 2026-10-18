@@ -79,6 +79,11 @@
 //!   ([`batch::last_mile`]);
 //! - [`pipeline`]: [`run_pipeline`](pipeline::run_pipeline), the job the
 //!   CLI, the GUI and the plugin run (`RoutingPipeline.run`).
+//!
+//! Beyond Java (Q14):
+//!
+//! - [`via_clearance`]: `router.via_clearance`, whether a routed via takes
+//!   its via type's clearance class (Java) or its net class's.
 
 pub mod batch;
 pub mod connection;
@@ -95,6 +100,7 @@ pub mod pipeline;
 pub mod probe;
 pub mod session;
 pub mod stages;
+pub mod via_clearance;
 
 /// The possible results of autorouting a connection (Java
 /// `AutorouteAttemptState`).

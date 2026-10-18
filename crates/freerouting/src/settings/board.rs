@@ -20,6 +20,7 @@ use freerouting_geometry::jmath::java_round;
 
 use super::fields::{RouterSettings, SettingsPatch};
 use super::layers::TraceCostFactor;
+use crate::autoroute::via_clearance::ViaClearanceMode;
 use crate::board::BasicBoard;
 use crate::util::equals_ignore_case;
 
@@ -226,6 +227,7 @@ pub struct BoardRouterSettings {
     neck_width_um: f64,
     min_trace_width_um: f64,
     strict_drc: bool,
+    via_clearance: ViaClearanceMode,
 }
 
 const OUT_OF_RANGE: LayerRouting = LayerRouting {
@@ -281,6 +283,7 @@ impl BoardRouterSettings {
                 .filter(|w| *w > 0.0)
                 .unwrap_or(0.0),
             strict_drc: settings.strict_drc,
+            via_clearance: ViaClearanceMode::of(settings),
         }
     }
 
@@ -394,5 +397,11 @@ impl BoardRouterSettings {
     /// `strictDrc`.
     pub fn strict_drc(&self) -> bool {
         self.strict_drc
+    }
+
+    /// `router.via_clearance` (Q14): where a routed via's clearance class
+    /// comes from.
+    pub fn via_clearance(&self) -> ViaClearanceMode {
+        self.via_clearance
     }
 }

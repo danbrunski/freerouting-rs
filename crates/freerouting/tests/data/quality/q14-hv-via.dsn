@@ -1,0 +1,84 @@
+(pcb q14-hv-via.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q14 synthetic fixture")
+    (host_version "two layers; net HV (class HV, clearance 0.25 mm, use_via 0.8 mm) has its F.Cu pad in a cage of fixed default-class wires (0.2 mm): a room, a 1.12 mm corridor and a pocket; only a via gets out")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  -5000 -10000  12000 -10000  12000 5000  -5000 5000  -5000 -10000)
+    )
+    (via "Via[0-1]_600:300_um" "Via[0-1]_800:400_um")
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "SMD600"
+      (place U1 0 0 front 0)
+    )
+    (component "THT"
+      (place J1 3000 -6000 front 0)
+    )
+    (component "SMD200"
+      (place S1 -1600 0 front 0)
+      (place S2 6100 0 front 0)
+    )
+  )
+  (library
+    (image "SMD600"
+      (pin Smd600 1 0 0)
+    )
+    (image "SMD200"
+      (pin Smd200 1 0 0)
+    )
+    (image "THT"
+      (pin Tht1500 1 0 0)
+    )
+    (padstack Smd600
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack Smd200
+      (shape (rect F.Cu -100 -100 100 100))
+      (attach off)
+    )
+    (padstack Tht1500
+      (shape (circle F.Cu 1500))
+      (shape (circle B.Cu 1500))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+    (padstack "Via[0-1]_800:400_um"
+      (shape (circle F.Cu 800))
+      (shape (circle B.Cu 800))
+      (attach off)
+    )
+  )
+  (network
+    (net HV (pins U1-1 J1-1))
+    (net SIG (pins S1-1 S2-1))
+    (class kicad_default "" SIG
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 200) (clearance 200))
+    )
+    (class HV HV
+      (circuit (use_via "Via[0-1]_800:400_um"))
+      (rule (width 300) (clearance 250))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 200  -1600 0  -1600 1600  1100 1600  1100 660  3900 660  3900 1100  6100 1100  6100 0) (net SIG) (type fix))
+    (wire (path F.Cu 200  -1600 0  -1600 -1600  -1100 -1600  -1100 -660  3900 -660  3900 -1100  6100 -1100  6100 0) (net SIG) (type fix))
+  )
+)

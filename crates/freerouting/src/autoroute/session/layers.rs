@@ -407,7 +407,11 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
                         radius,
                         f64::from(control.trace_half_width[layer_index]),
                     );
-                    Some((required, info.clearance_class, info.attach_smd_allowed))
+                    Some((
+                        required,
+                        control.via_info_clearance_class(info),
+                        info.attach_smd_allowed,
+                    ))
                 })
                 .collect()
         };

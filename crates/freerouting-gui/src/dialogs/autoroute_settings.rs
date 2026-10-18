@@ -93,6 +93,7 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "quality option without a Java control",
     ),
     ("wire_keepout", "quality option without a Java control"),
+    ("via_clearance", "quality option without a Java control"),
     ("result_json", "a file path for the CLI's result manifest"),
     (
         "autorouter.save_intermediate_stages",

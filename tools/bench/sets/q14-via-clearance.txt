@@ -1,0 +1,8 @@
+# Q14.3: the boards of the via-clearance measurement
+# (docs/roadmap/tasks/Q14-via-clearance-follows-net-class.md), registered in
+# docs/roadmap/prereg/Q14.json: canary-pwr (the owner board, routed from its unrouted DSN) and two
+# KiCad boards whose net classes have a clearance above the default class's, graded by
+# tools/kicad-oracle/grade.sh from their .kicad_pcb.
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+fixtures/kicad/Issue180-Test/Test.kicad_pcb
+target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb

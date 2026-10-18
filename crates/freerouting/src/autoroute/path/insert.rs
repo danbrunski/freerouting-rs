@@ -548,7 +548,12 @@ impl Inserter<'_> {
             .ctrl
             .via_rule_vias(rules)
             .iter()
-            .map(|id| rules.via_infos.get(*id).clone())
+            .map(|id| {
+                // Q14: the net class's via clearance class under `net_class`.
+                let mut info = rules.via_infos.get(*id).clone();
+                info.clearance_class = self.ctrl.via_info_clearance_class(&info);
+                info
+            })
             .collect();
         let depths = ShoveDepths {
             recursion: self.ctrl.max_shove_trace_recursion_depth,

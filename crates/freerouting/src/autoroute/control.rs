@@ -19,6 +19,12 @@
 //!   only grow them (`RoutingBoard.fanout` rebuilds up to three times). The
 //!   port keeps that.
 //!
+//! **Beyond Java (Q14).** Under `router.via_clearance = net_class` every via
+//! the search checks or inserts takes the net class's via clearance class
+//! in place of its via info's
+//! ([`via_info_clearance_class`](AutorouteControl::via_info_clearance_class),
+//! [`via_clearance`](super::via_clearance)); the default is Java's rule.
+//!
 //! **The fanout's merged via rule** (A12.1). `RoutingBoard.fanout` replaces
 //! `viaRule` by a new `ViaRule` that is not on the board: the class's vias
 //! followed by those of the board's first via rule that it lacks. Here
@@ -33,12 +39,13 @@
 
 use std::fmt;
 
+use crate::autoroute::via_clearance::ViaClearanceMode;
 use crate::board::BasicBoard;
 use crate::board::items::ItemId;
 use crate::board::structure::Unit;
 use crate::geometry::Point;
 use crate::geometry::jmath::max_f64;
-use crate::rules::{BoardRules, ViaInfoId, ViaRuleId};
+use crate::rules::{BoardRules, ItemClass, ViaInfo, ViaInfoId, ViaRuleId};
 use crate::settings::board::BoardRouterSettings;
 
 /// The horizontal and vertical trace costs on a layer (Java
@@ -163,6 +170,14 @@ pub struct AutorouteControl {
     /// the parity path, where the maze search is Java's.
     pub vias_pass_trace_only_areas: bool,
     pub via_clearance_class: i32,
+    /// Q14 (`router.via_clearance = net_class`): the via clearance class of
+    /// the net's class, which every via the search checks or inserts uses
+    /// in place of its via info's ([`Self::via_info_clearance_class`]).
+    /// `None` under Java's rule, and for a net without a class.
+    pub net_class_via_clearance_class: Option<i32>,
+    /// `router.via_clearance` is `net_class`; [`init_net`](Self::init_net)
+    /// reads it to set [`Self::net_class_via_clearance_class`].
+    pub via_clearance_follows_net_class: bool,
     pub via_infos: Vec<ViaMask>,
     pub via_lower_bound: i32,
     pub via_upper_bound: i32,
@@ -278,6 +293,8 @@ impl AutorouteControl {
             own_plane_layers: vec![false; layer_count],
             vias_pass_trace_only_areas: false,
             via_clearance_class: 0,
+            net_class_via_clearance_class: None,
+            via_clearance_follows_net_class: settings.via_clearance() == ViaClearanceMode::NetClass,
             via_infos: Vec::new(),
             via_lower_bound: 0,
             via_upper_bound: layer_count as i32,
@@ -309,6 +326,9 @@ impl AutorouteControl {
                 self.via_rule = class
                     .via_rule()
                     .ok_or(ControlError::NoViaRule(net_number))?;
+                self.net_class_via_clearance_class = self
+                    .via_clearance_follows_net_class
+                    .then(|| class.default_item_clearance_classes.get(ItemClass::Via));
                 Some(class)
             }
             None => {
@@ -316,6 +336,7 @@ impl AutorouteControl {
                 // missing net: class 1 and `viaRules.firstElement()`.
                 self.trace_clearance_class_index = 1;
                 self.via_rule = rules.via_rules.nth(0).ok_or(ControlError::NoViaRules)?;
+                self.net_class_via_clearance_class = None;
                 None
             }
         };
@@ -351,6 +372,14 @@ impl AutorouteControl {
         }
     }
 
+    /// The clearance class a via of type `info` gets when the search checks
+    /// or inserts it: the info's own (Java), or under Q14's `net_class` rule
+    /// the net class's via clearance class.
+    pub fn via_info_clearance_class(&self, info: &ViaInfo) -> i32 {
+        self.net_class_via_clearance_class
+            .unwrap_or(info.clearance_class)
+    }
+
     /// `rebuildViaInfo` (`AutorouteControl.java:240-286`): the via masks and
     /// the via costs of the current via rule.
     pub fn rebuild_via_info(
@@ -362,7 +391,7 @@ impl AutorouteControl {
         let rules = &board.rules;
         let vias = self.via_rule_vias(rules).to_vec();
         self.via_clearance_class = match vias.first() {
-            Some(via) => rules.via_infos.get(*via).clearance_class,
+            Some(via) => self.via_info_clearance_class(rules.via_infos.get(*via)),
             None => 1,
         };
         self.via_infos = Vec::with_capacity(vias.len());

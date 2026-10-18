@@ -1,0 +1,144 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q14.3-via-clearance-net-class",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/Q14-via-clearance-follows-net-class.md (Q14.3)",
+  "question": "With router.via_clearance=net_class, does KiCad report no clearance error between a via of a net whose class clearance is above the default class's and another net, with no new DRC errors, no via in a pad, and the KiCad-unconnected total within N02's totals rule of the same run with via_info (Java's rule)?",
+  "rule": "totals",
+  "totals_rule": {
+    "source": "docs/roadmap/tasks/N02-keep-rule-for-defaults.md (D10); N02.1's `freerouting-dev gate --rule totals` does not exist at registration, so the verdict is computed by hand from the graded numbers and written into Q14.3's done note",
+    "signal": "kicad_unconnected summed over the boards, per pair",
+    "accept": [
+      "hard: class_via_clearance_errors is 0 on every board for the candidate arm of each pair",
+      "hard: via_in_pad 0, below_minimum 0, and drc_real no higher than the pair's baseline on every board",
+      "totals: the candidate's total kicad_unconnected is at most the baseline's total plus the set's noise, sqrt(sum of the per-board bands squared) (a correctness fix is accepted within noise; it need not improve)",
+      "per board: no board's kicad_unconnected rises by more than twice its band"
+    ],
+    "noise_bands": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "10 (N02: the canary-pwr variants' spread)",
+      "fixtures/kicad/Issue180-Test/Test.kicad_pcb": "max(2, 5 % of the connections the unrouted board has, the router's 'started with N unrouted' count of arm mp1, rounded up)",
+      "target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb": "max(2, 5 % of the connections the unrouted board has, the router's 'started with N unrouted' count of arm mp1, rounded up)"
+    },
+    "min_boards": 3
+  },
+  "arms": {
+    "mp1": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "what": "baseline: pass 1, Java's via clearance (via_info)"
+    },
+    "mp1+netclass": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.via_clearance=net_class",
+      "what": "pass 1, vias cleared by their net class"
+    },
+    "mp1+sweep": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "what": "baseline: pass 1 and Q10's free sweep (canary-pwr's best, 33), via_info"
+    },
+    "mp1+sweep+netclass": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2 --router.via_clearance=net_class",
+      "what": "pass 1 and the free sweep, vias cleared by their net class"
+    }
+  },
+  "baseline_arm": "mp1",
+  "candidate_arm": "mp1+netclass",
+  "pairs": [
+    [
+      "mp1",
+      "mp1+netclass"
+    ],
+    [
+      "mp1+sweep",
+      "mp1+sweep+netclass"
+    ]
+  ],
+  "pairs_rule": "each pair is judged on its own by totals_rule; the setting is accepted only if both pairs pass; pass_rule below is the paired rule the gate parser requires and is reported, not the verdict",
+  "boards": {
+    "set": "tools/bench/sets/q14-via-clearance.txt",
+    "eligibility": "all three boards; no board is dropped after a number",
+    "board_flags": "canary-pwr-9511d9a is routed from its DSN by the arm command; the two KiCad boards run through tools/kicad-oracle/grade.sh, which strips tracks and vias and exports the DSN, with the arm command as the engine",
+    "files": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/kicad/Issue180-Test/Test.kicad_pcb": "f25d023df1c503ec359ebf9f58cab8d754e76f36a8652504e1fe744dccf541a8",
+      "target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb": "04437ed7eea48eaf6f1c6b127752953c432d045595273fb38f6c3f495a40c34b"
+    }
+  },
+  "grading": "the KiCad boards: tools/kicad-oracle/grade.sh (WSL KiCad 10.0.7). canary-pwr: canary's hardware/tools/grade.sh steps (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py) on WSL KiCad 10.0.7, calibrated by Q10.4's self-grade of mp1 (45 unconnected); the SESs also go to canary for the official grade",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "class_via_clearance_errors",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "class_via_clearance_errors": "KiCad clearance violations (type clearance or hole_clearance) of which one item is a via whose net's class has a clearance above the default class's and the other item belongs to another net",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session (canary: the count canary's grade prints; KiCad boards: grade.sh's routed count minus what the unrouted input reports)",
+    "drc_real": "KiCad copper errors other than unconnected items and starved thermals that the input does not already have"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "accept net_class (N05 then makes it enhanced's default) only if both pairs pass the totals rule; it stays an off-by-default setting either way, since it is a correctness fix KiCad's DRC asks for",
+  "stop_rule": "one registered run per arm per board; no reruns with other settings",
+  "not_registered": [
+    "canary-pwr placement variants a and b (canary-7a's exp-a/exp-b): only their add-only inputs exist outside canary, with Java's pass-1 routing (and its violations) fixed in; a pass-1 DSN needs canary's dsn_export.py on Windows KiCad",
+    "canary-pwr-1a7df77-addonly: add-only, so the violating vias are fixed input"
+  ],
+  "decision_table": {
+    "pass": "Q14.3 [x]; DIVERGENCES line with the numbers; N05 adds router.via_clearance=net_class to enhanced",
+    "fail": "keep the setting off by default (it is a correctness fix); numbers and the failing clause in Q14.3's done note; operator decision"
+  },
+  "amendments": []
+}

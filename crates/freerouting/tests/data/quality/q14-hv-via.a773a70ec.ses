@@ -1,0 +1,77 @@
+(session "q14-hv-via"
+  (base_design "q14-hv-via")
+  (placement
+    (resolution um 10)
+    (component SMD600
+      (place U1 0.0 0.0 front 0)
+    )
+    (component SMD200
+      (place S1 -16000.0 0.0 front 0)
+      (place S2 61000.0 0.0 front 0)
+    )
+    (component THT
+      (place J1 30000.0 -60000.0 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "freerouting-rs Q14 synthetic fixture")
+      (host_version "two layers; net HV (class HV, clearance 0.25 mm, use_via 0.8 mm) has its F.Cu pad in a cage of fixed default-class wires (0.2 mm): a room, a 1.12 mm corridor and a pocket; only a via gets out")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+      (padstack "Via[0-1]_800:400_um"
+        (shape
+          (circle F.Cu 8000 0 0)
+        )
+        (shape
+          (circle B.Cu 8000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net HV
+        (wire
+          (path B.Cu 3000
+            30000 -60000
+            10197 -40197
+            10197 329
+          )
+        )
+        (wire
+          (path F.Cu 2250
+            10197 329
+            9867 659
+          )
+        )
+        (wire
+          (path F.Cu 3000
+            0 0
+            7017 0
+          )
+        )
+        (wire
+          (path F.Cu 3000
+            9867 659
+            7676 659
+            7017 0
+          )
+        )
+        (via "Via[0-1]_600:300_um" 10197.0 329.0
+        )
+      )
+    )
+  )
+)

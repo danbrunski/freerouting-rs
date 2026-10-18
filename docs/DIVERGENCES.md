@@ -261,6 +261,15 @@ branch 3 in IntOctagon's box cutout.
   `quality::sweep`) are settings fields Java does not have, unset by default (no sweep, Java's
   routing). An unknown `sweep` value or a negative `sweep_passes` fails the job before routing,
   naming the key (`unknown_sweep_settings_are_refused_before_routing`).
+- `via_clearance` (Q14, `autoroute::via_clearance`) is a settings field Java does not have,
+  unset by default (`via_info`: Java's rule, a routed via takes its via info's clearance class).
+  `net_class` gives every via the autorouter checks or inserts for a net its net class's via
+  clearance class (KiCad's rule). It matters where the fanout's `fallback_to_board_vias` rule
+  appends the board's first via rule, whose infos carry the default class: on
+  `tests/data/quality/q14-hv-via.dsn` Java and `via_info` put a default-class 0.6 mm via on the
+  0.25 mm class's net 0.2322 mm from another net, and `net_class` keeps 0.25 mm
+  (`tests/via_clearance_net_class.rs`); an unknown value fails the job, naming the key. Off by
+  default until Q14.3's measurement; N05 decides `enhanced`.
 - The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
   (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
   `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the
