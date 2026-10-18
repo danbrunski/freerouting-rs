@@ -33,6 +33,12 @@ K01–K03. Its numbering is not used.
 
 ## Order and critical path
 
+- **The plugin run is the test (Dan, 2026-10-17).** A plugin run with default options
+  inside KiCad is the result that counts on `canary-pwr`; the CLI flow that grades 33 is
+  only the target. So K09 (with K09.9) ranks with Q13 and Q14, ahead of the other K
+  items. Every fix the CLI flow needed belongs in the plugin or the router: pours as fixed
+  copper, the fan keepout as placement-only, edge and fiducial clearances, tap widths,
+  no via in a pad, and no track on an inner layer.
 - **K01 now.** Nothing in it needs the router. K01.2 delivers the
   rule-area fix for Dan's boards through the plugin, long before the reader.
 - **K02 when the CLI routes**: the A series' batch pipeline (A13), the SES
