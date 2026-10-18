@@ -119,6 +119,10 @@ K10.5 has to show don't hurt:
     - or, if (a) is chosen, the done note names what is missed, and the dialog tells
       the user to save first when the board has unsaved changes (whether pcbnew can
       tell is unverified: check it here).
+  - On KiCad 11, K11.1 found that `SaveCopyOfDocument` with `include_project` writes the
+    `.kicad_pro` with the copy, and that `GetDocumentModifiedState` reports unsaved
+    changes. Whether that `.kicad_pro` carries unsaved Board Setup changes is still to
+    test (K11.6).
 - [ ] **K10.3 — Pass what the reader lacks.**
   - The minimum track width stays a CLI argument on both paths.
   - Add one CLI switch for `ReadOptions::apply_design_rules`, named by C02's settings

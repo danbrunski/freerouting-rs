@@ -137,10 +137,67 @@ Checked 2026-10-15 against KiCad's GitLab (`gitlab.com/kicad/code/kicad`).
   tracks and vias, adds the routed ones, and skips locked ones. Verified: neither message
   exists in the `10.0` branch protos. Verified: `kipy` (kicad-python `main`, PyPI 0.8.0) has no
   wrapper for either (`board.py` and `board_jobs.py` do not mention Specctra), so a plugin would
-  send the raw protobuf command. Unverified: whether the master implementation is complete and
-  how rule areas are exported by the job (not probed). Where the IPC calls do not exist (KiCad
-  10), SWIG `ExportSpecctraDSN` / `ImportSpecctraSES` stay. If KiCad ever drops both, K08's
-  direct `.kicad_pcb` writer and K04-K07's reader replace them.
+  send the raw protobuf command. Both work on a nightly; how they differ from 10.0.7 is in the
+  next bullet. Where the IPC calls do not exist (KiCad 10), SWIG `ExportSpecctraDSN` /
+  `ImportSpecctraSES` stay. If KiCad ever drops both, K08's direct `.kicad_pcb` writer and
+  K04-K07's reader replace them.
+- **Nightly probe (K11.1, 2026-10-17).** The build was KiCad `10.99.0` at master `80521a1b94`
+  (kicad-dev-nightly PPA, in Docker), headless through `kicad-cli api-server`. It was compared
+  with 10.0.7's SWIG calls on copies of `dev-board`, `rule-areas` and `canary-pwr`.
+  `tools/kicad-ipc/` holds the scripts, and the numbers are in K11.1's done note.
+  - **Import: the same as 10.0.7.** `ImportSpecctraSession` lands the same tracks and vias as
+    `ImportSpecctraSES`, 0.0 nm apart on all three boards, with `skipped_count` 0. Locked
+    tracks and vias are kept by both. The import edits the open board in one commit
+    ("Imported Specctra session via API"), so it is one undo step.
+  - **Export: the job reads the file on disk, not the open document.**
+    `handleRunBoardJobExportSpecctraDsn` hands `GetCurrentFileName()` to `KIWAY::ProcessJob`,
+    and an unsaved track was missing from its DSN. `SaveCopyOfDocument` and
+    `SaveDocumentToString` do carry the unsaved edit. `GetDocumentModifiedState` (11.0) tells
+    whether there is one.
+    - `SaveCopyOfDocument` with `include_project` also writes the `.kicad_pro` and `.kicad_prl`.
+      Whether those carry unsaved Board Setup changes was not tested.
+    - KiCad 10.0's API has `SaveCopyOfDocument` and `SaveDocumentToString` too, but no board
+      jobs.
+    - `kicad-cli pcb export specctra` exists on master, not in 10.0.7. It gives the same DSN
+      as the job.
+  - **Export: master's DSN differs from 10.0.7's in three ways.**
+    1. Copper zones become fixed copper: `(wire (polygon ...) (net N) (type protect))`, with
+       the fill's cut-outs as `(window ...)`, instead of `(plane ...)`. This happens for every
+       zone, no-net zones included. There is no option to keep planes: the job has only
+       `job_settings`, and the CLI only `-o` and `-D`.
+       - `canary-pwr`: 20 planes become 29 wires with 400 windows.
+       - Routed from each DSN (`-mp 1 --threads 2`, Rust `a7a164a`) and graded by 10.0.7's DRC
+         with `--refill-zones`: 68 unconnected with 31 dangling vias from 10.0.7's export (the
+         same 68 as K09's plugin run), and 57 with 15 from master's. Pass 1 took 39 s instead
+         of 11 s.
+    2. **A regression: footprint-owned rule areas land in the wrong place.** The footprint's
+       position is subtracted a second time. `dev-board`'s antenna keepout is
+       `(-9000 9800)-(9000 15750)` in 10.0.7, correct for U2 at `(127000 -51250)`, and
+       `(-136000 61050)-(-118000 67000)` on master, off the board. Since the keepout then
+       differs per placement, each instance gets its own image (`rule-areas`: 5 images become
+       8). The CLI export and the API job agree.
+    3. A fix: 10.0.7 writes the window of a B.Cu `via_keepout` on F.Cu, and master writes it on
+       B.Cu.
+  - **Plugins.**
+    - `plugin.json` follows `schemas/api.v1.schema.json`. Required fields: `identifier`,
+      `name`, `description`, `runtime` (`type` `python` or `exec`) and `actions`. Each action
+      needs `identifier`, `name`, `description` and `entrypoint`, and may set `show-button`,
+      `scopes` (`pcb`, ...), `args`, `icons-light` and `icons-dark`.
+    - KiCad finds IPC plugins by `plugin.json` under the stock plugins folder, the PCM's
+      `3rdparty` folder and the user's `<Documents>/KiCad/<ver>/plugins/`. That user folder is
+      not `scripting/plugins` (`common/paths.cpp`).
+    - It sets `KICAD_API_SOCKET` and `KICAD_API_TOKEN` for the action, and builds a Python
+      plugin's environment from its `requirements.txt` (`api_plugin_manager.cpp`).
+  - **The API is off by default.** The setting is `api.enable_server`, default `false`
+    (`common_settings.cpp`), shown as "Enable KiCad API" on the Preferences Plugins page.
+    Installing a PCM package whose version says `"runtime": "ipc"` offers to turn it on
+    (`pcm.cpp`).
+  - **PCM: one runtime per package version** (`pcm.v2.schema.json`: `runtime` `swig` or
+    `ipc`, with `kicad_version` and `kicad_version_max`). So the SWIG and the IPC plugin
+    ship as two versions, two zips, each limited to its KiCad versions.
+  - **Headless API sockets.** `kicad-cli api-server [--socket PATH] FILE` serves one board, and
+    an empty token is accepted. A Unix socket path must stay under 108 bytes, so the probe
+    dials a relative path.
 - **Copper-pour flag rename.** Verified in `pcbnew/zone.h`: the `9.0` branch has
   `GetDoNotAllowCopperPour`, the `10.0` branch and `master` have `GetDoNotAllowZoneFills`.
   Verified by probe on 10.0.7: `GetDoNotAllowZoneFills` exists, `GetDoNotAllowCopperPour` does
@@ -395,8 +452,8 @@ that stayed behind) under "Verified" above. The item stays partial until then.
 
 `freerouting -de board.kicad_pcb`, the GUI's File > Open and `freerouting::io::read_design` read a KiCad
 board without `ExportSpecctraDSN`, so a plugin can hand the CLI the board file. KiCad 11 (K00 question 5;
-SWIG removal in KiCad master is unverified here) drops `ExportSpecctraDSN`; a master that exports pours as
-`(wire (polygon ...))` instead of planes (GUI report 6.2, unverified) would not matter either. Bringing the
+SWIG removal verified in K01.5) drops `ExportSpecctraDSN`; a master that exports pours as
+`(wire (polygon ...))` instead of planes (it does, K11.1) would not matter either. Bringing the
 result back still needs `ImportSpecctraSES` or the optional writer (K08).
 
 **What is read** (`crates/freerouting-kicad`, tests in its `tests/` and in `crates/freerouting/tests/kicad_*.rs`):
