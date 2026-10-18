@@ -160,6 +160,15 @@ Source: research by freerouting-rs-f1 at Dan's request (2026-10-17), `docs/roadm
   numbers, adding `--router.optimizer.enable_preflight_guards=false` to that arm. Starved thermals
   are reported next to the unconnected count but do not gate the keep rule; Q13 and the pour guard
   carry that question. The grader is now canary-7a (formerly canary-23).
+  *Official grade 2026-10-17 (canary-7a, Windows KiCad 10.0.5, canary `hardware/tools/grade.sh`):*
+  hashes matched (input `65186b28`; `mp1` `502226b0`, `sweep-fixed` `85e9bf03`, `sweep-free`
+  `333c79f7`). `mp1` **45** (906 segments, 116 vias), `sweep-fixed` **35** (1159 / 139),
+  `sweep-free` **33** (1289 / 159). All clean: no clearance, width, annular, parity, via-in-pad or
+  inner-layer errors. Starved thermals 4 / 10 / 9, all GND through-hole connector pins with one
+  spoke of two (still joined through In1). The WSL self-grade matches exactly. 33 is the first
+  freerouting-rs result below Java's 37 and is the new number to beat (canary spec §P10 item 15).
+  Starved thermals are tracked as a secondary score. Still open: the registered run of every arm
+  on the eligible boards.
 
 ## Expected
 

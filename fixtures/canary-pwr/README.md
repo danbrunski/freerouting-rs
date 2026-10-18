@@ -58,7 +58,11 @@ grading below):
 `inner_tracks.py` (KiCad python, exits 1 on any track on an inner layer) must both report
 0. A valid result has no clearance, track width, annular ring or via-in-pad errors, and no
 tracks on In1/In2; canary's `autoroute.sh` refuses a result that fails `inner_tracks.py`.
-Starved thermals are counted but do not disqualify. **The result to beat is 37
+Starved thermals are counted but do not disqualify; fewer is a secondary score. **The result
+to beat is 33 unconnected** (canary-7a, 2026-10-17): freerouting-rs with Q10's add-only sweep in
+one run (`-mp 1 --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150
+--router.autorouter.sweep=free --router.autorouter.sweep_passes=2`) on `canary-pwr-9511d9a.dsn`,
+clean, 9 starved thermals; `sweep=fixed` gives 35. **Java's best is 37
 unconnected** (canary `c5ad2ea`, canary-7a, 2026-10-17): Java `7f56b062d`, which has the
 power-layer fix of Q01.7, pass 1 (`-mp 1 --router.scoring.start_ripup_costs=1500
 --router.min_trace_width_um=150`, taps 0.3 mm, GND 0.4 mm), then the add-only second run
