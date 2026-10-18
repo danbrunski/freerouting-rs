@@ -4,7 +4,10 @@
 //! c280ca8e32a3d9944f558c1751e7a6d759677aa3512595f6c3fc4324655ca347,
 //! before any number; a later change (the `eligible` list among them) goes
 //! in its `amendments` with the reason and updates the hash below in the
-//! same commit.
+//! same commit. Amended three times on 2026-10-18 before any number of the
+//! affected arms (the opt arm's preflight guards, the engine at main
+//! f6e75ab with its `enhanced`, the `eligible` list and a safety bound):
+//! cefea2fafc7e9e487eadd0f6bf777a318ccf7d02721b2620b7c8ad8b44c1f0e2.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -74,6 +77,6 @@ fn the_q10_registration_is_valid_and_names_its_arms_and_boards() {
 fn the_q10_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "c280ca8e32a3d9944f558c1751e7a6d759677aa3512595f6c3fc4324655ca347"
+        "cefea2fafc7e9e487eadd0f6bf777a318ccf7d02721b2620b7c8ad8b44c1f0e2"
     );
 }

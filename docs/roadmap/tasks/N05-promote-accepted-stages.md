@@ -157,6 +157,17 @@ Prerequisites: N01; each candidate's own accepted measurement.
     207 → 205 against noise 29.50; canary-pwr 41 → 41 unconnected, dangling vias 17 → 0;
     determinism byte-identical. Numbers and causes in Q16.4; sessions for canary's official grade:
     `target/canary-handoff/2026-10-18-q164/`.
+  - **2026-10-18, rejected (stays unset in the engine's profiles): `router.autorouter.sweep =
+    free`** (Q10.4, archived). Registration `docs/roadmap/prereg/Q10.json` (paired rule;
+    `c280ca8e…` at registration, amended three times before the affected numbers to `cefea2fa…`:
+    the opt arm's preflight guards off, engine main f6e75ab with its `enhanced`, the eligible list
+    and a safety bound), pinned by `crates/freerouting-dev/tests/prereg_q10.rs`. `freerouting-dev
+    gate --prereg`: **FAIL** (primary pair `mp1` → `mp1+sweep-free`: improved 7 of 25 boards,
+    regressed 9, neutral 9); every pair fails on the 21 eligible boards, the `mpdef` pair not run.
+    The HARD lines (`via_in_pad` 42 and 6 on smoothieboard and kit-dev, `below_minimum` on six
+    corpus boards from the commands' 150 um floor) hold in both arms. KiCad unconnected summed over
+    the 8 graded rows 234 → 186; canary-pwr-9511d9a 49 → **32**, clean. The plugin's `enhanced`
+    keeps K09.9's `sweep = free`. Sessions: `target/canary-handoff/2026-10-18-q104/`.
 
   Sessions for canary's official grade: `target/canary-handoff/2026-10-18-n05/` (8 SESs, the
   plugin DSN, `SHA256SUMS`, `README.txt` with flags and the self-grade).

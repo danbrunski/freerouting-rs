@@ -127,7 +127,7 @@ Source: research by freerouting-rs-f1 at the owner's request (2026-10-17), `docs
     incomplete connection, so on canary-pwr (and on bm01 at `-mp 1`) the first optimizer run is a
     no-op and the arm equals the after-loop sweep (canary-pwr `fixed` + after-optimizer: SES
     byte-identical to `fixed`).
-- [~] **Q10.4: measurement** (prereg draft `docs/roadmap/prereg/Q10.json (draft)`). The arms:
+- [x] **Q10.4: measurement** (prereg draft `docs/roadmap/prereg/Q10.json (draft)`). The arms:
   - `mp1`: `-mp 1`, the baseline;
   - `mpdef`: the default passes;
   - `mp1+sweep-fixed`;
@@ -169,6 +169,91 @@ Source: research by freerouting-rs-f1 at the owner's request (2026-10-17), `docs
   freerouting-rs result below Java's 37 and is the new number to beat (canary spec §P10 item 15).
   Starved thermals are tracked as a secondary score. Still open: the registered run of every arm
   on the eligible boards.
+  *Done 2026-10-18:* measured; the gate **fails** every registered pair, so nothing is promoted
+  and every sweep setting stays unset in both profiles (the plugin's `enhanced` keeps K09.9's
+  `sweep = free`, unchanged).
+  - Amendments before the affected numbers (`docs/roadmap/prereg/Q10.json`, sha256
+    `cefea2fafc7e9e487eadd0f6bf777a318ccf7d02721b2620b7c8ad8b44c1f0e2`, re-pinned in
+    `crates/freerouting-dev/tests/prereg_q10.rs`): (1) `mp1+opt+sweep+opt` gets
+    `--router.optimizer.enable_preflight_guards=false`; (2) engine main `f6e75ab` (one Linux release
+    build, CLI sha256 `4c6c3622…`) under its default `enhanced` (`power_layer_traces = none`,
+    `neck_width_um = 300`, `via_clearance = net_class`), the grading made precise (canary rows,
+    corpus rows, DSN-only rows: KiCad metrics null, `below_minimum` = traces narrower than both the
+    narrowest class width and the 150 um floor), and `seen_before_registration` (the 2026-10-17 dry
+    run and its official grade, N05.3's graded runs); (3) `eligible`: the 26 rows where `mp1` left
+    an incomplete connection (21 boards with the canary-pwr group; not Issue649, bm02, bm07, mccx11),
+    and an 1800 s safety bound for every arm but `mp1` (no run hit it).
+  - Run: `target/orchestrator/q10/s104/run.py` (one route or KiCad call at a time; the CLI on the
+    registered DSN; corpus rows through `tools/kicad-oracle/grade.sh` on
+    `target/corpus/projects/<id>`, whose own DSN export equals the registered DSN after the first line
+    on all eight; canary-pwr-9511d9a through canary's `grade.sh` steps on WSL KiCad 10.0.7 against
+    canary `9511d9a3`); engine-model metrics (statistics, `via_in_pad_count`, `pour_audit::audit`)
+    by a scratch tool on `freerouting-dev`'s functions. Records `records-q104.json`, gate output
+    `gate-q104.txt`, per-pair verdicts `judge-q104.txt` in `target/orchestrator/q10/s104/`.
+  - **Not run: `mpdef` and `mpdef+sweep`** (amendment 3's "not run when the session ends"): pass 1
+    alone took 439 s on kit-dev-coldfire and 570 s on LogicBoard_smt, so 100 default passes on about
+    14 rows would hit the 1800 s bound in both arms (about 14 h). The pair counts as failed.
+  - Per eligible board, router unrouted (KiCad unconnected where graded) / vias / length mm / wall s:
+
+    | board | mp1 | mp1+sweep-fixed | mp1+sweep-free | mp1+opt+sweep+opt |
+    |---|---|---|---|---|
+    | Issue433-my-board | 2 / 7 / 120 / 0 | 2 / 7 / 120 / 0 | 2 / 7 / 120 / 0 | 1 / 3 / 140 / 0 |
+    | Issue690-sonde_xilinx | 11 / 6 / 1284 / 0 | 11 / 6 / 1284 / 0 | 11 / 6 / 1284 / 0 | 11 / 6 / 1284 / 0 |
+    | Issue508-DAC2020_bm01 | 12 / 207 / 4591 / 28 | 10 / 216 / 4825 / 31 | 3 / 239 / 5170 / 37 | 3 / 201 / 5157 / 39 |
+    | Issue508-DAC2020_bm10 | 2 / 161 / 3264 / 8 | 1 / 162 / 3309 / 9 | 0 / 164 / 3359 / 11 | 0 / 164 / 3359 / 9 |
+    | Issue093-interf_u | 19 / 168 / 10206 / 0 | 19 / 168 / 10206 / 0 | 19 / 168 / 10206 / 0 | 18 / 168 / 10207 / 0 |
+    | Issue555-CNH_Functional_Tester_1 | 1 / 32 / 5926 / 5 | 1 / 32 / 5926 / 3 | 1 / 32 / 5926 / 3 | 1 / 32 / 5926 / 3 |
+    | Issue269-z10_module | 37 / 223 / 3681 / 91 | 35 / 224 / 3687 / 91 | 35 / 223 / 3680 / 112 | 35 / 223 / 3680 / 210 |
+    | Issue690-kit-dev-coldfire-xilinx_5213 | 181 / 506 / 18910 / 439 | 181 / 506 / 18919 / 398 | 181 / 506 / 18919 / 469 | 180 / 506 / 18877 / 406 |
+    | Issue753-CPU-85_r104 | 8 / 399 / 18250 / 59 | 7 / 405 / 18338 / 62 | 6 / 411 / 18468 / 65 | 6 / 392 / 18457 / 68 |
+    | Issue066-Project_GP8B | 25 / 856 / 18816 / 275 | 23 / 861 / 18887 / 286 | 15 / 866 / 19086 / 372 | 10 / 872 / 19189 / 361 |
+    | Issue145-smoothieboard | 15 / 564 / 7413 / 175 | 12 / 566 / 7504 / 141 | 9 / 567 / 7520 / 160 | 9 / 567 / 7520 / 164 |
+    | Issue219-LogicBoard_smt | 27 / 1261 / 21451 / 570 | 13 / 1282 / 21969 / 500 | 2 / 1299 / 22641 / 550 | 2 / 1300 / 22613 / 571 |
+    | Issue420-contribution-board | 9 / 621 / 9858 / 122 | 9 / 621 / 9858 / 127 | 1 / 622 / 10181 / 152 | 1 / 622 / 10177 / 154 |
+    | canary-pwr-9511d9a | 111 (**49**) / 148 / 1818 / 52 | 97 (39) / 169 / 2598 / 64 | 88 (**32**) / 189 / 2684 / 83 | 90 (34) / 178 / 2498 / 197 |
+    | canary-pwr-pours1 | 113 / 159 / 1826 / 71 | 94 / 164 / 2107 / 108 | 89 / 179 / 2385 / 131 | 87 / 160 / 2095 / 179 |
+    | canary-pwr-pours2 | 114 / 156 / 2054 / 76 | 95 / 171 / 2398 / 105 | 87 / 186 / 2541 / 119 | 88 / 183 / 2604 / 143 |
+    | canary-pwr-pours3 | 107 / 160 / 1958 / 68 | 92 / 174 / 2244 / 94 | 83 / 185 / 2723 / 88 | 83 / 186 / 2732 / 137 |
+    | canary-pwr-pours-as-planes | 58 / 179 / 1682 / 60 | 44 / 203 / 2113 / 71 | 39 / 215 / 2227 / 84 | 39 / 220 / 2245 / 80 |
+    | canary-pwr-2026-10-15-1747-unpoured | 93 / 191 / 3484 / 272 | 82 / 196 / 3575 / 267 | 80 / 201 / 3663 / 288 | 82 / 196 / 3536 / 269 |
+    | mydevboard-rp2040dev | 37 (34) / 29 / 570 / 6 | 32 (29) / 33 / 605 / 9 | 27 (25) / 34 / 646 / 12 | 29 (27) / 29 / 582 / 11 |
+    | slice-dcmt-bread-slice | 4 (12) / 14 / 1280 / 0 | 2 (11) / 14 / 1304 / 0 | 2 (11) / 14 / 1304 / 0 | 2 (11) / 14 / 1304 / 0 |
+    | flight-computer-core-board | 1 (5) / 28 / 591 / 0 | 1 (5) / 28 / 591 / 0 | 1 (5) / 28 / 591 / 0 | 1 (5) / 28 / 591 / 0 |
+    | laser-backplane-dvi-laserbackplane-dvi | 45 (70) / 3 / 119 / 0 | 45 (70) / 3 / 119 / 0 | 45 (70) / 3 / 119 / 0 | 45 (70) / 3 / 119 / 0 |
+    | vfo-controller-catvfoctrl | 2 (14) / 30 / 718 / 2 | 1 (13) / 32 / 747 / 1 | 1 (13) / 32 / 748 / 1 | 1 (13) / 32 / 748 / 1 |
+    | eprom-card-80bus | 18 (18) / 361 / 17245 / 65 | 10 (10) / 390 / 18344 / 67 | 1 (1) / 430 / 19042 / 74 | 0 (0) / 433 / 19374 / 65 |
+    | rio-iceshield-rio-iceshield | 21 (32) / 83 / 2505 / 29 | 18 (29) / 87 / 2599 / 25 | 15 (29) / 92 / 2758 / 31 | 15 (29) / 92 / 2759 / 30 |
+
+    Sums over the eligible rows: KiCad unconnected (8 graded rows) 234 / 206 / 186 / 189, router
+    unrouted 1073 / 937 / 843 / 839, vias 6552 / 6720 / 6898 / 6810. The four complete rows are
+    byte-for-byte unchanged in the sweep arms. Wall times overlapped other sessions' routes and
+    builds (14:38–14:48, 15:19–15:20, 16:47–17:35 and three one-minute windows after 17:09), so
+    they are reported, not compared.
+  - Guards and hard limits: `pour_lost_pins` 0 on every row and arm; canary-pwr-9511d9a clean in all
+    four arms (no error but unconnected and starved thermals, 0 via-in-pad, 0 inner-layer tracks;
+    starved thermals 3 / 7 / 8 / 8). Broken **in both arms of every pair**: `via_in_pad`
+    (engine model) 42 on Issue145-smoothieboard and 6 on kit-dev-coldfire; `below_minimum` on six
+    corpus boards (KiCad `track_width` under the Board Setup minimum 0.2 mm: the commands' 150 um
+    floor with `enhanced`'s neck-down, Q16.4's cause 1; mydevboard 74 → 89, rio-iceshield
+    114 → 128, vfo 67 → 71, slice 16, laser-backplane 10, eprom 0 → 5 in the free arm) and on the
+    unpoured canary DSN (3). `drc_real` rises with the sweep on mydevboard, vfo, eprom and
+    rio-iceshield (rio 129 → 144: `track_width` items).
+  - `freerouting-dev gate --records records-q104.json --baseline baseline-q104.json --prereg
+    docs/roadmap/prereg/Q10.json` (primary pair, all 30 rows; with `--prereg` the gate ignores
+    `--rows` and `--arms`): 0 refusals, **FAIL**, improved 7 of 25 boards, regressed 9, neutral 9,
+    nine HARD lines. The registered rule on the eligible rows for each pair (`judge.py`, the gate's
+    row mark): `mp1+sweep-fixed` FAIL (21 boards: improve 6, regress 9, neutral 6);
+    `mp1+sweep-free` FAIL (7 / 9 / 5); `mp1+opt+sweep+opt` FAIL (10 / 8 / 3); `mpdef+sweep` FAIL
+    (not run). Neutral boards: the sweep finds nothing to add on sonde_xilinx, interf_u, CNH,
+    kit-dev, flight-computer and laser-backplane.
+  - On canary-pwr the registered hypothesis holds: `mp1+sweep-free` **32** KiCad-unconnected
+    (≤ 40, below the previous 33), clean; `mp1` 49 on this engine (45 before N05's
+    `via_clearance = net_class`). Determinism: a second route of `mp1+sweep-free` on canary-pwr is
+    byte-identical. Sessions for canary-7a's official grade: `target/canary-handoff/2026-10-18-q104/`.
+  - The decision table's fail branch ("remove `quality/sweep.rs`") is not carried out here: the
+    plugin's `enhanced` runs the sweep (K09.9) and canary-pwr's best result needs it; the failures
+    come from hard limits both arms break and from boards the sweep cannot help. That is an operator
+    decision.
 
 ## Expected
 

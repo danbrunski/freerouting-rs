@@ -27,7 +27,7 @@
     },
     "mp1+opt+sweep+opt": {
       "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_after_optimizer=true",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_after_optimizer=true --router.optimizer.enable_preflight_guards=false",
       "what": "pass 1, optimizer, sweep, optimizer"
     },
     "mpdef+sweep": {
@@ -95,7 +95,34 @@
       "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn": "f390902a0b873eff6340805faad1185277f5ab3bee6eb22d186d5cb4821235e4"
     }
   },
-  "eligible": null,
+  "eligible": [
+    "fixtures/Issue433-my-board.dsn",
+    "fixtures/Issue690-sonde_xilinx.dsn",
+    "fixtures/Issue508-DAC2020_bm01.dsn",
+    "fixtures/Issue508-DAC2020_bm10.dsn",
+    "fixtures/Issue093-interf_u.dsn",
+    "fixtures/Issue555-CNH_Functional_Tester_1.dsn",
+    "fixtures/Issue269-z10_module.dsn",
+    "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn",
+    "fixtures/Issue753-CPU-85_r104.dsn",
+    "fixtures/Issue066-Project_GP8B.dsn",
+    "fixtures/Issue145-smoothieboard.dsn",
+    "fixtures/Issue219-LogicBoard_smt.dsn",
+    "fixtures/Issue420-contribution-board.dsn",
+    "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+    "fixtures/canary-pwr/canary-pwr-pours1.dsn",
+    "fixtures/canary-pwr/canary-pwr-pours2.dsn",
+    "fixtures/canary-pwr/canary-pwr-pours3.dsn",
+    "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn",
+    "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn",
+    "target/corpus/prepped/mydevboard-rp2040dev.dsn",
+    "target/corpus/prepped/slice-dcmt-bread-slice.dsn",
+    "target/corpus/prepped/flight-computer-core-board.dsn",
+    "target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn",
+    "target/corpus/prepped/vfo-controller-catvfoctrl.dsn",
+    "target/corpus/prepped/eprom-card-80bus.dsn",
+    "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn"
+  ],
   "grading": "tools/kicad-oracle/grade.sh where a .kicad_pcb exists (copper severities forced to error, input DRC subtracted, refill on); canary-pwr by canary-23 (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py)",
   "metrics": [
     {
@@ -178,5 +205,22 @@
     "fail": "remove quality/sweep.rs; numbers in Q10.4's done note"
   },
   "timing": "measured only after P04's default-tree decision",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "reason": "the arm mp1+opt+sweep+opt is degenerate as registered: with the default optimizer.enable_preflight_guards the optimizer skips a board with an incomplete connection, so the arm equals the after-loop sweep (Q10.3's note); approved before any number of the arm",
+      "changes": "adds --router.optimizer.enable_preflight_guards=false to that arm's command; nothing else"
+    },
+    {
+      "date": "2026-10-18",
+      "reason": "main moved on since registration (P04 decided, Java's tree stays; N05 promoted power_layer_traces=none, neck_width_um=300 and via_clearance=net_class into profile enhanced, the default); the registered run is made on the tree that would take a promotion; written before any route of the registered run",
+      "changes": "engine: freerouting-rs main f6e75ab, one Linux release build, default profile enhanced (power_layer_traces=none, neck_width_um=300, via_clearance=net_class), every arm's command as registered (amendment 1 for the opt arm) with no profile flag; 'the commit that lands the checklist' is read as this commit, since Q10.1-Q10.3 landed in a92bf77 and a promotion lands after the run. Grading, made precise before any number: canary-pwr-9511d9a (the one canary-pwr row with a KiCad project, canary 9511d9a3) with canary's grade.sh steps (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --save-board --severity-all, via_in_pad.py, inner_tracks.py) on WSL KiCad 10.0.7, the grader canary-23 now being canary-7a, whose official grade follows; there kicad_unconnected = unconnected items, drc_real = error items other than unconnected and starved_thermal, below_minimum = track_width errors, starved thermals reported. The target/corpus rows with tools/kicad-oracle/grade.sh on target/corpus/projects/<id>, the engine routing the registered prepped DSN (its hash checked; grade.sh's own export is compared with it). The benchmark rows and the other five canary-pwr rows have no .kicad_pcb: kicad_unconnected and drc_real are null there (a null pair is not compared), and below_minimum is the session's traces narrower than both the board's narrowest class width and the run's 150 um floor (min_trace_width_um, every command: a narrowing never goes below it), less those the input has; the first draft (the floor alone) was replaced after the driver's test run of mp1 on Issue433-my-board, whose 0.1 mm class width it counted. On every row: unrouted, vias, length_mm from freerouting-dev's session statistics (the SES imported into the DSN), via_in_pad from gate_collect::via_in_pad_count (session minus input), pour_lost_pins from quality::pour_audit::audit (input board against input + SES: pins of a pour net attached to its fill before and to none after), wall_seconds the CLI's wall time. Adds seen_before_registration. Boards, metrics, rules and the other arms unchanged"
+    },
+    {
+      "date": "2026-10-18",
+      "reason": "the registration's eligibility step: arm mp1 has run on every registered row (amendment 2's engine), and no candidate arm and neither mpdef arm has run; also a safety bound, since pass 1 alone took up to 570 s (Issue219-LogicBoard_smt) and 439 s (kit-dev-coldfire-xilinx_5213), so a default-passes run (100 passes) or a sweep can outlast the session",
+      "changes": "eligible: the 26 rows on which mp1 left at least one incomplete connection (all but Issue649-kicad_ecc83-pp_input_board_v1, Issue508-DAC2020_bm02, Issue508-DAC2020_bm07 and mccx11-hardware-sx1262-433mhz-reverse-engineering, complete under mp1), 21 distinct boards with the canary-pwr group; the verdicts are read on these rows (freerouting-dev gate --rows), every registered row is still run and recorded. Safety bound: a run of any arm other than mp1 that is still routing after 1800 s of wall time is killed and recorded as not graded (\"safety timeout\"), which the gate counts against its pair; no rerun. Run order: mp1+sweep-free, mp1+sweep-fixed, mp1+opt+sweep+opt, mpdef, mpdef+sweep, rows in set order; an arm left unrun when the session ends is reported as not run. Nothing else changes"
+    }
+  ],
+  "seen_before_registration": "Disclosed by amendment 2. Before the registration (2026-10-17): Q10.1-Q10.3's checks under the Q10 commit (bm01 -mp 1 with sweep=fixed 49 -> 24 -> 18 router-incomplete, sweep=free after the optimizer with guards off 49 -> 4 -> 2; q06-sole-wall; byte-identity of sweep=off on connection-parity and five benchmark boards, sessions compared only). The pre-P04 dry run on canary-pwr-9511d9a: router mp1 109, sweep-fixed 96, sweep-free 89 unrouted, self-graded and officially graded (canary-7a) 45 / 35 / 33 KiCad-unconnected, starved thermals 4 / 10 / 9. After it, N05.3's runs graded canary-pwr-9511d9a -mp 1 with and without sweep=free under enhanced variants (45 / 33 with power_layer_traces; 49 / 33 with via_clearance=net_class added), and K09.9 timed plugin hint runs with the sweep. No number of mpdef, mpdef+sweep or the amended mp1+opt+sweep+opt, and no number of any arm on any other registered board, under this registration's engine"
 }
