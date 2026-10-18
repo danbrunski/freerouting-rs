@@ -186,6 +186,65 @@ def test_every_drop_down_gets_the_dark_list_fix(env, monkeypatch):
     assert passed == [[dialog.profile, dialog.board_input, dialog.preset_choice, dialog.pour_mode, dialog.sweep] + stages]
 
 
+def test_the_options_sit_on_three_tabs_and_the_buttons_stay_outside(env):
+    """The dialog had grown taller than the screen, hiding Route in GUI and
+    the other buttons; the options now sit on tabs and the buttons below them."""
+    make_dialog, ui, _ = env
+    dialog = make_dialog("echo")
+    route, board, advanced = dialog.pages
+    notebook = route.parent
+    assert [(page, title) for page, title in notebook.pages] == [(route, "Route"), (board, "Board and DSN"), (advanced, "Advanced")]
+    assert notebook.parent is dialog
+    on_route = [dialog.profile, dialog.passes, dialog.threads, dialog.optimizer, dialog.threshold, dialog.classes, dialog.timeout, dialog.seed, dialog.min_width]
+    on_board = [dialog.board_input, dialog.apply_rules, dialog.fix_areas, dialog.widths, dialog.fixed_pours, dialog.pour_mode, dialog.drop_pours, dialog.keepouts, dialog.open_layers, dialog.fix_existing]
+    on_advanced = [dialog.ripup, dialog.sweep, dialog.sweep_passes, dialog.pass_hint] + [c for c, _ in dialog.stage_choices.values()]
+    assert [page_of(c, dialog) for c in on_route] == [route] * len(on_route)
+    assert [page_of(c, dialog) for c in on_board] == [board] * len(on_board)
+    assert [page_of(c, dialog) for c in on_advanced] == [advanced] * len(on_advanced)
+    # The fix-up, flow and stage controls are children of their group's box.
+    assert {dialog.widths.parent.label, dialog.ripup.parent.label, next(iter(dialog.stage_choices.values()))[0].parent.label} == {"DSN fix-ups", "Flow", "Stages"}
+    assert [b.label for b in ui.buttons if b.parent is dialog] == ["Route", "Route in GUI", "Open in viewer", "Import SES...", "Close"]
+    assert [(b.label, b.parent.label) for b in ui.buttons if b.parent is not dialog] == [("Apply", "Presets"), ("Save as preset...", "Presets")]
+    assert all(page_of(b, dialog) is None for b in ui.buttons)
+
+
+def page_of(control, dialog):
+    """The tab page `control` sits on, or None when it is outside the tabs."""
+    window = control.parent
+    while window is not None and window is not dialog:
+        if window in dialog.pages:
+            return window
+        window = window.parent
+    return None
+
+
+def test_each_page_asks_for_its_contents_when_the_dialog_fits(env):
+    make_dialog, ui, _ = env
+    ui.page_size, ui.dialog_size, ui.work_area_height = (400, 500), (700, 800), 1040
+    dialog = make_dialog("echo")
+    assert [page.min_size for page in dialog.pages] == [stub_ui.Size(400, 500)] * 3
+
+
+def test_every_tab_asks_for_its_whole_contents_where_the_screen_has_room(env):
+    """The notebook takes the longest tab's height (the Advanced stage list),
+    so no tab scrolls on a screen that has the room (Dan)."""
+    make_dialog, ui, _ = env
+    ui.page_sizes = {"Route": (400, 340), "Board and DSN": (420, 380), "Advanced": (450, 640)}
+    dialog = make_dialog("echo")
+    assert [page.min_size for page in dialog.pages] == [stub_ui.Size(400, 340), stub_ui.Size(420, 380), stub_ui.Size(450, 640)]
+
+
+def test_a_dialog_taller_than_the_screen_cuts_its_pages_so_they_scroll(env):
+    """Fitted at 1300 on a 1000-pixel work area (900 allowed), every page loses
+    the 400 excess and gets room for its scroll bar; its virtual size stays its
+    contents, so it scrolls."""
+    make_dialog, ui, _ = env
+    ui.page_size, ui.dialog_size, ui.work_area_height = (400, 700), (700, 1300), 1000
+    dialog = make_dialog("echo")
+    assert [page.min_size for page in dialog.pages] == [stub_ui.Size(417, 300)] * 3
+    assert [page.virtual_size for page in dialog.pages] == [stub_ui.Size(400, 700)] * 3
+
+
 def test_the_import_deletes_no_track_kicad_still_holds(env, tmp_path):
     """KiCad's action-plugin runner snapshots every board item before Run and,
     after it, commits the missing ones as removed. ImportSpecctraSES deletes the

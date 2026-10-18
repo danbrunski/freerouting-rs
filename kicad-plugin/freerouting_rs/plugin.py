@@ -19,10 +19,12 @@ from pathlib import Path
 import pcbnew
 import wx
 
-from . import dropdowns, export_flow, kicad_board, options, presets, progress, routing, snapshot, tools, version
+from . import dropdowns, export_flow, kicad_board, layout, options, presets, progress, routing, snapshot, tools, version
 
 TITLE = "freerouting-rs"
 TICK_MS = 100
+# The route dialog's tabs, in order.
+TABS = ("Route", "Board and DSN", "Advanced")
 
 
 def export_dsn(board, dsn):
@@ -85,6 +87,34 @@ def board_min_track_width_um(board):
         return nm / 1000.0 if nm and nm > 0 else None
     except Exception:  # an older KiCad without that attribute
         return None
+
+
+def labelled_grid(parent, rows):
+    """A two-column grid of `(label, control)` rows; an empty label leaves the
+    left cell blank (check boxes)."""
+    grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
+    grid.AddGrowableCol(1)
+    for label, ctrl in rows:
+        grid.Add(wx.StaticText(parent, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(ctrl, 1, wx.EXPAND)
+    return grid
+
+
+def add_page(notebook, title):
+    """A tab page that scrolls vertically when the dialog is cut down to the
+    screen (Dialog.fit_to_display)."""
+    page = wx.ScrolledWindow(notebook, style=wx.VSCROLL)
+    page.SetScrollRate(0, 12)
+    notebook.AddPage(page, title)
+    return page
+
+
+def fill_page(page, *parts):
+    """Lays `parts` (sizers) out top to bottom on `page`."""
+    sizer = wx.BoxSizer(wx.VERTICAL)
+    for part in parts:
+        sizer.Add(part, 0, wx.ALL | wx.EXPAND, 8)
+    page.SetSizer(sizer)
 
 
 def log_lines(work_dir, dsn, lines):
@@ -251,60 +281,78 @@ class Dialog(wx.Dialog):
         view.Bind(wx.EVT_BUTTON, self.on_view)
         imp.Bind(wx.EVT_BUTTON, self.on_import)
 
-        form = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
-        form.AddGrowableCol(1)
-        self.passes = wx.SpinCtrl(self, min=options.MAX_PASSES_RANGE[0], max=options.MAX_PASSES_RANGE[1])
+        notebook = wx.Notebook(self)
+        self.pages = [add_page(notebook, title) for title in TABS]
+        route_page, board_page, advanced_page = self.pages
+        # A group box's controls are its children (wxWidgets 3.3 logs a
+        # warning for a control in the box's sizer but not in the box).
+        dsn_group = wx.StaticBoxSizer(wx.VERTICAL, board_page, "DSN fix-ups")
+        flow_group = wx.StaticBoxSizer(wx.VERTICAL, advanced_page, "Flow")
+        stages_group = wx.StaticBoxSizer(wx.VERTICAL, advanced_page, "Stages")
+        preset_group = wx.StaticBoxSizer(wx.VERTICAL, self, "Presets")
+        self.passes = wx.SpinCtrl(route_page, min=options.MAX_PASSES_RANGE[0], max=options.MAX_PASSES_RANGE[1])
         self.passes.SetValue(saved.max_passes)
         self.passes.SetToolTip("Maximum routing passes (-mp); 0 means no limit")
-        self.threads = wx.SpinCtrl(self, min=options.THREADS_RANGE[0], max=options.THREADS_RANGE[1])
+        self.threads = wx.SpinCtrl(route_page, min=options.THREADS_RANGE[0], max=options.THREADS_RANGE[1])
         self.threads.SetValue(saved.threads)
         self.threads.SetToolTip("Worker threads (--threads); 0 lets the router choose")
-        self.optimizer = wx.CheckBox(self, label="Run the optimizer after routing")
+        self.optimizer = wx.CheckBox(route_page, label="Run the optimizer after routing")
         self.optimizer.SetValue(saved.optimizer)
-        self.threshold = wx.TextCtrl(self, value="" if saved.improvement_threshold is None else str(saved.improvement_threshold))
+        self.threshold = wx.TextCtrl(route_page, value="" if saved.improvement_threshold is None else str(saved.improvement_threshold))
         self.threshold.SetHint("router default (2.5)")
         self.threshold.SetToolTip("Stop the optimizer when a pass improves the score by less than this percentage (1 to 100)")
-        self.classes = wx.TextCtrl(self, value=options.join_net_classes(saved.ignore_net_classes))
+        self.classes = wx.TextCtrl(route_page, value=options.join_net_classes(saved.ignore_net_classes))
         self.classes.SetHint("none")
         self.classes.SetToolTip("Net classes the router skips (-inc), comma separated; \\, keeps a comma in a name")
-        self.timeout = wx.TextCtrl(self, value=saved.timeout)
+        self.timeout = wx.TextCtrl(route_page, value=saved.timeout)
         self.timeout.SetHint("none, e.g. 10m")
         self.timeout.SetToolTip("Time limit (--timeout): 90s, 10m, 2h or HH:MM:SS")
-        self.seed = wx.SpinCtrl(self, min=0, max=2147483647)
+        self.seed = wx.SpinCtrl(route_page, min=0, max=2147483647)
         self.seed.SetValue(saved.seed)
         self.seed.SetToolTip("Seed (--seed). This router version accepts only 0, and the GUI ignores it")
         self.min_width = wx.TextCtrl(
-            self, value="" if saved.min_trace_width_um is None else str(saved.min_trace_width_um)
+            route_page, value="" if saved.min_trace_width_um is None else str(saved.min_trace_width_um)
         )
         self.min_width.SetHint("from Board Setup: " + (f"{self.board_min_um:g}" if self.board_min_um else "not set"))
         self.min_width.SetToolTip("Minimum trace width in micrometres (--router.min_trace_width_um); empty uses the Board Setup value")
-        self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
+        self.fix_areas = wx.CheckBox(board_page, label="Fix rule areas in the exported DSN")
         self.fix_areas.SetValue(saved.rule_area_fixup)
-        self.add_k09_controls(saved)
-        self.add_k10_controls(saved)
-        self.add_preset_controls()
-        self.profile = wx.Choice(self, choices=[options.PROFILE_LABELS[p] for p in options.PROFILES])
+        self.add_k09_controls(saved, dsn_group.GetStaticBox(), flow_group.GetStaticBox())
+        self.add_k10_controls(saved, board_page)
+        self.add_preset_controls(preset_group.GetStaticBox())
+        self.profile = wx.Choice(route_page, choices=[options.PROFILE_LABELS[p] for p in options.PROFILES])
         self.profile.SetSelection(options.PROFILES.index(saved.profile))
         self.profile.SetToolTip(
             "Routing profile (--profile): Legacy gives results identical to Java Freerouting; "
-            "Enhanced (the default) adds the accepted improvements. The settings below start from it."
+            "Enhanced (the default) adds the accepted improvements. The other settings start from it."
         )
-        for label, ctrl in (
-            ("Profile", self.profile),
-            ("Maximum passes", self.passes),
-            ("Threads", self.threads),
-            ("", self.optimizer),
-            ("Optimizer threshold (%)", self.threshold),
-            ("Ignore net classes", self.classes),
-            ("Time limit", self.timeout),
-            ("Seed", self.seed),
-            ("Minimum trace width (um)", self.min_width),
-            ("Board input", self.board_input),
-            ("", self.apply_rules),
-            ("", self.fix_areas),
-        ):
-            form.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
-            form.Add(ctrl, 1, wx.EXPAND)
+        fill_page(
+            route_page,
+            labelled_grid(
+                route_page,
+                (
+                    ("Profile", self.profile),
+                    ("Maximum passes", self.passes),
+                    ("Threads", self.threads),
+                    ("", self.optimizer),
+                    ("Optimizer threshold (%)", self.threshold),
+                    ("Ignore net classes", self.classes),
+                    ("Time limit", self.timeout),
+                    ("Seed", self.seed),
+                    ("Minimum trace width (um)", self.min_width),
+                ),
+            ),
+        )
+        fill_page(
+            board_page,
+            labelled_grid(board_page, (("Board input", self.board_input), ("", self.apply_rules), ("", self.fix_areas))),
+            self.fill_dsn_group(dsn_group),
+        )
+        fill_page(advanced_page, self.fill_flow_group(flow_group), self.fill_stages_group(stages_group, saved))
+        # The tabs open tall enough for the longest (Dan: no scrolling where
+        # the screen has the room); fit_to_display cuts them on a small one.
+        self.page_contents = [page.GetSizer().GetMinSize() for page in self.pages]
+        self.set_page_heights([size.height for size in self.page_contents])
 
         buttons = wx.BoxSizer(wx.HORIZONTAL)
         for b in (route, route_gui, view, imp):
@@ -312,54 +360,56 @@ class Dialog(wx.Dialog):
         buttons.AddStretchSpacer()
         buttons.Add(close)
         sizer = wx.BoxSizer(wx.VERTICAL)
+        # The board's paths, the presets and the buttons stay outside the
+        # tabs: always in view, whichever tab is open.
         sizer.Add(info, 0, wx.ALL | wx.EXPAND, 12)
-        sizer.Add(form, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
-        sizer.Add(self.preset_group(), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
-        sizer.Add(self.k09_group(), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
-        sizer.Add(self.advanced_group(saved), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
+        sizer.Add(self.fill_preset_group(preset_group), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
+        sizer.Add(notebook, 1, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
+        self.fit_to_display()
         self.CentreOnParent()
         # KiCad 10's wxWidgets draws the selected row of a dark drop-down
         # white on white on recent Windows 11 builds (dropdowns.py).
         dropdowns.fix_dark_lists([self.profile, self.board_input, self.preset_choice, self.pour_mode, self.sweep] + [c for c, _ in self.stage_choices.values()])
 
-    def add_k09_controls(self, saved):
-        """The K09 fields: DSN fix-ups and the flow's router settings."""
-        self.widths = wx.TextCtrl(self, value=options.format_class_widths(saved.class_widths))
+    def add_k09_controls(self, saved, dsn_box, flow_box):
+        """The K09 fields: DSN fix-ups (in `dsn_box`) and the flow's router
+        settings (in `flow_box`)."""
+        self.widths = wx.TextCtrl(dsn_box, value=options.format_class_widths(saved.class_widths))
         self.widths.SetHint("as exported, or CLASS=mm, CLASS=mm, or auto")
         self.widths.SetToolTip("Routed width per net class in mm, written into the DSN; auto caps wide classes at their narrowest SMD pad")
-        self.fixed_pours = wx.TextCtrl(self, value=options.format_names(saved.fixed_pour_classes))
+        self.fixed_pours = wx.TextCtrl(dsn_box, value=options.format_names(saved.fixed_pour_classes))
         self.fixed_pours.SetHint("none, e.g. CLASS, CLASS, or auto")
         self.fixed_pours.SetToolTip("Net classes whose outer-layer pours other nets must keep out of; auto: pours above their layer's lowest zone priority")
-        self.pour_mode = wx.Choice(self, choices=list(options.POUR_MODES))
+        self.pour_mode = wx.Choice(dsn_box, choices=list(options.POUR_MODES))
         self.pour_mode.SetSelection(options.POUR_MODES.index(saved.fixed_pour_mode))
         self.pour_mode.SetToolTip("wires: the fill becomes fixed copper in the DSN; engine: the router keeps foreign nets out (Q01)")
-        self.drop_pours = wx.TextCtrl(self, value=options.format_names(saved.drop_pour_nets))
+        self.drop_pours = wx.TextCtrl(dsn_box, value=options.format_names(saved.drop_pour_nets))
         self.drop_pours.SetHint("none, e.g. NET, NET, or auto")
         self.drop_pours.SetToolTip("Nets whose outer-layer pours are left out, so their pads fan out to the inner plane; auto: a net alone on an inner layer")
-        self.keepouts = wx.CheckBox(self, label="Keep the board-edge and pad clearances (keepouts)")
+        self.keepouts = wx.CheckBox(dsn_box, label="Keep the board-edge and pad clearances (keepouts)")
         self.keepouts.SetValue(saved.edge_and_pad_keepouts)
-        self.open_layers = wx.TextCtrl(self, value=options.format_names(saved.route_on_plane_layers))
+        self.open_layers = wx.TextCtrl(dsn_box, value=options.format_names(saved.route_on_plane_layers))
         self.open_layers.SetHint("none, e.g. an inner layer name")
         self.open_layers.SetToolTip("Inner plane layers the router may also route on")
-        self.fix_existing = wx.CheckBox(self, label="Keep the existing tracks (add-only run)")
+        self.fix_existing = wx.CheckBox(dsn_box, label="Keep the existing tracks (add-only run)")
         self.fix_existing.SetValue(saved.fix_existing)
-        self.ripup = wx.TextCtrl(self, value="" if saved.start_ripup_costs is None else str(saved.start_ripup_costs))
+        self.ripup = wx.TextCtrl(flow_box, value="" if saved.start_ripup_costs is None else str(saved.start_ripup_costs))
         self.ripup.SetHint("router default (100)")
         self.ripup.SetToolTip("Start rip-up cost (--router.scoring.start_ripup_costs)")
-        self.sweep = wx.Choice(self, choices=["off", "fixed", "free"])
+        self.sweep = wx.Choice(flow_box, choices=["off", "fixed", "free"])
         self.sweep.SetSelection(options.SWEEPS.index(saved.sweep))
         self.sweep.SetToolTip("Add-only completion sweep after the passes (Q10)")
-        self.sweep_passes = wx.TextCtrl(self, value="" if saved.sweep_passes is None else str(saved.sweep_passes))
+        self.sweep_passes = wx.TextCtrl(flow_box, value="" if saved.sweep_passes is None else str(saved.sweep_passes))
         self.sweep_passes.SetHint("router default (2)")
-        self.pass_hint = wx.CheckBox(self, label="Stop at the pass that won last time" + (f" ({saved.pass_hint})" if saved.pass_hint else ""))
+        self.pass_hint = wx.CheckBox(flow_box, label="Stop at the pass that won last time" + (f" ({saved.pass_hint})" if saved.pass_hint else ""))
         self.pass_hint.SetValue(saved.use_pass_hint)
         self.saved_pass_hint = saved.pass_hint
 
-    def add_k10_controls(self, saved):
+    def add_k10_controls(self, saved, page):
         """The K10 fields: what the router reads, and the .kicad_dru switch."""
-        self.board_input = wx.Choice(self, choices=[options.BOARD_INPUT_LABELS[i] for i in options.BOARD_INPUTS])
+        self.board_input = wx.Choice(page, choices=[options.BOARD_INPUT_LABELS[i] for i in options.BOARD_INPUTS])
         self.board_input.SetSelection(options.BOARD_INPUTS.index(saved.board_input))
         self.board_input.SetToolTip(
             "What the router reads. KiCad's DSN export is the default. The board snapshot is "
@@ -367,7 +417,7 @@ class Dialog(wx.Dialog):
             "their flags, track arcs, unsaved Board Setup changes); it cannot be combined with the "
             "DSN fix-ups below. Experimental."
         )
-        self.apply_rules = wx.CheckBox(self, label="Apply the project's .kicad_dru rules (snapshot, Route only)")
+        self.apply_rules = wx.CheckBox(page, label="Apply the project's .kicad_dru rules (snapshot, Route only)")
         self.apply_rules.SetValue(saved.apply_kicad_rules)
         self.apply_rules.SetToolTip("Class-pair clearances and class track widths of the .kicad_dru beside the board (--apply-design-rules)")
 
@@ -377,11 +427,8 @@ class Dialog(wx.Dialog):
             "apply_kicad_rules": self.apply_rules.GetValue(),
         }
 
-    def k09_group(self):
-        group = wx.StaticBoxSizer(wx.VERTICAL, self, "DSN fix-ups and flow")
-        grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
-        grid.AddGrowableCol(1)
-        for label, ctrl in (
+    def fill_dsn_group(self, group):
+        rows = (
             ("Class widths (mm)", self.widths),
             ("Fixed pour classes", self.fixed_pours),
             ("Fixed pours as", self.pour_mode),
@@ -389,21 +436,25 @@ class Dialog(wx.Dialog):
             ("", self.keepouts),
             ("Route on plane layers", self.open_layers),
             ("", self.fix_existing),
+        )
+        group.Add(labelled_grid(group.GetStaticBox(), rows), 0, wx.EXPAND)
+        return group
+
+    def fill_flow_group(self, group):
+        rows = (
             ("Start rip-up cost", self.ripup),
             ("Completion sweep", self.sweep),
             ("Sweep passes", self.sweep_passes),
             ("", self.pass_hint),
-        ):
-            grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
-            grid.Add(ctrl, 1, wx.EXPAND)
-        group.Add(grid, 0, wx.EXPAND)
+        )
+        group.Add(labelled_grid(group.GetStaticBox(), rows), 0, wx.EXPAND)
         return group
 
-    def add_preset_controls(self):
+    def add_preset_controls(self, box):
         """Presets (presets.py): option files the board or the user brings."""
-        self.preset_choice = wx.Choice(self, choices=[])
-        self.preset_apply = wx.Button(self, label="Apply")
-        self.preset_save = wx.Button(self, label="Save as preset...")
+        self.preset_choice = wx.Choice(box, choices=[])
+        self.preset_apply = wx.Button(box, label="Apply")
+        self.preset_save = wx.Button(box, label="Save as preset...")
         self.preset_choice.SetToolTip(
             "Option presets: JSON files in freerouting-rs/presets next to the board, or in the user's presets folder"
         )
@@ -426,8 +477,7 @@ class Dialog(wx.Dialog):
         self.preset_choice.SetSelection(index)
         self.preset_apply.Enable(bool(self.presets))
 
-    def preset_group(self):
-        group = wx.StaticBoxSizer(wx.VERTICAL, self, "Presets")
+    def fill_preset_group(self, group):
         row = wx.BoxSizer(wx.HORIZONTAL)
         row.Add(self.preset_choice, 1, wx.RIGHT | wx.EXPAND, 6)
         row.Add(self.preset_apply, 0, wx.RIGHT, 6)
@@ -516,34 +566,55 @@ class Dialog(wx.Dialog):
             "use_pass_hint": self.pass_hint.GetValue(),
         }
 
-    def advanced_group(self, saved):
-        """The "Advanced" group (N01.4): one choice per stage slot of the
-        router, preset to the saved choice or the profile's."""
-        group = wx.StaticBoxSizer(wx.VERTICAL, self, "Advanced")
+    def fill_stages_group(self, group, saved):
+        """The "Stages" group of the Advanced tab (N01.4): one choice per stage
+        slot of the router, preset to the saved choice or the profile's."""
+        box = group.GetStaticBox()
         slots = self.stage_listing.get(saved.profile) or []
         self.stage_choices = {}
         if not slots:
-            group.Add(wx.StaticText(self, label="This router does not list its stages (no --list-stages)."))
+            group.Add(wx.StaticText(box, label="This router does not list its stages (no --list-stages)."))
             return group
-        group.Add(wx.StaticText(self, label="Stages start at the profile's choice; pick another to change one."))
-        grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
-        grid.AddGrowableCol(1)
+        group.Add(wx.StaticText(box, label="Stages start at the profile's choice; pick another to change one."))
+        rows = []
         for key, label, ids, default in slots:
             experimental = self.stage_experimental.get(saved.profile, {}).get(key, set())
-            choice = wx.Choice(self, choices=[options.stage_label(i, experimental) for i in ids])
+            choice = wx.Choice(box, choices=[options.stage_label(i, experimental) for i in ids])
             picked = saved.stages.get(key, default)
             if picked not in ids:
                 picked = default if default in ids else ids[0]
             choice.SetSelection(ids.index(picked))
             choice.SetToolTip(f"router.{key}; the profile's choice is {default or '(none)'}")
             self.stage_choices[key] = (choice, ids)
-            grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
-            grid.Add(choice, 1, wx.EXPAND)
-        group.Add(grid, 0, wx.EXPAND)
+            rows.append((label, choice))
+        group.Add(labelled_grid(box, rows), 0, wx.TOP | wx.EXPAND, 6)
         return group
 
+    def set_page_heights(self, heights):
+        """A scrolled window with a vertical scroll rate asks for no height of
+        its own, so each page's minimum size is set: its contents', at
+        `heights`, with room for the scroll bar where that cuts it."""
+        scrollbar = wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X)
+        for page, contents, height in zip(self.pages, self.page_contents, heights):
+            page.SetMinSize(wx.Size(contents.width + (scrollbar if height < contents.height else 0), height))
+            page.SetVirtualSize(contents)
+
+    def fit_to_display(self):
+        """Cuts the dialog down to its screen's work area when it would come
+        out taller (layout.py): the tab pages then scroll and the buttons stay
+        in view."""
+        index = wx.Display.GetFromWindow(self)
+        area = wx.Display(index if index >= 0 else 0).GetClientArea()
+        heights = layout.cut_to_screen(
+            [page.GetMinSize().height for page in self.pages], self.GetSize().height, layout.max_dialog_height(area.height)
+        )
+        if heights is None:
+            return
+        self.set_page_heights(heights)
+        self.GetSizer().SetSizeHints(self)
+
     def chosen_stages(self):
-        """`{key: id}` of the Advanced choices."""
+        """`{key: id}` of the Advanced tab's stage choices."""
         out = {}
         for key, (choice, ids) in self.stage_choices.items():
             index = choice.GetSelection()

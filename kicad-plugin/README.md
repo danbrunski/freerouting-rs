@@ -12,8 +12,9 @@ Its toolbar button opens a dialog that:
 - **Route in GUI**: the same export, then `freerouting-gui -de board.dsn -do board.ses` with the
   options; the window routes after its countdown and writes the session when routing ends or the
   window closes, and the plugin imports it. **Terminate** kills the window and imports nothing.
-- **Options** (maximum passes, threads, optimizer on/off and its threshold, net classes to ignore,
-  time limit, seed, minimum trace width) are saved per board in
+- **Options** sit on three tabs (Route, Board and DSN, Advanced) above the buttons. The Route tab
+  (maximum passes, threads, optimizer on/off and its threshold, net classes to ignore,
+  time limit, seed, minimum trace width) and the others are saved per board in
   `freerouting-rs/route-options.json`. The minimum trace width defaults to the Board Setup
   minimum track width, which the DSN does not carry.
 - **DSN fix-ups and flow** (K09, `dsn_fixups.py`, ported from canary's `dsn_export.py`): per

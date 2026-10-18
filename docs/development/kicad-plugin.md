@@ -14,6 +14,14 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   session the window writes. **Open in viewer** exports and launches `freerouting-gui board.dsn
   [board.ses]`. **Import SES...** imports any session file. Files go in a `freerouting-rs/` folder
   next to the `.kicad_pcb`.
+- **The dialog's layout.** The board's paths, the **Presets** row and the buttons stay in view; the
+  options sit on three tabs: **Route** (profile, passes, threads, optimizer, net classes, time
+  limit, seed, minimum width), **Board and DSN** (board input, `.kicad_dru` switch, rule-area fix,
+  the K09 DSN fix-ups) and **Advanced** (the K09 flow settings and the N01 stage choices). The
+  tabs open tall enough for the longest one, so none scrolls where the screen has the room (Dan,
+  2026-10-18). On a smaller screen the dialog is cut to 90 % of the display's work area
+  (`layout.py`, `Dialog.fit_to_display`) and the pages scroll; before the tabs, the stacked groups
+  outgrew the screen and hid **Route in GUI** and the other buttons.
 - K02 modules (all pure Python except `plugin.py`): `options.py` (the route options, per board in
   `freerouting-rs/route-options.json`, `"schema": 2`, defensive restore; `to_args()` builds the
   flags in a fixed order and always passes `--router.min_trace_width_um` from Board Setup's
@@ -61,7 +69,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   the same. The summary after the import starts with `Profile: Legacy` or `Profile: Enhanced`
   (the manifest's `settings_snapshot.profile` when the router wrote one, else the profile the
   plugin asked for).
-- **Advanced** (a group below the options): one choice per stage slot that takes one stage, read
+- **Advanced** (the Advanced tab's Stages group): one choice per stage slot that takes one stage, read
   from the router with `freerouting --list-stages=json --profile <p>` for each profile when the
   dialog opens (`tools.query_stages`, `options.parse_stage_listing`). Each choice starts at the
   saved one or the profile's; one that differs passes `--router.<key>=<id>` (sorted by key). A
@@ -77,14 +85,15 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   and stages reach the fake router and are restored, the summary names each profile, a router with
   no listing), `test_summary.py`, and against the real CLI `test_cli_integration.py`
   (`test_the_stage_listing_has_every_registered_id`,
-  `test_both_profiles_route_and_the_summary_names_them`). Not yet seen inside KiCad: the layout of
-  the Profile choice and the Advanced group (Dan, with K02.8).
+  `test_both_profiles_route_and_the_summary_names_them`). The tabbed layout was checked in KiCad
+  10.0's `python.exe` and wxWidgets 3.3.2 on Dan's machine (the real dialog with a stub `pcbnew`,
+  dark and light, full height and cut to 380 px); not yet inside KiCad's editor (Dan, with K02.8).
 
 ## DSN fix-ups and the canary flow (K09)
 
 KiCad's export is not what canary's graded flow routed: `hardware/tools/dsn_export.py` (Dan's canary
 repo) rewrote it. The plugin now does the same transforms itself, each an option of the dialog's "DSN
-fix-ups and flow" group, saved in `route-options.json` (schema 3; schema 1 and 2 files still load, a
+fix-ups" group (Board and DSN tab) or "Flow" group (Advanced tab), saved in `route-options.json` (schema 3; schema 1 and 2 files still load, a
 field they lack takes the profile's default):
 
 | option | what it does | default |
@@ -215,7 +224,8 @@ K02 tests: `test_options.py` (golden argument lists, save/load round trip, damag
 `test_routing.py` (`RouteRun` and `GuiRun` against `fake_bin/fake_freerouting.py` modes `route`,
 `route-slow`, `route-fail`, `route-noise` and `fake_bin/fake_gui.py`), `test_route_dialog.py` and
 `test_gui_mode.py` (plugin.py's Route and Route in GUI flows with the stub `wx`/`pcbnew` of
-`tests/stub_ui.py`: real dialog code, modal loops driven by their timers), `test_dropdowns.py`
+`tests/stub_ui.py`: real dialog code, modal loops driven by their timers; also which tab each
+option sits on and the cut to the screen), `test_layout.py` (the page heights), `test_dropdowns.py`
 (when the dark-list fix applies, and its Win32 calls against fakes), and
 `test_cli_integration.py` (the real CLI: all options, Stop, Abort, summary against `-drc`).
 The last one uses `FREEROUTING_RS_BIN` (a directory), else `target/release` or `target/debug`, and
@@ -405,6 +415,13 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
   works headless). A standalone wx script in KiCad's `python.exe` must create `wx.App` before
   any other wx call (even `wx.GetLibraryVersionInfo()`), or wxWidgets shows a "failed to
   initialize wxPlatformInfo" assert box.
+- **A scrolled tab page asks for no height.** A `wx.ScrolledWindow` with a vertical scroll rate
+  reports its minimum size as its best height, not its contents', so a notebook of them fits to
+  almost nothing. `plugin.set_page_heights` sets each page's minimum size from its sizer and its
+  virtual size to the contents, which is what scrolls once `fit_to_display` cuts it.
+- **A group box's controls must be its children.** wxWidgets 3.3 logs "should be created as
+  child of its wxStaticBox" for a control in a `wx.StaticBoxSizer` that has another parent; the
+  dialog creates each group's sizer first and its controls in `GetStaticBox()`.
 - **Dark drop-downs on recent Windows 11 are white on white in KiCad 10.0.** wxWidgets 3.3.2,
   which KiCad 10.0 bundles, themes a `wx.Choice`'s list so that Windows 26200.9xxx (and Insider
   26300.8553) draws the selected row, the one under the mouse, white under white text

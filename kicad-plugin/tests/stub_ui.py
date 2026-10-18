@@ -31,6 +31,23 @@ class UI:
         self.snapshots = []  # (path, aSkipSettings) given to SaveBoard
         self.project_copies = []  # paths given to SaveProjectCopy
         self.project_copy_fails = False
+        self.buttons = []  # every wx.Button, in creation order
+        self.dialog_size = (700, 800)  # what a fitted dialog's GetSize returns
+        self.page_size = (400, 500)  # a tab page's contents (its sizer's GetMinSize)
+        self.page_sizes = {}  # tab title -> its contents, overriding page_size
+        self.work_area_height = 1040  # the display's GetClientArea().height
+        self.scrollbar_width = 17
+
+
+class Size:
+    def __init__(self, width, height):
+        self.width, self.height = width, height
+
+    def __eq__(self, other):
+        return (self.width, self.height) == (other.width, other.height)
+
+    def __repr__(self):
+        return f"Size({self.width}, {self.height})"
 
 
 class Control:
@@ -39,6 +56,7 @@ class Control:
     def __init__(self, *args, value=None, min=0, max=100, label="", **kwargs):
         self._v = value if value is not None else min
         self.label = label
+        self.parent = args[0] if args else None
 
     def GetValue(self):
         return self._v
@@ -123,6 +141,32 @@ def build_wx(ui):
         def __init__(self, parent=None, *args, **kwargs):
             self._handlers = {}
             self._ended = None
+            self.parent = parent
+            self.min_size = None
+            self.virtual_size = None
+            self._sizer = Sizer()
+
+        def SetMinSize(self, size):
+            self.min_size = size
+
+        def GetMinSize(self):
+            return self.min_size
+
+        def SetVirtualSize(self, size):
+            self.virtual_size = size
+
+        def GetSize(self):
+            return Size(*ui.dialog_size)
+
+        def SetSizer(self, sizer):
+            self._sizer = sizer
+            sizer.owner = self
+
+        def SetSizerAndFit(self, sizer):
+            self._sizer = sizer
+
+        def GetSizer(self):
+            return self._sizer
 
         def Bind(self, event, handler, source=None):
             self._handlers.setdefault(event, []).append(handler)
@@ -159,16 +203,61 @@ def build_wx(ui):
                 raise AttributeError(name)
             return lambda *a, **k: None
 
+    class Notebook(Dialog):
+        def __init__(self, parent=None, *args, **kwargs):
+            super().__init__(parent)
+            self.pages = []  # (page, title)
+
+        def AddPage(self, page, title):
+            self.pages.append((page, title))
+            page.title = title
+
+    class Button(Control):
+        def __init__(self, parent=None, id=None, label="", **kwargs):  # wx.Button(parent, id, label)
+            super().__init__(parent, label=label, **kwargs)
+            ui.buttons.append(self)
+
+    class Display:
+        def __init__(self, index=0):
+            pass
+
+        @staticmethod
+        def GetFromWindow(window):
+            return 0
+
+        def GetClientArea(self):
+            return Size(1920, ui.work_area_height)
+
+    class StaticBoxSizer:  # a ContentSizer with its box, a child of `parent`
+        def __new__(cls, orient=0, parent=None, label=""):
+            sizer = ContentSizer()
+            box = Dialog(parent)
+            box.label = label
+            sizer.GetStaticBox = lambda: box
+            return sizer
+
+    class ContentSizer(Sizer):
+        def GetMinSize(self):  # a page's contents: ui.page_sizes[title] or ui.page_size
+            title = getattr(getattr(self, "owner", None), "title", None)
+            return Size(*ui.page_sizes.get(title, ui.page_size))
+
     wx.Dialog = Dialog
     wx.Panel = Dialog
+    wx.ScrolledWindow = Dialog
+    wx.Notebook = Notebook
+    wx.Button = Button
+    wx.Display = Display
+    wx.Size = Size
+    wx.SystemSettings = types.SimpleNamespace(GetMetric=lambda metric: ui.scrollbar_width)
     wx.SpinCtrl = Control
     wx.TextCtrl = TextControl
     wx.CheckBox = CheckBox
     wx.Choice = Choice
-    for name in ("Button", "StaticText", "Gauge"):
+    for name in ("StaticText", "Gauge"):
         setattr(wx, name, Control)
-    for name in ("BoxSizer", "FlexGridSizer", "StaticBoxSizer"):
-        setattr(wx, name, Sizer)
+    for name in ("BoxSizer", "FlexGridSizer"):
+        setattr(wx, name, ContentSizer)
+    wx.StaticBoxSizer = StaticBoxSizer
     wx.Timer = Timer
     wx.EVT_BUTTON, wx.EVT_TIMER, wx.EVT_CLOSE = "EVT_BUTTON", "EVT_TIMER", "EVT_CLOSE"
     wx.ID_OK, wx.ID_CANCEL = 5100, 5101
