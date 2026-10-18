@@ -191,17 +191,17 @@ Batches: **G** geometry cutouts, **M** maze search and rooms, **F** fanout, **S*
 
 | id | Rust | Java | The question | Reach | Proposal |
 |---|---|---|---|---|---|
-| `ripup_pass_no_unset` | autoroute/session/ripup.rs:12, 337; control.rs:138 | MazeRipupResolver.java:158-162, AutorouteControl.java:192 | `ripupPassNo` is never set, so the random detour factor `0.5 + r²` never fires; the batch router never had it (the 1.x import set it only in `ExpandTestState`) | batch, every rip-up from pass 4 on if enabled | Its own registration: switching on randomness Java never ran, deterministic by its reseed. Likely large either way |
-| `insert_stale_trace_object` | autoroute/path/insert.rs:100 | FoundConnectionInserter.java:108-137 | `connectToTrace` uses the start or target trace object after the insertion split or removed it | batch, occasional | Leave: the split keeps the old geometry as the new pieces, so the stub lands on the same copper |
-| `in_front_of_pad_side0_flank` | shove/drill_check.rs:461 | ForcedPadRouter.java:86 | Side 0's flank clause takes `min`, where cases 2, 4 and 6 take `max`; inferred from symmetry | as `in_front_of_pad_typo` | An arm of batch S, only together with the typo fix |
-| `opt_threshold_fraction` | optimize/batch/mod.rs:197-212, settings/path.rs:357-364 | BatchOptimizer.java:367-377 | A threshold in (0, 0.1) is multiplied by 100 (Java logs it as a heuristic); a CLI value below 0.001 is scaled twice | only JSON or environment values in (0, 0.1) | Leave Java's heuristic; fix the double scaling of the CLI |
-| `rules_unknown_layer_scope` | io/specctra/rules_reader.rs:21-29 | RulesReader.java | A layer scope naming an unknown layer applies to all layers | in, `-dr` only | Decide: ignore the scope with a warning, or keep it |
-| `rules_autoroute_settings_reenable` | io/specctra/rules_reader.rs:21-29 | RulesReader.java | A rules file's `autoroute_settings` re-enables every layer and the optimizer | in, `-dr` only | Decide with C04: a settings semantics choice |
-| `direction_compare_zero` | geometry/direction.rs:346 | Direction.java | `compare_to` handles the zero direction lopsidedly | batch, edge case | Leave: a quirk, not clearly wrong |
-| `route_stubs_layer_test` | drc/route_stubs.rs:9-12, 136 | WindowRouteStubs.java:73-74 | Both via bounds are compared with the contact's first layer, so the stub layer is always the last | out (route-stubs list) | Leave until the intent is clear |
-| `any_angle_skip_length_squared` | optimize/tighten/any_angle.rs:43-45 | TraceTightenerAnyAngle.java:22, 774, 896 | `SKIP_LENGTH = 10` is compared with a squared distance (effectively 3.2 units) | batch, any-angle mode only | Measure in any-angle mode, or leave |
-| `polyline_array_reversal` | optimize/tighten/mod.rs:19-22, 491 | Polyline.java (`new Polyline(Line[])`) | The constructor reverses lines in the caller's array, and later reads see that | batch | Leave: no clear correct fix |
-| `avoid_acid_traps_disabled` | optimize/tighten/mod.rs:377-381 | TraceTightener (`if (true) return polyline;`) | Java turned the acid-trap step off | batch | Leave: enabling it is a feature (a Q candidate), not a fix |
+| `ripup_pass_no_unset` | autoroute/session/ripup.rs:12, 337; control.rs:138 | MazeRipupResolver.java:158-162, AutorouteControl.java:192 | `ripupPassNo` is never set, so the random detour factor `0.5 + r²` never fires; the batch router never had it (the 1.x import set it only in `ExpandTestState`) | batch, every rip-up from pass 4 on if enabled | Its own registration: switching on randomness Java never ran, deterministic by its reseed. Likely large either way. **Outcome (N06.12, 2026-10-18): measured, run pending.** Wired (`batch::connection::router_control` sets the pass number under `false`), tested (`tests/n06_judgement.rs`), counted (`ripup_random_pass_connections`, `ripup_random_factor_draws`) and registered as the verdict pair of `prereg/N06.12-ripup-pass.json` (accept: improve, since it adds behaviour Java never ran); stays `true` until the run accepts it |
+| `insert_stale_trace_object` | autoroute/path/insert.rs:100 | FoundConnectionInserter.java:108-137 | `connectToTrace` uses the start or target trace object after the insertion split or removed it | batch, occasional | Leave: the split keeps the old geometry as the new pieces, so the stub lands on the same copper. **Outcome (N06.12): left as Java.** The stale object only supplies the geometry `connectToTrace` connects to (`insert.rs`, `trace_object`); a split keeps that geometry as its pieces, so the stub lands on the same copper and a fix that reads the pieces instead changes nothing on a split. The switch stays inert (`false` changes nothing) |
+| `in_front_of_pad_side0_flank` | shove/drill_check.rs:461 | ForcedPadRouter.java:86 | Side 0's flank clause takes `min`, where cases 2, 4 and 6 take `max`; inferred from symmetry | as `in_front_of_pad_typo` | An arm of batch S, only together with the typo fix. **Outcome (N06.12): follows N06.7's run.** Wired and tested by N06.7 (`side0_flank_switch_both_behaviours`, counter `shove_in_front_of_pad_flank_flips`) and registered as `prereg/N06.7.json`'s reported arm `all_flank`, judged against `all` only if batch S is accepted; otherwise it stays `true`. N06.7's done note records the result |
+| `opt_threshold_fraction` | optimize/batch/mod.rs:197-212, settings/path.rs:357-364 | BatchOptimizer.java:367-377 | A threshold in (0, 0.1) is multiplied by 100 (Java logs it as a heuristic); a CLI value below 0.001 is scaled twice | only JSON or environment values in (0, 0.1) | Leave Java's heuristic; fix the double scaling of the CLI. **Outcome (N06.12): heuristic left as Java (`true` in both profiles, `false` tested by `threshold_fraction_switch_both_behaviours`); the double scaling fixed as a port fix in both profiles** (`SettingsPatch::improvement_threshold_scaled`; `a_cli_threshold_below_a_thousandth_is_scaled_once`, `a_cli_threshold_is_scaled_once`; DIVERGENCES "Settings"). (a)-like: no A14 board, Java reference case (`-oit 0.035`, `4.0`, `0.05`) or plugin option (1-100 %) passes a CLI value below 0.001 |
+| `rules_unknown_layer_scope` | io/specctra/rules_reader.rs:21-29 | RulesReader.java | A layer scope naming an unknown layer applies to all layers | in, `-dr` only | Decide: ignore the scope with a warning, or keep it. **Outcome (N06.12, decided 2026-10-18): ignore it with a warning under `enhanced`, keep Java's under `legacy`.** Wired in `rules_reader::apply_rules` (`false` logs a second warning and skips the scope), tested (`unknown_layer_scope_switch_both_behaviours`), counted (`rules_unknown_layer_scopes`). Defaults stay `true`; N06.13 adds it to `ENHANCED` through N05. A wrong layer name in a rules file is an input error, and spreading its widths and clearances to every layer is the one reading that is surely wrong |
+| `rules_autoroute_settings_reenable` | io/specctra/rules_reader.rs:21-29 | RulesReader.java | A rules file's `autoroute_settings` re-enables every layer and the optimizer | in, `-dr` only | Decide with C04: a settings semantics choice. **Outcome (N06.12): left as Java.** C04's decisions keep it on purpose: a rules file's `autoroute_settings` are the file's whole routing setup, laid over the merged settings and the CLI (C04.3, `rules_autoroute_settings_override_cli`), and `AutorouteSettings.readScope` seeds every layer and the optimizer on. C04 makes no other settings-semantics choice, so the switch stays inert (`false` changes nothing) |
+| `direction_compare_zero` | geometry/direction.rs:346 | Direction.java | `compare_to` handles the zero direction lopsidedly | batch, edge case | Leave: a quirk, not clearly wrong. **Outcome (N06.12): left as Java.** An ordering of the zero direction is a convention, not a bug; changing it would reorder sorted directions with no correct order to aim for. The switch stays inert (the geometry crate has no settings access) |
+| `route_stubs_layer_test` | drc/route_stubs.rs:9-12, 136 | WindowRouteStubs.java:73-74 | Both via bounds are compared with the contact's first layer, so the stub layer is always the last | out (route-stubs list) | Leave until the intent is clear. **Outcome (N06.12): left as Java.** It changes only the route-stubs report's layer, not routing; which layer the report should name for a via stub is not clear from Java, so there is no fix to test. The switch stays inert |
+| `any_angle_skip_length_squared` | optimize/tighten/any_angle.rs:43-45 | TraceTightenerAnyAngle.java:22, 774, 896 | `SKIP_LENGTH = 10` is compared with a squared distance (effectively 3.2 units) | batch, any-angle mode only | Measure in any-angle mode, or leave. **Outcome (N06.12): measured, run pending.** Cheap to include: a reported arm of `prereg/N06.12-ripup-pass.json` over three any-angle variant boards (A07's `-any.dsn`), counted (`any_angle_skip_length_flips`) and tested (`any_angle::tests::skip_length_switch_both_behaviours_and_counter`); judged no-regress (a typo-like fix), stays `true` until the run |
+| `polyline_array_reversal` | optimize/tighten/mod.rs:19-22, 491 | Polyline.java (`new Polyline(Line[])`) | The constructor reverses lines in the caller's array, and later reads see that | batch | Leave: no clear correct fix. **Outcome (N06.12): left as Java.** Later reads of the caller's array (bisection steps, changed areas, accepted lines) depend on the reversal, and `normalized` replays it; copying the array would change those reads with no reference for the intended ones. The switch stays inert |
+| `avoid_acid_traps_disabled` | optimize/tighten/mod.rs:377-381 | TraceTightener (`if (true) return polyline;`) | Java turned the acid-trap step off | batch | Leave: enabling it is a feature (a Q candidate), not a fix. **Outcome (N06.12): left as Java; noted as a Q candidate** (turn on Java's dead acid-trap step and measure it as a quality change under N02). The switch stays inert |
 
 ### Reviewed and left out
 
@@ -928,11 +928,56 @@ These are marked or look like quirks but keep no bug:
   *Done 2026-10-18:* every **Accept:** clause is met: the switch tests above, the 32 runs
     above, and the shared N06.10 plugin-path run and grade (one SES for all 18 arms; no arm adds
     a real DRC, via-in-pad or below-minimum error).
-- [ ] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
+- [x] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
   its row.
   - `ripup_pass_no_unset` gets its own registration.
   - The fix of `opt_threshold_fraction`'s CLI double scaling counts as a port fix, not a quirk.
   - **Accept:** every (c) row has its outcome.
+  - *Done 2026-10-18:* every (c) row has its outcome, measured (registered, run pending) or
+    explained, with the reason in its row of the (c) table (worktree
+    `target/orchestrator/n06c/wt`, branch `land/n06-12`, on main `bbd1336`). Defaults stay
+    `true` (Java) in both profiles; `ENHANCED` is unchanged. The decisions are logged in
+    `target/orchestrator/operator-decisions.md` ("2026-10-18 N06.12").
+    - Measured (2): `ripup_pass_no_unset` (verdict pair, accept improve) and
+      `any_angle_skip_length_squared` (reported arm, no-regress), registered before any number
+      in `docs/roadmap/prereg/N06.12-ripup-pass.json` (sha256
+      `b39a51fe095788593e2bc4c27ebc4b7d67f9b35b235a101fa63d03c1fc76de23`) with
+      `tools/bench/sets/n06-ripup-pass.txt` (5 boards that run past pass 4, 3 any-angle variant
+      boards, plus canary-pwr through the plugin path), pinned by
+      `crates/freerouting-dev/tests/prereg_n06_12.rs` (4 tests pass).
+      - Both behaviours: `tests/n06_judgement.rs::ripup_pass_no_switch_both_behaviours_and_counters`
+        (Green14SegLED, pass 1 then passes numbered 4 and 6: both arms count pass 4's connections,
+        only `false` draws, nobody draws in pass 6, the sessions differ, `false` repeats itself
+        exactly) and `the_random_factor_fires_from_pass_4_outside_every_third_pass`;
+        `optimize::tighten::any_angle::tests::skip_length_switch_both_behaviours_and_counter`.
+      - Counters (`run_stats`, `--stats json` `total.counts`): `ripup_random_pass_connections`,
+        `ripup_random_factor_draws`, `any_angle_skip_length_flips`, `rules_unknown_layer_scopes`.
+      - Heavy run pending (orchestrator, from the worktree root, release build of this tree):
+        `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.12-ripup-pass.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-c`
+        (24 runs; exits non-zero after the last run when a session differs, as it should for the
+        ripup arm), then the canary-pwr plugin row as in N06.10 (the registration's
+        `plugin_canary`: export once, route the 3 arms with the exported args plus
+        `--router.profile=legacy` and the arm's two flags, grade each distinct session with
+        canary's `grade.sh`). N06.13 records the verdict.
+    - `in_front_of_pad_side0_flank`: follows N06.7's registered run (arm `all_flank`).
+    - `opt_threshold_fraction`: heuristic left as Java; the CLI double scaling fixed as a port
+      fix in both profiles (`a_cli_threshold_below_a_thousandth_is_scaled_once` in
+      `tests/settings_path.rs`, `optimize::batch::tests::a_cli_threshold_is_scaled_once`;
+      DIVERGENCES "Settings"); (a)-like, no A14 board passes such a value.
+    - `rules_unknown_layer_scope`: decided (ignore under `enhanced`, Java under `legacy`), wired
+      in `rules_reader::apply_rules`, tested by
+      `tests/rules_reader.rs::unknown_layer_scope_switch_both_behaviours`; promotion is N06.13's.
+    - Left as Java with the reason in the row (switch inert, its doc line says so):
+      `insert_stale_trace_object`, `rules_autoroute_settings_reenable` (C04),
+      `direction_compare_zero`, `route_stubs_layer_test`, `polyline_array_reversal`,
+      `avoid_acid_traps_disabled` (a Q candidate).
+    - DIVERGENCES: "Java quirk switches, opt-in (N06)" gains an N06.12 block; "Settings" the CLI
+      line; "Rules files" names the switch.
+    - Gate (private target, `CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0`): `cargo fmt --all --check`;
+      `cargo clippy -p freerouting -p freerouting-dev -p freerouting-cli --all-targets -- -D warnings`;
+      `cargo test -p freerouting -p freerouting-cli --no-fail-fast` 1574 passed, 0 failed, 33
+      ignored (155 suites); the N06 pin tests `prereg_n06_{4,5,6,7,8,9,12}` 28 passed;
+      `python3 tools/roadmap/checklists.py status --strict` clean.
 - [ ] **N06.13 — Results and promotion.**
   - Each batch's registration and numbers go in its item.
   - Each accepted switch is turned off in `enhanced` through N05, with its DIVERGENCES line under

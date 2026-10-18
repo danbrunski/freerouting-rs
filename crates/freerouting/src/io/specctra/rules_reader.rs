@@ -20,7 +20,9 @@
 //!
 //! Java's quirks are kept, each pinned by a test in `tests/rules_reader.rs`:
 //! - a `layer` scope naming an unknown layer applies to **all** layers
-//!   (`applyRules` keeps `layerIndex = -1`);
+//!   (`applyRules` keeps `layerIndex = -1`); disabling
+//!   `java_quirks.rules_unknown_layer_scope` ignores the scope with a second
+//!   warning (N06.12);
 //! - the clearance matrix is changed in place and the search trees are not
 //!   rebuilt; disabling `java_quirks.rules_matrix_trees_not_rebuilt` refreshes
 //!   every tree after applying the scopes;
@@ -28,7 +30,10 @@
 //! - `autoroute_settings` are read against the board's layers, with every
 //!   layer routable and `autoroute` and `postroute` on unless the scope says
 //!   otherwise (`AutorouteSettings.readScope`), so applying them re-enables
-//!   all layers and the optimizer.
+//!   all layers and the optimizer. N06.12 leaves this as Java in both
+//!   profiles (C04's settings semantics: a rules file's `autoroute_settings`
+//!   are the file's whole routing setup, laid over the CLI), so
+//!   `java_quirks.rules_autoroute_settings_reenable = false` changes nothing.
 //!
 //! Where it differs from Java (docs/DIVERGENCES.md, "Rules files"): the file
 //! is parsed completely before anything is applied, so a file with a syntax
@@ -96,6 +101,16 @@ fn apply_rules(ctx: &mut ReadContext, rules: &[ast::Rule], layer_name: Option<&s
         layer_index = ctx.board().layer_structure.get_no(name);
         if layer_index < 0 {
             ctx.log(format!("RulesReader.applyRules: layer not found: '{name}'"));
+            crate::run_stats::record_n06(crate::run_stats::Counter::RulesUnknownLayerScopes);
+            // PARITY(quirk, java_quirks.rules_unknown_layer_scope): Java keeps
+            // `layerIndex = -1` ("default"), so the scope applies to every layer;
+            // `false` ignores the scope (N06.12).
+            if !ctx.board().java_quirks().rules_unknown_layer_scope {
+                ctx.log(format!(
+                    "RulesReader.applyRules: the rules of layer '{name}' are ignored"
+                ));
+                return;
+            }
         }
     }
     let transform = ctx.coordinate_transform;

@@ -572,6 +572,38 @@ fn improvement_threshold_scales_only_inside_zero_and_one_and_only_on_the_cli() {
     assert_eq!(p.optimizer.improvement_threshold, Some(0.035_f32));
 }
 
+/// N06.12, a port fix in both profiles (DIVERGENCES, "Settings"): the command line
+/// marks the threshold it scaled, so the optimizer's fraction heuristic does not scale
+/// `-oit 0.0005` (now 0.05) a second time. The mark goes with the threshold: a later
+/// source that sets the threshold clears it, one that does not set it keeps it.
+#[test]
+fn a_cli_threshold_below_a_thousandth_is_scaled_once() {
+    let scaled = cli(&["-oit", "0.0005"]);
+    assert_eq!(
+        scaled.optimizer.improvement_threshold,
+        Some(0.0005_f32 * 100.0_f32)
+    );
+    assert_eq!(scaled.improvement_threshold_scaled, Some(true));
+    assert_eq!(
+        cli(&["-oit", "4.0"]).improvement_threshold_scaled,
+        Some(false)
+    );
+    assert_eq!(cli(&["-mp", "3"]).improvement_threshold_scaled, None);
+    let resolved = |sources: Vec<(Source, SettingsPatch)>| resolve(&sources, &ctx()).settings;
+    assert!(resolved(vec![(Source::Cli, scaled.clone())]).improvement_threshold_scaled);
+    let mut api = SettingsPatch::default();
+    api.set_path("optimizer.improvement_threshold", "0.05")
+        .unwrap();
+    let later = resolved(vec![(Source::Cli, scaled.clone()), (Source::Api, api)]);
+    assert_eq!(later.optimizer.improvement_threshold, 0.05);
+    assert!(!later.improvement_threshold_scaled);
+    let mut other = SettingsPatch::default();
+    other.set_path("optimizer.max_passes", "7").unwrap();
+    assert!(
+        resolved(vec![(Source::Cli, scaled), (Source::Api, other)]).improvement_threshold_scaled
+    );
+}
+
 #[test]
 fn legacy_batch_mode_switches_the_router_on() {
     let p = cli(&["-de", "a.dsn", "-do", "a.ses"]);

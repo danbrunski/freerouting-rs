@@ -61,6 +61,7 @@ use crate::autoroute::control::AutorouteControl;
 use crate::autoroute::path::RipupCosts;
 use crate::autoroute::session::budget::BudgetPolicy;
 use crate::autoroute::session::drills::DrillCarry;
+use crate::autoroute::session::ripup::draws_random_factor;
 use crate::autoroute::session::search::SearchSettings;
 use crate::autoroute::stages::{
     ConnectionOutcome, ConnectionParams, ConnectionRouter, Destinations, FailureRecord,
@@ -427,6 +428,10 @@ impl FreeroutingConnectionRouter {
         let Some(control) = router_control(board, task, p, ctx) else {
             return failed_outcome(AttemptResult::new(AttemptState::Failed));
         };
+        // N06.12 reachability, in either arm of `ripup_pass_no_unset`.
+        if p.ripup_allowed && draws_random_factor(i32::try_from(p.pass).unwrap_or(i32::MAX)) {
+            crate::run_stats::record_n06(crate::run_stats::Counter::RipupRandomPassConnections);
+        }
         let (start, mut dest, fallback) = match self.route_sets(board, task) {
             RouteSets::Skip(state) => return ConnectionOutcome::new(state, ""),
             RouteSets::Route {

@@ -240,6 +240,14 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
   which replaces the default source and is an error when missing or malformed. A
   `FREEROUTING__LOGGING__FILE__LOCATION` fallback moves the user-data path as in
   Java.
+- A command-line `optimizer.improvement_threshold` (`-oit` or
+  `--router.optimizer.improvement_threshold`) in (0, 1) is scaled by 100 once. Java's CLI
+  scales it and the optimizer's fraction heuristic then scales a result below 0.1 again, so
+  Java reads `-oit 0.0005` as 5 % and the port as 0.05 %, in both profiles (a port fix,
+  N06.12; `SettingsPatch::improvement_threshold_scaled`,
+  `a_cli_threshold_below_a_thousandth_is_scaled_once`, `a_cli_threshold_is_scaled_once`). No
+  A14 board, Java reference case (`-oit 0.035`, `4.0`, `0.05`) or plugin option (1-100) passes
+  such a value.
 - `min_trace_width_um` (Java fork commit `46bf9e2ef`, after the pin) is a settings
   field, unset by default.
 - `profile` (`router.profile`, N01) is a settings field Java does not have: `legacy` or
@@ -487,7 +495,8 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
 `tests/rules_writer.rs`, `tests/reference_drc.rs`)
 - Java's behaviour that the port keeps, each pinned by a test: a rules file's
   `autoroute_settings` override the merged settings, the CLI included, and switch every layer
-  and the optimizer back on; a `layer` scope with an unknown layer applies to all layers; a
+  and the optimizer back on; a `layer` scope with an unknown layer applies to all layers
+  (`router.java_quirks.rules_unknown_layer_scope = false` ignores it, N06.12); a
   via type with an existing name moves to the end; the clearance matrix changes without
   re-inserting the tree items; a different header name is a warning. A rule in the file for
   one layer lands on two layers when the file names a single layer: the second merge reads
@@ -1555,6 +1564,32 @@ counters are conservative: unknown class names and precision-only placement
 changes can count even when geometry does not change. `dsn_corpus_branch_inventory`
 produces a per-input JSON report without routing. Registered sessions, the optimizer
 reference run, and the plugin canary grade remain pending under N06.10.
+
+**N06.12 judgement calls (explicit opt-in; promotion pending)**
+
+Every (c) switch still defaults to `true` in both profiles. With the named switch `false`:
+- `ripup_pass_no_unset`: the batch pass number reaches `AutorouteControl::ripup_pass_no`,
+  so `MazeRipupResolver`'s random detour factor `0.5 + r * r` (`:158-162`), which Java's
+  batch router never draws, fires from pass 4 on outside every third pass; the generator is
+  the search's, reseeded with the ripup costs, so the run is deterministic
+  (`tests/n06_judgement.rs::ripup_pass_no_switch_both_behaviours_and_counters`). Registered
+  in `prereg/N06.12-ripup-pass.json`; the run is pending.
+- `any_angle_skip_length_squared`: the any-angle end smoothing skips an end segment of a
+  rational end corner shorter than 10 units (`SKIP_LENGTH` squared), not 3.2
+  (`any_angle::tests::skip_length_switch_both_behaviours_and_counter`); a reported arm of the
+  same registration.
+- `rules_unknown_layer_scope`: a rules-file `layer` scope naming a layer the board does not
+  have is ignored with a second warning instead of applying to every layer
+  (`tests/rules_reader.rs::unknown_layer_scope_switch_both_behaviours`). Decided 2026-10-18
+  for `enhanced`; it joins the table through N06.13 and N05.
+- `in_front_of_pad_side0_flank` is N06.7's reported arm `all_flank`. `opt_threshold_fraction`
+  keeps Java's heuristic (its `false` half: `threshold_fraction_switch_both_behaviours`).
+- Left as Java, `false` changes nothing: `insert_stale_trace_object`,
+  `rules_autoroute_settings_reenable`, `direction_compare_zero`, `route_stubs_layer_test`,
+  `polyline_array_reversal`, `avoid_acid_traps_disabled` (the reasons are in N06's (c) table).
+
+`run_stats` counts `ripup_random_pass_connections` and `any_angle_skip_length_flips` in
+either arm, `ripup_random_factor_draws` (only under `false`) and `rules_unknown_layer_scopes`.
 
 ## Profile `enhanced`
 

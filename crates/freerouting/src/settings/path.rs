@@ -306,7 +306,10 @@ impl SettingsPatch {
     ///   `lower_bound`/`lower-bound` is `V2_LOWER_BOUND`.
     /// - `improvement_threshold` values strictly inside (0, 1) are
     ///   multiplied by `100f` in `f32`. This applies on the CLI only, not to
-    ///   environment variables or JSON.
+    ///   environment variables or JSON. Not Java (N06.12, a port fix): the
+    ///   patch remembers it ([`SettingsPatch::improvement_threshold_scaled`]),
+    ///   so the optimizer does not scale a CLI value below 0.001 a second
+    ///   time (Java reads `-oit 0.0005` as 5 %, the port as 0.05 %).
     ///
     /// Deprecation warnings are appended to `warnings`. On success the value
     /// as stored is returned (Java's `getParsedArguments()` entry).
@@ -357,14 +360,21 @@ impl SettingsPatch {
         let is_threshold = property_name == "router.optimizer.improvement_threshold"
             || field_path.ends_with("improvement_threshold")
             || field_path.ends_with("optimizationImprovementThreshold");
+        let mut scaled = false;
         if is_threshold
             && let Ok(parsed) = parse_float(value.trim())
             && parsed > 0.0
             && parsed < 1.0
         {
             value = java_float_to_string(parsed * 100.0_f32);
+            scaled = true;
         }
         self.set_path(&field_path, &value)?;
+        if is_threshold {
+            // Not Java (N06.12, a port fix): a value below 0.001 scales to below
+            // 0.1, which the optimizer's fraction heuristic would scale again.
+            self.improvement_threshold_scaled = Some(scaled);
+        }
         Ok(value)
     }
 }

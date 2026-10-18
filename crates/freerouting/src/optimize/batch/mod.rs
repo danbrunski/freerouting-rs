@@ -52,7 +52,12 @@
 //!   `false` keeps every sorted candidate
 //!   (`equal_key_switch_keeps_every_candidate`).
 //! - `opt_threshold_fraction`: the threshold auto-scale for values in
-//!   (0, 0.1) (N06.12).
+//!   (0, 0.1) (`threshold_fraction_switch_both_behaviours`); left as Java in both
+//!   profiles by N06.12. Not Java (a port fix in both profiles): a value the
+//!   command line already scaled (`-oit` or `--router.optimizer.improvement_threshold`
+//!   below 0.001, which Java's CLI turns into a value below 0.1) is not scaled a
+//!   second time (`RouterSettings::improvement_threshold_scaled`;
+//!   `tests/settings_path.rs::a_cli_threshold_below_a_thousandth_is_scaled_once`).
 //!
 //! **Stops and time.** A full stop (cancel, or the optimizer or job
 //! deadline, which the pipeline arms with `StopLevel::All`) is checked
@@ -197,6 +202,21 @@ fn gate_figures(stats: &BoardStatistics, settings: &RouterSettings) -> GateFigur
         violations: stats.clearance_violations.total_count,
         score: stats.optimizer_ranking_score(Some(settings)),
     }
+}
+
+/// The threshold of a job's settings: [`effective_threshold`], where the
+/// fraction heuristic is `java_fraction_heuristic`
+/// (`router.java_quirks.opt_threshold_fraction`) unless the command line
+/// already scaled the value. Not Java (N06.12, a port fix in both profiles):
+/// Java scales a CLI value below 0.001 twice.
+fn job_threshold(
+    settings: &RouterSettings,
+    java_fraction_heuristic: bool,
+) -> (f32, Option<LogLine>) {
+    effective_threshold(
+        settings.optimizer.improvement_threshold,
+        java_fraction_heuristic && !settings.improvement_threshold_scaled,
+    )
 }
 
 /// The improvement threshold Java uses after its checks (with the log
@@ -463,8 +483,8 @@ pub fn run_batch_optimizer(
             initial_figures.violations
         ),
     });
-    let (threshold, threshold_line) = effective_threshold(
-        settings.optimizer.improvement_threshold,
+    let (threshold, threshold_line) = job_threshold(
+        settings,
         ctx.board_settings.java_quirks().opt_threshold_fraction,
     );
     run.log.extend(threshold_line);
@@ -647,7 +667,7 @@ impl Optimizer for FreeroutingOptimizer {
 
 #[cfg(test)]
 mod tests {
-    use super::{PassEnd, effective_threshold, pass_end_decision};
+    use super::{PassEnd, effective_threshold, job_threshold, pass_end_decision};
 
     /// N06.9 `opt_first_pass_stops`. Under `true` the clear inside the pass
     /// never reaches the loop (`cleared_in_pass` stays false), so a pass whose
@@ -693,5 +713,43 @@ mod tests {
         // Outside (0, 0.1) the switch changes nothing.
         assert_eq!(effective_threshold(2.5, true), (2.5, None));
         assert_eq!(effective_threshold(2.5, false), (2.5, None));
+    }
+
+    /// N06.12, a port fix in both profiles: `-oit 0.0005` (a fraction, 0.05 %) is
+    /// scaled once by the command line (to 0.05) and not again by the fraction
+    /// heuristic, which Java applies (5 %). The same 0.05 from an environment
+    /// variable or a settings file is still the heuristic's (5 % under `true`).
+    #[test]
+    fn a_cli_threshold_is_scaled_once() {
+        use crate::settings::{ResolveContext, SettingsPatch, Source, resolve};
+        let settings = |source: Source, patch: SettingsPatch| {
+            resolve(&[(source, patch)], &ResolveContext { cores: 1 }).settings
+        };
+        let mut cli = SettingsPatch::default();
+        cli.cli_property(
+            "router.optimizer.improvement_threshold",
+            "0.0005",
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let cli = settings(Source::Cli, cli);
+        assert_eq!(cli.optimizer.improvement_threshold, 0.0005_f32 * 100.0_f32);
+        assert!(cli.improvement_threshold_scaled);
+        for heuristic in [true, false] {
+            assert_eq!(
+                job_threshold(&cli, heuristic),
+                (0.0005_f32 * 100.0_f32, None),
+                "{heuristic}"
+            );
+        }
+        let mut env = SettingsPatch::default();
+        env.set_path("optimizer.improvement_threshold", "0.05")
+            .unwrap();
+        let env = settings(Source::Environment, env);
+        assert!(!env.improvement_threshold_scaled);
+        let (java, line) = job_threshold(&env, true);
+        assert_eq!(java, 0.05_f32 * 100.0_f32);
+        assert!(line.is_some());
+        assert_eq!(job_threshold(&env, false), (0.05, None));
     }
 }

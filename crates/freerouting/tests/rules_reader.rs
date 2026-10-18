@@ -128,6 +128,66 @@ fn rules_layer_scope_with_unknown_layer_applies_to_all_layers() {
     );
 }
 
+/// Every value of the clearance matrix, class by class and layer by layer.
+fn matrix_values(board: &RoutingBoard) -> Vec<i32> {
+    let matrix = &board.rules.clearance_matrix;
+    let classes = matrix.class_count() as i32;
+    let mut values = Vec::new();
+    for a in 0..classes {
+        for b in 0..classes {
+            for layer in 0..matrix.layer_count() as i32 {
+                values.push(matrix.get_value(a, b, layer, false));
+            }
+        }
+    }
+    values
+}
+
+/// N06.12 `rules_unknown_layer_scope`: `true` (unset) is Java's, the rule above
+/// lands on every layer; `false` ignores the scope with a second warning, so no
+/// layer changes. A scope naming a known layer is the same in both arms.
+#[test]
+fn unknown_layer_scope_switch_both_behaviours() {
+    let text =
+        r#"(rules PCB Issue029-hw48na (layer "No.Such.Layer" (rule (width 400) (clear 333))))"#;
+    let java_warning = "RulesReader.applyRules: layer not found: 'No.Such.Layer'";
+    let fixed_warning = "RulesReader.applyRules: the rules of layer 'No.Such.Layer' are ignored";
+    for java in [true, false] {
+        let mut board = board("Issue029-hw48na.dsn");
+        board.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("rules_unknown_layer_scope", java)
+                .unwrap(),
+        );
+        let before = half_widths(&board);
+        let matrix = matrix_values(&board);
+        let (board, outcome) = read(board, text, "Issue029-hw48na");
+        let expected = dsn_half_width(&board, 400.0);
+        if java {
+            assert_eq!(half_widths(&board), vec![expected; before.len()]);
+            assert_ne!(matrix_values(&board), matrix);
+            assert_eq!(warnings(&outcome), vec![java_warning]);
+        } else {
+            assert_eq!(half_widths(&board), before);
+            assert_eq!(matrix_values(&board), matrix);
+            assert_eq!(warnings(&outcome), vec![java_warning, fixed_warning]);
+        }
+        let mut known = self::board("Issue029-hw48na.dsn");
+        known.set_java_quirks(
+            freerouting::settings::JavaQuirks::JAVA
+                .with("rules_unknown_layer_scope", java)
+                .unwrap(),
+        );
+        let (known, outcome) = read(
+            known,
+            "(rules PCB Issue029-hw48na (layer B.Cu (rule (width 500))))",
+            "Issue029-hw48na",
+        );
+        assert_eq!(half_widths(&known)[1], dsn_half_width(&known, 500.0));
+        assert!(outcome.log.is_empty(), "{:?}", warnings(&outcome));
+    }
+}
+
 #[test]
 fn clearance_rule_goes_through_the_dsn_helper() {
     let board = board("Issue029-hw48na.dsn");

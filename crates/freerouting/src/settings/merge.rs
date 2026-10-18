@@ -191,6 +191,12 @@ impl SettingsPatch {
             self.validation_warnings = Some(warnings.clone());
             changed += 1;
         }
+        // Not Java (N06.12): whether the command line scaled the threshold goes
+        // with the threshold, so a later source's threshold is never taken for an
+        // already scaled one.
+        if src.optimizer.improvement_threshold.is_some() {
+            self.improvement_threshold_scaled = src.improvement_threshold_scaled;
+        }
         changed
     }
 

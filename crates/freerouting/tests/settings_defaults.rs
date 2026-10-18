@@ -441,7 +441,13 @@ fn table_mismatches<T: Debug>(value: &T, paths: &BTreeSet<&str>, extras: &[&str]
     problems
 }
 
-const EXTRAS: &[&str] = &["layers", "costs_initialized", "validation_warnings"];
+/// `improvement_threshold_scaled`: N06.12, the CLI's mark on a threshold it scaled.
+const EXTRAS: &[&str] = &[
+    "layers",
+    "costs_initialized",
+    "validation_warnings",
+    "improvement_threshold_scaled",
+];
 
 #[test]
 fn every_field_has_a_table_entry() {

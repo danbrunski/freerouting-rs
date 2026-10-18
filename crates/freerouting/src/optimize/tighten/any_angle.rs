@@ -44,16 +44,26 @@ use crate::board::items::ItemId;
 /// end corner shorter than this (squared) is skipped by the end smoothing.
 pub(crate) const SKIP_LENGTH: f64 = 10.0;
 
-/// The bound the squared end-segment length is compared with.
+/// Whether the end smoothing skips the short end segment from `end_corner` to
+/// `prev_end_corner` (`!(endCorner instanceof IntPoint) && distance < SKIP_LENGTH`).
 /// PARITY(quirk, java_quirks.any_angle_skip_length_squared):
 /// TraceTightenerAnyAngle.java:774, 896 compare [`SKIP_LENGTH`] itself with a
-/// squared distance (effectively 3.2 units); `false` compares its square.
-fn skip_length_square(board: &BasicBoard) -> f64 {
-    if board.java_quirks().any_angle_skip_length_squared {
-        SKIP_LENGTH
-    } else {
-        SKIP_LENGTH * SKIP_LENGTH
+/// squared distance (effectively 3.2 units); `java = false` compares its square.
+/// `run_stats` counts the segments the switch's other value would decide
+/// differently, in either arm (N06.12).
+fn skips_short_end_segment(java: bool, end_corner: &Point, prev_end_corner: &Point) -> bool {
+    if matches!(end_corner, Point::Int(_)) {
+        return false;
     }
+    let distance_square = end_corner
+        .to_float()
+        .distance_square(prev_end_corner.to_float());
+    let java_skip = distance_square < SKIP_LENGTH;
+    let fixed_skip = distance_square < SKIP_LENGTH * SKIP_LENGTH;
+    if java_skip != fixed_skip {
+        crate::run_stats::record_n06(crate::run_stats::Counter::AnyAngleSkipLengthFlips);
+    }
+    if java { java_skip } else { fixed_skip }
 }
 
 /// Java `TraceTightener.c_max_cos_angle`: two lines whose angle has a bigger
@@ -915,11 +925,11 @@ impl Tightener {
             return None;
         }
         let mut prev_end_corner = polyline.corner(1);
-        let skip_short_segment = !matches!(end_corner, Point::Int(_))
-            && end_corner
-                .to_float()
-                .distance_square(prev_end_corner.to_float())
-                < skip_length_square(board);
+        let skip_short_segment = skips_short_end_segment(
+            board.java_quirks().any_angle_skip_length_squared,
+            &end_corner,
+            &prev_end_corner,
+        );
         let mut start_line_no = 1;
         if skip_short_segment {
             if polyline.corner_count() < 3 {
@@ -981,11 +991,11 @@ impl Tightener {
             return None;
         }
         let mut prev_end_corner = polyline.corner(corner_count - 2);
-        let skip_short_segment = !matches!(end_corner, Point::Int(_))
-            && end_corner
-                .to_float()
-                .distance_square(prev_end_corner.to_float())
-                < skip_length_square(board);
+        let skip_short_segment = skips_short_end_segment(
+            board.java_quirks().any_angle_skip_length_squared,
+            &end_corner,
+            &prev_end_corner,
+        );
         let mut end_line_no = n - 2;
         if skip_short_segment {
             if corner_count < 3 {
@@ -1034,5 +1044,63 @@ impl Tightener {
         new_lines.push(new_line);
         new_lines.push(contact.line);
         Some(Polyline::new(&new_lines))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::run_stats::{self, Counter};
+    use freerouting_geometry::IntPoint;
+
+    fn int(x: i32, y: i32) -> Point {
+        Point::Int(IntPoint { x, y })
+    }
+
+    /// N06.12 `any_angle_skip_length_squared`: the rational end corner (1, 0.5)
+    /// (the line (0, 0)-(2, 1) meets x = 1). Java skips an end segment only below a
+    /// squared length of 10 (3.2 units); `false` below 100 (10 units). An integer end
+    /// corner never skips. `run_stats` counts, in either arm, the segments whose
+    /// decision the switch's other value flips.
+    #[test]
+    fn skip_length_switch_both_behaviours_and_counter() {
+        let _guard = run_stats::TEST_SERIAL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        run_stats::enable();
+        let end = Line::new(IntPoint { x: 0, y: 0 }, IntPoint { x: 2, y: 1 })
+            .intersection(&Line::new(IntPoint { x: 1, y: 0 }, IntPoint { x: 1, y: 1 }));
+        assert!(matches!(end, Point::Rational(_)));
+        assert_eq!(end.to_float(), FloatPoint::new(1.0, 0.5));
+        // (previous corner, Java's skip, the fixed skip): squared lengths 2.25,
+        // 56.25 and 380.25.
+        let cases = [
+            (int(1, 2), true, true),
+            (int(1, 8), false, true),
+            (int(1, 20), false, false),
+        ];
+        for java in [true, false] {
+            for (prev, java_skip, fixed_skip) in &cases {
+                let (skip, counts) =
+                    run_stats::capture(|| skips_short_end_segment(java, &end, prev));
+                assert_eq!(
+                    skip,
+                    if java { *java_skip } else { *fixed_skip },
+                    "{prev:?}"
+                );
+                let flips = u64::from(java_skip != fixed_skip);
+                assert_eq!(
+                    counts.get(Counter::AnyAngleSkipLengthFlips),
+                    flips,
+                    "{prev:?}"
+                );
+            }
+            let (skip, counts) =
+                run_stats::capture(|| skips_short_end_segment(java, &int(1, 1), &int(1, 3)));
+            assert!(!skip, "an integer end corner is never skipped");
+            assert_eq!(counts.get(Counter::AnyAngleSkipLengthFlips), 0);
+        }
+        run_stats::disable();
+        run_stats::reset();
     }
 }

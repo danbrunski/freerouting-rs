@@ -166,10 +166,24 @@ pub enum Counter {
     /// N06.8: `change_trace` calls ignored because the new lines are a strict
     /// prefix or suffix of the old ones (or the reverse) by identity.
     TraceChangePrefixSuffixIgnored,
+    /// N06.12: batch connections routed with ripup allowed in a pass whose number
+    /// draws the ripup resolver's random detour factor (pass 4 on, not a multiple of
+    /// 3), the connections `ripup_pass_no_unset = false` randomizes.
+    RipupRandomPassConnections,
+    /// N06.12: ripup cost evaluations that drew the random detour factor (only under
+    /// `ripup_pass_no_unset = false`: Java's pass number stays 1).
+    RipupRandomFactorDraws,
+    /// N06.12: any-angle end smoothings whose short-segment skip
+    /// `any_angle_skip_length_squared` flips (a rational end corner whose squared end
+    /// segment is at least `SKIP_LENGTH` and below its square).
+    AnyAngleSkipLengthFlips,
+    /// N06.12: rules-file `layer` scopes naming a layer the board does not have, which
+    /// Java applies to every layer and `rules_unknown_layer_scope = false` ignores.
+    RulesUnknownLayerScopes,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 46] = [
+pub const COUNTERS: [Counter; 50] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -216,6 +230,10 @@ pub const COUNTERS: [Counter; 46] = [
     Counter::PullTightSmoothLostTraces,
     Counter::PullTightReusedLinesFlips,
     Counter::TraceChangePrefixSuffixIgnored,
+    Counter::RipupRandomPassConnections,
+    Counter::RipupRandomFactorDraws,
+    Counter::AnyAngleSkipLengthFlips,
+    Counter::RulesUnknownLayerScopes,
 ];
 
 impl Counter {
@@ -268,6 +286,10 @@ impl Counter {
             Counter::PullTightSmoothLostTraces => "pull_tight_smooth_lost_traces",
             Counter::PullTightReusedLinesFlips => "pull_tight_reused_lines_flips",
             Counter::TraceChangePrefixSuffixIgnored => "trace_change_prefix_suffix_ignored",
+            Counter::RipupRandomPassConnections => "ripup_random_pass_connections",
+            Counter::RipupRandomFactorDraws => "ripup_random_factor_draws",
+            Counter::AnyAngleSkipLengthFlips => "any_angle_skip_length_flips",
+            Counter::RulesUnknownLayerScopes => "rules_unknown_layer_scopes",
         }
     }
 }

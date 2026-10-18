@@ -12,8 +12,9 @@
 //!
 //! The members of Java's `RouterSettings` that are not scalar fields are
 //! written by hand next to the generated structs: `layers`,
-//! `costs_initialized` (Java's transient `boardSpecificTraceCostsApplied`)
-//! and `validation_warnings`. The two per-layer cost arrays are table
+//! `costs_initialized` (Java's transient `boardSpecificTraceCostsApplied`),
+//! `validation_warnings` and `improvement_threshold_scaled` (not Java: the
+//! command line's fraction scaling, N06.12). The two per-layer cost arrays are table
 //! entries (`scoring.preferred_direction_trace_cost` and
 //! `scoring.undesired_direction_trace_cost`), marked as not JSON.
 //!
@@ -111,6 +112,13 @@ macro_rules! settings_table {
             pub costs_initialized: Option<bool>,
             /// Java's `validationWarnings`.
             pub validation_warnings: Option<Vec<String>>,
+            /// Not Java (N06.12, a port fix): `Some(true)` when the command line read
+            /// `optimizer.improvement_threshold` as a fraction and stored its percentage
+            /// ([`SettingsPatch::cli_property`]), so the optimizer's own fraction
+            /// heuristic (`java_quirks.opt_threshold_fraction`) must not scale it again.
+            /// It travels with the threshold: a source that sets the threshold also sets
+            /// this flag (`None` for every source but the command line).
+            pub improvement_threshold_scaled: Option<bool>,
         }
 
         /// The resolved router settings: the merged and validated
@@ -125,6 +133,10 @@ macro_rules! settings_table {
             pub costs_initialized: bool,
             /// Warnings from validation.
             pub validation_warnings: Vec<String>,
+            /// The command line already scaled `optimizer.improvement_threshold` from a
+            /// fraction ([`SettingsPatch::improvement_threshold_scaled`]; `null` is
+            /// `false`).
+            pub improvement_threshold_scaled: bool,
         }
 
         /// `DefaultSettings.getSettings()` for a machine with `cores`
@@ -137,6 +149,7 @@ macro_rules! settings_table {
                 layers: None,
                 costs_initialized: None,
                 validation_warnings: None,
+                improvement_threshold_scaled: None,
             }
         }
 
@@ -152,6 +165,7 @@ macro_rules! settings_table {
                     layers: p.layers.clone(),
                     costs_initialized: p.costs_initialized.unwrap_or(false),
                     validation_warnings: p.validation_warnings.clone().unwrap_or_default(),
+                    improvement_threshold_scaled: p.improvement_threshold_scaled.unwrap_or(false),
                 }
             }
         }
@@ -572,27 +586,27 @@ settings_table! {
             (select_extension_ignores_filter, bool, opt, None, None, "selectExtensionIgnoresFilter", [], Flat::No, true,
                 "The inspect state stays after an extension filter empties the selection: `true` (unset) keeps this Java bug, `false` fixes it (N06.11)."),
             (ripup_pass_no_unset, bool, opt, None, None, "ripupPassNoUnset", [], Flat::No, true,
-                "ripupPassNo is never set, so the random rip-up detour never fires: `true` (unset) keeps this Java bug, `false` fixes it (N06.12)."),
+                "ripupPassNo is never set, so the random rip-up detour never fires: `true` (unset) keeps this Java bug, `false` sets the pass number so the detour factor fires from pass 4 on, outside every third pass (N06.12, measured by prereg/N06.12-ripup-pass.json)."),
             (insert_stale_trace_object, bool, opt, None, None, "insertStaleTraceObject", [], Flat::No, true,
-                "connectToTrace uses the start or target trace after the insertion split it: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "connectToTrace uses the start or target trace after the insertion split it: `true` (unset) is Java's behaviour, left as Java by N06.12 (the split keeps the old geometry as the new pieces, so the stub lands on the same copper); `false` changes nothing."),
             (in_front_of_pad_side0_flank, bool, opt, None, None, "inFrontOfPadSide0Flank", [], Flat::No, true,
                 "Side 0's second flank clause takes min(x+y) where sides 2, 4 and 6 take the extreme past their diagonal (max here): `true` (unset) keeps this Java quirk, `false` takes max (an inferred fix, measured as an arm of N06.7; N06.12 records its outcome)."),
             (opt_threshold_fraction, bool, opt, None, None, "optThresholdFraction", [], Flat::No, true,
-                "An optimizer threshold in (0, 0.1) is read as a fraction and multiplied by 100: `true` (unset) keeps this Java bug, `false` fixes it (N06.12)."),
+                "An optimizer threshold in (0, 0.1) is read as a fraction and multiplied by 100: `true` (unset) keeps this Java heuristic (left as Java by N06.12), `false` reads it as the percentage it says. A command-line value is scaled only once either way."),
             (rules_unknown_layer_scope, bool, opt, None, None, "rulesUnknownLayerScope", [], Flat::No, true,
-                "A rules layer scope naming an unknown layer applies to all layers: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "A rules layer scope naming an unknown layer applies to all layers: `true` (unset) keeps this Java bug, `false` ignores the scope with a warning (N06.12)."),
             (rules_autoroute_settings_reenable, bool, opt, None, None, "rulesAutorouteSettingsReenable", [], Flat::No, true,
-                "A rules file's autoroute_settings re-enable every layer and the optimizer: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "A rules file's autoroute_settings re-enable every layer and the optimizer: `true` (unset) is Java's behaviour, left as Java by N06.12 (C04's settings semantics: the scope is the file's whole routing setup); `false` changes nothing."),
             (direction_compare_zero, bool, opt, None, None, "directionCompareZero", [], Flat::No, true,
-                "Direction compare handles the zero direction lopsidedly: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "Direction compare handles the zero direction lopsidedly: `true` (unset) is Java's behaviour, left as Java by N06.12 (an ordering quirk, not clearly wrong); `false` changes nothing."),
             (route_stubs_layer_test, bool, opt, None, None, "routeStubsLayerTest", [], Flat::No, true,
-                "Route stubs compare both via bounds with the contact's first layer: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "Route stubs compare both via bounds with the contact's first layer: `true` (unset) is Java's behaviour, left as Java by N06.12 (the intended stub layer is unclear); `false` changes nothing."),
             (any_angle_skip_length_squared, bool, opt, None, None, "anyAngleSkipLengthSquared", [], Flat::No, true,
-                "Any-angle pull-tight compares SKIP_LENGTH with a squared distance: `true` (unset) keeps this Java bug, `false` fixes it (N06.12)."),
+                "Any-angle pull-tight compares SKIP_LENGTH with a squared distance: `true` (unset) keeps this Java bug, `false` compares its square (N06.12, an arm of prereg/N06.12-ripup-pass.json)."),
             (polyline_array_reversal, bool, opt, None, None, "polylineArrayReversal", [], Flat::No, true,
-                "The polyline constructor reverses the caller's line array: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "The polyline constructor reverses the caller's line array: `true` (unset) is Java's behaviour, left as Java by N06.12 (later reads depend on it and no fix is clearly right); `false` changes nothing."),
             (avoid_acid_traps_disabled, bool, opt, None, None, "avoidAcidTrapsDisabled", [], Flat::No, true,
-                "The acid-trap avoidance step stays turned off: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "The acid-trap avoidance step stays turned off: `true` (unset) is Java's behaviour, left as Java by N06.12 (turning it on is a feature, a Q candidate, not a fix); `false` changes nothing."),
         }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {

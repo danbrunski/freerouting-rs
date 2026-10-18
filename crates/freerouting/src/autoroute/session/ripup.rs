@@ -345,6 +345,7 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
         // ripupPassNo, so this is dead at the pin (`batch::connection` sets it
         // under `false`).
         if draws_random_factor(control.ripup_pass_no) {
+            crate::run_stats::record_n06(crate::run_stats::Counter::RipupRandomFactorDraws);
             let random = self.random.next_double();
             let random_factor = 0.5 + random * random;
             detour *= random_factor;

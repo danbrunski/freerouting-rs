@@ -1,0 +1,187 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.12-ripup-pass",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.12, the (c) rows)",
+  "question": "Does router.java_quirks.ripup_pass_no_unset=false (the batch pass number reaches AutorouteControl.ripupPassNo, so MazeRipupResolver's random detour factor 0.5 + r^2, which Java's batch router never draws, fires from pass 4 on outside every third pass; deterministic, the search's generator is reseeded with the ripup costs before each connection) lower the registered boards' unrouted connections beyond the set's noise, with no new clearance violation; and, reported, does any_angle_skip_length_squared=false (the any-angle end smoothing compares the squared end segment with SKIP_LENGTH squared) keep the any-angle boards within the totals rule's no-regress form?",
+  "rule": "totals",
+  "totals": {
+    "accept": "improve",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "fixtures/Issue034-Green14SegLED.dsn": 2,
+      "fixtures/Issue035-ReadPlaceScope.dsn": 2,
+      "fixtures/Issue313-FastTest.dsn": 2,
+      "fixtures/Issue054-tairakb.dsn": 2,
+      "fixtures/Issue102-Mars-64-revE-rot00.dsn": 2,
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn": 2,
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": 2,
+      "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": 2,
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at the implementing commit (main bbd1336 plus N06.12's diff at registration), one Linux release build for every arm; profile legacy, so the arms differ from Java only in the two router.java_quirks keys, each given explicitly",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at the implementing commit (main bbd1336 plus N06.12's diff at registration), one Linux release build for every arm; profile legacy, so the arms differ from Java only in the two router.java_quirks keys, each given explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.ripup_pass_no_unset=true --router.java_quirks.any_angle_skip_length_squared=true",
+      "settings": {},
+      "what": "baseline: both switches true, Java's ripup pass number (always 1) and any-angle skip length"
+    },
+    "ripup_pass_no_unset": {
+      "engine": "freerouting-rs at the implementing commit (main bbd1336 plus N06.12's diff at registration), one Linux release build for every arm; profile legacy, so the arms differ from Java only in the two router.java_quirks keys, each given explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.ripup_pass_no_unset=false --router.java_quirks.any_angle_skip_length_squared=true",
+      "settings": {
+        "router.java_quirks.ripup_pass_no_unset": false
+      },
+      "what": "candidate: the batch pass number reaches the ripup resolver, so the random detour factor 0.5 + r^2 fires from pass 4 on, outside every third pass"
+    },
+    "any_angle_skip_length_squared": {
+      "engine": "freerouting-rs at the implementing commit (main bbd1336 plus N06.12's diff at registration), one Linux release build for every arm; profile legacy, so the arms differ from Java only in the two router.java_quirks keys, each given explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.ripup_pass_no_unset=true --router.java_quirks.any_angle_skip_length_squared=false",
+      "settings": {
+        "router.java_quirks.any_angle_skip_length_squared": false
+      },
+      "what": "reported: the any-angle end smoothing skips an end segment below 10 units (SKIP_LENGTH squared), not below 3.2"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "ripup_pass_no_unset",
+  "pairs": {
+    "verdict": [
+      "baseline",
+      "ripup_pass_no_unset"
+    ],
+    "reported": [
+      [
+        "baseline",
+        "any_angle_skip_length_squared"
+      ]
+    ]
+  },
+  "boards": {
+    "set": "tools/bench/sets/n06-ripup-pass.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "files": {
+      "fixtures/Issue034-Green14SegLED.dsn": "17bf07ff18a668faaad7f4b575199672b4cff34649efe49e32eca59d2c76de63",
+      "fixtures/Issue035-ReadPlaceScope.dsn": "69300e8bca77acccc1bd3d8799c18c728fc86e22415b9e1385565adb2610ed01",
+      "fixtures/Issue313-FastTest.dsn": "95b92720ead8c3de87ae67bd34b87625cd14ac858e85dd9c6836ac479c3e1a30",
+      "fixtures/Issue054-tairakb.dsn": "965f7154d19bec679916128ef1c07e15a97dedc6a52000e097726b5ff0e90969",
+      "fixtures/Issue102-Mars-64-revE-rot00.dsn": "3a7066d3ff441d495afb18f17a967c60a774a3d4fd7baf6438d727bdeb9c0dc5",
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn": "52f0b5d19d9b78e505b89b7870e292835fbc398abeeba797159cd86edc803c47",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": "fdd39050d654598ccf50a38f476af1e60d864ffa8757a213dbd3e2f77114e68e",
+      "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": "df6535a679fa0d2720324497f827929db91b0c667b23cd97a2e627e2ee09c7ed"
+    },
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path (plugin_canary below), outside n06_run.py"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "ripup_random_pass_connections",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "ripup_random_factor_draws",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "any_angle_skip_length_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias": "the result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`",
+    "session_differences": "1 if the arm's SES differs byte for byte from the baseline arm's on that board",
+    "ripup_random_pass_connections": "run_stats counter (--stats json, total.counts), in either arm: batch connections routed with ripup allowed in a pass whose number draws the random factor (4, 5, 7, 8, ...)",
+    "ripup_random_factor_draws": "run_stats counter: ripup cost evaluations that drew the random factor; 0 under Java's behaviour",
+    "any_angle_skip_length_flips": "run_stats counter, in either arm: any-angle end smoothings whose short-segment skip the switch's other value decides differently",
+    "kicad_unconnected, drc_real, via_in_pad, below_minimum": "the canary-pwr plugin row's grade (canary hardware/tools/grade.sh)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "Reachability first: a row whose baseline ripup_random_pass_connections is 0 never reaches a pass that draws; its ripup_pass_no_unset session must equal the baseline's. If every row reads 0, the switch is not measured by this set and stays true (N06.12 records it).",
+    "Verdict pair (baseline, ripup_pass_no_unset), the totals rule with accept=improve: no new clearance violation on any DSN row, the plugin row's via_in_pad and below_minimum 0 and drc_real no higher than baseline's; the candidate's unrouted summed over the DSN rows plus the plugin row's kicad_unconnected lower than the baseline's by more than the set's noise, sqrt of the sum of the bands squared (sqrt(8*2^2 + 10^2) = 11.49); no row worse by more than twice its band. Otherwise ripup_pass_no_unset stays true in both profiles, with these numbers.",
+    "Reported pair (baseline, any_angle_skip_length_squared): if any_angle_skip_length_flips is 0 in every run and every session equals its baseline, the fix is accepted on its test (any_angle::tests::skip_length_switch_both_behaviours_and_counter); otherwise the totals rule's no-regress form over the three any-angle rows (noise sqrt(3*2^2) = 3.46), with no new clearance violation. Its 45-degree rows and the plugin row cannot differ (the any-angle tightener does not run there); a difference on one is a bug to report."
+  ],
+  "stop_rule": "One run per arm per row. No heavy run by the implementer.",
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.12-ripup-pass.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-c",
+  "orchestrator": "Run orchestrator_command from the worktree root: it runs each arms.command on each boards.files row (8 rows x 3 arms = 24 runs), checks the input hashes, compares each SES with the baseline's and writes summary.json (session_differences, counts, statistics). It exits non-zero when a session differs, after every run: then apply the rules above to summary.json's statistics and counts. Then the plugin row.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=improve and the reachability guard above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 9511d9a (git archive, unedited), as in N06.10's plugin-path run; never edit the source project.",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then append --router.profile=legacy, the arm's two explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. One exported input and one argument list serve every arm. Compare each session with the plugin baseline arm's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade. Retain export/import logs, versions, source hashes and grades."
+  },
+  "not_registered": "time (the switches change no work budget; the random factor changes which connections finish inside it); the enhanced profile (the arms run under legacy so that only the switches differ from Java); several seeds (the factor's generator is reseeded per connection from the ripup costs, so there is no seed to vary)"
+}
