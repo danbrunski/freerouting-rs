@@ -28,6 +28,7 @@ implementation is never edited, so default results stay byte-identical.
 | [Q12](Q12-pass-1-portfolio.md) | Pass-1 portfolio: K deterministic orders on board clones in parallel, keep the best; squeaky-wheel restarts; per-board order spread | S / medium: memory × K | rung 3; A10; B01; O06; Q07.1–Q07.3 |
 | [Q13](Q13-plane-nets-stay-in-their-island.md) | A plane net's traces on a power layer stay inside its own plane, not just on its layer (canary-7a, 2026-10-17) | S–M / medium: room clipping in the maze search | rung 3; Q01.7; N01 |
 | [Q14](Q14-via-clearance-follows-net-class.md) | A via gets its net class's clearance, so a Power_High via keeps 0.25 mm from other nets, not the default 0.2 (canary-7a, 2026-10-17) | S / medium: changes via spacing on boards with class clearances | rung 3; C02; N01 |
+| [Q15](Q15-route-tidiness-score.md) | A measured tidiness score (detour, bends, acute corners, jogs, vias per connection) in the bench and the grader | S / low: report only | F03, F02.6, C05 |
 
 Sizes: S under about 1k lines of Rust, M 1–3k, L more.
 
