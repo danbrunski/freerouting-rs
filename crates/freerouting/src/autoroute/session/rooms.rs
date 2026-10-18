@@ -264,7 +264,8 @@ impl Session<'_> {
         // search could not be initialised leaves its rooms in the tree (A06),
         // and this session counts its ids from 1 again. Java keeps both rooms
         // under one id; the old one moves to a free key in place, so the tree
-        // keeps its shape and the old room stays an obstacle.
+        // keeps its shape and the old room stays an obstacle. Under `false` the
+        // failed session cleared its rooms, so there is none to move (N06.5).
         self.board.rekey_room_aside(self.tree_class, TreeRoomId(id));
         self.board
             .insert_room(self.tree_class, TreeRoomId(id), shape, layer);

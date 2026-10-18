@@ -1,0 +1,254 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.5-batch-maze",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.5, batch M)",
+  "question": "Do the maze search's five Java-bug fixes, router.java_quirks.init_failure_room_leak=false (a failed maze-search init clears its session before it returns), failed_attempt_ripped_carryover=false (an attempt rejected before its rip restores the ripped set and costs), ortho_zero_width_room=false (the 90 degree room right of an obstacle room reaches the board's right edge, not roomShape.ur.x), edge_corner_not_advanced=false (the 45 degree edge sweep of an obstacle room advances its compared corner) and connect_to_trace_swapped_width=false (each trace stub takes its own layer's half width), each alone and together, keep every registered board's routing within N02's totals rule (accept no-regress: correctness fixes) of Java's behaviour, with no new clearance violation; and how often does each branch run?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn": 2,
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn": 2,
+      "fixtures/Issue026-J2_reference.dsn": 2,
+      "fixtures/Issue508-DAC2020_bm08.dsn": 2,
+      "fixtures/Issue676-ch32v-tx118s.dsn": 2,
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm; profile legacy, so the arms differ from Java only in the five router.java_quirks keys, each given explicitly",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=true --router.java_quirks.failed_attempt_ripped_carryover=true --router.java_quirks.ortho_zero_width_room=true --router.java_quirks.edge_corner_not_advanced=true --router.java_quirks.connect_to_trace_swapped_width=true",
+      "settings": {},
+      "what": "baseline: all five switches true, Java's maze search"
+    },
+    "init_failure_room_leak": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=false --router.java_quirks.failed_attempt_ripped_carryover=true --router.java_quirks.ortho_zero_width_room=true --router.java_quirks.edge_corner_not_advanced=true --router.java_quirks.connect_to_trace_swapped_width=true",
+      "settings": {
+        "router.java_quirks.init_failure_room_leak": false
+      },
+      "what": "a failed maze-search init clears its session (no leaked start rooms) alone"
+    },
+    "failed_attempt_ripped_carryover": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=true --router.java_quirks.failed_attempt_ripped_carryover=false --router.java_quirks.ortho_zero_width_room=true --router.java_quirks.edge_corner_not_advanced=true --router.java_quirks.connect_to_trace_swapped_width=true",
+      "settings": {
+        "router.java_quirks.failed_attempt_ripped_carryover": false
+      },
+      "what": "an attempt rejected before its rip restores the ripped set and costs alone"
+    },
+    "ortho_zero_width_room": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=true --router.java_quirks.failed_attempt_ripped_carryover=true --router.java_quirks.ortho_zero_width_room=false --router.java_quirks.edge_corner_not_advanced=true --router.java_quirks.connect_to_trace_swapped_width=true",
+      "settings": {
+        "router.java_quirks.ortho_zero_width_room": false
+      },
+      "what": "the 90 degree room right of an obstacle room reaches the board edge alone"
+    },
+    "edge_corner_not_advanced": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=true --router.java_quirks.failed_attempt_ripped_carryover=true --router.java_quirks.ortho_zero_width_room=true --router.java_quirks.edge_corner_not_advanced=false --router.java_quirks.connect_to_trace_swapped_width=true",
+      "settings": {
+        "router.java_quirks.edge_corner_not_advanced": false
+      },
+      "what": "the 45 degree edge sweep advances its corner alone"
+    },
+    "connect_to_trace_swapped_width": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=true --router.java_quirks.failed_attempt_ripped_carryover=true --router.java_quirks.ortho_zero_width_room=true --router.java_quirks.edge_corner_not_advanced=true --router.java_quirks.connect_to_trace_swapped_width=false",
+      "settings": {
+        "router.java_quirks.connect_to_trace_swapped_width": false
+      },
+      "what": "each trace stub takes its own layer's half width alone"
+    },
+    "all": {
+      "engine": "freerouting-rs at the implementing commit (origin/main f6e75ab plus N06.7's 1dac842 plus N06.5's diff), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.init_failure_room_leak=false --router.java_quirks.failed_attempt_ripped_carryover=false --router.java_quirks.ortho_zero_width_room=false --router.java_quirks.edge_corner_not_advanced=false --router.java_quirks.connect_to_trace_swapped_width=false",
+      "settings": {
+        "router.java_quirks.init_failure_room_leak": false,
+        "router.java_quirks.failed_attempt_ripped_carryover": false,
+        "router.java_quirks.ortho_zero_width_room": false,
+        "router.java_quirks.edge_corner_not_advanced": false,
+        "router.java_quirks.connect_to_trace_swapped_width": false
+      },
+      "what": "candidate: the five fixes of batch M together"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "all",
+  "pairs": {
+    "verdict": [
+      "baseline",
+      "all"
+    ],
+    "reported": [
+      [
+        "baseline",
+        "init_failure_room_leak"
+      ],
+      [
+        "baseline",
+        "failed_attempt_ripped_carryover"
+      ],
+      [
+        "baseline",
+        "ortho_zero_width_room"
+      ],
+      [
+        "baseline",
+        "edge_corner_not_advanced"
+      ],
+      [
+        "baseline",
+        "connect_to_trace_swapped_width"
+      ]
+    ]
+  },
+  "boards": {
+    "set": "tools/bench/sets/n06-m.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "files": {
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn": "59c980e5d0492bc58d9f6736e362ca5428a579bcf05ef608d520425847c5143c",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn": "2607907a008dff2782967539c433a3c09d577a29a05d8725c03e571e067cb8b7",
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5",
+      "fixtures/Issue676-ch32v-tx118s.dsn": "7270f70a8d1964801fc476826291a83d82d00bee00a346aea01fe55b2b63359e"
+    },
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path (plugin_canary below), outside n06_run.py"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_init_failure_room_leaks",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_ripped_carryovers",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_ortho_zero_width_room_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_edge_sweeps_without_neighbours",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_edge_corner_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "insert_connect_to_trace_width_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias": "the result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`",
+    "session_differences": "1 if the arm's SES differs byte for byte from the baseline arm's on that board",
+    "maze_* and insert_connect_to_trace_width_flips": "run_stats counters (--stats json, total.counts), counted in either arm: maze_init_failure_room_leaks, init failures with completed start rooms in the tree; maze_ripped_carryovers, attempts rejected before the rip whose locate added to the ripped set; maze_ortho_zero_width_room_flips, 90 degree rooms right of an obstacle room that the fix would make; maze_edge_sweeps_without_neighbours, full edge sweeps of 45 degree obstacle rooms without sorted neighbours (the branch N06.5 asks to count); maze_edge_corner_flips, edge rooms that the other value of edge_corner_not_advanced adds or drops; insert_connect_to_trace_width_flips, trace stubs whose half width the switch changes",
+    "kicad_unconnected, drc_real, via_in_pad, below_minimum": "the canary-pwr plugin row's grade (canary hardware/tools/grade.sh)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "Reachability first: a switch whose counter is 0 in every run and whose arm's sessions all equal the baseline's is not reached by any registered board, and is accepted on its tests (both behaviours pinned).",
+    "Sessions identical but a counter above 0: the branch runs but decides nothing that reaches the output; that switch is neutral and accepted.",
+    "Otherwise the totals rule for the verdict pair (baseline, all): no new clearance violation on any DSN row, the plugin row's via_in_pad and below_minimum 0 and drc_real no higher than baseline's; the candidate's unrouted summed over the DSN rows plus the plugin row's kicad_unconnected at most the baseline's plus the set's noise, sqrt of the sum of the bands squared (sqrt(5*2^2 + 10^2) = 10.95); no row worse by more than twice its band.",
+    "A failed verdict pair is bisected through the five single-switch reported pairs; each switch is judged alone by the same rule.",
+    "ortho_zero_width_room is reached only in 90 degree mode: the two -90 rows (J2 and rpi_splitter with snap_angle ninety_degree, the A07 variant boards) carry its measurement."
+  ],
+  "stop_rule": "One run per arm per row. No heavy run by the implementer.",
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.5.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-m",
+  "orchestrator": "Run orchestrator_command from the root of the measured tree: it runs each arms.command on each boards.files row (5 rows x 7 arms = 35 runs), checks the input hashes, compares each SES with the baseline's and writes summary.json (session_differences, counts, statistics). It exits non-zero when a session differs, after every run: then apply the totals rule to summary.json's statistics. Then the plugin row.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the reachability and exact-session guards above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 9511d9a (git archive, unedited), as in N06.10's plugin-path run; never edit the source project.",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then append --router.profile=legacy, the arm's five explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. One exported input and one argument list serve every arm. Compare each session with the plugin baseline arm's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade. Retain export/import logs, versions, source hashes and grades."
+  },
+  "not_registered": "time (the fixes change no work budget); the enhanced profile (the arms run under legacy so that only the switches differ from Java); connect_to_trace_swapped_width needs per-layer trace widths, which only the two large fixtures Issue103 and Issue187 have (layer_rule), so no registered DSN row is expected to reach it and its counter reports that"
+}

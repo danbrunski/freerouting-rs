@@ -1,0 +1,15 @@
+# N06.5: batch M, the maze search's kept Java bugs (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.5.json: router.java_quirks.init_failure_room_leak,
+# failed_attempt_ripped_carryover, ortho_zero_width_room, edge_corner_not_advanced and
+# connect_to_trace_swapped_width, each alone and together, against Java's behaviour (all five
+# true). DSN files, routed by tools/bench/n06_run.py under profile legacy.
+# Two 90 degree boards for ortho_zero_width_room (A07's variant boards with
+# (snap_angle ninety_degree); no fixture routes at 90 degrees):
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn
+# 45 degree boards (the default), N06.7's three small boards:
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+fixtures/Issue676-ch32v-tx118s.dsn
+# canary-pwr through the KiCad plugin path (the registration's plugin_canary; outside
+# n06_run.py): canary hardware/canary-pwr-rev1.0 at canary 9511d9a.

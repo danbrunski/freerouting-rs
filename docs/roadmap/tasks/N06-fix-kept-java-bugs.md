@@ -484,7 +484,7 @@ These are marked or look like quirks but keep no bug:
       - Then the plugin canary run and grade, per the registration's `plugin_canary` block.
       - Also the corpus inventory (read-only; the path must be absolute):
         `N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
-- [ ] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
+- [~] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
   `session.clear()` before `InitFailed`, which also makes the rekey dead under `enhanced`),
   `failed_attempt_ripped_carryover` (snapshot and restore the set per attempt),
   `ortho_zero_width_room` (`b.ur.x`), `edge_corner_not_advanced` (advance the corner; first
@@ -492,6 +492,73 @@ These are marked or look like quirks but keep no bug:
   (swap the indices).
   - **Accept:** the batch is measured, with one 90° board in the set for
     `ortho_zero_width_room`.
+  - *Partial 2026-10-18:* code, both-behaviour tests, reachability counters and the
+    registration are done; heavy run pending (commands below). Defaults stay `true` (Java)
+    in both profiles; `ENHANCED` is unchanged. Every `// PARITY(quirk, java_quirks.<id>)`
+    marker is kept.
+    - [x] The five switches were wired by N06.3; N06.5 checked each `false` path against Java
+      at `a773a70ec` and changed one: `failed_attempt_ripped_carryover = false` now restores
+      the ripped set and the ripup costs only for an attempt rejected before its rip
+      (`connection::conclude_attempt`; N06.3 restored the set after any non-routed result,
+      which also dropped the items an attempt had ripped before a failed insert). The 90° and
+      45° room code moved into testable helpers with Java's order kept
+      (`neighbours90::incomplete_room_90`, `ortho_right_of_obstacle_room`;
+      `incomplete45::edge_room_sides`, `edge_room_octagon`, `incomplete_room_45`). The
+      stale Java line reference at the 90° site (271-276) is now 296-301.
+    - [x] Both behaviours, one test per switch, all pass:
+      `tests/n06_maze.rs::init_failure_switch_both_behaviours_and_counter` (Java leaves the
+      completed start room and the next session moves it to a negative key and fails; `false`
+      leaves an empty tree and the next search routes);
+      `connection::tests::rejected_attempt_ripped_set_switch_both_behaviours` (rejected on a
+      disabled layer: Java keeps the added item and costs, `false` restores both; a routed
+      attempt keeps them in both arms);
+      `neighbours90::tests::right_of_obstacle_room_switch_both_behaviours` (Java's box
+      `[200, 100, 200, 160]` is never made, the fixed `[200, 100, 1000, 160]` is, door
+      dimension 1); `incomplete45::tests::edge_room_sides_switch_both_behaviours` (full sweep:
+      regular octagon Java sides 0-6, fixed 0-7; box Java 0-5, fixed 0, 2, 4, 6) and
+      `of_the_flipped_box_sides_only_the_left_room_is_made`;
+      `tests/n06_maze.rs::connect_to_trace_width_switch_both_behaviours_and_counter` (the
+      `F.Cu` stub to a target wire from a `B.Cu` path: half width 2000 under Java, 1000 fixed).
+      `an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside` and
+      `a_path_ending_on_a_disabled_signal_layer_fails_and_keeps_the_ripped_set` (the `true`
+      halves) are unchanged and pass.
+    - [x] Reachability counters (`run_stats`, `--stats json` `total.counts`, counted in either
+      arm, only with statistics on; the configured value is always the one used):
+      `maze_init_failure_room_leaks`, `maze_ripped_carryovers`,
+      `maze_ortho_zero_width_room_flips` (rooms the fix would make), `maze_edge_sweeps_without_neighbours`
+      (the branch at `neighbours45.rs` that calls the full sweep, as the item asks),
+      `maze_edge_corner_flips` (edge rooms the other value adds or drops),
+      `insert_connect_to_trace_width_flips` (stubs whose half width differs between the
+      layers). Pinned by the two `n06_maze.rs` tests above (1 each), the ripped-set unit test
+      (1 rejected, 0 routed) and, on one connection per net of J2 with ripup on (debug test
+      build, not a registered run): `ortho_zero_width_room_reaches_a_90_degree_board` (J2 at
+      90°: 32 flips under Java, 33 fixed; maze pops 6618 against 6610, so the fix changes the
+      searches) and `edge_corner_counters_on_a_45_degree_board` (J2 at 45°: 27 sweeps, 27
+      flips in each arm, pops 8858 in both). `run_stats::Counts` has 36 counters now, so its
+      `Default` is written out (arrays derive it only up to 32).
+    - [x] Registered before any number: `docs/roadmap/prereg/N06.5.json` (sha256
+      `bf9a692bca53916a6d8f0d02bb49f58ae34c67be872d35c45b34152c82748ec3`) and
+      `tools/bench/sets/n06-m.txt`, pinned by `crates/freerouting-dev/tests/prereg_n06_5.rs`
+      (4 tests pass). Arms: `baseline`, each switch alone, `all` (the verdict pair with
+      `baseline`). Rows: A07's 90° variants `Issue026-J2_reference-90` and
+      `Issue143-rpi_splitter-90` (no fixture routes at 90°), J2, bm08 and Issue676 at 45°,
+      profile `legacy`, default passes, plus canary-pwr through the plugin path (canary
+      9511d9a, N06.10's procedure). Rule: reachability per switch (counter 0 and sessions
+      identical: accepted on tests), else N02 totals, no-regress, set noise 10.95. No
+      registered row has per-layer trace widths (only Issue103 and Issue187 have
+      `layer_rule`), so `insert_connect_to_trace_width_flips` is expected to read 0. A smoke
+      run of the `baseline` and `all` commands (debug CLI, `fixtures/scoring-perfect-two-pin.dsn`,
+      not a registered row) exits 0, writes the six counters (all 0) and gives the same SES.
+    - [ ] Heavy run pending (orchestrator, release build of the measured tree, run from its
+      root, e.g. `/home/thebo/code/freerouting-rs` after landing):
+      `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.5.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-m`
+      (35 runs; the arms' commands call
+      `/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting`;
+      it exits non-zero after the last run if a session differs, and then the totals rule
+      applies to `summary.json`'s `statistics`). Then the canary-pwr plugin row as in N06.10
+      (the registration's `plugin_canary`: export once, route the 7 arms with the exported
+      args plus `--router.profile=legacy` and the arm's five flags, grade each distinct
+      session with canary's `grade.sh`).
 - [ ] **N06.6 — Batch F, fanout:** `fanout_stale_drill_carry` (a fresh `DrillCarry` per
   attempt, as the batch router already does), `drill_destination_room_index` (index by
   section), `fanout_pin_order_names` (accept both spellings).

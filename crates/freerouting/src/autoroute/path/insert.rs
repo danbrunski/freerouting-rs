@@ -26,6 +26,13 @@
 //! neck-downs use [`AutorouteControl::neckdown_half_width`] and the
 //! micro-neck-down skips narrower candidates. Unset, nothing changes.
 //!
+//! Java bug kept for `legacy`: the stubs to a target and a start trace take
+//! each other's layer half width (`:113-140`).
+//! `router.java_quirks.connect_to_trace_swapped_width = false` gives each its
+//! own layer's (N06.5, `tests/n06_maze.rs`); with statistics on, the stubs whose
+//! half width the switch changes count as `insert_connect_to_trace_width_flips`
+//! in either arm.
+//!
 //! Java's unconditional trace logging (`if (true) FRLogger.trace(...)`) and
 //! the fanout diagnostics of pins named `U27-*` are dropped.
 
@@ -142,15 +149,25 @@ pub fn insert_segments(
     } else {
         (target_layer, start_layer)
     };
+    // N06.5 reachability, in either arm: a stub whose half width the switch
+    // changes (the two layers' half widths differ).
+    let widths_differ = half_width_at(ctrl, start_layer) != half_width_at(ctrl, target_layer);
+    let count_flip = || {
+        if widths_differ {
+            crate::run_stats::record_n06(crate::run_stats::Counter::InsertConnectToTraceWidthFlips);
+        }
+    };
     if let Some(trace) = trace_object_now(board, target_item, target_object)
         && let Some(corner) = done.first_corner
     {
+        count_flip();
         let half_width = half_width_at(ctrl, target_stub_layer);
         board.connect_to_trace_object(corner, &trace, half_width, class);
     }
     if let Some(trace) = trace_object_now(board, start_item, start_object)
         && let Some(corner) = done.last_corner
     {
+        count_flip();
         let half_width = half_width_at(ctrl, start_stub_layer);
         board.connect_to_trace_object(corner, &trace, half_width, class);
     }

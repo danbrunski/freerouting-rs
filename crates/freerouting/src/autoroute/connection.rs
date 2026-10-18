@@ -25,7 +25,9 @@
 //!   layer) leaves them filled; a later attempt that reuses them rips the
 //!   items an earlier failed attempt found
 //!   (`// PARITY(quirk, java_quirks.failed_attempt_ripped_carryover):`, A12;
-//!   `false` restores the set after a rejected attempt, N06);
+//!   `false` restores the set and the costs of an attempt rejected before its
+//!   rip, N06.5; an attempt that ripped keeps them, since those items left the
+//!   board);
 //! - the rip: each ripped item's connection (`getConnectionItems`) joins one
 //!   set, the items' nets another; the set is removed, then the trace tails
 //!   of each net in ascending order.
@@ -37,10 +39,16 @@
 //! same clearance class. The port does the same during the parity phase
 //! (`// PARITY(quirk, java_quirks.init_failure_room_leak):`, DIVERGENCES "Java bugs
 //! kept on purpose"; `false` clears the session before the failure returns,
-//! N06). A later session's room with the same id moves
+//! N06.5, so no room leaks and the rekey below never finds one). A later
+//! session's room with the same id moves
 //! the leaked one to a free key in place (`ShapeSearchTree::rekey_room_aside`);
 //! a leaked room is an obstacle but, unlike Java, never a neighbour with a
 //! door.
+//!
+//! With statistics on, both quirks count in either arm (N06.5's reachability
+//! counters): `maze_init_failure_room_leaks` (an init failure with completed
+//! rooms in the tree) and `maze_ripped_carryovers` (an attempt rejected before
+//! its rip whose locate added to the ripped set).
 //!
 //! Java's debug logging of nets 33, 66 and 67 and the observer notification
 //! around the rip and insert are not ported; the detail texts of the
@@ -176,14 +184,21 @@ fn route_connection_hooked<S: SearchSink>(
     widths: Option<&dyn WidthPolicy>,
     budget: Option<&mut dyn BudgetPolicy>,
 ) -> (AttemptResult, S) {
-    let Ripped { items, costs } = ripped;
-    // PARITY(quirk, java_quirks.failed_attempt_ripped_carryover): a rejected
-    // attempt keeps what its locate added to the ripped set, so the next attempt
-    // rips the earlier path's items too; `false` restores the set as it was.
-    let items_before = (!ctrl.quirks.failed_attempt_ripped_carryover).then(|| items.clone());
+    let Ripped { items, mut costs } = ripped;
+    let before = RippedBefore::take(ctrl, items, costs.as_deref());
     let stop = limits.stop;
     let (searched, sink) = search_and_locate(
-        board, start, dest, ctrl, limits, items, costs, sink, engine, widths, budget,
+        board,
+        start,
+        dest,
+        ctrl,
+        limits,
+        items,
+        costs.as_deref_mut(),
+        sink,
+        engine,
+        widths,
+        budget,
     );
     let (result, located) = match searched {
         Searched::InitFailed => {
@@ -200,13 +215,68 @@ fn route_connection_hooked<S: SearchSink>(
         Searched::Done { result, located } => (result, located),
     };
     let found = result.is_some();
-    let result = finish_connection(board, start, dest, ctrl, found, located, items, stop);
-    if result.state != AttemptState::Routed
-        && let Some(before) = items_before
-    {
-        *items = before;
-    }
+    let result = conclude_attempt(
+        board, start, dest, ctrl, found, located, items, costs, before, stop,
+    );
     (result, sink)
+}
+
+/// The ripped set and costs before an attempt's locate, for
+/// `failed_attempt_ripped_carryover` (N06.5): the set's size always, a copy of
+/// both only under `false`, which restores them.
+struct RippedBefore {
+    len: usize,
+    saved: Option<(BTreeSet<ItemId>, Option<RipupCosts>)>,
+}
+
+impl RippedBefore {
+    fn take(ctrl: &AutorouteControl, items: &BTreeSet<ItemId>, costs: Option<&RipupCosts>) -> Self {
+        // PARITY(quirk, java_quirks.failed_attempt_ripped_carryover): Java
+        // (AutorouteEngine.java:188, 227) keeps what a rejected attempt's locate
+        // added; `false` keeps a copy to restore.
+        let saved =
+            (!ctrl.quirks.failed_attempt_ripped_carryover).then(|| (items.clone(), costs.cloned()));
+        RippedBefore {
+            len: items.len(),
+            saved,
+        }
+    }
+}
+
+/// The checks, rip and insert after the search ([`finish_connection`]), then the
+/// ripped set of an attempt rejected before its rip: Java keeps what its locate
+/// added, so the next attempt on the same set rips the rejected path's items too
+/// (`// PARITY(quirk, java_quirks.failed_attempt_ripped_carryover):`); `false`
+/// restores the set and costs of `before`. An attempt that ripped keeps its set:
+/// those items have left the board. With statistics on, the rejected attempts
+/// whose locate added to the set count as `maze_ripped_carryovers` in either arm.
+#[allow(clippy::too_many_arguments)]
+fn conclude_attempt(
+    board: &mut RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+    ctrl: &AutorouteControl,
+    found: bool,
+    located: Option<Located>,
+    items: &mut BTreeSet<ItemId>,
+    costs: Option<&mut RipupCosts>,
+    before: RippedBefore,
+    stop: Option<&dyn Stoppable>,
+) -> AttemptResult {
+    let (result, ripped) = finish_connection(board, start, dest, ctrl, found, located, items, stop);
+    if !ripped {
+        // Locate only inserts into the set, so a larger set is an added item.
+        if items.len() > before.len {
+            crate::run_stats::record_n06(crate::run_stats::Counter::MazeRippedCarryovers);
+        }
+        if let Some((saved_items, saved_costs)) = before.saved {
+            *items = saved_items;
+            if let (Some(costs), Some(saved)) = (costs, saved_costs) {
+                *costs = saved;
+            }
+        }
+    }
+    result
 }
 
 /// [`route_connection_on_engine`] for the batch router, the fanout and the
@@ -267,7 +337,8 @@ pub(crate) fn route_connection_counted(
 /// The part of `autorouteConnection` after the session is cleared
 /// (`:206-261`): the checks of the search result and the located path, then
 /// the rip of `ripped` and the insert. `stop` is the search's stop request,
-/// which may end the insert's normalization early.
+/// which may end the insert's normalization early. The flag is whether it
+/// reached the rip (false: rejected before it, the board unchanged).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn finish_connection(
     board: &mut RoutingBoard,
@@ -278,7 +349,7 @@ pub(crate) fn finish_connection(
     located: Option<Located>,
     ripped: &BTreeSet<ItemId>,
     stop: Option<&dyn Stoppable>,
-) -> AttemptResult {
+) -> (AttemptResult, bool) {
     let failed = |board: &RoutingBoard, reason: &str| {
         let details = format!(
             "Failed to route connection between {}{reason}.",
@@ -287,25 +358,31 @@ pub(crate) fn finish_connection(
         AttemptResult::with_details(AttemptState::Failed, details)
     };
     if !found {
-        return failed(
-            board,
-            ", because no connection was found between their nets",
+        return (
+            failed(
+                board,
+                ", because no connection was found between their nets",
+            ),
+            false,
         );
     }
     let Some(located) = located else {
-        return failed(board, "");
+        return (failed(board, ""), false);
     };
     if is_disabled_signal_layer(board, ctrl, located.start_layer)
         || is_disabled_signal_layer(board, ctrl, located.target_layer)
     {
         // PARITY(quirk, java_quirks.failed_attempt_ripped_carryover): the ripped set stays filled (A06
-        // decisions); `route_connection_hooked` restores it under `false`.
-        return failed(board, ", because some of their layers are disabled");
+        // decisions); `conclude_attempt` restores it under `false`.
+        return (
+            failed(board, ", because some of their layers are disabled"),
+            false,
+        );
     }
     // Java's `connectionItems == null` (`:233-238`, SKIPPED) cannot happen:
     // the locator always returns a list, possibly empty, which is inserted.
     rip_connections(board, ripped, ctrl.remove_unconnected_vias);
-    match insert_located(board, ctrl, &located, stop) {
+    let result = match insert_located(board, ctrl, &located, stop) {
         Ok(_) => AttemptResult::new(AttemptState::Routed),
         Err(InsertError::Failed) => {
             failed(board, ", because the new connection could not be inserted")
@@ -313,7 +390,8 @@ pub(crate) fn finish_connection(
         // Java's NullPointerException reaches the batch router's catch,
         // which returns FAILED without details.
         Err(InsertError::NullCorner) => AttemptResult::new(AttemptState::Failed),
-    }
+    };
+    (result, true)
 }
 
 /// The session part of [`route_connection`]: init, search, locate, then
@@ -355,6 +433,10 @@ fn search_and_locate<S: SearchSink>(
         // rooms stay in the tree. `false` clears them first, which leaves the
         // rekey of `Session::complete_room` nothing to move aside.
         *engine = session.take_drill_carry();
+        if !session.complete_rooms().is_empty() {
+            // Counted in either arm: the rooms `true` leaves in the tree.
+            crate::run_stats::record_n06(crate::run_stats::Counter::MazeInitFailureRoomLeaks);
+        }
         if !ctrl.quirks.init_failure_room_leak {
             session.clear();
         }
@@ -557,7 +639,8 @@ mod tests {
             Some(located(Vec::new(), 1, 0)),
             &ripped,
             None,
-        );
+        )
+        .0;
         assert_eq!(result.state, AttemptState::Failed);
         assert!(
             result
@@ -566,6 +649,82 @@ mod tests {
         );
         assert_eq!(ripped.len(), 1, "the ripped set stays filled");
         assert_eq!(item_ids(&board), before, "nothing was ripped or inserted");
+    }
+
+    /// `failed_attempt_ripped_carryover` (N06.5): an attempt rejected before its
+    /// rip (a disabled layer) whose locate added an item and a cost. Java keeps
+    /// them for the next attempt; `false` restores the set and the costs. An
+    /// attempt that ripped keeps its set in both arms, and both arms count the
+    /// rejected one as `maze_ripped_carryovers`.
+    #[test]
+    fn rejected_attempt_ripped_set_switch_both_behaviours() {
+        use crate::autoroute::path::put_cost;
+        use crate::run_stats::{self, Counter};
+        let _guard = run_stats::TEST_SERIAL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        run_stats::enable();
+        // Ids no item has: the rip of a routed attempt removes nothing.
+        let (earlier, added) = (ItemId(90_001), ItemId(90_002));
+        let empty = BTreeSet::new();
+        for java in [true, false] {
+            let (mut board, mut control, _) = board_and_control();
+            control.layer_active[1] = false;
+            control.quirks = crate::settings::JavaQuirks::JAVA
+                .with("failed_attempt_ripped_carryover", java)
+                .unwrap();
+            let attempt = |board: &mut RoutingBoard, start_layer: i32| {
+                let mut items: BTreeSet<ItemId> = [earlier].into_iter().collect();
+                let mut costs: RipupCosts = vec![(earlier, 5)];
+                let before = RippedBefore::take(&control, &items, Some(&costs));
+                // What this attempt's locate adds.
+                items.insert(added);
+                put_cost(&mut costs, earlier, 9);
+                put_cost(&mut costs, added, 7);
+                let located = Some(located(Vec::new(), start_layer, start_layer));
+                let (result, counts) = run_stats::capture(|| {
+                    conclude_attempt(
+                        board,
+                        &empty,
+                        &empty,
+                        &control,
+                        true,
+                        located,
+                        &mut items,
+                        Some(&mut costs),
+                        before,
+                        None,
+                    )
+                });
+                (
+                    result.state,
+                    items,
+                    costs,
+                    counts.get(Counter::MazeRippedCarryovers),
+                )
+            };
+            let board_before = item_ids(&board);
+            let (state, items, costs, carried) = attempt(&mut board, 1);
+            assert_eq!(state, AttemptState::Failed);
+            assert_eq!(carried, 1, "java = {java}");
+            assert_eq!(item_ids(&board), board_before, "nothing was ripped");
+            if java {
+                assert_eq!(items, [earlier, added].into_iter().collect());
+                assert_eq!(costs, vec![(earlier, 9), (added, 7)]);
+            } else {
+                assert_eq!(items, [earlier].into_iter().collect());
+                assert_eq!(costs, vec![(earlier, 5)]);
+            }
+            // On an active layer the empty path is routed after the rip: the
+            // set stays as the locate left it, and nothing counts.
+            let (state, items, costs, carried) = attempt(&mut board, 0);
+            assert_eq!(state, AttemptState::Routed);
+            assert_eq!(carried, 0);
+            assert_eq!(items, [earlier, added].into_iter().collect());
+            assert_eq!(costs, vec![(earlier, 9), (added, 7)]);
+        }
+        run_stats::disable();
+        run_stats::reset();
     }
 
     #[test]
@@ -593,7 +752,8 @@ mod tests {
             Some(located(Vec::new(), 0, 0)),
             &empty,
             None,
-        );
+        )
+        .0;
         assert_eq!(result, AttemptResult::new(AttemptState::Routed));
         assert_eq!(item_ids(&board), before);
     }
@@ -611,7 +771,8 @@ mod tests {
             Some(located(Vec::new(), 1, 0)),
             &empty,
             None,
-        );
+        )
+        .0;
         assert_eq!(result, AttemptResult::new(AttemptState::Failed));
     }
 
@@ -622,7 +783,8 @@ mod tests {
         let empty = BTreeSet::new();
         let none = finish_connection(
             &mut board, &start, &empty, &control, false, None, &empty, None,
-        );
+        )
+        .0;
         assert_eq!(
             none.details,
             "Failed to route connection between pin of component #2 and , because no \
@@ -630,7 +792,8 @@ mod tests {
         );
         let unlocated = finish_connection(
             &mut board, &start, &empty, &control, true, None, &empty, None,
-        );
+        )
+        .0;
         assert_eq!(
             unlocated.details,
             "Failed to route connection between pin of component #2 and ."

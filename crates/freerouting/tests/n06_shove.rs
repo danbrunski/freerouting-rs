@@ -49,6 +49,8 @@ fn line(a: (i32, i32), b: (i32, i32)) -> Line {
 /// extreme that reaches past their diagonal.
 #[test]
 fn side0_flank_switch_both_behaviours() {
+    // Side 0 calls feed the flip counters, so this test shares their lock.
+    let _guard = serial();
     let l = line((150, -100), (300, 0));
     let java = JavaQuirks::JAVA;
     let fixed = quirks("in_front_of_pad_side0_flank", false);

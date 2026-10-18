@@ -19,6 +19,15 @@
 //!   holds;
 //! - the neighbour iteration of `calculateNewIncompleteRooms`, which decides
 //!   the creation order of the incomplete rooms and their doors.
+//!
+//! Java bug kept for `legacy`: the room right of an obstacle room, after a
+//! neighbour that ends on side 0, gets `roomShape.ur.x` as both x bounds
+//! (`:296-301`), so it has width 0 and is never made.
+//! `router.java_quirks.ortho_zero_width_room = false` reaches the board's right
+//! edge, as cases 0 and 2 reach theirs (N06.5,
+//! `right_of_obstacle_room_switch_both_behaviours`). With statistics on, the
+//! rooms the fix would make count as `maze_ortho_zero_width_room_flips` in
+//! either arm.
 
 use std::cmp::Ordering;
 
@@ -165,6 +174,41 @@ fn remove_border_line(room: &IntBox, edge: usize) -> IntBox {
         2 => IntBox::new(room.ll.x, room.ll.y, room.ur.x, CRIT_INT),
         _ => IntBox::new(-CRIT_INT, room.ll.y, room.ur.x, room.ur.y),
     }
+}
+
+/// Java `insertIncompleteRoom`'s tests (`:402-423`): the box of `coords`
+/// (`[ll.x, ll.y, ur.x, ur.y]`), its intersection with `room` and the door's
+/// dimension, if the box is 2-dimensional and touches `room` along a line or more.
+fn incomplete_room_90(room: &IntBox, coords: [i32; 4]) -> Option<(IntBox, IntBox, i32)> {
+    let [ll_x, ll_y, ur_x, ur_y] = coords;
+    let shape = IntBox::new(ll_x, ll_y, ur_x, ur_y);
+    if TileShape::IntBox(shape).dimension() != 2 {
+        return None;
+    }
+    let contained = room.intersection_box(&shape);
+    if contained.is_empty() {
+        return None;
+    }
+    let door_dimension = TileShape::IntBox(shape.intersection_box(room)).dimension();
+    (door_dimension > 0).then_some((shape, contained, door_dimension))
+}
+
+/// The room right of obstacle room `room`, from its bottom up to the next
+/// neighbour's intersection `next` (case 1 of `calculateNewIncompleteRooms`
+/// after a neighbour ending on side 0, 2 or 3). `java` is
+/// `router.java_quirks.ortho_zero_width_room`:
+/// `SortedOrthogonalRoomNeighbours.java:296-301` passes `roomShape.ur.x` as both
+/// x bounds, a box of width 0 that is never inserted; `false` reaches the board
+/// box `board`'s right edge, as cases 0 and 2 reach theirs.
+fn ortho_right_of_obstacle_room(
+    room: &IntBox,
+    board: &IntBox,
+    next: &IntBox,
+    java: bool,
+) -> [i32; 4] {
+    // PARITY(quirk, java_quirks.ortho_zero_width_room): `room.ur.x` twice.
+    let right_x = if java { room.ur.x } else { board.ur.x };
+    [room.ur.x, room.ll.y, right_x, next.ll.y]
 }
 
 impl Session<'_> {
@@ -354,17 +398,8 @@ impl Session<'_> {
 
     /// Java `insertIncompleteRoom` (`:402-423`).
     fn insert_incomplete_room_90(&mut self, calc: &Calc90, coords: [i32; 4]) {
-        let [ll_x, ll_y, ur_x, ur_y] = coords;
-        let shape = IntBox::new(ll_x, ll_y, ur_x, ur_y);
-        if TileShape::IntBox(shape).dimension() != 2 {
-            return;
-        }
-        let contained = calc.room_box.intersection_box(&shape);
-        if contained.is_empty() {
-            return;
-        }
-        let door_dimension = TileShape::IntBox(shape.intersection_box(&calc.room_box)).dimension();
-        if door_dimension > 0 {
+        if let Some((shape, contained, door_dimension)) = incomplete_room_90(&calc.room_box, coords)
+        {
             let new_room = self.add_incomplete(
                 Some(TileShape::IntBox(shape)),
                 calc.layer,
@@ -417,15 +452,26 @@ impl Session<'_> {
                                     rooms.push([pi.ur.x, b.ll.y, room.ur.x, room.ll.y]);
                                 }
                                 // PARITY(quirk, java_quirks.ortho_zero_width_room):
-                                // SortedOrthogonalRoomNeighbours.java:271-276, a box of
+                                // SortedOrthogonalRoomNeighbours.java:296-301, a box of
                                 // width 0 (room.ur.x twice), never inserted; `false`
-                                // reaches the board's right edge, as cases 0 and 2 do.
-                                let right_x = if self.control.quirks.ortho_zero_width_room {
-                                    room.ur.x
-                                } else {
-                                    b.ur.x
-                                };
-                                rooms.push([room.ur.x, room.ll.y, right_x, ni.ll.y]);
+                                // reaches the board's right edge, as cases 0 and 2 do
+                                // (`ortho_right_of_obstacle_room`).
+                                let fixed = [room.ur.x, room.ll.y, b.ur.x, ni.ll.y];
+                                if crate::run_stats::enabled()
+                                    && incomplete_room_90(&room, fixed).is_some()
+                                {
+                                    // Counted in either arm: Java's box has width 0
+                                    // and is never inserted, the fixed one would be.
+                                    crate::run_stats::record_n06(
+                                        crate::run_stats::Counter::MazeOrthoZeroWidthRoomFlips,
+                                    );
+                                }
+                                rooms.push(ortho_right_of_obstacle_room(
+                                    &room,
+                                    &b,
+                                    &ni,
+                                    self.control.quirks.ortho_zero_width_room,
+                                ));
                             } else {
                                 rooms.push([pi.ur.x, b.ll.y, b.ur.x, ni.ll.y]);
                             }
@@ -543,6 +589,32 @@ mod tests {
             room,
             touch,
         )
+    }
+
+    /// `ortho_zero_width_room` (N06.5): the room right of an obstacle room, up
+    /// to the next neighbour. Java's box has width 0 and is never made; `false`
+    /// reaches the board's right edge and touches the room along its right side.
+    #[test]
+    fn right_of_obstacle_room_switch_both_behaviours() {
+        let room = IntBox::new(100, 100, 200, 200);
+        let board = IntBox::new(0, 0, 1000, 1000);
+        let next = IntBox::new(200, 160, 200, 180);
+        let java = ortho_right_of_obstacle_room(&room, &board, &next, true);
+        assert_eq!(java, [200, 100, 200, 160]);
+        assert!(incomplete_room_90(&room, java).is_none());
+        let fixed = ortho_right_of_obstacle_room(&room, &board, &next, false);
+        assert_eq!(fixed, [200, 100, 1000, 160]);
+        let (shape, contained, door_dimension) =
+            incomplete_room_90(&room, fixed).expect("the fixed room is made");
+        assert_eq!(shape, IntBox::new(200, 100, 1000, 160));
+        assert_eq!(contained, IntBox::new(200, 100, 200, 160));
+        assert_eq!(door_dimension, 1);
+        // A next neighbour at the room's bottom leaves no room in either arm.
+        let low = IntBox::new(200, 100, 200, 120);
+        for java in [true, false] {
+            let coords = ortho_right_of_obstacle_room(&room, &board, &low, java);
+            assert!(incomplete_room_90(&room, coords).is_none(), "{java}");
+        }
     }
 
     #[test]

@@ -123,10 +123,26 @@ pub enum Counter {
     /// N06.4: octagon-from-box cutouts whose branch 3 changes the upper right octagon
     /// (`octagon_box_cutout_branch3`).
     OctagonBoxCutoutBranch3,
+    /// N06.5: maze-search inits that failed with completed start rooms in the tree,
+    /// which `init_failure_room_leak` leaves there.
+    MazeInitFailureRoomLeaks,
+    /// N06.5: attempts rejected before the rip whose locate added to the ripped set,
+    /// which `failed_attempt_ripped_carryover` hands to the next attempt.
+    MazeRippedCarryovers,
+    /// N06.5: 90-degree obstacle rooms right of the room that `ortho_zero_width_room`
+    /// leaves out (the fixed box would be inserted).
+    MazeOrthoZeroWidthRoomFlips,
+    /// N06.5: obstacle rooms without sorted neighbours, whose edge rooms come from the
+    /// full sweep of `Sorted45DegreeRoomNeighbours.java:70-73`.
+    MazeEdgeSweepsWithoutNeighbours,
+    /// N06.5: 45-degree edge rooms that `edge_corner_not_advanced` adds or drops.
+    MazeEdgeCornerFlips,
+    /// N06.5: trace stubs whose half width `connect_to_trace_swapped_width` changes.
+    InsertConnectToTraceWidthFlips,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 32] = [
+pub const COUNTERS: [Counter; 38] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -159,6 +175,12 @@ pub const COUNTERS: [Counter; 32] = [
     Counter::ShoveRationalProjectionFlips,
     Counter::SimplexPrevDivisionLine,
     Counter::OctagonBoxCutoutBranch3,
+    Counter::MazeInitFailureRoomLeaks,
+    Counter::MazeRippedCarryovers,
+    Counter::MazeOrthoZeroWidthRoomFlips,
+    Counter::MazeEdgeSweepsWithoutNeighbours,
+    Counter::MazeEdgeCornerFlips,
+    Counter::InsertConnectToTraceWidthFlips,
 ];
 
 impl Counter {
@@ -197,6 +219,12 @@ impl Counter {
             Counter::ShoveRationalProjectionFlips => "shove_rational_projection_flips",
             Counter::SimplexPrevDivisionLine => "simplex_prev_division_line_reached",
             Counter::OctagonBoxCutoutBranch3 => "octagon_box_cutout_branch3_reached",
+            Counter::MazeInitFailureRoomLeaks => "maze_init_failure_room_leaks",
+            Counter::MazeRippedCarryovers => "maze_ripped_carryovers",
+            Counter::MazeOrthoZeroWidthRoomFlips => "maze_ortho_zero_width_room_flips",
+            Counter::MazeEdgeSweepsWithoutNeighbours => "maze_edge_sweeps_without_neighbours",
+            Counter::MazeEdgeCornerFlips => "maze_edge_corner_flips",
+            Counter::InsertConnectToTraceWidthFlips => "insert_connect_to_trace_width_flips",
         }
     }
 }
@@ -281,8 +309,15 @@ pub(crate) fn add_counts(counts: &Counts) {
 }
 
 /// The counters at one moment.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Counts(pub [u64; COUNT]);
+
+// `Default` is derived only for arrays of up to 32 elements.
+impl Default for Counts {
+    fn default() -> Self {
+        Counts([0; COUNT])
+    }
+}
 
 impl Counts {
     /// The counters now.
@@ -565,13 +600,15 @@ pub(crate) fn record_door_section_reallocation() {
     }
 }
 
+/// The counters are process-wide, so the library's unit tests that turn them
+/// on run one at a time, here and in other modules (N06.5's `connection` tests).
+#[cfg(test)]
+pub(crate) static TEST_SERIAL: Mutex<()> = Mutex::new(());
+
 #[cfg(test)]
 mod tests {
+    use super::TEST_SERIAL as SERIAL;
     use super::*;
-
-    /// The counters are process-wide, so the tests that turn them on run
-    /// one at a time.
-    static SERIAL: Mutex<()> = Mutex::new(());
 
     #[test]
     fn a_stage_records_the_change_of_the_counters() {

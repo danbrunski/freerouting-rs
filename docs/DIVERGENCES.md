@@ -840,6 +840,8 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   leaked room is an obstacle in room completion but never a neighbour with a door, while Java
   can build a door into it and reach its stale doors; not reproduced, and no probe board has an
   init failure (`an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside`).
+  `router.java_quirks.init_failure_room_leak` keeps it (`true`, both profiles); N06.5 measures
+  the fix with the other four maze-search switches (see "Java quirk switches, opt-in").
 - Java's eager trace-log strings are dropped, their tree visits kept: `insertTrace` asks a found
   trace stub for its start and end contacts while building `compare_trace_stub_found`
   (`FoundConnectionInserter.java:441-458`); the port runs both contact queries so the work
@@ -1432,6 +1434,31 @@ The drill pages' split (`autoroute/session/drills.rs`) and the tie-pin trace cut
 area and outline-keepout shapes still split with Java's code. Run statistics count
 `octagon_box_cutout_branch3_reached` and `simplex_prev_division_line_reached` in both
 arms. Registered batch evidence remains pending under N06.4.
+
+**N06.5 maze search and room fixes (explicit opt-in; promotion pending)**
+
+All five switches still default to `true` in both profiles. With the named
+`router.java_quirks` key `false`:
+- `init_failure_room_leak`: a failed maze-search init clears the session before it
+  returns, so its completed start rooms leave the tree and a later session has no
+  leaked room to move aside (`init_failure_switch_both_behaviours_and_counter`).
+- `failed_attempt_ripped_carryover`: an attempt rejected before its rip (a disabled
+  layer, no located path) restores the ripped set and costs it started with; an
+  attempt that ripped keeps them (`rejected_attempt_ripped_set_switch_both_behaviours`).
+- `ortho_zero_width_room`: the 90 degree room right of an obstacle room reaches the
+  board's right edge instead of having width 0
+  (`right_of_obstacle_room_switch_both_behaviours`,
+  `ortho_zero_width_room_reaches_a_90_degree_board`).
+- `edge_corner_not_advanced`: the edge sweep of an obstacle room advances its corner, so
+  exactly the sides of length 0 are skipped (`edge_room_sides_switch_both_behaviours`).
+- `connect_to_trace_swapped_width`: the stubs to a target and a start trace take their
+  own layer's half width (`connect_to_trace_width_switch_both_behaviours_and_counter`).
+
+`run_stats` counts each branch in either arm (`maze_init_failure_room_leaks`,
+`maze_ripped_carryovers`, `maze_ortho_zero_width_room_flips`,
+`maze_edge_sweeps_without_neighbours`, `maze_edge_corner_flips`,
+`insert_connect_to_trace_width_flips`); the registered runs are pending under N06.5
+(`prereg/N06.5.json`).
 
 **N06.11 interactive fixes (explicit opt-in; promotion pending)**
 

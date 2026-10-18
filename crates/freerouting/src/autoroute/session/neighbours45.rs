@@ -284,6 +284,11 @@ impl Session<'_> {
             }
             if calc.sorted.is_empty() {
                 if calc.from_obstacle {
+                    // N06.5 reachability: the full edge sweep that
+                    // `edge_corner_not_advanced` cuts short.
+                    crate::run_stats::record_n06(
+                        crate::run_stats::Counter::MazeEdgeSweepsWithoutNeighbours,
+                    );
                     self.edge_incomplete_rooms_of_obstacle(&calc, 0, 7);
                 }
             } else {
