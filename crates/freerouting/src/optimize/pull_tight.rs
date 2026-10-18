@@ -12,12 +12,25 @@
 //! Java does with `traceCosts == null`.
 //! `joinGraphicsUpdateBox` is cosmetic and dropped.
 //!
-//! Kept Java quirks (DIVERGENCES, "Java bugs kept on purpose"):
-//! - the end-corner smoothing removes the trace before it inserts the
-//!   smoothed one and doesn't put it back when the insertion fails (a
-//!   polyline with fewer than two corners, or of length 0);
-//! - `pull_tight_trace` returns true for a changed polyline even when
-//!   `change_trace` finds the lines unchanged and returns early.
+//! Kept Java quirks (DIVERGENCES, "Java bugs kept on purpose"), each behind
+//! its switch, `true` (Java) in both profiles (N06.8):
+//! - `router.java_quirks.smooth_loses_trace`: the end-corner smoothing
+//!   removes the trace before it inserts the smoothed one and doesn't put it
+//!   back when the insertion fails (a polyline with fewer than two corners,
+//!   or of length 0 and not user fixed; `TraceTightener.java:431-441`).
+//!   `false` tests those conditions first and keeps the trace, so the
+//!   rejected insert's item id is not taken either;
+//! - `router.java_quirks.pull_tight_reused_lines_change`: `pull_tight_trace`
+//!   returns true for a changed polyline even when `change_trace` finds the
+//!   lines unchanged and returns early (`PolylineTrace.java:837-839`), so the
+//!   end smoothing and the pin exits are skipped for that trace. `false`
+//!   reports a change only when `change_trace` changed the trace.
+//!
+//! With statistics on, `pull_tight_smooth_lost_traces` counts the smoothed
+//! inserts that fail and `pull_tight_reused_lines_flips` the pull-tight
+//! results `change_trace` ignores, in either arm (N06.8's reachability
+//! counters); `change_trace` counts its strict prefix or suffix case
+//! (`trace_change_prefix_suffix_ignored`, `board::trace_ops`).
 //!
 //! N06.2 removes the duplicate removal of the old trace and restores saved
 //! contact pins on a keep-point early return in both profiles.
@@ -35,14 +48,15 @@ use std::collections::BTreeSet;
 use freerouting_geometry::{IntOctagon, Polyline, PolylineShapeOps, TileShape};
 
 use crate::autoroute::control::ExpansionCostFactor;
-use crate::board::RoutingBoard;
 use crate::board::contact_rule::TJunctions;
 use crate::board::items::ItemId;
 use crate::board::selection_filter::{ItemFilter, SelectableChoice};
 use crate::board::structure::{AngleRestriction, FixedState};
+use crate::board::{ChangeOutcome, RoutingBoard};
 use crate::optimize::params::{Clip, PullTightParams, REMOVE_ITEMS_PULL_TIGHT_NOMINAL_MS};
 use crate::optimize::tighten::{Outcome, Tightener, TrackedPolyline};
 use crate::optimize::via::OPT_VIA_RECURSION_DEPTH;
+use crate::run_stats::{Counter, record_n06};
 
 /// What [`RoutingBoard::opt_changed_area`] did.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -55,6 +69,28 @@ pub struct OptChangedAreaRun {
     /// The work units done since the limit started, at the last stop check
     /// (the cut-off if `stopped`); `None` without a limit or without a run.
     pub units_at_last_check: Option<u64>,
+}
+
+/// True if [`BasicBoard::insert_trace_without_cleaning`](crate::board::BasicBoard::insert_trace_without_cleaning)
+/// rejects `polyline` with `fixed`: fewer than two corners, or zero length and
+/// not at least user fixed (Java `BasicBoard.insertTraceWithoutCleaning`). The
+/// end-corner smoothing asserts in debug builds that the two agree.
+pub(crate) fn smoothed_insert_fails(polyline: &Polyline, fixed: FixedState) -> bool {
+    polyline.corner_count() < 2
+        || polyline.first_corner() == polyline.last_corner() && fixed < FixedState::UserFixed
+}
+
+/// What [`RoutingBoard::replace_smoothed_trace`] did.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SmoothedReplace {
+    /// The smoothed trace, with this id, replaced the old one.
+    Inserted(ItemId),
+    /// Nothing changed: the insert would fail and
+    /// `router.java_quirks.smooth_loses_trace = false` kept the old trace (or
+    /// `id` is not a trace).
+    Kept,
+    /// The insert failed after the old trace was removed (Java's behaviour).
+    Lost,
 }
 
 impl RoutingBoard {
@@ -117,14 +153,7 @@ impl RoutingBoard {
         if let Outcome::Changed(result) =
             tightener.pull_tight(self, TrackedPolyline::of_trace(polyline))
         {
-            let reuse = result.line_reuse(old_line_count);
-            // PARITY(quirk, java_quirks.pull_tight_reused_lines_change): Java
-            // returns true even when `change` finds the lines unchanged, which
-            // skips the end smoothing below; `false` goes on to it then.
-            let outcome = self.change_trace(id, result.polyline, reuse);
-            if self.java_quirks().pull_tight_reused_lines_change
-                || !matches!(outcome, crate::board::ChangeOutcome::Unchanged)
-            {
+            if self.apply_pull_tight_result(id, result, old_line_count) {
                 return true;
             }
         }
@@ -182,34 +211,17 @@ impl RoutingBoard {
             let Some(adjusted) = self.smoothen_end_corners_step(current, tightener) else {
                 break;
             };
-            let Some(item) = self.item(current) else {
+            let Some(layer) = self
+                .item(current)
+                .and_then(|i| i.as_trace())
+                .map(|t| t.layer)
+            else {
                 break;
             };
-            let trace = item.as_trace().expect("a trace");
-            let (layer, class, fixed) = (trace.layer, item.clearance_class(), item.fixed_state());
-            let nets = item.net_numbers().to_vec();
-            // PARITY(quirk, java_quirks.smooth_loses_trace): Java removes the
-            // trace before an insert that may fail, and the trace stays removed
-            // (TraceTightener.java:431-441); `false` tests the insert's failure
-            // conditions first and keeps the trace.
-            if !self.java_quirks().smooth_loses_trace
-                && (adjusted.corner_count() < 2
-                    || adjusted.first_corner() == adjusted.last_corner()
-                        && fixed < FixedState::UserFixed)
-            {
-                break;
-            }
-            self.remove_item(current);
-            let inserted = self.insert_trace_without_cleaning(
-                adjusted.clone(),
-                layer,
-                tightener.half_width(),
-                &nets,
-                class,
-                fixed,
-            );
-            let Some(new_id) = inserted else {
-                // Java's loop ends here too: the old trace stays removed.
+            let replaced = self.replace_smoothed_trace(current, &adjusted, tightener.half_width());
+            let SmoothedReplace::Inserted(new_id) = replaced else {
+                // Java's loop ends here too; under Java's behaviour the old
+                // trace stays removed.
                 break;
             };
             result = true;
@@ -230,6 +242,88 @@ impl RoutingBoard {
         }
         tightener.set_contact_pins(saved_pins);
         result
+    }
+
+    /// Applies the pull-tight result `result` of trace `id` (which had
+    /// `old_line_count` lines) with [`change_trace`](crate::board::BasicBoard::change_trace).
+    /// True if pull-tight reports a change (the `newLines != lines` branch of
+    /// Java `PolylineTrace.pullTight`).
+    ///
+    /// Under `router.java_quirks.pull_tight_reused_lines_change = true`
+    /// (Java) that is always true, even when `change_trace` finds every line
+    /// reused and returns early; `false` reports a change only when
+    /// `change_trace` changed the trace. With statistics on, each ignored
+    /// result counts `pull_tight_reused_lines_flips`, in either arm.
+    pub fn apply_pull_tight_result(
+        &mut self,
+        id: ItemId,
+        result: TrackedPolyline,
+        old_line_count: usize,
+    ) -> bool {
+        let reuse = result.line_reuse(old_line_count);
+        let outcome = self.change_trace(id, result.polyline, reuse);
+        let ignored = outcome == ChangeOutcome::Unchanged;
+        if ignored {
+            record_n06(Counter::PullTightReusedLinesFlips);
+        }
+        // PARITY(quirk, java_quirks.pull_tight_reused_lines_change): Java
+        // returns true even when `change` finds the lines unchanged, which
+        // skips the end smoothing and the pin exits; `false` goes on to them.
+        self.java_quirks().pull_tight_reused_lines_change || !ignored
+    }
+
+    /// Replaces trace `id` by a trace along `polyline` with `half_width` and
+    /// the old trace's layer, nets, clearance class and fixed state: the
+    /// `removeItem` and `insertTraceWithoutCleaning` of Java
+    /// `TraceTightener.smoothenEndCornersAtTrace1` (`TraceTightener.java:431-441`).
+    ///
+    /// The insert fails for a polyline with fewer than two corners, or of
+    /// length 0 and not user fixed. Java removes the trace first, so a failed
+    /// insert loses it ([`SmoothedReplace::Lost`]);
+    /// `router.java_quirks.smooth_loses_trace = false` tests those conditions
+    /// first and keeps the trace ([`SmoothedReplace::Kept`]). With statistics
+    /// on, each failing insert counts `pull_tight_smooth_lost_traces`, in
+    /// either arm.
+    pub fn replace_smoothed_trace(
+        &mut self,
+        id: ItemId,
+        polyline: &Polyline,
+        half_width: i32,
+    ) -> SmoothedReplace {
+        let Some(item) = self.item(id) else {
+            return SmoothedReplace::Kept;
+        };
+        let Some(trace) = item.as_trace() else {
+            return SmoothedReplace::Kept;
+        };
+        let (layer, class, fixed) = (trace.layer, item.clearance_class(), item.fixed_state());
+        let nets = item.net_numbers().to_vec();
+        // PARITY(quirk, java_quirks.smooth_loses_trace): Java removes the
+        // trace before an insert that may fail, and the trace stays removed
+        // (TraceTightener.java:431-441); `false` tests the insert's failure
+        // conditions first and keeps the trace.
+        let insert_fails = smoothed_insert_fails(polyline, fixed);
+        if insert_fails {
+            record_n06(Counter::PullTightSmoothLostTraces);
+            if !self.java_quirks().smooth_loses_trace {
+                return SmoothedReplace::Kept;
+            }
+        }
+        self.remove_item(id);
+        let inserted = self.insert_trace_without_cleaning(
+            polyline.clone(),
+            layer,
+            half_width,
+            &nets,
+            class,
+            fixed,
+        );
+        debug_assert_eq!(
+            inserted.is_none(),
+            insert_fails,
+            "smoothed_insert_fails must match insert_trace_without_cleaning"
+        );
+        inserted.map_or(SmoothedReplace::Lost, SmoothedReplace::Inserted)
     }
 
     /// Java `smoothenEndCornersAtTrace2`: the smoothed polyline of trace

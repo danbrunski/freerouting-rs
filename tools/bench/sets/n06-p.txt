@@ -1,0 +1,17 @@
+# N06.8: batch P, pull-tight's kept Java bugs (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.8.json: router.java_quirks.smooth_loses_trace and
+# pull_tight_reused_lines_change, each alone and together, against Java's behaviour (both true),
+# with the counter trace_change_prefix_suffix_ignored for the reviewed list's identity case.
+# DSN fixtures, routed by tools/bench/n06_run.py under profile legacy. Chosen before any count
+# from the A14 exact boards that route to completion, so the batch optimizer (pull-tight in
+# every candidate) runs after the passes: J2 (as in N06.7, N06.10, N06.11) and five with
+# 130 to 700 bends.
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue155-CH376_MCP795_Module.dsn
+fixtures/Issue508-DAC2020_bm06.dsn
+fixtures/Issue558-dev-board.dsn
+fixtures/Issue217-8088sbc.dsn
+fixtures/Issue034-Green14SegLED.dsn
+# canary-pwr through the KiCad plugin path (the registration's plugin_canary; outside
+# n06_run.py): canary hardware/canary-pwr-rev1.0 at canary 9511d9a. It does not complete,
+# so the optimizer is skipped there; pull-tight still runs after every routed connection.

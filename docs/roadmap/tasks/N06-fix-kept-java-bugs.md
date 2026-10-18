@@ -219,7 +219,8 @@ These are marked or look like quirks but keep no bug:
   The two Net Classes dialog bugs are already fixed.
 - `PolylineTrace.change` also ignores a new polyline that is a strict prefix or suffix of the old
   one by identity (trace_ops.rs:685). Pull-tight never drops end lines, so it is probably
-  unreachable. N06.8 checks it.
+  unreachable. N06.8 checks it: the counter `trace_change_prefix_suffix_ignored` read 0 in
+  every light run (N06.8's note); the registered run confirms it.
 
 ## Checklist
 
@@ -689,13 +690,68 @@ These are marked or look like quirks but keep no bug:
       in N06.10 (the registration's `plugin_canary`: export once, route the 6 arms with the
       exported args plus `--router.profile=legacy` and the arm's four flags, grade each
       distinct session with canary's `grade.sh`).
-- [ ] **N06.8 — Batch P, pull-tight:**
+- [~] **N06.8 — Batch P, pull-tight:**
   - `smooth_loses_trace`: test the failure conditions before removing, or re-insert the old
     trace;
   - `pull_tight_reused_lines_change`: report a change only when `change_trace` changed the
     trace;
   - the prefix/suffix identity case of the reviewed list: confirm it is unreachable, or add it.
   - **Accept:** the batch is measured.
+  - *Partial 2026-10-18:* code, both-behaviour tests, reachability counters and the
+    registration are done; heavy run pending (commands below). Defaults stay `true` (Java)
+    in both profiles; `ENHANCED` is unchanged.
+    - [x] Both switches were wired by N06.3; their sites are now two board methods that the
+      pull-tight paths call, each keeping its `// PARITY(quirk, java_quirks.<id>)` marker:
+      `RoutingBoard::replace_smoothed_trace` (the smoothing's remove and insert; returns
+      `SmoothedReplace::{Inserted, Kept, Lost}`) and `RoutingBoard::apply_pull_tight_result`
+      (`change_trace` and the reported change). `smooth_loses_trace = false` tests the
+      insert's failure conditions first (`smoothed_insert_fails`: fewer than two corners, or
+      zero length and not user fixed) and keeps the trace, so the rejected insert takes no
+      item id either; a `debug_assert!` checks under Java's path that the test agrees with
+      `insert_trace_without_cleaning` (held through the whole `cargo test -p freerouting` run).
+    - [x] Both behaviours, all pass (`tests/n06_pull_tight.rs`, debug):
+      `smooth_loses_trace_switch_both_behaviours` (a closed polyline and a two-line one: Java
+      `Lost`, the trace gone; `false` `Kept`, the trace unchanged; a valid polyline and a
+      user-fixed zero-length one insert in both arms),
+      `pull_tight_reused_lines_switch_both_behaviours` (a result with every line reused: Java
+      reports a change, `false` none, the trace unchanged in both; a changed result reports
+      in both), `prefix_suffix_identity_case_is_ignored_and_counted`.
+    - [x] Reachability counters (`run_stats`, in `--stats json` `total.counts`, counted in
+      either arm, only with statistics on): `pull_tight_smooth_lost_traces` (smoothed
+      inserts that fail), `pull_tight_reused_lines_flips` (pull-tight results `change_trace`
+      ignores) and `trace_change_prefix_suffix_ignored` (`change_trace` early returns with
+      another line count); with N06.4's, N06.5's and N06.6's, `COUNTERS` has 46 entries. A smoke run of `tools/bench/n06_run.py`
+      on a copy of the registration pointed at `fixtures/scoring-perfect-two-pin.dsn`
+      (release, 4 arms) wrote all three counters (0) and identical sessions.
+    - [x] The prefix/suffix identity case (reviewed list): kept as Java has it (no switch),
+      counted by `trace_change_prefix_suffix_ignored`. Light evidence that it and the two
+      switch branches do not run (temporary prints, removed): 0 hits outside
+      `tests/n06_pull_tight.rs` in the whole `cargo test -p freerouting` run (1383 passed;
+      it includes `reference_pull_tight`'s 41-board `opt_changed_area`), 0 in release CLI
+      runs (`--router.profile=legacy`) of five unregistered boards (Issue297-myboard,
+      Issue209-split10, Issue742-tastexx-pcb, Issue508-DAC2020_bm10, Issue433-my-board),
+      and 0 in 50,000 random trace bundles pulled tight on the two-pin board. The registered
+      run decides it: 0 in every run confirms the case unreachable; above 0 adds it as a (b)
+      row with its own switch.
+    - [x] Registered before any number: `docs/roadmap/prereg/N06.8.json` (sha256
+      `c9cbe6f11146a1157bfc9d1d92cc588f4bd6567afac85fd6e107cd5778aee633`) and
+      `tools/bench/sets/n06-p.txt`, pinned by `crates/freerouting-dev/tests/prereg_n06_8.rs`
+      (4 tests pass). Arms: `baseline`, each switch alone, `all` (the verdict pair with
+      `baseline`). Rows, chosen from the A14 exact boards that complete (so the optimizer,
+      pull-tight in every candidate, runs): Issue026-J2_reference, Issue155-CH376_MCP795_Module,
+      Issue508-DAC2020_bm06, Issue558-dev-board, Issue217-8088sbc, Issue034-Green14SegLED,
+      profile `legacy`, default passes, plus canary-pwr through the plugin path (N06.10's
+      procedure). Rule: reachability (both switch counters 0 and sessions identical:
+      accepted on tests), else N02 totals, no-regress, set noise 11.14.
+    - [ ] Heavy run pending (orchestrator, release build of the tree carrying this diff, from
+      its root): `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.8.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-p`
+      (24 runs; the arms' binary is
+      `/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting`;
+      it exits non-zero after the last run if a session differs, and then the totals rule
+      applies to `summary.json`'s `statistics`). Then the canary-pwr plugin row as in N06.10
+      (the registration's `plugin_canary`: export once, route the 4 arms with the exported
+      args plus `--router.profile=legacy` and the arm's two flags, grade each distinct
+      session with canary's `grade.sh`).
 - [~] **N06.9 — Batch O, batch optimizer:** `opt_first_pass_stops` (a clear inside a pass
   allows one more pass at normal ripup costs), `opt_equal_key_skip` (keep every sorted
   candidate).

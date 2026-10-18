@@ -683,6 +683,16 @@ impl BasicBoard {
         // same object; both scans finding none means no change.
         let first_different = reuse.prefix.min(last_index);
         if first_different == last_index || reuse.suffix >= last_index {
+            // Java's scans stop at the shorter polyline, so a new polyline that
+            // is a strict prefix or suffix of the old one by identity (or the
+            // reverse, or an empty one) is ignored too. N06.8 counts it with
+            // statistics on: pull-tight is not expected to drop or add an end
+            // line, so the count is expected to stay 0.
+            if old_lines != new_lines {
+                crate::run_stats::record_n06(
+                    crate::run_stats::Counter::TraceChangePrefixSuffixIgnored,
+                );
+            }
             return ChangeOutcome::Unchanged;
         }
         let keep_at_start = first_different.saturating_sub(2);

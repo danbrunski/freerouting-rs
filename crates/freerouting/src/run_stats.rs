@@ -157,10 +157,19 @@ pub enum Counter {
     /// (`distance_to_closest_on_net`, `surroundings_density`) that
     /// `fanout_pin_order_names` reads as pin-index order.
     FanoutPinOrderNameFlips,
+    /// N06.8: end-corner smoothings whose smoothed insert fails, where
+    /// `smooth_loses_trace` decides whether the trace is lost.
+    PullTightSmoothLostTraces,
+    /// N06.8: pull-tight results that `change_trace` ignores, where
+    /// `pull_tight_reused_lines_change` decides whether a change is reported.
+    PullTightReusedLinesFlips,
+    /// N06.8: `change_trace` calls ignored because the new lines are a strict
+    /// prefix or suffix of the old ones (or the reverse) by identity.
+    TraceChangePrefixSuffixIgnored,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 43] = [
+pub const COUNTERS: [Counter; 46] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -204,6 +213,9 @@ pub const COUNTERS: [Counter; 43] = [
     Counter::FanoutStaleDrillCarries,
     Counter::DrillDestinationRoomIndexFlips,
     Counter::FanoutPinOrderNameFlips,
+    Counter::PullTightSmoothLostTraces,
+    Counter::PullTightReusedLinesFlips,
+    Counter::TraceChangePrefixSuffixIgnored,
 ];
 
 impl Counter {
@@ -253,6 +265,9 @@ impl Counter {
             Counter::FanoutStaleDrillCarries => "fanout_stale_drill_carries",
             Counter::DrillDestinationRoomIndexFlips => "drill_destination_room_index_flips",
             Counter::FanoutPinOrderNameFlips => "fanout_pin_order_name_flips",
+            Counter::PullTightSmoothLostTraces => "pull_tight_smooth_lost_traces",
+            Counter::PullTightReusedLinesFlips => "pull_tight_reused_lines_flips",
+            Counter::TraceChangePrefixSuffixIgnored => "trace_change_prefix_suffix_ignored",
         }
     }
 }

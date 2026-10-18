@@ -734,7 +734,14 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 - Java bugs kept on purpose (`optimize::pull_tight` module docs): the end-corner smoothing
   removes the trace before it inserts the smoothed copy and leaves it removed when the
   insertion fails (fewer than two corners, or zero length and unfixed); `pull_tight_trace` reports a change when
-  `change_trace` finds every line reused and returns early. N06.8 owns these fixes.
+  `change_trace` finds every line reused and returns early. Each has its switch,
+  `router.java_quirks.smooth_loses_trace` (`false` tests the failure conditions first and keeps
+  the trace) and `pull_tight_reused_lines_change` (`false` reports a change only when
+  `change_trace` changed the trace), both `true` (Java) in both profiles; N06.8 measures them
+  (`tests/n06_pull_tight.rs`). `change_trace` also ignores, as Java's `change` does, a new
+  polyline that is a strict prefix or suffix of the old one by line identity; pull-tight is not
+  expected to drop or add an end line, so this is expected never to run, and the counter
+  `trace_change_prefix_suffix_ignored` checks it (`prefix_suffix_identity_case_is_ignored_and_counted`).
 - Java bugs fixed outright in N06.2: end-corner smoothing removes the old trace once and
   restores the saved contact pins when a keep-point split ends smoothing early
   (`keep_point_smoothing_restores_contact_pins`).

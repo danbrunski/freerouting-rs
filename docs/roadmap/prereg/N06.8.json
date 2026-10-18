@@ -1,0 +1,199 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.8-batch-pull-tight",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.8, batch P)",
+  "question": "Do pull-tight's two Java-bug fixes, router.java_quirks.smooth_loses_trace=false (TraceTightener.smoothenEndCornersAtTrace1 tests the smoothed insert's failure conditions before it removes the trace, so a failed insert no longer loses the trace) and pull_tight_reused_lines_change=false (PolylineTrace.pullTight reports a change only when change() changed the trace, so a result whose lines are all reused goes on to the end smoothing and the pin exits), each alone and together, keep every registered board's routing within N02's totals rule (accept no-regress: correctness fixes) of Java's behaviour, with no new clearance violation; how often does each branch run; and does change()'s strict prefix or suffix identity case (Java ignores a new polyline that is a strict prefix or suffix of the old one by line identity) ever run?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "fixtures/Issue026-J2_reference.dsn": 2,
+      "fixtures/Issue155-CH376_MCP795_Module.dsn": 2,
+      "fixtures/Issue508-DAC2020_bm06.dsn": 2,
+      "fixtures/Issue558-dev-board.dsn": 2,
+      "fixtures/Issue217-8088sbc.dsn": 2,
+      "fixtures/Issue034-Green14SegLED.dsn": 2,
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at the implementing commit (N06.8's landing commit: main e6dc8bb plus N06.8's diff at registration), one Linux release build for every arm; profile legacy, so the arms differ from Java only in the two router.java_quirks keys, each given explicitly",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at the implementing commit (N06.8's landing commit: main e6dc8bb plus N06.8's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.smooth_loses_trace=true --router.java_quirks.pull_tight_reused_lines_change=true",
+      "settings": {},
+      "what": "baseline: both switches true, Java's pull-tight"
+    },
+    "smooth_loses_trace": {
+      "engine": "freerouting-rs at the implementing commit (N06.8's landing commit: main e6dc8bb plus N06.8's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.smooth_loses_trace=false --router.java_quirks.pull_tight_reused_lines_change=true",
+      "settings": {
+        "router.java_quirks.smooth_loses_trace": false
+      },
+      "what": "the end-corner smoothing keeps the trace when the smoothed insert would fail, alone"
+    },
+    "pull_tight_reused_lines_change": {
+      "engine": "freerouting-rs at the implementing commit (N06.8's landing commit: main e6dc8bb plus N06.8's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.smooth_loses_trace=true --router.java_quirks.pull_tight_reused_lines_change=false",
+      "settings": {
+        "router.java_quirks.pull_tight_reused_lines_change": false
+      },
+      "what": "pull-tight reports a change only when change_trace changed the trace, alone"
+    },
+    "all": {
+      "engine": "freerouting-rs at the implementing commit (N06.8's landing commit: main e6dc8bb plus N06.8's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.smooth_loses_trace=false --router.java_quirks.pull_tight_reused_lines_change=false",
+      "settings": {
+        "router.java_quirks.smooth_loses_trace": false,
+        "router.java_quirks.pull_tight_reused_lines_change": false
+      },
+      "what": "candidate: both fixes of batch P together"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "all",
+  "pairs": {
+    "verdict": [
+      "baseline",
+      "all"
+    ],
+    "reported": [
+      [
+        "baseline",
+        "smooth_loses_trace"
+      ],
+      [
+        "baseline",
+        "pull_tight_reused_lines_change"
+      ]
+    ]
+  },
+  "boards": {
+    "set": "tools/bench/sets/n06-p.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "files": {
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue155-CH376_MCP795_Module.dsn": "3080de09e60d0a713d8904016c694bbf9a79668b10a0d070d1a123023302a5d7",
+      "fixtures/Issue508-DAC2020_bm06.dsn": "31f38102d90a1bb4b901d4ca8d1877eb41752281ffa9de9f53a3cf69ba5231e2",
+      "fixtures/Issue558-dev-board.dsn": "f1d70cb705bd0ee4c415519dfde6c036c3bd46c2675d3d9e5fa2bfdb5d7ea480",
+      "fixtures/Issue217-8088sbc.dsn": "d7caa5a23e834c86829b4f9029691bac0410261eacfca90aff8d052e1ba2dfad",
+      "fixtures/Issue034-Green14SegLED.dsn": "17bf07ff18a668faaad7f4b575199672b4cff34649efe49e32eca59d2c76de63"
+    },
+    "choice": "chosen before any count, from the A14 exact boards that route to completion (so the batch optimizer, which runs pull-tight in every candidate, runs after the passes): Issue026-J2_reference (as in N06.7, N06.10 and N06.11), and five with 130 to 700 bends in A14, Issue155-CH376_MCP795_Module, Issue508-DAC2020_bm06, Issue558-dev-board, Issue217-8088sbc and Issue034-Green14SegLED; the plugin row adds pull-tight after every routed connection on a board the optimizer skips",
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path (plugin_canary below), outside n06_run.py"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "pull_tight_smooth_lost_traces",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "pull_tight_reused_lines_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "trace_change_prefix_suffix_ignored",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias": "the result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`",
+    "session_differences": "1 if the arm's SES differs byte for byte from the baseline arm's on that board",
+    "pull_tight_smooth_lost_traces": "run_stats counter (--stats json, total.counts): in either arm, end-corner smoothings whose smoothed insert fails (fewer than two corners, or zero length and not user fixed); Java loses the trace there, smooth_loses_trace=false keeps it",
+    "pull_tight_reused_lines_flips": "run_stats counter: in either arm, pull-tight results that change_trace ignores (every line reused, or the prefix or suffix case); Java reports a change there, pull_tight_reused_lines_change=false goes on to the end smoothing and the pin exits",
+    "trace_change_prefix_suffix_ignored": "run_stats counter: change_trace calls of any caller that return without a change although the new polyline has another line count (a strict prefix or suffix by identity, or the reverse); expected 0",
+    "kicad_unconnected, drc_real, via_in_pad, below_minimum": "the canary-pwr plugin row's grade (canary hardware/tools/grade.sh)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "Reachability first: if every run's pull_tight_smooth_lost_traces and pull_tight_reused_lines_flips are 0 and every session equals its baseline, no registered board reaches the branches, and the batch is accepted on its tests (both behaviours pinned).",
+    "Sessions identical but a counter above 0: the branch runs but decides nothing that reaches the output; the batch is neutral and accepted.",
+    "Otherwise the totals rule for the verdict pair (baseline, all): no new clearance violation on any DSN row, the plugin row's via_in_pad and below_minimum 0 and drc_real no higher than baseline's; the candidate's unrouted summed over the DSN rows plus the plugin row's kicad_unconnected at most the baseline's plus the set's noise, sqrt of the sum of the bands squared (sqrt(6*2^2 + 10^2) = 11.14); no row worse by more than twice its band.",
+    "A failed verdict pair is bisected through the two single-switch reported pairs; each switch is judged alone by the same rule.",
+    "trace_change_prefix_suffix_ignored is not a switch: 0 in every run confirms the reviewed list's claim that the case is unreachable; above 0 adds it to N06's inventory as a (b) row with its own switch and registration."
+  ],
+  "stop_rule": "One run per arm per row. No heavy run by the implementer.",
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.8.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-p",
+  "orchestrator": "Run orchestrator_command from the root of the tree that carries N06.8's diff (the main checkout /home/thebo/code/freerouting-rs once landed): it runs each arms.command on each boards.files row (6 rows x 4 arms = 24 runs), checks the input hashes, compares each SES with the baseline's and writes summary.json (session_differences, counts, statistics). It exits non-zero when a session differs, after every run: then apply the totals rule to summary.json's statistics. Then the plugin row.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the reachability and exact-session guards above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 9511d9a (git archive, unedited), as in N06.10's plugin-path run; never edit the source project.",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then append --router.profile=legacy, the arm's two explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. One exported input and one argument list serve every arm. Compare each session with the plugin baseline arm's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade. Retain export/import logs, versions, source hashes and grades."
+  },
+  "not_registered": "time (the fixes change no work budget); the enhanced profile (the arms run under legacy so that only the switches differ from Java); the any-angle and 90-degree modes (the registered boards route at 45 degrees, the default)"
+}
