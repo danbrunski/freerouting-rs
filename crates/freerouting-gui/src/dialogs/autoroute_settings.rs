@@ -141,6 +141,15 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "autorouter.pass_controller",
         "stage selection (A10), set with the CLI or a settings file",
     ),
+    ("autorouter.sweep", "quality option without a Java control"),
+    (
+        "autorouter.sweep_passes",
+        "quality option without a Java control",
+    ),
+    (
+        "autorouter.sweep_after_optimizer",
+        "quality option without a Java control",
+    ),
     ("fanout.max_passes", "fanout tuning without a Java control"),
     ("fanout.max_items", "fanout tuning without a Java control"),
     (

@@ -1,10 +1,101 @@
 {
   "format": "freerouting-ab-prereg-1",
-  "registered": "DRAFT (freerouting-rs-f1, 2026-10-17): not registered, no sha256 pinned; the orchestrator edits and registers",
-  "boards": {
-    "eligibility": "every board of tools/bench/sets/benchmark.txt, owner.txt and the 2-layer medium/hard rows of kicad-corpus.txt on which the unchanged engine at the registration commit (arm mp1) leaves at least one incomplete connection; the list is written here before any candidate arm runs. canary-pwr-9511d9a and pours1..3 count as one board (grouped, as in Q01.json).",
-    "files": "sha256 of every eligible DSN and .kicad_pcb, filled at registration"
+  "id": "Q10.4-add-only-sweep",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/Q10-add-only-completion-sweep.md (Q10.4)",
+  "question": "Does an add-only completion sweep after the best pass (rip-up off) leave fewer incomplete connections and fewer KiCad-unconnected items than the same run without it on at least N-1 eligible boards, with none worse, no new DRC errors, no via in a pad and no pour pins lost; and on canary-pwr-9511d9a at most 40 KiCad-unconnected (Java 7f56b062d add-only)?",
+  "arms": {
+    "mp1": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "what": "baseline: pass 1 only"
+    },
+    "mpdef": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150",
+      "what": "baseline: default passes with restores"
+    },
+    "mp1+sweep-fixed": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=fixed --router.autorouter.sweep_passes=2",
+      "what": "pass 1, then sweeps with pass-1 wiring frozen"
+    },
+    "mp1+sweep-free": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "what": "pass 1, then sweeps, wiring unfrozen"
+    },
+    "mp1+opt+sweep+opt": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_after_optimizer=true",
+      "what": "pass 1, optimizer, sweep, optimizer"
+    },
+    "mpdef+sweep": {
+      "engine": "freerouting-rs at the commit that lands the checklist",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 --router.autorouter.sweep=free",
+      "what": "default passes, then sweeps"
+    }
   },
+  "baseline_arm": "mp1",
+  "candidate_arm": "mp1+sweep-free",
+  "pairs": [
+    [
+      "mp1",
+      "mp1+sweep-fixed"
+    ],
+    [
+      "mp1",
+      "mp1+sweep-free"
+    ],
+    [
+      "mp1",
+      "mp1+opt+sweep+opt"
+    ],
+    [
+      "mpdef",
+      "mpdef+sweep"
+    ]
+  ],
+  "pairs_rule": "each pair is judged on its own by pass_rule; baseline_arm/candidate_arm name the primary pair for freerouting-dev gate; an arm passes only if it passes against its own baseline",
+  "boards": {
+    "set": "tools/bench/sets/q10-sweep.txt",
+    "eligibility": "every board of tools/bench/sets/benchmark.txt, owner.txt and the 2-layer medium/hard rows of kicad-corpus.txt on which the unchanged engine at the registration commit (arm mp1) leaves at least one incomplete connection; the list goes into `eligible` below, as an amendment that changes nothing else, before any candidate arm runs. canary-pwr-9511d9a and pours1..3 count as one board (grouped, as in Q01.json).",
+    "grouped": "fixtures/canary-pwr/*.dsn are one board for pass_rule (the variants of one placement)",
+    "board_flags": "none beyond the arm commands; the canary-pwr flags are in every command (start_ripup_costs 1500, min_trace_width_um 150), as Q01.7 used them",
+    "files": {
+      "fixtures/Issue433-my-board.dsn": "36ce022caadc2e375e7faa5ecd0325f45671df6a1cbe71c13e3f10bed7086b50",
+      "fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn": "e7af5da592bd5c5d19e0082ddedacea2ba4da2a264b7cfb57c336a0c9c4a80d2",
+      "fixtures/Issue508-DAC2020_bm02.dsn": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
+      "fixtures/Issue690-sonde_xilinx.dsn": "633bd6bba64d23dc39e011caa3c44a8382f94818367bc30254d6aaca698dd380",
+      "fixtures/Issue508-DAC2020_bm07.dsn": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85",
+      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "fixtures/Issue508-DAC2020_bm10.dsn": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
+      "fixtures/Issue093-interf_u.dsn": "73a6eb52f27fa3316a791db5f647de0be5d8a369d8c1faf6e275e3c9d1464baa",
+      "fixtures/Issue555-CNH_Functional_Tester_1.dsn": "4ba02ac7147bbef2ba00e3348392cc1339deca7b762ca5c975ba20d99e053d9e",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "fixtures/Issue753-CPU-85_r104.dsn": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "fixtures/Issue145-smoothieboard.dsn": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "fixtures/Issue219-LogicBoard_smt.dsn": "bffe922b51a45ea7816166f94488d37d6d3415c919d018af727e2d05257b76fc",
+      "fixtures/Issue420-contribution-board.dsn": "2b062515781ff5876c3cd851d844748a0acf48fd26e2b3c6c143fb457b2ce5a8",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
+      "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn": "34cbcd4395de90aa8533620c1b2bcb8138d761af2f1ed9f5773ba4d4daf2c1ef",
+      "target/corpus/prepped/mydevboard-rp2040dev.dsn": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753",
+      "target/corpus/prepped/slice-dcmt-bread-slice.dsn": "864260cbe7f5b10e66dfca1eb72d5992142ab9c31aba2911408dbbca871b8074",
+      "target/corpus/prepped/flight-computer-core-board.dsn": "e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86",
+      "target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn": "bbf5efcf28e4071395dda11c95744e4d9ed557e37d9f6bdc324f046c1ce9de5b",
+      "target/corpus/prepped/vfo-controller-catvfoctrl.dsn": "4896cc4b6a640c482cdd2c7e8a2e88e3ef86d5b1e811a19446c4a39fd3ff12a4",
+      "target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn": "c7bc16b327a495e34e6c457f6d5d79df5bad46beb55c15b304494cf8273c946f",
+      "target/corpus/prepped/eprom-card-80bus.dsn": "199e96972cb3b4651f1131154382da47eda7f2ba3bdfb03b34991e4a7b44264b",
+      "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn": "f390902a0b873eff6340805faad1185277f5ab3bee6eb22d186d5cb4821235e4"
+    }
+  },
+  "eligible": null,
   "grading": "tools/kicad-oracle/grade.sh where a .kicad_pcb exists (copper severities forced to error, input DRC subtracted, refill on); canary-pwr by canary-23 (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py)",
   "metrics": [
     {
@@ -77,55 +168,15 @@
     "improve_all_but": 1,
     "max_regress": 0
   },
-  "timing": "measured only after P04's default-tree decision",
-  "amendments": [],
-  "id": "Q10-add-only-sweep",
-  "checklist": "Q10 (draft): target/orchestrator/algo-research/PROPOSALS.md section 3",
-  "question": "Does an add-only completion sweep after the best pass (rip-up off) leave fewer incomplete connections and fewer KiCad-unconnected items than the same run without it on at least N-1 eligible boards, with none worse, no new DRC errors, no via in a pad and no pour pins lost; and on canary-pwr-9511d9a at most 40 KiCad-unconnected (Java 7f56b062d add-only)?",
-  "arms": {
-    "mp1": {
-      "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
-      "what": "baseline: pass 1 only"
-    },
-    "mpdef": {
-      "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150",
-      "what": "baseline: default passes with restores"
-    },
-    "mp1+sweep-fixed": {
-      "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=fixed --router.autorouter.sweep_passes=2",
-      "what": "pass 1, then sweeps with pass-1 wiring frozen"
-    },
-    "mp1+sweep-free": {
-      "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "what": "pass 1, then sweeps, wiring unfrozen"
-    },
-    "mp1+opt+sweep+opt": {
-      "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_after_optimizer=true",
-      "what": "pass 1, optimizer, sweep, optimizer"
-    },
-    "mpdef+sweep": {
-      "engine": "freerouting-rs at the commit that lands the checklist",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 --router.autorouter.sweep=free",
-      "what": "default passes, then sweeps"
-    }
-  },
-  "baseline_arm": [
-    "mp1",
-    "mpdef"
-  ],
-  "candidate_arm": [
-    "mp1+sweep-fixed",
-    "mp1+sweep-free",
-    "mp1+opt+sweep+opt",
-    "mpdef+sweep"
+  "keep_rule": "keep an arm as a setting (off by default) only if it passes; with several passing, the one with the fewest kicad_unconnected summed over the eligible boards, ties by fewest vias",
+  "stop_rule": "one registered run per arm per board after P04; no reruns with other settings",
+  "not_registered": [
+    "sweep_via_cost_factor 0.5 (cheaper-via completion arm): not listed before the first number, so it is not an arm of this registration"
   ],
   "decision_table": {
     "pass": "keep the best passing arm as a setting (off by default); DIVERGENCES line with the numbers; propose a default change only by the Q00 rules",
     "fail": "remove quality/sweep.rs; numbers in Q10.4's done note"
-  }
+  },
+  "timing": "measured only after P04's default-tree decision",
+  "amendments": []
 }

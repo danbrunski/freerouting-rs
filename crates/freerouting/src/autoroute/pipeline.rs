@@ -233,6 +233,10 @@ pub fn run_pipeline_with(
         Ok(pipeline) => pipeline,
         Err(e) => return Err(fail(PipelineError::UnknownStage(e), board)),
     };
+    // Q10: an unknown `router.autorouter.sweep` value fails before routing.
+    if let Err(e) = crate::quality::sweep::check_settings(settings) {
+        return Err(fail(PipelineError::UnknownStage(e), board));
+    }
     let watcher = Watcher::new(Arc::clone(&job.cancel));
     if let Some(limit) = job.deadline {
         watcher.arm(limit, StopLevel::All);
@@ -285,6 +289,17 @@ pub fn run_pipeline_with(
                 return Err(fail(PipelineError::NoRoutableLayer(e), board));
             }
         }
+        // Q10.3: optimizer, then the add-only sweep; the optimizer below
+        // runs again. Off by default.
+        crate::quality::sweep::after_optimizer(
+            &mut board,
+            &mut stages,
+            runner.as_mut(),
+            pipeline.optimizer.as_mut(),
+            &mut ctx,
+            &watcher,
+            &mut loop_outcome,
+        );
         outcome.loop_ran = true;
     }
     log.append(&mut loop_outcome.log);

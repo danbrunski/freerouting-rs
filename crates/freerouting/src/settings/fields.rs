@@ -283,6 +283,12 @@ settings_table! {
                 "Ripup policy stage id (A10.2); unset uses the `algorithm` bundle's."),
             (pass_controller, String, opt, None, None, "passController", [], Flat::No, true,
                 "Pass controller stage id (A10.2); unset uses the `algorithm` bundle's."),
+            (sweep, String, opt, None, None, "sweep", [], Flat::No, true,
+                "Add-only completion sweep after the passes: `off` (unset), `fixed` or `free` (Q10)."),
+            (sweep_passes, i32, opt, None, None, "sweepPasses", [], Flat::No, true,
+                "Most add-only sweep passes; unset is 2 (Q10)."),
+            (sweep_after_optimizer, bool, opt, None, None, "sweepAfterOptimizer", [], Flat::No, true,
+                "Run the sweep after the optimizer, then optimize again (Q10.3); unset is false."),
         }
         fanout, FanoutPatch, FanoutSettings, "fanout",
         "Configuration of the SMD-pin fanout pre-pass." {

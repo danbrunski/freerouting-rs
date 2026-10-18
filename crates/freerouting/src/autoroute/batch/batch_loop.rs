@@ -194,6 +194,11 @@ pub struct LoopOutcome {
     pub final_figures: Option<BoardFigures>,
     /// Java's job log lines, in order.
     pub log: Vec<LogLine>,
+    /// True if the finish ran the final `remove_tails(NONE)` (Q10's sweep
+    /// repeats it).
+    pub final_tails: bool,
+    /// Q10: the add-only sweep, if one ran.
+    pub sweep: Option<crate::quality::sweep::SweepOutcome>,
 }
 
 impl LoopOutcome {
@@ -251,6 +256,16 @@ pub fn run_batch_loop(
         figures = run.passes(board, stages, executor, ctx, timed_out, figures);
     }
     figures = run.finish(board, stages, executor, ctx, figures);
+    // Q10: the add-only sweep (`router.autorouter.sweep`, off by default).
+    if let Some(sweep) =
+        crate::quality::sweep::after_loop(board, stages, executor, ctx, &run.outcome, timed_out())
+    {
+        for text in &sweep.log {
+            run.outcome.info(text.clone());
+        }
+        figures = sweep.after.clone();
+        run.outcome.sweep = Some(sweep);
+    }
     run.board_stages(board, stages, ctx, StagePhase::AfterRouting);
     run.flush(board, ctx);
     if run.listening {
@@ -629,6 +644,7 @@ impl Run {
             ));
         }
         // PARITY: :635-639.
+        self.outcome.final_tails = decision.remove_tails;
         if decision.remove_tails {
             executor.remove_tails(board, StopConnectionOption::None);
             executor.audit(board, AuditPoint::Finish);

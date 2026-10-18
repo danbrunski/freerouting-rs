@@ -174,6 +174,10 @@ fn defaults_with_eight_cores() {
         ("autorouter.connection_router", None),
         ("autorouter.ripup_policy", None),
         ("autorouter.pass_controller", None),
+        // Q10: unset, which is off.
+        ("autorouter.sweep", None),
+        ("autorouter.sweep_passes", None),
+        ("autorouter.sweep_after_optimizer", None),
         ("special.plane_taps", None),
         ("special.neck_down", None),
         ("special.stages", None),

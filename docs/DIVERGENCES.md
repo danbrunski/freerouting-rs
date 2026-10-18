@@ -252,6 +252,10 @@ branch 3 in IntOctagon's box cutout.
   back as `wire_keepout`. It changes routes on `Issue754-avionics_hub` (its Ground layer accepts
   vias) and on canary-pwr's `in2-open-wirekeepout` variant; an image-level `wire_keepout` stays a
   keepout (`tests/trace_obstacle.rs`). Off by default until Q09.5's measurement.
+- `autorouter.sweep`, `autorouter.sweep_passes` and `autorouter.sweep_after_optimizer` (Q10,
+  `quality::sweep`) are settings fields Java does not have, unset by default (no sweep, Java's
+  routing). An unknown `sweep` value or a negative `sweep_passes` fails the job before routing,
+  naming the key (`unknown_sweep_settings_are_refused_before_routing`).
 - The D9 stage keys (A10.2) are settings fields Java does not have, unset by default
   (unset uses the `autorouter.algorithm` bundle): `fanout.algorithm`,
   `autorouter.{ordering, connection_router, ripup_policy, pass_controller}` and the
@@ -433,6 +437,19 @@ Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
   so Java's two neck-downs never narrow (the fanout's micro neck-downs still may); routes
   change where Java would have necked
   (`strict_sizes_turn_the_neck_downs_off_and_add_the_report`).
+
+**Add-only completion sweep** (`quality::sweep`, Q10; tests `tests/quality_sweep.rs`)
+- New, with no Java counterpart (Java reaches it only with a second run on frozen wiring, through
+  KiCad's exporter): with `router.autorouter.sweep=fixed|free` the job runs Java's pass again
+  after the batch loop's best-board restore, with rip-up off and no repeated-failure ripup, up to
+  `sweep_passes` (2) times, keeping a pass only if it routed something and raised neither the
+  incomplete count nor the clearance violations. `fixed` marks the earlier wiring user-fixed for
+  the sweep and gives it its state back afterwards; `free` lets pull-tight and the shover move it.
+  With `sweep_after_optimizer` the sweep runs between a first optimizer run and the pipeline's
+  own. On `q06-sole-wall.dsn` with `-mp 1` the board ends complete with either arm and with one
+  incomplete connection without (`sole_wall_ends_complete_with_the_sweep_and_incomplete_without`);
+  off is the unchanged engine (`off_is_the_unchanged_engine`, and the A14 gate). Off by default
+  until Q10.4's measurement.
 
 **Shove checks** (`shove`, O03; tests `tests/board_probe_shove.rs`)
 - The fast cutout (`ShapeTraceEntries.fastCutoutTrace`) of a trace with a segment that has

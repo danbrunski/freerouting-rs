@@ -1,0 +1,40 @@
+# Q10.4: the boards of the add-only completion sweep measurement
+# (docs/roadmap/tasks/archive/Q10-add-only-completion-sweep.md), registered in
+# docs/roadmap/prereg/Q10.json. This is the universe; the eligible boards are those on which
+# arm mp1 (the unchanged engine) leaves at least one incomplete connection, written into the
+# registration's `eligible` list before any candidate arm runs. The canary-pwr rows count as
+# one board (grouped, as in Q01.json).
+# benchmark.txt
+fixtures/Issue433-my-board.dsn
+fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn
+fixtures/Issue508-DAC2020_bm02.dsn
+fixtures/Issue690-sonde_xilinx.dsn
+fixtures/Issue508-DAC2020_bm07.dsn
+fixtures/Issue508-DAC2020_bm01.dsn
+fixtures/Issue508-DAC2020_bm10.dsn
+fixtures/Issue093-interf_u.dsn
+fixtures/Issue555-CNH_Functional_Tester_1.dsn
+fixtures/Issue269-z10_module.dsn
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn
+fixtures/Issue753-CPU-85_r104.dsn
+fixtures/Issue066-Project_GP8B.dsn
+fixtures/Issue145-smoothieboard.dsn
+fixtures/Issue219-LogicBoard_smt.dsn
+fixtures/Issue420-contribution-board.dsn
+# owner.txt (in the repository) and the board on hold, one group
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+fixtures/canary-pwr/canary-pwr-pours1.dsn
+fixtures/canary-pwr/canary-pwr-pours2.dsn
+fixtures/canary-pwr/canary-pwr-pours3.dsn
+fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn
+fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn
+# kicad-corpus.txt, the 2-layer medium and hard rows (F03.3's out-of-repo corpus,
+# tools/corpus/fetch.sh then tools/corpus/prep.sh; skipped while missing)
+target/corpus/prepped/mydevboard-rp2040dev.dsn
+target/corpus/prepped/slice-dcmt-bread-slice.dsn
+target/corpus/prepped/flight-computer-core-board.dsn
+target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn
+target/corpus/prepped/vfo-controller-catvfoctrl.dsn
+target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn
+target/corpus/prepped/eprom-card-80bus.dsn
+target/corpus/prepped/rio-iceshield-rio-iceshield.dsn
