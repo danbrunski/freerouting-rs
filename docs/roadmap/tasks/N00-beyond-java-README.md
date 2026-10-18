@@ -38,6 +38,7 @@ change of direction; this series carries it out.
 | [N03](N03-free-the-tree-again.md) | P04's canonical room order, judged again under N02 on fresh boards; if kept, it is `enhanced`'s default, and then the faster tree (P04.3) | L / high: changes routes everywhere | N01, N02; P04's saved patch |
 | [N04](N04-contacts-inside-pads.md) | A trace end inside a same-net pad counts as connected (KiCad's rule) in `enhanced` | S–M / medium | N01 |
 | [N05](N05-promote-accepted-stages.md) | Each accepted Q, X or K improvement becomes part of `enhanced`; the CLI registers the KRT stages | S per stage | N01; each stage's own measurement |
+| [N06](N06-fix-kept-java-bugs.md) | The Java bugs kept for parity: sort them; fix the harmless ones outright, the rest under `enhanced` behind per-bug switches, measured in batches | M–L / medium: geometry and search changes | N01, N02, N05 |
 
 ## Order
 
