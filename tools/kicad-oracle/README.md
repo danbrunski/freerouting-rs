@@ -63,8 +63,20 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
 `input_tracks_and_vias_removed`, `drc_real` and `drc_real_by_type`
 (router-attributable), `preexisting`, `unconnected_items` and
 `input_unconnected_items`, `routed_by_type`, `input_by_type`,
-`capped_types`, `copper`, `originals_unchanged`, `exit_code`; or `graded:
-false` with a `reason`.
+`capped_types`, `netclass_clearance`, `copper`, `originals_unchanged`,
+`exit_code`; or `graded: false` with a `reason`.
+
+`netclass_clearance` (N05.3, Q14) counts the routed board's clearance and
+hole-clearance items whose rule is a net-class clearance. KiCad names the rule
+it applied in the item description (`netclass 'Power_High' clearance 0.2500
+mm`, against `board minimum clearance`, `board setup constraints hole
+clearance`, `rule 'x'` or, for an item without a net class, an empty source),
+and it applies the largest rule, so a net-class source means the class
+clearance is at least the board minimum. `netclass_via_clearance_errors`: such
+items with two items, one of them a via, on two different nets;
+`netclass_clearance_errors`: all of them. `python3 oracle_lib.py
+netclass-clearance DRC.json` prints both for any KiCad `drc.json` (canary's
+grade, for one).
 
 `tidiness` (Q15.2): when `freerouting-dev` is built (`FREEROUTING_DEV`, default
 `target/release/freerouting-dev`), `grade.sh` also scores the SES the engine wrote

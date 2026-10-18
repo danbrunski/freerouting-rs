@@ -239,19 +239,6 @@ pub struct Experimental {
 pub const EXPERIMENTAL: &[Experimental] = &[
     Experimental {
         kind: ExperimentalKind::Option,
-        key: "via_clearance",
-        slot: "connection_router",
-        class: "boards whose net classes ask a larger via clearance than the default class",
-        help: "`net_class` gives a routed via its net class's clearance, as KiCad checks it \
-               (Q14; N05.3 rejected it as a default). Wins on boards with power net classes \
-               above the default clearance: canary-pwr (the plugin run's last class-via error, \
-               1 -> 0) and overlord (KiCad drc_real 249 -> 209; 35 -> 8 clearance errors in \
-               Q14.3). It adds no violation and no via in a pad, and it costs connections on \
-               canary-pwr: KiCad unconnected 37 -> 44 (plugin path) and 45 -> 49, equal at 33 \
-               with the sweep. A new registration that counts netclass violations only is planned.",
-    },
-    Experimental {
-        kind: ExperimentalKind::Option,
         key: "cleanup.remove_stubs",
         slot: "optimizer",
         class: "boards with fixed pour strips and dangling vias (canary-pwr, interf_u)",

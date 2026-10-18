@@ -192,6 +192,51 @@ def item_nets(violation):
     return tuple(sorted(nets))
 
 
+# KiCad names the rule a clearance item broke in its description:
+# "Clearance violation (netclass 'Power_High' clearance 0.2500 mm; actual ...)"
+# for a net-class rule, "(board minimum clearance ...)" or "(board setup
+# constraints hole clearance ...)" for the board's own minimum, "(rule 'x'
+# clearance ...)" for a custom rule, and "( clearance ...)" against an item with
+# no net class (text, graphics). KiCad applies the largest rule, so a net-class
+# source means the class clearance is at least the board minimum.
+NETCLASS_RULE = re.compile(r"\(netclass '([^']*)'")
+CLEARANCE_TYPES = ("clearance", "hole_clearance")
+
+
+def netclass_rule(violation):
+    """The net class whose clearance rule a clearance item broke, else None."""
+    if violation.get("type") not in CLEARANCE_TYPES:
+        return None
+    match = NETCLASS_RULE.search(violation.get("description", ""))
+    return match.group(1) if match else None
+
+
+def _item_net(item):
+    match = re.search(r"\[([^\]]*)\]", item.get("description", ""))
+    return match.group(1) if match else None
+
+
+def is_netclass_via_clearance(violation):
+    """N05.3 (Q14): a clearance or hole-clearance item whose rule is a net-class
+    clearance, with a via as one item and two different nets."""
+    if netclass_rule(violation) is None:
+        return False
+    items = violation.get("items", [])
+    has_via = any(i.get("description", "").startswith("Via ") for i in items)
+    nets = {_item_net(i) for i in items}
+    return has_via and len(items) == 2 and len(nets) == 2
+
+
+def netclass_clearance(violations):
+    """`netclass_via_clearance_errors` (the N05.3 via-clearance metric) and
+    `netclass_clearance_errors` (any item pair under a net-class rule)."""
+    rule = [v for v in violations if netclass_rule(v) is not None]
+    return {
+        "netclass_via_clearance_errors": sum(1 for v in rule if is_netclass_via_clearance(v)),
+        "netclass_clearance_errors": len(rule),
+    }
+
+
 def _position(violation):
     items = violation.get("items", [])
     if not items or "pos" not in items[0]:
@@ -255,6 +300,7 @@ def summarize(routed_drc, unrouted_drc, copper, meta):
             "routed_by_type": routed_counts,
             "input_by_type": by_type(unrouted_drc.get("violations", [])),
             "capped_types": capped_types(routed_counts),
+            "netclass_clearance": netclass_clearance(routed_drc.get("violations", [])),
             "copper": copper,
             "exit_code": exit_code,
         }
@@ -304,6 +350,7 @@ USAGE = """usage: python3 oracle_lib.py COMMAND ...
   force-errors PROJECT.kicad_pro                  rewrites it in place
   summarize ROUTED_DRC.json INPUT_DRC.json COPPER.json META.json OUT.json
   add-tidiness SUMMARY.json TIDY.json            adds `tidiness`; a missing TIDY.json changes nothing
+  netclass-clearance DRC.json                    prints the net-class clearance counts as JSON
   not-graded REASON OUT.json [META.json]"""
 
 
@@ -351,6 +398,12 @@ def main(argv):
         if summary is not None and tidy is not None:
             with open(args[0], "w", encoding="utf-8") as f:
                 json.dump(add_tidiness(summary, tidy), f, indent=2)
+    elif command == "netclass-clearance" and len(args) == 1:
+        drc = _load_json(args[0])
+        if drc is None:
+            print("unreadable DRC report: %s" % args[0], file=sys.stderr)
+            return EXIT_NOT_GRADED
+        print(json.dumps(netclass_clearance(drc.get("violations", [])), sort_keys=True))
     elif command == "not-graded" and len(args) in (2, 3):
         meta = _load_json(args[2], {}) if len(args) == 3 else {}
         with open(args[1], "w", encoding="utf-8") as f:

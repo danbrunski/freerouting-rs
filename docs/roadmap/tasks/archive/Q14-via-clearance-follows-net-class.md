@@ -117,7 +117,7 @@ Prerequisites: C02 (the settings model); N01 (the fix goes into `enhanced`, and
   6 cutoff) pass, **22 of 22 SES byte-identical**, 2219.1 s; plus the three subdirectory
   boards (`min_fr_test`, `Issue269-NoViasOnPowerPlanes`, `TestSensel`, `PARITY_BOARDS`): 3 of 3
   exact and byte-identical. 25 of 25, as at Q10.
-- [~] **Q14.3 — Measure.** Register before the first number (N02's totals rule), on
+- [x] **Q14.3 — Measure.** Register before the first number (N02's totals rule), on
   `canary-pwr` (the add-only fixture and placement variants a and b) and two corpus
   boards with class-specific clearances.
   - **Accept:**
@@ -199,3 +199,19 @@ Prerequisites: C02 (the settings model); N01 (the fix goes into `enhanced`, and
   clearance). Totals 119 → 130, within the noise 13.60. canary-plugin45: 37 → 44 unconnected, class-via
   errors 1 → 0, drc_real 1 → 0; 9511d9a mp1 45 → 49, mp1+sweep 33 → 33; Issue180 identical sessions.
   Numbers and the operator decision in N05.3. `net_class` stays off.
+
+  *Done 2026-10-18:* accepted by N05.3 on the operator's decision (a registration whose clearance metric
+  counts only KiCad's net-class-rule items, on boards the last one did not route). Registration
+  `docs/roadmap/prereg/N05-via-clearance-netclass.json` (`08ede5c0…`, before any number, pinned by
+  `crates/freerouting-dev/tests/prereg_n05_netclass.rs`), set `tools/bench/sets/n05-via-clearance-netclass.txt`
+  (canary-pwr's plugin path plus pic_programmer, tinytapeout-demo, RoyalBlue54L-Feather,
+  slice-dcmt-bread-slice and CM5_MINIMA_3), `enhanced` at 4555d4b against `enhanced` plus `net_class`,
+  metric `netclass_via_clearance_errors` (`tools/kicad-oracle/oracle_lib.py`, `NetclassClearanceTest`).
+  Clause 1: KiCad reports no clearance error between a 0.25 mm-class via and another net in the `net_class`
+  arm: canary-plugin45's `+12V_PROT` (Power_High) via 0.245 mm, the plugin path's last copper error, is
+  gone (net-class via errors 1 → 0, drc_real 1 → 0), and no row has one (tinytapeout-demo's pwrhi 0.25 mm
+  items are the input's USB-C pad pairs, no via). Clause 2: `freerouting-dev gate` **PASS**, totals 263 →
+  261 against set noise 42.70 (canary-pwr 36 → 41, band 10). Clause 3: N05.3 added `via_clearance =
+  net_class` to `ENHANCED` (`settings/profile.rs`, `tests/settings_profile.rs::enhanced_sets_via_clearance_net_class`,
+  DIVERGENCES "Profile `enhanced`"). Table in N05.3. Variants a and b stay unmeasured (no pass-1 DSN; not
+  registered in any of the three registrations).

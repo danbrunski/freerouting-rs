@@ -296,8 +296,9 @@ IntOctagon's box cutout.
   appends the board's first via rule, whose infos carry the default class: on
   `tests/data/quality/q14-hv-via.dsn` Java and `via_info` put a default-class 0.6 mm via on the
   0.25 mm class's net 0.2322 mm from another net, and `net_class` keeps 0.25 mm
-  (`tests/via_clearance_net_class.rs`); an unknown value fails the job, naming the key. Off by
-  default until Q14.3's measurement; N05 decides `enhanced`.
+  (`tests/via_clearance_net_class.rs`); an unknown value fails the job, naming the key. Unset
+  (Java's rule) under profile `legacy`; N05.3 made `net_class` `enhanced`'s default (see
+  "Profile `enhanced`").
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
   by default and in both profiles (off: Java leaves the stubs of unfinished connections on the
   board). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
@@ -1405,3 +1406,14 @@ checks that this list and the table agree.
   via in a pad or power-layer trace; copper under the Board Setup width on the rows where the
   narrowing acted 848.9 → 310.4 mm. The retry acts on every class wider than 300 µm, not only
   the wide ones.
+- `via_clearance` = `net_class` (N05.3, `docs/roadmap/prereg/N05-via-clearance-netclass.json`):
+  a via the autorouter checks or inserts for a net takes its net class's via clearance class
+  (Q14, Autorouter `via_clearance`), as KiCad clears a via, where Java takes the via info's;
+  the fanout's fallback via of the board's first via rule no longer lands at the default
+  class's clearance on a wider class's net. Judged by N02's totals rule (`accept: no-regress`,
+  `freerouting-dev gate`: PASS) against `enhanced` without it, its clearance clause counting
+  only KiCad's net-class-rule items (board-minimum clearance, which the DSN does not carry, is
+  not judged): KiCad unconnected 263 → 261 over canary-pwr's plugin path, pic_programmer,
+  tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice and CM5_MINIMA_3 (set noise
+  42.70; canary-pwr 36 → 41), net-class via clearance errors 2 → 1 (canary-pwr's `+12V_PROT`
+  via 1 → 0), no via in a pad, copper below the minimum or power-layer trace.

@@ -21,6 +21,10 @@
 //!   other net, and the DRC flags a hand-placed HV via at 0.2 mm under both
 //!   settings. The rules file round-trips the class-named via infos the DSN
 //!   reader makes (`<padstack>-HV`).
+//! - N05.3: profile `enhanced` sets `net_class`
+//!   (`docs/roadmap/prereg/N05-via-clearance-netclass.json`), so every test
+//!   here pins `legacy`, where an unset key is Java's `via_info`, except
+//!   `enhanced_routes_net_hv_with_the_net_class_rule`.
 
 mod autoroute_common;
 
@@ -39,6 +43,7 @@ use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::io::specctra::{read_rules, read_session, rules_from_board};
 use freerouting::job::prepare::{JobError, JobInput, PreparedJob, RulesChoice, prepare_job};
 use freerouting::rules::ItemClass;
+use freerouting::settings::profile::legacy_pin;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
 
@@ -53,9 +58,19 @@ fn fixture_text() -> String {
 }
 
 /// The fixture loaded as `run.sh route` loads it: the optimizer off, at most
-/// five passes, plus `extra`.
+/// five passes, profile `legacy` (Java's defaults, so an unset
+/// `via_clearance` is Java's `via_info`), plus `extra`.
 fn prepare(dsn: &str, extra: &[(&str, &str)]) -> Result<PreparedJob, JobError> {
+    prepare_as(dsn, extra, true)
+}
+
+/// [`prepare`] under `legacy` when `legacy`, else under the default profile
+/// (`enhanced`).
+fn prepare_as(dsn: &str, extra: &[(&str, &str)], legacy: bool) -> Result<PreparedJob, JobError> {
     let mut profile = TestingProfile::default();
+    if legacy {
+        profile.patch.profile = legacy_pin().profile;
+    }
     profile.set_optimizer_enabled(false);
     profile.set_max_passes(5);
     for (key, value) in extra {
@@ -71,7 +86,11 @@ fn prepare(dsn: &str, extra: &[(&str, &str)]) -> Result<PreparedJob, JobError> {
 }
 
 fn route(extra: &[(&str, &str)]) -> RoutingBoard {
-    let prepared = prepare(&fixture_text(), extra).expect("the fixture loads");
+    route_as(extra, true)
+}
+
+fn route_as(extra: &[(&str, &str)], legacy: bool) -> RoutingBoard {
+    let prepared = prepare_as(&fixture_text(), extra, legacy).expect("the fixture loads");
     let job = PipelineJob {
         settings: &prepared.settings,
         board_settings: &prepared.board_settings,
@@ -265,6 +284,30 @@ fn net_class_keeps_net_hv_s_via_at_the_class_clearance() {
         let gap = gap_to_other_nets_um(&board, via);
         assert!(gap >= 250.0, "{via:?}: gap {gap} um");
         assert!(board.clearance_violations(via).is_empty());
+    }
+    assert_eq!(DesignRulesChecker::new(&board).incomplete_count(), 0);
+    assert!(board.all_clearance_violations().is_empty());
+}
+
+/// N05.3 (`docs/roadmap/prereg/N05-via-clearance-netclass.json`): profile
+/// `enhanced` sets `via_clearance = net_class`, so with no key set HV's via
+/// keeps HV's clearance, as with the explicit setting; `legacy` keeps Java's
+/// `via_info` (the test above).
+#[test]
+fn enhanced_routes_net_hv_with_the_net_class_rule() {
+    let prepared = prepare_as(&fixture_text(), &[], false).expect("the fixture loads");
+    assert_eq!(
+        prepared.board_settings.via_clearance(),
+        ViaClearanceMode::NetClass
+    );
+    let board = route_as(&[], false);
+    let hv = net(&board, "HV");
+    let hv_class = class_no(&board, "HV");
+    let vias = vias_of(&board, hv);
+    assert!(!vias.is_empty(), "HV still gets out of the cage");
+    for via in vias {
+        assert_eq!(board.item(via).unwrap().clearance_class(), hv_class);
+        assert!(gap_to_other_nets_um(&board, via) >= 250.0);
     }
     assert_eq!(DesignRulesChecker::new(&board).incomplete_count(), 0);
     assert!(board.all_clearance_violations().is_empty());

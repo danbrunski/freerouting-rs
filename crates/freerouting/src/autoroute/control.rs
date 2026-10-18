@@ -21,7 +21,8 @@
 //! the search checks or inserts takes the net class's via clearance class
 //! in place of its via info's
 //! ([`via_info_clearance_class`](AutorouteControl::via_info_clearance_class),
-//! [`via_clearance`](super::via_clearance)); the default is Java's rule.
+//! [`via_clearance`](super::via_clearance)); unset is Java's rule (profile
+//! `legacy`), and profile `enhanced` sets `net_class` (N05.3).
 //!
 //! **The fanout's merged via rule** (A12.1). `RoutingBoard.fanout` replaces
 //! `viaRule` by a new `ViaRule` that is not on the board: the class's vias

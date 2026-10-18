@@ -216,3 +216,61 @@ Prerequisites: N01; each candidate's own accepted measurement.
     errors); plugin45 A 37, B 36 (starved 5, the same Q14 `+12V_PROT` via clearance error, 0.245 mm).
     canary-7a: no objection; on canary its value is the safety net for un-narrowed classes
     (49 → 35), and the full-width Power_High it ships is not a defect.
+
+  - **2026-10-18, accepted: `router.via_clearance = net_class`** (Q14; judged a third time on the
+    operator's decision after the rejection above, under a registration whose clearance metric
+    counts only KiCad's net-class-rule items). Registration
+    `docs/roadmap/prereg/N05-via-clearance-netclass.json` (`08ede5c0…`, before any number, no
+    amendment), pinned by `crates/freerouting-dev/tests/prereg_n05_netclass.rs` (3 tests); set
+    `tools/bench/sets/n05-via-clearance-netclass.txt`: canary-pwr's plugin path
+    (`plugin-b1994423.dsn`, the plugin45 flags) plus five boards N05-via-clearance.json did not route,
+    each with a net class whose clearance is above the default's and the board minimum
+    (pic_programmer POWER 0.28/0.25, tinytapeout-demo pwr 0.23 and pwrhi 0.25/0.2, RoyalBlue54L-Feather
+    USB_DIFF 0.2032/0.15, corpus slice-dcmt-bread-slice HV Relay 1.25/0.2, CM5_MINIMA_3 100ohm and
+    90ohm 0.2/0.13). Arms: `enhanced` at origin/main 4555d4b (`power_layer_traces = none`,
+    `neck_width_um = 300`) against `enhanced` plus `--router.via_clearance=net_class`; one Linux
+    release build (`46f39e11…`). New metric `netclass_via_clearance_errors`
+    (`tools/kicad-oracle/oracle_lib.py` `netclass_clearance`, the `netclass-clearance` command and
+    the summary's `netclass_clearance`; `tests/test_oracle_lib.py` `NetclassClearanceTest`, 4 tests
+    on captured KiCad 10.0.7 items): clearance and hole-clearance items whose description names a
+    net-class rule (`netclass '<class>' clearance`), with a via and two nets; board-minimum,
+    board-setup, custom-rule and no-net items do not count. Role guard (must not rise on any row),
+    with via in a pad, copper below the minimum and power-layer traces hard. Canary row graded with
+    canary's `grade.sh` steps (WSL KiCad 10.0.7, Q13's path shim, canary b1994423), the others with
+    `tools/kicad-oracle/grade.sh` plus `via_in_pad.py`/`inner_tracks.py` and `freerouting-dev
+    power-traces`. Calibration: arm `enhanced` on canary-plugin45 writes the neck-down entry's arm B
+    session (`3d2cedef…`) and grades as it did (36, the `+12V_PROT` via). N02 totals rule, `accept:
+    no-regress`; `freerouting-dev gate --records records.json --baseline baseline.json --prereg ...`:
+    **PASS** (0 refusals; total 263 → 261, −2 against set noise 42.70; no board beyond twice its band).
+
+    | row | KiCad unconnected (enhanced → +netclass) | net-class via clearance errors | net-class clearance items (all) | drc_real | vias | wall s |
+    |---|---|---|---|---|---|---|
+    | canary-plugin45 | 36 → 41 | 1 → **0** | 1 → 0 | 1 → 0 (starved 5 → 8) | 128 → 125 | 106.2 → 104.6 |
+    | pic_programmer | 2 → 2 (identical sessions) | 0 → 0 | 0 → 0 | 2 → 2 | 0 → 0 | 0.3 → 0.3 |
+    | tinytapeout-demo | 103 → 104 | 0 → 0 | 4 → 4 (USB-C pad pairs of the input) | 37 → 37 | 126 → 129 | 1038 → 1114 |
+    | RoyalBlue54L-Feather | 91 → 87 | 0 → 0 | 0 → 0 | 81 → 81 | 71 → 62 | 92.6 → 140.1 |
+    | slice-dcmt-bread-slice | 9 → 9 (identical sessions) | 0 → 0 | 0 → 0 | 2 → 2 | 8 → 8 | 0.5 → 0.5 |
+    | CM5_MINIMA_3 | 22 → 18 | 1 → 1 | 1 → 1 | 38 → 38 | 187 → 167 | 83.7 → 106.2 |
+
+    Hard metrics (via in pad, below minimum, power-layer traces) are 0 in every run. CM5_MINIMA_3's
+    one net-class via item differs between the arms: `enhanced` has a `/CM5/USB2P.D_P` via (class
+    90ohm, 0.2 mm) 0.158 mm from a GND pad of D701, which `net_class` removes; `net_class` has a
+    `+3V3_PI` via (default class) 0.111 mm from a `/CM5/PCIE_PI.PWR_EN` track (class 90ohm), a pair
+    the via's own class does not decide. pic_programmer's identical session graded twice gave
+    drc_real 2 both times but filed one item as `shorting_items` the second time (grading noise seen
+    before); the first grade counts. On canary `net_class` removes the plugin path's last copper error
+    and costs 5 unconnected (band 10), so the plugin result goes from not counting at 36 to 41 with
+    no copper error (self-grade; the official grade is canary's). `ENHANCED` entry in
+    `settings/profile.rs`, DIVERGENCES "Profile `enhanced`" line (and the Autorouter `via_clearance`
+    line updated), `tests/settings_profile.rs::enhanced_sets_via_clearance_net_class`, help text in
+    `settings/fields.rs`; `tests/via_clearance_net_class.rs` now pins `legacy` (Java's `via_info`
+    is the unset value there) and `enhanced_routes_net_hv_with_the_net_class_rule` pins the new
+    default. End to end with the rebuilt CLI on plugin45 with the plugin's flags and no via flag: the
+    `net_class` session byte for byte (`4c8cb7e1…`). Sessions for canary's official grade:
+    `target/canary-handoff/2026-10-18-netclass/` (2 SESs, the DSN, `SHA256SUMS`, `README.txt` with
+    flags and the self-grade).
+    *Official grade (canary-7a, 2026-10-18, `grade.sh`, KiCad 10.0.5, canary b1994423):* both match
+    the self-grade: plugin45 `enhanced` 36 unconnected, 5 starved, 1 clearance error (the
+    `+12V_PROT` via, 0.245 mm), 16 dangling vias; `enhanced` + `net_class` 41, 8 starved, 0 copper
+    errors, 17 dangling vias. canary-7a: the promotion stays; 41 is the first plugin-path result
+    on canary-pwr that counts, and the gap to the CLI sweep's 33 is the next to close.

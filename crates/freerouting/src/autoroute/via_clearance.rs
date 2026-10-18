@@ -24,8 +24,9 @@
 //! - `net_class`: a via the autorouter checks or inserts for net N uses N's
 //!   net class's via clearance class (`default_item_clearance_classes` of
 //!   `Via`), whichever via info it came from. A deliberate divergence
-//!   (`docs/DIVERGENCES.md`, "Autorouter"); N05 makes it `enhanced`'s
-//!   default once Q14.3 accepts it.
+//!   (`docs/DIVERGENCES.md`, "Autorouter"), and profile `enhanced`'s
+//!   default since N05.3 accepted it
+//!   (`docs/roadmap/prereg/N05-via-clearance-netclass.json`).
 //!
 //! Only the autorouter reads it ([`AutorouteControl`]): the maze search's
 //! drill check, the first-via clearance class (`via_clearance_class`, which

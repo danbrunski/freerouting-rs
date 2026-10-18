@@ -31,7 +31,7 @@ settings access.
 | What the switches ride on | `BoardRouterSettings` (`settings/board.rs`), `AutorouteControl` (`autoroute/control.rs`), `BasicBoard` (`board/basic_board.rs`), `ReadContext` (`io/specctra/parser/mod.rs`), geometry `split_to_convex` (`freerouting-geometry/src/shapes/`) |
 | A test pinning each bug's Java behaviour | the "Test pinning Java today" columns below |
 | The A14 exact set (106 boards, byte-identical to Java) | `tests/autoroute_board_parity.rs`; the command is in [A14](archive/A14-board-parity-gate.md)'s done note (about 1.5 h, release) |
-| Measurement: preregistration, board sets, baselines | `docs/roadmap/routing-quality.md` "How to measure a quality change"; `docs/roadmap/prereg/*.json`; `tools/bench/sets/*.txt`; Q14 is a worked example ([Q14](Q14-via-clearance-follows-net-class.md), `prereg/Q14.json`, `sets/q14-via-clearance.txt`) |
+| Measurement: preregistration, board sets, baselines | `docs/roadmap/routing-quality.md` "How to measure a quality change"; `docs/roadmap/prereg/*.json`; `tools/bench/sets/*.txt`; Q14 is a worked example ([Q14](archive/Q14-via-clearance-follows-net-class.md), `prereg/Q14.json`, `sets/q14-via-clearance.txt`) |
 
 This checklist adds the `router.java_quirks.*` switches, the fixes behind them, and their
 measurements.

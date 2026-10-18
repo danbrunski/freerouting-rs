@@ -151,5 +151,125 @@ class OracleLibTest(unittest.TestCase):
         self.assertEqual(lib.capped_types({"track_width": 199, "clearance": 424}), ["track_width"])
 
 
+# Captured from KiCad 10.0.7 drc.json files of N05.3's runs (canary-pwr plugin45 under
+# enhanced, overlord), plus a track pair, a no-net text and a same-net item in the same form.
+NETCLASS_DRC = {
+    "violations": [
+        {
+            "description": "Clearance violation (netclass 'Power_High' clearance 0.2500 mm; actual 0.2450 mm)",
+            "items": [
+                {"description": "Track [/Holdup/LTC_INTVCC] on B.Cu, length 5.4128 mm",
+                 "pos": {"x": 137.0498, "y": 65.9488}},
+                {"description": "Via [+12V_PROT] on F.Cu - B.Cu", "pos": {"x": 136.3548, "y": 68.9598}},
+            ],
+            "severity": "error",
+            "type": "clearance",
+        },
+        {
+            "description": "Clearance violation (board minimum clearance 0.1750 mm; actual 0.1079 mm)",
+            "items": [
+                {"description": "Pad 2 [Net-(J7-ANODE_GREEN/_CATHODE_YELLOW)] of R12 on Front",
+                 "pos": {"x": 82.71, "y": 83.1}},
+                {"description": "Via [ETH_LED_Y] on Front - Back", "pos": {"x": 83.3022, "y": 82.5487}},
+            ],
+            "severity": "error",
+            "type": "clearance",
+        },
+        {
+            "description": "Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.2350 mm)",
+            "items": [
+                {"description": "Via [+12V_BUS] on F.Cu - B.Cu", "pos": {"x": 1.0, "y": 1.0}},
+                {"description": "Track [GND] on B.Cu, length 1.0000 mm", "pos": {"x": 1.1, "y": 1.0}},
+            ],
+            "severity": "error",
+            "type": "hole_clearance",
+        },
+        {
+            "description": "Clearance violation (netclass 'Power_High' clearance 0.2500 mm; actual 0.2353 mm)",
+            "items": [
+                {"description": "Track [~{PWR_FAIL}] on B.Cu, length 6.0352 mm", "pos": {"x": 2.0, "y": 2.0}},
+                {"description": "Track [+12V_BUS] on B.Cu, length 1.2000 mm", "pos": {"x": 2.1, "y": 2.0}},
+            ],
+            "severity": "error",
+            "type": "clearance",
+        },
+        {
+            "description": "Clearance violation ( clearance 0.1500 mm; actual 0.0398 mm)",
+            "items": [
+                {"description": "Via [/DTIN1] on Top_layer - B.Cu", "pos": {"x": 3.0, "y": 3.0}},
+                {"description": "PCB text 'MOD0' on Top_layer", "pos": {"x": 3.1, "y": 3.0}},
+            ],
+            "severity": "error",
+            "type": "clearance",
+        },
+        {
+            "description": "Hole clearance violation (netclass 'HV Relay' clearance 1.2500 mm; actual 1.0000 mm)",
+            "items": [
+                {"description": "Via [HV Line] on F.Cu - B.Cu", "pos": {"x": 4.0, "y": 4.0}},
+                {"description": "Pad 1 [NC2] of K1 on F.Cu", "pos": {"x": 4.1, "y": 4.0}},
+            ],
+            "severity": "error",
+            "type": "hole_clearance",
+        },
+        {
+            "description": "Clearance violation (netclass 'Power_High' clearance 0.2500 mm; actual 0.1000 mm)",
+            "items": [
+                {"description": "Via [+12V_BUS] on F.Cu - B.Cu", "pos": {"x": 5.0, "y": 5.0}},
+                {"description": "Via [+12V_BUS] on F.Cu - B.Cu", "pos": {"x": 5.1, "y": 5.0}},
+            ],
+            "severity": "error",
+            "type": "clearance",
+        },
+        {
+            "description": "Track width (netclass 'Power_High' min width 0.3000 mm; actual 0.2000 mm)",
+            "items": [{"description": "Via [+12V_BUS] on F.Cu - B.Cu", "pos": {"x": 6.0, "y": 6.0}}],
+            "severity": "error",
+            "type": "track_width",
+        },
+    ],
+    "unconnected_items": [],
+}
+
+
+class NetclassClearanceTest(unittest.TestCase):
+    def test_only_netclass_rules_with_a_via_between_two_nets_count(self):
+        counts = lib.netclass_clearance(NETCLASS_DRC["violations"])
+        # The Power_High via (0.245 mm) and the HV Relay via; not the board minimum,
+        # the board setup hole clearance, the no-net text, the same-net pair or the width.
+        self.assertEqual(counts["netclass_via_clearance_errors"], 2)
+        # Plus the track pair under Power_High and the same-net via pair.
+        self.assertEqual(counts["netclass_clearance_errors"], 4)
+
+    def test_the_rule_source_is_read_from_the_description(self):
+        rules = [lib.netclass_rule(v) for v in NETCLASS_DRC["violations"]]
+        self.assertEqual(
+            rules, ["Power_High", None, None, "Power_High", None, "HV Relay", "Power_High", None]
+        )
+
+    def test_the_summary_carries_the_counts(self):
+        summary, _ = lib.summarize(NETCLASS_DRC, {"violations": []}, {}, {})
+        self.assertEqual(
+            summary["netclass_clearance"],
+            {"netclass_via_clearance_errors": 2, "netclass_clearance_errors": 4},
+        )
+
+    def test_the_command_prints_the_counts(self):
+        import contextlib
+        import io
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "drc.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(NETCLASS_DRC, f)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(lib.main(["netclass-clearance", path]), 0)
+        self.assertEqual(
+            json.loads(out.getvalue()),
+            {"netclass_clearance_errors": 4, "netclass_via_clearance_errors": 2},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,13 @@
+# N05.3: router.via_clearance = net_class under profile enhanced, judged by net-class via
+# clearance errors only (docs/roadmap/tasks/N05-promote-accepted-stages.md), registered in
+# docs/roadmap/prereg/N05-via-clearance-netclass.json. canary-pwr's plugin path plus boards
+# N05-via-clearance.json did not route, each with a net class whose clearance is above the
+# default class's and the board minimum.
+crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn
+# KiCad 10.0.7 demos (outside the repository; hashes in the registration)
+/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
+/usr/share/kicad/demos/tiny_tapeout/tinytapeout-demo.kicad_pcb
+/usr/share/kicad/demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb
+/usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb
+# corpus (target/corpus, outside the repository)
+target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb

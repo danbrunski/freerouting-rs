@@ -93,6 +93,14 @@ pub const ENHANCED: &[Difference] = &[
                       (set noise 17.14), copper under the Board Setup width where the narrowing \
                       acted 848.9 -> 310.4 mm",
     },
+    Difference {
+        path: "via_clearance",
+        value: "net_class",
+        measurement: "N05.3 (docs/roadmap/prereg/N05-via-clearance-netclass.json): a routed \
+                      via takes its net class's clearance (Q14); KiCad unconnected 263 -> 261 \
+                      (set noise 42.70), KiCad net-class via clearance errors 2 -> 1, canary-pwr's \
+                      plugin path 1 -> 0",
+    },
 ];
 
 /// `legacy` changes nothing.

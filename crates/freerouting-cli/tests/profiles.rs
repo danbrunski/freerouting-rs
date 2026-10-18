@@ -124,7 +124,6 @@ fn list_stages_marks_the_experimental_options_and_stages() {
         .filter_map(|e| string_of(member(e, "key")))
         .collect();
     for key in [
-        "router.via_clearance",
         "router.cleanup.remove_stubs",
         "router.room_order",
         "router.work_unit",
@@ -147,14 +146,13 @@ fn list_stages_marks_the_experimental_options_and_stages() {
         [
             "router.cleanup.remove_stubs",
             "router.room_order",
-            "router.via_clearance",
             "router.work_unit"
         ]
     );
     let out = run_in(&dir, &["--list-stages"]);
     let text = stdout(&out);
     assert!(
-        text.contains("router.via_clearance = (unset)  [experimental]"),
+        text.contains("router.room_order = (unset)  [experimental]"),
         "{text}"
     );
     assert!(

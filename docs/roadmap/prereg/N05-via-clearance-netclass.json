@@ -1,0 +1,214 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N05.3-via-clearance-netclass",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3); Q14.3 judged a third time (operator decision after N05-via-clearance.json)",
+  "question": "Under profile enhanced (router.power_layer_traces=none, router.neck_width_um=300), does router.via_clearance=net_class leave KiCad's net-class via clearance errors no higher on any board, with no via in a pad, no copper below the board minimum, no trace on a power layer, and keep the KiCad-unconnected total within N02's totals rule (accept no-regress, a correctness fix)?",
+  "why_new": "N05-via-clearance.json failed on its hard clause class_via_clearance_errors, which counted overlord's 15 errors: all of them KiCad's board-minimum clearance (0.175 mm, a rule the KiCad DSN export does not carry), none a net-class clearance. The operator asked for a registration whose clearance metric counts only net-class-rule violations, on boards that registration did not use",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10,
+      "pic_programmer": 7,
+      "tinytapeout-demo": 32,
+      "RoyalBlue54L-Feather": 15,
+      "slice-dcmt-bread-slice": 5,
+      "CM5_MINIMA_3": 20
+    },
+    "min_boards": 3
+  },
+  "noise_why": "canary-pwr as N05-via-clearance.json; the others max(2, ceil(5 % of connections)), connections = pad-to-pad connections of the board (sum over nets of pads - 1, pcbnew 10.0.7 on the files hashed below), counted before any arm ran",
+  "engine": "freerouting-rs release CLI at origin/main 4555d4b (unchanged engine; this registration's diff touches only tools/kicad-oracle and docs), built once in target/orchestrator/vc/target, sha256 46f39e1137e7be45...",
+  "arms": {
+    "enhanced": {
+      "engine": "freerouting-rs release CLI at origin/main 4555d4b",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS}",
+      "settings": {},
+      "what": "baseline: profile enhanced as on origin/main (power_layer_traces=none, neck_width_um=300), Java's via clearance (via_info)"
+    },
+    "enhanced+netclass": {
+      "engine": "freerouting-rs release CLI at origin/main 4555d4b",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.via_clearance=net_class",
+      "settings": {
+        "router.via_clearance": "net_class"
+      },
+      "what": "candidate: enhanced plus the net class's via clearance (Q14)"
+    }
+  },
+  "baseline_arm": "enhanced",
+  "candidate_arm": "enhanced+netclass",
+  "boards": {
+    "set": "tools/bench/sets/n05-via-clearance-netclass.txt",
+    "eligibility": "every row; no row is dropped after a number. A board N05-via-clearance.json routed (canary-9511d9a, Issue180-Test, overlord) is not in the set, except canary-pwr's plugin path, the case the change is for",
+    "rows": {
+      "canary-plugin45": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "ROW_FLAGS": "--max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "ROW_FLAGS_why": "the plugin's arguments of Dan's plugin45 run (its route-options.json; the plugin adds no neck flag, enhanced's neck_width_um=300 applies), as every N05.3 canary-plugin45 row",
+        "grade": "canary grade.sh steps against canary-pwr-rev1.0 at canary b1994423 (WSL KiCad 10.0.7 through Q13's path shim)",
+        "why": "the plugin path's one remaining copper error under enhanced: a +12V_PROT (Power_High, 0.25 mm) via 0.245 mm from an LTC_INTVCC track"
+      },
+      "pic_programmer": {
+        "board": "pic_programmer",
+        "input": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=250",
+        "why": "class POWER (GND, VCC) 0.28 mm over Default 0.25; board minimum clearance 0"
+      },
+      "tinytapeout-demo": {
+        "board": "tinytapeout-demo",
+        "input": "/usr/share/kicad/demos/tiny_tapeout/tinytapeout-demo.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=160",
+        "why": "classes pwr (GND) 0.23 and pwrhi (VBUS) 0.25 mm over Default 0.2; board minimum clearance 0"
+      },
+      "RoyalBlue54L-Feather": {
+        "board": "RoyalBlue54L-Feather",
+        "input": "/usr/share/kicad/demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=76.2",
+        "why": "class USB_DIFF (4 nets) 0.2032 mm over Default 0.15; board minimum clearance 0.0762"
+      },
+      "slice-dcmt-bread-slice": {
+        "board": "slice-dcmt-bread-slice",
+        "input": "target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=200",
+        "why": "class HV Relay 1.25 mm over Default 0.2; board minimum clearance 0.1"
+      },
+      "CM5_MINIMA_3": {
+        "board": "CM5_MINIMA_3",
+        "input": "/usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb",
+        "ROW_FLAGS": "",
+        "ROW_FLAGS_why": "Board Setup min_track_width is 0, so the plugin passes no width flag",
+        "why": "classes 100ohm and 90ohm 0.2 mm over Default 0.13; board minimum clearance 0"
+      }
+    },
+    "files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "pic_programmer": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+      "tinytapeout-demo": "0d26bf9b6d561e32cf610d428541d6433e60b45e1838f34f73467e25b9144814",
+      "RoyalBlue54L-Feather": "535dbe212f43a8bab12b23277e176a94ac9694177258af2981c0e7b08e4b7252",
+      "slice-dcmt-bread-slice": "091fa9692123f23b2eb0a7c28399fa3b36a9499f0974df7cf8333b0b14f74150",
+      "CM5_MINIMA_3": "123e209e6245cbcc344c1c70b425dcb44a12cd0a2d05f00a39d3f2e7ff307ffa"
+    },
+    "rules_files": {
+      "pic_programmer": "3b0ac39da5af86d0baa2a64da55a89c39ba00148dc82b54f3062f5c3650a5cc5",
+      "tinytapeout-demo": "3d479ef334a9f1b35a487e5b300a995826c7bf180ccc01380b6bb9ca88c8a7a9",
+      "RoyalBlue54L-Feather": "a25ffa7ff829d5eaff27b29724b57821ce2ee7fd39ae367b9ea078d290e37690",
+      "slice-dcmt-bread-slice": "5ac7d900313d2ba5aaa619abb690018aa7a939d8e0605354cabe370c56bd25e0",
+      "CM5_MINIMA_3": "aa5b004bb45d70028612f6591b2cd5fa4754095e7542dbbca974753e4399526a"
+    },
+    "why": "net classes whose clearance is above both the default class's and the board minimum, so KiCad applies the class rule; boards outside the repository are named by path and hash (the .kicad_pcb in files, the .kicad_pro, which holds the rules, in rules_files)"
+  },
+  "seen_before_registration": {
+    "canary-plugin45": "seen in N05.3: under power_layer_traces=none without the neck-down, 37 (1 net-class via error) -> 44 (0) with net_class; under today's enhanced (the neck-down entry's arm B, session 3d2cedef...) 36 unconnected with the same +12V_PROT error, net_class not run",
+    "canary-9511d9a": "seen in N05.3 (mp1 45 -> 49, mp1+sweep 33 -> 33); not in this set",
+    "pic_programmer, CM5_MINIMA_3": "routed under enhanced by N05-neck-down.json through the plugin's headless path (pic_programmer 2, CM5_MINIMA_3 21 unconnected); net_class never run on them, and this set grades them with kicad-oracle grade.sh, not that path",
+    "tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice": "no N05 number"
+  },
+  "grading": "WSL KiCad 10.0.7 for every row, one job at a time, serial. canary-plugin45: canary's grade.sh steps (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones, via_in_pad.py, inner_tracks.py) against canary b1994423 through Q13's path shim. Other rows: tools/kicad-oracle/grade.sh with the arm command as the engine (strip tracks and vias, export, route, import, DRC of the unrouted and routed boards under the original rules), plus canary's via_in_pad.py and inner_tracks.py on the routed board and freerouting-dev power-traces on the session. Every route under timeout -k 10 3600; a timeout is a result (the row's arm is ungraded), not a rerun. When two arms' sessions are byte-identical the session is graded once, the baseline's grade. The canary sessions go to target/canary-handoff/2026-10-18-netclass/ for canary's official grade",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "power_layer_traces",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "netclass_via_clearance_errors",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "netclass_clearance_errors",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drc_real",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "inner_tracks",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "netclass_via_clearance_errors": "tools/kicad-oracle/oracle_lib.py netclass_clearance over every violation of the routed board's KiCad drc.json: items of type clearance or hole_clearance whose description names a net-class rule (\"netclass '<class>' clearance\"; KiCad applies the largest rule, so the class clearance is at least the board minimum), with exactly two items, one of them a via, on two different nets. Board-minimum, board-setup, custom-rule and no-net (\"( clearance\") items do not count. Role guard: the candidate may not be above the baseline on any row (the hard clause of this registration: must not rise)",
+    "netclass_clearance_errors": "the same tool: every clearance or hole_clearance item under a net-class rule, any item kinds (reported)",
+    "below_minimum": "canary: KiCad track_width errors; KiCad boards: kicad-oracle's copper.below_minimum (copper under the board minimums)",
+    "power_layer_traces": "every trace of any net on a power-type layer of the routed DSN (freerouting-dev power-traces, the `all` count); 0 under enhanced's power_layer_traces=none",
+    "drc_real": "canary: KiCad error-severity items other than unconnected items and starved thermals; KiCad boards: kicad-oracle's drc_real. Reported, not judged: it holds board-minimum and other clearance types this registration does not judge",
+    "inner_tracks": "canary's inner_tracks.py count on the routed board (reported; on canary every inner layer is a plane, which power_layer_traces already judges)",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session (canary: the count canary's grade prints; KiCad boards: kicad-oracle's unconnected_items of the routed board)",
+    "unrouted": "the router's final unrouted count (its log)",
+    "vias": "vias in the session"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "if the verdict passes, N05 adds router.via_clearance=net_class to ENHANCED (profile.rs entry, test, DIVERGENCES Profile enhanced line, help text) and Q14.3 is ticked if its accept clauses hold; otherwise net_class stays Experimental with these numbers",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings, no row dropped",
+  "not_registered": [
+    "canary-pwr placement variants a and b: their pass-1 DSNs still need canary-7a's export",
+    "canary-9511d9a, Issue180-Test, overlord: N05-via-clearance.json's boards"
+  ],
+  "decision_table": {
+    "pass": "enhanced gets via_clearance=net_class; N05.3 line; DIVERGENCES Profile enhanced entry; Q14.3 [x] if its clauses hold",
+    "fail": "net_class stays Experimental; numbers in N05.3 and Q14.3"
+  },
+  "amendments": []
+}

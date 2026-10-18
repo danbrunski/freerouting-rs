@@ -166,6 +166,14 @@ fn enhanced_sets_neck_width_um_300() {
 }
 
 #[test]
+fn enhanced_sets_via_clearance_net_class() {
+    // N05.3, docs/roadmap/prereg/N05-via-clearance-netclass.json: a routed via
+    // takes its net class's clearance (Q14); unset (Java's `via_info`) under
+    // `legacy`.
+    assert_enhanced_sets("via_clearance", "net_class", None, "via_info");
+}
+
+#[test]
 fn a_profile_difference_is_applied_after_the_defaults() {
     with_enhanced_differences(DUMMY, || {
         let enhanced = resolve_with(vec![]);

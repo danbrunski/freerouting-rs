@@ -254,7 +254,7 @@ settings_table! {
         (wire_keepout, String, opt, None, None, "wireKeepout", [], Flat::No, true,
             "A Specctra `wire_keepout` is a `keepout` (unset, Java) or `traces_only` (vias pass; Q09.3)."),
         (via_clearance, String, opt, None, None, "viaClearance", [], Flat::No, true,
-            "A routed via's clearance class: `via_info` (unset, Java: its via type's) or `net_class` (its net class's; Q14)."),
+            "A routed via's clearance class: `via_info` (unset, Java: its via type's; profile `legacy`) or `net_class` (its net class's, KiCad's rule; Q14); profile `enhanced` uses `net_class` (N05.3)."),
         (neck_width_um, f64, req, Some(0.0), 0.0, "neckWidthUm", [], Flat::No, true,
             "Retry a failed connection with traces clamped to this width (micrometers), never below `min_trace_width_um`; 0 is off (Java's default, profile `legacy`); profile `enhanced` uses 300 (N05.3)."),
         (min_trace_width_um, f64, opt, None, None, "minTraceWidthUm", [], Flat::No, true,
