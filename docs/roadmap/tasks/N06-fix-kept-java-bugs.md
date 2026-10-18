@@ -21,6 +21,51 @@ The rows come from:
 Prerequisites: N01 (profiles), N02 (the totals rule), N05 (promotion). The geometry crate has no
 settings access.
 
+## What exists and what this adds
+
+| Exists | Where |
+|---|---|
+| Profiles: `router.profile`, with `legacy` = Java and `enhanced` the default | `crates/freerouting/src/settings/profile.rs`; `ENHANCED` is still empty |
+| The rule that each `enhanced` difference has a DIVERGENCES line | `tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line` |
+| Settings fields, paths and the settings file | `settings/fields.rs` (`RouterSettings`), `settings/path.rs` |
+| What the switches ride on | `BoardRouterSettings` (`settings/board.rs`), `AutorouteControl` (`autoroute/control.rs`), `BasicBoard` (`board/basic_board.rs`), `ReadContext` (`io/specctra/parser/mod.rs`), geometry `split_to_convex` (`freerouting-geometry/src/shapes/`) |
+| A test pinning each bug's Java behaviour | the "Test pinning Java today" columns below |
+| The A14 exact set (106 boards, byte-identical to Java) | `tests/autoroute_board_parity.rs`; the command is in [A14](archive/A14-board-parity-gate.md)'s done note (about 1.5 h, release) |
+| Measurement: preregistration, board sets, baselines | `docs/roadmap/routing-quality.md` "How to measure a quality change"; `docs/roadmap/prereg/*.json`; `tools/bench/sets/*.txt`; Q14 is a worked example ([Q14](Q14-via-clearance-follows-net-class.md), `prereg/Q14.json`, `sets/q14-via-clearance.txt`) |
+
+This checklist adds the `router.java_quirks.*` switches, the fixes behind them, and their
+measurements.
+
+## How to work this checklist
+
+Whoever implements an item (the `implementer` agent, or Codex):
+- **Follow `.claude/agents/implementer.md`:** the Java reference at the pin, the targeted gate,
+  the `[x]`/`[~]` notes, and the hard rules (no windows on Dan's desktop, hands off Windows and
+  KiCad, `CARGO_BUILD_JOBS=2`). Where Dan's dispatch says otherwise, the dispatch wins.
+- **Read Java through git, never the checkout:**
+  `git -C ../freerouting show a773a70ec:src/main/java/app/freerouting/<path>`. Line numbers here
+  are at that pin; Rust line numbers drift, so find code by symbol.
+- **Take one item per dispatch,** in the order of N00's note 4: N06.2 and N06.3 first.
+- **Don't start heavy runs.** That means the A14 exact set, a batch measurement, or anything
+  that routes the registered set. WSL crashes when two run at once, and the orchestrator runs
+  them one at a time. Finish the code, the tests and the counters, then leave the item `[~]`
+  with `*Partial <date>:* heavy run pending: <the exact command>`. The orchestrator runs it and
+  ticks the box.
+- **Write the preregistration yourself, before any number exists:** the board set in
+  `tools/bench/sets/n06-<batch>.txt`, and `docs/roadmap/prereg/N06.<n>.json` with one arm per
+  switch plus the all-on arm.
+- **Keep every `// PARITY(quirk):` marker.** Add the switch's id to it
+  (`// PARITY(quirk, java_quirks.<id>):`), so `legacy`'s path stays findable.
+
+## File ownership
+
+| Item | Owns (creates or edits) |
+|---|---|
+| N06.2 | the files of the 12 (a) rows and their tests; the DIVERGENCES lines of those rows |
+| N06.3 | `settings/fields.rs`, `settings/path.rs`, a new `settings/java_quirks.rs`, `settings/board.rs`, `autoroute/control.rs` (the `quirks` field only), `board/basic_board.rs` (the field, `deep_copy`, the snapshot), `io/specctra/parser/mod.rs` (`ReadContext`), the geometry `split_to_convex_with` entry points, `tests/settings_java_quirks.rs` |
+| N06.4–N06.11 | the files in their rows' Rust column, their tests, `tools/bench/sets/n06-*.txt`, `docs/roadmap/prereg/N06.*.json`. The batches touch disjoint files except `autoroute/connection.rs` (M and F) and `optimize/pull_tight.rs` (P only), so run M and F one after the other |
+| N06.12, N06.13 | their rows' files; `settings/profile.rs` (`ENHANCED`) and the DIVERGENCES "Profile `enhanced`" section, through N05 |
+
 ## Decisions made here
 
 - **The three kinds:**
@@ -49,18 +94,24 @@ settings access.
     `split_to_convex`, and a flag on `TileShape::nearest_border_point`. A piece cache (the
     area's `OnceLock`) must not be shared across flag values.
   - The DSN `ReadContext` and `import_session` for the readers.
-- **The accept rule for a (b) fix:**
-  - It is a correctness fix, so it need not beat noise. A batch is accepted when N02's hard
-    guards hold, no board regresses by more than twice its noise band, and the total is not
-    worse by more than the set's noise, as N02's speed rule judges quality.
-  - A (b) fix that no registered board reaches (the inputs, the reports, the GUI) is accepted on
-    its tests: both behaviours pinned, and every registered board's session byte-identical
-    under the fix.
+- **The accept rule for a (b) fix (Dan, 2026-10-17: "if it's a bug fix and we fix it but it's
+  neutral, might as well leave it in"):**
+  - It is a correctness fix, so it need not beat noise.
+  - A batch is accepted when N02's hard guards hold, no board regresses by more than twice its
+    noise band, and the total is not worse by more than the set's noise.
+  - A neutral fix stays in.
+- **"No board reaches it" is measured, not argued.** A counter (or a `debug_assert!` in a debug
+  run) on the buggy branch, run over the registered set, shows that the branch never runs. Such a
+  fix is accepted on its tests: both behaviours pinned. A branch that does run is measured like
+  the batch members.
+- **One switch per bug, even inside a batch.** The batch is the first measurement. A fix that is
+  neutral on the totals but is later suspected somewhere is measured alone by its own switch.
 - **Measured in batches:** one N02 registration per batch, at least 3 boards plus `canary-pwr`
-  through the plugin path. If a batch fails, bisect it.
-- **Heavy runs are coordinated.** A14 is a 1.5 h release run, and every batch measurement routes
-  many boards. Each one takes the shared one-heavy-job slot (WSL limits); ask the orchestrator
-  first.
+  through the plugin path. If a batch fails, bisect it switch by switch. A measurement needs
+  N02.1–N02.2 (the totals rule in `freerouting-dev gate`). Until they land, a batch item ends `[~]`
+  with its code and tests done.
+- **Heavy runs go through the orchestrator** (see "How to work this checklist"). A14 is a 1.5 h
+  release run, and every batch measurement routes many boards.
 
 ## Inventory
 
@@ -177,11 +228,11 @@ These are marked or look like quirks but keep no bug:
       `nextDivisionLine = prevDivisionLine`, and `IntOctagon.java`'s branch 3 rebuilds the
       octagon with its old `topY`.
 - [ ] **N06.2 — The (a) fixes.** Fix the 12 (a) rows outright, each with a test of the
-  corrected value. Before fixing `door_section_realloc`, a counter shows that no reallocation
-  happens on A14. Correct the doc at `geometry/line.rs:495`: the overflow starts at ~46k units
+  corrected value. Before fixing `door_section_realloc`, add a counter that the A14 run
+  reports; the fix lands only if it reads 0. Correct the doc at `geometry/line.rs:495`: the overflow starts at ~46k units
   axis-aligned, ~32k only at 45°.
   - **Accept:**
-    - the A14 exact set stays byte-identical (a heavy run; ask the orchestrator first);
+    - the A14 exact set stays byte-identical (a heavy run: leave the command in a `[~]` note);
     - the B02, B03 and A04 probes are unchanged;
     - each row's DIVERGENCES entry moves from "kept on purpose" to the fixed Java bugs.
 - [ ] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
@@ -199,8 +250,8 @@ These are marked or look like quirks but keep no bug:
     simplexes, the piece areas sum to outer minus inner, with no two pieces overlapping.
   - Then the fixes, behind `split_to_convex_with(quirks)`.
   - **Accept:** the invariant holds with both switches `false`, and the batch is measured
-    (the decisions' accept rule). The drill pages change on most boards, so this is likely the largest geometry
-    effect.
+    under the decisions' accept rule. The drill pages change on most boards, so this is likely
+    the largest geometry effect.
 - [ ] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
   `session.clear()` before `InitFailed`, which also makes the rekey dead under `enhanced`),
   `failed_attempt_ripped_carryover` (snapshot and restore the set per attempt),
@@ -242,14 +293,19 @@ These are marked or look like quirks but keep no bug:
     - `ses_round_trip.rs` passes for Issue676 with `ses_reader_scale` off;
     - the reference tests (`reference_load.rs`, `reference_optimize.rs`, `kicad_parity.rs`)
       still compare Java's values under `legacy`;
-    - every registered board's session is byte-identical with the batch off (the decisions' rule
-      for fixes no board reaches).
+    - a counter on each DSN branch shows which corpus boards reach it (expected: none). Any board
+      that does is measured;
+    - with every fix of the batch on, every registered board's session is byte-identical, and a
+      counter shows how often `route_result_int_via_ratio` changes the `== 0.0` test (expected:
+      never).
 - [ ] **N06.11 — Batch U, GUI and interactive:** `snapshot_drops_compensation` (the snapshot
   stores the compensation flag), `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`,
   `route_change_layer_no_via`, `route_connect_inner_break`, `select_extension_ignores_filter`.
   The GUI's profile selector (N01) reaches them.
-  - **Accept:** a test of both behaviours for each (kittest where it is a GUI flow), and every
-    registered board's session is byte-identical.
+  - **Accept:**
+    - a test of both behaviours for each (kittest where it is a GUI flow);
+    - a counter shows that a batch run over the registered set never restores a snapshot with
+      compensation on. The other five are interactive code that batch runs never call.
 - [ ] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
   its row.
   - `ripup_pass_no_unset` gets its own registration.
