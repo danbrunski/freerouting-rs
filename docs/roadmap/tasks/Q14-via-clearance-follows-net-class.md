@@ -189,3 +189,13 @@ Prerequisites: C02 (the settings model); N01 (the fix goes into `enhanced`, and
   `net_class` changes nothing: its session is byte-identical with and without it, with or without
   `own_plane`. Sessions in `target/canary-handoff/2026-10-17-q13/`; registration
   `docs/roadmap/prereg/Q13.json` (reported pairs). Q14.3's acceptance stays with the orchestrator.
+  *Re-judged by N05.3 (2026-10-18), not accepted:* registration `docs/roadmap/prereg/N05-via-clearance.json`
+  (N02 totals rule with a `totals` block, `accept: no-regress`), `net_class` together with
+  `power_layer_traces = none` (N05.3's accepted value) on Q14.3's set plus the DSN of Dan's plugin run
+  of 2026-10-17 (`tests/data/canary-pwr-n05/plugin-b1994423.dsn`, whose Windows-build session had two
+  `+12V_BUS` via clearance errors), the KiCad boards with their own minimum width (254 and 160 um).
+  `freerouting-dev gate`: **FAIL**, hard clause `overlord class_via_clearance_errors = 15` (21 in the
+  baseline; all of them, in both arms, KiCad's board-minimum clearance 0.175 mm, none a netclass
+  clearance). Totals 119 → 130, within the noise 13.60. canary-plugin45: 37 → 44 unconnected, class-via
+  errors 1 → 0, drc_real 1 → 0; 9511d9a mp1 45 → 49, mp1+sweep 33 → 33; Issue180 identical sessions.
+  Numbers and the operator decision in N05.3. `net_class` stays off.

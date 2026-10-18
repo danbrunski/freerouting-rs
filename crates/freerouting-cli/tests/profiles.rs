@@ -26,7 +26,8 @@ fn array(value: Option<&JsonValue>) -> &[JsonValue] {
 }
 
 /// Both profiles route; `enhanced` (the default, no flag) equals `legacy`
-/// until N05 adds a difference.
+/// on this board: its one difference so far (N05.3, `power_layer_traces =
+/// none`) acts only on power layers, and this board has none.
 #[test]
 fn both_profiles_route_and_enhanced_is_the_default() {
     let (legacy, dir_legacy) = route("profile-legacy", &["--profile", "legacy"]);
@@ -43,7 +44,7 @@ fn both_profiles_route_and_enhanced_is_the_default() {
     );
     assert!(
         ses(&dir_legacy) == ses(&dir_enhanced),
-        "enhanced equals legacy until N05"
+        "enhanced equals legacy on a board its differences do not touch"
     );
 }
 

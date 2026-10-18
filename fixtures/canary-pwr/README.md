@@ -27,6 +27,12 @@ K09.8). It is a benchmark input, not plugin code: to use it, copy the file into 
 `freerouting-rs/presets/` folder (next to the `.kicad_pcb`), and it appears in the dialog's
 Preset drop-down. The plugin ships no preset of its own.
 
+**Board class widths (canary `b1994423`, 2026-10-17).** canary main `b1994423` ("net class
+widths are the taps' widths") set the board's own class widths to 0.3 mm (Power_High, Power,
+Switch_Node) and 0.4 mm (GND), the values the preset's `class_widths` write. On canary main the
+preset's `class_widths` are therefore a no-op (the plugin logs `width 300 -> 300 um`). The
+fixtures here keep the widths of the canary commit each one records.
+
 | File | sha256 (prefix) | What it is | Used by |
 |---|---|---|---|
 | `canary-pwr-pours1.dsn` | `da76e69c` | Pours turned into 113 fixed path wires covering their fills; GND outer planes dropped; the fan keepout dropped; Power_High, Switch_Node and Power at 0.3 mm, GND at 0.4 mm | variant set (F02.5, Q04, Q05) |

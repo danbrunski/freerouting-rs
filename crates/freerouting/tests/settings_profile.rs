@@ -4,7 +4,8 @@
 //! - an explicit key from any source beats the profile;
 //! - an unknown profile is a settings error that names the valid values;
 //! - every entry of the `enhanced` table is a valid setting and has its
-//!   DIVERGENCES line (the "Profile `enhanced`" section, empty until N05).
+//!   DIVERGENCES line (the "Profile `enhanced`" section), and `enhanced`
+//!   sets each one while `legacy` keeps Java's value (N05.3).
 
 use freerouting::job::prepare::{JobError, JobInput, RulesChoice, prepare_job};
 use freerouting::settings::env::parse_environment;
@@ -83,17 +84,69 @@ fn legacy_defaults_equal_todays_defaults_key_by_key() {
 }
 
 #[test]
-fn enhanced_is_the_default_and_starts_equal_to_legacy() {
+fn enhanced_is_the_default_and_differs_from_legacy_only_by_its_table() {
     let unset = resolve_with(vec![]);
     assert_eq!(unset.profile, Ok(Profile::Enhanced));
     assert_eq!(unset.patch.profile, None, "the default is not written");
-    // N05 adds the first difference; until then `enhanced` is `legacy`.
-    assert!(ENHANCED.is_empty());
-    assert_java_defaults(&unset.patch, "enhanced (empty table)");
-    assert_java_defaults(
-        &Profile::Enhanced.defaults(CORES),
-        "Profile::Enhanced.defaults",
+    // Every key outside the table is Java's; every key in it has the
+    // table's value, from the profile source.
+    let java = default_patch(CORES);
+    let mut expected = java.clone();
+    for difference in ENHANCED {
+        expected
+            .set_path(difference.path, difference.value)
+            .expect("a valid entry");
+    }
+    for field in FIELDS.iter().filter(|f| f.path != "profile") {
+        assert_eq!(
+            (field.get)(&unset.patch),
+            (field.get)(&expected),
+            "enhanced: {}",
+            field.path
+        );
+        let in_table = ENHANCED.iter().any(|d| d.path == field.path);
+        assert_eq!(
+            unset.provenance.get(field.path) == Some(&Source::Profile(Profile::Enhanced)),
+            in_table,
+            "only the table's keys come from the profile: {}",
+            field.path
+        );
+    }
+}
+
+/// N05.3: each promotion sets its key under `enhanced` and leaves `legacy`
+/// at Java's value.
+fn assert_enhanced_sets(path: &str, value: &str, java: Option<FieldValue>, other: &str) {
+    let enhanced = resolve_with(vec![]);
+    let legacy = resolve_with(vec![(Source::Cli, legacy_pin())]);
+    assert_eq!(
+        self::value(&enhanced.patch, path),
+        Some(FieldValue::Str(value.to_string())),
+        "enhanced sets {path}"
     );
+    assert_eq!(
+        enhanced.provenance.get(path),
+        Some(&Source::Profile(Profile::Enhanced))
+    );
+    assert_eq!(
+        self::value(&legacy.patch, path),
+        java,
+        "legacy keeps {path}"
+    );
+    // An explicit key (here `other`) still beats the profile.
+    let mut cli = SettingsPatch::default();
+    cli.set_path(path, other).expect("a valid value");
+    let explicit = resolve_with(vec![(Source::Cli, cli)]);
+    assert_eq!(
+        self::value(&explicit.patch, path),
+        Some(FieldValue::Str(other.to_string()))
+    );
+}
+
+#[test]
+fn enhanced_sets_power_layer_traces_none() {
+    // N05.3, docs/roadmap/prereg/N05-power-layer-traces.json.
+    assert_enhanced_sets("power_layer_traces", "none", None, "layer");
 }
 
 #[test]
@@ -331,5 +384,28 @@ fn rebase_moves_only_the_profile_values() {
         patch.fanout.max_passes = Some(3);
         profile::rebase(&mut patch, Profile::Legacy, CORES);
         assert_eq!(patch.fanout.max_passes, Some(3));
+    });
+}
+
+#[test]
+fn the_profile_is_never_java_s_merge_base() {
+    // With no defaults source the profile sorts first; Java's merge base is
+    // still the first real source (its clone drops `result_json`), laid
+    // over the profile's values, and an empty list still warns.
+    with_enhanced_differences(DUMMY, || {
+        let first = SettingsPatch {
+            result_json: Some("out.json".to_string()),
+            ..SettingsPatch::default()
+        };
+        let merged = resolve(&[(Source::ConfigFile, first)], &ctx());
+        assert_eq!(merged.patch.result_json, None);
+        assert_eq!(merged.patch.fanout.max_passes, Some(7));
+        let empty = resolve(&[], &ctx());
+        assert!(
+            empty
+                .warnings
+                .contains(&"No settings sources provided, using defaults".to_string())
+        );
+        assert_eq!(empty.patch.fanout.max_passes, Some(7));
     });
 }

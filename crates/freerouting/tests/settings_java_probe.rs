@@ -23,6 +23,7 @@ use freerouting::dsn::ast::{Pcb, RulesFile};
 use freerouting::settings::autoroute_scope::{patch_from_dsn, patch_from_rules};
 use freerouting::settings::env::parse_environment;
 use freerouting::settings::json_file::load_config_file;
+use freerouting::settings::profile::legacy_pin;
 use freerouting::settings::{
     LayerSettings, ResolveContext, Resolved, SettingsPatch, Source, defaults, dump,
     parse_cli_arguments, resolve,
@@ -170,7 +171,9 @@ fn sources_of(name: &str, ctx: &ResolveContext) -> Vec<(Source, SettingsPatch)> 
                 (Source::Cli, cli("x")),
                 (Source::Dsn, pcb("Issue103-Board-Routed.dsn")),
             ];
-            let job = resolve(&first, ctx).patch;
+            let mut pinned = first.clone();
+            pinned.push((Source::Testing, legacy_pin()));
+            let job = resolve(&pinned, ctx).patch;
             let mut second = first;
             second.push((Source::Api, job));
             second
@@ -332,7 +335,12 @@ fn merge_matches_java() {
     let mut failures = Vec::new();
     for (name, mut expected) in java {
         normalise_threads(&mut expected, cores as i64);
-        let resolved = resolve(&sources_of(&name, &ctx), &ctx);
+        // Java's merge is the `legacy` profile's (N01, N05): pinned, and the
+        // profile key, which Java does not have, left out of the dump.
+        let mut sources = sources_of(&name, &ctx);
+        sources.push((Source::Testing, legacy_pin()));
+        let mut resolved = resolve(&sources, &ctx);
+        resolved.patch.profile = None;
         let rust = JsonValue::parse(&rust_tree(&resolved).to_pretty_string()).unwrap();
         let mut differences = Vec::new();
         diff("", &expected, &rust, &mut differences);

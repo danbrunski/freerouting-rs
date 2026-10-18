@@ -1,0 +1,9 @@
+# N05.3: router.via_clearance = net_class with the chosen router.power_layer_traces
+# (docs/roadmap/tasks/N05-promote-accepted-stages.md), registered in
+# docs/roadmap/prereg/N05-via-clearance.json: Q14.3's set plus the DSN of the KiCad plugin
+# run of 2026-10-17 (canary b1994423). The canary rows count as one board; the 9511d9a DSN
+# is routed twice (mp1 and mp1+sweep flags, rows of the registration).
+crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+fixtures/kicad/Issue180-Test/Test.kicad_pcb
+target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb

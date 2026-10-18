@@ -2,7 +2,10 @@
 //! power layers that break Q01.7's rule (a net without a plane there) or
 //! Q13's (a plane's net that leaves its plane), after importing a session
 //! when one is given. Prints one line per trace and a count line; exits 1
-//! when it finds any. Q13.3 counts `outside_own_plane` with it.
+//! when it finds any. Q13.3 counts `outside_own_plane` with it. The count
+//! line also gives `all`, every trace on a power layer of any net, inside
+//! its plane or not (N05 counts `router.power_layer_traces = none`'s
+//! traces with it, which must be 0).
 
 use std::process::ExitCode;
 
@@ -43,6 +46,15 @@ pub fn breach_lines(board: &BasicBoard) -> Vec<(PowerLayerTrace, String)> {
         .collect()
 }
 
+/// The traces of any net on power layers, inside a plane or not.
+pub fn power_layer_trace_count(board: &BasicBoard) -> usize {
+    board
+        .items()
+        .filter_map(|item| item.as_trace())
+        .filter(|trace| !board.layer_structure.layers[trace.layer as usize].is_signal)
+        .count()
+}
+
 /// Runs the subcommand.
 pub fn run(args: &[String]) -> Result<ExitCode, String> {
     let (dsn, ses) = match args {
@@ -56,12 +68,13 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
         freerouting::io::specctra::import_session(&mut board, &session);
     }
     let lines = breach_lines(&board);
+    let all = power_layer_trace_count(&board);
     let count = |k: PowerLayerTrace| lines.iter().filter(|(kind, _)| *kind == k).count();
     for (_, line) in &lines {
         println!("{line}");
     }
     println!(
-        "power-layer traces: foreign {}, outside_own_plane {}",
+        "power-layer traces: foreign {}, outside_own_plane {}, all {all}",
         count(PowerLayerTrace::Foreign),
         count(PowerLayerTrace::OutsideOwnPlane)
     );

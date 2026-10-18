@@ -1,0 +1,246 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N05.3-power-layer-traces-none",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3)",
+  "question": "Which value of router.power_layer_traces goes into profile enhanced: does none (no trace of any net on a power layer; vias still land in their plane) keep the KiCad-unconnected total within N02's totals rule (accept no-regress, a correctness fix) of own_plane (Q13's rule, accepted by Q13.3), with no trace on a power layer, no via in a pad, no copper below the minimum and no new DRC error?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10,
+      "m-fc-g474": 13,
+      "microzed": 20
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff (router.power_layer_traces=none), one release build for every arm; unset settings route as origin/main (checked: arm layer on canary-plugin45 must be byte-identical to the plugin run's own session, target/canary-handoff/2026-10-17-plugin45/canary-pwr.ses, sha256 recorded in the done note, else the run stops and is reported)",
+  "arms": {
+    "layer": {
+      "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff (router.power_layer_traces=none), one release build for every arm; unset settings route as origin/main (checked: arm layer on canary-plugin45 must be byte-identical to the plugin run's own session, target/canary-handoff/2026-10-17-plugin45/canary-pwr.ses, sha256 recorded in the done note, else the run stops and is reported)",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.power_layer_traces=layer",
+      "settings": {
+        "router.power_layer_traces": "layer"
+      },
+      "what": "reported: Java's rule, what the plugin's enhanced profile ran (ENHANCED empty)"
+    },
+    "own_plane": {
+      "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff (router.power_layer_traces=none), one release build for every arm; unset settings route as origin/main (checked: arm layer on canary-plugin45 must be byte-identical to the plugin run's own session, target/canary-handoff/2026-10-17-plugin45/canary-pwr.ses, sha256 recorded in the done note, else the run stops and is reported)",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.power_layer_traces=own_plane",
+      "settings": {
+        "router.power_layer_traces": "own_plane"
+      },
+      "what": "baseline: Q13's rule, accepted by Q13.3 against layer"
+    },
+    "none": {
+      "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff (router.power_layer_traces=none), one release build for every arm; unset settings route as origin/main (checked: arm layer on canary-plugin45 must be byte-identical to the plugin run's own session, target/canary-handoff/2026-10-17-plugin45/canary-pwr.ses, sha256 recorded in the done note, else the run stops and is reported)",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.power_layer_traces=none",
+      "settings": {
+        "router.power_layer_traces": "none"
+      },
+      "what": "candidate: no trace of any net on a power layer"
+    }
+  },
+  "baseline_arm": "own_plane",
+  "candidate_arm": "none",
+  "pairs": {
+    "verdict": {
+      "arms": [
+        "own_plane",
+        "none"
+      ],
+      "rows": "all"
+    },
+    "reported": [
+      {
+        "arms": [
+          "layer",
+          "own_plane"
+        ],
+        "rows": "all"
+      },
+      {
+        "arms": [
+          "layer",
+          "none"
+        ],
+        "rows": "all"
+      }
+    ]
+  },
+  "pairs_rule": "the verdict pair is judged by the totals block with the hard and guard metrics below (freerouting-dev gate --prereg on a records file written from the graded numbers); the reported pairs' totals are printed, not judged, except that a reported pair with layer as its baseline is not held to drc_real or inner_tracks (layer is the known-bad rule)",
+  "boards": {
+    "set": "tools/bench/sets/n05-power-layer-traces.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "rows": {
+      "canary-plugin45": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "ROW_FLAGS": "--max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps against canary-pwr-rev1.0 at canary b1994423",
+        "why": "the DSN of Dan's KiCad plugin run of 2026-10-17 (enhanced profile, canary's graded-flow preset): KiCad 45 unconnected, invalid for 2 Power_High via clearance errors and a +12V_BUS track on Power.Cu"
+      },
+      "canary-plugin68": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-q13/plugin-e21ee05e-unrouted.dsn",
+        "ROW_FLAGS": "--router.min_trace_width_um=150",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "canary-9511d9a-mp1": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "canary-9511d9a-mp1sweep": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "canary-in2-open-mp1": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "canary-in2-open-wirekeepout-mp1": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a-in2-open-wirekeepout.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "m-fc-g474": {
+        "board": "m-fc-g474",
+        "input": "target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=150",
+        "grade": "tools/kicad-oracle/grade.sh with the arm command as the engine, plus canary's via_in_pad.py and inner_tracks.py on the routed board"
+      },
+      "microzed": {
+        "board": "microzed",
+        "input": "target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=88.9",
+        "grade": "as m-fc-g474"
+      }
+    },
+    "why": "Q13.3's set (power-type layers with more than one plane on a layer) plus the DSN of the plugin run whose +12V_BUS track on Power.Cu made it invalid; the canary rows count as one board",
+    "files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "canary-plugin68": "5bc34813d7fafa44c479e902076824efd560e5355c8d00b593adf20b5b5e7136",
+      "canary-9511d9a-mp1": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "canary-9511d9a-mp1sweep": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "canary-in2-open-mp1": "17020c17431bb7e3e3d8354df551f04213ad3e736d3846b2b95f7261990967ff",
+      "canary-in2-open-wirekeepout-mp1": "7b876b9d50c4f6ce0f407334ff74c0914108bfdaba6a85ec24bb285d013a51e1",
+      "m-fc-g474": "2f944a91d2d3ed83069d3653ddd1f667678e6fde3a947dac3e4f1926191dd621",
+      "microzed": "529c36213c1d8321b7284c66793d309c9fb3ac34d1ce59b3dd01a1314ce3ff8a"
+    }
+  },
+  "grading": "WSL KiCad 10.0.7 for every row, one job at a time, through Q13's path shim. Calibration: arm layer on canary-plugin45 must reproduce the plugin's session byte for byte and grade as Dan's run did (45 unconnected, 2 clearance errors, inner tracks 1); if the grade differs, the canary rev used is named and the run reported, not adjusted. When two arms' sessions are byte-identical the session is graded once. The canary sessions go to target/canary-handoff/2026-10-18-n05/ for canary's official grade",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "outside_own_plane",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "foreign_power_traces",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "power_layer_traces",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "inner_tracks",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "power_layer_traces": "every trace of any net on a power-type layer of the routed DSN (`freerouting-dev power-traces`, the `all` count)",
+    "outside_own_plane": "as Q13.json: traces on a power layer of a net with a plane there that leave its planes (`freerouting-dev power-traces`)",
+    "foreign_power_traces": "as Q13.json (same tool)",
+    "inner_tracks": "canary's inner_tracks.py count on the routed board (every track on an inner copper layer; in the in2-open rows Power.Cu is a signal layer, so tracks there count here but not in power_layer_traces)",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session (canary: the count canary's grade prints; corpus: kicad-oracle's unconnected count of the routed board)",
+    "drc_real": "canary: KiCad error-severity items other than unconnected items and starved thermals; corpus: kicad-oracle's drc_real",
+    "below_minimum": "canary: KiCad track_width errors; corpus: kicad-oracle's copper.below_minimum",
+    "unrouted": "the router's final unrouted count (its log); the signal for a row KiCad could not grade"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "if the verdict passes, N05 adds router.power_layer_traces=none to ENHANCED; otherwise it adds own_plane (accepted by Q13.3) and none stays an off-by-default value with these numbers",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings",
+  "not_registered": [
+    "canary-pwr placement variants a and a+b, for Q13.json's reason",
+    "Q13.3's own sessions are not reused: every arm runs on this engine"
+  ],
+  "decision_table": {
+    "pass": "enhanced gets power_layer_traces=none; N05.3 line; DIVERGENCES Profile enhanced entry",
+    "fail": "enhanced gets own_plane; none stays off, numbers in N05.3"
+  },
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "what": "the calibration of arm layer on canary-plugin45 is replaced: this Linux build's own session of the plugin's argument list is the reference, and Dan's plugin grade (45) is reported next to the layer arm's grade, not required of it; the run goes on with the same build, and the three canary-plugin45 sessions already routed are kept",
+      "why": "the registered calibration failed before any graded number: arm layer's session (sha256 4d67703c...) differs from the plugin's (5ad40948..., 476 wires against 559). The plugin ran the Windows build (C:\\Users\\thebo\\Documents\\code\\freerouting-rs\\target\\release\\freerouting.exe, built 2026-10-17 23:25 from the Windows checkout at b491b11 with uncommitted files), not this one. On this build the session does not depend on the DSN's file name, --progress json, --result-json or --threads 1 (all byte-identical apart from the session name), and origin/main's engine changes since b491b11 are Q13's off-by-default setting and K10's CLI flag, so the difference is the binary, which this measurement cannot run; it is an operator observation in N05.3"
+    }
+  ]
+}

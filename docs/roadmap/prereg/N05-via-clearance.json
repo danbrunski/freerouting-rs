@@ -1,0 +1,187 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N05.3-via-clearance-net-class",
+  "registered": "2026-10-17",
+  "checklist": "docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3); Q14.3 re-judged",
+  "question": "With router.power_layer_traces at the value N05-power-layer-traces.json chooses ({PLT}), does router.via_clearance=net_class remove KiCad's clearance errors between a via of a net whose class clearance is above the default and another net, with no via in a pad, no copper below the minimum, no new DRC error and no more power-layer traces, and keep the KiCad-unconnected total within N02's totals rule (accept no-regress, a correctness fix)?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10,
+      "Issue180-Test": 2,
+      "overlord": 9
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff, the same release build as N05-power-layer-traces.json's runs",
+  "PLT": "none if N05-power-layer-traces.json's verdict passes, else own_plane (fixed by that verdict before any arm here runs)",
+  "arms": {
+    "plt": {
+      "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff, the same release build as N05-power-layer-traces.json's runs",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.power_layer_traces={PLT}",
+      "settings": {
+        "router.power_layer_traces": "{PLT}"
+      },
+      "what": "baseline: Java's via clearance (via_info) with the chosen power-layer rule"
+    },
+    "plt+netclass": {
+      "engine": "freerouting-rs at origin/main 9bcade7 with N05's diff, the same release build as N05-power-layer-traces.json's runs",
+      "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.power_layer_traces={PLT} --router.via_clearance=net_class",
+      "settings": {
+        "router.power_layer_traces": "{PLT}",
+        "router.via_clearance": "net_class"
+      },
+      "what": "candidate: the net class's via clearance (Q14)"
+    }
+  },
+  "baseline_arm": "plt",
+  "candidate_arm": "plt+netclass",
+  "boards": {
+    "set": "tools/bench/sets/n05-via-clearance.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "rows": {
+      "canary-plugin45": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "ROW_FLAGS": "--max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps against canary-pwr-rev1.0 at canary b1994423",
+        "why": "Dan's plugin run: two +12V_BUS (Power_High, 0.25 mm) vias at 0.2353 and 0.2054 mm from other nets"
+      },
+      "canary-9511d9a-mp1": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "canary-9511d9a-mp1sweep": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps at canary e21ee05e"
+      },
+      "Issue180-Test": {
+        "board": "Issue180-Test",
+        "input": "fixtures/kicad/Issue180-Test/Test.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=254",
+        "grade": "tools/kicad-oracle/grade.sh with the arm command as the engine; ROW_FLAGS is the plugin's default argument list, the board's Board Setup min_track_width 0.254 mm"
+      },
+      "overlord": {
+        "board": "overlord",
+        "input": "target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb",
+        "ROW_FLAGS": "--router.min_trace_width_um=160",
+        "grade": "as Issue180-Test; Board Setup min_track_width 0.16 mm"
+      }
+    },
+    "why": "Q14.3's set (class clearances above the default: canary Power_High and Switch_Node 0.25 over 0.2, Issue180 Power 0.635 over 0.381, overlord ETH_DIFF 0.127 over 0.1) plus the plugin run that showed the errors. Unlike Q14.3 the KiCad boards run with the plugin's default flags (their own minimum width), not canary's 150 um floor, which made Q14.3's below_minimum non-zero in every arm",
+    "files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "canary-9511d9a-mp1": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "canary-9511d9a-mp1sweep": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "Issue180-Test": "f25d023df1c503ec359ebf9f58cab8d754e76f36a8652504e1fe744dccf541a8",
+      "overlord": "04437ed7eea48eaf6f1c6b127752953c432d045595273fb38f6c3f495a40c34b"
+    }
+  },
+  "grading": "as N05-power-layer-traces.json; a canary session byte-identical to one graded there is not graded again. class_via_clearance_errors is computed from KiCad's drc.json as Q14.3 did (target/orchestrator/q14/scratch/analyze.py's via_errors)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "class_via_clearance_errors",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "outside_own_plane",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "foreign_power_traces",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "power_layer_traces",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "inner_tracks",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "class_via_clearance_errors": "as Q14.json: KiCad clearance or hole_clearance violations of which one item is a via whose net's class has a clearance above the default class's and the other item belongs to another net",
+    "drc_real": "canary: KiCad error-severity items other than unconnected items and starved thermals; KiCad boards: kicad-oracle's drc_real",
+    "other metrics": "as N05-power-layer-traces.json"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "if the verdict passes, N05 adds router.via_clearance=net_class to ENHANCED and Q14.3 is ticked; otherwise net_class stays off with these numbers",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings",
+  "not_registered": [
+    "canary-pwr placement variants a and b: their pass-1 DSNs still need canary-7a's export"
+  ],
+  "decision_table": {
+    "pass": "enhanced gets via_clearance=net_class; Q14.3 [x]; N05.3 line; DIVERGENCES Profile enhanced entry",
+    "fail": "net_class stays off; numbers in N05.3 and Q14.3"
+  },
+  "amendments": []
+}

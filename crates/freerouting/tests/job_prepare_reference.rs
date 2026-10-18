@@ -80,7 +80,10 @@ fn class_name(board: &BasicBoard, index: i32) -> String {
 
 /// The settings tree: `dump_patch` plus `layers` and the two cost arrays.
 fn settings_json(prepared: &PreparedJob) -> JsonValue {
-    let JsonValue::Object(mut members) = dump_patch(&prepared.patch, CORES) else {
+    // Java has no profile key; the job is pinned to `legacy` (`job_input`).
+    let mut patch = prepared.patch.clone();
+    patch.profile = None;
+    let JsonValue::Object(mut members) = dump_patch(&patch, CORES) else {
         panic!("object")
     };
     let layers = prepared.patch.layers.as_ref().expect("layers");
@@ -539,6 +542,11 @@ fn job_input(
     let mut input = JobInput::new(bytes, base);
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = Some(dsn_dir.to_path_buf());
+    // Java's dumps are the `legacy` profile's (N01, N05).
+    input.extra_sources.push((
+        Source::Testing,
+        freerouting::settings::profile::legacy_pin(),
+    ));
     match scenario {
         "default" => {}
         "fixture" => input

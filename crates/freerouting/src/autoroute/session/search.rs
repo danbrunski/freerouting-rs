@@ -594,7 +594,9 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
 
     /// Q13 (`router.power_layer_traces = own_plane`): false if expanding
     /// from `element` to `connection_point` on `layer` would lay a trace on
-    /// a power layer outside the net's own planes. True under Java's rule
+    /// a power layer outside the net's own planes (under `none`, N05: any
+    /// trace there, [`hop_allowed`](crate::autoroute::power_layer_traces::hop_allowed)).
+    /// True under Java's rule
     /// and on signal layers; otherwise the entry segment and the connection
     /// point must lie in one convex piece of one of the net's planes on
     /// `layer`, in the board's own geometry
@@ -622,7 +624,8 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             connection_point.round().into(),
         ];
         let areas = own.get(layer as usize).map_or(&[][..], Vec::as_slice);
-        crate::autoroute::power_layer_traces::points_in_one_piece(board, areas, &points)
+        let mode = self.s.control.power_layer_traces;
+        crate::autoroute::power_layer_traces::hop_allowed(mode, board, areas, &points)
     }
 
     /// `completeNeighbourRooms` with the hook for each completed room.

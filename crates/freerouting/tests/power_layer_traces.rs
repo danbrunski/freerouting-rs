@@ -4,6 +4,8 @@
 //! - Q13.1: under `own_plane` the maze search lays no trace on a power layer
 //!   outside the net's own plane there; under `layer` (unset, Java's rule
 //!   from `7f56b062d`) it may, and does on the fixture.
+//! - N05: under `none` the maze search lays no trace of any net on a power
+//!   layer; a via still lands in its net's plane there.
 //! - Q13.2: the engine's check ([`power_layer_breaches`]) flags such a trace
 //!   on a board, here the fixed `+5V_PI` tracks of canary-7a's placement run
 //!   a (its add-only input carries Java `7f56b062d`'s pass 1 as fixed
@@ -31,19 +33,23 @@ use std::sync::Arc;
 use autoroute_common::repo_root;
 use freerouting::autoroute::events::{CancelToken, NullEvents};
 use freerouting::autoroute::pipeline::{PipelineJob, run_pipeline};
-use freerouting::autoroute::power_layer_traces::power_layer_breaches;
+use freerouting::autoroute::power_layer_traces::{
+    PowerLayerTraces, hop_allowed, own_plane_areas, power_layer_breaches,
+};
 use freerouting::board::{BasicBoard, RoutingBoard};
 use freerouting::job::prepare::{JobError, JobInput, PreparedJob, RulesChoice, prepare_job};
 use freerouting::scoring::BoardStatistics;
 use freerouting::settings::profile::legacy_pin;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
+use freerouting_geometry::{IntPoint, Point};
 
 const ISLANDS: &str = "crates/freerouting/tests/data/quality/q13-two-islands.dsn";
 const VIA_AT_BORDER: &str = "crates/freerouting/tests/data/quality/q13-via-at-border.dsn";
 const EXP_A: &str = "crates/freerouting/tests/data/canary-pwr-q13/exp-a-addonly.dsn";
 
 const OWN_PLANE: &[(&str, &str)] = &[("power_layer_traces", "own_plane")];
+const NO_TRACES: &[(&str, &str)] = &[("power_layer_traces", "none")];
 
 /// The job's load sequence on `dsn` with the test settings, `legacy` pinned,
 /// and `extra` (`path=value` pairs set on the testing source).
@@ -184,6 +190,113 @@ fn own_plane_refuses_the_hop_from_a_via_just_outside_the_island() {
     assert!(new_vias[0] > 200_000.0, "inside the island: {new_vias:?}");
 }
 
+/// The centre of the one via of net `net` on `board` that the router added.
+fn routed_via_centres(board: &BasicBoard, net: &str) -> Vec<(i32, i32)> {
+    let number = board
+        .rules
+        .nets
+        .get_by_name(net, 1)
+        .expect("the net")
+        .net_number;
+    board
+        .items()
+        .filter(|i| i.is_via() && !i.is_user_fixed() && i.contains_net(number))
+        .map(|i| {
+            let c = i.drill().expect("a drill").center.to_float();
+            (c.x.round() as i32, c.y.round() as i32)
+        })
+        .collect()
+}
+
+#[test]
+fn none_lays_no_trace_on_the_power_layer_and_still_lands_the_via() {
+    // N05: under `none` no trace of any net lies on In1.Cu; PB still
+    // connects, with a via landing in its island, as under `own_plane`.
+    let board = route(ISLANDS, NO_TRACES);
+    assert_eq!(unrouted(&board), 0, "both nets still connect");
+    assert_eq!(power_layer_traces(&board), Vec::<String>::new());
+    assert_eq!(breaches(&board), Vec::<String>::new());
+    let vias = routed_via_centres(&board, "PB");
+    assert_eq!(vias.len(), 1, "{vias:?}");
+    let (x, y) = vias[0];
+    assert!(
+        (200_000..=280_000).contains(&x) && (-180_000..=-20_000).contains(&y),
+        "the via lands in PB's island: {vias:?}"
+    );
+    // Here no trace of `own_plane` lies inside an island either, so the two
+    // modes route the fixture alike.
+    let own = route(ISLANDS, OWN_PLANE);
+    assert_eq!(own.state_hash(), board.state_hash());
+}
+
+#[test]
+fn none_refuses_the_hop_from_a_via_just_outside_the_island() {
+    // As `own_plane` does: no trace on In1.Cu, and PB reaches its island
+    // with a new via inside it.
+    let board = route(VIA_AT_BORDER, NO_TRACES);
+    assert_eq!(unrouted(&board), 0, "PB still connects");
+    assert_eq!(power_layer_traces(&board), Vec::<String>::new());
+    assert_eq!(breaches(&board), Vec::<String>::new());
+    let vias = routed_via_centres(&board, "PB");
+    assert_eq!(vias.len(), 1, "{vias:?}");
+    assert!(vias[0].0 > 200_000, "inside the island: {vias:?}");
+}
+
+#[test]
+fn none_allows_only_a_hop_without_length_inside_the_plane() {
+    // The rule itself, on PB's island (x 200000-280000, y -180000 to -20000
+    // in board units, stored as eight 40000-unit square pieces; the hop
+    // must stay in one): `own_plane` lets a trace lie inside the island,
+    // `none` lets only a via land there; outside it neither allows a hop,
+    // and `layer` (Java) allows every hop.
+    let prepared = prepare(ISLANDS, &[]).unwrap_or_else(|e| panic!("{ISLANDS}: {e}"));
+    let board = &prepared.board;
+    let pb = board
+        .rules
+        .nets
+        .get_by_name("PB", 1)
+        .expect("net PB")
+        .net_number;
+    let areas = own_plane_areas(board, pb);
+    let in1 = &areas[1];
+    assert_eq!(in1.len(), 1, "PB's island on In1.Cu");
+    let p = |x, y| Point::from(IntPoint::new(x, y));
+    let trace_inside = [
+        p(205_000, -25_000),
+        p(205_000, -25_000),
+        p(235_000, -55_000),
+    ];
+    let via_inside = [
+        p(240_000, -100_000),
+        p(240_000, -100_000),
+        p(240_000, -100_000),
+    ];
+    let trace_out = [
+        p(150_000, -100_000),
+        p(150_000, -100_000),
+        p(220_000, -100_000),
+    ];
+    let via_out = [
+        p(150_000, -100_000),
+        p(150_000, -100_000),
+        p(150_000, -100_000),
+    ];
+    let allowed = |mode, points: &[Point]| hop_allowed(mode, board, in1, points);
+    use PowerLayerTraces::{Layer, NoTraces, OwnPlane};
+    assert!(allowed(OwnPlane, &trace_inside));
+    assert!(!allowed(NoTraces, &trace_inside));
+    for mode in [OwnPlane, NoTraces] {
+        assert!(allowed(mode, &via_inside), "{mode:?}");
+        assert!(!allowed(mode, &trace_out), "{mode:?}");
+        assert!(!allowed(mode, &via_out), "{mode:?}");
+    }
+    for points in [&trace_inside, &via_inside, &trace_out, &via_out] {
+        assert!(allowed(Layer, points));
+    }
+    // A net without a plane on In1.Cu has no area there: no hop at all.
+    assert!(!hop_allowed(NoTraces, board, &[], &via_inside));
+}
+
 #[test]
 fn the_check_flags_the_fixed_5v_pi_tracks_of_placement_run_a() {
     // Q13.2: canary-7a's placement run a, pass 1 by Java `7f56b062d`, fixed
@@ -211,5 +324,9 @@ fn unknown_power_layer_traces_values_fail_the_job() {
     assert!(
         err.contains("router.power_layer_traces") && err.contains("'island'"),
         "{err}"
+    );
+    assert!(
+        err.contains("'none'"),
+        "the message lists the values: {err}"
     );
 }

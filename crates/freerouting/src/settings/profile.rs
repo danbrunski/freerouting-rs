@@ -34,8 +34,7 @@
 //! the measurement that accepted it (N05 adds them). Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
-//! entry is a valid settings key and value. The table starts empty, so
-//! `enhanced` starts equal to `legacy`.
+//! entry is a valid settings key and value, and that `enhanced` sets it.
 //!
 //! # Parity pins `legacy`
 //!
@@ -75,9 +74,16 @@ pub struct Difference {
     pub measurement: &'static str,
 }
 
-/// What `enhanced` changes from `legacy`. Empty until N05 accepts the first
-/// improvement; each entry has a line in DIVERGENCES, "Profile `enhanced`".
-pub const ENHANCED: &[Difference] = &[];
+/// What `enhanced` changes from `legacy`, one entry per measurement N05
+/// accepted (the promotion procedure is in `docs/development/engine.md`);
+/// each entry has a line in DIVERGENCES, "Profile `enhanced`".
+pub const ENHANCED: &[Difference] = &[Difference {
+    path: "power_layer_traces",
+    value: "none",
+    measurement: "N05.3 (docs/roadmap/prereg/N05-power-layer-traces.json): no trace on a power \
+                  layer; KiCad unconnected 256 -> 256 against own_plane, 257 -> 256 against \
+                  Java's layer, power-layer traces 6 -> 0",
+}];
 
 /// `legacy` changes nothing.
 const LEGACY: &[Difference] = &[];

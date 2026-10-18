@@ -319,10 +319,15 @@ fn owner_settings_file_sets_start_ripup_costs() {
     let loaded = load_config_file(&data("owner_freerouting.json"), true).unwrap();
     assert!(loaded.warnings.is_empty());
     let ctx = ctx();
+    // Pinned to `legacy`: the comparison below is with Java's defaults.
     let resolved = resolve(
         &[
             (Source::Defaults, defaults(&ctx)),
             (Source::ConfigFile, loaded.patch),
+            (
+                Source::Testing,
+                freerouting::settings::profile::legacy_pin(),
+            ),
         ],
         &ctx,
     );
@@ -335,7 +340,7 @@ fn owner_settings_file_sets_start_ripup_costs() {
     let default = defaults(&ctx);
     for field in FIELDS
         .iter()
-        .filter(|f| f.path != "scoring.start_ripup_costs")
+        .filter(|f| f.path != "scoring.start_ripup_costs" && f.path != "profile")
     {
         assert_eq!(
             (field.get)(&resolved.patch),

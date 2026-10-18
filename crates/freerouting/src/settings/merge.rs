@@ -224,7 +224,9 @@ impl SettingsPatch {
 /// in order and validates.
 ///
 /// Not Java: first the routing profile (N01, [`profile`]) the sources name is
-/// added as [`Source::Profile`] at priority 5, when it changes anything. An
+/// added as [`Source::Profile`] at priority 5, when it changes anything
+/// (never as Java's merge base: with no source below it, the first real
+/// source is the base, laid over the profile's values). An
 /// unknown profile adds nothing and is reported in [`Resolved::profile`] and
 /// as a warning; `prepare_job` turns it into an error.
 pub fn resolve(sources: &[(Source, SettingsPatch)], ctx: &ResolveContext) -> Resolved {
@@ -248,12 +250,27 @@ pub fn resolve(sources: &[(Source, SettingsPatch)], ctx: &ResolveContext) -> Res
 
     let mut provenance = BTreeMap::new();
     let mut merged: Option<SettingsPatch> = None;
+    // The profile is no source of Java's: when it sorts first (no
+    // defaults source), Java's merge base is still the first real source,
+    // laid over the profile's values.
+    let mut profile_under: Option<&SettingsPatch> = None;
     for (source, patch) in sorted {
         for path in patch.set_paths() {
             provenance.insert(path, source.clone());
         }
+        let is_profile = matches!(source, Source::Profile(_));
         match merged.as_mut() {
-            None => merged = Some(patch.clone_as_merge_base()),
+            None if is_profile => profile_under = Some(patch),
+            None => {
+                merged = Some(match profile_under {
+                    None => patch.clone_as_merge_base(),
+                    Some(profile) => {
+                        let mut base = profile.clone();
+                        base.apply_from(&patch.clone_as_merge_base());
+                        base
+                    }
+                })
+            }
             Some(m) => {
                 m.apply_from(patch);
             }
@@ -263,7 +280,7 @@ pub fn resolve(sources: &[(Source, SettingsPatch)], ctx: &ResolveContext) -> Res
         Some(patch) => patch,
         None => {
             warnings.push("No settings sources provided, using defaults".to_string());
-            SettingsPatch::default()
+            profile_under.cloned().unwrap_or_default()
         }
     };
     warnings.extend(validate(&mut patch, ctx.cores));

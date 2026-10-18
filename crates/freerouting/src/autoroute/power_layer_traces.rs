@@ -19,8 +19,15 @@
 //!   `legacy`, and routes are byte-identical to Java's;
 //! - `own_plane`: a trace of net N on a power layer may only lie inside the
 //!   outline of one of N's own conduction areas on that layer. A deliberate
-//!   divergence (`docs/DIVERGENCES.md`, "Autorouter"); N05 makes it
-//!   `enhanced`'s default once Q13.3 accepts it.
+//!   divergence (`docs/DIVERGENCES.md`, "Autorouter");
+//! - `none` (N05): no trace of any net on a power layer, as canary's
+//!   validity check (`inner_tracks.py`) wants; a via still lands in its
+//!   net's plane there. Under it a hop on a power layer is expanded only
+//!   when it has no length (the entry segment and the connection point are
+//!   one board point) and that point lies in one of N's planes there, which
+//!   is a via landing in the plane: `own_plane`'s check with the extra
+//!   condition that the hop lays no trace. A deliberate divergence
+//!   (`docs/DIVERGENCES.md`, "Autorouter").
 //!
 //! **Where the rule acts.** Power layers are never active, so on a power
 //! layer the maze search only expands from the room it entered to the
@@ -60,6 +67,9 @@ pub enum PowerLayerTraces {
     Layer,
     /// Only inside the outline of one of the net's own planes there.
     OwnPlane,
+    /// No trace on a power layer at all; vias still land in the net's
+    /// own planes (`none`, N05).
+    NoTraces,
 }
 
 impl PowerLayerTraces {
@@ -69,8 +79,9 @@ impl PowerLayerTraces {
         match value.map(str::trim) {
             None | Some("") | Some("layer") => Ok(PowerLayerTraces::Layer),
             Some("own_plane") => Ok(PowerLayerTraces::OwnPlane),
+            Some("none") => Ok(PowerLayerTraces::NoTraces),
             Some(other) => Err(format!(
-                "{SETTINGS_KEY}: unknown value '{other}' (expected 'layer' or 'own_plane')"
+                "{SETTINGS_KEY}: unknown value '{other}' (expected 'layer', 'own_plane' or 'none')"
             )),
         }
     }
@@ -79,6 +90,44 @@ impl PowerLayerTraces {
     /// ([`validate`] reports it).
     pub fn of(settings: &RouterSettings) -> Self {
         Self::parse(settings.power_layer_traces.as_deref()).unwrap_or_default()
+    }
+}
+
+impl PowerLayerTraces {
+    /// The setting's value (`layer`, `own_plane`, `none`).
+    pub fn name(self) -> &'static str {
+        match self {
+            PowerLayerTraces::Layer => "layer",
+            PowerLayerTraces::OwnPlane => "own_plane",
+            PowerLayerTraces::NoTraces => "none",
+        }
+    }
+
+    /// True if the maze search needs the net's planes per power layer
+    /// ([`own_plane_areas`]) to judge a hop there.
+    pub fn needs_plane_areas(self) -> bool {
+        self != PowerLayerTraces::Layer
+    }
+}
+
+/// Whether the maze search may expand a hop on a power layer whose entry
+/// segment and connection point are `points`, for a net whose planes on
+/// that layer are `areas`. Always true under `layer`; under `own_plane` the
+/// points must lie in one convex piece of one of `areas`
+/// ([`points_in_one_piece`]); under `none` they must also be one point, so
+/// the hop lays no trace (a via landing in the plane).
+pub fn hop_allowed(
+    mode: PowerLayerTraces,
+    board: &BasicBoard,
+    areas: &[ItemId],
+    points: &[Point],
+) -> bool {
+    match mode {
+        PowerLayerTraces::Layer => true,
+        PowerLayerTraces::OwnPlane => points_in_one_piece(board, areas, points),
+        PowerLayerTraces::NoTraces => {
+            points.windows(2).all(|w| w[0] == w[1]) && points_in_one_piece(board, areas, points)
+        }
     }
 }
 
@@ -178,7 +227,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_accepts_the_two_values_and_refuses_others() {
+    fn parse_accepts_the_three_values_and_refuses_others() {
         assert_eq!(PowerLayerTraces::parse(None), Ok(PowerLayerTraces::Layer));
         assert_eq!(
             PowerLayerTraces::parse(Some("")),
@@ -192,6 +241,17 @@ mod tests {
             PowerLayerTraces::parse(Some(" own_plane ")),
             Ok(PowerLayerTraces::OwnPlane)
         );
+        assert_eq!(
+            PowerLayerTraces::parse(Some("none")),
+            Ok(PowerLayerTraces::NoTraces)
+        );
+        for mode in [
+            PowerLayerTraces::Layer,
+            PowerLayerTraces::OwnPlane,
+            PowerLayerTraces::NoTraces,
+        ] {
+            assert_eq!(PowerLayerTraces::parse(Some(mode.name())), Ok(mode));
+        }
         let err = PowerLayerTraces::parse(Some("island")).unwrap_err();
         assert!(
             err.contains(SETTINGS_KEY) && err.contains("'island'"),

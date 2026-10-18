@@ -415,11 +415,20 @@ fn scheduler_merge(
     {
         resolved.patch.apply_from(&parsed);
     }
+    // Java has no profile key.
+    resolved.patch.profile = None;
     resolved
 }
 
 fn scenario_patches(scenario: &str, base: &str, inc_class: &str) -> Vec<(Source, SettingsPatch)> {
-    let mut sources = vec![(Source::Defaults, defaults(&ctx()))];
+    // Java's dumps are the `legacy` profile's (N01, N05): pinned.
+    let mut sources = vec![
+        (Source::Defaults, defaults(&ctx())),
+        (
+            Source::Testing,
+            freerouting::settings::profile::legacy_pin(),
+        ),
+    ];
     match scenario {
         "default" => {}
         "fixture" => sources.push((Source::Testing, java_fixture_test())),

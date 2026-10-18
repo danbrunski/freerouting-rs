@@ -54,7 +54,7 @@ deliberate fix, and every deliberate one is listed in `DIVERGENCES.md`.
 Java is the baseline of the `legacy` routing profile only. The default profile,
 `enhanced`, may carry accepted improvements (`ENHANCED` in
 `crates/freerouting/src/settings/profile.rs`, each with its line in
-DIVERGENCES, "Profile `enhanced`"); until N05 adds the first it equals `legacy`.
+DIVERGENCES, "Profile `enhanced`"; N05.3 lists them).
 The profile only sets defaults: the merge (`settings::resolve`) adds its
 differences as a source at priority 5, after Java's defaults and before the
 settings file, so any explicit key wins.
@@ -77,6 +77,36 @@ To run in parity mode, pin `legacy` explicitly:
   on the current thread; `autoroute_board_parity.rs::the_gate_pins_legacy_beside_a_dummy_enhanced_difference`
   and `settings_defaults.rs::java_defaults_are_the_legacy_profile` use it to
   prove the pins hold.
+
+### Promoting an improvement into `enhanced` (N05.2)
+
+A Q, X, K or N candidate is built off by default, as a settings key whose unset
+value is Java's. It joins `enhanced` only through these steps, all in one diff:
+
+1. **Register, then measure.** A registration in `docs/roadmap/prereg/<id>.json`
+   with `"rule": "totals"` and a `totals` block (N02; `tools/ab/README.md`, "The
+   totals rule"), pinned by its sha256 in a `crates/freerouting-dev/tests/prereg_*.rs`
+   test, committed before the first number. `accept: improve` for a quality change,
+   `no-regress` for a correctness fix (a result KiCad's DRC or canary's checks
+   refuse). Grade with KiCad (canary's `grade.sh` steps, `tools/kicad-oracle/grade.sh`)
+   and judge with `freerouting-dev gate --prereg <file> --records <records.json>`,
+   the records written from the graded numbers.
+2. **The table entry.** One `Difference { path, value, measurement }` in
+   `ENHANCED` (`crates/freerouting/src/settings/profile.rs`); `measurement` names
+   the checklist item and its result in a few words.
+3. **The DIVERGENCES line.** One bullet in `docs/DIVERGENCES.md`, "Profile
+   `enhanced`", starting with the key in backquotes (`` `power_layer_traces` = ...``):
+   what it changes, the registration and the numbers.
+   `tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line`
+   fails without it.
+4. **A test that `enhanced` sets it**, and that `legacy` does not, in
+   `tests/settings_profile.rs` (`enhanced_sets_<key>`).
+5. **The record.** One line in N05.3 (the date, key and value, the registration,
+   the result), the candidate's own checklist item ticked or annotated, and the
+   help text of the field (`settings/fields.rs`) naming the profile's value.
+
+A parity run is unaffected: it pins `legacy`. A rejected candidate stays off, or
+is deleted under N02's keep-or-delete rule; its numbers stay in its checklist.
 
 ### Regenerating the reference
 

@@ -245,7 +245,7 @@ settings_table! {
             ["conduction_is_obstacle", "planeAsObstacle", "conductionIsObstacle"], Flat::No, true,
             "Conduction areas block foreign traces."),
         (power_layer_traces, String, opt, None, None, "powerLayerTraces", [], Flat::No, true,
-            "Where a plane net's traces may lie on a power layer: `layer` (unset, Java: anywhere on it) or `own_plane` (inside its own plane; Q13)."),
+            "Where a plane net's traces may lie on a power layer: `layer` (unset, Java: anywhere on it), `own_plane` (inside its own plane; Q13) or `none` (no trace on a power layer; vias still land in their plane; profile `enhanced`'s value, N05)."),
         (plane_obstacle_net_classes, Vec<String>, opt, None, None, "planeObstacleNetClasses", [],
             Flat::No, true,
             "Net classes whose signal-layer pours block the nets with no pin or via inside them (Q01)."),

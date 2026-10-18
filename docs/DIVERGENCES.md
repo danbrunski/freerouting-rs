@@ -268,7 +268,14 @@ IntOctagon's box cutout.
   via landing in the island (`tests/power_layer_traces.rs`); an unknown value fails the job,
   naming the key. Off by default; Q13.3 measured it within N02's totals rule with the plugin's
   default flags (KiCad unconnected canary-pwr 68 → 68, m-fc-g474 5 → 5, microzed 0 → 0; plane-net
-  traces outside their plane 5 → 0), so N05 makes it `enhanced`'s default.
+  traces outside their plane 5 → 0). N05 made the stricter `none` `enhanced`'s default instead
+  (see "Profile `enhanced`").
+  `none` (N05) lays no trace of any net on a power layer, as canary's validity check
+  (`inner_tracks.py`) demands: a hop there is expanded only when it has no length and lies in one
+  of the net's planes (a via landing in its plane); vias through the layer are unchanged. On the
+  Q13 fixtures it routes as `own_plane` does (no trace on In1.Cu, PB's via inside its island), and
+  `hop_allowed` refuses the in-island trace `own_plane` allows
+  (`tests/power_layer_traces.rs`, `none_allows_only_a_hop_without_length_inside_the_plane`).
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which
@@ -1222,4 +1229,11 @@ key, its `enhanced` value and the measurement that accepted it (N05 adds them).
 `tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line`
 checks that this list and the table agree.
 
-No entries yet: `enhanced` equals `legacy`.
+- `power_layer_traces` = `none` (N05.3, `docs/roadmap/prereg/N05-power-layer-traces.json`,
+  amended once): no trace of any net on a power layer; vias still land in their net's plane
+  (Autorouter, `power_layer_traces`). canary's validity check refuses any track on an inner
+  plane layer, and Dan's plugin run of 2026-10-17 had a `+12V_BUS` track on Power.Cu. Judged by
+  N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against `own_plane`,
+  Q13's rule: KiCad unconnected 256 → 256 over canary-pwr (6 rows), m-fc-g474 and microzed,
+  every session byte-identical to `own_plane`'s; against Java's `layer` 257 → 256, traces on
+  power layers 6 → 0, inner-layer tracks on the canary plane rows 4 → 0.

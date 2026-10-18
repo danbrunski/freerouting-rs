@@ -145,3 +145,7 @@ rule).
   `README.txt` with flags and the self-grade). **Remains:** N05 adds
   `power_layer_traces = own_plane` to `enhanced` (not done here, by the task's instruction), and
   canary's official grade of the handoff sessions.
+  *Note from N05.3 (2026-10-18):* N05 put the stricter `power_layer_traces = none` (no trace on a
+  power layer at all, canary's validity rule) into `enhanced` instead of `own_plane`, measured against
+  `own_plane` on this set plus the plugin run's DSN: every session byte-identical to `own_plane`'s
+  (`docs/roadmap/prereg/N05-power-layer-traces.json`, gate PASS). `own_plane` stays a valid value.
