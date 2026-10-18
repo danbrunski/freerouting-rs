@@ -147,6 +147,12 @@ clearance errors. So a default run is the legacy flow plus the board's clearance
 `canary-pwr` 76 unconnected, 0 edge errors. For the graded flow, use the canary preset file (`fixtures/canary-pwr/presets/canary-graded-flow.json`, Preset drop-down)
 (38 with the sweep, 45 without; `dsn_export.py`'s DSN of the same board gives 33, and the gap
 comes from the plugin's extra edge rectangles and place keepout, which change a chaotic route; K09.8). Once Q13 lands, rerun the candidates.
+Under `enhanced` the plugin keeps the Board Setup class widths and passes no neck-down flag: the
+engine's `enhanced` profile sets `router.neck_width_um = 300` (Java's necked retry of a failed
+connection), which N05.3 accepted against class narrowing on 2026-10-18
+(`docs/roadmap/prereg/N05-neck-down.json`: KiCad unconnected 103 → 106 within noise 17.14,
+copper under the Board Setup width 848.9 → 310.4 mm where the narrowing acted). `class_widths`
+(a preset or `auto`) still narrows a class when chosen.
 
 ## Dan's machine (Windows 11, KiCad 10.0)
 

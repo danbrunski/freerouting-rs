@@ -502,8 +502,24 @@ fn view_direction_and_bend_fallbacks() {
 #[test]
 fn view_scalar_fallbacks_and_fields() {
     let ctx = ResolveContext { cores: 8 };
-    let all = resolve(&[(Source::Defaults, defaults(&ctx))], &ctx);
+    // Java's defaults are the `legacy` profile's (N05.3 sets the neck width
+    // under `enhanced`, checked below).
+    let all = resolve(
+        &[
+            (Source::Defaults, defaults(&ctx)),
+            (
+                Source::Testing,
+                freerouting::settings::profile::legacy_pin(),
+            ),
+        ],
+        &ctx,
+    );
     let v = BoardRouterSettings::from_settings(&all.settings);
+    let enhanced = resolve(&[(Source::Defaults, defaults(&ctx))], &ctx);
+    assert_eq!(
+        BoardRouterSettings::from_settings(&enhanced.settings).neck_width_um(),
+        300.0
+    );
     assert_eq!(v.via_costs(), 50);
     assert_eq!(v.plane_via_costs(), 5);
     assert_eq!(v.start_ripup_costs(), 100);

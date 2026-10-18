@@ -1,0 +1,224 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N05.3-neck-down",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3; Dan 2026-10-17: \"we should turn that on\")",
+  "question": "Does neck-down, routed with the board's own (Board Setup) class widths, replace class narrowing in profile enhanced: with router.neck_width_um = 300 (Java's necked retry of a failed connection, the only neck-down policy built; Q02.3's bounded-neck is not) does the KiCad-unconnected total stay within N02's totals rule (accept no-regress) of arm A, which routes the class widths narrowed the way the plugin flow narrows them, with no new clearance, width, via-in-pad or inner-track error, and does it ship more copper at the Board Setup width?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10,
+      "interf_u": 8.2,
+      "pic_programmer": 4.3,
+      "CM5_MINIMA_3": 10.4
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at origin/main f010b1e (no engine change), one Linux release build for every arm (target/orchestrator/neck/scratch/bin/freerouting, sha256 1b0e4c01cf2b34968c3fa9b70fa31572b995517c1a84fe1a0b5b98e68b9bf73f); the default profile, enhanced as it is at f010b1e (router.power_layer_traces=none)",
+  "neck_width_why": "300 um: one board-independent value is needed for a profile default. It is at or above common fab minimum track widths (0.1-0.2 mm), so a necked trace never needs the board-minimum floor on such boards (the floor, router.min_trace_width_um, still applies: half width max(neck/2, min half width)); it is the width canary-pwr's own Board Setup gives its power taps (canary b1994423) and the preset's narrowing (K09.8). The retry applies to every connection whose class is wider than it, not only the wide classes.",
+  "arms": {
+    "A": {
+      "engine": "freerouting-rs at origin/main f010b1e (no engine change), one Linux release build for every arm (target/orchestrator/neck/scratch/bin/freerouting, sha256 1b0e4c01cf2b34968c3fa9b70fa31572b995517c1a84fe1a0b5b98e68b9bf73f); the default profile, enhanced as it is at f010b1e (router.power_layer_traces=none); demos: the same build through kicad-plugin/headless_run.py at f010b1e (the plugin's export, DSN fix-ups, argument list and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "command": "canary: freerouting -de {DSN_NARROW} -do {SES} --gui.enabled=false {ROW_FLAGS}; demos: headless_run.py export with options {\"schema\": 4, \"class_widths\": \"auto\"}, then the exported argument list",
+      "settings": {},
+      "what": "baseline: enhanced as it is, with the class narrowing the plugin flow applies: canary rows the narrowed DSN (plugin-b1994423.dsn's Board Setup widths are already the taps' widths; the 9511d9a fixture is dsn_export.py --width's 0.3/0.4 mm), demos the plugin's class_widths auto (a class wider than the board default capped at its narrowest SMD pad, not below the board minimum; K09.1)"
+    },
+    "plain": {
+      "engine": "freerouting-rs at origin/main f010b1e (no engine change), one Linux release build for every arm (target/orchestrator/neck/scratch/bin/freerouting, sha256 1b0e4c01cf2b34968c3fa9b70fa31572b995517c1a84fe1a0b5b98e68b9bf73f); the default profile, enhanced as it is at f010b1e (router.power_layer_traces=none); demos: the same build through kicad-plugin/headless_run.py at f010b1e (the plugin's export, DSN fix-ups, argument list and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "command": "canary: freerouting -de {DSN_BOARD_SETUP} -do {SES} --gui.enabled=false {ROW_FLAGS}; demos: headless_run.py export with options {\"schema\": 4}, then the exported argument list",
+      "settings": {},
+      "what": "reported: the plugin's default options today (PROFILE_DEFAULTS['enhanced'] is {} at f010b1e), Board Setup widths, no neck-down; where its command equals A's (canary-plugin45, and demos where auto narrows nothing) it is A's run"
+    },
+    "B": {
+      "engine": "freerouting-rs at origin/main f010b1e (no engine change), one Linux release build for every arm (target/orchestrator/neck/scratch/bin/freerouting, sha256 1b0e4c01cf2b34968c3fa9b70fa31572b995517c1a84fe1a0b5b98e68b9bf73f); the default profile, enhanced as it is at f010b1e (router.power_layer_traces=none); demos: the same build through kicad-plugin/headless_run.py at f010b1e (the plugin's export, DSN fix-ups, argument list and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "command": "as plain, plus --router.neck_width_um=300",
+      "settings": {
+        "router.neck_width_um": "300"
+      },
+      "what": "candidate: Board Setup widths and Java's necked retry at 300 um; where the session is byte-identical to another arm's it is graded once"
+    }
+  },
+  "baseline_arm": "A",
+  "candidate_arm": "B",
+  "pairs": {
+    "verdict": {
+      "arms": [
+        "A",
+        "B"
+      ],
+      "rows": "all"
+    },
+    "reported": [
+      {
+        "arms": [
+          "plain",
+          "B"
+        ],
+        "rows": "all"
+      },
+      {
+        "arms": [
+          "A",
+          "plain"
+        ],
+        "rows": "all"
+      }
+    ]
+  },
+  "pairs_rule": "the verdict pair is judged by the totals block with the hard and guard metrics below (freerouting-dev gate --prereg on a records file written from the graded numbers) plus the width clause of keep_rule; reported pairs are printed, not judged",
+  "boards": {
+    "set": "tools/bench/sets/n05-neck-down.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "rows": {
+      "canary-plugin45": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "input_board_setup": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "ROW_FLAGS": "--max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps against canary-pwr-rev1.0 at canary b1994423",
+        "why": "the DSN of Dan's plugin run of 2026-10-17 with the plugin's argument list; its classes are canary b1994423's Board Setup (Power_High, Switch_Node, Power 0.3 mm, GND 0.4), so A = plain and B necks GND and nothing else"
+      },
+      "canary-9511d9a-mp1sweep": {
+        "board": "canary-pwr",
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        "input_board_setup": "crates/freerouting/tests/data/canary-pwr-n05/canary-pwr-9511d9a-board-setup-widths.dsn",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "grade": "canary grade.sh steps at canary e21ee05e (board blob unchanged since 9511d9a)",
+        "why": "canary's graded flow (Q10's 33); the Board Setup DSN is the fixture with its four narrowed class widths set back to canary 9511d9a's Board Setup (Power_High 1.5, Switch_Node 1.5, Power 0.5, GND 0.5 mm), every other byte equal"
+      },
+      "interf_u": {
+        "board": "interf_u",
+        "input": "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb",
+        "grade": "headless plugin import, kicad-cli pcb drc --refill-zones --severity-all, canary's via_in_pad.py and inner_tracks.py (K09's arm.sh steps)"
+      },
+      "pic_programmer": {
+        "board": "pic_programmer",
+        "input": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
+        "grade": "as interf_u"
+      },
+      "CM5_MINIMA_3": {
+        "board": "CM5_MINIMA_3",
+        "input": "/usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb",
+        "grade": "as interf_u"
+      }
+    },
+    "procedure": "demos: tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip (K09.json's boards; the hashes below are of the stripped boards)",
+    "why": "the boards Dan named: canary-pwr through the plugin's DSN and argument list and through canary's graded flow (with Board Setup widths of 1.5 mm, the case neck-down is for), and K09's three demos (interf_u and pic_programmer have classes wider than 300 um; CM5_MINIMA_3 has none, a no-change control)",
+    "files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "canary-9511d9a-mp1sweep": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "interf_u": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "pic_programmer": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49",
+      "CM5_MINIMA_3": "031b7497386e84c3345d180c8b1c36b07910eb075b81ac6d793ba6f21558449a"
+    },
+    "board_setup_files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "canary-9511d9a-mp1sweep": "294bc980847bd8cb76594e32cea8b0154ca247555d4919af70ca0966d4ec9b11"
+    }
+  },
+  "grading": "WSL KiCad 10.0.7 for every row, one job at a time (Q13's path shim for canary's grade.sh). When two arms' sessions are byte-identical the session is graded once, the earlier arm's grade (order A, plain, B). The canary sessions go to target/canary-handoff/2026-10-18-neckdown/ for canary's official grade",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "power_layer_traces",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_errors",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "inner_tracks",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "under_board_setup_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "power_layer_traces": "every trace on a power-type layer of the routed DSN (freerouting-dev power-traces, the `all` count); 0 under enhanced's power_layer_traces=none",
+    "clearance_errors": "KiCad error items of type clearance, hole_clearance, shorting_items, track_width, copper_edge_clearance and tracks_crossing, minus the same types on the unrouted input (demos; canary: the input has none)",
+    "drc_real": "KiCad error-severity items other than unconnected items and starved thermals, minus the same types on the unrouted input",
+    "below_minimum": "KiCad track_width errors",
+    "inner_tracks": "canary's inner_tracks.py count on the routed board (on canary every inner layer is a plane; on CM5_MINIMA_3 its inner layers are signal layers, so the count is held to A's, not to 0)",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session",
+    "unrouted": "the router's final unrouted count (its log)",
+    "under_board_setup_mm": "length of copper of the wide nets shipped under the net's Board Setup class width (freerouting-dev widths <Board Setup DSN> <SES>: the sum of under_mm over its nets; the wide nets are those whose class is wider than the board's narrowest class); the per-net delivered widths of the wide classes (canary: Power_High, Switch_Node, GND, Power) from the same report go in the done note",
+    "vias": "vias in the session"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "B is accepted when (1) freerouting-dev gate --prereg passes on the A/B records (no-regress totals, hard metrics 0, guards not worse than A) and (2) summed over the rows where A narrows a class (canary-9511d9a-mp1sweep and any demo whose auto widths change a class), under_board_setup_mm is lower in B than in A. Then ENHANCED gets router.neck_width_um=300 and the plugin's enhanced defaults keep the Board Setup widths (no class_widths). Otherwise router.neck_width_um stays off by default (0, Java's), and N02's keep-or-delete rule is applied in the note (it is Java's own setting, so it stays as an option).",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings or neck widths",
+  "not_registered": [
+    "other neck widths (one value, registered here before any number)",
+    "Q02.3's bounded-neck and Q02.5's widen-back: not built",
+    "canary-plugin68 (plugin export at canary e21ee05e): its narrowing would come from class_widths auto, which K09.9 rejected; the 9511d9a row covers 1.5 mm Board Setup widths"
+  ],
+  "decision_table": {
+    "pass": "enhanced gets router.neck_width_um=300; N05.3 line; DIVERGENCES Profile enhanced entry; plugin PROFILE_DEFAULTS['enhanced'] has no class narrowing (comment names this measurement)",
+    "fail": "neck_width_um stays 0 by default; numbers in N05.3; keep-or-delete per N02"
+  }
+}

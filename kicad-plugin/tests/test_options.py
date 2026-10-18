@@ -347,6 +347,15 @@ def test_bad_k09_values_keep_the_profile_default():
     assert RouteOptions.from_dict(bad) == options.profile_defaults("legacy")
 
 
+def test_enhanced_keeps_the_board_setup_widths_and_leaves_the_neck_down_to_the_engine():
+    # N05.3 (docs/roadmap/prereg/N05-neck-down.json): no class narrowing by
+    # default; the engine's `enhanced` profile sets router.neck_width_um itself.
+    enhanced = options.profile_defaults("enhanced")
+    assert enhanced.class_widths == {}
+    assert options.dsn_settings(enhanced)["class_widths"] == {}
+    assert not any("neck_width" in a for a in enhanced.to_args(board_min_trace_width_um=150))
+
+
 def test_schema_2_files_load_and_take_the_new_defaults():
     old = {"schema": 2, "profile": "enhanced"}
     assert RouteOptions.from_dict(old) == options.profile_defaults("enhanced")

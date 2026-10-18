@@ -318,7 +318,12 @@ def _restore_k09(out, data):
 # own clearance rules (`edge_and_pad_keepouts`, on in the dataclass), which
 # hold under both profiles. `enhanced` is empty: no candidate of
 # docs/roadmap/prereg/K09.json passed its guards on 2026-10-17 (the `auto`
-# arms left Q13's inner-layer tracks on canary-pwr; K09.9's note).
+# arms left Q13's inner-layer tracks on canary-pwr; K09.9's note). It keeps
+# the Board Setup class widths (no `class_widths`): the engine's own
+# `enhanced` profile necks a connection down only where it fails at full
+# width (`router.neck_width_um = 300`), which N05.3 measured against class
+# narrowing (docs/roadmap/prereg/N05-neck-down.json: no-regress, copper under
+# the Board Setup width 848.9 -> 310.4 mm), so the plugin passes no flag for it.
 PROFILE_DEFAULTS = {
     "legacy": {},
     "enhanced": {},

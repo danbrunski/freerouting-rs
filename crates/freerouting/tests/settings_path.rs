@@ -519,8 +519,19 @@ fn neck_width_cli_flag_reaches_router_settings() {
 
 #[test]
 fn neck_width_default_is_off() {
-    let s = resolve(&[(Source::Defaults, defaults(&ctx()))], &ctx()).settings;
+    // Java's default (profile `legacy`) is off; `enhanced` uses 300 (N05.3).
+    let legacy = freerouting::settings::profile::legacy_pin();
+    let s = resolve(
+        &[
+            (Source::Defaults, defaults(&ctx())),
+            (Source::Testing, legacy),
+        ],
+        &ctx(),
+    )
+    .settings;
     assert_eq!(s.neck_width(), 0.0);
+    let s = resolve(&[(Source::Defaults, defaults(&ctx()))], &ctx()).settings;
+    assert_eq!(s.neck_width(), 300.0);
     let mut p = SettingsPatch::default();
     p.neck_width_um = Some(-5.0);
     assert_eq!(

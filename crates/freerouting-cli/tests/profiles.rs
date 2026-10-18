@@ -26,8 +26,10 @@ fn array(value: Option<&JsonValue>) -> &[JsonValue] {
 }
 
 /// Both profiles route; `enhanced` (the default, no flag) equals `legacy`
-/// on this board: its one difference so far (N05.3, `power_layer_traces =
-/// none`) acts only on power layers, and this board has none.
+/// on this board, which its differences so far (N05.3) do not touch:
+/// `power_layer_traces = none` acts only on power layers, and this board has
+/// none; `neck_width_um = 300` acts only on a class wider than 300 um, and
+/// its one class is 250 um wide.
 #[test]
 fn both_profiles_route_and_enhanced_is_the_default() {
     let (legacy, dir_legacy) = route("profile-legacy", &["--profile", "legacy"]);

@@ -133,3 +133,74 @@ Prerequisites: N01; each candidate's own accepted measurement.
 
   Sessions for canary's official grade: `target/canary-handoff/2026-10-18-n05/` (8 SESs, the
   plugin DSN, `SHA256SUMS`, `README.txt` with flags and the self-grade).
+
+  - **2026-10-18, accepted: `router.neck_width_um = 300`** (Java's necked retry,
+    `retryConnectionNecked`: a connection that fails at its class width is tried once more with every
+    trace clamped to 300 µm, never below `min_trace_width_um`; Dan 2026-10-17: "we should turn that
+    on"). The only neck-down built: Q02.3's distance-bounded neck and Q02.5's widen-back are not, so
+    a failed connection ships narrow end to end, not only through the pin field. Registration
+    `docs/roadmap/prereg/N05-neck-down.json` (`bd0c0784…`, before any number, no amendment), pinned
+    by `crates/freerouting-dev/tests/prereg_n05_neck.rs` (4 tests); set
+    `tools/bench/sets/n05-neck-down.txt`; new input
+    `crates/freerouting/tests/data/canary-pwr-n05/canary-pwr-9511d9a-board-setup-widths.dsn` (the
+    fixture with its four narrowed classes back at canary 9511d9a's Board Setup widths). Arms: **A**
+    enhanced at f010b1e with the class narrowing the plugin flow applies (canary: the narrowed DSN;
+    demos: the plugin's `class_widths auto`), **plain** (reported) Board Setup widths without
+    neck-down (today's plugin default: `PROFILE_DEFAULTS["enhanced"]` is `{}` since K09.9),
+    **B** Board Setup widths plus `--router.neck_width_um=300`. One Linux release build
+    (`1b0e4c01…`); arm A reproduces N05's sessions byte for byte (plugin45 `844e2c0e…`, 9511d9a
+    `333c79f7…` = Q10's 33). Canary rows graded with canary's `grade.sh` steps (WSL KiCad 10.0.7,
+    plugin45 against `b1994423`, 9511d9a against `e21ee05e`), demos through
+    `kicad-plugin/headless_run.py` (export, route, import, `kicad-cli pcb drc`, `via_in_pad.py`,
+    `inner_tracks.py`; K09's stripped boards). N02 totals rule, `accept: no-regress`;
+    `freerouting-dev gate --records records.json --baseline baseline.json --prereg ...`: **PASS**
+    (0 refusals; total 103 → 106, +3 against set noise 17.14; no board beyond twice its band).
+    Registered width clause: copper under the Board Setup width, summed over the rows where A's
+    narrowing acted (9511d9a, pic_programmer), 848.9 → 310.4 mm: holds.
+
+    | row | KiCad unconnected A / plain / B | under Board Setup width, wide nets, mm (A / plain / B) | copper errors A / B | starved A / B | wall s A / plain / B |
+    |---|---|---|---|---|---|
+    | canary-plugin45 | 37 / = A / 36 | 30.9 / = A / 32.6 | 1 / 1 (the same +12V_PROT via, 0.245 mm) | 5 / 5 | 110.5 / – / 104.2 |
+    | canary-9511d9a-mp1sweep | 33 / 49 / 35 | 696.7 / 96.7 / 309.9 | 0 / 0 | 9 / 9 | 66.7 / 86.6 / 154.0 |
+    | interf_u | 10 / 10 (identical) / 12 | 1.8 / 1.8 / 1.8 | 0 / 0 | 5 / 4 | 11.1 / 13.3 / 9.9 |
+    | pic_programmer | 2 / 2 / 2 | 152.2 / 0.6 / 0.6 | 2 / 2 (input text crossings) | 0 / 0 | 0.3 / 0.3 / 0.3 |
+    | CM5_MINIMA_3 | 21 / = A / 21 (B identical to A) | 92.2 / = A / 92.2 | 10 / 10 | 0 / 0 | 85.5 / – / 86.1 |
+
+    Hard metrics (via in pad, track_width below minimum, power-layer traces) are 0 in every run;
+    clearance-type errors and `drc_real` equal A's on every row, inner-layer tracks 0 on canary (425
+    = 425 on CM5's signal inner layers). pic_programmer's two errors in every arm are the
+    `/DATA-RB7` track over the copper text `1=>>`, which the DSN does not carry; in B KiCad files
+    one of them as `shorting_items` (text without a net) instead of `clearance`. CM5_MINIMA_3 has no
+    class wider than 300 µm, so B is byte-identical to A. Per-net delivered widths on canary's wide
+    classes (`freerouting-dev widths` against the Board Setup DSN; length / under the Board Setup
+    width, mm), 9511d9a row: Power_High 180.1/180.1 (A) → 123.5/44.1 (plain) → 206.0/140.9 (B);
+    Switch_Node 7.2/7.2 → 4.5/2.3 → 7.9/5.8; Power 330.6/330.6 → 305.3/28.0 → 427.3/144.3; GND
+    178.1/178.1 → 175.5/15.6 → 168.2/7.8. So B ships 65 mm of Power_High at 1.5 mm, 283 mm of Power
+    and 160 mm of GND at 0.5 mm where A ships none, with 2 more unconnected. Largest B nets under
+    width: `+5V_BUCK` 54.8 of 56.7 mm (min 0.18), `+3V3_AON` 52.1 of 126.3, `/Holdup/LTC_CAPRTN` 33.4
+    of 34.9, `/Holdup/LTC_INTVCC` 31.2 of 31.2, `+12V_PROT` 29.2 of 58.7, `+5V_PI` 24.0 of 30.5 (min
+    0.18). plugin45 row (canary b1994423's Board Setup is already the taps' widths, 0.3/0.4 mm):
+    only GND necks, 177.6/5.0 → 179.3/6.7 (min 0.24 → 0.18). Over all nets (`ses_widths.py`, not
+    registered) B also ships less copper under its class width than A on every row but plugin45
+    (+2.2 mm): interf_u 130.2 → 99.4 mm and pic_programmer 207.0 → 118.7 mm, where the retry also
+    necks default-class connections (0.4 and 0.5 mm classes) to 0.3 mm. Wall time: the retry costs
+    time where many connections fail at 1.5 mm (9511d9a 66.7 → 154.0 s, 2.3×); elsewhere B is not
+    slower (plugin45 −6 %, interf_u −11 %, CM5_MINIMA_3 +1 %).
+    `ENHANCED` entry in `settings/profile.rs`, DIVERGENCES "Profile `enhanced`" line,
+    `tests/settings_profile.rs::enhanced_sets_neck_width_um_300`, help text in
+    `settings/fields.rs`; `tests/quality_attribution.rs` now pins its verdict runs to `legacy`
+    (Q03's 1.5 mm QFN pin is infeasible for Java's router) and
+    `qfn_power_pin_routes_necked_under_enhanced` pins the new behaviour (PWR routes, at most
+    0.3 mm); `settings_board.rs`, `settings_path.rs` and `stage_catalog.rs` check 0 under
+    `legacy` and 300 under `enhanced`. The plugin's `PROFILE_DEFAULTS["enhanced"]` keeps the Board Setup widths
+    (no `class_widths`) and passes no neck flag
+    (`kicad-plugin/tests/test_options.py::test_enhanced_keeps_the_board_setup_widths_and_leaves_the_neck_down_to_the_engine`).
+    End to end with the rebuilt CLI on plugin45 with the plugin's flags and no neck flag: B's session
+    byte for byte (`3d2cedef…`).
+    Sessions for canary's official grade: `target/canary-handoff/2026-10-18-neckdown/` (5 SESs, the
+    three DSNs, `SHA256SUMS`, `README.txt` with flags, self-grade and widths).
+    *Official grade (canary-7a, 2026-10-18, `grade.sh`, KiCad 10.0.5, canary b1994423):* all five
+    match the self-grade: 9511d9a mp1sweep A 33, plain 49, B 35 (starved 9 / 4 / 9, 0 copper
+    errors); plugin45 A 37, B 36 (starved 5, the same Q14 `+12V_PROT` via clearance error, 0.245 mm).
+    canary-7a: no objection; on canary its value is the safety net for un-narrowed classes
+    (49 → 35), and the full-width Power_High it ships is not a defect.

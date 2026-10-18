@@ -1,0 +1,14 @@
+# N05.3: router.neck_width_um (Java's necked retry, the only neck-down built; Q02) in profile
+# `enhanced` against class narrowing (docs/roadmap/tasks/N05-promote-accepted-stages.md),
+# registered in docs/roadmap/prereg/N05-neck-down.json. The canary rows count as one board.
+# Arm A routes the narrowed DSN (the first line of each pair), arms plain and B the DSN with the
+# Board Setup widths (the second): plugin-b1994423.dsn already has its board's Board Setup
+# widths (canary b1994423 set them to the taps' widths), so it serves all three arms.
+crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+crates/freerouting/tests/data/canary-pwr-n05/canary-pwr-9511d9a-board-setup-widths.dsn
+# KiCad 10.0.7 demos, tracks and vias stripped (outside the repository; K09.json's boards and hashes),
+# routed through the plugin's headless path (kicad-plugin/headless_run.py):
+#   /usr/share/kicad/demos/interf_u/interf_u.kicad_pcb
+#   /usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
+#   /usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb

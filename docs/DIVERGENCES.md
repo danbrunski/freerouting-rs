@@ -1278,3 +1278,15 @@ checks that this list and the table agree.
   Q13's rule: KiCad unconnected 256 → 256 over canary-pwr (6 rows), m-fc-g474 and microzed,
   every session byte-identical to `own_plane`'s; against Java's `layer` 257 → 256, traces on
   power layers 6 → 0, inner-layer tracks on the canary plane rows 4 → 0.
+- `neck_width_um` = `300` (N05.3, `docs/roadmap/prereg/N05-neck-down.json`): Java's necked
+  retry (`retryConnectionNecked`, Autorouter: a connection that fails at its class width is tried
+  once more with every trace clamped to 300 µm, never below `min_trace_width_um`) is on, where
+  Java's default 0 leaves it off. It lets a board keep its Board Setup class widths: copper is
+  full width wherever the first attempt fits, and only failed connections ship narrow. Judged by
+  N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against the same
+  version routing class widths narrowed the way the plugin flow narrows them (canary's 0.3/0.4 mm
+  export, the plugin's `class_widths auto`): KiCad unconnected 103 → 106 over canary-pwr
+  (2 rows), interf_u, pic_programmer and CM5_MINIMA_3 (set noise 17.14), no new DRC error,
+  via in a pad or power-layer trace; copper under the Board Setup width on the rows where the
+  narrowing acted 848.9 → 310.4 mm. The retry acts on every class wider than 300 µm, not only
+  the wide ones.

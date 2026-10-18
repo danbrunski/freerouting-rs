@@ -121,7 +121,7 @@ fn assert_enhanced_sets(path: &str, value: &str, java: Option<FieldValue>, other
     let legacy = resolve_with(vec![(Source::Cli, legacy_pin())]);
     assert_eq!(
         self::value(&enhanced.patch, path),
-        Some(FieldValue::Str(value.to_string())),
+        parsed(path, value),
         "enhanced sets {path}"
     );
     assert_eq!(
@@ -137,16 +137,32 @@ fn assert_enhanced_sets(path: &str, value: &str, java: Option<FieldValue>, other
     let mut cli = SettingsPatch::default();
     cli.set_path(path, other).expect("a valid value");
     let explicit = resolve_with(vec![(Source::Cli, cli)]);
-    assert_eq!(
-        self::value(&explicit.patch, path),
-        Some(FieldValue::Str(other.to_string()))
-    );
+    assert_eq!(self::value(&explicit.patch, path), parsed(path, other));
+}
+
+/// `text` as the field at `path` holds it (`"300"` is a `Double` for a
+/// micrometre field, a `Str` for a string field).
+fn parsed(path: &str, text: &str) -> Option<FieldValue> {
+    let mut patch = SettingsPatch::default();
+    patch.set_path(path, text).expect("a valid value");
+    value(&patch, path)
 }
 
 #[test]
 fn enhanced_sets_power_layer_traces_none() {
     // N05.3, docs/roadmap/prereg/N05-power-layer-traces.json.
     assert_enhanced_sets("power_layer_traces", "none", None, "layer");
+}
+
+#[test]
+fn enhanced_sets_neck_width_um_300() {
+    // N05.3, docs/roadmap/prereg/N05-neck-down.json: Java's necked retry of a
+    // failed connection at 300 um; Java's default 0 (off) under `legacy`.
+    assert_eq!(
+        parsed("neck_width_um", "300"),
+        Some(FieldValue::Double(300.0))
+    );
+    assert_enhanced_sets("neck_width_um", "300", Some(FieldValue::Double(0.0)), "0");
 }
 
 #[test]

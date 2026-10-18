@@ -103,8 +103,19 @@ fn defaults_follow_the_profile() {
         .find(|o| o.path == "fanout.max_passes")
         .expect("the option");
     assert_eq!(passes.default, Some(FieldValue::Int(20)));
-    // Until N05, `enhanced` lists the same.
-    assert_eq!(catalog(&registry, Profile::Enhanced, CORES), legacy);
+    // `enhanced` lists the same apart from its table's keys that are stage
+    // options: the neck width (N05.3; `power_layer_traces` is no option).
+    let mut expected = legacy.clone();
+    for slot in &mut expected {
+        for option in &mut slot.options {
+            if option.path == "neck_width_um" {
+                assert_eq!(option.default, Some(FieldValue::Double(0.0)));
+                option.default = Some(FieldValue::Double(300.0));
+            }
+        }
+    }
+    assert_ne!(expected, legacy);
+    assert_eq!(catalog(&registry, Profile::Enhanced, CORES), expected);
     // A difference of `enhanced` shows in its listing only.
     const DUMMY: &[Difference] = &[Difference {
         path: "fanout.max_passes",

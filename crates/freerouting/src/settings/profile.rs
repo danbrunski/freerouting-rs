@@ -77,13 +77,23 @@ pub struct Difference {
 /// What `enhanced` changes from `legacy`, one entry per measurement N05
 /// accepted (the promotion procedure is in `docs/development/engine.md`);
 /// each entry has a line in DIVERGENCES, "Profile `enhanced`".
-pub const ENHANCED: &[Difference] = &[Difference {
-    path: "power_layer_traces",
-    value: "none",
-    measurement: "N05.3 (docs/roadmap/prereg/N05-power-layer-traces.json): no trace on a power \
-                  layer; KiCad unconnected 256 -> 256 against own_plane, 257 -> 256 against \
-                  Java's layer, power-layer traces 6 -> 0",
-}];
+pub const ENHANCED: &[Difference] = &[
+    Difference {
+        path: "power_layer_traces",
+        value: "none",
+        measurement: "N05.3 (docs/roadmap/prereg/N05-power-layer-traces.json): no trace on a \
+                      power layer; KiCad unconnected 256 -> 256 against own_plane, 257 -> 256 \
+                      against Java's layer, power-layer traces 6 -> 0",
+    },
+    Difference {
+        path: "neck_width_um",
+        value: "300",
+        measurement: "N05.3 (docs/roadmap/prereg/N05-neck-down.json): Board Setup widths plus \
+                      Java's necked retry against class narrowing; KiCad unconnected 103 -> 106 \
+                      (set noise 17.14), copper under the Board Setup width where the narrowing \
+                      acted 848.9 -> 310.4 mm",
+    },
+];
 
 /// `legacy` changes nothing.
 const LEGACY: &[Difference] = &[];
