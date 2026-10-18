@@ -361,8 +361,8 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             // The occupation is delayed by a ripup, or nothing was expanded.
             return Ok((Step::Continue, popped, skipped));
         }
-        // PARITY(quirk): MazeSearchEngine.java:394 writes to the old range.
-        // N06.2: use the current range; absent reallocation this is `slot`.
+        // N06.2 fix, both profiles: MazeSearchEngine.java:394 wrote to the old
+        // range. Use the current range; absent reallocation this is `slot`.
         self.s.occupy_current_section(element.door, element.section);
         Ok((Step::Continue, popped, skipped))
     }

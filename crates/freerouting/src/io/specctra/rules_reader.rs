@@ -215,8 +215,10 @@ pub fn apply_rules_file(
 
     let mut board = ctx.board.take().expect("the board stays in the context");
     // PARITY(quirk, java_quirks.rules_matrix_trees_not_rebuilt): Java leaves
-    // compensated shapes cached against the old clearance matrix.
-    if let Some(old) = old_matrix {
+    // compensated shapes cached against the old clearance matrix. Without
+    // compensation no shape depends on the matrix, so nothing is rebuilt.
+    if let Some(old) = old_matrix.filter(|_| board.search_trees().is_clearance_compensation_used())
+    {
         let matrix = &board.rules.clearance_matrix;
         let changed = old.class_count() != matrix.class_count()
             || (0..matrix.class_count() as i32).any(|a| {

@@ -178,8 +178,8 @@ impl Session<'_> {
         if len != 0 {
             self.door_section_reallocations += 1;
             crate::run_stats::record_door_section_reallocation();
-            // PARITY(quirk): ExpansionDoor.java:197 loses the old states.
-            // N06.2: keep surviving indices; only new sections start fresh.
+            // N06.2 fix, both profiles: ExpansionDoor.java:197 lost the old
+            // states. Keep surviving indices; only new sections start fresh.
             let (old_start, _) = self.door(door).sections;
             let start = self.sections.len() as u32;
             let retained = (len as usize).min(count);

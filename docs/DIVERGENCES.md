@@ -1387,49 +1387,11 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 
-## Profile `enhanced`
+## Java quirk switches, opt-in (N06)
 
-`router.profile` (N01, D10) picks the defaults a job starts from: `legacy` is Java Freerouting
-at the pin (every section above still holds for it, and every parity test and gate pins it),
-`enhanced` is the default and adds the improvements a measurement accepted. A profile only
-changes defaults: any key set in a settings file, the design, the environment or on the command
-line wins, so a settings file that sets every key routes the same under both. The table is
-`ENHANCED` in `crates/freerouting/src/settings/profile.rs`; each entry below names its settings
-key, its `enhanced` value and the measurement that accepted it (N05 adds them).
-`tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line`
-checks that this list and the table agree.
-
-- `power_layer_traces` = `none` (N05.3, `docs/roadmap/prereg/N05-power-layer-traces.json`,
-  amended once): no trace of any net on a power layer; vias still land in their net's plane
-  (Autorouter, `power_layer_traces`). canary's validity check refuses any track on an inner
-  plane layer, and Dan's plugin run of 2026-10-17 had a `+12V_BUS` track on Power.Cu. Judged by
-  N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against `own_plane`,
-  Q13's rule: KiCad unconnected 256 → 256 over canary-pwr (6 rows), m-fc-g474 and microzed,
-  every session byte-identical to `own_plane`'s; against Java's `layer` 257 → 256, traces on
-  power layers 6 → 0, inner-layer tracks on the canary plane rows 4 → 0.
-- `neck_width_um` = `300` (N05.3, `docs/roadmap/prereg/N05-neck-down.json`): Java's necked
-  retry (`retryConnectionNecked`, Autorouter: a connection that fails at its class width is tried
-  once more with every trace clamped to 300 µm, never below `min_trace_width_um`) is on, where
-  Java's default 0 leaves it off. It lets a board keep its Board Setup class widths: copper is
-  full width wherever the first attempt fits, and only failed connections ship narrow. Judged by
-  N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against the same
-  version routing class widths narrowed the way the plugin flow narrows them (canary's 0.3/0.4 mm
-  export, the plugin's `class_widths auto`): KiCad unconnected 103 → 106 over canary-pwr
-  (2 rows), interf_u, pic_programmer and CM5_MINIMA_3 (set noise 17.14), no new DRC error,
-  via in a pad or power-layer trace; copper under the Board Setup width on the rows where the
-  narrowing acted 848.9 → 310.4 mm. The retry acts on every class wider than 300 µm, not only
-  the wide ones.
-- `via_clearance` = `net_class` (N05.3, `docs/roadmap/prereg/N05-via-clearance-netclass.json`):
-  a via the autorouter checks or inserts for a net takes its net class's via clearance class
-  (Q14, Autorouter `via_clearance`), as KiCad clears a via, where Java takes the via info's;
-  the fanout's fallback via of the board's first via rule no longer lands at the default
-  class's clearance on a wider class's net. Judged by N02's totals rule (`accept: no-regress`,
-  `freerouting-dev gate`: PASS) against `enhanced` without it, its clearance clause counting
-  only KiCad's net-class-rule items (board-minimum clearance, which the DSN does not carry, is
-  not judged): KiCad unconnected 263 → 261 over canary-pwr's plugin path, pic_programmer,
-  tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice and CM5_MINIMA_3 (set noise
-  42.70; canary-pwr 36 → 41), net-class via clearance errors 2 → 1 (canary-pwr's `+12V_PROT`
-  via 1 → 0), no via in a pad, copper below the minimum or power-layer trace.
+Fixes of kept Java bugs behind `router.java_quirks.<id>`: unset (`true`) is Java's
+behaviour in both profiles, `false` the fix. Not part of `enhanced` until N06.13 promotes
+them ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md)).
 
 **N06.11 interactive fixes (explicit opt-in; promotion pending)**
 
@@ -1492,3 +1454,47 @@ counters are conservative: unknown class names and precision-only placement
 changes can count even when geometry does not change. `dsn_corpus_branch_inventory`
 produces a per-input JSON report without routing. Registered sessions, the optimizer
 reference run, and the plugin canary grade remain pending under N06.10.
+
+## Profile `enhanced`
+
+`router.profile` (N01, D10) picks the defaults a job starts from: `legacy` is Java Freerouting
+at the pin (every section above still holds for it, and every parity test and gate pins it),
+`enhanced` is the default and adds the improvements a measurement accepted. A profile only
+changes defaults: any key set in a settings file, the design, the environment or on the command
+line wins, so a settings file that sets every key routes the same under both. The table is
+`ENHANCED` in `crates/freerouting/src/settings/profile.rs`; each entry below names its settings
+key, its `enhanced` value and the measurement that accepted it (N05 adds them).
+`tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line`
+checks that this list and the table agree.
+
+- `power_layer_traces` = `none` (N05.3, `docs/roadmap/prereg/N05-power-layer-traces.json`,
+  amended once): no trace of any net on a power layer; vias still land in their net's plane
+  (Autorouter, `power_layer_traces`). canary's validity check refuses any track on an inner
+  plane layer, and Dan's plugin run of 2026-10-17 had a `+12V_BUS` track on Power.Cu. Judged by
+  N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against `own_plane`,
+  Q13's rule: KiCad unconnected 256 → 256 over canary-pwr (6 rows), m-fc-g474 and microzed,
+  every session byte-identical to `own_plane`'s; against Java's `layer` 257 → 256, traces on
+  power layers 6 → 0, inner-layer tracks on the canary plane rows 4 → 0.
+- `neck_width_um` = `300` (N05.3, `docs/roadmap/prereg/N05-neck-down.json`): Java's necked
+  retry (`retryConnectionNecked`, Autorouter: a connection that fails at its class width is tried
+  once more with every trace clamped to 300 µm, never below `min_trace_width_um`) is on, where
+  Java's default 0 leaves it off. It lets a board keep its Board Setup class widths: copper is
+  full width wherever the first attempt fits, and only failed connections ship narrow. Judged by
+  N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against the same
+  version routing class widths narrowed the way the plugin flow narrows them (canary's 0.3/0.4 mm
+  export, the plugin's `class_widths auto`): KiCad unconnected 103 → 106 over canary-pwr
+  (2 rows), interf_u, pic_programmer and CM5_MINIMA_3 (set noise 17.14), no new DRC error,
+  via in a pad or power-layer trace; copper under the Board Setup width on the rows where the
+  narrowing acted 848.9 → 310.4 mm. The retry acts on every class wider than 300 µm, not only
+  the wide ones.
+- `via_clearance` = `net_class` (N05.3, `docs/roadmap/prereg/N05-via-clearance-netclass.json`):
+  a via the autorouter checks or inserts for a net takes its net class's via clearance class
+  (Q14, Autorouter `via_clearance`), as KiCad clears a via, where Java takes the via info's;
+  the fanout's fallback via of the board's first via rule no longer lands at the default
+  class's clearance on a wider class's net. Judged by N02's totals rule (`accept: no-regress`,
+  `freerouting-dev gate`: PASS) against `enhanced` without it, its clearance clause counting
+  only KiCad's net-class-rule items (board-minimum clearance, which the DSN does not carry, is
+  not judged): KiCad unconnected 263 → 261 over canary-pwr's plugin path, pic_programmer,
+  tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice and CM5_MINIMA_3 (set noise
+  42.70; canary-pwr 36 → 41), net-class via clearance errors 2 → 1 (canary-pwr's `+12V_PROT`
+  via 1 → 0), no via in a pad, copper below the minimum or power-layer trace.

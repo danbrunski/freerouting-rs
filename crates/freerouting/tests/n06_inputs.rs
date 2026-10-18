@@ -88,6 +88,17 @@ fn pcb_unit_and_placement_resolution_switch_use_physical_units() {
         assert_eq!(board.communication.unit, Unit::Um);
         assert_eq!(board.communication.resolution, 10);
     }
+    // A resolution that is not a whole number of steps in the new unit keeps at
+    // least one step: 1 per mil is 0.039 per um, which rounded to 0.
+    let text = BASE.replace("(resolution um 10)", "(resolution mil 1)");
+    for java in [true, false] {
+        let board = read(&text, "dsn_unit_ignored", java);
+        let expected = if java { (Unit::Mil, 1) } else { (Unit::Um, 1) };
+        assert_eq!(
+            (board.communication.unit, board.communication.resolution),
+            expected
+        );
+    }
     // Equal units, even with a different placement precision, do not move anything.
     let text = BASE.replace("(placement", "(placement (resolution um 100)");
     assert_eq!(

@@ -173,16 +173,18 @@ fn read_scopes(ctx: &mut ReadContext, pcb: &Pcb) -> bool {
     // PARITY(quirk, java_quirks.dsn_unit_ignored): only the pcb `resolution` is
     // read; the placement `resolution` and the pcb-level `unit` are ignored, as
     // in Java (`Placement.java`). In the fixed arm `unit` selects the DSN
-    // coordinate unit and resolution is converted to preserve its physical grid.
-    // Placement coordinates are converted separately in insert_components.
+    // coordinate unit and the resolution is converted to it, rounded to a whole
+    // step and at least 1 (a coarser grid when the ratio is not whole, e.g.
+    // `(resolution mil 1)` in um). Placement coordinates are converted
+    // separately in insert_components.
     if let Some(resolution) = pcb.resolution {
         ctx.unit = Unit::from(resolution.unit);
         ctx.resolution = resolution.value;
     }
     let placement_resolution = pcb.placement.as_ref().and_then(|p| p.resolution);
     if pcb.unit.is_some_and(|u| Unit::from(u) != ctx.unit)
-        || placement_resolution
-            .is_some_and(|r| Unit::from(r.unit) != ctx.unit || r.value != ctx.resolution)
+        // A placement resolution's value is precision only; its unit moves parts.
+        || placement_resolution.is_some_and(|r| Unit::from(r.unit) != ctx.unit)
     {
         crate::run_stats::record_n06(crate::run_stats::Counter::DsnUnitIgnored);
     }
@@ -195,7 +197,8 @@ fn read_scopes(ctx: &mut ReadContext, pcb: &Pcb) -> bool {
                 f64::from(ctx.resolution),
                 unit,
                 ctx.unit,
-            ));
+            ))
+            .max(1);
         }
         ctx.unit = unit;
     }
