@@ -114,6 +114,11 @@ PLUGIN FLAGS (not in Java)
   --threads <number>
       Threads of the autorouter and the optimizer; never changes the result.
       Setting: autorouter.max_threads, optimizer.max_threads
+  --apply-design-rules
+      With a .kicad_pcb input, apply the rules of the <design>.kicad_dru that
+      the router can express (class-pair clearances, class track widths) to
+      the board. Without it the file is read and reported only. Other inputs
+      ignore it with a warning.
   --seed <number>
       Reserved. 0 means Java's own seeds; any other value is refused.
   --profile <legacy|enhanced>

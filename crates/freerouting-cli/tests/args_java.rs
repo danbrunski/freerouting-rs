@@ -1050,7 +1050,19 @@ mod plugin_flags {
         assert!(a.usage_errors.is_empty());
         assert_eq!(a.design_file.as_deref(), Some("a.dsn"));
         assert_eq!(a.output_file.as_deref(), Some("a.ses"));
-        assert_eq!(EXTRA_FLAGS.len(), 11);
+        assert_eq!(EXTRA_FLAGS.len(), 12);
+    }
+
+    /// K10.3: `--apply-design-rules` is a switch without a value: it sets
+    /// the flag, warns about nothing and leaves the next argument alone.
+    #[test]
+    fn apply_design_rules_is_a_switch() {
+        let a = parse_strs(&["--apply-design-rules", "-de", "a.kicad_pcb", "-do", "a.ses"]);
+        assert!(a.apply_design_rules);
+        assert_eq!(count(&a, LogLevel::Warn), 0, "{:?}", a.log);
+        assert!(a.usage_errors.is_empty());
+        assert_eq!(a.design_file.as_deref(), Some("a.kicad_pcb"));
+        assert!(!parse_strs(&["-de", "a.dsn"]).apply_design_rules);
     }
 
     /// The settings file path stays together with its flag.

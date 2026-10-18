@@ -42,8 +42,8 @@
 //! - The plugin-facing flags of C08 ([`EXTRA_FLAGS`]) are rewritten before the
 //!   walk: `--max-passes`, `--threads`, `--timeout` and `--result-json` become
 //!   the `--router.*` flags that set the same fields, so they can never do
-//!   more than the settings do. `--progress`, `--seed`, `--version` and
-//!   `--capabilities` are the CLI's own. A bad value is a usage error (exit
+//!   more than the settings do. `--progress`, `--seed`, `--apply-design-rules`
+//!   (K10.3), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
 //!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
@@ -352,6 +352,13 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
         Setting::CliOnly("reserved; only 0 (Java's own seeds) is accepted"),
     ),
     (
+        "--apply-design-rules",
+        false,
+        Setting::CliOnly(
+            "applies the expressible rules of the .kicad_dru beside a .kicad_pcb input (K10.3)",
+        ),
+    ),
+    (
         "--version",
         false,
         Setting::CliOnly("prints the version line"),
@@ -443,6 +450,9 @@ pub struct Args {
     pub console_level: Option<String>,
     /// `--progress` (C08.3).
     pub progress: ProgressMode,
+    /// `--apply-design-rules` was given (K10.3): the route reads the
+    /// `.kicad_dru` rules of a `.kicad_pcb` into the board.
+    pub apply_design_rules: bool,
     /// `--version` was given (C08.2).
     pub version: bool,
     /// `--capabilities` was given (C08.2).
@@ -804,6 +814,7 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
         }
         let value = value.unwrap_or_default();
         match name {
+            "--apply-design-rules" => out.apply_design_rules = true,
             "--version" => out.version = true,
             "--capabilities" => out.capabilities = true,
             "--progress" => match value.to_lowercase().as_str() {

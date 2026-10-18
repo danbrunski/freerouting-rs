@@ -21,8 +21,14 @@ Its toolbar button opens a dialog that:
   router), outer pours of listed nets dropped, the board-edge and pad clearances as keepouts (on by
   default: they are board rules), inner plane layers opened to routing, an add-only run that keeps
   the existing tracks, the start rip-up cost, Q10's completion sweep, and a remembered pass limit.
-  The **Canary flow** button fills them with the values canary's graded flow uses. After the import
+  A **Preset** drop-down fills the dialog from option files in `freerouting-rs/presets/` next to the board
+  (or the user's presets folder); **Save as preset...** writes one. The plugin ships none. After the import
   the plugin sets each routed via's drill from the session (KiCad's import takes the net class's).
+- **Board input** (experimental, K10): instead of KiCad's DSN export the plugin can save a snapshot of the
+  open board (`SaveBoard`, with the project's net classes from the live board) and route that with the
+  router's own `.kicad_pcb` reader. DSN stays the default. It is refused while an option that rewrites the
+  DSN is on (class widths, fixed or dropped pours, edge and pad keepouts, opened plane layers); "Apply the
+  project's .kicad_dru rules" passes `--apply-design-rules`. The result comes back through the same SES import.
 - **Open in viewer**: exports the board and opens it (plus the last `.ses`, if any) in
   `freerouting-gui`.
 - **Import SES...**: imports any Specctra session file into the board.

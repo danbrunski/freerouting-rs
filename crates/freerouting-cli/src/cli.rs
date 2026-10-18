@@ -457,8 +457,18 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     }
 
     let kicad = design_kind(Path::new(design)) == DesignKind::KicadPcb;
+    if parsed.apply_design_rules && !kicad {
+        log_lines.push(line(
+            LogLevel::Warn,
+            "--apply-design-rules only applies to a .kicad_pcb input; it is ignored here",
+        ));
+    }
+    let read_options = ReadOptions {
+        apply_design_rules: parsed.apply_design_rules,
+        ..ReadOptions::default()
+    };
     let (dsn, kicad_input) = if kicad {
-        match read_kicad_input(Path::new(design), ReadOptions::default()) {
+        match read_kicad_input(Path::new(design), read_options) {
             Ok(input) => (Vec::new(), Some(input)),
             Err(KicadReadError::Io(e)) => {
                 printer.print(&log_lines);

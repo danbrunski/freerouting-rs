@@ -1,0 +1,25 @@
+{
+  "schema": 4,
+  "name": "canary graded flow",
+  "description": "canary-pwr: the values of canary's graded flow (dsn_export.py --width ..., -mp 1, rip-up cost 1500, minimum width 150 um, Q10's free sweep x2). K09.8.",
+  "max_passes": 1,
+  "min_trace_width_um": 150.0,
+  "class_widths": {
+    "Power_High": 0.3,
+    "Switch_Node": 0.3,
+    "Power": 0.3,
+    "GND": 0.4
+  },
+  "fixed_pour_classes": [
+    "Power_High",
+    "Switch_Node"
+  ],
+  "drop_pour_nets": [
+    "GND"
+  ],
+  "start_ripup_costs": 1500,
+  "sweep": "free",
+  "sweep_passes": 2,
+  "fixed_pour_mode": "wires",
+  "edge_and_pad_keepouts": true
+}

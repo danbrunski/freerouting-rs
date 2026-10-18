@@ -21,6 +21,8 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `min_trace_width_um` | `--router.min_trace_width_um=X` | above 0, unset = from the board |
 | `timeout` | `--timeout T` | `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS`, seconds; empty = none |
 | `rule_area_fixup` | (plugin side, K01.2) | on |
+| `board_input` | (plugin side, K10) what the router reads: `dsn` (KiCad's export, default) or `kicad_pcb` (a snapshot of the open board, read directly) | `dsn` |
+| `apply_kicad_rules` | `--apply-design-rules`, only with `board_input = kicad_pcb` (K10.3) | off |
 | `profile` | `--profile legacy` (N01.3) | `legacy` or `enhanced` (default, no flag) |
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
 
@@ -52,11 +54,11 @@ import re
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
-SCHEMA = 3
+SCHEMA = 4
 # Schema 1 (K02.1) wrote every option and had no profile; schema 2 (N01) had
-# no K09 fields. Both still load: a field a file leaves out takes the
-# profile's default (`profile_defaults`).
-READABLE_SCHEMAS = (1, 2, 3)
+# no K09 fields; schema 3 (K09) had no K10 fields. All still load: a field a
+# file leaves out takes the profile's default (`profile_defaults`).
+READABLE_SCHEMAS = (1, 2, 3, 4)
 OPTIONS_FILE = "route-options.json"
 
 # The router's routing profiles (N01): `legacy` is Java Freerouting's results,
@@ -69,6 +71,12 @@ _STAGE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 AUTO = "auto"  # a fix-up list derived from the board (dsn_fixups.resolve)
 POUR_MODES = ("wires", "engine")
+# K10: what the router reads. `dsn` is KiCad's export (the default: the Java
+# comparison and K02/K09's graded flow); `kicad_pcb` a snapshot of the open
+# board read by the router's own reader.
+INPUT_DSN, INPUT_KICAD_PCB = "dsn", "kicad_pcb"
+BOARD_INPUTS = (INPUT_DSN, INPUT_KICAD_PCB)
+BOARD_INPUT_LABELS = {INPUT_DSN: "KiCad's DSN export", INPUT_KICAD_PCB: "Board snapshot (experimental)"}
 SWEEPS = ("", "fixed", "free")
 RIPUP_RANGE = (1, 1000000)
 SWEEP_PASSES_RANGE = (1, 100)
@@ -144,6 +152,9 @@ class RouteOptions:
     sweep_passes: int = None
     use_pass_hint: bool = False
     pass_hint: int = None  # the pass that won last time (K09.7), written after a run
+    # K10: the direct read of the board (snapshot.py).
+    board_input: str = INPUT_DSN
+    apply_kicad_rules: bool = False  # --apply-design-rules; kicad_pcb only
 
     # --- the argument list ---------------------------------------------------
 
@@ -184,6 +195,9 @@ class RouteOptions:
             args.append(f"--router.autorouter.sweep={self.sweep}")
             if self.sweep_passes is not None:
                 args.append(f"--router.autorouter.sweep_passes={self.sweep_passes}")
+        if self.apply_kicad_rules and self.board_input == INPUT_KICAD_PCB and not for_gui:
+            # The GUI reads the rules file without applying it (it has no such switch).
+            args.append("--apply-design-rules")
         args += list(extra_args)
         for key in sorted(self.stages):
             args.append(f"--router.{key}={self.stages[key]}")
@@ -290,6 +304,12 @@ def _restore_k09(out, data):
     v = data.get("pass_hint")
     if _int_in(v, 1, MAX_PASSES_RANGE[1]):
         out.pass_hint = v
+    v = data.get("board_input")
+    if v in BOARD_INPUTS:
+        out.board_input = v
+    v = data.get("apply_kicad_rules")
+    if isinstance(v, bool):
+        out.apply_kicad_rules = v
 
 
 # The plugin's defaults per profile (K09.9): what each profile changes from the
@@ -310,28 +330,6 @@ def profile_defaults(profile=DEFAULT_PROFILE):
     return replace(RouteOptions(), profile=profile, **PROFILE_DEFAULTS.get(profile, {}))
 
 
-# K09.8: the values canary's graded flow uses (`dsn_export.py --width ...`,
-# `-mp 1 --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150`,
-# Q10's sweep). The dialog's "Canary flow" button fills the fields with them.
-CANARY_PRESET = {
-    "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4},
-    "fixed_pour_classes": ["Power_High", "Switch_Node"],
-    "fixed_pour_mode": "wires",
-    "drop_pour_nets": ["GND"],
-    "edge_and_pad_keepouts": True,
-    "max_passes": 1,
-    "start_ripup_costs": 1500,
-    "min_trace_width_um": 150.0,
-    "sweep": "free",
-    "sweep_passes": 2,
-}
-
-
-def with_preset(opts, preset=None):
-    """`opts` with the preset's values (CANARY_PRESET by default)."""
-    return replace(opts, **(CANARY_PRESET if preset is None else preset))
-
-
 def dsn_settings(opts):
     """The `dsn_fixups.apply` settings of `opts`. With `fixed_pour_mode`
     `engine` the pours stay planes and the classes go to the router."""
@@ -345,7 +343,7 @@ def dsn_settings(opts):
 
 
 def format_class_widths(widths):
-    """`Power_High=0.3, GND=0.4`, or `auto`."""
+    """`CLASS=mm, CLASS=mm`, or `auto`."""
     if widths == AUTO:
         return AUTO
     return ", ".join(f"{k}={_fmt(v)}" for k, v in sorted(widths.items()))
@@ -501,6 +499,7 @@ def from_form(values):
         errors.append(f"timeout: '{timeout}' is not a duration (use 90s, 10m, 2h or HH:MM:SS)")
     options.rule_area_fixup = bool(values.get("rule_area_fixup", True))
     _form_k09(options, values, errors, number)
+    _form_k10(options, values, errors)
     if profile not in PROFILES:
         errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
     stages = values.get("stages", {})
@@ -548,3 +547,57 @@ def _form_k09(options, values, errors, number):
         options.sweep_passes = number("sweep_passes", int, *SWEEP_PASSES_RANGE)
     if "pass_hint" in values:
         options.pass_hint = number("pass_hint", int, 1, MAX_PASSES_RANGE[1])
+
+
+# The K09 options that rewrite the DSN text, by the name the dialog shows
+# (K10.4). A `.kicad_pcb` input has no DSN text to rewrite, and the reader's
+# tree has no form of these yet, so `board_input = kicad_pcb` refuses them.
+DSN_REWRITE_LABELS = {
+    "class_widths": "Class widths",
+    "fixed_pour_classes": "Fixed pour classes",
+    "drop_pour_nets": "Drop pours of nets",
+    "edge_and_pad_keepouts": "Keep the board-edge and pad clearances",
+    "route_on_plane_layers": "Route on plane layers",
+}
+
+
+def input_conflicts(opts):
+    """The dialog labels of the options that need the DSN text and are on, as
+    a list, for `opts.board_input == "kicad_pcb"`; empty for a DSN input or
+    when none is on.
+
+    `fixed_pour_classes` in `engine` mode is allowed when the classes are
+    named: it is the engine flag `--router.plane_obstacle_net_classes`, which
+    does not touch the input. `auto` needs the DSN text to find the classes."""
+    if opts.board_input != INPUT_KICAD_PCB:
+        return []
+    out = []
+    if opts.class_widths:
+        out.append(DSN_REWRITE_LABELS["class_widths"])
+    if opts.fixed_pour_classes and (opts.fixed_pour_mode == "wires" or opts.fixed_pour_classes == AUTO):
+        out.append(DSN_REWRITE_LABELS["fixed_pour_classes"])
+    if opts.drop_pour_nets:
+        out.append(DSN_REWRITE_LABELS["drop_pour_nets"])
+    if opts.edge_and_pad_keepouts:
+        out.append(DSN_REWRITE_LABELS["edge_and_pad_keepouts"])
+    if opts.route_on_plane_layers:
+        out.append(DSN_REWRITE_LABELS["route_on_plane_layers"])
+    return out
+
+
+def _form_k10(options, values, errors):
+    """The K10 fields of the form; a field the form leaves out keeps the
+    profile's default. Refuses a board snapshot while a DSN-rewriting option
+    is on, naming each (K10.4)."""
+    chosen = str(values.get("board_input", options.board_input)).strip().lower()
+    if chosen in BOARD_INPUTS:
+        options.board_input = chosen
+    else:
+        errors.append(f"board input: '{chosen}' is not one of {', '.join(BOARD_INPUTS)}")
+    if "apply_kicad_rules" in values:
+        options.apply_kicad_rules = bool(values["apply_kicad_rules"])
+    for label in input_conflicts(options):
+        errors.append(
+            f"board input: the board snapshot is read without a DSN, so '{label}' cannot apply. "
+            f"Turn it off, or choose {BOARD_INPUT_LABELS[INPUT_DSN]}."
+        )

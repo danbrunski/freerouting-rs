@@ -1,6 +1,7 @@
 """KiCad PCB editor action plugin for freerouting-rs.
 
-Exports the open board to Specctra DSN, routes it with the freerouting-rs
+Exports the open board to Specctra DSN (or, with the experimental board input
+`kicad_pcb`, takes a snapshot of it with SaveBoard, K10), routes it with the freerouting-rs
 command line (live progress, Stop and keep, Abort, a result summary) or in
 the GUI window ("Route in GUI"), imports the resulting SES session, and opens
 boards in the freerouting-rs viewer. Files go in a `freerouting-rs` folder
@@ -18,7 +19,7 @@ from pathlib import Path
 import pcbnew
 import wx
 
-from . import dropdowns, export_flow, kicad_board, options, progress, routing, tools, version
+from . import dropdowns, export_flow, kicad_board, options, presets, progress, routing, snapshot, tools, version
 
 TITLE = "freerouting-rs"
 TICK_MS = 100
@@ -196,7 +197,10 @@ class Dialog(wx.Dialog):
         self.board = board
         pcb = Path(board.GetFileName())
         self.work_dir = pcb.parent / "freerouting-rs"
+        self.stem = pcb.stem
+        self.board_dir = pcb.parent
         self.dsn = self.work_dir / (pcb.stem + ".dsn")
+        self.design = self.dsn  # what the router reads: the DSN, or the snapshot (K10)
         self.ses = self.work_dir / (pcb.stem + ".ses")
         self.result_json = routing.manifest_path(self.work_dir, pcb.stem)
         self.router = tools.find_tool(tools.ROUTER)
@@ -277,6 +281,8 @@ class Dialog(wx.Dialog):
         self.fix_areas = wx.CheckBox(self, label="Fix rule areas in the exported DSN")
         self.fix_areas.SetValue(saved.rule_area_fixup)
         self.add_k09_controls(saved)
+        self.add_k10_controls(saved)
+        self.add_preset_controls()
         self.profile = wx.Choice(self, choices=[options.PROFILE_LABELS[p] for p in options.PROFILES])
         self.profile.SetSelection(options.PROFILES.index(saved.profile))
         self.profile.SetToolTip(
@@ -293,6 +299,8 @@ class Dialog(wx.Dialog):
             ("Time limit", self.timeout),
             ("Seed", self.seed),
             ("Minimum trace width (um)", self.min_width),
+            ("Board input", self.board_input),
+            ("", self.apply_rules),
             ("", self.fix_areas),
         ):
             form.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
@@ -306,6 +314,7 @@ class Dialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(info, 0, wx.ALL | wx.EXPAND, 12)
         sizer.Add(form, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
+        sizer.Add(self.preset_group(), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(self.k09_group(), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(self.advanced_group(saved), 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
@@ -313,26 +322,26 @@ class Dialog(wx.Dialog):
         self.CentreOnParent()
         # KiCad 10's wxWidgets draws the selected row of a dark drop-down
         # white on white on recent Windows 11 builds (dropdowns.py).
-        dropdowns.fix_dark_lists([self.profile, self.pour_mode, self.sweep] + [c for c, _ in self.stage_choices.values()])
+        dropdowns.fix_dark_lists([self.profile, self.board_input, self.preset_choice, self.pour_mode, self.sweep] + [c for c, _ in self.stage_choices.values()])
 
     def add_k09_controls(self, saved):
         """The K09 fields: DSN fix-ups and the flow's router settings."""
         self.widths = wx.TextCtrl(self, value=options.format_class_widths(saved.class_widths))
-        self.widths.SetHint("as exported, e.g. Power_High=0.3, GND=0.4, or auto")
+        self.widths.SetHint("as exported, or CLASS=mm, CLASS=mm, or auto")
         self.widths.SetToolTip("Routed width per net class in mm, written into the DSN; auto caps wide classes at their narrowest SMD pad")
         self.fixed_pours = wx.TextCtrl(self, value=options.format_names(saved.fixed_pour_classes))
-        self.fixed_pours.SetHint("none, e.g. Power_High, Switch_Node, or auto")
+        self.fixed_pours.SetHint("none, e.g. CLASS, CLASS, or auto")
         self.fixed_pours.SetToolTip("Net classes whose outer-layer pours other nets must keep out of; auto: pours above their layer's lowest zone priority")
         self.pour_mode = wx.Choice(self, choices=list(options.POUR_MODES))
         self.pour_mode.SetSelection(options.POUR_MODES.index(saved.fixed_pour_mode))
         self.pour_mode.SetToolTip("wires: the fill becomes fixed copper in the DSN; engine: the router keeps foreign nets out (Q01)")
         self.drop_pours = wx.TextCtrl(self, value=options.format_names(saved.drop_pour_nets))
-        self.drop_pours.SetHint("none, e.g. GND, or auto")
+        self.drop_pours.SetHint("none, e.g. NET, NET, or auto")
         self.drop_pours.SetToolTip("Nets whose outer-layer pours are left out, so their pads fan out to the inner plane; auto: a net alone on an inner layer")
         self.keepouts = wx.CheckBox(self, label="Keep the board-edge and pad clearances (keepouts)")
         self.keepouts.SetValue(saved.edge_and_pad_keepouts)
         self.open_layers = wx.TextCtrl(self, value=options.format_names(saved.route_on_plane_layers))
-        self.open_layers.SetHint("none, e.g. Power.Cu")
+        self.open_layers.SetHint("none, e.g. an inner layer name")
         self.open_layers.SetToolTip("Inner plane layers the router may also route on")
         self.fix_existing = wx.CheckBox(self, label="Keep the existing tracks (add-only run)")
         self.fix_existing.SetValue(saved.fix_existing)
@@ -347,9 +356,26 @@ class Dialog(wx.Dialog):
         self.pass_hint = wx.CheckBox(self, label="Stop at the pass that won last time" + (f" ({saved.pass_hint})" if saved.pass_hint else ""))
         self.pass_hint.SetValue(saved.use_pass_hint)
         self.saved_pass_hint = saved.pass_hint
-        self.preset = wx.Button(self, label="Canary flow")
-        self.preset.SetToolTip("Fill the fields with the values canary's graded flow uses; each can still be changed")
-        self.preset.Bind(wx.EVT_BUTTON, self.on_preset)
+
+    def add_k10_controls(self, saved):
+        """The K10 fields: what the router reads, and the .kicad_dru switch."""
+        self.board_input = wx.Choice(self, choices=[options.BOARD_INPUT_LABELS[i] for i in options.BOARD_INPUTS])
+        self.board_input.SetSelection(options.BOARD_INPUTS.index(saved.board_input))
+        self.board_input.SetToolTip(
+            "What the router reads. KiCad's DSN export is the default. The board snapshot is "
+            "the open board saved with SaveBoard and read by the router's own reader (rule areas by "
+            "their flags, track arcs, unsaved Board Setup changes); it cannot be combined with the "
+            "DSN fix-ups below. Experimental."
+        )
+        self.apply_rules = wx.CheckBox(self, label="Apply the project's .kicad_dru rules (snapshot, Route only)")
+        self.apply_rules.SetValue(saved.apply_kicad_rules)
+        self.apply_rules.SetToolTip("Class-pair clearances and class track widths of the .kicad_dru beside the board (--apply-design-rules)")
+
+    def k10_values(self):
+        return {
+            "board_input": options.BOARD_INPUTS[max(self.board_input.GetSelection(), 0)],
+            "apply_kicad_rules": self.apply_rules.GetValue(),
+        }
 
     def k09_group(self):
         group = wx.StaticBoxSizer(wx.VERTICAL, self, "DSN fix-ups and flow")
@@ -367,28 +393,113 @@ class Dialog(wx.Dialog):
             ("Completion sweep", self.sweep),
             ("Sweep passes", self.sweep_passes),
             ("", self.pass_hint),
-            ("Preset", self.preset),
         ):
             grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
             grid.Add(ctrl, 1, wx.EXPAND)
         group.Add(grid, 0, wx.EXPAND)
         return group
 
+    def add_preset_controls(self):
+        """Presets (presets.py): option files the board or the user brings."""
+        self.preset_choice = wx.Choice(self, choices=[])
+        self.preset_apply = wx.Button(self, label="Apply")
+        self.preset_save = wx.Button(self, label="Save as preset...")
+        self.preset_choice.SetToolTip(
+            "Option presets: JSON files in freerouting-rs/presets next to the board, or in the user's presets folder"
+        )
+        self.preset_apply.SetToolTip("Fill the fields with the preset's options; each can still be changed")
+        self.preset_save.SetToolTip("Save the fields as a preset in this board's freerouting-rs/presets folder")
+        self.preset_apply.Bind(wx.EVT_BUTTON, self.on_apply_preset)
+        self.preset_save.Bind(wx.EVT_BUTTON, self.on_save_preset)
+        self.load_presets()
+
+    def load_presets(self, select=None):
+        """Lists the presets; a skipped file is logged as a warning."""
+        self.presets, warnings = presets.discover(self.work_dir, presets.user_dir())
+        for warning in warnings:
+            tools.log_line(self.work_dir, f"{time.strftime('%Y-%m-%d %H:%M:%S')} WARNING: {warning}")
+        names = [p.label() for p in self.presets]
+        self.preset_choice.Clear()
+        for name in names or ["(no presets)"]:
+            self.preset_choice.Append(name)
+        index = next((i for i, p in enumerate(self.presets) if p.name == select), 0)
+        self.preset_choice.SetSelection(index)
+        self.preset_apply.Enable(bool(self.presets))
+
+    def preset_group(self):
+        group = wx.StaticBoxSizer(wx.VERTICAL, self, "Presets")
+        row = wx.BoxSizer(wx.HORIZONTAL)
+        row.Add(self.preset_choice, 1, wx.RIGHT | wx.EXPAND, 6)
+        row.Add(self.preset_apply, 0, wx.RIGHT, 6)
+        row.Add(self.preset_save)
+        group.Add(row, 0, wx.EXPAND)
+        return group
+
     def show_options(self, opts):
-        """Puts `opts` into the controls (the preset button)."""
+        """Puts `opts` into every control (applying a preset)."""
         self.passes.SetValue(opts.max_passes)
+        self.threads.SetValue(opts.threads)
+        self.optimizer.SetValue(opts.optimizer)
+        self.threshold.SetValue("" if opts.improvement_threshold is None else options._fmt(opts.improvement_threshold))
+        self.classes.SetValue(options.join_net_classes(opts.ignore_net_classes))
+        self.timeout.SetValue(opts.timeout)
+        self.seed.SetValue(opts.seed)
         self.min_width.SetValue("" if opts.min_trace_width_um is None else options._fmt(opts.min_trace_width_um))
+        self.fix_areas.SetValue(opts.rule_area_fixup)
+        self.profile.SetSelection(options.PROFILES.index(opts.profile))
+        self.board_input.SetSelection(options.BOARD_INPUTS.index(opts.board_input))
+        self.apply_rules.SetValue(opts.apply_kicad_rules)
         self.widths.SetValue(options.format_class_widths(opts.class_widths))
         self.fixed_pours.SetValue(options.format_names(opts.fixed_pour_classes))
         self.pour_mode.SetSelection(options.POUR_MODES.index(opts.fixed_pour_mode))
         self.drop_pours.SetValue(options.format_names(opts.drop_pour_nets))
         self.keepouts.SetValue(opts.edge_and_pad_keepouts)
+        self.open_layers.SetValue(options.format_names(opts.route_on_plane_layers))
+        self.fix_existing.SetValue(opts.fix_existing)
         self.ripup.SetValue("" if opts.start_ripup_costs is None else str(opts.start_ripup_costs))
         self.sweep.SetSelection(options.SWEEPS.index(opts.sweep))
         self.sweep_passes.SetValue("" if opts.sweep_passes is None else str(opts.sweep_passes))
+        self.pass_hint.SetValue(opts.use_pass_hint)
+        for key, (choice, ids) in self.stage_choices.items():
+            if opts.stages.get(key) in ids:
+                choice.SetSelection(ids.index(opts.stages[key]))
 
-    def on_preset(self, _evt):
-        self.show_options(options.with_preset(options.profile_defaults()))
+    def on_apply_preset(self, _evt):
+        index = self.preset_choice.GetSelection()
+        if not 0 <= index < len(self.presets):
+            return
+        preset = self.presets[index]
+        current, _errors = options.from_form(self.form_values())  # a bad field keeps its default here
+        merged, warnings = presets.apply(preset, current)
+        for warning in warnings:
+            tools.log_line(self.work_dir, f"{time.strftime('%Y-%m-%d %H:%M:%S')} WARNING: {warning}")
+        self.show_options(merged)
+
+    def ask_preset_name(self):
+        """The name the user types for "Save as preset...", or None."""
+        with wx.TextEntryDialog(self, "Name of the preset:", TITLE + ": save as preset") as entry:
+            if entry.ShowModal() != wx.ID_OK:
+                return None
+            return entry.GetValue().strip() or None
+
+    def on_save_preset(self, _evt):
+        name = self.ask_preset_name()
+        if not name:
+            return
+        chosen, errors = options.from_form(self.form_values())
+        if errors:
+            self.error("Fix these route options first:\n\n" + "\n".join(errors))
+            return
+        chosen.pass_hint = self.saved_pass_hint
+        defaults = options.stage_defaults(self.stage_listing.get(chosen.profile) or [])
+        chosen.stages = options.differing_stages(chosen.stages, defaults)
+        try:
+            path = presets.save(self.work_dir, name, chosen, stage_defaults=defaults)
+        except (OSError, ValueError) as e:
+            self.error(f"Could not save the preset:\n{e}")
+            return
+        self.load_presets(select=name)
+        wx.MessageBox(f"Saved {path.name} in\n{path.parent}", TITLE, wx.OK | wx.ICON_INFORMATION, self)
 
     def k09_values(self):
         return {
@@ -442,25 +553,28 @@ class Dialog(wx.Dialog):
     def error(self, msg):
         wx.MessageBox(msg, TITLE, wx.OK | wx.ICON_ERROR, self)
 
+    def form_values(self):
+        """What the controls hold, as `options.from_form` takes it."""
+        return {
+            "max_passes": self.passes.GetValue(),
+            "threads": self.threads.GetValue(),
+            "optimizer": self.optimizer.GetValue(),
+            "improvement_threshold": self.threshold.GetValue(),
+            "ignore_net_classes": self.classes.GetValue(),
+            "seed": self.seed.GetValue(),
+            "min_trace_width_um": self.min_width.GetValue(),
+            "timeout": self.timeout.GetValue(),
+            "rule_area_fixup": self.fix_areas.GetValue(),
+            "profile": options.PROFILES[max(self.profile.GetSelection(), 0)],
+            "stages": self.chosen_stages(),
+            **self.k09_values(),
+            **self.k10_values(),
+        }
+
     def read_options(self):
         """The options in the controls, saved for this board. None (after a
         message) when a field is invalid."""
-        chosen, errors = options.from_form(
-            {
-                "max_passes": self.passes.GetValue(),
-                "threads": self.threads.GetValue(),
-                "optimizer": self.optimizer.GetValue(),
-                "improvement_threshold": self.threshold.GetValue(),
-                "ignore_net_classes": self.classes.GetValue(),
-                "seed": self.seed.GetValue(),
-                "min_trace_width_um": self.min_width.GetValue(),
-                "timeout": self.timeout.GetValue(),
-                "rule_area_fixup": self.fix_areas.GetValue(),
-                "profile": options.PROFILES[max(self.profile.GetSelection(), 0)],
-                "stages": self.chosen_stages(),
-                **self.k09_values(),
-            }
-        )
+        chosen, errors = options.from_form(self.form_values())
         chosen.pass_hint = self.saved_pass_hint
         if errors:
             self.error("Fix these route options first:\n\n" + "\n".join(errors))
@@ -475,14 +589,25 @@ class Dialog(wx.Dialog):
         return chosen
 
     def export(self, chosen):
-        """Exports and fixes up the DSN. Returns `(ok, router_args, locked)`;
-        `locked` are the tracks `fix_existing` locked, which stay locked until
-        `kicad_board.restore_locks` after the import."""
-        ok, extra, lines, locked = export_flow.prepare(self.board, pcbnew, self.dsn, chosen, export_dsn)
-        if not ok:
-            self.error(f"KiCad could not export the board to\n{self.dsn}")
-            return False, [], []
-        log_lines(self.work_dir, self.dsn, lines)
+        """Exports and fixes up the DSN, or takes the board snapshot (K10),
+        and sets `self.design` to the file the router reads. Returns `(ok,
+        router_args, locked)`; `locked` are the tracks `fix_existing` locked,
+        which stay locked until `kicad_board.restore_locks` after the import."""
+        self.design = snapshot.design_path(self.work_dir, self.stem, chosen.board_input)
+        if snapshot.wanted(chosen):
+            ok, extra, lines, locked = export_flow.prepare_snapshot(
+                self.board, pcbnew, self.work_dir, self.stem, self.board_dir, chosen
+            )
+            if not ok:
+                log_lines(self.work_dir, self.design, lines)
+                self.error(f"KiCad could not save a snapshot of the board to\n{self.design}\n\n" + "\n".join(lines))
+                return False, [], []
+        else:
+            ok, extra, lines, locked = export_flow.prepare(self.board, pcbnew, self.dsn, chosen, export_dsn)
+            if not ok:
+                self.error(f"KiCad could not export the board to\n{self.dsn}")
+                return False, [], []
+        log_lines(self.work_dir, self.design, lines)
         return True, extra, locked
 
     def on_route(self, _evt):
@@ -502,7 +627,7 @@ class Dialog(wx.Dialog):
         self.result_json.unlink(missing_ok=True)
         run = routing.RouteRun(
             self.router,
-            self.dsn,
+            self.design,
             self.ses,
             chosen.to_args(self.board_min_um, extra_args=extra),
             self.result_json,
@@ -516,6 +641,8 @@ class Dialog(wx.Dialog):
         with RouteProgressDialog(self, run) as progress_dialog:
             progress_dialog.ShowModal()
         tools.log_line(self.work_dir, f"{time.strftime('%Y-%m-%d %H:%M:%S')} route: " + run.state.text())
+        if snapshot.wanted(chosen):  # the reader's report and warnings (K10.3)
+            log_lines(self.work_dir, self.design, snapshot.reader_lines(run.lines))
         if run.aborted:
             wx.MessageBox("Routing aborted. The board was not changed.", TITLE, wx.OK, self)
             return
@@ -551,7 +678,9 @@ class Dialog(wx.Dialog):
 
     def route_gui(self, chosen, extra):
         self.ses.unlink(missing_ok=True)
-        run = routing.GuiRun(self.gui, self.dsn, self.ses, chosen.to_args(self.board_min_um, for_gui=True, extra_args=extra))
+        if snapshot.wanted(chosen) and chosen.apply_kicad_rules:
+            log_lines(self.work_dir, self.design, ["Route in GUI reads the .kicad_dru but does not apply it (use Route)"])
+        run = routing.GuiRun(self.gui, self.design, self.ses, chosen.to_args(self.board_min_um, for_gui=True, extra_args=extra))
         try:
             run.start()
         except OSError as e:
@@ -584,7 +713,7 @@ class Dialog(wx.Dialog):
             return
         ses = self.ses if self.ses.is_file() else None
         try:
-            tools.open_viewer(self.viewer, self.dsn, ses)
+            tools.open_viewer(self.viewer, self.design, ses)
         except OSError as e:
             self.error(f"Could not start {self.viewer.describe()}:\n{e}")
 

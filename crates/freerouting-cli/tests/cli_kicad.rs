@@ -132,3 +132,86 @@ fn a_kicad_5_file_exits_1() {
     }
     assert!(!dir.join("out.ses").exists());
 }
+
+/// K10.3: `--apply-design-rules` puts the expressible `.kicad_dru` rules on
+/// the board of a `.kicad_pcb` input, as `ReadOptions::apply_design_rules`
+/// does in `design_rules_reach_the_board`. On the `classes` board the rule
+/// "fast tracks" (track width 0.3 mm for class Fast) changes the width of the
+/// routed Fast wires in the session from 0.1 mm to 0.3 mm; without the
+/// switch the rules are read, reported as ignored, and change nothing.
+#[test]
+fn the_apply_design_rules_switch_changes_the_class_rules() {
+    let dir = scratch("kicad-dru");
+    let synthetic = repo("fixtures/kicad/synthetic");
+    for (from, to) in [
+        ("classes.kicad_pcb", "classes.kicad_pcb"),
+        ("classes.kicad_pro", "classes.kicad_pro"),
+        ("rules.kicad_dru", "classes.kicad_dru"),
+    ] {
+        std::fs::copy(synthetic.join(from), dir.join(to)).unwrap();
+    }
+    let board = arg(&dir.join("classes.kicad_pcb"));
+    let route = |name: &str, extra: &[&str]| {
+        let mut args = vec!["-de", board.as_str(), "-do", name, "--max-passes", "1"];
+        args.extend_from_slice(extra);
+        let out = run_in(&dir, &args);
+        assert_eq!(code(&out), 0, "{}", stderr(&out));
+        (
+            stderr(&out),
+            std::fs::read_to_string(dir.join(name)).unwrap(),
+        )
+    };
+    let (off_log, off) = route("off.ses", &[]);
+    let (on_log, on) = route("on.ses", &["--apply-design-rules"]);
+
+    for rule in ["clearance", "track_width"] {
+        assert!(
+            off_log.contains(&format!(
+                "constraint {rule}: ignored (apply_design_rules is off)"
+            )),
+            "{off_log}"
+        );
+        assert!(
+            on_log.contains(&format!("constraint {rule}: applied (1 target(s))")),
+            "{on_log}"
+        );
+    }
+    // the rule the DSN cannot say is reported either way
+    for log in [&off_log, &on_log] {
+        assert!(log.contains("UNSUPPORTED"), "{log}");
+    }
+    let widths = |ses: &str| -> Vec<String> {
+        ses.lines()
+            .filter_map(|l| l.trim().strip_prefix("(path F.Cu "))
+            .map(str::to_owned)
+            .collect()
+    };
+    assert!(widths(&off).iter().any(|w| w == "1000"), "{off}");
+    assert!(widths(&on).iter().any(|w| w == "3000"), "{on}");
+    assert!(!on.lines().zip(off.lines()).all(|(a, b)| a == b));
+}
+
+/// K10.3: the switch means nothing to a DSN input; it says so and routes.
+#[test]
+fn the_apply_design_rules_switch_on_a_dsn_is_a_warning() {
+    let dir = scratch("kicad-dru-dsn");
+    let dsn = repo("fixtures/kicad/synthetic/classes.kicad10.dsn");
+    let out = run_in(
+        &dir,
+        &[
+            "-de",
+            &arg(&dsn),
+            "-do",
+            "out.ses",
+            "--max-passes",
+            "1",
+            "--apply-design-rules",
+        ],
+    );
+    assert_eq!(code(&out), 0, "{}", stderr(&out));
+    assert!(
+        stderr(&out).contains("--apply-design-rules only applies to a .kicad_pcb input"),
+        "{}",
+        stderr(&out)
+    );
+}

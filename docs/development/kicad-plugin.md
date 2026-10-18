@@ -98,10 +98,21 @@ field they lack takes the profile's default):
 | `start_ripup_costs`, `sweep`, `sweep_passes` | `--router.scoring.start_ripup_costs`, Q10's `--router.autorouter.sweep` and `sweep_passes` | router defaults |
 | `use_pass_hint`, `pass_hint` | after a run the plugin stores the routing pass that ended with the fewest incomplete connections; with the option on, the next run stops there (`--max-passes`) | off |
 
-- **Canary flow** (button, `options.CANARY_PRESET`) fills the fields with canary's values: widths
-  Power_High, Switch_Node, Power 0.3 mm and GND 0.4 mm, fixed pours Power_High and Switch_Node, GND
-  outer pours dropped, keepouts on, one pass, rip-up cost 1500, minimum width 150 um, sweep `free` x2.
-  Each field can still be changed.
+- **Presets** (`presets.py`, dialog group "Presets": a drop-down, **Apply**, **Save as preset...**).
+  A preset is a JSON file in the options format (`route-options.json`'s) with a `name` and an
+  optional `description`; it may hold only the options it sets, and Apply changes just those fields
+  (each can still be edited). They are listed from `<board dir>/freerouting-rs/presets/*.json` and
+  from the user's folder if it exists (`$FREEROUTING_RS_PRESETS`, else
+  `~/.config/freerouting-rs/presets`, `%APPDATA%\freerouting-rs\presets` on Windows; never
+  created). A board preset hides a user preset of the same name. **Save as preset...** writes every
+  option of the dialog to the board folder under the name typed. A file that is not JSON, has no
+  `name` or has an unreadable `schema` is skipped with a WARNING in `plugin.log`; a bad value or an
+  unknown key inside one is ignored and logged (the options file's rules). The plugin ships no
+  preset, so it carries nothing board-specific. canary's graded flow (widths, fixed pours, GND
+  dropped, keepouts, one pass, rip-up cost 1500, minimum width 150 um, sweep `free` x2) is
+  `fixtures/canary-pwr/presets/canary-graded-flow.json`; copy it into the board's `presets/` folder
+  to use it. Tests: `test_presets.py`, `test_route_dialog.py` (`test_a_board_preset_fills_...`,
+  `test_save_as_preset_...`, `test_a_malformed_preset_file_...`).
 - **After the import** the plugin sets every routed via's drill from the session padstack
   (`ses_vias.py`): KiCad 10's `ImportSpecctraSES` takes the drill from the net class, which gave
   0.6 mm vias a 0.4 mm drill and a 0.1 mm annular ring on `canary-pwr`.
@@ -120,10 +131,10 @@ field they lack takes the profile's default):
   (`target/orchestrator/k09/scratch/arm.sh`, not committed).
 - Tests: `test_dsn_fixups.py` (every transform on `tests/data/k09_four_layer.dsn` and
   `k09_two_layer.dsn`, the `auto` rules, `ses_vias`, the drill fix), `test_options.py` (K09 flags,
-  round trip, bad values, the form), `test_route_dialog.py` (the preset reaches the router,
+  round trip, bad values, the form), `test_route_dialog.py` (a board preset reaches the router,
   `fix_existing` keeps the tracks locked through the import only, the pass hint is stored and used),
   `test_cli_integration.py::test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli`.
-- Not yet seen inside KiCad: the layout of the new group and the preset button (Dan, with K02.8).
+- Not yet seen inside KiCad: the layout of the new groups and the Preset drop-down (Dan, with K02.8).
 
 **Profile defaults (K09.9).** `options.PROFILE_DEFAULTS` holds what each profile's plugin defaults
 change from the dataclass defaults; a new board, and a field an older options file lacks, start
@@ -133,7 +144,7 @@ empty: on 2026-10-17 the `auto` candidates (derived widths, pours, ripup 1500, `
 sweep `free`) took `canary-pwr` from 76 to 36 unconnected and the four-board total from 109 to 72
 (63 unlimited), but left 2 `+5V_PI` tracks on `Power.Cu` (Q13), and without the width cap they gave 3
 clearance errors. So a default run is the legacy flow plus the board's clearances as keepouts:
-`canary-pwr` 76 unconnected, 0 edge errors. For the graded flow, use the **Canary flow** button
+`canary-pwr` 76 unconnected, 0 edge errors. For the graded flow, use the canary preset file (`fixtures/canary-pwr/presets/canary-graded-flow.json`, Preset drop-down)
 (38 with the sweep, 45 without; `dsn_export.py`'s DSN of the same board gives 33, and the gap
 comes from the plugin's extra edge rectangles and place keepout, which change a chaotic route; K09.8). Once Q13 lands, rerun the candidates.
 
@@ -623,6 +634,68 @@ reader's board to the same 494 tracks, vias and arcs, largest endpoint distance 
 nanometres round to 0.1 um board units, at most 50 nm per coordinate; on this board every pad centre is on
 the grid and the largest distance of a track end to its pad centre is 0 nm (171 ends). A finer resolution is
 not worth a change until a board shows a connection lost to it.
+
+## The plugin reads the board directly (K10)
+
+**The option.** `board_input` (dialog: "Board input", saved in `route-options.json`, schema 4) is `dsn`
+(KiCad's `ExportSpecctraDSN`, the default) or `kicad_pcb` ("Board snapshot (experimental)"). DSN and SES
+stay the default: the DSN path is what the Java comparison (A14) and the graded runs of K02 and K09 used,
+and KiCad 11's IPC API keeps exactly these two board operations (K01.5). `kicad_pcb` changes only what the
+router reads; the result still comes back through `ImportSpecctraSES` (`plugin.import_ses`, which detaches the
+unlocked tracks first, 9bc7ee6). Making it the default is Dan's decision after K10.5.
+
+- **The snapshot** (`snapshot.py`, `export_flow.prepare_snapshot`): on KiCad's UI thread, `pcbnew.SaveBoard(path,
+  board, True)` (`aSkipSettings`) writes `freerouting-rs/<stem>.kicad_pcb` beside where `<stem>.dsn` would be, so
+  the session is named as on the DSN path. A track added in memory is in it. "Route", "Route in GUI" and "Open in
+  viewer" all pass it. A pcbnew whose `SaveBoard` lacks `aSkipSettings` is refused (the two-argument form saves
+  the project file, the call that aborted KiCad on worker threads for projects older than KiCad 10; the idea is
+  KiCadRoutingTools', no code taken).
+- **The project's rules (K10.2).** Tested on KiCad 10.0.7 (`test_snapshot_headless.py`): (a) copying
+  `<stem>.kicad_pro` from disk misses a net class changed in Board Setup and not yet saved; (b) writing the
+  project from the live board with `SettingsManager.SaveProjectCopy(path, board.GetProject())` carries it (a
+  `Power` clearance of 0.333 mm, unsaved, is in the snapshot's project; the file on disk is untouched; also
+  with projects saved by older KiCad versions). The plugin uses (b) and falls back to (a) with a `WARNING` in
+  `plugin.log` saying what is missed. The `.kicad_prl` KiCad writes with the copy is deleted. The
+  `<stem>.kicad_dru` is not in memory (KiCad parses the file), so it is copied from disk. `board.IsModified()`
+  does not tell: it stayed `False` after an in-memory track and class edit (headless; inside the editor
+  unverified), so no "save first" warning is shown; (b) makes it unnecessary for net classes. Unverified:
+  whether unsaved edits in Board Setup's custom-rules page reach the `.kicad_dru`, and (b) inside the running
+  editor (Dan, with K02.8).
+- **The reader's report.** The router's own log lists the reader's report lines and warnings; after a Route run
+  the plugin copies those (`snapshot.reader_lines`) to `plugin.log`.
+- **`apply_kicad_rules` (K10.3)**, off by default: passes `--apply-design-rules` (new CLI switch,
+  `cli_kicad.rs::the_apply_design_rules_switch_changes_the_class_rules`: on the `classes` board the rule
+  "fast tracks" takes the Fast wires from 0.1 mm to 0.3 mm in the session; `design_rules_reach_the_board` is
+  the engine-level test) only with `board_input = kicad_pcb` and only for Route. "Route in GUI" reads the
+  `.kicad_dru` but has no such switch and says so in the log. The minimum track width stays
+  `--router.min_trace_width_um` on both paths. The `-drc` mode does not apply the rules.
+- **The K09 restriction (K10.4).** The K09 options that rewrite DSN text (`class_widths`, `fixed_pour_classes`
+  as `wires` or `auto`, `drop_pour_nets`, `edge_and_pad_keepouts`, `route_on_plane_layers`) cannot apply to a
+  `.kicad_pcb`, so the dialog refuses `kicad_pcb` while any is on and names it
+  (`options.input_conflicts`; `test_snapshot.py`). Note `edge_and_pad_keepouts` is on by default (a board rule,
+  K09.9): untick it to use the snapshot, and the reader has no copper-to-edge strips of its own, so edge
+  clearance is the router's. `fixed_pour_mode = engine` with named classes, `fix_existing`, the rip-up cost, the
+  sweep and the pass hint are engine flags or board locks and work. The rule-area fix-up (K01.2) does nothing
+  (the reader maps rule areas by flags); the run log says so once.
+- **Presets** (see above) work with both inputs.
+- **Tests:** `test_snapshot.py` (paths and argument lists for both inputs and non-ASCII names, the staged
+  files, the fall-back, the options check), `test_route_dialog.py` (`test_route_with_the_snapshot_...`,
+  the detaching import, refusal, `fix_existing`), `test_snapshot_headless.py` (real pcbnew and CLI: the track in
+  memory, the unsaved class clearance, the unchanged board's DRC equals the snapshot's, route and
+  `ImportSpecctraSES` with no error), `headless_run.py snapshot`.
+- **K10.5, measured against the DSN path:** `tools/kicad-reader/plugin-input-ab.sh` (one arm per call). Smoke
+  only so far: the dev board (`Issue558`), one pass, both arms 11 unconnected, 12 copper-to-edge and 4
+  hole-clearance errors, prepare 0.18 s (export) against 0.20 s (snapshot). The graded table is pending (the
+  checklist has the commands).
+
+**K10.6: when to write to the open board.** A live write (KiCad Routing Tools' `board.Add(PCB_TRACK)` plus
+`pcbnew.Refresh()`) is not worth doing while a session carries everything a stage produces: tracks, vias and
+their widths. It is taken up when a stage first produces something a session cannot carry, and not before:
+teardrops, via tenting, footprint or pin swaps (the editor's pin swap, I03/G09, is the one that exists today and
+works on the router's own board, not KiCad's), and plane refills after added copper (Q10 watches pours cut by
+added traces; KiCad's own refill does it today). Such an item must also decide undo: whether KiCad's undo covers
+either path is unverified (the detaching import, 9bc7ee6, lets the action-plugin runner record the removed
+tracks, so Undo restores them; a `board.Add` would need its own commit). Until then there is no live write.
 
 ## Direct `.kicad_pcb` writer (K08)
 

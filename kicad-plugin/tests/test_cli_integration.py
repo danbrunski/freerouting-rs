@@ -210,7 +210,7 @@ def test_both_profiles_route_and_the_summary_names_them(router, board, profile, 
 
 
 def test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli(router, tmp_path):
-    """K09: the preset's router flags are read by the CLI (its settings snapshot), and a DSN
+    """K09: the canary preset file's router flags are read by the CLI (its settings snapshot), and a DSN
     with every fix-up (class width, fixed pour wires, dropped plane, edge and pad keepouts,
     an opened plane layer) loads and routes."""
     import dsn_fixups
@@ -231,7 +231,9 @@ def test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli(router, tmp_path):
     work.mkdir()
     dsn, ses = work / "k09.dsn", work / "k09.ses"
     dsn.write_text(text, encoding="utf-8")
-    chosen = options.with_preset(options.RouteOptions())
+    from conftest import canary_preset_options
+
+    chosen = canary_preset_options()
     run = start(router, dsn, ses, work, chosen.to_args())
     assert run.wait(timeout=300) == 0, "\n".join(run.lines[-15:])
     assert run.ses_written()

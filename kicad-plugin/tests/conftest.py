@@ -71,3 +71,19 @@ def isolated_env(tmp_path, monkeypatch):
     home.mkdir()
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
     return tmp_path
+
+
+CANARY_PRESET_FILE = REPO / "fixtures" / "canary-pwr" / "presets" / "canary-graded-flow.json"
+
+
+def canary_preset_options(current=None):
+    """The options of the canary-pwr preset file (a benchmark input, not
+    plugin code), applied on `current` or the defaults."""
+    import options
+    import presets
+
+    preset, warning = presets.parse(CANARY_PRESET_FILE.read_text(encoding="utf-8"), CANARY_PRESET_FILE, "board")
+    assert warning is None, warning
+    merged, warnings = presets.apply(preset, current or options.RouteOptions())
+    assert warnings == [], warnings
+    return merged

@@ -4,6 +4,7 @@ discards, the summary after the import."""
 
 import json
 import sys
+from pathlib import Path
 
 import pytest
 import stub_ui
@@ -47,7 +48,7 @@ def test_the_options_are_saved_and_reach_the_router(env):
     dialog.timeout.SetValue("10m")
     dialog.on_route(None)
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 3 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
+    assert saved["schema"] == 4 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
     # The router failed to write a session ("echo"): the dialog shows its output.
     failure = ui.messages[-1][0]
     assert "Routing failed (exit code 0)" in failure
@@ -182,7 +183,7 @@ def test_every_drop_down_gets_the_dark_list_fix(env, monkeypatch):
     dialog = make_dialog("echo")
     stages = [choice for choice, _ in dialog.stage_choices.values()]
     assert len(stages) == 2
-    assert passed == [[dialog.profile, dialog.pour_mode, dialog.sweep] + stages]
+    assert passed == [[dialog.profile, dialog.board_input, dialog.preset_choice, dialog.pour_mode, dialog.sweep] + stages]
 
 
 def test_the_import_deletes_no_track_kicad_still_holds(env, tmp_path):
@@ -212,10 +213,21 @@ def test_a_failed_import_puts_the_tracks_back(env, tmp_path):
     assert board.tracks == [old] and not old.freed
 
 
-def test_the_canary_preset_fills_the_fields_and_reaches_the_router(env):
+def test_a_board_preset_fills_the_fields_and_reaches_the_router(env):
+    """The canary-pwr preset file, copied into the board's presets folder, appears in the
+    Preset drop-down; Apply fills the fields (K09.8 values) and Route passes them."""
+    import shutil
+
+    from conftest import CANARY_PRESET_FILE
+
     make_dialog, ui, work = env
+    (work / "presets").mkdir(parents=True)
+    shutil.copy(CANARY_PRESET_FILE, work / "presets")
     dialog = make_dialog("echo")
-    dialog.on_preset(None)
+    assert dialog.preset_choice.choices == ["canary graded flow (board)"]
+    dialog.on_apply_preset(None)
+    assert dialog.widths.GetValue() == "GND=0.4, Power=0.3, Power_High=0.3, Switch_Node=0.3"
+    assert dialog.passes.GetValue() == 1 and dialog.sweep.GetStringSelection() == "free"
     dialog.on_route(None)
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
     assert saved["class_widths"] == {"GND": 0.4, "Power": 0.3, "Power_High": 0.3, "Switch_Node": 0.3}
@@ -233,6 +245,62 @@ def test_the_canary_preset_fills_the_fields_and_reaches_the_router(env):
     # The stub board's DSN has none of canary's classes: the fix-up says so and routing goes on.
     log = (work / "plugin.log").read_text(encoding="utf-8")
     assert "WARNING: DSN fix-ups skipped: ValueError('no class GND with a width in the DSN')" in log
+
+
+def test_without_presets_the_drop_down_says_so_and_apply_does_nothing(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    assert dialog.preset_choice.choices == ["(no presets)"] and dialog.presets == []
+    dialog.passes.SetValue(7)
+    dialog.on_apply_preset(None)
+    assert dialog.passes.GetValue() == 7
+
+
+def test_applying_a_preset_keeps_the_fields_it_does_not_hold(env):
+    make_dialog, ui, work = env
+    write_preset(work, "p.json", {"schema": 4, "name": "p", "max_passes": 3})
+    dialog = make_dialog("echo")
+    dialog.threads.SetValue(6)
+    dialog.classes.SetValue("GND")
+    dialog.on_apply_preset(None)
+    assert (dialog.passes.GetValue(), dialog.threads.GetValue(), dialog.classes.GetValue()) == (3, 6, "GND")
+
+
+def test_a_malformed_preset_file_is_logged_and_the_dialog_still_opens(env):
+    make_dialog, ui, work = env
+    write_preset(work, "bad.json", "{oops")
+    write_preset(work, "ok.json", {"schema": 4, "name": "ok", "max_passes": 2})
+    dialog = make_dialog("echo")
+    assert dialog.preset_choice.choices == ["ok (board)"]
+    assert "WARNING: preset bad.json skipped: not JSON" in (work / "plugin.log").read_text(encoding="utf-8")
+
+
+def test_save_as_preset_writes_the_fields_and_lists_it(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    dialog.passes.SetValue(4)
+    dialog.sweep.SetSelection(2)  # free
+    dialog.ask_preset_name = lambda: "My flow"
+    dialog.on_save_preset(None)
+    path = work / "presets" / "My-flow.json"
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored["name"] == "My flow" and stored["max_passes"] == 4 and stored["sweep"] == "free"
+    assert dialog.preset_choice.choices == ["My flow (board)"] and dialog.preset_choice.GetSelection() == 0
+    # a fresh dialog lists it; applying it on changed fields restores them
+    again = make_dialog("echo")
+    again.passes.SetValue(1)
+    again.on_apply_preset(None)
+    assert again.passes.GetValue() == 4 and again.sweep.GetStringSelection() == "free"
+    # cancelling the name dialog writes nothing more
+    dialog.ask_preset_name = lambda: None
+    dialog.on_save_preset(None)
+    assert len(list((work / "presets").glob("*.json"))) == 1
+
+
+def write_preset(work, name, data):
+    (work / "presets").mkdir(parents=True, exist_ok=True)
+    text = data if isinstance(data, str) else json.dumps(data)
+    (work / "presets" / name).write_text(text, encoding="utf-8")
 
 
 def plugin_pcbnew():
@@ -271,3 +339,132 @@ def test_the_winning_pass_is_remembered_and_offered(env):
     again.on_route(None)
     lines = ui.messages[-1][0].splitlines()
     assert lines[lines.index("--max-passes") + 1] == str(saved["pass_hint"])
+
+
+# --- K10: the board snapshot as the router's input -----------------------------
+
+
+def snapshot_dialog(make_dialog, mode, rules=False):
+    dialog = make_dialog(mode)
+    dialog.board_input.SetSelection(1)  # Board snapshot
+    dialog.keepouts.SetValue(False)  # a DSN rewrite: refused on a snapshot
+    dialog.apply_rules.SetValue(rules)
+    return dialog
+
+
+def test_route_with_the_snapshot_gives_the_router_the_kicad_pcb(env):
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "echo", rules=True)
+    dialog.on_route(None)
+    assert ui.snapshots == [(work / "b.kicad_pcb", True)]  # SaveBoard(path, board, aSkipSettings=True)
+    assert ui.exports == []  # no DSN export
+    assert ui.project_copies == [work / "b.kicad_pro"]
+    assert not (work / "b.kicad_prl").exists()
+    lines = ui.messages[-1][0].splitlines()
+    assert lines[lines.index("-de") + 1] == str(work / "b.kicad_pcb")
+    assert "--apply-design-rules" in lines
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["board_input"] == "kicad_pcb" and saved["apply_kicad_rules"] is True
+    log = (work / "plugin.log").read_text(encoding="utf-8")
+    assert "rule-area fix-up not applied" in log and "snapshot: b.kicad_pcb" in log
+
+
+def test_the_rules_switch_is_not_passed_while_the_option_is_off(env):
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "echo")
+    dialog.on_route(None)
+    assert "--apply-design-rules" not in ui.messages[-1][0].splitlines()
+
+
+def test_the_default_input_still_exports_the_dsn(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    dialog.on_route(None)
+    assert [Path(p) for p in ui.exports] == [work / "b.dsn"] and ui.snapshots == []
+    lines = ui.messages[-1][0].splitlines()
+    assert lines[lines.index("-de") + 1] == str(work / "b.dsn")
+
+
+def test_the_snapshot_result_comes_back_through_the_detaching_import(env):
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "route")
+    old, kept = stub_ui.FakeTrack("old"), stub_ui.FakeTrack("locked", locked=True)
+    dialog.board.tracks = [old, kept]
+    dialog.on_route(None)
+    assert ui.imports == [work / "b.ses"]  # the session is named as on the DSN path
+    assert not old.freed and not kept.freed  # 9bc7ee6: the import deleted nothing KiCad holds
+    assert old not in dialog.board.tracks and kept in dialog.board.tracks
+    assert ui.messages[-1][0].startswith("Routed and imported the result into the board.")
+
+
+def test_a_snapshot_with_a_dsn_rewrite_on_is_refused_before_anything_is_saved(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route")
+    dialog.board_input.SetSelection(1)  # the keepouts option is on by default
+    dialog.widths.SetValue("GND=0.4")
+    dialog.on_route(None)
+    assert ui.snapshots == [] and ui.exports == [] and ui.imports == []
+    text = ui.messages[-1][0]
+    assert "'Class widths'" in text and "'Keep the board-edge and pad clearances'" in text
+    assert not (work / "route-options.json").exists()
+
+
+def test_a_failed_snapshot_says_so_and_routes_nothing(env, monkeypatch):
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "route")
+    monkeypatch.setattr(plugin_pcbnew(), "SaveBoard", lambda *a: False)
+    dialog.on_route(None)
+    assert ui.imports == []
+    assert "could not save a snapshot" in ui.messages[-1][0]
+
+
+def test_route_in_gui_and_the_viewer_take_the_snapshot_too(env, monkeypatch):
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "echo", rules=True)
+    started = []
+    plugin = sys.modules["freerouting_rs.plugin"]
+    monkeypatch.setattr(plugin.tools, "open_viewer", lambda tool, design, ses=None: started.append((design, ses)))
+    dialog.on_view(None)
+    assert started == [(work / "b.kicad_pcb", None)] and ui.snapshots == [(work / "b.kicad_pcb", True)]
+    # Route in GUI: the snapshot is the design; the GUI has no rules switch, so none is passed.
+    seen = []
+
+    class Run:
+        MESSAGE = ""
+        finished = True
+
+        def __init__(self, tool, design, ses, args):
+            seen.append((design, list(args)))
+
+        def start(self):
+            pass
+
+        def should_import(self):
+            return False
+
+        def outcome_text(self):
+            return "x"
+
+    monkeypatch.setattr(plugin.routing, "GuiRun", Run)
+    dialog.on_route_gui(None)
+    assert seen[0][0] == work / "b.kicad_pcb" and "--apply-design-rules" not in seen[0][1]
+    assert "Route in GUI reads the .kicad_dru but does not apply it" in (work / "plugin.log").read_text(encoding="utf-8")
+
+
+def test_fix_existing_locks_the_tracks_into_the_snapshot(env):
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "route")
+    tracks = [stub_ui.FakeTrack("a"), stub_ui.FakeTrack("b", locked=True)]
+    dialog.board.tracks = list(tracks)
+    dialog.fix_existing.SetValue(True)
+    states = []
+    real = plugin_pcbnew().SaveBoard
+
+    def save(path, board, skip=False):
+        states.append([t.IsLocked() for t in tracks])
+        return real(path, board, skip)
+
+    plugin_pcbnew().SaveBoard = save
+    dialog.on_route(None)
+    assert states == [[True, True]]  # written as fixed copper (the reader: type fix)
+    assert [t.IsLocked() for t in tracks] == [False, True]  # and restored afterwards

@@ -20,6 +20,13 @@ Per fixture:
 - The 17:47 unpoured DSN is a plain KiCad export
   (`pcbnew.ExportSpecctraDSN`) with no post-processing.
 
+**Plugin preset:** `presets/canary-graded-flow.json` holds the plugin options of canary's
+graded flow (class widths, fixed pours of Power_High and Switch_Node, GND outer pours dropped,
+edge and pad keepouts, one pass, rip-up cost 1500, minimum width 150 um, Q10's free sweep x2;
+K09.8). It is a benchmark input, not plugin code: to use it, copy the file into the board's
+`freerouting-rs/presets/` folder (next to the `.kicad_pcb`), and it appears in the dialog's
+Preset drop-down. The plugin ships no preset of its own.
+
 | File | sha256 (prefix) | What it is | Used by |
 |---|---|---|---|
 | `canary-pwr-pours1.dsn` | `da76e69c` | Pours turned into 113 fixed path wires covering their fills; GND outer planes dropped; the fan keepout dropped; Power_High, Switch_Node and Power at 0.3 mm, GND at 0.4 mm | variant set (F02.5, Q04, Q05) |

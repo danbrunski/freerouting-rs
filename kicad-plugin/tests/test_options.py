@@ -93,7 +93,7 @@ def test_save_load_save_gives_equal_json(tmp_path):
     assert loaded == chosen
     options.save(second, loaded)
     assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")
-    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 3
+    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 4
 
 
 def test_defaults_round_trip_too(tmp_path):
@@ -312,7 +312,10 @@ def test_the_fix_ups_engine_flags_go_before_the_stages():
 
 
 def test_the_k09_options_round_trip(tmp_path):
-    chosen = options.with_preset(RouteOptions(), dict(options.CANARY_PRESET, fix_existing=True, pass_hint=4))
+    from conftest import canary_preset_options
+
+    chosen = canary_preset_options()
+    chosen.fix_existing, chosen.pass_hint = True, 4
     chosen.route_on_plane_layers = ["Power.Cu"]
     chosen.fixed_pour_mode = "engine"
     path = tmp_path / "route-options.json"

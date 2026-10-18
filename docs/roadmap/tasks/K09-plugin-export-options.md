@@ -205,10 +205,19 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
       session);
     - `kicad-plugin.md` documents the options and the preset.
 
-  *Done 2026-10-17:* `options.CANARY_PRESET`, the dialog's "Canary flow" button (fills the fields,
+  *Moved 2026-10-17 (K10 session; Dan: no board-specific code in the tool):* the preset is no
+  longer product code. `options.CANARY_PRESET`, `with_preset` and the "Canary flow" button are gone;
+  the values are the preset file `fixtures/canary-pwr/presets/canary-graded-flow.json`, which the
+  dialog's Preset drop-down lists once it is copied into the board's `freerouting-rs/presets/`
+  folder (`presets.py`; the plugin ships no preset). Tests now:
+  `test_presets.py::test_the_canary_fixture_preset_gives_the_old_preset_values_and_arguments`,
+  `test_route_dialog.py::test_a_board_preset_fills_the_fields_and_reaches_the_router`,
+  `test_dsn_fixups.py::test_the_canary_preset_file_reproduces_dsn_export_on_the_fixture`.
+
+  *Done 2026-10-17:* `options.CANARY_PRESET` (now the preset file above), the dialog's "Canary flow" button (now Preset > Apply; fills the fields,
   each still editable; with the sweep `free` x2 of Q10). Test:
   `test_route_dialog.py::test_the_canary_preset_fills_the_fields_and_reaches_the_router`;
-  `test_dsn_fixups.py::test_the_preset_reproduces_dsn_export_on_the_fixture`. Headless plugin runs
+  `test_dsn_fixups.py::test_the_preset_reproduces_dsn_export_on_the_fixture` (both renamed above). Headless plugin runs
   on `canary-pwr` (canary HEAD `e21ee05e`, WSL KiCad 10.0.7, round 2):
   - without the sweep (arm `preset-nosweep`): **45** unconnected, as Java `7f56b062d` / `97d10d6`;
     clearance 4 (vias of the 0.3 mm classes, Q14), 2 inner tracks (Q13), 93 s. `freerouting-dev

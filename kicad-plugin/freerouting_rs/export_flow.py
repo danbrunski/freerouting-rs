@@ -8,6 +8,9 @@ The pcbnew module is passed in, never imported, so this file imports nothing
 outside the standard library and the plugin's pure modules. Call it on
 KiCad's UI thread only.
 
+`prepare_snapshot` is the K10 form: the board snapshot the router reads
+directly, with none of those DSN steps (`snapshot.py`).
+
 Order: KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), then the
 K09 fix-ups (`dsn_fixups`). After `ImportSpecctraSES`, `after_import` sets the
 drills KiCad's import takes from the net class instead of the session. A fix-up that fails is logged with a WARNING and
@@ -15,7 +18,7 @@ leaves the DSN as it was before that step; it never blocks routing.
 """
 
 try:  # inside the plugin package
-    from . import dsn_fixups, kicad_areas, kicad_board, options, rule_areas, ses_vias
+    from . import dsn_fixups, kicad_areas, kicad_board, options, rule_areas, ses_vias, snapshot
 except ImportError:  # tests and headless scripts put this folder on sys.path
     import dsn_fixups
     import kicad_areas
@@ -23,6 +26,7 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
     import options
     import rule_areas
     import ses_vias
+    import snapshot
 
 
 def _read(path):
@@ -92,6 +96,29 @@ def prepare(board, pcbnew, dsn, opts, export):
     if locked:
         more.append(f"fix existing: {len(locked)} track(s) and via(s) exported as fixed")
     return True, args, lines + more, locked
+
+
+def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
+    """K10: the `board_input = kicad_pcb` counterpart of `prepare`. Takes the
+    snapshot (`snapshot.take`), after locking the tracks first for
+    `fix_existing` as `prepare` does (the reader writes a locked track as
+    fixed copper). No DSN fix-up applies: `options.input_conflicts` keeps the
+    options that need one off. `fixed_pour_mode = engine` with named classes
+    is the one K09 option that works here, because it is an engine flag.
+    Returns `(ok, router_args, log_lines, locked_tracks)`."""
+    locked = kicad_board.lock_tracks(board) if opts.fix_existing else []
+    ok, lines = snapshot.take(board, pcbnew, work_dir, stem, board_dir)
+    if not ok:
+        kicad_board.restore_locks(locked)
+        return False, [], lines, []
+    args = []
+    if opts.fixed_pour_mode == "engine" and opts.fixed_pour_classes and opts.fixed_pour_classes != options.AUTO:
+        args = dsn_fixups.engine_plane_obstacle_args(opts.fixed_pour_classes)
+        lines.append(f"pours of {', '.join(opts.fixed_pour_classes)} kept clear by the router ({' '.join(args)})")
+    lines += snapshot.notes(opts)
+    if locked:
+        lines.append(f"fix existing: {len(locked)} track(s) and via(s) in the snapshot as fixed")
+    return True, args, lines, locked
 
 
 def after_import(board, ses):

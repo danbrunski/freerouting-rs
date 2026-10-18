@@ -28,6 +28,9 @@ class UI:
         self.on_modal = None
         self.dialogs = []  # every modal dialog that was shown, in order
         self.import_ok = True
+        self.snapshots = []  # (path, aSkipSettings) given to SaveBoard
+        self.project_copies = []  # paths given to SaveProjectCopy
+        self.project_copy_fails = False
 
 
 class Control:
@@ -80,6 +83,13 @@ class Choice(Control):
         super().__init__(*args, **kwargs)
         self.choices = list(choices)
         self.value = 0
+
+    def Clear(self):
+        self.choices = []
+        self.value = 0
+
+    def Append(self, text):
+        self.choices.append(text)
 
     def GetSelection(self):
         return self.value
@@ -197,6 +207,21 @@ def build_pcbnew(ui, dsn_text):
             board.tracks.append(FakeTrack("routed"))
         return ui.import_ok
 
+    def save_board(path, board, skip_settings=False):
+        ui.snapshots.append((Path(path), skip_settings))
+        Path(path).write_text("(kicad_pcb (version 20241229))\n", encoding="utf-8")
+        return True
+
+    class SettingsManager:
+        def SaveProjectCopy(self, path, project):
+            if ui.project_copy_fails:
+                raise RuntimeError("no project")
+            ui.project_copies.append(Path(path))
+            Path(path).write_text('{"net_settings": {"live": true}}', encoding="utf-8")
+            Path(path).with_suffix(".kicad_prl").write_text("{}", encoding="utf-8")
+
+    pcbnew.SaveBoard = save_board
+    pcbnew.GetSettingsManager = SettingsManager
     pcbnew.ActionPlugin = ActionPlugin
     pcbnew.F_Cu, pcbnew.B_Cu = 0, 2
     pcbnew.ToMM = lambda nm: nm / 1e6
@@ -236,6 +261,9 @@ class FakeBoard:
 
     def GetFileName(self):
         return self.path
+
+    def GetProject(self):
+        return object()
 
     def GetDesignSettings(self):
         return types.SimpleNamespace(m_TrackMinWidth=self.min_track_nm, m_CopperEdgeClearance=0)

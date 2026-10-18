@@ -195,9 +195,12 @@ def test_a_failing_fix_up_is_logged_and_leaves_the_dsn(tmp_path):
     assert dsn.read_text(encoding="utf-8") == TWO
 
 
-def test_the_preset_reproduces_dsn_export_on_the_fixture():
-    """The canary preset's DSN settings are dsn_export.py's command line."""
-    s = options.dsn_settings(options.with_preset(options.RouteOptions()))
+def test_the_canary_preset_file_reproduces_dsn_export_on_the_fixture():
+    """The DSN settings of fixtures/canary-pwr/presets/canary-graded-flow.json
+    are dsn_export.py's command line."""
+    from conftest import canary_preset_options
+
+    s = options.dsn_settings(canary_preset_options())
     assert s == {
         "class_widths": {"Power_High": 0.3, "Switch_Node": 0.3, "Power": 0.3, "GND": 0.4},
         "fixed_pour_classes": ["Power_High", "Switch_Node"],
