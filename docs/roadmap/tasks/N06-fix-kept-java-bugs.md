@@ -1,6 +1,6 @@
 # N06 — Fix the Java bugs kept on purpose
 
-Opened 2026-10-17 (Dan asked whether they were fixed; they weren't). During the parity phase
+Opened 2026-10-17 (the owner asked whether they were fixed; they weren't). During the parity phase
 the port reproduced Java's bugs wherever fixing one would change routing results. D10 ends that
 phase, so each bug can now be fixed under profile `enhanced`, while `legacy` keeps it.
 
@@ -40,8 +40,8 @@ measurements.
 
 Whoever implements an item (the `implementer` agent, or Codex):
 - **Follow `.claude/agents/implementer.md`:** the Java reference at the pin, the targeted gate,
-  the `[x]`/`[~]` notes, and the hard rules (no windows on Dan's desktop, hands off Windows and
-  KiCad, `CARGO_BUILD_JOBS=2`). Where Dan's dispatch says otherwise, the dispatch wins.
+  the `[x]`/`[~]` notes, and the hard rules (no windows on the owner's desktop, hands off Windows and
+  KiCad, `CARGO_BUILD_JOBS=2`). Where the owner's dispatch says otherwise, the dispatch wins.
 - **Read Java through git, never the checkout:**
   `git -C ../freerouting show a773a70ec:src/main/java/app/freerouting/<path>`. Line numbers here
   are at that pin; Rust line numbers drift, so find code by symbol.
@@ -99,7 +99,7 @@ Whoever implements an item (the `implementer` agent, or Codex):
     `split_to_convex`, and a flag on `TileShape::nearest_border_point`. A piece cache (the
     area's `OnceLock`) must not be shared across flag values.
   - The DSN `ReadContext` and `import_session` for the readers.
-- **The accept rule for a (b) fix (Dan, 2026-10-17: "if it's a bug fix and we fix it but it's
+- **The accept rule for a (b) fix (owner, 2026-10-17: "if it's a bug fix and we fix it but it's
   neutral, might as well leave it in"):**
   - It is a correctness fix, so it need not beat noise.
   - A batch is accepted when N02's hard guards hold, no board regresses by more than twice its

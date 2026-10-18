@@ -1,6 +1,6 @@
 # Q16 — No dangling vias or trace stubs in the result
 
-Opened 2026-10-18, from canary-7a's grade of Dan's `enhanced` plugin run on `canary-pwr`
+Opened 2026-10-18, from canary-7a's grade of the owner's `enhanced` plugin run on `canary-pwr`
 (`target/canary-handoff/2026-10-17-plugin45/`, 45 unconnected). KiCad's DRC counted **32
 dangling vias**, mostly pairs on supervisor signals (CAN_*, LED_*, I2C_READY, MCU_SCL). They
 are stubs of connections the router started and never finished. KiCad only warns about them,
@@ -83,7 +83,7 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
   optimizer never ran: it skips a board with unrouted connections (canary 95, interf_u 4, CM5 8),
   so on canary the `sweep` and `plugin45` sessions are byte-identical (`04de8e96…`), as are all
   three interf_u sessions (`f5b27354…`) and pic_programmer's (`3dcecedb…`). KiCad unconnected
-  on the handoff DSN: 48 (pass 1), 37, 37. The `plugin45` session differs from Dan's
+  on the handoff DSN: 48 (pass 1), 37, 37. The `plugin45` session differs from the owner's
   (`5ad40948…`, the Windows build, N05.3's amendment) at byte 9964. The canary stubs are on
   supervisor and holdup signals (`/Holdup/LTC_CAPRTN` 2, `LTC_PFO` 2, `MCU_SCL` 2,
   `/Supervisor/CAN_FAULT_N` 2, and one each on `/Holdup/VCAP`, `/Holdup/LTC_CFP`,

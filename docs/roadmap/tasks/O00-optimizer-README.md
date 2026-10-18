@@ -152,7 +152,7 @@ These add to the shared rules in the [tasks README](README.md).
 - **Kept Java quirks** get a test, a module-doc note and a DIVERGENCES line
   under "Java bugs kept on purpose".
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **One winner per optimizer pass.** Java evaluates every candidate against
    the pass baseline and adopts only the single best one. That decides

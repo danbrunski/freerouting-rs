@@ -53,7 +53,7 @@ What this adds:
   plain style, used where Java isn't the oracle. Exponent form
   (`1.2345E8` at 10⁷ and above) is kept for parity. KiCad exports at
   `(resolution um 10)`, so its boards reach 10⁷ units only at 1 m, and the
-  question doesn't arise for Dan's boards.
+  question doesn't arise for the owner's boards.
 - **Numbers.**
   - `java_double(f64)` is `Double.toString` as JDK 19+ prints it: the
     shortest digits that round-trip (the same digits Rust's `{}` and `{:e}`

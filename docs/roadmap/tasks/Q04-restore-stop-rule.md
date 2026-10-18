@@ -36,7 +36,7 @@ F03.1, F03.4.
 - **Cause:** Java's ripup is greedy. Ripped blockers often can't be rerouted,
   and nothing remembers congestion between passes.
 
-This is the strongest case for Q04 on Dan's board. A stop rule that ends the
+This is the strongest case for Q04 on the owner's board. A stop rule that ends the
 run after the first restore that can't beat pass 1 would have saved about
 60 % of the routing time with a byte-identical result.
 

@@ -2,7 +2,7 @@
 
 Opened 2026-10-15. Today `freerouting` (`crates/freerouting-cli`) understands
 `-de`, `-drc` and `-dr` only. Anything except a DRC run exits 2 with "routing
-is not implemented yet". The KiCad plugin, Dan's scripts and the Java fork's
+is not implemented yet". The KiCad plugin, the owner's scripts and the Java fork's
 `compare.py` need the Java command line:
 - the same flags and the same settings they set;
 - the same output files and exit codes;

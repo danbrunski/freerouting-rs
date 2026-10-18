@@ -95,7 +95,7 @@ Prerequisites: F02.2 (`ses-diff`), F02.3 (`bench`), F02.6 (the KiCad oracle).
   count of unrouted connections alone would have accepted.
 
 - [x] **F03.2 — Failed connections against the human original.**
-  For corpus boards and Dan's boards, list every connection an engine leaves
+  For corpus boards and the owner's boards, list every connection an engine leaves
   unrouted next to the human-routed original's layers, vias, widths and
   clearance headroom. Tag each one:
   - "router gap": the human routed it;
@@ -119,7 +119,7 @@ Prerequisites: F02.2 (`ses-diff`), F02.3 (`bench`), F02.6 (the KiCad oracle).
   connections the human closed with a pour the DSN doesn't carry), each with the
   human's layers, vias, widths, length and headroom. Other boards: eprom-card-80bus
   35/35 gap, rio-iceshield 23/23, laser-backplane-dvi 45/45, pcietest 5/5. Both
-  tags: Dan's canary-pwr 9511d9a (Java `46bf9e2ef` session against the routed36
+  tags: the owner's canary-pwr 9511d9a (Java `46bf9e2ef` session against the routed36
   board, exported with tracks kept): 102 unrouted, 49 `router gap`, 53 `no human
   route`, 7 `infeasible` (Q03: GND to U3-7, +12V_PROT to U1-34, ...). Both
   tags also appear on the corpus board `cm4-edge-ai-carrier`: 7 unrouted, all
@@ -151,7 +151,7 @@ Prerequisites: F02.2 (`ses-diff`), F02.3 (`bench`), F02.6 (the KiCad oracle).
 
   *Done 2026-10-16:* `tools/corpus/manifest.json` (30 boards: 12 two-layer, 12
   four-layer, 6 six-layer; tiers easy 5, medium 16, hard 9; 18 with inner-layer
-  planes; plus `owner_boards`: Dan's three canary-pwr 9511d9a DSNs, noted "graded
+  planes; plus `owner_boards`: the owner's three canary-pwr 9511d9a DSNs, noted "graded
   by canary-09 through Windows KiCad"), `fetch.sh`, `prep.sh`, `seed.py` (how the
   manifest was built from KRT's candidate lists: commit, licence, companions and
   hashes resolved with `gh api`), `allowed-licenses.txt`, `README.md`,

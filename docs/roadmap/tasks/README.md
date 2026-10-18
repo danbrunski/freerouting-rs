@@ -22,7 +22,7 @@ through git, never guess at what the report said.
 checklists use: `large-board-autorouter-performance.md` (P03: which
 parallel passes Java measured and removed), `escape_congestion_research.md`
 (Q07, X10, X12), `kicad_ipc_api_research.md` (K00 question 5),
-`star-ground-routing.md` (an unplanned feature request, issue 383). Dan's
+`star-ground-routing.md` (an unplanned feature request, issue 383). The owner's
 analysis tools are in `docs/development/tools/` (Q06, X01).
 
 ## Series

@@ -73,7 +73,7 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
   This never saves the user's board.
   - K10's direct read is K11.6: it routes the same copy without the export.
   - Writing tracks through a commit is K10.6's decision, not this checklist's.
-- **The dialog lives in `freerouting-gui`** (Dan, 2026-10-17, question 1).
+- **The dialog lives in `freerouting-gui`** (owner, 2026-10-17, question 1).
   - The IPC plugin starts the app in a plugin mode that shows the options, the progress,
     Stop and Abort, and the summary.
   - The app writes the session, and the plugin imports it.
@@ -187,7 +187,7 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
   - One zip with both plugins: **no.** `pcm.v2.schema.json` gives one `runtime` per package
     version, so it takes two versions.
   - Saving a copy: **yes.**
-  - A Python UI in the plugin's environment: **not probed.** It was moot after Dan's answer
+  - A Python UI in the plugin's environment: **not probed.** It was moot after the owner's answer
     to question 1.
   - Plugin folders and environment variables: from `common/paths.cpp` and
     `api_plugin_manager.cpp`.
@@ -253,7 +253,7 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
     question 1 for KiCad 11.
   - **Accept:** K10.1's in-memory-edit test passes through IPC.
 - [ ] **K11.8 — Correct master's misplaced footprint keepouts ourselves.** No upstream
-  report (Dan, question 3). When the DSN comes from KiCad 11 or later (`kicad-cli` or
+  report (owner, question 3). When the DSN comes from KiCad 11 or later (`kicad-cli` or
   `RunBoardJobExportSpecctraDsn`), the rule-area fix-up (`rule_areas.py`, K01.2) rewrites each
   footprint-owned keepout from the board's own rule areas (`kicad_areas`, read through the
   API), not from the exported coordinates. Detect the offset by comparing the two rather than
@@ -270,7 +270,7 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
   - and the top-level README's KiCad versions line.
   - **Accept:** each fact names its test or item.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Where the dialog lives.** *Answered 2026-10-17:* in `freerouting-gui`, as recommended.
    Recorded under "Decisions made here".
@@ -280,7 +280,7 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
    - Master's Specctra export puts footprint-owned rule areas off by the footprint's
      position (K11.1, with a two-line repro on `Issue558-dev-board`).
    - If 11.0 ships with it, every DSN from KiCad 11 has misplaced footprint keepouts.
-   - Filing an issue on KiCad's GitLab is publishing, so it is Dan's call.
-   - *Answered 2026-10-17 (Dan):* don't report upstream; fix what we can in our own repos.
+   - Filing an issue on KiCad's GitLab is publishing, so it is the owner's call.
+   - *Answered 2026-10-17 (owner):* don't report upstream; fix what we can in our own repos.
      K11.8 corrects the keepouts in the plugin's DSN fix-up, and K11.6's direct read avoids
      the export altogether.

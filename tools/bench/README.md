@@ -199,7 +199,7 @@ repository. The counts below are `connections.maximum_count`,
   (`Issue066-Project_GP8B`, `Issue145-smoothieboard`), four KiCad demo boards
   (ecc83, sonde, interf_u, coldfire, which the KiCad oracle can also grade),
   four DAC2020 benchmarks, and the largest boards that Java loads quickly.
-- **`owner.txt`**: Dan's boards. The `canary-pwr` variants are in the
+- **`owner.txt`**: the owner's boards. The `canary-pwr` variants are in the
   repository since 2026-10-15 (`fixtures/canary-pwr/README.md`); further
   owner boards are listed by out-of-repo path and skipped when missing.
 

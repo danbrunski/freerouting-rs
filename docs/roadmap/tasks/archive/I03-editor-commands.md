@@ -5,7 +5,7 @@ and drag). This checklist ports the rest of the reachable editor at
 `cda540f` behind one entry point, `Editor::apply(Command) -> Response`:
 mode handling, selection, pin swap, keepout construction, and undo/redo with
 board deltas for the GUI. It also ports delete and fix/unfix of the
-selection if Dan approves decision 1 in [I00](../I00-interactive-README.md)
+selection if the owner approves decision 1 in [I00](../I00-interactive-README.md)
 (the same question as G00's question 6); both are disabled in Java's GUI at
 the pin. Copy of a selection moves to
 I04 with the other "pick up and place" edits (see the note at the end).
@@ -180,7 +180,7 @@ B00); O01 (`remove_items_and_pull_tight`).
     before it, in Java either.
 
 - [x] **I03.6 — Delete and fix/unfix of the selection (decision 1).**
-  - Only if Dan approves; otherwise mark `[~]` with the decision as the
+  - Only if the owner approves; otherwise mark `[~]` with the decision as the
     remainder.
   - Rust: `interactive/edit_ops.rs`.
     - Delete: one snapshot; items that are deletion-forbidden or
@@ -194,7 +194,7 @@ B00); O01 (`remove_items_and_pull_tight`).
     enabled here by decision").
   - **Accept:** unit tests per operation on J2 (item counts, fixed states,
     the status for a fixed item), and undo restores the `state_hash`.
-  - *Done 2026-10-16:* decision 1 accepted by Dan (I00, 2026-10-16). `interactive/edit_ops.rs`
+  - *Done 2026-10-16:* decision 1 accepted by the owner (I00, 2026-10-16). `interactive/edit_ops.rs`
     (`delete_selection`, `fix_selection`, `set_fixed_state_undoable`). On routed J2:
     `delete_selection_keeps_fixed_items_and_undo_restores` (push on and off: 6 traces and a pin
     selected, one trace user fixed → 5 removed, 2 refused with

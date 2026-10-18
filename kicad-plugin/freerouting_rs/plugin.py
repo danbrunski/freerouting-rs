@@ -349,7 +349,7 @@ class Dialog(wx.Dialog):
             self.fill_dsn_group(dsn_group),
         )
         fill_page(advanced_page, self.fill_flow_group(flow_group), self.fill_stages_group(stages_group, saved))
-        # The tabs open tall enough for the longest (Dan: no scrolling where
+        # The tabs open tall enough for the longest (owner: no scrolling where
         # the screen has the room); fit_to_display cuts them on a small one.
         self.page_contents = [page.GetSizer().GetMinSize() for page in self.pages]
         self.set_page_heights([size.height for size in self.page_contents])

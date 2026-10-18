@@ -1,21 +1,21 @@
 # Completing the port
 
 Recorded 2026-10-15. This is the plan for taking freerouting-rs from a board
-viewer with DRC to a full replacement for Dan's Java Freerouting: a headless
+viewer with DRC to a full replacement for the Java Freerouting: a headless
 router the KiCad plugin can call, a desktop app with the Java feature set, and
 release builds for Windows, macOS and Linux. The detailed implementation
 checklists are in [tasks/](tasks/README.md). The module map and the original
 porting order stay in [PORT_PLAN.md](../PORT_PLAN.md). This document replaces
 PORT_PLAN's milestones 6 to 11 as the working plan.
 
-**Owner steer (Dan, 2026-10-15): the port should perform better than Java, and
+**Owner steer (2026-10-15): the port should perform better than Java, and
 it does not need to match the Java structure.** Java stays the reference for
 *results*: what gets routed, where, with which vias, and what the DRC reports.
 How the Rust code reaches those results is free: data layout, module
 boundaries, ownership, caching and parallelism are chosen for speed, not to
 mirror Java classes. See decision D1.
 
-**Owner steer (Dan, 2026-10-15): take the best of both worlds.** The engine
+**Owner steer (2026-10-15): take the best of both worlds.** The engine
 offers a choice of algorithms. It pulls them from Freerouting and from
 [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools) (KRT,
 MIT-licensed, at `../KiCadRoutingTools`). KRT is a grid-based A* router with
@@ -46,17 +46,17 @@ push-and-shove and blind/buried vias. See decision D9 and the X series.
 the live state.)
 
 In release, loading plus a full DRC already takes 0.04–0.5 s on the largest
-fixtures (0.09 s on Dan's `canary-pwr` board).
+fixtures (0.09 s on the owner's `canary-pwr` board).
 
 ## What "complete" means
 
 The port is complete when all of these hold:
 
 1. **The CLI routes.** `freerouting -de board.dsn -do board.ses` with the Java
-   flags the KiCad plugin and Dan use (`-mp`, `-mt`, `-oit`, `-inc`, `-dr`,
+   flags the KiCad plugin and the owner use (`-mp`, `-mt`, `-oit`, `-inc`, `-dr`,
    `--router.*`) produces a session KiCad imports. Exit codes and output match
    what the plugin expects.
-2. **Results are at least as good as Java's** on every fixture and on Dan's
+2. **Results are at least as good as Java's** on every fixture and on the owner's
    boards. That means no new clearance violations, no via in a pad, completion
    at or above Java's, and via count and length within a stated tolerance or
    better. Every place where the Rust result differs on purpose is listed in
@@ -86,10 +86,10 @@ port leaves for them).
 
 ## Decisions
 
-Implement these; don't reopen them without Dan. Each checklist restates the ones
+Implement these; don't reopen them without the owner. Each checklist restates the ones
 it depends on.
 
-- **D1 — Match Java's results, not its structure (Dan, 2026-10-15).** Rust code
+- **D1 — Match Java's results, not its structure (owner, 2026-10-15).** Rust code
   is organised for speed and clarity. That means arenas and indexes instead of
   object graphs, no class-per-module mirroring, fewer allocations, cheap
   snapshots, and parallelism with an ordered merge. What must match Java is
@@ -110,7 +110,7 @@ it depends on.
     never change how work is done.
   - Every routing checklist proves this by routing the same board twice, once
     idle and once under load, and diffing the SES.
-- **D3 — Re-pin before the router.** Dan's Java fork is replacing its
+- **D3 — Re-pin before the router.** The Java fork is replacing its
   wall-clock limits with work-count limits ([J01](tasks/archive/J01-repin-deterministic-java.md)).
   That covers the fanout per-pin limit, the pull-tight guard, the maze search,
   the shover and the drill mover. After that commit, Java routing is
@@ -160,7 +160,7 @@ it depends on.
   - signal-layer pours are ignored for nets that have a power-layer plane
   - the flat cost settings work
   - the best board is the one saved
-  - **the board's design rules are hard limits (Dan, 2026-10-15).** No
+  - **the board's design rules are hard limits (owner, 2026-10-15).** No
     trace narrower than the minimum track width, no via or drill smaller
     than the board allows, no clearance below the rules. No trace narrower
     than its own net class's width either, because class widths carry
@@ -175,7 +175,7 @@ it depends on.
     head-to-head (X01) showed why this needs saying: KiCadRoutingTools'
     default `--fab-tier auto` escalated to 0.089–0.127 mm tracks and
     0.25/0.15 mm vias and lowered the board's minimums to match.
-- **D9 — One engine, interchangeable algorithms (Dan, 2026-10-15).**
+- **D9 — One engine, interchangeable algorithms (owner, 2026-10-15).**
   - **A pipeline of stages.** A routing job runs fanout, net ordering,
     connection routing, the ripup policy, the optimizer, and special stages
     (plane taps and repair, neck-down, diagnostics, differential pairs,
@@ -205,12 +205,12 @@ it depends on.
   - **Sequencing.** The A series defines the stage traits when it ports the
     batch pipeline, so Freerouting's stages are their first implementations.
     KRT algorithms come after board parity, in the X series. They start
-    with the ones that fill Freerouting's gaps on Dan's boards: neck-down
+    with the ones that fill Freerouting's gaps on the owner's boards: neck-down
     at fine-pitch pads, plane handling and diagnostics. Then the grid A*
     connection router, then differential pairs and length matching. A
     head-to-head of Java Freerouting against KRT, graded by KiCad's DRC,
     sets the order within the X series.
-- **D10 — Beyond Java (Dan, 2026-10-17).** "Let's move beyond java
+- **D10 — Beyond Java (owner, 2026-10-17).** "Let's move beyond java
   freerouting now, and make this better." Board parity is reached (A14),
   so the goal becomes the best routed board, not Java's board.
   - **Two profiles.** `router.profile = legacy` keeps every Java behaviour
@@ -244,7 +244,7 @@ Each rung uses the reference data and harness in
 4. **Owner boards and the KiCad oracle.** `canary-pwr` and its variants route
    at least as well as the Java fork. Its results move by about ±10 unrouted
    with small input changes, so compare across several board variants, not
-   repeat runs. Boards with a `.kicad_pcb` (Dan's, KiCad's bundled demos)
+   repeat runs. Boards with a `.kicad_pcb` (the owner's, KiCad's bundled demos)
    are also graded by KiCad's own DRC after importing the session (F02.6).
    That is an oracle independent of the router's own model.
 5. **Speed.** Release-build wall time against Java on the same set, same
@@ -271,7 +271,7 @@ Each rung uses the reference data and harness in
 | **Q** Routing quality beyond Java | [routing-quality.md](routing-quality.md) | [Q00](tasks/Q00-routing-quality-README.md) | after board parity |
 | **X** Algorithms from KiCadRoutingTools | [algorithms.md](algorithms.md) | [X00](tasks/X00-krt-algorithms-README.md) | head-to-head now; ports after board parity |
 | **R** Release builds | [desktop-app.md](desktop-app.md) | [R01](tasks/archive/R01-release-builds.md) | after the CLI routes |
-| **S** Server and job management | this file ("Later") | [S00](tasks/S00-server-README.md) | after "complete", when Dan asks |
+| **S** Server and job management | this file ("Later") | [S00](tasks/S00-server-README.md) | after "complete", when the owner asks |
 
 The critical path is J01 → B (router prerequisites) → O (shared board
 operations) → A (search core → path insertion → batch pipeline) → C (routing
@@ -292,12 +292,12 @@ append to (`lib.rs` module lists, `DIVERGENCES.md`).
 
 ## Relationship to other plans and sessions
 
-- **Development focus is freerouting-rs** (Dan, 2026-10-15, as relayed by the
+- **Development focus is freerouting-rs** (owner, 2026-10-15, as relayed by the
   Java session). The Java fork now gets only bug fixes and cleanup, no
   large features. Its determinism commit `30baad7e2` and three fixes after it
   (the optimizer score clamp, headless DSN output, a machine-readable
   work-limit cut-off line) make up `a773a70ec`, the re-pin target (J01).
-- **Dan's Java fork** (`../freerouting`) keeps `docs/development/PORT_LEDGER.md`:
+- **The Java fork** (`../freerouting`) keeps `docs/development/PORT_LEDGER.md`:
   one line per Java commit after the pin, with its measurements and
   "Port: yes/no/later". The J series adopts ledger entries by re-pinning or by
   a DIVERGENCES line. Read it at `main` through git, never the working tree.

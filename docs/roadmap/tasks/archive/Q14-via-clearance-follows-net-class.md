@@ -191,7 +191,7 @@ Prerequisites: C02 (the settings model); N01 (the fix goes into `enhanced`, and
   `docs/roadmap/prereg/Q13.json` (reported pairs). Q14.3's acceptance stays with the orchestrator.
   *Re-judged by N05.3 (2026-10-18), not accepted:* registration `docs/roadmap/prereg/N05-via-clearance.json`
   (N02 totals rule with a `totals` block, `accept: no-regress`), `net_class` together with
-  `power_layer_traces = none` (N05.3's accepted value) on Q14.3's set plus the DSN of Dan's plugin run
+  `power_layer_traces = none` (N05.3's accepted value) on Q14.3's set plus the DSN of the owner's plugin run
   of 2026-10-17 (`tests/data/canary-pwr-n05/plugin-b1994423.dsn`, whose Windows-build session had two
   `+12V_BUS` via clearance errors), the KiCad boards with their own minimum width (254 and 160 um).
   `freerouting-dev gate`: **FAIL**, hard clause `overlord class_via_clearance_errors = 15` (21 in the

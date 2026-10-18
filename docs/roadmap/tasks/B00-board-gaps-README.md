@@ -132,7 +132,7 @@ These add to the shared rules in [README.md](README.md).
   B09.1) runs its probe test under `tools/determinism-check.sh` with
   `BOARD_PROBE_OUT={OUT}` (B01.1) and records "identical" in its done note.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Ledger staleness (board-gap Q1).** Java's `NetRoutingLedger` isn't told
    about undo and redo, fast-cutout pieces, in-place trace changes or net

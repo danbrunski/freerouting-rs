@@ -5,7 +5,7 @@ the router:
 - Java's settings model and its sources;
 - the settings that change the board at load time;
 - the rules, SES and DSN files;
-- the CLI contract that the KiCad plugin, Dan's scripts and the Java fork's
+- the CLI contract that the KiCad plugin, the owner's scripts and the Java fork's
   `compare.py` rely on.
 
 The narrative is in [cli-settings-io.md](../cli-settings-io.md). Decisions
@@ -21,7 +21,7 @@ field table. Start C02 now, and C03 as soon as C02.2 lands.
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
 | [C01](archive/C01-java-reference-dumps.md) ✅ | Six deterministic Java dump modes (`settings`, `argv`, `ses`, `dsn`, `rules`, `clirun`), synthetic settings cases, committed dumps plus an on-demand full set | S–M / low (Java harness only) | none; J01.5 before regenerating the routed SES dumps |
-| [C02](archive/C02-settings-model.md) ✅ | `settings/`: one field table, Java's names, aliases and defaults; Java's merge and precedence; config file (`--settings`, Dan's `freerouting.json`); env vars; DSN and rules `autoroute_settings`; validation; test profiles | M / low | none (C01.1 for C02.8) |
+| [C02](archive/C02-settings-model.md) ✅ | `settings/`: one field table, Java's names, aliases and defaults; Java's merge and precedence; config file (`--settings`, the owner's `freerouting.json`); env vars; DSN and rules `autoroute_settings`; validation; test profiles | M / low | none (C01.1 for C02.8) |
 | [C03](archive/C03-settings-on-board.md) ✅ | Cost tuning, net-class exclusions, the five board overrides, `minimum_pin_gap`, `prepare_job` in Java's order, `BoardRouterSettings` for A01 | M / medium | C02, C01.1 |
 | [C04](archive/C04-rules-files.md) ✅ | Rules reader (`-dr`, `+rules`, adjacent `<design>.rules`), rules in DRC, rules writer | M / medium | C02, C03, C01.1, C01.5, C01.6 |
 | [C05](archive/C05-ses-writer.md) ✅ | SES writer, byte-identical to Java, with `(attach off)` | M / low | C01.3 (F02.1 optional) |
@@ -91,8 +91,8 @@ These add to the shared rules in [README.md](README.md).
   | One explicit layer cost suppresses the computed costs on every other layer | `explicit_layer_cost_suppresses_computed_costs` | C03.1, C04.4 |
   | `-mt` does nothing in a headless run | `mt_does_nothing_headless` | C07.2 |
   | The fork's flat cost keys (`router.via_costs`, `router.start_ripup_costs`, …; D8, fork commit `77d6158a8`) work on the CLI, in env and in JSON | `flat_cost_keys_reach_scoring` | C02.3, C02.4 |
-  | `ignore_net_classes` (`-inc`) is honoured headless. Dan uses it to keep the router off hand-laid power nets | `ignore_net_classes_is_honoured_headless`, `ignore_net_classes_end_to_end` | C03.5, C07.8 |
-  | Dan's `freerouting.json` (`router.scoring.start_ripup_costs = 1500`) is read through `--settings` | `owner_settings_file_sets_start_ripup_costs`, `owner_config_reaches_router_view` | C02.4, C03.7 |
+  | `ignore_net_classes` (`-inc`) is honoured headless. The owner uses it to keep the router off hand-laid power nets | `ignore_net_classes_is_honoured_headless`, `ignore_net_classes_end_to_end` | C03.5, C07.8 |
+  | The owner's `freerouting.json` (`router.scoring.start_ripup_costs = 1500`) is read through `--settings` | `owner_settings_file_sets_start_ripup_costs`, `owner_config_reaches_router_view` | C02.4, C03.7 |
 
 - **Name the settings scenario.**
   - Every comparison against a Java dump names one of C01's scenarios:
@@ -141,7 +141,7 @@ These add to the shared rules in [README.md](README.md).
 | A14 | The SES writer (C05) and the `java_fixture_test()` profile (C02.8) |
 | O06 | Settings (C02) and the SES writer (C05) |
 | G07, G08 | Settings, `prepare_job`, the rules reader and writer, SES and DSN writers. The G series depends on C04–C06 (ENG-GUI-B) |
-| K02 | The routing CLI (C07), the plugin extras (C08), `--settings` for Dan's file |
+| K02 | The routing CLI (C07), the plugin extras (C08), `--settings` for the owner's file |
 
 G00 lists "the interactive settings, serde" under C02. C02 covers Java's
 `app.freerouting.settings` only, and uses no serde. Java's interactive
@@ -149,7 +149,7 @@ editing settings live in GUI classes (for example
 `gui/workspace/controllers/GuiBoardRoutingSettings.java`) and belong with I01
 and G09.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Should the Rust CLI read Java's `freerouting.json` without being told?**
    - Java reads `%APPDATA%\freerouting\freerouting.json`, where your

@@ -19,7 +19,7 @@ KiCad I/O, §8 plugin and packaging); the handover notes
 | Part | State on 2026-10-15 |
 |---|---|
 | Desktop app | A board viewer: DSN and SES, layers, hover, labels. It drops the engine board after building the scene, draws by transforming every vertex on the CPU each frame, and has no tests beyond scene and tessellation units |
-| KiCad plugin | Exports DSN, runs the CLI, imports SES. Route reports "not implemented" until the CLI routes. No tests; not yet confirmed by Dan inside KiCad |
+| KiCad plugin | Exports DSN, runs the CLI, imports SES. Route reports "not implemented" until the CLI routes. No tests; not yet confirmed by the owner inside KiCad |
 | `.kicad_pcb` reader | None. Java's `io.kicad` reads a lossy JSON format from the Java plugin's experimental mode; it is not ported (decision below) |
 | Release builds | None. CI is written but not installed (F01.2) |
 
@@ -78,7 +78,7 @@ to add. These are G00's open questions.
   opens and describes;
 - frame targets FT0–FT7 measured with `--bench` in release on a quiet
   machine, on Issue190 and on a synthetic 4×4 tiling of it (174,160 items,
-  about 5.6 M triangles), plus Dan's Windows GPU by hand;
+  about 5.6 M triangles), plus the owner's Windows GPU by hand;
 - deterministic counters (triangles, draws, chunks drawn, bytes uploaded,
   full rebuilds) that tests assert exactly.
 
@@ -117,7 +117,7 @@ against Java Freerouting on the same exports.
 **Packaging** follows KRT: one PCM zip per version carrying every
 platform's executables, a resolver that picks the right one, and a version
 gate in CI. The plugin's identifier differs from the Java plugin's, which
-Dan runs alongside.
+the owner runs alongside.
 
 **Hard rules** for anyone touching KiCad (from `kicad-plugin.md`): never
 close or kill KiCad (Windows or the Linux one in WSL), never touch the Java
@@ -149,7 +149,7 @@ areas map from all five flags; tracks-only areas keep Java's meaning, as
 above, but the tree keeps them distinct so a later change is one line.
 
 **How it is verified.** On a corpus of KiCad 6–10 boards (the Java repo's
-fixtures, KiCad's demos, Dan's boards out of the repo), `build_board` of
+fixtures, KiCad's demos, the owner's boards out of the repo), `build_board` of
 the reader's output is compared with `build_board` of KiCad 10's DSN export:
 item counts by kind, nets, board statistics and DRC, with every difference
 listed and explained (the rule-area fixes, the arcs, net-class order,
@@ -161,7 +161,7 @@ than 0.1 µm is ever worth it (K00 question 2), and whether a direct writer
 
 port-completion.md puts the importer outside "complete". It has no router
 dependency, so it can run in parallel with anything, but it is scheduled
-after the plugin routes unless Dan wants it sooner.
+after the plugin routes unless the owner wants it sooner.
 
 ## Release builds (R series)
 
@@ -173,7 +173,7 @@ all three installers from one config; it is pinned, with native fallbacks,
 because its last release is old. A version gate runs first and fails a tag
 in seconds when the workspace, the plugin and its metadata disagree. A
 build stamp gives `--version` and About the same commit id. Releases are
-drafts until Dan publishes them. Signing (R02) waits for Dan's decision.
+drafts until the owner publishes them. Signing (R02) waits for the owner's decision.
 
 ## Risks
 
@@ -182,7 +182,7 @@ drafts until Dan publishes them. Signing (R02) waits for Dan's decision.
   and misses FT4 and FT5. G00 states what G07 needs so A08 can include it.
 - **GPU and driver variety.** The paint callback must behave on DX12,
   Metal, Vulkan, GL and lavapipe. The CPU fallback and the snapshot
-  comparison between the two paths contain that risk; Dan's Windows run is
+  comparison between the two paths contain that risk; the owner's Windows run is
   the real check.
 - **Most of the G series waits on engine work** (B, C, A, I). G01–G04 can
   proceed now; the rest is sequenced behind the port's critical path.
@@ -195,5 +195,5 @@ drafts until Dan publishes them. Signing (R02) waits for Dan's decision.
 - **Young tooling.** cargo-packager's last release is old, WiX v3 is out of
   support upstream, and an egui upgrade means upgrading egui_kittest in the
   same commit and regenerating snapshots.
-- **Two KiCads on one machine.** Dan's plugin runs in Windows KiCad 10.0.5;
+- **Two KiCads on one machine.** The owner's plugin runs in Windows KiCad 10.0.5;
   WSL has KiCad 10.0.7. Headless results should name the version used.

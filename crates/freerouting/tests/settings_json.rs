@@ -1,4 +1,4 @@
-//! C02.4: JSON settings files and Dan's `freerouting.json`.
+//! C02.4: JSON settings files and the owner's `freerouting.json`.
 //!
 //! Ports `JsonFileSettingsTest`, the JSON half of `FlatCostSettingsTest`
 //! and the deserialize half of `RouterSettingsSerializationTest`.
@@ -312,7 +312,7 @@ fn json_null_leaves_a_field_unset_and_comments_are_allowed() {
     assert_eq!(p.layers, None);
 }
 
-// ---- Dan's freerouting.json --------------------------------------------
+// ---- the owner's freerouting.json --------------------------------------------
 
 #[test]
 fn owner_settings_file_sets_start_ripup_costs() {

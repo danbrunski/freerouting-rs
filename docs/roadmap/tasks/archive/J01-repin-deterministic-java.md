@@ -1,6 +1,6 @@
 # J01 — Re-pin to the deterministic Java router
 
-Opened 2026-10-15. Dan's Java fork is replacing every wall-clock limit in the
+Opened 2026-10-15. The Java fork is replacing every wall-clock limit in the
 router with a work-count limit. The affected cuts are the fanout per-pin
 limit, the 1 s pull-tight guard after each connection and in `removeTails`,
 the maze search, `TraceShover`, `DrillItemMover`, and the interactive

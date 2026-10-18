@@ -369,6 +369,6 @@ def test_a_bin_dir_of_ones_own_is_refused_but_a_wsl_fallback_passes():
     for flags in (["--bin-dir", "elsewhere"], ["--bin-dir=elsewhere"], ["--windows-kicad", "--wsl-bin-dir=/x"]):
         with pytest.raises(SystemExit):
             ip.parse(flags)
-    # Dan's Windows install keeps a WSL build as the fallback.
+    # The owner's Windows install keeps a WSL build as the fallback.
     _, _, rest = ip.parse(["--wsl-bin-dir", "/home/me/target/release"])
     assert rest == ["--wsl-bin-dir", "/home/me/target/release"]

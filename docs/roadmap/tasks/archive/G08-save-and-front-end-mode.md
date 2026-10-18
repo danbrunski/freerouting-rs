@@ -20,7 +20,7 @@ G08.4 and G08.5.
 **Not in this checklist** (G00 question 2): `.frb` files, the Autodesk
 Fusion `.scr` export and the KiCad session JSON export. Java's Save As
 offers all three (`BoardExportActions.showSaveAsDialog` filters `ses`,
-`scr`, `dsn`, `json`). They are added only if Dan asks.
+`scr`, `dsn`, `json`). They are added only if the owner asks.
 
 ## What exists and what this adds
 
@@ -284,7 +284,7 @@ Paths are under `crates/freerouting-gui/`.
   - `dct_zero_starts_without_dialog` and `autoroute_flag_is_dct_zero`; unit test
     `autostart::tests::counts_down_once_a_second_like_java`.
   - Seen under Xvfb (release): the dialog is centred over the board with `Start Now (3)` and Cancel
-    (`target/orchestrator/g08/countdown.png`). Whether it looks right to Dan is his call.
+    (`target/orchestrator/g08/countdown.png`). Whether it looks right to the owner is his call.
 
 - [x] **G08.6 — End-to-end front-end check under Xvfb.**
   - `tools/gui/frontend-smoke.sh <fixture>` runs the release binary with

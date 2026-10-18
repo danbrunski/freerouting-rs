@@ -18,7 +18,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   options sit on three tabs: **Route** (profile, passes, threads, optimizer, net classes, time
   limit, seed, minimum width), **Board and DSN** (board input, `.kicad_dru` switch, rule-area fix,
   the K09 DSN fix-ups) and **Advanced** (the K09 flow settings and the N01 stage choices). The
-  tabs open tall enough for the longest one, so none scrolls where the screen has the room (Dan,
+  tabs open tall enough for the longest one, so none scrolls where the screen has the room (owner,
   2026-10-18). On a smaller screen the dialog is cut to 90 % of the display's work area
   (`layout.py`, `Dialog.fit_to_display`) and the pages scroll; before the tabs, the stacked groups
   outgrew the screen and hid **Route in GUI** and the other buttons.
@@ -86,12 +86,12 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   no listing), `test_summary.py`, and against the real CLI `test_cli_integration.py`
   (`test_the_stage_listing_has_every_registered_id`,
   `test_both_profiles_route_and_the_summary_names_them`). The tabbed layout was checked in KiCad
-  10.0's `python.exe` and wxWidgets 3.3.2 on Dan's machine (the real dialog with a stub `pcbnew`,
-  dark and light, full height and cut to 380 px); not yet inside KiCad's editor (Dan, with K02.8).
+  10.0's `python.exe` and wxWidgets 3.3.2 on the dev machine (the real dialog with a stub `pcbnew`,
+  dark and light, full height and cut to 380 px); not yet inside KiCad's editor (owner, with K02.8).
 
 ## DSN fix-ups and the canary flow (K09)
 
-KiCad's export is not what canary's graded flow routed: `hardware/tools/dsn_export.py` (Dan's canary
+KiCad's export is not what canary's graded flow routed: `hardware/tools/dsn_export.py` (the owner's canary
 repo) rewrote it. The plugin now does the same transforms itself, each an option of the dialog's "DSN
 fix-ups" group (Board and DSN tab) or "Flow" group (Advanced tab), saved in `route-options.json` (schema 3; schema 1 and 2 files still load, a
 field they lack takes the profile's default):
@@ -143,7 +143,7 @@ field they lack takes the profile's default):
   round trip, bad values, the form), `test_route_dialog.py` (a board preset reaches the router,
   `fix_existing` keeps the tracks locked through the import only, the pass hint is stored and used),
   `test_cli_integration.py::test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli`.
-- Not yet seen inside KiCad: the layout of the new groups and the Preset drop-down (Dan, with K02.8).
+- Not yet seen inside KiCad: the layout of the new groups and the Preset drop-down (owner, with K02.8).
 
 **Profile defaults (K09.9).** `options.PROFILE_DEFAULTS` holds what each profile's plugin defaults
 change from the dataclass defaults; a new board, and a field an older options file lacks, start
@@ -163,7 +163,7 @@ connection), which N05.3 accepted against class narrowing on 2026-10-18
 copper under the Board Setup width 848.9 → 310.4 mm where the narrowing acted). `class_widths`
 (a preset or `auto`) still narrows a class when chosen.
 
-## Dan's machine (Windows 11, KiCad 10.0)
+## The dev machine (Windows 11, KiCad 10.0)
 
 - Installed at `C:\Users\thebo\Documents\KiCad\10.0\scripting\plugins\freerouting_rs`, with
   `settings.json` = `bin_dir: C:\Users\thebo\Documents\code\freerouting-rs\target\release`
@@ -183,7 +183,7 @@ copper under the Board Setup width 848.9 → 310.4 mm where the narrowing acted)
 - From WSL, `python3 tools/install_plugin.py --windows-kicad` builds the Linux executables and
   installs into the Windows KiCad with `wsl_bin_dir` set to that build. A `bin_dir` that was
   already in `settings.json`, the Windows exes, stays in place and is still preferred.
-- Dan had not yet confirmed the button appears in KiCad when these notes were written.
+- The owner had not yet confirmed the button appears in KiCad when these notes were written.
 
 ## Native Windows toolchain
 
@@ -216,7 +216,7 @@ dev-only dependency). `conftest.py` puts `freerouting_rs/` on `sys.path`, so `to
 `wx.CallAfter`). `test_rule_areas.py::test_canary_pwr_fresh_kicad_export` runs KiCad's Python
 (`FREEROUTING_RS_KICAD_PYTHON`, or a system `python3` that imports `pcbnew`) on a copy of
 `../canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb` (`CANARY_PCB` overrides) and skips
-when either is missing. GitHub CI is disabled (Dan, 2026-10-15); run the suite by hand.
+when either is missing. GitHub CI is disabled (owner, 2026-10-15); run the suite by hand.
 
 K02 tests: `test_options.py` (golden argument lists, save/load round trip, damaged files),
 `test_progress.py` and `test_summary.py` (replay `tests/data/progress-{j2,bm01}.jsonl` and
@@ -239,7 +239,7 @@ Checked 2026-10-15 against KiCad's GitLab (`gitlab.com/kicad/code/kicad`).
   [`65a442b1`](https://gitlab.com/kicad/code/kicad/-/commit/65a442b1d2bf153be7979de8926ab71fd095f4bd),
   "REMOVED: SWIG, wxPython, and Python integration", 2026-03-22, "The IPC API will be used going
   forward" (fixes work item 9078). The commit is on `master` only (refs query), so the
-  KiCad 10.0 series keeps SWIG (10.0.5 on Dan's machine and 10.0.7 here both import `pcbnew`).
+  KiCad 10.0 series keeps SWIG (10.0.5 on the dev machine and 10.0.7 here both import `pcbnew`).
   Verified: the plugin works through 10.x; it stops loading in the release cut from master
   (presumably 11.0; the version number itself is unverified).
 - **IPC API, Specctra.** Verified in the protobuf files on `master`: `RunBoardJobExportSpecctraDsn`
@@ -327,7 +327,7 @@ Checked 2026-10-15 against KiCad's GitLab (`gitlab.com/kicad/code/kicad`).
 
 One zip per version for KiCad's Plugin and Content Manager, built locally and by R01's release
 job (`docs/development/release-workflow.yml`, the "PCM zip" step). **Nothing is submitted or
-uploaded:** the KiCad repository submission and the GitHub release need Dan's go-ahead.
+uploaded:** the KiCad repository submission and the GitHub release need the owner's go-ahead.
 
 - **Files.** `kicad-plugin/metadata.json` (identifier `com.github.danbrunski.freerouting-rs`,
   `"runtime": "swig"`, `"status": "testing"`, `"kicad_version": "10.0"`, one `versions[]` entry,
@@ -395,7 +395,7 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
 - **Found by that run (K01 bug, fixed):** `fix_rule_areas` used `Path.read_text(newline=...)`,
   which exists only from Python 3.13; KiCad 10 ships 3.12, so on every run the rule-area fix-up
   was skipped with `WARNING: rule-area fix-up skipped: TypeError(...)` in `plugin.log`. It now uses
-  `open()` (`tests/test_dsn_fixup_io.py`). Dan's Windows KiCad 10.0.5 has the same problem if its
+  `open()` (`tests/test_dsn_fixup_io.py`). The owner's Windows KiCad 10.0.5 has the same problem if its
   Python is older than 3.13, so re-check the K01.6 `canary-pwr` log line after reinstalling.
 - **Not checked.** Windows (KiCad 10, PCM install of the zip, the toolbar button, `Router:` showing
   `plugins/bin/windows-x86_64`; remove the manual `scripting/plugins/freerouting_rs` copy first or
@@ -407,10 +407,10 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
 ## Gotchas
 
 - **Never close, restart or kill KiCad, and don't touch the Java Freerouting plugin**
-  (`3rdparty\plugins\app_freerouting_kicad-plugin`) or its Java processes; Dan runs it
+  (`3rdparty\plugins\app_freerouting_kicad-plugin`) or its Java processes; the owner runs it
   alongside this one.
 - **Don't import the plugin package in a standalone KiCad Python.** `register()` outside the
-  editor raises a wxWidgets "PgmOrNull() failed" debug dialog on Dan's desktop. Test
+  editor raises a wxWidgets "PgmOrNull() failed" debug dialog on the owner's desktop. Test
   `tools.py` and `export_dsn` directly instead (`pcbnew.LoadBoard` + `ExportSpecctraDSN`
   works headless). A standalone wx script in KiCad's `python.exe` must create `wx.App` before
   any other wx call (even `wx.GetLibraryVersionInfo()`), or wxWidgets shows a "failed to
@@ -428,7 +428,7 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
   ([wxWidgets #26535](https://github.com/wxWidgets/wxWidgets/issues/26535), KiCad work item
   23570; fixed in wxWidgets 3.3.3). `dropdowns.py` gives the dialog's lists the
   `DarkMode_DarkTheme` theme, as wxWidgets 3.3.3 does. It does nothing on other systems, in
-  light mode, before build 26200, and with wxWidgets 3.3.3 or later. Checked on Dan's machine
+  light mode, before build 26200, and with wxWidgets 3.3.3 or later. Checked on the dev machine
   (26200.9711, KiCad 10.0's `python.exe` and wx 3.3.2, a standalone window loading only
   `dropdowns.py`): unreadable before, readable after, light mode unchanged. KiCad's own
   drop-downs keep the bug until KiCad ships a newer wxWidgets.
@@ -442,7 +442,7 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
   importer deletes none, the runner records them as removed, and Undo restores the old
   routing. A failed import puts them back. Checked with KiCad 10.0.7's `pcbnew` module:
   the old tracks stay readable after the import, and the board reads back normally.
-- **Dan's display is at 125% (120 DPI).** Screen captures of the viewer from a DPI-unaware
+- **The owner's display is at 125% (120 DPI).** Screen captures of the viewer from a DPI-unaware
   process (plain PowerShell) get only the top-left part of the window and look wrongly
   fitted. Call `SetProcessDPIAware()` before `GetWindowRect`/`PrintWindow`.
 - KiCad's DSN export carries no silkscreen. The viewer's reference designators come from
@@ -469,15 +469,15 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
 
 ## What's left
 
-- **K01.6, Dan:** after the orchestrator reinstalls the plugin (`install.py --bin-dir target\release`,
+- **K01.6, owner:** after the orchestrator reinstalls the plugin (`install.py --bin-dir target\release`,
   then Tools > External Plugins > Refresh Plugins, no restart), check in KiCad 10.0.5: the toolbar
   button, the dialog with both versions, Open in viewer, Import SES, and on `canary-pwr` that
   `freerouting-rs/plugin.log` names the fan inlet (`keepout -> place_keepout`). Record the date and
   what he saw under "Verified". Nothing in K01.2/K01.3 has run inside KiCad yet; only headless
   (pcbnew in a plain Python, fake pcbnew in tests).
-- **K02.8, Dan (Windows, inside KiCad):** see "K02.8: what Dan checks" below.
+- **K02.8, owner (Windows, inside KiCad):** see "K02.8: what the owner checks" below.
 - Real silkscreen in the viewer would need the plugin to export extra data from the board
-  alongside the DSN (offered to Dan, not requested).
+  alongside the DSN (offered to the owner, not requested).
 
 ## K02.6: non-ASCII names round trip
 
@@ -557,7 +557,7 @@ Differences explained:
   `fixtures/canary-pwr/canary-pwr-9511d9a.dsn`, so its numbers do not compare with the canary
   grades in `fixtures/canary-pwr/README.md`.
 
-## K02.8: what Dan checks (Windows, inside KiCad)
+## K02.8: what the owner checks (Windows, inside KiCad)
 
 Nothing of K02 has run inside KiCad yet; the dialogs are tested against a stub `wx`/`pcbnew`
 (`tests/stub_ui.py`) and the router against the real CLI. Needs a native Windows rebuild first
@@ -665,7 +665,7 @@ not worth a change until a board shows a connection lost to it.
 stay the default: the DSN path is what the Java comparison (A14) and the graded runs of K02 and K09 used,
 and KiCad 11's IPC API keeps exactly these two board operations (K01.5). `kicad_pcb` changes only what the
 router reads; the result still comes back through `ImportSpecctraSES` (`plugin.import_ses`, which detaches the
-unlocked tracks first, 9bc7ee6). Making it the default is Dan's decision after K10.5.
+unlocked tracks first, 9bc7ee6). Making it the default is the owner's decision after K10.5.
 
 - **The snapshot** (`snapshot.py`, `export_flow.prepare_snapshot`): on KiCad's UI thread, `pcbnew.SaveBoard(path,
   board, True)` (`aSkipSettings`) writes `freerouting-rs/<stem>.kicad_pcb` beside where `<stem>.dsn` would be, so
@@ -683,7 +683,7 @@ unlocked tracks first, 9bc7ee6). Making it the default is Dan's decision after K
   does not tell: it stayed `False` after an in-memory track and class edit (headless; inside the editor
   unverified), so no "save first" warning is shown; (b) makes it unnecessary for net classes. Unverified:
   whether unsaved edits in Board Setup's custom-rules page reach the `.kicad_dru`, and (b) inside the running
-  editor (Dan, with K02.8).
+  editor (owner, with K02.8).
 - **The reader's report.** The router's own log lists the reader's report lines and warnings; after a Route run
   the plugin copies those (`snapshot.reader_lines`) to `plugin.log`.
 - **`apply_kicad_rules` (K10.3)**, off by default: passes `--apply-design-rules` (new CLI switch,

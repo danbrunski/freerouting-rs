@@ -4,7 +4,7 @@ Opened 2026-10-15. Java has a fanout pre-pass (`BatchFanout.fanoutBoard` →
 `RoutingBoard.fanout` per SMD pin, cda540f), which is parity work for the A
 series. KRT has a dedicated QFN/QFP escape (`py_router/qfn_fanout/`, 2,469
 lines, entry `generate_qfn_fanout`, at `0486e799`): short stubs outward from
-edge pads, in the part's own frame. On Dan's boards the escapes are exactly
+edge pads, in the part's own frame. On the owner's boards the escapes are exactly
 where wide power nets have to narrow, so this stage pairs with Q02: each stub
 starts at the pin's width and widens back past the pin field.
 

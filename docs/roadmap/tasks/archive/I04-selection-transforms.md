@@ -6,7 +6,7 @@ the other side, and drop them (`MoveItemState`), or place a copy
 (`CopyItemState`). At `cda540f` both states have no callers:
 `GuiBoardLegacyEditActions.moveSelectedItems` and `copySelectedItems` are
 no-ops. The engine helper `ComponentItemTransform` is still tested in Java.
-This checklist exists so the feature can be built if Dan wants it; **do not
+This checklist exists so the feature can be built if the owner wants it; **do not
 start it until decision 1 in [I00](../I00-interactive-README.md) says so**, and
 not before the G series has selection.
 

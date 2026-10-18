@@ -78,7 +78,7 @@ parser (that is C07), validation, test profiles and the comparison dump.
 - **No new dependency.**
   - No serde and no TOML.
   - Config files are JSON in Java's shape, with a `"router"` member, so
-    Dan's `freerouting.json` works unchanged.
+    the owner's `freerouting.json` works unchanged.
   - The JSON parser is appended to `drc/json.rs` as `JsonValue::parse`.
     Numbers keep their source text, so they convert exactly as Java's
     `Integer.parseInt` and `Double.parseDouble` would.
@@ -403,7 +403,7 @@ Paths are under `crates/freerouting/src/` unless they start with
     62 parse and 36 timespan probe lines equal (it found `4.9E-324`; two hex-float
     inputs and one non-ASCII digit string are listed as expected mismatches).
 
-- [x] **C02.4 — JSON settings files and Dan's `freerouting.json`.**
+- [x] **C02.4 — JSON settings files and the owner's `freerouting.json`.**
   Java: `JsonFileSettings` (reads the `"router"` member; a missing file,
   missing member, non-object or malformed JSON gives empty settings, no
   error), `RouterSettingsTypeAdapterFactory` (absorbs legacy flat keys,
@@ -425,7 +425,7 @@ Paths are under `crates/freerouting/src/` unless they start with
       30).
     - Port of the deserialize half of `RouterSettingsSerializationTest`.
     - `owner_settings_file_sets_start_ripup_costs`: the test data file
-      copies the shape of Dan's file. Its `router` member holds empty
+      copies the shape of the owner's file. Its `router` member holds empty
       `autorouter`, `fanout`, `optimizer`, `router_scoring` and
       `optimizer_scoring` objects and `"scoring": {"start_ripup_costs":
       1500}`, and the top level holds `"version": "2.5.1"` and a `gui`
@@ -448,7 +448,7 @@ Paths are under `crates/freerouting/src/` unless they start with
     deserialize half of `RouterSettingsSerializationTest`, both payloads),
     `every_section_file`, `a_type_error_anywhere_fails_the_whole_read`, and
     `owner_settings_file_sets_start_ripup_costs` (data file
-    `tests/data/settings/owner_freerouting.json` has Dan's shape: `version`
+    `tests/data/settings/owner_freerouting.json` has the owner's shape: `version`
     "2.5.1", `gui`, empty sections, `scoring.start_ripup_costs = 1500`; resolving
     gives 1500 with provenance `ConfigFile` and every other table field at its
     default). Differential: `settings_java_probe.rs` scenarios `json-every`,

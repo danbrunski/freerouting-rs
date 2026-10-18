@@ -17,5 +17,5 @@ python3 crates/freerouting-gui/icons/render.py
 The output is deterministic, so a re-run leaves `git status` clean. K03.1's 64 px plugin icon
 is `icon-64.png` (copy it to `kicad-plugin/resources/icon.png`).
 
-Dan approves the artwork before the first public release (R00 question 3); until then it is a
+The owner approves the artwork before the first public release (R00 question 3); until then it is a
 placeholder, and replacing `icon.svg` plus a re-run of `render.py` is the whole change.

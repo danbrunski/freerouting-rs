@@ -134,7 +134,7 @@ A14 (the parity gate).
     `test_route_dialog.py::test_the_profile_and_the_advanced_stages_reach_the_router`. The GUI
     section was rendered once with wgpu/lavapipe through a throwaway kittest (520 px wide: every
     slot, the "changed" mark and Reset on a changed row, list ids on one line); its look is for
-    Dan.
+    the owner.
 - [x] **N01.5 — Documentation.**
   - A DIVERGENCES section, "Profile `enhanced`", that lists each difference from Java
     with its measurement.

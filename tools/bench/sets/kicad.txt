@@ -3,7 +3,7 @@
 # several. All are outside the repository and skipped when missing.
 #
 # KiCad's bundled demos of the WSL-native KiCad 10.0.7 (/usr/share/kicad/demos). The
-# Windows install (10.0.5, the version Dan saves his boards with) has the same set under
+# Windows install (10.0.5, the version the owner saves his boards with) has the same set under
 # C:\Program Files\KiCad\10.0\share\kicad\demos; never mix versions in one comparison.
 /usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb
 /usr/share/kicad/demos/sonde xilinx
@@ -21,6 +21,6 @@
 /usr/share/kicad/demos/cm5_minima
 /usr/share/kicad/demos/vme-wren
 /usr/share/kicad/demos/jetson-agx-thor-baseboard
-# Dan's boards (read-only; grade.sh works on copies).
+# The owner's boards (read-only; grade.sh works on copies).
 ~/code/canary/hardware/canary-pwr-rev1.0
 ~/code/canary/hardware/canary-hat-rev2.1

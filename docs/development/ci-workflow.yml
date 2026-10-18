@@ -1,4 +1,4 @@
-# DISABLED at Dan's request (2026-10-15): this file lives in docs/development/ so
+# DISABLED (decided 2026-10-15): this file lives in docs/development/ so
 # GitHub never runs it. To enable CI, move it to .github/workflows/ci.yml.
 #
 # The three gate commands below are the local gate (docs/development/engine.md,

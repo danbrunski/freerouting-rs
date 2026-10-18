@@ -13,16 +13,16 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
-| [K01](archive/K01-plugin-before-routing.md) ✅ | Headless plugin tests, the rule-area DSN fix-up (the `canary-pwr` fan inlet), version handshake, UI-thread and shadow-install guards, the SWIG/IPC note, Dan's confirmation in KiCad | M / low | none |
+| [K01](archive/K01-plugin-before-routing.md) ✅ | Headless plugin tests, the rule-area DSN fix-up (the `canary-pwr` fan inlet), version handshake, UI-thread and shadow-install guards, the SWIG/IPC note, the owner's confirmation in KiCad | M / low | none |
 | [K02](archive/K02-plugin-routing.md) ✅ | Route options persisted per board, live progress, Stop vs Abort, result summary, "Route in GUI", non-ASCII round trip, five demo boards routed and graded by KiCad | M / medium | A13, C05, C07, C08 (the CLI routes); F02.6; G08.4 for K02.5 |
 | [K03](archive/K03-pcm-package.md) ✅ | One cross-platform PCM zip with a binary resolver, validated metadata, install from file on all three OSes | S / medium | K01, R01 |
 | [K04](archive/K04-kicad-pcb-syntax.md) ✅ | `crates/freerouting-kicad`: s-expression lexer and tree, version gates, net-dialect detection, the test corpus | M / low | none |
 | [K05](archive/K05-kicad-pcb-board-structure.md) ✅ | Layers, nets and net classes (`.kicad_pro`), board outline, footprints and pads, as a DSN syntax tree | L / medium | K04 |
 | [K06](archive/K06-kicad-pcb-rule-areas-and-copper.md) ✅ | Rule areas to keepout kinds, zones, tracks and arcs, vias | M / medium | K05 |
 | [K07](archive/K07-kicad-pcb-entry-points-and-parity.md) ✅ | `.kicad_pcb` opens in the CLI and the GUI; parity against KiCad's DSN export on the corpus; `.kicad_dru` subset; the coordinate-frame check | M / medium | K06; C07 (CLI `-de`); G01 (GUI `Session`) |
-| [K08](archive/K08-kicad-pcb-writer.md) ✅ | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG (`-do routed.kicad_pcb`; KiCad's DRC grades it like `ImportSpecctraSES` on three boards; K08.4 `[~]`: Dan to accept an `f32` sum-order difference in the round-trip statistics) | M / medium | K07, C05; Dan's go-ahead (question 5, given 2026-10-17) |
+| [K08](archive/K08-kicad-pcb-writer.md) ✅ | *Optional.* A direct `.kicad_pcb` writer with deterministic UUIDs, for when KiCad drops SWIG (`-do routed.kicad_pcb`; KiCad's DRC grades it like `ImportSpecctraSES` on three boards; K08.4 `[~]`: the owner to accept an `f32` sum-order difference in the round-trip statistics) | M / medium | K07, C05; the owner's go-ahead (question 5, given 2026-10-17) |
 | [K09](K09-plugin-export-options.md) | Plugin options that reproduce canary's graded `dsn_export.py` flow: class widths, pours of listed classes kept clear, outer GND pours dropped, edge and pad keepouts, plane layers opened, add-only second run, wasted-pass stop, a canary preset | M / medium: measured on `canary-pwr` | K01, K02, K03; Q01, Q09; Q10 (K09.6); Q04 (K09.7) |
-| [K10](K10-plugin-direct-board-read.md) | An option for the plugin to snapshot the open board (`SaveBoard`) and route the `.kicad_pcb` with the reader instead of KiCad's DSN export; results still come back through `ImportSpecctraSES`; measured against the DSN path, Dan picks the default | M / medium: graded by KiCad on the K02 boards and `canary-pwr` | K02, K07; K09 (K10.4) |
+| [K10](K10-plugin-direct-board-read.md) | An option for the plugin to snapshot the open board (`SaveBoard`) and route the `.kicad_pcb` with the reader instead of KiCad's DSN export; results still come back through `ImportSpecctraSES`; measured against the DSN path, the owner picks the default | M / medium: graded by KiCad on the K02 boards and `canary-pwr` | K02, K07; K09 (K10.4) |
 | [K11](K11-kicad11-ipc-plugin.md) | KiCad 11 has no SWIG: an IPC-API plugin that keeps the DSN/SES flow (`RunBoardJobExportSpecctraDsn`, `ImportSpecctraSession`), a dialog without wx, both plugins in one package | M / high: the API is new and unwrapped by `kipy` | K02, K03; K10 (K11.6); a KiCad 11 release candidate or release date (K11.2 onward) |
 
 The report's PLG-1 is K01, PLG-2 is K02, PLG-1.5 (PCM) grew into K03, and
@@ -33,25 +33,25 @@ K01–K03. Its numbering is not used.
 
 ## Order and critical path
 
-- **The plugin run is the test (Dan, 2026-10-17).** A plugin run with default options
+- **The plugin run is the test (owner, 2026-10-17).** A plugin run with default options
   inside KiCad is the result that counts on `canary-pwr`; the CLI flow that grades 33 is
   only the target. So K09 (with K09.9) ranks with Q13 and Q14, ahead of the other K
   items. Every fix the CLI flow needed belongs in the plugin or the router: pours as fixed
   copper, the fan keepout as placement-only, edge and fiducial clearances, tap widths,
   no via in a pad, and no track on an inner layer.
 - **K01 now.** Nothing in it needs the router. K01.2 delivers the
-  rule-area fix for Dan's boards through the plugin, long before the reader.
+  rule-area fix for the owner's boards through the plugin, long before the reader.
 - **K02 when the CLI routes**: the A series' batch pipeline (A13), the SES
   writer (C05), CLI parity (C07) and the plugin-facing CLI extras (C08).
   K02 is on the port's critical path: J01 → B → O → A → C → K02.
 - **K03 after R01**, which builds the binaries the package carries.
 - **K04–K07 have no router dependency** and touch only their own crate until
   K07. They can run in parallel with anything. port-completion.md puts the
-  importer outside "complete", so schedule them after K02 unless Dan wants
+  importer outside "complete", so schedule them after K02 unless the owner wants
   them sooner. K01.2 already covers the rule-area lesson for exported DSNs.
-- **K08 only on Dan's go-ahead** (given 2026-10-17; done the same day).
+- **K08 only on the owner's go-ahead** (given 2026-10-17; done the same day).
 - **K10 any time after K07.** It needs no router change. K10.4 waits for K09's options
-  to exist, and K10.5's answer on the default is Dan's.
+  to exist, and K10.5's answer on the default is the owner's.
 - **K11.1 now, the rest of K11 when KiCad 11 is near.** The probe runs on a nightly and
   settles the facts. The plugin is built once there is a release candidate or a release
   date (K11 question 2).
@@ -84,13 +84,13 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
 
 - **Never close, restart or kill KiCad**, and never touch the Java
   Freerouting plugin (`3rdparty\plugins\app_freerouting_kicad-plugin`) or
-  its Java processes. Dan runs it beside this one. Check with
+  its Java processes. The owner runs it beside this one. Check with
   `pgrep -x kicad; pgrep -x pcbnew` (WSL) and `tasklist` (Windows) before
   and after any KiCad step. Not `pgrep -f kicad`: it also matches unrelated
   processes, such as KRT runs.
 - **Never import the plugin package in a standalone KiCad Python.**
   `register()` outside the editor raises a wxWidgets "PgmOrNull() failed"
-  dialog on Dan's desktop. Headless scripts use `pcbnew.LoadBoard` and
+  dialog on the owner's desktop. Headless scripts use `pcbnew.LoadBoard` and
   `ExportSpecctraDSN` directly, on copies of the board.
 - **KiCad launches the Windows exes in the Windows checkout's
   `target\release`** (`C:\Users\thebo\Documents\code\freerouting-rs`). A WSL
@@ -99,7 +99,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
 - **Native Windows builds need mingw on PATH** (the WinLibs path in
   `kicad-plugin.md`), because Rust's gnu `dlltool` calls an assembler it
   doesn't ship. Close the viewer first: Windows locks the running exe.
-- **Two KiCads.** Dan's plugin runs in Windows KiCad 10.0.5
+- **Two KiCads.** The owner's plugin runs in Windows KiCad 10.0.5
   (`/mnt/c/Program Files/KiCad/10.0/bin/`: `kicad-cli.exe`, `python.exe`;
   pass paths through `wslpath -w`). WSL also has KiCad 10.0.7 from the
   Ubuntu packages (`/usr/bin/kicad-cli`; system `python3` imports
@@ -107,7 +107,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
   either; record which, because 10.0.5 and 10.0.7 can differ. A Linux
   `kicad` GUI process was running on 2026-10-15 (started 19:27): it falls
   under the first rule like the Windows one.
-- **Dan's display is at 125 %.** Screen captures on Windows call
+- **The owner's display is at 125 %.** Screen captures on Windows call
   `SetProcessDPIAware()` first, or use the app's `--screenshot` (G01.5).
 - **pcbnew is called only on KiCad's UI thread.** A worker-thread
   `SaveBoard` froze KiCad at 0 % CPU (KRT issue #688,
@@ -135,7 +135,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
   list of pitfalls, each linked to its KRT issue number.
 - **Boards.** KiCad's bundled demos (18 boards from 72 KB to 89 MB, in
   `C:\Program Files\KiCad\10.0\share\kicad\demos` or
-  `/usr/share/kicad/demos`) and Dan's boards stay out of the repo; board
+  `/usr/share/kicad/demos`) and the owner's boards stay out of the repo; board
   sets name them by path and skip them when missing. The Java repo's
   KiCad 6–10 fixtures (`git -C ../freerouting ls-tree -r --name-only cda540f`
   under `fixtures/` and `examples/`: 37 files at `(version 20211014)` or
@@ -146,7 +146,7 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
   KiCad 5 files (`(version 20171130)` or older), which the reader refuses,
   so they are not part of the corpus.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Tracks-only rule areas (`wire_keepout`).** KiCad exports a tracks-only
    rule area as `wire_keepout`. Java lexes that as `keepout`
@@ -193,17 +193,17 @@ hard rules from `kicad-plugin.md` and the F02.6 notes.
    plugin needs `ExportSpecctraDSN` and `ImportSpecctraSES`, which are SWIG
    calls. *Recommendation:* K01.5 records the facts; decide on K08 (direct
    writer) or an IPC-API plugin once KiCad 11's release date is known.
-   *Accepted by Dan 2026-10-15.* Dan gave the go-ahead for K08 on 2026-10-17.
+   *Accepted by the owner 2026-10-15.* The owner gave the go-ahead for K08 on 2026-10-17.
 6. **What the reader adds beyond KiCad's export.** KiCad's exporter writes
    non-default net classes in `std::unordered_map` order (not
    reproducible), turns placement-only rule areas into full keepouts, and
    drops copper zones owned by footprints. *Recommendations:* sort classes
    by name and list the order difference in K07.3; map rule areas by flags
    (K06.2); keep footprint copper zones as planes and list them as a
-   difference, unless Dan prefers KiCad's behaviour.
+   difference, unless the owner prefers KiCad's behaviour.
 7. **`.kicad_dru` rules.** K07.5 reads them and reports every rule it can't
    express by name. *Recommendation:* applying the expressible subset stays
-   off by default until K07.3 shows it doesn't change parity, then Dan
+   off by default until K07.3 shows it doesn't change parity, then the owner
    decides.
 8. **New dependencies and committed boards.** K05 needs `serde_json` (for
    `.kicad_pro`) and K05.6 `i_overlay` (polygon union for custom pads), each

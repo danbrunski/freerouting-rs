@@ -1,6 +1,6 @@
 # N00 — Beyond Java
 
-Opened 2026-10-17. Dan: "let's move beyond java freerouting now, and make this
+Opened 2026-10-17. The owner: "let's move beyond java freerouting now, and make this
 better". The port reached board parity (A14: 135 of 140 boards byte-identical
 to Java `a773a70ec`), and `canary-pwr` routes like Java's pass 1 (45 unconnected,
 graded by KiCad). From here the goal is the best routed board, not Java's
@@ -14,7 +14,7 @@ change of direction; this series carries it out.
   A04 probes pin it. The default profile, `enhanced`, is the set of accepted
   improvements. The CLI, GUI and plugin use it unless told otherwise. Until N01
   lands and the first improvement is accepted, `enhanced` equals `legacy`.
-  The profile is user-facing (named after Dan's suggestion, 2026-10-17): it sets
+  The profile is user-facing (named after the owner's suggestion, 2026-10-17): it sets
   the starting values, and each algorithm stage and routing option can still be
   chosen on its own in the GUI, CLI and plugin (N01.4).
 - **A keep rule that can accept a real improvement.** The old rule, "better on

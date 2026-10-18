@@ -5,7 +5,7 @@ to the Java desktop app's feature set (item 5 of "What 'complete' means" in
 [port-completion.md](../port-completion.md)): views and layer controls, the
 info lists, the rule and parameter dialogs, the autorouter with live
 progress, interactive editing with undo and redo, and file save. It also
-makes the app fast on large boards, which is Dan's "faster than Java" steer
+makes the app fast on large boards, which is the owner's "faster than Java" steer
 applied to drawing. The narrative is in [desktop-app.md](../desktop-app.md);
 the research behind it is the GUI, plugin and packaging report of
 2026-10-15 (sections 1–4 and 8).
@@ -128,7 +128,7 @@ These add to the shared rules in [README.md](README.md).
   - deterministic counters from `src/stats.rs` (triangles, draw calls,
     chunks drawn, bytes uploaded, full rebuilds), which tests may assert
     exactly.
-- **No window on Dan's desktop.** Under WSLg a plain `cargo run` opens on
+- **No window on the owner's desktop.** Under WSLg a plain `cargo run` opens on
   his screen. Run the app only under `xvfb-run`.
 - **Long work never blocks the GUI thread.** Loading, DRC, ratsnest and
   routing run on worker threads. The check is the frame statistics: the
@@ -142,7 +142,7 @@ These add to the shared rules in [README.md](README.md).
   `cda540f`), so users moving from Java recognise them. All user-visible
   strings live in `src/text.rs` (see question 3).
 - **Windows check.** KiCad launches the Windows exes in the Windows
-  checkout's `target\release`, not anything built in WSL. A change Dan
+  checkout's `target\release`, not anything built in WSL. A change the owner
   should see in KiCad needs the native rebuild in `kicad-plugin.md`
   (mingw `bin` on PATH; close the viewer first, because Windows locks the
   running exe). The orchestrator does that after a commit; implementers
@@ -159,13 +159,13 @@ thread in `App::update` plus the paint callback's `prepare`,
 Xvfb is llvmpipe rasterising and not a usable metric (report §3.1). CI
 asserts only loose bounds (3× the target); the targets are checked on this
 machine and recorded in `gui.md`, and the wall-clock frame rate is checked
-by hand on Dan's Windows GPU.
+by hand on the owner's Windows GPU.
 
 | Id | Metric | Target | Checked in |
 |---|---|---|---|
 | FT0 | Baseline: `--bench pan-zoom` on `Issue190-processor.Z80` and `Issue690-kit-dev-coldfire-xilinx_5213` with today's renderer | numbers recorded in `gui.md` | G01.5 |
 | FT1 | `Issue190`, `--bench pan-zoom --frames 600`: frame CPU | p95 ≤ 2 ms and ≥ 5× better than FT0 | G02.1, G02.3 |
-| FT2 | Synthetic 16× board (4×4 tiling of Issue190: 174,160 items, about 5.6 M triangles): frame CPU | p95 ≤ 4 ms; ≥ 60 fps wall clock on Dan's GPU (manual) | G02.5 |
+| FT2 | Synthetic 16× board (4×4 tiling of Issue190: 174,160 items, about 5.6 M triangles): frame CPU | p95 ≤ 4 ms; ≥ 60 fps wall clock on the owner's GPU (manual) | G02.5 |
 | FT3 | Load Issue190 from file to first frame | ≤ 1.5 s total, tessellation ≤ 200 ms | G02.6 |
 | FT4 | Apply a delta of 200 removed plus 200 added items | ≤ 2 ms CPU; uploaded bytes ≤ 2× the dirty chunks' size; 0 full rebuilds | G02.4, G07.4 |
 | FT5 | During an autoroute of Issue190 | frame CPU p95 ≤ 4 ms; progress shown at ≤ 30 Hz; Cancel to `Finished` ≤ 250 ms; 0 full rebuilds | G07.4 |
@@ -177,7 +177,7 @@ Issue190 has 10,885 items and 5,981 traces
 350,056 triangles with today's renderer (measured by the research pass on
 2026-10-15; G01.5 re-measures it). Issue690 tessellates to 184,222.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Keys and mouse.** Java uses left-drag for region select and tools,
    the middle button to pan, the right button for context menus
@@ -187,7 +187,7 @@ Issue190 has 10,885 items and 5,981 traces
    (`gui.interactive.InteractiveState`, `MenuState`). Today any mouse
    button pans and F fits the board. *Recommendation:* Java's set, plus Home
    to fit, Ctrl+Z/Ctrl+Y as aliases for U/B, and Space+left-drag to pan for
-   laptops. G01.7 implements this and stays partial until Dan confirms.
+   laptops. G01.7 implements this and stays partial until the owner confirms.
 2. **Java features to drop.** `.frb` files (Java serialization:
    `board/facade/BoardSnapshotManager`, `util/SafeObjectInputStream`), the
    Autodesk Fusion `.scr` export (`io/specctra/parser/SessionToFusion`, 631
@@ -199,7 +199,7 @@ Issue190 has 10,885 items and 5,981 traces
    e-mail, telemetry and contact consent, usage statistics).
    *Recommendation:* drop all of them, each with a DIVERGENCES line. DSN +
    SES + `.rules` restore everything `.frb` did. Open Recent replaces the
-   tutorial. *Accepted by Dan 2026-10-15; the DIVERGENCES lines were added
+   tutorial. *Accepted by the owner 2026-10-15; the DIVERGENCES lines were added
    2026-10-16 ("Dropped Java features").*
 3. **Languages.** Java ships 36 locales. *Recommendation:* English only,
    with every string in `src/text.rs`, so Fluent or gettext can come later.
@@ -212,7 +212,7 @@ Issue190 has 10,885 items and 5,981 traces
    *Recommendation:* developer-only, behind an environment variable, after
    the A series has a step API (A04's `MazeSearch::step` and the batch
    loop's pass boundary). Not in G07; `DebugControl` is not ported as a
-   class and `BatchAutorouterDebugTest` is not ported. *Accepted by Dan
+   class and `BatchAutorouterDebugTest` is not ported. *Accepted by the owner
    2026-10-15.*
 6. **Java's disabled edits.** At `cda540f`, Delete, Fix, Unfix, New Net,
    New Component, Cutout, Assign Clearance Class, Autoroute and Pull Tight
@@ -223,4 +223,4 @@ Issue190 has 10,885 items and 5,981 traces
    leaving them out. *Recommendation:* add Delete, Fix and Unfix only
    (engine calls exist: `remove_items` with `is_deletion_forbidden`,
    `set_fixed_state`, `unfix`), each with a DIVERGENCES line; leave the
-   rest out until Dan asks. G05.4, G07.7 and G09.6 refer to this question.
+   rest out until the owner asks. G05.4, G07.7 and G09.6 refer to this question.

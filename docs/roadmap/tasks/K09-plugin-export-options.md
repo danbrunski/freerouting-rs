@@ -7,7 +7,7 @@ Opened 2026-10-17, from the Java Freerouting session (freerouting-08) on
   an SES byte-identical to Java `7f56b062d`, using `-mp 1 --threads 2
   --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150`.
   KiCad grades it 45 unconnected.
-- **The plugin run is worse.** Dan's plugin run (native KiCad export plus
+- **The plugin run is worse.** The owner's plugin run (native KiCad export plus
   `rule_area_fixup`, unlimited passes, 2 threads, optimizer on) grades
   **68**, with 31 dangling vias and 2 `+5V_PI` tracks on `Power.Cu`.
 - **The input is the difference, not the router.** The plugin's export:
@@ -31,7 +31,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
 |---|---|
 | `kicad-plugin/freerouting_rs/rule_areas.py` | The K01.2 fix-up: footprint-only rule areas no longer become full keepouts (`dsn_export.py` step 1) |
 | `options.py` | `max_passes`, `threads`, `optimizer`, `improvement_threshold`, `ignore_net_classes`, `seed`, `min_trace_width_um`, `timeout`, `rule_area_fixup`; per board in `freerouting-rs/route-options.json` |
-| `canary/hardware/tools/dsn_export.py` (Dan's canary repo, `dbfe7b67`) | Steps 2–6 below, written for `canary-pwr`; graded 45 and 40 there |
+| `canary/hardware/tools/dsn_export.py` (the owner's canary repo, `dbfe7b67`) | Steps 2–6 below, written for `canary-pwr`; graded 45 and 40 there |
 | Engine | Q01's `router.plane_obstacle_net_classes` (pours of listed classes block pass-through nets inside the engine); Q09's `router.plane_obstacle_block = traces` and `router.wire_keepout = traces_only` |
 
 ## Decisions made here
@@ -46,7 +46,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
 - **Every option is off by default**, so a plugin run with the defaults is unchanged.
 - **A "canary flow" preset** in the dialog sets the options to the values canary
   grades with. The preset only fills the fields, so each one can still be changed.
-- **Provenance:** the transforms are ported from Dan's own canary repo, which is
+- **Provenance:** the transforms are ported from the owner's own canary repo, which is
   recorded in the module docs. No third-party code is involved.
 
 ## File ownership
@@ -65,7 +65,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
     for byte; the options file round-trips.
 
   *Done 2026-10-17:* `kicad-plugin/freerouting_rs/dsn_fixups.py` (step 4, provenance in its
-  docstring: canary `hardware/tools/dsn_export.py`, Dan's repo, `dbfe7b67`); dialog field "Class
+  docstring: canary `hardware/tools/dsn_export.py`, the owner's repo, `dbfe7b67`); dialog field "Class
   widths (mm)" (`CLASS=mm, ...` or `auto`). `test_dsn_fixups.py::test_one_class_width_is_rewritten_and_the_rest_stays_byte_for_byte`
   (the text before and after the one `(width ...)` atom is equal), `test_an_unknown_class_is_refused`;
   `test_options.py::test_the_k09_options_round_trip` (save, load, equal; `auto` too) and
@@ -131,7 +131,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   `test_cli_integration.py::test_the_k09_flags_and_a_fixed_up_dsn_reach_the_real_cli` (the CLI loads
   and routes a DSN with every fix-up, no warning). `canary-pwr`: `copper_edge_clearance` **0** in every
   round-2 arm with the option on (legacy, preset-wires, preset-nosweep, enh-auto-*, add-only), against
-  2 in `plugin-0` (option off; Dan's run had the same 2 GND vias at 0.297 mm).
+  2 in `plugin-0` (option off; the owner's run had the same 2 GND vias at 0.297 mm).
 - [x] **K09.5 — Open inner plane layers to routing.** Option `route_on_plane_layers`
   (DSN layer names): `(type power)` becomes `(type signal)`. It can be combined with
   Q09's `plane_obstacle_block = traces` so the islands keep traces out.
@@ -205,7 +205,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
       session);
     - `kicad-plugin.md` documents the options and the preset.
 
-  *Moved 2026-10-17 (K10 session; Dan: no board-specific code in the tool):* the preset is no
+  *Moved 2026-10-17 (K10 session; the owner: no board-specific code in the tool):* the preset is no
   longer product code. `options.CANARY_PRESET`, `with_preset` and the "Canary flow" button are gone;
   the values are the preset file `fixtures/canary-pwr/presets/canary-graded-flow.json`, which the
   dialog's Preset drop-down lists once it is copied into the board's `freerouting-rs/presets/`
@@ -238,7 +238,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   inferred, not traced, and the routing is chaotic at canary's ±10. `kicad-plugin.md` "DSN fix-ups and the canary flow (K09)"
   documents the options, the preset, the headless runs and these numbers.
 - [~] **K09.9 — A plain plugin run gets the graded flow under `enhanced`.** canary-7a graded
-  Dan's plugin run at `9c97117` (profile `enhanced`, default options) at 68 unconnected, with
+  the owner's plugin run at `9c97117` (profile `enhanced`, default options) at 68 unconnected, with
   2 `copper_edge_clearance` errors (GND vias 0.297 mm from the edge against 0.3) and 2
   inner-layer tracks (Q13), while the CLI flow grades 33 (Q10). The plugin got none of what
   produced 33:

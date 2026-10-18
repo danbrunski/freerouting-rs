@@ -1,7 +1,7 @@
 # Q00 — Routing quality beyond Java
 
 Opened 2026-10-15. These checklists make the port route better than Java on
-the boards Dan cares about, once it routes like Java. The plan and the
+the boards the owner cares about, once it routes like Java. The plan and the
 measurement rules are in [routing-quality.md](../routing-quality.md). The
 sources are the `canary-pwr` layout lessons, the Java fork's HANDOVER and
 shelved neck-down experiment, and KiCadRoutingTools (KRT) at `0486e799`.
@@ -29,7 +29,7 @@ implementation is never edited, so default results stay byte-identical.
 | [Q13](archive/Q13-plane-nets-stay-in-their-island.md) ✅ | A plane net's traces on a power layer stay inside its own plane, not just on its layer (canary-7a, 2026-10-17) | S–M / medium: room clipping in the maze search | rung 3; Q01.7; N01 |
 | [Q14](archive/Q14-via-clearance-follows-net-class.md) ✅ | A via gets its net class's clearance, so a Power_High via keeps 0.25 mm from other nets, not the default 0.2 (canary-7a, 2026-10-17) | S / medium: changes via spacing on boards with class clearances | rung 3; C02; N01 |
 | [Q15](Q15-route-tidiness-score.md) | A measured tidiness score (detour, bends, acute corners, jogs, vias per connection) in the bench and the grader | S / low: report only | F03, F02.6, C05 |
-| [Q16](Q16-no-dangling-stubs.md) | A final cleanup removes dangling vias and trace stubs left by unfinished connections (32 on Dan's canary plugin run) | S / low: removal of copper that connects nothing | Q10, N02, F02.6 |
+| [Q16](Q16-no-dangling-stubs.md) | A final cleanup removes dangling vias and trace stubs left by unfinished connections (32 on the owner's canary plugin run) | S / low: removal of copper that connects nothing | Q10, N02, F02.6 |
 | [Q17](Q17-neck-only-in-the-pin-field.md) | Neck down only within reach of the pins (Q02.3's width policy in the search, the `bounded-neck` stage) and widen back with tapers (Q02.5), measured against `enhanced`'s retry at 300 µm | M / high: width policy inside the maze search | Q02.1–Q02.2, N02, N05 |
 
 Sizes: S under about 1k lines of Rust, M 1–3k, L more.
@@ -39,11 +39,11 @@ Sizes: S under about 1k lines of Rust, M 1–3k, L more.
 1. **Now:** Q03. It needs only the loaded board, the rules and F02's dev
    crate. It is the one Q item that may land before parity, because a static
    diagnostic changes no routes.
-2. **After board parity (rung 3) and after P04** (Dan, 2026-10-16: P04
+2. **After board parity (rung 3) and after P04** (owner, 2026-10-16: P04
    frees the search tree and changes routes, so every route-changing Q item
    is measured against the freed tree, once; the report-only items Q01.4,
    Q02.1 and Q06 need only rung 3), in this order of expected value on
-   Dan's boards:
+   the owner's boards:
    - Q04 (time saved on every `canary-pwr` run, mostly byte-identical);
    - Q01 and Q02 (the two failure causes canary-09 named);
    - Q06 (needs the A04 failure record), then Q05.1 instrumentation;
@@ -51,7 +51,7 @@ Sizes: S under about 1k lines of Rust, M 1–3k, L more.
      boards;
    - Q07 and Q08, as experiments.
    - Q10, Q11 and Q12 (added 2026-10-17 from freerouting-rs-f1's research, at
-     Dan's request): on `canary-pwr` Q06.5 found 83 of 109 incomplete
+     the owner's request): on `canary-pwr` Q06.5 found 83 of 109 incomplete
      connections routable on the final board, 73 of them routed and then ripped
      in pass 1. These three stop that loss. Q10 first, then Q11 (its no-code
      rip-cost sweep first), then Q12 after Q07's orders exist. Their code may
@@ -138,7 +138,7 @@ These add to the shared rules in [README.md](README.md).
    `0486e799`) and a `docs/PROVENANCE.md` row. A file written from the idea
    alone gets a one-line credit in its module docs.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Commit the `canary-pwr` Q03 board?** canary-09 is sending the DSN, 3–5
    variants and a post-processor. *Recommendation:* keep them out of the repo
@@ -172,8 +172,8 @@ yet; each opens as Q13+ only when its gate holds:
 | Candidate | Gate |
 |---|---|
 | Shove before rip (Mighty's weak modification) | Q11 measured; code after P04.1 |
-| Acute-angle and acid-trap cleanup (optimizer stage, geometry only) | a report-only count shows acute corners on Dan's boards |
-| Spread and centre DFM pass | Dan wants DFM work |
+| Acute-angle and acid-trap cleanup (optimizer stage, geometry only) | a report-only count shows acute corners on the owner's boards |
+| Spread and centre DFM pass | The owner wants DFM work |
 | Exact assignment (min-cost flow, DP) in the X10/X12 escape planners | X10/X12 measured after P04 |
 | SAT window repair of the last unrouted connections (new dependency) | Q10–Q12 and shove-before-rip leave ≥ 5 `blocked_by`/`found` per board on 3 boards |
 | Specctra-style conflict-tolerant passes (negotiated congestion) | Q10–Q12 and shove-before-rip recover under half of the `found` failures |

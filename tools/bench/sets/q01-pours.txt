@@ -1,10 +1,10 @@
 # Q01.5: boards with signal-layer pours for the pour-guard measurement
 # (docs/roadmap/prereg/Q01.json). KiCad 10.0.7's bundled demos (WSL-native,
 # /usr/share/kicad/demos) whose copper zones on signal layers belong to a net
-# class other than the default one, plus Dan's canary-pwr. Outside the
+# class other than the default one, plus the owner's canary-pwr. Outside the
 # repository and skipped when missing; each run works on copies.
 /usr/share/kicad/demos/interf_u/interf_u.kicad_pcb                                    # GND pour on bottom_copper, class Power
 /usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb                        # GND pour on bottom_layer, class POWER
 /usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb  # GND on B.Cu and In1.Cu, class POWER
 /usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb                  # -VAA, HT, GND pours, class power
-~/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb                         # Dan's board: Power_High and Switch_Node pours
+~/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb                         # the owner's board: Power_High and Switch_Node pours

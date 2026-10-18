@@ -4,7 +4,7 @@ Recorded 2026-10-15, and updated the same day with what KiCadRoutingTools
 (KRT, read at commit `0486e799`) teaches. This is what the port should do
 better than Java once it routes like Java (rung 6 of the verification ladder
 in [port-completion.md](port-completion.md)). Sources:
-- the lessons of laying out Dan's `canary-pwr` board, sent by the CANary
+- the lessons of laying out the owner's `canary-pwr` board, sent by the CANary
   layout session (canary-09) on 2026-10-15, including a list of 17 pins that
   no 1.5 mm trace can reach;
 - the open ideas in the Java fork's `docs/development/HANDOVER.md`;
@@ -24,7 +24,7 @@ quality change made before parity can't be measured against Java, and it
 hides port bugs. The exception is Q03's static diagnostic: it depends only on
 the loaded board and its rules and changes no routes, so it starts now.
 Every change here is a
-deliberate divergence. It gets measured on the benchmark set and Dan's board
+deliberate divergence. It gets measured on the benchmark set and the owner's board
 variants, kept only if it helps, and recorded in
 [DIVERGENCES.md](../DIVERGENCES.md) with its numbers. That is the Java fork's
 own rule: "a change that does not measurably help is not committed, even if it
@@ -120,7 +120,7 @@ construction. It is still tested with `ses-diff`.
   A missing baseline fails. A partial run may not write the baseline. The
   gate self-tests on every invocation.
 - **Grade with an independent oracle where one exists.** For boards that have
-  a `.kicad_pcb` (Dan's boards, KiCad's bundled demos), import the session
+  a `.kicad_pcb` (the owner's boards, KiCad's bundled demos), import the session
   into KiCad and run KiCad's own DRC (F02.6). Freerouting's DRC grades the
   board by the same model the router used, so it can't see what that model
   gets wrong. The grading rules (F02.6, amended from KRT):
@@ -246,7 +246,7 @@ and must be measured as one.
 
 With it comes KRT's two-axis output guard: never write a board worse than the
 input on connections lost against gained or on unconnected pins, neither axis
-outvoting the other. It matters for boards that arrive with wiring, like Dan's.
+outvoting the other. It matters for boards that arrive with wiring, like the owner's.
 
 ### 5. Congestion-aware ripup (Q05)
 
@@ -305,7 +305,7 @@ changes where Java's limits cut.
 - **Ignoring net classes** (`-inc`, `router.ignore_net_classes`) is Java
   behaviour (`RouterSettings.applyNetClassExclusions`), so it is CLI parity
   ([C series](tasks/C00-cli-settings-io-README.md)), not a quality change.
-  Dan uses it to keep the router off hand-laid power nets.
+  The owner uses it to keep the router off hand-laid power nets.
 - **Headless `-do something.dsn` writes a 0-byte file** without an error in
   Java (HANDOVER open idea 4). The Rust CLI writes a real DSN or refuses with
   an error (C series).

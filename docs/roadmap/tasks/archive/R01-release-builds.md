@@ -2,7 +2,7 @@
 
 Opened 2026-10-15. "Complete" includes release builds for Windows, macOS
 (universal) and Linux (item 7 in [port-completion.md](../../port-completion.md)).
-Today there are none: Dan builds the Windows exes by hand with the gnu
+Today there are none: the owner builds the Windows exes by hand with the gnu
 toolchain, and nothing is versioned beyond `0.1.0` in `Cargo.toml`. This
 checklist adds one tag-triggered workflow that builds, packages, checks and
 drafts a GitHub release, plus the version gate and version stamp it needs.
@@ -18,7 +18,7 @@ tests on three systems) is F01.2; signing is [R02](R02-signing.md).
 - K01.3 and K03 (plugin `version.py`, `metadata.json`, the PCM zip) for
   R01.1's plugin checks and R01.7's PCM asset; until they exist those parts
   are skipped with a note.
-- Pushing workflows and tags needs Dan's credentials (the local `gh` token
+- Pushing workflows and tags needs the owner's credentials (the local `gh` token
   lacks the `workflow` scope; GUI report §0 item 10). The implementer
   prepares files; the orchestrator pushes.
 
@@ -52,7 +52,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
   host at run time.
 - **Windows release builds use MSVC with a static C runtime**
   (`-C target-feature=+crt-static`), so users need no Visual C++
-  redistributable. Dan's local KiCad loop keeps the gnu toolchain.
+  redistributable. The owner's local KiCad loop keeps the gnu toolchain.
 - **macOS ships one universal build**: `aarch64-apple-darwin` and
   `x86_64-apple-darwin` (cross-compiled on the arm64 runner), joined with
   `lipo -create`. Ad-hoc signature only until R02.
@@ -106,7 +106,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
   negative control `test_planted_mismatch_in_a_copy_of_the_repository_fails` copies the real `Cargo.toml`,
   `Packager.toml` and plugin package into a temp dir, plants 9.9.9 in `version.py` and the script exits 1.
   `python3 tools/release/check_version.py --tag v0.1.0` on the repo: ok. The CI step is the `version-gate`
-  job appended to `docs/development/ci-workflow.yml` (CI is disabled by Dan, so no `.github/`; a green
+  job appended to `docs/development/ci-workflow.yml` (CI is disabled by the owner, so no `.github/`; a green
   GitHub run is not claimed); the release workflow draft's first job (`gate`) runs it with the tag.
 
 - [x] **R01.2 — Build stamp.**
@@ -152,7 +152,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     and `APPIMAGE_EXTRACT_AND_RUN=1` it runs
     `--screenshot shot.png --exit fixtures/Issue159-setonix_2hp-pcb.dsn`
     (G01.5) and the implementer opens the PNG and describes it. Until
-    G01.5 lands, `--version` is the check. Dan approves the icon (R00
+    G01.5 lands, `--version` is the check. The owner approves the icon (R00
     question 3).
 
   *Partial 2026-10-17:* done: `crates/freerouting-gui/icons/icon.svg` (original: two routed nets with
@@ -175,7 +175,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
   menu bar (File..Help), a toolbar (Autoroute, Inspect, Route, Drag, Ratsnest, Violations, Undo, Redo,
   mm), a layer panel (F.Cu red, B.Cu blue), the board panel (9.6 x 108.5 mm, 15 components, 9 nets) and the
   long narrow board with LED, switch and jack outlines, yellow ratsnest lines, "Incomplete connections: 23". The
-  icon is not visible in that shot (the window does not set it yet). (2) **Dan approves the icon** (R00
+  icon is not visible in that shot (the window does not set it yet). (2) **The owner approves the icon** (R00
   question 3); the GUI does not yet use `icon-*.png` as its window icon (G-series). (3) K03.1's 64 px PNG:
   `icons/icon-64.png` is ready to copy.
 
@@ -185,7 +185,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     `kicad-plugin/`, `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`; the
     AppImage of the GUI. `permissions: contents: read` for build jobs.
   - **Accept:**
-    - The job is green on a test tag (pushed by the orchestrator, on Dan's
+    - The job is green on a test tag (pushed by the orchestrator, on the owner's
       repository or a fork).
     - A follow-up job on `ubuntu-24.04` runs the AppImage under `xvfb-run`
       with lavapipe and uploads the `--screenshot` PNG; it is non-empty.
@@ -195,7 +195,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
       most 2.35.
     - The tar listing contains `THIRD_PARTY_NOTICES.md` (F04.1's check).
 
-  *Partial 2026-10-17:* needs a GitHub run, "CI disabled by Dan": no `.github/`; the workflow is the
+  *Partial 2026-10-17:* needs a GitHub run, "CI disabled by the owner": no `.github/`; the workflow is the
   draft `docs/development/release-workflow.yml` (jobs `gate`, `linux`, `linux-smoke`; tags `v*`,
   `permissions: contents: read`; pins in `release.md`; YAML parses). Local evidence on this Ubuntu 24.04
   box with the local release build: `tools/release/package_archive.py --platform linux-x86_64` makes
@@ -205,7 +205,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
   `ubuntu:22.04` container (`docker run`: `freerouting 0.1.0 (git 813663cea882)`). The glibc check
   (`tools/release/glibc_floor.sh 2.35 ...`): CLI highest `GLIBC_2.35` (ok); GUI `GLIBC_2.39` -> the script
   fails, as designed, because this box builds on glibc 2.39; whether the GUI stays <= 2.35 when built on
-  `ubuntu-22.04` is unverified. Remaining (needs the test tag of R01.7 and Dan's push; screenshot flag from G01.5): a green run on a test tag, the `ubuntu-24.04` smoke job with the
+  `ubuntu-22.04` is unverified. Remaining (needs the test tag of R01.7 and the owner's push; screenshot flag from G01.5): a green run on a test tag, the `ubuntu-24.04` smoke job with the
   uploaded screenshot, the 22.04 glibc number.
 
 - [~] **R01.5 — Windows release job.**
@@ -224,14 +224,14 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     - The exe's file properties carry the version (PowerShell
       `(Get-Item …).VersionInfo.ProductVersion`).
 
-  *Partial 2026-10-17:* written, not run ("CI disabled by Dan"; no Windows runner here, no windows
+  *Partial 2026-10-17:* written, not run ("CI disabled by the owner"; no Windows runner here, no windows
   target installed, so not even `cargo check --target`). Draft job `windows` in `release-workflow.yml`
   (MSVC, `-C target-feature=+crt-static`, dumpbin dependents check, `ProductVersion` check, zip via
   `package_archive.py`, MSI via `cargo packager -c "$PWD\Packager.toml" --formats wix`, msiexec install,
   `freerouting.exe --version`, uninstall check). `NEW DEP: winresource 0.1 (Windows-only
   build-dependency of freerouting-gui and freerouting-cli, for the icon and version resource; Cargo.lock
   +42 lines: winresource, toml, serde_spanned, toml_writer, winnow 1.0.4, ...)`; both `build.rs` files run it for msvc
-  targets only (or `FREEROUTING_WINRES=1`), so Dan's gnu loop is unchanged, and a failed resource is a
+  targets only (or `FREEROUTING_WINRES=1`), so the owner's gnu loop is unchanged, and a failed resource is a
   warning, not an error. The `build.rs` files compile and do nothing on Linux (clippy clean).
   Remaining (a Windows runner via the test tag of R01.7; signing is R02): everything that runs on Windows, the WiX build, the install path the MSI picks (the job
   searches `%ProgramFiles%` and `%LOCALAPPDATA%\Programs`).
@@ -251,7 +251,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     - The Gatekeeper behaviour for a downloaded (quarantined) app is
       recorded, with K03.6's subprocess check.
 
-  *Partial 2026-10-17:* written, not run ("CI disabled by Dan"; no macOS here). Draft job `macos` on
+  *Partial 2026-10-17:* written, not run ("CI disabled by the owner"; no macOS here). Draft job `macos` on
   `macos-14`: both targets, `lipo -create` with an `x86_64 arm64` check, tar.gz via `package_archive.py`,
   `cargo packager --formats app,dmg --binaries-dir universal` with `tools/release/macos_dmg.sh`
   (hand-made `.app` + `hdiutil create -format UDZO`, `bash -n` clean) as the automatic fallback, ad-hoc
@@ -272,7 +272,7 @@ jobs, checksums and a draft release, and `docs/development/release.md`.
     `metadata.json`. `sha256sum -c SHA256SUMS` passes on the downloaded
     assets. The release URL is in the done note.
 
-  *Partial 2026-10-17:* written, not run ("CI disabled by Dan"; no draft release was created and nothing
+  *Partial 2026-10-17:* written, not run ("CI disabled by the owner"; no draft release was created and nothing
   was pushed or uploaded). Draft job `release` (needs all build jobs, tag-only, `permissions: contents:
   write` only there): downloads the artifacts, a K03 step that runs `kicad-plugin/package.py` and
   `update_metadata.py` only if they exist (K03 has not landed: skipped with a note), `SHA256SUMS`, then

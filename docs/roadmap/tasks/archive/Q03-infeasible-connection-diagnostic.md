@@ -341,7 +341,7 @@ What this adds:
   C = 0.7 − 0.2 − 0.25 = 0.25 mm, reported 0.26); C23-1 (throat between R9-2,
   R0603 at (126.2, −63.9) rotated 90°, top edge y = −62.675, and C23-2, C0603 at
   (125.775, −61.5), bottom edge y = −61.975: 0.70 − 2·0.25 = 0.20 mm, reported
-  0.20). Start model decided (orchestrator, under Dan's standing instruction to take
+  0.20). Start model decided (orchestrator, under the owner's standing instruction to take
   the recommended answer, 2026-10-15): the default stays `--start shape` (sound against
   Java, Q03.7's 0 hard false positives); canary-09's "all 17" holds under
   `--start centre` (17/17, U7-3 = 1.440 mm) and the default flags 15/17 (Q3-1 and

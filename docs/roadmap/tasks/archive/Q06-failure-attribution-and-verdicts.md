@@ -21,7 +21,7 @@ Prior art in the Java fork (read at `main` through git,
 connections of a DSN + SES), `PowerFailures.java` (which unrouted
 connections belong to the wide power classes and what sits in their way),
 `GndAirlines.java` (airlines of the plane net) and `ViolDiff.java` (the
-violations a session adds over the input board). Dan wrote these to read
+violations a session adds over the input board). The owner wrote these to read
 `canary-pwr` runs by hand; the verdicts here replace them. Q06.4's report
 format should let each of those four questions be answered from the result
 JSON, so the tools are not needed against the Rust engine.

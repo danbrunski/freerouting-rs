@@ -4,7 +4,7 @@ Opened 2026-10-15. D9 says a head-to-head of Java Freerouting against KRT,
 graded by KiCad's DRC, sets the order of the X series. KRT publishes no
 Freerouting numbers (its `awx/baseline_freerouting.py` harness exists, but no
 results are committed), so nobody knows where either router wins. This
-checklist routes Dan's `canary-pwr` and four KiCad demo boards with the Java
+checklist routes the owner's `canary-pwr` and four KiCad demo boards with the Java
 fork's jar and with KRT's own routing chain, grades both sessions with the
 same KiCad DRC, sorts the connections one engine routes and the other doesn't
 by cause, and writes the resulting order into
@@ -25,8 +25,8 @@ Prerequisites:
 | Exists | Used for |
 |---|---|
 | Java fork `../freerouting`, built with `./gradlew executableJar` → `build/libs/freerouting-current-executable.jar` (HANDOVER); the plugin's copy is `C:\Users\thebo\Documents\KiCad\10.0\3rdparty\plugins\app_freerouting_kicad-plugin\jar\freerouting-dev.jar` | the Java arm |
-| Dan's Java settings: `C:\Users\thebo\AppData\Roaming\freerouting\freerouting.json` sets `router.scoring.start_ripup_costs = 1500` | the Java arm's settings |
-| The plugin's DSN step (`router_dsn.py`): rewrites the first line to `(pcb <name>` and strips lines with `search_n_strip`; command `java -jar <jar> -de <dsn> -do <ses> -host KiCad` | what Dan's real runs see |
+| The owner's Java settings: `C:\Users\thebo\AppData\Roaming\freerouting\freerouting.json` sets `router.scoring.start_ripup_costs = 1500` | the Java arm's settings |
+| The plugin's DSN step (`router_dsn.py`): rewrites the first line to `(pcb <name>` and strips lines with `search_n_strip`; command `java -jar <jar> -de <dsn> -do <ses> -host KiCad` | what the owner's real runs see |
 | KRT at `0486e799`: `py_router/route.py <in.kicad_pcb> <out.kicad_pcb> --nets '*'` reads net-class widths and clearances from the sibling `.kicad_pro`; `build_router.py --from-source` builds `rust_router` with cargo; `requirements.txt`: numpy ≥ 1.22, scipy ≥ 1.7, shapely ≥ 2.0, Pillow ≥ 9.2 | the KRT arm |
 | KRT `awx/baseline_freerouting.py` notes: layer user names must be canonical around the DSN round trip; footprints with no reference need `NOREF<n>`; SES `(placement …)` stripped before import; rule areas that forbid only zone fills dropped | traps for the Java arm (F02.6 owns the workarounds) |
 | KiCad 10 demos in `C:\Program Files\KiCad\10.0\share\kicad\demos` | four of the boards |
@@ -39,7 +39,7 @@ X01 preregistration, the results, and the order in X00.
 ## Decisions made here
 
 - **Boards** (preregistered; changes only by amendment):
-  - `canary-pwr` as it stands (hand-laid copper kept), because that is Dan's
+  - `canary-pwr` as it stands (hand-laid copper kept), because that is the owner's
     real input;
   - `pic_programmer` (2 layers, 63 footprints), `interf_u` (2 layers, 25),
     `kit-dev-coldfire-xilinx_5213` (4 layers, 160), `video` (4 layers, 189),
@@ -97,7 +97,7 @@ no preregistration, used a scratchpad harness and a local KRT clone at
 numbers inform the plan but **tick no box here**; X01 still has to run as
 written. Setup:
 - boards stripped of tracks and vias, zones kept;
-- Freerouting is Dan's `freerouting-dev.jar` (the fork's main at
+- Freerouting is the owner's `freerouting-dev.jar` (the fork's main at
   `de7a4fd2c`), headless, `start_ripup_costs=1500`, a 10-minute job cap;
   `canary-pwr` without the footprint-only fan-inlet keepout;
 - KRT is `route.py` with defaults, then with board-rule settings;
@@ -127,7 +127,7 @@ Findings:
 - **KRT's default completion lead comes from breaking the board's rules.**
   It escalates to 0.089–0.127 mm tracks and 0.25/0.15 mm vias, lowers the
   project's minimums to match, and narrows power nets: +12V_BUS was routed
-  at 0.089 mm against its 1.5 mm class. Dan's ruling (D8): design rules are
+  at 0.089 mm against its 1.5 mm class. The owner's ruling (D8): design rules are
   hard limits.
 - **Held to the board's rules (strict), KRT still routes more on four of
   five boards** (sonde, StickHub, canary-pwr, coldfire) with fewer new DRC
@@ -354,7 +354,7 @@ Findings:
   - **Accept:** a markdown table per board and arm (unrouted, `drc_real`,
     vias, length, vias in pads, time) is in the done note; the decision and
     the rule that produced it are stated; any board that couldn't be graded
-    is listed as a failure of its arm. The orchestrator and Dan confirm the
+    is listed as a failure of its arm. The orchestrator and the owner confirm the
     new order before X03 or X02 starts.
   - *Partial 2026-10-16:* `tools/krt-h2h/results.py` wrote
     `tools/krt-h2h/results/x01-demos.json` (demos only, paths as `$X01_DIR`, prereg sha256
@@ -394,5 +394,5 @@ Findings:
       22 vias in pads and 701 inner-layer tracks (299 on Gnd.Cu, 402 on Power.Cu: KRT routes
       both planes as signal layers). Its lower count comes from using the planes and pads.
     The canary result to beat stays 40 (Java `7f56b062d` add-only, clean). The order
-    `planes-first` was confirmed by the orchestrator under Dan's standing instruction to take
+    `planes-first` was confirmed by the orchestrator under the owner's standing instruction to take
     the recommended answer (`target/orchestrator/operator-decisions.md`).

@@ -1,6 +1,6 @@
 # X13 — The head-to-head again: freerouting-rs against KRT, both held to the rules
 
-Opened 2026-10-17 (Dan: "sure"). X01 (2026-10-15) compared Java Freerouting with
+Opened 2026-10-17 (owner: "sure"). X01 (2026-10-15) compared Java Freerouting with
 KiCadRoutingTools (KRT), every board graded by KiCad's DRC under its original rules:
 - **KRT's default completion lead came from breaking those rules.** `--fab-tier auto`
   narrowed tracks to 0.089 mm and lowered the board's minimums.

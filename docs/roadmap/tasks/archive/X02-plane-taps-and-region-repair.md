@@ -199,7 +199,7 @@ revert); F04; F03.1, F03.4, F02.6.
   for zone nets (must not rise), unrouted, `drc_real`, vias in pads.
   - **Accept:** measured. Kept only if islands lost fall on N−1 boards and
     nothing regresses on any; otherwise X02.3–X02.4's code is removed and
-    the numbers stay here. X02.2's report may stay if Dan wants it.
+    the numbers stay here. X02.2's report may stay if the owner wants it.
   *Partial 2026-10-17:* preregistered, not measured. `docs/roadmap/prereg/X02.json`
   (F03.4 format; `freerouting_dev::gate_prereg::Prereg::parse` accepts it: id
   `X02.5-region-repair`, baseline `default`, candidate `repair`, third arm `q01-repair`

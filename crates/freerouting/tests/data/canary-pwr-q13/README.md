@@ -1,6 +1,6 @@
 # canary-pwr inputs and sessions for Q13
 
-Dan's CANary power board (`hardware/canary-pwr-rev1.0` in the private `danbrunski/canary`
+The owner's CANary power board (`hardware/canary-pwr-rev1.0` in the private `danbrunski/canary`
 repository), as in `fixtures/canary-pwr/` (committing canary-pwr files was approved on
 2026-10-15). These files live here rather than under `fixtures/` because every DSN there needs
 a Java load reference. Q13 uses them

@@ -298,7 +298,7 @@ or `docs/`.
       `testPlaneAsObstacleOverride`.
     - Port of `Issue885SettingsInitializationTest`'s
       `applyNetClassExclusions` test (`POWER` flagged).
-    - **`ignore_net_classes_is_honoured_headless`.** Dan uses `-inc` to
+    - **`ignore_net_classes_is_honoured_headless`.** The owner uses `-inc` to
       keep the router off hand-laid power nets.
       - On `Issue558-dev-board.dsn`, `prepare_job` with a CLI patch
         `ignore_net_classes = ["Power,Default"]`, as one element the way
@@ -437,7 +437,7 @@ or `docs/`.
   `Issue029-hw48na.dsn` with the `owner-config` scenario and its adjacent rules
   file: `job.board_settings.start_ripup_costs()` and
   `job.settings.scoring.start_ripup_costs` are 100, the rules file's value, not
-  Dan's 1500, and equal C01's dump (`effective.startRipupCosts` = 100). The
+  the owner's 1500, and equal C01's dump (`effective.startRipupCosts` = 100). The
   rules file's `autoroute_settings` are applied on top of the merge by
   `prepare_job` (`rules_reader::apply_rules_file`, `SettingsPatch::apply_from`).
   `cargo test -p freerouting --test settings_board`: 21 passed.

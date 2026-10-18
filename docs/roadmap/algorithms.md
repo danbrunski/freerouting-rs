@@ -239,7 +239,7 @@ environment and nothing from the port.
   connectors and path conversion are 3–5k lines and carry all the bugs KRT
   fixed over 0.17–0.23 (grazes at 45° moves, stale stamps, off-grid pins).
 - **A conservative raster wastes completion** where pitch is tight, exactly
-  where Dan's boards fail. X01 and X06 measure it before more is invested.
+  where the owner's boards fail. X01 and X06 measure it before more is invested.
 - **Python is a specification with history.** KRT's comments record many
   measured dead ends (the "grace" budget, a via-rung retry that fired 459
   times for about 2 wins). Port the shipped behaviour and its measurement,

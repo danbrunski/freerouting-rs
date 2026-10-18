@@ -79,6 +79,6 @@ copies KRT code.
   file with no header and no row, passes (exit 0) with both, fails on a ledger
   row naming a missing file; passes on the tree (exit 0). The CI step
   (`Provenance check`, Linux only) is appended to the prepared workflow
-  `docs/development/ci-workflow.yml`. Remaining: GitHub CI is disabled by Dan
+  `docs/development/ci-workflow.yml`. Remaining: GitHub CI is disabled by the owner
   (2026-10-15), so the step has never run. Owner: F01.2 / R01, when CI is
   re-enabled.

@@ -68,7 +68,7 @@ Prerequisites: N01; each candidate's own accepted measurement.
     Registration `docs/roadmap/prereg/N05-power-layer-traces.json` (sha256 `a5ca6049…` before any
     number; amended once before any graded number to `2013aaac…`, below), pinned by
     `crates/freerouting-dev/tests/prereg_n05.rs`; set `tools/bench/sets/n05-power-layer-traces.txt`
-    (Q13.3's set plus `tests/data/canary-pwr-n05/plugin-b1994423.dsn`, the DSN of Dan's plugin run
+    (Q13.3's set plus `tests/data/canary-pwr-n05/plugin-b1994423.dsn`, the DSN of the owner's plugin run
     of 2026-10-17). N02 totals rule, `accept: no-regress`, `none` against `own_plane`;
     `freerouting-dev gate --records records-reg1.json --baseline baseline-reg1.json --prereg ...`:
     **PASS** (0 refusals; total 256 → 256, set noise 25.87; every row neutral). One Linux release
@@ -148,7 +148,7 @@ Prerequisites: N01; each candidate's own accepted measurement.
 
   - **2026-10-18, accepted: `router.neck_width_um = 300`** (Java's necked retry,
     `retryConnectionNecked`: a connection that fails at its class width is tried once more with every
-    trace clamped to 300 µm, never below `min_trace_width_um`; Dan 2026-10-17: "we should turn that
+    trace clamped to 300 µm, never below `min_trace_width_um`; owner, 2026-10-17: "we should turn that
     on"). The only neck-down built: Q02.3's distance-bounded neck and Q02.5's widen-back are not, so
     a failed connection ships narrow end to end, not only through the pin field. Registration
     `docs/roadmap/prereg/N05-neck-down.json` (`bd0c0784…`, before any number, no amendment), pinned

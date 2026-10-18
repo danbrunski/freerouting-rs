@@ -2,7 +2,7 @@
 //!
 //! Java's inspect toolbar has no such buttons at the pin: the edits it
 //! lists route to `GuiBoardLegacyEditActions`, whose methods are empty
-//! (`docs/DIVERGENCES.md`, "Delete, Fix and Unfix of the selection"). Dan
+//! (`docs/DIVERGENCES.md`, "Delete, Fix and Unfix of the selection"). The owner
 //! accepted adding these three. The engine owns them (I03.6,
 //! `freerouting::interactive::{delete_selection, fix_selection}`); these
 //! functions only map their outcome for the GUI.

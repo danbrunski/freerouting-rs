@@ -33,7 +33,7 @@ The app is a board viewer for now. Nothing in it edits or routes.
   their clearance violations), `W` zooms to the selection, `U`/`Ctrl+Z` undo and
   `B`/`Ctrl+Y` redo. `S R D` choose the tool of the left button (G09, below).
   The view fits again automatically when the window resizes, until the user
-  pans or zooms. (Open question for Dan, G00 question 1: this is the
+  pans or zooms. (Open question for the owner, G00 question 1: this is the
   recommended set; the change from "any button pans, `F` fits" awaits his
   confirmation.)
 - The layer panel shows or hides each layer and picks the active layer, which
@@ -164,7 +164,7 @@ The app is a board viewer for now. Nothing in it edits or routes.
   Tests: `ui_routing.rs::{profile_selector_covers_both_profiles, an_algorithm_stage_changes_and_resets,
   an_option_reset_returns_the_profile_value, the_algorithms_section_offers_the_krt_stages}`. The
   GUI routes and lists stages with `freerouting_stages::registry()` (N05.1: Freerouting's stages plus
-  the KRT ones; the GUI does not depend on `freerouting-krt`). Not yet looked at by Dan: the layout and the look of the
+  the KRT ones; the GUI does not depend on `freerouting-krt`). Not yet looked at by the owner: the layout and the look of the
   new rows.
 - **Autorouter (G07, `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`,
   `panels/{progress,routing_summary}.rs`, `overlays/routing.rs`).** The toolbar's Autoroute button
@@ -445,7 +445,7 @@ in ms). The machine was not quiet (other sessions were building and routing; 1-m
 
 Target: frame CPU p95 at most 8 ms and 0 full rebuilds. Both runs are under 8 ms even on the busy
 machine and rebuild nothing (598 patches in 600 frames). Pending: the same run on a quiet machine
-(load average at most 1.0) and on Dan's Windows GPU. The checklist box stays partial until then.
+(load average at most 1.0) and on the owner's Windows GPU. The checklist box stays partial until then.
 
 ### FT4 to FT6: during an autoroute (G07.4, G07.8)
 
@@ -459,7 +459,7 @@ and reports `cancel_to_finished_ms` (the press to the `Finished` event).
 **Recorded 2026-10-16** at `d21d5f1` plus the G07 working tree (release build, Xvfb with lavapipe, Issue190,
 `FREEROUTING_BENCH_PASSES=10`). The machine was **not quiet**: another session was running a release test, so
 the 1-minute load average was 2.8 to 4.5 on 8 cores (the targets need at most 1.0). Read the numbers as upper
-bounds; the box stays partial until a quiet run and Dan's Windows GPU.
+bounds; the box stays partial until a quiet run and the owner's Windows GPU.
 
 | Run | route | passes | frame p50 / p95 / max (ms) | update p95 (ms) | `max_apply_ms` | patches | full rebuilds | GPU buffers first to max | load 1 min |
 |---|---|---|---|---|---|---|---|---|---|
@@ -484,7 +484,7 @@ busier Issue684 test `live_redraw_patches_before_the_job_ends` has 310 deltas an
 longest single connection was not measured: Cancel is checked between connections and inside the maze search
 (full stop), and the 244 ms above is the worst Cancel seen.
 
-Dan's Windows GPU: pending (run `freerouting-gui.exe --bench route Issue190-processor.Z80.dsn` with
+The owner's Windows GPU: pending (run `freerouting-gui.exe --bench route Issue190-processor.Z80.dsn` with
 `FREEROUTING_BENCH_PASSES=10`, and once with `FREEROUTING_BENCH_CANCEL_MS=1500`, and put the numbers here).
 
 A mid-run screenshot under Xvfb (`Issue269-caniot-tiny-arm.dsn`, `--bench route`, about 6 s into the job,
@@ -596,7 +596,7 @@ The new renderer (frame CPU, ms):
   definition; against G01's recorded update p95 (3.07 to 3.57) it is at least
   6.5x.
 - **FT2 CPU part** (p95 at most 4 ms): met, 1.55 to 1.80 ms. The 4x4 board has
-  `gpu_buffer_bytes` 124,442,080 (118.7 MiB). The wall-clock part (60 fps on Dan's
+  `gpu_buffer_bytes` 124,442,080 (118.7 MiB). The wall-clock part (60 fps on the owner's
   GPU) is manual: needs the Windows run. The 1 ms update p50 on this board is the
   hover test and the label loop, not the board.
 - **FT3** (Issue190 file to first frame at most 1.5 s, tessellation plus chunking at
@@ -624,7 +624,7 @@ The new renderer (frame CPU, ms):
 - **FT6 static** (at most 64 MB): Issue190 has 7.4 MiB of GPU buffers. The growth
   across routing passes is G07.4's.
 - Not done: the Windows run of `freerouting-gui.exe --bench pan-zoom --frames 600`
-  on Issue190 and on the 4x4 board (DX12, and `WGPU_BACKEND=gl`). Dan runs it; the
+  on Issue190 and on the 4x4 board (DX12, and `WGPU_BACKEND=gl`). The owner runs it; the
   numbers go here.
 
 ## Rules dialogs (G06)
@@ -683,12 +683,12 @@ In plan order. Each item needs engine work first, so check what has landed in
    since G09; the G05 tools (select, keepout, Delete, Fix) still call the engine's I03 functions
    directly. Delete still takes the push-off path (plain removal).
 3. **Autorouter run:** done in G07 (see "What works"). Open: the FT4 to FT6 numbers on a quiet machine
-   and on Dan's Windows GPU (see "FT4 to FT6: during an autoroute"), routing a selection (G07.7, an operator
+   and on the owner's Windows GPU (see "FT4 to FT6: during an autoroute"), routing a selection (G07.7, an operator
    decision) and the optimizer's cross and stage (O06).
 4. **Parameter dialogs:** the autorouter's (G07) and the rules dialogs (G06) are done; the remaining
    Java windows are listed in G08.
 5. **Interactive routing and editing:** done in G09 (see "What works"). Open: the
-   FT7 numbers on a quiet machine and on Dan's Windows GPU (see "Frame numbers").
+   FT7 numbers on a quiet machine and on the owner's Windows GPU (see "Frame numbers").
 
 Other gaps:
 
@@ -699,11 +699,11 @@ Other gaps:
   has tried a screen reader on it.
 - Performance: done in G02 (see "Renderer"). The vertices stay on the GPU;
   a frame uploads the 48-byte camera.
-- Widget style: the panels use egui's default dark style. Dan asked about
+- Widget style: the panels use egui's default dark style. The owner asked about
   native Windows looks, which turned out to be about the title bar only (now
   fixed). A Windows-like light theme is an open offer, not a request.
 - The menu bar and the toolbar have a look of their own (`chrome.rs`, asked
-  for by Dan on 2026-10-17): the app's icon at the left, an icon column and
+  for by the owner on 2026-10-17): the app's icon at the left, an icon column and
   right-aligned shortcuts in the File and View menus, a green Autoroute (red
   Cancel while routing), Mode and Unit as segmented groups, toggles filled while
   on, a red Delete All icon, and the open board in a chip at the right. The icons
@@ -713,7 +713,7 @@ Other gaps:
 
 ## Working rules
 
-- Dan is the sole developer. Commit and push straight to main, with no PRs.
+- The owner is the sole developer. Commit and push straight to main, with no PRs.
   Pull with `--rebase` before pushing. Keep fmt, clippy and tests green.
 - The GUI work owns `crates/freerouting-gui`. Engine changes go into
   `crates/freerouting` in coordination with the engine work; don't change

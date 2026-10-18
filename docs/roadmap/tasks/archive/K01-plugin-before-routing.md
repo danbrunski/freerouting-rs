@@ -24,14 +24,14 @@ then it is tested against a fake executable.
 | `kicad-plugin/freerouting_rs/__init__.py` (3 lines) | Imports `plugin` and calls `register()`, so importing the package needs pcbnew and wx |
 | `kicad-plugin/install.py` (71 lines) | Copies `freerouting_rs/` into KiCad's user `scripting/plugins` and writes `settings.json` (executable locations) |
 | Tests | none |
-| Dan's machine | KiCad 10.0.5 on Windows (`host_version` in `canary-pwr.dsn`); plugin at `C:\Users\thebo\Documents\KiCad\10.0\scripting\plugins\freerouting_rs`; the Java plugin (`app.freerouting.kicad-plugin`) installed alongside in `3rdparty\plugins\app_freerouting_kicad-plugin` |
+| Dev machine | KiCad 10.0.5 on Windows (`host_version` in `canary-pwr.dsn`); plugin at `C:\Users\thebo\Documents\KiCad\10.0\scripting\plugins\freerouting_rs`; the Java plugin (`app.freerouting.kicad-plugin`) installed alongside in `3rdparty\plugins\app_freerouting_kicad-plugin` |
 | KiCad's export of rule areas | `canary-pwr.kicad_pcb` zone "Fan inlet keep-out" on B.Cu: `(pads not_allowed) (footprints not_allowed)`, tracks, vias and copper pour allowed, polygon (136.5, 53)–(162.5, 79) mm. KiCad's DSN (`canary-pwr/freerouting-rs/canary-pwr.dsn:64`): `(keepout "" (polygon B.Cu 0 136500 -53000 162500 -53000 …))`, a full keepout. The keepout type is chosen from the tracks and vias flags only (report §0 item 8, from `specctra_export.cpp`, delegated read) |
 | KRT | `py_router/ui_thread.py` (issue #688: a worker-thread `SaveBoard` froze KiCad 10.0.5 on Windows 11), `install_plugin.py` (`find_conflicting_pcm_installs`, `disable_pcm_install` into `disabled_pcm_plugins/<version>/`), `py_router/swig_compat.py` |
 | Java plugin at `cda540f` | `integrations/KiCad/kicad-freerouting/plugins/{plugin.py,router_dsn.py,process_utils.py}`; it strips Greek letters from the DSN (`router_dsn.py::search_n_strip`) |
 
 What this adds: a pytest suite; `rule_areas.py` and the DSN rewrite; a
 version handshake; a worker-thread guard test and a shadow-install guard;
-notes on SWIG and the IPC API; Dan's confirmation in KiCad.
+notes on SWIG and the IPC API; the owner's confirmation in KiCad.
 
 ## Decisions made here
 
@@ -101,7 +101,7 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
   removed in turn), `windows_to_wsl_path` (`C:\Users\me\b.dsn`, a UNC path raises `ValueError`),
   `Tool.command` native and WSL, UTF-16 `wsl.exe` output in `finish_route`, and a
   `start_route`/`finish_route` round trip through `tests/fake_bin/fake_freerouting.py`.
-  Remainder: the CI job. CI disabled by Dan 2026-10-15; job prepared in
+  Remainder: the CI job. CI disabled by the owner 2026-10-15; job prepared in
   `docs/development/ci-workflow.yml` (owner: F01.2; the orchestrator appends the plugin-test job, whose YAML is in the K01 report).
   The Linux and Windows runs of the suite are unverified (only run on Linux/WSL here).
 
@@ -165,8 +165,8 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
     footprint-owned reference).
   - A real bug found by the fresh export: `(string_quote ")` made a naive scanner treat the quote as a
     string start; handled, and the committed export covers it.
-  Remainder: the rule-area log naming the fan inlet in the editor on `canary-pwr` (needs Dan, K01.6);
-  the Windows KiCad 10.0.5 probe (K02 or Dan).
+  Remainder: the rule-area log naming the fan inlet in the editor on `canary-pwr` (needs the owner, K01.6);
+  the Windows KiCad 10.0.5 probe (K02 or the owner).
 
 - [~] **K01.3 — Version handshake.**
   - `version.py`: `__version__` equal to the workspace version in
@@ -191,7 +191,7 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
   `0.2.0 (abc1234)` and `0.1.0` and the fix; garbage and exit 3 give "unknown" (allowed with a
   warning); a sleeper hits the timeout (0.5 s) and gives "unknown"; `__version__` equals the
   `Cargo.toml` workspace version (test reads it). Remainder: the real check against C08's binary
-  (add to this note when C08 lands), and the dialog inside KiCad (K01.6, Dan).
+  (add to this note when C08 lands), and the dialog inside KiCad (K01.6, owner).
 
 - [x] **K01.4 — UI-thread and shadow-install guards.**
   - `test_threads.py`: parses `plugin.py` with `ast`, finds every function
@@ -245,16 +245,16 @@ notes on SWIG and the IPC API; Dan's confirmation in KiCad.
   on 10.0/master (source) and on 10.0.7 (probe), with a `getattr` fallback in `kicad_areas`.
   Unverified items are marked in the section.
 
-- [~] **K01.6 — Dan confirms the plugin in KiCad.** *Manual, Dan.*
+- [~] **K01.6 — The owner confirms the plugin in KiCad.** *Manual, the owner.*
   - After the orchestrator reinstalls the plugin on Windows
     (`install.py --bin-dir target\release`, then Tools > External Plugins >
-    Refresh Plugins; never restarting KiCad), Dan checks: the toolbar
+    Refresh Plugins; never restarting KiCad), the owner checks: the toolbar
     button, the dialog with both versions, Open in viewer, Import SES, and
     the rule-area log on `canary-pwr` naming the fan inlet.
-  - **Accept:** Dan's confirmation, with the date and what he saw, in
+  - **Accept:** The owner's confirmation, with the date and what he saw, in
     `kicad-plugin.md` "Verified". Until then the item is partial with
-    "needs Dan".
+    "needs the owner".
 
-  *Partial 2026-10-15:* needs Dan (owner: K02, after the orchestrator reinstalls). Prepared: the steps and what to look for are in
+  *Partial 2026-10-15:* needs the owner (owner: K02, after the orchestrator reinstalls). Prepared: the steps and what to look for are in
   `kicad-plugin.md` "What's left"; nothing was reinstalled or run in KiCad.
 

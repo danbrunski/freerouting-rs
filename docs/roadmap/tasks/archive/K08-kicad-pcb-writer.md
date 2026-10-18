@@ -1,7 +1,7 @@
 # K08 — Direct `.kicad_pcb` writer (optional)
 
-Opened 2026-10-15. **Optional: start only on Dan's go-ahead** (K00 question
-5); go-ahead by Dan 2026-10-17. Today the routed result goes back to KiCad as a SES file through
+Opened 2026-10-15. **Optional: start only on the owner's go-ahead** (K00 question
+5); go-ahead by the owner 2026-10-17. Today the routed result goes back to KiCad as a SES file through
 `pcbnew.ImportSpecctraSES`, a SWIG call. If KiCad 11 drops SWIG, as KRT's
 docstring says master did in 2026-03 (unverified), the plugin can no longer
 call it. With [K07](K07-kicad-pcb-entry-points-and-parity.md) the router
@@ -198,7 +198,7 @@ routed board to write.
   whether that `f32` accumulation-order difference is acceptable (recommended) or the clause must be
   bit-exact (K08, operator).
   *Done 2026-10-17:* the orchestrator accepted the `f32` accumulation-order difference (option a,
-  recommended; Dan's standing instruction to take recommended answers): every other field is exact
+  recommended; the owner's standing instruction to take recommended answers): every other field is exact
   and the three per-direction sums agree to 1e-5 relative, which the test asserts.
 
 - [x] **K08.5 — KiCad grades both paths the same.**

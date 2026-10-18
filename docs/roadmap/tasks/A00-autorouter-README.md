@@ -192,7 +192,7 @@ These add to the shared rules in [README.md](README.md).
 - **Owner rules (D8)** are tested where they act: plane-net pads get their own via (A11,
   A12), no via in a pad (A12, A14), `(attach off)` honoured (A01's via masks).
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Unknown stage ids.** Java replaces an unknown `router.autorouter.algorithm` with
    `freerouting-router` and warns (`RoutingPipeline.java:140-148`); the KRT report

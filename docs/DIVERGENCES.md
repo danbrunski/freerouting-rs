@@ -936,7 +936,7 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 I03, port of `gui.interactive.InteractiveStateController`, the menu, inspect, region, pin swap and
 construction states and `GuiBoardHistoryController`; tests `tests/interactive_editor.rs`)
 - Delete of the selection is disabled in Java's GUI at the pin (`GuiBoardLegacyEditActions` makes
-  it a no-op); enabled here by decision (I00 decision 1, accepted by Dan): one snapshot, the
+  it a no-op); enabled here by decision (I00 decision 1, accepted by the owner): one snapshot, the
   deletion-forbidden and user-fixed items stay with Java's
   `some_items_are_fixed_and_could_therefore_not_be_removed`, the rest go through
   `remove_items_and_pull_tight` when push is on, else `remove_items`
@@ -963,7 +963,7 @@ port of `board.actions.ComponentItemTransform`, `MoveItemState` and `CopyItemSta
 - Move, rotate, mirror and copy of the selection are disabled in Java's GUI at the pin
   (`GuiBoardLegacyEditActions.moveSelectedItems` and `copySelectedItems` are no-ops and nothing
   calls `MoveItemState` or `CopyItemState`); enabled here by decision (I00 decision 1, accepted by
-  Dan). The state classes are transcribed headless by the probe and compared line by line on
+  the owner). The state classes are transcribed headless by the probe and compared line by line on
   three boards (`transform_matches_java_*`).
 - `apply_transform` returns the transformed copies and, for a refusal, the reason (Java returns
   `null`); the editor shows Java's `insertion_failed_because_of_obstacles` for every reason.
@@ -1181,7 +1181,7 @@ users would notice is listed. Texts follow the English Java bundles.)
   (`FREEROUTING_GIT_COMMIT` at build time, `unknown` until R01.2 sets it), the license and links.
 
 **Inspect mode, selection and safe edits** (G05, `tools/`, `panels/{select_settings,selection_toolbar,item_info}.rs`, `overlays/construction.rs`; tests `tests/ui_edit.rs`)
-- **Delete, Fix and Unfix of the selection** (decision G00 question 6, accepted by Dan
+- **Delete, Fix and Unfix of the selection** (decision G00 question 6, accepted by the owner
   2026-10-16). Java's inspect toolbar has no such buttons at the pin: the edits it has texts
   for call the empty methods of `GuiBoardLegacyEditActions`. Delete removes the unfixed items
   after one snapshot and keeps the ones whose deletion is forbidden (items of components, user
@@ -1276,7 +1276,7 @@ users would notice is listed. Texts follow the English Java bundles.)
   and the fixed state of traces that these edits change are changed in place without a saved
   version). G06's decision that "U undoes a rule edit" can't be met without engine work.
 
-**Dropped Java features** (G00 question 2, accepted by Dan 2026-10-15; recorded 2026-10-16)
+**Dropped Java features** (G00 question 2, accepted by the owner 2026-10-15; recorded 2026-10-16)
 - `.frb` snapshots (Java serialization, `BoardSnapshotManager`, `SafeObjectInputStream`):
   not ported. DSN + SES + `.rules` carry everything they did; the GUI's own session state
   is G01's persistence.
@@ -1470,7 +1470,7 @@ checks that this list and the table agree.
 - `power_layer_traces` = `none` (N05.3, `docs/roadmap/prereg/N05-power-layer-traces.json`,
   amended once): no trace of any net on a power layer; vias still land in their net's plane
   (Autorouter, `power_layer_traces`). canary's validity check refuses any track on an inner
-  plane layer, and Dan's plugin run of 2026-10-17 had a `+12V_BUS` track on Power.Cu. Judged by
+  plane layer, and the owner's plugin run of 2026-10-17 had a `+12V_BUS` track on Power.Cu. Judged by
   N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against `own_plane`,
   Q13's rule: KiCad unconnected 256 → 256 over canary-pwr (6 rows), m-fc-g474 and microzed,
   every session byte-identical to `own_plane`'s; against Java's `layer` 257 → 256, traces on

@@ -45,7 +45,7 @@ matching items (G00's table).
   autoroute trees, `Item.java:1001-1008`), the facade does the same and its doc
   says so. A fix would be a measured divergence.
 - **`delete_all_traces_and_vias` keeps removing tree entries** (B00, decided
-  without Dan). Java's stale entries are a GUI-only bug. The DIVERGENCES line and
+  without the owner). Java's stale entries are a GUI-only bug. The DIVERGENCES line and
   a test pin the Rust behaviour.
 
 ## File ownership

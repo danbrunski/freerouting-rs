@@ -277,7 +277,7 @@ Paths are under `crates/freerouting-gui/`.
     counters change between the two (details in `gui.md`).
   *Remainder:* the numbers were taken at load average 2.8 to 4.5 on 8 cores (another session was running a
   release test; the checklist wants at most 1.0), and Cancel at 244 ms is within 6 ms of its target. Repeat
-  `freerouting-gui --bench route` on a quiet machine (owner: P01, the measurement runs) and on Dan's Windows
+  `freerouting-gui --bench route` on a quiet machine (owner: P01, the measurement runs) and on the owner's Windows
   GPU (owner: G00, "Frame targets"; the pending line is in `gui.md`).
 
 - [x] **G07.5 — Routing overlay.**
@@ -337,7 +337,7 @@ Paths are under `crates/freerouting-gui/`.
     are empty; there is no fanout of a selection. The toolbar texts
     `autoroute`, `fanout`, `pull_tight` remain in
     `BoardToolbarInspectedItem_en.properties`.
-  - *Operator decision* (G00, "Java's disabled edits"). Only if Dan says
+  - *Operator decision* (G00, "Java's disabled edits"). Only if the owner says
     yes: Autoroute, Fanout and Pull Tight buttons in the selection toolbar
     start the engine's selection entry points (A13's pipeline limited to
     the selected nets, A12's fanout of the selected pins, O01's pull-tight
@@ -350,21 +350,21 @@ Paths are under `crates/freerouting-gui/`.
 
   *Partial 2026-10-16, not attempted:* this item waits on the operator decision (G00 question 6: Java's
   Autoroute, Fanout and Pull Tight of a selection do nothing at the pin; the recommendation is to leave them out
-  until Dan asks), on A12 and O01 entry points for a selection, and on an engine entry point that limits
+  until the owner asks), on A12 and O01 entry points for a selection, and on an engine entry point that limits
   `run_pipeline` to the selected nets. None of the three exists, so nothing was built. Owner: the operator
   decision first, then A12/O01/A13.
 
 - [~] **G07.8 — Record the numbers.**
   - `docs/development/gui.md` gains the FT4, FT5 and FT6 numbers on this
-    machine (lavapipe, release, load average) and a line for Dan's Windows
+    machine (lavapipe, release, load average) and a line for the owner's Windows
     GPU, filled in by hand.
   - **Accept:** the numbers are in `gui.md` with the commit they were
-    measured at; Dan's line is marked "pending" until he runs it.
+    measured at; the owner's line is marked "pending" until he runs it.
 
   *Partial 2026-10-16:* `docs/development/gui.md`, "FT4 to FT6: during an autoroute", has the numbers, the
   command (`freerouting-gui --bench route`, new: `--bench route` with `FREEROUTING_BENCH_PASSES` and
   `FREEROUTING_BENCH_CANCEL_MS`; `bench.rs`, `app_routing.rs`) and the commit they were taken at (`d21d5f1`
-  plus the G07 working tree), with the load average of every row (2.8 to 4.5, not quiet). Dan's Windows GPU line
+  plus the G07 working tree), with the load average of every row (2.8 to 4.5, not quiet). The owner's Windows GPU line
   is marked pending with the exact commands. Remainder: the quiet-machine run (owner: P01, the measurement
-  runs) and Dan's Windows GPU line (owner: G00, "Frame targets").
+  runs) and the owner's Windows GPU line (owner: G00, "Frame targets").
 

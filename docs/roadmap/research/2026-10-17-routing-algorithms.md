@@ -1,7 +1,7 @@
 # Routing algorithms beyond Freerouting and KRT: proposals
 
 Written 2026-10-17 by freerouting-rs-f1 for the orchestrator (freerouting-rs-11), at
-Dan's request ("research other routing algorithms we could try … have them added as
+the owner's request ("research other routing algorithms we could try … have them added as
 checklists and implemented if anything good comes up"). This is research, not a
 checklist. Ids below (N1–N11) are placeholders: the orchestrator picks real ids
 (Q10+ or a new series), the order against Q04/Q07/Q08/P04, and what to drop.
@@ -54,7 +54,7 @@ spread**. That is a noise floor every Q and X keep rule could use as its quantum
 | N3 | Pass-1 portfolio: K deterministic orders, in parallel, keep the best; squeaky-wheel restarts | yes, when on | S | yes, after Q07.1–Q07.3 are built; measure after P04 | none |
 | N4 | Shove before rip (Mighty's weak modification, Situs/Xpedition "Hug") | yes, when on | M | after P04.1 lands (insertion and room code) | N2 measured |
 | N5 | Acute-angle and acid-trap cleanup (mitering), an optimizer stage | geometry only, no connectivity | S | yes | N5.1 count shows acute corners exist |
-| N6 | Spread and centre pass (DFM) | geometry only | S–M | yes | Dan wants DFM work |
+| N6 | Spread and centre pass (DFM) | geometry only | S–M | yes | The owner wants DFM work |
 | N7 | Exact assignment in the escape planners (min-cost flow for BGA, DP/matching for QFN) | yes, when on | S–M | after X10/X12 are measured | X10/X12 measured post-P04 |
 | N8 | SAT window repair of the last unrouted connections | yes, when on | M + NEW DEP | after P04 | N1–N4 leave ≥ 5 `blocked_by`/`found` per board on 3 boards |
 | N9 | Specctra-style conflict-tolerant passes (true negotiated congestion) | yes, when on | L | after P04 | N1–N4 recover under half of the `found` failures |
@@ -350,7 +350,7 @@ later passes, not pass 1.
   item id, and leave fixed and neck-down copper alone.
 - **Metric:** KiCad DRC on a copy of the board with clearance raised by 0.05 mm; slack
   violations −30 % on N−1 boards; real DRC clean.
-- Ask Dan whether DFM spacing matters to him before building it.
+- Ask the owner whether DFM spacing matters to him before building it.
 
 **N7 — Exact escape assignment.**
 - **Sources:**
@@ -482,7 +482,7 @@ later passes, not pass 1.
 
   - On D3-B, KRT used 11.8 vias to Freerouting's 3.48.
   - **D3-C** (6–451 nets, 2–8 layers) is released but not evaluated. It is the public
-    set closest to Dan's board type, and a candidate for F03.3's corpus once its
+    set closest to the owner's board type, and a candidate for F03.3's corpus once its
     boards' licences are checked.
 - No academic paper reports completion on the DAC2020 boards [V: none found].
 

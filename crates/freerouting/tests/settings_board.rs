@@ -681,7 +681,7 @@ mod reference {
 
     #[test]
     fn owner_config_reaches_router_view() {
-        // Dan's `freerouting.json` sets `scoring.start_ripup_costs = 1500`.
+        // The owner's `freerouting.json` sets `scoring.start_ripup_costs = 1500`.
         // `Issue413-test` has no rules file or DSN override, so the router's
         // view shows it. (On `Issue029-hw48na` the rules file's value wins
         // through the quirk C04.3 pins; the second half below.)

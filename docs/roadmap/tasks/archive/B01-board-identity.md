@@ -59,7 +59,7 @@ transient routing state.
   only the default tree, uncompensated. That is Java's `readObject`
   (`BasicBoard.java:1511-1519`, `SearchTreeManager.java:30-36`). Java drops a
   GUI-set clearance compensation on every restore. The port reproduces that
-  during the parity phase (open question Q8 in B00 asks Dan about fixing it later).
+  during the parity phase (open question Q8 in B00 asks the owner about fixing it later).
 - **`Clone` stays for tests and the viewer**, documented as "not a Java copy".
   Routing, optimizer and history code uses `deep_copy()` or `BoardSnapshot`
   (A00's board-history rule says the same).

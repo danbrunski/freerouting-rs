@@ -351,7 +351,7 @@ Paths are under `crates/freerouting-gui/`.
 
 - [x] **G01.7 — Java mouse and key model.**
   *Operator decision:* G00 question 1. Implement the recommendation; the item
-  stays partial until Dan confirms or changes it.
+  stays partial until the owner confirms or changes it.
   - Mouse: the left button is reserved for tools (inspect and region select
     come in G05); middle-drag and Space+left-drag pan; right-click opens the
     context menu (G05.6); the wheel zooms at the cursor; pinch still zooms.
@@ -370,7 +370,7 @@ Paths are under `crates/freerouting-gui/`.
       fitted camera; Z then O returns to the start zoom within 1e-6).
     - `f_zooms_to_rectangle`: F, then a left-drag from (100, 100) to
       (300, 250), gives a view that contains that rectangle's board area.
-  *Done 2026-10-15:* Dan accepted G00 question 1's recommendation
+  *Done 2026-10-15:* The owner accepted G00 question 1's recommendation
   (2026-10-15), which is what was implemented. `tests/ui_input.rs` (no renderer, all OSes): `middle_drag_pans`,
   `left_drag_does_not_pan`, `keys_a_z_o_c`, `f_zooms_to_rectangle`, plus
   `space_and_left_drag_pans`, `a_left_drag_without_f_leaves_the_view_alone_and_escape_cancels_f`,

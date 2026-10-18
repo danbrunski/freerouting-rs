@@ -5,7 +5,7 @@ and the router:
 - how a run's settings are assembled;
 - what those settings change on the board before routing starts;
 - the rules, session and design files the engine reads and writes;
-- the CLI contract that the KiCad plugin, Dan's scripts and the Java fork's
+- the CLI contract that the KiCad plugin, the owner's scripts and the Java fork's
   measurement tools depend on.
 
 The checklists are the [C series](tasks/C00-cli-settings-io-README.md).
@@ -66,7 +66,7 @@ depend on it (decision D1):
 - **The fork's flat keys work.** `router.via_costs`,
   `router.start_ripup_costs` and the rest reach the cost settings (D8, fork
   commit `77d6158a8`).
-- **`ignore_net_classes` is honoured headless.** Dan relies on `-inc` to
+- **`ignore_net_classes` is honoured headless.** The owner relies on `-inc` to
   keep the router off power nets he lays by hand.
 
 Each of these is reproduced and pinned by a named test (C00, "Rules for this
@@ -81,7 +81,7 @@ lesson: drift between the CLI, the GUI and the engine starts wherever a
 default or a flag is written twice. C07.7's gates fail the build when that
 happens.
 
-The config file is JSON in Java's shape, so Dan's `freerouting.json` works
+The config file is JSON in Java's shape, so the owner's `freerouting.json` works
 through `--settings` unchanged. There is no TOML and no serde, so no new
 dependency (C02).
 
@@ -171,7 +171,7 @@ None of this changes the default behaviour.
     on, which is what Java's fixture-test numbers assume;
   - `cli`, a fixed flag set that also shows rules files overriding the
     CLI;
-  - `owner-config`, Dan's `start_ripup_costs = 1500`.
+  - `owner-config`, the owner's `start_ripup_costs = 1500`.
 - **Synthetic boards** cover the explicit-layer-cost quirk, which no
   fixture shows.
 - **Ported Java tests.** Roughly 25 Java test classes port before the
@@ -201,7 +201,7 @@ None of this changes the default behaviour.
 - **Repository size.** Full SES and DSN dumps would add about 30 MB, so
   only a subset is committed. The full set is generated on demand for the
   `#[ignore]` tests.
-- **Where Dan's settings come from.** Dan's `start_ripup_costs = 1500`
+- **Where the owner's settings come from.** The owner's `start_ripup_costs = 1500`
   lives in the Windows Java config. A WSL run never sees it, and the Rust
   CLI reads it only through `--settings`. The CLI logs the effective value
   and its source on every run; the plugin's handling is open question 1

@@ -25,7 +25,7 @@ Measured 2026-10-15 at `b119467` on this machine, quiet:
 
 ## Decisions made here
 
-- **Opt-level 1 for dev and test builds.** This is recommended, and Dan
+- **Opt-level 1 for dev and test builds.** This is recommended, and the owner
   confirms it at F01.1. Opt-level 2 adds almost nothing over 1. Overflow
   checks and debug assertions stay on, because only `opt-level` changes. Rust
   doesn't change float semantics with optimisation, so test results are the
@@ -44,7 +44,7 @@ Measured 2026-10-15 at `b119467` on this machine, quiet:
 ## Checklist
 
 - [x] **F01.1 — Build dev and test profiles at opt-level 1.**
-  *Operator decision:* Dan confirms opt-level 1 (recommended above). Until he
+  *Operator decision:* The owner confirms opt-level 1 (recommended above). Until he
   does, this item is partial and nothing changes.
   - Add `[profile.dev] opt-level = 1` to the workspace `Cargo.toml`, with a
     one-line comment giving the measured reason.
@@ -64,7 +64,7 @@ Measured 2026-10-15 at `b119467` on this machine, quiet:
     - The incremental rebuild is at most 1.5× slower. If it is slower than
       that, record the numbers and leave the profile unchanged.
 
-    *Done 2026-10-15:* Dan directed all checklists be implemented, which is his
+    *Done 2026-10-15:* The owner directed all checklists be implemented, which is his
     go-ahead for opt-level 1. `[profile.dev] opt-level = 1` is in `Cargo.toml`.
     Measured on a quiet machine with a private `CARGO_TARGET_DIR`:
     - Warm `cargo test --workspace` (all 14 test binaries pass in both):
@@ -102,7 +102,7 @@ Measured 2026-10-15 at `b119467` on this machine, quiet:
       out from the first run; don't guess)
   - Keep the three gate commands identical to the local gate.
   - The workflow only reaches GitHub on a push, and pushing is the
-    orchestrator's job. Pushing `.github/workflows/` needs Dan's credentials,
+    orchestrator's job. Pushing `.github/workflows/` needs the owner's credentials,
     which the local git remote (`git@github.com:danbrunski/freerouting-rs.git`)
     uses. So the implementer prepares the file and validates it with
     `python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1]))'`, and
@@ -114,8 +114,8 @@ Measured 2026-10-15 at `b119467` on this machine, quiet:
       workflow's location.
     - Until the push, this item stays partial with "needs push".
 
-    *Partial 2026-10-15:* CI disabled by Dan; install to
-    `.github/workflows/` when he re-enables it (owner: R01 / Dan). The
+    *Partial 2026-10-15:* CI disabled by the owner; install to
+    `.github/workflows/` when he re-enables it (owner: R01 / repository owner). The
     improvements are in `docs/development/ci-workflow.yml` in place (it
     stays there, so GitHub never runs it): `permissions: contents: read`,
     `timeout-minutes: 30`, `Swatinem/rust-cache@v2.9.2`,
@@ -124,7 +124,7 @@ Measured 2026-10-15 at `b119467` on this machine, quiet:
     `python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1]))'`. No
     GUI system packages were added, since that needs a first real run. Nothing
     was pushed. `engine.md` ("Working practices") now says the workflow is
-    prepared in `docs/development/ci-workflow.yml` and disabled at Dan's request
+    prepared in `docs/development/ci-workflow.yml` and disabled by the owner
     (2026-10-15). Remaining: move the file, the green run on all three
     operating systems with its URL, and the Linux packages if the first run
     needs any.

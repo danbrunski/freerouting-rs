@@ -1,6 +1,6 @@
 //! Pins Q16's preregistration (`docs/roadmap/prereg/Q16.json`, Q16.3):
 //! whether `router.cleanup.remove_stubs = true` leaves no dangling via or
-//! trace on canary-pwr (the plugin path and Dan's plugin45 handoff DSN) and
+//! trace on canary-pwr (the plugin path and the owner's plugin45 handoff DSN) and
 //! the K09 demos, judged by N02's totals rule with `accept: no-regress` and
 //! the hard guards unconnected not rising on any board, no new DRC error
 //! and determinism. Registered 2026-10-18 as
@@ -12,7 +12,7 @@
 //! gave `enhanced` `power_layer_traces = none` after the registration, so
 //! both arms run under it.
 //!
-//! The boards are outside the repository (Dan's canary repo, KiCad's demos
+//! The boards are outside the repository (the owner's canary repo, KiCad's demos
 //! and the handoff directory), so their hashes are checked by the run, not
 //! here.
 use std::path::{Path, PathBuf};

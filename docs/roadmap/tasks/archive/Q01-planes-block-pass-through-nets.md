@@ -14,7 +14,7 @@ provisional id; see "Decisions"); C02 (settings model) and C03 (settings
 applied to the board); F03.1 and F03.4 for the measurement; F02.6 for KiCad
 grading.
 
-**Fixture:** `fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn` is Dan's board with the pours left as KiCad planes: the case this checklist exists for. Its siblings `canary-pwr-pours1..3.dsn` are the same board with the pours exported as fixed wires; that is the workaround to compare against (see `fixtures/canary-pwr/README.md`).
+**Fixture:** `fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn` is the owner's board with the pours left as KiCad planes: the case this checklist exists for. Its siblings `canary-pwr-pours1..3.dsn` are the same board with the pours exported as fixed wires; that is the workaround to compare against (see `fixtures/canary-pwr/README.md`).
 
 ## What exists and what this adds
 
@@ -196,7 +196,7 @@ per job, the predicate that uses it, a pour-cut report, and the measurement.
     island-by-island comparison with KiCad's filled polygons).
 
 - [~] **Q01.5 — Measurement.**
-  Preregister (F03.4): arms `off` and `on` with Dan's classes on `canary-pwr`
+  Preregister (F03.4): arms `off` and `on` with the owner's classes on `canary-pwr`
   and its variants, and with the pour net's class listed on at least three
   boards that have signal-layer pours (chosen from the F02.6 demo set and the
   F03.3 corpus, listed in `tools/bench/sets/q01-pours.txt`). Signal: KiCad
@@ -205,7 +205,7 @@ per job, the predicate that uses it, a pour-cut report, and the measurement.
   - **Accept:** measured. Kept only if the pour losses fall on at least N−1
     boards and unrouted rises on none. If kept, a DIVERGENCES line with the
     numbers. If not, the code from Q01.1–Q01.4 that only serves the rule is
-    removed (the report may stay if Dan wants it) and the numbers go in this
+    removed (the report may stay if the owner wants it) and the numbers go in this
     done note.
   *Partial 2026-10-16:* preregistered in `docs/roadmap/prereg/Q01.json` (arms `off` and `on`,
   per-board classes decided from the inputs: interf_u `Power`, pic_programmer `POWER`,

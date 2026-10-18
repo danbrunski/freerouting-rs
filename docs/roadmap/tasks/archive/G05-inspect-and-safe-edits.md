@@ -74,7 +74,7 @@ owner decision (the same one I04 records for selection transforms).
   while a construction or route tool is active.
 - **Edit buttons beyond Java are behind a decision.** G05.4 builds the
   toolbar with Java's reachable buttons first. The disabled ones are added
-  only if Dan says so, and then call I03 commands, never board methods
+  only if the owner says so, and then call I03 commands, never board methods
   directly from the GUI.
 
 ## File ownership
@@ -168,7 +168,7 @@ Paths are under `crates/freerouting-gui/`.
     filter G03's DRC findings to those touching a selected item.
   - Buttons beyond Java (`delete`, `fix`, `unfix`, `spacing`, `new_net`):
     *Operator decision* (G00, "Java's disabled edits"). The
-    recommendation is to add Delete, Fix and Unfix only. If Dan says
+    recommendation is to add Delete, Fix and Unfix only. If the owner says
     yes, each calls the I03 editor command, which owns the rules
     (`remove_items` returns false for fixed items and the status text is
     `some_items_are_fixed_and_could_therefore_not_be_removed`). Until then
@@ -178,7 +178,7 @@ Paths are under `crates/freerouting-gui/`.
     `violations_of_selection_counts`: on a fixture with violations (pick one
     from `tests/reference_drc.rs`), selecting both items of one violation
     and pressing V shows `1 clearance violations found`.
-  *Done 2026-10-16:* `panels/selection_toolbar.rs`: a toolbar that floats over the top of the canvas while items are selected (so the canvas does not resize and fit again), with Java's ten buttons in Java's four groups (Cancel, Info | Nets, Connected Sets, Connections, Components | Violations | Zoom Selection, Zoom All, Zoom Region) and, by decision G00 question 6 (accepted by Dan), Delete, Fix and Unfix in a fifth group (`tools/edit.rs`; DIVERGENCES line). Violations shows the selected items' clearance violations as `N clearance violations found` (Java's `aggregateSortedBySeverity`: the sum of each item's own report, no deduplication) and draws their markers; Info opens the item info window (G04.3 done with it). `tests/ui_edit.rs`: `toolbar_buttons_match_java_set` (labels equal Java's ten, then the three added; each is one button on the canvas while a selection exists and none without), `violations_of_selection_counts` (Issue015, whose one violation is reported by one of its two items: V shows `1 clearance violations found`), `violations_seen_from_both_items_count_twice` (Issue684 shows 2, as Java's code does), `toolbar_zoom_and_extend_buttons_work`, `delete_keeps_fixed_items_and_undo_restores`, `fix_and_unfix_set_the_fixed_state`. Ports of the Java tests `BoardMenuToolbarA11yTest.inspectToolbarActionsAreGroupedSeparatorsAndAccessible` (`selection_toolbar::tests::javas_toolbar_is_four_groups_with_distinct_names`); the Hungarian-locale test is not ported (English only). Known gap: Fix and Unfix are not undoable, because `BasicBoard::set_fixed_state` and `unfix` do not save the item for undo (as in Java); I03.6 owns that.
+  *Done 2026-10-16:* `panels/selection_toolbar.rs`: a toolbar that floats over the top of the canvas while items are selected (so the canvas does not resize and fit again), with Java's ten buttons in Java's four groups (Cancel, Info | Nets, Connected Sets, Connections, Components | Violations | Zoom Selection, Zoom All, Zoom Region) and, by decision G00 question 6 (accepted by the owner), Delete, Fix and Unfix in a fifth group (`tools/edit.rs`; DIVERGENCES line). Violations shows the selected items' clearance violations as `N clearance violations found` (Java's `aggregateSortedBySeverity`: the sum of each item's own report, no deduplication) and draws their markers; Info opens the item info window (G04.3 done with it). `tests/ui_edit.rs`: `toolbar_buttons_match_java_set` (labels equal Java's ten, then the three added; each is one button on the canvas while a selection exists and none without), `violations_of_selection_counts` (Issue015, whose one violation is reported by one of its two items: V shows `1 clearance violations found`), `violations_seen_from_both_items_count_twice` (Issue684 shows 2, as Java's code does), `toolbar_zoom_and_extend_buttons_work`, `delete_keeps_fixed_items_and_undo_restores`, `fix_and_unfix_set_the_fixed_state`. Ports of the Java tests `BoardMenuToolbarA11yTest.inspectToolbarActionsAreGroupedSeparatorsAndAccessible` (`selection_toolbar::tests::javas_toolbar_is_four_groups_with_distinct_names`); the Hungarian-locale test is not ported (English only). Known gap: Fix and Unfix are not undoable, because `BasicBoard::set_fixed_state` and `unfix` do not save the item for undo (as in Java); I03.6 owns that.
 
 - [x] **G05.5 — Undo and redo with scene patching.**
   - Java: `GuiBoardHistoryController.undo/redo/generateSnapshot`, keys U

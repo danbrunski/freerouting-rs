@@ -258,7 +258,7 @@ fn fetch_accepts_files_that_match_their_hash_without_the_network() {
     }
 }
 
-/// Dan's canary-pwr boards are corpus entries too, graded by canary-09.
+/// The owner's canary-pwr boards are corpus entries too, graded by canary-09.
 #[test]
 fn the_owner_boards_are_committed_fixtures_graded_by_canary_09() {
     let json = freerouting_dev::json_read::Json::parse(

@@ -1,9 +1,9 @@
 # canary-pwr fixtures
 
-Dan's CANary power board (`hardware/canary-pwr-rev1.0` in the private
+The owner's CANary power board (`hardware/canary-pwr-rev1.0` in the private
 `danbrunski/canary` repository): 4 layers, with In1 and In2 as planes, so
 routing is on F.Cu and B.Cu. The board has hand-laid power pours, Kelvin
-pairs and gate drives, locked and exported as `type fix`. Dan approved
+pairs and gate drives, locked and exported as `type fix`. The owner approved
 committing these on 2026-10-15. They were handed over by the CANary layout
 session.
 

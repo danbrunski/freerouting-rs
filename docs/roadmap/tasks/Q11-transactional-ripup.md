@@ -6,7 +6,7 @@ Opened 2026-10-17. In pass 1, a rip whose victim does not re-land is permanent (
 
 Prerequisites: board parity (rung 3); A10 (`ConnectionRouter` wrapper slot), A11 (rip events, `ConnectionOutcome::ripped`), B01 (snapshots); Q05.1 (`rip-stats`); Q10's sweep for the combined arms; F03.1, F03.4; measured after P04. Code may start before P04.
 
-Source: research by freerouting-rs-f1 at Dan's request (2026-10-17), `docs/roadmap/research/2026-10-17-routing-algorithms.md` (candidate N2); the preregistration draft is `docs/roadmap/prereg/Q11.json`, marked `DRAFT` until the implementer registers it (sha256s pinned) before the first number.
+Source: research by freerouting-rs-f1 at the owner's request (2026-10-17), `docs/roadmap/research/2026-10-17-routing-algorithms.md` (candidate N2); the preregistration draft is `docs/roadmap/prereg/Q11.json`, marked `DRAFT` until the implementer registers it (sha256s pinned) before the first number.
 
 Practice and literature:
 - KRT's "custody" rips [V, `docs/rip-up-reroute.md` at `0486e799`];

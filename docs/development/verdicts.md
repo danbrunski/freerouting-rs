@@ -134,7 +134,7 @@ A blocker:
 
 ## The Java fork's analysis tools
 
-Dan's tools in the Java fork (`docs/development/tools/` at `main`) answer
+The tools in the Java fork (`docs/development/tools/` at `main`) answer
 these questions from a DSN and an SES; with the verdicts they come from the
 result JSON:
 - `Incompletes.java` (the incomplete connections, by net and component, with

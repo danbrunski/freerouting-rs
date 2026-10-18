@@ -23,7 +23,7 @@ before every push, keep each commit green (fmt, clippy, tests).
 
 ## The Java reference
 
-The port follows Dan's Java repository, `danbrunski/freerouting`, and tracks its
+The port follows the Java repository, `danbrunski/freerouting`, and tracks its
 latest `main` rather than a fixed upstream release. It is currently pinned to
 `a773a70ec` (J01, 2026-10-15; before that `cda540f`), where routing is
 deterministic: every cut-off inside the router is a work budget (`WorkLimit`,
@@ -225,20 +225,20 @@ Board services for algorithm stages (B09, 2026-10-16), none used on the parity p
    batch pipeline. Done when small fixtures route to completion. Then compare
    completion, vias, length, score and time with `fixtures/reference/route`.
    Use a fixed seed everywhere (`freerouting_geometry::jmath` has a bit-exact
-   `java.util.Random`), and take the router changes in Dan's commits since
+   `java.util.Random`), and take the router changes in the Java fork's commits since
    `fc35bbd0` (`git log fc35bbd0..a773a70ec -- src/main/java/app/freerouting/autoroute`).
 2. **Optimizer** (`board.optimize`, `BatchOptimizer`): pull-tight, shove, via
    optimization.
 3. **Interactive editing** (`gui.interactive` logic, as engine code the GUI calls).
 4. **CLI routing parity**, performance, packaging.
 
-### Watch list from comparing Dan's Java changes
+### Watch list from comparing the Java fork's changes
 
 A one-run comparison of the old (`fc4bd20`) and new (`cda540f`) Java router on
 16 boards, 45 s each: the new version left fewer connections unrouted on 13,
 was slightly worse on `Issue066-Project_GP8B` (486 → 500) and
 `Issue145-smoothieboard` (350 → 385), and was the same on `Issue093` while
-finishing in 6 s instead of 17 s. Dan accepted that as is; those two boards are
+finishing in 6 s instead of 17 s. The owner accepted that as is; those two boards are
 worth watching when the router is ported.
 
 ## Working practices that paid off
@@ -252,9 +252,9 @@ worth watching when the router is ported.
 - CI is prepared in [ci-workflow.yml](ci-workflow.yml) (fmt, `clippy -D
   warnings` and `cargo test --workspace` on Linux, Windows and macOS, the same
   three commands as the local gate, with read-only permissions, a 30-minute
-  timeout and `rust-cache`). It is disabled at Dan's request (2026-10-15):
+  timeout and `rust-cache`). It is disabled (decided 2026-10-15):
   it stays in `docs/development/` so GitHub never runs it. To enable it, move
-  it to `.github/workflows/ci.yml`; pushing that directory needs Dan's own git
+  it to `.github/workflows/ci.yml`; pushing that directory needs the owner's own git
   credentials (the cloud sessions' GitHub token can't).
 
 ## Parity and benchmark tools (F02)

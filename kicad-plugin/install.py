@@ -58,7 +58,7 @@ def folder_identifier(folder):
 def is_ours(folder):
     ident = folder_identifier(folder)
     if ident == JAVA_IDENTIFIER or folder.name == JAVA_IDENTIFIER.replace(".", "_"):
-        return False  # Dan runs the Java plugin beside this one
+        return False  # the owner runs the Java plugin beside this one
     if ident in OUR_IDENTIFIERS:
         return True
     names = {FOLDER_NAME} | {i.replace(".", "_") for i in OUR_IDENTIFIERS} | OUR_IDENTIFIERS

@@ -10,7 +10,7 @@ upstream fixes can be re-vendored by diff. It adds no behaviour to the
 engine; X04 and X05 use it.
 
 Prerequisites: board parity (rung 3); X01's decision (skip this checklist if
-X01 puts the grid router last and Dan agrees); F04 (provenance scaffolding,
+X01 puts the grid router last and the owner agrees); F04 (provenance scaffolding,
 `LICENSES/MIT-KiCadRoutingTools.txt`); the orchestrator's answer to
 `NEW DEP: rustc-hash`; X01.2's KRT environment (for the differential test).
 

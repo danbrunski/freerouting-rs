@@ -13,7 +13,7 @@ This checklist removes the tie on purpose, after parity:
 Steps 1 and 2 change routes, so they are a deliberate divergence, measured
 under the Q-series rules ([routing-quality.md](../../routing-quality.md)).
 
-**Position (Dan, 2026-10-16):** P04 runs right after P02 and before P03,
+**Position (owner, 2026-10-16):** P04 runs right after P02 and before P03,
 P05 and every route-changing Q item, so the tree is freed once and every
 later measurement is paired against the freed tree. See P00 "Order".
 
@@ -39,7 +39,7 @@ gate comparator.
   `benchmark` set, the same fraction of connections hit them as before.
 - **The tree is free only after both changes are accepted.** Until then any
   tree change must keep fingerprints identical.
-- **Both trees stay (Dan, 2026-10-16).** The Java-shaped tree with Java's
+- **Both trees stay (owner, 2026-10-16).** The Java-shaped tree with Java's
   work unit is not replaced; it becomes a selectable implementation,
   `router.search_tree = "java" | "fast"` (one key beside P04.1's
   `router.room_order`), as D9 does for stages. `java` is the parity mode:
@@ -219,7 +219,7 @@ gate comparator.
   are accepted", and both were rejected. The default-tree decision is therefore
   **Java's tree** (`MinAreaTree` shape, depth-first room order, nodes-visited
   work unit, D5). `router.search_tree` is not added, so no Q or X measurement
-  needs a re-baseline. Remainder, an operator decision for Dan, owned by
+  needs a re-baseline. Remainder, an operator decision for the owner, owned by
   P00 (the series' open questions):
   - relax P04's pass rule for a divergence made for speed, for example by
     judging totals, or a noise band taken from the canary-pwr variants,

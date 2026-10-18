@@ -1,5 +1,5 @@
 # K02.7: the boards of the plugin's graded runs (tools/bench/k02-graded-runs.sh): KiCad 10's
-# demos named in docs/roadmap/tasks/K02-plugin-routing.md and Dan's canary-pwr. All are
+# demos named in docs/roadmap/tasks/K02-plugin-routing.md and the owner's canary-pwr. All are
 # outside the repository and skipped when missing; each run works on copies.
 #
 # KiCad's bundled demos of the WSL-native KiCad 10.0.7 (/usr/share/kicad/demos). The Windows
@@ -10,5 +10,5 @@
 /usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb
 /usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb
 /usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb
-# Dan's board (read-only; grade.sh works on copies).
+# The owner's board (read-only; grade.sh works on copies).
 ~/code/canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb

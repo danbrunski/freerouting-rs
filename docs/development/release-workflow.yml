@@ -1,9 +1,9 @@
-# DISABLED at Dan's request (2026-10-15, no GitHub CI): this file lives in docs/development/ so
+# DISABLED (decided 2026-10-15, no GitHub CI): this file lives in docs/development/ so
 # GitHub never runs it. To enable releases, move it to .github/workflows/release.yml (pushing a
 # workflow file needs the `workflow` scope or SSH; see docs/development/release.md).
 #
 # R01: on a tag vX.Y.Z, check the version first, build and package on Linux, Windows and macOS,
-# then make a DRAFT GitHub release with SHA256SUMS. Nothing is published until Dan publishes the
+# then make a DRAFT GitHub release with SHA256SUMS. Nothing is published until the owner publishes the
 # draft. No signing yet (R02). The tools are pinned here and listed in release.md.
 name: Release
 

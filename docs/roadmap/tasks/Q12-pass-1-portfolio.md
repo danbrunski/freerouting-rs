@@ -10,7 +10,7 @@ whole solutions and keeps the best:
 
 Prerequisites: board parity (rung 3); A10 (`NetOrdering`); B01; O06 (parallel evaluation pattern); **Q07.1–Q07.3 built** (its two orders are arms 1 and 2; Q07.4 rejected both as defaults, so the code is kept under tag `archive/q07-orderings`, 379b413 (the branch was deleted). Re-apply it here with its PROVENANCE rows, and change the engine crate's `license` to `GPL-3.0-only AND MIT`, because the files carry KRT's MIT portions); Q10 and Q11 for the combined arm; F03.1, F03.4; measured after P04.
 
-Source: research by freerouting-rs-f1 at Dan's request (2026-10-17), `docs/roadmap/research/2026-10-17-routing-algorithms.md` (candidate N3); the preregistration draft is `docs/roadmap/prereg/Q12.json`, marked `DRAFT` until the implementer registers it (sha256s pinned) before the first number.
+Source: research by freerouting-rs-f1 at the owner's request (2026-10-17), `docs/roadmap/research/2026-10-17-routing-algorithms.md` (candidate N3); the preregistration draft is `docs/roadmap/prereg/Q12.json`, marked `DRAFT` until the implementer registers it (sha256s pinned) before the first number.
 
 Evidence of order variance:
 - KRT #1230: placebo perturbations moved open nets by about ±10 % [V];

@@ -1,5 +1,5 @@
 """dropdowns.py: when the plugin re-themes its drop-down lists, and the Win32
-calls it makes. The calls go to fakes; the real ones were checked on Dan's
+calls it makes. The calls go to fakes; the real ones were checked on the owner's
 Windows 11 26200 with KiCad 10.0's wxWidgets 3.3.2 (kicad-plugin.md)."""
 
 import importlib

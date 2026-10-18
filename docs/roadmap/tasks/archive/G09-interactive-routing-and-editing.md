@@ -250,7 +250,7 @@ Paths are under `crates/freerouting-gui/`.
     cannot be entered from the GUI (see "What Java can actually do at the
     pin"). `PopupMenuMove_en.properties` still holds their menu texts.
   - *Operator decision* (G00, "Java's disabled edits", and I04's owner
-    decision). Only if Dan says yes: `tools::move_component` and a cutout
+    decision). Only if the owner says yes: `tools::move_component` and a cutout
     tool calling I04, with the component grid and wheel setting in a
     "Component Movement Settings" dialog (Java `WindowMoveParameter`
     texts).
@@ -276,10 +276,10 @@ Paths are under `crates/freerouting-gui/`.
   - **Waits on I02 and G02.4.**
   - **Accept:** on a quiet machine (load average ≤ 1.0, recorded), frame CPU
     p95 ≤ 8 ms and `full_rebuilds == 0` over the run; numbers in the done
-    note and in `gui.md`, with a "pending" line for Dan's Windows GPU.
+    note and in `gui.md`, with a "pending" line for the owner's Windows GPU.
   *Partial 2026-10-16:* `--bench drag` (`bench_drag.rs`, `bench::drag_offset`): Issue190, release,
   600 frames, patching only. Frame CPU p95 5.84 and 5.54 ms, p50 3.27 ms, max 9.28 and 7.46 ms,
   `full_rebuilds` 0, `patches` 598 (two runs; numbers and the method in `gui.md`, "FT7"). The machine was
   not quiet (other agents routing and building: 1-minute load average 7 to 12, the clause needs at most
   1.0), so the timing clause is not met as written. Remainder: repeat on a quiet machine (owner: P01, the
-  measurement runs) and on Dan's Windows GPU (owner: G00, "Frame targets"; pending line in `gui.md`).
+  measurement runs) and on the owner's Windows GPU (owner: G00, "Frame targets"; pending line in `gui.md`).

@@ -157,7 +157,7 @@ def tier(fp):
     return "easy" if fp <= 30 else "medium" if fp <= 80 else "hard"
 
 
-# Dan's own boards, already committed under fixtures/ (Dan approved: fixtures/canary-pwr/README.md).
+# The owner's own boards, already committed under fixtures/ (the owner approved: fixtures/canary-pwr/README.md).
 # They are graded by the CANary layout session (canary-09) through Windows KiCad, not by this
 # repository's oracle; the procedure is in docs/roadmap/routing-quality.md and the handover note.
 OWNER_BOARDS = [

@@ -2,7 +2,7 @@
 
 wxWidgets 3.3.2, which KiCad 10.0 bundles, gives the drop-down list of a
 `wx.Choice` the "Explorer" theme in dark mode. Recent Windows 11 builds
-(26200.9711 on Dan's machine; 26300.8553 on Insider, where it was first
+(26200.9711 on the dev machine; 26300.8553 on Insider, where it was first
 seen) draw that theme's selected row white under the list's white text, so
 the row under the mouse can't be read (wxWidgets #26535, KiCad #23570).
 wxWidgets 3.3.3 gives the list "DarkMode_DarkTheme" instead, on the builds

@@ -4,7 +4,7 @@ Opened 2026-10-16 by the roadmap review. This series has no checklists. It
 exists so the Java classes it will port are listed somewhere, and so the
 seams the port leaves for them are named before someone designs around
 them. port-completion.md keeps the REST/MCP server and job management
-outside "complete"; nothing here starts until Dan asks.
+outside "complete"; nothing here starts until the owner asks.
 
 ## What Java has
 
@@ -39,6 +39,6 @@ needs.
 
 - The server is its own crate (`freerouting-server`, PORT_PLAN's name) and
   depends on `freerouting` only. The engine never learns about HTTP.
-- No API keys, rate limiting or analytics are ported until Dan says what
+- No API keys, rate limiting or analytics are ported until the owner says what
   the server is for; a local single-user server needs none of them.
 - `NEW DEP` lines for the HTTP stack, decided by the orchestrator.

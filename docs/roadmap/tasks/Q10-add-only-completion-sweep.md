@@ -9,7 +9,7 @@ different costs such as cheaper vias [V, Altium docs].
 
 Prerequisites: board parity (rung 3); A10 (`PassController`, `RipupPolicy`), A13 (best-board restore), B01 (snapshots); Q06 (the `found` verdicts that motivate it); F03.1, F03.4; measured after P04's default-tree decision. Code may start before P04.
 
-Source: research by freerouting-rs-f1 at Dan's request (2026-10-17), `docs/roadmap/research/2026-10-17-routing-algorithms.md` (candidate N1); the preregistration draft is `docs/roadmap/prereg/Q10.json`, marked `DRAFT` until the implementer registers it (sha256s pinned) before the first number.
+Source: research by freerouting-rs-f1 at the owner's request (2026-10-17), `docs/roadmap/research/2026-10-17-routing-algorithms.md` (candidate N1); the preregistration draft is `docs/roadmap/prereg/Q10.json`, marked `DRAFT` until the implementer registers it (sha256s pinned) before the first number.
 
 ## What exists
 

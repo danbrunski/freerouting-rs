@@ -43,7 +43,7 @@ What this adds:
   while the 1-minute load average is above 1.0 (configurable). It records the
   load average next to every timing. This follows the Java fork's
   measurement rule: never benchmark while builds or tests run.
-- **Owner boards stay out of the repo** until Dan says otherwise. Board sets can
+- **Owner boards stay out of the repo** until the owner says otherwise. Board sets can
   name a path outside the repo (for example a copy of `canary-pwr`); such
   entries are skipped with a note when the file is missing.
 
@@ -216,9 +216,9 @@ What this adds:
     `Issue555-CNH_Functional_Tester_1`, `Issue269-z10_module`) and the two
     watch-list boards from `engine.md` (`Issue066-Project_GP8B`,
     `Issue145-smoothieboard`)
-  - `owner.txt`: Dan's boards. `canary-pwr` is in the repo since 2026-10-15
+  - `owner.txt`: the owner's boards. `canary-pwr` is in the repo since 2026-10-15
     (`fixtures/canary-pwr/`: three variants pours1–3, the planes variant and
-    the unpoured board; Dan approved committing them). Any further owner
+    the unpoured board; the owner approved committing them). Any further owner
     boards are out-of-repo paths, skipped when missing
   - **Accept:**
     - Every in-repo path exists.
@@ -246,7 +246,7 @@ What this adds:
   grading with KiCad as the oracle. Two KiCad 10 installs are available:
   - **WSL native, 10.0.7** (`/usr/bin/kicad-cli`, `pcbnew` importable from
     `python3`). Prefer it: no path translation, no Windows process start-up.
-  - **Windows, 10.0.5**, the version Dan saves his boards with:
+  - **Windows, 10.0.5**, the version the owner saves his boards with:
     `/mnt/c/Program Files/KiCad/10.0/bin/kicad-cli.exe` and
     `/mnt/c/Program Files/KiCad/10.0/bin/python.exe`, with paths passed
     through `wslpath -w`. The 2026-10-15 head-to-head used this one, at
@@ -267,7 +267,7 @@ What this adds:
   6. Writes a summary JSON with violations by type, unconnected items, and
      the KiCad version.
   Board sets gain a `kicad.txt`: KiCad's bundled demos
-  (`C:\Program Files\KiCad\10.0\share\kicad\demos`, about 15 boards) and Dan's
+  (`C:\Program Files\KiCad\10.0\share\kicad\demos`, about 15 boards) and the owner's
   boards, all out of the repo.
   - **Grading rules** (from KiCadRoutingTools' `awx/baseline_freerouting.py`
     and its CLAUDE.md, plus the 2026-10-15 head-to-head):
@@ -345,7 +345,7 @@ What this adds:
   *Done 2026-10-15:* `tools/kicad-oracle/` (`grade.sh`, `grade-set.sh`,
   `kicad_steps.py` for pcbnew, `oracle_lib.py` pure Python, `README.md`,
   `tests/`) and `tools/bench/sets/kicad.txt` (16 bundled demos of the
-  WSL-native KiCad 10.0.7 plus Dan's `canary-pwr` and `canary-hat`, all out of
+  WSL-native KiCad 10.0.7 plus the owner's `canary-pwr` and `canary-hat`, all out of
   the repo). Built from the head-to-head's `prep.py`, `import_ses.py`,
   `strip_placement.py`, `classwidths.py`, `stats.py`, `summarize.py` and
   `run_board.sh`. Uses the WSL KiCad 10.0.7 (`kicad-cli` and `pcbnew` must

@@ -62,7 +62,7 @@ The order is therefore the D9 default, with plane handling at its head:
 4. X07, then X08 → X09.
 5. X10, X11, X12.
 
-The orchestrator and Dan confirm this before X02 or X03 starts.
+The orchestrator and the owner confirm this before X02 or X03 starts.
 
 Two findings for the grid-router lane. KRT put 8 vias in pads on coldfire
 and on video, through its dog-bone "via-in-pad fallback", even with
@@ -107,7 +107,7 @@ can run in parallel; X04 → X05 → X06 and X08 → X09 are sequential.
 - **Not ported: KRT's fab-tier escalation and rule rewriting (D8).** KRT's
   default `--fab-tier auto` "rescues" a failing net by dropping to an
   advanced fab tier (0.089–0.127 mm tracks, 0.25/0.15 mm vias). It then
-  rewrites the routed project's DRC minimums to match. Dan's ruling
+  rewrites the routed project's DRC minimums to match. The owner's ruling
   (2026-10-15): the board's design rules are hard limits. Every X stage
   routes within them and never edits them. When X01 or any other comparison
   runs KRT itself, its primary arm uses `--fab-tier standard` (the board's
@@ -153,7 +153,7 @@ measurement rules, which apply here unchanged.
    `krt-meander`, `krt-diffpair`, `krt-qfn-escape`, `krt-bus`,
    `krt-bga-escape`.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **X01's KRT arm: with or without KRT's own KiCad calls?** KRT's `route.py`
    can call `kicad-cli` mid-run to find what KiCad still reports unconnected,

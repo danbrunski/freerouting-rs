@@ -108,7 +108,7 @@ These add to the shared rules and to [O00](O00-optimizer-README.md)'s rules
   `pin_not_swapped_because_it_is_already_connected`) and arguments; the GUI
   owns the text.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **Java's disabled GUI edits.** At `cda540f`,
    `gui/workspace/controllers/GuiBoardLegacyEditActions.java` makes these

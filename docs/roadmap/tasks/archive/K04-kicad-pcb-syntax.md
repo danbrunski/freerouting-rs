@@ -17,7 +17,7 @@ detection, and a test corpus paired with KiCad 10's own DSN exports, so
 K05–K07 can compare the reader against KiCad bit for bit.
 
 Prerequisites: none. KiCad 10 is needed only for K04.8. This machine has
-two: Windows KiCad 10.0.5 (Dan's, the one the plugin runs in) and WSL KiCad
+two: Windows KiCad 10.0.5 (the owner's, the one the plugin runs in) and WSL KiCad
 10.0.7 from the Ubuntu packages (`/usr/bin/kicad-cli`; system `python3`
 imports `pcbnew`), see K00 "Two KiCads". [F04](F04-provenance.md) is a prerequisite
 only if an item translates KiCadRoutingTools (KRT) code; the plan here takes
@@ -262,9 +262,9 @@ What this adds:
     prints `pcbnew.GetBuildVersion()`. Default: WSL KiCad 10.0.7, run as
     `python3 -I export_dsn.py` (no path translation). Optional: Windows
     KiCad 10.0.5 (`/mnt/c/Program Files/KiCad/10.0/bin/python.exe`, paths
-    through `wslpath -w`), the version Dan's plugin uses. The script never
+    through `wslpath -w`), the version the owner's plugin uses. The script never
     imports the plugin package, in either interpreter (`register()` outside
-    the editor raises a dialog on Dan's desktop).
+    the editor raises a dialog on the owner's desktop).
   - `tools/kicad-reader/export.sh [--windows] <board.kicad_pcb> <out.dsn>`:
     copies the board and its `.kicad_pro`/`.kicad_dru` into a scratch folder,
     runs the script there, and copies the DSN back. It records the KiCad

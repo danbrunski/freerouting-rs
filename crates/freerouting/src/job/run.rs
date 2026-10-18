@@ -388,7 +388,7 @@ fn stage_summary(
 }
 
 /// The lines every run starts with after the load: the effective
-/// `start_ripup_costs` and where it came from (D8: Dan's `freerouting.json`
+/// `start_ripup_costs` and where it came from (D8: the owner's `freerouting.json`
 /// sets it), and the warning for an `ignore_net_classes` list whose parts
 /// joined with `,` are the name of a net class on the board (the comma
 /// split of Java's `-inc Power,Default` is a mistake when KiCad's class is

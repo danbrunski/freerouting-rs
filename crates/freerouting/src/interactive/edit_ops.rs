@@ -1,5 +1,5 @@
 //! Delete and fix/unfix of the selection (I03.6, decision 1 of I00, accepted
-//! by Dan 2026-10-16).
+//! by the owner 2026-10-16).
 //!
 //! Java's GUI has these edits disabled at `a773a70ec`: the inspect toolbar
 //! has no buttons for them and `GuiBoardLegacyEditActions` makes the menu

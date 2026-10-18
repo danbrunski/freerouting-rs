@@ -9,7 +9,7 @@
 //! before any routing number; a later change goes in its `amendments` with
 //! the reason and updates the hash below in the same change.
 //!
-//! The boards are outside the repository (Dan's canary repo and KiCad's
+//! The boards are outside the repository (the owner's canary repo and KiCad's
 //! demos), so their hashes are checked by the run, not here.
 use std::path::{Path, PathBuf};
 

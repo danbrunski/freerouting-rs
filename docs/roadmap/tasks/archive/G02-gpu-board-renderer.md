@@ -244,8 +244,8 @@ overlays in `src/overlays/` with egui shapes and must not need changes here.
       and an equal checksum of the vertex buffers.
     - FT2 CPU part: frame CPU p95 ≤ 4 ms on this machine, release, three
       runs, numbers in the done note.
-    - FT2 wall-clock part (≥ 60 fps on Dan's Windows GPU) is manual: the
-      item stays partial until Dan runs the native build and the numbers are
+    - FT2 wall-clock part (≥ 60 fps on the owner's Windows GPU) is manual: the
+      item stays partial until the owner runs the native build and the numbers are
       in `gui.md`.
   *Done 2026-10-15 (CPU part):* `src/bench_synthetic.rs` and
   `--bench-synthetic 4x4 board.dsn` (implies `--bench pan-zoom`; tiling on the
@@ -257,8 +257,8 @@ overlays in `src/overlays/` with egui shapes and must not need changes here.
   and vias are one per layer); 5,600,896 triangles. FT2 CPU part, release, 3
   runs (load 15.3, 13.2, 8.8): frame CPU p95 1.796, 1.550, 1.582 ms (target 4);
   1,514 chunks, 386 drawn in the last frame; `gpu_buffer_bytes` 124,442,080.
-  *Partial 2026-10-15:* the wall-clock part (60 fps on Dan's Windows GPU) is manual and
-  still open: needs Windows run (Dan, by hand, together with G02.8; G07.8 records
+  *Partial 2026-10-15:* the wall-clock part (60 fps on the owner's Windows GPU) is manual and
+  still open: needs Windows run (owner, by hand, together with G02.8; G07.8 records
   the matching FT5 line for his GPU).
 
 - [x] **G02.6 — Faster load (meets FT3).**
@@ -309,11 +309,11 @@ overlays in `src/overlays/` with egui shapes and must not need changes here.
 - [~] **G02.8 — Renderer notes and the Windows check.**
   - `gui.md`: a "Renderer" section (pipeline, chunking, patching, fallback,
     counters) and the FT0–FT4 and FT6 numbers for this machine (lavapipe).
-  - Dan runs `freerouting-gui.exe --bench pan-zoom --frames 600` on
+  - The owner runs `freerouting-gui.exe --bench pan-zoom --frames 600` on
     Issue190 and the 4×4 board on the native Windows build (DX12 and, with
     `WGPU_BACKEND=gl`, GL), as described in `kicad-plugin.md` for the
     native build.
-  - **Accept:** the numbers for both machines are in `gui.md`. Until Dan's
+  - **Accept:** the numbers for both machines are in `gui.md`. Until the owner's
     run, the item is partial with "needs Windows run".
   *Done 2026-10-15 (this machine):* `docs/development/gui.md` has a "Renderer"
   section (pipeline, chunking, patching, fallback, counters, the two frame CPU
@@ -321,5 +321,5 @@ overlays in `src/overlays/` with egui shapes and must not need changes here.
   on lavapipe, with load averages (the machine was busy, load 9 to 15).
   *Partial 2026-10-15:* the Windows numbers (`freerouting-gui.exe --bench pan-zoom
   --frames 600` on Issue190 and `--bench-synthetic 4x4`, DX12 and
-  `WGPU_BACKEND=gl`) are Dan's; needs Windows run (the same session as G07.8's
+  `WGPU_BACKEND=gl`) are the owner's; needs Windows run (the same session as G07.8's
   line for his GPU).

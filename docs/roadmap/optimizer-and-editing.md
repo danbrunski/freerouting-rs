@@ -183,7 +183,7 @@ Each checklist climbs the verification ladder in port-completion.md:
   uses item-id order and compares only order-independent cases.
 - **Scope.** Much of Java's editing is switched off at the pin (delete,
   fix/unfix, cutout, move, copy, optimize or autoroute the selection). I00
-  asks Dan which to build, together with G00's matching question; the
+  asks the owner which to build, together with G00's matching question; the
   recommendation is delete and fix/unfix now, the rest later.
 - **Speed.** One winner per optimizer pass is slow on large boards. It stays
   the default for parity; a faster mode is a Q-series measurement.

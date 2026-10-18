@@ -42,7 +42,7 @@ on real boards; the Windows end-to-end check.
   are not kept in `settings.json`, which holds executable locations and is
   rewritten by `install.py`. Restore skips unknown keys and values it
   doesn't know and keeps defaults for them (KRT's lesson). KRT kept settings
-  in memory only; Dan's boards are long-lived, so ours go to disk.
+  in memory only; the owner's boards are long-lived, so ours go to disk.
 - **The plugin parses only C08's JSON lines**, never human log text. Lines
   that aren't JSON are shown in a log pane as they are.
 - **Progress reaches the UI through a queue.** A reader thread parses
@@ -184,13 +184,13 @@ on real boards; the Windows end-to-end check.
   *Partial 2026-10-16:* `tools/bench/sets/kicad-demos.txt`, `tools/bench/k02-graded-runs.sh`, `tools/kicad-oracle/via_in_pad.py`, `graded_table.py`; the table and the explanations are in `kicad-plugin.md`, "K02.7". Done: five of six boards, both engines, graded by `grade.sh` (KiCad 10.0.7): `ecc83-pp` and `complex_hierarchy` no router-caused item in either engine; `CM5_MINIMA_3` the two sessions are line for line the same (38 items, all shared); `interf_u` Rust 5 `starved_thermal`, Java 4; `kit-dev-coldfire-xilinx_5213` Rust has one `clearance` item (a via 0.04 mm from the copper text `MOD0`, which the DSN export does not carry; Java missed it by chance) and Java has 190 tracks under the board's minimum width, Rust none. No via in a pad in any graded run. Same KiCad processes before and after (none). **Remaining: `canary-pwr`, Rust.** The CLI panics at HEAD with the plugin's options (`expect("item on the board")`, `basic_board.rs:227`, from `normalize_pass` in the fanout stage; with the fanout off it panics with a minimum width and routes without one). That is an engine bug owned by the A series (A14, the board parity gate, which owns the fanout and trace-insertion fixes); Java's `canary-pwr` row is in the table. Re-run `tools/bench/k02-graded-runs.sh ... canary-pwr` once it is fixed, then tick.
   *Done 2026-10-17:* the panic was a port bug in `normalize_pass` (not A14; it panics back to A13), fixed in `8fb7e21` as Java behaves. `ENGINES=rust tools/bench/k02-graded-runs.sh tools/bench/sets/kicad-demos.txt target/orchestrator/k02/g4 <release freerouting at 813663c> <a773a70ec jar> canary-pwr`: copper_edge_clearance 2, starved_thermal 2, via_dangling 36, 70 / 174 unconnected, 124 vias, 0 vias in pads, 0 below the board minimum, 199 s; Java at the pin: the same edge-clearance and thermal items plus 2 under-width tracks and 1 dangling track, 71 / 174. No clearance item Rust has that Java lacks; KiCad processes unchanged (none). Table and explanation in `kicad-plugin.md`, "K02.7".
 
-- [~] **K02.8 — Windows end to end with the native build.** *Manual, Dan.*
+- [~] **K02.8 — Windows end to end with the native build.** *Manual, the owner.*
   - The orchestrator rebuilds the Windows exes natively (`kicad-plugin.md`,
-    mingw `bin` on PATH, viewer closed) and reinstalls the plugin. Dan
+    mingw `bin` on PATH, viewer closed) and reinstalls the plugin. The owner
     routes `canary-pwr` and one demo from inside KiCad: Route with
     progress, Stop, Abort, Route in GUI, and the summary.
-  - **Accept:** Dan's results (what worked, routed and incomplete counts,
+  - **Accept:** The owner's results (what worked, routed and incomplete counts,
     times) are recorded with the date in `kicad-plugin.md` "Verified".
-    Until then the item is partial with "needs Dan".
+    Until then the item is partial with "needs the owner".
 
-  *Partial 2026-10-16:* needs Dan, on Windows, inside KiCad 10.0.5. The exact steps (options saved, Route with progress, Stop, Abort, Route in GUI with Terminate, a demo board) and what to record are in `kicad-plugin.md`, "K02.8: what Dan checks". Before that the orchestrator rebuilds the Windows exes natively (mingw `bin` on PATH, viewer closed, `cargo build --release -p freerouting-gui -p freerouting-cli`) and reinstalls the plugin (`install.py --bin-dir target\release`, Refresh Plugins). Same Windows reinstall as K01.6. Nothing of K02 has run inside KiCad; all of it runs headless against the stub `wx`/`pcbnew`, the fake and the real CLI.
+  *Partial 2026-10-16:* needs the owner, on Windows, inside KiCad 10.0.5. The exact steps (options saved, Route with progress, Stop, Abort, Route in GUI with Terminate, a demo board) and what to record are in `kicad-plugin.md`, "K02.8: what the owner checks". Before that the orchestrator rebuilds the Windows exes natively (mingw `bin` on PATH, viewer closed, `cargo build --release -p freerouting-gui -p freerouting-cli`) and reinstalls the plugin (`install.py --bin-dir target\release`, Refresh Plugins). Same Windows reinstall as K01.6. Nothing of K02 has run inside KiCad; all of it runs headless against the stub `wx`/`pcbnew`, the fake and the real CLI.

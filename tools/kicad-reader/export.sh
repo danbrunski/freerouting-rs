@@ -4,7 +4,7 @@
 #   tools/kicad-reader/export.sh [--windows] <board.kicad_pcb> <out.dsn>
 #
 # Default interpreter: the WSL system python3 (KiCad 10.0.7 from the Ubuntu packages), no path
-# translation. --windows: Windows KiCad 10.0.5's python.exe (the version Dan's plugin runs in),
+# translation. --windows: Windows KiCad 10.0.5's python.exe (the version the owner's plugin runs in),
 # paths through wslpath -w.
 #
 # The board and its .kicad_pro/.kicad_dru are copied into a scratch folder and KiCad runs there,

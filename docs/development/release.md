@@ -2,7 +2,7 @@
 
 How a release is cut, what is in it, and what a user sees on first launch. The pipeline is
 `docs/development/release-workflow.yml` (R01); like the CI draft it sits here because GitHub CI
-is disabled. **Until Dan enables it, nothing here has run on GitHub**: the scripts and the
+is disabled. **Until the owner enables it, nothing here has run on GitHub**: the scripts and the
 Linux package were exercised locally (see "Verified so far"); the Windows and macOS jobs and
 the draft release are untried.
 
@@ -17,7 +17,7 @@ the draft release are untried.
    workflow runs it first with the tag, so a mismatch fails in seconds.
 3. Test the scripts: `python3 -m unittest discover -s tools/release -p 'test_*.py'`.
 4. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. Pushing the workflow file or a tag
-   needs Dan's credentials (the `gh` token lacks the `workflow` scope: `gh auth refresh -h
+   needs the owner's credentials (the `gh` token lacks the `workflow` scope: `gh auth refresh -h
    github.com -s workflow`, or push over SSH).
 5. The workflow builds Linux, Windows and macOS, smoke-tests them and creates a **draft**
    release. Open it, check the assets and `SHA256SUMS`, edit the notes, and publish it by hand.
@@ -37,7 +37,7 @@ release.
 | `freerouting-rs-<v>-macos-universal.dmg` | `freerouting-rs.app` (arm64 and x86_64) |
 | `freerouting-rs-<v>-macos-universal.tar.gz` | The two universal binaries, the plugin, README, LICENSE, notices |
 | `SHA256SUMS` | SHA-256 of every asset above |
-| `freerouting-rs-<v>-pcm.zip` and `metadata.json` | The KiCad plugin-manager package (plugin plus the binaries of all three platforms; `kicad-plugin/package.py`) and the repository `metadata.json` with its checksum and sizes patched in (`update_metadata.py`); the job also runs KiCad's validator on the zip. Submitting it to KiCad's repository is a separate step that needs Dan's go-ahead |
+| `freerouting-rs-<v>-pcm.zip` and `metadata.json` | The KiCad plugin-manager package (plugin plus the binaries of all three platforms; `kicad-plugin/package.py`) and the repository `metadata.json` with its checksum and sizes patched in (`update_metadata.py`); the job also runs KiCad's validator on the zip. Submitting it to KiCad's repository is a separate step that needs the owner's go-ahead |
 
 Every archive carries `LICENSE` and `THIRD_PARTY_NOTICES.md`.
 
@@ -58,7 +58,7 @@ Put the assets and `SHA256SUMS` in one directory, then `sha256sum -c SHA256SUMS`
   lavapipe (`mesa-vulkan-drivers`); the `gl` backend panics under Xvfb ("Invalid surface").
 - **Windows.** MSVC build with a static C runtime (`-C target-feature=+crt-static`), so no Visual
   C++ redistributable is needed. The exes are **unsigned**: SmartScreen shows "Windows protected
-  your PC"; More info > Run anyway. The MSI shows the same for an unsigned publisher. Dan's local
+  your PC"; More info > Run anyway. The MSI shows the same for an unsigned publisher. The owner's local
   KiCad loop keeps the gnu toolchain (its `build.rs` skips the icon resource unless
   `FREEROUTING_WINRES=1`).
 - **macOS.** One universal build (the x86_64 half is cross-compiled on the arm64 runner). The app
@@ -67,7 +67,7 @@ Put the assets and `SHA256SUMS` in one directory, then `sha256sum -c SHA256SUMS`
   "freerouting-rs" and choose **Open Anyway**. macOS 15 removed the Control-click > Open
   shortcut; on macOS 14 it still works. (This is from the GUI report and Apple's documentation,
   not yet seen on a machine here; R01.6 stays partial until someone does it.) The builds stay
-  unsigned: Dan decided on 2026-10-18 that the project does not need code signing (R02, not
+  unsigned: the owner decided on 2026-10-18 that the project does not need code signing (R02, not
   planned), so these warnings are the expected first-run steps on Windows and macOS.
 
 ## Tools and pins
@@ -120,7 +120,7 @@ engine. The stamp is never read by routing code.
 ## Icons
 
 `crates/freerouting-gui/icons/icon.svg` is the single source; `render.py` makes the PNGs, `.ico`
-and `.icns` (see its README). Dan approves the artwork before the first public release.
+and `.icns` (see its README). The owner approves the artwork before the first public release.
 
 ## Verified so far
 

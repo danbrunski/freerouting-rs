@@ -12,7 +12,7 @@
 //! outline segments off the bounding box, and every arm runs again; now
 //! 626f62d42664509bac8b203daa4bc6555165c88f382374b90a313a47d9efb973.
 //!
-//! The boards are outside the repository (Dan's canary repo and KiCad's
+//! The boards are outside the repository (the owner's canary repo and KiCad's
 //! demos), so their hashes are checked by the run, not here.
 use std::path::{Path, PathBuf};
 

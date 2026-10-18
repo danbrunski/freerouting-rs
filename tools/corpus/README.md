@@ -30,7 +30,7 @@ corpus elsewhere, set `FR_CORPUS_DIR` and symlink `target/corpus` to it.
 | `layers`, `tier`, `has_planes`, `has_zones`, `footprints`, `human_routed_items` | `tier` is easy (up to 30 footprints), medium (up to 80) or hard; `has_planes` is a zone on an inner layer; `human_routed_items` counts tracks and vias of the original (two boards are unrouted) |
 | `committable` | the licence is in `allowed-licenses.txt` |
 
-`owner_boards`: Dan's `canary-pwr` boards, already committed under
+`owner_boards`: the owner's `canary-pwr` boards, already committed under
 `fixtures/canary-pwr/`. They carry the note **graded by canary-09** (the CANary
 layout session grades them through Windows KiCad, with `via_in_pad.py = 0` as a
 hard requirement), not by this repository's oracle.

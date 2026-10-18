@@ -100,7 +100,7 @@ D8 allows a short neck-down at a pin, whose bound is Q02's.
 must import `pcbnew`) pick the install, and both must report the same version;
 the version goes into every summary. Prefer the WSL-native KiCad 10.0.7
 (`/usr/bin/kicad-cli`, `pcbnew` in the system `python3`): no path translation
-and no Windows process start-up. The Windows install (10.0.5, the version Dan
+and no Windows process start-up. The Windows install (10.0.5, the version the owner
 saves his boards with, about 8 s of start-up per call) would need `wslpath -w`
 path translation, which these scripts don't do yet. Never mix versions in one
 comparison.

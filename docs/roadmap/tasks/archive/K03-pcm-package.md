@@ -49,7 +49,7 @@ and install checks on the three operating systems.
 - **If the zip is too large for PCM** (the limit is not known here), the
   fallback is a Python-only package that downloads the platform's binaries
   from the GitHub release on first use, checked against the sha256 in its
-  metadata. That is a decision for Dan if K03.2 measures a problem.
+  metadata. That is a decision for the owner if K03.2 measures a problem.
 
 ## File ownership
 
@@ -66,7 +66,7 @@ and install checks on the three operating systems.
 
 - [x] **K03.1 — Metadata and icon.**
   - `metadata.json` with the fields in the decisions, `"license":
-    "GPL-3.0"`, author and maintainer Dan, the repository URL, one
+    "GPL-3.0"`, author and maintainer the repository owner, the repository URL, one
     `versions[]` entry whose `version` equals `version.__version__`
     (three parts) and whose `download_url` names the GitHub release asset.
     `download_sha256`, `download_size` and `install_size` are placeholders
@@ -81,7 +81,7 @@ and install checks on the three operating systems.
     `app.freerouting.kicad-plugin`.
 
   *Done 2026-10-17:* `kicad-plugin/metadata.json` (identifier `com.github.danbrunski.freerouting-rs`, GPL-3.0, author and
-  maintainer Dan, `swig`, `testing`, `kicad_version` 10.0, `platforms` all three, one entry `0.1.0`, `download_url` =
+  maintainer the repository owner, `swig`, `testing`, `kicad_version` 10.0, `platforms` all three, one entry `0.1.0`, `download_url` =
   `.../releases/download/v0.1.0/freerouting-rs-0.1.0-pcm.zip`) and `kicad-plugin/resources/icon.png` (64 x 64 RGBA, 3742 B,
   a copy of R01.3's `crates/freerouting-gui/icons/icon-64.png`, so no "needs icon" remainder). Deviation from the
   wording: the source file has **no** `download_sha256`/`download_size`/`install_size` placeholders (a fake sha would be
@@ -182,7 +182,7 @@ and install checks on the three operating systems.
   workflow runs it with pinned pip packages and the pinned clone.
 
 - [~] **K03.6 — Install from file on three systems.** *Partly manual.*
-  - Windows (Dan): KiCad 10 > Plugin and Content Manager > Install from
+  - Windows (owner): KiCad 10 > Plugin and Content Manager > Install from
     File with the zip; the toolbar button appears; Route on a demo board
     imports a SES using the bundled binaries (the dialog's "Router:" line
     shows the `plugins/bin/windows-x86_64` path). Remove the manual
@@ -193,7 +193,7 @@ and install checks on the three operating systems.
     `freerouting --version` the way the plugin does (a subprocess); record
     whether Gatekeeper blocks it and what "Open Anyway" changes.
   - Linux: the same install through the WSL KiCad 10.0.7 only if it can be
-    done without a window on Dan's desktop; otherwise manual, by Dan.
+    done without a window on the owner's desktop; otherwise manual, by the owner.
   - **Accept:** the results per system, with the KiCad version and date,
     are in `kicad-plugin.md`. Each system not yet checked keeps the item
     partial with "needs <system> check".
@@ -205,8 +205,8 @@ and install checks on the three operating systems.
   .../bin/linux-x86_64/freerouting`, `Router version: 0.1.0 (813663cea)`; Route with the bundled router imported the result
   (115 of 126 connections, 6 vias). Details, and the K01 bug this found (`Path.read_text(newline=)` needs Python 3.13, so
   the rule-area fix-up was skipped on KiCad's 3.12; fixed, `test_dsn_fixup_io.py`), are in `kicad-plugin.md`. Remainder:
-  **needs Windows check** (Dan: KiCad 10 > Plugin and Content Manager > Install from File with the release zip; remove the
+  **needs Windows check** (owner: KiCad 10 > Plugin and Content Manager > Install from File with the release zip; remove the
   manual `scripting/plugins/freerouting_rs` copy first; toolbar button, Route, `Router:` shows `plugins/bin/windows-x86_64`)
   and **needs macOS check** (R01's macOS job: quarantine attribute, `freerouting --version` as a subprocess, Gatekeeper and
   Open Anyway). Both need the real release binaries (MSVC build, macOS universal), which exist only after R01's workflow
-  runs. Submitting the package to KiCad's repository or publishing the release needs Dan's go-ahead and is not part of this item.
+  runs. Submitting the package to KiCad's repository or publishing the release needs the owner's go-ahead and is not part of this item.

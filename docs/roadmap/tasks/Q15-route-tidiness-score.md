@@ -1,6 +1,6 @@
 # Q15 — A measured tidiness score for routes
 
-Opened 2026-10-17 (Dan: "sure"). KRT's users and author say its routes are "far more natural
+Opened 2026-10-17 (owner: "sure"). KRT's users and author say its routes are "far more natural
 and organized than the Manhattan-style FreeRouting algorithm". freerouting-rs measures none of
 that today. It grades only:
 - unconnected connections;
@@ -26,7 +26,7 @@ Prerequisites: F03 (the bench and gate), F02.6 (the KiCad oracle), C05 (the SES 
 - **It reads an SES or a `.kicad_pcb`**, so the same tool scores freerouting-rs, Java and KRT
   output (KRT writes a board, not an SES).
 - **Report-only at first.** Making tidiness part of a keep rule would be a separate decision for
-  Dan, once there are numbers.
+  the owner, once there are numbers.
 
 ## Checklist
 

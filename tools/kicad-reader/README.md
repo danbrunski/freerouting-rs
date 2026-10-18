@@ -18,7 +18,7 @@ folders out of `/tmp`.
 
 Two KiCads: the default is WSL's KiCad 10.0.7 (system `python3` imports
 `pcbnew`, no path translation); `--windows` runs Windows KiCad 10.0.5's
-`python.exe` (the version Dan's plugin runs in) with paths through `wslpath -w`.
+`python.exe` (the version the owner's plugin runs in) with paths through `wslpath -w`.
 
 Determinism of the exports: KiCad orders non-default net classes through a
 `std::unordered_map` in `SPECCTRA_DB::FromBOARD`. On the seven committed boards

@@ -1,10 +1,10 @@
 # K10 — The plugin reads the board directly
 
-Opened 2026-10-17, after Dan asked whether DSN and SES are the right interface
+Opened 2026-10-17, after the owner asked whether DSN and SES are the right interface
 for the plugin, or whether it should integrate with KiCad more closely, as
 KiCadRoutingTools (KRT) does.
 - **The answer:** keep DSN and SES as the default. Add a direct read of the board as an
-  option, measure it, and let Dan decide whether it becomes the default.
+  option, measure it, and let the owner decide whether it becomes the default.
 - **The result still comes back through `ImportSpecctraSES`.**
 
 Prerequisites:
@@ -79,7 +79,7 @@ K10.5 has to show don't hurt:
 - **Results keep coming back through `ImportSpecctraSES`.**
   - Writing to the open board (KRT's `board.Add`) is not part of this checklist.
   - K10.6 records when it becomes worth doing.
-- **Making `kicad_pcb` the default is Dan's decision,** after K10.5's measurement. Until
+- **Making `kicad_pcb` the default is the owner's decision,** after K10.5's measurement. Until
   then the option is off and labelled as experimental in the dialog.
 
 ## File ownership
@@ -126,7 +126,7 @@ K10.5 has to show don't hurt:
     `test_a_snapshot_of_an_unchanged_board_checks_like_the_board` (DRC reports equal as multisets).
   - The result goes back through `plugin.import_ses` (detach first, 9bc7ee6):
     `test_the_snapshot_result_comes_back_through_the_detaching_import`.
-  - Not seen inside KiCad (Dan, K02.8): the dialog's layout, and `SaveBoard`/`SaveProjectCopy` in the
+  - Not seen inside KiCad (owner, K02.8): the dialog's layout, and `SaveBoard`/`SaveProjectCopy` in the
     running editor.
 
 - [x] **K10.2 — The project's rules come along.** Stage `<stem>.kicad_pro` and
@@ -211,7 +211,7 @@ K10.5 has to show don't hurt:
 - [~] **K10.5 — Measured against the DSN path.** Route each board both ways with the
   same options and grade both with KiCad's DRC (F02.6). Boards:
   - the five K02 demo boards;
-  - `canary-pwr` with the options of Dan's plugin run in K09's header (68 unconnected on
+  - `canary-pwr` with the options of the owner's plugin run in K09's header (68 unconnected on
     the DSN path);
   - the K07.6 corpus boards that have open differences, when the corpus is present.
 
@@ -222,7 +222,7 @@ K10.5 has to show don't hurt:
     - the table is in the done note;
     - every board where the direct read grades worse is explained, or tied to one of
       K07.6's open differences;
-    - Dan's answer on the default is recorded (question 1).
+    - The owner's answer on the default is recorded (question 1).
 
   *Partial 2026-10-17:* `tools/kicad-reader/plugin-input-ab.sh` (new; one arm per call: the plugin's own export or
   snapshot, route, `ImportSpecctraSES`, `kicad-cli pcb drc`, `summary.json` with `prepare_s`, `load_s`,
@@ -239,13 +239,13 @@ K10.5 has to show don't hurt:
       tools/kicad-reader/plugin-input-ab.sh $arm /usr/share/kicad/demos/$b.kicad_pcb $O out/k10/$arm/$(basename $b)
     done
   done
-  # canary-pwr, with the options of Dan's plugin run in K09's header (unlimited passes, 2 threads, optimizer on):
+  # canary-pwr, with the options of the owner's plugin run in K09's header (unlimited passes, 2 threads, optimizer on):
   for arm in dsn kicad_pcb; do tools/kicad-reader/plugin-input-ab.sh $arm <canary>/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb $O out/k10/$arm/canary-pwr; done
   # K07.6 boards with open differences (video, vme-wren, One-Air-Max, jetson): the same loop on their .kicad_pcb
   ```
   Then fill the table (unconnected, violations by type, prepare+load time per arm), explain every board where
   `kicad_pcb` grades worse (tie to K07.6's open differences: merged traces, courtyards, keepout order,
-  `One-Air-Max`'s pin/via violation) and record Dan's answer on the default (question 1).
+  `One-Air-Max`'s pin/via violation) and record the owner's answer on the default (question 1).
 
 - [x] **K10.6 — When to write to the open board.** Write down the trigger in
   `kicad-plugin.md`. A live write (KRT's `board.Add` plus `pcbnew.Refresh()`) is taken
@@ -272,11 +272,11 @@ K10.5 has to show don't hurt:
   describe everything but **K10.5's numbers**, which wait for the heavy run (the smoke result is in the section).
   Fill the table there when K10.5 is done.
 
-## Open questions for Dan
+## Open questions for the owner
 
 1. **The default input after K10.5.** *Recommendation:* switch to `kicad_pcb` only if it
    grades the same or better on every K10.5 board. Otherwise keep `dsn` and list the
    boards that hold it back.
 2. **Selection-aware routing**, which KRT has: route only the nets of the selected items.
    It needs a CLI way to route a subset of nets, which does not exist yet.
-   *Recommendation:* not in K10. Open it as its own item if Dan wants it.
+   *Recommendation:* not in K10. Open it as its own item if the owner wants it.

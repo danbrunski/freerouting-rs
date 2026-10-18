@@ -30,7 +30,7 @@ F03.1, F03.4.
 | Exists | State |
 |---|---|
 | Java ripup inside the maze search: a foreign trace can be crossed at a ripup cost `start_ripup_costs × pass` (fanout `× (pass + 1)`); ripped connections become incomplete for the next pass (`MazeRipupResolver`, `AutorouteControl`, cda540f) | ported by A04 and A10's default `RipupPolicy` |
-| Java fork finding (HANDOVER): `start_ripup_costs` 1500 instead of 100 routes `canary-pwr` much better (154 → 132 unrouted) but adds vias elsewhere (CPU-85 +60 %) | the existing ripup knob; Dan's `freerouting.json` sets 1500 |
+| Java fork finding (HANDOVER): `start_ripup_costs` 1500 instead of 100 routes `canary-pwr` much better (154 → 132 unrouted) but adds vias elsewhere (CPU-85 +60 %) | the existing ripup knob; the owner's `freerouting.json` sets 1500 |
 | A04 cost hook `extra_cost(layer, door or room)` (requested) | where history is read |
 | KRT `HistoryField` (sorted parallel arrays, lexsort eviction), charges: contest (frontier ∩ routed copper) at full increment, rip footprint weight 1.0, raw failed frontier 0.25; shipped cost 0.1 mm-equivalent, cap 0.5, no escalation, no decay | the design |
 | KRT `obstacle_costs.compute_ripped_route_costs`: +0.1 mm-equivalent within 1 mm of a ripped net's former copper until it reroutes | the corridor cost |
@@ -47,7 +47,7 @@ F03.1, F03.4.
 - **Cause:** Java's ripup is greedy. Ripped blockers often can't be rerouted,
   and nothing remembers congestion between passes.
 
-So the case for Q05 rests on more than KRT's weak evidence: on Dan's board,
+So the case for Q05 rests on more than KRT's weak evidence: on the owner's board,
 Java's memoryless greedy ripup makes every pass after the first worse. That
 makes history costs (negotiated congestion) the most promising divergence for
 completion. It is still measured under the Q rules, starting from a pass-1

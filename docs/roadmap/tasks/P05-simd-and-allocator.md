@@ -1,6 +1,6 @@
 # P05 — SIMD and allocator
 
-Opened 2026-10-15. Dan welcomes SIMD where it helps (2026-10-15). In this
+Opened 2026-10-15. The owner welcomes SIMD where it helps (2026-10-15). In this
 codebase that means wide, data-parallel loops over plain integers. Example: an
 octagon's eight bounds compared as one `i32x8`, batched over a node's
 children or a leaf block. Branchy search, priority queues and `i128`/`BigInt`

@@ -1,6 +1,6 @@
 # Performance
 
-Recorded 2026-10-15. Dan wants the port to perform better than Java
+Recorded 2026-10-15. The owner wants the port to perform better than Java
 (decision D1). This document says how speed is measured, what may change at
 each stage of the port, and where the time is expected to go. The checklists
 are the [P series](tasks/P00-performance-README.md).
@@ -8,7 +8,7 @@ are the [P series](tasks/P00-performance-README.md).
 ## What is true today
 
 - **Loading and DRC are already fast.** In release, loading a board plus a
-  full DRC takes 0.04–0.5 s on the largest fixtures and 0.09 s on Dan's
+  full DRC takes 0.04–0.5 s on the largest fixtures and 0.09 s on the owner's
   `canary-pwr` (measured 2026-10-15 at `b119467`). Nothing there needs work
   yet.
 - **The router exists since A13/A14** and is where the time goes; at parity it is as fast as Java
@@ -85,7 +85,7 @@ measurements of the Rust port.
    port-completion.md proposes as 3× lower median wall time.
 3. **After parity, P02:** optimizations that keep results identical. Its
    numbers say how far the parity-shaped tree can go.
-4. **Freeing the search tree (P04), right after P02** (Dan, 2026-10-16).
+4. **Freeing the search tree (P04), right after P02** (owner, 2026-10-16).
    The tree's shape decides routes today (D5). A faster tree first needs
    room completion that doesn't depend on visit order, for example by
    visiting obstacles in item-id order, and a work unit that doesn't count
@@ -165,8 +165,8 @@ routing speed. The first parity build is at 1.16× on that set, so 3× needs abo
 profile gives P02 two clear targets (allocation, 16 %, and `remove_redundant_lines` scratch
 vectors, 8.6 %) and P05 one (the box and octagon overlap tests, about 14 % together); neither
 looks like 2.6× on its own, so P04 (the freed search tree) is probably needed to reach 3×, which
-is the order Dan chose (P01, P02, P04, P03/P05). If P02's numbers show less, reconsider the number
-then; set it for the default tree. **Needs Dan:** the number is recorded in
+is the order the owner chose (P01, P02, P04, P03/P05). If P02's numbers show less, reconsider the number
+then; set it for the default tree. **Needs the owner:** the number is recorded in
 [port-completion.md](port-completion.md) "What complete means" only after he agrees.
 
 **Re-running on a quiet machine** (stop builds and tests first; `bench` waits up to `--load-wait`

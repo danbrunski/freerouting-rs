@@ -135,7 +135,7 @@ and there is no measured history for this repo yet, so pace by progress:
 The full list is D1–D9 in `docs/roadmap/port-completion.md`. The ones that
 shape everyday code:
 
-- **D1: match Java's results, not its structure (Dan, 2026-10-15).**
+- **D1: match Java's results, not its structure (owner, 2026-10-15).**
   Organise Rust code for speed and clarity: arenas and indexes instead of
   object graphs, no class-per-module mirroring, fewer allocations, cheap
   snapshots, and parallelism with an ordered merge. What must match Java is
@@ -177,7 +177,7 @@ shape everyday code:
 
 ## Performance and vectorization
 
-Dan welcomes speed-ups, SIMD included, where they measurably help. In
+The owner welcomes speed-ups, SIMD included, where they measurably help. In
 this repo a speed-up must still produce identical results:
 
 - **Measure first, in release.** Time it on the same fixture, on a
@@ -236,7 +236,7 @@ this repo a speed-up must still produce identical results:
 2. **Partial beats blocked.** Mark an item `[~]`, naming exactly
    what remains, when it needs any of these:
    - engine work that hasn't landed
-   - a look-and-feel judgement only Dan can make (take the screenshot
+   - a look-and-feel judgement only the owner can make (take the screenshot
      anyway and name it)
    - a Windows-native build or a check inside KiCad
    - an operator decision (re-pinning, a divergence that changes routing
@@ -367,7 +367,7 @@ this repo a speed-up must still produce identical results:
   import the plugin package in a standalone KiCad Python, because that
   pops a wxWidgets dialog on the operator's desktop.
 - **No windows on the operator's desktop.** Under WSLg the GUI opens on
-  Dan's screen, so launch `freerouting-gui` only on a virtual display,
+  the owner's screen, so launch `freerouting-gui` only on a virtual display,
   and check your own visual work. This recipe is tested here; gui.md's
   version races Xvfb's startup and uses `sleep`.
   ```

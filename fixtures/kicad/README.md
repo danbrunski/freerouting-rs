@@ -64,7 +64,7 @@ tools/kicad-reader/export.sh fixtures/kicad/Issue368-CorneyIslandWireless/corney
 python3 -I tools/kicad-reader/manifest.py write
 ```
 
-`--windows` uses Dan's KiCad 10.0.5 instead. On the seven boards the two
+`--windows` uses the owner's KiCad 10.0.5 instead. On the seven boards the two
 exports differ only in the `(host_version ...)` line (Windows KiCad writes CRLF;
 `export.sh` converts it to LF).
 

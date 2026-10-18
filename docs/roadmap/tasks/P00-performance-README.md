@@ -19,7 +19,7 @@ tree.
 
 ## Order
 
-Decided by Dan 2026-10-16 (the review's question below): **P01 → P02 → P04
+Decided by the owner 2026-10-16 (the review's question below): **P01 → P02 → P04
 → P03 and P05 → the route-changing Q items.**
 
 1. **P01** first. Its tooling items can start as soon as the A series has a
@@ -57,7 +57,7 @@ Report-only Q items (Q03, Q01.4, Q02.1, Q06) do not wait for P04.
 - **A new dependency** (an allocator, a SIMD crate, a profiler crate) is a
   `NEW DEP` line, measured before it is accepted.
 
-## Open questions for Dan
+## Open questions for the owner
 
 - **The release speed target.** port-completion.md proposes at least 3×
   lower median wall time than Java at equal or better results. P01.5
@@ -71,7 +71,7 @@ Report-only Q items (Q03, Q01.4, Q02.1, Q06) do not wait for P04.
   *Recommendation:* keep P04 after P02, but run it before P05 and before any
   Q item that changes routes, so the tree is freed once and every later
   measurement is against the freed tree. P01.5 says which, from the numbers.
-  *Decided by Dan 2026-10-16: as recommended, with the Java-shaped tree kept
+  *Decided by the owner 2026-10-16: as recommended, with the Java-shaped tree kept
   as a selectable mode. Recorded in "Order" above, in P04's decisions, in
   [performance.md](../performance.md) and in Q00's order.*
 - **P04's pass rule** (raised by P04, 2026-10-17). P04.1 (canonical room order)
@@ -86,6 +86,6 @@ Report-only Q items (Q03, Q01.4, Q02.1, Q06) do not wait for P04.
   since P02 already gave the constant-factor gains. Revisit if P01.5's speed
   target is missed. The numbers, the registrations and the patch are in
   [P04](archive/P04-order-independent-rooms.md).
-  *Decided 2026-10-17 (orchestrator, under Dan's standing instruction to take
+  *Decided 2026-10-17 (orchestrator, under the owner's standing instruction to take
   the recommended answer):* keep the rule and close P04.3; the default tree
   stays Java's, and every measurement that waited for P04 runs against it.

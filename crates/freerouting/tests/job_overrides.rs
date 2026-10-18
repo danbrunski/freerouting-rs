@@ -610,7 +610,7 @@ fn clearance_tolerance_override() {
 
 #[test]
 fn ignore_net_classes_is_honoured_headless() {
-    // Dan uses `-inc` to keep the router off hand-laid power nets. The patch
+    // The owner uses `-inc` to keep the router off hand-laid power nets. The patch
     // gives the class name as one element, the way a config file does.
     let mut cli = SettingsPatch::default();
     cli.autorouter.ignore_net_classes = Some(vec!["Power,Default".to_string()]);

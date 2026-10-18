@@ -4,10 +4,10 @@ Opened 2026-10-15. R01's builds are unsigned on Windows and ad-hoc signed on
 macOS. Windows shows a SmartScreen warning for the MSI, and macOS makes
 users approve the app in System Settings before the first launch. Signing
 removes both, but it costs money and needs secrets in CI. It is the GUI
-report's REL-2. **Nothing here starts without Dan's decision** (R00
+report's REL-2. **Nothing here starts without the owner's decision** (R00
 question 1).
 
-**Prerequisites:** R01 (the release workflow); Dan's decision and accounts.
+**Prerequisites:** R01 (the release workflow); the owner's decision and accounts.
 
 ## What exists and what this adds
 
@@ -42,16 +42,16 @@ handling for both.
 
 ## Checklist
 
-- [x] **R02.1 — Record Dan's decision.** *Operator decision.*
-  *Done 2026-10-18:* Dan: "We don't need code signing so no R02." Recorded in
+- [x] **R02.1 — Record the owner's decision.** *Operator decision.*
+  *Done 2026-10-18:* The owner: "We don't need code signing so no R02." Recorded in
   `docs/development/release.md` (Unsigned builds). R02.2–R02.4 are not planned.
   - Which platforms to sign, which accounts or services, who holds the
     keys, and the yearly cost. Recorded in `release.md`.
-  - **Accept:** the decision and its date are in `release.md`. If Dan says
+  - **Accept:** the decision and its date are in `release.md`. If the owner says
     no, the remaining items are marked not planned.
 
 - [x] **R02.2 — macOS Developer ID signing and notarization.** *Not planned.*
-  *Done 2026-10-18:* not planned; Dan decided against code signing (R02.1). Nothing was built.
+  *Done 2026-10-18:* not planned; the owner decided against code signing (R02.1). Nothing was built.
   - Sign both binaries and the app with the hardened runtime and the
     entitlements wgpu needs (none beyond the defaults is expected; record
     what was needed), build the DMG, sign it, submit with `notarytool
@@ -62,14 +62,14 @@ handling for both.
     attribute is set on the downloaded DMG.
 
 - [x] **R02.3 — Windows Authenticode.** *Not planned.*
-  *Done 2026-10-18:* not planned; Dan decided against code signing (R02.1). Nothing was built.
+  *Done 2026-10-18:* not planned; the owner decided against code signing (R02.1). Nothing was built.
   - Sign both exes before packaging and the MSI after, with a timestamp
     server.
   - **Accept:** `signtool verify /pa /v` passes on both exes and the MSI on
     the runner; the signature's subject is the one recorded in R02.1.
 
 - [x] **R02.4 — Update the user docs.** *Not planned.*
-  *Done 2026-10-18:* not planned; Dan decided against code signing (R02.1). Nothing was built.
+  *Done 2026-10-18:* not planned; the owner decided against code signing (R02.1). Nothing was built.
   - Remove the "Open Anyway" and SmartScreen steps from `release.md` and the
     README for the signed platforms.
   - **Accept:** the documents match what a downloaded signed release does,

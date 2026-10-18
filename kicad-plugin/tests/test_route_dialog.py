@@ -227,7 +227,7 @@ def test_each_page_asks_for_its_contents_when_the_dialog_fits(env):
 
 def test_every_tab_asks_for_its_whole_contents_where_the_screen_has_room(env):
     """The notebook takes the longest tab's height (the Advanced stage list),
-    so no tab scrolls on a screen that has the room (Dan)."""
+    so no tab scrolls on a screen that has the room (owner)."""
     make_dialog, ui, _ = env
     ui.page_sizes = {"Route": (400, 340), "Board and DSN": (420, 380), "Advanced": (450, 640)}
     dialog = make_dialog("echo")

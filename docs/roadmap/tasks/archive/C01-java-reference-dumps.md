@@ -65,7 +65,7 @@ What this adds:
     scenario shows the rules overriding the CLI.
   - `owner-config`: prototype `[DefaultSettings, new JsonFileSettings(P)]` with
     `P = tools/java-reference/cases/owner-freerouting.json`. That file has the
-    shape of Dan's `%APPDATA%\freerouting\freerouting.json`: every router
+    shape of the owner's `%APPDATA%\freerouting\freerouting.json`: every router
     section empty except `"scoring": {"start_ripup_costs": 1500}`.
 - **Full-precision numbers.** Dumps use ReferenceDump's own plain `GSON`.
   `GsonProvider.GSON` writes doubles with 2 decimals, which would hide cost

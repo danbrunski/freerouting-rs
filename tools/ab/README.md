@@ -118,7 +118,7 @@ re-registers the head-to-head of X01 (Java Freerouting against
 KiCadRoutingTools, graded by the same KiCad DRC):
 
 - arms `java` (the baseline) and `krt`, with the commands X01 gives;
-- five boards: `canary-pwr-9511d9a` (Dan's board as it stands, input
+- five boards: `canary-pwr-9511d9a` (the owner's board as it stands, input
   `fixtures/canary-pwr/canary-pwr-9511d9a.dsn`) and the stripped DSNs of the
   KiCad demos `pic_programmer`, `interf_u`, `kit-dev-coldfire-xilinx_5213`
   and `video`, as `tools/corpus/prep.sh` exports them with the WSL KiCad
