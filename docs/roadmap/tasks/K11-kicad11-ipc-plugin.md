@@ -252,6 +252,17 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
   - This also avoids master's misplaced footprint keepouts (K11.1), which bears on K10's
     question 1 for KiCad 11.
   - **Accept:** K10.1's in-memory-edit test passes through IPC.
+- [ ] **K11.8 — Correct master's misplaced footprint keepouts ourselves.** No upstream
+  report (Dan, question 3). When the DSN comes from KiCad 11 or later (`kicad-cli` or
+  `RunBoardJobExportSpecctraDsn`), the rule-area fix-up (`rule_areas.py`, K01.2) rewrites each
+  footprint-owned keepout from the board's own rule areas (`kicad_areas`, read through the
+  API), not from the exported coordinates. Detect the offset by comparing the two rather than
+  by version alone, so a fixed KiCad needs no change here.
+  - **Accept:**
+    - on the nightly, `Issue558-dev-board`'s antenna keepout lands where 10.0.7 puts it
+      (K11.1's repro);
+    - the 10.0.7 DSN passes through unchanged;
+    - a unit test with an offset keepout.
 - [ ] **K11.7 — Documentation.** Covers:
   - in `kicad-plugin.md`: the IPC plugin, enabling the API, the nightly probe results;
   - which plugin each KiCad version gets;
@@ -270,5 +281,6 @@ main:docs/research/kicad_ipc_api_research.md`), not checked here:
      position (K11.1, with a two-line repro on `Issue558-dev-board`).
    - If 11.0 ships with it, every DSN from KiCad 11 has misplaced footprint keepouts.
    - Filing an issue on KiCad's GitLab is publishing, so it is Dan's call.
-   - *Recommendation:* file it, with the `dev-board` numbers, before KiCad 11's feature
-     freeze.
+   - *Answered 2026-10-17 (Dan):* don't report upstream; fix what we can in our own repos.
+     K11.8 corrects the keepouts in the plugin's DSN fix-up, and K11.6's direct read avoids
+     the export altogether.
