@@ -1047,6 +1047,10 @@ users would notice is listed. Texts follow the English Java bundles.)
 - Cancel is a full stop of the engine's cancel token: the pipeline finishes the step it is in and
   hands back the best board (D8); Java's `requestStop` ends the thread the same way. Esc, the
   toolbar's Cancel and a click on the canvas all stop it (Java: "Click anywhere on the canvas").
+  After a stop request the status line and the progress panel say the router is stopping (Java
+  keeps "Autorouter is running" until the thread ends), and the log records how long the stop
+  took. A frame reads at most `EVENTS_PER_FRAME` router events, so a router that sends as fast as
+  the window reads can't keep the window from redrawing or seeing input.
 
 **Saving, the questions and the front-end mode** (G08, `files.rs`, `app_files.rs`, `dialogs/autostart.rs`, `file_dialog.rs`; tests `tests/ui_files.rs`)
 - The Save button of the unsaved-changes question (open and drop) saves: it opens Save As and loads
@@ -1085,5 +1089,7 @@ users would notice is listed. Texts follow the English Java bundles.)
   result and does not exit at all after an exception. The window stays open after a failed load so
   the error can be read. Closing the window in the front-end mode stops the job and writes the
   output without a question, like Java's `windowClosing`, and waits for the job to hand back its
-  board before it closes. Pinned by `frontend_failed_write_exits_with_1`,
-  `frontend_writes_on_close_when_routed`.
+  board before it closes. If that stop takes longer than `STOP_GRACE` (3 s), closing again quits
+  without waiting and writes nothing, so the plugin imports nothing (Java has no way out short of
+  killing the process). Pinned by `frontend_failed_write_exits_with_1`,
+  `frontend_writes_on_close_when_routed`, `frontend_close_again_after_a_slow_stop_quits_without_waiting`.

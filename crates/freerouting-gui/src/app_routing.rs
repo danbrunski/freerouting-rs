@@ -29,6 +29,12 @@ impl App {
         self.routing.as_ref()
     }
 
+    /// The running job, for tests that age its stop request.
+    #[doc(hidden)]
+    pub fn routing_mut(&mut self) -> Option<&mut RoutingRun> {
+        self.routing.as_mut()
+    }
+
     /// The autorouter's settings, summary and counters.
     pub fn autoroute(&self) -> &Autoroute {
         &self.autoroute
@@ -81,6 +87,10 @@ impl App {
     /// Asks the running job to stop; it hands back the board it keeps.
     pub(crate) fn stop_routing(&mut self) {
         if let Some(run) = &mut self.routing {
+            if run.stop_requested.is_none() {
+                self.log.push(Level::Info, "Stop requested.");
+                self.notice = Some(crate::text::ROUTING_STOPPING.to_string());
+            }
             run.stop();
         }
     }
@@ -154,7 +164,15 @@ impl App {
             self.routing_failed();
             self.frontend_job_ended(ctx);
         } else {
-            ctx.request_repaint_after(REPAINT_EVERY);
+            if run.stop_is_slow() && self.notice.as_deref() == Some(crate::text::ROUTING_STOPPING) {
+                self.notice = Some(crate::text::ROUTING_STOP_SLOW.to_string());
+            }
+            if events.capped {
+                // More events are waiting: read them next frame, at once.
+                ctx.request_repaint();
+            } else {
+                ctx.request_repaint_after(REPAINT_EVERY);
+            }
         }
     }
 
@@ -190,6 +208,13 @@ impl App {
             if line.level != freerouting::job::LogLevel::Debug {
                 self.log.push(level, line.text.clone());
             }
+        }
+        if let Some(asked) = run.stop_requested {
+            let seconds = format!("{:.1}", asked.elapsed().as_secs_f64());
+            self.log.push(
+                Level::Info,
+                crate::text::fill(crate::text::ROUTING_STOPPED_AFTER, &[&seconds]),
+            );
         }
         let message = crate::panels::progress::end_message(&summary);
         self.log.push(Level::Info, message.clone());

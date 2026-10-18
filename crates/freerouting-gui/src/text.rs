@@ -949,6 +949,17 @@ pub const INTERRUPTED: &str = "interrupted";
 pub const OPEN_A_BOARD: &str = "Open a board first.";
 pub const ROUTING_READ_ONLY: &str =
     "The autorouter is running; the board can't be edited until it finishes.";
+/// Port-only: the status line after Cancel, until the job hands its board back.
+pub const ROUTING_STOPPING: &str =
+    "Stopping the autorouter: it finishes the current step and keeps the best board so far.";
+/// Port-only: the status line when a stop takes longer than `STOP_GRACE`.
+pub const ROUTING_STOP_SLOW: &str = "The autorouter has not stopped yet. Close the window again to quit without waiting; this run's routing is then discarded.";
+/// Port-only: the log line when a stop has been answered.
+pub const ROUTING_STOPPED_AFTER: &str =
+    "The autorouter stopped {{seconds}} s after the stop request.";
+/// Port-only: the log line when the window closes without waiting for the job.
+pub const ROUTING_ABANDONED: &str =
+    "Closed without waiting for the autorouter; nothing was written.";
 
 // WindowRoutingSummary_en.properties
 pub const SUMMARY_TITLE: &str = "Routing Summary";

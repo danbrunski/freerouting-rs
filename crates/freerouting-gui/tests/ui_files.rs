@@ -699,6 +699,33 @@ fn frontend_writes_on_close_when_routed() {
 }
 
 #[test]
+fn frontend_close_again_after_a_slow_stop_quits_without_waiting() {
+    let dir = scratch("fe-close-slow");
+    let design = fixture("Issue684-Autorouter_PCB1_2026-5-8.dsn");
+    let out = dir.join("out.ses");
+    let mut h = app(strings(&[
+        "-de",
+        design.to_str().unwrap(),
+        "-do",
+        out.to_str().unwrap(),
+        "-dct",
+        "0",
+    ]));
+    step_until(&mut h, 300, "the job", |a| a.is_routing());
+    // A stop asked for longer ago than the grace that the job has not
+    // answered: the router is not told, so it is still running.
+    let past = Instant::now()
+        .checked_sub(freerouting_gui::routing::STOP_GRACE * 2)
+        .unwrap();
+    h.state_mut().routing_mut().unwrap().stop_requested = Some(past);
+    close_request(&mut h);
+    assert!(h.state().close_sent(), "the close did not wait");
+    assert!(!h.state().is_routing());
+    assert!(!out.exists(), "an abandoned run wrote the output");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
 fn frontend_close_after_cancelled_countdown_writes_a_routed_board() {
     // No job ran, but the board has traces (a session was opened): Java writes
     // the output on close anyway.

@@ -72,6 +72,14 @@ const STACK_BYTES: usize = 64 * 1024 * 1024;
 /// How often a running job asks for a repaint (about 30 Hz).
 pub const REPAINT_EVERY: Duration = Duration::from_millis(33);
 
+/// The most events one frame reads, so a router that sends as fast as the GUI
+/// reads can never hold the frame (and with it Cancel and the close button).
+pub const EVENTS_PER_FRAME: usize = EVENT_BOUND;
+
+/// How long a stop may take before closing the window again quits without
+/// waiting for the job.
+pub const STOP_GRACE: Duration = Duration::from_secs(3);
+
 /// How a job thread ended.
 pub enum JobEnd {
     /// `run_pipeline` returned. The board went over the channel with
@@ -369,6 +377,9 @@ pub struct FrameEvents {
     pub finished: Option<(Box<RoutingBoard>, RunSummary)>,
     /// True once the sender is gone.
     pub disconnected: bool,
+    /// True if the frame stopped reading at [`EVENTS_PER_FRAME`] with events
+    /// still waiting.
+    pub capped: bool,
     /// How many events were read.
     pub events: usize,
     pub progress_events: usize,
@@ -376,10 +387,20 @@ pub struct FrameEvents {
 }
 
 impl FrameEvents {
-    /// Reads every event that is waiting, without blocking.
+    /// Reads the events that are waiting, up to [`EVENTS_PER_FRAME`],
+    /// without blocking.
     pub fn drain(events: &Receiver<RouterEvent>) -> FrameEvents {
+        FrameEvents::drain_at_most(events, EVENTS_PER_FRAME)
+    }
+
+    /// [`drain`](Self::drain) with its limit.
+    pub fn drain_at_most(events: &Receiver<RouterEvent>, limit: usize) -> FrameEvents {
         let mut frame = FrameEvents::default();
         loop {
+            if frame.events >= limit {
+                frame.capped = true;
+                break;
+            }
             match events.try_recv() {
                 Ok(event) => frame.push(event),
                 Err(TryRecvError::Empty) => break,
@@ -596,6 +617,13 @@ impl RoutingRun {
         }
     }
 
+    /// True if a stop was asked for more than [`STOP_GRACE`] ago and the job
+    /// has not ended.
+    pub fn stop_is_slow(&self) -> bool {
+        self.stop_requested
+            .is_some_and(|asked| asked.elapsed() >= STOP_GRACE)
+    }
+
     /// Reads this frame's events and patches the scene. Returns the merged
     /// events, whose `finished` the caller handles.
     pub fn poll(&mut self, loaded: &mut Loaded) -> FrameEvents {
@@ -689,6 +717,24 @@ pub struct Autoroute {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_frame_reads_at_most_its_limit() {
+        let (sender, receiver) = std::sync::mpsc::sync_channel(16);
+        for _ in 0..10 {
+            sender
+                .send(RouterEvent::Progress(Progress::default()))
+                .unwrap();
+        }
+        let first = FrameEvents::drain_at_most(&receiver, 4);
+        assert_eq!((first.events, first.capped), (4, true));
+        let rest = FrameEvents::drain_at_most(&receiver, 4);
+        assert_eq!((rest.events, rest.capped), (4, true));
+        let last = FrameEvents::drain_at_most(&receiver, 4);
+        assert_eq!((last.events, last.capped), (2, false));
+        drop(sender);
+        assert!(FrameEvents::drain(&receiver).disconnected);
+    }
 
     #[test]
     fn fanout_events_without_figures_keep_the_last_ones() {

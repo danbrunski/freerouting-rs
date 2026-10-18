@@ -35,6 +35,7 @@ use crate::commands::{Answer, Command};
 use crate::dialogs::autostart::{Autostart, Choice};
 use crate::files::{self, SaveKind};
 use crate::panels::log::Level;
+use crate::routing::RoutingRun;
 use crate::text;
 
 /// The process exit code the front-end mode asks for: 0, or 1 once a write
@@ -364,6 +365,14 @@ impl App {
         if self.files.frontend.options.output.is_some() && self.loaded.is_some() {
             // Java's `windowClosing`: stop the router and write the output if
             // the board changed or has traces; no question.
+            if self.routing.as_ref().is_some_and(RoutingRun::stop_is_slow) {
+                // Closed again while a stop is overdue: quit without waiting.
+                // Dropping the job asks it to stop and does not join it.
+                self.routing = None;
+                self.log.push(Level::Warning, text::ROUTING_ABANDONED);
+                self.close_window(ctx);
+                return;
+            }
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             self.files.frontend.closing = true;
             if self.routing.is_some() {

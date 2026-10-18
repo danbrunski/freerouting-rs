@@ -96,6 +96,9 @@ pub fn end_message(summary: &RunSummary) -> String {
 pub fn ui(ui: &mut egui::Ui, progress: Option<&Progress>, stopping: bool) -> Vec<Command> {
     let mut out = Vec::new();
     ui.heading(text::MENU_AUTOROUTER);
+    if stopping {
+        ui.label(text::ROUTING_STOPPING);
+    }
     match progress {
         None => {
             ui.label(text::BATCH_AUTOROUTER_START_MESSAGE);
