@@ -109,7 +109,27 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
     `-mp 1`, `start_ripup_costs = 1500`, `min_trace_width_um = 150`.
   - **Accept:**
     - a headless plugin run (pcbnew from WSL KiCad 10.0.7) on `canary-pwr` grades
-      45 unconnected, or within the differences the done note explains against
+      45 unconnected (33 with Q10's `sweep=free`), or within the differences the done note explains against
       `dsn_export.py`'s DSN (`ses-diff` against the 97d10d6 / Java 7f56b062d
       session);
     - `kicad-plugin.md` documents the options and the preset.
+- [ ] **K09.9 — A plain plugin run gets the graded flow under `enhanced`.** canary-7a graded
+  Dan's plugin run at `9c97117` (profile `enhanced`, default options) at 68 unconnected, with
+  2 `copper_edge_clearance` errors (GND vias 0.297 mm from the edge against 0.3) and 2
+  inner-layer tracks (Q13), while the CLI flow grades 33 (Q10). The plugin got none of what
+  produced 33:
+  - KiCad's raw export (20 planes against 4, 1.5 mm and 0.5 mm class widths, 110 fixed
+    items against 220, no edge clearance);
+  - profile defaults (ripup cost 100 against 1500, unlimited passes against `-mp 1`, no
+    minimum width);
+  - no sweep (Q10 isn't in `enhanced` yet).
+
+  With the measurements of K09.2–K09.7, Q10 and Q04 in hand, decide which fix-ups and
+  settings `enhanced` turns on in the plugin by default (N02's rule, N05's procedure), so
+  that a run with default options reproduces the graded flow. The board's copper-to-edge
+  clearance is always honoured: it is a board rule, not a tuning option (K09.4 makes it a
+  keepout; with K10's direct read the router takes it from the board).
+  - **Accept:**
+    - a default-options plugin run on `canary-pwr` grades ≤ 33 with no edge-clearance or
+      inner-layer errors, or the done note gives the number and the cause;
+    - `legacy` keeps the plugin's current behaviour.
