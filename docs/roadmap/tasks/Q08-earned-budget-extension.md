@@ -106,7 +106,7 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
   the Q08.3 registration, both arms, optimizer off, `--stats json`: `Issue433-my-board`,
   `Issue649-kicad_ecc83`, `Issue508-DAC2020_bm02`, `Issue690-sonde_xilinx`,
   `Issue508-DAC2020_bm07`: SES identical, `maze_work_limit_hits` 0, extensions 0 (0 % extra
-  work); disclosed in `Q08.json`'s amendment 1 (operator decision). Remainder, in Q08.3's heavy run: the full A14 / `ses-diff` on `benchmark` with the
+  work); disclosed in `Q08.json`'s amendment 1 (operator decision). Full A14 done 2026-10-18: full A14 on origin/main 7a4f73b (Q08, Q12, N06.3 in the tree; release, `--test-threads=1`, `PARITY_SUBDIRS=1`; log `target/orchestrator/heavy/a14-7a4f73b.log`): 1 passed, 138 boards (120 exact, 15 cutoff, 3 Java failures), every SES byte-identical except the known Issue684 and Issue721 (expected), Issue110-RelayModule (non-ASCII name only) and the Java-failure boards. Remainder, in Q08.3's heavy run: `ses-diff` on `benchmark` with the
   default router, `determinism-check.sh` on `canary-pwr` and `Issue145-smoothieboard`, and the
   per-board extensions and extra-work share (Q08.3's report metrics `maze_budget_extensions`,
   `maze_budget_extra_units`, `tree_nodes_visited`).

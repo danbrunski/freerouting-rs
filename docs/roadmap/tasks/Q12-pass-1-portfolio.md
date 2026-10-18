@@ -91,7 +91,7 @@ an arm, never the default.
     Issue433 (K = 4, restarts 2, 2 threads) and on `q12-channel.dsn`: "identical". Off is
     unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p
     freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
-    --test-threads=1` ok (the full A14 is pending, the orchestrator's run). DIVERGENCES line
+    --test-threads=1` ok (and the full A14 on origin/main 7a4f73b (Q08, Q12, N06.3 in the tree; release, `--test-threads=1`, `PARITY_SUBDIRS=1`; log `target/orchestrator/heavy/a14-7a4f73b.log`): 1 passed, 138 boards (120 exact, 15 cutoff, 3 Java failures), every SES byte-identical except the known Issue684 and Issue721 (expected), Issue110-RelayModule (non-ASCII name only) and the Java-failure boards). DIVERGENCES line
     under the settings fields.
 - [x] **Q12.2: squeaky-wheel restarts.**
   - **Accept:** a fixture where the failed connection routes when moved first ends
