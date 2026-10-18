@@ -141,7 +141,8 @@ K02 tests: `test_options.py` (golden argument lists, save/load round trip, damag
 `test_routing.py` (`RouteRun` and `GuiRun` against `fake_bin/fake_freerouting.py` modes `route`,
 `route-slow`, `route-fail`, `route-noise` and `fake_bin/fake_gui.py`), `test_route_dialog.py` and
 `test_gui_mode.py` (plugin.py's Route and Route in GUI flows with the stub `wx`/`pcbnew` of
-`tests/stub_ui.py`: real dialog code, modal loops driven by their timers), and
+`tests/stub_ui.py`: real dialog code, modal loops driven by their timers), `test_dropdowns.py`
+(when the dark-list fix applies, and its Win32 calls against fakes), and
 `test_cli_integration.py` (the real CLI: all options, Stop, Abort, summary against `-drc`).
 The last one uses `FREEROUTING_RS_BIN` (a directory), else `target/release` or `target/debug`, and
 skips with the reason when no `freerouting` with `--capabilities` is found.
@@ -327,7 +328,19 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
 - **Don't import the plugin package in a standalone KiCad Python.** `register()` outside the
   editor raises a wxWidgets "PgmOrNull() failed" debug dialog on Dan's desktop. Test
   `tools.py` and `export_dsn` directly instead (`pcbnew.LoadBoard` + `ExportSpecctraDSN`
-  works headless).
+  works headless). A standalone wx script in KiCad's `python.exe` must create `wx.App` before
+  any other wx call (even `wx.GetLibraryVersionInfo()`), or wxWidgets shows a "failed to
+  initialize wxPlatformInfo" assert box.
+- **Dark drop-downs on recent Windows 11 are white on white in KiCad 10.0.** wxWidgets 3.3.2,
+  which KiCad 10.0 bundles, themes a `wx.Choice`'s list so that Windows 26200.9xxx (and Insider
+  26300.8553) draws the selected row, the one under the mouse, white under white text
+  ([wxWidgets #26535](https://github.com/wxWidgets/wxWidgets/issues/26535), KiCad work item
+  23570; fixed in wxWidgets 3.3.3). `dropdowns.py` gives the dialog's lists the
+  `DarkMode_DarkTheme` theme, as wxWidgets 3.3.3 does. It does nothing on other systems, in
+  light mode, before build 26200, and with wxWidgets 3.3.3 or later. Checked on Dan's machine
+  (26200.9711, KiCad 10.0's `python.exe` and wx 3.3.2, a standalone window loading only
+  `dropdowns.py`): unreadable before, readable after, light mode unchanged. KiCad's own
+  drop-downs keep the bug until KiCad ships a newer wxWidgets.
 - **Dan's display is at 125% (120 DPI).** Screen captures of the viewer from a DPI-unaware
   process (plain PowerShell) get only the top-left part of the window and look wrongly
   fitted. Call `SetProcessDPIAware()` before `GetWindowRect`/`PrintWindow`.

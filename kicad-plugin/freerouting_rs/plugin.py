@@ -18,7 +18,7 @@ from pathlib import Path
 import pcbnew
 import wx
 
-from . import kicad_areas, options, progress, routing, rule_areas, tools, version
+from . import dropdowns, kicad_areas, options, progress, routing, rule_areas, tools, version
 
 TITLE = "freerouting-rs"
 TICK_MS = 100
@@ -285,6 +285,9 @@ class Dialog(wx.Dialog):
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
         self.CentreOnParent()
+        # KiCad 10's wxWidgets draws the selected row of a dark drop-down
+        # white on white on recent Windows 11 builds (dropdowns.py).
+        dropdowns.fix_dark_lists([self.profile] + [c for c, _ in self.stage_choices.values()])
 
     def advanced_group(self, saved):
         """The "Advanced" group (N01.4): one choice per stage slot of the

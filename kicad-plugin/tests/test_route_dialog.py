@@ -3,6 +3,7 @@ stub wx/pcbnew: options saved and passed, progress shown, Stop keeps, Abort
 discards, the summary after the import."""
 
 import json
+import sys
 
 import pytest
 import stub_ui
@@ -171,3 +172,14 @@ def test_a_router_without_a_stage_listing_has_no_choices(env):
     dialog = make_dialog("fail")  # `--list-stages=json` exits 3
     assert dialog.stage_choices == {}
     assert dialog.chosen_stages() == {}
+
+
+def test_every_drop_down_gets_the_dark_list_fix(env, monkeypatch):
+    make_dialog, _, _ = env
+    passed = []
+    dropdowns = sys.modules["freerouting_rs.dropdowns"]
+    monkeypatch.setattr(dropdowns, "fix_dark_lists", lambda choices: passed.append(list(choices)))
+    dialog = make_dialog("echo")
+    stages = [choice for choice, _ in dialog.stage_choices.values()]
+    assert len(stages) == 2
+    assert passed == [[dialog.profile] + stages]
