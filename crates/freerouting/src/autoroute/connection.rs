@@ -53,6 +53,7 @@ use super::session::Session;
 use super::session::drills::DrillCarry;
 use super::session::search::{MazeSearch, SearchResult, SearchSettings};
 use super::session::sink::{NoExtraCost, SearchSink};
+use super::width_policy::WidthPolicy;
 use super::{AttemptResult, AttemptState};
 use crate::board::RoutingBoard;
 use crate::board::items::{AreaKind, Item, ItemId, ItemKind, StopConnectionOption};
@@ -133,9 +134,28 @@ pub fn route_connection_on_engine<S: SearchSink>(
     sink: S,
     engine: &mut DrillCarry,
 ) -> (AttemptResult, S) {
+    route_connection_with_widths(board, start, dest, ctrl, limits, ripped, sink, engine, None)
+}
+
+/// [`route_connection_on_engine`] with the room widths of `widths` (Q17.1):
+/// the search, the locator and the inserter read each room's trace half
+/// width from it. `None` is [`route_connection_on_engine`].
+#[allow(clippy::too_many_arguments)]
+pub fn route_connection_with_widths<S: SearchSink>(
+    board: &mut RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+    ctrl: &AutorouteControl,
+    limits: RouteLimits<'_>,
+    ripped: Ripped<'_>,
+    sink: S,
+    engine: &mut DrillCarry,
+    widths: Option<&dyn WidthPolicy>,
+) -> (AttemptResult, S) {
     let Ripped { items, costs } = ripped;
-    let (searched, sink) =
-        search_and_locate(board, start, dest, ctrl, limits, items, costs, sink, engine);
+    let (searched, sink) = search_and_locate(
+        board, start, dest, ctrl, limits, items, costs, sink, engine, widths,
+    );
     let (result, located) = match searched {
         Searched::InitFailed => {
             let details = format!(
@@ -168,9 +188,10 @@ pub(crate) fn route_connection_counted(
     limits: RouteLimits<'_>,
     ripped: Ripped<'_>,
     engine: &mut DrillCarry,
+    widths: Option<&dyn WidthPolicy>,
 ) -> AttemptResult {
     if !crate::run_stats::enabled() {
-        return route_connection_on_engine(
+        return route_connection_with_widths(
             board,
             start,
             dest,
@@ -179,12 +200,13 @@ pub(crate) fn route_connection_counted(
             ripped,
             super::session::sink::NoopSink,
             engine,
+            widths,
         )
         .0;
     }
     let Ripped { items, costs } = ripped;
     let ripped_before = items.len();
-    let (result, counters) = route_connection_on_engine(
+    let (result, counters) = route_connection_with_widths(
         board,
         start,
         dest,
@@ -196,6 +218,7 @@ pub(crate) fn route_connection_counted(
         },
         super::session::sink::WorkCounters::default(),
         engine,
+        widths,
     );
     let added = items.len().saturating_sub(ripped_before);
     crate::run_stats::record_connection(&counters, result.state, added);
@@ -263,9 +286,11 @@ fn search_and_locate<S: SearchSink>(
     costs: Option<&mut RipupCosts>,
     sink: S,
     engine: &mut DrillCarry,
+    widths: Option<&dyn WidthPolicy>,
 ) -> (Searched, S) {
     let angle = board.rules.trace_angle_restriction();
     let mut session = Session::new(board, ctrl, limits.stop, limits.work_limit);
+    session.set_width_policy(widths);
     // PARITY(quirk): the engine's drill pages (`AutorouteEngine.java:91`).
     session.install_drill_carry(std::mem::take(engine));
     let (result, sink) = {
@@ -558,6 +583,7 @@ mod tests {
         board.rules.set_pin_edge_to_turn_dist(55.0);
         // From the pin of U1 out of the board: no shove gets past the outline.
         let trace = ResultItem {
+            half_widths: Vec::new(),
             corners: vec![IntPoint::new(20000, 20000), IntPoint::new(20000, 60000)],
             layer: 0,
         };

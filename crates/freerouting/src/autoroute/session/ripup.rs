@@ -398,8 +398,8 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
         let room = element.next_room.expect("the element has a next room");
         let layer = self.s.room(room).layer();
         // Java's TRACE_WIDTH_TOLERANCE is the int 2.
-        let check_radius = self.s.control.compensated_trace_half_width[layer as usize]
-            + TRACE_WIDTH_TOLERANCE as i32;
+        let check_radius =
+            self.s.room_compensated_half_width(room, layer as usize) + TRACE_WIDTH_TOLERANCE as i32;
         let freerouting_geometry::Direction::Int(direction) =
             door_line.direction().turn_45_degree(2)
         else {

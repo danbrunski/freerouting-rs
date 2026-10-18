@@ -34,6 +34,12 @@ use crate::board::structure::AngleRestriction;
 pub struct ResultItem {
     pub corners: Vec<IntPoint>,
     pub layer: i32,
+    /// With a width policy (Q17.1): `half_widths[k]` is the trace half width
+    /// of the segment from corner `k - 1` to corner `k`, the policy's width
+    /// of the room the locator placed corner `k` in (`half_widths[0]` is
+    /// unused). Empty without one: every segment has the control's half
+    /// width on the layer.
+    pub half_widths: Vec<i32>,
 }
 
 /// A located connection (the public fields of Java's
@@ -150,16 +156,22 @@ pub(super) struct Locator<'a, 'b> {
     pub(super) target_shape: TileShape,
 }
 
-/// `ctrl.compensatedTraceHalfWidth[layer]`.
+/// `ctrl.compensatedTraceHalfWidth[layer]`, or the width policy's for
+/// `room` (Q17.1).
 pub(super) fn half_width(
     s: &Session<'_>,
+    room: Option<RoomId>,
     layer: i32,
     at: &'static str,
 ) -> Result<i32, LocateError> {
-    usize::try_from(layer)
+    let index = usize::try_from(layer)
         .ok()
-        .and_then(|l| s.control().compensated_trace_half_width.get(l).copied())
-        .ok_or(LocateError::IndexOutOfBounds { at })
+        .filter(|l| *l < s.control().compensated_trace_half_width.len())
+        .ok_or(LocateError::IndexOutOfBounds { at })?;
+    Ok(match room {
+        Some(room) => s.room_compensated_half_width(room, index),
+        None => s.control().compensated_trace_half_width[index],
+    })
 }
 
 /// The shape of a room; `NullPointer` for an incomplete room on the whole
@@ -327,7 +339,7 @@ impl Locator<'_, '_> {
             // The target is a conduction area: shrink it by the trace half
             // width for a safe connection.
             let layer = self.s.room(room).layer();
-            let half_width = f64::from(half_width(self.s, layer, AT_CONSTRUCTOR)?);
+            let half_width = f64::from(half_width(self.s, Some(room), layer, AT_CONSTRUCTOR)?);
             let shrinked = shape.offset(-half_width);
             if !shrinked.is_empty() {
                 return Ok(shrinked);
@@ -343,6 +355,12 @@ impl Locator<'_, '_> {
         at_fanout_end: bool,
     ) -> Result<ResultItem, LocateError> {
         let mut corners = vec![self.current_from];
+        // Q17.1: the half width of the room of each corner, with a policy.
+        let with_widths = self.s.width_policy().is_some();
+        let mut widths: Vec<i32> = Vec::new();
+        if with_widths {
+            widths.push(i32::MAX);
+        }
         if !at_fanout_end {
             // PARITY: FoundConnectionLocator.java:415 compares the adjusted
             // corner with currentFromPoint by reference.
@@ -355,11 +373,20 @@ impl Locator<'_, '_> {
                 );
                 corners.push(add);
                 corners.push(adjusted);
+                if with_widths {
+                    let width = self.room_trace_half_width(self.from_index);
+                    widths.extend([width, width]);
+                }
                 self.previous_from = self.current_from;
                 self.current_from = adjusted;
             }
         }
         loop {
+            let width = if with_widths {
+                self.room_trace_half_width(self.to_index.wrapping_sub(1))
+            } else {
+                0
+            };
             let next = match self.angle {
                 AngleRestriction::None => self.next_trace_corners_any()?,
                 _ => locate45::calculate_next_trace_corners(self)?,
@@ -372,6 +399,9 @@ impl Locator<'_, '_> {
                 // corner with the previous one by reference.
                 if let Corner::New(point) = corner {
                     corners.push(point);
+                    if with_widths {
+                        widths.push(width);
+                    }
                     self.previous_from = self.current_from;
                     self.current_from = point;
                 }
@@ -389,18 +419,39 @@ impl Locator<'_, '_> {
             }
         }
         let mut rounded: Vec<IntPoint> = Vec::with_capacity(corners.len());
-        for corner in corners {
+        let mut half_widths: Vec<i32> = Vec::with_capacity(widths.len());
+        for (i, corner) in corners.into_iter().enumerate() {
             let point = corner.round();
             if rounded.last() != Some(&point) {
                 rounded.push(point);
+                if with_widths {
+                    half_widths.push(widths[i]);
+                }
+            } else if let Some(last) = half_widths.last_mut() {
+                // A segment rounded away: its corner keeps the narrower.
+                *last = (*last).min(widths[i]);
             }
         }
         let item = ResultItem {
             corners: rounded,
             layer: self.current_trace_layer,
+            half_widths,
         };
         self.current_trace_layer = next_layer;
         Ok(item)
+    }
+
+    /// The trace half width (not compensated) of the room chain element
+    /// `index` enters, on the current trace layer (Q17.1): the width a
+    /// segment placed in that room is inserted at. The control's without a
+    /// room.
+    fn room_trace_half_width(&self, index: usize) -> i32 {
+        let layer = usize::try_from(self.current_trace_layer).unwrap_or(0);
+        let layer = layer.min(self.s.control().trace_half_width.len().saturating_sub(1));
+        match self.chain.get(index).and_then(|e| e.next_room) {
+            Some(room) => self.s.room_half_width(room, layer),
+            None => self.s.control().trace_half_width[layer],
+        }
     }
 
     /// Java `adjustStartCorner` (`:522-537`): the start corner moved into
@@ -413,7 +464,12 @@ impl Locator<'_, '_> {
         let Some(room) = element.next_room else {
             return Ok(Corner::Unchanged);
         };
-        let half_width = f64::from(half_width(self.s, self.current_trace_layer, AT_ADJUST)?);
+        let half_width = f64::from(half_width(
+            self.s,
+            Some(room),
+            self.current_trace_layer,
+            AT_ADJUST,
+        )?);
         let shrinked = room_shape(self.s, room, AT_ADJUST)?.offset(-half_width);
         if shrinked.is_empty() || shrinked.contains_float(self.current_from) {
             return Ok(Corner::Unchanged);

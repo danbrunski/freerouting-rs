@@ -381,7 +381,7 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
         {
             return Ok(true);
         }
-        let mut half_width = f64::from(control.compensated_trace_half_width[layer_index]);
+        let mut half_width = f64::from(self.s.room_compensated_half_width(room, layer_index));
         let mut door_is_small = false;
         if let ExpandableRef::Door(door) = element.door {
             let mut half_width_add = half_width + TRACE_WIDTH_TOLERANCE;
@@ -709,10 +709,10 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
                 if from != to {
                     let polyline =
                         freerouting_geometry::Polyline::from_points(&[from.into(), to.into()]);
-                    let layer_index = layer as usize;
+                    let half_width = self.s.room_half_width(room, layer as usize);
                     let ok = self.s.board.check_forced_trace_polyline(
                         &polyline,
-                        control.trace_half_width[layer_index],
+                        half_width,
                         layer,
                         &[control.net_number],
                         control.trace_clearance_class_index,
@@ -755,7 +755,7 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
     ) -> Result<bool, RoomError> {
         let room = element.next_room.expect("the element has a next room");
         let layer = self.s.room(room).layer();
-        let half_width = f64::from(self.s.control.compensated_trace_half_width[layer as usize]);
+        let half_width = f64::from(self.s.room_compensated_half_width(room, layer as usize));
         let mut something_expanded = false;
         // PARITY(quirk): may reallocate the door's sections (A02.5).
         let sections = self.s.section_segments(to_door, half_width)?;
@@ -819,7 +819,7 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
     }
 
     /// `doorIsSmall` (`:779-807`): the door is narrower than `trace_width`.
-    fn door_is_small(&self, door: DoorId, trace_width: f64) -> Result<bool, RoomError> {
+    pub(crate) fn door_is_small(&self, door: DoorId, trace_width: f64) -> Result<bool, RoomError> {
         if self.s.door(door).dimension != 1 && !self.both_rooms_free(door) {
             return Ok(false);
         }
@@ -996,7 +996,7 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             // Java warns "unexpected obstacle item".
             0.0
         };
-        half_width >= f64::from(self.s.control.compensated_trace_half_width[layer as usize])
+        half_width >= f64::from(self.s.room_compensated_half_width(room, layer as usize))
     }
 
     /// `checkNeckDownAtDestPin` (`:1229-1243`): the neck-down half width of

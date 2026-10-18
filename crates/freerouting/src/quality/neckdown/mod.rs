@@ -3,9 +3,13 @@
 //!
 //! - [`width_report`] (Q02.1): the width each wide net actually got;
 //! - [`ledger`] (Q02.2): every shipped narrowing and the strict-sizes rule;
-//! - [`bounded`] (Q02.3, in part): the distance bound of a neck and the
-//!   neck width, as pure functions; the width policy inside the maze search
-//!   that would use them is not built (see the checklist).
+//! - [`bounded`] (Q02.3): the distance bound of a neck and the neck width,
+//!   as pure functions;
+//! - [`bounded_neck`] (Q17.2): the `bounded-neck` neck-down stage, a width
+//!   policy in the maze search ([`WidthPolicy`](crate::autoroute::width_policy::WidthPolicy))
+//!   built from them;
+//! - [`widen_back`] (Q17.3): the piecewise widen-back with tapers after a
+//!   neck-down retry (`router.neck_down.widen_back`).
 //!
 //! The `widths` diagnostic (`router.special.diagnostics=widths`, also
 //! added by `router.neck_down.strict`) computes the report and the ledger
@@ -16,7 +20,9 @@
 //! (`tests/quality_widths.rs`).
 
 pub mod bounded;
+pub mod bounded_neck;
 pub mod ledger;
+pub mod widen_back;
 pub mod width_report;
 
 use crate::autoroute::AttemptState;

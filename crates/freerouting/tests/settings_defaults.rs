@@ -215,6 +215,9 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("optimizer_scoring.difficulty_scale_floor", f32v(1.0)),
         // Q02.2: strict sizes, unset (off; not a Java key, so not dumped).
         ("neck_down.strict", None),
+        // Q17.2 and Q17.3: unset (courtyard plus pitch; widen-back off).
+        ("neck_down.path_mm", None),
+        ("neck_down.widen_back", None),
         // X07: no length matching unless selected.
         ("length_matching.groups", None),
         ("special.length_matching", None),

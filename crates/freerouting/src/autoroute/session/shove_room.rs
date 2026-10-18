@@ -165,12 +165,11 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
             )
         };
         // Only traces of the same half width and clearance class are shoved.
-        if half_width != control.trace_half_width[layer_index]
-            || class != control.trace_clearance_class_index
-        {
+        let room_half_width = self.s.room_half_width(room, layer_index);
+        if half_width != room_half_width || class != control.trace_clearance_class_index {
             return Ok(true);
         }
-        let compensated = f64::from(control.compensated_trace_half_width[layer_index]);
+        let compensated = f64::from(self.s.room_compensated_half_width(room, layer_index));
         let from_door_shape = self.s.door_shape(from_door)?;
         if from_door_shape.max_width() < 2.0 * compensated {
             return Ok(true);
@@ -265,7 +264,7 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
                 )
             }
         };
-        let trace_half_width = control.trace_half_width[layer_index];
+        let trace_half_width = room_half_width;
         let nets = [control.net_number];
         let mut shove_width = self.s.board.check_trace_segment_line(
             &segment,

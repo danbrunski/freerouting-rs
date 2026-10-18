@@ -46,7 +46,7 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
         let room = from.next_room.expect("the element has a next room");
         let layer = self.s.room(room).layer();
         let layer_index = layer as usize;
-        let trace_half_width = control.compensated_trace_half_width[layer_index];
+        let trace_half_width = self.s.room_compensated_half_width(room, layer_index);
         let room_is_thin = self.room_shape(room)?.min_width() < f64::from(2 * trace_half_width);
         if room_is_thin {
             let intersects_backtrack = match from.backtrack {
@@ -388,6 +388,7 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
     ) -> CheckDrillResult {
         let control = self.s.control;
         let layer_index = layer as usize;
+        let trace_half_width = self.s.shape_half_width(Some(room_shape), layer_index);
         let location = self.s.drill(drill).location.clone();
         let vias: Vec<(f64, i32, bool)> = {
             let board = &*self.s.board;
@@ -403,10 +404,8 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
                     let radius = padstack
                         .get_shape(layer)
                         .map_or(0.0, |shape| 0.5 * shape.max_width());
-                    let required = freerouting_geometry::jmath::max_f64(
-                        radius,
-                        f64::from(control.trace_half_width[layer_index]),
-                    );
+                    let required =
+                        freerouting_geometry::jmath::max_f64(radius, f64::from(trace_half_width));
                     Some((
                         required,
                         control.via_info_clearance_class(info),
@@ -430,7 +429,7 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
                     recursion: control.max_shove_trace_recursion_depth,
                     via_recursion: 0,
                 },
-                control.trace_half_width[layer_index],
+                trace_half_width,
                 control.trace_clearance_class_index,
             );
             if result == CheckDrillResult::Drillable {

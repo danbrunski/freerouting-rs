@@ -254,7 +254,7 @@ pub(super) fn calculate_next_trace_corners(
         return Ok(result);
     };
     let room = room_shape(l.s, from_room, AT_CORNERS)?.clone();
-    let trace_half_width = half_width(l.s, l.current_trace_layer, AT_CORNERS)?;
+    let trace_half_width = half_width(l.s, Some(from_room), l.current_trace_layer, AT_CORNERS)?;
     // Some tolerance for free space expansion rooms.
     let trace_half_width_add = trace_half_width + TRACE_WIDTH_TOLERANCE as i32;
     let shrink_offset = if matches!(l.s.room(from_room), Room::Obstacle { .. }) {

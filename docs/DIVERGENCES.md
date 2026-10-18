@@ -564,6 +564,29 @@ Q02.2; tests `tests/quality_widths.rs`, `tests/quality_no_ratchet.rs`,
   change where Java would have necked
   (`strict_sizes_turn_the_neck_downs_off_and_add_the_report`).
 
+**Bounded neck-down and widen-back** (`quality::neckdown::{bounded_neck, widen_back}`, the
+maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
+`tests/autoroute_width_policy.rs`, `autoroute::session::tests`)
+- The maze search, the path locator and the inserter read each room's trace half width through
+  a width policy (Q17.1). Without one (every Java path) they read the control's per-layer value
+  directly, so routing is unchanged (A14 `connection-parity` byte-identical,
+  `the_freerouting_policy_routes_like_no_policy`).
+- New, with no Java counterpart: `router.special.neck_down=bounded-neck` (not a Java id, unset
+  by default and in no profile) replaces Java's necked retry after a failed class-width attempt,
+  at the same point and ripup cost: the search uses the neck width only in rooms within D of the
+  connection's pins (D = courtyard plus one pitch, or `router.neck_down.path_mm`), the class
+  width elsewhere; each segment is inserted at its room's width, and the new narrow copper
+  outside every pin's D box is widened back to the class width where the exact clearance check
+  passes, before the pull-tight. On `q02-qfn-power.dsn` it routes the pin Java leaves unrouted and
+  no copper beyond D is narrow (`bounded_neck_is_narrow_only_within_d_of_the_pin`).
+- New, with no Java counterpart: `router.neck_down.widen_back=true` (unset: off, Java's routing)
+  widens a neck-down retry's narrow traces (Java's `neck_width_um` retry and `bounded-neck`) in
+  0.5 mm pieces where the class width passes the exact clearance check, drops wide islands no
+  longer than two tapers and adds a 4-step 0.5 mm taper at each narrow-to-wide junction, before
+  the pull-tight. A 22 mm run with one pinch is narrow only at the pinch and its tapers
+  (`a_22mm_run_with_one_pinch_is_narrow_only_at_the_pinch_and_its_tapers`); it adds no DRC item
+  (`widen_back_adds_no_drc_items_on_any_fixture`).
+
 **Add-only completion sweep** (`quality::sweep`, Q10; tests `tests/quality_sweep.rs`)
 - New, with no Java counterpart (Java reaches it only with a second run on frozen wiring, through
   KiCad's exporter): with `router.autorouter.sweep=fixed|free` the job runs Java's pass again

@@ -66,6 +66,7 @@ use crate::autoroute::stages::{
     NeckDownAttempt, NeckDownPolicy, PlaneTapPolicy, RouteTask, StageCtx, StageRegistry,
     StageSelection, WorkStats,
 };
+use crate::autoroute::width_policy::WidthPolicy;
 use crate::autoroute::{AttemptResult, AttemptState};
 use crate::board::RoutingBoard;
 use crate::board::items::ItemId;
@@ -177,7 +178,7 @@ pub fn calculate_airline(
 
 /// The Java control of `task.net` with the pass's via and trace costs and
 /// ripup settings (`:42-46`, `:225-229`).
-fn router_control(
+pub(crate) fn router_control(
     board: &RoutingBoard,
     task: &RouteTask,
     p: &ConnectionParams,
@@ -210,6 +211,22 @@ pub(crate) fn attempt(
     ripped: &mut BTreeSet<ItemId>,
     costs: &mut RipupCosts,
 ) -> AttemptResult {
+    attempt_with_widths(board, start, dest, control, limit, ctx, ripped, costs, None)
+}
+
+/// [`attempt`] with the room widths of `widths` (Q17.1).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn attempt_with_widths(
+    board: &mut RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+    control: &AutorouteControl,
+    limit: &WorkLimit,
+    ctx: &StageCtx,
+    ripped: &mut BTreeSet<ItemId>,
+    costs: &mut RipupCosts,
+    widths: Option<&dyn WidthPolicy>,
+) -> AttemptResult {
     let limits = RouteLimits {
         settings: SearchSettings::from_router(ctx.board_settings),
         stop: Some(ctx.cancel),
@@ -227,6 +244,7 @@ pub(crate) fn attempt(
         limits,
         ripped,
         &mut DrillCarry::default(),
+        widths,
     )
 }
 
@@ -613,6 +631,11 @@ impl NeckDownPolicy for FreeroutingNeckDown {
         // PARITY: :225-229, a new control on the board as it is now.
         let mut control = router_control(board, task, p, ctx)?;
         clamp_half_widths(&mut control, half_width);
+        let first_new = board
+            .communication
+            .id_generator
+            .max_generated_id()
+            .wrapping_add(1);
         let result = attempt(
             board,
             attempt_in.start,
@@ -625,6 +648,20 @@ impl NeckDownPolicy for FreeroutingNeckDown {
         );
         if result.state != AttemptState::Routed {
             return None;
+        }
+        // Q17.3, opt-in (`router.neck_down.widen_back`, unset: off).
+        if crate::quality::neckdown::bounded_neck::widen_back_on(ctx.settings) {
+            // The class widths: the retry's control before the clamp.
+            if let Some(class) = router_control(board, task, p, ctx) {
+                crate::quality::neckdown::bounded_neck::widen_after_retry(
+                    board,
+                    task.net,
+                    first_new,
+                    &class,
+                    Vec::new(),
+                    true,
+                );
+            }
         }
         pull_tight_after_connection(board, p.pull_tight_accuracy, &control.trace_costs);
         Some(ConnectionOutcome::new(result.state, result.details))

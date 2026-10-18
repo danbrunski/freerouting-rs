@@ -147,7 +147,13 @@ pub const SLOTS: &[SlotDesc] = &[
         label: "Neck-down",
         key: "special.neck_down",
         arity: SlotArity::One,
-        options: &["neck_width_um", "min_trace_width_um", "neck_down.strict"],
+        options: &[
+            "neck_width_um",
+            "min_trace_width_um",
+            "neck_down.strict",
+            "neck_down.path_mm",
+            "neck_down.widen_back",
+        ],
     },
     SlotDesc {
         kind: "board_stages",

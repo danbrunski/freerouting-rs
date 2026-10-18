@@ -85,6 +85,7 @@ use freerouting_geometry::{Stoppable, TileShape, TileShapeOps};
 use crate::autoroute::control::AutorouteControl;
 use crate::autoroute::distance::DestinationDistance;
 use crate::autoroute::java_ids;
+use crate::autoroute::width_policy::{self, WidthPolicy};
 use crate::board::RoutingBoard;
 use crate::board::basic_board::BasicBoard;
 use crate::board::items::ItemId;
@@ -364,6 +365,8 @@ pub struct Session<'b> {
     pub(crate) drill_pages: Option<drills::DrillPageArray>,
     /// The drills of the pages and vias, never reused within a session.
     pub(crate) drills: Vec<drills::ExpansionDrill>,
+    /// The width policy (Q17.1); `None` reads the control's widths.
+    pub(crate) widths: Option<&'b dyn WidthPolicy>,
 }
 
 impl<'b> Session<'b> {
@@ -417,6 +420,55 @@ impl<'b> Session<'b> {
             distance,
             drill_pages: None,
             drills: Vec::new(),
+            widths: None,
+        }
+    }
+
+    /// Gives each room the half width of `policy` (Q17.1); `None` (the
+    /// default) reads the control's widths.
+    pub fn set_width_policy(&mut self, policy: Option<&'b dyn WidthPolicy>) {
+        self.widths = policy;
+    }
+
+    /// The width policy, if any.
+    pub fn width_policy(&self) -> Option<&'b dyn WidthPolicy> {
+        self.widths
+    }
+
+    /// The trace half width on layer index `layer` of a room with shape
+    /// `shape` (the control's without a width policy).
+    #[inline]
+    pub(crate) fn shape_half_width(&self, shape: Option<&TileShape>, layer: usize) -> i32 {
+        width_policy::trace_half_width(self.widths, self.control, shape, layer)
+    }
+
+    /// The compensated trace half width on layer index `layer` of a room
+    /// with shape `shape` (the control's without a width policy).
+    #[inline]
+    pub(crate) fn shape_compensated_half_width(
+        &self,
+        shape: Option<&TileShape>,
+        layer: usize,
+    ) -> i32 {
+        width_policy::compensated_half_width(self.widths, self.control, shape, layer)
+    }
+
+    /// The trace half width of room `room` on layer index `layer`.
+    #[inline]
+    pub(crate) fn room_half_width(&self, room: RoomId, layer: usize) -> i32 {
+        match self.widths {
+            None => self.control.trace_half_width[layer],
+            Some(_) => self.shape_half_width(self.room(room).shape(), layer),
+        }
+    }
+
+    /// The compensated trace half width of room `room` on layer index
+    /// `layer`.
+    #[inline]
+    pub(crate) fn room_compensated_half_width(&self, room: RoomId, layer: usize) -> i32 {
+        match self.widths {
+            None => self.control.compensated_trace_half_width[layer],
+            Some(_) => self.shape_compensated_half_width(self.room(room).shape(), layer),
         }
     }
 

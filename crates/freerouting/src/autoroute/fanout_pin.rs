@@ -159,7 +159,7 @@ fn attempt(
         items: ripped,
         costs: None,
     };
-    route_connection_counted(board, start, dest, control, limits, ripped, engine)
+    route_connection_counted(board, start, dest, control, limits, ripped, engine, None)
 }
 
 /// True if a plane or closest-target attempt ended the fanout.

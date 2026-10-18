@@ -449,6 +449,10 @@ settings_table! {
         "Neck-down limits (Q02.2; not a Java section)." {
             (strict, bool, opt, None, None, "strict", [], Flat::No, true,
                 "Strict sizes: neck-down stages don't narrow; exit 3 if copper ships under its class width."),
+            (path_mm, f64, opt, None, None, "pathMm", [], Flat::No, true,
+                "`bounded-neck` (Q17.2): the neck distance D in mm from each pin instead of courtyard plus one pitch (unset: courtyard plus pitch)."),
+            (widen_back, bool, opt, None, None, "widenBack", [], Flat::No, true,
+                "Widen a neck-down retry's narrow traces back to the class width in 0.5 mm pieces where they fit, with 4-step tapers (Q17.3; unset: off)."),
         }
         length_matching, LengthMatchingPatch, LengthMatchingSettings, "lengthMatching",
         "Length and time matching targets (X07.2; not a Java section)." {

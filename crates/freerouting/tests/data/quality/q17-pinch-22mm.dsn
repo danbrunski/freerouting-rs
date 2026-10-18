@@ -1,0 +1,78 @@
+(pcb q17-pinch-22mm.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q17 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 12000  0 12000  0 0)
+    )
+    (via VIA600)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component BIG_PAD
+      (place J1 4000 6000 front 0)
+      (place J2 26000 6000 front 0)
+    )
+    (component WALL
+      (place W1 15000 9300 front 0)
+      (place W2 15000 2700 front 0)
+    )
+  )
+  (library
+    (image BIG_PAD
+      (pin BIG 1 0 0)
+    )
+    (image WALL
+      (pin WALL_PAD 1 0 0)
+    )
+    (padstack BIG
+      (shape (circle F.Cu 2000))
+      (attach off)
+    )
+    (padstack WALL_PAD
+      (shape (rect F.Cu -500 -2750 500 2750))
+      (attach off)
+    )
+    (padstack VIA600
+      (shape (circle F.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net PWR (pins J1-1 J2-1))
+    (net N1 (pins W1-1))
+    (net N2 (pins W2-1))
+    (class kicad_default N1 N2
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+    (class Power_High PWR
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 1500)
+        (clearance 250)
+      )
+    )
+  )
+)

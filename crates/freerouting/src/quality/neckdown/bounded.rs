@@ -1,11 +1,7 @@
-//! Q02.3 (in part): the distance bound of the `bounded-neck` policy, as
-//! pure integer functions. The width policy inside the maze search that
-//! would use them, its stage registration and its insertion with
-//! per-segment widths are not built: the A04 search has no per-room width
-//! hook yet (its control carries one half width per layer, used by room
-//! completion, the door checks, the path locator and the inserter), and
-//! the measurement that decides whether the policy stays waits for P04
-//! (see the checklist's Q02.3 note).
+//! Q02.3: the distance bound of the `bounded-neck` policy, as pure
+//! integer functions. The stage that uses them, with its width policy in
+//! the maze search and its insertion at per-segment widths, is
+//! [`bounded_neck`](super::bounded_neck) (Q17.2).
 //!
 //! **The rule** (checklist "Decisions"): a room is inside the neck of a pin
 //! when its bounding box meets the pin's bounding box enlarged by D on

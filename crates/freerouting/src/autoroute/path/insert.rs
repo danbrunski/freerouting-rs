@@ -158,6 +158,20 @@ fn trace_object_now(
     id.and_then(|id| board.trace_object(id)).or(Some(before))
 }
 
+/// The half width of the polyline from corner `from` to corner `to` of
+/// `trace`: `base` (the control's) without per-segment widths, else the
+/// narrowest of its segments' (Q17.1).
+fn window_half_width(trace: &ResultItem, from: usize, to: usize, base: i32) -> i32 {
+    if trace.half_widths.is_empty() {
+        return base;
+    }
+    trace
+        .half_widths
+        .get(from + 1..=to)
+        .and_then(|w| w.iter().copied().min())
+        .unwrap_or(base)
+}
+
 fn half_width_at(ctrl: &AutorouteControl, layer: i32) -> i32 {
     usize::try_from(layer)
         .ok()
@@ -297,11 +311,12 @@ impl Inserter<'_> {
     ) -> bool {
         let corners = &trace.corners;
         let layer = trace.layer;
-        let half_width = half_width_at(self.ctrl, layer);
+        let base_half_width = half_width_at(self.ctrl, layer);
         let nets = self.net_numbers();
         let mut from_corner_no = 0usize;
         for i in 1..corners.len() {
             let current = &corners[from_corner_no..=i];
+            let half_width = window_half_width(trace, from_corner_no, i, base_half_width);
             let points: Vec<Point> = current.iter().map(|p| Point::Int(*p)).collect();
             let polyline = Polyline::from_points(&points);
             let forced = ForcedTrace {
@@ -332,7 +347,7 @@ impl Inserter<'_> {
                 && let Some(from) = ok_point
             {
                 neckdown_inserted =
-                    self.insert_neckdown(from, current[1], layer, start_pin, end_pin);
+                    self.insert_neckdown(from, current[1], layer, half_width, start_pin, end_pin);
             }
             let mut micro_inserted = false;
             // PARITY: FoundConnectionInserter.java:240-247, any result but the
@@ -342,8 +357,9 @@ impl Inserter<'_> {
                 && (self.ctrl.is_fanout || self.ctrl.with_neckdown)
                 && two_corners
             {
-                micro_inserted = self
-                    .insert_fanout_micro_neckdown(ok_point, current[1], layer, start_pin, end_pin);
+                micro_inserted = self.insert_fanout_micro_neckdown(
+                    ok_point, current[1], layer, half_width, start_pin, end_pin,
+                );
             }
             // PARITY: FoundConnectionInserter.java:248 and :295, `okPoint ==
             // insertPolyline.lastCorner()` and `== firstCorner()` by reference.
@@ -369,6 +385,7 @@ impl Inserter<'_> {
         from: IntPoint,
         to: IntPoint,
         layer: i32,
+        half_width: i32,
         start_pin: Option<ItemId>,
         end_pin: Option<ItemId>,
     ) -> bool {
@@ -376,12 +393,12 @@ impl Inserter<'_> {
         // fromCorner` / `== toCorner` by reference: only the last segment of
         // `tryNeckDown` reaching its end returns that object.
         if let Some(pin) = start_pin
-            && self.try_neck_down(to, from, layer, pin)
+            && self.try_neck_down(to, from, layer, half_width, pin)
         {
             return true;
         }
         if let Some(pin) = end_pin {
-            return self.try_neck_down(from, to, layer, pin);
+            return self.try_neck_down(from, to, layer, half_width, pin);
         }
         false
     }
@@ -390,7 +407,16 @@ impl Inserter<'_> {
     /// as it can go towards `to`, then necks down to the pin's width for
     /// the rest. True where Java returns the `toCorner` object (the last
     /// segment reached `to`); Java's null and early `fromCorner` are false.
-    fn try_neck_down(&mut self, from: IntPoint, to: IntPoint, layer: i32, pin: ItemId) -> bool {
+    /// `half_width` is the trace's (the control's, or the segment's with a
+    /// width policy).
+    fn try_neck_down(
+        &mut self,
+        from: IntPoint,
+        to: IntPoint,
+        layer: i32,
+        half_width: i32,
+        pin: ItemId,
+    ) -> bool {
         let Some(item) = self.board.item(pin) else {
             return false;
         };
@@ -413,7 +439,6 @@ impl Inserter<'_> {
             return false;
         }
         let neck_down_half_width = self.ctrl.neckdown_half_width(self.board, pin, layer);
-        let half_width = half_width_at(self.ctrl, layer);
         if neck_down_half_width >= half_width {
             return false;
         }
@@ -494,6 +519,7 @@ impl Inserter<'_> {
         ok_point: Option<IntPoint>,
         target: IntPoint,
         layer: i32,
+        base_half_width: i32,
         start_pin: Option<ItemId>,
         end_pin: Option<ItemId>,
     ) -> bool {
@@ -501,7 +527,6 @@ impl Inserter<'_> {
         if from == target {
             return false;
         }
-        let base_half_width = half_width_at(self.ctrl, layer);
         let pin_widths = [start_pin, end_pin].map(|pin| {
             pin.filter(|p| self.board.item(*p).is_some_and(|i| i.is_on_layer(layer)))
                 .map(|p| self.ctrl.neckdown_half_width(self.board, p, layer))

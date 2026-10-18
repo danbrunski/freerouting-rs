@@ -25,6 +25,12 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::neckdown::DIAGNOSTIC_ID, |s| {
             Box::new(super::neckdown::WidthDiagnostics::from_settings(s))
         });
+    // Q17.2: the `bounded-neck` neck-down policy (`router.special.neck_down`).
+    registry
+        .neck_down
+        .insert(super::neckdown::bounded_neck::POLICY_ID, |s| {
+            Box::new(super::neckdown::bounded_neck::BoundedNeck::from_settings(s))
+        });
     // Q04.1: the `quantum-stop` pass controller
     // (`router.autorouter.pass_controller`).
     registry

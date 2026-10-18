@@ -108,6 +108,7 @@ pub mod probe;
 pub mod session;
 pub mod stages;
 pub mod via_clearance;
+pub mod width_policy;
 
 /// The possible results of autorouting a connection (Java
 /// `AutorouteAttemptState`).

@@ -297,3 +297,97 @@ fn a_stop_request_or_an_exhausted_work_limit_fails_the_init() {
     assert_eq!(s.cutoff_log().len(), 1);
     assert!(s.cutoff_log()[0].starts_with("WORK_LIMIT_CUTOFF"));
 }
+
+/// Q17.1: a policy with two widths (narrow in rooms meeting `near`, wide
+/// elsewhere).
+struct TwoWidths {
+    near: IntBox,
+    narrow: i32,
+    wide: i32,
+}
+
+impl crate::autoroute::width_policy::WidthPolicy for TwoWidths {
+    fn half_width(&self, room: Option<&TileShape>, _layer: usize) -> i32 {
+        let meets = room.is_none_or(|r| r.bounding_box().intersects_box(&self.near));
+        if meets { self.narrow } else { self.wide }
+    }
+}
+
+/// `expand_to_room_doors`'s door check, `door_is_small(door, 2 ·
+/// (compensated half width of the next room + tolerance))`.
+fn door_is_small_into(s: &mut Session<'_>, door: DoorId, room: RoomId) -> bool {
+    let half_width = f64::from(s.room_compensated_half_width(room, 0));
+    let width = 2.0 * (half_width + doors::TRACE_WIDTH_TOLERANCE);
+    let settings = search::SearchSettings {
+        fanout_max_escape_length_mm: 0.0,
+        fanout_min_escape_length_mm: 0.0,
+        start_ripup_costs: 100,
+    };
+    let search = search::MazeSearch::new(s, sink::NoopSink, sink::NoExtraCost, settings);
+    search.door_is_small(door, width).expect("a door shape")
+}
+
+/// Q17.1: the default (no policy) reads the control's width; a policy
+/// that gives the room behind a door a narrower width than the control's
+/// turns a door that is small at the control's width into one that is
+/// not, and the room it does not narrow keeps the control's decision.
+#[test]
+fn a_two_width_policy_changes_what_door_is_small_decides() {
+    let mut f = fixture();
+    let half = f.control.trace_half_width[0];
+    let compensation = f.control.compensated_trace_half_width[0] - half;
+    let narrow = half / 4;
+    // A door a little narrower than the control's trace with clearance.
+    let door_length = 2 * (half + compensation) - 10;
+    let near = IntBox::new(0, 0, 100, door_length);
+    let policy = TwoWidths {
+        near,
+        narrow,
+        wide: half,
+    };
+    let mut s = Session::new(&mut f.board, &f.control, None, None);
+    let a = s.detached_free_room(square(0, 0, 100, door_length), 0, 1);
+    let b = s.detached_free_room(square(100, 0, 200, door_length), 0, 2);
+    let far = s.detached_free_room(square(5000, 0, 5100, door_length), 0, 3);
+    let far_neighbour = s.detached_free_room(square(5100, 0, 5200, door_length), 0, 4);
+    let ab = s.new_door(a, b, 1);
+    let far_door = s.new_door(far, far_neighbour, 1);
+    // No policy: the control's width, the door is small either way.
+    assert!(door_is_small_into(&mut s, ab, a));
+    assert!(door_is_small_into(&mut s, far_door, far));
+    // The two-width policy: room `a` meets `near` and gets the narrow width.
+    s.set_width_policy(Some(&policy));
+    assert_eq!(s.room_half_width(a, 0), narrow);
+    assert_eq!(s.room_compensated_half_width(a, 0), narrow + compensation);
+    assert!(!door_is_small_into(&mut s, ab, a));
+    assert_eq!(s.room_half_width(far, 0), half);
+    assert!(door_is_small_into(&mut s, far_door, far));
+}
+
+/// Q17.1: Freerouting's policy returns the control's widths in every room,
+/// what a session without a policy reads.
+#[test]
+fn the_freerouting_policy_is_the_controls_width() {
+    let mut f = fixture();
+    let control = f.control.clone();
+    let policy = crate::autoroute::width_policy::FreeroutingWidths { control: &control };
+    let mut s = Session::new(&mut f.board, &f.control, None, None);
+    let room = s.detached_free_room(square(0, 0, 100, 100), 0, 1);
+    let without = (
+        s.room_half_width(room, 0),
+        s.room_compensated_half_width(room, 0),
+    );
+    s.set_width_policy(Some(&policy));
+    let with = (
+        s.room_half_width(room, 0),
+        s.room_compensated_half_width(room, 0),
+    );
+    assert_eq!(without, with);
+    assert_eq!(
+        with,
+        (
+            control.trace_half_width[0],
+            control.compensated_trace_half_width[0]
+        )
+    );
+}

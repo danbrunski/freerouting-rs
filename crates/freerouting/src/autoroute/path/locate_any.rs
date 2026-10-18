@@ -105,7 +105,17 @@ impl Locator<'_, '_> {
             }
             return Ok(Vec::new());
         }
-        let exact = f64::from(half_width(self.s, self.current_trace_layer, AT_CORNERS)?);
+        let room = self
+            .to_index
+            .checked_sub(1)
+            .and_then(|i| self.chain.get(i))
+            .and_then(|e| e.next_room);
+        let exact = f64::from(half_width(
+            self.s,
+            room,
+            self.current_trace_layer,
+            AT_CORNERS,
+        )?);
         let max = exact + TRACE_WIDTH_TOLERANCE;
         let middle = exact + TOLERANCE;
         let from = self.current_from;
