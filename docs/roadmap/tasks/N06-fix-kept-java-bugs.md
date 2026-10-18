@@ -56,6 +56,11 @@ Whoever implements an item (the `implementer` agent, or Codex):
   switch plus the all-on arm.
 - **Keep every `// PARITY(quirk):` marker.** Add the switch's id to it
   (`// PARITY(quirk, java_quirks.<id>):`), so `legacy`'s path stays findable.
+- **Build in your own target dir.** Run the gate with
+  `CARGO_TARGET_DIR=target/orchestrator/n06-target` (or another folder of your own), never the
+  main checkout's `target/`: other sessions' routing runs use it.
+- **Q13 is in flight** (2026-10-17) and touches the autoroute and plane code. `autoroute/control.rs`
+  and `autoroute/batch/pass.rs` may conflict when the two merge. Whichever lands second rebases.
 
 ## File ownership
 
