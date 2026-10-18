@@ -274,6 +274,10 @@ pub fn run_pipeline_with(
     if let Err(e) = crate::quality::stop_rule::check_settings(settings) {
         return Err(fail(PipelineError::UnknownStage(e), board));
     }
+    // Q11: an invalid `router.transaction` value fails before routing.
+    if let Err(e) = crate::quality::transaction::check_settings(settings) {
+        return Err(fail(PipelineError::UnknownStage(e), board));
+    }
     let watcher = Watcher::new(Arc::clone(&job.cancel));
     if let Some(limit) = job.deadline {
         watcher.arm(limit, StopLevel::All);
@@ -337,6 +341,13 @@ pub fn run_pipeline_with(
             &watcher,
             &mut loop_outcome,
         );
+        // Q11: the connection router's tally (none for Java's).
+        for text in loop_pipeline.connection_router.log_lines() {
+            log.push(LogLine {
+                level: LogLevel::Info,
+                text,
+            });
+        }
         outcome.loop_ran = true;
     }
     log.append(&mut loop_outcome.log);

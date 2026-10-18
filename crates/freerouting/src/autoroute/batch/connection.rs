@@ -132,6 +132,7 @@ pub fn connection_params(
         work_budget: maze_work_budget(pass),
         pull_tight_accuracy,
         strict_check,
+        ripup_factors: None,
     }
 }
 
@@ -194,6 +195,7 @@ pub(crate) fn router_control(
     .ok()?;
     control.ripup_allowed = p.ripup_allowed;
     control.ripup_costs = p.ripup_cost;
+    control.ripup_factors = p.ripup_factors.clone();
     control.remove_unconnected_vias = p.remove_unconnected_vias;
     Some(control)
 }

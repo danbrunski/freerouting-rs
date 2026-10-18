@@ -499,6 +499,7 @@ fn default_params(board: &RoutingBoard, net: i32, s: &BoardRouterSettings) -> Co
         work_budget: maze_work_budget(1),
         pull_tight_accuracy: 0,
         strict_check: false,
+        ripup_factors: None,
     }
 }
 

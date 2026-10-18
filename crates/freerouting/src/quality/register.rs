@@ -38,4 +38,11 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::stop_rule::CONTROLLER_ID, |s| {
             Box::new(super::stop_rule::QuantumStop::from_settings(s))
         });
+    // Q11: the `transactional-ripup` connection router
+    // (`router.autorouter.connection_router`).
+    registry
+        .connection_router
+        .insert(super::transaction::ROUTER_ID, |s| {
+            Box::new(super::transaction::TransactionalRipup::from_settings(s))
+        });
 }

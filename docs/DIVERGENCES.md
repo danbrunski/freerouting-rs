@@ -310,6 +310,30 @@ IntOctagon's box cutout.
   stays, and no complete connection becomes incomplete (`tests/stub_cleanup.rs` on
   `tests/data/quality/q16-stubs.dsn`). Q16.3 measures it (`docs/roadmap/prereg/Q16.json`); N05
   decides `enhanced`.
+- `autorouter.connection_router = transactional-ripup` (Q11, `quality::transaction`) is a
+  connection router Java does not have, selected by no profile (unset is Java's
+  `freerouting-connection`), with the settings fields `transaction.{rule, depth, rip_factor}`
+  (unset: `strict`, 0, 0). It wraps Java's connection router: a connection whose attempt rips
+  copper of another net becomes a transaction; the victim nets are routed again at once with
+  rip-up off (one attempt per piece, ascending lowest pin id, then net), and the board is kept
+  only if every victim net has no more incomplete connections than before (`strict`) or the
+  ledger's incomplete count fell (`count`); otherwise the board before the attempt (a `Clone`:
+  same items, ids and search tree) comes back, the attempt's work stays on the meter, and the
+  connection is routed once more with rip-up off, whose outcome the pass records as Java would.
+  `depth = 1` lets the victims rip once, never a net of the same transaction twice. On
+  `tests/data/quality/q11-locked-cross.dsn` Java's pass 1 routes A by ripping B for good, and
+  every arm keeps B's wire and leaves A unrouted; on `q06-sole-wall.dsn` every arm completes both
+  nets in pass 1 where Java needs pass 2 (`tests/quality_transaction.rs`). Its tally goes into
+  the job log ("Transactional rip-up ..."). An invalid value fails the job before routing,
+  naming the key. Q11.6 measures it (`docs/roadmap/prereg/Q11.json`).
+- `transaction.rip_factor` (Q11.5) is rip-count protection Java does not have: with factor
+  `f > 0` the transactional router hands the maze search, through
+  `ConnectionParams::ripup_factors` and `AutorouteControl::ripup_factors`, a factor `1 + f * k`
+  per net, `k` being the committed transactions that ripped the net this run, and
+  `MazeRipupResolver.checkRipup`'s cost of an item (after Java's rounding, before its
+  `Integer.MAX_VALUE / 100` cap) is multiplied by the largest factor of its nets. Every other
+  caller passes `None`, so Java's search never reads it
+  (`the_rip_factor_multiplies_the_rip_cost_of_the_ripped_net_only`).
 - `autorouter.pass_controller = quantum-stop` (Q04.1, `quality::stop_rule`) is a pass controller
   Java does not have, selected by no profile (unset is Java's `freerouting-passes`), with the
   settings fields `quantum_stop.{grace, checks, quantum_abs, quantum_pct}` (unset: 0, 2, 1.0,

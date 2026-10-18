@@ -389,6 +389,7 @@ fn grid_run(dsn: &str, router: &mut KrtGrid) -> (GridRun, RoutingBoard) {
         work_budget: maze_work_budget(1),
         pull_tight_accuracy: 0,
         strict_check: false,
+        ripup_factors: None,
     };
     let run = router.route_logged(&mut prepared.board, &task, &p, &ctx);
     (run, prepared.board)

@@ -147,6 +147,10 @@ pub struct AutorouteControl {
     pub min_normal_via_cost: f64,
     pub ripup_allowed: bool,
     pub ripup_costs: i32,
+    /// Q11.5: per net, the factor the ripup cost of the net's items is
+    /// multiplied by ([`ConnectionParams::ripup_factors`](crate::autoroute::stages::ConnectionParams::ripup_factors)).
+    /// `None` on the parity path, where the cost is Java's.
+    pub ripup_factors: Option<std::sync::Arc<std::collections::BTreeMap<i32, i32>>>,
     /// Never set by the batch router at the pin: always 1
     /// (`AutorouteControl.java:192`, A00 question 3).
     pub ripup_pass_no: i32,
@@ -296,6 +300,7 @@ impl AutorouteControl {
             min_normal_via_cost: 0.0,
             ripup_allowed: false,
             ripup_costs: 1000,
+            ripup_factors: None,
             ripup_pass_no: 1,
             is_fanout: false,
             is_plane_fanout: false,

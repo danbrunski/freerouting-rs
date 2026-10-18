@@ -249,6 +249,10 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("special.diagnostics", None),
         // Q16: unset, which is off.
         ("cleanup.remove_stubs", None),
+        // Q11: unset, which is off (the router is not selected).
+        ("transaction.rule", None),
+        ("transaction.depth", None),
+        ("transaction.rip_factor", None),
         // P02.1: unset, which is off.
         ("debug.audit_incremental", None),
     ];

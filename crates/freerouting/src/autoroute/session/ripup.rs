@@ -6,7 +6,10 @@
 //! The ripup cost of an obstacle is the control's ripup costs times the
 //! obstacle's width (a via: its widest trace, halved per extra contact),
 //! divided by the detour of the connection it belongs to, and multiplied by
-//! a fanout-via protection factor. The random detour factor `0.5 + r * r`
+//! a fanout-via protection factor. Q11.5's rip-count protection (not Java)
+//! then multiplies the rounded cost by the largest factor of the obstacle's
+//! nets when [`AutorouteControl::ripup_factors`](crate::autoroute::control::AutorouteControl::ripup_factors)
+//! is set; it is `None` on the parity path. The random detour factor `0.5 + r * r`
 //! is drawn from the search's generator only from ripup pass 4 on, outside
 //! every third pass (`:158-162`); the batch router never sets the pass
 //! number, so the draw is dead at the pin (`// PARITY(quirk):`, A00
@@ -346,7 +349,20 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
         }
         ripup_cost /= detour;
         ripup_cost *= fanout_via_cost_factor;
-        let result = d2i(ripup_cost).max(1);
+        let mut result = d2i(ripup_cost).max(1);
+        if let Some(factors) = &control.ripup_factors {
+            // Q11.5 (not Java): rip-count protection, the largest factor of
+            // the obstacle's nets; `None` on the parity path.
+            let factor = self.s.board.item(obstacle).map_or(1, |item| {
+                item.net_numbers()
+                    .iter()
+                    .filter_map(|net| factors.get(net))
+                    .copied()
+                    .max()
+                    .unwrap_or(1)
+            });
+            result = (i64::from(result) * i64::from(factor)).min(i64::from(i32::MAX)) as i32;
+        }
         Ok(result.min(i32::MAX / 100))
     }
 

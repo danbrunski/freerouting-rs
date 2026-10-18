@@ -67,7 +67,8 @@
 //! (`quality::verdict`) is registered by `quality::register`. The registry, the selection and the placeholders are in the
 //! `registry` submodule (`stages/registry.rs`), re-exported here.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use freerouting_geometry::FloatPoint;
 
@@ -145,6 +146,11 @@ pub struct ConnectionParams {
     /// True if a routed connection with new clearance violations is
     /// rejected ([`RipupPolicy::strict_check`] of this pass; A11).
     pub strict_check: bool,
+    /// Q11.5's rip-count protection: per net, the factor the maze search
+    /// multiplies the rip cost of the net's items by. `None` (every caller
+    /// but `quality::transaction`) is Java's cost, and the search never
+    /// looks.
+    pub ripup_factors: Option<Arc<BTreeMap<i32, i32>>>,
 }
 
 /// A failed search's account of why it failed: A04's failure record. Only
@@ -532,6 +538,12 @@ pub trait ConnectionRouter {
         p: &ConnectionParams,
         ctx: &mut StageCtx,
     ) -> ConnectionOutcome;
+
+    /// Job log lines the router writes after the routing passes (Q11's
+    /// transaction tally); none by default.
+    fn log_lines(&self) -> Vec<String> {
+        Vec::new()
+    }
 }
 
 /// The ripup cost schedule, the strict-DRC rule and what happens after a

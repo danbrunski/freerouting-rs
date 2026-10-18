@@ -107,6 +107,9 @@ pub const SLOTS: &[SlotDesc] = &[
             "strict_drc",
             "room_order",
             "work_unit",
+            "transaction.rule",
+            "transaction.depth",
+            "transaction.rip_factor",
         ],
     },
     SlotDesc {

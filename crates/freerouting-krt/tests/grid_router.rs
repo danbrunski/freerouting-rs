@@ -118,6 +118,7 @@ fn params() -> ConnectionParams {
         work_budget: maze_work_budget(1),
         pull_tight_accuracy: 0,
         strict_check: false,
+        ripup_factors: None,
     }
 }
 

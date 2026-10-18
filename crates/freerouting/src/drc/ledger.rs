@@ -141,6 +141,18 @@ impl RoutingLedger {
         state.maximum_connections
     }
 
+    /// The incomplete-connection count of net `net`, recounting dirty nets
+    /// first; 0 for a net the board does not have (Q11's commit test).
+    pub fn net_incomplete_count(&self, board: &BasicBoard, net: i32) -> usize {
+        let mut state = self.lock();
+        Self::ensure_built(&mut state, board);
+        Self::flush_dirty(&mut state, board);
+        usize::try_from(net - 1)
+            .ok()
+            .and_then(|i| state.incomplete_by_net.get(i).copied())
+            .unwrap_or(0)
+    }
+
     /// The nets with at least one incomplete connection, ascending (Java
     /// `incompleteNetNumbers`).
     pub fn incomplete_net_numbers(&self, board: &BasicBoard) -> BTreeSet<i32> {

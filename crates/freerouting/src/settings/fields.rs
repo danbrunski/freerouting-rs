@@ -492,6 +492,15 @@ settings_table! {
             (remove_stubs, bool, opt, None, None, "removeStubs", [], Flat::No, true,
                 "Remove routed vias and traces that connect fewer than two items of their net at the end of the run (unset: off; Q16)."),
         }
+        transaction, TransactionPatch, TransactionSettings, "transaction",
+        "The `transactional-ripup` connection router (Q11; not a Java section)." {
+            (rule, String, opt, None, None, "rule", [], Flat::No, true,
+                "Commit a rip-up only if every victim net re-lands (`strict`, unset) or the incomplete count falls (`count`)."),
+            (depth, i32, opt, None, None, "depth", [], Flat::No, true,
+                "Victims may rip once more (`1`) or not (`0`, unset); no net is ripped twice in one transaction (Q11.4)."),
+            (rip_factor, i32, opt, None, None, "ripFactor", [], Flat::No, true,
+                "Rip cost of a net ripped k times this run times 1 + rip_factor * k (Q11.5; unset or 0: off)."),
+        }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {
             (audit_incremental, bool, opt, None, None, "auditIncremental", [], Flat::No, true,

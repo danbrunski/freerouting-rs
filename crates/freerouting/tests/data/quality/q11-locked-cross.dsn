@@ -1,0 +1,53 @@
+(pcb q11-locked-cross.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q11 synthetic fixture")
+    (host_version "one layer; A and B cross, and all four pads sit 0.2 mm from the outline: routing A rips B, and B cannot re-land")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 20000  0 20000  0 0)
+    )
+    (via "Via[0-0]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "PAD"
+      (place A1 700 10000 front 0)
+      (place A2 29300 10000 front 0)
+      (place B1 15000 700 front 0)
+      (place B2 15000 19300 front 0)
+    )
+  )
+  (library
+    (image "PAD"
+      (pin RectPad 1 0 0)
+    )
+    (padstack RectPad
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-0]_600:300_um"
+      (shape (circle F.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net A (pins A1-1 A2-1))
+    (net B (pins B1-1 B2-1))
+    (class kicad_default "" A B
+      (circuit (use_via "Via[0-0]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 250  15000 700  15000 19300) (net B))
+  )
+)

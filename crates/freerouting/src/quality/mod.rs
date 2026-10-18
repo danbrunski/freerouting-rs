@@ -14,4 +14,5 @@ pub mod register;
 pub mod stop_rule;
 pub mod stubs;
 pub mod sweep;
+pub mod transaction;
 pub mod verdict;

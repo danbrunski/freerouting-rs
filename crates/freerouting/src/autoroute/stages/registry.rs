@@ -334,6 +334,10 @@ impl ConnectionRouter for ObservedRouter {
         }
         outcome
     }
+
+    fn log_lines(&self) -> Vec<String> {
+        self.inner.log_lines()
+    }
 }
 
 fn lookup<F: Copy>(
