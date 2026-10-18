@@ -546,6 +546,19 @@ These are marked or look like quirks but keep no bug:
     Check per-board DSN reachability, byte-identical sessions and zero
     `route_result_zero_test_changes`; complete the separate plugin canary run
     and grade before accepting or promoting. Any reached DSN fix needs N02 totals.
+  *Partial 2026-10-18 (registered runs):* the orchestrator ran `prereg/N06.10.json` at 298af02
+    (release CLI in `target/orchestrator/n06-run`, logs in `target/orchestrator/heavy/n06-*.log`):
+    - `n06_run.py`: 40 runs (4 boards × 10 arms), `session_differences` 0 in every run, so every
+      arm's SES equals the baseline's; `route_result_zero_test_changes` 0 and the four
+      `dsn_*_reached` counters 0 in every run.
+    - `dsn_corpus_branch_inventory`: 205 DSN files, 203 load, and no file reaches any of the four
+      DSN branches, so no N02 totals measurement is owed. The registered command's relative
+      `N06_INPUT_COUNTERS_OUT` fails, because cargo runs the test in `crates/freerouting`; it ran
+      with an absolute path.
+    - `reference_optimize`: 3 passed (`candidate_order_matches_java`,
+      `optimizer_runs_match_java`, `candidate_items_match_java`), 160 s.
+    Small parity checks on 7e70541: `connection-parity` 7/7 and `PARITY_MAX_JAVA_S=20` 57/57 exact
+    boards byte-identical, D8 0. Remaining: the canary-pwr plugin-path grade.
 - [~] **N06.11 — Batch U, GUI and interactive:** `snapshot_drops_compensation` (the snapshot
   stores the compensation flag), `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`,
   `route_change_layer_no_via`, `route_connect_inner_break`, `select_extension_ignores_filter`.
@@ -574,6 +587,9 @@ These are marked or look like quirks but keep no bug:
     comparison; no new UI code is involved (the GUI delegates to these engine APIs).
     The heavy run is queued with the orchestrator; an accepted switch joins `enhanced` through
     N05 (see N06.13).
+  *Partial 2026-10-18 (registered runs):* the orchestrator ran `prereg/N06.11.json` at 298af02:
+    32 runs (4 boards × 8 arms), `session_differences` 0 and `compensated_snapshot_restores` 0 in
+    every run. Remaining: the canary-pwr plugin-path grade.
 - [ ] **N06.12 — The (c) rows.** Each one ends measured or explained, with the reason written in
   its row.
   - `ripup_pass_no_unset` gets its own registration.
