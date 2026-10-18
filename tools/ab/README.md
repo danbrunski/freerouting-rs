@@ -43,6 +43,7 @@ A rejected candidate leaves its numbers in the baseline file with
 | `boards.set` | the board set file the run used |
 | `boards.files` | **row name → sha256 of the input file** for every board. A board changed after registration is refused with its name |
 | `metrics` | the judged metrics, in order of importance: `name`, `direction` (`lower`, the default, or `higher`), `kind` (`int`, `float`, `counts`), `role`, `tol`, `compared` |
+| `rule`, `totals` | optional. `paired` (the default) or `totals`; see "The totals rule" below |
 | `pass_rule` | `min_boards` (not below 3), `improve_all_but` (not above 1: N-1) and `max_regress` (0). A registration may tighten the global rule, never loosen it |
 | `amendments` | `{date, reason, changes}` entries. A change after the first number goes here, with the reason, and the pinned hash in the test is updated in the same commit |
 
@@ -73,6 +74,42 @@ distinct boards**, improves on N-1 and regresses on none; rows of one board
 count once (use `board` in the row, or `gate collect --group PREFIX=BOARD`, for
 variants such as the canary-pwr family); neutral boards are printed; the luck
 rate (1 run in 2^N) is printed with the result.
+
+## The totals rule (N02)
+
+`"rule": "paired"` (the default) is the rule above: `pass_rule`, improve on
+N-1 boards, regress on none. A change to profile `enhanced` is judged by
+`"rule": "totals"` instead (routing-quality.md, "Which rule judges"), with a
+`totals` block next to `metrics`:
+
+```json
+"rule": "totals",
+"totals": { "accept": "improve",
+            "signal": ["kicad_unconnected", "unrouted"],
+            "noise": { "canary-pwr": 10, "pic_programmer": 3 },
+            "min_boards": 3,
+            "speed": { "metric": "maze_nodes", "min_drop_percent": 20 } }
+```
+
+| Key | Meaning |
+|---|---|
+| `accept` | required. `improve`: the total improves by more than the set's noise (or the speed clause holds). `no-regress`: the total is not worse than the set's noise (correctness fixes, N06) |
+| `signal` | optional, registered metrics, default `kicad_unconnected` then `unrouted`. Per row the first one that is a number in both arms is used; the rows that fall back are summed and printed separately |
+| `noise` | optional. Band per distinct **board** (the row's `board`; the canary-pwr variants share one). A board without one gets `max(2, ceil(5 % of connections))` from the row's `connections`; neither is `MISSING`. A name no run row has is `REFUSED` |
+| `min_boards` | optional, not below 3 |
+| `speed` | optional, only with `accept: improve`. `metric` is a registered metric (lower is better); `min_drop_percent` defaults to and may not go below 20 |
+
+The hard guards (`hard` and `guard` metrics) and D2 (the baseline
+comparison) are the same as for the paired rule. `pass_rule` may stay in the
+file (it is validated, and reported), but the verdict is the totals rule's.
+`freerouting-dev gate` without `--prereg` takes `--rule totals [--accept ...]
+[--noise BOARD=BAND]... [--speed METRIC[=PERCENT]]`; with `--prereg` the
+registration states all of it, and an option that differs is `REFUSED`.
+A registration that says `"rule": "totals"` without the block (Q14's, judged by
+hand) parses, but a run against it is refused.
+[`examples/n02-totals.prereg.json`](examples/n02-totals.prereg.json) is a
+sample; `crates/freerouting-dev/tests/gate_totals.rs` pins its sha256 and
+runs it.
 
 ## Worked example: the X01 head-to-head, re-registered
 

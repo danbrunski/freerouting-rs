@@ -64,6 +64,48 @@ construction. It is still tested with `ses-diff`.
   2^N runs, so N=3 is weak evidence. These rules come from KRT's A/B practice,
   where per-board spread is ±2–3 nets and two defaults were shipped and then
   reverted.
+- **Which rule judges (amended 2026-10-17, N02, D10).** The paired rule above
+  stays the rule for stages that are **opt-in** (off by default, a new
+  algorithm, an `experimental` setting). A change to **profile `enhanced`**
+  (a new default, a changed cost, a reordering) is judged by the **totals
+  rule**, `freerouting-dev gate --rule totals` or `"rule": "totals"` in its
+  registration:
+  - *Why.* A change that moves routes moves most boards by a few connections
+    either way, so "N-1 improve, none regress" rejects it even when the total
+    improves clearly. P04.1 (canonical obstacle order) cut the total from 1,281
+    to 1,269 unrouted over 17 boards and the maze work from 39.1 G to 19.6 G
+    nodes, yet 5 boards regressed (bm01 +2, CPU-85 +7, GP8B on the clearance
+    guard, smoothieboard +9, canary-pwr +5) and the paired rule rejected it.
+  - *Hard guards, unchanged:* no hard metric above zero (`via_in_pad`,
+    `below_minimum`), no guard metric worse (`drc_real`, clearance), D2
+    determinism (the baseline comparison). Any failure rejects the change.
+  - *Signal:* KiCad-graded `kicad_unconnected`, summed over the registered set;
+    for a board with no `.kicad_pcb`, the router's own `unrouted`, reported
+    separately. The `canary-pwr` variants are one board, summed.
+  - *Accept when both hold:* (1) the total improves by **more than the set's
+    noise**, sqrt(sum of the per-board bands squared); (2) **no board is worse
+    than twice its own band**. The band of a board is its order spread (the
+    half-range over K pass-1 orders, Q12.4), registered per board; until it is
+    measured, max(2, 5 % of the board's connections) (`connections` in the
+    record), and 10 for `canary-pwr`. At least **3 distinct boards**, still.
+  - *Speed changes:* accepted when the total is not worse than the noise and
+    the registered work measure (maze nodes, tree nodes visited) drops by at
+    least 20 %. The bands still bind.
+  - *Correctness fixes* (`"accept": "no-regress"`, N06): the guards hold, no
+    board is worse than twice its band, and the total is not worse than the
+    set's noise. No improvement is needed.
+  - *What it does to P04.1.* Its unrouted counts alone (its clearance
+    violations on GP8B, 0 to 2, and smoothieboard, 210 to 211, fail the hard
+    guards under either rule, so P04.1 as measured is still rejected) pass by
+    the speed clause only: a 50 % drop of the maze work with the total 12 better. On quality
+    alone it fails: the smallest possible bands (2 for each of the 16 boards, 10
+    for canary-pwr) give noise sqrt(16 x 4 + 100) = 12.8, above the 12
+    improvement. The rule accepts speed-ups that cost nothing within noise; it
+    does not turn a -12 on 1,281 into a quality win. The numbers are pinned by
+    `crates/freerouting-dev/tests/gate_totals.rs`.
+  - *Existing registrations keep their rules*: a result that exists is not
+    re-judged by a rule written after it. The format is in `tools/ab/README.md`
+    (`tools/ab/examples/n02-totals.prereg.json`).
 - **Keep the board that disagrees.** A candidate that helps on one board of
   three isn't a candidate. Deleting the dissenting row is how a
   coincidence becomes folklore.

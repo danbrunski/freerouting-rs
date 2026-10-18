@@ -3,10 +3,18 @@
 //! ```text
 //! freerouting-dev gate --records run.json --baseline base.json [--prereg reg.json]
 //!     [--rows a,b] [--arms off,on]
+//!     [--rule paired|totals [--accept improve|no-regress] [--noise BOARD=BAND]...
+//!      [--speed METRIC[=PERCENT]]]
 //! freerouting-dev gate --records run.json --baseline base.json --write-baseline [...]
 //! freerouting-dev gate collect --arm NAME=bench.json[,oracle=DIR] (twice or more)
 //!     --out records.json [--engine java] [--group PREFIX=BOARD] [--arms-json file]
 //! ```
+//!
+//! `--rule totals` judges by N02's totals rule ([`crate::gate_totals`]); the
+//! other three options set its acceptance, the noise band of a board and the
+//! speed clause. With `--prereg` the registration states the rule, so `--rule`
+//! may only repeat it and the other three are refused: a run can't choose its
+//! own criteria.
 //!
 //! The self-test ([`crate::gate_selftest`]) runs first on every invocation.
 //! Exit status: 0 the gate passes (or a baseline was written), 1 it fails
@@ -21,12 +29,14 @@ use crate::gate::{Arms, Class, Outcome, Problem, Settings, baseline_from, check,
 use crate::gate_collect::{ArmSource, CollectOptions, collect, write_records};
 use crate::gate_prereg::{Prereg, check_registered, check_registration};
 use crate::gate_selftest;
+use crate::gate_totals::{Accept, MIN_SPEED_DROP_PERCENT, SpeedClause, TotalsRule};
 use crate::json_read::Json;
 
 /// The usage text.
 pub const USAGE: &str = "usage:
   freerouting-dev gate --records <run.json> --baseline <base.json> [--prereg <reg.json>]
       [--rows a,b] [--arms off,on] [--write-baseline]
+      [--rule paired|totals] [--accept improve|no-regress] [--noise BOARD=BAND]... [--speed METRIC[=PERCENT]]
   freerouting-dev gate collect --arm NAME=<bench.json>[,oracle=<dir>] --arm NAME=... --out <records.json>
       [--engine java] [--group PREFIX=BOARD] [--arms-json <file>]
   freerouting-dev gate --self-test";
@@ -105,7 +115,9 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
     }
     let parsed = parse_args(
         args,
-        &["records", "baseline", "prereg", "rows", "arms"],
+        &[
+            "records", "baseline", "prereg", "rows", "arms", "rule", "accept", "noise", "speed",
+        ],
         &["write-baseline", "self-test"],
     )?;
     if parsed.get("self-test").is_some() {
@@ -153,6 +165,11 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
             cand: cand.into(),
         };
     }
+    match rule_options(&parsed, prereg.as_ref())? {
+        RuleOptions::Refused(problems) => return Ok(fail(&problems)),
+        RuleOptions::Totals(rule) => settings.totals = Some(rule),
+        RuleOptions::Registered => {}
+    }
     if parsed.get("write-baseline").is_some() {
         return write_baseline(&records, &settings, prereg.as_ref(), &baseline_path);
     }
@@ -184,6 +201,102 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
     } else {
         ExitCode::from(1)
     })
+}
+
+/// What the rule options of the command line ask for.
+enum RuleOptions {
+    /// The registration (or the default paired rule) decides.
+    Registered,
+    /// `--rule totals` without a registration.
+    Totals(TotalsRule),
+    Refused(Vec<Problem>),
+}
+
+fn rule_options(parsed: &Parsed, prereg: Option<&Prereg>) -> Result<RuleOptions, String> {
+    let rule = parsed.get("rule");
+    if !matches!(rule, None | Some("paired") | Some("totals")) {
+        return Err(format!("--rule takes paired or totals\n{USAGE}"));
+    }
+    let extras = ["accept", "noise", "speed"]
+        .into_iter()
+        .filter(|n| parsed.get(n).is_some())
+        .collect::<Vec<_>>();
+    if let Some(p) = prereg {
+        let registered = if p.totals_registered {
+            "totals"
+        } else {
+            "paired"
+        };
+        let mut problems = Vec::new();
+        if rule.is_some_and(|r| r != registered) {
+            problems.push(Problem::new(
+                Class::Refused,
+                format!(
+                    "--rule {} but the registration {} states rule {registered}",
+                    rule.unwrap_or(""),
+                    p.id
+                ),
+            ));
+        }
+        for name in extras {
+            problems.push(Problem::new(
+                Class::Refused,
+                format!("--{name} with --prereg: the registration states the criteria"),
+            ));
+        }
+        return Ok(if problems.is_empty() {
+            RuleOptions::Registered
+        } else {
+            RuleOptions::Refused(problems)
+        });
+    }
+    if rule != Some("totals") {
+        if let Some(name) = extras.first() {
+            return Err(format!("--{name} goes with --rule totals\n{USAGE}"));
+        }
+        return Ok(RuleOptions::Registered);
+    }
+    let accept = match parsed.get("accept") {
+        None => Accept::Improve,
+        Some(a) => Accept::parse(a)
+            .ok_or_else(|| format!("--accept takes improve or no-regress, got {a:?}\n{USAGE}"))?,
+    };
+    let mut totals = TotalsRule::new(accept);
+    for spec in parsed.all("noise") {
+        let (board, band) = spec
+            .split_once('=')
+            .ok_or_else(|| format!("--noise takes BOARD=BAND, got {spec:?}"))?;
+        let band: f64 = band
+            .parse()
+            .ok()
+            .filter(|b: &f64| *b >= 0.0 && b.is_finite())
+            .ok_or_else(|| format!("--noise {spec:?}: the band must be a number >= 0"))?;
+        totals.noise.insert(board.to_string(), band);
+    }
+    if let Some(spec) = parsed.get("speed") {
+        let (metric, percent) = match spec.split_once('=') {
+            Some((m, p)) => (
+                m,
+                p.parse::<f64>()
+                    .map_err(|_| format!("--speed {spec:?}: the percentage must be a number"))?,
+            ),
+            None => (spec, MIN_SPEED_DROP_PERCENT),
+        };
+        if percent < MIN_SPEED_DROP_PERCENT || accept == Accept::NoRegress {
+            return Ok(RuleOptions::Refused(vec![Problem::new(
+                Class::Refused,
+                format!(
+                    "--speed needs --accept improve and a drop of at least \
+                     {MIN_SPEED_DROP_PERCENT} %"
+                ),
+            )]));
+        }
+        totals.speed = Some(SpeedClause {
+            metric: metric.to_string(),
+            min_drop_percent: percent,
+        });
+    }
+    Ok(RuleOptions::Totals(totals))
 }
 
 fn write_baseline(

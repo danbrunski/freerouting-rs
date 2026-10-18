@@ -62,12 +62,18 @@
 //! - `REFUSED`: fewer distinct boards than the rule needs, or a
 //!   preregistration mismatch ([`crate::gate_prereg`]).
 //!
-//! # The pass rule
+//! # The pass rules
 //!
-//! At least 3 **distinct boards** (rows of one board count once), improving
-//! on at least N-1 and regressing on none. Neutral boards are printed, and so
-//! is the luck rate: a change whose per-board direction is a coin flip passes
-//! the rule 1 run in 2^N.
+//! The **paired rule**, the default and the rule for opt-in stages: at least 3
+//! **distinct boards** (rows of one board count once), improving on at least
+//! N-1 and regressing on none. Neutral boards are printed, and so is the luck
+//! rate: a change whose per-board direction is a coin flip passes the rule 1
+//! run in 2^N.
+//!
+//! The **totals rule** (`--rule totals`, `"rule": "totals"` in a
+//! registration; N02, D10), the rule for changes to profile `enhanced`: the
+//! sum of the signal over the boards must beat the set's noise, and no board
+//! may be worse than twice its own band. See [`crate::gate_totals`].
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -77,6 +83,7 @@ use freerouting::drc::json::JsonValue;
 use crate::json_read::Json;
 
 pub use crate::gate_baseline::{baseline_from, baseline_rows, compare_baseline};
+use crate::gate_totals::{TotalsRule, judge};
 
 /// The format tag of a records file.
 pub const RECORDS_FORMAT: &str = "freerouting-gate-records-1";
@@ -292,6 +299,8 @@ pub struct Settings {
     /// The metrics to judge; empty: the default table, narrowed to what the
     /// records contain.
     pub specs: Vec<MetricSpec>,
+    /// `Some`: judge by the totals rule instead of the paired `rule`.
+    pub totals: Option<TotalsRule>,
 }
 
 /// The result of a check.
@@ -578,6 +587,28 @@ pub fn row_mark(row: &Row<'_>, specs: &[MetricSpec], arms: &Arms) -> (Mark, Vec<
     (Mark::Neutral, hard)
 }
 
+/// The hard guards a row breaks in the candidate arm, as text: a hard metric
+/// above zero, a guard metric worse than the baseline arm. The totals rule
+/// fails on any of them whatever the signal does.
+pub fn guard_failures(row: &Row<'_>, specs: &[MetricSpec], arms: &Arms) -> Vec<String> {
+    let (Some(base), Some(cand)) = (row.arm(&arms.base), row.arm(&arms.cand)) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for spec in specs {
+        match (spec.role, value_of(base, spec), value_of(cand, spec)) {
+            (Role::Hard, _, Value::Num(c)) if c > 0.0 => {
+                out.push(format!("{}.{} = {c}", row.name, spec.name));
+            }
+            (Role::Guard, Value::Num(b), Value::Num(c)) if worse(spec, b, c) => {
+                out.push(format!("{}.{} {b} -> {c}", row.name, spec.name));
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
 /// The marks of all rows, by row name.
 pub fn marks(rows: &[Row<'_>], specs: &[MetricSpec], arms: &Arms) -> BTreeMap<String, Mark> {
     rows.iter()
@@ -814,7 +845,14 @@ pub fn check(records: &Json, baseline: &Json, settings: &Settings) -> Outcome {
             )
         })
         .collect();
-    let (ok, lines) = trial(&trial_rows, &settings.rule);
+    let (ok, lines) = match &settings.totals {
+        Some(rule) => {
+            let (ok, lines, more) = judge(&scoped, arms, &specs, rule);
+            problems.extend(more);
+            (ok, lines)
+        }
+        None => trial(&trial_rows, &settings.rule),
+    };
     outcome.rule_ok = ok;
     outcome.lines.extend(lines);
     problems.sort_by(|a, b| a.class.cmp(&b.class).then_with(|| a.text.cmp(&b.text)));

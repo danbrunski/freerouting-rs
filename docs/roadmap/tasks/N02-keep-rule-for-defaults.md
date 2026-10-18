@@ -49,21 +49,54 @@ The rule for a change to profile `enhanced`:
 
 ## Checklist
 
-- [ ] **N02.1 — The rule in `freerouting-dev gate`.** Add a `--rule totals` mode next
+- [x] **N02.1 — The rule in `freerouting-dev gate`.** Add a `--rule totals` mode next
   to today's paired rule. It reads each board's noise band from the
   registration (`noise` per board, or a formula).
   - **Accept:** self-tests cover a P04.1-shaped table, which passes; a total that
     improves only within noise, which fails; and a board beyond twice its band,
     which fails.
-- [ ] **N02.2 — Registration format.** The registration states `"rule": "totals"`,
+  *Done 2026-10-17:* `freerouting-dev gate --rule totals` (module `gate_totals.rs`;
+  `--accept improve|no-regress`, `--noise BOARD=BAND`, `--speed METRIC[=PERCENT]`; with
+  `--prereg` the registration states them and a differing option is REFUSED). The rule is as
+  Decisions states it: hard guards (hard metrics, guard metrics, D2 through the baseline
+  comparison), total improvement strictly above sqrt(sum band^2), no board worse than 2 x its
+  band, band registered per board or max(2, ceil(5 % of `connections`)), rows of a `board`
+  summed and counted once, >= 3 boards, optional speed clause (quality within noise and the work
+  measure down >= 20 %), `no-regress` for N06. Self-tests in `gate_selftest.rs` (every
+  invocation) and `crates/freerouting-dev/tests/gate_totals.rs` (21 tests, `cargo test -p
+  freerouting-dev`: all pass). P04.1-shaped table (P04's measured counts, illustrative bands,
+  maze work 39.1 G -> 19.6 G): passes **through the speed clause**; on quality alone it fails,
+  because -12 is below the set noise (52.6 with the illustrative bands, 12.81 even with the
+  smallest possible bands, 2 per board and 10 for canary-pwr). So "a P04.1-shaped table, which
+  passes" holds for the speed clause only; the Decisions' rule cannot pass P04.1 on the
+  unrouted total (the doc says so). Also pinned: improvement equal to the noise fails; a board
+  at exactly 2 x band passes, above fails; hard guard fails a great total; < 3 boards refused;
+  canary variants count once.
+- [x] **N02.2 — Registration format.** The registration states `"rule": "totals"`,
   the per-board noise source, and the speed clause if used. `prereg` tests pin it
   as before.
   - **Accept:** the format is documented in routing-quality.md, and a sample
     registration validates.
-- [ ] **N02.3 — routing-quality.md.** Amend "How to measure a quality change":
+  *Done 2026-10-17:* `"rule": "paired" | "totals"` and the `totals` block (`accept`, `signal`,
+  `noise`, `min_boards`, `speed`) in `gate_prereg.rs`; unknown keys, a missing `accept`, a
+  `min_boards` below 3, a speed drop below 20 %, a speed clause with `no-regress`, an
+  unregistered signal or speed metric, and a noise band naming no run board are all refused or
+  malformed (tests `a_bad_totals_registration_is_refused_or_malformed`,
+  `a_noise_band_for_a_board_the_run_does_not_have_is_refused`). Documented in `tools/ab/README.md`
+  ("The totals rule") and the module docs. Sample: `tools/ab/examples/n02-totals.prereg.json`,
+  validated, sha256-pinned and run against a synthetic run in `gate_totals.rs`. Q14's registration
+  (`"rule": "totals"`, prose `totals_rule`, no block, hash unchanged) still parses and
+  `prereg_q14` passes; a run against it is REFUSED ("no `totals` block"), so Q14.3's verdict stays
+  hand-computed unless an amendment adds the block.
+- [x] **N02.3 — routing-quality.md.** Amend "How to measure a quality change":
   keep the paired rule as the rule for stages that are opt-in, and use the totals
   rule for changes to `enhanced`. Record the reason, with P04.1's numbers.
   - **Accept:** the amendment is in the doc, dated, with a pointer to D10.
+  *Done 2026-10-17:* `routing-quality.md`, "How to measure a quality change", bullet "Which rule
+  judges (amended 2026-10-17, N02, D10)": paired rule for opt-in stages, totals rule for changes
+  to `enhanced`, the reason with P04.1's numbers (1,281 -> 1,269, maze work 39.1 G -> 19.6 G, 5
+  regressing boards, the clearance guard failures), and the plain statement that P04.1 passes
+  only through the speed clause.
 - [ ] **N02.4 — Sort the rejected candidates.** Apply the keep-or-delete rule to
   every rejection so far: Q07 conflict-rounds and inside-out, P04's rejected arms,
   and X02, X06 and X11, which are already removed. For each one record the board

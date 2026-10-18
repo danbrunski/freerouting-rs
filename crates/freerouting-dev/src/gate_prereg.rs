@@ -18,6 +18,14 @@
 //!   "amendments": [] }
 //! ```
 //!
+//! `pass_rule` is the paired rule (`"rule": "paired"`, the default). A
+//! registration for a change to profile `enhanced` says `"rule": "totals"`
+//! and adds a `totals` block (`accept`, `signal`, `noise`, `min_boards`,
+//! `speed`), see [`crate::gate_totals`] and `tools/ab/README.md` (N02). A
+//! `"rule": "totals"` without that block parses (Q14's hand-judged
+//! registration) but a run against it is refused: the gate does not guess the
+//! criteria.
+//!
 //! A run is **refused** (class `REFUSED`) when
 //! - its arms differ from the registered ones by name, engine or settings;
 //! - a board is not registered, is missing, or its input hash changed since
@@ -40,6 +48,7 @@ use crate::gate::{
     Arms, Class, Direction, Kind, MIN_BOARDS, MetricSpec, Outcome, PassRule, Problem, Role,
     Settings, check, default_metrics, records_rows,
 };
+use crate::gate_totals::TotalsRule;
 use crate::json_read::Json;
 
 /// The format tag of a registration.
@@ -58,6 +67,10 @@ pub struct Prereg {
     pub set: Option<String>,
     pub specs: Vec<MetricSpec>,
     pub rule: PassRule,
+    /// `"rule": "totals"` was registered (the paired `rule` is then reported only).
+    pub totals_registered: bool,
+    /// The `totals` block, when there is one.
+    pub totals: Option<TotalsRule>,
     pub amendments: usize,
 }
 
@@ -212,6 +225,29 @@ impl Prereg {
             }
         }
         problems.extend(weaker_than_global(&rule, &specs));
+        let totals_registered = match json.get("rule") {
+            None => false,
+            Some(Json::String(r)) if r == "paired" => false,
+            Some(Json::String(r)) if r == "totals" => true,
+            Some(other) => {
+                problems.push(malformed(format!(
+                    "`rule` must be \"paired\" or \"totals\", got {}",
+                    crate::gate::show(Some(other))
+                )));
+                false
+            }
+        };
+        let mut totals = None;
+        match json.get("totals") {
+            None => {}
+            Some(_) if !totals_registered => problems.push(malformed(
+                "a `totals` block needs `\"rule\": \"totals\"`".to_string(),
+            )),
+            Some(block) => match TotalsRule::parse(block, &specs) {
+                Ok(t) => totals = Some(t),
+                Err(more) => problems.extend(more),
+            },
+        }
         let amendments = match json.get("amendments") {
             Some(Json::Array(a)) => a.len(),
             None => 0,
@@ -232,6 +268,8 @@ impl Prereg {
             set,
             specs,
             rule,
+            totals_registered,
+            totals,
             amendments,
         })
     }
@@ -243,6 +281,7 @@ impl Prereg {
             rule: self.rule,
             scope: None,
             specs: self.specs.clone(),
+            totals: self.totals.clone(),
         }
     }
 }
@@ -354,6 +393,25 @@ pub fn check_registration(prereg: &Prereg, records: &Json) -> Vec<Problem> {
             out.push(refused(format!(
                 "board {registered} is registered but missing from the run"
             )));
+        }
+    }
+    // The totals rule: its block must exist, and its noise must name run boards.
+    if prereg.totals_registered {
+        match &prereg.totals {
+            None => out.push(refused(
+                "`rule` is \"totals\" but the registration has no `totals` block (accept, \
+                 noise, signal); the gate does not guess the criteria"
+                    .to_string(),
+            )),
+            Some(t) => {
+                for board in t.noise.keys() {
+                    if !rows.iter().any(|r| r.board == board || r.name == board) {
+                        out.push(refused(format!(
+                            "totals.noise names board {board}, which no row of the run has"
+                        )));
+                    }
+                }
+            }
         }
     }
     // Metrics: the run's own list, when it has one.

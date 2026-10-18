@@ -1,0 +1,40 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N02-sample-totals",
+  "registered": "2026-10-17",
+  "question": "SAMPLE for the totals rule (N02): does the candidate arm 'on' lower the KiCad-unconnected total of the set by more than the set's noise, with no hard-guard failure and no board worse than twice its band, or keep it within noise while cutting the maze work by at least 20 percent? The hashes are illustrative (sha256 of 'n02-sample-input:<row>'); a real registration hashes the input files.",
+  "rule": "totals",
+  "totals": {
+    "accept": "improve",
+    "signal": ["kicad_unconnected", "unrouted"],
+    "noise": { "canary-pwr": 10, "pic_programmer": 3 },
+    "min_boards": 3,
+    "speed": { "metric": "maze_nodes", "min_drop_percent": 20 }
+  },
+  "arms": {
+    "off": { "engine": "freerouting-rs at the parent commit", "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false", "settings": {} },
+    "on": { "engine": "freerouting-rs at the commit that lands the checklist", "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false --router.example=on", "settings": {} }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "on",
+  "boards": {
+    "set": "tools/bench/sets/n02-sample.txt",
+    "files": {
+      "canary-pwr-a": "107e304dfaf0fdccf2fa2f875001b91c950915c0b56760d836ae9128695d00aa",
+      "canary-pwr-b": "dc5ace7d07c80831daad2949ff1ac8ba03f4729a43adc74a36827befad8820c6",
+      "interf_u": "e50570b0d66ef8026250c7f6e92df75d9daa60b2dfddfeac9060e1a734f88d63",
+      "pic_programmer": "41c72c4db45dc02746adfb1d0a3ac963f466aca1b6138296422f2638c286fd99"
+    }
+  },
+  "metrics": [
+    { "name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower" },
+    { "name": "drc_real", "role": "guard", "kind": "int", "direction": "lower" },
+    { "name": "kicad_unconnected", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "unrouted", "role": "score", "kind": "int", "direction": "lower" },
+    { "name": "maze_nodes", "role": "report", "kind": "int", "direction": "lower", "compared": false },
+    { "name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false }
+  ],
+  "pass_rule": { "min_boards": 3, "improve_all_but": 1, "max_regress": 0 },
+  "amendments": []
+}

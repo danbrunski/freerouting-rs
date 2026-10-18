@@ -6,6 +6,7 @@
 //! A failure here is a bug in the gate, reported before any verdict.
 
 use crate::gate::{Class, Mark, PassRule, Problem, Settings, baseline_from, check, trial};
+use crate::gate_totals::{Accept, BoardTotal, SpeedClause, TotalsRule, Work, totals_trial};
 use crate::json_read::Json;
 
 /// A row piece of a records document: `values` as `name: number` pairs.
@@ -131,6 +132,111 @@ pub fn run() -> Result<(), Vec<String>> {
     );
     let (ok, _) = t(&[]);
     expect("no rows on trial passes the rule", ok);
+
+    // The totals rule (N02): a P04.1-shaped table (17 boards, 5 regressing, -12
+    // in total, half the maze work), a total inside the noise, a board beyond
+    // twice its band, a hard guard, and the non-regression variant.
+    let b = |name: &str, base: f64, cand: f64, band: f64| BoardTotal {
+        board: name.to_string(),
+        signal: "unrouted".to_string(),
+        base,
+        cand,
+        band,
+    };
+    let mut p04: Vec<BoardTotal> = (0..12)
+        .map(|i| b(&format!("flat{i}"), 10.0, 10.0, 2.0))
+        .collect();
+    p04.extend([
+        b("regress1", 24.0, 26.0, 5.0),
+        b("regress2", 57.0, 64.0, 10.0),
+        b("regress3", 19.0, 28.0, 10.0),
+        b("win1", 285.0, 274.0, 5.0),
+        b("win2", 57.0, 43.0, 5.0),
+    ]);
+    let mut speed_rule = TotalsRule::new(Accept::Improve);
+    speed_rule.speed = Some(SpeedClause {
+        metric: "maze_nodes".into(),
+        min_drop_percent: 20.0,
+    });
+    let halved = Work {
+        metric: "maze_nodes".into(),
+        base: 39.1e9,
+        cand: 19.6e9,
+    };
+    expect(
+        "totals: a P04.1-shaped table passes through the speed clause",
+        totals_trial(&p04, &speed_rule, Some(&halved), &[]).0,
+    );
+    expect(
+        "totals: the same table fails on a total inside the noise without it",
+        !totals_trial(&p04, &TotalsRule::new(Accept::Improve), None, &[]).0,
+    );
+    let three = |gain: f64| {
+        vec![
+            b("a", 20.0, 20.0 - gain, 3.0),
+            b("b", 20.0, 20.0, 4.0),
+            b("c", 20.0, 20.0, 0.0),
+        ]
+    };
+    let improve = TotalsRule::new(Accept::Improve);
+    expect(
+        "totals: an improvement equal to the set noise (5) fails, above it passes",
+        !totals_trial(&three(5.0), &improve, None, &[]).0
+            && totals_trial(&three(6.0), &improve, None, &[]).0,
+    );
+    expect(
+        "totals: a board beyond twice its band fails a great total",
+        !totals_trial(
+            &[
+                b("a", 100.0, 40.0, 5.0),
+                b("b", 40.0, 20.0, 5.0),
+                b("c", 10.0, 15.0, 2.0),
+            ],
+            &improve,
+            None,
+            &[],
+        )
+        .0,
+    );
+    expect(
+        "totals: a hard guard failure fails a great total",
+        !totals_trial(
+            &three(10.0),
+            &improve,
+            None,
+            &["x.via_in_pad = 1".to_string()],
+        )
+        .0,
+    );
+    expect(
+        "totals: fewer than 3 distinct boards are refused",
+        !totals_trial(&three(10.0)[..2], &improve, None, &[]).0,
+    );
+    let no_regress = TotalsRule::new(Accept::NoRegress);
+    expect(
+        "totals: no-regress accepts a total within noise (+5) and rejects one beyond it (+6)",
+        totals_trial(
+            &[
+                b("a", 20.0, 25.0, 3.0),
+                b("b", 20.0, 20.0, 4.0),
+                b("c", 20.0, 20.0, 0.0),
+            ],
+            &no_regress,
+            None,
+            &[],
+        )
+        .0 && !totals_trial(
+            &[
+                b("a", 20.0, 26.0, 3.0),
+                b("b", 20.0, 20.0, 4.0),
+                b("c", 20.0, 20.0, 0.0),
+            ],
+            &no_regress,
+            None,
+            &[],
+        )
+        .0,
+    );
 
     // Marks and the comparator.
     let base_rows = vec![improving("a", "A"), improving("b", "B"), neutral("c", "C")];
