@@ -12,7 +12,7 @@ in [desktop-app.md](../desktop-app.md).
 | Task | Outcome | Size / risk | Prerequisite |
 |---|---|---|---|
 | [R01](archive/R01-release-builds.md) ✅ | Version gate, build stamp, icons, `release.yml` with Linux (AppImage, tar), Windows (MSI, zip) and macOS (universal DMG, tar) jobs, checksums, draft release, release docs | M / medium: young tooling, needs pushes | F01.2, F04.1; C08 (`--version`); K01.3 and K03 for the plugin parts |
-| [R02](R02-signing.md) | *Optional.* Developer ID signing and notarization on macOS, Authenticode on Windows | S / low, but costs money and needs secrets | R01; Dan's decision |
+| [R02](archive/R02-signing.md) ✅ | *Not planned* (Dan, 2026-10-18: no code signing). Was: Developer ID signing and notarization on macOS, Authenticode on Windows | — | — |
 
 ## Order
 
@@ -22,7 +22,7 @@ in [desktop-app.md](../desktop-app.md).
   C08) and the plugin routes (K02). Until then only draft test releases.
 - K03's PCM zip joins R01.7's assets when K03 lands; K03 needs R01's
   binaries, so the two meet at R01.7.
-- R02 only after Dan decides (question 1).
+- R02 is not planned: Dan decided against code signing (2026-10-18).
 
 ## Lanes and file ownership
 

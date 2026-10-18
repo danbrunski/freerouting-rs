@@ -8,7 +8,7 @@ checklist adds one tag-triggered workflow that builds, packages, checks and
 drafts a GitHub release, plus the version gate and version stamp it needs.
 It is the GUI report's REL-1 with KRT's "version gate first" amendment
 (KRT report, "R and C — Release and settings"). CI itself (fmt, clippy,
-tests on three systems) is F01.2; signing is [R02](../R02-signing.md).
+tests on three systems) is F01.2; signing is [R02](R02-signing.md).
 
 **Prerequisites:**
 - F01.2: CI installed, with the action versions it pins (reuse them here).

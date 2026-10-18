@@ -42,13 +42,16 @@ handling for both.
 
 ## Checklist
 
-- [ ] **R02.1 — Record Dan's decision.** *Operator decision.*
+- [x] **R02.1 — Record Dan's decision.** *Operator decision.*
+  *Done 2026-10-18:* Dan: "We don't need code signing so no R02." Recorded in
+  `docs/development/release.md` (Unsigned builds). R02.2–R02.4 are not planned.
   - Which platforms to sign, which accounts or services, who holds the
     keys, and the yearly cost. Recorded in `release.md`.
   - **Accept:** the decision and its date are in `release.md`. If Dan says
     no, the remaining items are marked not planned.
 
-- [ ] **R02.2 — macOS Developer ID signing and notarization.**
+- [x] **R02.2 — macOS Developer ID signing and notarization.** *Not planned.*
+  *Done 2026-10-18:* not planned; Dan decided against code signing (R02.1). Nothing was built.
   - Sign both binaries and the app with the hardened runtime and the
     entitlements wgpu needs (none beyond the defaults is expected; record
     what was needed), build the DMG, sign it, submit with `notarytool
@@ -58,13 +61,15 @@ handling for both.
     Developer ID"; the app launches with `--version` after the quarantine
     attribute is set on the downloaded DMG.
 
-- [ ] **R02.3 — Windows Authenticode.**
+- [x] **R02.3 — Windows Authenticode.** *Not planned.*
+  *Done 2026-10-18:* not planned; Dan decided against code signing (R02.1). Nothing was built.
   - Sign both exes before packaging and the MSI after, with a timestamp
     server.
   - **Accept:** `signtool verify /pa /v` passes on both exes and the MSI on
     the runner; the signature's subject is the one recorded in R02.1.
 
-- [ ] **R02.4 — Update the user docs.**
+- [x] **R02.4 — Update the user docs.** *Not planned.*
+  *Done 2026-10-18:* not planned; Dan decided against code signing (R02.1). Nothing was built.
   - Remove the "Open Anyway" and SmartScreen steps from `release.md` and the
     README for the signed platforms.
   - **Accept:** the documents match what a downloaded signed release does,

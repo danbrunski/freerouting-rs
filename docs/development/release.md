@@ -66,8 +66,9 @@ Put the assets and `SHA256SUMS` in one directory, then `sha256sum -c SHA256SUMS`
   on first launch open System Settings > Privacy & Security, scroll to the message about
   "freerouting-rs" and choose **Open Anyway**. macOS 15 removed the Control-click > Open
   shortcut; on macOS 14 it still works. (This is from the GUI report and Apple's documentation,
-  not yet seen on a machine here; R01.6 stays partial until someone does it.) R02 would replace
-  this with a Developer ID signature and notarization.
+  not yet seen on a machine here; R01.6 stays partial until someone does it.) The builds stay
+  unsigned: Dan decided on 2026-10-18 that the project does not need code signing (R02, not
+  planned), so these warnings are the expected first-run steps on Windows and macOS.
 
 ## Tools and pins
 
