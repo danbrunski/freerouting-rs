@@ -30,18 +30,11 @@ are not in this repository; the test boards in `tests/data/` are synthetic.
   verification (a report). Both are written from KRT ideas; no KRT code is
   ported. Pour region repair (`krt-region-repair`, X02.3) was rejected by
   X02.5's registered run and removed.
-- `grid` (X04): the conservative obstacle raster of one connection for the
-  vendored grid A* (`crates/krt-grid-router`, MIT, a dependency of this
-  crate): the frame and window, trace and via cells from the board's shapes,
-  keepouts, the outline and terminal cells. Written from KRT's design; no KRT
-  code is ported, so these files are GPL-3.0-only.
-- `grid` (X05): the `krt-grid` connection router
-  (`router.autorouter.connection_router = krt-grid`): one connection on the
-  raster at 0.1, then 0.05, then 0.025 mm, the path turned into traces and vias
-  (`grid/path.rs`, which ports KRT's `simplify_path` and
-  `_path_to_segments_vias` and so is GPL-3.0-only AND MIT), exact connectors to
-  the pins, and one DRC-checked transaction per attempt; on failure the
-  frontier's blocking items. The other X05 files are written from KRT ideas.
+- The grid connection router (`krt-grid`, X05), its obstacle raster (X04), the
+  region classes (X06.2) and the vendored `krt-grid-router` crate (X03, MIT)
+  were judged by N02.4 and removed: the router never routed more connections
+  than the maze search and routed fewer on 4 of 10 boards (X05.6), so it wins
+  on no board class. The git history keeps the code.
 - `length` (X07): length and time matching, the `krt-meander` board stage
   (`router.special.length_matching = krt-meander`, groups in
   `router.length_matching.groups`), run after the optimizer: net lengths with

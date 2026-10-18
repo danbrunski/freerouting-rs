@@ -27,7 +27,12 @@ fn the_registry_is_the_builtin_one_plus_the_krt_stages() {
         krt_only += all.iter().filter(|id| id.starts_with("krt-")).count();
     }
     assert!(krt_only > 0, "the KRT stages are registered");
-    for id in ["krt-grid", "krt-meander", "krt-diffpair"] {
+    for id in [
+        "krt-meander",
+        "krt-diffpair",
+        "krt-qfn-escape",
+        "krt-bga-escape",
+    ] {
         assert!(
             full.iter().any(|(_, ids)| ids.contains(&id)),
             "{id} is registered"
@@ -84,7 +89,7 @@ fn registering_the_krt_stages_changes_no_session_while_none_is_selected() {
 fn a_krt_stage_runs_with_the_full_registry_and_is_unknown_without() {
     let dir = std::env::temp_dir().join(format!("n051-sel-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let key = "--router.autorouter.connection_router=krt-grid";
+    let key = "--router.special.length_matching=krt-meander";
     let (code, ses) = route(
         &dir,
         "krt",
@@ -94,5 +99,31 @@ fn a_krt_stage_runs_with_the_full_registry_and_is_unknown_without() {
     assert_eq!(code, 0);
     assert!(!ses.is_empty());
     let (code, _) = route(&dir, "unknown", &[key], None);
-    assert_ne!(code, 0, "krt-grid is unknown to the built-in registry");
+    assert_ne!(code, 0, "krt-meander is unknown to the built-in registry");
+}
+
+#[test]
+fn experimental_stages_are_registered_listed_and_selected_by_no_profile() {
+    use freerouting::autoroute::stages::catalog::{EXPERIMENTAL, ExperimentalKind, catalog};
+    use freerouting::settings::Profile;
+    let registry = freerouting_stages::registry();
+    let stages: Vec<_> = EXPERIMENTAL
+        .iter()
+        .filter(|e| e.kind == ExperimentalKind::Stage)
+        .collect();
+    assert!(!stages.is_empty(), "krt-diffpair is experimental (N02.4)");
+    for profile in [Profile::Legacy, Profile::Enhanced] {
+        let slots = catalog(&registry, profile, 8);
+        for e in &stages {
+            let slot = slots.iter().find(|s| s.desc.kind == e.slot).unwrap();
+            assert!(slot.ids.contains(&e.key), "{} is registered", e.key);
+            assert!(slot.experimental_ids.contains(e), "{} is marked", e.key);
+            assert!(
+                !slot.default.iter().any(|d| d == e.key),
+                "{} is a default of {}",
+                e.key,
+                profile.name()
+            );
+        }
+    }
 }

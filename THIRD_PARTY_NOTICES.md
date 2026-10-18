@@ -13,10 +13,6 @@ Per-file provenance is in `docs/PROVENANCE.md`.
 - Where its code lives here: files carrying a `Portions ported from` line and
   an SPDX header `GPL-3.0-only AND MIT`; each is listed in
   `docs/PROVENANCE.md`.
-- Vendored whole: `crates/krt-grid-router` is KRT's `rust_router/` grid router
-  (crate `grid_router` 0.23.0 at `0486e799`) with the Python binding removed.
-  It stays MIT (`license = "MIT"`, KRT's `LICENSE` beside the code);
-  `crates/krt-grid-router/VENDORED.diff` lists every change against KRT.
 
 ## Freerouting (Java)
 

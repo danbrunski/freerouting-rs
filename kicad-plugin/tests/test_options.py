@@ -193,7 +193,7 @@ LISTING = {
         {"key": "router.autorouter.connection_router", "label": "Connection router", "arity": "one",
          "ids": ["freerouting-connection", "x-grid"], "default": ["freerouting-connection"]},
         {"key": "router.special.length_matching", "label": "Length matching", "arity": "optional",
-         "ids": ["krt-meander"], "default": []},
+         "ids": ["krt-meander", "x-lab"], "default": [], "experimental_ids": ["x-lab"]},
         {"key": "router.special.diagnostics", "label": "Diagnostics", "arity": "list", "ids": ["verdicts"]},
     ]
 }  # fmt: skip
@@ -219,11 +219,20 @@ def test_the_listing_gives_the_single_choice_slots():
     slots = options.parse_stage_listing(LISTING)
     assert slots == [
         ("autorouter.connection_router", "Connection router", ["freerouting-connection", "x-grid"], "freerouting-connection"),
-        ("special.length_matching", "Length matching", ["", "krt-meander"], ""),
+        ("special.length_matching", "Length matching", ["", "krt-meander", "x-lab"], ""),
     ]  # fmt: skip
     assert options.stage_defaults(slots) == {"autorouter.connection_router": "freerouting-connection", "special.length_matching": ""}
     for junk in (None, [], {"slots": 3}, {"slots": [3, {"key": 5}, {"arity": "one"}]}):
         assert options.parse_stage_listing(junk) == []
+
+
+def test_the_advanced_group_marks_experimental_stage_ids():
+    found = options.experimental_stage_ids(LISTING)
+    assert found == {"special.length_matching": {"x-lab"}}
+    labels = [options.stage_label(i, found["special.length_matching"]) for i in ["", "krt-meander", "x-lab"]]
+    assert labels == ["(none)", "krt-meander", "x-lab (experimental)"]
+    for junk in (None, [], {"slots": 3}, {"slots": [3, {"key": "router.a", "experimental_ids": "x"}]}):
+        assert options.experimental_stage_ids(junk) == {}
 
 
 def test_the_options_file_stores_only_the_differences(tmp_path):

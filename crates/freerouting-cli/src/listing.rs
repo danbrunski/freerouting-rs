@@ -19,7 +19,9 @@
 
 use std::path::Path;
 
-use freerouting::autoroute::stages::catalog::{SlotArity, StageSlot, catalog};
+use freerouting::autoroute::stages::catalog::{
+    EXPERIMENTAL, Experimental, ExperimentalKind, SlotArity, StageSlot, catalog,
+};
 use freerouting::drc::json::JsonValue;
 use freerouting::job::prepare::{
     DesignKind, ReadOptions, design_kind, prepare_job, read_kicad_input,
@@ -73,6 +75,10 @@ pub fn stages_json(profile: Profile, slots: &[StageSlot]) -> JsonValue {
                             o.default.clone().map_or(JsonValue::Null, value_to_json),
                         ),
                         ("doc".to_string(), JsonValue::string(o.doc)),
+                        (
+                            "experimental".to_string(),
+                            JsonValue::Bool(o.experimental.is_some()),
+                        ),
                     ])
                 })
                 .collect();
@@ -93,6 +99,10 @@ pub fn stages_json(profile: Profile, slots: &[StageSlot]) -> JsonValue {
                     strings(slot.default.iter().map(String::as_str)),
                 ),
                 ("options".to_string(), JsonValue::Array(options)),
+                (
+                    "experimental_ids".to_string(),
+                    strings(slot.experimental_ids.iter().map(|e| e.key)),
+                ),
             ])
         })
         .collect();
@@ -100,6 +110,25 @@ pub fn stages_json(profile: Profile, slots: &[StageSlot]) -> JsonValue {
         ("profile".to_string(), JsonValue::string(profile.name())),
         ("profiles".to_string(), JsonValue::Array(profiles)),
         ("slots".to_string(), JsonValue::Array(slots)),
+        (
+            "experimental".to_string(),
+            JsonValue::Array(EXPERIMENTAL.iter().map(experimental_json).collect()),
+        ),
+    ])
+}
+
+/// One experimental entry as JSON (N02.4).
+fn experimental_json(e: &Experimental) -> JsonValue {
+    let (kind, key) = match e.kind {
+        ExperimentalKind::Option => ("option", format!("router.{}", e.key)),
+        ExperimentalKind::Stage => ("stage", e.key.to_string()),
+    };
+    JsonValue::Object(vec![
+        ("kind".to_string(), JsonValue::string(kind)),
+        ("key".to_string(), JsonValue::String(key)),
+        ("slot".to_string(), JsonValue::string(e.slot)),
+        ("class".to_string(), JsonValue::string(e.class)),
+        ("help".to_string(), JsonValue::string(e.help)),
     ])
 }
 
@@ -125,7 +154,17 @@ pub fn stages_table(profile: Profile, slots: &[StageSlot]) -> String {
             if slot.ids.is_empty() {
                 "(none registered)".to_string()
             } else {
-                slot.ids.join(", ")
+                slot.ids
+                    .iter()
+                    .map(|id| {
+                        if slot.experimental_ids.iter().any(|e| e.key == *id) {
+                            format!("{id} [experimental]")
+                        } else {
+                            (*id).to_string()
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ")
             }
         ));
         for option in &slot.options {
@@ -133,8 +172,27 @@ pub fn stages_table(profile: Profile, slots: &[StageSlot]) -> String {
                 .default
                 .as_ref()
                 .map_or_else(|| "(unset)".to_string(), ToString::to_string);
-            out.push_str(&format!("  router.{} = {value}\n", option.path));
+            let mark = if option.experimental.is_some() {
+                "  [experimental]"
+            } else {
+                ""
+            };
+            out.push_str(&format!("  router.{} = {value}{mark}\n", option.path));
         }
+    }
+    out.push_str(
+        "\nExperimental (off in every profile; N02's keep rule: each wins on a board class, \
+         or is kept pending a measurement)\n",
+    );
+    for e in EXPERIMENTAL {
+        let key = match e.kind {
+            ExperimentalKind::Option => format!("router.{}", e.key),
+            ExperimentalKind::Stage => format!("{} (stage)", e.key),
+        };
+        out.push_str(&format!(
+            "  {key}\n    class: {}\n    {}\n",
+            e.class, e.help
+        ));
     }
     out
 }

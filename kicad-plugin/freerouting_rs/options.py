@@ -418,6 +418,37 @@ def parse_stage_listing(data):
     return slots
 
 
+EXPERIMENTAL_MARK = " (experimental)"
+
+
+def experimental_stage_ids(data):
+    """`{key: {ids}}` of the slots' `experimental_ids` in the router's
+    `--list-stages=json` (N02.4): stage ids that are off in every profile and
+    meet N02's keep rule; the Advanced group marks them. Keys are without
+    `router.`; a damaged or older listing gives what can be read."""
+    out = {}
+    if not isinstance(data, dict) or not isinstance(data.get("slots"), list):
+        return out
+    for slot in data["slots"]:
+        if not isinstance(slot, dict):
+            continue
+        key, found = slot.get("key"), slot.get("experimental_ids")
+        if not isinstance(key, str) or not key.startswith("router.") or not isinstance(found, list):
+            continue
+        ids = {i for i in found if isinstance(i, str) and _STAGE_ID.match(i)}
+        if ids:
+            out[key[len("router."):]] = ids
+    return out
+
+
+def stage_label(stage_id, experimental_ids=()):
+    """The text of a stage id in the Advanced group: `(none)` for no stage,
+    the id marked `(experimental)` when the router says so."""
+    if not stage_id:
+        return "(none)"
+    return stage_id + EXPERIMENTAL_MARK if stage_id in experimental_ids else stage_id
+
+
 def stage_defaults(slots):
     """`{key: default id}` of `parse_stage_listing`'s slots."""
     return {key: default for key, _, _, default in slots}

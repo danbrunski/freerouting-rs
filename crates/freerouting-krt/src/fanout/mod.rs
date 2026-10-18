@@ -3,6 +3,7 @@
 //! - [`frame`] (X10.1): the part frame of a component and the sides of an
 //!   edge-row part (QFN, QFP, SOIC, SOP).
 //! - [`qfn`] (X10.2): the escape stubs of those parts.
+//! - [`rules`]: the net rules and the via-in-pad check both planners read.
 //! - [`bga`] (X12): the dense-BGA escape planner, stage `krt-bga-escape`.
 //!
 //! **Selection.** `router.fanout.algorithm = "krt-qfn-escape"` (with
@@ -21,6 +22,7 @@ use freerouting::board::RoutingBoard;
 pub mod bga;
 pub mod frame;
 pub mod qfn;
+pub mod rules;
 
 pub use frame::{PartFrame, PartLayout, Side, analyze, sides};
 pub use qfn::{EscapeReport, PinResult, Skip, StubKind, escape};

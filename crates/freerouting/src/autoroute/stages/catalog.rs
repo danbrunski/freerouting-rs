@@ -12,6 +12,16 @@
 //! paths its built-in implementations read (the Freerouting stages, the
 //! special stages' sections), so that a user sees what can be tuned below
 //! each choice. A path that is no settings field is a test failure.
+//!
+//! **Experimental (N02.4).** A candidate that failed its registered gate stays
+//! only as an opt-in, off in every profile, when N02's keep rule holds: it
+//! wins on a board class one can name, it passes the hard guards and it is a
+//! self-contained stage or setting. [`EXPERIMENTAL`] lists those, with the
+//! class and the measured numbers as the help text; the CLI's
+//! `--list-stages`, the GUI's "Algorithms" section and the plugin's listing
+//! mark them. Tests (`tests/stage_catalog.rs`, `freerouting-stages`) check that
+//! every entry names a real settings field or registered stage id and that no
+//! profile sets or selects it.
 
 use super::registry::{StageRegistry, StageSelection};
 use crate::settings::fields::{RouterSettings, field_by_path};
@@ -105,6 +115,7 @@ pub const SLOTS: &[SlotDesc] = &[
             "trace_pull_tight_accuracy",
             "automatic_neckdown",
             "strict_drc",
+            "via_clearance",
             "room_order",
             "work_unit",
             "transaction.rule",
@@ -197,6 +208,108 @@ pub const SLOTS: &[SlotDesc] = &[
     },
 ];
 
+/// What an [`Experimental`] entry names.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExperimentalKind {
+    /// A settings path (without `router.`).
+    Option,
+    /// A stage id registered in the slot `slot`.
+    Stage,
+}
+
+/// An opt-in option or stage that is off in every profile and listed under
+/// "Experimental" (N02.4).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Experimental {
+    pub kind: ExperimentalKind,
+    /// The settings path without `router.` ([`ExperimentalKind::Option`]) or
+    /// the stage id ([`ExperimentalKind::Stage`]).
+    pub key: &'static str,
+    /// The [`SlotDesc::kind`] the entry belongs to.
+    pub slot: &'static str,
+    /// The board class it wins on, or why there is none yet.
+    pub class: &'static str,
+    /// The help text: what it does, the class and the measured numbers.
+    pub help: &'static str,
+}
+
+/// Every experimental option and stage, in listing order. The table in
+/// `docs/roadmap/tasks/archive/N02-keep-rule-for-defaults.md` (N02.4) gives each
+/// entry's verdict and measurement.
+pub const EXPERIMENTAL: &[Experimental] = &[
+    Experimental {
+        kind: ExperimentalKind::Option,
+        key: "via_clearance",
+        slot: "connection_router",
+        class: "boards whose net classes ask a larger via clearance than the default class",
+        help: "`net_class` gives a routed via its net class's clearance, as KiCad checks it \
+               (Q14; N05.3 rejected it as a default). Wins on boards with power net classes \
+               above the default clearance: canary-pwr (the plugin run's last class-via error, \
+               1 -> 0) and overlord (KiCad drc_real 249 -> 209; 35 -> 8 clearance errors in \
+               Q14.3). It adds no violation and no via in a pad, and it costs connections on \
+               canary-pwr: KiCad unconnected 37 -> 44 (plugin path) and 45 -> 49, equal at 33 \
+               with the sweep. A new registration that counts netclass violations only is planned.",
+    },
+    Experimental {
+        kind: ExperimentalKind::Option,
+        key: "cleanup.remove_stubs",
+        slot: "optimizer",
+        class: "boards with fixed pour strips and dangling vias (canary-pwr, interf_u)",
+        help: "Removes routed vias and traces that join fewer than two items of their net \
+               (Q16). Dangling vias fall 15 -> 0, 16 -> 0 (canary-pwr) and 9 -> 0 (interf_u), \
+               KiCad drc_real 1 -> 0 on canary-pwr. Kept pending Q16.4: Q16.3's gate failed on \
+               two guards (canary-pwr KiCad unconnected 37 -> 38, CM5_MINIMA_3 \
+               track_dangling 1 -> 1); Q16.4 counts contacts as KiCad does.",
+    },
+    Experimental {
+        kind: ExperimentalKind::Option,
+        key: "room_order",
+        slot: "connection_router",
+        class: "none yet",
+        help: "`canonical` completes rooms in an order independent of the search tree's shape \
+               (P04.1). No board class wins: over 17 boards the total unrouted fell \
+               1,281 -> 1,269 and the maze work 39.1 G -> 19.6 G nodes, but 5 boards \
+               regressed and GP8B gained 2 clearance violations. Kept pending N03.3, which \
+               judges it by the totals rule on boards P04 did not use.",
+    },
+    Experimental {
+        kind: ExperimentalKind::Option,
+        key: "work_unit",
+        slot: "connection_router",
+        class: "none yet",
+        help: "`leaves` counts leaves returned by tree queries instead of nodes visited \
+               (P04.2), so work limits do not depend on the tree's shape. No board class \
+               wins: against `canonical` alone the total unrouted rose 1,269 -> 1,279 and \
+               canary-pwr regressed. Kept pending N03.3.",
+    },
+    Experimental {
+        kind: ExperimentalKind::Stage,
+        key: "krt-diffpair",
+        slot: "diff_pairs",
+        class: "boards with one or a few differential pairs that share a signal layer",
+        help: "Routes each differential pair as a coupled pair (X08, X09). Wins on boards \
+               with a single pair on a shared layer: coupled share 0.91 to 0.99 on x08-straight, \
+               x08-connector, x09-two-layer, x09-skew and rp2040dev, with no new violation \
+               and no via in a pad. It loses on pair-dense boards: picodvi (10 pairs) couples \
+               0.04 and leaves one more single-ended connection unrouted (3 -> 4), \
+               pcie-active-backplane (33 pairs) couples 0.28.",
+    },
+];
+
+/// The entry for the option `path`, if it is experimental.
+pub fn experimental_option(path: &str) -> Option<&'static Experimental> {
+    EXPERIMENTAL
+        .iter()
+        .find(|e| e.kind == ExperimentalKind::Option && e.key == path)
+}
+
+/// The entry for the stage `id` of the slot `slot`, if it is experimental.
+pub fn experimental_stage(slot: &str, id: &str) -> Option<&'static Experimental> {
+    EXPERIMENTAL
+        .iter()
+        .find(|e| e.kind == ExperimentalKind::Stage && e.slot == slot && e.key == id)
+}
+
 /// One option of a slot.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StageOption {
@@ -206,6 +319,8 @@ pub struct StageOption {
     pub doc: &'static str,
     /// The value under the profile; `None` is unset.
     pub default: Option<FieldValue>,
+    /// Set for an experimental option (N02.4).
+    pub experimental: Option<&'static Experimental>,
 }
 
 /// One slot as listed.
@@ -218,6 +333,8 @@ pub struct StageSlot {
     /// one for [`SlotArity::Optional`], the list for [`SlotArity::List`].
     pub default: Vec<String>,
     pub options: Vec<StageOption>,
+    /// The registered ids that are experimental (N02.4).
+    pub experimental_ids: Vec<&'static Experimental>,
 }
 
 impl PartialEq for SlotDesc {
@@ -274,22 +391,31 @@ pub fn catalog(registry: &StageRegistry, profile: Profile, cores: usize) -> Vec<
     let selection = StageSelection::resolve(&settings, registry);
     SLOTS
         .iter()
-        .map(|desc| StageSlot {
-            desc: *desc,
-            ids: registered(registry, desc.kind),
-            default: default_ids(&selection, &settings, desc.kind),
-            options: desc
-                .options
-                .iter()
-                .filter_map(|path| {
-                    let field = field_by_path(path)?;
-                    Some(StageOption {
-                        path: field.path,
-                        doc: field.doc,
-                        default: (field.get)(&defaults),
+        .map(|desc| {
+            let ids = registered(registry, desc.kind);
+            StageSlot {
+                desc: *desc,
+                default: default_ids(&selection, &settings, desc.kind),
+                options: desc
+                    .options
+                    .iter()
+                    .filter_map(|path| {
+                        let field = field_by_path(path)?;
+                        Some(StageOption {
+                            path: field.path,
+                            doc: field.doc,
+                            default: (field.get)(&defaults),
+                            experimental: experimental_option(field.path),
+                        })
                     })
-                })
-                .collect(),
+                    .collect(),
+                experimental_ids: EXPERIMENTAL
+                    .iter()
+                    .filter(|e| e.kind == ExperimentalKind::Stage && e.slot == desc.kind)
+                    .filter(|e| ids.contains(&e.key))
+                    .collect(),
+                ids,
+            }
         })
         .collect()
 }

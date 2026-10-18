@@ -21,9 +21,9 @@ board parity (rung 3).
 |---|---|---|---|
 | [X01](archive/X01-krt-head-to-head.md) ✅ | Java jar vs KRT on `canary-pwr` + 4 KiCad demos, graded by KiCad DRC; failure causes; the X order | M / medium: two toolchains, KiCad from WSL | F02.6 (with the KRT report's grading rules and a grade-only entry); F03.4; no port work |
 | [X02](archive/X02-plane-taps-and-region-repair.md) ✅ | Plane-tap verification under D8; MST straps re-joining split pour islands | M / medium | rung 3; Q01.4; A06; B09; F04 |
-| [X03](archive/X03-vendor-krt-grid-router.md) ✅ | `crates/krt-grid-router`: KRT's Rust core with the Python binding removed, MIT | S / low | rung 3; X01's decision; F04; `NEW DEP: rustc-hash` |
+| [X03](archive/X03-vendor-krt-grid-router.md) ✅ | `crates/krt-grid-router`: KRT's Rust core with the Python binding removed, MIT (**removed by N02.4**, 2026-10-18) | S / low | rung 3; X01's decision; F04; `NEW DEP: rustc-hash` |
 | [X04](archive/X04-grid-obstacle-raster.md) ✅ | Board items → conservative obstacle raster with per-item stamps and an audit | M / high: correctness of inflation | X03; F04 |
-| [X05](archive/X05-grid-connection-router-stage.md) ✅ | `krt-grid` connection router: exact pin connectors, path → copper, exact DRC before insert | M / high | X04; A10; B05; B09 (transaction) |
+| [X05](archive/X05-grid-connection-router-stage.md) ✅ | `krt-grid` connection router: exact pin connectors, path → copper, exact DRC before insert (**removed by N02.4**: it wins on no board class) | M / high | X04; A10; B05; B09 (transaction) |
 | [X06](archive/X06-grid-astar-with-pull-tight.md) ✅ | `krt-astar` bundle: grid path then pull-tight and via optimizer; measured by region class | S / medium: expected to lose in pin fields | X05; O01, O05, O06 |
 | [X07](archive/X07-length-and-time-matching.md) ✅ | Trombone meanders to length and time targets, each bump DRC-checked | M / medium | rung 3; K05.1 (stackup); O01; B09; F04 |
 | [X08](archive/X08-diff-pairs-routing.md) ✅ | Pair model, centreline at compound width, P/N offset | L / high | rung 3; K05.3, K07.5; A04 width hook; A06; B09; F04 |

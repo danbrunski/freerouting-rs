@@ -57,8 +57,7 @@ use freerouting::job::overrides::um_to_board_units;
 use freerouting::settings::board::BoardRouterSettings;
 
 use super::frame::{PartLayout, PartPin, Side, analyze};
-use crate::grid::raster::{NetRules, ViaChoice};
-use crate::grid::router::via_in_pad;
+use super::rules::{NetRules, ViaChoice, via_in_pad};
 
 /// The length of the taper from the narrow to the class width (µm, KRT
 /// `_apply_neckdown_widths`).

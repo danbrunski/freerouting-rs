@@ -54,8 +54,7 @@ use super::array::{BallArray, Rejection, arrays_of};
 use super::channels::{Band, Demand, EscapeLayer, Slot, assign, capacity, slot_offset};
 use super::vias::{DogBone, ViaOption, choose, lateral_unit, sigma, via_options};
 use crate::fanout::frame::Side;
-use crate::grid::raster::NetRules;
-use crate::grid::router::via_in_pad;
+use crate::fanout::rules::{NetRules, via_in_pad};
 
 /// Why a ball got nothing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

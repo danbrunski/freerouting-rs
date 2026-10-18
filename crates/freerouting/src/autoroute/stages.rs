@@ -163,7 +163,8 @@ pub struct FailureRecord {
     /// The items a failed search met at its frontier, sorted by `(net, item
     /// id, layer)` ascending, at most [`MAX_BLOCKING_ITEMS`]. Empty when the
     /// router keeps no frontier (the Freerouting maze search; Q06 runs its
-    /// own analysis for it). The `krt-grid` stage (X05) fills it.
+    /// own analysis for it). The `krt-grid` stage (X05) filled it; N02.4 removed
+    /// that stage.
     pub blocking: Vec<BlockingItem>,
 }
 

@@ -114,6 +114,56 @@ fn list_stages_table_lists_every_registered_id() {
 }
 
 #[test]
+fn list_stages_marks_the_experimental_options_and_stages() {
+    let dir = scratch("list-stages-experimental");
+    let out = run_in(&dir, &["--list-stages=json"]);
+    assert_eq!(code(&out), 0, "{}", stderr(&out));
+    let json = JsonValue::parse(&stdout(&out)).expect("JSON");
+    let listed: Vec<String> = array(member(&json, "experimental"))
+        .iter()
+        .filter_map(|e| string_of(member(e, "key")))
+        .collect();
+    for key in [
+        "router.via_clearance",
+        "router.cleanup.remove_stubs",
+        "router.room_order",
+        "router.work_unit",
+        "krt-diffpair",
+    ] {
+        assert!(listed.iter().any(|k| k == key), "{key} in {listed:?}");
+    }
+    // The option is marked inside its slot too.
+    let mut marked = Vec::new();
+    for slot in array(member(&json, "slots")) {
+        for option in array(member(slot, "options")) {
+            if matches!(member(option, "experimental"), Some(JsonValue::Bool(true))) {
+                marked.extend(string_of(member(option, "key")));
+            }
+        }
+    }
+    marked.sort();
+    assert_eq!(
+        marked,
+        [
+            "router.cleanup.remove_stubs",
+            "router.room_order",
+            "router.via_clearance",
+            "router.work_unit"
+        ]
+    );
+    let out = run_in(&dir, &["--list-stages"]);
+    let text = stdout(&out);
+    assert!(
+        text.contains("router.via_clearance = (unset)  [experimental]"),
+        "{text}"
+    );
+    assert!(
+        text.contains("\nExperimental (off in every profile"),
+        "{text}"
+    );
+}
+
+#[test]
 fn dump_settings_shows_the_profile_and_the_sources() {
     let dir = scratch("dump-settings");
     copy_fixtures(&dir, &[FIXTURE]);
@@ -178,5 +228,15 @@ fn help_and_capabilities_document_the_profile() {
     let caps = stdout(&run_in(&dir, &["--capabilities"]));
     for flag in ["\"--profile\"", "\"--list-stages\"", "\"--dump-settings\""] {
         assert!(caps.contains(flag), "{flag} is not in --capabilities");
+    }
+}
+
+#[test]
+fn help_names_every_experimental_entry() {
+    use freerouting::autoroute::stages::catalog::EXPERIMENTAL;
+    let help = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/help.txt"))
+        .expect("help.txt");
+    for e in EXPERIMENTAL {
+        assert!(help.contains(e.key), "{} is not in help.txt", e.key);
     }
 }

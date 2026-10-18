@@ -44,7 +44,7 @@ use freerouting_krt::fanout::bga::{
     escape,
 };
 use freerouting_krt::fanout::frame::{PartFrame, Side};
-use freerouting_krt::grid::router::via_in_pad;
+use freerouting_krt::fanout::rules::via_in_pad;
 
 const ARRAYS: &str = "crates/freerouting-krt/tests/data/x12-arrays.dsn";
 const BGA_0P8: &str = "crates/freerouting-krt/tests/data/x12-bga-0p8.dsn";

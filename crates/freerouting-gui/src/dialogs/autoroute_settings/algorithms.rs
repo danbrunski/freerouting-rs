@@ -11,11 +11,18 @@
 //!   profile's is marked, and its Reset button returns it to the profile's
 //!   value.
 //!
+//! Options and stage ids that failed a registered gate but meet N02's keep
+//! rule are marked "(experimental)" with their help text on hover, and
+//! listed again, with the board class they win on, under an "Experimental"
+//! header at the end of the section (N02.4).
+//!
 //! The section edits the same [`SettingsPatch`] as the rest of the dialog;
 //! the paths it covers are [`algorithm_paths`].
 
 use eframe::egui;
-use freerouting::autoroute::stages::catalog::{SLOTS, SlotArity, StageSlot, catalog};
+use freerouting::autoroute::stages::catalog::{
+    EXPERIMENTAL, ExperimentalKind, SLOTS, SlotArity, StageSlot, catalog,
+};
 use freerouting::settings::profile::rebase;
 use freerouting::settings::{FieldKind, FieldValue, Profile, SettingsPatch, field_by_path};
 
@@ -170,6 +177,23 @@ fn reset_cell(ui: &mut egui::Ui, draft: &mut Draft, path: &str, label: &str) {
     }
 }
 
+/// The text of a stage id: marked when it is experimental.
+fn stage_text(slot: &StageSlot, id: &str) -> String {
+    if slot.experimental_ids.iter().any(|e| e.key == id) {
+        format!("{id} (experimental)")
+    } else {
+        id.to_string()
+    }
+}
+
+/// The help text of an experimental stage id.
+fn experimental_help(slot: &StageSlot, id: &str) -> Option<&'static str> {
+    slot.experimental_ids
+        .iter()
+        .find(|e| e.key == id)
+        .map(|e| e.help)
+}
+
 fn stage_choice(ui: &mut egui::Ui, draft: &mut Draft, slot: &StageSlot) {
     let label = slot.desc.label;
     let current = draft.stage_ids(slot);
@@ -184,7 +208,11 @@ fn stage_choice(ui: &mut egui::Ui, draft: &mut Draft, slot: &StageSlot) {
                 }
                 for id in &slot.ids {
                     let mut on = ids.iter().any(|i| i == id);
-                    let response = ui.checkbox(&mut on, *id);
+                    let response = ui.checkbox(&mut on, stage_text(slot, id));
+                    let response = match experimental_help(slot, id) {
+                        Some(help) => response.on_hover_text(help),
+                        None => response,
+                    };
                     response.widget_info(|| {
                         egui::WidgetInfo::selected(
                             egui::WidgetType::Checkbox,
@@ -220,7 +248,11 @@ fn stage_choice(ui: &mut egui::Ui, draft: &mut Draft, slot: &StageSlot) {
                         ui.selectable_value(&mut chosen, String::new(), none);
                     }
                     for id in &slot.ids {
-                        ui.selectable_value(&mut chosen, id.to_string(), *id);
+                        let response =
+                            ui.selectable_value(&mut chosen, id.to_string(), stage_text(slot, id));
+                        if let Some(help) = experimental_help(slot, id) {
+                            response.on_hover_text(help);
+                        }
                     }
                 })
                 .response
@@ -283,12 +315,42 @@ pub fn algorithms(ui: &mut egui::Ui, draft: &mut Draft) {
                         reset_cell(ui, draft, slot.desc.key, slot.desc.label);
                         ui.end_row();
                         for option in &slot.options {
-                            ui.label(option.path).on_hover_text(option.doc);
+                            match option.experimental {
+                                Some(e) => ui
+                                    .label(format!("{} (experimental)", option.path))
+                                    .on_hover_text(format!(
+                                        "{}\n\nExperimental: {}",
+                                        option.doc, e.help
+                                    )),
+                                None => ui.label(option.path).on_hover_text(option.doc),
+                            };
                             option_value(ui, draft, option.path);
                             reset_cell(ui, draft, option.path, option.path);
                             ui.end_row();
                         }
                     });
+            }
+            ui.separator();
+            experimental_section(ui);
+        });
+}
+
+/// The "Experimental" header: every opt-in that failed a gate but meets the
+/// keep rule, with the board class it wins on (N02.4).
+fn experimental_section(ui: &mut egui::Ui) {
+    egui::CollapsingHeader::new("Experimental")
+        .id_salt("autoroute_experimental")
+        .show(ui, |ui| {
+            ui.weak("Off in every profile. Each wins on a board class, or is kept pending a measurement.");
+            for e in EXPERIMENTAL {
+                let key = match e.kind {
+                    ExperimentalKind::Option => format!("router.{}", e.key),
+                    ExperimentalKind::Stage => format!("{} (stage)", e.key),
+                };
+                ui.strong(key);
+                ui.label(format!("Board class: {}", e.class));
+                ui.label(e.help);
+                ui.add_space(4.0);
             }
         });
 }

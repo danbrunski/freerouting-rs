@@ -139,3 +139,67 @@ fn defaults_follow_the_profile() {
         assert_eq!(catalog(&registry, Profile::Legacy, CORES), legacy);
     });
 }
+
+#[test]
+fn experimental_options_are_real_listed_marked_and_unset_in_every_profile() {
+    use freerouting::autoroute::stages::catalog::{EXPERIMENTAL, ExperimentalKind};
+    let registry = StageRegistry::builtin();
+    let mut seen = BTreeSet::new();
+    for e in EXPERIMENTAL {
+        assert!(seen.insert((e.slot, e.key)), "{} listed twice", e.key);
+        assert!(
+            !e.class.is_empty() && e.help.len() > 40,
+            "{}: no help",
+            e.key
+        );
+        assert!(
+            SLOTS.iter().any(|s| s.kind == e.slot),
+            "{}: no slot {}",
+            e.key,
+            e.slot
+        );
+        if e.kind != ExperimentalKind::Option {
+            continue;
+        }
+        assert!(field_by_path(e.key).is_some(), "{} is no field", e.key);
+        for profile in [Profile::Legacy, Profile::Enhanced] {
+            let slots = catalog(&registry, profile, CORES);
+            let slot = slots.iter().find(|s| s.desc.kind == e.slot).unwrap();
+            let option = slot
+                .options
+                .iter()
+                .find(|o| o.path == e.key)
+                .unwrap_or_else(|| panic!("{} is not an option of {}", e.key, e.slot));
+            assert_eq!(option.experimental, Some(e), "{} is marked", e.key);
+            assert_eq!(
+                option.default,
+                None,
+                "{}: experimental means unset in {}",
+                e.key,
+                profile.name()
+            );
+        }
+    }
+    // The N02.4 sort: these four options are the in-tree opt-ins.
+    for key in [
+        "via_clearance",
+        "cleanup.remove_stubs",
+        "room_order",
+        "work_unit",
+    ] {
+        assert!(seen.iter().any(|(_, k)| *k == key), "{key} is experimental");
+    }
+    // Nothing else is marked.
+    for slot in catalog(&registry, Profile::Enhanced, CORES) {
+        for option in &slot.options {
+            assert_eq!(
+                option.experimental.is_some(),
+                EXPERIMENTAL
+                    .iter()
+                    .any(|e| e.kind == ExperimentalKind::Option && e.key == option.path),
+                "{}",
+                option.path
+            );
+        }
+    }
+}

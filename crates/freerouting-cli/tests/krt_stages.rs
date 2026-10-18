@@ -41,8 +41,12 @@ fn capabilities_lists_the_registered_stage_ids() {
             assert!(listed.iter().any(|l| l == id), "{kind}: {id} is not listed");
         }
     }
+    // N02.4 removed the `krt-grid` connection router: no KRT router is left.
     let routers = strings_of(member(stages, "connection_router"));
-    assert!(routers.iter().any(|id| id == "krt-grid"), "{routers:?}");
+    assert!(
+        !routers.iter().any(|id| id.starts_with("krt-")),
+        "{routers:?}"
+    );
     let fanouts = strings_of(member(stages, "fanout"));
     assert!(
         fanouts.iter().any(|id| id == "krt-qfn-escape"),
@@ -65,13 +69,13 @@ fn list_stages_lists_the_krt_ids() {
     }
 }
 
-/// Every KRT connection router id is accepted as a value of the key, and an
-/// unknown one is still refused.
+/// A KRT stage id is accepted as a value of its key, and an unknown one is
+/// still refused (`krt-grid` was removed by N02.4, so it is unknown too).
 #[test]
-fn a_krt_connection_router_is_accepted() {
+fn a_krt_stage_is_accepted_and_krt_grid_is_gone() {
     let (out, dir) = route(
         "krt-select",
-        &["--router.autorouter.connection_router=krt-grid"],
+        &["--router.special.length_matching=krt-meander"],
     );
     assert_eq!(code(&out), 0, "{}", stderr(&out));
     assert!(dir.join("out.ses").exists());
@@ -82,6 +86,12 @@ fn a_krt_connection_router_is_accepted() {
     );
     assert_ne!(code(&out), 0);
     assert!(stderr(&out).contains("krt-nonesuch"), "{}", stderr(&out));
+
+    let (out, _) = route(
+        "krt-select-grid",
+        &["--router.autorouter.connection_router=krt-grid"],
+    );
+    assert_ne!(code(&out), 0, "krt-grid was removed");
 }
 
 /// With no KRT key set the session is the built-in registry's (the

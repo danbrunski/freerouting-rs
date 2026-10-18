@@ -1018,10 +1018,18 @@ fn the_algorithms_section_offers_the_krt_stages() {
             .collect()
     };
     let routers = ids_of("connection_router");
-    assert!(routers.iter().any(|id| id == "krt-grid"), "{routers:?}");
     assert!(
         routers.iter().any(|id| id == "freerouting-connection"),
         "{routers:?}"
     );
     assert!(ids_of("fanout").iter().any(|id| id == "krt-bga-escape"));
+    // The experimental stage is offered and marked (N02.4).
+    let pairs = slots.iter().find(|s| s.desc.kind == "diff_pairs").unwrap();
+    assert!(pairs.ids.contains(&"krt-diffpair"));
+    assert!(
+        pairs
+            .experimental_ids
+            .iter()
+            .any(|e| e.key == "krt-diffpair")
+    );
 }

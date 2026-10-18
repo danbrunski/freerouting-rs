@@ -210,10 +210,10 @@ class Dialog(wx.Dialog):
         saved = options.load_for_board(self.work_dir, tools.load_board_settings(self.work_dir))
         # The router's stage slots and each profile's choices (N01.4); empty
         # for a router without `--list-stages`.
-        self.stage_listing = {
-            p: options.parse_stage_listing(tools.query_stages(self.router, p) if self.router else None)
-            for p in options.PROFILES
-        }
+        listings = {p: tools.query_stages(self.router, p) if self.router else None for p in options.PROFILES}
+        self.stage_listing = {p: options.parse_stage_listing(listings[p]) for p in options.PROFILES}
+        # Stage ids the router marks experimental (N02.4), per profile.
+        self.stage_experimental = {p: options.experimental_stage_ids(listings[p]) for p in options.PROFILES}
 
         def found(tool):
             return tool.describe() if tool else "not found"
@@ -529,7 +529,8 @@ class Dialog(wx.Dialog):
         grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=8)
         grid.AddGrowableCol(1)
         for key, label, ids, default in slots:
-            choice = wx.Choice(self, choices=[i or "(none)" for i in ids])
+            experimental = self.stage_experimental.get(saved.profile, {}).get(key, set())
+            choice = wx.Choice(self, choices=[options.stage_label(i, experimental) for i in ids])
             picked = saved.stages.get(key, default)
             if picked not in ids:
                 picked = default if default in ids else ids[0]

@@ -99,6 +99,10 @@ opening; Q01 measures whether that matters before anyone adds it.
 
 ## What gets vendored, and what gets written
 
+**Vendored: the grid search only (X03). Removed by N02.4 (2026-10-18):** the
+`krt-grid` router, its raster, the region classes and this crate won on no board
+class and were deleted; git history keeps them. What follows is the record.
+
 **Vendored: the grid search only (X03).** `rust_router/src/{types,
 obstacle_map, router, dubins, pose_router}.rs` go into their own crate,
 `crates/krt-grid-router`, with `license = "MIT"` and KRT's `LICENSE` beside
@@ -159,7 +163,7 @@ pull-tight reclaims.
 [`prereg/X06.json`](prereg/X06.json) with one amendment) rejected the
 `krt-astar` bundle, and its code was removed; the region classes (X06.2:
 `pin-field` where an end pad is fine-pitch by KRT's rule, `open` otherwise)
-and the `krt-grid` connection router (X05) stay. Unrouted connections by class,
+and the `krt-grid` connection router (X05) stayed at the time (N02.4 removed both later, see above). Unrouted connections by class,
 default against `krt-astar`, on the boards run:
 - `pin-field`: only bm07 has such connections among them (39), 0 unrouted in
   both arms;

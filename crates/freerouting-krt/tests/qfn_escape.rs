@@ -34,8 +34,8 @@ use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting_krt::fanout::frame::{PartFrame, PartLayout, analyze, sides};
 use freerouting_krt::fanout::qfn::{PinOutcome, PinResult, Skip, StubKind, escape};
+use freerouting_krt::fanout::rules::via_in_pad;
 use freerouting_krt::fanout::{KrtQfnEscape, QFN_ESCAPE_ID};
-use freerouting_krt::grid::router::via_in_pad;
 
 const FRAME: &str = "crates/freerouting-krt/tests/data/x10-frame.dsn";
 const POWER: &str = "crates/freerouting-krt/tests/data/x10-qfn-power.dsn";
