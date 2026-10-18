@@ -40,8 +40,9 @@ board like `canary-pwr` (the step numbers are the script's):
 
 Step 1 (rule areas) is `rule_areas.rewrite` (K01.2), run before these.
 
-`"auto"` (the plugin's `enhanced` defaults, see `options.PROFILE_DEFAULTS`)
-derives the lists from the board instead of naming them:
+`"auto"` (offered in the dialog; not a profile default, see
+`options.PROFILE_DEFAULTS` and K09.9) derives the lists from the board instead
+of naming them:
 - fixed pour classes: the classes of the outer-layer pours whose zone
   priority is above the lowest priority on their layer. The lowest-priority
   pours are the flood fills that give way to tracks; the ones above them are

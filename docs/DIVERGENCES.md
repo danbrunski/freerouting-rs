@@ -1386,6 +1386,13 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   (`ses_vias.py`, pinned by `test_imported_vias_get_the_sessions_drill_not_the_class_drill`).
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
+- **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,
+  K09.9): the plugin passes `--router.autorouter.sweep=free` (the router's 2 sweep passes) unless
+  the dialog turns it off; the engine's own `enhanced` leaves the sweep off, and `legacy` passes
+  nothing. Accepted by `docs/roadmap/prereg/K09.9-rerun.json` (N02's totals rule on canary-pwr
+  and three KiCad demos through the plugin's headless path: KiCad unconnected 95 → 74 against a
+  set noise of 17.14, no new clearance error). Pinned by
+  `test_options.py::test_enhanced_adds_the_completion_sweep_and_legacy_does_not`.
 
 ## Java quirk switches, opt-in (N06)
 

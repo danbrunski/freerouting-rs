@@ -316,9 +316,20 @@ def _restore_k09(out, data):
 # dataclass defaults above, each entry naming the measurement that accepted
 # it. `legacy` keeps the plugin's behaviour before K09, except the board's
 # own clearance rules (`edge_and_pad_keepouts`, on in the dataclass), which
-# hold under both profiles. `enhanced` is empty: no candidate of
-# docs/roadmap/prereg/K09.json passed its guards on 2026-10-17 (the `auto`
-# arms left Q13's inner-layer tracks on canary-pwr; K09.9's note). It keeps
+# hold under both profiles. `enhanced` adds Q10's add-only completion sweep
+# (`free`, 2 passes) after the router's passes: the keep rule of
+# docs/roadmap/prereg/K09.9-rerun.json (2026-10-18, engine 571d06d, the
+# plugin's headless path on canary-pwr and three KiCad demos) passed `+sweep`
+# (KiCad-unconnected total 95 -> 74 against a set noise of 17.14, no board
+# worse, no new clearance error, no via in a pad, no power-layer trace) and
+# `+cli-flow` (73, with -mp 1, ripup 1500 and the auto pour fix-ups), and gave
+# the tie to `+sweep` by wall time (282 s against 439 s over the four boards).
+# The arm passed `sweep_passes=2`; the default leaves `sweep_passes` unset,
+# which is the router's 2 (`DEFAULT_SWEEP_PASSES`; the same session byte for
+# byte on interf_u) and keeps a stored file free of a null pass count.
+# `-mp 1` alone (125), `-mp 1` with the sweep (81) and the CLI flow's flags
+# (83, a new clearance error on CM5_MINIMA_3) did not pass. K09.json's first
+# round (2026-10-17, no candidate passed) is in K09.9's note. `enhanced` keeps
 # the Board Setup class widths (no `class_widths`): the engine's own
 # `enhanced` profile necks a connection down only where it fails at full
 # width (`router.neck_width_um = 300`), which N05.3 measured against class
@@ -326,7 +337,7 @@ def _restore_k09(out, data):
 # the Board Setup width 848.9 -> 310.4 mm), so the plugin passes no flag for it.
 PROFILE_DEFAULTS = {
     "legacy": {},
-    "enhanced": {},
+    "enhanced": {"sweep": "free"},
 }
 
 

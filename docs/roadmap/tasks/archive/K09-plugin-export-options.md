@@ -172,7 +172,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   grades **37**, Java's add-only number, with 0 inner tracks and no clearance error, in 69 s. The
   plugin's own pass-1 board is another 45 (K09.8's DSN differences route differently), and 42 is
   within canary's ±10 of 37.
-- [~] **K09.7 — Stop wasted passes.** On `canary-pwr`, pass 1 is best (94
+- [x] **K09.7 — Stop wasted passes.** On `canary-pwr`, pass 1 is best (94
   router-unrouted). Passes 2–18 each end at 139–181 and the best board is restored,
   so about 190 of 210 s are wasted (Java does the same). The plugin offers Q04's stop
   rule once Q04 lands. Until then it offers a per-board pass-limit hint: the options
@@ -194,6 +194,18 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   under load (average about 11 during legacy, lower during pass-hint), so the absolute times are
   inflated. Remainder: the fanout's cost, which no checklist owns (operator decision whether 2.84×
   meets the intent), and Q04's stop rule in place of the hint once it lands.
+
+  *Done 2026-10-18:* rerun under today's engine `enhanced` (`571d06d`), registered arms `plugin-default`
+  and `+mp1` of `docs/roadmap/prereg/K09.9-rerun.json` (headless plugin path, canary `b1994423`, WSL
+  KiCad 10.0.7). `+mp1`'s flags are exactly what `use_pass_hint` with hint 1 passes
+  (`RouteOptions.to_args`: `--max-passes 1 --router.min_trace_width_um=150`, checked), and 1 is the pass
+  the plugin would remember: the default run's route `pass_end` events end pass 1 at 83 incomplete,
+  passes 2–18 at 124–146. Result: the session is **byte-identical** to `plugin-default`'s (`cmp`), so
+  the grade is the same (**63** unconnected, 1 starved thermal, no copper error), in **42.6 s against
+  217.8 s = 5.11×**. The fanout no longer costs 65 s before route pass 1 (route pass 1 now starts at
+  33 s). With K09.9's new default sweep the hint run is `+mp1+sweep` against `+sweep`: 61.4 s against
+  238.8 s = 3.89×, grade 41 against 42 (the sessions differ: the sweep starts from a different board).
+  Q04's stop rule in place of the hint stays Q04's.
 - [x] **K09.8 — The canary preset reproduces the graded flow.**
   - The preset: `class_widths` from canary's run, `fixed_pour_classes =
     Power_High,Switch_Node`, `drop_pour_nets = GND`, edge and pad keepouts on,
@@ -237,7 +249,7 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   `insertComponentObstacle`), but each adds items to the board; that this reorders the search is
   inferred, not traced, and the routing is chaotic at canary's ±10. `kicad-plugin.md` "DSN fix-ups and the canary flow (K09)"
   documents the options, the preset, the headless runs and these numbers.
-- [~] **K09.9 — A plain plugin run gets the graded flow under `enhanced`.** canary-7a graded
+- [x] **K09.9 — A plain plugin run gets the graded flow under `enhanced`.** canary-7a graded
   the owner's plugin run at `9c97117` (profile `enhanced`, default options) at 68 unconnected, with
   2 `copper_edge_clearance` errors (GND vias 0.297 mm from the edge against 0.3) and 2
   inner-layer tracks (Q13), while the CLI flow grades 33 (Q10). The plugin got none of what
@@ -291,3 +303,46 @@ Q09 (`plane_obstacle_block`, `wire_keepout`), Q10 (add-only sweep, for K09.6), Q
   nowidth 10, mpdef 8. Remainder: rerun `enh-auto-mp1`/`enh-auto-mpdef` once Q13 lands (the keep
   rule then picks `enh-auto-mpdef`, 63, unless its wall time is ruled out), and canary-7a's grade
   of the handoff sessions in `target/canary-handoff/2026-10-17-k09/`.
+
+  *Done 2026-10-18 (rerun):* registered first as `docs/roadmap/prereg/K09.9-rerun.json` (sha256
+  `f9899ad1...` at registration, `4132300c...` after one editorial amendment, pinned by `crates/freerouting-dev/tests/prereg_k09_rerun.rs`), engine
+  `571d06d` (its `enhanced` has `power_layer_traces = none`, `neck_width_um = 300`,
+  `via_clearance = net_class`, so Q13's inner-layer tracks are gone), baseline `plugin-default` =
+  `PROFILE_DEFAULTS["enhanced"] = {}`, every arm under profile `enhanced`, headless plugin path
+  (`headless_run.py` export, `RouteOptions.to_args`, import with the drill fix), WSL KiCad 10.0.7,
+  graded by `kicad-cli pcb drc --refill-zones --severity-all` (canary-pwr with `--schematic-parity`
+  in canary `b1994423`'s project), canary's `via_in_pad.py`/`inner_tracks.py`, `freerouting-dev
+  power-traces`; one job at a time (`target/orchestrator/k099/scratch/arm.sh`). KiCad-unconnected
+  (set noise 17.14; wall = router seconds over the four boards):
+
+  | arm | canary-pwr | interf_u | pic_programmer | CM5_MINIMA_3 | total | Δ | wall s | verdict | dsn45 (report) |
+  |---|---|---|---|---|---|---|---|---|---|
+  | `plugin-default` | 63 | 12 | 2 | 18 | 95 | | 261 | baseline | 61 |
+  | `+mp1` | 63 | 28 | 2 | 32 | 125 | +30 | 76 | fail | 61 |
+  | `+sweep` | **42** | 12 | 2 | 18 | **74** | −21 | 282 | **pass, kept** | 46 |
+  | `+mp1+sweep` | 41 | 16 | 2 | 22 | 81 | −14 | 103 | fail (within noise) | 46 |
+  | `+cli-flags` (`-mp 1`, ripup 1500, sweep) | 39 | 14 | 2 | 28 | 83 | −12 | 146 | fail (noise; CM5 +2 clearance) | 41 |
+  | `+cli-flow` (`+cli-flags`, `auto` pours) | 45 | 14 | 2 | 12 | 73 | −22 | 439 | pass | 41 |
+
+  Guards: via in a pad 0, track_width 0, power-layer traces 0 and inner tracks on canary-pwr 0 in
+  every row; `clearance` (input-relative) 0 everywhere except pic_programmer 2 in every arm (the
+  baseline's too) and CM5_MINIMA_3 2 under `+cli-flags`; canary-pwr copper_edge_clearance 0
+  (CM5_MINIMA_3 2 = its input's). No route timed out. Keep rule: `+sweep` and `+cli-flow` pass; 73
+  is within 17.14 of 74, so the tie goes to `+sweep` by wall time (282 s against 439 s). So
+  `options.PROFILE_DEFAULTS["enhanced"] = {"sweep": "free"}` (the router's 2 sweep passes;
+  the arm passed `sweep_passes=2`, the same session byte for byte on interf_u without it), in the
+  plugin, not the engine's `ENHANCED`: the sweep's engine default is Q10.4's registered run on the
+  engine bench set (operator decision). Tests: `test_options.py::test_enhanced_adds_the_completion_sweep_and_legacy_does_not`,
+  `test_a_sweep_turned_off_under_enhanced_is_stored_and_restored`; four tests now compare against
+  `profile_defaults()` instead of `RouteOptions()`. `legacy` keeps the plugin's behaviour
+  (`PROFILE_DEFAULTS["legacy"]` stays `{}`, pinned by the same test).
+
+  The number and the cause (first accept clause): a default-options plugin run on `canary-pwr` now
+  grades **42** (self-graded, 9 starved thermals, 0 edge-clearance errors, 0 inner-layer tracks, no
+  copper error), against 63 before; not ≤ 33. The 33 is canary's `dsn_export.py` DSN of `9511d9a`; the
+  plugin's export of that whole flow (`+cli-flow` 45; the plugin45 run's DSN with the preset's flags 41,
+  byte-identical to the session canary-7a graded 41 apart from the `base_design` name) stays within
+  canary's ±10 of 33 but above it, and no registered setting closes the gap (K09.8 measured the DSN
+  differences: the off-bbox edge rectangles and the place keepout). The canary sessions, DSNs, graded
+  boards, `SHA256SUMS` and a README are in `target/canary-handoff/2026-10-18-k09rerun/` for
+  canary-7a's official grade (`sweep/canary-pwr/canary-pwr-sweep.ses` is the new default run).

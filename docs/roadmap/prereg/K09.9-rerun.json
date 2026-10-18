@@ -1,0 +1,129 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "K09.9-rerun-plugin-enhanced-defaults",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/K09-plugin-export-options.md (K09.9, remainder: rerun once Q13 landed; K09.7 wall time reported)",
+  "question": "Under today's engine profile enhanced (router.power_layer_traces=none f010b1e, router.neck_width_um=300 a76fe2a, router.via_clearance=net_class ded6183), with the plugin's PROFILE_DEFAULTS['enhanced'] = {} as the baseline, should a default-options plugin run also pass -mp 1, Q10's sweep, or the rest of canary's CLI flow (start_ripup_costs 1500, the auto pour fix-ups), judged by N02's totals rule on canary-pwr and K09's three KiCad demos through the plugin's own headless path?",
+  "why_new": "K09.json's candidates (enh-auto-*) were refused on Q13's inner-layer tracks, which enhanced's power_layer_traces=none now removes; and its arms ran on profile legacy with the engine of 836dac3. K09.json is left as registered; this is a new registration for K09.9's remainder",
+  "rule": "totals",
+  "totals": {
+    "accept": "improve",
+    "signal": ["kicad_unconnected"],
+    "noise": {
+      "canary-pwr": 10,
+      "interf_u": 8.2,
+      "pic_programmer": 4.3,
+      "CM5_MINIMA_3": 10.4
+    },
+    "min_boards": 3
+  },
+  "noise_why": "K09.json's bands, unchanged: canary-pwr's +-10 (N02); the demos max(2, 0.05 * the unconnected count of the unrouted input board, by KiCad's DRC); set noise sqrt(10^2 + 8.2^2 + 4.3^2 + 10.4^2) = 17.14",
+  "engine": "freerouting-rs release CLI at origin/main 571d06d (no engine change in this registration's diff), built once in target/orchestrator/k099/target, sha256 f34bc70a2c850b16562d744228fe4248f825501c4de5aa337d2fa065b5586eda",
+  "arms": {
+    "plugin-default": {
+      "engine": "as `engine`, through kicad-plugin/headless_run.py at 571d06d (the plugin's export, fix-ups, RouteOptions.to_args and ImportSpecctraSES with the via drill fix), WSL KiCad 10.0.7",
+      "command": "freerouting -de {DSN} -do {SES} --progress json --result-json {R} {RouteOptions.to_args(board minimum width)}",
+      "options": {"schema": 4, "profile": "enhanced"},
+      "what": "baseline: a default-options plugin run today (PROFILE_DEFAULTS['enhanced'] = {}; K09.4's edge and pad keepouts and K01.2's rule-area fix-up are on in the dataclass); the engine profile decides everything else"
+    },
+    "+mp1": {
+      "engine": "as plugin-default",
+      "command": "as plugin-default",
+      "options": {"schema": 4, "profile": "enhanced", "max_passes": 1},
+      "what": "plugin-default with --max-passes 1 (the CLI flow's -mp 1; K09.7: pass 1 is best on canary-pwr)"
+    },
+    "+sweep": {
+      "engine": "as plugin-default",
+      "command": "as plugin-default",
+      "options": {"schema": 4, "profile": "enhanced", "sweep": "free", "sweep_passes": 2},
+      "what": "plugin-default with Q10's --router.autorouter.sweep=free --router.autorouter.sweep_passes=2, no pass limit"
+    },
+    "+mp1+sweep": {
+      "engine": "as plugin-default",
+      "command": "as plugin-default",
+      "options": {"schema": 4, "profile": "enhanced", "max_passes": 1, "sweep": "free", "sweep_passes": 2},
+      "what": "plugin-default with -mp 1 and the sweep free x2"
+    },
+    "+cli-flags": {
+      "engine": "as plugin-default",
+      "command": "as plugin-default",
+      "options": {"schema": 4, "profile": "enhanced", "max_passes": 1, "sweep": "free", "sweep_passes": 2, "start_ripup_costs": 1500},
+      "what": "the router flags of the CLI flow that graded 33 (Q10: -mp 1 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2; the minimum width comes from the board, 150 um on canary-pwr) on the plugin's default export"
+    },
+    "+cli-flow": {
+      "engine": "as plugin-default",
+      "command": "as plugin-default",
+      "options": {"schema": 4, "profile": "enhanced", "max_passes": 1, "sweep": "free", "sweep_passes": 2, "start_ripup_costs": 1500, "fixed_pour_classes": "auto", "drop_pour_nets": "auto"},
+      "what": "+cli-flags plus dsn_export.py's pour transforms derived from the board (K09.2 fixed wires for pours above their layer's lowest priority, K09.3 outer pours dropped for a net alone on an inner layer), as K09.json's enh-auto arms; no class_widths (the engine's neck-down replaces class narrowing, N05.3's N05-neck-down.json, and canary b1994423's classes are the tap widths)"
+    }
+  },
+  "baseline_arm": "plugin-default",
+  "candidate_arm": "+mp1+sweep",
+  "candidates": ["+mp1", "+sweep", "+mp1+sweep", "+cli-flags", "+cli-flow"],
+  "boards": {
+    "procedure": "canary-pwr: git archive of canary b1994423 hardware/canary-pwr-rev1.0 (the commit of the plugin45 run; its .kicad_pcb is K09.json's blob, the .kicad_pro carries the tap-width classes), routed as committed (hand-laid copper locked), graded with --schematic-parity in the project copy. Demos: K09.json's stripped boards (KiCad 10.0.7 demos with tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip), copied from target/orchestrator/k09/scratch/boards. canary-pwr-dsn45 is a report row, not judged and not in the totals (it would count canary-pwr twice): crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn, the DSN the plugin45 run exported with the canary graded-flow preset (its route-options.json: class widths, fixed pours, GND dropped, -mp 1, ripup 1500, sweep free x2), routed with each arm's RouteOptions.to_args(150) and imported by the plugin into the b1994423 board; it ties this run to canary-7a's 41 (the preset's flags) and to 33",
+    "judged": ["canary-pwr", "interf_u", "pic_programmer", "CM5_MINIMA_3"],
+    "report_only": ["canary-pwr-dsn45"],
+    "files": {
+      "canary-pwr": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "interf_u": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "pic_programmer": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49",
+      "CM5_MINIMA_3": "031b7497386e84c3345d180c8b1c36b07910eb075b81ac6d793ba6f21558449a",
+      "canary-pwr-dsn45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942"
+    },
+    "rules_files": {
+      "canary-pwr": "665cba3d4b76b4f7ac7e5b5a761558576726ff9612be07c3b82de18eca742de9",
+      "interf_u": "b9908a96e6113e6e51f488482108dc87aa5d9bcd838f9e3345c85e0db09bffa9",
+      "pic_programmer": "3b0ac39da5af86d0baa2a64da55a89c39ba00148dc82b54f3062f5c3650a5cc5",
+      "CM5_MINIMA_3": "aa5b004bb45d70028612f6591b2cd5fa4754095e7542dbbca974753e4399526a"
+    }
+  },
+  "seen_before_registration": {
+    "canary-pwr-dsn45": "canary-7a official 2026-10-18: the preset's flags (-mp 1, ripup 1500, sweep free x2, min width 150) on this DSN under enhanced with neck_width_um=300 and via_clearance=net_class grade 41 (8 starved, 0 copper errors); without net_class 36 with one +12V_PROT via at 0.245 mm (N05-via-clearance-netclass.json). Other flags never run on it under today's enhanced",
+    "canary-pwr (CLI)": "canary-7a official 2026-10-17: canary's dsn_export.py DSN of 9511d9a (fixtures/canary-pwr/canary-pwr-9511d9a.dsn) with -mp 1 --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 grades 45, with the sweep free x2 33 (Q10); under power_layer_traces=none 45/33, with net_class 49/33 (N05.3 self-grades). Not this registration's input",
+    "canary-pwr": "no default-options plugin run of canary b1994423 under today's enhanced has a number. K09.json round 2 (engine 836dac3, canary e21ee05e project with the old class widths, profile legacy): legacy 76, enh-auto-mp1 36, enh-auto-mpdef 36, enh-auto-nowidth-mp1 51",
+    "interf_u, pic_programmer, CM5_MINIMA_3": "K09.json round 2 (profile legacy at 836dac3): legacy 10/2/21, enh-auto-mp1 18/3/15, enh-auto-mpdef 13/3/11; N05-neck-down.json routed pic_programmer 2 and CM5_MINIMA_3 21 under enhanced (before net_class) through this headless path. None under today's enhanced"
+  },
+  "grading": "WSL KiCad 10.0.7, one job at a time, serial, as K09.json: the board ImportSpecctraSES saved (headless_run.py import), kicad-cli pcb drc --refill-zones --save-board --severity-all --format json (canary-pwr also --schematic-parity), canary b1994423's via_in_pad.py and inner_tracks.py, freerouting-dev power-traces on the routed DSN and session. The unrouted input board of each row is graded the same way once, before the arms, for the input-relative counts. Every route under timeout -k 10 3600; a timeout is a result (the arm's row is ungraded and the arm fails), not a rerun. Script: target/orchestrator/k099/scratch/arm.sh",
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "power_layer_traces", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "clearance", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "kicad_unconnected", "role": "score", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "copper_edge_clearance", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "inner_tracks", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "starved_thermal", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "unrouted", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "vias", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "metric_definitions": {
+    "via_in_pad": "canary's via_in_pad.py count on the saved board",
+    "below_minimum": "KiCad error-severity track_width items",
+    "power_layer_traces": "freerouting-dev power-traces on the routed DSN and session, its `all` count (every trace on a power-type layer); 0 under enhanced's power_layer_traces=none",
+    "clearance": "KiCad error-severity clearance, hole_clearance, copper_edge_clearance, shorting_items and tracks_crossing items, each type minus the unrouted input's count (floor 0), summed. Role guard: no candidate row above the baseline's (N02's hard guards: no new DRC error)",
+    "kicad_unconnected": "KiCad's unconnected_items on the saved board",
+    "drc_real": "every error-severity type other than unconnected items and starved thermals, minus the input's (reported)",
+    "copper_edge_clearance": "KiCad's count on the saved board (K09.4 keepouts are on in every arm)",
+    "inner_tracks": "canary's inner_tracks.py count (on canary-pwr every inner layer is a plane; on the demos it counts inner signal layers and is not a fault)",
+    "unrouted": "the router's final incomplete count (--result-json board_statistics.connections.incomplete_count)",
+    "vias": "vias in the router's result (board_statistics.vias.total_count)",
+    "wall_seconds": "the router process's wall time (K09.7: the plugin run's time); one job at a time, machine load not controlled"
+  },
+  "pass_rule": {"min_boards": 3, "improve_all_but": 1, "max_regress": 0},
+  "keep_rule": "a candidate passes against plugin-default when (1) no hard metric above 0 on a judged row, (2) clearance not above plugin-default's on any judged row, (3) the kicad_unconnected total over the four judged boards improves by more than the set noise 17.14, (4) no judged board worse by more than twice its band. Among the passing candidates, those whose total is within the set noise of the best passing total are tied and the tie goes to the smallest summed wall_seconds (K09.7's time budget); a remaining tie goes to the arm with fewer options. The winner's options (minus schema and profile) become kicad-plugin options.PROFILE_DEFAULTS['enhanced']; if none passes, it stays {} and K09.9's note gives the numbers. The engine's ENHANCED is not changed here: a board-independent setting found to win is proposed for it through N05's recipe on the engine bench set",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings, no row dropped",
+  "decision_table": {
+    "pass": "PROFILE_DEFAULTS['enhanced'] = the winner's options, test_options/test_route_dialog updated, K09.9 ticked with the table if canary-pwr's default run grades <= 33 clean, else [x] on the accept clause's 'or the number and the cause'",
+    "fail": "PROFILE_DEFAULTS['enhanced'] stays {}; K09.9 note gives the table"
+  },
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "after": "every registered run (results in K09.9's done note)",
+      "change": "editorial only: a person's name removed from the boards.procedure prose (documentation rule of 2026-10-18); arms, boards, hashes, metrics and the rules are unchanged"
+    }
+  ]
+}

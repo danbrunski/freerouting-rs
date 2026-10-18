@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 
 import options
 import pytest
@@ -121,10 +122,10 @@ def test_a_damaged_stored_dict_restores_defaults_without_an_exception():
 
     # Another schema: nothing is trusted.
     future = dict(good, schema=99)
-    assert RouteOptions.from_dict(future) == RouteOptions()
+    assert RouteOptions.from_dict(future) == options.profile_defaults()
     # Not even a dict.
     for junk in (None, [], "x", 3, {"schema": "1"}):
-        assert RouteOptions.from_dict(junk) == RouteOptions()
+        assert RouteOptions.from_dict(junk) == options.profile_defaults()
 
 
 def test_booleans_are_not_numbers():
@@ -167,8 +168,13 @@ def test_the_form_builds_options_and_reports_every_bad_field():
         }
     )
     assert errors == []
-    assert chosen == RouteOptions(
-        max_passes=5, ignore_net_classes=["GND", "Power"], min_trace_width_um=150.0, timeout="10m", rule_area_fixup=False
+    assert chosen == replace(
+        options.profile_defaults(),
+        max_passes=5,
+        ignore_net_classes=["GND", "Power"],
+        min_trace_width_um=150.0,
+        timeout="10m",
+        rule_area_fixup=False,
     )
     _, errors = options.from_form(
         {"max_passes": 99999, "improvement_threshold": "abc", "min_trace_width_um": "-3", "timeout": "10 minutes"}
@@ -239,9 +245,10 @@ def test_the_options_file_stores_only_the_differences(tmp_path):
     defaults = options.stage_defaults(options.parse_stage_listing(LISTING))
     path = tmp_path / "route-options.json"
     # Everything at the profile's value: only the schema and the profile.
-    options.save(path, RouteOptions(stages={"autorouter.connection_router": "freerouting-connection"}), defaults)
+    at_profile = replace(options.profile_defaults(), stages={"autorouter.connection_router": "freerouting-connection"})
+    options.save(path, at_profile, defaults)
     assert json.loads(path.read_text(encoding="utf-8")) == {"schema": options.SCHEMA, "profile": "enhanced"}
-    assert options.load(path) == RouteOptions()
+    assert options.load(path) == options.profile_defaults()
     # One option and one stage differ: only those are stored.
     chosen = RouteOptions(
         profile="legacy",
@@ -267,7 +274,7 @@ def test_a_schema_1_file_loads_as_enhanced():
     old = {"schema": 1, "max_passes": 7, "threads": 0, "optimizer": True, "improvement_threshold": None,
            "ignore_net_classes": [], "seed": 0, "min_trace_width_um": None, "timeout": "", "rule_area_fixup": False}  # fmt: skip
     restored = RouteOptions.from_dict(old)
-    assert restored == RouteOptions(max_passes=7, rule_area_fixup=False)
+    assert restored == replace(options.profile_defaults("enhanced"), max_passes=7, rule_area_fixup=False)
     assert restored.profile == "enhanced"
 
 
@@ -363,6 +370,33 @@ def test_enhanced_keeps_the_board_setup_widths_and_leaves_the_neck_down_to_the_e
     assert enhanced.class_widths == {}
     assert options.dsn_settings(enhanced)["class_widths"] == {}
     assert not any("neck_width" in a for a in enhanced.to_args(board_min_trace_width_um=150))
+
+
+def test_enhanced_adds_the_completion_sweep_and_legacy_does_not():
+    # K09.9 (docs/roadmap/prereg/K09.9-rerun.json, arm `+sweep`): a default
+    # enhanced run sweeps `free` with the router's 2 passes, no pass limit,
+    # no ripup cost and no pour fix-up; legacy keeps the plugin's defaults.
+    enhanced = options.profile_defaults("enhanced")
+    assert enhanced.sweep == "free" and enhanced.sweep_passes is None
+    assert enhanced.to_args(board_min_trace_width_um=150) == [
+        "--router.min_trace_width_um=150",
+        "--router.autorouter.sweep=free",
+    ]
+    assert options.dsn_settings(enhanced) == options.dsn_settings(RouteOptions())
+    legacy = options.profile_defaults("legacy")
+    assert legacy == RouteOptions(profile="legacy")
+    assert legacy.to_args(board_min_trace_width_um=150) == ["--profile", "legacy", "--router.min_trace_width_um=150"]
+
+
+def test_a_sweep_turned_off_under_enhanced_is_stored_and_restored(tmp_path):
+    path = tmp_path / "route-options.json"
+    off = replace(options.profile_defaults("enhanced"), sweep="")
+    options.save(path, off)
+    assert json.loads(path.read_text(encoding="utf-8")) == {"schema": options.SCHEMA, "profile": "enhanced", "sweep": ""}
+    assert options.load(path) == off
+    assert not any("sweep" in a for a in off.to_args(board_min_trace_width_um=150))
+    # A file saved before the default changed (no `sweep` key) takes the sweep.
+    assert RouteOptions.from_dict({"schema": 4, "profile": "enhanced"}).sweep == "free"
 
 
 def test_schema_2_files_load_and_take_the_new_defaults():

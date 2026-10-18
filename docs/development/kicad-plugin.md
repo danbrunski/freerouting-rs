@@ -148,14 +148,28 @@ field they lack takes the profile's default):
 **Profile defaults (K09.9).** `options.PROFILE_DEFAULTS` holds what each profile's plugin defaults
 change from the dataclass defaults; a new board, and a field an older options file lacks, start
 from it. The engine's `ENHANCED` (`settings/profile.rs`) is not involved. An entry only lands with
-the registered measurement that accepted it (`docs/roadmap/prereg/K09.json`). Both entries are
-empty: on 2026-10-17 the `auto` candidates (derived widths, pours, ripup 1500, `-mp 1` or unlimited,
-sweep `free`) took `canary-pwr` from 76 to 36 unconnected and the four-board total from 109 to 72
-(63 unlimited), but left 2 `+5V_PI` tracks on `Power.Cu` (Q13), and without the width cap they gave 3
-clearance errors. So a default run is the legacy flow plus the board's clearances as keepouts:
-`canary-pwr` 76 unconnected, 0 edge errors. For the graded flow, use the canary preset file (`fixtures/canary-pwr/presets/canary-graded-flow.json`, Preset drop-down)
-(38 with the sweep, 45 without; `dsn_export.py`'s DSN of the same board gives 33, and the gap
-comes from the plugin's extra edge rectangles and place keepout, which change a chaotic route; K09.8). Once Q13 lands, rerun the candidates.
+the registered measurement that accepted it (`docs/roadmap/prereg/K09.json`, then
+`K09.9-rerun.json`). `legacy` is empty. `enhanced` is `{"sweep": "free"}`: Q10's add-only completion
+sweep after the passes, with the router's 2 sweep passes (`--router.autorouter.sweep=free`). The
+rerun of 2026-10-18 (engine `571d06d`, whose `enhanced` already has `power_layer_traces = none`,
+`neck_width_um = 300` and `via_clearance = net_class`) judged six arms through the headless path on
+`canary-pwr` (canary `b1994423`) and the three demos (KiCad-unconnected, set noise 17.14):
+
+| arm | canary-pwr | interf_u | pic_programmer | CM5_MINIMA_3 | total | wall s | verdict |
+|---|---|---|---|---|---|---|---|
+| `plugin-default` (`{}`) | 63 | 12 | 2 | 18 | 95 | 261 | baseline |
+| `+mp1` | 63 | 28 | 2 | 32 | 125 | 76 | worse |
+| `+sweep` | 42 | 12 | 2 | 18 | 74 | 282 | **kept** |
+| `+mp1+sweep` | 41 | 16 | 2 | 22 | 81 | 103 | −14, within noise |
+| `+cli-flags` (`-mp 1`, ripup 1500, sweep) | 39 | 14 | 2 | 28 | 83 | 146 | −12; 2 new clearance errors on CM5_MINIMA_3 |
+| `+cli-flow` (`+cli-flags`, `auto` pours) | 45 | 14 | 2 | 12 | 73 | 439 | passes; tie to `+sweep` by wall time |
+
+No arm put a via in a pad, copper below the minimum or a trace on a power layer. So a default
+`enhanced` run on `canary-pwr` grades 42 (self-graded, 9 starved thermals, no copper error), not
+the CLI's 33: the 33 is canary's own `dsn_export.py` DSN of `9511d9a`, and the plugin export of the
+same flow (`+cli-flow`, or the plugin45 run's DSN with the preset's flags: 41, canary-7a's number)
+lands within canary's ±10 of it (K09.8 gives the DSN differences). For the graded flow, use the
+canary preset file (`fixtures/canary-pwr/presets/canary-graded-flow.json`, Preset drop-down).
 Under `enhanced` the plugin keeps the Board Setup class widths and passes no neck-down flag: the
 engine's `enhanced` profile sets `router.neck_width_um = 300` (Java's necked retry of a failed
 connection), which N05.3 accepted against class narrowing on 2026-10-18
