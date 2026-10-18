@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use freerouting_geometry::simd::{BoundLanes, PairLanes};
 use freerouting_geometry::{RegularTileShape, ShapeBoundingDirections, TileShape, TileShapeOps};
 
 use crate::board::search::WorkMeter;
@@ -41,14 +42,56 @@ struct Node<K> {
 /// tree does not show in query results. It adds the nodes it visits to the
 /// tree's [`WorkMeter`] (Java `WorkMeter.tick()` in
 /// `MinAreaTree.overlapsUnlocked`); a clone shares the meter.
+///
+/// Beside the node arena the tree keeps two dense arrays indexed like it, for
+/// the hot loop of [`overlaps`](Self::overlaps) (P05.1): for each inner node
+/// the bounds of its two children side by side as [`PairLanes`] (one 64-byte
+/// line), and the two children's indexes, each marked with [`LEAF_BIT`] if
+/// it is a leaf. A query tests both children of a node that it enters in one
+/// branch-free loop over eight lanes, which the compiler vectorizes, and
+/// reads a [`Node`] only for a leaf it returns. The node's
+/// [`RegularTileShape`] stays the source of truth; every write to a node's
+/// bounds or children goes through [`set_bounds`](Self::set_bounds) and
+/// [`set_children`](Self::set_children), which keep the arrays in step.
 #[derive(Clone, Debug)]
 pub struct ShapeTree<K> {
     directions: ShapeBoundingDirections,
     root: Option<usize>,
     nodes: Vec<Option<Node<K>>>,
+    /// For an inner node `nodes[i]`, the bounds of its first and second
+    /// child (unused for a leaf or a free slot).
+    child_lanes: Vec<PairLanes>,
+    /// For an inner node `nodes[i]`, its first and second child, with
+    /// [`LEAF_BIT`] set for a leaf (unused for a leaf or a free slot).
+    links: Vec<[u32; 2]>,
+    /// True once a bound of the other kind than [`Self::directions`] makes
+    /// was inserted (only tests do); queries then take the scalar path.
+    mixed_kinds: bool,
     free: Vec<usize>,
     leaf_count: usize,
     meter: Arc<WorkMeter>,
+}
+
+/// The initial capacity of the traversal stack of [`ShapeTree::overlaps`].
+const QUERY_STACK_CAPACITY: usize = 64;
+
+/// Marks a child in [`ShapeTree`]'s links as a leaf.
+const LEAF_BIT: u32 = 1 << 31;
+
+/// The links of a node that has no children.
+const NO_LINKS: [u32; 2] = [u32::MAX, u32::MAX];
+
+/// The pair lanes of a node that has no children.
+const NO_LANES: PairLanes = PairLanes {
+    lo: [0; 8],
+    hi: [0; 8],
+};
+
+/// Which lane test answers a query (P05.1).
+#[derive(Clone, Copy)]
+enum LaneTest {
+    Octagons,
+    Boxes,
 }
 
 impl<K: Ord + Copy> ShapeTree<K> {
@@ -57,6 +100,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
             directions,
             root: None,
             nodes: Vec::new(),
+            child_lanes: Vec::new(),
+            links: Vec::new(),
+            mixed_kinds: false,
             free: Vec::new(),
             leaf_count: 0,
             meter: Arc::new(WorkMeter::new()),
@@ -93,12 +139,82 @@ impl<K: Ord + Copy> ShapeTree<K> {
     }
 
     fn alloc(&mut self, node: Node<K>) -> usize {
-        if let Some(idx) = self.free.pop() {
+        let inner = match node.kind {
+            NodeKind::Inner { first, second } => Some((first, second)),
+            NodeKind::Leaf { .. } => None,
+        };
+        let idx = if let Some(idx) = self.free.pop() {
             self.nodes[idx] = Some(node);
             idx
         } else {
             self.nodes.push(Some(node));
+            self.child_lanes.push(NO_LANES);
+            self.links.push(NO_LINKS);
             self.nodes.len() - 1
+        };
+        match inner {
+            Some((first, second)) => self.set_children(idx, first, second),
+            None => {
+                self.child_lanes[idx] = NO_LANES;
+                self.links[idx] = NO_LINKS;
+            }
+        }
+        idx
+    }
+
+    /// The link of child `idx`: its index, marked if it is a leaf.
+    fn link_of(&self, idx: usize) -> u32 {
+        debug_assert!(
+            idx < LEAF_BIT as usize,
+            "tree node index {idx} overflows a link"
+        );
+        match self.node(idx).kind {
+            NodeKind::Leaf { .. } => idx as u32 | LEAF_BIT,
+            NodeKind::Inner { .. } => idx as u32,
+        }
+    }
+
+    /// Sets `idx`'s bounding shape and its lanes in its parent.
+    fn set_bounds(&mut self, idx: usize, bounds: RegularTileShape) {
+        let node = self.node_mut(idx);
+        node.bounds = bounds;
+        let Some(parent) = node.parent else {
+            return;
+        };
+        let slot = usize::from(self.links[parent][0] & !LEAF_BIT != idx as u32);
+        debug_assert_eq!(self.links[parent][slot] & !LEAF_BIT, idx as u32);
+        self.child_lanes[parent].set(slot, &BoundLanes::from_regular(&bounds));
+    }
+
+    /// Sets the children of the inner node `idx`, its links and the lanes
+    /// of their bounds.
+    fn set_children(&mut self, idx: usize, new_first: usize, new_second: usize) {
+        let NodeKind::Inner { first, second } = &mut self.node_mut(idx).kind else {
+            return;
+        };
+        *first = new_first;
+        *second = new_second;
+        self.links[idx] = [self.link_of(new_first), self.link_of(new_second)];
+        self.child_lanes[idx] = PairLanes::new(
+            &BoundLanes::from_regular(&self.node(new_first).bounds),
+            &BoundLanes::from_regular(&self.node(new_second).bounds),
+        );
+    }
+
+    /// The lane test that answers a query with `shape`, if every bound in
+    /// the tree and `shape` have the kind this tree's directions make.
+    fn lane_test(&self, shape: &RegularTileShape) -> Option<LaneTest> {
+        if self.mixed_kinds {
+            return None;
+        }
+        match (self.directions, shape) {
+            (ShapeBoundingDirections::FortyfiveDegree, RegularTileShape::IntOctagon(_)) => {
+                Some(LaneTest::Octagons)
+            }
+            (ShapeBoundingDirections::Orthogonal, RegularTileShape::IntBox(_)) => {
+                Some(LaneTest::Boxes)
+            }
+            _ => None,
         }
     }
 
@@ -139,6 +255,9 @@ impl<K: Ord + Copy> ShapeTree<K> {
     /// Inserts a leaf for shape `shape_index` of `object` with bounding shape
     /// `bounds`, which the caller computes with this tree's directions.
     pub fn insert(&mut self, object: K, shape_index: usize, bounds: RegularTileShape) -> LeafId {
+        if self.lane_test(&bounds).is_none() {
+            self.mixed_kinds = true;
+        }
         let leaf = self.alloc(Node {
             bounds,
             parent: None,
@@ -165,11 +284,11 @@ impl<K: Ord + Copy> ShapeTree<K> {
             },
         });
         if let Some(parent) = parent {
-            if let NodeKind::Inner { first, second } = &mut self.node_mut(parent).kind {
-                if *first == to_replace {
-                    *first = inner;
+            if let NodeKind::Inner { first, second } = self.node(parent).kind {
+                if first == to_replace {
+                    self.set_children(parent, inner, second);
                 } else {
-                    *second = inner;
+                    self.set_children(parent, first, inner);
                 }
             }
         }
@@ -189,7 +308,7 @@ impl<K: Ord + Copy> ShapeTree<K> {
                 NodeKind::Inner { first, second } => (first, second),
             };
             let union = bounds.union(&self.node(current).bounds);
-            self.node_mut(current).bounds = union;
+            self.set_bounds(current, union);
             let first_shape = self.node(first).bounds;
             let first_increase = area(&bounds.union(&first_shape)) - area(&first_shape);
             let second_shape = self.node(second).bounds;
@@ -233,11 +352,11 @@ impl<K: Ord + Copy> ShapeTree<K> {
         match grand_parent {
             None => self.root = Some(other),
             Some(gp) => {
-                if let NodeKind::Inner { first, second } = &mut self.node_mut(gp).kind {
-                    if *second == parent {
-                        *second = other;
-                    } else if *first == parent {
-                        *first = other;
+                if let NodeKind::Inner { first, second } = self.node(gp).kind {
+                    if second == parent {
+                        self.set_children(gp, first, other);
+                    } else if first == parent {
+                        self.set_children(gp, other, second);
                     }
                 }
             }
@@ -255,7 +374,7 @@ impl<K: Ord + Copy> ShapeTree<K> {
             if new_bounds.contains_regular(&self.node(idx).bounds) {
                 break;
             }
-            self.node_mut(idx).bounds = new_bounds;
+            self.set_bounds(idx, new_bounds);
             to_recalculate = self.node(idx).parent;
         }
     }
@@ -273,6 +392,115 @@ impl<K: Ord + Copy> ShapeTree<K> {
         let Some(root) = self.root else {
             return Vec::new();
         };
+        let query = BoundLanes::from_regular(shape);
+        let visited = match self.lane_test(shape) {
+            Some(LaneTest::Octagons) => self.overlaps_lanes(
+                root,
+                &query,
+                BoundLanes::octagons_intersect,
+                PairLanes::octagons_intersect,
+                &mut found,
+            ),
+            Some(LaneTest::Boxes) => self.overlaps_lanes(
+                root,
+                &query,
+                BoundLanes::boxes_intersect,
+                PairLanes::boxes_intersect,
+                &mut found,
+            ),
+            None => self.overlaps_scalar(root, shape, &mut found),
+        };
+        self.meter.add_query(visited, found.len() as u64);
+        // A key and shape index identify a leaf, so the order is total.
+        found.sort_unstable_by_key(|&(key, index, _)| (key, index));
+        found.into_iter().map(|(_, _, leaf)| leaf).collect()
+    }
+
+    /// The leaves [`overlaps`](Self::overlaps) finds, sorted the same way,
+    /// and the nodes it pops, by the scalar traversal on the node shapes
+    /// (the path before P05.1, kept as the reference of the lane
+    /// traversal). Does not touch the meter.
+    pub fn overlaps_reference(&self, shape: &RegularTileShape) -> (Vec<LeafId>, u64) {
+        let Some(root) = self.root else {
+            return (Vec::new(), 0);
+        };
+        let mut found = Vec::new();
+        let visited = self.overlaps_scalar(root, shape, &mut found);
+        found.sort_unstable_by_key(|&(key, index, _)| (key, index));
+        (
+            found.into_iter().map(|(_, _, leaf)| leaf).collect(),
+            visited,
+        )
+    }
+
+    /// The traversal of [`overlaps`](Self::overlaps) on the lane arrays:
+    /// the nodes [`overlaps_scalar`](Self::overlaps_scalar) pops, tested by
+    /// pairs of siblings, and the leaves it finds, since `hit_root` and
+    /// `hit_pair` answer as [`bounds_intersect`] does. The order differs,
+    /// which the sort in `overlaps` hides; a node is popped if all its
+    /// ancestors hit, in any order. Returns the nodes popped.
+    #[inline(always)]
+    fn overlaps_lanes(
+        &self,
+        root: usize,
+        query: &BoundLanes,
+        hit_root: impl Fn(&BoundLanes, &BoundLanes) -> bool,
+        hit_pair: impl Fn(&PairLanes, &PairLanes) -> u32,
+        found: &mut Vec<(K, usize, LeafId)>,
+    ) -> u64 {
+        if !hit_root(&BoundLanes::from_regular(&self.node(root).bounds), query) {
+            return 1;
+        }
+        let mut push_leaf = |idx: usize| {
+            if let NodeKind::Leaf {
+                object,
+                shape_index,
+            } = self.node(idx).kind
+            {
+                found.push((object, shape_index, LeafId(idx as u32)));
+            }
+        };
+        if matches!(self.node(root).kind, NodeKind::Leaf { .. }) {
+            push_leaf(root);
+            return 1;
+        }
+        let pair_query = PairLanes::splat(query);
+        // Deep enough for the trees of real boards, so the stack does not
+        // grow in the loop (a depth-first stack holds at most depth + 1).
+        let mut stack = Vec::with_capacity(QUERY_STACK_CAPACITY);
+        stack.push(root as u32);
+        let mut visited = 1u64;
+        while let Some(current) = stack.pop() {
+            let current = current as usize;
+            visited += 2;
+            let mask = hit_pair(&self.child_lanes[current], &pair_query);
+            if mask == 0 {
+                continue;
+            }
+            let links = self.links[current];
+            for (slot, link) in links.into_iter().enumerate() {
+                if mask & (1 << slot) == 0 {
+                    continue;
+                }
+                if link & LEAF_BIT != 0 {
+                    push_leaf((link & !LEAF_BIT) as usize);
+                } else {
+                    stack.push(link);
+                }
+            }
+        }
+        visited
+    }
+
+    /// The traversal of [`overlaps`](Self::overlaps) on the node shapes,
+    /// for a tree or query with bounds of mixed kinds. Returns the nodes
+    /// popped.
+    fn overlaps_scalar(
+        &self,
+        root: usize,
+        shape: &RegularTileShape,
+        found: &mut Vec<(K, usize, LeafId)>,
+    ) -> u64 {
         let query = shape.to_tile_shape();
         let mut stack = vec![root];
         let mut visited = 0u64;
@@ -292,10 +520,7 @@ impl<K: Ord + Copy> ShapeTree<K> {
                 }
             }
         }
-        self.meter.add_query(visited, found.len() as u64);
-        // A key and shape index identify a leaf, so the order is total.
-        found.sort_unstable_by_key(|&(key, index, _)| (key, index));
-        found.into_iter().map(|(_, _, leaf)| leaf).collect()
+        visited
     }
 
     /// All leaves, from the leftmost to the rightmost (Java `toArray`).
@@ -548,5 +773,142 @@ mod tests {
         let second = tree.insert(2, 0, bx(-20, -20, 20, 20));
         assert_eq!(tree.size(), 1);
         assert!(tree.overlaps(&bx(-100, -100, 100, 100)).contains(&second));
+    }
+
+    /// Random boxes and octagons on a small grid (touching and empty bounds
+    /// are frequent) and near the coordinate limit.
+    fn random_bounds(
+        random: &mut freerouting_geometry::jmath::JavaRandom,
+        octagon: bool,
+    ) -> RegularTileShape {
+        use freerouting_geometry::{CRIT_INT, IntOctagon};
+        let range = if random.next_int(4) == 0 {
+            CRIT_INT
+        } else {
+            40
+        };
+        let x = random.next_int(2 * range + 1) - range;
+        let y = random.next_int(2 * range + 1) - range;
+        // Sometimes empty (the upper corner below or left of the lower one).
+        let w = random.next_int(range / 2) - range / 16;
+        let h = random.next_int(range / 2) - range / 16;
+        let b = IntBox::new(x, y, x.saturating_add(w), y.saturating_add(h));
+        if random.next_int(23) == 0 {
+            return if octagon {
+                RegularTileShape::IntOctagon(IntOctagon::EMPTY)
+            } else {
+                RegularTileShape::IntBox(IntBox::EMPTY)
+            };
+        }
+        if !octagon {
+            return RegularTileShape::IntBox(b);
+        }
+        let mut cut = || random.next_int(range / 4 + 1);
+        let (lx, by, rx, ty) = (b.ll.x, b.ll.y, b.ur.x, b.ur.y);
+        let o = IntOctagon::new(
+            lx,
+            by,
+            rx,
+            ty,
+            lx.saturating_sub(ty).saturating_add(cut()),
+            rx.saturating_sub(by).saturating_sub(cut()),
+            lx.saturating_add(by).saturating_add(cut()),
+            rx.saturating_add(ty).saturating_sub(cut()),
+        );
+        RegularTileShape::IntOctagon(if x % 2 == 0 { o.normalize() } else { o })
+    }
+
+    /// The lane arrays hold each live inner node's children and their
+    /// bounds (P05.1).
+    fn assert_lanes_in_step<K: Ord + Copy>(tree: &ShapeTree<K>) {
+        for (idx, node) in tree.nodes.iter().enumerate() {
+            let Some(node) = node else { continue };
+            let NodeKind::Inner { first, second } = node.kind else {
+                continue;
+            };
+            for (slot, child) in [first, second].into_iter().enumerate() {
+                let bounds = tree.node(child).bounds;
+                assert_eq!(
+                    tree.child_lanes[idx].get(slot),
+                    BoundLanes::from_regular(&bounds)
+                );
+                assert_eq!(tree.links[idx][slot], tree.link_of(child));
+                assert_eq!(tree.node(child).parent, Some(idx));
+            }
+        }
+    }
+
+    /// P05.1: the lane traversal finds the leaves the scalar traversal
+    /// finds and pops as many nodes, on trees that grow and shrink.
+    #[test]
+    fn lane_queries_equal_scalar_queries() {
+        let mut random = freerouting_geometry::jmath::JavaRandom::new(5);
+        for (octagon, directions) in [
+            (true, ShapeBoundingDirections::FortyfiveDegree),
+            (false, ShapeBoundingDirections::Orthogonal),
+        ] {
+            let mut tree: ShapeTree<u32> = ShapeTree::new(directions);
+            let mut leaves = Vec::new();
+            let mut queries = 0u32;
+            for step in 0..3000u32 {
+                if !leaves.is_empty() && random.next_int(3) == 0 {
+                    let at = random.next_int(leaves.len() as i32) as usize;
+                    tree.remove_leaf(leaves.swap_remove(at));
+                } else {
+                    leaves.push(tree.insert(step, 0, random_bounds(&mut random, octagon)));
+                }
+                if step % 50 == 0 {
+                    assert_lanes_in_step(&tree);
+                }
+                let query = random_bounds(&mut random, octagon);
+                assert!(tree.lane_test(&query).is_some());
+                let Some(root) = tree.root else { continue };
+                let mut fast = Vec::new();
+                let mut slow = Vec::new();
+                let popped = match tree.lane_test(&query) {
+                    Some(LaneTest::Octagons) => tree.overlaps_lanes(
+                        root,
+                        &BoundLanes::from_regular(&query),
+                        BoundLanes::octagons_intersect,
+                        PairLanes::octagons_intersect,
+                        &mut fast,
+                    ),
+                    Some(LaneTest::Boxes) => tree.overlaps_lanes(
+                        root,
+                        &BoundLanes::from_regular(&query),
+                        BoundLanes::boxes_intersect,
+                        PairLanes::boxes_intersect,
+                        &mut fast,
+                    ),
+                    None => unreachable!(),
+                };
+                assert_eq!(popped, tree.overlaps_scalar(root, &query, &mut slow));
+                fast.sort_unstable_by_key(|&(key, index, _)| (key, index));
+                slow.sort_unstable_by_key(|&(key, index, _)| (key, index));
+                assert_eq!(fast, slow, "query {query:?}");
+                queries += u32::from(!fast.is_empty());
+            }
+            assert!(queries > 300, "too few queries hit: {queries}");
+            assert!(!tree.mixed_kinds);
+        }
+    }
+
+    /// A bound of the other kind sends queries down the scalar path.
+    #[test]
+    fn mixed_kinds_take_the_scalar_path() {
+        use freerouting_geometry::IntOctagon;
+        let mut tree = ShapeTree::new(ShapeBoundingDirections::Orthogonal);
+        tree.insert(1, 0, bx(0, 0, 10, 10));
+        assert!(tree.lane_test(&bx(0, 0, 1, 1)).is_some());
+        let oct = RegularTileShape::IntOctagon(IntOctagon::new(20, 0, 30, 10, -10, 30, 20, 40));
+        assert!(tree.lane_test(&oct).is_none());
+        tree.insert(2, 0, oct);
+        assert!(tree.lane_test(&bx(0, 0, 1, 1)).is_none());
+        let found: Vec<_> = tree
+            .overlaps(&bx(5, 5, 25, 5))
+            .into_iter()
+            .map(|l| tree.leaf(l).0)
+            .collect();
+        assert_eq!(found, vec![1, 2]);
     }
 }

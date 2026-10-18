@@ -196,6 +196,19 @@ counts on two fixtures; an optimization that claims to keep results identical
 must not move them. The timed loops are `#[inline(never)]` functions named
 `timed_*` so callgrind can isolate them.
 
+## `tools/bench/microbench-ab.sh`: two builds, alternating
+
+```sh
+tools/bench/microbench-ab.sh <base>/freerouting-dev <new>/freerouting-dev \
+    [--kernel overlap,drc] [--runs 9] [--rounds 3] fixtures/Issue145-smoothieboard.dsn ...
+```
+
+Runs the two builds' `microbench` in turns (A B A B ...), so a change of the
+machine's load hits both, and prints per board and kernel the minimum of
+each build over all rounds, the ratio A/B (above 1: B is faster) and the
+highest load seen. It fails if the builds' work counts differ. Added for P05;
+only a run at load at most 1.0 is a timing.
+
 ## `tools/bench/callgrind.sh`: instruction-count baselines
 
 ```sh

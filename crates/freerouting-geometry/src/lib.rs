@@ -24,6 +24,7 @@ pub mod quirks;
 pub mod shapes;
 pub mod side;
 pub mod signum;
+pub mod simd;
 pub mod stoppable;
 pub mod vector;
 
