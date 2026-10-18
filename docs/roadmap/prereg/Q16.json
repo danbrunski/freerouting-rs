@@ -1,0 +1,62 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q16.3-remove-stubs",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/Q16-no-dangling-stubs.md (Q16.3)",
+  "question": "With router.cleanup.remove_stubs=true, does a plugin run with the plugin45 options leave no via_dangling and no track_dangling on canary-pwr and the K09 boards, without raising the KiCad-unconnected count of any board, adding a DRC error, or losing determinism?",
+  "rule": "totals",
+  "rule_text": "N02 (docs/roadmap/tasks/N02-keep-rule-for-defaults.md) with accept no-regress, because the stage is a cleanup that only removes copper the router inserted: the candidate passes against the baseline arm when the KiCad-unconnected total over the distinct boards is not worse than the set's noise (sqrt of the sum of the per-board bands squared). Hard guards, each on every board: kicad_unconnected of the candidate not above the baseline's (a rise of 1 fails, whatever the noise), drc_real not above the baseline's (no new DRC error), via_in_pad = 0, below_minimum = 0, via_dangling = 0 and track_dangling = 0 in the candidate; determinism (D2): the candidate's CLI run on each board is run twice and the two SES files are byte-identical. The handoff DSN row is a canary-pwr variant and counts in canary-pwr's board. pass_rule below is the parser's paired rule, kept only so the file validates; it does not decide.",
+  "totals": {
+    "accept": "no-regress",
+    "signal": ["kicad_unconnected"],
+    "noise": { "canary-pwr": 10 },
+    "min_boards": 3
+  },
+  "noise": {
+    "canary-pwr": 10,
+    "formula": "max(2, 0.05 * the unconnected count of the unrouted input board, by KiCad's DRC)",
+    "source": "as K09.json: N02's canary-pwr variants' +-10; the other boards by the formula until Q12.4 measures them"
+  },
+  "arms": {
+    "plugin45": {
+      "engine": "freerouting-rs release CLI at the tree that lands Q16, through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7; the handoff DSN row routed directly by the CLI with the same flags",
+      "options": {"schema": 3, "profile": "enhanced", "max_passes": 1, "min_trace_width_um": 150.0, "class_widths": {"GND": 0.4, "Power": 0.3, "Power_High": 0.3, "Switch_Node": 0.3}, "fixed_pour_classes": ["Power_High", "Switch_Node"], "drop_pour_nets": ["GND"], "start_ripup_costs": 1500, "sweep": "free", "sweep_passes": 2},
+      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "what": "baseline: Dan's plugin45 run (target/canary-handoff/2026-10-17-plugin45/route-options.json, sha256 cda467a2858a05ba2b210bd7bbbab2eaa32bfd135d6d53c2dd925455ae5ce749), the cleanup unset"
+    },
+    "plugin45+cleanup": {
+      "engine": "as plugin45",
+      "options": {"schema": 3, "profile": "enhanced", "max_passes": 1, "min_trace_width_um": 150.0, "class_widths": {"GND": 0.4, "Power": 0.3, "Power_High": 0.3, "Switch_Node": 0.3}, "fixed_pour_classes": ["Power_High", "Switch_Node"], "drop_pour_nets": ["GND"], "start_ripup_costs": 1500, "sweep": "free", "sweep_passes": 2},
+      "router_extra": "--router.cleanup.remove_stubs=true",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2 --router.cleanup.remove_stubs=true",
+      "what": "candidate: plugin45 plus Q16's final stub cleanup"
+    }
+  },
+  "baseline_arm": "plugin45",
+  "candidate_arm": "plugin45+cleanup",
+  "boards": {
+    "procedure": "as K09.json: canary-pwr is the git archive of canary HEAD e21ee05e hardware/canary-pwr-rev1.0, routed through the plugin path as committed (its hand-laid copper is locked), graded with --schematic-parity; the demos are /usr/share/kicad/demos (KiCad 10.0.7) with tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip (hashes of the stripped boards). The plugin45 handoff DSN (Dan's plugin export of 2026-10-17, a canary-pwr variant) is routed by the CLI and its SES graded by K09's grade_ses.sh (ses_import.py into the canary HEAD project, the same DRC)",
+    "files": {
+      "canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "target/canary-handoff/2026-10-17-plugin45/canary-pwr.dsn (canary-pwr variant)": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "demos/interf_u.kicad_pcb (stripped)": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "demos/CM5_MINIMA_3.kicad_pcb (stripped)": "031b7497386e84c3345d180c8b1c36b07910eb075b81ac6d793ba6f21558449a",
+      "demos/pic_programmer.kicad_pcb (stripped)": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49"
+    }
+  },
+  "grading": "kicad-cli pcb drc --refill-zones --severity-all --format json on the board ImportSpecctraSES saved (canary-pwr and the handoff row also --schematic-parity, inside the canary HEAD project copy); canary's via_in_pad.py (WSL KiCad python). via_dangling and track_dangling are the counts of those violation types; drc_real = error-severity violations other than unconnected_items and starved_thermal, minus the same types on the unrouted input",
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "via_dangling", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "track_dangling", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "kicad_unconnected", "role": "guard", "kind": "int", "direction": "lower"},
+    {"name": "starved_thermal", "role": "report", "kind": "int", "direction": "lower", "compared": false},
+    {"name": "wall_seconds", "role": "report", "kind": "float", "direction": "lower", "compared": false}
+  ],
+  "pass_rule": {"min_boards": 3, "improve_all_but": 1, "max_regress": 0},
+  "keep_rule": "if the candidate passes, N05 adds cleanup.remove_stubs = true to ENHANCED with these numbers; if it fails, the setting stays unset in both profiles and Q16.3's note gives the numbers and the cause (a dangling via the cleanup keeps is named with its net and why: input copper, a fixed item, or the contact guard)",
+  "stop_rule": "one registered run per arm per board, plus the candidate's determinism rerun; no reruns with other settings",
+  "amendments": []
+}

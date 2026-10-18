@@ -234,6 +234,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("special.neck_down", None),
         ("special.stages", None),
         ("special.diagnostics", None),
+        // Q16: unset, which is off.
+        ("cleanup.remove_stubs", None),
         // P02.1: unset, which is off.
         ("debug.audit_incremental", None),
     ];

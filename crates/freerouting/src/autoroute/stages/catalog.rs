@@ -170,6 +170,7 @@ pub const SLOTS: &[SlotDesc] = &[
             "optimizer.improvement_threshold",
             "optimizer.timeout",
             "optimizer_scoring.version",
+            "cleanup.remove_stubs",
         ],
     },
     SlotDesc {

@@ -466,6 +466,11 @@ settings_table! {
             (diagnostics, Vec<String>, opt, None, None, "diagnostics", [], Flat::No, true,
                 "Report-only diagnostics ids (Q06 `verdicts` and rip-stats (Q05)); they change no routes."),
         }
+        cleanup, CleanupPatch, CleanupSettings, "cleanup",
+        "The final cleanup after the last routing or optimizer step (Q16; not a Java section)." {
+            (remove_stubs, bool, opt, None, None, "removeStubs", [], Flat::No, true,
+                "Remove routed vias and traces that connect fewer than two items of their net at the end of the run (unset: off; Q16)."),
+        }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {
             (audit_incremental, bool, opt, None, None, "auditIncremental", [], Flat::No, true,

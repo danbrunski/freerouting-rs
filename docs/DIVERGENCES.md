@@ -291,6 +291,18 @@ IntOctagon's box cutout.
   0.25 mm class's net 0.2322 mm from another net, and `net_class` keeps 0.25 mm
   (`tests/via_clearance_net_class.rs`); an unknown value fails the job, naming the key. Off by
   default until Q14.3's measurement; N05 decides `enhanced`.
+- `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
+  by default and in both profiles (off: Java leaves the stubs of unfinished connections on the
+  board). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
+  that phase's board stages, also after a stop: every trace or via the router inserted during
+  the run (no item of the board as handed to `run_pipeline` is ever removed, locked or not, so a
+  designer's unfinished track stays) that is unfixed, of one net, a tail (Java `Item.isTail`,
+  the DRC's `track_dangling` and `via_dangling`; a plane of the net is a contact, so a via
+  stitching a trace to its plane stays) and whose contacts all touch one another is removed, in
+  item-id order, round after round until a round removes nothing; fixed and protected copper
+  stays, and no complete connection becomes incomplete (`tests/stub_cleanup.rs` on
+  `tests/data/quality/q16-stubs.dsn`). Q16.3 measures it (`docs/roadmap/prereg/Q16.json`); N05
+  decides `enhanced`.
 - `room_order` and `work_unit` (N03.1, restored from P04.1 and P04.2, `board::search`) are
   settings fields Java does not have, unset by default and unset in profile `legacy` (`tree`
   and `nodes`: Java's depth-first room completion and its search-tree nodes-visited work unit,
