@@ -341,6 +341,16 @@ uploaded:** the KiCad repository submission and the GitHub release need Dan's go
   (26200.9711, KiCad 10.0's `python.exe` and wx 3.3.2, a standalone window loading only
   `dropdowns.py`): unreadable before, readable after, light mode unchanged. KiCad's own
   drop-downs keep the bug until KiCad ships a newer wxWidgets.
+- **"Unhandled exception" (Abort / Retry / Ignore) on closing the dialog after a route.** KiCad
+  10's `ImportSpecctraSES(board, path)` deletes the unlocked tracks it replaces, but the
+  action-plugin runner (`PCB_EDIT_FRAME::RunActionPlugin`) snapshots every board item before
+  `Run` and, when `Run` returns, commits the missing ones as removed: a use-after-free that
+  wxWidgets reports with that box (sometimes, depending on what reused the memory). The
+  editor's own SES import avoids it by clearing the undo list first. `import_ses` now takes
+  the unlocked tracks off the board itself (`Remove`, `thisown = 0`) before importing, so the
+  importer deletes none, the runner records them as removed, and Undo restores the old
+  routing. A failed import puts them back. Checked with KiCad 10.0.7's `pcbnew` module:
+  the old tracks stay readable after the import, and the board reads back normally.
 - **Dan's display is at 125% (120 DPI).** Screen captures of the viewer from a DPI-unaware
   process (plain PowerShell) get only the top-left part of the window and look wrongly
   fitted. Call `SetProcessDPIAware()` before `GetWindowRect`/`PrintWindow`.

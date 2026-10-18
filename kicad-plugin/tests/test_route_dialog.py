@@ -183,3 +183,30 @@ def test_every_drop_down_gets_the_dark_list_fix(env, monkeypatch):
     stages = [choice for choice, _ in dialog.stage_choices.values()]
     assert len(stages) == 2
     assert passed == [[dialog.profile] + stages]
+
+
+def test_the_import_deletes_no_track_kicad_still_holds(env, tmp_path):
+    """KiCad's action-plugin runner snapshots every board item before Run and,
+    after it, commits the missing ones as removed. ImportSpecctraSES deletes the
+    tracks it replaces, so those pointers dangled: wx's "Unhandled exception"
+    box on closing the dialog. The plugin detaches the unlocked tracks first, so
+    the importer deletes none and the runner records them as removed (Undo
+    restores them)."""
+    _make_dialog, ui, _work = env
+    plugin = sys.modules["freerouting_rs.plugin"]
+    old, kept = stub_ui.FakeTrack("old"), stub_ui.FakeTrack("locked", locked=True)
+    board = stub_ui.FakeBoard(tmp_path / "x.kicad_pcb", tracks=[old, kept])
+    assert plugin.import_ses(board, tmp_path / "x.ses")
+    assert not old.freed and not kept.freed
+    assert old not in board.tracks and kept in board.tracks
+    assert [t.name for t in board.tracks if t not in (old, kept)] == ["routed"]
+
+
+def test_a_failed_import_puts_the_tracks_back(env, tmp_path):
+    _make_dialog, ui, _work = env
+    plugin = sys.modules["freerouting_rs.plugin"]
+    ui.import_ok = False
+    old = stub_ui.FakeTrack("old")
+    board = stub_ui.FakeBoard(tmp_path / "x.kicad_pcb", tracks=[old])
+    assert not plugin.import_ses(board, tmp_path / "x.ses")
+    assert board.tracks == [old] and not old.freed

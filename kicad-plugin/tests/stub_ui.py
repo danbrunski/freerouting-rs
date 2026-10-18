@@ -186,7 +186,15 @@ def build_pcbnew(ui, dsn_text):
         return True
 
     def import_ses(board, path):
+        """Like KiCad 10's DSN::ImportSpecctraSession: on success, every unlocked
+        track still on the board is deleted (marked `freed`) and the session's
+        tracks are added."""
         ui.imports.append(Path(path))
+        if ui.import_ok and isinstance(board, FakeBoard):
+            for track in [t for t in board.tracks if not t.locked]:
+                board.tracks.remove(track)
+                track.freed = True
+            board.tracks.append(FakeTrack("routed"))
         return ui.import_ok
 
     pcbnew.ActionPlugin = ActionPlugin
@@ -196,10 +204,30 @@ def build_pcbnew(ui, dsn_text):
     return pcbnew
 
 
+class FakeTrack:
+    def __init__(self, name, locked=False):
+        self.name = name
+        self.locked = locked
+        self.freed = False  # deleted by the importer while KiCad still points at it
+
+    def IsLocked(self):
+        return self.locked
+
+
 class FakeBoard:
-    def __init__(self, pcb_path, min_track_nm=150000):
+    def __init__(self, pcb_path, min_track_nm=150000, tracks=()):
         self.path = str(pcb_path)
         self.min_track_nm = min_track_nm
+        self.tracks = list(tracks)
+
+    def GetTracks(self):
+        return list(self.tracks)
+
+    def Remove(self, item):
+        self.tracks.remove(item)
+
+    def Add(self, item):
+        self.tracks.append(item)
 
     def GetFileName(self):
         return self.path

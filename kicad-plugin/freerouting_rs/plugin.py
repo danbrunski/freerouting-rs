@@ -33,11 +33,42 @@ def export_dsn(board, dsn):
     return bool(ok) and dsn.is_file()
 
 
+def detach_unlocked_tracks(board):
+    """Takes the unlocked tracks and vias off the board without deleting them.
+
+    ImportSpecctraSES(board, ...) deletes the tracks it replaces, but KiCad's
+    action-plugin runner holds every board item from before Run and, after Run,
+    commits the missing ones as removed. Deleted, those pointers dangle: wx's
+    "Unhandled exception" box when the dialog closes, or a crash on Undo.
+    Detached first, they stay alive; the importer finds none to delete and the
+    runner records them as removed, so Undo restores them.
+
+    pcbnew's `Remove` leaves the C++ side owning the item only while an action
+    plugin is running; otherwise Python takes it and deletes it on garbage
+    collection, which breaks the board's later reads. `thisown = 0` keeps C++
+    the owner in both cases (the undo list frees them)."""
+    detached = [track for track in board.GetTracks() if not track.IsLocked()]
+    for track in detached:
+        board.Remove(track)
+        track.thisown = 0
+    return detached
+
+
+def reattach(board, tracks):
+    for track in tracks:
+        board.Add(track)
+
+
 def import_ses(board, ses):
+    detached = detach_unlocked_tracks(board)
     try:
         ok = pcbnew.ImportSpecctraSES(board, str(ses))
-    except TypeError:
+    except TypeError:  # older KiCad: the frame's import, which clears the undo list itself
+        reattach(board, detached)
+        detached = []
         ok = pcbnew.ImportSpecctraSES(str(ses))
+    if not ok:
+        reattach(board, detached)
     if ok:
         if hasattr(pcbnew, "UpdateUserInterface"):
             pcbnew.UpdateUserInterface()
