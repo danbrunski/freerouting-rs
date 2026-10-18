@@ -20,8 +20,16 @@
 //! contact's clearance class with itself (`contactItem.clearanceClassIndex()
 //! != contactTrace.clearanceClassIndex()`, the same object), so only the
 //! shove-fixed state and the half width decide there. Under
-//! `router.java_quirks.store_trace_class_self_compare = false` (N06) the
-//! contact's class is compared with the stored trace's.
+//! `router.java_quirks.store_trace_class_self_compare = false` (N06.7) the
+//! contact's class is compared with the stored trace's
+//! (`tests/n06_shove.rs::store_trace_class_switch_both_behaviours`). The end-corner
+//! projection of a rational corner follows `router.java_quirks.rational_perp_projection`
+//! (`tests::rational_end_corner_projection_switch_both_behaviours`).
+//!
+//! With statistics on, `shove_store_trace_class_flips` counts the contacts whose
+//! decision the class switch flips, and `shove_rational_projection_flips` the
+//! end-corner entry points the projection switch changes, in either arm (N06.7's
+//! reachability measurement).
 
 use freerouting_geometry::{FloatPoint, Line, Polyline, PolylineShapeOps, TileShape, TileShapeOps};
 
@@ -326,17 +334,26 @@ impl ShapeTraceEntries {
             }
             match &contact.kind {
                 ItemKind::Trace(contact_trace) => {
+                    let java_blocks = board.is_shove_fixed(contact)
+                        || contact_trace.half_width != trace.half_width;
+                    let class_differs = contact.clearance_class() != trace_item.clearance_class();
                     // PARITY(quirk, java_quirks.store_trace_class_self_compare):
                     // Java compares the contact's class with itself here
                     // (ShapeTraceEntries.java:385); `false` compares it with the
                     // stored trace's.
-                    let class_differs = !board.java_quirks().store_trace_class_self_compare
-                        && contact.clearance_class() != trace_item.clearance_class();
-                    if (board.is_shove_fixed(contact)
-                        || contact_trace.half_width != trace.half_width
-                        || class_differs)
+                    let fixed_blocks =
+                        !board.java_quirks().store_trace_class_self_compare && class_differs;
+                    if !java_blocks
+                        && class_differs
+                        && crate::run_stats::enabled()
                         && offset_shape.contains_inside(end_corner)
                     {
+                        // N06.7 reachability: the switch decides this contact.
+                        crate::run_stats::record_n06(
+                            crate::run_stats::Counter::ShoveStoreTraceClassFlips,
+                        );
+                    }
+                    if (java_blocks || fixed_blocks) && offset_shape.contains_inside(end_corner) {
                         self.found_obstacle = Some(contact_id);
                         return false;
                     }
@@ -381,10 +398,28 @@ impl ShapeTraceEntries {
         if contact_count == 1 && store_end_corner {
             // PARITY(quirk, java_quirks.rational_perp_projection): a rational end
             // corner is projected with Java's formula unless the switch is `false`.
-            if let Some(projection) = offset_shape
-                .nearest_border_point_with(end_corner, board.java_quirks().rational_perp_projection)
-                && let Some(projection_side) = offset_shape.contains_on_border_line_no(&projection)
+            let java_projection = board.java_quirks().rational_perp_projection;
+            let project = |java: bool| {
+                let projection = offset_shape.nearest_border_point_with(end_corner, java)?;
+                let side = offset_shape.contains_on_border_line_no(&projection)?;
+                Some((projection, side))
+            };
+            let found = project(java_projection);
+            if matches!(end_corner, freerouting_geometry::Point::Rational(_))
+                && crate::run_stats::enabled()
             {
+                // N06.7 reachability: an entry point the switch moves, adds or drops
+                // (an integer corner projects the same under both values).
+                let key = |f: &Option<(freerouting_geometry::Point, usize)>| {
+                    f.as_ref().map(|(p, side)| (*side, p.to_float()))
+                };
+                if key(&project(!java_projection)) != key(&found) {
+                    crate::run_stats::record_n06(
+                        crate::run_stats::Counter::ShoveRationalProjectionFlips,
+                    );
+                }
+            }
+            if let Some((projection, projection_side)) = found {
                 // May not be correct: the trace may have no line suitable as
                 // the end line of the substitute trace.
                 let trace_line_no = if end == 0 {
@@ -819,5 +854,99 @@ impl ShapeTraceEntries {
                 }),
             ));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::io::specctra::{BoardReadResult, read_board_from_str};
+    use crate::settings::JavaQuirks;
+    use freerouting_geometry::{IntBox, IntPoint, Point};
+
+    fn line(a: (i32, i32), b: (i32, i32)) -> Line {
+        Line::new(IntPoint { x: a.0, y: a.1 }, IntPoint { x: b.0, y: b.1 })
+    }
+
+    /// N06 `rational_perp_projection` in `storeTrace`: trace A ends at the rational
+    /// corner (5001, 5000.5), where trace B of its net starts, inside the shape
+    /// (4800, 4800)-(5200, 5200), offset by half width and clearance to
+    /// (2683, 2683)-(7317, 7317). The exact projection (`false`) is (7317, 5000.5) on
+    /// the right border (edge 1); Java's formula (`true`) misses every border line, so
+    /// the entry is the nearest corner (7317, 7317), on edge 2.
+    #[test]
+    fn rational_end_corner_projection_switch_both_behaviours() {
+        let BoardReadResult::Success { board, .. } = read_board_from_str(include_str!(
+            "../../../../fixtures/scoring-perfect-two-pin.dsn"
+        )) else {
+            panic!("fixture")
+        };
+        let mut board = *board;
+        let pin = board.items().find(|i| i.is_pin()).expect("pin");
+        let (net, class) = (pin.net_numbers()[0], pin.clearance_class());
+        let mut insert = |lines: &[Line]| {
+            board
+                .insert_trace_without_cleaning(
+                    Polyline::new(lines),
+                    0,
+                    100,
+                    &[net],
+                    class,
+                    FixedState::Unfixed,
+                )
+                .expect("trace")
+        };
+        let a = insert(&[
+            line((3000, 0), (3000, 1)),
+            line((4000, 4500), (6000, 5500)),
+            line((5001, 0), (5001, 1)),
+        ]);
+        let b = insert(&[
+            line((5001, 0), (5001, 1)),
+            line((5000, 5001), (5002, 5000)),
+            line((6000, 0), (6000, 1)),
+        ]);
+        let corner = board.item(a).unwrap().as_trace().unwrap().last_corner();
+        assert!(matches!(corner, Point::Rational(_)));
+        assert_eq!(corner.to_float(), FloatPoint::new(5001.0, 5000.5));
+        assert_eq!(
+            board.trace_end_contacts(a).into_iter().collect::<Vec<_>>(),
+            [b]
+        );
+        let shape = TileShape::IntBox(IntBox::new(4800, 4800, 5200, 5200));
+        let mut end_entries = Vec::new();
+        for java in [true, false] {
+            board.set_java_quirks(
+                JavaQuirks::JAVA
+                    .with("rational_perp_projection", java)
+                    .unwrap(),
+            );
+            let mut entries = ShapeTraceEntries::new(shape.clone(), 0, &[], 1, None);
+            assert!(entries.store_items(&board, [a], false, false));
+            // The entry of A's last line: the end-corner projection.
+            let last_line = board
+                .item(a)
+                .unwrap()
+                .as_trace()
+                .unwrap()
+                .polyline
+                .lines()
+                .len()
+                - 1;
+            let found: Vec<(usize, FloatPoint)> = entries
+                .entries
+                .iter()
+                .filter(|e| e.trace == a && e.trace_line_no == last_line)
+                .map(|e| (e.edge_index, e.entry_approx))
+                .collect();
+            end_entries.push(found);
+        }
+        assert_eq!(
+            end_entries,
+            [
+                vec![(2, FloatPoint::new(7317.0, 7317.0))],
+                vec![(1, FloatPoint::new(7317.0, 5000.5))]
+            ]
+        );
     }
 }

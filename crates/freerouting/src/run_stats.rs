@@ -109,10 +109,18 @@ pub enum Counter {
     DsnUnitIgnored,
     /// N06.10 reachability measurement.
     RouteResultZeroTestChanges,
+    /// N06.7: side-0 in-front-of-pad tests whose result `in_front_of_pad_typo` flips.
+    ShoveInFrontOfPadTypoFlips,
+    /// N06.7: side-0 in-front-of-pad tests whose result `in_front_of_pad_side0_flank` flips.
+    ShoveInFrontOfPadFlankFlips,
+    /// N06.7: end-corner contact tests whose result `store_trace_class_self_compare` flips.
+    ShoveStoreTraceClassFlips,
+    /// N06.7: end-corner entry points that `rational_perp_projection` changes.
+    ShoveRationalProjectionFlips,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 26] = [
+pub const COUNTERS: [Counter; 30] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -139,6 +147,10 @@ pub const COUNTERS: [Counter; 26] = [
     Counter::DsnShapeBbox,
     Counter::DsnUnitIgnored,
     Counter::RouteResultZeroTestChanges,
+    Counter::ShoveInFrontOfPadTypoFlips,
+    Counter::ShoveInFrontOfPadFlankFlips,
+    Counter::ShoveStoreTraceClassFlips,
+    Counter::ShoveRationalProjectionFlips,
 ];
 
 impl Counter {
@@ -171,6 +183,10 @@ impl Counter {
             Counter::DsnShapeBbox => "dsn_shape_bbox_reached",
             Counter::DsnUnitIgnored => "dsn_unit_ignored_reached",
             Counter::RouteResultZeroTestChanges => "route_result_zero_test_changes",
+            Counter::ShoveInFrontOfPadTypoFlips => "shove_in_front_of_pad_typo_flips",
+            Counter::ShoveInFrontOfPadFlankFlips => "shove_in_front_of_pad_flank_flips",
+            Counter::ShoveStoreTraceClassFlips => "shove_store_trace_class_flips",
+            Counter::ShoveRationalProjectionFlips => "shove_rational_projection_flips",
         }
     }
 }

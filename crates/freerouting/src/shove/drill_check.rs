@@ -9,7 +9,19 @@
 //! Java bug kept on purpose: `inFrontOfPad` for from side 0 compares
 //! `Math.min(lineA.x + lineA.y, lineB.x + lineB.x)` (`ForcedPadRouter.java:78`)
 //! where `lineB.x + lineB.y` is meant; [`in_front_of_pad`] keeps the typo
-//! (`in_front_of_pad_keeps_java_typo`).
+//! (`in_front_of_pad_keeps_java_typo`). [`in_front_of_pad_with`] fixes it under
+//! `router.java_quirks.in_front_of_pad_typo = false` (N06.7).
+//!
+//! Java quirk kept (a judgement call, N06's (c) row `in_front_of_pad_side0_flank`):
+//! side 0's second flank clause tests `Math.min(lineA.x + lineA.y, lineB.x + lineB.y)`
+//! against the upper right diagonal (`ForcedPadRouter.java:86`), where sides 2, 4 and
+//! 6 test the extreme that reaches past their diagonal (`max` for a `>=` bound).
+//! `router.java_quirks.in_front_of_pad_side0_flank = false` takes `max`
+//! (`tests/n06_shove.rs::side0_flank_switch_both_behaviours`).
+//!
+//! With statistics on, the counters `shove_in_front_of_pad_typo_flips` and
+//! `shove_in_front_of_pad_flank_flips` count the side-0 tests whose result the other
+//! value of the switch would flip, in either arm (N06.7's reachability measurement).
 
 use freerouting_geometry::{
     Direction, IntPoint, IntVector, Line, Point, Polyline, PolylineShapeOps, TileShape,
@@ -437,8 +449,14 @@ pub fn in_front_of_pad(
 
 /// [`in_front_of_pad`] with the switches `router.java_quirks.in_front_of_pad_typo`
 /// (`false` takes `min(a.x + a.y, b.x + b.y)` for side 0) and
-/// `in_front_of_pad_side0_flank` (N06.12 decides its fix; both values keep Java's
-/// flank clause until then).
+/// `in_front_of_pad_side0_flank` (`false` takes `max(a.x + a.y, b.x + b.y)` in side 0's
+/// second flank clause, as sides 2, 4 and 6 do; N06.7 registers it as a reported arm,
+/// N06.12 records its outcome).
+///
+/// With statistics on, a side-0 test also evaluates each switch's other value and
+/// counts the tests whose result it flips (`shove_in_front_of_pad_typo_flips`,
+/// `shove_in_front_of_pad_flank_flips`, N06.7's reachability counters); the returned
+/// value is always the configured one.
 pub fn in_front_of_pad_with(
     line: &Line,
     pad_shape: &TileShape,
@@ -453,6 +471,35 @@ pub fn in_front_of_pad_with(
     let Some(pad) = pad_shape.bounding_octagon() else {
         return true;
     };
+    let typo = quirks.in_front_of_pad_typo;
+    let flank = quirks.in_front_of_pad_side0_flank;
+    let eval = |typo: bool, flank: bool| {
+        in_front_of_octagon(line, &pad, from_side, width, with_sides, typo, flank)
+    };
+    let result = eval(typo, flank);
+    if from_side == 0 && crate::run_stats::enabled() {
+        use crate::run_stats::{Counter, record_n06};
+        if eval(!typo, flank) != result {
+            record_n06(Counter::ShoveInFrontOfPadTypoFlips);
+        }
+        if eval(typo, !flank) != result {
+            record_n06(Counter::ShoveInFrontOfPadFlankFlips);
+        }
+    }
+    result
+}
+
+/// The octagon half of [`in_front_of_pad_with`], with the two side-0 switches as
+/// plain flags (`true` = Java's formula).
+fn in_front_of_octagon(
+    line: &Line,
+    pad: &freerouting_geometry::IntOctagon,
+    from_side: i32,
+    width: i32,
+    with_sides: bool,
+    typo: bool,
+    flank: bool,
+) -> bool {
     let (a, b) = (line.a(), line.b());
     let (ax, ay, bx, by) = (
         i64::from(a.x),
@@ -485,20 +532,21 @@ pub fn in_front_of_pad_with(
         0 => {
             // PARITY(quirk, java_quirks.in_front_of_pad_typo): Java's typo
             // `lineB.x + lineB.x` (ForcedPadRouter.java:78).
-            let side0_min_sum = if quirks.in_front_of_pad_typo {
+            let side0_min_sum = if typo {
                 f((ax + ay).min(bx + bx))
             } else {
                 min_sum
             };
             let mut result =
                 min_y >= top + w || max_diff <= ul - diag || side0_min_sum >= ur + diag;
-            // PARITY(quirk, java_quirks.in_front_of_pad_side0_flank): the flank
-            // clause below takes `min` where sides 2, 4 and 6 take `max`
-            // (ForcedPadRouter.java:86); N06.12 decides the fix.
-            let _java_side0_flank = quirks.in_front_of_pad_side0_flank;
+            // PARITY(quirk, java_quirks.in_front_of_pad_side0_flank): the second
+            // flank clause takes `min(x + y)` where sides 2, 4 and 6 test the
+            // extreme past their diagonal (ForcedPadRouter.java:86); `false` takes
+            // `max`.
+            let flank_sum = if flank { min_sum } else { max_sum };
             if with_sides && !result {
                 result = max_x <= left - w && min_diff <= ul - diag
-                    || min_x >= right + w && min_sum >= ur + diag;
+                    || min_x >= right + w && flank_sum >= ur + diag;
             }
             result
         }

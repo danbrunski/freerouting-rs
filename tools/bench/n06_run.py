@@ -12,6 +12,24 @@ import shlex
 import subprocess
 
 
+def final_statistics(manifest):
+    """The routed board's unrouted connections, clearance violations and vias, from
+    the result manifest's `board_statistics` (Freerouting's board model); empty when
+    the manifest has none. A batch whose sessions differ is judged on these (N06.7)."""
+    try:
+        stats = json.loads(manifest.read_text()).get('board_statistics') or {}
+    except (OSError, ValueError):
+        return {}
+    def total(*keys):
+        value = stats
+        for key in keys:
+            value = value.get(key) if isinstance(value, dict) else None
+        return value
+    return {'unrouted': total('connections', 'incomplete_count'),
+            'clearance_violations': total('clearance_violations', 'total_count'),
+            'vias': total('vias', 'total_count')}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('registration', type=Path)
@@ -50,6 +68,7 @@ def main():
             results.append({'board': board, 'arm': arm,
                             'session_differences': int(content != baseline),
                             'counts': counters,
+                            'statistics': final_statistics(manifest),
                             'manifest': str(manifest)})
             (args.out / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')
     if any(row['session_differences'] for row in results):

@@ -685,7 +685,12 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   `min(lineA.x + lineA.y, lineB.x + lineB.x)` (`ForcedPadRouter.java:78`; test
   `in_front_of_pad_keeps_java_typo`), and `ShapeTraceEntries.storeTrace` compares a
   contact trace's clearance class with itself, so only the shove-fixed state and the half
-  width decide there (`shove::trace_entries` module docs).
+  width decide there (`shove::trace_entries` module docs). Each has its switch,
+  `router.java_quirks.in_front_of_pad_typo` and `store_trace_class_self_compare`, with
+  `rational_perp_projection` for the end-corner projection; side 0's second flank clause
+  (`min` where sides 2, 4 and 6 take `max`, `ForcedPadRouter.java:86`) is kept behind
+  `in_front_of_pad_side0_flank`. All four are `true` (Java) in both profiles; N06.7
+  measures them (`tests/n06_shove.rs`).
 - `ForcedPadRouter.calcCheckShapeForFromSide` with a rational shape centre (Java's
   `Line(Point, Direction)` only warns and builds a rational line) or a polyline whose offset
   shape is `null` (Java then throws in `checkTraceShape`): the port skips that side

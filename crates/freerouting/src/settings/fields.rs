@@ -576,7 +576,7 @@ settings_table! {
             (insert_stale_trace_object, bool, opt, None, None, "insertStaleTraceObject", [], Flat::No, true,
                 "connectToTrace uses the start or target trace after the insertion split it: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
             (in_front_of_pad_side0_flank, bool, opt, None, None, "inFrontOfPadSide0Flank", [], Flat::No, true,
-                "Side 0's flank clause takes min where the other sides take max: `true` (unset) keeps this Java bug; its fix (N06.12) has not landed, so `false` changes nothing yet."),
+                "Side 0's second flank clause takes min(x+y) where sides 2, 4 and 6 take the extreme past their diagonal (max here): `true` (unset) keeps this Java quirk, `false` takes max (an inferred fix, measured as an arm of N06.7; N06.12 records its outcome)."),
             (opt_threshold_fraction, bool, opt, None, None, "optThresholdFraction", [], Flat::No, true,
                 "An optimizer threshold in (0, 0.1) is read as a fraction and multiplied by 100: `true` (unset) keeps this Java bug, `false` fixes it (N06.12)."),
             (rules_unknown_layer_scope, bool, opt, None, None, "rulesUnknownLayerScope", [], Flat::No, true,

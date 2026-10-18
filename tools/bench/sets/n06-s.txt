@@ -1,0 +1,14 @@
+# N06.7: batch S, the shove's kept Java bugs (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.7.json: router.java_quirks.in_front_of_pad_typo,
+# store_trace_class_self_compare and rational_perp_projection, each alone and together, plus
+# the reported (c) arm in_front_of_pad_side0_flank, against Java's behaviour (all four true).
+# DSN fixtures, routed by tools/bench/n06_run.py under profile legacy; N06.10/N06.11's three
+# small boards, and two with several net classes (store_trace_class_self_compare needs
+# same-net traces of different classes):
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+fixtures/Issue676-ch32v-tx118s.dsn
+fixtures/Issue313-FastTest.dsn
+fixtures/Issue027-zMRETestFixture.dsn
+# canary-pwr through the KiCad plugin path (the registration's plugin_canary; outside
+# n06_run.py): canary hardware/canary-pwr-rev1.0 at canary 9511d9a.

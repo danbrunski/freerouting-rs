@@ -364,7 +364,7 @@ These are marked or look like quirks but keep no bug:
       `any_angle_skip_length_squared`, `route_connect_inner_break`. Each carries
       `// PARITY(quirk, java_quirks.<id>):`; every older `PARITY(quirk)` marker of a (b)/(c) row
       got its id (the (a) rows' markers are N06.2's).
-    - [ ] Read sites deferred (16, now 10 after N06.10 and N06.11 wired theirs; the switch exists and reaches the code, `false` changes
+    - [ ] Read sites deferred (16, now 9 after N06.10, N06.11 and N06.7 wired theirs; N06.7 wired `in_front_of_pad_side0_flank`; the switch exists and reaches the code, `false` changes
       nothing yet, and its doc line says so): `simplex_prev_division_line`,
       `octagon_box_cutout_branch3` (both reach the cutouts, N06.4 writes the fixes after its
       invariant test; the search tree's area shapes in `board/search/mod.rs` still call
@@ -419,10 +419,59 @@ These are marked or look like quirks but keep no bug:
   - **Accept:**
     - the batch is measured on boards with fanout on;
     - the done note gives how many fanout retries succeed before and after.
-- [ ] **N06.7 — Batch S, shove:** `in_front_of_pad_typo`, `store_trace_class_self_compare`,
+- [~] **N06.7 — Batch S, shove:** `in_front_of_pad_typo`, `store_trace_class_self_compare`,
   `rational_perp_projection` (the arm with `in_front_of_pad_side0_flank` follows if the batch
   is accepted).
   - **Accept:** the batch is measured; the (c) arm is measured or explained.
+  - *Partial 2026-10-18:* code, both-behaviour tests, reachability counters and the
+    registration are done; heavy run pending (commands below). Defaults stay `true` (Java)
+    in both profiles; `ENHANCED` is unchanged.
+    - [x] The three (b) switches were wired by N06.3 (`shove/drill_check.rs`
+      `in_front_of_pad_with`, `shove/trace_entries.rs` `store_end_corner`, geometry
+      `perpendicular_projection_with`). The (c) switch `in_front_of_pad_side0_flank` is now
+      wired too: under `false` side 0's second flank clause takes `max(x + y)`
+      (`ForcedPadRouter.java:86` takes `min`, where sides 2, 4 and 6 test the extreme past
+      their diagonal). Every `// PARITY(quirk, java_quirks.<id>)` marker is kept.
+    - [x] Both behaviours, one test per switch, all pass:
+      `shove::drill_check::tests::in_front_of_pad_keeps_java_typo` (typo);
+      `tests/n06_shove.rs::side0_flank_switch_both_behaviours` (flank: Java not in front,
+      fixed in front; sides 1-7 and `with_sides = false` unchanged);
+      `tests/n06_shove.rs::store_trace_class_switch_both_behaviours` (two same-net traces of
+      different classes meeting inside the shape: Java stores, `false` stops at the contact;
+      same classes: both store); `shove::trace_entries::tests::rational_end_corner_projection_switch_both_behaviours`
+      (rational end corner (5001, 5000.5): Java's entry is the corner (7317, 7317) on edge 2,
+      `false` the exact foot (7317, 5000.5) on edge 1); geometry
+      `rational_perpendicular_projection_switch_both_behaviours` (unchanged).
+    - [x] Reachability counters (`run_stats`, in `--stats json` `total.counts`, counted in
+      either arm, only with statistics on, the returned value always the configured one):
+      `shove_in_front_of_pad_typo_flips` and `shove_in_front_of_pad_flank_flips` (side-0
+      tests whose result the switch's other value flips), `shove_store_trace_class_flips`
+      (contacts not blocked by Java's test, of another class, with the end corner inside),
+      `shove_rational_projection_flips` (rational end corners whose entry point, side and
+      position, differs between the two projections). Pinned by
+      `tests/n06_shove.rs::in_front_of_pad_counters_count_flips_in_both_arms`,
+      `rational_projection_counter_counts_in_both_arms` (1 for a rational corner, 0 for an
+      integer one) and the class test above.
+    - [x] Registered before any number: `docs/roadmap/prereg/N06.7.json` (sha256
+      `5f9b910c8a0258c0aa5fc29b0acde6b788626b481169b79ece235acaaeda94a4`) and
+      `tools/bench/sets/n06-s.txt`, pinned by `crates/freerouting-dev/tests/prereg_n06_7.rs`
+      (4 tests pass). Arms: `baseline`, each switch alone, `all` (the verdict pair with
+      `baseline`) and the reported (c) arm `all_flank`, judged against `all` only if the batch
+      is accepted. Rows: Issue026-J2_reference, bm08, Issue676 (N06.10/11's), Issue313-FastTest
+      and Issue027-zMRETestFixture (several net classes), profile `legacy`, default passes,
+      plus canary-pwr through the plugin path. Rule: reachability (every flip counter 0 and
+      sessions identical: accepted on tests), else N02 totals, no-regress, set noise 10.95.
+      `tools/bench/n06_run.py` now also copies each run's final `unrouted`,
+      `clearance_violations` and `vias` (the manifest's `board_statistics`) into
+      `summary.json`; a smoke run on `fixtures/scoring-perfect-two-pin.dsn` (debug build, 6
+      arms) wrote them and the four counters.
+    - [ ] Heavy run pending (orchestrator, release build of this tree):
+      `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.7.json --out target/orchestrator/n06-s`
+      (30 runs; it exits non-zero after the last run if a session differs, and then the
+      totals rule applies to `summary.json`'s `statistics`). Then the canary-pwr plugin row as
+      in N06.10 (the registration's `plugin_canary`: export once, route the 6 arms with the
+      exported args plus `--router.profile=legacy` and the arm's four flags, grade each
+      distinct session with canary's `grade.sh`).
 - [ ] **N06.8 — Batch P, pull-tight:**
   - `smooth_loses_trace`: test the failure conditions before removing, or re-insert the old
     trace;
