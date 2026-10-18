@@ -66,6 +66,15 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
 `capped_types`, `copper`, `originals_unchanged`, `exit_code`; or `graded:
 false` with a `reason`.
 
+`tidiness` (Q15.2): when `freerouting-dev` is built (`FREEROUTING_DEV`, default
+`target/release/freerouting-dev`), `grade.sh` also scores the SES the engine wrote
+with `freerouting-dev tidy` and adds `connections`, `skipped`, `nets` and
+`measures` (median and p90 of `detour`, `bends_per_10mm`, `acute`, `jogs`, `vias`
+per connection) to the summary. It is reported, never part of the verdict or the
+exit status, and costs no KiCad call. `tools/krt-h2h/grade_routed.sh` does the same
+for the routed `.kicad_pcb` of an engine that writes a board. The definitions are in
+[tools/bench/README.md](../bench/README.md#freerouting-dev-tidy-how-tidy-a-route-is-q15).
+
 Exit status: **0** graded clean (no router-attributable DRC item and no copper
 below the board minimums), **1** router-attributable items, **2** not graded
 (no `kicad-cli`, no `pcbnew`, `kicad-cli` and `pcbnew` of different versions,

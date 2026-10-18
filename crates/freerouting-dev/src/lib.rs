@@ -33,6 +33,12 @@
 //!   over the runs and the work counts, which every run must repeat
 //!   ([`microbench`], P01.3).
 //!
+//! - `tidy board.dsn routed.ses|routed.kicad_pcb [--json out.json] [--connections]`:
+//!   the median and 90th percentile of five tidiness measures per routed
+//!   connection (detour, bends per 10 mm, acute corners, jogs, vias), from the
+//!   copper alone ([`tidy`], Q15.1). Bench records and `gate collect` carry
+//!   the same measures.
+//!
 //! The manifest of the out-of-repo corpus of open KiCad boards
 //! (`tools/corpus/`, F03.3) is read by [`corpus`], which also refuses any
 //! committed board whose licence is not allow-listed.
@@ -62,6 +68,10 @@ pub mod json_read;
 pub mod microbench;
 pub mod ses_diff;
 pub mod session_geometry;
+pub mod tidy;
+pub mod tidy_copper;
+pub mod tidy_geometry;
+pub mod tidy_input;
 pub mod widths;
 
 use std::path::Path;

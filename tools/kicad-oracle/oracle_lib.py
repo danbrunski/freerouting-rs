@@ -262,6 +262,17 @@ def summarize(routed_drc, unrouted_drc, copper, meta):
     return summary, exit_code
 
 
+def add_tidiness(summary, tidy):
+    """Q15.2: adds the `freerouting-dev tidy` score (its `connections`, `skipped` and
+    `measures`: median and p90 of detour, bends_per_10mm, acute, jogs, vias) to a summary as
+    `tidiness`. Reported, not part of the verdict or the exit code."""
+    summary = dict(summary)
+    summary["tidiness"] = {
+        key: tidy[key] for key in ("connections", "skipped", "nets", "measures") if key in tidy
+    }
+    return summary
+
+
 def not_graded(reason, meta=None):
     summary = dict(meta or {})
     summary.update({"graded": False, "reason": reason, "exit_code": EXIT_NOT_GRADED})
@@ -292,6 +303,7 @@ USAGE = """usage: python3 oracle_lib.py COMMAND ...
   class-widths IN.dsn OUT.json
   force-errors PROJECT.kicad_pro                  rewrites it in place
   summarize ROUTED_DRC.json INPUT_DRC.json COPPER.json META.json OUT.json
+  add-tidiness SUMMARY.json TIDY.json            adds `tidiness`; a missing TIDY.json changes nothing
   not-graded REASON OUT.json [META.json]"""
 
 
@@ -334,6 +346,11 @@ def main(argv):
                 )
             )
         return code
+    elif command == "add-tidiness" and len(args) == 2:
+        summary, tidy = _load_json(args[0]), _load_json(args[1])
+        if summary is not None and tidy is not None:
+            with open(args[0], "w", encoding="utf-8") as f:
+                json.dump(add_tidiness(summary, tidy), f, indent=2)
     elif command == "not-graded" and len(args) in (2, 3):
         meta = _load_json(args[2], {}) if len(args) == 3 else {}
         with open(args[1], "w", encoding="utf-8") as f:

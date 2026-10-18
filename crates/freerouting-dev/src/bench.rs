@@ -31,6 +31,10 @@
 //!   and parity sweeps; timing runs keep `--jobs 1` and the quiet-machine
 //!   rule.
 //!
+//! - Q15.2: each result also gets its tidiness score ([`crate::tidy`]: the
+//!   median and 90th percentile of detour, bends per 10 mm, acute corners,
+//!   jogs and vias per connection) as the run's `tidiness` object.
+//!
 //! The report (`bench.json` and `bench.md`) is written by
 //! [`crate::bench_report`].
 
@@ -281,6 +285,8 @@ pub struct RunRecord {
     pub rip_stats: Option<freerouting::drc::json::JsonValue>,
     /// Q02.1's delivered widths of the SES imported into the board.
     pub widths: Option<freerouting::quality::neckdown::width_report::WidthReport>,
+    /// Q15.2's tidiness of the SES imported into the board.
+    pub tidiness: Option<crate::tidy::TidyReport>,
 }
 
 /// Starts `args` in `dir` with stdout and stderr in `log`, waits at most
@@ -656,6 +662,10 @@ fn run_board(
                 (Ok(board), Ok(_)) => measure_widths(board, &ses).ok(),
                 _ => None,
             };
+            let tidiness = match (&board, &measured) {
+                (Ok(board), Ok(_)) => crate::tidy::tidy_session(board, &ses).ok(),
+                _ => None,
+            };
             engine_result.runs.push(RunRecord {
                 run,
                 wall_seconds,
@@ -668,6 +678,7 @@ fn run_board(
                 statistics: measured.ok(),
                 rip_stats: rip_stats.then(|| read_rip_stats(&result_json)).flatten(),
                 widths,
+                tidiness,
             });
         }
         board_result.engines.push(engine_result);

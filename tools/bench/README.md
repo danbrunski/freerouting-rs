@@ -54,6 +54,11 @@ target/release/freerouting-dev bench --set tools/bench/sets/benchmark.txt \
   `ses-diff`'s statistics: incomplete connections, clearance violations,
   vias, trace length in mm and bends. Java's `WORK_LIMIT_CUTOFF` log lines
   (from `a773a70ec` on) are counted per run.
+- **Tidiness (Q15.2).** Every measured SES is also scored by
+  `freerouting-dev tidy`'s rules (below) and kept as the run's `tidiness`
+  object in `bench.json`; `bench.md` gets a second table with the connections
+  scored and `median / p90` of each measure. A run without a score (the SES
+  did not import) has no `tidiness` member.
 - **Rip statistics (Q05.1).** `--rip-stats` adds
   `--router.special.diagnostics=rip-stats --result-json <run>.result.json`
   to every Rust run and keeps the manifest's `freerouting-rip-stats/1`
@@ -69,6 +74,89 @@ target/release/freerouting-dev bench --set tools/bench/sets/benchmark.txt \
   Each board's SES files and logs are in `<out>/<board>/`.
 - **Exit status.** 0 when it ran, 3 when it refused or stopped because the
   machine was busy, 2 on an error.
+
+## `freerouting-dev tidy`: how tidy a route is (Q15)
+
+```sh
+target/release/freerouting-dev tidy board.dsn routed.ses|routed.kicad_pcb \
+  [--json out.json|-] [--connections]
+```
+
+Scores the routed copper of a board with five measures per **connection**
+(a pair of pins joined by routed copper), then reports the **median** and
+**90th percentile** over the board's connections. It reads a session (this
+port's, Java's, KiCad's) or a `.kicad_pcb` (KiCadRoutingTools writes a board,
+not a session), so one tool scores every router. Nothing is judged by eye and
+nothing is a keep rule: the numbers are for reports and for X13's comparison.
+
+| measure | definition |
+|---|---|
+| `detour` | length of the copper path over the distance between the two pin centres; 1 is a straight track |
+| `bends_per_10mm` | direction changes of more than 10 degrees on the path, per 10 mm of copper |
+| `acute` | bends sharper than 90 degrees (a turn of more than 90) on the path; a right angle is not acute |
+| `jogs` | segments between two bends that are shorter than 2 track widths |
+| `vias` | vias on the path, plus the through-hole pins it changes layer in |
+
+- **Connections.** For each connected piece of copper the connections are the
+  edges of a minimum spanning tree of its pins, the distance between two pins
+  being the length of the shortest copper path between them. A two-pin net is
+  one connection; a Y of three pins is its two shorter legs. Copper that
+  reaches no second pin, pins joined only through a plane or pour, and pairs
+  at one point (a via in a pad joining two stacked pads) make no connection
+  (`skipped` counts the zero-length pairs). Details and tie-breaks in
+  `crates/freerouting-dev/src/tidy_copper.rs`.
+- **Bends, acute corners, jogs.** `tidy_geometry.rs`. 10 degrees is below any
+  corner a router makes on purpose (22.5 and 45 degrees are the smallest) and
+  above the 5.7 degrees between two chords of an approximated arc, so a smooth
+  arc is not a row of bends. Vias and pads end a run: the turn where a path
+  changes layer is not a bend.
+- **Percentiles.** The median of an even count is the mean of the two middle
+  values; the 90th percentile is the value at position `ceil(0.9 n)` of the
+  sorted list.
+- **`.kicad_pcb` input.** It must be the board the DSN was exported from: the
+  reader's frame is KiCad's DSN frame (um, y negated). Segments, arcs and vias
+  are read; a via whose padstack the DSN lacks takes the DSN's first via type
+  (reported on stderr). Zones are ignored.
+- **All copper counts**, including wiring the DSN already holds.
+
+### The record (`freerouting-tidy-1`)
+
+`--json` writes (and bench records embed, without `format` and
+`connection_list`):
+
+```json
+{
+  "format": "freerouting-tidy-1",
+  "connections": 120,
+  "skipped": 0,
+  "nets": 87,
+  "bend_degrees": 10.0000,
+  "jog_widths": 2.0000,
+  "measures": {
+    "detour":         { "median": 1.0840, "p90": 1.6120 },
+    "bends_per_10mm": { "median": 1.1000, "p90": 3.0000 },
+    "acute":          { "median": 0.0000, "p90": 0.0000 },
+    "jogs":           { "median": 0.0000, "p90": 1.0000 },
+    "vias":           { "median": 0.0000, "p90": 2.0000 }
+  }
+}
+```
+
+Numbers have four decimals. A measure over no connections is left out.
+`--connections` adds `connection_list`: one object per connection (`net`,
+`from`, `to` as `component-pin`, `length_mm`, `straight_mm`, `detour`,
+`bends`, `bends_per_10mm`, `acute`, `jogs`, `vias`).
+
+### Where the measures appear
+
+- `bench.json`: the run's `tidiness` object (above); `bench.md`: a table.
+- `freerouting-dev gate collect`: the arm values `tidy_<measure>_median` and
+  `tidy_<measure>_p90` (`tidy_detour_median`, `tidy_bends_per_10mm_p90`, ...)
+  from the bench run's `tidiness`, or the oracle summary's when the bench has
+  none. The gate prints them with its row lines (it compares the arms), but
+  they are `report` metrics: not judged, not kept in a baseline.
+- `tools/kicad-oracle/grade.sh` and `tools/krt-h2h/grade_routed.sh`: the
+  `tidiness` object of `summary.json` (needs a built `freerouting-dev`).
 
 ## `freerouting-dev ses-diff`
 

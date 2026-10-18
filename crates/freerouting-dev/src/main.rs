@@ -25,7 +25,8 @@ const USAGE: &str = "usage:
       [--start shape|centre]
   freerouting-dev gate ...       (the measurement gate; `freerouting-dev gate --self-test`)
   freerouting-dev failed-vs-human board.dsn engine.ses human.dsn [--json out.json] [--no-feasibility]
-  freerouting-dev widths board.dsn [session.ses] [--json out.json]";
+  freerouting-dev widths board.dsn [session.ses] [--json out.json]
+  freerouting-dev tidy board.dsn routed.ses|routed.kicad_pcb [--json out.json|-] [--connections]";
 
 /// Bench defaults: passes when no route bounds name the board, the load
 /// limit, how long to wait for it, and the per-run safety timeout.
@@ -46,6 +47,7 @@ fn main() -> ExitCode {
         Some("gate") => freerouting_dev::gate_cli::run(&args[1..]),
         Some("failed-vs-human") => freerouting_dev::failed_vs_human::run(&args[1..]),
         Some("widths") => freerouting_dev::widths::run(&args[1..]),
+        Some("tidy") => freerouting_dev::tidy::run(&args[1..]),
         _ => Err(USAGE.to_string()),
     };
     match result {

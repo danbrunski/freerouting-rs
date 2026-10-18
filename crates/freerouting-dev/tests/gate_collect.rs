@@ -233,3 +233,51 @@ fn groups_map_variants_to_one_board() {
     let row = rows.values().next().unwrap();
     assert_eq!(row.get("board").and_then(Json::as_str), Some("issue508"));
 }
+
+#[test]
+fn tidiness_of_a_bench_run_reaches_the_records_and_the_report() {
+    let tidiness = "\"tidiness\": {\"format\": \"freerouting-tidy-1\", \"connections\": 9, \
+        \"measures\": {\"detour\": {\"median\": 1.25, \"p90\": 2.5}, \
+        \"vias\": {\"median\": 0.0, \"p90\": 2.0}}}, ";
+    let mut arms = Vec::new();
+    for (name, incomplete) in [("off", 3), ("on", 2)] {
+        let bench = bench_dir(&format!("tidy-{name}"), &java_ses(), incomplete);
+        let text = std::fs::read_to_string(&bench).unwrap();
+        let text = text.replacen(
+            "\"timed_out\": false,",
+            &format!("\"timed_out\": false, {tidiness}"),
+            1,
+        );
+        assert!(text.contains("tidy"), "the record was not edited");
+        std::fs::write(&bench, text).unwrap();
+        arms.push(arm(name, bench));
+    }
+    let options = CollectOptions {
+        arms,
+        engine: "java".into(),
+        ..CollectOptions::default()
+    };
+    let mut notes = Vec::new();
+    let records = collect(&options, &mut notes).unwrap();
+    let Some(Json::Object(rows)) = records.get("rows") else {
+        panic!()
+    };
+    let row = &rows[&format!("fixtures/{BOARD}.dsn")];
+    let value = |name: &str| row.path(&format!("arms.on.{name}")).and_then(Json::as_f64);
+    assert_eq!(value("tidy_detour_median"), Some(1.25));
+    assert_eq!(value("tidy_detour_p90"), Some(2.5));
+    assert_eq!(value("tidy_vias_p90"), Some(2.0));
+    // a measure the run lacks is not invented
+    assert_eq!(value("tidy_jogs_median"), None);
+
+    // the gate prints the tidiness but a baseline does not record it
+    let base = baseline_from(&records, &Settings::default()).unwrap();
+    let outcome = check(&records, &base, &Settings::default());
+    assert!(
+        outcome.to_text().contains("tidy_detour_median 1.25->1.25"),
+        "{}",
+        outcome.to_text()
+    );
+    let base_text = freerouting_dev::gate::to_writer(&base).to_pretty_string();
+    assert!(!base_text.contains("tidy_"), "{base_text}");
+}

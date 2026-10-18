@@ -34,7 +34,10 @@
 //! routing-quality.md: vias in pads and copper below the board minimums
 //! (hard limits: any in the candidate arm is a failure, D8), then clearance
 //! and DRC items (none new, ever), unrouted connections, vias, length, bends.
-//! Time is reported, not judged.
+//! Time is reported, not judged, and so is the tidiness of the routes (Q15.2:
+//! `tidy_<measure>_median` and `_p90` for detour, bends per 10 mm, acute
+//! corners, jogs and vias per connection, [`crate::tidy`]); neither is kept
+//! in a baseline.
 //!
 //! A row's mark compares the candidate arm with the baseline arm: `regress`
 //! if a hard metric is above zero or a guard got worse, else the first metric
@@ -159,7 +162,7 @@ impl MetricSpec {
 pub fn default_metrics() -> Vec<MetricSpec> {
     let mut wall = MetricSpec::new("wall_seconds", Kind::Float, Role::Report);
     wall.compared = false;
-    vec![
+    let mut specs = vec![
         MetricSpec::new("via_in_pad", Kind::Int, Role::Hard),
         MetricSpec::new("below_minimum", Kind::Int, Role::Hard),
         MetricSpec::new("drc_real", Kind::Int, Role::Guard),
@@ -170,7 +173,15 @@ pub fn default_metrics() -> Vec<MetricSpec> {
         MetricSpec::new("bends", Kind::Int, Role::Score),
         MetricSpec::new("drc_real_by_type", Kind::Counts, Role::Report),
         wall,
-    ]
+    ];
+    // Q15.2: the tidiness of the routes is printed, not judged and not
+    // recorded in a baseline.
+    for (_, _, name) in crate::tidy::GATE_METRICS {
+        let mut spec = MetricSpec::new(name, Kind::Float, Role::Report);
+        spec.compared = false;
+        specs.push(spec);
+    }
+    specs
 }
 
 /// The class of a problem.

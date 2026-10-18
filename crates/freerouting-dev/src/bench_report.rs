@@ -62,6 +62,12 @@ fn run_json(run: &RunRecord) -> JsonValue {
             "widths".to_string(),
             run.widths.as_ref().map_or(JsonValue::Null, |w| w.to_json()),
         ),
+        (
+            "tidiness".to_string(),
+            run.tidiness
+                .as_ref()
+                .map_or(JsonValue::Null, |t| t.to_json(false)),
+        ),
     ];
     if let Some(note) = &run.note {
         members.push(("note".to_string(), JsonValue::string(note.clone())));
@@ -291,6 +297,7 @@ pub fn to_markdown(result: &BenchResult) -> String {
             ));
         }
     }
+    out.push_str(&tidiness_table(result));
     if !result.missing.is_empty() {
         out.push_str("\nSkipped (file missing):\n");
         for entry in &result.missing {
@@ -299,6 +306,59 @@ pub fn to_markdown(result: &BenchResult) -> String {
     }
     if let Some(reason) = &result.aborted {
         out.push_str(&format!("\nStopped early: {reason}\n"));
+    }
+    out
+}
+
+/// One tidiness cell: `median / p90` of a measure over the first run that has
+/// a score (runs of one engine on one board are deterministic).
+fn tidiness_cell(engine: &EngineResult, index: usize) -> String {
+    engine
+        .runs
+        .iter()
+        .find_map(|r| r.tidiness.as_ref())
+        .and_then(|t| t.measures[index])
+        .map_or("–".to_string(), |d| {
+            format!("{:.2} / {:.2}", d.median, d.p90)
+        })
+}
+
+/// The tidiness section of `bench.md` (Q15.2): per board and engine the
+/// connections scored and `median / p90` of each measure; empty when no run
+/// has a score.
+fn tidiness_table(result: &BenchResult) -> String {
+    fn scored(e: &EngineResult) -> Option<&crate::tidy::TidyReport> {
+        e.runs.iter().find_map(|r| r.tidiness.as_ref())
+    }
+    if !result
+        .boards
+        .iter()
+        .any(|b| b.engines.iter().any(|e| scored(e).is_some()))
+    {
+        return String::new();
+    }
+    let mut out = String::from(
+        "\nTidiness per connection, median / p90 (`freerouting-dev tidy`):\n\n| board | engine | \
+         connections |",
+    );
+    for (_, label) in crate::tidy::MEASURES {
+        out.push_str(&format!(" {label} |"));
+    }
+    out.push_str("\n|---|---|---|---|---|---|---|---|\n");
+    for board in &result.boards {
+        for engine in &board.engines {
+            let Some(t) = scored(engine) else { continue };
+            out.push_str(&format!(
+                "| {} | {} | {} |",
+                board.entry.written,
+                engine.engine,
+                t.measured.connections.len()
+            ));
+            for index in 0..crate::tidy::MEASURES.len() {
+                out.push_str(&format!(" {} |", tidiness_cell(engine, index)));
+            }
+            out.push('\n');
+        }
     }
     out
 }

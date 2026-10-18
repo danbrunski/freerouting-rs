@@ -8,6 +8,7 @@
 //! |---|---|
 //! | `unrouted`, `clearance_violations`, `vias`, `length_mm`, `bends` | the bench run's statistics (Freerouting's board model) |
 //! | `wall_seconds` | the bench's median wall time |
+//! | `tidy_<measure>_median`, `tidy_<measure>_p90` | the run's tidiness score ([`crate::tidy`], Q15.2), for `detour`, `bends_per_10mm`, `acute`, `jogs` and `vias`; from the bench run's `tidiness`, or the oracle summary's when the bench has none. Reported, not judged. |
 //! | `via_in_pad` | vias whose copper overlaps an SMD pad, counted on the imported SES minus those already in the input board ([`via_in_pad_count`]) |
 //! | `drc_real`, `drc_real_by_type`, `below_minimum`, `kicad_unconnected` | the oracle's summary (KiCad's DRC) |
 //! | tags `kicad_version`, `engine_commit` | the oracle and the jar name |
@@ -155,6 +156,20 @@ fn ungraded(reason: impl Into<String>) -> Json {
     ])
 }
 
+/// The `tidy_<measure>_<median|p90>` members of a `tidiness` object (a bench
+/// run's or an oracle summary's); none for a measure it lacks.
+fn tidy_members(tidiness: &Json) -> Vec<(&'static str, Json)> {
+    crate::tidy::GATE_METRICS
+        .iter()
+        .filter_map(|(key, stat, name)| {
+            let v = tidiness
+                .path(&format!("measures.{key}.{stat}"))
+                .and_then(Json::as_f64)?;
+            Some((*name, num(v)))
+        })
+        .collect()
+}
+
 /// The arm values of one bench board.
 fn arm_from_bench(
     bench_dir: &Path,
@@ -217,6 +232,9 @@ fn arm_from_bench(
         ("length_mm", num(get("traces.total_length_mm"))),
         ("bends", num(get("bends.total_count"))),
     ];
+    if let Some(tidiness) = runs.iter().find_map(|r| r.get("tidiness")) {
+        members.extend(tidy_members(tidiness));
+    }
     walls.sort_by(f64::total_cmp);
     if !walls.is_empty() {
         let mid = walls.len() / 2;
@@ -283,6 +301,11 @@ fn merge_oracle(arm: Json, summary: Option<Json>, dir: &Path, name: &str) -> Jso
     }
     if let Some(v) = summary.get("kicad_version") {
         values.insert("kicad_version".into(), v.clone());
+    }
+    if let Some(tidiness) = summary.get("tidiness") {
+        for (key, value) in tidy_members(tidiness) {
+            values.entry(key.to_string()).or_insert(value);
+        }
     }
     Json::Object(values)
 }

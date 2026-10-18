@@ -115,6 +115,38 @@ class OracleLibTest(unittest.TestCase):
         self.assertEqual(code, lib.EXIT_ROUTER_ITEMS)
         self.assertEqual(lib.not_graded("no kicad-cli")["exit_code"], lib.EXIT_NOT_GRADED)
 
+    def test_tidiness_is_added_to_the_summary_without_changing_the_verdict(self):
+        tidy = {
+            "format": "freerouting-tidy-1",
+            "connections": 3,
+            "skipped": 1,
+            "nets": 2,
+            "measures": {"detour": {"median": 1.1, "p90": 2.0}},
+            "connection_list": [{"net": "x"}],
+        }
+        summary, code = lib.summarize({}, {}, {}, {})
+        added = lib.add_tidiness(summary, tidy)
+        self.assertEqual(added["tidiness"]["measures"]["detour"]["p90"], 2.0)
+        self.assertEqual(added["tidiness"]["connections"], 3)
+        self.assertNotIn("connection_list", added["tidiness"])
+        self.assertNotIn("tidiness", summary)
+        self.assertEqual((added["drc_real"], added["exit_code"]), (summary["drc_real"], code))
+
+    def test_add_tidiness_command_edits_the_file_and_ignores_a_missing_score(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as d:
+            summary_path = os.path.join(d, "summary.json")
+            tidy_path = os.path.join(d, "tidy.json")
+            with open(summary_path, "w") as f:
+                json.dump({"graded": True}, f)
+            self.assertEqual(lib.main(["add-tidiness", summary_path, tidy_path]), 0)
+            self.assertEqual(json.load(open(summary_path)), {"graded": True})
+            with open(tidy_path, "w") as f:
+                json.dump({"connections": 2, "measures": {}}, f)
+            self.assertEqual(lib.main(["add-tidiness", summary_path, tidy_path]), 0)
+            self.assertEqual(json.load(open(summary_path))["tidiness"]["connections"], 2)
+
     def test_capped_counts_are_flagged(self):
         self.assertEqual(lib.capped_types({"track_width": 199, "clearance": 424}), ["track_width"])
 

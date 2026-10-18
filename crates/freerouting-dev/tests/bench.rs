@@ -194,6 +194,7 @@ fn run(run: usize, wall: f64, vias: usize) -> RunRecord {
         note: None,
         rip_stats: None,
         widths: None,
+        tidiness: None,
     }
 }
 
@@ -443,4 +444,63 @@ fn jobs_route_boards_at_once_and_merge_in_set_order() {
     let json = to_json(&parallel).to_pretty_string();
     assert!(json.contains("\"jobs\": 3"), "{json}");
     assert!(to_markdown(&parallel).contains("3 boards at once"));
+}
+
+fn with_tidiness() -> BenchResult {
+    use freerouting_dev::tidy::{Distribution, TidyReport};
+    use freerouting_dev::tidy_copper::Measured;
+    let d = |median, p90| Some(Distribution { median, p90 });
+    let mut result = sample_result();
+    result.boards[0].engines[0].runs[0].tidiness = Some(TidyReport {
+        measured: Measured {
+            connections: Vec::new(),
+            skipped: 0,
+            nets: 0,
+        },
+        measures: [
+            d(1.25, 2.5),
+            d(0.5, 1.5),
+            d(0.0, 1.0),
+            d(0.0, 0.0),
+            d(0.0, 2.0),
+        ],
+    });
+    result
+}
+
+#[test]
+fn tidiness_is_in_the_run_record_and_the_report() {
+    let result = with_tidiness();
+    let json = Json::parse(&to_json(&result).to_pretty_string()).unwrap();
+    let Some(Json::Array(boards)) = json.get("boards") else {
+        panic!("no boards");
+    };
+    let Some(Json::Array(engines)) = boards[0].get("engines") else {
+        panic!("no engines");
+    };
+    let Some(Json::Array(runs)) = engines[0].get("runs") else {
+        panic!("no runs");
+    };
+    let detour = runs[0].path("tidiness.measures.detour.p90");
+    assert_eq!(detour.and_then(Json::as_f64), Some(2.5));
+    assert_eq!(
+        runs[0]
+            .path("tidiness.measures.vias.median")
+            .and_then(Json::as_f64),
+        Some(0.0)
+    );
+    // a run without a score has no tidiness member
+    assert!(runs[1].get("tidiness").is_none());
+
+    let table = to_markdown(&result);
+    assert!(
+        table.contains("Tidiness per connection, median / p90"),
+        "{table}"
+    );
+    assert!(
+        table.contains("| fixtures/a.dsn | java | 0 | 1.25 / 2.50 | 0.50 / 1.50 | 0.00 / 1.00 |"),
+        "{table}"
+    );
+    // no scores: no section
+    assert!(!to_markdown(&sample_result()).contains("Tidiness"));
 }

@@ -19,7 +19,8 @@
 # never grades itself under rules it wrote) and force the copper classes to error; run
 # `kicad-cli pcb drc --severity-all --refill-zones --format json` on the unrouted and the routed
 # board; count copper from the geometry; subtract what the unrouted input already reports.
-# Writes OUT/summary.json and prints one line.
+# Writes OUT/summary.json and prints one line. When freerouting-dev is built the summary also has
+# `tidiness` (Q15.2, see the README).
 #
 # Exit status: 0 graded clean, 1 router-attributable items (new DRC items, or copper below the
 # board minimums), 2 not graded (no kicad-cli, no pcbnew, mixed KiCad versions, a failed export
@@ -191,8 +192,19 @@ meta["originals_unchanged"] = True
 json.dump(meta, open(sys.argv[1], "w"), indent=2)
 PY
 
+# Q15.2: the tidiness of the route (detour, bends, acute corners, jogs, vias per connection:
+# median and p90), from the SES the engine wrote. Reported next to the DRC, never part of the
+# verdict. Needs a built freerouting-dev (FREEROUTING_DEV, default target/release/freerouting-dev);
+# without it, or when it fails, the summary simply has no `tidiness`.
+FREEROUTING_DEV=${FREEROUTING_DEV:-$HERE/../../target/release/freerouting-dev}
+rm -f "$OUT/tidy.json"
+if [[ -x "$FREEROUTING_DEV" ]]; then
+  "$FREEROUTING_DEV" tidy "$DSN" "$SES" --json "$OUT/tidy.json" > "$OUT/work/tidy.log" 2>&1 ||
+    rm -f "$OUT/tidy.json"
+fi
 python3 "$LIB" summarize "$OUT/routed/drc.json" "$OUT/unrouted/drc.json" "$OUT/routed/copper.json" \
   "$META" "$SUMMARY"
 STATUS=$?
+python3 "$LIB" add-tidiness "$SUMMARY" "$OUT/tidy.json"
 echo "summary: $SUMMARY (KiCad $CLI_VERSION)"
 exit $STATUS
