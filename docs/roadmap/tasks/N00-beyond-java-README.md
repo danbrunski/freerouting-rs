@@ -38,7 +38,7 @@ change of direction; this series carries it out.
 | [N03](N03-free-the-tree-again.md) | P04's canonical room order, judged again under N02 on fresh boards; if kept, it is `enhanced`'s default, and then the faster tree (P04.3) | L / high: changes routes everywhere | N01, N02; P04's saved patch |
 | [N04](N04-contacts-inside-pads.md) | A trace end inside a same-net pad counts as connected (KiCad's rule) in `enhanced` | S–M / medium | N01 |
 | [N05](N05-promote-accepted-stages.md) | Each accepted Q, X or K improvement becomes part of `enhanced`; the CLI registers the KRT stages | S per stage | N01; each stage's own measurement |
-| [N06](N06-fix-kept-java-bugs.md) | The Java bugs kept for parity: sort them; fix the harmless ones outright, the rest under `enhanced` behind per-bug switches, measured in batches | M–L / medium: geometry and search changes | N01, N02, N05 |
+| [N06](N06-fix-kept-java-bugs.md) | The 54 Java bugs kept for parity: 12 dead ones fixed outright, 31 fixed under `enhanced` behind per-bug `router.java_quirks.*` switches in 8 measured batches, 11 judgement calls | M–L / medium: geometry and search changes | N01, N02, N05 |
 
 ## Order
 
@@ -47,6 +47,10 @@ change of direction; this series carries it out.
 2. Then N04, small and with a clear win on boards with hand-laid tracks, and N03.
 3. N05 runs alongside: as each registered measurement (Q09.5, Q10–Q12, X02–X12,
    K09) accepts its candidate, it joins `enhanced`.
+4. N06: the dead-code fixes (N06.2) and the switches (N06.3) need only N01. Batch O
+   (the batch optimizer) goes first among the measured batches: it runs in every default
+   run, so it is the one most likely to move `canary-pwr`. Then F (fanout), G (geometry
+   cutouts) and M; S and P are small; I and U need no measurement.
 
 The routing-quality work already queued keeps its priority: Q10 (add-only
 sweep), Q11 (transactional rip-up), Q12 (pass-1 portfolio), Q04 (stop rule) and

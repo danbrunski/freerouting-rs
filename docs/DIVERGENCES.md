@@ -32,8 +32,8 @@ Each crate's docs carry the full detail; this file is the index.
 - IntOctagon `is_empty` compares by value; its `toSimplex` cache is gone. Logging is gone.
 - `sin`/`cos` may differ from Java's `Math` by one ulp.
 
-**Java bugs kept on purpose** (changing them would change routing results; revisit once
-the router is ported and measurable): `RationalPoint.perpendicularProjection`, the int
+**Java bugs kept on purpose** (changing them would change routing results; N06 sorts every
+kept bug and schedules its fix under profile `enhanced`): `RationalPoint.perpendicularProjection`, the int
 overflow in `Line.length`, `stairApproximation45` evaluating `functionValueApprox` for
 the function-of-y case, the `index_of_nearest_corner` quirk, `PolygonShape.area`
 returning 0, `Simplex.cutoutFrom` never setting its previous division line, the no-op
