@@ -44,6 +44,18 @@ use crate::board::items::ItemId;
 /// end corner shorter than this (squared) is skipped by the end smoothing.
 pub(crate) const SKIP_LENGTH: f64 = 10.0;
 
+/// The bound the squared end-segment length is compared with.
+/// PARITY(quirk, java_quirks.any_angle_skip_length_squared):
+/// TraceTightenerAnyAngle.java:774, 896 compare [`SKIP_LENGTH`] itself with a
+/// squared distance (effectively 3.2 units); `false` compares its square.
+fn skip_length_square(board: &BasicBoard) -> f64 {
+    if board.java_quirks().any_angle_skip_length_squared {
+        SKIP_LENGTH
+    } else {
+        SKIP_LENGTH * SKIP_LENGTH
+    }
+}
+
 /// Java `TraceTightener.c_max_cos_angle`: two lines whose angle has a bigger
 /// cosine are nearly parallel and their corner isn't cut again.
 pub(crate) const MAX_COS_ANGLE: f64 = 0.999;
@@ -907,7 +919,7 @@ impl Tightener {
             && end_corner
                 .to_float()
                 .distance_square(prev_end_corner.to_float())
-                < SKIP_LENGTH;
+                < skip_length_square(board);
         let mut start_line_no = 1;
         if skip_short_segment {
             if polyline.corner_count() < 3 {
@@ -973,7 +985,7 @@ impl Tightener {
             && end_corner
                 .to_float()
                 .distance_square(prev_end_corner.to_float())
-                < SKIP_LENGTH;
+                < skip_length_square(board);
         let mut end_line_no = n - 2;
         if skip_short_segment {
             if corner_count < 3 {

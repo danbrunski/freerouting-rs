@@ -158,11 +158,16 @@ pub fn sorted_candidates(board: &BasicBoard) -> Vec<Candidate> {
             .then(b.is_via.cmp(&a.is_via))
             .then(pa.cmp(pb))
     });
+    // PARITY(quirk, java_quirks.opt_equal_key_skip): Java's strictly greater
+    // cursor skips every later candidate of an equal key for the whole pass;
+    // `false` keeps every sorted candidate.
+    let skip_equal_keys = board.java_quirks().opt_equal_key_skip;
     let mut result: Vec<Candidate> = Vec::with_capacity(all.len());
     for (_, candidate) in all {
-        let duplicate = result
-            .last()
-            .is_some_and(|prev| prev.key.cmp(&candidate.key) == Ordering::Equal);
+        let duplicate = skip_equal_keys
+            && result
+                .last()
+                .is_some_and(|prev| prev.key.cmp(&candidate.key) == Ordering::Equal);
         if !duplicate {
             result.push(candidate);
         }

@@ -51,11 +51,22 @@ pub enum PinSortingOrder {
 impl PinSortingOrder {
     /// The order Java's comparator picks for `name`.
     pub fn from_name(name: &str) -> PinSortingOrder {
+        Self::from_name_with(name, true)
+    }
+
+    /// [`Self::from_name`] behind `router.java_quirks.fanout_pin_order_names`
+    /// (N06): `true` is Java's exact strings, `false` also accepts the
+    /// documented spellings `distance_to_closest_on_net` and
+    /// `surroundings_density`.
+    pub fn from_name_with(name: &str, java_quirk: bool) -> PinSortingOrder {
         match name {
             "outer_first" => PinSortingOrder::OuterFirst,
             "inner_first" => PinSortingOrder::InnerFirst,
             "distanceToClosestOnNet" => PinSortingOrder::DistanceToClosestOnNet,
             "surroundingsDensity" => PinSortingOrder::SurroundingsDensity,
+            // PARITY(quirk, java_quirks.fanout_pin_order_names): BatchFanout.java:811-846.
+            "distance_to_closest_on_net" if !java_quirk => PinSortingOrder::DistanceToClosestOnNet,
+            "surroundings_density" if !java_quirk => PinSortingOrder::SurroundingsDensity,
             _ => PinSortingOrder::PinIndex,
         }
     }

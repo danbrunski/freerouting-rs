@@ -102,6 +102,9 @@ pub struct BoardSnapshot {
     pub(crate) search_config: crate::board::search::SearchConfig,
     /// The board's contact rule (N04), which a restored board keeps.
     pub(crate) contact_rule: crate::board::contact_rule::ContactRule,
+    /// The board's `router.java_quirks.*` switches (N06), which a restored board
+    /// and a deep copy keep.
+    pub(crate) java_quirks: crate::settings::JavaQuirks,
 }
 
 /// The restore memo of a [`BoardSnapshot`] (P02.4).

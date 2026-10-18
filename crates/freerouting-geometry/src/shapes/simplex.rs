@@ -9,6 +9,7 @@ use crate::jmath::d2i;
 use crate::limits::CRIT_INT;
 use crate::line::Line;
 use crate::point::{IntPoint, Point};
+use crate::quirks::SplitQuirks;
 use crate::side::Side;
 use crate::vector::Vector;
 
@@ -441,6 +442,15 @@ impl Simplex {
     /// along minimal distance lines from the inner corners to the outer simplex. `None`
     /// if this simplex is not 2-dimensional (Java returns `null`).
     pub fn cutout_from(&self, outer_simplex: &Simplex) -> Option<Vec<Simplex>> {
+        self.cutout_from_with(outer_simplex, SplitQuirks::JAVA)
+    }
+
+    /// [`Self::cutout_from`] with the switches of the cutouts (N06 batch G).
+    pub fn cutout_from_with(
+        &self,
+        outer_simplex: &Simplex,
+        quirks: SplitQuirks,
+    ) -> Option<Vec<Simplex>> {
         if self.dimension() < 2 {
             return None;
         }
@@ -457,9 +467,12 @@ impl Simplex {
             }
         }
         let mut check_cross_first_line = false;
-        // Java declares `prevDivisionLine` but never assigns it a value (the statement at
-        // the end of the loop assigns to another local), so it stays `null`; this port
-        // keeps that behaviour.
+        // PARITY(quirk, java_quirks.simplex_prev_division_line): Java declares
+        // `prevDivisionLine` but never assigns it a value (the statement at the end of the
+        // loop assigns to another local, `Simplex.java:860`), so it stays `null`; this port
+        // keeps that behaviour. N06.4 adds the fix under `false`; until then both values
+        // keep Java's.
+        let _java_prev_division_line = quirks.simplex_prev_division_line;
         let prev_division_line: Option<Line> = None;
         let first_division_line = division_line_arr[0][0];
         let first_direction = first_division_line.int_direction();

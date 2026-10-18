@@ -216,6 +216,10 @@ pub struct AutorouteControl {
     /// algorithm stages that route between two chosen sets of one net
     /// (X02's straps between pour islands, past the net's own plane).
     pub destinations_only: Option<std::collections::BTreeSet<ItemId>>,
+    /// `router.java_quirks.*` (N06), copied from
+    /// [`BoardRouterSettings::java_quirks`]: the autorouter, the fanout and the batch
+    /// optimizer read the switches here. Every switch `true` is Java.
+    pub quirks: crate::settings::JavaQuirks,
 }
 
 impl AutorouteControl {
@@ -329,6 +333,7 @@ impl AutorouteControl {
             min_cheap_via_cost: 0.0,
             warnings,
             destinations_only: None,
+            quirks: settings.java_quirks(),
         }
     }
 

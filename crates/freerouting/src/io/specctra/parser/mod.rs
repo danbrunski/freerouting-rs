@@ -152,6 +152,9 @@ pub(crate) struct ReadContext {
     /// Java's `scanner.getScopeIdentifier()`: the last name the reader
     /// noted, used in messages.
     pub scope_identifier: String,
+    /// `router.java_quirks.*` (N06): the readers' switches (`dsn_*`); the board
+    /// the read builds keeps them.
+    pub java_quirks: crate::settings::JavaQuirks,
 }
 
 impl ReadContext {
@@ -178,6 +181,7 @@ impl ReadContext {
             unit: Unit::Mil,
             resolution: 100,
             scope_identifier: String::new(),
+            java_quirks: crate::settings::JavaQuirks::JAVA,
         }
     }
 

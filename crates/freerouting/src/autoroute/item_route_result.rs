@@ -57,15 +57,13 @@ impl ItemRouteResult {
                 Ordering::Equal => trace_length_after < trace_length_before,
             },
         };
-        // PARITY(quirk): Java divides the via counts as `int`s inside the
-        // `double` expression (`viaCountAfter / viaCountBefore`), so the via
-        // term is truncated toward zero: 1 / 2 contributes 0, not 0.5.
-        let improvement_percentage = if via_count_before != 0 && trace_length_before != 0.0 {
-            let via_ratio = f64::from(via_count_after.wrapping_div(via_count_before));
-            (1.0 - ((via_ratio + trace_length_after / trace_length_before) / 2.0)) as f32
-        } else {
-            0.0
-        };
+        let improvement_percentage = improvement_percentage(
+            via_count_before,
+            via_count_after,
+            trace_length_before,
+            trace_length_after,
+            true,
+        );
         ItemRouteResult {
             item_id,
             improvement_percentage,
@@ -76,6 +74,25 @@ impl ItemRouteResult {
             incomplete_count_before,
             incomplete_count_after,
             improved,
+        }
+    }
+
+    /// This result under `router.java_quirks.route_result_int_via_ratio` (N06):
+    /// `true` keeps Java's integer via ratio, `false` recomputes
+    /// [`Self::improvement_percentage`] with the real ratio.
+    pub fn with_int_via_ratio(self, java_quirk: bool) -> Self {
+        if java_quirk {
+            return self;
+        }
+        ItemRouteResult {
+            improvement_percentage: improvement_percentage(
+                self.via_count_before,
+                self.via_count_after,
+                self.trace_length_before,
+                self.trace_length_after,
+                false,
+            ),
+            ..self
         }
     }
 
@@ -158,6 +175,29 @@ impl ItemRouteResult {
     pub fn update_improved(&mut self, improved: bool) {
         self.improved = improved;
     }
+}
+
+/// Java's `improvementPercentage` (`ItemRouteResult.java:59-65`).
+fn improvement_percentage(
+    via_count_before: i32,
+    via_count_after: i32,
+    trace_length_before: f64,
+    trace_length_after: f64,
+    java_int_via_ratio: bool,
+) -> f32 {
+    if via_count_before == 0 || trace_length_before == 0.0 {
+        return 0.0;
+    }
+    // PARITY(quirk, java_quirks.route_result_int_via_ratio): Java divides the
+    // via counts as `int`s inside the `double` expression
+    // (`viaCountAfter / viaCountBefore`), so the via term is truncated toward
+    // zero: 1 / 2 contributes 0, not 0.5. `false` divides as `double`s.
+    let via_ratio = if java_int_via_ratio {
+        f64::from(via_count_after.wrapping_div(via_count_before))
+    } else {
+        f64::from(via_count_after) / f64::from(via_count_before)
+    };
+    (1.0 - ((via_ratio + trace_length_after / trace_length_before) / 2.0)) as f32
 }
 
 #[cfg(test)]

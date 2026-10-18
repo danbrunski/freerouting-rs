@@ -8,6 +8,7 @@ use crate::line_segment::LineSegment;
 use crate::point::{IntPoint, Point};
 use crate::polygon::Polygon;
 use crate::polyline::Polyline;
+use crate::quirks::SplitQuirks;
 use crate::side::Side;
 use crate::vector::Vector;
 
@@ -194,10 +195,21 @@ pub trait TileShapeOps: PolylineShapeOps {
     /// The point of this shape nearest to `from_point`; `from_point` itself if it is
     /// contained. `None` for an empty shape.
     fn nearest_point(&self, from_point: &Point) -> Option<Point> {
+        self.nearest_point_with(from_point, true)
+    }
+
+    /// [`Self::nearest_point`] with the switch
+    /// `router.java_quirks.rational_perp_projection` (N06): `false` projects a rational
+    /// `from_point` exactly ([`Point::perpendicular_projection_with`]).
+    fn nearest_point_with(
+        &self,
+        from_point: &Point,
+        rational_perp_projection: bool,
+    ) -> Option<Point> {
         if !self.is_outside(from_point) {
             return Some(from_point.clone());
         }
-        self.nearest_border_point(from_point)
+        self.nearest_border_point_with(from_point, rational_perp_projection)
     }
 
     /// Approximation of the nearest point of the shape to `from_point`.
@@ -210,13 +222,26 @@ pub trait TileShapeOps: PolylineShapeOps {
 
     /// The nearest point to `from_point` on the border; `None` for an empty shape.
     fn nearest_border_point(&self, from_point: &Point) -> Option<Point> {
+        self.nearest_border_point_with(from_point, true)
+    }
+
+    /// [`Self::nearest_border_point`] with the switch
+    /// `router.java_quirks.rational_perp_projection` (N06).
+    fn nearest_border_point_with(
+        &self,
+        from_point: &Point,
+        rational_perp_projection: bool,
+    ) -> Option<Point> {
         let line_count = self.border_line_count();
         if line_count == 0 {
             return None;
         }
         let from_point_f = from_point.to_float();
         if line_count == 1 {
-            return Some(self.border_line(0).perpendicular_projection(from_point));
+            return Some(
+                self.border_line(0)
+                    .perpendicular_projection_with(from_point, rational_perp_projection),
+            );
         }
         let mut min_dist = f64::MAX;
         let mut min_dist_ind = 0;
@@ -233,7 +258,7 @@ pub trait TileShapeOps: PolylineShapeOps {
         for next_ind in 0..line_count {
             let projection = self
                 .border_line(current_ind)
-                .perpendicular_projection(from_point);
+                .perpendicular_projection_with(from_point, rational_perp_projection);
             if (!self.corner_is_bounded(current_ind)
                 || self.border_line(prev_ind).side_of(&projection) == Side::OnTheRight)
                 && (!self.corner_is_bounded(next_ind)
@@ -996,29 +1021,38 @@ impl TileShape {
     /// Cuts `shape` out of this shape and divides the rest into convex pieces. `None`
     /// where Java returns `null` (the cut shape is a simplex of dimension below 2).
     pub fn cutout(&self, shape: &TileShape) -> Option<Vec<TileShape>> {
+        self.cutout_with(shape, SplitQuirks::JAVA)
+    }
+
+    /// [`Self::cutout`] with the switches of the cutouts (N06 batch G).
+    pub fn cutout_with(&self, shape: &TileShape, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
         match self {
             TileShape::IntBox(d) => {
-                let tmp = shape.cutout_from_box(d)?;
+                let tmp = shape.cutout_from_box(d, quirks)?;
                 Some(tmp.iter().map(TileShape::simplify).collect())
             }
-            TileShape::IntOctagon(d) => shape.cutout_from_octagon(d),
-            TileShape::Simplex(d) => shape.cutout_from_simplex(d),
+            TileShape::IntOctagon(d) => shape.cutout_from_octagon(d, quirks),
+            TileShape::Simplex(d) => shape.cutout_from_simplex(d, quirks),
         }
     }
 
-    fn cutout_from_box(&self, d: &IntBox) -> Option<Vec<TileShape>> {
+    fn cutout_from_box(&self, d: &IntBox, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
         Some(match self {
             TileShape::IntBox(c) => c.cutout_from_box(d).into_iter().map(Into::into).collect(),
-            TileShape::IntOctagon(c) => c.cutout_from_box(d).into_iter().map(Into::into).collect(),
+            TileShape::IntOctagon(c) => c
+                .cutout_from_box_with(d, quirks)
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             TileShape::Simplex(c) => c
-                .cutout_from(&d.to_simplex())?
+                .cutout_from_with(&d.to_simplex(), quirks)?
                 .into_iter()
                 .map(Into::into)
                 .collect(),
         })
     }
 
-    fn cutout_from_octagon(&self, d: &IntOctagon) -> Option<Vec<TileShape>> {
+    fn cutout_from_octagon(&self, d: &IntOctagon, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
         Some(match self {
             TileShape::IntBox(c) => c
                 .to_int_octagon()
@@ -1032,20 +1066,26 @@ impl TileShape {
                 .map(Into::into)
                 .collect(),
             TileShape::Simplex(c) => c
-                .cutout_from(&d.to_simplex())?
+                .cutout_from_with(&d.to_simplex(), quirks)?
                 .into_iter()
                 .map(Into::into)
                 .collect(),
         })
     }
 
-    fn cutout_from_simplex(&self, d: &Simplex) -> Option<Vec<TileShape>> {
+    fn cutout_from_simplex(&self, d: &Simplex, quirks: SplitQuirks) -> Option<Vec<TileShape>> {
         let inner = match self {
             TileShape::IntBox(c) => c.to_simplex(),
             TileShape::IntOctagon(c) => c.to_simplex(),
             TileShape::Simplex(c) => c.clone(),
         };
-        Some(inner.cutout_from(d)?.into_iter().map(Into::into).collect())
+        Some(
+            inner
+                .cutout_from_with(d, quirks)?
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        )
     }
 
     /// The division into convex pieces: the shape itself.

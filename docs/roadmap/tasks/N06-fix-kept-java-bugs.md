@@ -294,7 +294,7 @@ These are marked or look like quirks but keep no bug:
           needs a short argument that without a reallocation the resolution gives the same
           slot as today.
         - If that argument is in any doubt, rerun A14 with the command above.
-- [ ] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
+- [~] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
   that might be fixed, and the `JavaQuirks` value carried as the decisions say. Wire each
   switch to its site, keeping Java's code path when the switch is `true`.
   - **Accept:**
@@ -303,6 +303,68 @@ These are marked or look like quirks but keep no bug:
       `true` half);
     - the keys round-trip through a settings file and `--router.java_quirks.<id>=false`;
     - the board's quirks survive `deep_copy` and snapshot restore.
+  - *Partial 2026-10-18:* the plumbing, 26 of the 42 read sites, and the tests below. Heavy
+    run pending: the A14 exact set with every switch `true` (the command in A14's done note).
+    - [x] The switches: 42 `opt` bool keys in a `java_quirks` section of `settings/fields.rs`
+      (31 (b) + 11 (c), the inventory's ids and order), unset = `true` = Java in both profiles,
+      so Java's settings dump and `legacy` are unchanged and `ENHANCED` stays empty.
+      `settings/java_quirks.rs` generates `JavaQuirks` (`JAVA`, `ALL_FIXED`, `IDS`,
+      `from_settings`, `get`, `with`, `fix_item`, `split`). Carried as the decisions say:
+      `BoardRouterSettings::java_quirks` → `AutorouteControl::quirks`; `BasicBoard::java_quirks`
+      (kept by `BoardSnapshot`, so by `deep_copy` and every restore); `ReadContext::java_quirks`
+      through `build_board_with`/`read_board_from_str_with`; `prepare_job` reads the board with
+      the first merge's switches and puts the final ones on the board before the session import,
+      `prepare_board_for_routing` too. Geometry: `freerouting_geometry::SplitQuirks`,
+      `PolylineArea::split_to_convex_with` (one `OnceLock` per switch value, so no piece cache is
+      shared across values), `Area::split_to_convex_with`, `TileShape::cutout_with`,
+      `Simplex::cutout_from_with`, `IntOctagon::cutout_from_box_with`, and the projection flag
+      (`Point`/`Line::perpendicular_projection_with`, `TileShapeOps::nearest_point_with` and
+      `nearest_border_point_with`).
+    - [x] Read sites with Java's path under `true` and the fix under `false` (26):
+      `ortho_zero_width_room`, `edge_corner_not_advanced`, `connect_to_trace_swapped_width`,
+      `init_failure_room_leak`, `failed_attempt_ripped_carryover`, `fanout_stale_drill_carry`,
+      `drill_destination_room_index`, `fanout_pin_order_names`, `in_front_of_pad_typo`,
+      `store_trace_class_self_compare`, `rational_perp_projection` (shove's end-corner
+      projection), `smooth_loses_trace`, `pull_tight_reused_lines_change`, `opt_first_pass_stops`,
+      `opt_equal_key_skip`, `dsn_via_alias`, `dsn_class_class_pairs`, `dsn_shape_bbox`,
+      `ses_reader_scale`, `stats_line_ab_length`, `route_result_int_via_ratio`,
+      `drc_units_10000_per_mm`, `ripup_pass_no_unset`, `opt_threshold_fraction`,
+      `any_angle_skip_length_squared`, `route_connect_inner_break`. Each carries
+      `// PARITY(quirk, java_quirks.<id>):`; every older `PARITY(quirk)` marker of a (b)/(c) row
+      got its id (the (a) rows' markers are N06.2's).
+    - [ ] Read sites deferred (16; the switch exists and reaches the code, `false` changes
+      nothing yet, and its doc line says so): `simplex_prev_division_line`,
+      `octagon_box_cutout_branch3` (both reach the cutouts, N06.4 writes the fixes after its
+      invariant test; the search tree's area shapes in `board/search/mod.rs` still call
+      `split_to_convex`), `dsn_unit_ignored` (N06.10), the six U rows `snapshot_drops_compensation`,
+      `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`, `route_change_layer_no_via`,
+      `select_extension_ignores_filter` (N06.11; `route_connect_inner_break` is wired), and the (c)
+      rows `insert_stale_trace_object`, `in_front_of_pad_side0_flank`, `rules_unknown_layer_scope`,
+      `rules_autoroute_settings_reenable`, `direction_compare_zero` (geometry, no settings access),
+      `route_stubs_layer_test`, `polyline_array_reversal`, `avoid_acid_traps_disabled` (N06.12).
+      No deferred site is in `doors.rs`, `search.rs` or `locate45.rs`.
+    - [x] Both behaviours tested (7): `in_front_of_pad_keeps_java_typo` (extended),
+      geometry `rational_perpendicular_projection_switch_both_behaviours`,
+      `parser::shape::tests::bounding_box_switch_both_behaviours`,
+      `optimize::batch::tests::threshold_fraction_switch_both_behaviours`, and in
+      `tests/settings_java_quirks.rs` `fanout_pin_order_names_both_behaviours`,
+      `route_result_via_ratio_both_behaviours`, `trace_length_statistics_both_behaviours`. The
+      other 19 wired switches get their `false` half in their batch item (N06.5–N06.10,
+      N06.12), whose measurement needs them anyway.
+    - [x] Round trips (`tests/settings_java_quirks.rs`, 9 tests, all pass):
+      `each_key_round_trips_through_a_settings_file` (`{"router": {"java_quirks": {"<id>":
+      false}}}`, every id), `each_key_is_set_on_the_command_line_and_in_the_environment`
+      (`--router.java_quirks.<id>=false`, `FREEROUTING__ROUTER__JAVA_QUIRKS__<ID>`, the CLI
+      beating a file), `both_profiles_keep_every_java_bug`,
+      `every_switch_is_a_settings_key_in_inventory_order`,
+      `the_job_carries_the_switches_to_the_board_and_the_control` (`prepare_job` → board,
+      `BoardRouterSettings`, `AutorouteControl`),
+      `the_board_keeps_its_switches_through_deep_copy_and_restore` (deep copy and three
+      restores of one snapshot: rebuild, memo fill, memo clone).
+    - [x] With every switch `true` routing is unchanged on the fast subset (release, private
+      target): `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p
+      freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
+      --test-threads=1`: exact 7 boards, 7 pass, 0 fail, 7 SES byte-identical.
 - [ ] **N06.4 — Batch G, geometry cutouts:** `simplex_prev_division_line`,
   `octagon_box_cutout_branch3`.
   - First, an invariant test that fails on Java's code: over random holes in boxes and

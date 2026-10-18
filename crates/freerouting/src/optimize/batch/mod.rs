@@ -183,8 +183,10 @@ fn gate_figures(stats: &BoardStatistics, settings: &RouterSettings) -> GateFigur
 }
 
 /// The improvement threshold Java uses after its checks (with the log
-/// line it writes).
-fn effective_threshold(threshold: f32) -> (f32, Option<LogLine>) {
+/// line it writes). `java_fraction_heuristic` is
+/// `router.java_quirks.opt_threshold_fraction` (N06): `false` reads a value in
+/// (0, 0.1) as the percentage it says.
+fn effective_threshold(threshold: f32, java_fraction_heuristic: bool) -> (f32, Option<LogLine>) {
     if threshold.is_nan() || threshold.is_infinite() || threshold < 0.0 {
         let line = LogLine {
             level: LogLevel::Warn,
@@ -195,8 +197,9 @@ fn effective_threshold(threshold: f32) -> (f32, Option<LogLine>) {
             ),
         };
         (DEFAULT_IMPROVEMENT_THRESHOLD, Some(line))
-    } else if threshold > 0.0 && threshold < 0.1 {
-        // PARITY(quirk): :367-377, a fraction is taken for a percentage.
+    } else if java_fraction_heuristic && threshold > 0.0 && threshold < 0.1 {
+        // PARITY(quirk, java_quirks.opt_threshold_fraction): :367-377, a
+        // fraction is taken for a percentage.
         let scaled = threshold * 100.0;
         let line = LogLine {
             level: LogLevel::Info,
@@ -218,6 +221,10 @@ struct Loop<'s, 'c> {
     ctx: &'s StageCtx<'c>,
     options: OptimizerOptions,
     use_increased_ripup_costs: bool,
+    /// The pass just run cleared the increased ripup costs (only under
+    /// `router.java_quirks.opt_first_pass_stops = false`, N06), so the loop
+    /// goes on once at normal costs.
+    cleared_in_pass: bool,
     total_items: i32,
     results: BTreeMap<ItemId, ItemRouteResult>,
     position: Option<FloatPoint>,
@@ -348,10 +355,13 @@ impl Loop<'_, '_> {
             route_improved = result.improvement_percentage();
             evaluation.winner_result = Some(result);
         }
-        // PARITY(quirk): :812-815, no adopted improvement (or a 0 %
-        // improvement) ends the increased ripup costs.
+        // PARITY(quirk, java_quirks.opt_first_pass_stops): :812-815, no
+        // adopted improvement (or a 0 % improvement) ends the increased ripup
+        // costs, and the loop then stops below the threshold; `false` lets the
+        // loop go on once at normal costs.
         if self.use_increased_ripup_costs && route_improved == 0.0 {
             self.use_increased_ripup_costs = false;
+            self.cleared_in_pass = !self.ctx.board_settings.java_quirks().opt_first_pass_stops;
         }
         self.progress(board, pass, true);
         (ids, evaluation)
@@ -399,13 +409,17 @@ pub fn run_batch_optimizer(
             initial_figures.violations
         ),
     });
-    let (threshold, threshold_line) = effective_threshold(settings.optimizer.improvement_threshold);
+    let (threshold, threshold_line) = effective_threshold(
+        settings.optimizer.improvement_threshold,
+        ctx.board_settings.java_quirks().opt_threshold_fraction,
+    );
     run.log.extend(threshold_line);
 
     let mut state = Loop {
         ctx,
         options: *options,
         use_increased_ripup_costs: true,
+        cleared_in_pass: false,
         total_items: 0,
         results: BTreeMap::new(),
         position: None,
@@ -488,7 +502,9 @@ pub fn run_batch_optimizer(
             break;
         }
         // PARITY: :462-480.
-        let continue_once = state.use_increased_ripup_costs && score_after <= score_before;
+        let increased =
+            state.use_increased_ripup_costs || std::mem::take(&mut state.cleared_in_pass);
+        let continue_once = increased && score_after <= score_before;
         if continue_once {
             state.use_increased_ripup_costs = false;
         } else if improvement < f64::from(threshold) {
@@ -569,5 +585,22 @@ impl Optimizer for FreeroutingOptimizer {
             log: run.log,
             ..OptimizerSummary::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::effective_threshold;
+
+    /// N06 `opt_threshold_fraction`: `true` reads 0.05 as 5 %, `false` as 0.05 %.
+    #[test]
+    fn threshold_fraction_switch_both_behaviours() {
+        let (java, line) = effective_threshold(0.05, true);
+        assert_eq!(java, 0.05 * 100.0);
+        assert!(line.is_some());
+        assert_eq!(effective_threshold(0.05, false), (0.05, None));
+        // Outside (0, 0.1) the switch changes nothing.
+        assert_eq!(effective_threshold(2.5, true), (2.5, None));
+        assert_eq!(effective_threshold(2.5, false), (2.5, None));
     }
 }

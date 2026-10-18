@@ -198,6 +198,13 @@ pub(crate) fn router_control(
     control.ripup_costs = p.ripup_cost;
     control.ripup_factors = p.ripup_factors.clone();
     control.remove_unconnected_vias = p.remove_unconnected_vias;
+    // PARITY(quirk, java_quirks.ripup_pass_no_unset): AutorouteControl.java:192,
+    // the batch router never sets `ripupPassNo`, so it stays 1 and the random
+    // detour factor of the ripup resolver never fires; `false` sets the pass
+    // number (N06.12).
+    if !control.quirks.ripup_pass_no_unset {
+        control.ripup_pass_no = i32::try_from(p.pass).unwrap_or(i32::MAX);
+    }
     Some(control)
 }
 

@@ -229,6 +229,7 @@ pub struct BoardRouterSettings {
     min_trace_width_um: f64,
     strict_drc: bool,
     via_clearance: ViaClearanceMode,
+    java_quirks: super::java_quirks::JavaQuirks,
 }
 
 const OUT_OF_RANGE: LayerRouting = LayerRouting {
@@ -288,6 +289,7 @@ impl BoardRouterSettings {
                 .unwrap_or(0.0),
             strict_drc: settings.strict_drc,
             via_clearance: ViaClearanceMode::of(settings),
+            java_quirks: super::java_quirks::JavaQuirks::from_settings(settings),
         }
     }
 
@@ -413,5 +415,21 @@ impl BoardRouterSettings {
     /// comes from.
     pub fn via_clearance(&self) -> ViaClearanceMode {
         self.via_clearance
+    }
+
+    /// `router.java_quirks.*` (N06): the Java bugs kept, one switch each;
+    /// [`AutorouteControl::quirks`](crate::autoroute::control::AutorouteControl::quirks)
+    /// copies it.
+    pub fn java_quirks(&self) -> super::java_quirks::JavaQuirks {
+        self.java_quirks
+    }
+
+    /// These settings with the switches `quirks` (N06), for callers that build the
+    /// settings by hand.
+    pub fn with_java_quirks(&self, quirks: super::java_quirks::JavaQuirks) -> BoardRouterSettings {
+        BoardRouterSettings {
+            java_quirks: quirks,
+            ..self.clone()
+        }
     }
 }

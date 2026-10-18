@@ -513,16 +513,34 @@ impl RationalPoint {
     /// determinant term is added with the wrong sign for the y coordinate and the
     /// denominator is not multiplied by `z`, so the result is only correct for some
     /// inputs. Callers that need an exact projection of a rational point must not rely
-    /// on it.
+    /// on it; [`Self::perpendicular_projection_with`] with `java_quirk = false` is exact.
     pub fn perpendicular_projection(&self, line: &Line) -> Point {
+        self.perpendicular_projection_with(line, true)
+    }
+
+    /// [`Self::perpendicular_projection`] behind the switch
+    /// `router.java_quirks.rational_perp_projection` (N06): `true` is Java's formula,
+    /// `false` the exact projection (the y term subtracts `det·vx·z` and the
+    /// denominator is `(vx² + vy²)·z`).
+    pub fn perpendicular_projection_with(&self, line: &Line, java_quirk: bool) -> Point {
         let v = line.b.difference_by_int(line.a);
         let vxvx = BigInt::from(i64::from(v.x) * i64::from(v.x));
         let vyvy = BigInt::from(i64::from(v.y) * i64::from(v.y));
         let vxvy = BigInt::from(i64::from(v.x) * i64::from(v.y));
-        let mut denominator = &vxvx + &vyvy;
         let det = BigInt::from(line.a.determinant(line.b));
         let mut proj_x = &vxvx * &self.x + &vxvy * &self.y + &det * BigInt::from(v.y) * &self.z;
-        let mut proj_y = &vxvy * &self.x + &vyvy * &self.y + &det * BigInt::from(v.x) * &self.z;
+        let (mut proj_y, mut denominator) = if java_quirk {
+            // PARITY(quirk, java_quirks.rational_perp_projection): RationalPoint.java:239-283.
+            (
+                &vxvy * &self.x + &vyvy * &self.y + &det * BigInt::from(v.x) * &self.z,
+                &vxvx + &vyvy,
+            )
+        } else {
+            (
+                &vxvy * &self.x + &vyvy * &self.y - &det * BigInt::from(v.x) * &self.z,
+                (&vxvx + &vyvy) * &self.z,
+            )
+        };
         if !denominator.is_zero() {
             if denominator.is_negative() {
                 denominator = -denominator;
@@ -748,9 +766,17 @@ impl Point {
 
     /// The nearest point to this point on `line`.
     pub fn perpendicular_projection(&self, line: &Line) -> Point {
+        self.perpendicular_projection_with(line, true)
+    }
+
+    /// [`Self::perpendicular_projection`] with the switch
+    /// `router.java_quirks.rational_perp_projection` (N06; see
+    /// [`RationalPoint::perpendicular_projection_with`]). An integer point is exact
+    /// either way.
+    pub fn perpendicular_projection_with(&self, line: &Line, java_quirk: bool) -> Point {
         match self {
             Point::Int(p) => p.perpendicular_projection(line),
-            Point::Rational(p) => p.perpendicular_projection(line),
+            Point::Rational(p) => p.perpendicular_projection_with(line, java_quirk),
         }
     }
 
@@ -943,6 +969,38 @@ mod tests {
         );
         let q = IntPoint::new(1, 0);
         assert_eq!(q.perpendicular_projection(&line), Point::from(rp(1, 1, 2)));
+    }
+
+    /// N06 `rational_perp_projection`: `true` is Java's formula, `false` the exact
+    /// projection of a rational point.
+    #[test]
+    fn rational_perpendicular_projection_switch_both_behaviours() {
+        // The horizontal line y = 10 and the point (1/2, 1/2): the exact foot is (1/2, 10).
+        let line = Line::new(IntPoint::new(0, 10), IntPoint::new(10, 10));
+        let p = Point::from(rp(1, 1, 2));
+        let java = p.perpendicular_projection_with(&line, true);
+        assert_eq!(java, p.perpendicular_projection(&line));
+        assert_eq!(java.to_float(), FloatPoint::new(1.0, -20.0));
+        let exact = p.perpendicular_projection_with(&line, false);
+        assert_eq!(exact.to_float(), FloatPoint::new(0.5, 10.0));
+        assert_eq!(line.perpendicular_projection_with(&p, false), exact);
+        // Through the origin only the missing `z` shows: (1/2, 0) onto y = x.
+        let diagonal = Line::new(IntPoint::new(0, 0), IntPoint::new(10, 10));
+        let q = Point::from(rp(1, 0, 2));
+        assert_eq!(
+            q.perpendicular_projection_with(&diagonal, true).to_float(),
+            FloatPoint::new(0.5, 0.5)
+        );
+        assert_eq!(
+            q.perpendicular_projection_with(&diagonal, false).to_float(),
+            FloatPoint::new(0.25, 0.25)
+        );
+        // An integer point is exact under both values.
+        let i = Point::Int(IntPoint::new(10, 0));
+        assert_eq!(
+            i.perpendicular_projection_with(&diagonal, false),
+            i.perpendicular_projection_with(&diagonal, true)
+        );
     }
 
     #[test]

@@ -512,7 +512,7 @@ impl Session<'_> {
         }
         for drill in &mut drills {
             place(&mut drill.sections, self);
-            // PARITY(quirk): Java's `roomArr` keeps the removed rooms of the
+            // PARITY(quirk, java_quirks.fanout_stale_drill_carry): Java's `roomArr` keeps the removed rooms of the
             // earlier search, which no room of this one is identical to.
             drill.rooms.iter_mut().for_each(|room| *room = None);
         }
@@ -563,7 +563,9 @@ impl Session<'_> {
             PolylineShape::from(page_shape),
             holes.into_iter().map(PolylineShape::from).collect(),
         );
-        let Some(drill_shapes) = area.split_to_convex(self.stop) else {
+        // N06 batch G: the cutouts' `router.java_quirks.*` switches.
+        let Some(drill_shapes) = area.split_to_convex_with(self.stop, self.control.quirks.split())
+        else {
             // A stopped or failed split leaves the page empty for this net.
             return Ok(Vec::new());
         };

@@ -309,6 +309,12 @@ impl Line {
         point.perpendicular_projection(self)
     }
 
+    /// [`Self::perpendicular_projection`] with the switch
+    /// `router.java_quirks.rational_perp_projection` (N06).
+    pub fn perpendicular_projection_with(&self, point: &Point, java_quirk: bool) -> Point {
+        point.perpendicular_projection_with(self, java_quirk)
+    }
+
     /// Translates the line perpendicular by about `dist`: to the left if `dist > 0`,
     /// else to the right.
     pub fn translate(&self, dist: f64) -> Line {

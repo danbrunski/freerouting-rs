@@ -236,9 +236,17 @@ pub fn control_paths() -> Vec<&'static str> {
 pub fn uncovered_fields<'a>(paths: impl IntoIterator<Item = &'a str>) -> Vec<&'a str> {
     paths
         .into_iter()
-        .filter(|path| !has_control(path) && !CLI_ONLY.iter().any(|(p, _)| p == path))
+        .filter(|path| {
+            !has_control(path)
+                && !CLI_ONLY.iter().any(|(p, _)| p == path)
+                && !path.starts_with(JAVA_QUIRKS_PREFIX)
+        })
         .collect()
 }
+
+/// The `java_quirks.*` switches (N06) have no control: they are set with the
+/// CLI, a settings file or a profile, one Java bug each.
+pub const JAVA_QUIRKS_PREFIX: &str = "java_quirks.";
 
 /// A layer of the open board, for the rows of the window.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -45,6 +45,17 @@ pub fn import_session(board: &mut BasicBoard, session: &Session) -> SesImportSum
     let communication = &board.communication;
     let denominator =
         communication.coordinate_transform.dsn_to_board(1.0) / f64::from(communication.resolution);
+    // PARITY(quirk, java_quirks.ses_reader_scale): SesReader.java:70-72 divides
+    // by the factor the writer divides by; `false` multiplies, the inverse of
+    // the writer.
+    let java_scale = board.java_quirks().ses_reader_scale;
+    let to_board = |v: f64| {
+        if java_scale {
+            v / denominator
+        } else {
+            v * denominator
+        }
+    };
     for net in &routes.network_out {
         let Some(net_number) = board
             .rules
@@ -97,12 +108,16 @@ pub fn import_session(board: &mut BasicBoard, session: &Session) -> SesImportSum
                         .iter()
                         .map(|p| {
                             Point::Int(IntPoint::new(
-                                round_to_i32(p.x / denominator),
-                                round_to_i32(p.y / denominator),
+                                round_to_i32(to_board(p.x)),
+                                round_to_i32(to_board(p.y)),
                             ))
                         })
                         .collect();
-                    let half_width = round_to_i32(width / (2.0 * denominator));
+                    let half_width = if java_scale {
+                        round_to_i32(width / (2.0 * denominator))
+                    } else {
+                        round_to_i32(width * denominator / 2.0)
+                    };
                     board.insert_trace(
                         Polyline::from_points(&corners),
                         layer_no,
@@ -135,8 +150,8 @@ pub fn import_session(board: &mut BasicBoard, session: &Session) -> SesImportSum
                         continue;
                     };
                     let center = IntPoint::new(
-                        round_to_i32(via.at.x / denominator),
-                        round_to_i32(via.at.y / denominator),
+                        round_to_i32(to_board(via.at.x)),
+                        round_to_i32(to_board(via.at.y)),
                     );
                     board.insert_via(
                         padstack,

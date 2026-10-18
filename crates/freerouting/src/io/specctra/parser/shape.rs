@@ -152,10 +152,25 @@ impl DsnShape {
     /// coordinates, a circle uses its diameter as radius, a path adds the
     /// half width to the maximum x after taking the maximum. `None` for a
     /// polyline path.
-    pub fn bounding_box(&self) -> Option<[f64; 4]> {
+    ///
+    /// `java_quirk` is `router.java_quirks.dsn_shape_bbox` (N06): `false` sorts a rectangle's coordinates, takes half a circle's diameter as
+    /// its radius and adds a path's half width to each x.
+    pub fn bounding_box_with(&self, java_quirk: bool) -> Option<[f64; 4]> {
         let c = &self.coor;
         match self.kind {
+            // PARITY(quirk, java_quirks.dsn_shape_bbox): Rectangle.java:25,
+            // Circle.java:57-63, PolygonPath.java:111-130.
+            DsnShapeKind::Rectangle if !java_quirk => Some([
+                c[0].min(c[2]),
+                c[1].min(c[3]),
+                c[0].max(c[2]),
+                c[1].max(c[3]),
+            ]),
             DsnShapeKind::Rectangle => Some([c[0], c[1], c[2], c[3]]),
+            DsnShapeKind::Circle if !java_quirk => {
+                let r = c[0] / 2.0;
+                Some([c[1] - r, c[2] - r, c[1] + r, c[2] + r])
+            }
             DsnShapeKind::Circle => Some([c[1] - c[0], c[2] - c[0], c[1] + c[0], c[2] + c[0]]),
             DsnShapeKind::Polygon => {
                 let mut b = [
@@ -186,7 +201,11 @@ impl DsnShape {
                 for (i, v) in c.iter().enumerate() {
                     if i % 2 == 0 {
                         b[0] = b[0].min(*v - offset);
-                        b[2] = b[2].max(*v) + offset;
+                        b[2] = if java_quirk {
+                            b[2].max(*v) + offset
+                        } else {
+                            b[2].max(*v + offset)
+                        };
                     } else {
                         b[1] = b[1].min(*v - offset);
                         b[3] = b[3].max(*v + offset);
@@ -382,4 +401,45 @@ pub(crate) fn transform_area_to_board_rel(
     transform: &CoordinateTransform,
 ) -> Option<Area> {
     to_area(shapes, |s| s.transform_to_board_rel(transform))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn shape(kind: DsnShapeKind, width: f64, coor: &[f64]) -> DsnShape {
+        DsnShape {
+            layer: super::super::layer::DsnLayer::pcb(),
+            kind,
+            width,
+            coor: coor.to_vec(),
+        }
+    }
+
+    /// N06 `dsn_shape_bbox`: `true` keeps Java's three box bugs, `false` fixes them.
+    #[test]
+    fn bounding_box_switch_both_behaviours() {
+        let rect = shape(DsnShapeKind::Rectangle, 0.0, &[10.0, 20.0, 0.0, 5.0]);
+        assert_eq!(rect.bounding_box_with(true), Some([10.0, 20.0, 0.0, 5.0]));
+        assert_eq!(rect.bounding_box_with(false), Some([0.0, 5.0, 10.0, 20.0]));
+        // A circle of diameter 4 at (10, 20).
+        let circle = shape(DsnShapeKind::Circle, 0.0, &[4.0, 10.0, 20.0]);
+        assert_eq!(
+            circle.bounding_box_with(true),
+            Some([6.0, 16.0, 14.0, 24.0])
+        );
+        assert_eq!(
+            circle.bounding_box_with(false),
+            Some([8.0, 18.0, 12.0, 22.0])
+        );
+        // A path of width 2 from (0, 0) to (10, 0) to (5, 0): Java adds the half
+        // width to max x at every x step.
+        let path = shape(
+            DsnShapeKind::PolygonPath,
+            2.0,
+            &[0.0, 0.0, 10.0, 0.0, 5.0, 0.0],
+        );
+        assert_eq!(path.bounding_box_with(true), Some([-1.0, -1.0, 12.0, 1.0]));
+        assert_eq!(path.bounding_box_with(false), Some([-1.0, -1.0, 11.0, 1.0]));
+    }
 }

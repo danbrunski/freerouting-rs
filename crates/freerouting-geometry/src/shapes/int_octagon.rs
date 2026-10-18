@@ -8,6 +8,7 @@ use crate::jmath::{d2i, round_to_i32};
 use crate::limits::{CRIT_INT, SQRT2};
 use crate::line::Line;
 use crate::point::{IntPoint, Point};
+use crate::quirks::SplitQuirks;
 use crate::side::Side;
 use crate::vector::Vector;
 
@@ -628,6 +629,11 @@ impl IntOctagon {
     /// Divides `d` minus this octagon into 8 convex pieces, 4 of which have a corner cut
     /// off (Java `cutoutFrom(IntBox)`).
     pub fn cutout_from_box(&self, d: &IntBox) -> Vec<IntOctagon> {
+        self.cutout_from_box_with(d, SplitQuirks::JAVA)
+    }
+
+    /// [`Self::cutout_from_box`] with the switches of the cutouts (N06 batch G).
+    pub fn cutout_from_box_with(&self, d: &IntBox, quirks: SplitQuirks) -> Vec<IntOctagon> {
         let c = self.intersection_box(d);
         if self.is_empty() || c.dimension() < self.dimension() {
             return vec![d.to_int_octagon()];
@@ -742,6 +748,10 @@ impl IntOctagon {
         let (b, o) = (boxes[3], octagons[3]);
         if b.ur.y.wrapping_sub(b.ll.y) > o.right_x.wrapping_sub(o.left_x) {
             boxes[3] = IntBox::new(b.ll.x, b.ll.y, o.right_x, b.ur.y);
+            // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): IntOctagon.java:1206-1223
+            // rebuilds the octagon unchanged, so it overlaps the moved box. N06.4 adds the
+            // trim under `false`; until then both values keep Java's.
+            let _java_branch3 = quirks.octagon_box_cutout_branch3;
             octagons[3] = with(&o, o.left_x, o.bottom_y, o.right_x, o.top_y);
         }
         let (b, o) = (boxes[1], octagons[3]);

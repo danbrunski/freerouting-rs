@@ -5,6 +5,7 @@ use std::sync::{Arc, OnceLock};
 
 use crate::float_point::FloatPoint;
 use crate::point::{IntPoint, Point};
+use crate::quirks::SplitQuirks;
 use crate::stoppable::Stoppable;
 use crate::vector::Vector;
 
@@ -13,7 +14,9 @@ use super::{IntBox, IntOctagon, PolylineShape, PolylineShapeOps, TileShape, Tile
 struct PolylineAreaInner {
     border: PolylineShape,
     holes: Vec<PolylineShape>,
-    convex_pieces: OnceLock<Vec<TileShape>>,
+    /// One cached split per [`SplitQuirks`] value ([`SplitQuirks::cache_slot`]), so a
+    /// split is never shared across switch values (N06).
+    convex_pieces: [OnceLock<Vec<TileShape>>; SplitQuirks::COMBINATIONS],
 }
 
 /// An area where the outside border curve and the hole borders consist of straight
@@ -42,7 +45,7 @@ impl PolylineArea {
             inner: Arc::new(PolylineAreaInner {
                 border,
                 holes,
-                convex_pieces: OnceLock::new(),
+                convex_pieces: Default::default(),
             }),
         }
     }
@@ -145,7 +148,18 @@ impl PolylineArea {
     /// Returns `None` if a split fails, if a cutout fails, or if `stoppable` requests a
     /// stop. The result is cached only on success.
     pub fn split_to_convex(&self, stoppable: Option<&dyn Stoppable>) -> Option<Vec<TileShape>> {
-        if let Some(pieces) = self.inner.convex_pieces.get() {
+        self.split_to_convex_with(stoppable, SplitQuirks::JAVA)
+    }
+
+    /// [`Self::split_to_convex`] with the switches of the cutouts (N06 batch G). Each
+    /// switch value has its own cache.
+    pub fn split_to_convex_with(
+        &self,
+        stoppable: Option<&dyn Stoppable>,
+        quirks: SplitQuirks,
+    ) -> Option<Vec<TileShape>> {
+        let cache = &self.inner.convex_pieces[quirks.cache_slot()];
+        if let Some(pieces) = cache.get() {
             return Some(pieces.clone());
         }
         let mut curr_pieces = self.inner.border.split_to_convex()?;
@@ -161,7 +175,7 @@ impl PolylineArea {
                     if stoppable.is_some_and(|s| s.is_stop_requested()) {
                         return None;
                     }
-                    for piece in divide_piece.cutout(hole_piece)? {
+                    for piece in divide_piece.cutout_with(hole_piece, quirks)? {
                         if piece.dimension() == 2 {
                             new_pieces.push(piece);
                         }
@@ -170,7 +184,7 @@ impl PolylineArea {
                 curr_pieces = new_pieces;
             }
         }
-        Some(self.inner.convex_pieces.get_or_init(|| curr_pieces).clone())
+        Some(cache.get_or_init(|| curr_pieces).clone())
     }
 
     /// The area turned by `factor` times 90 degrees around `pole`.

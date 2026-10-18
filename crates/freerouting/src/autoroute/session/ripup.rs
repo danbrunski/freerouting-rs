@@ -12,7 +12,7 @@
 //! is set; it is `None` on the parity path. The random detour factor `0.5 + r * r`
 //! is drawn from the search's generator only from ripup pass 4 on, outside
 //! every third pass (`:158-162`); the batch router never sets the pass
-//! number, so the draw is dead at the pin (`// PARITY(quirk):`, A00
+//! number, so the draw is dead at the pin (`// PARITY(quirk, java_quirks.ripup_pass_no_unset):`, A00
 //! question 3).
 //!
 //! `Connection.get` caches the connection of every item it walks, as Java
@@ -340,8 +340,10 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
                 detour = connection.detour(board);
             }
         }
-        // PARITY(quirk): MazeRipupResolver.java:158-162; the batch router
-        // never sets ripupPassNo, so this is dead at the pin.
+        // PARITY(quirk, java_quirks.ripup_pass_no_unset):
+        // MazeRipupResolver.java:158-162; the batch router never sets
+        // ripupPassNo, so this is dead at the pin (`batch::connection` sets it
+        // under `false`).
         if draws_random_factor(control.ripup_pass_no) {
             let random = self.random.next_double();
             let random_factor = 0.5 + random * random;

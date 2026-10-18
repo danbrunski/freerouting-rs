@@ -97,7 +97,7 @@ pub fn insert_segments(
     target_layer: i32,
     segments: &[ResultItem],
 ) -> Result<Inserted, InsertError> {
-    // PARITY(quirk): Java holds the start and target items as objects
+    // PARITY(quirk, java_quirks.insert_stale_trace_object): Java holds the start and target items as objects
     // (`:108-137`); a trace the insertion splits or removes leaves the board,
     // and `connectToTrace` still connects to the removed object's geometry.
     let target_object = target_item.and_then(|id| board.trace_object(id));
@@ -125,18 +125,25 @@ pub fn insert_segments(
     let done = inserter.done;
     let net = ctrl.net_number;
     let class = ctrl.trace_clearance_class_index;
-    // PARITY: FoundConnectionInserter.java:113-140, the target trace gets
-    // the start layer's half width and the start trace the target layer's.
+    // PARITY(quirk, java_quirks.connect_to_trace_swapped_width):
+    // FoundConnectionInserter.java:113-140, the target trace gets the start
+    // layer's half width and the start trace the target layer's; `false` gives
+    // each stub its own layer's.
+    let (target_stub_layer, start_stub_layer) = if ctrl.quirks.connect_to_trace_swapped_width {
+        (start_layer, target_layer)
+    } else {
+        (target_layer, start_layer)
+    };
     if let Some(trace) = trace_object_now(board, target_item, target_object)
         && let Some(corner) = done.first_corner
     {
-        let half_width = half_width_at(ctrl, start_layer);
+        let half_width = half_width_at(ctrl, target_stub_layer);
         board.connect_to_trace_object(corner, &trace, half_width, class);
     }
     if let Some(trace) = trace_object_now(board, start_item, start_object)
         && let Some(corner) = done.last_corner
     {
-        let half_width = half_width_at(ctrl, target_layer);
+        let half_width = half_width_at(ctrl, start_stub_layer);
         board.connect_to_trace_object(corner, &trace, half_width, class);
     }
     board.normalize_traces(net);

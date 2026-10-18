@@ -778,6 +778,20 @@ impl Area {
             Area::PolylineArea(a) => a.split_to_convex(Some(stoppable)),
         }
     }
+
+    /// [`Area::split_to_convex`] with the switches of the cutouts (N06 batch G) and an
+    /// optional `stoppable`. A plain shape's split makes no cutout, so the switches
+    /// reach only a [`PolylineArea`]'s holes.
+    pub fn split_to_convex_with(
+        &self,
+        stoppable: Option<&dyn Stoppable>,
+        quirks: crate::quirks::SplitQuirks,
+    ) -> Option<Vec<TileShape>> {
+        match self {
+            Area::Shape(s) => s.split_to_convex(),
+            Area::PolylineArea(a) => a.split_to_convex_with(stoppable, quirks),
+        }
+    }
 }
 
 #[cfg(test)]

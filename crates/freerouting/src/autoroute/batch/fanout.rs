@@ -173,7 +173,10 @@ impl FanoutRun {
     /// Java's constructor: the components of `board` in fanout order, the
     /// deadline of `fanout.timeout` from now.
     pub fn new(board: &RoutingBoard, ctx: &StageCtx) -> FanoutRun {
-        let order = PinSortingOrder::from_name(&ctx.settings.fanout.pin_sorting_order);
+        let order = PinSortingOrder::from_name_with(
+            &ctx.settings.fanout.pin_sorting_order,
+            ctx.board_settings.java_quirks().fanout_pin_order_names,
+        );
         let components = fanout_components(board, order);
         let total_smd_pins = components.iter().map(FanoutComponent::smd_pin_count).sum();
         let deadline = ctx

@@ -14,7 +14,10 @@ mod ses_reader;
 pub mod ses_writer;
 pub mod wire_keepout;
 
-pub use dsn_reader::{BoardReadResult, build_board, read_board, read_board_from_str};
+pub use dsn_reader::{
+    BoardReadResult, build_board, build_board_with, read_board, read_board_from_str,
+    read_board_from_str_with,
+};
 pub use rules_reader::{RulesError, RulesOutcome, apply_rules_file, read_rules};
 pub use rules_writer::{rules_from_board, write_rules};
 pub use ses_reader::{SesImportSummary, import_session, read_session};

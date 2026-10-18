@@ -87,6 +87,11 @@ pub struct BasicBoard {
     /// Where a trace end connects to a pin (N04, `router.pad_contacts`;
     /// [`crate::board::contact_rule`]). A [`BoardSnapshot`] keeps it.
     pub(crate) contact_rule: crate::board::contact_rule::ContactRule,
+    /// `router.java_quirks.*` (N06): the switches of the Java bugs that shove,
+    /// pull-tight, the DRC, the statistics, the readers and the interactive code
+    /// read through the board ([`Self::java_quirks`]). A [`BoardSnapshot`] keeps
+    /// them, so deep copies and restores carry them.
+    pub(crate) java_quirks: crate::settings::JavaQuirks,
 }
 
 impl BasicBoard {
@@ -122,6 +127,7 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
             contact_rule: Default::default(),
+            java_quirks: crate::settings::JavaQuirks::JAVA,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -248,6 +254,19 @@ impl BasicBoard {
     // Snapshots (B01.3)
     // ------------------------------------------------------------------
 
+    /// The switches of the Java bugs kept for parity (N06,
+    /// `router.java_quirks.*`); [`crate::settings::JavaQuirks::JAVA`] unless a job
+    /// set them.
+    pub fn java_quirks(&self) -> crate::settings::JavaQuirks {
+        self.java_quirks
+    }
+
+    /// Sets the switches of the Java bugs kept for parity (N06). The job sets
+    /// them from the settings before it reads a session or routes.
+    pub fn set_java_quirks(&mut self, quirks: crate::settings::JavaQuirks) {
+        self.java_quirks = quirks;
+    }
+
     /// What Java serializes of this board (see [`BoardSnapshot`]).
     pub(crate) fn snapshot(&self) -> BoardSnapshot {
         BoardSnapshot {
@@ -266,6 +285,7 @@ impl BasicBoard {
             shape_memo: self.search_trees.shape_memo().clone(),
             search_config: self.search_trees.search_config(),
             contact_rule: self.contact_rule,
+            java_quirks: self.java_quirks,
         }
     }
 
@@ -297,6 +317,7 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
             contact_rule: snapshot.contact_rule,
+            java_quirks: snapshot.java_quirks,
         };
         board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();
@@ -2527,7 +2548,8 @@ impl BasicBoard {
         if trace_shape.intersection(&pin_shape).dimension() < 2 {
             return false;
         }
-        let Some(pieces) = trace_shape.cutout(&pin_shape) else {
+        // N06 batch G: the cutouts' `router.java_quirks.*` switches.
+        let Some(pieces) = trace_shape.cutout_with(&pin_shape, self.java_quirks.split()) else {
             return false;
         };
         let mut new_shape: Option<TileShape> = None;

@@ -599,7 +599,11 @@ impl RouteSession {
     ) -> bool {
         let corners = angled_connection(board, from, to);
         let mut succeeded = true;
-        for pair in corners.windows(2) {
+        // PARITY(quirk, java_quirks.route_connect_inner_break): Route.java:411-415
+        // leaves only the inner loop, so the next corner pair is tried from the
+        // added corner; `false` leaves both.
+        let java_inner_break = board.java_quirks().route_connect_inner_break;
+        'pairs: for pair in corners.windows(2) {
             let (mut from_corner, to_corner) = (pair[0], pair[1]);
             let mut limit = budget.check_ms.map(|ms| {
                 WorkLimit::with_site(board.search_trees.work_meter(), ms, "interactive_route")
@@ -642,6 +646,9 @@ impl RouteSession {
                     self.prev_corner = from_corner;
                     succeeded = false;
                     // Java breaks the inner loop only (kept quirk)
+                    if !java_inner_break {
+                        break 'pairs;
+                    }
                     break;
                 }
                 from_corner = ok;

@@ -19,7 +19,9 @@
 //! Java quirk kept: in `storeTrace` the contact-trace test compares a
 //! contact's clearance class with itself (`contactItem.clearanceClassIndex()
 //! != contactTrace.clearanceClassIndex()`, the same object), so only the
-//! shove-fixed state and the half width decide there.
+//! shove-fixed state and the half width decide there. Under
+//! `router.java_quirks.store_trace_class_self_compare = false` (N06) the
+//! contact's class is compared with the stored trace's.
 
 use freerouting_geometry::{FloatPoint, Line, Polyline, PolylineShapeOps, TileShape, TileShapeOps};
 
@@ -324,9 +326,15 @@ impl ShapeTraceEntries {
             }
             match &contact.kind {
                 ItemKind::Trace(contact_trace) => {
-                    // Java compares the contact's class with itself here.
+                    // PARITY(quirk, java_quirks.store_trace_class_self_compare):
+                    // Java compares the contact's class with itself here
+                    // (ShapeTraceEntries.java:385); `false` compares it with the
+                    // stored trace's.
+                    let class_differs = !board.java_quirks().store_trace_class_self_compare
+                        && contact.clearance_class() != trace_item.clearance_class();
                     if (board.is_shove_fixed(contact)
-                        || contact_trace.half_width != trace.half_width)
+                        || contact_trace.half_width != trace.half_width
+                        || class_differs)
                         && offset_shape.contains_inside(end_corner)
                     {
                         self.found_obstacle = Some(contact_id);
@@ -371,7 +379,10 @@ impl ShapeTraceEntries {
             contact_count += 1;
         }
         if contact_count == 1 && store_end_corner {
-            if let Some(projection) = offset_shape.nearest_border_point(end_corner)
+            // PARITY(quirk, java_quirks.rational_perp_projection): a rational end
+            // corner is projected with Java's formula unless the switch is `false`.
+            if let Some(projection) = offset_shape
+                .nearest_border_point_with(end_corner, board.java_quirks().rational_perp_projection)
                 && let Some(projection_side) = offset_shape.contains_on_border_line_no(&projection)
             {
                 // May not be correct: the trace may have no line suitable as

@@ -171,7 +171,8 @@ pub fn opt_route_item(
         length_after,
         incomplete_before,
         incomplete_after,
-    );
+    )
+    .with_int_via_ratio(board.java_quirks().route_result_int_via_ratio);
     // PARITY: :946-950, a full stop makes the result unimproved (the
     // deadline is a stop request here, see the module docs).
     let improved = !ctx.cancel.is_stop_requested() && result.improved();

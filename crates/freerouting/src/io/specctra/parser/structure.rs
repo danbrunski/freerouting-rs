@@ -458,10 +458,11 @@ fn create_board(ctx: &mut ReadContext, info: &mut BoardConstructionInfo) -> bool
             return false;
         }
         // Java fails on a polyline path here; its box is left out.
+        let java_bbox = ctx.java_quirks.dsn_shape_bbox;
         let boxes: Vec<[f64; 4]> = info
             .outline_shapes
             .iter()
-            .filter_map(DsnShape::bounding_box)
+            .filter_map(|s| s.bounding_box_with(java_bbox))
             .collect();
         let Some(first) = boxes.first().copied() else {
             ctx.board_outline_ok = false;
@@ -476,7 +477,8 @@ fn create_board(ctx: &mut ReadContext, info: &mut BoardConstructionInfo) -> bool
         });
     }
     let bounding_shape = info.bounding_shape.clone().expect("bounding shape");
-    let Some(bounding_box) = bounding_shape.bounding_box() else {
+    let Some(bounding_box) = bounding_shape.bounding_box_with(ctx.java_quirks.dsn_shape_bbox)
+    else {
         ctx.board_outline_ok = false;
         return false;
     };

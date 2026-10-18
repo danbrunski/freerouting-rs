@@ -260,7 +260,7 @@ impl Session<'_> {
         // PARITY: list order, then the tree insert (AutorouteEngine.java:556-557).
         self.complete.push(completed);
         self.by_java_id.insert(id, completed);
-        // PARITY(quirk): AutorouteEngine.java:142-150, a connection whose
+        // PARITY(quirk, java_quirks.init_failure_room_leak): AutorouteEngine.java:142-150, a connection whose
         // search could not be initialised leaves its rooms in the tree (A06),
         // and this session counts its ids from 1 again. Java keeps both rooms
         // under one id; the old one moves to a free key in place, so the tree

@@ -281,6 +281,24 @@ impl<'a> DesignRulesChecker<'a> {
         report
     }
 
+    /// Board units per millimetre for the summary messages, congestion zones and
+    /// hints. PARITY(quirk, java_quirks.drc_units_10000_per_mm):
+    /// DesignRulesChecker.java:455-475, 1338-1365 hard-code 10000; `false` takes
+    /// the board's own scale.
+    fn board_units_per_mm(&self) -> f64 {
+        if self.board.java_quirks().drc_units_10000_per_mm {
+            return 10000.0;
+        }
+        let communication = &self.board.communication;
+        let dsn = communication.coordinate_transform.board_to_dsn(1.0);
+        let mm = Unit::scale(dsn, communication.unit, Unit::Mm);
+        if mm > 0.0 && mm.is_finite() {
+            1.0 / mm
+        } else {
+            10000.0
+        }
+    }
+
     /// Java `convertCoordinate`.
     fn convert_coordinate(&self, value: f64, coordinate_unit: &str) -> f64 {
         let communication = &self.board.communication;
@@ -496,6 +514,7 @@ impl<'a> DesignRulesChecker<'a> {
     /// congestion clusters and hints.
     pub fn generate_summary(&mut self) -> DrcSummary {
         let mut summary = DrcSummary::default();
+        let per_mm = self.board_units_per_mm();
         let violations = self.all_clearance_violations();
         summary.clearance_violations_count = violations.len();
         let unconnected = self.all_unconnected_items();
@@ -516,9 +535,9 @@ impl<'a> DesignRulesChecker<'a> {
             let layer_name = self.layer_name(v.layer);
             let item1 = self.item_with_context(v.first_item);
             let item2 = self.item_with_context(v.second_item);
-            let expected_mm = v.expected_clearance / 10000.0;
-            let actual_mm = v.actual_clearance / 10000.0;
-            let shortfall_mm = ((v.expected_clearance - v.actual_clearance) / 10000.0).max(0.0);
+            let expected_mm = v.expected_clearance / per_mm;
+            let actual_mm = v.actual_clearance / per_mm;
+            let shortfall_mm = ((v.expected_clearance - v.actual_clearance) / per_mm).max(0.0);
             summary.violations.push(DiagnosticViolation {
                 violation_type: "clearance".into(),
                 severity: "error".into(),
@@ -626,8 +645,9 @@ impl<'a> DesignRulesChecker<'a> {
         }
 
         summary.unconnected_nets_count = unconnected_nets.len() + dangling_stubs;
-        summary.congestion_zones = detect_congestion_zones(&violations);
-        summary.hints = actionable_hints(&violations, &unconnected, &summary.congestion_zones);
+        summary.congestion_zones = detect_congestion_zones(&violations, per_mm);
+        summary.hints =
+            actionable_hints(&violations, &unconnected, &summary.congestion_zones, per_mm);
         summary
     }
 
@@ -688,13 +708,13 @@ impl<'a> DesignRulesChecker<'a> {
 
 /// Java `detectCongestionZones`: greedy clustering of the violation
 /// centres within 5 mm (assuming 10000 board units per mm like Java).
-fn detect_congestion_zones(violations: &[ClearanceViolation]) -> Vec<CongestionZone> {
+fn detect_congestion_zones(violations: &[ClearanceViolation], per_mm: f64) -> Vec<CongestionZone> {
     const CLUSTER_RADIUS_MM: f64 = 5.0;
     let points: Vec<(f64, f64)> = violations
         .iter()
         .map(|v| {
             let p = v.shape.centre_of_gravity().round();
-            (f64::from(p.x) / 10000.0, f64::from(p.y) / 10000.0)
+            (f64::from(p.x) / per_mm, f64::from(p.y) / per_mm)
         })
         .collect();
     let mut visited = vec![false; points.len()];
@@ -743,11 +763,12 @@ fn actionable_hints(
     violations: &[ClearanceViolation],
     unconnected: &[UnconnectedItems],
     zones: &[CongestionZone],
+    per_mm: f64,
 ) -> Vec<String> {
     let mut hints = Vec::new();
     let max_shortfall = violations
         .iter()
-        .map(|v| (v.expected_clearance - v.actual_clearance) / 10000.0)
+        .map(|v| (v.expected_clearance - v.actual_clearance) / per_mm)
         .fold(0.0, f64::max);
     if max_shortfall > 0.0 {
         hints.push(format!(

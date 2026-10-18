@@ -29,10 +29,13 @@ impl Session<'_> {
     ) {
         let board = self.board_octagon();
         let room = &calc.room_oct;
-        // PARITY(quirk): Sorted45DegreeRoomNeighbours.java:263, the corner
-        // compared with each next corner is never advanced, so a side is
-        // skipped only when its end corner equals the first side's start.
-        let current_corner = room.int_corner(from_side);
+        // PARITY(quirk, java_quirks.edge_corner_not_advanced):
+        // Sorted45DegreeRoomNeighbours.java:263, the corner compared with each
+        // next corner is never advanced, so a side is skipped only when its end
+        // corner equals the first side's start. `false` advances it, so every
+        // side of length 0 is skipped.
+        let advance_corner = !self.control.quirks.edge_corner_not_advanced;
+        let mut current_corner = room.int_corner(from_side);
         let mut side = from_side;
         loop {
             let next = (side + 1) % 8;
@@ -52,6 +55,9 @@ impl Session<'_> {
             }
             if side == to_side {
                 break;
+            }
+            if advance_corner {
+                current_corner = room.int_corner(next);
             }
             side = next;
         }

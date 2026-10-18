@@ -39,7 +39,7 @@ use crate::board::RoutingBoard;
 use crate::board::contact_rule::TJunctions;
 use crate::board::items::ItemId;
 use crate::board::selection_filter::{ItemFilter, SelectableChoice};
-use crate::board::structure::AngleRestriction;
+use crate::board::structure::{AngleRestriction, FixedState};
 use crate::optimize::params::{Clip, PullTightParams, REMOVE_ITEMS_PULL_TIGHT_NOMINAL_MS};
 use crate::optimize::tighten::{Outcome, Tightener, TrackedPolyline};
 use crate::optimize::via::OPT_VIA_RECURSION_DEPTH;
@@ -118,9 +118,15 @@ impl RoutingBoard {
             tightener.pull_tight(self, TrackedPolyline::of_trace(polyline))
         {
             let reuse = result.line_reuse(old_line_count);
-            // Java returns true even when `change` finds the lines unchanged.
-            self.change_trace(id, result.polyline, reuse);
-            return true;
+            // PARITY(quirk, java_quirks.pull_tight_reused_lines_change): Java
+            // returns true even when `change` finds the lines unchanged, which
+            // skips the end smoothing below; `false` goes on to it then.
+            let outcome = self.change_trace(id, result.polyline, reuse);
+            if self.java_quirks().pull_tight_reused_lines_change
+                || !matches!(outcome, crate::board::ChangeOutcome::Unchanged)
+            {
+                return true;
+            }
         }
         let angle = self.rules.trace_angle_restriction();
         if angle != AngleRestriction::NinetyDegree && self.rules.pin_edge_to_turn_dist() > 0.0 {
@@ -182,6 +188,17 @@ impl RoutingBoard {
             let trace = item.as_trace().expect("a trace");
             let (layer, class, fixed) = (trace.layer, item.clearance_class(), item.fixed_state());
             let nets = item.net_numbers().to_vec();
+            // PARITY(quirk, java_quirks.smooth_loses_trace): Java removes the
+            // trace before an insert that may fail, and the trace stays removed
+            // (TraceTightener.java:431-441); `false` tests the insert's failure
+            // conditions first and keeps the trace.
+            if !self.java_quirks().smooth_loses_trace
+                && (adjusted.corner_count() < 2
+                    || adjusted.first_corner() == adjusted.last_corner()
+                        && fixed < FixedState::UserFixed)
+            {
+                break;
+            }
             self.remove_item(current);
             let inserted = self.insert_trace_without_cleaning(
                 adjusted.clone(),

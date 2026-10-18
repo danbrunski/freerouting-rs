@@ -13,6 +13,7 @@ use super::parser::wiring::read_wiring;
 use crate::board::RoutingBoard;
 use crate::board::state::WriteResolution;
 use crate::board::structure::Unit;
+use crate::settings::JavaQuirks;
 
 /// The location reported for every DSN read failure.
 const PCB_LOCATION: &str = "(pcb";
@@ -82,11 +83,17 @@ pub fn read_board(bytes: &[u8]) -> BoardReadResult {
 
 /// Reads DSN text and builds its board.
 pub fn read_board_from_str(text: &str) -> BoardReadResult {
+    read_board_from_str_with(text, JavaQuirks::JAVA)
+}
+
+/// [`read_board_from_str`] with the readers' `router.java_quirks.*` switches
+/// (N06); the board keeps `quirks`.
+pub fn read_board_from_str_with(text: &str, quirks: JavaQuirks) -> BoardReadResult {
     if !has_pcb_header(text) {
         return BoardReadResult::parse_error(NOT_A_DSN_FILE);
     }
     match Pcb::parse(text) {
-        Ok(pcb) => build_board(&pcb),
+        Ok(pcb) => build_board_with(&pcb, quirks),
         Err(_) => BoardReadResult::parse_error(STRUCTURE_FAILED),
     }
 }
@@ -98,8 +105,19 @@ pub fn read_board_from_str(text: &str) -> BoardReadResult {
 /// the order exporters write them: parser, resolution, structure,
 /// placement, library, part library, network, wiring.
 pub fn build_board(pcb: &Pcb) -> BoardReadResult {
+    build_board_with(pcb, JavaQuirks::JAVA)
+}
+
+/// [`build_board`] with the readers' `router.java_quirks.*` switches (N06, the
+/// `dsn_*` rows); the board keeps `quirks`
+/// ([`BasicBoard::java_quirks`](crate::board::BasicBoard::java_quirks)).
+pub fn build_board_with(pcb: &Pcb, quirks: JavaQuirks) -> BoardReadResult {
     let mut ctx = ReadContext::new();
+    ctx.java_quirks = quirks;
     let read_ok = read_scopes(&mut ctx, pcb);
+    if let Some(board) = ctx.board.as_mut() {
+        board.set_java_quirks(quirks);
+    }
     super::parser::set_last_scope_identifier(&ctx.scope_identifier);
     let warnings = std::mem::take(&mut ctx.warnings);
     if read_ok {
@@ -152,6 +170,10 @@ fn read_scopes(ctx: &mut ReadContext, pcb: &Pcb) -> bool {
             ctx.dsn_file_generated_by_host = false;
         }
     }
+    // PARITY(quirk, java_quirks.dsn_unit_ignored): only the pcb `resolution` is
+    // read; the placement `resolution` and the pcb-level `unit` are ignored, as
+    // in Java (`Placement.java`). The reader carries the switch in
+    // `ctx.java_quirks`; N06.10 reads them under `false`.
     if let Some(resolution) = pcb.resolution {
         ctx.unit = Unit::from(resolution.unit);
         ctx.resolution = resolution.value;

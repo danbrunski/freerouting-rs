@@ -20,6 +20,7 @@ pub mod placement_transform;
 pub mod point;
 pub mod polygon;
 pub mod polyline;
+pub mod quirks;
 pub mod shapes;
 pub mod side;
 pub mod signum;
@@ -37,6 +38,7 @@ pub use placement_transform::PlacementTransform;
 pub use point::{IntPoint, Point, RationalPoint};
 pub use polygon::Polygon;
 pub use polyline::Polyline;
+pub use quirks::SplitQuirks;
 pub use shapes::{
     Area, Circle, ConvexShape, IntBox, IntOctagon, PolygonShape, PolylineArea, PolylineShape,
     PolylineShapeOps, RegularTileShape, Shape, ShapeBoundingDirections, Simplex, TileShape,

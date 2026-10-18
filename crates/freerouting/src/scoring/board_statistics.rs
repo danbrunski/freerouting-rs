@@ -573,20 +573,39 @@ impl BoardStatistics {
         } else {
             0.0
         };
+        // PARITY(quirk, java_quirks.stats_line_ab_length): BoardStatistics.java:252-263
+        // sums the distance between each line's two defining points; `false`
+        // sums the segments between consecutive corners.
+        let java_lengths = board.java_quirks().stats_line_ab_length;
         for trace in traces.iter().filter_map(|t| t.as_trace()) {
             let polyline = &trace.polyline;
             let corner_count = polyline.corner_count();
             if corner_count > 1 {
                 s.traces.total_segment_count += corner_count - 1;
             }
-            for line in polyline.lines() {
-                let (a, b) = (line.a(), line.b());
-                let (ax, ay, bx, by) = (
-                    f64::from(a.x),
-                    f64::from(a.y),
-                    f64::from(b.x),
-                    f64::from(b.y),
-                );
+            let ends: Vec<[f64; 4]> = if java_lengths {
+                polyline
+                    .lines()
+                    .iter()
+                    .map(|line| {
+                        let (a, b) = (line.a(), line.b());
+                        [
+                            f64::from(a.x),
+                            f64::from(a.y),
+                            f64::from(b.x),
+                            f64::from(b.y),
+                        ]
+                    })
+                    .collect()
+            } else {
+                (1..corner_count)
+                    .map(|i| {
+                        let (a, b) = (polyline.corner_approx(i - 1), polyline.corner_approx(i));
+                        [a.x, a.y, b.x, b.y]
+                    })
+                    .collect()
+            };
+            for [ax, ay, bx, by] in ends {
                 let length = ((ax - bx).powi(2) + (ay - by).powi(2)).sqrt() as f32;
                 if ax == bx {
                     s.traces.total_vertical_length += length;

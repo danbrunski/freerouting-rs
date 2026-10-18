@@ -31,7 +31,7 @@
 //! - after `Routed`, `opt_changed_area` on the pin's net with the pull-tight
 //!   accuracy, the control's trace costs and a limit of 1,000 nominal ms.
 //!
-//! `// PARITY(quirk):` Java initialises one `AutorouteEngine` and calls
+//! `// PARITY(quirk, java_quirks.fanout_stale_drill_carry):` Java initialises one `AutorouteEngine` and calls
 //! `autorouteConnection` up to three times on it, sharing one ripped set
 //! (`:1074-1126`). Each call clears its rooms and resets the room counter,
 //! so a fresh [`Session`](super::session::Session) per call matches it, but
@@ -154,6 +154,12 @@ fn attempt(
         stop: Some(ctx.cancel),
         work_limit: Some(limit.clone()),
     };
+    // PARITY(quirk, java_quirks.fanout_stale_drill_carry): one engine for every
+    // attempt (`:1076-1078`); `false` gives each attempt fresh drill pages, as
+    // the batch router does.
+    if !control.quirks.fanout_stale_drill_carry {
+        *engine = DrillCarry::default();
+    }
     // PARITY: :1083-1126, `ripupCosts` is null here.
     let ripped = Ripped {
         items: ripped,
@@ -269,7 +275,7 @@ fn route_attempts(
 ) -> Result<AttemptResult, String> {
     let settings = ctx.board_settings;
     let net = control.net_number;
-    // PARITY(quirk): one engine for every attempt (`:1076-1078`), so the
+    // PARITY(quirk, java_quirks.fanout_stale_drill_carry): one engine for every attempt (`:1076-1078`), so the
     // later attempts see the drill pages the earlier ones used.
     let mut engine = DrillCarry::default();
     let engine = &mut engine;

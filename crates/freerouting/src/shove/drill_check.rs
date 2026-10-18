@@ -20,6 +20,7 @@ use crate::board::RoutingBoard;
 use crate::board::items::{Item, ItemId, ItemKind};
 use crate::board::search::WorkLimit;
 use crate::board::structure::AngleRestriction;
+use crate::settings::JavaQuirks;
 
 use super::entry_side::{ShapeAndEntrySide, ShapeEntrySide};
 use super::trace_check::TraceShover;
@@ -293,7 +294,14 @@ impl TraceShover<'_> {
                 let current_line = trace.polyline.lines()[i + 1];
                 let direction: Direction = current_line.direction();
                 let in_front = !check_only_front
-                    || in_front_of_pad(&current_line, pad_shape, from_no, trace.half_width, true);
+                    || in_front_of_pad_with(
+                        &current_line,
+                        pad_shape,
+                        from_no,
+                        trace.half_width,
+                        true,
+                        &self.board.java_quirks(),
+                    );
                 if !in_front {
                     continue;
                 }
@@ -417,6 +425,28 @@ pub fn in_front_of_pad(
     width: i32,
     with_sides: bool,
 ) -> bool {
+    in_front_of_pad_with(
+        line,
+        pad_shape,
+        from_side,
+        width,
+        with_sides,
+        &JavaQuirks::JAVA,
+    )
+}
+
+/// [`in_front_of_pad`] with the switches `router.java_quirks.in_front_of_pad_typo`
+/// (`false` takes `min(a.x + a.y, b.x + b.y)` for side 0) and
+/// `in_front_of_pad_side0_flank` (N06.12 decides its fix; both values keep Java's
+/// flank clause until then).
+pub fn in_front_of_pad_with(
+    line: &Line,
+    pad_shape: &TileShape,
+    from_side: i32,
+    width: i32,
+    with_sides: bool,
+    quirks: &JavaQuirks,
+) -> bool {
     if !pad_shape.is_int_octagon() {
         return true;
     }
@@ -453,9 +483,19 @@ pub fn in_front_of_pad(
     let max_sum = f((ax + ay).max(bx + by));
     match from_side {
         0 => {
-            // PARITY: Java's typo `lineB.x + lineB.x` (ForcedPadRouter.java:78).
-            let typo_min_sum = f((ax + ay).min(bx + bx));
-            let mut result = min_y >= top + w || max_diff <= ul - diag || typo_min_sum >= ur + diag;
+            // PARITY(quirk, java_quirks.in_front_of_pad_typo): Java's typo
+            // `lineB.x + lineB.x` (ForcedPadRouter.java:78).
+            let side0_min_sum = if quirks.in_front_of_pad_typo {
+                f((ax + ay).min(bx + bx))
+            } else {
+                min_sum
+            };
+            let mut result =
+                min_y >= top + w || max_diff <= ul - diag || side0_min_sum >= ur + diag;
+            // PARITY(quirk, java_quirks.in_front_of_pad_side0_flank): the flank
+            // clause below takes `min` where sides 2, 4 and 6 take `max`
+            // (ForcedPadRouter.java:86); N06.12 decides the fix.
+            let _java_side0_flank = quirks.in_front_of_pad_side0_flank;
             if with_sides && !result {
                 result = max_x <= left - w && min_diff <= ul - diag
                     || min_x >= right + w && min_sum >= ur + diag;
@@ -564,5 +604,14 @@ mod tests {
         // swapped it takes min(150 - 140, 300 + 300) = 10, no.
         let reversed = Line::new(IntPoint { x: 150, y: -140 }, IntPoint { x: 300, y: -100 });
         assert!(!in_front_of_pad(&reversed, &pad, 0, 0, false));
+        // N06 `in_front_of_pad_typo`: `true` is the typo above, `false` the
+        // intended, symmetric formula.
+        let java = JavaQuirks::JAVA;
+        let fixed = JavaQuirks::JAVA
+            .with("in_front_of_pad_typo", false)
+            .unwrap();
+        assert!(in_front_of_pad_with(&line, &pad, 0, 0, false, &java));
+        assert!(!in_front_of_pad_with(&line, &pad, 0, 0, false, &fixed));
+        assert!(!in_front_of_pad_with(&reversed, &pad, 0, 0, false, &fixed));
     }
 }

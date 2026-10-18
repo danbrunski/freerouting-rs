@@ -108,15 +108,17 @@ pub fn backtrack(
         ExpandableRef::TargetDoor(door) => session.target_door(door).room,
         ExpandableRef::Drill(drill) => {
             let first_layer = session.drill(drill).first_layer;
-            // PARITY(quirk): FoundConnectionLocator.java:255 indexes the
-            // drill's rooms by `firstLayer + section`, though `roomArr`
-            // starts at the first layer. Every drill of a fixture starts at
-            // layer 0, so the index is the section's.
-            let room = drill_room(
-                session,
-                drill,
-                i64::from(first_layer) + destination_section as i64,
-            )?;
+            // PARITY(quirk, java_quirks.drill_destination_room_index):
+            // FoundConnectionLocator.java:255 indexes the drill's rooms by
+            // `firstLayer + section`, though `roomArr` starts at the first
+            // layer. Every drill of a fixture starts at layer 0, so the index is
+            // the section's. `false` indexes by the section.
+            let offset = if session.control.quirks.drill_destination_room_index {
+                i64::from(first_layer)
+            } else {
+                0
+            };
+            let room = drill_room(session, drill, offset + destination_section as i64)?;
             if current.room_ripped {
                 for tmp in session.drill(drill).rooms.clone() {
                     if let Some(item) = obstacle_item(session, tmp) {

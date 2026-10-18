@@ -23,7 +23,9 @@
 //! - the ripped set and costs are the caller's and are filled while
 //!   backtracking, before any check, so a rejected result (a disabled
 //!   layer) leaves them filled; a later attempt that reuses them rips the
-//!   items an earlier failed attempt found (`// PARITY(quirk):`, A12);
+//!   items an earlier failed attempt found
+//!   (`// PARITY(quirk, java_quirks.failed_attempt_ripped_carryover):`, A12;
+//!   `false` restores the set after a rejected attempt, N06);
 //! - the rip: each ripped item's connection (`getConnectionItems`) joins one
 //!   set, the items' nets another; the set is removed, then the trace tails
 //!   of each net in ascending order.
@@ -33,8 +35,9 @@
 //! `FAILED` before `clear()` (`:142-150`), so the start rooms it completed
 //! stay in the autoroute tree as obstacles for later connections of the
 //! same clearance class. The port does the same during the parity phase
-//! (`// PARITY(quirk):`, DIVERGENCES "Java bugs kept on purpose"; it is to
-//! be fixed after rung 3). A later session's room with the same id moves
+//! (`// PARITY(quirk, java_quirks.init_failure_room_leak):`, DIVERGENCES "Java bugs
+//! kept on purpose"; `false` clears the session before the failure returns,
+//! N06). A later session's room with the same id moves
 //! the leaked one to a free key in place (`ShapeSearchTree::rekey_room_aside`);
 //! a leaked room is an obstacle but, unlike Java, never a neighbour with a
 //! door.
@@ -174,6 +177,10 @@ fn route_connection_hooked<S: SearchSink>(
     budget: Option<&mut dyn BudgetPolicy>,
 ) -> (AttemptResult, S) {
     let Ripped { items, costs } = ripped;
+    // PARITY(quirk, java_quirks.failed_attempt_ripped_carryover): a rejected
+    // attempt keeps what its locate added to the ripped set, so the next attempt
+    // rips the earlier path's items too; `false` restores the set as it was.
+    let items_before = (!ctrl.quirks.failed_attempt_ripped_carryover).then(|| items.clone());
     let (searched, sink) = search_and_locate(
         board, start, dest, ctrl, limits, items, costs, sink, engine, widths, budget,
     );
@@ -192,6 +199,11 @@ fn route_connection_hooked<S: SearchSink>(
         Searched::Done { result, located } => (result, located),
     };
     let result = finish_connection(board, start, dest, ctrl, result.is_some(), located, items);
+    if result.state != AttemptState::Routed
+        && let Some(before) = items_before
+    {
+        *items = before;
+    }
     (result, sink)
 }
 
@@ -281,7 +293,8 @@ pub(crate) fn finish_connection(
     if is_disabled_signal_layer(board, ctrl, located.start_layer)
         || is_disabled_signal_layer(board, ctrl, located.target_layer)
     {
-        // PARITY(quirk): the ripped set stays filled (A06 decisions).
+        // PARITY(quirk, java_quirks.failed_attempt_ripped_carryover): the ripped set stays filled (A06
+        // decisions); `route_connection_hooked` restores it under `false`.
         return failed(board, ", because some of their layers are disabled");
     }
     // Java's `connectionItems == null` (`:233-238`, SKIPPED) cannot happen:
@@ -320,7 +333,8 @@ fn search_and_locate<S: SearchSink>(
     if budget.is_some() {
         session.set_budget_policy(budget);
     }
-    // PARITY(quirk): the engine's drill pages (`AutorouteEngine.java:91`).
+    // PARITY(quirk, java_quirks.fanout_stale_drill_carry): the engine's drill pages
+    // (`AutorouteEngine.java:91`).
     session.install_drill_carry(std::mem::take(engine));
     let (result, sink) = {
         let mut search = MazeSearch::new(&mut session, sink, NoExtraCost, limits.settings);
@@ -331,9 +345,14 @@ fn search_and_locate<S: SearchSink>(
         (result, search.into_sink())
     };
     let Some(result) = result else {
-        // PARITY(quirk): AutorouteEngine.java:142-150, FAILED before
-        // `clear()`: the session's rooms stay in the tree.
+        // PARITY(quirk, java_quirks.init_failure_room_leak):
+        // AutorouteEngine.java:142-150, FAILED before `clear()`: the session's
+        // rooms stay in the tree. `false` clears them first, which leaves the
+        // rekey of `Session::complete_room` nothing to move aside.
         *engine = session.take_drill_carry();
+        if !ctrl.quirks.init_failure_room_leak {
+            session.clear();
+        }
         return (Searched::InitFailed, sink);
     };
     // Java catches what the locator throws: no located path.
@@ -722,7 +741,7 @@ mod tests {
                 break;
             }
         }
-        // PARITY(quirk): the completed start rooms stay in the tree.
+        // PARITY(quirk, java_quirks.init_failure_room_leak): the completed start rooms stay in the tree.
         assert!(!leaked.is_empty(), "the init failure leaks its rooms");
         assert!(leaked.iter().all(|id| *id > 0));
 

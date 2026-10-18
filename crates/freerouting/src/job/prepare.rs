@@ -50,14 +50,16 @@ pub use crate::io::kicad::{
     DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input, same_file,
 };
 use crate::io::specctra::{
-    BoardReadResult, SesImportSummary, apply_rules_file, build_board, read_board_from_str,
+    BoardReadResult, SesImportSummary, apply_rules_file, build_board_with, read_board_from_str_with,
 };
 use crate::quality::pour_guard;
 use crate::settings::autoroute_scope::{patch_from_dsn, patch_from_rules};
 use crate::settings::board::{
     BoardRouterSettings, apply_board_specific, apply_net_class_exclusions,
 };
-use crate::settings::{ResolveContext, RouterSettings, SettingsPatch, Source, defaults, resolve};
+use crate::settings::{
+    JavaQuirks, ResolveContext, RouterSettings, SettingsPatch, Source, defaults, resolve,
+};
 
 /// Which rules file a job uses (`RoutingJobScheduler.java:115-157`).
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -301,10 +303,12 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let mut provenance = merged.provenance;
     let mut patch = merged.patch;
 
-    // 2. Read the board.
+    // 2. Read the board, with the readers' `router.java_quirks.*` (N06) of the
+    // first merge.
+    let read_quirks = JavaQuirks::from_patch(&patch.java_quirks);
     let result = match &pcb {
-        Some(pcb) => build_board(pcb),
-        None => read_board_from_str(&text),
+        Some(pcb) => build_board_with(pcb, read_quirks),
+        None => read_board_from_str_with(&text, read_quirks),
     };
     let (mut board, warnings) = match result {
         BoardReadResult::Success { board, warnings }
@@ -363,6 +367,10 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     for warning in apply_net_class_exclusions(&patch, &mut board) {
         push(&mut log, LogLevel::Warn, warning);
     }
+
+    // N06: the final `router.java_quirks.*` go on the board before the session
+    // import, the rules having been read with the first merge's.
+    board.set_java_quirks(JavaQuirks::from_patch(&patch.java_quirks));
 
     // 7. The session.
     let mut ses_summary = None;
@@ -498,6 +506,8 @@ pub fn prepare_board_for_routing(
     }
     let mut state = OverrideState::default();
     let settings = RouterSettings::from_patch(patch, ctx.cores);
+    // N06: `router.java_quirks.*` on the board, for the code that sees only it.
+    board.set_java_quirks(JavaQuirks::from_settings(&settings));
     log.extend(overrides::apply_all(board, &settings, &mut state));
     board.expand_bounding_box_to_include_all_items();
     board.reduce_nets_of_route_items();

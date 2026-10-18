@@ -103,7 +103,7 @@ fn java_defaults_are_the_legacy_profile() {
 /// machine with 8 cores, checked on `patch`.
 fn check_java_defaults(patch: &SettingsPatch, what: &str) {
     let threads = i(7);
-    let expected: Vec<(&str, Option<FieldValue>)> = vec![
+    let mut expected: Vec<(&str, Option<FieldValue>)> = vec![
         // N01: unset, which is `enhanced`; Java has no profile.
         ("profile", None),
         // Top level.
@@ -260,6 +260,14 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         // P02.1: unset, which is off.
         ("debug.audit_incremental", None),
     ];
+    // N06: every `java_quirks` switch is unset, which is `true` (Java's
+    // behaviour); `tests/settings_java_quirks.rs` checks the ids.
+    expected.extend(
+        FIELDS
+            .iter()
+            .filter(|f| f.section == "java_quirks")
+            .map(|f| (f.path, None)),
+    );
     let tabled: BTreeSet<&str> = FIELDS.iter().map(|f| f.path).collect();
     let listed: BTreeSet<&str> = expected.iter().map(|(p, _)| *p).collect();
     assert_eq!(tabled, listed, "this test must list every table entry");

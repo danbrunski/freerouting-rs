@@ -135,7 +135,9 @@ pub(crate) fn read_network(ctx: &mut ReadContext, network: &ast::Network) -> boo
             }
             (None, _) => {
                 ctx.via_padstack_names = Some(use_via);
-                aliased_class = Some(i);
+                // PARITY(quirk, java_quirks.dsn_via_alias): Network.java:1328-1335
+                // shares the first class's list; `false` copies it.
+                aliased_class = ctx.java_quirks.dsn_via_alias.then_some(i);
             }
         }
     }
@@ -740,10 +742,18 @@ fn create_via_rule(board: &mut RoutingBoard, use_via: &[String], net_class: NetC
 /// Java `Network.insertClassPairs`. Java walks the remaining names with the
 /// outer iterator, so only the pairs of the first known class with the
 /// others are used.
+///
+/// `router.java_quirks.dsn_class_class_pairs = false` (N06) uses every pair.
 fn insert_class_pairs(ctx: &mut ReadContext, class_classes: &[ast::ClassClass]) {
     let transform = ctx.coordinate_transform;
+    // PARITY(quirk, java_quirks.dsn_class_class_pairs): Network.java:563-593.
+    let java_pairs = ctx.java_quirks.dsn_class_class_pairs;
     let board = ctx.board();
     for class_class in class_classes {
+        if !java_pairs {
+            insert_all_class_pairs(board, class_class, &transform);
+            continue;
+        }
         let mut names = class_class.classes.iter();
         while let Some(first_name) = names.next() {
             let Some(first) = resolve_net_class(&mut board.rules, first_name) else {
@@ -761,6 +771,33 @@ fn insert_class_pairs(ctx: &mut ReadContext, class_classes: &[ast::ClassClass]) 
                 };
                 insert_class_pair_info(board, class_class, first, second, &transform);
             }
+        }
+    }
+}
+
+/// Every pair of the known classes of `class_class`, each once, in list
+/// order (N06 `dsn_class_class_pairs = false`).
+fn insert_all_class_pairs(
+    board: &mut RoutingBoard,
+    class_class: &ast::ClassClass,
+    transform: &CoordinateTransform,
+) {
+    let names = &class_class.classes;
+    for (i, first_name) in names.iter().enumerate() {
+        let Some(first) = resolve_net_class(&mut board.rules, first_name) else {
+            board
+                .log
+                .push("Network.insert_class_pairs: first class not found".into());
+            continue;
+        };
+        for second_name in &names[i + 1..] {
+            let Some(second) = resolve_net_class(&mut board.rules, second_name) else {
+                board
+                    .log
+                    .push("Network.insert_class_pairs: second class not found".into());
+                continue;
+            };
+            insert_class_pair_info(board, class_class, first, second, transform);
         }
     }
 }

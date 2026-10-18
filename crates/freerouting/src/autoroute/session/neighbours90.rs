@@ -416,9 +416,16 @@ impl Session<'_> {
                                 if p.last == 0 {
                                     rooms.push([pi.ur.x, b.ll.y, room.ur.x, room.ll.y]);
                                 }
-                                // PARITY(quirk): SortedOrthogonalRoomNeighbours.java:271-276,
-                                // a box of width 0 (room.ur.x twice), never inserted.
-                                rooms.push([room.ur.x, room.ll.y, room.ur.x, ni.ll.y]);
+                                // PARITY(quirk, java_quirks.ortho_zero_width_room):
+                                // SortedOrthogonalRoomNeighbours.java:271-276, a box of
+                                // width 0 (room.ur.x twice), never inserted; `false`
+                                // reaches the board's right edge, as cases 0 and 2 do.
+                                let right_x = if self.control.quirks.ortho_zero_width_room {
+                                    room.ur.x
+                                } else {
+                                    b.ur.x
+                                };
+                                rooms.push([room.ur.x, room.ll.y, right_x, ni.ll.y]);
                             } else {
                                 rooms.push([pi.ur.x, b.ll.y, b.ur.x, ni.ll.y]);
                             }
