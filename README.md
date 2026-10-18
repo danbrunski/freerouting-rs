@@ -23,8 +23,23 @@ a measurement has accepted; **Legacy** gives results identical to Java Freerouti
 profile every stage (fanout, net ordering, connection router, rip-up policy, optimizer, the
 special stages) and every option can still be set on its own. Pick one with `--profile legacy`
 on the command line, the Profile selector in the desktop app's autoroute settings, or the
-Profile choice in the KiCad plugin's dialog. Until the first improvement is accepted the two
-route the same.
+Profile choice in the KiCad plugin's dialog.
+
+Enhanced changes three things so far, each accepted by a measurement on real boards
+([docs/DIVERGENCES.md](docs/DIVERGENCES.md), "Profile `enhanced`"):
+- **No traces on power layers.** Vias still land in their net's plane.
+- **Neck-down when a connection fails.** A failed connection is retried with traces down to
+  300 µm, so a board can keep its Board Setup class widths. Full width is kept wherever the
+  first attempt fits.
+- **Vias take their net class's clearance**, as KiCad checks them, where Java uses the via
+  rule's.
+
+**Java's bugs, fixed one switch at a time.** The port kept Java's bugs so that Legacy matches
+Java. The ones no board reaches are now fixed outright. Each of the others has a fix behind
+`router.java_quirks.<id>`; unset means Java's behaviour in both profiles. A fix will join
+Enhanced once its measurement accepts it, including a fix that changes nothing on the measured
+boards. Options that won only on one kind of board are offered as **Experimental**, with that
+board class in their help text.
 
 **Speed**
 - **No JVM.** Each tool is one native executable that starts in milliseconds. Java spends about
@@ -48,10 +63,16 @@ route the same.
 - **Reads and writes `.kicad_pcb` directly.** Java only reads Specctra DSN; given a KiCad board it
   reports "Unknown file type".
 - **A plugin with live progress.**
+  - The options sit on three tabs (Route, Board and DSN, Advanced), with the buttons always in
+    view.
   - "Stop and keep result" finishes the current step and imports the best board so far. "Abort"
     imports nothing.
   - "Route in GUI" watches the routing in the desktop app.
-  - Rule areas are fixed up before routing.
+  - Rule areas are fixed up before routing. Optional DSN fix-ups (class widths, fixed or dropped
+    pours, edge and pad clearances as keepouts) reproduce canary's export, and presets save a
+    set of options for reuse.
+  - Instead of the DSN export, it can route a snapshot of the open board through the router's
+    own `.kicad_pcb` reader (experimental).
   - Net and part names outside ASCII round-trip intact (Java's plugin strips them).
   - A version check catches a mismatched router.
   - Its plugin-manager package, not yet published, carries the executables for Windows, macOS
@@ -74,11 +95,12 @@ route the same.
 - **Interactive routing and editing**, undo and redo, the rules dialogs and the Info lists, all
   ported from Java's GUI.
 
-**Still in progress.** The Enhanced profile has no accepted improvement yet, so it still routes
-like Legacy (Java Freerouting); each improvement joins it once its measurement accepts it. Stages ported from
-KiCadRoutingTools are merged but not yet enabled in the command line or the app: differential
-pairs, length matching, BGA and QFN fanout, and bus routing. Their measurements are next. See
-[docs/roadmap/](docs/roadmap/).
+**Still in progress.** More candidates are being measured for Enhanced. The stages ported from
+KiCadRoutingTools can be picked in the command line, the app and the plugin, but none is on by
+default: length matching (`krt-meander`), BGA and QFN fanout (`krt-bga-escape`,
+`krt-qfn-escape`), and coupled differential pairs (`krt-diffpair`, Experimental: it helps boards
+with one or a few pairs on a shared signal layer). The KiCadRoutingTools grid router and bus
+routing were measured and removed. See [docs/roadmap/](docs/roadmap/).
 
 ## Install the KiCad plugin
 
