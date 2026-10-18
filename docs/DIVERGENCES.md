@@ -1453,6 +1453,30 @@ area and outline-keepout shapes still split with Java's code. Run statistics cou
 `octagon_box_cutout_branch3_reached` and `simplex_prev_division_line_reached` in both
 arms. Registered batch evidence remains pending under N06.4.
 
+**N06.14 simplex cutouts outside N06.4's domain (explicit opt-in; promotion pending)**
+
+Both switches still default to `true` in both profiles. With the named switch `false`
+(`Simplex::cutout_from`, `crates/freerouting-geometry/src/shapes/simplex.rs`):
+- `cutout_hole_crosses_border`: the stand-in division line of a corner on the outer
+  border (the hole edge before it) no longer acts as a division line: it neither clips
+  later pieces as the first division line nor turns that clipping on
+  (`Simplex.java:731-732`, `:756-768`, `:809-824`). Java's pieces go missing where a hole
+  crosses the outer border (half the rest in the pinned case).
+- `simplex_octagon_half_corner`: a corner that is not an integer point and lies on no
+  outer border line (an odd-parity octagon's diagonal corner, an enlarged simplex's
+  corner) is divided at its exact point, along the nearest lines through integer points
+  on either side (`Line::nearest_through_integer_points`); Java leaves it undivided
+  (`Simplex.java:1042-1057`) and its pieces overlap (755,786 units² in the pinned case).
+
+`tests/cutout_invariant.rs`: `java_breaks_the_invariant_outside_the_two_rows` pins both
+cases under all 16 switch values, and `all_fixed_cutouts_tile_the_rest_on_the_extended_set`
+finds no violation in 16,200 cutouts with every switch `false` (Java: 1,817). The
+switches reach a batch run only in any-angle mode, whose plain search tree keeps simplex
+obstacles in the drill pages; 45 and 90 degree trees keep octagons and boxes
+(`tests/n06_cutout_reach.rs`). Run statistics count `cutout_hole_crosses_border_reached`
+and `simplex_octagon_half_corner_reached` in both arms. Registered evidence pending
+under N06.14 (`docs/roadmap/prereg/N06.14.json`).
+
 **N06.5 maze search and room fixes (explicit opt-in; promotion pending)**
 
 All five switches still default to `true` in both profiles. With the named

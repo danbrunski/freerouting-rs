@@ -166,6 +166,94 @@ fn reduce_redundant_lines(lines: &mut [Line]) -> usize {
     new_length
 }
 
+/// The division lines of one corner of a cutout (`Simplex.calcDivisionLines`).
+struct Division {
+    /// Java's lines: one, or two at a sharp corner. A piece on the left of a line uses
+    /// it as it is.
+    lines: Vec<Line>,
+    /// The lines that pieces on their right use, reversed; `None` if they are `lines`.
+    /// Only a corner that is not an integer point has them (the fixed arm of
+    /// `simplex_octagon_half_corner`): no line through integer points need pass through
+    /// it, so the pieces on either side take the nearest such line on their own side,
+    /// and overlap by a strip at most one unit wide instead of leaving a gap.
+    right_lines: Option<Vec<Line>>,
+    /// False for a corner taken to lie on the outer border, whose line is a stand-in.
+    divided: bool,
+}
+
+impl Division {
+    fn undivided(line: Line) -> Division {
+        Division {
+            lines: vec![line],
+            right_lines: None,
+            divided: false,
+        }
+    }
+
+    /// Line `no` as a piece on its right uses it: reversed.
+    fn reversed(&self, no: usize) -> Line {
+        let line = self.right_lines.as_ref().map_or(&self.lines, |r| r)[no];
+        Line::new(line.b, line.a)
+    }
+
+    fn first(&self) -> Line {
+        self.lines[0]
+    }
+
+    fn last(&self) -> Line {
+        self.lines[self.lines.len() - 1]
+    }
+}
+
+/// The first-division-line test of `Simplex.cutoutFrom` (`checkCrossFirstLine`,
+/// `Simplex.java:756-768`, `:809-824`), in both arms of `cutout_hole_crosses_border`
+/// (N06.14).
+///
+/// A corner of the cut-out part that `calc_division_lines` does not divide (one on the
+/// outer border) gets the hole edge before it as a stand-in division line. Java treats
+/// that stand-in as a division line twice: as the first division line, which later
+/// pieces are clipped with, and as a corner's last division line, which turns the
+/// crossing test on. Either way pieces of the rest vanish. The fixed arm uses only
+/// lines of divided corners. Both arms are followed side by side, so that `reach` counts
+/// the pieces whose clip differs whichever arm is computed.
+struct CrossFirstLine {
+    /// Java's `checkCrossFirstLine`.
+    java: bool,
+    /// The same, turned on only by the division line of a divided corner.
+    fixed: bool,
+    first_corner_divided: bool,
+    keep_java: bool,
+}
+
+impl CrossFirstLine {
+    fn new(first_corner_divided: bool, quirks: SplitQuirks) -> CrossFirstLine {
+        CrossFirstLine {
+            java: false,
+            fixed: false,
+            first_corner_divided,
+            keep_java: quirks.cutout_hole_crosses_border,
+        }
+    }
+
+    /// Java's `if (!checkCrossFirstLine) checkCrossFirstLine = crosses;` for a corner's
+    /// division line, divided or a stand-in.
+    fn turn_on(&mut self, crosses: bool, corner_divided: bool) {
+        self.java |= crosses;
+        self.fixed |= crosses && corner_divided;
+    }
+
+    /// Whether the piece is clipped by the first division line, given that its other
+    /// line lies before the first one (`determinant < 0`).
+    fn clips(&self, before_first: bool, reach: &mut SplitReach) -> bool {
+        let java = self.java && before_first;
+        let fixed = self.fixed && before_first && self.first_corner_divided;
+        if java != fixed {
+            reach.cutout_hole_crosses_border += 1;
+        }
+        if self.keep_java { java } else { fixed }
+    }
+}
+
 /// `!Simplex::new(a ++ b sorted).remove_redundant_lines().is_empty()`, the
 /// emptiness test of [`Simplex::intersection_simplex`], without building a
 /// simplex: the same lines in the same order through the same steps, in a
@@ -488,14 +576,20 @@ impl Simplex {
             return Some(vec![outer_simplex.clone()]);
         }
         let inner_corner_count = inner_simplex.lines().len();
-        let mut division_line_arr: Vec<Vec<Line>> = Vec::with_capacity(inner_corner_count);
+        let mut division_line_arr: Vec<Division> = Vec::with_capacity(inner_corner_count);
         for inner_corner_no in 0..inner_corner_count {
-            match inner_simplex.calc_division_lines(inner_corner_no, outer_simplex) {
-                Some(lines) => division_line_arr.push(lines),
+            match inner_simplex.calc_division_lines(inner_corner_no, outer_simplex, quirks, reach) {
+                Some(division) => division_line_arr.push(division),
                 None => return Some(vec![outer_simplex.clone()]),
             }
         }
-        let mut check_cross_first_line = false;
+        // PARITY(quirk, java_quirks.cutout_hole_crosses_border): Simplex.java:731-732,
+        // 756-768, 809-824. A corner on the outer border is not divided; Java uses its
+        // stand-in division line, the hole edge before it, as the first division line and
+        // to turn the crossing test on, and pieces of the rest vanish (a hole crossing the
+        // outer border). Under `true` the stand-ins act as in Java; under `false` only
+        // divided corners' lines do ([`CrossFirstLine`], which counts `reach` in both arms).
+        let mut cross_first = CrossFirstLine::new(division_line_arr[0].divided, quirks);
         // PARITY(quirk, java_quirks.simplex_prev_division_line): Java declares
         // `prevDivisionLine` but never assigns it a value (the statement at the end of the
         // loop, `Simplex.java:860`, is `nextDivisionLine = prevDivisionLine`, backwards), so
@@ -503,8 +597,8 @@ impl Simplex {
         // Under `true` it stays `None`; under `false` it is the previous corner's next
         // division line (`fixed_prev_division_line`, kept in both arms for `reach`).
         let mut fixed_prev_division_line: Option<Line> = None;
-        let first_division_line = division_line_arr[0][0];
-        let first_direction = first_division_line.int_direction();
+        let first_division = &division_line_arr[0];
+        let first_direction = first_division.first().int_direction();
         let mut result_list = Vec::new();
 
         for inner_corner_no in 0..inner_corner_count {
@@ -517,8 +611,10 @@ impl Simplex {
                 fixed_prev_division_line.is_some_and(|p| dir.determinant(&p.int_direction()) > 0.0)
             };
             let next_corner_no = (inner_corner_no + 1) % inner_corner_count;
-            let next_division_line = division_line_arr[next_corner_no][0];
-            let current_division_lines = &division_line_arr[inner_corner_no];
+            let next_division = &division_line_arr[next_corner_no];
+            let next_division_line = next_division.first();
+            let current = &division_line_arr[inner_corner_no];
+            let current_division_lines = &current.lines;
             if current_division_lines.len() == 2 {
                 // Two division lines are necessary (sharp corner).
                 let current_direction = current_division_lines[0].int_direction();
@@ -527,31 +623,24 @@ impl Simplex {
                 }
                 let merge_prev_division_line = prev_division_line
                     .is_some_and(|p| current_direction.determinant(&p.int_direction()) > 0.0);
-                let mut merge_first_division_line = false;
-                if !check_cross_first_line {
-                    check_cross_first_line = inner_corner_no > 0
-                        && current_direction.determinant(&first_direction) > 0.0;
-                }
-                if check_cross_first_line {
-                    let current_dir_2 = current_division_lines[1].int_direction();
-                    if current_dir_2.determinant(&first_direction) < 0.0 {
-                        merge_first_division_line = true;
-                    }
-                }
-                let mut piece_lines = vec![
-                    Line::new(current_division_lines[1].b, current_division_lines[1].a),
-                    current_division_lines[0],
-                ];
+                cross_first.turn_on(
+                    inner_corner_no > 0 && current_direction.determinant(&first_direction) > 0.0,
+                    current.divided,
+                );
+                let current_dir_2 = current_division_lines[1].int_direction();
+                let merge_first_division_line =
+                    cross_first.clips(current_dir_2.determinant(&first_direction) < 0.0, reach);
+                let mut piece_lines = vec![current.reversed(1), current_division_lines[0]];
                 if let Some(p) = prev_division_line.filter(|_| merge_prev_division_line) {
                     piece_lines.push(p);
                 }
                 if merge_first_division_line {
-                    piece_lines.push(Line::new(first_division_line.b, first_division_line.a));
+                    piece_lines.push(first_division.reversed(0));
                 }
                 result_list.push(Simplex::new(piece_lines).intersection_simplex(outer_simplex));
             }
             let merge_next_division_line = next_division_line.b != next_division_line.a;
-            let last_curr_division_line = current_division_lines[current_division_lines.len() - 1];
+            let last_curr_division_line = current.last();
             let last_curr_dir = last_curr_division_line.int_direction();
             let merge_last_curr_division_line =
                 last_curr_division_line.b != last_curr_division_line.a;
@@ -560,25 +649,22 @@ impl Simplex {
             }
             let merge_prev_division_line = prev_division_line
                 .is_some_and(|p| last_curr_dir.determinant(&p.int_direction()) > 0.0);
-            let mut merge_first_division_line = false;
-            if !check_cross_first_line {
-                check_cross_first_line = inner_corner_no > 0
+            cross_first.turn_on(
+                inner_corner_no > 0
                     && last_curr_dir.determinant(&first_direction) > 0.0
                     && last_curr_dir
                         .get_vector()
                         .scalar_product_int(first_direction.get_vector())
-                        < 0.0;
-            }
-            if check_cross_first_line {
-                let next_dir = next_division_line.int_direction();
-                if next_dir.determinant(&first_direction) < 0.0 {
-                    merge_first_division_line = true;
-                }
-            }
+                        < 0.0,
+                current.divided,
+            );
+            let next_dir = next_division_line.int_direction();
+            let merge_first_division_line =
+                cross_first.clips(next_dir.determinant(&first_direction) < 0.0, reach);
             let current_line = inner_simplex.lines()[inner_corner_no];
             let mut piece_lines = vec![Line::new(current_line.b, current_line.a)];
             if merge_next_division_line {
-                piece_lines.push(Line::new(next_division_line.b, next_division_line.a));
+                piece_lines.push(next_division.reversed(0));
             }
             if merge_last_curr_division_line {
                 piece_lines.push(last_curr_division_line);
@@ -587,7 +673,7 @@ impl Simplex {
                 piece_lines.push(p);
             }
             if merge_first_division_line {
-                piece_lines.push(Line::new(first_division_line.b, first_division_line.a));
+                piece_lines.push(first_division.reversed(0));
             }
             result_list.push(Simplex::new(piece_lines).intersection_simplex(outer_simplex));
             fixed_prev_division_line = Some(next_division_line);
@@ -620,12 +706,15 @@ impl Simplex {
 
     /// For corner `inner_corner_no` of this inner simplex, one or two perpendicular
     /// projections onto lines of `outer_simplex`, so that the pieces after cutting out
-    /// the inner simplex are convex.
+    /// the inner simplex are convex. A corner taken to lie on the outer border is not
+    /// divided ([`Division::divided`]).
     fn calc_division_lines(
         &self,
         inner_corner_no: usize,
         outer_simplex: &Simplex,
-    ) -> Option<Vec<Line>> {
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Division> {
         let lines = self.lines();
         let current_inner_line = lines[inner_corner_no];
         let prev_inner_line = if inner_corner_no != 0 {
@@ -641,13 +730,42 @@ impl Simplex {
         let ctolerance = 0.0001;
         let is_exact = (f64::from(inner_corner.x) - intersection.x).abs() < ctolerance
             && (f64::from(inner_corner.y) - intersection.y).abs() < ctolerance;
-        if !is_exact {
-            // Corners which are not exact come from the intersection with the outer
-            // simplex and lie on its border: no division is necessary.
-            return Some(vec![prev_inner_line]);
-        }
-        let inner_corner_point = Point::Int(inner_corner);
         let outer_lines = outer_simplex.lines();
+        if !is_exact {
+            // Java assumes that corners which are not exact come from the intersection
+            // with the outer simplex and lie on its border: no division is necessary.
+            // PARITY(quirk, java_quirks.simplex_octagon_half_corner): Simplex.java:1042-1057.
+            // A hole's own corner can be inexact too: an octagon whose diagonals meet at a
+            // half-integer point, as a simplex, or a corner of an offset simplex. Under
+            // `true` it stays undivided, as in Java, and the pieces beside it overlap; under
+            // `false` a corner on no outer line is divided at its exact point, along the
+            // nearest lines through integer points. `reach` counts such corners in both
+            // arms.
+            let on_border = outer_lines.iter().any(|outer_line| {
+                outer_line.side_of_intersection(&prev_inner_line, &current_inner_line)
+                    == Side::Collinear
+            });
+            if !on_border {
+                reach.simplex_octagon_half_corner += 1;
+            }
+            if on_border || quirks.simplex_octagon_half_corner {
+                return Some(Division::undivided(prev_inner_line));
+            }
+        }
+        // Only the fixed arm of `simplex_octagon_half_corner` gets here with an inexact
+        // corner; Java's corners are all exact here.
+        let (inner_corner_point, corner_float) = if is_exact {
+            (Point::Int(inner_corner), inner_corner.to_float())
+        } else {
+            (
+                current_inner_line.intersection(&prev_inner_line),
+                intersection,
+            )
+        };
+        let division_line = |dir: IntDirection, point_on_left: bool| {
+            Line::nearest_through_integer_points(&inner_corner_point, dir, point_on_left)
+                .unwrap_or_else(|| Line::from_point_and_direction(inner_corner, dir))
+        };
         let mut first_projection_dir = IntDirection::NULL;
         let mut second_projection_dir = IntDirection::NULL;
         let prev_inner_dir = prev_inner_line.int_direction().opposite();
@@ -660,12 +778,11 @@ impl Simplex {
                 .perpendicular_direction(&outer_line)
                 .expect_int();
             if current_projection_dir == IntDirection::NULL {
-                return Some(vec![Line::new(inner_corner, inner_corner)]);
+                return Some(Division::undivided(Line::new(inner_corner, inner_corner)));
             }
             let projection_visible = prev_inner_dir.determinant(&current_projection_dir) >= 0.0;
             if projection_visible {
-                let mut current_distance =
-                    outer_line.signed_distance(inner_corner.to_float()).abs();
+                let mut current_distance = outer_line.signed_distance(corner_float).abs();
                 let second_division_necessary =
                     current_projection_dir.determinant(&next_inner_dir) < 0.0;
                 let mut current_second_projection_dir = current_projection_dir;
@@ -682,7 +799,10 @@ impl Simplex {
                             .perpendicular_direction(&outer_lines[tmp_outer_line_no])
                             .expect_int();
                         if current_second_projection_dir == IntDirection::NULL {
-                            return Some(vec![Line::new(inner_corner, inner_corner)]);
+                            return Some(Division::undivided(Line::new(
+                                inner_corner,
+                                inner_corner,
+                            )));
                         }
                         if current_projection_dir.determinant(&current_second_projection_dir) < 0.0
                         {
@@ -694,7 +814,7 @@ impl Simplex {
                             current_second_projection_dir.determinant(&next_inner_dir) >= 0.0;
                     }
                     current_distance += outer_lines[tmp_outer_line_no]
-                        .signed_distance(inner_corner.to_float())
+                        .signed_distance(corner_float)
                         .abs();
                 }
                 if current_distance < min_distance {
@@ -712,17 +832,29 @@ impl Simplex {
         if min_distance == f64::from(i32::MAX) {
             return None;
         }
-        if first_projection_dir == second_projection_dir {
-            Some(vec![Line::from_point_and_direction(
-                inner_corner,
-                first_projection_dir,
-            )])
+        let dirs: &[IntDirection] = if first_projection_dir == second_projection_dir {
+            &[first_projection_dir]
         } else {
-            Some(vec![
-                Line::from_point_and_direction(inner_corner, first_projection_dir),
-                Line::from_point_and_direction(inner_corner, second_projection_dir),
-            ])
-        }
+            &[first_projection_dir, second_projection_dir]
+        };
+        let (lines, right_lines) = if is_exact {
+            let lines = dirs
+                .iter()
+                .map(|&dir| Line::from_point_and_direction(inner_corner, dir))
+                .collect();
+            (lines, None)
+        } else {
+            // A piece on the left of a line takes the one with the corner on its left
+            // too, and the other way round, so that the pieces overlap.
+            let lines = dirs.iter().map(|&dir| division_line(dir, true)).collect();
+            let right_lines = dirs.iter().map(|&dir| division_line(dir, false)).collect();
+            (lines, Some(right_lines))
+        };
+        Some(Division {
+            lines,
+            right_lines,
+            divided: true,
+        })
     }
 
     fn compute_bounding_octagon(&self) -> Option<IntOctagon> {

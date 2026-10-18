@@ -1,9 +1,16 @@
-//! N06.4 (batch G): the cutouts' reachability counters reach the run statistics.
+//! N06.4 (batch G) and N06.14: the cutouts' reachability counters reach the run
+//! statistics.
 //!
 //! Its own test binary, because the run statistics are process-wide: no other test
-//! resets them under it. One autoroute pass of a small board computes drill pages, whose
-//! convex split (`autoroute/session/drills.rs`) is where `octagon_box_cutout_branch3`
-//! and `simplex_prev_division_line` are reached in a batch run.
+//! resets them under it, and the one test that reads them runs its boards one after
+//! the other. One autoroute pass of a small board computes drill pages, whose convex
+//! split (`autoroute/session/drills.rs`) is where `octagon_box_cutout_branch3` and
+//! `simplex_prev_division_line` are reached in a batch run.
+//!
+//! N06.14's two switches live in `Simplex::cutout_from`, which a drill page reaches only
+//! with simplex obstacles. In 45 and 90 degree modes the search trees keep octagons and
+//! boxes, so the drill pages never get there (0 on every board checked, below); in
+//! any-angle mode (the plain tree) they do, hundreds of times per pass.
 mod autoroute_common;
 
 use autoroute_common::{Loaded, load};
@@ -17,6 +24,10 @@ use freerouting::run_stats::{self, Counter, Counts};
 use freerouting::settings::JavaQuirks;
 
 const MIN_FR_TEST: &str = "fixtures/Issue269-min_fr_test/min_fr_test.dsn";
+
+/// A07's any-angle variant of `Issue143-rpi_splitter` (`(snap_angle none)`).
+const RPI_SPLITTER_ANY: &str =
+    "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn";
 
 /// Routes pass 1 of `loaded` with `quirks` on its board and its control; returns the
 /// counts of the pass.
@@ -56,8 +67,13 @@ fn drill_page_splits_report_both_counters_in_both_arms() {
             .with("simplex_prev_division_line", false)
             .and_then(|q| q.with("octagon_box_cutout_branch3", false))
             .unwrap(),
+        JavaQuirks::JAVA
+            .with("cutout_hole_crosses_border", false)
+            .and_then(|q| q.with("simplex_octagon_half_corner", false))
+            .unwrap(),
     ];
     let mut branch3 = Vec::new();
+    let mut n06_14 = Vec::new();
     for quirks in arms {
         let counts = pass_one_counts(load(MIN_FR_TEST), quirks);
         assert!(
@@ -67,16 +83,52 @@ fn drill_page_splits_report_both_counters_in_both_arms() {
         // The simplex fix is inert: no piece of any arm passes its merge test.
         assert_eq!(counts.get(Counter::SimplexPrevDivisionLine), 0);
         branch3.push(counts.get(Counter::OctagonBoxCutoutBranch3));
+        n06_14.push((
+            counts.get(Counter::CutoutHoleCrossesBorder),
+            counts.get(Counter::SimplexOctagonHalfCorner),
+        ));
+    }
+    println!(
+        "cutout_hole_crosses_border and simplex_octagon_half_corner reached, Java, N06.4 \
+         fixed, N06.14 fixed: {n06_14:?}"
+    );
+    // A 45 degree board: no simplex reaches a drill page.
+    assert!(n06_14.iter().all(|&c| c == (0, 0)), "{n06_14:?}");
+    // An any-angle board: its plain tree keeps the simplex obstacles.
+    let mut any_angle = Vec::new();
+    for quirks in [arms[0], arms[2]] {
+        let counts = pass_one_counts(load(RPI_SPLITTER_ANY), quirks);
+        any_angle.push((
+            counts.get(Counter::CutoutHoleCrossesBorder),
+            counts.get(Counter::SimplexOctagonHalfCorner),
+        ));
     }
     run_stats::disable();
+    println!("{RPI_SPLITTER_ANY}, Java and N06.14 fixed: {any_angle:?}");
+    assert!(
+        any_angle[0].0 > 0 && any_angle[0].1 > 0,
+        "Java reaches both: {any_angle:?}"
+    );
+    assert!(
+        any_angle[1].1 > 0,
+        "the half-corner count is taken in the fixed arm too: {any_angle:?}"
+    );
+    assert_eq!(
+        Counter::CutoutHoleCrossesBorder.name(),
+        "cutout_hole_crosses_border_reached"
+    );
+    assert_eq!(
+        Counter::SimplexOctagonHalfCorner.name(),
+        "simplex_octagon_half_corner_reached"
+    );
     println!("octagon_box_cutout_branch3_reached, java and fixed: {branch3:?}");
     assert!(
         branch3[0] > 0,
         "an octagon obstacle in a drill page fires branch 3 under Java: {branch3:?}"
     );
     assert!(
-        branch3[1] > 0,
-        "the count is taken in the fixed arm too: {branch3:?}"
+        branch3[1] > 0 && branch3[2] > 0,
+        "the count is taken in the fixed arms too: {branch3:?}"
     );
     assert_eq!(
         Counter::OctagonBoxCutoutBranch3.name(),
@@ -91,7 +143,8 @@ fn drill_page_splits_report_both_counters_in_both_arms() {
 /// The splits a batch run makes with Java's code whatever the switches are: the
 /// search trees' shapes of obstacle and conduction areas (`board/search/mod.rs`) and of
 /// the board outline's generated keepout, which still call `split_to_convex`. Counts,
-/// per corpus board, how often those splits reach the two switches' branches; a board
+/// per corpus board, how often those splits reach the four switches' branches (N06.4's
+/// two and N06.14's two); a board
 /// where they do is one where wiring those sites would change routes. Read-only (loads
 /// every fixture, never routes); run by the orchestrator with an absolute path in
 /// `N06_CUTOUT_COUNTERS_OUT`.
@@ -166,6 +219,14 @@ fn unwired_area_splits_corpus_inventory() {
                 row.push((
                     format!("{site}_octagon_box_cutout_branch3_reached"),
                     J::int(reach.octagon_box_cutout_branch3 as i64),
+                ));
+                row.push((
+                    format!("{site}_cutout_hole_crosses_border_reached"),
+                    J::int(reach.cutout_hole_crosses_border as i64),
+                ));
+                row.push((
+                    format!("{site}_simplex_octagon_half_corner_reached"),
+                    J::int(reach.simplex_octagon_half_corner as i64),
                 ));
             }
         }

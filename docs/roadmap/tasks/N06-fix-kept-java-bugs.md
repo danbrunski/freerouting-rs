@@ -9,6 +9,9 @@ The inventory (N06.1, 2026-10-17) is the table below, with 54 rows:
 - **31 of kind (b):** they change routes, imports or reports. Fixed under `enhanced` behind one
   switch each, in eight batches (N06.4–N06.11).
 - **11 of kind (c):** judgement calls, in N06.12.
+- **2 more of kind (b),** added 2026-10-18 by N06.14: the two simplex cutout failures that N06.4's
+  invariant test found outside its rows (`cutout_hole_crosses_border`,
+  `simplex_octagon_half_corner`).
 
 The rows come from:
 - `docs/DIVERGENCES.md` "Java bugs kept on purpose" (geometry, DSN, board model, shove,
@@ -69,6 +72,7 @@ Whoever implements an item (the `implementer` agent, or Codex):
 | N06.2 | the files of the 12 (a) rows and their tests; the DIVERGENCES lines of those rows |
 | N06.3 | `settings/fields.rs`, `settings/path.rs`, a new `settings/java_quirks.rs`, `settings/board.rs`, `autoroute/control.rs` (the `quirks` field only), `board/basic_board.rs` (the field, `deep_copy`, the snapshot), `io/specctra/parser/mod.rs` (`ReadContext`), the geometry `split_to_convex_with` entry points, `tests/settings_java_quirks.rs` |
 | N06.4–N06.11 | the files in their rows' Rust column, their tests, `tools/bench/sets/n06-*.txt`, `docs/roadmap/prereg/N06.*.json`. The batches touch disjoint files except `autoroute/connection.rs` (M and F) and `optimize/pull_tight.rs` (P only), so run M and F one after the other |
+| N06.14 | `geometry/shapes/simplex.rs`, `geometry/line.rs` (`nearest_through_integer_points`), `geometry/quirks.rs`, `geometry/tests/cutout_invariant.rs`, its two keys in `settings/fields.rs` and `settings/java_quirks.rs`, its two counters in `run_stats.rs`, `tests/n06_cutout_reach.rs`, `tools/bench/sets/n06-g2.txt`, `docs/roadmap/prereg/N06.14.json` |
 | N06.12, N06.13 | their rows' files; `settings/profile.rs` (`ENHANCED`) and the DIVERGENCES "Profile `enhanced`" section, through N05 |
 
 ## Decisions made here
@@ -154,6 +158,8 @@ Rust paths are under `crates/freerouting/src/` unless they start with `geometry/
 |---|---|---|---|---|---|---|
 | `simplex_prev_division_line` | geometry/shapes/simplex.rs:460-463 | Simplex.java:730, 860 | `nextDivisionLine = prevDivisionLine` is backwards, so the previous line stays null and pieces at sharp inner corners can overlap | batch, hot: drill pages of every pass (`split_to_convex`), area tree shapes, any shape with a simplex | G | maybe `simplex_cutout_and_rotation_like_java` |
 | `octagon_box_cutout_branch3` | geometry/shapes/int_octagon.rs:742-746 | IntOctagon.java:1206-1223 | Branch 3 moves the box to the octagon's right edge but rebuilds the octagon unchanged (branch 2 trims it), so the pieces overlap | batch, hot: drill pages, area tree shapes | G | none |
+| `cutout_hole_crosses_border` | geometry/shapes/simplex.rs:586 (`CrossFirstLine`, :219) | Simplex.java:731-732, 756-768, 809-824 | A corner of the cut-out part on the outer border is not divided; its stand-in division line (the hole edge before it) still clips later pieces as the first division line, and turns that clipping on as a corner's last line, so pieces of a hole crossing the border vanish (half the rest in the pinned case). Fix: only divided corners' lines take part | batch, any-angle mode only: drill pages with simplex obstacles (45 and 90 degree trees keep octagons and boxes); the search trees' area splits (unwired, Java's code) | G2 (N06.14) | `java_breaks_the_invariant_outside_the_two_rows` |
+| `simplex_octagon_half_corner` | geometry/shapes/simplex.rs:737 (`calc_division_lines`, `Division`, :170) | Simplex.java:1042-1057 | A corner that is not an integer point is taken to lie on the outer border and is not divided; an odd-parity octagon's diagonal corner or an enlarged simplex's corner lies inside, and the pieces beside it overlap (755,786 units² in the pinned case). Fix: divide a corner on no outer line at its exact point, each side taking the nearest line through integer points on its own side (`Line::nearest_through_integer_points`) | as `cutout_hole_crosses_border` | G2 (N06.14) | `java_breaks_the_invariant_outside_the_two_rows` |
 | `init_failure_room_leak` | autoroute/connection.rs:31-40, 280, 670; session/rooms.rs:263 | AutorouteEngine.java:142-150 | A failed `getInstance` returns before `clear()`, so completed start rooms stay as obstacles | batch, rare (an init work limit or room error) | M | `an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside` |
 | `failed_attempt_ripped_carryover` | autoroute/connection.rs:26, 236; fanout_pin.rs:34 | AutorouteEngine.java:188, 227; RoutingBoard.java:1090-1125 | A rejected attempt leaves the ripped set filled, so the next attempt rips the earlier path's items | batch, rare (a retry after a disabled-layer or locate rejection) | M | `a_path_ending_on_a_disabled_signal_layer_fails_and_keeps_the_ripped_set` |
 | `ortho_zero_width_room` | autoroute/session/neighbours90.rs:419 | SortedOrthogonalRoomNeighbours.java:296-301 | `roomShape.ur.x` written twice: the room right of an obstacle has width 0 and is never made (cases 0 and 2 are right) | batch, 90° mode only, on most obstacle doors | M | indirect: `variants_match_java` |
@@ -184,7 +190,7 @@ Rust paths are under `crates/freerouting/src/` unless they start with `geometry/
 | `route_connect_inner_break` | interactive/route.rs:28-30, 641-646 | gui/interactive/Route.java:411-415 | Only the inner loop is left, so the second corner pair is tried from the added corner | GUI | U | none |
 | `select_extension_ignores_filter` | interactive/select.rs:19-22 | InspectedItemState.java:75ff | After an extension's filter, the inspect state stays even with an empty selection | GUI | U | none |
 
-Batches: **G** geometry cutouts, **M** maze search and rooms, **F** fanout, **S** shove, **P** pull-tight,
+Batches: **G** geometry cutouts (**G2**: N06.14's two rows), **M** maze search and rooms, **F** fanout, **S** shove, **P** pull-tight,
 **O** batch optimizer, **I** inputs and reports, **U** GUI and interactive.
 
 ### (c) Judgement calls: N06.12
@@ -987,3 +993,83 @@ These are marked or look like quirks but keep no bug:
   - The DIVERGENCES "kept on purpose" paragraphs point to this file.
   - **Accept:** every (b) row ends accepted, rejected with numbers, or accepted on tests under
     the decisions' rule.
+
+- [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
+  `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and
+  `target/orchestrator/operator-decisions.md`, "2026-10-18 N06.4" and "N06.12 follow-ups").
+  - Switches in `settings/java_quirks.rs` and the geometry `SplitQuirks`, `true` = Java; fixes
+    behind them in `Simplex::cutout_from`, as N06.4 did.
+  - **Accept:** the invariant holds with all four cutout switches `false` on the cases
+    `java_breaks_the_invariant_outside_the_two_rows` pins and on an extended seeded set with holes
+    crossing the border; the engine's reach is counted; registered before any number, and
+    measured under the decisions' accept rule.
+  - *Partial 2026-10-18:* code, tests, counters and registration done (worktree
+    `target/orchestrator/n06g2/wt`, branch `land/n06-14`, on main `3b1bde6`, whose code is
+    `81afaba`'s, the engine the registration names); heavy run pending.
+    - [x] Switches: `router.java_quirks.cutout_hole_crosses_border` and
+      `simplex_octagon_half_corner` (`settings/fields.rs`, after N06.4's two; `JavaQuirks::IDS`
+      now 44, `fix_item` = N06.14), carried into `SplitQuirks` by `JavaQuirks::split`.
+      `SplitQuirks` has 4 fields, `COMBINATIONS` = 16 and `SplitQuirks::all()`, so the area's
+      piece cache keeps one slot per value (`default_is_java_and_cache_slots_are_distinct`).
+      Unset is `true` in both profiles (`both_profiles_keep_every_java_bug`,
+      `every_switch_is_a_settings_key_in_inventory_order`,
+      `each_key_round_trips_through_a_settings_file`, all in `tests/settings_java_quirks.rs`).
+    - [x] `cutout_hole_crosses_border=false`: a corner `calc_division_lines` does not divide gets
+      a stand-in line that neither clips as the first division line nor turns the clipping on
+      (`CrossFirstLine` in `simplex.rs`, both arms followed side by side).
+    - [x] `simplex_octagon_half_corner=false`: an inexact corner on no outer line (exact test,
+      `side_of_intersection`) is divided at its exact rational point. Its division lines come
+      from `Line::nearest_through_integer_points` (exact, `BigInt`): the piece on each side
+      takes the nearest line through integer points on its own side, so the two overlap by a
+      strip at most `1/|dir|` wide instead of leaving a gap. A single rounded-point line left
+      gaps of up to 8 units² on 21 enlarged cases. `nearest_lines_through_integer_points_bracket_the_point`
+      checks the bracketing, adjacency and anchors exactly, at `CRIT_INT` with directions up to
+      `2 * CRIT_INT`.
+    - [x] Invariant (`crates/freerouting-geometry/tests/cutout_invariant.rs`, 9 tests, pass):
+      - `java_breaks_the_invariant_outside_the_two_rows`: both pinned cases under all 16
+        switch values; the gap goes exactly when `cutout_hole_crosses_border` is `false`, the
+        overlap exactly when `simplex_octagon_half_corner` is `false`.
+      - `all_fixed_cutouts_tile_the_rest_on_the_extended_set`: N06.4's 5400 cases plus 5400
+        holes centred on the outer border and 5400 enlarged holes (half crossing):
+        0 of 16,200 cutouts broken with every switch `false`; Java breaks 1,817
+        (`java_breaks_the_extended_set_through_each_switch`: each N06.14 switch alone removes
+        every failure of its kind). A one-off run at 4000 cases per pair: 0 of 107,997.
+      - `the_n06_14_switches_change_nothing_in_the_domain`: inside N06.4's domain the two
+        switches change no piece and count nothing; N06.4's 5 tests still pass.
+      - `the_n06_14_counters_count_the_changed_cutouts`: every cutout a switch changes is
+        counted (631 of 697 counted change for the border switch, 1554 of 1554 for the
+        half-corner switch).
+    - [x] Reach, counted as N06.4 did: run statistics `cutout_hole_crosses_border_reached` and
+      `simplex_octagon_half_corner_reached` (`run_stats.rs`, `record_split_reach`), at the
+      drill-page split and the tie-pin cutout. The fixes sit in `Simplex::cutout_from`, which
+      a drill page reaches only with simplex obstacles: the 45 and 90 degree search trees
+      keep octagons and boxes, the plain (any-angle) tree keeps simplexes.
+      `tests/n06_cutout_reach.rs::drill_page_splits_report_both_counters_in_both_arms`: pass 1
+      of `Issue269-min_fr_test` reaches neither (all arms); pass 1 of
+      `Issue143-rpi_splitter-any` reaches them 6 and 578 times under Java (0 and 659 with both
+      fixes). While choosing that board, pass 1 of `Issue026-J2_reference-any` gave 14 and 512,
+      `scoring-mixed-layer-any` 0 and 0, and the 45 degree fixtures Issue413-test,
+      Issue433-my-board, TestSensel, Issue143-rpi_splitter, Issue954-polygon64 and
+      Issue026-J2_reference 0 and 0. So the switches are reachable, in any-angle mode only, and
+      are measured, not accepted on tests. `unwired_area_splits_corpus_inventory` reports the
+      two new columns for the search trees' area splits (Java's code in every arm).
+    - [x] Registered before any routed number: `docs/roadmap/prereg/N06.14.json` (sha256
+      `1b945407a39a72fd9c27f061c73f842b28e6cb1529dfc5408173721f38680c99`) and
+      `tools/bench/sets/n06-g2.txt`. Arms `baseline`, `cutout_hole_crosses_border`,
+      `simplex_octagon_half_corner`, `all`, each setting both keys; default profile; totals rule,
+      no-regress. Rows: A07's three any-angle variants plus `Issue026-J2_reference` and
+      canary-pwr, the 45 degree identity checks (every arm's sessions must equal the
+      baseline's); canary-pwr also through the plugin path. Pinned by
+      `crates/freerouting-dev/tests/prereg_n06_14.rs` (5 tests, pass).
+    - [x] Defaults unchanged: both keys unset are `true` in both profiles; Java's path is the
+      `true` branch at both `PARITY(quirk, java_quirks.<id>)` markers. DIVERGENCES: "N06.14
+      simplex cutouts outside N06.4's domain" under "Java quirk switches, opt-in (N06)".
+    - [ ] Heavy run pending (orchestrator, one job at a time):
+      `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2`.
+      - `n06_run.py` exits non-zero when sessions differ, expected on the any-angle rows; it
+        writes `summary.json` with every run's counters first.
+      - Then grade each SES with `gate collect` and `freerouting-dev widths`, and judge the
+        pairs with `freerouting-dev gate --rule totals`; then the plugin canary run and grade,
+        per the registration's `plugin_canary` block.
+      - Also the corpus inventory (read-only):
+        `cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.

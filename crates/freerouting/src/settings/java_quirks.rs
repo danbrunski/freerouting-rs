@@ -96,6 +96,8 @@ java_quirks! {
     // (b) rows, by batch.
     simplex_prev_division_line: "N06.4",
     octagon_box_cutout_branch3: "N06.4",
+    cutout_hole_crosses_border: "N06.14",
+    simplex_octagon_half_corner: "N06.14",
     init_failure_room_leak: "N06.5",
     failed_attempt_ripped_carryover: "N06.5",
     ortho_zero_width_room: "N06.5",
@@ -151,11 +153,13 @@ impl JavaQuirks {
         JavaQuirks::from_section(&settings.java_quirks)
     }
 
-    /// The switches of the geometry's convex split (batch G).
+    /// The switches of the geometry's convex split (batch G and N06.14).
     pub fn split(&self) -> SplitQuirks {
         SplitQuirks {
             simplex_prev_division_line: self.simplex_prev_division_line,
             octagon_box_cutout_branch3: self.octagon_box_cutout_branch3,
+            cutout_hole_crosses_border: self.cutout_hole_crosses_border,
+            simplex_octagon_half_corner: self.simplex_octagon_half_corner,
         }
     }
 

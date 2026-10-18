@@ -29,10 +29,32 @@
 ///   (`IntOctagon.java:1206-1223`) moves the upper box to the upper right octagon's right
 ///   edge but rebuilds that octagon unchanged, so the two overlap. Under `false` the
 ///   octagon's top moves down to the box's bottom, as branch 2 does on the left.
+/// - `cutout_hole_crosses_border` (N06.14): `Simplex.cutoutFrom` does not divide a
+///   corner of the cut-out part that lies on the outer border; its stand-in division
+///   line is the hole edge before it. Java still treats the stand-in as a division line
+///   (`Simplex.java:731-732`, `:756-768`, `:809-824`): as the first one, which later
+///   pieces are clipped with, and as a corner's last one, which turns that clipping on.
+///   When the hole crosses the outer border, whole pieces vanish. Under `false` only
+///   the lines of divided corners take part.
+/// - `simplex_octagon_half_corner` (N06.14): `Simplex.calcDivisionLines`
+///   (`Simplex.java:1042-1057`) takes every corner that is not an integer point for one
+///   on the outer border and divides nothing there. An octagon whose diagonals meet at
+///   a half-integer point, or an enlarged simplex, has such corners inside the outer
+///   shape, and the pieces beside them overlap. Under `false` such a corner, unless it
+///   lies on an outer border line, is divided at its exact point; as a line through it
+///   need contain no integer point, the pieces on either side take the nearest line
+///   through integer points on their own side
+///   ([`Line::nearest_through_integer_points`](crate::Line::nearest_through_integer_points))
+///   and overlap by a strip at most one unit wide.
+///
+/// Inside the domain of N06.4's invariant test (holes inside the outer shape with
+/// integer corners) the two N06.14 switches change no piece.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct SplitQuirks {
     pub simplex_prev_division_line: bool,
     pub octagon_box_cutout_branch3: bool,
+    pub cutout_hole_crosses_border: bool,
+    pub simplex_octagon_half_corner: bool,
 }
 
 impl SplitQuirks {
@@ -40,23 +62,39 @@ impl SplitQuirks {
     pub const JAVA: SplitQuirks = SplitQuirks {
         simplex_prev_division_line: true,
         octagon_box_cutout_branch3: true,
+        cutout_hole_crosses_border: true,
+        simplex_octagon_half_corner: true,
     };
 
     /// Every bug fixed.
     pub const FIXED: SplitQuirks = SplitQuirks {
         simplex_prev_division_line: false,
         octagon_box_cutout_branch3: false,
+        cutout_hole_crosses_border: false,
+        simplex_octagon_half_corner: false,
     };
 
     /// The number of distinct values, the size of a piece cache that keeps one
     /// result per value.
-    pub const COMBINATIONS: usize = 4;
+    pub const COMBINATIONS: usize = 16;
 
     /// This value's slot in a piece cache of [`Self::COMBINATIONS`] entries: a
     /// cached split is never shared across flag values.
     pub fn cache_slot(self) -> usize {
         usize::from(self.simplex_prev_division_line)
             | (usize::from(self.octagon_box_cutout_branch3) << 1)
+            | (usize::from(self.cutout_hole_crosses_border) << 2)
+            | (usize::from(self.simplex_octagon_half_corner) << 3)
+    }
+
+    /// Every value of the four switches, in [`Self::cache_slot`] order.
+    pub fn all() -> [SplitQuirks; SplitQuirks::COMBINATIONS] {
+        std::array::from_fn(|slot| SplitQuirks {
+            simplex_prev_division_line: slot & 1 != 0,
+            octagon_box_cutout_branch3: slot & 2 != 0,
+            cutout_hole_crosses_border: slot & 4 != 0,
+            simplex_octagon_half_corner: slot & 8 != 0,
+        })
     }
 }
 
@@ -80,6 +118,12 @@ pub struct SplitReach {
     /// reaching above the moved upper box, so that `false` trims the octagon and Java
     /// keeps the overlap.
     pub octagon_box_cutout_branch3: u64,
+    /// Pieces of a simplex cutout that Java clips with the first division line although
+    /// the first corner lies on the outer border and has none (`cutout_hole_crosses_border`).
+    pub cutout_hole_crosses_border: u64,
+    /// Corners of a simplex cutout that are not integer points and do not lie on the
+    /// outer border, which Java leaves undivided (`simplex_octagon_half_corner`).
+    pub simplex_octagon_half_corner: u64,
 }
 
 impl SplitReach {
@@ -87,6 +131,8 @@ impl SplitReach {
     pub fn add(&mut self, other: &SplitReach) {
         self.simplex_prev_division_line += other.simplex_prev_division_line;
         self.octagon_box_cutout_branch3 += other.octagon_box_cutout_branch3;
+        self.cutout_hole_crosses_border += other.cutout_hole_crosses_border;
+        self.simplex_octagon_half_corner += other.simplex_octagon_half_corner;
     }
 }
 
@@ -97,19 +143,14 @@ mod tests {
     #[test]
     fn default_is_java_and_cache_slots_are_distinct() {
         assert_eq!(SplitQuirks::default(), SplitQuirks::JAVA);
-        let mut slots = Vec::new();
-        for a in [false, true] {
-            for b in [false, true] {
-                let q = SplitQuirks {
-                    simplex_prev_division_line: a,
-                    octagon_box_cutout_branch3: b,
-                };
-                assert!(q.cache_slot() < SplitQuirks::COMBINATIONS);
-                slots.push(q.cache_slot());
-            }
+        let all = SplitQuirks::all();
+        for (slot, q) in all.iter().enumerate() {
+            assert_eq!(q.cache_slot(), slot);
         }
-        slots.sort_unstable();
-        slots.dedup();
-        assert_eq!(slots.len(), SplitQuirks::COMBINATIONS);
+        let mut distinct = all.to_vec();
+        distinct.dedup();
+        assert_eq!(distinct.len(), SplitQuirks::COMBINATIONS);
+        assert_eq!(all[0], SplitQuirks::FIXED);
+        assert_eq!(all[SplitQuirks::COMBINATIONS - 1], SplitQuirks::JAVA);
     }
 }

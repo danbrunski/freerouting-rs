@@ -123,6 +123,12 @@ pub enum Counter {
     /// N06.4: octagon-from-box cutouts whose branch 3 changes the upper right octagon
     /// (`octagon_box_cutout_branch3`).
     OctagonBoxCutoutBranch3,
+    /// N06.14: simplex cutout pieces that Java clips with the stand-in first division
+    /// line of a first corner it did not divide (`cutout_hole_crosses_border`).
+    CutoutHoleCrossesBorder,
+    /// N06.14: simplex cutout corners that are not integer points and lie on no outer
+    /// border line, which Java leaves undivided (`simplex_octagon_half_corner`).
+    SimplexOctagonHalfCorner,
     /// N06.5: maze-search inits that failed with completed start rooms in the tree,
     /// which `init_failure_room_leak` leaves there.
     MazeInitFailureRoomLeaks,
@@ -183,7 +189,7 @@ pub enum Counter {
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 50] = [
+pub const COUNTERS: [Counter; 52] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -216,6 +222,8 @@ pub const COUNTERS: [Counter; 50] = [
     Counter::ShoveRationalProjectionFlips,
     Counter::SimplexPrevDivisionLine,
     Counter::OctagonBoxCutoutBranch3,
+    Counter::CutoutHoleCrossesBorder,
+    Counter::SimplexOctagonHalfCorner,
     Counter::MazeInitFailureRoomLeaks,
     Counter::MazeRippedCarryovers,
     Counter::MazeOrthoZeroWidthRoomFlips,
@@ -272,6 +280,8 @@ impl Counter {
             Counter::ShoveRationalProjectionFlips => "shove_rational_projection_flips",
             Counter::SimplexPrevDivisionLine => "simplex_prev_division_line_reached",
             Counter::OctagonBoxCutoutBranch3 => "octagon_box_cutout_branch3_reached",
+            Counter::CutoutHoleCrossesBorder => "cutout_hole_crosses_border_reached",
+            Counter::SimplexOctagonHalfCorner => "simplex_octagon_half_corner_reached",
             Counter::MazeInitFailureRoomLeaks => "maze_init_failure_room_leaks",
             Counter::MazeRippedCarryovers => "maze_ripped_carryovers",
             Counter::MazeOrthoZeroWidthRoomFlips => "maze_ortho_zero_width_room_flips",
@@ -637,7 +647,7 @@ pub(crate) fn record_n06(counter: Counter) {
     }
 }
 
-/// N06.4: the cutouts' reachability counts ([`freerouting_geometry::SplitReach`]) of
+/// N06.4 and N06.14: the cutouts' reachability counts ([`freerouting_geometry::SplitReach`]) of
 /// one split or cutout, in either switch arm.
 pub(crate) fn record_split_reach(reach: &freerouting_geometry::SplitReach) {
     if enabled() {
@@ -648,6 +658,14 @@ pub(crate) fn record_split_reach(reach: &freerouting_geometry::SplitReach) {
         add(
             Counter::OctagonBoxCutoutBranch3,
             reach.octagon_box_cutout_branch3,
+        );
+        add(
+            Counter::CutoutHoleCrossesBorder,
+            reach.cutout_hole_crosses_border,
+        );
+        add(
+            Counter::SimplexOctagonHalfCorner,
+            reach.simplex_octagon_half_corner,
         );
     }
 }

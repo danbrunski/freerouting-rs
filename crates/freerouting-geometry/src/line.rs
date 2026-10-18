@@ -3,6 +3,8 @@
 use std::sync::Arc;
 
 use num_bigint::BigInt;
+use num_integer::Integer;
+use num_traits::{Signed, ToPrimitive, Zero};
 
 use crate::direction::{Direction, IntDirection};
 use crate::float_point::FloatPoint;
@@ -63,6 +65,59 @@ impl Line {
     pub fn get_instance(a: IntPoint, dir: IntDirection) -> Line {
         let b = a.translate_by_int(dir.get_vector());
         Line::new(a, b)
+    }
+
+    /// The line with direction `dir` through integer points that is nearest to `point`
+    /// with `point` on its left (`point_on_left`) or on its right, anchored at its integer
+    /// point nearest to `point` (N06.14, `simplex_octagon_half_corner`).
+    ///
+    /// A line through a point that is not an integer point may contain no integer point
+    /// at all; the two nearest lines through integer points on either side lie at most
+    /// `1 / |dir|` apart. A line through `point` that contains integer points is returned
+    /// on both sides. Exact: `dir.y * x - dir.x * y` is rounded in `BigInt` at `point` to
+    /// the next value an integer point takes, and the anchor solves the equation.
+    /// `None` for the zero direction, a point at infinity, or an anchor outside the
+    /// `i32` range.
+    pub fn nearest_through_integer_points(
+        point: &Point,
+        dir: IntDirection,
+        point_on_left: bool,
+    ) -> Option<Line> {
+        let (px, py, pz) = match point {
+            Point::Int(p) => return Some(Line::from_point_and_direction(*p, dir)),
+            Point::Rational(r) => (r.x().clone(), r.y().clone(), r.z().clone()),
+        };
+        let (dx, dy) = (BigInt::from(dir.x), BigInt::from(dir.y));
+        // At integer points `f = dy * x - dx * y` takes the multiples of `g`:
+        // `dy * u - dx * v = g`.
+        let ext = dy.extended_gcd(&-&dx);
+        let (g, u, v) = if ext.gcd.is_negative() {
+            (-ext.gcd, -ext.x, -ext.y)
+        } else {
+            (ext.gcd, ext.x, ext.y)
+        };
+        if g.is_zero() || pz.is_zero() {
+            return None;
+        }
+        // `point` is on the left of the line `f = g * m` exactly when `f(point) < g * m`.
+        let f_num: BigInt = &dy * &px - &dx * &py;
+        let f_den: BigInt = &pz * &g;
+        let m = if point_on_left {
+            -((-f_num).div_floor(&f_den))
+        } else {
+            f_num.div_floor(&f_den)
+        };
+        let (x0, y0) = (u * &m, v * &m);
+        // Along the line the integer points step by `dir / g`; take the one nearest to
+        // `point`, rounding half up.
+        let (sx, sy) = (&dx / &g, &dy / &g);
+        let along: BigInt = (&px - &pz * &x0) * &sx + (&py - &pz * &y0) * &sy;
+        let step_den: BigInt = &pz * (&sx * &sx + &sy * &sy) * 2;
+        let t_num: BigInt = along * 2 + &step_den / 2;
+        let t = t_num.div_floor(&step_den);
+        let x = (x0 + &t * &sx).to_i32()?;
+        let y = (y0 + t * sy).to_i32()?;
+        Some(Line::from_point_and_direction(IntPoint::new(x, y), dir))
     }
 
     /// The first defining point.
@@ -531,6 +586,110 @@ mod tests {
     use super::*;
     use num_integer::Integer;
     use num_traits::{Signed, ToPrimitive, Zero};
+
+    /// N06.14: the nearest lines through integer points beside an inexact point bracket
+    /// it, one on each side, with no such line strictly between them; a line through
+    /// the point that contains integer points serves both sides. Exact at the
+    /// coordinate limits (`CRIT_INT`, and directions up to `2 * CRIT_INT`).
+    #[test]
+    fn nearest_lines_through_integer_points_bracket_the_point() {
+        let rational = |x: i64, y: i64, z: i64| {
+            Point::Rational(Arc::new(RationalPoint::new(
+                BigInt::from(x),
+                BigInt::from(y),
+                BigInt::from(z),
+            )))
+        };
+        // `f = dy * x - dx * y` at `point` times its denominator, and at a line.
+        let f_line = |l: &Line| {
+            let d = l.int_direction();
+            BigInt::from(d.y) * l.a.x - BigInt::from(d.x) * l.a.y
+        };
+        // Whether the line through `point` with direction `dir` has integer points.
+        let has_integer_points = |point: &Point, dir: IntDirection| match point {
+            Point::Int(_) => true,
+            Point::Rational(r) => {
+                let f = BigInt::from(dir.y) * r.x() - BigInt::from(dir.x) * r.y();
+                f.is_multiple_of(r.z())
+            }
+        };
+        let check = |point: &Point, dir: IntDirection, exact_line: bool| {
+            // The divisions' directions are normalized, as these.
+            assert_eq!(dir.get_vector().to_normalized_direction(), dir);
+            assert_eq!(
+                has_integer_points(point, dir),
+                exact_line,
+                "{point:?} {dir:?}"
+            );
+            let left = Line::nearest_through_integer_points(point, dir, true).unwrap();
+            let right = Line::nearest_through_integer_points(point, dir, false).unwrap();
+            assert_eq!(left.int_direction(), dir);
+            assert_eq!(right.int_direction(), dir);
+            if exact_line {
+                assert_eq!(left, right);
+                assert_eq!(point.side_of_line(&left), Side::Collinear);
+                return;
+            }
+            assert_eq!(
+                point.side_of_line(&left),
+                Side::OnTheLeft,
+                "{point:?} {left:?}"
+            );
+            assert_eq!(
+                point.side_of_line(&right),
+                Side::OnTheRight,
+                "{point:?} {right:?}"
+            );
+            // Adjacent: the two values differ by the gcd of the direction, 1.
+            assert_eq!(f_line(&left) - f_line(&right), BigInt::from(1));
+            // The anchors are the integer points of their lines nearest to the point.
+            let p = point.to_float();
+            let step = f64::from(dir.x).hypot(f64::from(dir.y));
+            for l in [left, right] {
+                let a = l.a.to_float();
+                assert!((a.x - p.x).hypot(a.y - p.y) <= step, "{l:?} {p:?}");
+            }
+        };
+        // An odd-parity octagon's corner, with an axis, a diagonal and a steep direction.
+        let half = rational(25523, -4577, 2);
+        check(&half, IntDirection::new(0, 1), false);
+        check(&half, IntDirection::new(-1, 0), false);
+        check(&half, IntDirection::new(1, 1), true);
+        check(&half, IntDirection::new(49597, 6885), true);
+        check(&half, IntDirection::new(49597, 6884), false);
+        // A corner of an enlarged simplex, with a denominator that is not 2.
+        check(
+            &rational(1_000_003, -2_000_001, 7),
+            IntDirection::new(-2251, 2552),
+            false,
+        );
+        // At the coordinate limits.
+        let c = i64::from(CRIT_INT);
+        let near_limit = rational(2 * c - 1, -(2 * c - 3), 2);
+        let big = CRIT_INT * 2 - 1;
+        check(&near_limit, IntDirection::new(big, -(big - 2)), true);
+        check(&near_limit, IntDirection::new(big, -(big - 1)), false);
+        check(&near_limit, IntDirection::new(0, -1), false);
+        check(
+            &rational(3 * c - 1, c + 1, 3),
+            IntDirection::new(-big, 2),
+            false,
+        );
+        check(
+            &rational(3 * c - 1, c + 1, 3),
+            IntDirection::new(-big, 4),
+            false,
+        );
+        // An integer point is its own anchor.
+        let p = IntPoint::new(7, -3);
+        let line =
+            Line::nearest_through_integer_points(&Point::Int(p), IntDirection::new(2, 5), true);
+        assert_eq!(line.map(|l| l.a), Some(p));
+        assert_eq!(
+            Line::nearest_through_integer_points(&half, IntDirection::NULL, true),
+            None
+        );
+    }
 
     #[test]
     fn geometric_equality() {
