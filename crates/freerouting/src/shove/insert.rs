@@ -32,6 +32,17 @@
 //! the caller's region never grows. With `java_quirks.move_drill_tidy_region`
 //! off, the insertion returns that union through a mutable region (see
 //! [`RoutingBoard::move_drill_item`](crate::board::RoutingBoard)).
+//!
+//! Kept Java bug (N06.15, found by N03.2): a substitute piece goes on the board
+//! only after the recursive inserts of its own shapes, and a deeper level's
+//! `shoveVias` may move a via of another net onto the piece meanwhile: the move's
+//! check (`DrillItemMover.check`, `forcedPad`) cannot see a piece that is not on
+//! the board, so Java then inserts the piece over the via, a short
+//! (`TraceShover.java:544-569`, `ForcedPadRouter.java:413-438`). With
+//! `java_quirks.shove_via_into_pending_piece` off, the piece's shapes are queried
+//! again before it is inserted and the shove fails at such a via. A trace of
+//! another net inserted there later in the same recursion is not covered (the
+//! counter `shove_pending_piece_foreign_traces` measures it).
 
 use std::collections::BTreeSet;
 
@@ -220,6 +231,8 @@ impl TraceShover<'_> {
                 .as_trace()
                 .expect("substitute trace")
                 .tile_shape_count();
+            let check_pending = self.checks_pending_piece();
+            let mut piece_shapes = Vec::new();
             for i in 0..shape_count {
                 let Some(current) =
                     ShapeAndEntrySide::new(self.board, &piece, i, orthogonal, false)
@@ -239,6 +252,25 @@ impl TraceShover<'_> {
                 ) {
                     return false;
                 }
+                if check_pending {
+                    piece_shapes.push(current.shape);
+                }
+            }
+            // PARITY(quirk, java_quirks.shove_via_into_pending_piece): Java inserts the
+            // piece even when a deeper level of this recursion moved a via of another
+            // net onto it (`shoveVias`; the move's check cannot see the piece, which is
+            // not on the board yet), a short. `false` fails the shove there, as the
+            // insert does for a via in its way (N06.15).
+            if check_pending
+                && let Some(via) = self.foreign_via_in_pending_piece(
+                    &piece_shapes,
+                    layer,
+                    &piece_nets,
+                    piece_class,
+                )
+            {
+                self.board.set_shove_failing_obstacle(Some(via));
+                return false;
             }
             let polyline = piece.as_trace().expect("substitute trace").polyline.clone();
             for i in 0..polyline.corner_count() {
@@ -272,6 +304,80 @@ impl TraceShover<'_> {
             }
         }
         true
+    }
+
+    /// True if [`foreign_via_in_pending_piece`](Self::foreign_via_in_pending_piece)
+    /// runs: under `java_quirks.shove_via_into_pending_piece = false`, or to count
+    /// with statistics on.
+    fn checks_pending_piece(&self) -> bool {
+        !self.board.java_quirks().shove_via_into_pending_piece || crate::run_stats::enabled()
+    }
+
+    /// N06.15: the via of another net that overlaps one of `shapes` (a substitute
+    /// piece's shapes, about to be inserted) with the piece's clearance, which the
+    /// shove must fail at under `java_quirks.shove_via_into_pending_piece = false`;
+    /// always `None` under `true` (Java). A via there arrived during the recursion
+    /// of the piece's own shapes: a via in a shape when its insert starts fails that
+    /// insert.
+    ///
+    /// Under `false` the shapes are queried in order, as the board's other queries
+    /// are (on the work meter), up to the first with such a via, whose lowest id is
+    /// the answer. Under `true` it only counts, with statistics on, on queries that
+    /// leave the work meter alone, so that no work limit cuts off elsewhere.
+    ///
+    /// The counters count pieces, in either value: `shove_via_into_pending_pieces`
+    /// (such a via) and `shove_pending_piece_foreign_traces`, a trace of another net
+    /// whose copper overlaps the piece's shapes (no clearance), which neither value
+    /// acts on: deeper pieces of other nets are placed against a pending piece at
+    /// exactly the clearance, so a clearance query would find those too.
+    fn foreign_via_in_pending_piece(
+        &mut self,
+        shapes: &[TileShape],
+        layer: i32,
+        piece_nets: &[i32],
+        piece_class: i32,
+    ) -> Option<ItemId> {
+        let fix = !self.board.java_quirks().shove_via_into_pending_piece;
+        let foreign = |board: &crate::board::BasicBoard, id: ItemId, via: bool| {
+            board.item(id).is_some_and(|item| {
+                !item.shares_net_no(piece_nets) && if via { item.is_via() } else { item.is_trace() }
+            })
+        };
+        let mut via = None;
+        for shape in shapes {
+            let found = if fix {
+                self.board
+                    .overlapping_items_with_clearance(shape, layer, &[], piece_class)
+            } else {
+                self.board.overlapping_items_with_clearance_unmetered(
+                    shape,
+                    layer,
+                    &[],
+                    piece_class,
+                )
+            };
+            via = found.into_iter().find(|id| foreign(self.board, *id, true));
+            if via.is_some() {
+                break;
+            }
+        }
+        if crate::run_stats::enabled() {
+            use crate::run_stats::{Counter, record_n06};
+            if via.is_some() {
+                record_n06(Counter::ShoveViaIntoPendingPieces);
+            }
+            // Clearance class 0 has clearance 0 to every class: copper overlap only.
+            let trace = shapes.iter().any(|shape| {
+                self.board
+                    .overlapping_items_with_clearance_unmetered(shape, layer, &[], 0)
+                    .into_iter()
+                    .any(|id| foreign(self.board, id, false))
+            });
+            if trace {
+                record_n06(Counter::ShovePendingPieceForeignTraces);
+            }
+        }
+        if fix { via } else { None }
     }
 
     /// Java's `nextSubstituteTracePiece` loop, run before the cutout: the
@@ -699,3 +805,7 @@ impl TraceShover<'_> {
 fn via_vector(target: IntPoint, center: IntPoint) -> Vector {
     Point::Int(target).difference_by(&Point::Int(center))
 }
+
+#[cfg(test)]
+#[path = "insert_pending_tests.rs"]
+mod pending_tests;

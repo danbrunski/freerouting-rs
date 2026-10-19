@@ -22,6 +22,7 @@ mod shove_insert_stages;
 mod shove_sampler;
 
 use board_probe::header;
+use freerouting::settings::JavaQuirks;
 use shove_insert_stages::{insert_steps, shove_insert_lines};
 
 const KIND: &str = "shove-insert";
@@ -29,11 +30,17 @@ const KIND: &str = "shove-insert";
 /// Runs every stage on `board_name` (with its fixtures.tsv session if
 /// `with_session`) and compares with the probe's output.
 fn check_board(board_name: &str, with_session: bool) {
+    check_board_with(board_name, with_session, JavaQuirks::JAVA);
+}
+
+/// [`check_board`] with the board's switches `quirks`.
+fn check_board_with(board_name: &str, with_session: bool, quirks: JavaQuirks) {
     let row = board_probe::fixture(board_name);
     let mut board = board_probe::load(&row);
     if with_session {
         board_probe::import_session(&mut board, &row);
     }
+    board.set_java_quirks(quirks);
     let mut lines = vec![header(KIND, &row.board)];
     shove_insert_lines(&mut board, insert_steps(&row.board), &mut lines);
     if let Err(e) = board_probe::compare(KIND, &row, &lines) {
@@ -89,6 +96,20 @@ fn shove_insert_matches_java_issue110() {
 #[test]
 fn shove_insert_matches_java_issue742() {
     check_board("Issue742-tastexx-pcb", true);
+}
+
+/// N06.15: with `java_quirks.shove_via_into_pending_piece = false` the probe's
+/// steps on J2 (200 forced inserts, with its session) still match Java's recording:
+/// no via is moved onto a pending piece there, and the fix changes nothing else.
+/// Its `false` half where a via does arrive is
+/// `shove::insert::pending_tests::pending_piece_switch_both_behaviours_and_counters`.
+#[test]
+fn shove_insert_with_the_pending_piece_fix_matches_java_where_no_via_arrives() {
+    let fixed = JavaQuirks::JAVA
+        .with("shove_via_into_pending_piece", false)
+        .unwrap();
+    check_board_with("Issue026-J2_reference", true, fixed);
+    check_board_with("Issue508-DAC2020_bm08", true, fixed);
 }
 
 /// `(attach off)` (D8, O04.3): a forced via onto an own-net SMD pad with a

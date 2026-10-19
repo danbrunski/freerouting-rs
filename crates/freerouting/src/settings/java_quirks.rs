@@ -127,6 +127,8 @@ java_quirks! {
     route_change_layer_no_via: "N06.11",
     route_connect_inner_break: "N06.11",
     select_extension_ignores_filter: "N06.11",
+    // (b) row found after the inventory (N03.2).
+    shove_via_into_pending_piece: "N06.15",
     // (c) rows.
     ripup_pass_no_unset: "N06.12",
     insert_stale_trace_object: "N06.12",

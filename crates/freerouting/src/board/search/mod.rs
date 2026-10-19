@@ -576,6 +576,7 @@ impl ShapeSearchTree {
             matrix,
             items,
             keep,
+            true,
         )
     }
 
@@ -605,6 +606,32 @@ impl ShapeSearchTree {
             matrix,
             items,
             |_| true,
+            true,
+        )
+    }
+
+    /// [`clearance_search_entries`](Self::clearance_search_entries) without
+    /// touching the work meter (the tree's reference traversal finds the same
+    /// leaves): for a counter that only observes (N06.15), so that a run with
+    /// statistics on cuts its work limits off at the same point.
+    pub fn clearance_search_entries_unmetered(
+        &self,
+        shape: &TileShape,
+        layer: i32,
+        ignore_nets: &[i32],
+        clearance_class: i32,
+        matrix: &ClearanceMatrix,
+        items: &UndoableObjects<ItemId, Item>,
+    ) -> Vec<TreeEntry> {
+        self.clearance_search_entries_where(
+            shape,
+            layer,
+            ignore_nets,
+            clearance_class,
+            matrix,
+            items,
+            |_| true,
+            false,
         )
     }
 
@@ -618,6 +645,7 @@ impl ShapeSearchTree {
         matrix: &ClearanceMatrix,
         items: &UndoableObjects<ItemId, Item>,
         keep: impl Fn(&Item) -> bool,
+        metered: bool,
     ) -> Vec<TreeEntry> {
         let mut result = Vec::new();
         let Some(bounds) = shape.bounding_shape(self.tree.bounding_directions()) else {
@@ -632,7 +660,12 @@ impl ShapeSearchTree {
         // (clearance, entry id) sorted like the Java TreeSet of
         // EntrySortedByClearance.
         let mut sorted: Vec<(i32, usize, LeafId)> = Vec::new();
-        for leaf in self.tree.overlaps(&offset_bounds) {
+        let leaves = if metered {
+            self.tree.overlaps(&offset_bounds)
+        } else {
+            self.tree.overlaps_reference(&offset_bounds).0
+        };
+        for leaf in leaves {
             let (object, shape_index) = self.tree.leaf(leaf);
             // Java casts every leaf object to `Item` here; rooms never reach
             // this query.

@@ -589,6 +589,8 @@ settings_table! {
                 "Interactive connect leaves only the inner loop, retrying from the added corner: `true` (unset) keeps this Java bug, `false` fixes it (N06.11)."),
             (select_extension_ignores_filter, bool, opt, None, None, "selectExtensionIgnoresFilter", [], Flat::No, true,
                 "The inspect state stays after an extension filter empties the selection: `true` (unset) keeps this Java bug, `false` fixes it (N06.11)."),
+            (shove_via_into_pending_piece, bool, opt, None, None, "shoveViaIntoPendingPiece", [], Flat::No, true,
+                "A shove's recursion moves a via of another net onto a substitute piece that is not on the board yet, and the piece is then inserted over it (a short): `true` (unset) keeps this Java bug, `false` fails the shove when a piece about to be inserted overlaps such a via (N06.15)."),
             (ripup_pass_no_unset, bool, opt, None, None, "ripupPassNoUnset", [], Flat::No, true,
                 "ripupPassNo is never set, so the random rip-up detour never fires: `true` (unset) keeps this Java bug, `false` sets the pass number so the detour factor fires from pass 4 on, outside every third pass (N06.12, measured by prereg/N06.12-ripup-pass.json)."),
             (insert_stale_trace_object, bool, opt, None, None, "insertStaleTraceObject", [], Flat::No, true,

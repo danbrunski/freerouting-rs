@@ -1,0 +1,16 @@
+# N06.15: router.java_quirks.shove_via_into_pending_piece (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.15.json: the shove's re-query of a substitute piece for a
+# via of another net that a deeper level moved onto it, against Java's behaviour, under profiles
+# legacy and enhanced. DSN fixtures, routed by tools/bench/n06_run.py with P04's bounds (3 passes,
+# optimizer off), the bounds N03.2 measured GP8B with. GP8B is the board N03.2 traced the bug on;
+# the others are A14 boards whose routes shove heavily (dense, via-heavy, multilayer; P04's set
+# and the slower A14 cutoff boards):
+fixtures/Issue066-Project_GP8B.dsn
+fixtures/Issue145-smoothieboard.dsn
+fixtures/Issue113-Protein.dsn
+fixtures/Issue269-z10_module.dsn
+fixtures/Issue753-CPU-85_r104.dsn
+fixtures/Issue508-DAC2020_bm01.dsn
+fixtures/Issue593-BBD_Mars-64.dsn
+# canary-pwr through the KiCad plugin path (the registration's plugin_canary; outside
+# n06_run.py): canary hardware/canary-pwr-rev1.0 at canary 2a7e070b.

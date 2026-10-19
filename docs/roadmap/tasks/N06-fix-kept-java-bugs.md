@@ -12,6 +12,8 @@ The inventory (N06.1, 2026-10-17) is the table below, with 54 rows:
 - **2 more of kind (b),** added 2026-10-18 by N06.14: the two simplex cutout failures that N06.4's
   invariant test found outside its rows (`cutout_hole_crosses_border`,
   `simplex_octagon_half_corner`).
+- **1 more of kind (b),** added 2026-10-18 by N06.15: the shove bug N03.2 found
+  (`shove_via_into_pending_piece`).
 
 The rows come from:
 - `docs/DIVERGENCES.md` "Java bugs kept on purpose" (geometry, DSN, board model, shove,
@@ -74,6 +76,7 @@ Whoever implements an item (the `implementer` agent, or Codex):
 | N06.4–N06.11 | the files in their rows' Rust column, their tests, `tools/bench/sets/n06-*.txt`, `docs/roadmap/prereg/N06.*.json`. The batches touch disjoint files except `autoroute/connection.rs` (M and F) and `optimize/pull_tight.rs` (P only), so run M and F one after the other |
 | N06.14 | `geometry/shapes/simplex.rs`, `geometry/line.rs` (`nearest_through_integer_points`), `geometry/quirks.rs`, `geometry/tests/cutout_invariant.rs`, its two keys in `settings/fields.rs` and `settings/java_quirks.rs`, its two counters in `run_stats.rs`, `tests/n06_cutout_reach.rs`, `tools/bench/sets/n06-g2.txt`, `docs/roadmap/prereg/N06.14.json` |
 | N06.12, N06.13 | their rows' files; `settings/profile.rs` (`ENHANCED`) and the DIVERGENCES "Profile `enhanced`" section, through N05 |
+| N06.15 | `shove/insert.rs` and its `insert_pending_tests.rs`, the unmetered clearance query (`board/search/mod.rs`, `board/basic_board.rs`), the key (`settings/fields.rs`, `settings/java_quirks.rs`, `tests/settings_java_quirks.rs`), two `run_stats` counters, `tests/reference_shove_insert.rs`, `tools/bench/n06_run.py` (an arm's own `baseline`), `prereg/N06.15.json`, `sets/n06-pending-piece.txt`, `freerouting-dev/tests/prereg_n06_15.rs` |
 
 ## Decisions made here
 
@@ -189,9 +192,11 @@ Rust paths are under `crates/freerouting/src/` unless they start with `geometry/
 | `route_change_layer_no_via` | interactive/route/layer.rs:155-195, interactive/route.rs:25-28 | gui/interactive/Route.java:282 | With no via spanning both layers, the layer change "succeeds" without a via | GUI | U | `layer_change_without_spanning_via_quirk` |
 | `route_connect_inner_break` | interactive/route.rs:28-30, 641-646 | gui/interactive/Route.java:411-415 | Only the inner loop is left, so the second corner pair is tried from the added corner | GUI | U | none |
 | `select_extension_ignores_filter` | interactive/select.rs:19-22 | InspectedItemState.java:75ff | After an extension's filter, the inspect state stays even with an empty selection | GUI | U | none |
+| `shove_via_into_pending_piece` (added by N06.15, found by N03.2) | shove/insert.rs:259-274 (`insert_substitute_pieces`), 312-381 (`checks_pending_piece`, `foreign_via_in_pending_piece`) | optimize/TraceShover.java:544-569, actions/ForcedPadRouter.java:413-438, actions/DrillItemMover.java:173-248 (`shoveVias`) | A substitute piece goes on the board only after the recursive inserts of its own shapes; a deeper level's `shoveVias` may move a via of another net onto the piece meanwhile, and its move check (`check`, `forcedPad`) cannot see the piece, so the piece is inserted over the via: a short. **Question:** fail the shove there? **Proposal:** before the piece is inserted, query its shapes again with its clearance and fail the shove at the first via of another net (the prototype of N03.2). **Remaining case:** a trace of another net inserted onto the pending piece later in the same recursion; a clearance re-query also finds the pieces placed against it at exactly the clearance (1,076 pieces on bm01 in three `legacy` passes, final board 0 violations), so it is only counted, as copper overlap (`shove_pending_piece_foreign_traces`) | batch, rare: GP8B `legacy` tree pass 3 once, canonical twice, `enhanced` tree pass 1 once (N03.2); 0 on the 15 A14 boards and the probe stages N06.15 tried | N06.15 | none (the bug has no Java recording; `pending_piece_switch_both_behaviours_and_counters` pins both halves) |
 
 Batches: **G** geometry cutouts (**G2**: N06.14's two rows), **M** maze search and rooms, **F** fanout, **S** shove, **P** pull-tight,
-**O** batch optimizer, **I** inputs and reports, **U** GUI and interactive.
+**O** batch optimizer, **I** inputs and reports, **U** GUI and interactive. The last row was found after the
+inventory (N03.2) and has its own item, N06.15.
 
 ### (c) Judgement calls: N06.12
 
@@ -1197,3 +1202,92 @@ These are marked or look like quirks but keep no bug:
         per the registration's `plugin_canary` block.
       - Also the corpus inventory (read-only):
         `cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
+- [~] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
+  deeper level of `TraceShover.insert`'s recursion moves a via of another net (`shoveVias`) onto a
+  substitute piece that is not on the board yet; the piece is then inserted over it, a short. Make
+  N03.2's env-gated prototype (`target/orchestrator/n03/scratch/n03-2-fix-prototype.patch`) a switch.
+  - **Accept:** the row, the key (`SWITCH_COUNT`, the settings docs), the `false` path with
+    `// PARITY(quirk, java_quirks.shove_via_into_pending_piece)` on Java's, a both-behaviour test, a
+    reach counter that only observes, the trace case investigated, and the registration under
+    `legacy` and `enhanced` (N03.3 reads the `enhanced` answer); the fix is measured.
+  - *Partial 2026-10-18:* code, tests, counters and the registration are done; heavy run pending
+    (commands below). Defaults stay `true` (Java) in both profiles; `ENHANCED` is unchanged.
+    - [x] Row and key: the (b) row above; `router.java_quirks.shove_via_into_pending_piece`
+      (`settings/fields.rs`, its doc string is the settings documentation; `settings/java_quirks.rs`,
+      owning item N06.15), `SWITCH_COUNT` 44 → 45 (`tests/settings_java_quirks.rs`, 9 tests pass:
+      file, command line and environment round trips include the new key). `--help` lists no
+      quirk keys, so it is unchanged. DIVERGENCES: the kept bug under "Shove insert" and an
+      "N06.15 shove fix" block in "Java quirk switches, opt-in (N06)".
+    - [x] The `false` path (`shove::insert`, `insert_substitute_pieces`): the prototype's re-query
+      without its env var. Before a piece goes on the board its shapes (the `ShapeAndEntrySide`
+      shapes its own inserts cleared) are queried again with its clearance, in order, on the work
+      meter; the first via of another net found fails the shove, as the shove-failing obstacle.
+      It covers `forcedPad`'s pieces too (the same tail, `ForcedPadRouter.java:413-438`). Java's
+      path keeps the marker; the module docs name the bug.
+    - [x] Reach counters (`run_stats`, `--stats json` `total.counts`, either arm, only with
+      statistics on): `shove_via_into_pending_pieces` (pieces with such a via) and
+      `shove_pending_piece_foreign_traces` (pieces whose shapes overlap the copper of a trace of
+      another net). Under `true` they query through the tree's reference traversal, which leaves
+      the work meter alone (`overlapping_items_with_clearance_unmetered`, new in
+      `board/basic_board.rs` and `board/search/mod.rs`), so no work limit cuts off elsewhere;
+      Issue508-DAC2020_bm01 (`legacy`, 3 passes, optimizer off) writes a byte-identical SES with
+      and without `--stats json`.
+    - [x] Both behaviours: no small board was found where a shove moves a via onto a pending
+      piece. It needs a cascade of pushes (GP8B: depths 16 to 19) with a via moved back onto an
+      ancestor's piece. Random forced inserts on synthetic two-layer boards (118,000, dense
+      trace bundles, bends, vias), 400 on each of 80 probe boards with their sessions and 3,000
+      on each of four dense ones, the probe's stages (200 steps) on 30 probe boards with and
+      without their sessions, and three-pass `legacy` routes of 15 A14 boards never reached it
+      (counter 0); only GP8B's routes do. So the test is unit
+      level, on the board state at the re-query: `shove::insert::pending_tests::pending_piece_switch_both_behaviours_and_counters`
+      (a piece over a foreign via: `true` inserts, `false` returns the via, both count 1; within
+      the clearance only: the same; an own-net via or nothing: neither; a foreign trace: counted
+      only on copper overlap) and `pending_piece_counting_leaves_the_work_meter_alone` (Java's
+      arm adds 0 work units with statistics on and does not query with them off; the fix
+      queries on the meter). End to end, `reference_shove_insert.rs::shove_insert_with_the_pending_piece_fix_matches_java_where_no_via_arrives`:
+      with the switch `false` the probe's J2 (200 steps) and bm08 steps still match Java's
+      recording.
+    - [x] The trace case: not covered. A clearance re-query for traces of another net fires on
+      pieces that deeper levels placed against the pending piece at exactly the clearance
+      (1,076 pieces on Issue508-DAC2020_bm01, 117 on Issue593-BBD_Mars-64, in three `legacy`
+      passes, whose final boards have 0 violations), so failing on it would fail legitimate
+      shoves. Copper overlap is counted instead: 0 on those two boards, 1 on
+      Issue015-StackOverflow, 1 on GP8B `legacy` (both arms). Recorded in the row as the
+      remaining case.
+    - [x] The switch reproduces the prototype on GP8B (release, `fixtures/Issue066-Project_GP8B.dsn`,
+      `--router.autorouter.max_passes=3 --router.optimizer.enabled=false`, one run per arm, one at
+      a time, 18:13:30 to 18:33:50): `legacy` `true` 61 unrouted, 0 violations, counter 2;
+      `false` 59 unrouted, 0 violations (N03.2's prototype: 61 → 59); `enhanced` `true` 56
+      unrouted (pass 1 ends with 1 violation, gone by pass 2, as N03.2 saw), 0 violations, counter
+      1; `false` 52 unrouted, pass 1 0 violations, 0 at the end. These four were seen after the
+      registration was written.
+    - [x] Registered before any number of the switch: `docs/roadmap/prereg/N06.15.json` (sha256
+      `397fd09cc28f80dc88e778adef33e0d9a8d8e059b21896f841aca6c9e2ceb663` after its one amendment,
+      which rewrote `pairs` into the array form main `4d44676`'s gate reads, same two pairs) and
+      `tools/bench/sets/n06-pending-piece.txt` (GP8B, Issue145-smoothieboard, Issue113-Protein,
+      Issue269-z10_module, Issue753-CPU-85_r104, Issue508-DAC2020_bm01, Issue593-BBD_Mars-64, plus
+      canary-pwr at canary 2a7e070b through the plugin path), pinned by
+      `crates/freerouting-dev/tests/prereg_n06_15.rs` (4 tests pass). Arms `legacy_baseline`,
+      `legacy_fix`, `enhanced_baseline`, `enhanced_fix`, P04's bounds on the DSN rows; two judged
+      pairs (the `pairs` array, `gate --prereg --all-pairs`), one per profile, each by N02's totals rule, no-regress, bands max(2, 5 % of
+      connections) and 10 for canary-pwr; router `clearance_violations` and KiCad
+      `shorting_items`/clearance are hard guards (any worsening rejects). The file names what was
+      seen before it: N03.2's GP8B `legacy` prototype numbers (canonical 51 → 64, tree 61 → 59
+      unrouted) and the reach counter's 0 on bm01 and BBD_Mars-64. `tools/bench/n06_run.py` now
+      compares an arm with its own `baseline` arm when it names one, and copies each run's
+      `connections` (the band's input) into `summary.json`; a smoke run of the four arms on
+      `fixtures/scoring-perfect-two-pin.dsn` wrote them.
+    - [ ] Heavy run pending (orchestrator, from the worktree root, release build of this tree):
+      `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.15.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-v`
+      (28 runs; it exits non-zero after the last run when a session differs, and then the totals
+      rule applies to `summary.json`'s `statistics` per verdict pair). Then the canary-pwr plugin
+      row as in N06.10 on canary 2a7e070b (the registration's `plugin_canary`: export once with
+      `canary-graded-flow.json`, route the 4 arms with the exported args plus the arm's
+      `--router.profile` and switch flag, grade each distinct session with canary's `grade.sh`,
+      `GRADE_REV=2a7e070b`, recording `shorting_items` and clearance). N06.13 records the verdict.
+    - Gate (worktree `target/orchestrator/n06v/wt`, branch `land/n06-15` on main `03eaf07`, private
+      target, `CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0`): `cargo fmt --all --check`;
+      `cargo clippy -p freerouting -p freerouting-dev -p freerouting-cli --all-targets -- -D warnings`;
+      `cargo test -p freerouting -p freerouting-cli --no-fail-fast` 1577 passed, 0 failed, 33
+      ignored (155 suites); the N06 pin tests `prereg_n06_{4,5,6,7,8,9,12,14,15}` 37 passed;
+      `python3 tools/roadmap/checklists.py status --strict` clean.

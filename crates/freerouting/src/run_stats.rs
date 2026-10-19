@@ -186,10 +186,17 @@ pub enum Counter {
     /// N06.12: rules-file `layer` scopes naming a layer the board does not have, which
     /// Java applies to every layer and `rules_unknown_layer_scope = false` ignores.
     RulesUnknownLayerScopes,
+    /// N06.15: shove substitute pieces about to be inserted that overlap a via of
+    /// another net a deeper level of the recursion moved there, which Java inserts
+    /// over the via and `shove_via_into_pending_piece = false` fails the shove at.
+    ShoveViaIntoPendingPieces,
+    /// N06.15: shove substitute pieces about to be inserted that overlap a trace of
+    /// another net (the case the switch leaves to Java in both arms).
+    ShovePendingPieceForeignTraces,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 52] = [
+pub const COUNTERS: [Counter; 54] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -242,6 +249,8 @@ pub const COUNTERS: [Counter; 52] = [
     Counter::RipupRandomFactorDraws,
     Counter::AnyAngleSkipLengthFlips,
     Counter::RulesUnknownLayerScopes,
+    Counter::ShoveViaIntoPendingPieces,
+    Counter::ShovePendingPieceForeignTraces,
 ];
 
 impl Counter {
@@ -300,6 +309,8 @@ impl Counter {
             Counter::RipupRandomFactorDraws => "ripup_random_factor_draws",
             Counter::AnyAngleSkipLengthFlips => "any_angle_skip_length_flips",
             Counter::RulesUnknownLayerScopes => "rules_unknown_layer_scopes",
+            Counter::ShoveViaIntoPendingPieces => "shove_via_into_pending_pieces",
+            Counter::ShovePendingPieceForeignTraces => "shove_pending_piece_foreign_traces",
         }
     }
 }

@@ -717,6 +717,13 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   stays `IntOctagon.EMPTY`, `EMPTY.enlarge(w)` is `EMPTY` again and `optChangedArea` skips the
   tightener; only `Integer.MAX_VALUE` (no clip) pull-tightens after a move
   (`RoutingBoard::move_drill_item`, test `move_drill_item_finite_tidy_skips_pull_tight`).
+- Java bug kept on purpose (found by N03.2): a shove substitute piece goes on the board only
+  after the recursive inserts of its own shapes, and a deeper level's `shoveVias` may move a
+  via of another net onto the piece meanwhile. The move's check (`DrillItemMover.check`,
+  `forcedPad`) cannot see a piece that is not on the board, so the piece is inserted over the
+  via, a short (`TraceShover.java:544-569`, `ForcedPadRouter.java:413-438`; N03.2 traced it on
+  GP8B). Switch `router.java_quirks.shove_via_into_pending_piece`, `true` (Java) in both
+  profiles; N06.15 measures it (`shove::insert` module docs).
 - Where Java throws out of an insert (a substitute piece without a tree shape in
   `ShapeAndEntrySide`; `insertTraceWithoutCleaning` rejecting the new trace, fewer than two
   corners or zero length, so that `combine` throws a `NullPointerException`), the port reports
@@ -1614,6 +1621,19 @@ Every (c) switch still defaults to `true` in both profiles. With the named switc
 
 `run_stats` counts `ripup_random_pass_connections` and `any_angle_skip_length_flips` in
 either arm, `ripup_random_factor_draws` (only under `false`) and `rules_unknown_layer_scopes`.
+
+**N06.15 shove fix (explicit opt-in; promotion pending)**
+
+`shove_via_into_pending_piece` still defaults to `true` in both profiles. With it `false`, a
+shove substitute piece's shapes are queried again before the piece goes on the board, and the
+shove fails at a via of another net found there (the shove-failing obstacle is the via), as the
+insert fails at a via in its way; callers undo as for any failed shove
+(`shove::insert::pending_tests::pending_piece_switch_both_behaviours_and_counters`). Where no
+via arrives the shove is Java's (`shove_insert_with_the_pending_piece_fix_matches_java_where_no_via_arrives`).
+A trace of another net inserted onto a pending piece later in the same recursion is not
+covered. `run_stats` counts `shove_via_into_pending_pieces` and
+`shove_pending_piece_foreign_traces` in either arm, with queries that leave the work meter
+alone. Registered in `prereg/N06.15.json` under `legacy` and `enhanced`; the run is pending.
 
 ## Profile `enhanced`
 

@@ -13,7 +13,8 @@ import subprocess
 
 
 def final_statistics(manifest):
-    """The routed board's unrouted connections, clearance violations and vias, from
+    """The routed board's connections (N02's band: max(2, 5 % of them), N06.15),
+    unrouted connections, clearance violations and vias, from
     the result manifest's `board_statistics` (Freerouting's board model); empty when
     the manifest has none. A batch whose sessions differ is judged on these (N06.7)."""
     try:
@@ -25,7 +26,8 @@ def final_statistics(manifest):
         for key in keys:
             value = value.get(key) if isinstance(value, dict) else None
         return value
-    return {'unrouted': total('connections', 'incomplete_count'),
+    return {'connections': total('connections', 'maximum_count'),
+            'unrouted': total('connections', 'incomplete_count'),
             'clearance_violations': total('clearance_violations', 'total_count'),
             'vias': total('vias', 'total_count')}
 
@@ -43,7 +45,7 @@ def main():
     args.out.mkdir(parents=True, exist_ok=False)
     results = []
     for board in boards:
-        baseline = None
+        sessions = {}
         for arm, spec in registration['arms'].items():
             directory = args.out / Path(board).stem / arm
             directory.mkdir(parents=True)
@@ -60,10 +62,12 @@ def main():
             with (directory / 'run.log').open('w') as log:
                 subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
             content = session.read_bytes()
-            if arm == registration['baseline_arm']:
-                baseline = content
+            sessions[arm] = content
+            # An arm may name its own baseline arm (N06.15: one per profile); by
+            # default every arm is compared with the registration's baseline_arm.
+            baseline = sessions.get(spec.get('baseline', registration['baseline_arm']))
             if baseline is None:
-                parser.error('registration must list baseline first')
+                parser.error(f'{arm}: its baseline arm must be listed before it')
             counters = json.loads(stats.read_text())['total']['counts']
             results.append({'board': board, 'arm': arm,
                             'session_differences': int(content != baseline),

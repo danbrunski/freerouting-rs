@@ -1421,6 +1421,30 @@ impl BasicBoard {
             .collect()
     }
 
+    /// [`overlapping_items_with_clearance`](Self::overlapping_items_with_clearance)
+    /// without touching the work meter, for counters that only observe (N06.15).
+    pub fn overlapping_items_with_clearance_unmetered(
+        &self,
+        shape: &TileShape,
+        layer: i32,
+        ignore_nets: &[i32],
+        clearance_class: i32,
+    ) -> BTreeSet<ItemId> {
+        self.search_trees
+            .default_tree()
+            .clearance_search_entries_unmetered(
+                shape,
+                layer,
+                ignore_nets,
+                clearance_class,
+                &self.rules.clearance_matrix,
+                &self.items,
+            )
+            .into_iter()
+            .map(|e| e.item)
+            .collect()
+    }
+
     /// The items overlapping `area` on `layer`.
     pub fn overlapping_items(&self, area: &Area, layer: i32) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();

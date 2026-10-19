@@ -1,0 +1,203 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.15-shove-via-into-pending-piece",
+  "registered": "2026-10-18",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.15)",
+  "question": "Does router.java_quirks.shove_via_into_pending_piece=false (before a shove substitute piece goes on the board, its shapes are queried again and the shove fails at a via of another net that a deeper level of TraceShover.insert's recursion moved onto it, where Java inserts the piece over the via, a short) keep every registered board's routing within N02's totals rule (accept no-regress: a correctness fix) of Java's behaviour, under profile legacy and under profile enhanced, with no new router clearance violation and no new KiCad shorting_items or clearance error; and how often does the branch decide a result?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "freerouting-rs at the implementing commit (main dcf0641 plus N06.15's diff at registration), one Linux release build for every arm; P04's bounds (3 passes, optimizer off), the bounds N03.2 measured GP8B with; each arm gives the switch explicitly",
+  "arms": {
+    "legacy_baseline": {
+      "engine": "freerouting-rs at the implementing commit (main dcf0641 plus N06.15's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.autorouter.max_passes=3 --router.optimizer.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.shove_via_into_pending_piece=true",
+      "settings": {},
+      "baseline": "legacy_baseline",
+      "what": "baseline: profile legacy, the switch true (Java's shove)"
+    },
+    "legacy_fix": {
+      "engine": "freerouting-rs at the implementing commit (main dcf0641 plus N06.15's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.autorouter.max_passes=3 --router.optimizer.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.shove_via_into_pending_piece=false",
+      "settings": {
+        "router.java_quirks.shove_via_into_pending_piece": false
+      },
+      "baseline": "legacy_baseline",
+      "what": "candidate under legacy: the shove fails at a via of another net on a pending piece"
+    },
+    "enhanced_baseline": {
+      "engine": "freerouting-rs at the implementing commit (main dcf0641 plus N06.15's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --router.autorouter.max_passes=3 --router.optimizer.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.shove_via_into_pending_piece=true",
+      "settings": {
+        "router.profile": "enhanced"
+      },
+      "baseline": "enhanced_baseline",
+      "what": "baseline under enhanced (the default profile, which the fix would join): the switch true"
+    },
+    "enhanced_fix": {
+      "engine": "freerouting-rs at the implementing commit (main dcf0641 plus N06.15's diff at registration), one Linux release build for every arm",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --router.autorouter.max_passes=3 --router.optimizer.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.shove_via_into_pending_piece=false",
+      "settings": {
+        "router.profile": "enhanced",
+        "router.java_quirks.shove_via_into_pending_piece": false
+      },
+      "baseline": "enhanced_baseline",
+      "what": "candidate under enhanced: the answer N03.3 needs"
+    }
+  },
+  "baseline_arm": "legacy_baseline",
+  "candidate_arm": "legacy_fix",
+  "pairs": [
+    [
+      "legacy_baseline",
+      "legacy_fix"
+    ],
+    [
+      "enhanced_baseline",
+      "enhanced_fix"
+    ]
+  ],
+  "boards": {
+    "set": "tools/bench/sets/n06-pending-piece.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "files": {
+      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "fixtures/Issue145-smoothieboard.dsn": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
+      "fixtures/Issue113-Protein.dsn": "c400fb8dd163e2b4c5f5ea93959da3b64d3ff96a8365b9b9a4978751def0b174",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue753-CPU-85_r104.dsn": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
+      "fixtures/Issue593-BBD_Mars-64.dsn": "ff8cf056554cea9042dc0447ad60e78871d78ff4432311c60a4601c7aeb06e7d"
+    },
+    "bands": "each DSN row's band is N02's default, max(2, ceil(5 % of the row's connections)), connections = the legacy_baseline arm's board_statistics.connections.maximum_count (n06_run.py copies it into summary.json's statistics.connections); the plugin row's band is 10",
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path (plugin_canary below), outside n06_run.py",
+    "seen_before_registration": "N03.2's GP8B legacy runs with the env-gated prototype of this fix (bbd1336): canonical room order 51 -> 64 unrouted, tree order 61 -> 59, 2 -> 0 and 0 -> 0 router violations; the implementer's light runs while choosing rows: the reach counter shove_via_into_pending_pieces read 0 on Issue508-DAC2020_bm01 and Issue593-BBD_Mars-64 (legacy, these bounds; no routing number was read), and one GP8B route per arm (legacy and enhanced, these bounds) to confirm that the switch reproduces the prototype, whose numbers are in N06.15's note"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_shorting_items",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_clearance",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_via_into_pending_pieces",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_pending_piece_foreign_traces",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias": "the result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`",
+    "session_differences": "1 if the arm's SES differs byte for byte from its own baseline arm's (the arm's `baseline` key: legacy_baseline for the legacy arms, enhanced_baseline for the enhanced arms) on that board",
+    "shove_via_into_pending_pieces": "run_stats counter (--stats json, total.counts), in either arm: shove substitute pieces about to be inserted whose shapes overlap, with the piece's clearance, a via of another net (Java inserts the piece; the fix fails the shove at the first)",
+    "shove_pending_piece_foreign_traces": "run_stats counter, in either arm: such pieces whose shapes overlap the copper of a trace of another net, which neither arm acts on (the case the switch leaves open)",
+    "kicad_unconnected, kicad_shorting_items, kicad_clearance, drc_real, via_in_pad, below_minimum": "the canary-pwr plugin row's grade (canary hardware/tools/grade.sh): KiCad DRC unconnected items, shorting_items and clearance violations, the real DRC errors, via_in_pad.py and the minimum checks"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "Reachability first: if shove_via_into_pending_pieces is 0 in every run and every session equals its own baseline's, no registered board reaches the branch, and the fix is accepted on its tests (both behaviours pinned).",
+    "Sessions identical but the counter above 0: the branch runs but decides nothing that reaches the output; the fix is neutral and accepted.",
+    "Otherwise the totals rule for each verdict pair, (legacy_baseline, legacy_fix) and (enhanced_baseline, enhanced_fix), judged alone. Hard guards, any worsening rejects: no DSN row's router clearance_violations above its baseline's; on the plugin row via_in_pad and below_minimum 0 and kicad_shorting_items, kicad_clearance and drc_real not above the baseline's. Then the candidate's unrouted summed over the DSN rows plus the plugin row's kicad_unconnected at most the baseline's plus the set's noise, sqrt of the sum of the bands squared; no row worse by more than twice its band.",
+    "The enhanced pair decides whether N06.13 turns the switch off in enhanced (N05) and is the answer N03.3 reads; the legacy pair is recorded with it (legacy keeps the switch true either way)."
+  ],
+  "stop_rule": "One run per arm per row. No heavy run by the implementer beyond one GP8B route per arm.",
+  "orchestrator_command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.15.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-v",
+  "orchestrator": "Run orchestrator_command from the worktree root: it runs each arms.command on each boards.files row (7 rows x 4 arms = 28 runs), checks the input hashes, compares each SES with its own baseline arm's and writes summary.json (session_differences, counts, statistics). It exits non-zero when a session differs, after every run: then apply the totals rule to summary.json's statistics. Then the plugin row.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the reachability and exact-session guards above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 2a7e070b, the current board base (git archive, unedited); never edit the source project.",
+    "options": "fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "options_sha256": "a9124f662b8cd8ac62d54c99b7c734c4bd4ae82900f9d98c96250934e7bf482d",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then append the arm's --router.profile, its explicit --router.java_quirks.shove_via_into_pending_piece flag, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json (no P04 bounds: the plugin's own options). One exported input and one argument list serve every arm. Compare each session with its own baseline arm's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (GRADE_REV=2a7e070b; ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade. Record shorting_items and clearance separately. Retain export/import logs, versions, source hashes and grades."
+  },
+  "not_registered": "time (the fix changes no work budget beyond its own queries); the optimizer and passes past 3 on the DSN rows (P04's bounds); a KiCad grade of the DSN rows (GP8B and the others have no KiCad project here; the router's DRC guards them)",
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "after": "the registration was written and the implementer's one GP8B route per arm (no registered run yet)",
+      "change": "`pairs` rewritten from {\"verdict\": [P1, P2], \"reported\": []} to the array [P1, P2], the form main 4d44676's parser reads for two judged pairs (`freerouting-dev gate --prereg --all-pairs` judges both, exit 1 if either fails); the same two verdict pairs, arms, boards, metrics and rule."
+    }
+  ]
+}
