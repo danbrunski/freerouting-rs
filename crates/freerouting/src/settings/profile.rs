@@ -31,7 +31,11 @@
 //!
 //! `legacy` has no differences: it is Java's defaults. [`ENHANCED`] lists
 //! what `enhanced` changes, one [`Difference`] per settings key, each naming
-//! the measurement that accepted it (N05 adds them). Adding one is one entry
+//! the measurement that accepted it (N05 adds them). N06.13 added the 30
+//! Java-bug fixes (`java_quirks.<id> = false`) that N06's batches accepted:
+//! they were measured under `legacy`, and
+//! `docs/roadmap/prereg/N06.13-promotion.json` registers their confirmation
+//! under `enhanced`. Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
 //! entry is a valid settings key and value, and that `enhanced` sets it.
@@ -101,7 +105,196 @@ pub const ENHANCED: &[Difference] = &[
                       (set noise 42.70), KiCad net-class via clearance errors 2 -> 1, canary-pwr's \
                       plugin path 1 -> 0",
     },
+    Difference {
+        path: "java_quirks.init_failure_room_leak",
+        value: "false",
+        measurement: N06_5_MAZE,
+    },
+    Difference {
+        path: "java_quirks.failed_attempt_ripped_carryover",
+        value: "false",
+        measurement: N06_5_MAZE,
+    },
+    Difference {
+        path: "java_quirks.ortho_zero_width_room",
+        value: "false",
+        measurement: N06_5_MAZE,
+    },
+    Difference {
+        path: "java_quirks.edge_corner_not_advanced",
+        value: "false",
+        measurement: N06_5_MAZE,
+    },
+    Difference {
+        path: "java_quirks.connect_to_trace_swapped_width",
+        value: "false",
+        measurement: N06_5_MAZE,
+    },
+    Difference {
+        path: "java_quirks.fanout_stale_drill_carry",
+        value: "false",
+        measurement: N06_6_FANOUT,
+    },
+    Difference {
+        path: "java_quirks.drill_destination_room_index",
+        value: "false",
+        measurement: N06_6_FANOUT,
+    },
+    Difference {
+        path: "java_quirks.fanout_pin_order_names",
+        value: "false",
+        measurement: N06_6_FANOUT,
+    },
+    Difference {
+        path: "java_quirks.in_front_of_pad_typo",
+        value: "false",
+        measurement: N06_7_SHOVE,
+    },
+    Difference {
+        path: "java_quirks.store_trace_class_self_compare",
+        value: "false",
+        measurement: N06_7_SHOVE,
+    },
+    Difference {
+        path: "java_quirks.rational_perp_projection",
+        value: "false",
+        measurement: N06_7_SHOVE,
+    },
+    Difference {
+        path: "java_quirks.in_front_of_pad_side0_flank",
+        value: "false",
+        measurement: N06_7_SHOVE,
+    },
+    Difference {
+        path: "java_quirks.smooth_loses_trace",
+        value: "false",
+        measurement: N06_8_PULL_TIGHT,
+    },
+    Difference {
+        path: "java_quirks.pull_tight_reused_lines_change",
+        value: "false",
+        measurement: N06_8_PULL_TIGHT,
+    },
+    Difference {
+        path: "java_quirks.dsn_via_alias",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.dsn_class_class_pairs",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.dsn_shape_bbox",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.dsn_unit_ignored",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.ses_reader_scale",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.stats_line_ab_length",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.route_result_int_via_ratio",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.drc_units_10000_per_mm",
+        value: "false",
+        measurement: N06_10_INPUTS,
+    },
+    Difference {
+        path: "java_quirks.snapshot_drops_compensation",
+        value: "false",
+        measurement: N06_11_INTERACTIVE,
+    },
+    Difference {
+        path: "java_quirks.rules_matrix_trees_not_rebuilt",
+        value: "false",
+        measurement: N06_11_INTERACTIVE,
+    },
+    Difference {
+        path: "java_quirks.move_drill_tidy_region",
+        value: "false",
+        measurement: N06_11_INTERACTIVE,
+    },
+    Difference {
+        path: "java_quirks.route_change_layer_no_via",
+        value: "false",
+        measurement: N06_11_INTERACTIVE,
+    },
+    Difference {
+        path: "java_quirks.route_connect_inner_break",
+        value: "false",
+        measurement: N06_11_INTERACTIVE,
+    },
+    Difference {
+        path: "java_quirks.select_extension_ignores_filter",
+        value: "false",
+        measurement: N06_11_INTERACTIVE,
+    },
+    Difference {
+        path: "java_quirks.rules_unknown_layer_scope",
+        value: "false",
+        measurement: N06_12_RULES_SCOPE,
+    },
+    Difference {
+        path: "java_quirks.any_angle_skip_length_squared",
+        value: "false",
+        measurement: N06_12_SKIP_LENGTH,
+    },
 ];
+
+// The N06 Java-bug fixes promoted by N06.13 (2026-10-19), one measurement per
+// batch. They were measured under `legacy`; the confirmation under `enhanced` is
+// docs/roadmap/prereg/N06.13-promotion.json.
+
+const N06_5_MAZE: &str = "N06.13 from N06.5 (docs/roadmap/prereg/N06.5.json, batch M, under \
+                          legacy): gate PASS, every session identical to Java's on 5 DSN rows \
+                          and canary-pwr's plugin path, total 38 -> 38 (set noise \
+                          10.95)";
+const N06_6_FANOUT: &str = "N06.13 from N06.6 (docs/roadmap/prereg/N06.6.json, batch F, under \
+                            legacy, fanout on): gate PASS, every session identical to Java's on \
+                            6 DSN rows and canary-pwr's plugin path, total 100 -> 100 (set noise \
+                            11.14), 307 fanout retries, 0 succeeded in either arm";
+const N06_7_SHOVE: &str = "N06.13 from N06.7 (docs/roadmap/prereg/N06.7.json, batch S with arm \
+                           all_flank, under legacy): no registered board reaches the branch \
+                           (every flip counter 0, every session identical to Java's on 5 DSN \
+                           rows and canary-pwr's plugin path); accepted on its tests";
+const N06_8_PULL_TIGHT: &str = "N06.13 from N06.8 (docs/roadmap/prereg/N06.8.json, batch P, \
+                                under legacy): gate PASS, both counters 0 and every session \
+                                identical to Java's on 6 DSN rows and canary-pwr's plugin path; \
+                                accepted on its tests";
+const N06_10_INPUTS: &str = "N06.13 from N06.10 (docs/roadmap/prereg/N06.10.json, batch I, \
+                             under legacy): 40 runs with every session identical to Java's, the \
+                             DSN counters 0 on 203 corpus boards, route_result_zero_test_changes \
+                             0, reference_optimize 3 passed, canary-pwr's plugin path one session \
+                             for every arm; accepted on its tests";
+const N06_11_INTERACTIVE: &str = "N06.13 from N06.11 (docs/roadmap/prereg/N06.11.json, batch U, \
+                                  under legacy): 32 runs with every session identical to \
+                                  Java's, compensated_snapshot_restores 0, canary-pwr's plugin \
+                                  path one session for every arm; interactive code that batch \
+                                  runs never call, accepted on its tests";
+const N06_12_RULES_SCOPE: &str = "N06.13 from N06.12 (decided 2026-10-18): a rules-file layer \
+                                  scope naming an unknown layer is ignored with a warning; \
+                                  rules files only (-dr), accepted on its test \
+                                  (unknown_layer_scope_switch_both_behaviours)";
+const N06_12_SKIP_LENGTH: &str = "N06.13 from N06.12 (docs/roadmap/prereg/N06.12-ripup-pass.json, \
+                                  reported arm, under legacy): any_angle_skip_length_flips 0 and \
+                                  every session identical to Java's on 6 DSN rows and canary-pwr's \
+                                  plugin path; accepted on its test";
 
 /// `legacy` changes nothing.
 const LEGACY: &[Difference] = &[];

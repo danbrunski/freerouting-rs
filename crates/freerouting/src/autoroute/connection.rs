@@ -863,7 +863,9 @@ mod tests {
 
     #[test]
     fn an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside() {
-        let (mut board, control, net) = tht_board();
+        let (mut board, mut control, net) = tht_board();
+        // Java's leak, the `true` half: profile `enhanced` fixes it since N06.13.
+        control.quirks.init_failure_room_leak = true;
         let class = control.trace_clearance_class_index;
         let pins: Vec<ItemId> = board
             .items()

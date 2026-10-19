@@ -308,3 +308,48 @@ Prerequisites: N01; each candidate's own accepted measurement.
     `+12V_PROT` via, 0.245 mm), 16 dangling vias; `enhanced` + `net_class` 41, 8 starved, 0 copper
     errors, 17 dangling vias. canary-7a: the promotion stays; 41 is the first plugin-path result
     on canary-pwr that counts, and the gap to the CLI sweep's 33 is the next to close.
+
+  - **2026-10-19, accepted (N06.13, the first round of N06's Java-bug fixes): 30
+    `router.java_quirks.<id> = false`**, one `ENHANCED` entry and one DIVERGENCES "Profile
+    `enhanced`" line each, `tests/settings_profile.rs::enhanced_turns_off_the_promoted_java_quirks`,
+    and the exact list pinned by
+    `tests/settings_java_quirks.rs::legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set`.
+    Every batch was measured under `legacy` (only its switches differed from Java), by N06's
+    accept rule (no-regress; a branch no registered row reaches is accepted on its tests). Per
+    batch:
+    - M (N06.5, `docs/roadmap/prereg/N06.5.json`, sha256 `e49fba98…`): `init_failure_room_leak`,
+      `failed_attempt_ripped_carryover`, `ortho_zero_width_room`, `edge_corner_not_advanced`,
+      `connect_to_trace_swapped_width`. Gate PASS, every session identical, total 38 → 38 (noise
+      10.95); the ortho and edge-corner branches ran (neutral), the other three never did.
+    - F (N06.6, `prereg/N06.6.json`, `78fb583f…`): `fanout_stale_drill_carry`,
+      `drill_destination_room_index`, `fanout_pin_order_names`. Gate PASS, every session identical,
+      total 100 → 100 (noise 11.14); 307 fanout retries, 0 succeeding in either arm.
+    - S (N06.7, `prereg/N06.7.json`, `45a043ee…`): `in_front_of_pad_typo`,
+      `store_trace_class_self_compare`, `rational_perp_projection` and the (c) flank
+      `in_front_of_pad_side0_flank` (arm `all_flank`). Every flip counter 0, every session
+      identical: accepted on tests.
+    - P (N06.8, `prereg/N06.8.json`, `82559f27…`): `smooth_loses_trace`,
+      `pull_tight_reused_lines_change`. Gate PASS, both counters 0, every session identical, total
+      38 → 38.
+    - I (N06.10, `prereg/N06.10.json`, `a79d35d3…`): `dsn_via_alias`, `dsn_class_class_pairs`,
+      `dsn_shape_bbox`, `dsn_unit_ignored`, `ses_reader_scale`, `stats_line_ab_length`,
+      `route_result_int_via_ratio`, `drc_units_10000_per_mm`. 40 runs, every session identical, the
+      DSN counters 0 on 203 corpus boards, `route_result_zero_test_changes` 0: accepted on tests.
+    - U (N06.11, `prereg/N06.11.json`, `9aea6f5a…`): `snapshot_drops_compensation`,
+      `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`, `route_change_layer_no_via`,
+      `route_connect_inner_break`, `select_extension_ignores_filter`. 32 runs, every session
+      identical, `compensated_snapshot_restores` 0: accepted on tests.
+    - N06.12: `any_angle_skip_length_squared` (`prereg/N06.12-ripup-pass.json`, `f50fe24e…`,
+      reported arm: counter 0, every session identical) and `rules_unknown_layer_scope` (decided
+      2026-10-18, on its test).
+
+    Not promoted: `ripup_pass_no_unset` (rejected by N06.12's run: 47 → 47, one new class-width
+    breach, `gate: FAIL`), the cutout switches (N06.4's two, held back until N06.14's amendment 1
+    re-measures them; N06.14's two pending), the optimizer's two (N06.9 pending),
+    `shove_via_into_pending_piece` (N06.15 pending) and the seven (c) rows left as Java. Because
+    the batches ran under `legacy`, the promotion has its own confirmation under `enhanced`:
+    `docs/roadmap/prereg/N06.13-promotion.json` (sha256 `cd57a3af…`, before any number), pinned by
+    `crates/freerouting-dev/tests/prereg_n06_13.rs`; `enhanced` at the parent commit against the
+    promotion commit, 21 DSN rows plus canary-pwr (canary 2a7e070b) through the plugin path with
+    default options, N02 totals, no-regress, option (b) hard guards. Run pending (N06.13's note
+    gives the command); a FAIL is bisected by batch and a failing batch leaves `ENHANCED`.

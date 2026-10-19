@@ -29,7 +29,8 @@ fn array(value: Option<&JsonValue>) -> &[JsonValue] {
 /// on this board, which its differences so far (N05.3) do not touch:
 /// `power_layer_traces = none` acts only on power layers, and this board has
 /// none; `neck_width_um = 300` acts only on a class wider than 300 um, and
-/// its one class is 250 um wide.
+/// its one class is 250 um wide. N06.13's Java-bug fixes do not change its
+/// session either (N06's batches routed it identically under every switch).
 #[test]
 fn both_profiles_route_and_enhanced_is_the_default() {
     let (legacy, dir_legacy) = route("profile-legacy", &["--profile", "legacy"]);
@@ -209,6 +210,55 @@ fn dump_settings_shows_the_profile_and_the_sources() {
 
     let out = run_in(&dir, &["--dump-settings=xml"]);
     assert_eq!(code(&out), 2);
+}
+
+/// N06.13: with no flag the job runs `enhanced`, whose table turns off the
+/// 30 promoted `router.java_quirks` switches; `legacy` leaves every switch
+/// unset (Java), and an explicit `true` beats the profile.
+#[test]
+fn dump_settings_shows_the_promoted_java_quirks() {
+    let dir = scratch("dump-settings-quirks");
+    copy_fixtures(&dir, &[FIXTURE]);
+    let quirks = |extra: &[&str]| {
+        let mut args = vec!["-de", FIXTURE, "--dump-settings=json"];
+        args.extend_from_slice(extra);
+        let out = run_in(&dir, &args);
+        assert_eq!(code(&out), 0, "{}", stderr(&out));
+        let json = JsonValue::parse(&stdout(&out)).expect("JSON");
+        array(member(&json, "settings"))
+            .iter()
+            .filter_map(|r| {
+                let path = string_of(member(r, "path"))?;
+                let id = path.strip_prefix("java_quirks.")?.to_string();
+                let from_profile = member(r, "from_profile") == Some(&JsonValue::Bool(true));
+                Some((id, member(r, "value").cloned(), from_profile))
+            })
+            .collect::<Vec<_>>()
+    };
+    let promoted: Vec<&str> = freerouting::settings::profile::ENHANCED
+        .iter()
+        .filter_map(|d| d.path.strip_prefix("java_quirks."))
+        .collect();
+    assert_eq!(promoted.len(), 30);
+    let default = quirks(&[]);
+    assert_eq!(default.len(), freerouting::settings::JavaQuirks::IDS.len());
+    for (id, value, from_profile) in &default {
+        let on = promoted.contains(&id.as_str());
+        assert_eq!(*from_profile, on, "{id}");
+        if on {
+            assert_eq!(value.as_ref(), Some(&JsonValue::Bool(false)), "{id}");
+        }
+    }
+    let legacy = quirks(&["--profile", "legacy"]);
+    assert!(legacy.iter().all(|(_, _, p)| !p), "{legacy:?}");
+    assert_eq!(legacy.len(), default.len());
+    let explicit = quirks(&["--router.java_quirks.ses_reader_scale=true"]);
+    let ses = explicit
+        .iter()
+        .find(|(id, _, _)| id == "ses_reader_scale")
+        .expect("the switch is dumped");
+    assert_eq!(ses.1, Some(JsonValue::Bool(true)));
+    assert!(!ses.2, "the CLI beats the profile");
 }
 
 #[test]

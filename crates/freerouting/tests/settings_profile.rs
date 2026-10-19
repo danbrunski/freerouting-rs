@@ -174,6 +174,22 @@ fn enhanced_sets_via_clearance_net_class() {
 }
 
 #[test]
+fn enhanced_turns_off_the_promoted_java_quirks() {
+    // N05.3 and N06.13: each promoted switch is `false` under `enhanced` and
+    // unset (`true`, Java's bug) under `legacy`; an explicit `true` beats the
+    // profile. `tests/settings_java_quirks.rs` pins the exact list.
+    let promoted: Vec<&Difference> = ENHANCED
+        .iter()
+        .filter(|d| d.path.starts_with("java_quirks."))
+        .collect();
+    assert_eq!(promoted.len(), 30);
+    for difference in promoted {
+        assert_eq!(difference.value, "false", "{}", difference.path);
+        assert_enhanced_sets(difference.path, "false", None, "true");
+    }
+}
+
+#[test]
 fn a_profile_difference_is_applied_after_the_defaults() {
     with_enhanced_differences(DUMMY, || {
         let enhanced = resolve_with(vec![]);

@@ -3,9 +3,13 @@
 //!
 //! Each switch is a settings key `router.java_quirks.<id>` (the ids of the N06
 //! inventory, `docs/roadmap/tasks/N06-fix-kept-java-bugs.md`). `true` keeps Java's
-//! behaviour, `false` selects the fix. Unset is `true` in both profiles, so
-//! `legacy` is Java; `enhanced`'s table (N05) turns a switch off only once its
-//! batch is accepted. The keys are `opt` table entries without a default, as every
+//! behaviour, `false` selects the fix. Unset is `true`, and `legacy` keeps every
+//! switch unset, so `legacy` is Java; `enhanced`'s table (N05,
+//! [`ENHANCED`](super::profile::ENHANCED)) turns a switch off only once its batch is
+//! accepted. N06.13 turned off the 30 that N06's batches accepted; the cutout
+//! switches (N06.4, N06.14), the optimizer's (N06.9), `shove_via_into_pending_piece`
+//! (N06.15), the rejected `ripup_pass_no_unset` and the (c) rows left as Java stay
+//! `true` in both profiles. The keys are `opt` table entries without a default, as every
 //! key that is not Java's, so Java's settings dump stays as it was.
 //!
 //! [`JavaQuirks`] is the resolved value: built once from the settings at job start,

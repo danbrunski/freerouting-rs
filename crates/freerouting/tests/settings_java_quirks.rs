@@ -1,7 +1,9 @@
 //! N06.3: the `router.java_quirks.*` switches and the `JavaQuirks` value.
 //!
 //! - one switch per (b) and (c) row of the N06 inventory, each a settings key
-//!   whose unset value is `true` (Java) under both profiles;
+//!   whose unset value is `true` (Java);
+//! - `legacy` keeps every Java bug, and `enhanced` fixes exactly the switches
+//!   N06.13 promoted ([`PROMOTED`]);
 //! - the keys round-trip through a settings file, the command line and the
 //!   environment;
 //! - the job puts the switches on the board, its router settings and the
@@ -24,10 +26,10 @@ use freerouting::scoring::BoardStatistics;
 use freerouting::settings::env::parse_environment;
 use freerouting::settings::java_quirks::SETTINGS_PREFIX;
 use freerouting::settings::json_file::patch_from_config_text;
-use freerouting::settings::profile::legacy_pin;
+use freerouting::settings::profile::{ENHANCED, legacy_pin};
 use freerouting::settings::{
-    FIELDS, JavaQuirks, ResolveContext, RouterSettings, SettingsPatch, Source, default_patch,
-    parse_cli_arguments, resolve,
+    FIELDS, JavaQuirks, Profile, ResolveContext, RouterSettings, SettingsPatch, Source,
+    default_patch, parse_cli_arguments, resolve,
 };
 
 const CORES: usize = 8;
@@ -35,6 +37,45 @@ const CORES: usize = 8;
 /// The N06 inventory: 35 rows of kind (b) (two added by N06.14, one by N06.15 and one
 /// by N06.16) and 11 of kind (c).
 const SWITCH_COUNT: usize = 46;
+
+/// The switches profile `enhanced` turns off (N06.13, 2026-10-19), in inventory
+/// order: the accepted batches M (N06.5), F (N06.6), S (N06.7), P (N06.8), I
+/// (N06.10) and U (N06.11), and N06.12's flank, rules-scope and skip-length fixes.
+/// Not promoted: the cutout switches (N06.4, N06.14; re-measured by N06.14), the
+/// optimizer's (N06.9, pending), `shove_via_into_pending_piece` (N06.15, pending),
+/// `ripup_pass_no_unset` (rejected) and the (c) rows left as Java.
+const PROMOTED: [&str; 30] = [
+    "init_failure_room_leak",
+    "failed_attempt_ripped_carryover",
+    "ortho_zero_width_room",
+    "edge_corner_not_advanced",
+    "connect_to_trace_swapped_width",
+    "fanout_stale_drill_carry",
+    "drill_destination_room_index",
+    "fanout_pin_order_names",
+    "in_front_of_pad_typo",
+    "store_trace_class_self_compare",
+    "rational_perp_projection",
+    "smooth_loses_trace",
+    "pull_tight_reused_lines_change",
+    "dsn_via_alias",
+    "dsn_class_class_pairs",
+    "dsn_shape_bbox",
+    "dsn_unit_ignored",
+    "ses_reader_scale",
+    "stats_line_ab_length",
+    "route_result_int_via_ratio",
+    "drc_units_10000_per_mm",
+    "snapshot_drops_compensation",
+    "rules_matrix_trees_not_rebuilt",
+    "move_drill_tidy_region",
+    "route_change_layer_no_via",
+    "route_connect_inner_break",
+    "select_extension_ignores_filter",
+    "in_front_of_pad_side0_flank",
+    "rules_unknown_layer_scope",
+    "any_angle_skip_length_squared",
+];
 
 fn ctx() -> ResolveContext {
     ResolveContext { cores: CORES }
@@ -44,6 +85,19 @@ fn resolved(sources: Vec<(Source, SettingsPatch)>) -> RouterSettings {
     let mut all = vec![(Source::Defaults, default_patch(CORES))];
     all.extend(sources);
     resolve(&all, &ctx()).settings
+}
+
+/// `sources` under `legacy`, where every unset switch is Java's.
+fn resolved_legacy(mut sources: Vec<(Source, SettingsPatch)>) -> RouterSettings {
+    sources.push((Source::Testing, legacy_pin()));
+    resolved(sources)
+}
+
+/// Java's switches with the promoted ones `false`: what `enhanced` resolves to.
+fn enhanced_quirks() -> JavaQuirks {
+    PROMOTED.iter().fold(JavaQuirks::JAVA, |q, id| {
+        q.with(id, false).expect("a known id")
+    })
 }
 
 fn fixture(name: &str) -> String {
@@ -87,11 +141,24 @@ fn every_switch_is_a_settings_key_in_inventory_order() {
 }
 
 #[test]
-fn both_profiles_keep_every_java_bug() {
+fn legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set() {
+    let legacy = resolved(vec![(Source::Cli, legacy_pin())]);
+    assert_eq!(
+        JavaQuirks::from_settings(&legacy),
+        JavaQuirks::JAVA,
+        "legacy"
+    );
+    assert!(
+        Profile::Legacy
+            .differences()
+            .iter()
+            .all(|d| !d.path.starts_with("java_quirks.")),
+        "legacy sets no switch"
+    );
     let unset = resolved(vec![]);
     assert_eq!(
-        JavaQuirks::from_settings(&unset),
-        JavaQuirks::JAVA,
+        JavaQuirks::from_settings(&unset).fixed_ids(),
+        PROMOTED,
         "enhanced (unset)"
     );
     let enhanced = resolved(vec![(
@@ -101,16 +168,29 @@ fn both_profiles_keep_every_java_bug() {
             ..SettingsPatch::default()
         },
     )]);
-    assert_eq!(
-        JavaQuirks::from_settings(&enhanced),
-        JavaQuirks::JAVA,
-        "enhanced"
+    assert_eq!(JavaQuirks::from_settings(&enhanced), enhanced_quirks());
+    // The table holds the promoted switches, each once, as `false`.
+    let mut table: Vec<&str> = ENHANCED
+        .iter()
+        .filter_map(|d| d.path.strip_prefix("java_quirks."))
+        .collect();
+    assert!(
+        ENHANCED
+            .iter()
+            .filter(|d| d.path.starts_with("java_quirks."))
+            .all(|d| d.value == "false" && d.measurement.starts_with("N06.13 from N06.")),
+        "every promoted switch is `false` with its batch's measurement"
     );
-    let legacy = resolved(vec![(Source::Cli, legacy_pin())]);
+    table.sort_unstable();
+    let mut promoted = PROMOTED.to_vec();
+    promoted.sort_unstable();
+    assert_eq!(table, promoted);
+    // An explicit `true` (here on the command line) still beats the profile.
+    let cli = parse_cli_arguments(&["--router.java_quirks.ses_reader_scale=true".to_string()]);
+    let settings = resolved(vec![(Source::Cli, cli.patch)]);
     assert_eq!(
-        JavaQuirks::from_settings(&legacy),
-        JavaQuirks::JAVA,
-        "legacy"
+        JavaQuirks::from_settings(&settings),
+        enhanced_quirks().with("ses_reader_scale", true).unwrap()
     );
 }
 
@@ -120,13 +200,13 @@ fn each_key_round_trips_through_a_settings_file() {
         let text = format!(r#"{{"router": {{"java_quirks": {{"{id}": false}}}}}}"#);
         let file = patch_from_config_text(&text).expect("a settings file");
         assert!(file.warnings.is_empty(), "{id}: {:?}", file.warnings);
-        let settings = resolved(vec![(Source::ConfigFile, file.patch)]);
+        let settings = resolved_legacy(vec![(Source::ConfigFile, file.patch)]);
         let quirks = JavaQuirks::from_settings(&settings);
         assert_eq!(quirks.fixed_ids(), vec![*id], "{id}");
         // Its explicit `true` is Java's value again.
         let text = format!(r#"{{"router": {{"java_quirks": {{"{id}": true}}}}}}"#);
         let file = patch_from_config_text(&text).expect("a settings file");
-        let settings = resolved(vec![(Source::ConfigFile, file.patch)]);
+        let settings = resolved_legacy(vec![(Source::ConfigFile, file.patch)]);
         assert_eq!(
             JavaQuirks::from_settings(&settings),
             JavaQuirks::JAVA,
@@ -140,12 +220,12 @@ fn each_key_is_set_on_the_command_line_and_in_the_environment() {
     for id in JavaQuirks::IDS {
         let cli = parse_cli_arguments(&[format!("--{SETTINGS_PREFIX}{id}=false")]);
         assert!(cli.warnings.is_empty(), "{id}: {:?}", cli.warnings);
-        let settings = resolved(vec![(Source::Cli, cli.patch)]);
+        let settings = resolved_legacy(vec![(Source::Cli, cli.patch)]);
         assert_eq!(JavaQuirks::from_settings(&settings).fixed_ids(), vec![*id]);
 
         let name = format!("FREEROUTING__ROUTER__JAVA_QUIRKS__{}", id.to_uppercase());
         let env = parse_environment([(name.as_str(), "false")]);
-        let settings = resolved(vec![(Source::Environment, env.patch)]);
+        let settings = resolved_legacy(vec![(Source::Environment, env.patch)]);
         assert_eq!(
             JavaQuirks::from_settings(&settings).fixed_ids(),
             vec![*id],
@@ -157,7 +237,7 @@ fn each_key_is_set_on_the_command_line_and_in_the_environment() {
         patch_from_config_text(r#"{"router": {"java_quirks": {"ses_reader_scale": false}}}"#)
             .expect("a settings file");
     let cli = parse_cli_arguments(&["--router.java_quirks.ses_reader_scale=true".to_string()]);
-    let settings = resolved(vec![
+    let settings = resolved_legacy(vec![
         (Source::ConfigFile, file.patch),
         (Source::Cli, cli.patch),
     ]);
@@ -169,19 +249,25 @@ fn the_job_carries_the_switches_to_the_board_and_the_control() {
     let bytes = fixture("Issue413-test.dsn").into_bytes();
     let mut input = JobInput::new(bytes, "Issue413-test");
     input.rules = RulesChoice::None;
+    // No flag: profile `enhanced`, the promoted fixes.
+    let enhanced = prepare_job(&input, &ctx()).expect("loads");
+    assert_eq!(enhanced.board.java_quirks(), enhanced_quirks());
+    assert_eq!(enhanced.board_settings.java_quirks(), enhanced_quirks());
+    input.cli = Some(legacy_pin());
     let java = prepare_job(&input, &ctx()).expect("loads");
     assert_eq!(java.board.java_quirks(), JavaQuirks::JAVA);
     assert_eq!(java.board_settings.java_quirks(), JavaQuirks::JAVA);
 
+    // A switch the profile leaves `true` turned off, a promoted one turned back on.
     let cli = parse_cli_arguments(&[
         "--router.java_quirks.opt_equal_key_skip=false".to_string(),
-        "--router.java_quirks.dsn_shape_bbox=false".to_string(),
+        "--router.java_quirks.dsn_shape_bbox=true".to_string(),
     ]);
     input.cli = Some(cli.patch);
     let prepared = prepare_job(&input, &ctx()).expect("loads");
-    let want = JavaQuirks::JAVA
+    let want = enhanced_quirks()
         .with("opt_equal_key_skip", false)
-        .and_then(|q| q.with("dsn_shape_bbox", false))
+        .and_then(|q| q.with("dsn_shape_bbox", true))
         .unwrap();
     assert_eq!(prepared.board.java_quirks(), want);
     assert_eq!(prepared.board_settings.java_quirks(), want);

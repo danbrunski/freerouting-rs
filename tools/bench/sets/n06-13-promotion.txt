@@ -1,0 +1,39 @@
+# N06.13: the confirmation of N06's promotion (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.13-promotion.json: profile enhanced at the parent of the
+# promotion commit against enhanced with the 30 promoted router.java_quirks switches `false`
+# (the promotion commit). The batches measured them under legacy; this set is the union of the
+# DSN rows of the batches whose switches were promoted (N06.5 M, N06.6 F, N06.7 S, N06.8 P,
+# N06.10 I, N06.11 U and N06.12's set; N06.4's rows are N06.10's), without the any-angle J2 and
+# rpi_splitter variants, which the engine can't route in bounded memory (N06.12 amendments 2
+# and 3; they were never in N06.12's set file after those amendments). Routed by
+# tools/bench/n06_run.py with no flag beyond the statistics, under N06_RUN_ULIMIT_KB=8000000.
+# N06.5 (batch M), the two 90 degree variants and the three small 45 degree boards:
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+fixtures/Issue676-ch32v-tx118s.dsn
+# N06.6 (batch F), boards with SMD pins to fan out:
+fixtures/Issue957-smoke-ldo-led.dsn
+fixtures/Issue367-Charger.dsn
+fixtures/Issue756-tomu-fpga.dsn
+fixtures/Issue269-z10_module.dsn
+# N06.7 (batch S), several net classes:
+fixtures/Issue313-FastTest.dsn
+fixtures/Issue027-zMRETestFixture.dsn
+# N06.8 (batch P), A14 boards that complete, so the optimizer runs:
+fixtures/Issue155-CH376_MCP795_Module.dsn
+fixtures/Issue508-DAC2020_bm06.dsn
+fixtures/Issue558-dev-board.dsn
+fixtures/Issue217-8088sbc.dsn
+fixtures/Issue034-Green14SegLED.dsn
+# N06.10 and N06.11 (batches I and U; N06.4's G):
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+# N06.12 (its set after amendments 2 and 3; FastTest and Green14SegLED are listed above):
+fixtures/Issue035-ReadPlaceScope.dsn
+fixtures/Issue054-tairakb.dsn
+fixtures/Issue102-Mars-64-revE-rot00.dsn
+crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
+# canary-pwr through the KiCad plugin path with the plugin's default options (the
+# registration's plugin_canary; outside n06_run.py): canary hardware/canary-pwr-rev1.0 at
+# canary 2a7e070b.

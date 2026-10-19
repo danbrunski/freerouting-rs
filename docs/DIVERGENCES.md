@@ -40,9 +40,11 @@ Each crate's docs carry the full detail; this file is the index.
 
 **Java bugs kept on purpose** (changing them would change routing results; N06 sorts every
 kept bug and schedules its fix under profile `enhanced`; see
-[N06](roadmap/tasks/N06-fix-kept-java-bugs.md)): `RationalPoint.perpendicularProjection`,
-`Simplex.cutoutFrom` never setting its previous division line, the no-op branch 3 in
-IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" below).
+[N06](roadmap/tasks/N06-fix-kept-java-bugs.md)): `Simplex.cutoutFrom` never setting its
+previous division line, the no-op branch 3 in IntOctagon's box cutout (N06.4's switches, `true`
+in both profiles until N06.14's amendment 1 re-measures them; see "Java quirk switches, opt-in"
+below). `RationalPoint.perpendicularProjection` is kept under `legacy` only: profile `enhanced`
+fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted by N06.13).
 
 ## freerouting-dsn
 
@@ -88,14 +90,17 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
   paths in the boundary are left out of the outline (ClassCastException); a wire on an
   unknown polyline-path layer is dropped. A file without a structure scope is a
   `ParseError` (Java returns a null board or throws).
-- The placement scope's `resolution` and the pcb-level `unit` are ignored, as in Java.
+- The placement scope's `resolution` and the pcb-level `unit` are ignored, as in Java, under
+  `legacy`; profile `enhanced` honours them (`router.java_quirks.dsn_unit_ignored = false`,
+  N06.10, promoted by N06.13).
 - The scope identifier in warning messages is the net or padstack name; Java prints the
   scanner's current identifier.
 - Logged messages go to `BasicBoard::log_messages`; only the wiring warnings are
   returned, as in Java.
-- Kept on purpose: the `via_padstack_names` aliasing with the first class's `use_via`
-  list, and class-class rules pairing only the first known class with the others (Java
-  shares one iterator).
+- Kept under `legacy` ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md); profile `enhanced`
+  fixes both, `dsn_via_alias` and `dsn_class_class_pairs`, N06.10, promoted by N06.13): the
+  `via_padstack_names` aliasing with the first class's `use_via` list, and class-class rules
+  pairing only the first known class with the others (Java shares one iterator).
 
 **Board model**
 - Java bugs fixed outright in N06.2: outline transforms store the transformed shapes as
@@ -120,8 +125,9 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
   inserts and removals and goes stale after them; the `ledger` probe
   (`fixtures/reference/probe/ledger/`) shows Java's count differing from a fresh count
   after an undo, net changes and cutouts (`tests/drc_ledger.rs`).
-- Java bug kept on purpose: a snapshot restore or deep copy rebuilds the default tree
-  without clearance compensation and drops the compensated trees, even when
+- Java bug kept under `legacy` (N06; profile `enhanced` fixes it,
+  `router.java_quirks.snapshot_drops_compensation = false`, N06.11, promoted by N06.13): a
+  snapshot restore or deep copy rebuilds the default tree without clearance compensation and drops the compensated trees, even when
   compensation was on (`deep_copy_drops_clearance_compensation`).
 - `ShapeTree` stores leaves in an arena; `overlaps` returns them sorted by object
   (rooms, then items, each by id descending) and shape index, as Java sorts them.
@@ -496,9 +502,12 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
 - Java's behaviour that the port keeps, each pinned by a test: a rules file's
   `autoroute_settings` override the merged settings, the CLI included, and switch every layer
   and the optimizer back on; a `layer` scope with an unknown layer applies to all layers
-  (`router.java_quirks.rules_unknown_layer_scope = false` ignores it, N06.12); a
+  under `legacy` (profile `enhanced` ignores it with a warning,
+  `router.java_quirks.rules_unknown_layer_scope = false`, N06.12, promoted by N06.13); a
   via type with an existing name moves to the end; the clearance matrix changes without
-  re-inserting the tree items; a different header name is a warning. A rule in the file for
+  re-inserting the tree items under `legacy` (`enhanced` rebuilds the trees,
+  `rules_matrix_trees_not_rebuilt = false`, N06.11, promoted by N06.13); a different header
+  name is a warning. A rule in the file for
   one layer lands on two layers when the file names a single layer: the second merge reads
   the rules file's layer names alone (`discoverLayerStructure`), so `In1.Cu`, the only layer
   `explicit-cost-rules.rules` names, is layer 0 (`F.Cu`) there, and `RulesReader.read` then
@@ -547,7 +556,10 @@ IntOctagon's box cutout (N06.4's switches; see "Java quirk switches, opt-in" bel
   they wrote reads back scaled wrongly where that factor is not 1 (`Issue676-ch32v-tx118s`,
   0.1: 100 times too large). The port reproduces both sides (kept bug; the written text is
   Java's byte for byte); `ses_round_trip.rs` lists the board as an expected mismatch of the
-  round-trip property.
+  round-trip property. Under profile `enhanced` the reader multiplies instead
+  (`router.java_quirks.ses_reader_scale = false`, N06.10, promoted by N06.13;
+  `issue676_round_trips_with_reader_scale_fixed`), so an import is the inverse of the export;
+  the writer's text is Java's in both profiles.
 - The library of a board whose adjacent rules file adds via padstacks (`Issue029-hw48na`) lacks
   them in `library_out` until the rules reader (C04) lands; `ses_writer.rs` strips them from
   Java's text before comparing.
@@ -692,7 +704,8 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   half changed; the port skips the missing leaf and finishes the cutout. The
   `trace-entries` probe hits it on `Issue026-J2_reference` at cutout sample 37
   (`JAVA_CUTOUT_EXCEPTIONS`); every line before it is equal.
-- Java bugs kept on purpose: `ForcedPadRouter.inFrontOfPad` for from side 0 takes
+- Java bugs kept under `legacy` ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md); profile
+  `enhanced` fixes all four, N06.13): `ForcedPadRouter.inFrontOfPad` for from side 0 takes
   `min(lineA.x + lineA.y, lineB.x + lineB.x)` (`ForcedPadRouter.java:78`; test
   `in_front_of_pad_keeps_java_typo`), and `ShapeTraceEntries.storeTrace` compares a
   contact trace's clearance class with itself, so only the shove-fixed state and the half
@@ -700,8 +713,9 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   `router.java_quirks.in_front_of_pad_typo` and `store_trace_class_self_compare`, with
   `rational_perp_projection` for the end-corner projection; side 0's second flank clause
   (`min` where sides 2, 4 and 6 take `max`, `ForcedPadRouter.java:86`) is kept behind
-  `in_front_of_pad_side0_flank`. All four are `true` (Java) in both profiles; N06.7
-  measures them (`tests/n06_shove.rs`).
+  `in_front_of_pad_side0_flank`. N06.7 accepted all four on their tests
+  (`tests/n06_shove.rs`); `legacy` keeps them `true` (Java), profile `enhanced` sets them
+  `false` (N06.13).
 - `ForcedPadRouter.calcCheckShapeForFromSide` with a rational shape centre (Java's
   `Line(Point, Direction)` only warns and builds a rational line) or a polyline whose offset
   shape is `null` (Java then throws in `checkTraceShape`): the port skips that side
@@ -711,8 +725,9 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 
 **Shove insert** (`shove::insert`, `shove::forced`, O04; tests `tests/reference_shove_insert.rs`,
 `tests/issue954_keepout_insertion.rs`)
-- Java bugs kept on purpose: `RoutingBoard.moveDrillItem` with a finite tidy width never
-  pull-tightens. `DrillItemMover.insert` unions the moved shapes into its own copy of the tidy
+- Java bug kept under `legacy` (N06; profile `enhanced` fixes it,
+  `router.java_quirks.move_drill_tidy_region = false`, N06.11, promoted by N06.13):
+  `RoutingBoard.moveDrillItem` with a finite tidy width never pull-tightens. `DrillItemMover.insert` unions the moved shapes into its own copy of the tidy
   region (`tidyRegion = tidyRegion.union(..)`, `DrillItemMover.java:145`), so the caller's region
   stays `IntOctagon.EMPTY`, `EMPTY.enlarge(w)` is `EMPTY` again and `optChangedArea` skips the
   tightener; only `Integer.MAX_VALUE` (no clip) pull-tightens after a move
@@ -747,14 +762,16 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   588320207) comes from 588320207, not the pin; pull-tight removes all four traces.
   `board_none_matches_java` has no expected mismatch any more; the ring is pinned by
   `any_angle_tightener_cycle` in `tests/java_ports.rs`.
-- Java bugs kept on purpose (`optimize::pull_tight` module docs): the end-corner smoothing
+- Java bugs kept under `legacy` (`optimize::pull_tight` module docs; N06, fixed under
+  `enhanced` since N06.13): the end-corner smoothing
   removes the trace before it inserts the smoothed copy and leaves it removed when the
   insertion fails (fewer than two corners, or zero length and unfixed); `pull_tight_trace` reports a change when
   `change_trace` finds every line reused and returns early. Each has its switch,
   `router.java_quirks.smooth_loses_trace` (`false` tests the failure conditions first and keeps
   the trace) and `pull_tight_reused_lines_change` (`false` reports a change only when
-  `change_trace` changed the trace), both `true` (Java) in both profiles; N06.8 measures them
-  (`tests/n06_pull_tight.rs`). `change_trace` also ignores, as Java's `change` does, a new
+  `change_trace` changed the trace). N06.8 accepted both on their tests
+  (`tests/n06_pull_tight.rs`); `legacy` keeps them `true` (Java), profile `enhanced` sets them
+  `false` (N06.13). `change_trace` also ignores, as Java's `change` does, a new
   polyline that is a strict prefix or suffix of the old one by line identity; pull-tight is not
   expected to drop or add an end line, so this is expected never to run, and the counter
   `trace_change_prefix_suffix_ignored` checks it (`prefix_suffix_identity_case_is_ignored_and_counted`).
@@ -855,7 +872,8 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 
 **Connection insertion** (`autoroute::path::insert`, `autoroute::connection`, A06; tests
 `tests/autoroute_probe_insert.rs`, `autoroute::connection::tests`)
-- Java bugs kept on purpose (to be fixed after rung 3): when `MazeSearchEngine.getInstance`
+- Java bug kept under `legacy` ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md); fixed under
+  `enhanced` since N06.13): when `MazeSearchEngine.getInstance`
   returns null or throws, `AutorouteEngine.autorouteConnection` returns `FAILED` before
   `clear()` (`AutorouteEngine.java:142-150`), so the start rooms it completed stay in the
   autoroute tree as obstacles for later connections of the same clearance class; the port keeps
@@ -865,8 +883,9 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   leaked room is an obstacle in room completion but never a neighbour with a door, while Java
   can build a door into it and reach its stale doors; not reproduced, and no probe board has an
   init failure (`an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside`).
-  `router.java_quirks.init_failure_room_leak` keeps it (`true`, both profiles); N06.5 measures
-  the fix with the other four maze-search switches (see "Java quirk switches, opt-in").
+  `router.java_quirks.init_failure_room_leak` keeps it under `legacy`; N06.5 accepted the fix
+  with the other four maze-search switches, and profile `enhanced` sets all five `false`
+  (N06.13; see "Java quirk switches, opt-in").
 - Java's eager trace-log strings are dropped, their tree visits kept: `insertTrace` asks a found
   trace stub for its start and end contacts while building `compare_trace_stub_found`
   (`FoundConnectionInserter.java:441-458`); the port runs both contact queries so the work
@@ -926,11 +945,15 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 **Interactive routing** (`interactive`, I01, port of `gui.interactive.Route`, `RouteState`,
 `DynamicRouteState`, `StitchRouteState` and `GuiBoardRoutingSettings`; tests
 `tests/interactive_route.rs`, `interactive::settings::tests`)
-- Java bug kept on purpose: when the via rule has no via spanning both layers,
+- Java bug kept under `legacy` (N06; profile `enhanced` fixes it,
+  `router.java_quirks.route_change_layer_no_via = false`, N06.11, promoted by N06.13): when the
+  via rule has no via spanning both layers,
   `Route.changeLayer` returns true without a via and without changing the route's layer, and the
   route state still switches the current layer and takes a snapshot
   (`layer_change_without_spanning_via_quirk`).
-- Java bug kept on purpose: `Route.connect` leaves only the inner loop when a corner pair fails,
+- Java bug kept under `legacy` (N06; profile `enhanced` fixes it,
+  `router.java_quirks.route_connect_inner_break = false`, N06.11, promoted by N06.13):
+  `Route.connect` leaves only the inner loop when a corner pair fails,
   so with an added 45 or 90 degree corner the second pair is still tried from the added corner.
 - Java failures that became defined results: a route net number without a net (Java's
   `NullPointerException` in `getTraceHalfWidth`, `getTraceClearanceClass`, `getViaRule`) gives half
@@ -1457,12 +1480,15 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 ## Java quirk switches, opt-in (N06)
 
 Fixes of kept Java bugs behind `router.java_quirks.<id>`: unset (`true`) is Java's
-behaviour in both profiles, `false` the fix. Not part of `enhanced` until N06.13 promotes
-them ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md)).
+behaviour, `false` the fix, and `legacy` keeps every switch unset. N06.13 (2026-10-19)
+promoted the 30 switches of the accepted batches into `enhanced`, one line each under
+"Profile `enhanced`"; the others stay `true` in both profiles until their measurement
+([N06](roadmap/tasks/N06-fix-kept-java-bugs.md)).
 
 **N06.4 geometry cutout fixes (explicit opt-in; promotion pending)**
 
-Both switches still default to `true` in both profiles. With the named switch `false`:
+Both switches still default to `true` in both profiles: N06.13 holds them back until
+N06.14's amendment 1 re-measures them at every `Area` split. With the named switch `false`:
 - `octagon_box_cutout_branch3`: branch 3 of `IntOctagon::cutout_from_box` (the upper
   right divide line switched to horizontal, `IntOctagon.java:1206-1223`) trims the upper
   right octagon's top to the widened upper box, as branch 2 does on the left; Java's
@@ -1514,10 +1540,10 @@ every `Area` split of the board since the follow-up of 2026-10-18; in the corpus
 stored areas' splits reach neither of them. Registered evidence pending under N06.14
 (`docs/roadmap/prereg/N06.14.json`, amendment 1).
 
-**N06.5 maze search and room fixes (explicit opt-in; promotion pending)**
+**N06.5 maze search and room fixes (profile `enhanced` since N06.13)**
 
-All five switches still default to `true` in both profiles. With the named
-`router.java_quirks` key `false`:
+Unset is `true` (Java): `legacy` keeps all five, `enhanced` sets them `false` (N06.13). With
+the named `router.java_quirks` key `false`:
 - `init_failure_room_leak`: a failed maze-search init clears the session before it
   returns, so its completed start rooms leave the tree and a later session has no
   leaked room to move aside (`init_failure_switch_both_behaviours_and_counter`).
@@ -1536,13 +1562,13 @@ All five switches still default to `true` in both profiles. With the named
 `run_stats` counts each branch in either arm (`maze_init_failure_room_leaks`,
 `maze_ripped_carryovers`, `maze_ortho_zero_width_room_flips`,
 `maze_edge_sweeps_without_neighbours`, `maze_edge_corner_flips`,
-`insert_connect_to_trace_width_flips`); the registered runs are pending under N06.5
-(`prereg/N06.5.json`).
+`insert_connect_to_trace_width_flips`); N06.5's registered run (`prereg/N06.5.json`) accepted
+the batch under `legacy`.
 
-**N06.6 fanout fixes (explicit opt-in; promotion pending)**
+**N06.6 fanout fixes (profile `enhanced` since N06.13)**
 
-All three switches still default to `true` in both profiles. With the named
-`router.java_quirks` key `false`:
+Unset is `true` (Java): `legacy` keeps all three, `enhanced` sets them `false` (N06.13). With
+the named `router.java_quirks` key `false`:
 - `fanout_stale_drill_carry`: each attempt of a pin's fanout (the plane attempt, the
   closest target, all targets) starts on fresh drill pages, as the batch router's
   connections do; Java's one `AutorouteEngine` (`RoutingBoard.java:1074-1126`) hands a
@@ -1561,12 +1587,13 @@ All three switches still default to `true` in both profiles. With the named
 
 `run_stats` counts in either arm `fanout_retries`, `fanout_retries_succeeded`,
 `fanout_stale_drill_carries`, `drill_destination_room_index_flips` and
-`fanout_pin_order_name_flips`; the registered runs are pending under N06.6
-(`prereg/N06.6.json`).
+`fanout_pin_order_name_flips`; N06.6's registered run (`prereg/N06.6.json`) accepted the
+batch under `legacy`.
 
-**N06.11 interactive fixes (explicit opt-in; promotion pending)**
+**N06.11 interactive fixes (profile `enhanced` since N06.13)**
 
-All six switches still default to `true` in both profiles. Setting the named
+Unset is `true` (Java): `legacy` keeps all six, `enhanced` sets them `false` (N06.13). Setting
+the named
 `router.java_quirks` key to `false` selects these corrections instead of the
 kept Java behavior documented above:
 - `snapshot_drops_compensation`: snapshots capture the compensation flag and
@@ -1587,12 +1614,13 @@ kept Java behavior documented above:
   `extension_filter_switch_exits_empty_inspection`.
 
 `run_stats` counts every `compensated_snapshot_restores` request even in the Java
-arm and on memo hits. Registered batch evidence and plugin canary grading remain
-pending under N06.11; these changes do not promote any enhanced defaults.
+arm and on memo hits. N06.11's registered runs and the plugin canary grade accepted the
+batch under `legacy`, and N06.13 promoted all six into `enhanced`.
 
-**N06.10 input and report fixes (explicit opt-in; promotion pending)**
+**N06.10 input and report fixes (profile `enhanced` since N06.13)**
 
-All eight `router.java_quirks` switches still default to `true` in both profiles.
+Unset is `true` (Java): `legacy` keeps all eight `router.java_quirks` switches, `enhanced` sets
+them `false` (N06.13).
 With the named switch `false`:
 - `dsn_via_alias` copies the first class's via names; later classes cannot add
   vias to its rule (`via_alias_switch_keeps_first_class_vias_separate`).
@@ -1623,18 +1651,23 @@ nonempty list, a class-pair scope with at least three names, a shape box whose
 formulas differ, and a unit or placement-resolution mismatch. The pair and unit
 counters are conservative: unknown class names and precision-only placement
 changes can count even when geometry does not change. `dsn_corpus_branch_inventory`
-produces a per-input JSON report without routing. Registered sessions, the optimizer
-reference run, and the plugin canary grade remain pending under N06.10.
+produces a per-input JSON report without routing. N06.10's registered sessions, the
+optimizer reference run and the plugin canary grade accepted the batch under `legacy`, and
+N06.13 promoted all eight into `enhanced`.
 
-**N06.12 judgement calls (explicit opt-in; promotion pending)**
+**N06.12 judgement calls (three in profile `enhanced` since N06.13)**
 
-Every (c) switch still defaults to `true` in both profiles. With the named switch `false`:
+Unset is `true` (Java). N06.13 promoted three into `enhanced` (`any_angle_skip_length_squared`,
+`rules_unknown_layer_scope`, `in_front_of_pad_side0_flank`); the others stay `true` in both
+profiles. With the named switch `false`:
 - `ripup_pass_no_unset`: the batch pass number reaches `AutorouteControl::ripup_pass_no`,
   so `MazeRipupResolver`'s random detour factor `0.5 + r * r` (`:158-162`), which Java's
   batch router never draws, fires from pass 4 on outside every third pass; the generator is
   the search's, reseeded with the ripup costs, so the run is deterministic
   (`tests/n06_judgement.rs::ripup_pass_no_switch_both_behaviours_and_counters`). Registered
-  in `prereg/N06.12-ripup-pass.json`; the run is pending.
+  in `prereg/N06.12-ripup-pass.json`; the run of 2026-10-19 rejected it (total 47 → 47, one
+  new trace under ReadPlaceScope's narrowest class width), so it stays `true` in both
+  profiles.
 - `any_angle_skip_length_squared`: the any-angle end smoothing skips an end segment of a
   rational end corner shorter than 10 units (`SKIP_LENGTH` squared), not 3.2
   (`any_angle::tests::skip_length_switch_both_behaviours_and_counter`); a reported arm of the
@@ -1642,7 +1675,7 @@ Every (c) switch still defaults to `true` in both profiles. With the named switc
 - `rules_unknown_layer_scope`: a rules-file `layer` scope naming a layer the board does not
   have is ignored with a second warning instead of applying to every layer
   (`tests/rules_reader.rs::unknown_layer_scope_switch_both_behaviours`). Decided 2026-10-18
-  for `enhanced`; it joins the table through N06.13 and N05.
+  for `enhanced`; in its table since N06.13.
 - `in_front_of_pad_side0_flank` is N06.7's reported arm `all_flank`. `opt_threshold_fraction`
   keeps Java's heuristic (its `false` half: `threshold_fraction_switch_both_behaviours`).
 - Left as Java, `false` changes nothing: `insert_stale_trace_object`,
@@ -1722,3 +1755,144 @@ checks that this list and the table agree.
   tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice and CM5_MINIMA_3 (set noise
   42.70; canary-pwr 36 → 41), net-class via clearance errors 2 → 1 (canary-pwr's `+12V_PROT`
   via 1 → 0), no via in a pad, copper below the minimum or power-layer trace.
+
+The `java_quirks` lines below are N06's Java-bug fixes that N06.13 promoted on 2026-10-19, each
+under N06's accept rule: measured and neutral, or not reached by any registered row and accepted
+on its tests (both behaviours pinned). They were measured under `legacy`; their confirmation
+under `enhanced` (`enhanced` at the parent commit against `enhanced` with them) is registered in
+`docs/roadmap/prereg/N06.13-promotion.json`, and its run is pending. An explicit
+`--router.java_quirks.<id>=true` brings Java's bug back.
+
+- `java_quirks.init_failure_room_leak` = `false` (N06.13 from N06.5,
+  `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): a failed
+  maze-search init clears its session, so its completed start rooms do not stay in the autoroute
+  tree as obstacles (Connection insertion). Not reached: `maze_init_failure_room_leaks` 0 in every
+  run; accepted on `init_failure_switch_both_behaviours_and_counter`.
+- `java_quirks.failed_attempt_ripped_carryover` = `false` (N06.13 from N06.5,
+  `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): an attempt
+  rejected before its rip restores the ripped set and the ripup costs it started with. Not reached:
+  `maze_ripped_carryovers` 0; accepted on `rejected_attempt_ripped_set_switch_both_behaviours`.
+- `java_quirks.ortho_zero_width_room` = `false` (N06.13 from N06.5,
+  `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): the 90
+  degree room right of an obstacle room reaches the board's right edge instead of having width 0.
+  Reached on both 90 degree rows (254 and 61 rooms) with every session identical: neutral
+  (`right_of_obstacle_room_switch_both_behaviours`).
+- `java_quirks.edge_corner_not_advanced` = `false` (N06.13 from N06.5,
+  `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): the 45
+  degree edge sweep of an obstacle room advances its corner, so only sides of length 0 are skipped.
+  Reached (373 sweeps on J2, 22 on bm08, 12121 on the plugin path) with every session identical:
+  neutral (`edge_room_sides_switch_both_behaviours`).
+- `java_quirks.connect_to_trace_swapped_width` = `false` (N06.13 from N06.5,
+  `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): the stubs
+  to a start and a target trace take their own layer's half width. Not reached (no row has per-layer
+  widths); accepted on `connect_to_trace_width_switch_both_behaviours_and_counter`.
+- `java_quirks.fanout_stale_drill_carry` = `false` (N06.13 from N06.6,
+  `docs/roadmap/prereg/N06.6.json`, batch F with the fanout on: gate PASS, total 100 → 100, set
+  noise 11.14): each attempt of a pin's fanout starts on fresh drill pages. Reached (307 retries on
+  z10_module and the plugin path, 0 succeeding in either arm) with every session identical: neutral
+  (`stale_drill_carry_switch_both_behaviours_and_counters`).
+- `java_quirks.drill_destination_room_index` = `false` (N06.13 from N06.6,
+  `docs/roadmap/prereg/N06.6.json`, batch F with the fanout on: gate PASS, total 100 → 100, set
+  noise 11.14): a destination drill's room is indexed by section, not by `firstLayer + section`. Not
+  reached (no blind or buried via); accepted on
+  `drill_destination_room_index_switch_both_behaviours_and_counter`.
+- `java_quirks.fanout_pin_order_names` = `false` (N06.13 from N06.6,
+  `docs/roadmap/prereg/N06.6.json`, batch F with the fanout on: gate PASS, total 100 → 100, set
+  noise 11.14): `fanout.pin_sorting_order` also accepts `distance_to_closest_on_net` and
+  `surroundings_density`. Not reached (no arm sets the order); accepted on
+  `pin_order_names_switch_reaches_the_fanout_run_and_counter`.
+- `java_quirks.in_front_of_pad_typo` = `false` (N06.13 from N06.7, `docs/roadmap/prereg/N06.7.json`,
+  batch S: every flip counter 0 and every session identical on 5 DSN rows and canary-pwr's plugin
+  path): side 0 of the in-front-of-pad test takes `b.x + b.y` (Shove checks); accepted on
+  `in_front_of_pad_keeps_java_typo`.
+- `java_quirks.store_trace_class_self_compare` = `false` (N06.13 from N06.7,
+  `docs/roadmap/prereg/N06.7.json`, batch S: every flip counter 0 and every session identical on 5
+  DSN rows and canary-pwr's plugin path): a contact trace's clearance class is compared with the
+  shoved trace's (Shove checks); accepted on `store_trace_class_switch_both_behaviours`.
+- `java_quirks.rational_perp_projection` = `false` (N06.13 from N06.7,
+  `docs/roadmap/prereg/N06.7.json`, batch S: every flip counter 0 and every session identical on 5
+  DSN rows and canary-pwr's plugin path): the shove's end-corner projection of a rational corner is
+  the exact foot (geometry `perpendicular_projection_with`); accepted on
+  `rational_end_corner_projection_switch_both_behaviours`.
+- `java_quirks.in_front_of_pad_side0_flank` = `false` (N06.13 from N06.7,
+  `docs/roadmap/prereg/N06.7.json`, batch S, reported arm `all_flank` against `all`: every flip
+  counter 0 and every session identical on 5 DSN rows and canary-pwr's plugin path): side 0's second
+  flank clause takes `max(x + y)`, as sides 2, 4 and 6 take the extreme past their diagonal (a (c)
+  row, N06.12); accepted on `side0_flank_switch_both_behaviours`.
+- `java_quirks.smooth_loses_trace` = `false` (N06.13 from N06.8, `docs/roadmap/prereg/N06.8.json`,
+  batch P: gate PASS, total 38 → 38, both counters 0, every session identical): the end-corner
+  smoothing tests the insert's failure conditions first and keeps the trace (Pull-tight); accepted
+  on `smooth_loses_trace_switch_both_behaviours`.
+- `java_quirks.pull_tight_reused_lines_change` = `false` (N06.13 from N06.8,
+  `docs/roadmap/prereg/N06.8.json`, batch P: gate PASS, total 38 → 38, both counters 0, every
+  session identical): pull-tight reports a change only when `change_trace` changed the trace;
+  accepted on `pull_tight_reused_lines_switch_both_behaviours`.
+- `java_quirks.dsn_via_alias` = `false` (N06.13 from N06.10, `docs/roadmap/prereg/N06.10.json`,
+  batch I: 40 runs, every session identical): with no structure `via`, later classes no longer add
+  vias to the first class's rule (Reading a DSN file). No corpus board reaches it
+  (`dsn_corpus_branch_inventory`, 203 boards); accepted on
+  `via_alias_switch_keeps_first_class_vias_separate`.
+- `java_quirks.dsn_class_class_pairs` = `false` (N06.13 from N06.10,
+  `docs/roadmap/prereg/N06.10.json`, batch I: 40 runs, every session identical): a `class_class`
+  rule applies to every pair of its classes. No corpus board reaches it; accepted on
+  `class_class_switch_applies_all_three_pairs`.
+- `java_quirks.dsn_shape_bbox` = `false` (N06.13 from N06.10, `docs/roadmap/prereg/N06.10.json`,
+  batch I: 40 runs, every session identical): DSN bounding boxes sort rectangle bounds, take half a
+  circle's diameter and add a path's half width once. No corpus board reaches it; accepted on
+  `bounding_box_switch_both_behaviours`.
+- `java_quirks.dsn_unit_ignored` = `false` (N06.13 from N06.10, `docs/roadmap/prereg/N06.10.json`,
+  batch I: 40 runs, every session identical): the pcb-level `unit` and the placement `resolution`
+  are honoured. No corpus board has a differing unit; accepted on
+  `pcb_unit_and_placement_resolution_switch_use_physical_units`.
+- `java_quirks.ses_reader_scale` = `false` (N06.13 from N06.10, `docs/roadmap/prereg/N06.10.json`,
+  batch I: 40 runs, every session identical): the SES reader multiplies by the writer's divisor, so
+  an import is the inverse of the export (Issue676: Java's import is 100 times too large). Every SES
+  import; no routed session reads one; accepted on `issue676_round_trips_with_reader_scale_fixed`.
+- `java_quirks.stats_line_ab_length` = `false` (N06.13 from N06.10,
+  `docs/roadmap/prereg/N06.10.json`, batch I: 40 runs, every session identical): board statistics
+  sum the trace segments, not the distances between each line's defining points: the trace lengths
+  of the result manifest and `--stats` change, routing does not; accepted on
+  `trace_length_statistics_both_behaviours`.
+- `java_quirks.route_result_int_via_ratio` = `false` (N06.13 from N06.10,
+  `docs/roadmap/prereg/N06.10.json`, batch I: 40 runs, every session identical): a route result's
+  via ratio is a real division (`improvement_percentage`). `route_result_zero_test_changes` 0 in
+  every run, so no optimizer decision changed; accepted on `route_result_via_ratio_both_behaviours`.
+- `java_quirks.drc_units_10000_per_mm` = `false` (N06.13 from N06.10,
+  `docs/roadmap/prereg/N06.10.json`, batch I: 40 runs, every session identical): DRC summary
+  messages, congestion zones and hints use the board's own scale, not 10000 units per mm (reports
+  only); accepted on `drc_units_switch_uses_the_actual_board_scale`.
+- `java_quirks.snapshot_drops_compensation` = `false` (N06.13 from N06.11,
+  `docs/roadmap/prereg/N06.11.json`, batch U: 32 runs, every session identical,
+  `compensated_snapshot_restores` 0): a snapshot restore or deep copy keeps clearance compensation
+  (Board model); compensation is on only in the GUI; accepted on
+  `snapshot_compensation_switch_including_memo_restores`.
+- `java_quirks.rules_matrix_trees_not_rebuilt` = `false` (N06.13 from N06.11,
+  `docs/roadmap/prereg/N06.11.json`, batch U: 32 runs, every session identical,
+  `compensated_snapshot_restores` 0): a rules file's clearance matrix rebuilds the search trees
+  (Rules files); accepted on `rules_matrix_refresh_switch_updates_compensated_shapes`.
+- `java_quirks.move_drill_tidy_region` = `false` (N06.13 from N06.11,
+  `docs/roadmap/prereg/N06.11.json`, batch U: 32 runs, every session identical,
+  `compensated_snapshot_restores` 0): a moved drill item pull-tightens within a finite tidy width
+  (Shove insert); accepted on `move_drill_item_finite_tidy_skips_pull_tight`.
+- `java_quirks.route_change_layer_no_via` = `false` (N06.13 from N06.11,
+  `docs/roadmap/prereg/N06.11.json`, batch U: 32 runs, every session identical,
+  `compensated_snapshot_restores` 0): an interactive layer change without a via spanning both layers
+  fails instead of switching the layer (Interactive routing); accepted on
+  `layer_change_without_spanning_via_quirk`.
+- `java_quirks.route_connect_inner_break` = `false` (N06.13 from N06.11,
+  `docs/roadmap/prereg/N06.11.json`, batch U: 32 runs, every session identical,
+  `compensated_snapshot_restores` 0): an interactive connect stops at the first failed corner pair;
+  accepted on `failed_first_corner_pair_switch_stops_disconnected_second_leg`.
+- `java_quirks.select_extension_ignores_filter` = `false` (N06.13 from N06.11,
+  `docs/roadmap/prereg/N06.11.json`, batch U: 32 runs, every session identical,
+  `compensated_snapshot_restores` 0): an extension whose filter empties the selection leaves the
+  inspect state; accepted on `extension_filter_switch_exits_empty_inspection`.
+- `java_quirks.rules_unknown_layer_scope` = `false` (N06.13 from N06.12, decided 2026-10-18): a
+  rules-file `layer` scope naming a layer the board does not have is ignored with a second warning,
+  where Java applies it to every layer (Rules files; `-dr` only); accepted on
+  `unknown_layer_scope_switch_both_behaviours`.
+- `java_quirks.any_angle_skip_length_squared` = `false` (N06.13 from N06.12,
+  `docs/roadmap/prereg/N06.12-ripup-pass.json`, reported arm: `any_angle_skip_length_flips` 0 and
+  every session identical on 6 DSN rows and canary-pwr's plugin path): the any-angle end smoothing
+  compares a squared end segment with `SKIP_LENGTH` squared (10 units, not 3.2; any-angle mode
+  only); accepted on `skip_length_switch_both_behaviours_and_counter`.

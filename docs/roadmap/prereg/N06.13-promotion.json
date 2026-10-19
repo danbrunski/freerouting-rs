@@ -1,0 +1,423 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.13-promotion",
+  "registered": "2026-10-19",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.13), through docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3)",
+  "question": "N06's batches measured their Java-bug fixes under profile legacy (every arm differed from Java only in its switches), and N06.13 turns the 30 accepted ones off in profile enhanced, the default: router.java_quirks.init_failure_room_leak, router.java_quirks.failed_attempt_ripped_carryover, router.java_quirks.ortho_zero_width_room, router.java_quirks.edge_corner_not_advanced, router.java_quirks.connect_to_trace_swapped_width, router.java_quirks.fanout_stale_drill_carry, router.java_quirks.drill_destination_room_index, router.java_quirks.fanout_pin_order_names, router.java_quirks.in_front_of_pad_typo, router.java_quirks.store_trace_class_self_compare, router.java_quirks.rational_perp_projection, router.java_quirks.smooth_loses_trace, router.java_quirks.pull_tight_reused_lines_change, router.java_quirks.dsn_via_alias, router.java_quirks.dsn_class_class_pairs, router.java_quirks.dsn_shape_bbox, router.java_quirks.dsn_unit_ignored, router.java_quirks.ses_reader_scale, router.java_quirks.stats_line_ab_length, router.java_quirks.route_result_int_via_ratio, router.java_quirks.drc_units_10000_per_mm, router.java_quirks.snapshot_drops_compensation, router.java_quirks.rules_matrix_trees_not_rebuilt, router.java_quirks.move_drill_tidy_region, router.java_quirks.route_change_layer_no_via, router.java_quirks.route_connect_inner_break, router.java_quirks.select_extension_ignores_filter, router.java_quirks.in_front_of_pad_side0_flank, router.java_quirks.rules_unknown_layer_scope, router.java_quirks.any_angle_skip_length_squared = false. Does profile enhanced with them (the promotion commit, no flag) keep every registered board within N02's totals rule (accept no-regress: correctness fixes) of profile enhanced without them (the promotion commit's parent, no flag), with no new hard-guard breach versus that baseline, no new router clearance violation, and no new KiCad real DRC error or short on canary-pwr's plugin path with the plugin's default options?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "two Linux release builds of freerouting-rs: the baseline arm's at the parent of the promotion commit, the candidate arm's at the promotion commit; both arms run the default profile (enhanced, unset) with no router flag, so they differ only in ENHANCED's 30 java_quirks entries",
+  "arms": {
+    "enhanced_main": {
+      "engine": "freerouting-rs at the parent of the promotion commit (main at landing; main 0e3f1d5 at registration), one Linux release build; profile enhanced (unset), whose table has power_layer_traces = none, neck_width_um = 300 and via_clearance = net_class and no java_quirks entry",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-base/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT}",
+      "settings": {},
+      "what": "baseline: profile enhanced as it is before the promotion (every java_quirks switch true)"
+    },
+    "enhanced_promoted": {
+      "engine": "freerouting-rs at the promotion commit (the one commit that lands branch land/n06-13: main 0e3f1d5 plus N06.13's diff at registration, which changes ENHANCED, docs and tests only), one Linux release build; profile enhanced (unset), whose table adds the 30 java_quirks entries",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-cand/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT}",
+      "settings": {
+        "router.java_quirks.init_failure_room_leak": false,
+        "router.java_quirks.failed_attempt_ripped_carryover": false,
+        "router.java_quirks.ortho_zero_width_room": false,
+        "router.java_quirks.edge_corner_not_advanced": false,
+        "router.java_quirks.connect_to_trace_swapped_width": false,
+        "router.java_quirks.fanout_stale_drill_carry": false,
+        "router.java_quirks.drill_destination_room_index": false,
+        "router.java_quirks.fanout_pin_order_names": false,
+        "router.java_quirks.in_front_of_pad_typo": false,
+        "router.java_quirks.store_trace_class_self_compare": false,
+        "router.java_quirks.rational_perp_projection": false,
+        "router.java_quirks.smooth_loses_trace": false,
+        "router.java_quirks.pull_tight_reused_lines_change": false,
+        "router.java_quirks.dsn_via_alias": false,
+        "router.java_quirks.dsn_class_class_pairs": false,
+        "router.java_quirks.dsn_shape_bbox": false,
+        "router.java_quirks.dsn_unit_ignored": false,
+        "router.java_quirks.ses_reader_scale": false,
+        "router.java_quirks.stats_line_ab_length": false,
+        "router.java_quirks.route_result_int_via_ratio": false,
+        "router.java_quirks.drc_units_10000_per_mm": false,
+        "router.java_quirks.snapshot_drops_compensation": false,
+        "router.java_quirks.rules_matrix_trees_not_rebuilt": false,
+        "router.java_quirks.move_drill_tidy_region": false,
+        "router.java_quirks.route_change_layer_no_via": false,
+        "router.java_quirks.route_connect_inner_break": false,
+        "router.java_quirks.select_extension_ignores_filter": false,
+        "router.java_quirks.in_front_of_pad_side0_flank": false,
+        "router.java_quirks.rules_unknown_layer_scope": false,
+        "router.java_quirks.any_angle_skip_length_squared": false
+      },
+      "what": "candidate: profile enhanced with the 30 promoted switches false, from the profile table (no flag)"
+    }
+  },
+  "baseline_arm": "enhanced_main",
+  "candidate_arm": "enhanced_promoted",
+  "pairs": [
+    [
+      "enhanced_main",
+      "enhanced_promoted"
+    ]
+  ],
+  "boards": {
+    "set": "tools/bench/sets/n06-13-promotion.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "files": {
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn": "59c980e5d0492bc58d9f6736e362ca5428a579bcf05ef608d520425847c5143c",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn": "2607907a008dff2782967539c433a3c09d577a29a05d8725c03e571e067cb8b7",
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5",
+      "fixtures/Issue676-ch32v-tx118s.dsn": "7270f70a8d1964801fc476826291a83d82d00bee00a346aea01fe55b2b63359e",
+      "fixtures/Issue957-smoke-ldo-led.dsn": "090e615ca832eb4aa13f76fe1ca8be36cf9f45027f48aa8126512c72580178f5",
+      "fixtures/Issue367-Charger.dsn": "7ce9353ef668555d39956b6b1b96aca5cff83091d26ab89bb4c59c3c13b62a38",
+      "fixtures/Issue756-tomu-fpga.dsn": "c5279c56697b86e9e8189ffa3ee0036eaeafaa661c07df25dbe6c066ef16a9ee",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue313-FastTest.dsn": "95b92720ead8c3de87ae67bd34b87625cd14ac858e85dd9c6836ac479c3e1a30",
+      "fixtures/Issue027-zMRETestFixture.dsn": "59c692fe9468fe8909b08c55705a175d30db39d7fe164a5363f1da43d03fbd44",
+      "fixtures/Issue155-CH376_MCP795_Module.dsn": "3080de09e60d0a713d8904016c694bbf9a79668b10a0d070d1a123023302a5d7",
+      "fixtures/Issue508-DAC2020_bm06.dsn": "31f38102d90a1bb4b901d4ca8d1877eb41752281ffa9de9f53a3cf69ba5231e2",
+      "fixtures/Issue558-dev-board.dsn": "f1d70cb705bd0ee4c415519dfde6c036c3bd46c2675d3d9e5fa2bfdb5d7ea480",
+      "fixtures/Issue217-8088sbc.dsn": "d7caa5a23e834c86829b4f9029691bac0410261eacfca90aff8d052e1ba2dfad",
+      "fixtures/Issue034-Green14SegLED.dsn": "17bf07ff18a668faaad7f4b575199672b4cff34649efe49e32eca59d2c76de63",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/Issue035-ReadPlaceScope.dsn": "69300e8bca77acccc1bd3d8799c18c728fc86e22415b9e1385565adb2610ed01",
+      "fixtures/Issue054-tairakb.dsn": "965f7154d19bec679916128ef1c07e15a97dedc6a52000e097726b5ff0e90969",
+      "fixtures/Issue102-Mars-64-revE-rot00.dsn": "3a7066d3ff441d495afb18f17a967c60a774a3d4fd7baf6438d727bdeb9c0dc5",
+      "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": "df6535a679fa0d2720324497f827929db91b0c667b23cd97a2e627e2ee09c7ed",
+      "canary-pwr-plugin": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58"
+    },
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path with the plugin's default options (plugin_canary below), outside n06_run.py. Its hash is the sha256 of the source board hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb at canary 2a7e070b (git show 2a7e070b:<path>), because the plugin exports it at run time; the exported DSN's and args' sha256 are recorded with the result",
+    "outside_runner": [
+      "canary-pwr-plugin"
+    ],
+    "dropped_before_registration": "the any-angle variants crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn and Issue143-rpi_splitter-any.dsn of N06.12's original set (and N06.14's set): the engine can't route them in bounded memory (N06.12 amendments 2 and 3); the rows of N06.9 (batch O), N06.14 (G2) and N06.15, whose switches are not promoted",
+    "bands": "each DSN row is its own board; its band is N02's default, max(2, ceil(5 % of the row's connections)), connections = the enhanced_main arm's board_statistics.connections.maximum_count (n06_run.py copies it into summary.json's statistics.connections); the plugin row's band is 10. fixtures/canary-pwr/canary-pwr-9511d9a.dsn (canary 9511d9a, the DSN fixture) and canary-pwr-plugin (canary 2a7e070b, the plugin path) are two boards"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_shorting_items",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "connections",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "below_minimum_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "kicad_clearance",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "plugin_unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_init_failure_room_leaks",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_ripped_carryovers",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_ortho_zero_width_room_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_edge_sweeps_without_neighbours",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_edge_corner_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "insert_connect_to_trace_width_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_retries",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_retries_succeeded",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_stale_drill_carries",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drill_destination_room_index_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "fanout_pin_order_name_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_in_front_of_pad_typo_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_in_front_of_pad_flank_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_store_trace_class_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_rational_projection_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "pull_tight_smooth_lost_traces",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "pull_tight_reused_lines_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "dsn_via_alias_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "dsn_class_class_pairs_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "dsn_shape_bbox_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "dsn_unit_ignored_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "route_result_zero_test_changes",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "compensated_snapshot_restores",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "any_angle_skip_length_flips",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "rules_unknown_layer_scopes",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias, connections": "a DSN row's result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count, connections.maximum_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`. The plugin row's record carries unrouted null and its router count as plugin_unrouted, so its signal is kicad_unconnected; its clearance_violations is null (the router's count is reported)",
+    "via_in_pad, below_minimum": "option (b) of N06.4's amendment 2, no new breach versus baseline: the arm's count minus the enhanced_main arm's count on the same row, floored at 0; the raw counts are reported as via_in_pad_raw and below_minimum_raw. On a DSN row the raw counts are counted on the routed board by a tool on the engine API, with the input's session wiring stripped (main 019b260) and the session read at the writer's scale (main 8f302b2): vias in an SMD pad the input has no via for (main 4885a30's added_via_in_pad), and delivered traces narrower than the board's narrowest class width that the input does not already have. On the plugin row via_in_pad is via_in_pad.py's count and below_minimum KiCad's track_width error count. Option (b), because enhanced's baseline already breaks an absolute count: the router's pin neck-down (N06.4 amendment 2: 37 traces on J2 and 11 on bm08 under legacy) and enhanced's neck_width_um = 300 retry (N05.3), which ships failed connections at 300 um, under some boards' narrowest class width",
+    "drc_real, kicad_shorting_items, kicad_clearance, kicad_unconnected": "the plugin row's grade (canary hardware/tools/grade.sh, GRADE_REV=2a7e070b): real DRC errors, shorting_items, clearance items (reported only: re-imports of one session have graded 2 and 4, N06.12's note) and unconnected items. Each distinct session's first grade counts",
+    "session_differences": "1 if the candidate's SES differs byte for byte from the enhanced_main arm's on that row",
+    "wall_seconds": "the router's stats.json total wall_seconds per run (reported: the fanout and drill fixes add work, N06.6's +8912 and +57495 drills)",
+    "maze_*, insert_*, fanout_*, drill_*, shove_*, pull_tight_*, dsn_*_reached, route_result_zero_test_changes, compensated_snapshot_restores, any_angle_skip_length_flips, rules_unknown_layer_scopes": "the promoted switches' run_stats reach counters (--stats json, total.counts), counted in either arm, as each batch registered them"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "The verdict pair (enhanced_main, enhanced_promoted), N02's totals rule with accept no-regress, judged by freerouting-dev gate --prereg on records built from n06_run.py's summary.json and the plugin row. Hard guards: via_in_pad and below_minimum as option (b), no new breach versus the baseline arm on any row; no DSN row's clearance_violations above its baseline's; on the plugin row drc_real and kicad_shorting_items not above the baseline's. Then the candidate's unrouted summed over the DSN rows plus the plugin row's kicad_unconnected at most the baseline's plus the set's noise, sqrt of the sum of the bands squared; no board worse by more than twice its band.",
+    "PASS: the 30 entries stay in ENHANCED, and N06.13 records the numbers and is ticked.",
+    "FAIL: the promotion is bisected by batch (M, F, S with the flank, P, I, U, and N06.12's rules-scope and skip-length switches). Each batch is judged alone by the same rule, on the candidate binary with the other batches' switches set back to true by flags, under an amendment written before those runs. A batch whose own pair fails leaves ENHANCED: its switches stay true in both profiles, with these numbers.",
+    "A route that aborts at the memory cap is reported, never measured. If a baseline route aborts, the row is dropped by an amendment before any of its numbers is read; if only a candidate route aborts, the verdict is FAIL (the promotion made a board unroutable in bounded memory) and the cause is reported."
+  ],
+  "stop_rule": "One run per arm per row, the plugin row's included; no rerun with other settings. No route by the implementer.",
+  "memory_cap": "every route of this registration, the plugin row's included, runs under an 8000000 kB address-space cap: n06_run.py's opt-in N06_RUN_ULIMIT_KB=8000000 for the DSN rows, and ulimit -v 8000000 for the plugin routes. The cap changes no routing work",
+  "orchestrator_command": "cd /home/thebo/code/freerouting-rs && PROMOTION=<sha of the commit that lands land/n06-13> && git worktree add --detach target/orchestrator/n06-13-base-wt \"$PROMOTION~1\" && git worktree add --detach target/orchestrator/n06-13-cand-wt \"$PROMOTION\" && (cd target/orchestrator/n06-13-base-wt && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-base cargo build --release -p freerouting-cli) && cd target/orchestrator/n06-13-cand-wt && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-cand cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.13-promotion.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13",
+  "orchestrator": "Run orchestrator_command: it builds the two binaries the arms name, then, from the candidate's worktree root, runs each arms.command on each DSN row of boards.files (21 rows x 2 arms = 42 runs), checks the input hashes, compares each candidate SES with the baseline's and writes summary.json (session_differences, counts, statistics). It exits non-zero after the last run when a session differs, which is expected: then build the records and apply the totals rule. Then the plugin row (plugin_canary), then freerouting-dev gate --records <records> --baseline <baseline> --prereg docs/roadmap/prereg/N06.13-promotion.json (the baseline file written first by the same command with --write-baseline), with freerouting-dev built at the promotion commit.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the hard guards above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 2a7e070b, the current board base (git archive, unedited); never edit the source project.",
+    "source_sha256": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58",
+    "options": {
+      "schema": 4,
+      "profile": "enhanced"
+    },
+    "options_note": "the plugin's default options: profile_defaults('enhanced'), what a new board starts from (as Q16.5's registration), written to <PLUGIN_WORK>/route-options.json before the export",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" \"{PLUGIN_WORK}/route-options.json\"",
+    "route": "Export once, with kicad-plugin at the promotion commit on WSL KiCad 10.0.7, before any route. For each arm, run that arm's release CLI (the binary its command names) on the exported DSN with the generated <stem>.args.json args verbatim, then --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json, under ulimit -v 8000000. No profile or java_quirks flag: both arms run the default profile. One exported input and one argument list serve both arms. Compare the candidate's session with the baseline's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" \"{PLUGIN_WORK}/route-options.json\"",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (GRADE_REV=2a7e070b; ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade, and each session's first grade counts. Record shorting_items and clearance separately. Retain the export and import logs, versions, the exported DSN's and args' sha256 and the grades."
+  },
+  "not_registered": "a second seed (the router is deterministic); legacy (unchanged by the promotion; the small parity check shows it); the switches one by one (the batches measured them; a failed verdict is bisected by batch as accept says); interactive use (batch U's switches act in the GUI, which no batch run calls)",
+  "seen_before_registration": "No route of either arm under this registration, on any row. Before it: the batches' legacy numbers on these rows (N06.5 to N06.12's done notes), and enhanced numbers of earlier registrations on canary-pwr (N05.3, Q16.5). At registration the implementer routed nothing under profile enhanced: the CLI end-to-end check of N06.13 printed the resolved settings of one small fixture (--dump-settings, no routing), and the light parity check routed the connection-parity set under legacy, which neither arm runs.",
+  "amendments": []
+}

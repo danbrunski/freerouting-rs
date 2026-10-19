@@ -59,8 +59,11 @@ fn work_counts_of_issue433() {
                     ("queue_pushes", 6076),
                     ("rooms_completed", 241),
                     ("doors_expanded", 3008),
-                    ("maze_work_units", 90488),
-                    ("tree_nodes_visited", 173255),
+                    // N06.13: profile `enhanced`'s Java-bug fixes add 148 tree
+                    // nodes to the maze search (90488 and 173255 before); the
+                    // routes and every other count are unchanged.
+                    ("maze_work_units", 90636),
+                    ("tree_nodes_visited", 173403),
                 ],
             ),
             (

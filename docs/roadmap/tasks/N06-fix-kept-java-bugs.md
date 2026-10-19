@@ -32,7 +32,7 @@ settings access.
 
 | Exists | Where |
 |---|---|
-| Profiles: `router.profile`, with `legacy` = Java and `enhanced` the default | `crates/freerouting/src/settings/profile.rs`; `ENHANCED` is still empty |
+| Profiles: `router.profile`, with `legacy` = Java and `enhanced` the default | `crates/freerouting/src/settings/profile.rs`; `ENHANCED` was empty when N06 opened; N06.13 added the 30 accepted switches |
 | The rule that each `enhanced` difference has a DIVERGENCES line | `tests/settings_profile.rs::every_enhanced_difference_is_a_setting_with_its_divergence_line` |
 | Settings fields, paths and the settings file | `settings/fields.rs` (`RouterSettings`), `settings/path.rs` |
 | What the switches ride on | `BoardRouterSettings` (`settings/board.rs`), `AutorouteControl` (`autoroute/control.rs`), `BasicBoard` (`board/basic_board.rs`), `ReadContext` (`io/specctra/parser/mod.rs`), geometry `split_to_convex` (`freerouting-geometry/src/shapes/`) |
@@ -1508,7 +1508,7 @@ These are marked or look like quirks but keep no bug:
       `cargo test -p freerouting -p freerouting-cli --no-fail-fast` 1574 passed, 0 failed, 33
       ignored (155 suites); the N06 pin tests `prereg_n06_{4,5,6,7,8,9,12}` 28 passed;
       `python3 tools/roadmap/checklists.py status --strict` clean.
-- [ ] **N06.13 — Results and promotion.**
+- [~] **N06.13 — Results and promotion.**
   - Each batch's registration and numbers go in its item.
   - Each accepted switch is turned off in `enhanced` through N05, with its DIVERGENCES line under
     "Profile `enhanced`".
@@ -1517,6 +1517,124 @@ These are marked or look like quirks but keep no bug:
   - The DIVERGENCES "kept on purpose" paragraphs point to this file.
   - **Accept:** every (b) row ends accepted, rejected with numbers, or accepted on tests under
     the decisions' rule.
+  - *Partial 2026-10-19:* the first promotion round, through N05 (N05.3's 2026-10-19 lines).
+    Worktree `target/orchestrator/n0613/wt`, branch `land/n06-13` on main `0e3f1d5`. 30 switches
+    promoted, 1 rejected, 7 pending, 7 left as Java (45 ids). Not ticked: 7 (b) rows are still
+    pending (their batches' runs), and the promotion's confirmation run under `enhanced` is a
+    heavy run.
+    - [x] The list, from the done notes of N06.4 to N06.12 and the state of N06.9, N06.14 and
+      N06.15. "On tests" is the decisions' reachability rule (counter 0, every session identical);
+      "neutral" is measured, the counter above 0 and every session identical.
+
+      | id | kind | batch | outcome | evidence |
+      |---|---|---|---|---|
+      | `simplex_prev_division_line` | b | G (N06.4) | pending: held back | N06.4 accepted it inert at the drill-page reach (counter 0, sessions identical); b26d04e widened its reach to every `Area` split, re-measured by N06.14 amendment 1 |
+      | `octagon_box_cutout_branch3` | b | G (N06.4) | pending: held back | N06.4 gate PASS at the drill-page reach (+2 against noise 10.58); N06.14 amendment 1's arm re-measures it at every `Area` split |
+      | `cutout_hole_crosses_border` | b | G2 (N06.14) | pending | N06.14's heavy run |
+      | `simplex_octagon_half_corner` | b | G2 (N06.14) | pending | N06.14's heavy run |
+      | `init_failure_room_leak` | b | M (N06.5) | accepted on tests | `maze_init_failure_room_leaks` 0 in 35 runs and the plugin row; gate PASS, 38 → 38 |
+      | `failed_attempt_ripped_carryover` | b | M (N06.5) | accepted on tests | `maze_ripped_carryovers` 0 |
+      | `ortho_zero_width_room` | b | M (N06.5) | accepted, neutral | 254 and 61 flips on the two 90° rows, sessions identical |
+      | `edge_corner_not_advanced` | b | M (N06.5) | accepted, neutral | 373 (J2), 22 (bm08) and 12121 (plugin) sweeps, sessions identical |
+      | `connect_to_trace_swapped_width` | b | M (N06.5) | accepted on tests | `insert_connect_to_trace_width_flips` 0 (no row has per-layer widths) |
+      | `fanout_stale_drill_carry` | b | F (N06.6) | accepted, neutral | 307 retries, 0 succeeding in either arm, sessions identical; gate PASS, 100 → 100 |
+      | `drill_destination_room_index` | b | F (N06.6) | accepted on tests | flips 0 (no blind or buried via) |
+      | `fanout_pin_order_names` | b | F (N06.6) | accepted on tests | flips 0 (no arm sets the order) |
+      | `in_front_of_pad_typo` | b | S (N06.7) | accepted on tests | flip counter 0, 30 runs and the plugin row identical |
+      | `store_trace_class_self_compare` | b | S (N06.7) | accepted on tests | flip counter 0 |
+      | `rational_perp_projection` | b | S (N06.7) | accepted on tests | flip counter 0 |
+      | `smooth_loses_trace` | b | P (N06.8) | accepted on tests | counter 0, 24 runs and the plugin row identical; gate PASS, 38 → 38 |
+      | `pull_tight_reused_lines_change` | b | P (N06.8) | accepted on tests | counter 0 |
+      | `opt_first_pass_stops` | b | O (N06.9) | pending | N06.9's heavy run |
+      | `opt_equal_key_skip` | b | O (N06.9) | pending | N06.9's heavy run |
+      | `dsn_via_alias` | b | I (N06.10) | accepted on tests | `dsn_via_alias_reached` 0 in 40 runs and on 203 corpus boards |
+      | `dsn_class_class_pairs` | b | I (N06.10) | accepted on tests | its counter 0, likewise |
+      | `dsn_shape_bbox` | b | I (N06.10) | accepted on tests | its counter 0, likewise |
+      | `dsn_unit_ignored` | b | I (N06.10) | accepted on tests | its counter 0, likewise |
+      | `ses_reader_scale` | b | I (N06.10) | accepted on tests | `issue676_round_trips_with_reader_scale_fixed`; 40 runs identical (no route reads a session) |
+      | `stats_line_ab_length` | b | I (N06.10) | accepted on tests | a report value (`trace_length_statistics_both_behaviours`); 40 runs identical |
+      | `route_result_int_via_ratio` | b | I (N06.10) | accepted on tests | `route_result_zero_test_changes` 0 in every run |
+      | `drc_units_10000_per_mm` | b | I (N06.10) | accepted on tests | a report value (`drc_units_switch_uses_the_actual_board_scale`) |
+      | `snapshot_drops_compensation` | b | U (N06.11) | accepted on tests | `compensated_snapshot_restores` 0 in 32 runs |
+      | `rules_matrix_trees_not_rebuilt` | b | U (N06.11) | accepted on tests | interactive (GUI with compensation); 32 runs identical |
+      | `move_drill_tidy_region` | b | U (N06.11) | accepted on tests | interactive only |
+      | `route_change_layer_no_via` | b | U (N06.11) | accepted on tests | interactive only |
+      | `route_connect_inner_break` | b | U (N06.11) | accepted on tests | interactive only |
+      | `select_extension_ignores_filter` | b | U (N06.11) | accepted on tests | interactive only |
+      | `shove_via_into_pending_piece` | b | N06.15 | pending | N06.15's heavy run |
+      | `ripup_pass_no_unset` | c | N06.12 | rejected | total 47 → 47 (noise 11.14), 1 new trace under ReadPlaceScope's narrowest class width (80 → 81), `gate: FAIL`; stays `true` in both profiles |
+      | `insert_stale_trace_object` | c | N06.12 | left as Java (inert) | the split keeps the old geometry |
+      | `in_front_of_pad_side0_flank` | c | S (N06.7, arm `all_flank`) | accepted on tests | flank counter 0, sessions identical to `all`'s |
+      | `opt_threshold_fraction` | c | N06.12 | left as Java (heuristic) | the CLI's double scaling is a port fix in both profiles |
+      | `rules_unknown_layer_scope` | c | N06.12 | accepted (decided 2026-10-18), on its test | `unknown_layer_scope_switch_both_behaviours`; `-dr` only |
+      | `rules_autoroute_settings_reenable` | c | N06.12 | left as Java (inert) | C04's settings semantics |
+      | `direction_compare_zero` | c | N06.12 | left as Java (inert) | an ordering convention |
+      | `route_stubs_layer_test` | c | N06.12 | left as Java (inert) | the intended stub layer is unclear |
+      | `any_angle_skip_length_squared` | c | N06.12 (reported arm) | accepted on tests | `any_angle_skip_length_flips` 0, every session identical |
+      | `polyline_array_reversal` | c | N06.12 | left as Java (inert) | later reads depend on it |
+      | `avoid_acid_traps_disabled` | c | N06.12 | left as Java (inert) | a Q candidate |
+    - [x] Promoted: the 30 "accepted" rows, as `router.java_quirks.<id> = false` in `ENHANCED`
+      (`settings/profile.rs`, one `Difference` each; the measurement strings are per batch), one
+      DIVERGENCES line each under "Profile `enhanced`" (30 lines, with an opening paragraph that
+      says they were measured under `legacy`), and each field's help text naming `enhanced`'s
+      `false` (`settings/fields.rs`). The "kept on purpose" paragraphs of the promoted bugs now say
+      "kept under `legacy`" and point to N06 (geometry `RationalPoint`, DSN reading, board model,
+      rules files, the SES reader, shove checks, shove insert, pull-tight, connection insertion,
+      interactive routing), and the N06 section's blocks say which batches are in `enhanced`.
+      `legacy` stays Java: its table is empty.
+    - [x] Tests: `tests/settings_java_quirks.rs::legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set`
+      (was `both_profiles_keep_every_java_bug`) pins the exact list (`PROMOTED`, 30 ids in
+      inventory order) against the resolved `enhanced`, the table and `legacy`;
+      `the_job_carries_the_switches_to_the_board_and_the_control` checks that `prepare_job` with no
+      flag puts the promoted set on the board, the router settings and the control, and `legacy`
+      Java's; the round-trip tests pin `legacy`. `tests/settings_profile.rs::enhanced_turns_off_the_promoted_java_quirks`
+      checks each entry under both profiles and that an explicit `true` beats the profile.
+      Three tests that compare with Java now pin it: the unit test
+      `connection::tests::an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside`
+      sets `init_failure_room_leak = true` on its control (its board loads under the default
+      profile), and `tests/reference_optimize.rs` loads under `legacy` with `require_legacy` (its
+      `candidate_items_match_java` failed under `enhanced` on Issue954-circle and J2's
+      `improvement_percentage`, the `route_result_int_via_ratio` fix). The P01.3 microbench pins
+      the default engine's work, so `crates/freerouting-dev/tests/microbench.rs` takes the new
+      Issue433 maze counts (`maze_work_units` 90488 → 90636, `tree_nodes_visited` 173255 →
+      173403; 7 routed, queue pops 952 and every other count unchanged).
+    - [x] End to end with no flag (debug CLI, `fixtures/Issue756-minimal-ok.dsn`,
+      `--dump-settings`, no routing): the 30 promoted switches read `false  (profile enhanced)`, the
+      other 15 `(unset)`; with `--profile legacy` all 45 are unset; with
+      `--router.java_quirks.ses_reader_scale=true` that switch reads `true  (CLI)`. Pinned by
+      `crates/freerouting-cli/tests/profiles.rs::dump_settings_shows_the_promoted_java_quirks` (J2,
+      `--dump-settings=json`). `both_profiles_route_and_enhanced_is_the_default` still passes: J2
+      at `-mp 3` gives the same session under `legacy` and the new `enhanced`.
+    - [x] `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt PARITY_MAX_JAVA_S=20
+      cargo test --release -p freerouting --test autoroute_board_parity -- --ignored
+      autoroute_board_parity --test-threads=1` under `ulimit -v 8000000` (private target): exact 7
+      boards, 7 pass, 7 SES byte-identical (`target/parity/summary.json` in the worktree).
+    - [x] Gate (private target, `CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0`): `cargo fmt --all --check`;
+      `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test -p freerouting --test
+      settings_profile --test settings_java_quirks --test settings_path` 15 + 11 + 22 passed;
+      `cargo test -p freerouting-cli` and `cargo test -p freerouting-dev --test prereg_n06_13` (5
+      passed); `cargo test --workspace --no-fail-fast` before the last two fixes: 258 suites, the
+      microbench (fixed above) and `freerouting-cli` `stop::two_signals_abort` failed; the latter
+      passes alone (3 of 3 runs): its two back-to-back `kill -INT` race the end of pass 1 under
+      the parallel load, not a settings effect.
+    - [x] Confirmation registered before any number: `docs/roadmap/prereg/N06.13-promotion.json`
+      (sha256 `cd57a3af1e9836f075d8bb5059076202844186ba56ffdafea66cdcd4bd6b5d24`), set `tools/bench/sets/n06-13-promotion.txt`, pinned by
+      `crates/freerouting-dev/tests/prereg_n06_13.rs` (5 tests). Arms `enhanced_main` (the parent of
+      the promotion commit) and `enhanced_promoted` (the promotion commit), both with no router
+      flag. Rows: the 21 DSN rows of the promoted batches (M, F, S, P, I, U and N06.12's set,
+      without the any-angle J2 and rpi_splitter variants) plus canary-pwr at canary 2a7e070b
+      through the plugin path with the plugin's default options (`outside_runner`, hashed as its
+      source board). N02 totals, `accept: no-regress`; hard guards option (b), no new breach versus
+      baseline; every route under an 8000000 kB cap.
+    - [ ] Heavy run pending (orchestrator, one job at a time), after this diff lands as one commit:
+      `cd /home/thebo/code/freerouting-rs && PROMOTION=<sha of the commit that lands land/n06-13> && git worktree add --detach target/orchestrator/n06-13-base-wt "$PROMOTION~1" && git worktree add --detach target/orchestrator/n06-13-cand-wt "$PROMOTION" && (cd target/orchestrator/n06-13-base-wt && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-base cargo build --release -p freerouting-cli) && cd target/orchestrator/n06-13-cand-wt && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-cand cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.13-promotion.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13`
+      (42 runs; it exits non-zero when a session differs, which is expected). Then the plugin row
+      (the registration's `plugin_canary`: write `{"schema": 4, "profile": "enhanced"}` as the
+      options, export canary 2a7e070b once, route both arms' binaries with the exported args under
+      `ulimit -v 8000000`, grade each distinct session with canary's `grade.sh`,
+      `GRADE_REV=2a7e070b`), then `freerouting-dev gate --records <records> --baseline <baseline>
+      --prereg docs/roadmap/prereg/N06.13-promotion.json` (baseline file first with
+      `--write-baseline`). A FAIL is bisected by batch as the registration's `accept` says.
 
 - [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and

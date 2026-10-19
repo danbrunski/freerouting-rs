@@ -50,6 +50,7 @@ use freerouting::optimize::batch::item::ItemPassParams;
 use freerouting::optimize::batch::worker::{PassSetup, evaluate_candidate};
 use freerouting::optimize::batch::{OptimizerOptions, run_batch_optimizer};
 use freerouting::scoring::BoardStatistics;
+use freerouting::settings::profile::{legacy_pin, require_legacy};
 use freerouting::settings::{ItemSelectionStrategy, ResolveContext, SettingsPatch, Source};
 
 /// The ten boards of stage `order` (`OptimizeCandidatesProbe.ORDER_BOARDS`).
@@ -131,11 +132,14 @@ fn load_with(board: &str, ses: &str, patch: Option<SettingsPatch>) -> PreparedJo
     let mut input = JobInput::new(bytes, JobInput::design_name_of(file_name));
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
+    // Java's reference: profile `legacy` (N06.13 put Java-bug fixes in `enhanced`).
+    input.extra_sources.push((Source::Testing, legacy_pin()));
     input
         .extra_sources
         .extend(patch.map(|p| (Source::Testing, p)));
     let mut prepared = prepare_job(&input, &ResolveContext { cores: 8 })
         .unwrap_or_else(|e| panic!("{board}: {e}"));
+    require_legacy(&prepared.settings).unwrap_or_else(|e| panic!("{board}: {e}"));
     let text = std::fs::read_to_string(repo_root().join(ses)).unwrap_or_else(|e| panic!("{e}"));
     read_session(&mut prepared.board, &text).unwrap_or_else(|e| panic!("{ses}: {e}"));
     unfix_routes(&mut prepared.board);
