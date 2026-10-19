@@ -332,13 +332,22 @@ fn switching_afterwards_gives_the_pieces_of_a_board_built_switched() {
     assert_eq!(ids, switched_ids);
     let java: Vec<_> = ids.iter().map(|id| tree_pieces(&switched, *id)).collect();
     let walk_before = switched.search_trees().default_tree().walk_lines();
+    switched.set_journaling(true);
     // A switch outside the split: no tree changes.
     switched.set_java_quirks(JavaQuirks::JAVA.with("dsn_via_alias", false).unwrap());
     assert_eq!(
         switched.search_trees().default_tree().walk_lines(),
         walk_before
     );
+    assert!(switched.take_changes().is_empty());
     switched.set_java_quirks(split_fixed());
+    // Each reinserted item is reported changed, so the ledger and the GUI's
+    // view of its nets are refreshed.
+    let mut reported = switched.take_changes().changed;
+    reported.sort();
+    let mut expected = ids.clone();
+    expected.sort();
+    assert_eq!(reported, expected);
     for (index, id) in ids.iter().enumerate() {
         assert_eq!(
             tree_pieces(&switched, *id),

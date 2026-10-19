@@ -1462,7 +1462,9 @@ outline-keepout shapes and the outline's piece count (`ShapeContext::split_quirk
 the interactive hole, the plane adjustment after reading and the interactive route's
 nearest target point (`board/split_switches.rs`, `tests/n06_area_splits.rs`). The reader
 builds the board with its final switches; a later change reinserts the items whose pieces
-change. Run statistics count `octagon_box_cutout_branch3_reached` and
+change, with the same pieces but other leaf positions, so with a split switch `false` the
+GUI (read with Java's switches, then switched) can route differently from the CLI (read
+with the job's). Run statistics count `octagon_box_cutout_branch3_reached` and
 `simplex_prev_division_line_reached` in both arms, at the drill pages and the tie-pin
 cutout. N06.4 measured and accepted the batch at that reach; the wider reach is
 re-measured under N06.14's amendment 1.

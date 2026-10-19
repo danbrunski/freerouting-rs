@@ -355,6 +355,13 @@ impl BasicBoard {
         let ids: Vec<ItemId> = self.items.keys().copied().collect();
         for id in &ids {
             if let Some(item) = self.items.get(id) {
+                // Every outline in a snapshot was synced to the board's split
+                // when it entered the trees (`sync_outline_split`).
+                debug_assert!(
+                    item.as_board_outline()
+                        .is_none_or(|o| o.keepout_split() == ctx.split_quirks),
+                    "outline keepout split out of sync with the board's switches"
+                );
                 self.search_trees.insert_memoized(item, &ctx);
             }
         }

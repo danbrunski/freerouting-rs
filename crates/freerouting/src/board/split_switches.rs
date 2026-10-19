@@ -17,6 +17,13 @@
 //! built with the new switches, though their leaves may sit elsewhere in the
 //! tree (a full build inserts in a different order).
 //!
+//! Tree order is part of the routing result (D5), so with a split switch
+//! `false` a board switched after reading can route differently from one read
+//! with the switches. The CLI reads with the job's switches; the GUI reads with
+//! Java's and switches before routing, as `prepare_job` does when a rules file
+//! changes `java_quirks`. N06's measurements use the CLI path. With every split
+//! switch `true` nothing is reinserted, and both paths are the same.
+//!
 //! [`ShapeContext::split_quirks`]: crate::board::search::ShapeContext::split_quirks
 
 use freerouting_geometry::{Area, SplitQuirks, TileShape};
@@ -62,6 +69,8 @@ impl BasicBoard {
             if changed && self.items.get(&id).is_some_and(|i| i.on_the_board) {
                 self.search_trees.remove(id);
                 self.insert_into_trees(id);
+                // Its shapes changed, so its nets' incomplete counts are stale.
+                self.note_changed(id);
             }
         }
     }
