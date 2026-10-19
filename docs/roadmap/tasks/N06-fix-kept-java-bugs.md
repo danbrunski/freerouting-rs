@@ -668,7 +668,7 @@ These are marked or look like quirks but keep no bug:
       `octagon_box_cutout_branch3` (measured, neutral within noise) and
       `simplex_prev_division_line` (inert: no session changes and its counter is 0; accepted on its
       tests, and N06.13 decides on promoting inert switches). `ENHANCED` is unchanged here.
-- [~] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
+- [x] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
   `session.clear()` before `InitFailed`, which also makes the rekey dead under `enhanced`),
   `failed_attempt_ripped_carryover` (snapshot and restore the set per attempt),
   `ortho_zero_width_room` (`b.ur.x`), `edge_corner_not_advanced` (advance the corner; first
@@ -733,8 +733,8 @@ These are marked or look like quirks but keep no bug:
       `layer_rule`), so `insert_connect_to_trace_width_flips` is expected to read 0. A smoke
       run of the `baseline` and `all` commands (debug CLI, `fixtures/scoring-perfect-two-pin.dsn`,
       not a registered row) exits 0, writes the six counters (all 0) and gives the same SES.
-    - [ ] Heavy run pending (orchestrator, release build of the measured tree, run from its
-      root, e.g. `/home/thebo/code/freerouting-rs` after landing):
+    - [x] Heavy run (done 2026-10-18, below), release build of the measured tree, run from its
+      root:
       `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.5.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-m`
       (35 runs; the arms' commands call
       `/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting`;
@@ -743,7 +743,76 @@ These are marked or look like quirks but keep no bug:
       (the registration's `plugin_canary`: export once, route the 7 arms with the exported
       args plus `--router.profile=legacy` and the arm's five flags, grade each distinct
       session with canary's `grade.sh`).
-- [~] **N06.6 — Batch F, fanout:** `fanout_stale_drill_carry` (a fresh `DrillCarry` per
+  - *Done 2026-10-18:* the **Accept:** clause holds. The batch is measured, with two 90° rows
+    in the set, and `ortho_zero_width_room`'s counter reads above 0 on both. Worktree
+    `target/orchestrator/n06r2/wt` (branch `land/n06-runs2`, main `ce17855`), one Linux release
+    CLI (sha256 `06e916e5…`, `--version` git `ce17855bcadf`).
+    - Amendment 1, written before any N06.5 route (sha256 now
+      `e49fba98edbe53bb3b7dc3189b7efd0a40e783f9fd207d0e8d46accb5dd2545c`, re-pinned in
+      `prereg_n06_5.rs`, 4 tests pass).
+      - The engine base moves to main `ce17855` (N06.5's diff is `e6dc8bb`). Every switch added
+        since defaults to `true`, and `ENHANCED` is unchanged.
+      - The plugin row joins the gate. `boards.files` gains `canary-pwr-plugin`, hashed as its
+        exported DSN (`65ef16a8…`), and `boards.outside_runner` names it, so `n06_run.py` skips it
+        (the script now reads that key).
+      - Hard metrics are counted on every row, so the gate grades every row. On a DSN row they
+        are counted as N06.4's amendment 2 counts them: `added_via_in_pad`, and new traces under
+        the board's narrowest class width. On the plugin row they are `via_in_pad.py` and KiCad's
+        `track_width`. Both use option (b), no new breach versus baseline (raw counts reported).
+      - Hard-guard check: N06.7's `legacy` sessions of J2 and bm08 (rows here too) already break
+        an absolute DSN `below_minimum`, through the router's pin neck-down (37 and 11 traces under
+        the narrowest class width). This run confirms it: 37 on J2, 11 on bm08 and 1 on J2-90, the
+        same in every arm. The plugin row's baseline configuration
+        is N06.7's graded one (0 via-in-pad, 0 `track_width`).
+      - The verdict comes from `freerouting-dev gate --prereg --all-pairs`.
+    - `n06_run.py`: 35 runs (5 rows × 7 arms), exit 0, "Sessions identical": every arm's SES
+      equals its row's baseline byte for byte. Numbers from the router's manifests (the
+      engine-model counts of the scratch tool `target/orchestrator/n06r2/n06m`, N06.4's, which
+      reads each SES at the writer's scale, agree on all 35; no `freerouting-dev` import is used):
+
+      | row | unrouted | clearance | vias | length mm | ortho flips | edge sweeps = edge flips | below class width (raw) |
+      |---|---|---|---|---|---|---|---|
+      | Issue026-J2_reference-90 | 0 | 0 | 16 | 400.52 | 254 (255 in `ortho_zero_width_room`, `all`) | 0 | 1 |
+      | Issue143-rpi_splitter-90 | 0 | 0 | 2 | 118.63 | 61 | 0 | 0 |
+      | Issue026-J2_reference | 0 | 0 | 16 | 371.16 | 0 | 373 | 37 |
+      | Issue508-DAC2020_bm08 | 0 | 0 | 1 | 94.82 | 0 | 22 | 11 |
+      | Issue676-ch32v-tx118s | 0 | 0 | 6 | 14.26 | 0 | 0 | 0 |
+
+      In every run `maze_init_failure_room_leaks`, `maze_ripped_carryovers` and
+      `insert_connect_to_trace_width_flips` are 0, and so is `via_in_pad` (raw and new).
+    - Plugin row: canary 9511d9a (`git archive`, unedited), exported once at `ce17855` with
+      `canary-graded-flow.json` on WSL KiCad 10.0.7. The DSN body equals N06.7's export (only line
+      1, its own path, differs), and so do the args. The 7 arms were routed with the exported args,
+      `--router.profile=legacy` and each arm's five flags (`target/orchestrator/n06r2/route_arms.py`).
+      They give one session, `986e30bd…`, byte-identical to N06.7's. Router's count: 96 unrouted, 40
+      clearance, 187 vias.
+      - `maze_edge_sweeps_without_neighbours` and `maze_edge_corner_flips` read 12121, or 12116 in
+        the two arms with `edge_corner_not_advanced=false`.
+      - The other four counters read 0.
+    - Grade of that session (`headless_run.py import`, then canary `grade.sh` at `2a7e070b`,
+      `GRADE_REV=9511d9a`): 38 unconnected, 4 clearance (Power_High 0.25 mm), 5 starved
+      thermals, 20 dangling vias (warning), 0 via-in-pad, 0 `track_width`, 2 inner-layer tracks
+      (+12V_BUS on Power.Cu, 12.94 mm). This is N06.7's grade, in every arm. Handoff:
+      `target/canary-handoff/2026-10-18-n06-m/` (README.txt, SHA256SUMS).
+    - Gate, run from the worktree: `freerouting-dev gate --records
+      target/orchestrator/n06r2/records-m.json --prereg docs/roadmap/prereg/N06.5.json --baseline
+      target/orchestrator/n06r2/baseline-m.json --all-pairs`. The records are built by
+      `target/orchestrator/n06r2/build_records.py`, and the baseline file was written by the same
+      command with `--write-baseline`. Result: 0 refusals, `gate: PASS`.
+      - The verdict pair and all five reported pairs PASS. Every row is neutral, the total is
+        38 → 38 (unrouted 0 → 0, `kicad_unconnected` 38 → 38) against a set noise of 10.95, and
+        `drc_real` is 9 → 9.
+    - Verdict: the reachability rule decides each switch, and the totals rule passes as well.
+      - `init_failure_room_leak`, `failed_attempt_ripped_carryover` and
+        `connect_to_trace_swapped_width`: the counter is 0 in every run and the sessions equal the
+        baseline's. They are not reached, so they are accepted on their tests (both behaviours
+        pinned above). No registered row has per-layer widths, as expected.
+      - `ortho_zero_width_room` (both 90° rows, 254 and 61 rooms) and `edge_corner_not_advanced`
+        (three rows and the plugin row): the counter is above 0 but the sessions are identical,
+        so each is **neutral and accepted**.
+      - Batch M is **accepted**. All five switches are accepted for N06.13; `ENHANCED` is
+        unchanged here.
+- [x] **N06.6 — Batch F, fanout:** `fanout_stale_drill_carry` (a fresh `DrillCarry` per
   attempt, as the batch router already does), `drill_destination_room_index` (index by
   section), `fanout_pin_order_names` (accept both spellings).
   - **Accept:**
@@ -807,8 +876,8 @@ These are marked or look like quirks but keep no bug:
       reads 0. A smoke run of the `baseline` and `all` commands (debug CLI,
       `fixtures/scoring-perfect-two-pin.dsn`, not a registered row) exits 0, runs the
       `fanout` stage, writes the five counters (all 0) and gives the same SES.
-    - [ ] Heavy run pending (orchestrator, release build of the measured tree, run from its
-      root, e.g. `/home/thebo/code/freerouting-rs` after landing):
+    - [x] Heavy run (done 2026-10-18, below), release build of the measured tree, run from its
+      root:
       `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 /home/thebo/code/freerouting-rs/tools/bench/n06_run.py /home/thebo/code/freerouting-rs/docs/roadmap/prereg/N06.6.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-f`
       (30 runs; the arms call
       `/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting`;
@@ -820,6 +889,72 @@ These are marked or look like quirks but keep no bug:
       grade each distinct session with canary's `grade.sh`). The done note then gives
       `fanout_retries` and `fanout_retries_succeeded` summed over the rows for `baseline`
       and for `fanout_stale_drill_carry` and `all`.
+  - *Done 2026-10-18:* both **Accept:** clauses hold. The batch is measured with the fanout
+    on: every run's statistics show the `fanout` stage. The retry counts are below. Worktree
+    `target/orchestrator/n06r2/wt` (branch `land/n06-runs2`, main `ce17855`), with the same CLI as
+    N06.5's (sha256 `06e916e5…`).
+    - Amendment 1, written before any N06.6 route (sha256 now
+      `78fb583f15761d289e860bd4d3e1dccf625df65a3d9f437856a37c8ea62a6d48`, re-pinned in
+      `prereg_n06_6.rs`, 4 tests pass). It matches N06.5's amendment, with these specifics:
+      - The engine base moves to main `ce17855` (N06.6's diff is `2e031ac`).
+      - The plugin row joins `boards.files` and `boards.outside_runner`.
+      - Hard metrics are counted on every row with option (b), no new breach versus baseline.
+        The reason is the pin neck-down on the DSN rows (bm08's 11). On the plugin row, no graded
+        session with the fanout on existed before this run.
+      - The verdict comes from `gate --prereg --all-pairs`.
+    - `n06_run.py`: 30 runs (6 rows × 5 arms), exit 0, "Sessions identical". Numbers from the
+      router's manifests. Every arm gives the same values; `drills_computed` is the baseline's
+      (→ the `fanout_stale_drill_carry` and `all` arms' where it differs):
+
+      | row | unrouted | clearance | vias | length mm | fanout retries | succeeded | stale carries | drills computed |
+      |---|---|---|---|---|---|---|---|---|
+      | Issue676-ch32v-tx118s | 0 | 0 | 6 | 14.26 | 0 | 0 | 0 | 0 |
+      | Issue957-smoke-ldo-led | 1 | 0 | 14 | 45.22 | 0 | 0 | 0 | 0 |
+      | Issue367-Charger | 9 | 1 | 15 | 233.94 | 0 | 0 | 0 | 1737 |
+      | Issue756-tomu-fpga | 15 | 72 | 162 | 1597.45 | 0 | 0 | 0 | 441 |
+      | Issue269-z10_module | 37 | 10 | 129 | 1918.00 | 43 | 0 | 43 | 92609 → 101521 |
+      | Issue508-DAC2020_bm08 | 0 | 0 | 1 | 94.82 | 0 | 0 | 0 | 974 |
+
+      `drill_destination_room_index_flips` and `fanout_pin_order_name_flips` are 0 in every run,
+      and so is `via_in_pad` (raw and new). Raw `below_minimum` is 11 on bm08 and 0 elsewhere.
+    - Engine-model counts: the scratch tool `target/orchestrator/n06r2/n06m` reads each SES at
+      the writer's scale; no `freerouting-dev` import is used. Its unrouted and via counts match
+      the manifests on all 30 runs. Its clearance count does not on two rows: tomu-fpga 50
+      against the manifest's 72, and z10_module 7 against 10, the same in every arm. Clearance is
+      registered from the manifest, so that difference decides nothing.
+    - Plugin row: the same export and args as N06.5's. The 5 arms were routed with the exported
+      args, `--router.profile=legacy`, `--router.fanout.enabled=true` and each arm's three flags.
+      - They give one session, `986e30bd…`, the same bytes as N06.5's and N06.7's. The fanout is
+        on by default (`fanout.enabled` defaults to `true`), so N06.5's and N06.7's plugin runs
+        already ran it, and the added flag changes nothing.
+      - Fanout: 367 SMD pins, 255 escaped. `fanout_retries` 264, `fanout_retries_succeeded` 0
+        and `fanout_stale_drill_carries` 264 in every arm. The other two counters are 0.
+        `drills_computed` is 676873, and 734368 in the two arms with
+        `fanout_stale_drill_carry=false`.
+      - The grade of that session is N06.5's: 38 unconnected, 4 clearance, 5 starved thermals, 20
+        dangling vias (warning), 0 via-in-pad, 0 `track_width`, 2 inner-layer tracks. Handoff:
+        `target/canary-handoff/2026-10-18-n06-f/` (README.txt, SHA256SUMS).
+    - Retries, summed over the six DSN rows plus the plugin row:
+      - before (`baseline`): 307 retries (43 + 264), 0 succeeded;
+      - after (`fanout_stale_drill_carry`, and `all`): 307 retries, 0 succeeded.
+      - Over the DSN rows alone it is 43 and 0 in all three arms.
+      - The fresh pages make each retry compute its drills again (z10 +8912 drills, the plugin
+        row +57495), and no retry that fails under Java routes with them.
+    - Gate: `freerouting-dev gate --records target/orchestrator/n06r2/records-f.json --prereg
+      docs/roadmap/prereg/N06.6.json --baseline target/orchestrator/n06r2/baseline-f.json
+      --all-pairs` (records built by `target/orchestrator/n06r2/build_records.py`). Result: 0
+      refusals, `gate: PASS`.
+      - The verdict pair and the three reported pairs PASS. Every row is neutral, the total is
+        100 → 100 (unrouted 62 → 62, `kicad_unconnected` 38 → 38) against a set noise of 11.14,
+        and `drc_real` is 9 → 9.
+    - Verdict: the reachability rule decides each switch, and the totals rule passes as well.
+      - `drill_destination_room_index` and `fanout_pin_order_names`: the counter is 0 and the
+        sessions are identical. They are not reached, so they are accepted on their tests. No
+        blind or buried via, and no arm sets `pin_sorting_order`, as expected.
+      - `fanout_stale_drill_carry`: the counter is above 0 (z10_module and the plugin row) and the
+        sessions are identical, so it is **neutral and accepted**.
+      - Batch F is **accepted**. All three switches are accepted for N06.13; `ENHANCED` is
+        unchanged here.
 - [x] **N06.7 — Batch S, shove:** `in_front_of_pad_typo`, `store_trace_class_self_compare`,
   `rational_perp_projection` (the arm with `in_front_of_pad_side0_flank` follows if the batch
   is accepted).

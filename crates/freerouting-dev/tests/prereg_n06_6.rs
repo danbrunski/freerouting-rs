@@ -52,7 +52,9 @@ fn the_batch_f_registration_is_valid() {
         ]
     );
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 6);
+    // The DSN rows plus the plugin row (amendment 1: `canary-pwr-plugin`, hashed as
+    // its exported DSN, routed outside n06_run.py).
+    assert_eq!(prereg.boards.len(), 7);
     assert!(prereg.totals_registered);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     for name in [
@@ -126,13 +128,24 @@ fn each_arm_sets_only_its_switches() {
     }
 }
 
-/// Every row is in the set file and hashes as registered.
+/// Every DSN row is in the set file and hashes as registered. The rows routed
+/// outside n06_run.py (amendment 1) are the plugin row only; its input is the
+/// plugin's export, which is not in the repository.
 #[test]
 fn the_registered_inputs_hash_as_registered() {
     let json = json();
-    let Some(Json::Object(files)) = json.path("boards.files") else {
+    let Some(Json::Object(all)) = json.path("boards.files") else {
         panic!("boards.files")
     };
+    let Some(Json::Array(outside)) = json.path("boards.outside_runner") else {
+        panic!("boards.outside_runner")
+    };
+    let outside: Vec<&str> = outside.iter().filter_map(Json::as_str).collect();
+    assert_eq!(outside, ["canary-pwr-plugin"]);
+    let files: Vec<_> = all
+        .iter()
+        .filter(|(row, _)| !outside.contains(&row.as_str()))
+        .collect();
     let set = std::fs::read_to_string(repo().join(SET)).unwrap();
     let rows: Vec<&str> = set
         .lines()
@@ -140,7 +153,7 @@ fn the_registered_inputs_hash_as_registered() {
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
         .collect();
     assert_eq!(rows.len(), files.len());
-    for (input, want) in files {
+    for &(input, want) in &files {
         assert!(rows.contains(&input.as_str()), "{input} missing from {SET}");
         let bytes = std::fs::read(repo().join(input)).unwrap_or_else(|e| panic!("{input}: {e}"));
         assert_eq!(
@@ -155,6 +168,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_batch_f_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "5f49d83f452bd05a5690dbf0b52c13554aa4d46663cedade3de1dad276bf51f6"
+        "78fb583f15761d289e860bd4d3e1dccf625df65a3d9f437856a37c8ea62a6d48"
     );
 }

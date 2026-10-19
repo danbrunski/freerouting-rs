@@ -57,11 +57,14 @@ fn the_batch_m_registration_is_valid() {
         ]
     );
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 5);
+    // The DSN rows plus the plugin row (amendment 1: `canary-pwr-plugin`, hashed as
+    // its exported DSN, routed outside n06_run.py).
+    assert_eq!(prereg.boards.len(), 6);
     // At least one row routes at 90 degrees (the accept clause of N06.5).
     let ninety = prereg
         .boards
         .keys()
+        .filter(|b| b.as_str() != "canary-pwr-plugin")
         .filter(|b| {
             std::fs::read_to_string(repo().join(b.as_str()))
                 .unwrap()
@@ -131,13 +134,24 @@ fn each_arm_sets_only_its_switches() {
     }
 }
 
-/// Every row is in the set file and hashes as registered.
+/// Every DSN row is in the set file and hashes as registered. The rows routed
+/// outside n06_run.py (amendment 1) are the plugin row only; its input is the
+/// plugin's export, which is not in the repository.
 #[test]
 fn the_registered_inputs_hash_as_registered() {
     let json = json();
-    let Some(Json::Object(files)) = json.path("boards.files") else {
+    let Some(Json::Object(all)) = json.path("boards.files") else {
         panic!("boards.files")
     };
+    let Some(Json::Array(outside)) = json.path("boards.outside_runner") else {
+        panic!("boards.outside_runner")
+    };
+    let outside: Vec<&str> = outside.iter().filter_map(Json::as_str).collect();
+    assert_eq!(outside, ["canary-pwr-plugin"]);
+    let files: Vec<_> = all
+        .iter()
+        .filter(|(row, _)| !outside.contains(&row.as_str()))
+        .collect();
     let set = std::fs::read_to_string(repo().join(SET)).unwrap();
     let rows: Vec<&str> = set
         .lines()
@@ -145,7 +159,7 @@ fn the_registered_inputs_hash_as_registered() {
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
         .collect();
     assert_eq!(rows.len(), files.len());
-    for (input, want) in files {
+    for &(input, want) in &files {
         assert!(rows.contains(&input.as_str()), "{input} missing from {SET}");
         let bytes = std::fs::read(repo().join(input)).unwrap_or_else(|e| panic!("{input}: {e}"));
         assert_eq!(
@@ -160,6 +174,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_batch_m_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "bf9a692bca53916a6d8f0d02bb49f58ae34c67be872d35c45b34152c82748ec3"
+        "e49fba98edbe53bb3b7dc3189b7efd0a40e783f9fd207d0e8d46accb5dd2545c"
     );
 }

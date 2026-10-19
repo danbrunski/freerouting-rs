@@ -3,6 +3,8 @@
 
 Does not perform the separately required KiCad plugin canary grade or promote
 settings. Keeps the commands, sessions, logs and per-run reachability counters.
+Rows listed in `boards.outside_runner` (a plugin-path row the gate judges with the
+others) are routed by the registration's own procedure and skipped here.
 """
 import argparse
 import hashlib
@@ -38,7 +40,9 @@ def main():
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
     registration = json.loads(args.registration.read_text())
-    boards = registration['boards']['files']
+    outside = set(registration['boards'].get('outside_runner', []))
+    boards = {board: expected for board, expected in registration['boards']['files'].items()
+              if board not in outside}
     for board, expected in boards.items():
         if hashlib.sha256(Path(board).read_bytes()).hexdigest() != expected:
             parser.error(f'input hash changed: {board}')
