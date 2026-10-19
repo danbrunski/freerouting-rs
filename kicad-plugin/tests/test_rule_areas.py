@@ -53,7 +53,7 @@ def test_five_board_level_areas():
     ]
     assert [l for l in log if l.startswith("WARNING")] == [
         "WARNING: rule area 'to' on B.Cu: tracks-only area is written as wire_keepout, which the router "
-        "reads as a full keepout: it blocks vias too"
+        "reads as a full keepout: it blocks vias too, unless the route passes --router.wire_keepout=traces_only"
     ]
     assert "rule area 'fo' on B.Cu: keepout -> place_keepout (bans: footprints)" in log
     assert any("rule area 'pp' on B.Cu: keepout removed" in l for l in log)

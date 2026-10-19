@@ -275,7 +275,7 @@ def rewrite(dsn_text, areas):
             elif action == "warn_wire":
                 log.append(
                     f"WARNING: {who}: tracks-only area is written as {keyword}, which the router reads as a "
-                    "full keepout: it blocks vias too"
+                    "full keepout: it blocks vias too, unless the route passes --router.wire_keepout=traces_only"
                 )
             elif action == "place":
                 kw = scope.children[0]
