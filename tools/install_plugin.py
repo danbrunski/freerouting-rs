@@ -6,9 +6,11 @@
 
 Other options: --skip-build (install the executables already built), --no-setup
 (report problems but install nothing), --windows-kicad (from WSL: install into
-the Windows KiCad, which then runs this Linux build through WSL). Options it
-does not know (--kicad-version, --plugins-dir, --keep-pcm, --wsl-bin-dir
-for a WSL fallback, ...) go to kicad-plugin/install.py. Any Python 3.8+ works, KiCad's own included.
+the Windows KiCad, which then runs this Linux build through WSL), --kicad-version
+(the version folder to use, default the newest) and --plugins-dir (install
+there instead; with --windows-kicad a Windows path works too). Options it does
+not know (--keep-pcm, --wsl-bin-dir for a WSL fallback, ...) go to
+kicad-plugin/install.py. Any Python 3.8+ works, KiCad's own included.
 
 What it checks, and offers to fix:
 - Rust: cargo and a rustc at least the workspace's rust-version (rustup through
@@ -18,9 +20,12 @@ What it checks, and offers to fix:
   does not bundle); a C compiler on Linux; the Xcode command line tools on macOS.
 - Linux: the libraries the viewer loads when it starts (xkbcommon, Vulkan or
   EGL), from the distribution's packages (apt, dnf, pacman, zypper).
-- KiCad's user folder (the native install, the Flatpak one, or from WSL the
-  Windows one), Python, free disk space, and on Windows a viewer or router
-  still running (Windows locks a running exe, so the build cannot replace it).
+- KiCad's user folder where KiCad itself looks: under KICAD_DOCUMENTS_HOME when
+  set, else Windows' Documents folder (asked of Windows, also from WSL, so a
+  folder OneDrive or a redirection moved is found), ~/Documents on macOS, and
+  XDG_DATA_HOME or the Flatpak's folder on Linux. Then Python, free disk space,
+  and on Windows a viewer or router still running (Windows locks a running
+  exe, so the build cannot replace it).
 
 Afterwards, in KiCad's PCB editor: Tools > External Plugins > Refresh Plugins.
 """
@@ -330,31 +335,50 @@ def runtime_problems(host, sonames):
 
 # --- KiCad ---------------------------------------------------------------------
 
+# KiCad's user folder is <documents>/KiCad/<major.minor> ("kicad" on Linux).
+# <documents> is KICAD_DOCUMENTS_HOME when that is set, else the system's:
+# Windows' Documents shell folder (OneDrive or a redirection can move it off
+# the profile, even to another drive), ~/Documents on macOS, XDG_DATA_HOME
+# (~/.local/share) on Linux.
+DOCUMENTS_HOME = "KICAD_DOCUMENTS_HOME"
+# Run from WSL, asks Windows for both; UTF-8 so a name outside the console's
+# code page survives.
+WINDOWS_FOLDERS_PS = (
+    "[Console]::OutputEncoding = [Text.Encoding]::UTF8; "
+    f"'kicad=' + $env:{DOCUMENTS_HOME}; "
+    "'documents=' + [Environment]::GetFolderPath('MyDocuments')"
+)
+WINDOWS_PATH = re.compile(r"[A-Za-z]:[\\/]|\\\\")
+
 
 def windows_documents():
-    """The Documents folder KiCad uses on Windows: the shell's (OneDrive can
-    move it), else the usual ones."""
-    found = []
+    """The Windows shell's Documents folder, from the registry (empty when
+    there is none)."""
     try:
         import winreg
 
         key = r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key) as k:
-            found.append(Path(os.path.expandvars(winreg.QueryValueEx(k, "Personal")[0])))
+            return [Path(os.path.expandvars(winreg.QueryValueEx(k, "Personal")[0]))]
     except (ImportError, OSError):
-        pass
-    return found
+        return []
 
 
-def kicad_roots(host, home):
+def kicad_roots(host, home, env):
     """KiCad's user folders that may exist on this system, preferred first."""
     home = Path(home)
-    if host.system == "windows":
-        docs = windows_documents() + [home / "Documents", home / "OneDrive" / "Documents"]
-        return [d / "KiCad" for d in dict.fromkeys(docs)]
-    if host.system == "macos":
-        return [home / "Documents" / "KiCad"]
-    return [home / ".local" / "share" / "kicad", home / ".var" / "app" / "org.kicad.KiCad" / "data" / "kicad"]
+    if env.get(DOCUMENTS_HOME):
+        docs = [Path(env[DOCUMENTS_HOME])]
+    elif host.system == "windows":
+        # Without the shell's answer, the usual places, OneDrive's (a work
+        # account's is "OneDrive - <organisation>") included.
+        docs = windows_documents() or [home / "Documents"] + sorted(home.glob("OneDrive*/Documents"))
+    elif host.system == "macos":
+        docs = [home / "Documents"]
+    else:
+        docs = [Path(env.get("XDG_DATA_HOME") or home / ".local" / "share"), home / ".var" / "app" / "org.kicad.KiCad" / "data"]
+    name = "kicad" if host.system == "linux" else "KiCad"
+    return [d / name for d in dict.fromkeys(docs)]
 
 
 def newest_version_dir(root):
@@ -366,49 +390,74 @@ def newest_version_dir(root):
     return max(versions, key=lambda p: version_tuple(p.name), default=None)
 
 
-def windows_profile_from_wsl():
-    """The Windows user's profile folder as a WSL path, or None."""
-    code, out = run_quiet(["cmd.exe", "/c", "echo %USERPROFILE%"], cwd="/mnt/c")
-    if code != 0 or not out.strip() or "%" in out:
-        return None
-    code, path = run_quiet(["wslpath", "-u", out.strip()])
-    return Path(path.strip()) if code == 0 and path.strip() else None
+def windows_powershell():
+    """powershell.exe as WSL runs it, also when WSL leaves Windows' folders
+    off the PATH (appendWindowsPath=false), or None."""
+    exe = shutil.which("powershell.exe")
+    if exe:
+        return exe
+    tail = Path("Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+    return next((str(d / tail) for d in sorted(Path("/mnt").glob("?")) if (d / tail).is_file()), None)
 
 
-def windows_kicad_from_wsl():
-    """The newest version folder of the Windows KiCad, seen from WSL, or None."""
-    profile = windows_profile_from_wsl()
-    if not profile:
-        return None
-    for docs in (profile / "Documents", profile / "OneDrive" / "Documents"):
-        version = newest_version_dir(docs / "KiCad")
-        if version:
-            return version
-    return None
+def wsl_path(windows_path):
+    """A Windows path as WSL reaches it, or None (a network path has none)."""
+    code, out = run_quiet(["wslpath", "-u", windows_path])
+    return Path(out.strip()) if code == 0 and out.strip() else None
 
 
-def kicad_target(host, home, args, rest):
-    """Where install.py puts the plugin: (plugins folder or None for its own
-    choice, problems). With --plugins-dir or --kicad-version it decides."""
-    if any(a.split("=", 1)[0] in ("--plugins-dir", "--kicad-version") for a in rest):
-        return None, []
+def windows_kicad_root():
+    """The Windows KiCad's user folder, as Windows reports it: (the WSL path or
+    None, the Windows path or "" when Windows could not be asked)."""
+    exe = windows_powershell()
+    code, out = run_quiet([exe, "-NoProfile", "-NonInteractive", "-Command", WINDOWS_FOLDERS_PS]) if exe else (None, "")
+    folders = {}
+    if code == 0:
+        for line in out.splitlines():
+            key, _, value = line.strip().partition("=")
+            folders[key] = value
+    docs = folders.get("kicad") or folders.get("documents")
+    if not docs:
+        return None, ""
+    path = wsl_path(docs)
+    return (path / "KiCad" if path else None), docs + "\\KiCad"
+
+
+def kicad_target(host, home, env, args):
+    """The plugins folder to install into, and the problems finding it.
+    --plugins-dir decides; --kicad-version picks the version folder."""
+    if args.plugins_dir:
+        plugins = Path(args.plugins_dir)
+        if args.windows_kicad and WINDOWS_PATH.match(args.plugins_dir):
+            plugins = wsl_path(args.plugins_dir)
+            if not plugins:
+                return None, [Problem(f"WSL cannot reach {args.plugins_dir}", "Pass --plugins-dir as a WSL path (/mnt/<drive>/...).")]
+        return plugins, []
     if args.windows_kicad:
-        version = windows_kicad_from_wsl() if host.wsl else None
-        if not version:
-            return None, [Problem("No Windows KiCad user folder found from WSL", "Start the Windows KiCad once, or pass --plugins-dir.")]
-        return version / "scripting" / "plugins", []
-    for root in kicad_roots(host, home):
-        version = newest_version_dir(root)
-        if version:
+        root, shown = windows_kicad_root()
+        if not root:
+            hint = f"Windows keeps it in {shown}, which WSL cannot reach" if shown else "Windows could not be asked where it is (is WSL's Windows interop on?)"
+            return None, [Problem("No Windows KiCad user folder found from WSL", hint + "; pass --plugins-dir.")]
+        roots = [root]
+    else:
+        roots = kicad_roots(host, home, env)
+    for root in roots:
+        version = root / args.kicad_version if args.kicad_version else newest_version_dir(root)
+        if version and version.is_dir():
             return version / "scripting" / "plugins", []
-    hint = "Start KiCad once (it creates the folder), or pass --plugins-dir."
-    if host.wsl and windows_kicad_from_wsl():
+    version = f" {args.kicad_version}" if args.kicad_version else ""
+    if args.windows_kicad:
+        hint = f"Looked in {shown}. Start the Windows KiCad{version} once (it creates the folder), or pass --plugins-dir."
+        return None, [Problem(f"No Windows KiCad{version} user folder found from WSL", hint)]
+    hint = f"Looked in {', '.join(str(r) for r in roots)}. Start KiCad{version} once (it creates the folder), or pass --plugins-dir."
+    windows_root = windows_kicad_root()[0] if host.wsl else None
+    if windows_root and newest_version_dir(windows_root):
         hint = (
             "This is WSL and only the Windows KiCad is set up: run again with --windows-kicad "
             "(the plugin then runs this Linux build through WSL), or run this script from Windows "
             "for native executables."
         )
-    return None, [Problem("No KiCad user folder found", hint)]
+    return None, [Problem(f"No KiCad{version} user folder found", hint)]
 
 
 # --- Windows ---------------------------------------------------------------------
@@ -493,7 +542,7 @@ def build_checks(host, env, cargo, oks):
     return toolchain, problems
 
 
-def check(host, args, rest):
+def check(host, args):
     env = dict(os.environ)
     oks = [f"Python {sys.version.split()[0]}"]
     problems = []
@@ -512,7 +561,7 @@ def check(host, args, rest):
         problems += found
         if ldconfig and not found:
             oks.append("viewer libraries: xkbcommon, Vulkan or EGL")
-    plugins, found = kicad_target(host, Path.home(), args, rest)
+    plugins, found = kicad_target(host, Path.home(), env, args)
     if plugins:
         oks.append(f"KiCad plugins folder: {plugins}")
     return Plan(env, cargo, toolchain, plugins, oks, problems + found)
@@ -544,12 +593,12 @@ def confirm(question, host, assume_yes):
     return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
 
 
-def set_up(host, args, rest):
+def set_up(host, args):
     """Checks the machine and offers the fixes, a few rounds (installing Rust
     can reveal a missing toolchain). Returns the final plan; exits when
     something blocking is left."""
     tried = set()
-    plan = check(host, args, rest)
+    plan = check(host, args)
     report(plan)
     if args.check:
         sys.exit(1 if any(p.blocking for p in plan.problems) else 0)
@@ -567,7 +616,7 @@ def set_up(host, args, rest):
                     print(f"That did not work. {p.hint}")
         if not ran:
             break
-        plan = check(host, args, rest)
+        plan = check(host, args)
         print("Checked again:")
         report(plan)
     blocking = [p for p in plan.problems if p.blocking]
@@ -620,9 +669,7 @@ def install(plan, host, args, rest, bin_dir):
         cmd += ["--plugins-dir", str(plan.plugins), "--wsl-bin-dir", str(bin_dir)]
         cmd += ["--wsl-distro", os.environ.get("WSL_DISTRO_NAME", "")]
     else:
-        cmd += ["--bin-dir", str(bin_dir)]
-        if plan.plugins:
-            cmd += ["--plugins-dir", str(plan.plugins)]
+        cmd += ["--bin-dir", str(bin_dir), "--plugins-dir", str(plan.plugins)]
     if subprocess.run(cmd + rest).returncode != 0:
         sys.exit("install.py failed.")
     if args.windows_kicad:
@@ -644,6 +691,8 @@ def parse(argv):
         action="store_true",
         help="from WSL: install into the Windows KiCad, which runs this Linux build through WSL",
     )
+    ap.add_argument("--plugins-dir", help="install into this folder (with --windows-kicad, a Windows path works too)")
+    ap.add_argument("--kicad-version", help="KiCad user folder version, e.g. 10.0 (default: the newest found)")
     args, rest = ap.parse_known_args(argv)
     flags = {a.split("=", 1)[0] for a in rest}
     if "--bin-dir" in flags:
@@ -658,7 +707,7 @@ def main(argv=None, host=None):
     host = host or detect_host()
     if args.windows_kicad and not host.wsl:
         ap.error("--windows-kicad is for running in WSL")
-    plan = set_up(host, args, rest)
+    plan = set_up(host, args)
     if not plan.cargo:
         sys.exit("cargo is still not found: open a new terminal (so the PATH is updated) and run this again.")
     bin_dir = target_dir(plan.cargo, plan.env) / "release"

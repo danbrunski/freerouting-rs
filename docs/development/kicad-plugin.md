@@ -217,7 +217,10 @@ copper under the Board Setup width 848.9 → 310.4 mm where the narrowing acted)
   `& "C:\Program Files\KiCad\10.0\bin\python.exe" kicad-plugin\install.py --bin-dir target\release --wsl-bin-dir ...`.
 - From WSL, `python3 tools/install_plugin.py --windows-kicad` builds the Linux executables and
   installs into the Windows KiCad with `wsl_bin_dir` set to that build. A `bin_dir` that was
-  already in `settings.json`, the Windows exes, stays in place and is still preferred.
+  already in `settings.json`, the Windows exes, stays in place and is still preferred. It finds
+  the Windows KiCad folder by asking `powershell.exe` for `KICAD_DOCUMENTS_HOME` and the
+  Documents shell folder, so a Documents folder moved off the profile (`D:\Documents` on one
+  machine) is found; `--plugins-dir` also takes a Windows path.
 - The owner had not yet confirmed the button appears in KiCad when these notes were written.
 
 ## Native Windows toolchain

@@ -123,8 +123,10 @@ offers to fix what is missing, asking first each time:
   - macOS: the Xcode command line tools.
 - **The viewer's libraries on Linux:** xkbcommon, and Vulkan or EGL.
 - **Before the build starts:**
-  - KiCad's user folder: the native one, the Flatpak one, or on Windows a Documents folder that
-    OneDrive moved;
+  - KiCad's user folder, where KiCad itself looks: under `KICAD_DOCUMENTS_HOME` when set, else
+    Windows' Documents folder (asked of Windows, also from WSL, so one that OneDrive or a
+    redirection moved to another drive is found), `~/Documents` on macOS, and `XDG_DATA_HOME` or
+    the Flatpak's folder on Linux;
   - enough free disk space;
   - on Windows, a viewer or router still running, since Windows locks a running exe.
 
@@ -137,7 +139,9 @@ Useful options:
 | `--no-setup` | Never install anything; stop on a problem |
 | `--skip-build` | Install the executables already built |
 | `--windows-kicad` | From WSL: install into the Windows KiCad, which then runs this Linux build through WSL |
-| `--kicad-version 9.0`, `--plugins-dir DIR`, `--keep-pcm` | Passed to `kicad-plugin/install.py` |
+| `--kicad-version 9.0` | Install into that KiCad version's folder instead of the newest |
+| `--plugins-dir DIR` | Install into DIR; with `--windows-kicad`, a Windows path such as `D:\Documents\KiCad\10.0\scripting\plugins` works too |
+| `--keep-pcm` | Passed to `kicad-plugin/install.py` |
 
 Then, in KiCad's PCB editor: Tools > External Plugins > Refresh Plugins. No restart is needed.
 The plugin's own documentation: [kicad-plugin/README.md](kicad-plugin/README.md).

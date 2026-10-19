@@ -196,29 +196,100 @@ def test_the_newest_kicad_version_folder_wins(tmp_path):
 
 
 def args(**kw):
-    defaults = dict(check=False, yes=False, no_setup=False, skip_build=False, windows_kicad=False)
+    defaults = dict(check=False, yes=False, no_setup=False, skip_build=False, windows_kicad=False, plugins_dir=None, kicad_version=None)
     return ip.argparse.Namespace(**{**defaults, **kw})
 
 
 def test_the_flatpak_kicad_is_found_when_it_is_the_only_one(tmp_path):
     flatpak = tmp_path / ".var" / "app" / "org.kicad.KiCad" / "data" / "kicad" / "9.0"
     flatpak.mkdir(parents=True)
-    plugins, problems = ip.kicad_target(LINUX, tmp_path, args(), [])
+    plugins, problems = ip.kicad_target(LINUX, tmp_path, {}, args())
     assert plugins == flatpak / "scripting" / "plugins" and problems == []
     native = tmp_path / ".local" / "share" / "kicad" / "10.0"
     native.mkdir(parents=True)
-    assert ip.kicad_target(LINUX, tmp_path, args(), [])[0] == native / "scripting" / "plugins"
+    assert ip.kicad_target(LINUX, tmp_path, {}, args())[0] == native / "scripting" / "plugins"
+
+
+def test_kicads_own_folder_variables_are_followed(tmp_path):
+    home = tmp_path / "home"
+    xdg = tmp_path / "xdg"
+    assert ip.kicad_roots(LINUX, home, {"XDG_DATA_HOME": str(xdg)})[0] == xdg / "kicad"
+    # KICAD_DOCUMENTS_HOME replaces the system's folder, as in KiCad's PATHS::getUserDocumentPath.
+    docs = tmp_path / "docs"
+    assert ip.kicad_roots(LINUX, home, {"KICAD_DOCUMENTS_HOME": str(docs), "XDG_DATA_HOME": str(xdg)}) == [docs / "kicad"]
+    assert ip.kicad_roots(ip.Host("macos", False, None, False), home, {"KICAD_DOCUMENTS_HOME": str(docs)}) == [docs / "KiCad"]
+    assert ip.kicad_roots(ip.Host("macos", False, None, False), home, {}) == [home / "Documents" / "KiCad"]
+
+
+def fake_windows(monkeypatch, powershell_out, code=0, wsl_paths=None):
+    """Windows as WSL asks it: powershell.exe prints `powershell_out`, and
+    wslpath converts by `wsl_paths` (a path missing there is unreachable)."""
+    monkeypatch.setattr(ip, "windows_powershell", lambda: "powershell.exe")
+
+    def run(cmd, **kw):
+        if cmd[0] == "powershell.exe":
+            assert ip.WINDOWS_FOLDERS_PS in cmd
+            return code, powershell_out
+        assert cmd[:2] == ["wslpath", "-u"]
+        found = (wsl_paths or {}).get(cmd[2])
+        return (0, found + "\n") if found else (1, "")
+
+    monkeypatch.setattr(ip, "run_quiet", run)
+
+
+def test_windows_documents_moved_to_another_drive_is_found_from_wsl(tmp_path, monkeypatch):
+    version = tmp_path / "d" / "Documents" / "KiCad" / "10.0"
+    version.mkdir(parents=True)
+    # OneDrive or a redirection moved Documents off C:\Users\<name>; Windows says where.
+    fake_windows(monkeypatch, "kicad=\r\ndocuments=D:\\Documents\r\n", wsl_paths={"D:\\Documents": str(tmp_path / "d" / "Documents")})
+    assert ip.windows_kicad_root() == (tmp_path / "d" / "Documents" / "KiCad", "D:\\Documents\\KiCad")
+    plugins, problems = ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True))
+    assert plugins == version / "scripting" / "plugins" and problems == []
+
+
+def test_windows_kicad_documents_home_wins_over_the_documents_folder(monkeypatch):
+    fake_windows(monkeypatch, "kicad=E:\\kicad-docs\r\ndocuments=D:\\Documents\r\n", wsl_paths={"E:\\kicad-docs": "/mnt/e/kicad-docs"})
+    assert ip.windows_kicad_root() == (Path("/mnt/e/kicad-docs/KiCad"), "E:\\kicad-docs\\KiCad")
+
+
+def test_windows_kicad_problems_say_what_was_tried(tmp_path, monkeypatch):
+    fake_windows(monkeypatch, "", code=1)
+    _, (problem,) = ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True))
+    assert problem.blocking and "interop" in problem.hint and "--plugins-dir" in problem.hint
+    fake_windows(monkeypatch, "kicad=\r\ndocuments=\\\\server\\home\\Documents\r\n")
+    _, (problem,) = ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True))
+    assert "\\\\server\\home\\Documents\\KiCad, which WSL cannot reach" in problem.hint
+    fake_windows(monkeypatch, "kicad=\r\ndocuments=D:\\Documents\r\n", wsl_paths={"D:\\Documents": str(tmp_path)})
+    _, (problem,) = ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True))
+    assert problem.hint.startswith("Looked in D:\\Documents\\KiCad. Start the Windows KiCad once")
 
 
 def test_without_kicad_the_hint_points_at_wsls_windows_kicad(tmp_path, monkeypatch):
-    monkeypatch.setattr(ip, "windows_kicad_from_wsl", lambda: tmp_path / "win" / "10.0")
-    plugins, (problem,) = ip.kicad_target(WSL, tmp_path, args(), [])
+    (tmp_path / "win" / "KiCad" / "10.0").mkdir(parents=True)
+    monkeypatch.setattr(ip, "windows_kicad_root", lambda: (tmp_path / "win" / "KiCad", "C:\\Users\\me\\Documents\\KiCad"))
+    plugins, (problem,) = ip.kicad_target(WSL, tmp_path, {}, args())
     assert plugins is None and problem.blocking and "--windows-kicad" in problem.hint
-    plugins, problems = ip.kicad_target(WSL, tmp_path, args(windows_kicad=True), [])
-    assert plugins == tmp_path / "win" / "10.0" / "scripting" / "plugins" and problems == []
-    # The user's own choice is install.py's to make.
-    assert ip.kicad_target(LINUX, tmp_path, args(), ["--plugins-dir=/x"]) == (None, [])
-    assert ip.kicad_target(LINUX, tmp_path, args(), ["--kicad-version", "9.0"]) == (None, [])
+    plugins, problems = ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True))
+    assert plugins == tmp_path / "win" / "KiCad" / "10.0" / "scripting" / "plugins" and problems == []
+    # Plain Linux names the folders it looked in.
+    _, (problem,) = ip.kicad_target(LINUX, tmp_path, {}, args())
+    assert problem.hint.startswith(f"Looked in {tmp_path / '.local' / 'share' / 'kicad'}, ")
+
+
+def test_kicad_version_picks_the_folder_and_plugins_dir_decides(tmp_path, monkeypatch):
+    for v in ("9.0", "10.0"):
+        (tmp_path / ".local" / "share" / "kicad" / v).mkdir(parents=True)
+    plugins, _ = ip.kicad_target(LINUX, tmp_path, {}, args(kicad_version="9.0"))
+    assert plugins == tmp_path / ".local" / "share" / "kicad" / "9.0" / "scripting" / "plugins"
+    _, (problem,) = ip.kicad_target(LINUX, tmp_path, {}, args(kicad_version="8.0"))
+    assert problem.what == "No KiCad 8.0 user folder found"
+    assert ip.kicad_target(LINUX, tmp_path, {}, args(plugins_dir="/x", kicad_version="8.0")) == (Path("/x"), [])
+    # From WSL, a folder copied from Explorer is converted; one WSL cannot reach is refused.
+    fake_windows(monkeypatch, "", wsl_paths={"D:\\KiCad\\plugins": "/mnt/d/KiCad/plugins"})
+    assert ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True, plugins_dir="D:\\KiCad\\plugins")) == (Path("/mnt/d/KiCad/plugins"), [])
+    assert ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True, plugins_dir="/mnt/c/k")) == (Path("/mnt/c/k"), [])
+    _, (problem,) = ip.kicad_target(WSL, tmp_path, {}, args(windows_kicad=True, plugins_dir="\\\\nas\\k"))
+    assert problem.what == "WSL cannot reach \\\\nas\\k"
 
 
 # --- set_up: asking, fixing, stopping ---------------------------------------------
@@ -236,7 +307,7 @@ def test_yes_runs_each_fix_once_and_checks_again(monkeypatch):
     monkeypatch.setattr(ip, "check", lambda *a: next(checks))
     ran = []
     monkeypatch.setattr(ip, "run_fix", lambda cmd: ran.append(cmd) or 0)
-    assert ip.set_up(LINUX, args(yes=True), []).problems == []
+    assert ip.set_up(LINUX, args(yes=True)).problems == []
     assert ran == [MISSING_CC.fix]
 
 
@@ -245,7 +316,7 @@ def test_a_fix_that_does_not_help_is_not_retried(monkeypatch):
     ran = []
     monkeypatch.setattr(ip, "run_fix", lambda cmd: ran.append(cmd) or 1)
     with pytest.raises(SystemExit, match="1 problem"):
-        ip.set_up(LINUX, args(yes=True), [])
+        ip.set_up(LINUX, args(yes=True))
     assert ran == [MISSING_CC.fix]
 
 
@@ -253,9 +324,9 @@ def test_without_a_terminal_or_yes_nothing_is_installed(monkeypatch):
     monkeypatch.setattr(ip, "check", lambda *a: plan([MISSING_CC]))
     monkeypatch.setattr(ip, "run_fix", lambda cmd: pytest.fail("ran a fix"))
     with pytest.raises(SystemExit, match="--yes"):
-        ip.set_up(LINUX, args(), [])
+        ip.set_up(LINUX, args())
     with pytest.raises(SystemExit):
-        ip.set_up(LINUX, args(no_setup=True, yes=True), [])
+        ip.set_up(LINUX, args(no_setup=True, yes=True))
 
 
 def test_an_interactive_no_skips_the_fix(monkeypatch):
@@ -263,20 +334,20 @@ def test_an_interactive_no_skips_the_fix(monkeypatch):
     monkeypatch.setattr(ip, "run_fix", lambda cmd: pytest.fail("ran a fix"))
     monkeypatch.setattr("builtins.input", lambda prompt: "n")
     with pytest.raises(SystemExit):
-        ip.set_up(ip.Host("linux", False, "apt", True), args(), [])
+        ip.set_up(ip.Host("linux", False, "apt", True), args())
 
 
 def test_check_only_reports_and_exits_by_whether_anything_blocks(monkeypatch, capsys):
     warning = ip.Problem("Only 2.0 GB free", "Free some space.", blocking=False)
     monkeypatch.setattr(ip, "check", lambda *a: plan([warning]))
     with pytest.raises(SystemExit) as done:
-        ip.set_up(LINUX, args(check=True), [])
+        ip.set_up(LINUX, args(check=True))
     assert done.value.code == 0
     out = capsys.readouterr().out
     assert "[ok] Python 3" in out and "[--] Only 2.0 GB free" in out
     monkeypatch.setattr(ip, "check", lambda *a: plan([MISSING_CC]))
     with pytest.raises(SystemExit) as done:
-        ip.set_up(LINUX, args(check=True), [])
+        ip.set_up(LINUX, args(check=True))
     assert done.value.code == 1
     assert "fix offered: sudo apt-get install -y gcc" in capsys.readouterr().out
 
