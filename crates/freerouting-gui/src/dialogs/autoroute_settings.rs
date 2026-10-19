@@ -491,7 +491,12 @@ fn cost_rows(ui: &mut egui::Ui, draft: &mut Draft, layers: &[LayerInfo]) {
 }
 
 /// The body of the window. Returns the commands of the buttons.
-pub fn ui(ui: &mut egui::Ui, draft: &mut Draft, layers: &[LayerInfo]) -> DialogOut {
+pub fn ui(
+    ui: &mut egui::Ui,
+    draft: &mut Draft,
+    layers: &[LayerInfo],
+    stop_on_canvas_click: bool,
+) -> DialogOut {
     let mut out = DialogOut::default();
     algorithms::profile_selector(ui, draft);
     algorithms::algorithms(ui, draft);
@@ -603,6 +608,17 @@ pub fn ui(ui: &mut egui::Ui, draft: &mut Draft, layers: &[LayerInfo]) -> DialogO
         ui.label("Trace costs by layer");
         cost_rows(ui, draft, layers);
     });
+    ui.separator();
+    // A GUI preference, not a router setting: it takes effect at once and is
+    // kept between runs, so it does not wait for Apply.
+    let mut stop = stop_on_canvas_click;
+    if ui
+        .checkbox(&mut stop, crate::text::STOP_ON_CLICK_CHECKBOX)
+        .on_hover_text(crate::text::STOP_ON_CLICK_TOOLTIP)
+        .changed()
+    {
+        out.commands.push(Command::SetStopOnCanvasClick(stop));
+    }
     ui.separator();
     ui.weak("Click Apply to use the current values.");
     ui.horizontal(|ui| {

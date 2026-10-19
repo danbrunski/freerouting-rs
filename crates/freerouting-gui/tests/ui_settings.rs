@@ -165,3 +165,26 @@ fn a_missing_recent_file_is_listed_disabled() {
         "not removed"
     );
 }
+
+/// G07: "Stop routing on a canvas click" is on by default (Java's behaviour),
+/// and an off value comes back after a save and a restore.
+#[test]
+fn stop_on_canvas_click_round_trips() {
+    let mut h = plain_harness(&[A]);
+    assert!(h.state().settings_snapshot().stop_on_canvas_click);
+    run(&mut h, Command::SetStopOnCanvasClick(false));
+    assert!(!h.state().settings_snapshot().stop_on_canvas_click);
+    let mut storage = MemStorage::default();
+    eframe::App::save(h.state_mut(), &mut storage);
+
+    let mut fresh = app_from(&storage);
+    assert!(!fresh.state().settings_snapshot().stop_on_canvas_click);
+    run(&mut fresh, Command::SetStopOnCanvasClick(true));
+    assert!(fresh.state().settings_snapshot().stop_on_canvas_click);
+
+    // Settings stored before the preference existed keep Java's behaviour.
+    let mut old = MemStorage::default();
+    old.set_string(STORAGE_KEY, "(schema: 1, show_labels: false)".into());
+    let restored = app_from(&old).state().settings_snapshot();
+    assert!(restored.stop_on_canvas_click && !restored.show_labels);
+}

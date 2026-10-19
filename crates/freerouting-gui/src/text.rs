@@ -941,6 +941,24 @@ pub const BATCH_OPTIMIZER_START_MESSAGE: &str =
     "Optimizer is running. Click anywhere on the canvas to cancel.";
 pub const AUTOROUTE_END_MESSAGE: &str =
     "Autoroute {{status}}; {{incomplete_count}} connections remain unrouted.";
+// Port-only variants of the four lines above for "Stop routing on a canvas
+// click" switched off (`PersistedSettings::stop_on_canvas_click`): the same
+// lines without the click, naming what stops the job instead.
+pub const AUTOROUTER_STARTED_NO_CLICK: &str = "Autorouter is running. Press Esc or Cancel to stop it. Autorouter pass #{{autorouter_pass_number}}";
+pub const OPTIMIZER_STARTED_NO_CLICK: &str = "Optimizer is running. Press Esc or Cancel to stop it. Optimizer pass #{{optimizer_pass_number}}.";
+pub const BATCH_AUTOROUTER_START_MESSAGE_NO_CLICK: &str =
+    "Autorouter is running. Press Esc or Cancel to stop it.";
+pub const BATCH_OPTIMIZER_START_MESSAGE_NO_CLICK: &str =
+    "Optimizer is running. Press Esc or Cancel to stop it.";
+/// Port-only: the status line when a canvas click is ignored during a job.
+pub const ROUTING_CLICK_IGNORED: &str =
+    "A click does not stop the autorouter. Press Esc or Cancel to stop it.";
+/// Port-only: the settings dialog's checkbox and its tooltip.
+pub const STOP_ON_CLICK_CHECKBOX: &str = "Stop routing on a canvas click";
+pub const STOP_ON_CLICK_TOOLTIP: &str = "On (Java's behaviour): a left click on the canvas stops a running job. Off: only Cancel, Esc and the stop button do.";
+/// Port-only: front-end mode after the user stopped a job. The output is
+/// written and the window stays open (Java exits at once).
+pub const FRONTEND_STOPPED_KEPT_OPEN: &str = "Routing stopped. The result is saved to {{file}}; close the window to return it, or route again.";
 pub const OPTIMIZATION_END_MESSAGE: &str = "Optimization {{status}}.";
 pub const COMPLETED: &str = "completed";
 pub const INTERRUPTED: &str = "interrupted";

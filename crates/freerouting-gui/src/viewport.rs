@@ -67,6 +67,10 @@ pub struct ViewState {
     /// The corners of the rectangle being dragged to select items (G05.1).
     pub tool_drag: Option<(Pos2, Pos2)>,
     pan_anchor: Option<Pos2>,
+    /// The left button went down with Space held, or panned: its release is
+    /// the end of a pan, never a click, even when the press stayed below
+    /// egui's drag threshold or Space was let go first.
+    press_is_pan: bool,
     /// G09: what the left button does now.
     pub left_button: LeftButton,
     /// G09: a session follows the pointer, so moves become commands.
@@ -97,6 +101,7 @@ impl Default for ViewState {
             zoom_rect_drag: None,
             tool_drag: None,
             pan_anchor: None,
+            press_is_pan: false,
             left_button: LeftButton::Inspect,
             tracking: false,
             track_last: None,
@@ -417,7 +422,24 @@ fn handle_mouse(
         view.zoom_rect_drag = None;
     }
 
-    tool_pointer(ui, response, view, rect, panning || space, &mut commands);
+    // Remember a pan-press until the button is up: the release frame has
+    // `clicked_by` true for a short Space-plus-left tap whose Space is
+    // already gone.
+    let primary_down = ui.input(|i| i.pointer.primary_down());
+    if panning || (space && primary_down) {
+        view.press_is_pan = true;
+    }
+    tool_pointer(
+        ui,
+        response,
+        view,
+        rect,
+        panning || space || view.press_is_pan,
+        &mut commands,
+    );
+    if !primary_down {
+        view.press_is_pan = false;
+    }
 
     if let Some(hover) = response.hover_pos() {
         let (scroll, pinch) = ui.input(|i| (i.smooth_scroll_delta, i.zoom_delta()));

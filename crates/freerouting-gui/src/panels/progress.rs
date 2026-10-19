@@ -32,6 +32,12 @@ pub struct ProgressTexts {
 
 /// The lines for `progress`, as Java would fill them with its counters.
 pub fn texts(progress: &Progress) -> ProgressTexts {
+    texts_for(progress, true)
+}
+
+/// [`texts`], with the "Click anywhere on the canvas to cancel" wording only
+/// when `click_cancels` (the preference "Stop routing on a canvas click").
+pub fn texts_for(progress: &Progress, click_cancels: bool) -> ProgressTexts {
     let n = |v: usize| v.to_string();
     let score = text::fill(
         text::SCORE,
@@ -58,7 +64,14 @@ pub fn texts(progress: &Progress) -> ProgressTexts {
             score,
         },
         Phase::Autoroute => ProgressTexts {
-            status: text::fill(text::AUTOROUTER_STARTED, &[&progress.pass.to_string()]),
+            status: text::fill(
+                if click_cancels {
+                    text::AUTOROUTER_STARTED
+                } else {
+                    text::AUTOROUTER_STARTED_NO_CLICK
+                },
+                &[&progress.pass.to_string()],
+            ),
             add: text::fill(
                 text::BATCH_AUTOROUTE_ADD,
                 &[&n(progress.items_to_go), &n(progress.routed)],
@@ -70,7 +83,14 @@ pub fn texts(progress: &Progress) -> ProgressTexts {
             score,
         },
         Phase::Optimize => ProgressTexts {
-            status: text::fill(text::OPTIMIZER_STARTED, &[&progress.pass.to_string()]),
+            status: text::fill(
+                if click_cancels {
+                    text::OPTIMIZER_STARTED
+                } else {
+                    text::OPTIMIZER_STARTED_NO_CLICK
+                },
+                &[&progress.pass.to_string()],
+            ),
             add: String::new(),
             layer: String::new(),
             score,
@@ -93,7 +113,12 @@ pub fn end_message(summary: &RunSummary) -> String {
 }
 
 /// The panel: the status line, the counters and the Cancel button.
-pub fn ui(ui: &mut egui::Ui, progress: Option<&Progress>, stopping: bool) -> Vec<Command> {
+pub fn ui(
+    ui: &mut egui::Ui,
+    progress: Option<&Progress>,
+    stopping: bool,
+    click_cancels: bool,
+) -> Vec<Command> {
     let mut out = Vec::new();
     ui.heading(text::MENU_AUTOROUTER);
     if stopping {
@@ -101,10 +126,14 @@ pub fn ui(ui: &mut egui::Ui, progress: Option<&Progress>, stopping: bool) -> Vec
     }
     match progress {
         None => {
-            ui.label(text::BATCH_AUTOROUTER_START_MESSAGE);
+            ui.label(if click_cancels {
+                text::BATCH_AUTOROUTER_START_MESSAGE
+            } else {
+                text::BATCH_AUTOROUTER_START_MESSAGE_NO_CLICK
+            });
         }
         Some(progress) => {
-            let lines = texts(progress);
+            let lines = texts_for(progress, click_cancels);
             ui.label(lines.status);
             if !lines.add.is_empty() {
                 ui.label(lines.add);

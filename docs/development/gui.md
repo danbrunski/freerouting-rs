@@ -183,7 +183,10 @@ The app is a board viewer for now. Nothing in it edits or routes.
   fanout, the score line) and the router's incomplete and violation counts instead of the stale checks,
   the canvas shows the airline being routed (`overlays::routing`), edits are refused with a status
   message (`Command::edits_board`), and Cancel, Esc or a click on the canvas stop the job (a full stop;
-  the best board comes back). When it ends the returned board replaces the session board, and the
+  the best board comes back). The click is a preference ("Stop routing on a canvas click" in
+  Settings > Autorouter, on by default as in Java); off, a click only shows a hint and the status
+  lines say "Press Esc or Cancel to stop it". A press that had Space held or panned never counts as
+  a click (`ViewState::press_is_pan`). When it ends the returned board replaces the session board, and the
   summary window (`panels::routing_summary`: nets, incomplete connections, violations, vias, trace length,
   score, time; "show after routing" is kept) opens. The dialog edits the engine's `SettingsPatch`
   (`Draft`): layers (active, preferred direction, trace and bend costs), the three stages, vias,
@@ -221,8 +224,10 @@ The app is a board viewer for now. Nothing in it edits or routes.
   `Start Now (n)` (GUI time; Cancel leaves the app idle and open), the job runs with the settings the
   open board would have, and when it ends, completed or stopped, the output is written. After Start Now (or
   `-dct 0`) the app then exits: 0 after a written file, 1 when the write failed or the design did not
-  load. Closing the window stops the job and writes the output if the board changed or has traces,
-  without a question. `tools/gui/frontend-smoke.sh <fixture.dsn>` checks all of it under Xvfb in a
+  load. A stop the user asked for (Cancel, Esc, a click, the stop command) writes the output but keeps
+  the window open with a notice (Java exits); a later close writes the output again if the board
+  changed or has traces, then closes. Closing the window stops the job and writes the output if the
+  board changed or has traces, without a question. `tools/gui/frontend-smoke.sh <fixture.dsn>` checks all of it under Xvfb in a
   release build (the GUI exits 0, and the CLI imports the session with `-drc` with no import errors).
   Tests: `tests/ui_files.rs`.
 

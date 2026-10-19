@@ -1366,6 +1366,25 @@ users would notice is listed. Texts follow the English Java bundles.)
   keeps "Autorouter is running" until the thread ends), and the log records how long the stop
   took. A frame reads at most `EVENTS_PER_FRAME` router events, so a router that sends as fast as
   the window reads can't keep the window from redrawing or seeing input.
+- A stop keeps the front-end window open (decided 2026-10-19). Java's `GuiManager` exports and
+  calls `System.exit(0)` on both `autorouterAborted` and `autorouterFinished` when
+  `exitWhenFinished`. Here, when the user stopped the job (Cancel, Esc, a canvas click, the stop
+  command), the front-end mode writes the output as for any end, shows "Routing stopped. The result
+  is saved to <file>; close the window to return it, or route again." in the status line and the
+  log, and does not close. A job that ends on its own still closes the window when
+  `exit_when_finished`; closing the window (also while a job runs) writes the output if the board
+  changed or has traces, then closes, as before. Test:
+  `frontend_stop_writes_the_output_and_keeps_the_window`, `frontend_close_during_a_job_still_closes_after_the_stop`.
+- "Stop routing on a canvas click" is a preference (Settings > Autorouter, kept between runs,
+  `PersistedSettings::stop_on_canvas_click`). On, the default, is Java's behaviour. Off, a click on
+  the canvas during a job only shows a hint that Cancel or Esc stops it, and the status lines say
+  "Press Esc or Cancel to stop it" instead of "Click anywhere on the canvas to cancel." Cancel, Esc
+  and the stop command work either way. Tests: `with_the_preference_off_a_click_is_ignored_and_esc_still_stops`,
+  `stop_on_canvas_click_round_trips`.
+- A press of the left button that had Space held, or panned, is a pan until the button is up,
+  even if it stayed below egui's drag threshold or Space was let go first; it never yields
+  `CanvasClick`. (Java pans with the middle button and has no Space pan.) Test:
+  `a_space_pan_never_stops_the_job`.
 
 **Saving, the questions and the front-end mode** (G08, `files.rs`, `app_files.rs`, `dialogs/autostart.rs`, `file_dialog.rs`; tests `tests/ui_files.rs`)
 - The Save button of the unsaved-changes question (open and drop) saves: it opens Save As and loads

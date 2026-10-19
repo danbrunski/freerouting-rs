@@ -362,7 +362,8 @@ impl App {
             | Command::CloseAutorouteSettings
             | Command::ApplyAutorouteSettings(_)
             | Command::CloseRoutingSummary
-            | Command::SetShowRoutingSummary(_)) => self.execute_routing(ctx, command),
+            | Command::SetShowRoutingSummary(_)
+            | Command::SetStopOnCanvasClick(_)) => self.execute_routing(ctx, command),
             command @ (Command::SaveAsDialog
             | Command::SaveAs(_)
             | Command::SaveCancelled

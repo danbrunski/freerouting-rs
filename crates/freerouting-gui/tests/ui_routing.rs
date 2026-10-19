@@ -404,6 +404,179 @@ fn edits_are_refused_while_routing() {
 }
 
 // ---------------------------------------------------------------------------
+// Stopping with a click: the preference, and a pan is never a click
+// ---------------------------------------------------------------------------
+
+fn canvas_point(h: &Harness<'_, App>, dx: f32, dy: f32) -> egui::Pos2 {
+    h.state().view().canvas.min + egui::vec2(dx, dy)
+}
+
+fn pointer(h: &mut Harness<'_, App>, pos: egui::Pos2, pressed: Option<bool>) {
+    let event = match pressed {
+        None => egui::Event::PointerMoved(pos),
+        Some(pressed) => egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        },
+    };
+    h.input_mut().events.push(event);
+    h.step();
+}
+
+/// A left click with real pointer events.
+fn click(h: &mut Harness<'_, App>, pos: egui::Pos2) {
+    pointer(h, pos, None);
+    pointer(h, pos, Some(true));
+    pointer(h, pos, Some(false));
+    h.step();
+}
+
+fn start_long_job(h: &mut Harness<'_, App>) {
+    exec(h, Command::StartRouting);
+    assert!(h.state().is_routing());
+}
+
+fn stop_and_wait(h: &mut Harness<'_, App>) {
+    exec(h, Command::StopRouting);
+    run_to_end(h);
+}
+
+#[test]
+fn a_canvas_click_stops_the_job_by_default() {
+    let mut h = plain_harness(&[ISSUE684]);
+    assert!(h.state().settings_snapshot().stop_on_canvas_click);
+    start_long_job(&mut h);
+    let at = canvas_point(&h, 300.0, 300.0);
+    click(&mut h, at);
+    let run = h.state().routing();
+    assert!(
+        run.is_none_or(|r| r.stop_requested.is_some()),
+        "a click did not stop the job"
+    );
+    run_to_end(&mut h);
+}
+
+#[test]
+fn with_the_preference_off_a_click_is_ignored_and_esc_still_stops() {
+    let mut h = plain_harness(&[ISSUE684]);
+    exec(&mut h, Command::SetStopOnCanvasClick(false));
+    start_long_job(&mut h);
+    assert_eq!(
+        h.state().notice(),
+        Some(freerouting_gui::text::BATCH_AUTOROUTER_START_MESSAGE_NO_CLICK)
+    );
+    let at = canvas_point(&h, 300.0, 300.0);
+    click(&mut h, at);
+    let run = h.state().routing().expect("the click stopped the job");
+    assert!(run.stop_requested.is_none(), "the click asked for a stop");
+    assert_eq!(
+        h.state().notice(),
+        Some(freerouting_gui::text::ROUTING_CLICK_IGNORED)
+    );
+    exec(
+        &mut h,
+        Command::CanvasClick {
+            at: freerouting_gui::scene::P::new(0.0, 0.0),
+            toggle: false,
+        },
+    );
+    assert!(h.state().routing().unwrap().stop_requested.is_none());
+    // Esc is the Cancel command.
+    h.key_press(egui::Key::Escape);
+    h.step();
+    h.step();
+    let run = h.state().routing();
+    assert!(
+        run.is_none_or(|r| r.stop_requested.is_some()),
+        "Esc did not stop the job"
+    );
+    run_to_end(&mut h);
+}
+
+#[test]
+fn with_the_preference_off_the_stop_command_still_works() {
+    let mut h = plain_harness(&[ISSUE684]);
+    exec(&mut h, Command::SetStopOnCanvasClick(false));
+    start_long_job(&mut h);
+    stop_and_wait(&mut h);
+    assert!(h.state().autoroute().last_run.is_some());
+}
+
+#[test]
+fn the_status_text_names_what_stops_the_job() {
+    let progress = recorded()
+        .into_iter()
+        .find(|p| p.phase == Phase::Autoroute)
+        .expect("an autoroute event");
+    let on = progress::texts_for(&progress, true).status;
+    let off = progress::texts_for(&progress, false).status;
+    assert_eq!(on, progress::texts(&progress).status);
+    assert!(
+        on.contains("Click anywhere on the canvas to cancel."),
+        "{on}"
+    );
+    assert!(!off.contains("Click anywhere"), "{off}");
+    assert!(off.contains("Esc"), "{off}");
+}
+
+/// A Space-held left press is a pan, never a click: not when the press stays
+/// below egui's drag threshold, and not when Space is let go before the
+/// button.
+#[test]
+fn a_space_pan_never_stops_the_job() {
+    let mut h = plain_harness(&[ISSUE684]);
+    start_long_job(&mut h);
+    let at = canvas_point(&h, 300.0, 300.0);
+    pointer(&mut h, at, None);
+    h.key_down(egui::Key::Space);
+    h.step();
+    // Press and release at one point with Space held.
+    pointer(&mut h, at, Some(true));
+    pointer(&mut h, at, Some(false));
+    // Press with Space, let Space go, then release.
+    pointer(&mut h, at, Some(true));
+    h.key_up(egui::Key::Space);
+    h.step();
+    pointer(&mut h, at, Some(false));
+    h.step();
+    // A short drag (a pan) that ends after Space went.
+    h.key_down(egui::Key::Space);
+    h.step();
+    pointer(&mut h, at, Some(true));
+    pointer(&mut h, at + egui::vec2(40.0, 0.0), None);
+    h.key_up(egui::Key::Space);
+    h.step();
+    pointer(&mut h, at + egui::vec2(40.0, 0.0), Some(false));
+    h.step();
+    let run = h.state().routing().expect("a pan stopped the job");
+    assert!(run.stop_requested.is_none(), "a pan asked for a stop");
+    // A plain click right after still stops it: the pan left nothing behind.
+    click(&mut h, at);
+    let run = h.state().routing();
+    assert!(
+        run.is_none_or(|r| r.stop_requested.is_some()),
+        "the click after the pan did not stop the job"
+    );
+    run_to_end(&mut h);
+}
+
+#[test]
+fn the_settings_dialog_has_the_preference() {
+    let mut h = plain_harness(&[ISSUE159]);
+    exec(&mut h, Command::ShowAutorouteSettings);
+    h.get_by_label(freerouting_gui::text::STOP_ON_CLICK_CHECKBOX)
+        .click();
+    let _ = h.run_ok();
+    assert!(!h.state().settings_snapshot().stop_on_canvas_click);
+    h.get_by_label(freerouting_gui::text::STOP_ON_CLICK_CHECKBOX)
+        .click();
+    let _ = h.run_ok();
+    assert!(h.state().settings_snapshot().stop_on_canvas_click);
+}
+
+// ---------------------------------------------------------------------------
 // G07.3: the progress texts
 // ---------------------------------------------------------------------------
 
@@ -588,7 +761,7 @@ fn progress_texts_match_events() {
     );
     let mut h = Harness::new_ui_state(
         |ui, p: &mut Progress| {
-            let _ = progress::ui(ui, Some(p), false);
+            let _ = progress::ui(ui, Some(p), false, true);
         },
         events[0].clone(),
     );
@@ -630,7 +803,7 @@ fn progress_snapshot() {
         .wgpu()
         .build_ui_state(
             |ui, p: &mut Progress| {
-                let _ = progress::ui(ui, Some(p), false);
+                let _ = progress::ui(ui, Some(p), false, true);
             },
             mid,
         );

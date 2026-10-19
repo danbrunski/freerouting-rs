@@ -85,7 +85,14 @@ impl App {
         self.routing = Some(RoutingRun::new(handle, &b.session.board));
         self.selection.clear();
         self.autoroute.summary_open = false;
-        self.notice = Some(crate::text::BATCH_AUTOROUTER_START_MESSAGE.to_string());
+        self.notice = Some(
+            if self.settings.stop_on_canvas_click {
+                crate::text::BATCH_AUTOROUTER_START_MESSAGE
+            } else {
+                crate::text::BATCH_AUTOROUTER_START_MESSAGE_NO_CLICK
+            }
+            .to_string(),
+        );
         self.log
             .push(Level::Info, "Starting auto-routing of the open board.");
         ctx.request_repaint();
@@ -124,18 +131,24 @@ impl App {
             }
             Command::CloseRoutingSummary => self.autoroute.summary_open = false,
             Command::SetShowRoutingSummary(show) => self.settings.show_routing_summary = show,
+            Command::SetStopOnCanvasClick(stop) => self.settings.stop_on_canvas_click = stop,
             _ => {}
         }
     }
 
-    /// While a job runs: stop on Cancel/Esc and on a click on the canvas
-    /// (Java's "Click anywhere on the canvas to cancel"), refuse edits.
-    /// Returns true if the command was handled here.
+    /// While a job runs: stop on Cancel/Esc and, unless the preference
+    /// `stop_on_canvas_click` is off, on a click on the canvas (Java's "Click
+    /// anywhere on the canvas to cancel"); refuse edits. Returns true if the
+    /// command was handled here.
     pub(crate) fn routing_filter(&mut self, command: &Command) -> bool {
         if self.routing.is_none() {
             return false;
         }
         match command {
+            Command::CanvasClick { .. } if !self.settings.stop_on_canvas_click => {
+                self.notice = Some(crate::text::ROUTING_CLICK_IGNORED.to_string());
+                true
+            }
             Command::Cancel | Command::CanvasClick { .. } | Command::StopRouting => {
                 self.stop_routing();
                 true
@@ -164,12 +177,15 @@ impl App {
         self.stats.patches += run.stats.patches - patches_before;
         let finished = events.finished.take();
         let disconnected = events.disconnected;
+        // The user asked this job to stop (Cancel, Esc, a click, the stop
+        // command, or the window closing).
+        let stopped = run.stop_requested.is_some();
         if let Some((board, summary)) = finished {
             self.finish_routing(board, summary);
-            self.frontend_job_ended(ctx);
+            self.frontend_job_ended(ctx, stopped);
         } else if disconnected {
             self.routing_failed();
-            self.frontend_job_ended(ctx);
+            self.frontend_job_ended(ctx, false);
         } else {
             if run.stop_is_slow() && self.notice.as_deref() == Some(crate::text::ROUTING_STOPPING) {
                 self.notice = Some(crate::text::ROUTING_STOP_SLOW.to_string());
@@ -280,6 +296,7 @@ impl App {
                 })
             })
             .collect();
+        let stop_on_click = self.settings.stop_on_canvas_click;
         if let Some(draft) = &mut self.autoroute.dialog {
             let mut open = true;
             egui::Window::new(crate::text::AUTOROUTE_SETTINGS_TITLE)
@@ -288,7 +305,13 @@ impl App {
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         commands.extend(
-                            crate::dialogs::autoroute_settings::ui(ui, draft, &layers).commands,
+                            crate::dialogs::autoroute_settings::ui(
+                                ui,
+                                draft,
+                                &layers,
+                                stop_on_click,
+                            )
+                            .commands,
                         );
                     });
                 });

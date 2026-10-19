@@ -57,7 +57,11 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   (`--keep-pcm` refuses instead). The Java plugin (`app.freerouting.kicad-plugin`) is never
   touched. `OUR_IDENTIFIERS` is the PCM identifier `com.github.danbrunski.freerouting-rs` (K03.1).
 - Route in GUI needs the GUI's front-end mode (G08.4): the window counts down 5 s, routes, and
-  writes `-do` when routing ends or the window closes. The router flags (`--max-passes`,
+  writes `-do` when routing ends or the window closes. A stop in the window (Cancel, Esc, a click)
+  writes `-do` but leaves the window open, so `GuiRun.finished` stays false and the plugin keeps
+  waiting until the window closes or the user presses Terminate; a re-route rewrites `-do` when it
+  ends, and a close writes it again if the board changed. `should_import` reads the file only
+  after the process exits. The router flags (`--max-passes`,
   `--threads`, `--router.*`, ...) are the CLI's (K02.5, `settings::cli_flags`); `--seed` is not
   passed to the GUI.
 

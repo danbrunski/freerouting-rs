@@ -423,16 +423,31 @@ impl App {
     }
 
     /// The job ended (`finish_routing`, `routing_failed`): in front-end mode
-    /// write the output, and exit if that is what is wanted.
-    pub(crate) fn frontend_job_ended(&mut self, ctx: &egui::Context) {
+    /// write the output, and exit if that is what is wanted. `stopped` is
+    /// true when the user asked the job to stop. Then the output is written
+    /// as for any end, but the window stays open with a notice, unless the
+    /// window itself is being closed (Java exits at once on an abort too;
+    /// see DIVERGENCES, "A stop in front-end mode").
+    pub(crate) fn frontend_job_ended(&mut self, ctx: &egui::Context, stopped: bool) {
         let Some(output) = self.files.frontend.options.output.clone() else {
             return;
         };
         if self.loaded.is_none() {
             return;
         }
-        self.write_output(&output);
-        if self.files.frontend.exit_when_finished || self.files.frontend.closing {
+        let written = self.write_output(&output);
+        if self.files.frontend.closing {
+            self.close_window(ctx);
+        } else if stopped {
+            if written {
+                let message = text::fill(
+                    text::FRONTEND_STOPPED_KEPT_OPEN,
+                    &[&output.to_string_lossy()],
+                );
+                self.log.push(Level::Info, message.clone());
+                self.notice = Some(message);
+            }
+        } else if self.files.frontend.exit_when_finished {
             self.close_window(ctx);
         }
     }

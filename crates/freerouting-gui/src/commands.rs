@@ -237,6 +237,8 @@ pub enum Command {
     CloseRoutingSummary,
     /// The summary window's "show after auto-routing" checkbox.
     SetShowRoutingSummary(bool),
+    /// The settings dialog's "Stop routing on a canvas click" checkbox.
+    SetStopOnCanvasClick(bool),
 }
 
 /// The buttons of a question: Yes (Save), No (Don't Save) and Cancel.

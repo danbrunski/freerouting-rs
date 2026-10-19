@@ -61,6 +61,10 @@ pub struct PersistedSettings {
     pub autoroute: Vec<(String, String)>,
     /// Java `guiSettings.showRoutingSummary`.
     pub show_routing_summary: bool,
+    /// A left click on the canvas stops a running job (Java: "Click anywhere
+    /// on the canvas to cancel"). Off, only Cancel, Esc and the stop command
+    /// do. A GUI-only preference; the default is Java's behaviour.
+    pub stop_on_canvas_click: bool,
 }
 
 /// The interactive routing settings of Java's `WindowRouteParameter` that are
@@ -159,6 +163,7 @@ impl Default for PersistedSettings {
             interactive: InteractiveSettings::default(),
             autoroute: Vec::new(),
             show_routing_summary: true,
+            stop_on_canvas_click: true,
         }
     }
 }

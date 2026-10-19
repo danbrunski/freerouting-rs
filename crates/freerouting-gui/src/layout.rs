@@ -93,6 +93,7 @@ impl App {
                                     ui,
                                     run.progress.as_ref(),
                                     run.stop_requested.is_some(),
+                                    self.settings.stop_on_canvas_click,
                                 ));
                                 ui.add_space(8.0);
                             }

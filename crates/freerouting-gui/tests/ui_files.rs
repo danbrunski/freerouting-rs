@@ -698,6 +698,84 @@ fn frontend_writes_on_close_when_routed() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+/// A front-end job on a board that takes a while, started at once (`-dct 0`).
+fn frontend_job(dir: &Path) -> (Harness<'static, App>, PathBuf) {
+    let design = fixture("Issue684-Autorouter_PCB1_2026-5-8.dsn");
+    let out = dir.join("out.ses");
+    let mut h = app(strings(&[
+        "-de",
+        design.to_str().unwrap(),
+        "-do",
+        out.to_str().unwrap(),
+        "-dct",
+        "0",
+    ]));
+    step_until(&mut h, 300, "the job", |a| a.is_routing());
+    (h, out)
+}
+
+/// A stop the user asks for (Cancel, Esc, a canvas click or the stop command)
+/// writes the output and keeps the window open with a notice; a later close
+/// closes it. A DIVERGENCES line: Java exits on a stop.
+#[test]
+fn frontend_stop_writes_the_output_and_keeps_the_window() {
+    for (name, command) in [
+        ("stop", Command::StopRouting),
+        ("esc", Command::Cancel),
+        (
+            "click",
+            Command::CanvasClick {
+                at: freerouting_gui::scene::P::new(0.0, 0.0),
+                toggle: false,
+            },
+        ),
+    ] {
+        let dir = scratch(&format!("fe-stop-{name}"));
+        let (mut h, out) = frontend_job(&dir);
+        assert!(h.state().exit_when_finished(), "{name}");
+        exec(&mut h, command);
+        step_until(&mut h, 300, "the end of the job", |a| !a.is_routing());
+        h.step();
+        assert!(out.is_file(), "{name}: a stop wrote no output");
+        assert!(!h.state().close_sent(), "{name}: a stop closed the window");
+        assert_eq!(h.state().frontend_exit_code(), 0, "{name}");
+        let want = freerouting_gui::text::fill(
+            freerouting_gui::text::FRONTEND_STOPPED_KEPT_OPEN,
+            &[&out.to_string_lossy()],
+        );
+        assert_eq!(h.state().notice(), Some(want.as_str()), "{name}");
+        assert!(
+            h.state().log_entries().iter().any(|e| e.text == want),
+            "{name}: the log has no notice"
+        );
+        // Closing the window afterwards behaves as for a finished job: it
+        // closes, and the output (written when the job ended; nothing has
+        // changed since) is still the latest board and reads back.
+        let first = std::fs::read(&out).unwrap();
+        close_request(&mut h);
+        assert!(h.state().close_sent(), "{name}: the close did not close");
+        assert!(out.is_file(), "{name}: the close removed the output");
+        assert_eq!(std::fs::read(&out).unwrap(), first, "{name}");
+        let mut board = fresh_board("Issue684-Autorouter_PCB1_2026-5-8");
+        read_session(&mut board, &String::from_utf8(first).unwrap())
+            .unwrap_or_else(|e| panic!("{name}: the session does not read: {e:?}"));
+        let _ = std::fs::remove_dir_all(dir);
+    }
+}
+
+/// Closing the window during a job still stops it, writes the output and
+/// closes (the stop that the close asked for is not a user stop).
+#[test]
+fn frontend_close_during_a_job_still_closes_after_the_stop() {
+    let dir = scratch("fe-stop-close");
+    let (mut h, out) = frontend_job(&dir);
+    close_request(&mut h);
+    assert!(cancelled_close(&h));
+    step_until(&mut h, 300, "the close", |a| a.close_sent());
+    assert!(out.is_file());
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 #[test]
 fn frontend_close_again_after_a_slow_stop_quits_without_waiting() {
     let dir = scratch("fe-close-slow");
