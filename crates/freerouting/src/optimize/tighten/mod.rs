@@ -20,6 +20,9 @@
 //! it drops none, which happens to the three-line check polylines of
 //! `repositionLine` and `smoothenCorner`; their accepted line is that
 //! reversed line. The port replays this where the array is read again.
+//! N06.12 left it as Java in both profiles (later reads depend on it, and no
+//! fix is clearly right), so `java_quirks.polyline_array_reversal` is inert
+//! and its markers sit at the replays.
 
 pub mod any_angle;
 pub mod diag45;
@@ -384,6 +387,9 @@ impl Tightener {
     /// Java `avoidAcidTraps`: dead code at the pin (`if (true) return
     /// polyline;`, `TraceTightener.java:517-520`), so the identity.
     fn avoid_acid_traps(&self, polyline: TrackedPolyline) -> TrackedPolyline {
+        // PARITY(quirk, java_quirks.avoid_acid_traps_disabled): Java turned the step
+        // off. Left as Java by N06.12 (turning it on is a feature, a Q candidate), so
+        // the switch is inert: `false` changes nothing.
         polyline
     }
 
@@ -495,7 +501,10 @@ impl Tightener {
             let tmp = Polyline::new(&check_lines);
             let mut check_ok = false;
             if tmp.lines().len() == 3 {
-                // Java's constructor reversed the middle line in check_lines
+                // Java's constructor reversed the middle line in check_lines.
+                // PARITY(quirk, java_quirks.polyline_array_reversal): left as Java by
+                // N06.12 (later reads depend on it, no fix is clearly right), so the
+                // switch is inert: `false` changes nothing.
                 check_lines[1] = tmp.lines()[1];
                 check_ok = self.check_segment(board, &tmp, 0);
             }

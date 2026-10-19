@@ -332,7 +332,7 @@ These are marked or look like quirks but keep no bug:
     - Additional checks passed: `cargo fmt --all --check`,
       `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo clippy -p freerouting --lib -- -D warnings`,
       `git diff --check`, and `python3 tools/roadmap/checklists.py status --strict`.
-- [~] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
+- [x] **N06.3 — The quirk switches.** Add `router.java_quirks.<id>` for every (b) and (c) row
   that might be fixed, and the `JavaQuirks` value carried as the decisions say. Wire each
   switch to its site, keeping Java's code path when the switch is `true`.
   - **Accept:**
@@ -376,17 +376,91 @@ These are marked or look like quirks but keep no bug:
       `any_angle_skip_length_squared`, `route_connect_inner_break`. Each carries
       `// PARITY(quirk, java_quirks.<id>):`; every older `PARITY(quirk)` marker of a (b)/(c) row
       got its id (the (a) rows' markers are N06.2's).
-    - [ ] Read sites deferred (16, now 9 after N06.10, N06.11 and N06.7 wired theirs; N06.7 wired `in_front_of_pad_side0_flank`; the switch exists and reaches the code, `false` changes
-      nothing yet, and its doc line says so): `simplex_prev_division_line`,
-      `octagon_box_cutout_branch3` (both reach the cutouts, N06.4 writes the fixes after its
-      invariant test; the search tree's area shapes in `board/search/mod.rs` still call
-      `split_to_convex`), `dsn_unit_ignored` (N06.10), the six U rows `snapshot_drops_compensation`,
-      `rules_matrix_trees_not_rebuilt`, `move_drill_tidy_region`, `route_change_layer_no_via`,
-      `select_extension_ignores_filter` (N06.11; `route_connect_inner_break` is wired), and the (c)
-      rows `insert_stale_trace_object`, `in_front_of_pad_side0_flank`, `rules_unknown_layer_scope`,
-      `rules_autoroute_settings_reenable`, `direction_compare_zero` (geometry, no settings access),
-      `route_stubs_layer_test`, `polyline_array_reversal`, `avoid_acid_traps_disabled` (N06.12).
-      No deferred site is in `doors.rs`, `search.rs` or `locate45.rs`.
+    - [x] Read sites, audited 2026-10-18 at 45 switches (main `94d0620`, which has N06.15).
+      Every switch reaches its site with Java's path under `true`; 38 are wired
+      (`false` changes the behaviour) and 7 are inert on purpose (their doc line in
+      `settings/fields.rs` says so). Of the 16 deferred sites, the batch items wired 9: N06.4
+      `octagon_box_cutout_branch3`, N06.7 the flank, N06.10 `dsn_unit_ignored`, N06.11 the five
+      U rows, N06.12 `rules_unknown_layer_scope`. The other 7 are inert:
+      `simplex_prev_division_line` (N06.4) and the six (c) rows N06.12 left as Java. N06.14 (2)
+      and N06.15 (1) added and wired three more switches. The five inert switches that had no
+      marker now carry one at Java's site (comment only). Sites are `file:line` in
+      `crates/freerouting/src` (geometry: `crates/freerouting-geometry/src`); tests are the
+      both-behaviours tests.
+
+      | id | site | state | test |
+      |---|---|---|---|
+      | `simplex_prev_division_line` | geometry `shapes/simplex.rs:593`, through `JavaQuirks::split` at `autoroute/session/drills.rs:578` and `board/basic_board.rs:2585` | inert by construction (N06.4: the fix never passes a merge test) | `the_simplex_switch_changes_no_piece` (5400 cases, same pieces under both values) |
+      | `octagon_box_cutout_branch3` | geometry `shapes/int_octagon.rs:762`, same callers | wired (drill pages, tie-pin cutout) | `box_cutout_branch3_switch_both_behaviours` |
+      | `cutout_hole_crosses_border` | geometry `shapes/simplex.rs:586`, same callers | wired | `java_breaks_the_invariant_outside_the_two_rows`, `java_breaks_the_extended_set_through_each_switch` |
+      | `simplex_octagon_half_corner` | geometry `shapes/simplex.rs:737`, same callers | wired | the same two |
+      | `init_failure_room_leak` | `autoroute/connection.rs:431`, `:919`, `autoroute/session/rooms.rs:263` | wired | `n06_maze.rs::init_failure_switch_both_behaviours_and_counter` |
+      | `failed_attempt_ripped_carryover` | `autoroute/connection.rs:234`, `:249`, `:375` | wired | `connection::tests::rejected_attempt_ripped_set_switch_both_behaviours` |
+      | `ortho_zero_width_room` | `autoroute/session/neighbours90.rs:209`, `:454` | wired | `neighbours90::tests::right_of_obstacle_room_switch_both_behaviours` |
+      | `edge_corner_not_advanced` | `autoroute/session/incomplete45.rs:29` | wired | `incomplete45::tests::edge_room_sides_switch_both_behaviours` |
+      | `connect_to_trace_swapped_width` | `autoroute/path/insert.rs:143` | wired | `n06_maze.rs::connect_to_trace_width_switch_both_behaviours_and_counter` |
+      | `fanout_stale_drill_carry` | `autoroute/fanout_pin.rs:168`, `:323`, `autoroute/connection.rs:419`, `autoroute/session/drills.rs:523` | wired | `n06_fanout.rs::stale_drill_carry_switch_both_behaviours_and_counters` |
+      | `drill_destination_room_index` | `autoroute/path/backtrack.rs:111` | wired | `n06_fanout.rs::drill_destination_room_index_switch_both_behaviours_and_counter` |
+      | `fanout_pin_order_names` | `autoroute/batch/fanout_rules.rs:68` | wired | `settings_java_quirks.rs::fanout_pin_order_names_both_behaviours`, `n06_fanout.rs::pin_order_names_switch_reaches_the_fanout_run_and_counter` |
+      | `in_front_of_pad_typo` | `shove/drill_check.rs:533` | wired | `shove::drill_check::tests::in_front_of_pad_keeps_java_typo` |
+      | `store_trace_class_self_compare` | `shove/trace_entries.rs:340` | wired | `n06_shove.rs::store_trace_class_switch_both_behaviours` |
+      | `rational_perp_projection` | `shove/trace_entries.rs:399`, geometry `point.rs:533` | wired | `shove::trace_entries::tests::rational_end_corner_projection_switch_both_behaviours`, geometry `rational_perpendicular_projection_switch_both_behaviours` |
+      | `smooth_loses_trace` | `optimize/pull_tight.rs:301` | wired | `n06_pull_tight.rs::smooth_loses_trace_switch_both_behaviours` |
+      | `pull_tight_reused_lines_change` | `optimize/pull_tight.rs:269` | wired | `n06_pull_tight.rs::pull_tight_reused_lines_switch_both_behaviours` |
+      | `opt_first_pass_stops` | `optimize/batch/mod.rs:431` | wired | `optimize::batch::tests::pass_end_decision_both_behaviours`, `batch_optimizer.rs::first_pass_switch_both_behaviours` |
+      | `opt_equal_key_skip` | `optimize/batch/candidates.rs:163` | wired | `batch_optimizer.rs::equal_key_switch_keeps_every_candidate` (`true` half `equal_key_skips_rest_of_pass`) |
+      | `dsn_via_alias` | `io/specctra/parser/network.rs:141` | wired | `n06_inputs.rs::via_alias_switch_keeps_first_class_vias_separate` |
+      | `dsn_class_class_pairs` | `io/specctra/parser/network.rs:752` | wired | `n06_inputs.rs::class_class_switch_applies_all_three_pairs` |
+      | `dsn_shape_bbox` | `io/specctra/parser/shape.rs:170` | wired | `parser::shape::tests::bounding_box_switch_both_behaviours` |
+      | `dsn_unit_ignored` | `io/specctra/dsn_reader.rs:173` | wired | `n06_inputs.rs::pcb_unit_and_placement_resolution_switch_use_physical_units` |
+      | `ses_reader_scale` | `io/specctra/ses_reader.rs:48` | wired | `ses_round_trip.rs::issue676_round_trips_with_reader_scale_fixed` |
+      | `stats_line_ab_length` | `scoring/board_statistics.rs:576` | wired | `settings_java_quirks.rs::trace_length_statistics_both_behaviours` |
+      | `route_result_int_via_ratio` | `autoroute/item_route_result.rs:210` | wired | `settings_java_quirks.rs::route_result_via_ratio_both_behaviours` |
+      | `drc_units_10000_per_mm` | `drc/checker.rs:285` | wired | `drc::checker::tests::drc_units_switch_uses_the_actual_board_scale` |
+      | `snapshot_drops_compensation` | `board/basic_board.rs:325` | wired | `board_snapshot.rs::snapshot_compensation_switch_including_memo_restores` |
+      | `rules_matrix_trees_not_rebuilt` | `io/specctra/rules_reader.rs:236` | wired | `rules_reader.rs::rules_matrix_refresh_switch_updates_compensated_shapes` |
+      | `move_drill_tidy_region` | `shove/forced.rs:518` | wired | `reference_shove_insert.rs::move_drill_item_finite_tidy_skips_pull_tight` |
+      | `route_change_layer_no_via` | `interactive/route/layer.rs:155` | wired | `interactive_route.rs::layer_change_without_spanning_via_quirk` |
+      | `route_connect_inner_break` | `interactive/route.rs:605` | wired | `interactive::route::tests::failed_first_corner_pair_switch_stops_disconnected_second_leg` |
+      | `select_extension_ignores_filter` | `interactive/select.rs:162` | wired | `interactive_editor.rs::extension_filter_switch_exits_empty_inspection` |
+      | `shove_via_into_pending_piece` | `shove/insert.rs:259` | wired (N06.15) | `shove::insert::pending_tests::pending_piece_switch_both_behaviours_and_counters` |
+      | `ripup_pass_no_unset` | `autoroute/batch/connection.rs:202`, `autoroute/session/ripup.rs:343` | wired | `n06_judgement.rs::ripup_pass_no_switch_both_behaviours_and_counters` |
+      | `insert_stale_trace_object` | `autoroute/path/insert.rs:115` | inert (N06.12: the split keeps the old geometry, so the stub lands on the same copper) | none, the behaviours do not differ |
+      | `in_front_of_pad_side0_flank` | `shove/drill_check.rs:542` | wired | `n06_shove.rs::side0_flank_switch_both_behaviours` |
+      | `opt_threshold_fraction` | `optimize/batch/mod.rs:238` | wired | `optimize::batch::tests::threshold_fraction_switch_both_behaviours` |
+      | `rules_unknown_layer_scope` | `io/specctra/rules_reader.rs:105` | wired | `rules_reader.rs::unknown_layer_scope_switch_both_behaviours` |
+      | `rules_autoroute_settings_reenable` | `io/specctra/rules_reader.rs:154` (marker new) | inert (N06.12: C04's settings semantics) | none |
+      | `direction_compare_zero` | geometry `direction.rs:349` (marker new) | inert (N06.12: an ordering convention; the geometry crate has no settings access) | none |
+      | `route_stubs_layer_test` | `drc/route_stubs.rs:136` (marker new) | inert (N06.12: the intended stub layer is unclear) | none |
+      | `any_angle_skip_length_squared` | `optimize/tighten/any_angle.rs:49` | wired | `optimize::tighten::any_angle::tests::skip_length_switch_both_behaviours_and_counter` |
+      | `polyline_array_reversal` | `optimize/tighten/mod.rs:505`, `diag45.rs:333`, `any_angle.rs:78` (markers new) | inert (N06.12: later reads depend on it, no fix is clearly right) | none |
+      | `avoid_acid_traps_disabled` | `optimize/tighten/mod.rs:390` (marker new) | inert (N06.12: turning it on is a feature, a Q candidate) | none |
+
+      - Every test in the table passes:
+        `cargo test -p freerouting -p freerouting-geometry --no-fail-fast -- <the 43 names plus
+        the three settings tests below>`, debug, private target: 46 passed, 0 failed, over 139
+        test binaries.
+      - Area splits left on Java's code in every arm, on purpose. The cutout switches act
+        at the drill-page split and the tie-pin cutout only. These sites still call
+        `split_to_convex`: the search trees' obstacle and conduction areas
+        (`board/search/mod.rs:758`), the outline's generated keepout (`:981`) and its
+        `BoardOutline::keepout_piece_count` (`board/items/mod.rs:594`, `:611`), as N06.4's note
+        says. The board's other `Area` splits do too (`board/queries.rs:101` `check_shape`,
+        `board/basic_board.rs:1451` `overlapping_items`, `shove/spring.rs:340`,
+        `interactive/construct.rs:435`, `io/specctra/parser/dsn_file.rs:46`). Wiring them under
+        the same switches changes what `false` means after N06.4 accepted
+        `octagon_box_cutout_branch3` on a run without them. That run had canary-pwr as a row,
+        and canary-pwr is not in the corpus inventory, whose tree splits reach branch 3 on
+        tomu-fpga8 (1) and tomu-fpga9 (6). It also changes the engine that N06.14's pending
+        registration names. Wiring needs a re-measurement or a new switch, so it is an
+        operator decision and outside N06.3's scope. Two more things block it: the reader
+        inserts items before it puts the switches on the board, and `prepare_job` puts the
+        final switches on afterwards, so a split value that differs would need a tree rebuild.
+        `unwired_area_splits_corpus_inventory` counts the reach.
+      - `every_switch_has_a_parity_marker_at_its_site` (new, `tests/settings_java_quirks.rs`)
+        scans `crates/freerouting/src` and `crates/freerouting-geometry/src`. Every id in
+        `JavaQuirks::IDS` has a marker, and every marker names a known id. Before this audit
+        it would have failed on the five inert ids without a marker.
     - [x] Both behaviours tested (7): `in_front_of_pad_keeps_java_typo` (extended),
       geometry `rational_perpendicular_projection_switch_both_behaviours`,
       `parser::shape::tests::bounding_box_switch_both_behaviours`,
@@ -405,10 +479,30 @@ These are marked or look like quirks but keep no bug:
       `BoardRouterSettings`, `AutorouteControl`),
       `the_board_keeps_its_switches_through_deep_copy_and_restore` (deep copy and three
       restores of one snapshot: rebuild, memo fill, memo clone).
+      At 45 switches (2026-10-18): 11 tests, all pass. The new
+      `every_switch_survives_deep_copy_and_restore` sets each switch alone to `false` and checks
+      it through a deep copy and the three restores. The new
+      `every_switch_has_a_parity_marker_at_its_site` is described above.
     - [x] With every switch `true` routing is unchanged on the fast subset (release, private
       target): `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p
       freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
       --test-threads=1`: exact 7 boards, 7 pass, 0 fail, 7 SES byte-identical.
+  - *Done 2026-10-18:* every **Accept:** clause holds at 45 switches.
+    - A14 with every switch `true`: the full A14 on `7a4f73b` (above), plus the small parity
+      checks of the later batches (N06.9's and N06.10's `connection-parity` 7/7 runs, N06.10's
+      `PARITY_MAX_JAVA_S=20` 57/57). This audit changed comments and tests only, no `true`-path
+      code, so it reran no parity check.
+    - Both behaviours: the 38 wired switches have tests (table above, 46 tests pass). In the 7
+      inert switches the behaviours do not differ, and `simplex_prev_division_line`'s sameness
+      is pinned by `the_simplex_switch_changes_no_piece`.
+    - Round trips: `each_key_round_trips_through_a_settings_file` and
+      `each_key_is_set_on_the_command_line_and_in_the_environment` iterate `JavaQuirks::IDS`
+      (45, `SWITCH_COUNT`).
+    - `deep_copy` and restore: `every_switch_survives_deep_copy_and_restore`, plus
+      `the_board_keeps_its_switches_through_deep_copy_and_restore`.
+    - Gate: `cargo test -p freerouting --test settings_java_quirks` 11 passed.
+    - Left for an operator decision, not in this item: the search trees' and the board's other
+      area splits still run Java's cutout code under every switch value (above).
 - [x] **N06.4 — Batch G, geometry cutouts:** `simplex_prev_division_line`,
   `octagon_box_cutout_branch3`.
   - First, an invariant test that fails on Java's code: over random holes in boxes and

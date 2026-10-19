@@ -329,7 +329,9 @@ impl Tightener {
                 let tmp = Polyline::new(&check_lines);
                 let mut check_ok = false;
                 if tmp.lines().len() == 3 {
-                    // Java's constructor reversed the middle line in check_lines
+                    // Java's constructor reversed the middle line in check_lines.
+                    // PARITY(quirk, java_quirks.polyline_array_reversal): inert, left as
+                    // Java by N06.12 (see `tighten`'s module docs).
                     check_lines[1] = tmp.lines()[1];
                     check_ok = self.check_segment(board, &tmp, 0);
                 }

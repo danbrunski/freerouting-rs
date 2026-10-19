@@ -75,6 +75,8 @@ pub(crate) const MAX_COS_ANGLE: f64 = 0.999;
 /// itself, so `lines` becomes the result's lines.
 fn normalized(lines: &mut [Line]) -> Polyline {
     let result = Polyline::new(lines);
+    // PARITY(quirk, java_quirks.polyline_array_reversal): inert, left as Java by
+    // N06.12 (see `tighten`'s module docs).
     if result.lines().len() == lines.len() {
         lines.copy_from_slice(result.lines());
     }

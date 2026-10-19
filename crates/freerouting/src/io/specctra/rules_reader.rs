@@ -151,6 +151,10 @@ fn apply_rules(ctx: &mut ReadContext, rules: &[ast::Rule], layer_name: Option<&s
 /// The `autoroute_settings` scopes of the file, read against the board's
 /// layers and combined in file order into one patch.
 pub fn autoroute_patch(rules: &RulesFile, layer_names: &[String]) -> Option<SettingsPatch> {
+    // PARITY(quirk, java_quirks.rules_autoroute_settings_reenable): `read_scope`
+    // seeds every layer and the optimizer on, as `AutorouteSettings.readScope` does.
+    // Left as Java by N06.12 (C04's settings semantics), so the switch is inert:
+    // `false` changes nothing.
     let mut combined: Option<SettingsPatch> = None;
     for item in &rules.items {
         if let RulesItem::AutorouteSettings(scope) = item

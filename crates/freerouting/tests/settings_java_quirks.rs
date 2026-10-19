@@ -6,7 +6,8 @@
 //!   environment;
 //! - the job puts the switches on the board, its router settings and the
 //!   autoroute control, and the board keeps them through a deep copy and a
-//!   snapshot restore;
+//!   snapshot restore, each switch alone too;
+//! - every switch has a `// PARITY(quirk, java_quirks.<id>)` marker at its site;
 //! - both behaviours of the fixes whose read sites are plain functions (the
 //!   others are pinned next to their code: `in_front_of_pad_keeps_java_typo`,
 //!   `rational_perpendicular_projection_switch_both_behaviours`,
@@ -223,6 +224,76 @@ fn the_board_keeps_its_switches_through_deep_copy_and_restore() {
         read("Issue756-minimal-ok.dsn", JavaQuirks::JAVA).java_quirks(),
         JavaQuirks::JAVA
     );
+}
+
+/// Each switch alone survives a deep copy and the three kinds of snapshot
+/// restore (rebuild, memo fill, memo clone), so no field is dropped on the way.
+#[test]
+fn every_switch_survives_deep_copy_and_restore() {
+    let board = read("Issue756-minimal-ok.dsn", JavaQuirks::JAVA);
+    for id in JavaQuirks::IDS {
+        let quirks = JavaQuirks::JAVA.with(id, false).expect("a known id");
+        let mut changed = board.deep_copy();
+        changed.set_java_quirks(quirks);
+        assert_eq!(changed.deep_copy().java_quirks(), quirks, "{id}: deep copy");
+        let snapshot = changed.snapshot();
+        for n in 0..3 {
+            assert_eq!(
+                snapshot.restore().java_quirks(),
+                quirks,
+                "{id}: restore {n}"
+            );
+        }
+    }
+}
+
+/// Every switch has at least one `// PARITY(quirk, java_quirks.<id>)` marker
+/// beside Java's path in the engine or geometry sources (the inert ones at the
+/// Java code they would change), and every marker names a known switch.
+#[test]
+fn every_switch_has_a_parity_marker_at_its_site() {
+    const MARKER: &str = "PARITY(quirk, java_quirks.";
+    fn scan(dir: &std::path::Path, found: &mut Vec<(String, String)>) {
+        let mut entries: Vec<_> = std::fs::read_dir(dir)
+            .expect("a source directory")
+            .map(|e| e.expect("an entry").path())
+            .collect();
+        entries.sort();
+        for path in entries {
+            if path.is_dir() {
+                scan(&path, found);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                let text = std::fs::read_to_string(&path).expect("a source file");
+                for rest in text.split(MARKER).skip(1) {
+                    let id: String = rest
+                        .chars()
+                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                        .collect();
+                    // `java_quirks.<id>` in the docs is the pattern, not a marker.
+                    if !id.is_empty() {
+                        found.push((id, path.display().to_string()));
+                    }
+                }
+            }
+        }
+    }
+    let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let mut found = Vec::new();
+    for krate in ["freerouting/src", "freerouting-geometry/src"] {
+        scan(&crates.join(krate), &mut found);
+    }
+    for (id, path) in &found {
+        assert!(
+            JavaQuirks::IDS.contains(&id.as_str()),
+            "{path}: marker names unknown switch {id:?}"
+        );
+    }
+    let missing: Vec<&str> = JavaQuirks::IDS
+        .iter()
+        .copied()
+        .filter(|id| !found.iter().any(|(f, _)| f == id))
+        .collect();
+    assert!(missing.is_empty(), "switches without a marker: {missing:?}");
 }
 
 /// `fanout_pin_order_names`: Java compares the exact camelCase strings.

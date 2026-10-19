@@ -24,7 +24,9 @@
 //!   ([`JavaQuirks::split`], `rational_perp_projection`).
 //!
 //! Every read site carries the marker `// PARITY(quirk, java_quirks.<id>):` beside
-//! Java's path.
+//! Java's path. The seven inert switches (`simplex_prev_division_line` and the six
+//! (c) rows N06.12 left as Java, whose `false` changes nothing) carry it at the Java
+//! code they name; `tests/settings_java_quirks.rs` checks every id has one.
 
 use freerouting_geometry::SplitQuirks;
 
