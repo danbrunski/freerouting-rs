@@ -312,6 +312,9 @@ pub struct Settings {
     pub specs: Vec<MetricSpec>,
     /// `Some`: judge by the totals rule instead of the paired `rule`.
     pub totals: Option<TotalsRule>,
+    /// `arms` were chosen by the caller (`--arms`, a registered pair): the
+    /// records' own `baseline_arm` / `candidate_arm` don't override them.
+    pub arms_pinned: bool,
 }
 
 /// The result of a check.
@@ -823,14 +826,35 @@ pub fn arms_of(records: &Json, defaults: &Arms) -> Arms {
     }
 }
 
+/// The arms a check compares: the caller's when pinned, else the records'
+/// own (`arms_of`) over the settings' defaults.
+pub fn effective_arms(records: &Json, settings: &Settings) -> Arms {
+    if settings.arms_pinned {
+        settings.arms.clone()
+    } else {
+        arms_of(records, &settings.arms)
+    }
+}
+
 /// Checks a run against a baseline (see the module docs).
 pub fn check(records: &Json, baseline: &Json, settings: &Settings) -> Outcome {
+    check_with(records, Some(baseline), settings)
+}
+
+/// [`check`] without the baseline comparison (D2): for a pair of arms the
+/// baseline file does not record. The rows, hard limits and pass rule are
+/// judged as usual.
+pub fn check_without_baseline(records: &Json, settings: &Settings) -> Outcome {
+    check_with(records, None, settings)
+}
+
+fn check_with(records: &Json, baseline: Option<&Json>, settings: &Settings) -> Outcome {
     let mut outcome = Outcome::default();
     let mut problems = Vec::new();
     let rows = records_rows(records, &mut problems);
     let specs = active_specs(records, settings);
     let settings = Settings {
-        arms: arms_of(records, &settings.arms),
+        arms: effective_arms(records, settings),
         ..settings.clone()
     };
     let arms = &settings.arms;
@@ -841,9 +865,11 @@ pub fn check(records: &Json, baseline: &Json, settings: &Settings) -> Outcome {
         .collect();
     check_rows(&scoped, &specs, arms, &mut problems);
     let declared = declared_rows(records, &rows);
-    problems.extend(compare_baseline(
-        &scoped, &declared, baseline, &specs, &settings,
-    ));
+    if let Some(baseline) = baseline {
+        problems.extend(compare_baseline(
+            &scoped, &declared, baseline, &specs, &settings,
+        ));
+    }
     outcome.lines = report_lines(&scoped, &specs, arms);
     let trial_rows: Vec<(String, String, Mark, bool)> = scoped
         .iter()

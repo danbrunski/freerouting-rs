@@ -32,6 +32,23 @@ prints each row's mark and the verdict, and exits 0 only if every check holds.
 A rejected candidate leaves its numbers in the baseline file with
 `"rejected": true` on the rows, but no code.
 
+With `--prereg`, `gate` judges the registration's primary pair
+(`baseline_arm` -> `candidate_arm`) on all rows unless told otherwise. The
+options below select among what the registration lists, and nothing is
+ignored silently: a combination that can't be honoured exits 2 with the reason.
+
+| option | effect |
+|---|---|
+| `--arms A,B` | judges that pair of registered arms with the registered rule and metrics. Any other name exits 2 and lists the registered arms. The baseline file records the primary pair only, so for another pair leave out `--baseline` (the D2 comparison is skipped and the report says so; giving `--baseline` exits 2) |
+| `--rows a,b` | judges only those rows. A name the run doesn't have is `REFUSED`. `min_boards` and the totals noise (the set noise is `sqrt(sum band^2)`) count the judged boards only. The registration's checks (arms, input hashes, metrics) still cover the whole run |
+| `--eligible` | `--rows` with the registration's `eligible` array; exits 2 if there is none, or with `--rows` too |
+| `--all-pairs` | judges every pair of `pairs` (an array of `[baseline, candidate]`, or `{"verdict": P, "reported": [P, ...]}` with `P` as `[baseline, candidate]` or `{"arms": [...], "rows": "all" or [...]}`), prints each verdict and a summary. Exit 1 if a verdict or listed pair fails; `reported` pairs are printed, not counted. `--baseline` is compared for the primary pair only. Not with `--arms` or `--write-baseline` |
+
+A pair whose registration names rows (`"rows": [...]`) needs `--rows` to say
+which to judge. `--write-baseline` records the primary pair on all rows and
+refuses the options above. Without `--prereg`, `--arms` overrides the records'
+own `baseline_arm` / `candidate_arm`; `--eligible` and `--all-pairs` exit 2.
+
 ## `TEMPLATE.json`
 
 | Field | Meaning |

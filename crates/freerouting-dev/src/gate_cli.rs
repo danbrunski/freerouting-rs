@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! freerouting-dev gate --records run.json --baseline base.json [--prereg reg.json]
-//!     [--rows a,b] [--arms off,on]
+//!     [--rows a,b] [--arms off,on] [--eligible] [--all-pairs]
 //!     [--rule paired|totals [--accept improve|no-regress] [--noise BOARD=BAND]...
 //!      [--speed METRIC[=PERCENT]]]
 //! freerouting-dev gate --records run.json --baseline base.json --write-baseline [...]
@@ -16,6 +16,13 @@
 //! may only repeat it and the other three are refused: a run can't choose its
 //! own criteria.
 //!
+//! With `--prereg`, `--arms A,B` judges another pair of registered arms (no
+//! baseline comparison: the baseline records the primary pair), `--rows` and
+//! `--eligible` (the registration's `eligible` rows) judge a row subset, with
+//! `min_boards` and the noise over the judged rows, and `--all-pairs` judges
+//! and prints every pair in the registration's `pairs`. A combination that
+//! can't be honoured is a usage error (exit 2), never a silent ignore.
+//!
 //! The self-test ([`crate::gate_selftest`]) runs first on every invocation.
 //! Exit status: 0 the gate passes (or a baseline was written), 1 it fails
 //! (problems, the pass rule, a missing or malformed baseline, a failed
@@ -27,15 +34,18 @@ use std::process::ExitCode;
 
 use crate::gate::{Arms, Class, Outcome, Problem, Settings, baseline_from, check, to_writer};
 use crate::gate_collect::{ArmSource, CollectOptions, collect, write_records};
-use crate::gate_prereg::{Prereg, check_registered, check_registration};
+use crate::gate_prereg::{PairRole, Prereg, check_registered_for, check_registration};
 use crate::gate_selftest;
 use crate::gate_totals::{Accept, MIN_SPEED_DROP_PERCENT, SpeedClause, TotalsRule};
 use crate::json_read::Json;
 
 /// The usage text.
 pub const USAGE: &str = "usage:
-  freerouting-dev gate --records <run.json> --baseline <base.json> [--prereg <reg.json>]
+  freerouting-dev gate --records <run.json> [--baseline <base.json>] [--prereg <reg.json>]
       [--rows a,b] [--arms off,on] [--write-baseline]
+      [--eligible] [--all-pairs]
+      (--baseline is required unless --prereg judges a pair other than the primary one;
+       --eligible and --all-pairs need --prereg: the registration's eligible rows, every listed pair)
       [--rule paired|totals] [--accept improve|no-regress] [--noise BOARD=BAND]... [--speed METRIC[=PERCENT]]
   freerouting-dev gate collect --arm NAME=<bench.json>[,oracle=<dir>] --arm NAME=... --out <records.json>
       [--engine java] [--group PREFIX=BOARD] [--arms-json <file>]
@@ -118,7 +128,7 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
         &[
             "records", "baseline", "prereg", "rows", "arms", "rule", "accept", "noise", "speed",
         ],
-        &["write-baseline", "self-test"],
+        &["write-baseline", "self-test", "eligible", "all-pairs"],
     )?;
     if parsed.get("self-test").is_some() {
         println!("gate self-test: ok");
@@ -128,11 +138,6 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
         parsed
             .get("records")
             .ok_or_else(|| format!("--records is required\n{USAGE}"))?,
-    );
-    let baseline_path = PathBuf::from(
-        parsed
-            .get("baseline")
-            .ok_or_else(|| format!("--baseline is required\n{USAGE}"))?,
     );
     let records_text = read_file(&records_path)?;
     let records = Json::parse(&records_text)
@@ -144,63 +149,283 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
         },
         None => None,
     };
-    let mut settings = prereg
-        .as_ref()
-        .map_or_else(Settings::default, Prereg::settings);
-    if let Some(rows) = parsed.get("rows") {
-        settings.scope = Some(
-            rows.split(',')
-                .map(str::trim)
-                .filter(|r| !r.is_empty())
-                .map(str::to_string)
-                .collect::<BTreeSet<_>>(),
-        );
+    let selection = Selection::from_args(&parsed, prereg.as_ref())?;
+    let mut settings = Settings::default();
+    if let Some(p) = &prereg {
+        settings = p.settings();
     }
-    if let Some(arms) = parsed.get("arms") {
-        let (base, cand) = arms
-            .split_once(',')
-            .ok_or("--arms takes BASE,CANDIDATE".to_string())?;
-        settings.arms = Arms {
-            base: base.into(),
-            cand: cand.into(),
-        };
+    settings.scope = selection.scope.clone();
+    if let Some(first) = selection.pairs.first().filter(|_| prereg.is_none()) {
+        // `--arms` without a registration: it wins over the records' own arms.
+        settings.arms = first.arms.clone();
+        settings.arms_pinned = parsed.get("arms").is_some();
     }
     match rule_options(&parsed, prereg.as_ref())? {
         RuleOptions::Refused(problems) => return Ok(fail(&problems)),
         RuleOptions::Totals(rule) => settings.totals = Some(rule),
         RuleOptions::Registered => {}
     }
+    let baseline_path = parsed.get("baseline").map(PathBuf::from);
     if parsed.get("write-baseline").is_some() {
-        return write_baseline(&records, &settings, prereg.as_ref(), &baseline_path);
+        let path = baseline_path.ok_or_else(|| format!("--baseline is required\n{USAGE}"))?;
+        if let Some(p) = &prereg {
+            settings = p.settings_for(&selection.pairs[0].arms, selection.scope.clone());
+        }
+        return write_baseline(&records, &settings, prereg.as_ref(), &path);
     }
-    if !baseline_path.is_file() {
+    let baseline = match (&baseline_path, selection.needs_baseline) {
+        (Some(path), _) => match load_baseline(path)? {
+            Ok(b) => Some(b),
+            Err(code) => return Ok(code),
+        },
+        (None, true) => return Err(format!("--baseline is required\n{USAGE}")),
+        (None, false) => None,
+    };
+    judge_pairs(
+        &records,
+        baseline.as_ref(),
+        &settings,
+        prereg.as_ref(),
+        &selection,
+    )
+}
+
+/// Reads the baseline; `Err(code)` inside is a failed gate already printed.
+fn load_baseline(path: &Path) -> Result<Result<Json, ExitCode>, String> {
+    if !path.is_file() {
         println!(
             "MALFORMED baseline: {} does not exist. A missing baseline fails; record one \
              with --write-baseline after reading the table",
-            baseline_path.display()
+            path.display()
         );
         println!("gate: FAIL");
-        return Ok(ExitCode::from(1));
+        return Ok(Err(ExitCode::from(1)));
     }
-    let baseline = match Json::parse(&read_file(&baseline_path)?) {
-        Ok(b) => b,
-        Err(e) => {
-            return Ok(fail(&[Problem::new(
-                Class::Malformed,
-                format!("baseline {}: not JSON: {e}", baseline_path.display()),
-            )]));
+    Ok(match Json::parse(&read_file(path)?) {
+        Ok(b) => Ok(b),
+        Err(e) => Err(fail(&[Problem::new(
+            Class::Malformed,
+            format!("baseline {}: not JSON: {e}", path.display()),
+        )])),
+    })
+}
+
+/// One pair of arms to judge.
+struct Judged {
+    arms: Arms,
+    /// `reported` pairs are printed with their verdict but don't decide the exit status.
+    counted: bool,
+    /// The registration lists specific rows for the pair.
+    rows: Option<Vec<String>>,
+    /// How the registration lists it, for the report.
+    label: &'static str,
+}
+
+/// What `--arms`, `--rows`, `--eligible` and `--all-pairs` select.
+struct Selection {
+    pairs: Vec<Judged>,
+    scope: Option<BTreeSet<String>>,
+    /// Whether a pair is the registration's primary pair, which the baseline records.
+    needs_baseline: bool,
+    all_pairs: bool,
+}
+
+impl Selection {
+    fn from_args(parsed: &Parsed, prereg: Option<&Prereg>) -> Result<Selection, String> {
+        let flag = |name: &str| parsed.get(name).is_some();
+        let write = flag("write-baseline");
+        let mut scope = parsed.get("rows").map(|rows| {
+            rows.split(',')
+                .map(str::trim)
+                .filter(|r| !r.is_empty())
+                .map(str::to_string)
+                .collect::<BTreeSet<_>>()
+        });
+        let arms = match parsed.get("arms") {
+            Some(a) => {
+                let (base, cand) = a
+                    .split_once(',')
+                    .ok_or("--arms takes BASE,CANDIDATE".to_string())?;
+                Some(Arms {
+                    base: base.trim().into(),
+                    cand: cand.trim().into(),
+                })
+            }
+            None => None,
+        };
+        let Some(p) = prereg else {
+            for name in ["eligible", "all-pairs"] {
+                if flag(name) {
+                    return Err(format!(
+                        "--{name} needs --prereg: it reads the registration\n{USAGE}"
+                    ));
+                }
+            }
+            let arms = arms.unwrap_or_default();
+            return Ok(Selection {
+                pairs: vec![Judged {
+                    arms,
+                    counted: true,
+                    rows: None,
+                    label: "",
+                }],
+                scope,
+                needs_baseline: true,
+                all_pairs: false,
+            });
+        };
+        if flag("eligible") {
+            if scope.is_some() {
+                return Err("--eligible and --rows both choose the rows; use one".to_string());
+            }
+            let list = p.eligible.as_ref().ok_or_else(|| {
+                format!("--eligible: registration {} has no `eligible` list", p.id)
+            })?;
+            scope = Some(list.iter().cloned().collect());
         }
+        if flag("all-pairs") && arms.is_some() {
+            return Err("--all-pairs and --arms both choose the pairs; use one".to_string());
+        }
+        if write && flag("all-pairs") {
+            return Err(
+                "--write-baseline records one pair; it can't be combined with --all-pairs"
+                    .to_string(),
+            );
+        }
+        let pairs: Vec<Judged> = if flag("all-pairs") {
+            if p.pairs.is_empty() {
+                return Err(format!(
+                    "--all-pairs: registration {} lists no `pairs`",
+                    p.id
+                ));
+            }
+            p.pairs
+                .iter()
+                .map(|pair| Judged {
+                    arms: pair.arms.clone(),
+                    counted: pair.role != PairRole::Reported,
+                    rows: pair.rows.clone(),
+                    label: match pair.role {
+                        PairRole::Verdict => "verdict",
+                        PairRole::Reported => "reported, not counted",
+                        PairRole::Listed => "listed",
+                    },
+                })
+                .collect()
+        } else {
+            let arms = arms.unwrap_or_else(|| p.names.clone());
+            if !p.has_arms(&arms) || arms.base == arms.cand {
+                return Err(format!(
+                    "--arms {},{}: both must be two different arms registered in {} (registered arms: {})",
+                    arms.base,
+                    arms.cand,
+                    p.id,
+                    p.arm_names()
+                ));
+            }
+            let listed = p.pairs.iter().find(|x| x.arms == arms);
+            vec![Judged {
+                counted: true,
+                rows: listed.and_then(|x| x.rows.clone()),
+                label: "",
+                arms,
+            }]
+        };
+        if scope.is_none() {
+            if let Some(j) = pairs.iter().find(|j| j.rows.is_some()) {
+                return Err(format!(
+                    "the registration lists rows for the pair {} -> {} ({}); name the rows to judge with --rows",
+                    j.arms.base,
+                    j.arms.cand,
+                    j.rows.as_deref().unwrap_or_default().join(", ")
+                ));
+            }
+        }
+        let needs_baseline = pairs.iter().any(|j| j.arms == p.names);
+        if !needs_baseline && parsed.get("baseline").is_some() {
+            return Err(format!(
+                "--baseline records the primary pair ({} -> {}) and can't be compared with the \
+                 pair {} -> {}; leave it out",
+                p.names.base, p.names.cand, pairs[0].arms.base, pairs[0].arms.cand
+            ));
+        }
+        if write && !needs_baseline {
+            return Err(format!(
+                "--write-baseline records the primary pair ({} -> {}), not {} -> {}",
+                p.names.base, p.names.cand, pairs[0].arms.base, pairs[0].arms.cand
+            ));
+        }
+        Ok(Selection {
+            pairs,
+            scope,
+            needs_baseline,
+            all_pairs: flag("all-pairs"),
+        })
+    }
+}
+
+fn judge_pairs(
+    records: &Json,
+    baseline: Option<&Json>,
+    settings: &Settings,
+    prereg: Option<&Prereg>,
+    selection: &Selection,
+) -> Result<ExitCode, String> {
+    let Some(p) = prereg else {
+        let outcome: Outcome = check(
+            records,
+            baseline.expect("required without --prereg"),
+            settings,
+        );
+        print!("{}", outcome.to_text());
+        return Ok(exit_of(outcome.passed()));
     };
-    let outcome: Outcome = match &prereg {
-        Some(p) => check_registered(&records, &baseline, p),
-        None => check(&records, &baseline, &settings),
+    let judge = |j: &Judged| {
+        let settings = p.settings_for(&j.arms, selection.scope.clone());
+        let base = baseline.filter(|_| j.arms == p.names);
+        check_registered_for(records, base, p, &settings)
     };
-    print!("{}", outcome.to_text());
-    Ok(if outcome.passed() {
+    if !selection.all_pairs {
+        let outcome = judge(&selection.pairs[0]);
+        print!("{}", outcome.to_text());
+        return Ok(exit_of(outcome.passed()));
+    }
+    let mut summary = Vec::new();
+    let mut all_ok = true;
+    for j in &selection.pairs {
+        let outcome = judge(j);
+        println!(
+            "=== pair {} -> {} ({}) ===",
+            j.arms.base, j.arms.cand, j.label
+        );
+        for line in &outcome.lines {
+            println!("{line}");
+        }
+        for problem in &outcome.problems {
+            println!("{problem}");
+        }
+        let verdict = if outcome.passed() { "PASS" } else { "FAIL" };
+        println!("pair {} -> {}: {verdict}", j.arms.base, j.arms.cand);
+        summary.push(format!(
+            "  {} -> {} ({}): {verdict}",
+            j.arms.base, j.arms.cand, j.label
+        ));
+        all_ok &= outcome.passed() || !j.counted;
+    }
+    println!("pairs:");
+    for line in summary {
+        println!("{line}");
+    }
+    println!("gate: {}", if all_ok { "PASS" } else { "FAIL" });
+    Ok(exit_of(all_ok))
+}
+
+fn exit_of(passed: bool) -> ExitCode {
+    if passed {
         ExitCode::SUCCESS
     } else {
         ExitCode::from(1)
-    })
+    }
 }
 
 /// What the rule options of the command line ask for.

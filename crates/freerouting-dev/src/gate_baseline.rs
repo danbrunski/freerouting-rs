@@ -6,8 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::gate::{
     Arms, BASELINE_FORMAT, Class, Kind, Mark, MetricSpec, Problem, Row, Settings, TAG_KEYS,
-    active_specs, arms_of, as_object, check_rows, declared_rows, number, records_rows, row_mark,
-    show, type_name,
+    active_specs, as_object, check_rows, declared_rows, effective_arms, number, records_rows,
+    row_mark, show, type_name,
 };
 use crate::json_read::Json;
 
@@ -291,7 +291,7 @@ pub fn baseline_from(records: &Json, settings: &Settings) -> Result<Json, Vec<Pr
     let mut problems = Vec::new();
     let rows = records_rows(records, &mut problems);
     let specs = active_specs(records, settings);
-    let arms = arms_of(records, &settings.arms);
+    let arms = effective_arms(records, settings);
     if matches!(records.get("partial"), Some(Json::Bool(true))) {
         problems.push(Problem::new(
             Class::Refused,

@@ -12,7 +12,8 @@
 //!   `bench.json` and `bench.md` ([`bench`], [`bench_report`]). Exit status 0
 //!   when it ran, 3 when it refused because the machine was busy, 2 on an
 //!   error.
-//! - `gate --records <run.json> --baseline <base.json> [--prereg <reg.json>]`
+//! - `gate --records <run.json> --baseline <base.json> [--prereg <reg.json>
+//!   [--arms A,B] [--rows ..|--eligible] [--all-pairs]]`
 //!   and `gate collect`: the measurement gate ([`gate`], [`gate_prereg`],
 //!   [`gate_collect`], [`gate_cli`], F03.1 and F03.4). It compares per-board,
 //!   per-arm records with a baseline file, names every problem (INVERTED,

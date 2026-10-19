@@ -180,6 +180,16 @@ construction. It is still tested with `ses-diff`.
   repeat, so `power-traces` and the other measures read them right. The
   router's own `--result-json` statistics are taken on the routed board in
   memory and were right all along.
+  Checked 2026-10-18: every affected verdict (P04.1, P04.2, Q07.2, Q07.3,
+  Q10.4) used absolute differences. They are paired-rule verdicts (improve on
+  N-1 boards, regress on none), with no `totals` block, noise band or
+  percentage rule: a hard metric above 0 in the candidate, an integer guard
+  (`clearance_violations`, `drc_real`, `pour_lost_pins`) worse by any amount
+  (`tol` 0), and `unrouted` / `kicad_unconnected` as the score. `vias`,
+  `length_mm` and `bends` were report-only, or `compared: false`, and never
+  decided a mark; P04.2's 5 % clause is on work-limit hits, which the
+  doubling doesn't touch. The re-measured offsets are constant per board
+  across arms, so no ratio-based rule could have moved either.
 
 "Measured" in a Q or X **Accept:** clause means all of the above:
 preregistered, at least three distinct boards plus the owner variants,

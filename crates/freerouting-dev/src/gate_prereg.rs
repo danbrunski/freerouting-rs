@@ -37,22 +37,50 @@
 //!   more than N-1 non-improving boards, any regression allowed), has no
 //!   `via_in_pad` hard metric, or downgrades a hard limit.
 //!
+//! Two optional fields say which comparisons a registration lists:
+//! `pairs` (an array of `[baseline, candidate]`, or `{"verdict": P, "reported":
+//! [P, ...]}` where a pair `P` is `[baseline, candidate]` or `{"arms": [..],
+//! "rows": "all" | [..]}`) and `eligible` (the rows the verdict is judged on,
+//! when that is a subset of `boards.files`). `gate --prereg` judges the primary
+//! pair on all rows by default; `--arms`, `--rows`, `--eligible` and
+//! `--all-pairs` select among the above ([`crate::gate_cli`]).
+//!
 //! The report prints the sha256 of the registration file; a test pins that
 //! of the worked example (`tools/ab/examples/`).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use freerouting::quality::feasibility::report::sha256_hex;
 
 use crate::gate::{
     Arms, Class, Direction, Kind, MIN_BOARDS, MetricSpec, Outcome, PassRule, Problem, Role,
-    Settings, check, default_metrics, records_rows,
+    Settings, check, check_without_baseline, default_metrics, records_rows,
 };
 use crate::gate_totals::TotalsRule;
 use crate::json_read::Json;
 
 /// The format tag of a registration.
 pub const PREREG_FORMAT: &str = "freerouting-ab-prereg-1";
+
+/// How a registration lists a pair of arms.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PairRole {
+    /// The `verdict` of a `{verdict, reported}` block: counted.
+    Verdict,
+    /// A `reported` pair: printed with its verdict, not counted.
+    Reported,
+    /// An element of a plain `pairs` array: each is judged on its own, counted.
+    Listed,
+}
+
+/// One pair of arms a registration lists.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Pair {
+    pub arms: Arms,
+    pub role: PairRole,
+    /// The rows the pair names (`"rows": [..]`); `None`: all.
+    pub rows: Option<Vec<String>>,
+}
 
 /// A parsed registration.
 #[derive(Clone, Debug)]
@@ -72,6 +100,10 @@ pub struct Prereg {
     /// The `totals` block, when there is one.
     pub totals: Option<TotalsRule>,
     pub amendments: usize,
+    /// The pairs the registration lists (`pairs`), in file order.
+    pub pairs: Vec<Pair>,
+    /// The `eligible` rows, when the registration has such a list.
+    pub eligible: Option<Vec<String>>,
 }
 
 fn malformed(text: impl Into<String>) -> Problem {
@@ -129,6 +161,113 @@ fn parse_spec(v: &Json, index: usize) -> Result<MetricSpec, Problem> {
         tol,
         compared,
     })
+}
+
+fn parse_pair(
+    v: &Json,
+    role: PairRole,
+    arms: &BTreeMap<String, Json>,
+    at: &str,
+) -> Result<Pair, Problem> {
+    let (names, rows) = match v {
+        Json::Array(_) => (v, None),
+        Json::Object(_) => (
+            v.get("arms")
+                .ok_or_else(|| malformed(format!("{at}: no `arms`")))?,
+            v.get("rows"),
+        ),
+        _ => return Err(malformed(format!("{at}: expected [baseline, candidate]"))),
+    };
+    let pair: Vec<&str> = match names {
+        Json::Array(a) => a.iter().filter_map(Json::as_str).collect(),
+        _ => Vec::new(),
+    };
+    let [base, cand] = pair[..] else {
+        return Err(malformed(format!(
+            "{at}: expected two arm names, [baseline, candidate]"
+        )));
+    };
+    for arm in [base, cand] {
+        if !arms.contains_key(arm) {
+            return Err(malformed(format!(
+                "{at}: arm {arm:?} is not registered under `arms`"
+            )));
+        }
+    }
+    let rows = match rows {
+        None => None,
+        Some(Json::String(s)) if s == "all" => None,
+        Some(Json::Array(list)) => {
+            let names: Vec<String> = list
+                .iter()
+                .filter_map(Json::as_str)
+                .map(str::to_string)
+                .collect();
+            if names.len() != list.len() {
+                return Err(malformed(format!("{at}: `rows` must list row names")));
+            }
+            Some(names)
+        }
+        Some(_) => {
+            return Err(malformed(format!(
+                "{at}: `rows` must be \"all\" or an array of row names"
+            )));
+        }
+    };
+    Ok(Pair {
+        arms: Arms {
+            base: base.to_string(),
+            cand: cand.to_string(),
+        },
+        role,
+        rows,
+    })
+}
+
+fn parse_pairs(
+    json: &Json,
+    arms: &BTreeMap<String, Json>,
+    problems: &mut Vec<Problem>,
+) -> Vec<Pair> {
+    let mut out = Vec::new();
+    let mut add =
+        |v: &Json, role: PairRole, at: String, problems: &mut Vec<Problem>| match parse_pair(
+            v, role, arms, &at,
+        ) {
+            Ok(p) => out.push(p),
+            Err(p) => problems.push(p),
+        };
+    match json.get("pairs") {
+        None | Some(Json::Null) => {}
+        Some(Json::Array(list)) => {
+            for (i, v) in list.iter().enumerate() {
+                add(v, PairRole::Listed, format!("pairs[{i}]"), problems);
+            }
+        }
+        Some(block @ Json::Object(_)) => {
+            if let Some(v) = block.get("verdict") {
+                add(v, PairRole::Verdict, "pairs.verdict".into(), problems);
+            }
+            match block.get("reported") {
+                None => {}
+                Some(Json::Array(list)) => {
+                    for (i, v) in list.iter().enumerate() {
+                        add(
+                            v,
+                            PairRole::Reported,
+                            format!("pairs.reported[{i}]"),
+                            problems,
+                        );
+                    }
+                }
+                Some(_) => problems.push(malformed("pairs.reported must be an array")),
+            }
+        }
+        Some(_) => problems.push(malformed(
+            "`pairs` must be an array or a {verdict, reported} object",
+        )),
+    }
+    out
 }
 
 impl Prereg {
@@ -248,6 +387,30 @@ impl Prereg {
                 Err(more) => problems.extend(more),
             },
         }
+        let pairs = parse_pairs(&json, &arms, &mut problems);
+        let eligible = match json.get("eligible") {
+            None | Some(Json::Null) => None,
+            Some(Json::Array(list)) => {
+                let names: Vec<String> = list
+                    .iter()
+                    .filter_map(Json::as_str)
+                    .map(str::to_string)
+                    .collect();
+                if names.len() != list.len() {
+                    problems.push(malformed("`eligible` must list row names"));
+                }
+                for row in names.iter().filter(|r| !boards.contains_key(*r)) {
+                    problems.push(malformed(format!(
+                        "eligible row {row} is not a registered board (`boards.files`)"
+                    )));
+                }
+                Some(names)
+            }
+            Some(_) => {
+                problems.push(malformed("`eligible` must be an array of row names"));
+                None
+            }
+        };
         let amendments = match json.get("amendments") {
             Some(Json::Array(a)) => a.len(),
             None => 0,
@@ -271,6 +434,8 @@ impl Prereg {
             totals_registered,
             totals,
             amendments,
+            pairs,
+            eligible,
         })
     }
 
@@ -282,7 +447,29 @@ impl Prereg {
             scope: None,
             specs: self.specs.clone(),
             totals: self.totals.clone(),
+            arms_pinned: false,
         }
+    }
+
+    /// The settings for judging `arms` (a pair of registered arms) on `scope`
+    /// (`None`: all rows). The registered rule and metrics apply to every pair.
+    pub fn settings_for(&self, arms: &Arms, scope: Option<BTreeSet<String>>) -> Settings {
+        Settings {
+            arms: arms.clone(),
+            scope,
+            arms_pinned: true,
+            ..self.settings()
+        }
+    }
+
+    /// Whether both arms of `arms` are registered.
+    pub fn has_arms(&self, arms: &Arms) -> bool {
+        self.arms.contains_key(&arms.base) && self.arms.contains_key(&arms.cand)
+    }
+
+    /// The registered arm names, comma separated, for messages.
+    pub fn arm_names(&self) -> String {
+        self.arms.keys().cloned().collect::<Vec<_>>().join(", ")
     }
 }
 
@@ -434,10 +621,45 @@ pub fn check_registration(prereg: &Prereg, records: &Json) -> Vec<Problem> {
 
 /// Checks a run against a baseline under a registration: the registration's
 /// refusals, then the ordinary check with the registered metrics, arms and
-/// pass rule.
+/// pass rule (the primary pair on all rows).
 pub fn check_registered(records: &Json, baseline: &Json, prereg: &Prereg) -> Outcome {
-    let refusals = check_registration(prereg, records);
-    let mut outcome = check(records, baseline, &prereg.settings());
+    check_registered_for(
+        records,
+        Some(baseline),
+        prereg,
+        &prereg.settings_for(&prereg.names, None),
+    )
+}
+
+/// [`check_registered`] for one pair of registered arms on a row subset, as
+/// `settings` (from [`Prereg::settings_for`]) say. `baseline` is the baseline
+/// file of the primary pair, `None` for another pair (no D2 comparison). A
+/// scoped row the run does not have is `REFUSED`; the judged rows are named in
+/// the report.
+pub fn check_registered_for(
+    records: &Json,
+    baseline: Option<&Json>,
+    prereg: &Prereg,
+    settings: &Settings,
+) -> Outcome {
+    let mut refusals = check_registration(prereg, records);
+    let mut ignored = Vec::new();
+    let rows = records_rows(records, &mut ignored);
+    if let Some(scope) = &settings.scope {
+        for name in scope.iter().filter(|n| !rows.iter().any(|r| &r.name == n)) {
+            refusals.push(refused(format!(
+                "row {name} was asked for but the run has no such row"
+            )));
+        }
+    }
+    let mut outcome = match baseline {
+        Some(b) => check(records, b, settings),
+        None => check_without_baseline(records, settings),
+    };
+    let judged = rows
+        .iter()
+        .filter(|r| settings.scope.as_ref().is_none_or(|s| s.contains(r.name)))
+        .count();
     let mut lines = vec![format!(
         "prereg {} (sha256 {}, {} amendment(s)): {} refusal(s)",
         prereg.id,
@@ -445,6 +667,18 @@ pub fn check_registered(records: &Json, baseline: &Json, prereg: &Prereg) -> Out
         prereg.amendments,
         refusals.len()
     )];
+    lines.push(format!(
+        "pair {} -> {}; judged {} of {} row(s){}",
+        settings.arms.base,
+        settings.arms.cand,
+        judged,
+        rows.len(),
+        if baseline.is_none() {
+            "; no baseline comparison (the baseline records the primary pair)"
+        } else {
+            ""
+        }
+    ));
     lines.append(&mut outcome.lines);
     outcome.lines = lines;
     outcome.problems.splice(0..0, refusals);
