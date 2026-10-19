@@ -2,7 +2,11 @@
 //!
 //! Both end as a Specctra [`Session`] imported into the board by
 //! `import_session`, so the copper is scored by one code path whichever file
-//! it came from.
+//! it came from. The routed copper replaces the board's own: a session
+//! repeats the board's traces and vias but the system-fixed ones
+//! ([`import_routed_session`]), and a `.kicad_pcb` holds all of them, so
+//! the import first removes those (for a `.kicad_pcb`, every trace and via).
+//! Importing on top of them counted the input's wiring twice.
 //!
 //! A `.kicad_pcb` is read by the K-series reader
 //! ([`freerouting::io::kicad`]): its segments, arcs (as polylines) and vias
@@ -28,7 +32,7 @@ use freerouting::dsn::ast::{LayerRef, Point, Routes, SessionNet, Shape, Via, Wir
 use freerouting::io::kicad::{DesignKind, ReadOptions, design_kind, read_kicad_input};
 use freerouting::io::specctra::{SesImportSummary, import_session};
 
-use crate::ses_diff::parse_session;
+use crate::ses_diff::{import_routed_session, parse_session};
 use crate::{load_board, read_text};
 
 /// What importing the routed copper did.
@@ -204,19 +208,28 @@ pub fn kicad_session(board: &BasicBoard, path: &Path) -> Result<(Session, usize)
     Ok((session, substitutions))
 }
 
-/// Imports the routed copper in `path` (`.ses` or `.kicad_pcb`) into `board`.
+/// Imports the routed copper in `path` (`.ses` or `.kicad_pcb`) into
+/// `board`, the input it was routed from, in place of the board's wiring
+/// that the file holds too.
 pub fn import_routed(board: &mut BasicBoard, path: &Path) -> Result<Imported, String> {
-    let (session, via_substitutions) = match design_kind(path) {
-        DesignKind::KicadPcb => kicad_session(board, path)?,
-        DesignKind::Dsn => (
-            parse_session(&read_text(path)?).map_err(|e| format!("{}: {e}", path.display()))?,
-            0,
-        ),
-    };
-    Ok(Imported {
-        summary: import_session(board, &session),
-        via_substitutions,
-    })
+    match design_kind(path) {
+        DesignKind::KicadPcb => {
+            let (session, via_substitutions) = kicad_session(board, path)?;
+            board.delete_all_traces_and_vias();
+            Ok(Imported {
+                summary: import_session(board, &session),
+                via_substitutions,
+            })
+        }
+        DesignKind::Dsn => {
+            let session =
+                parse_session(&read_text(path)?).map_err(|e| format!("{}: {e}", path.display()))?;
+            Ok(Imported {
+                summary: import_routed_session(board, &session),
+                via_substitutions: 0,
+            })
+        }
+    }
 }
 
 /// `dsn` loaded with the copper of `routed` imported.

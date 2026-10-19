@@ -157,6 +157,29 @@ construction. It is still tested with `ses-diff`.
   them). Other measures that import a session into the input board double
   the input's wiring the same way. One of them is Q10.4's helper's
   `below_minimum_dsn`: the unpoured canary DSN's 3 were input traces.
+  *Since 2026-10-18* every `freerouting-dev` measure imports in place of
+  the wiring the session repeats (`ses_diff::import_routed_session`): the
+  bench's `unrouted`, `clearance_violations`, `vias`, `length_mm`, `bends`,
+  widths and tidiness, `ses-diff`, `widths`, `power-traces`, `tidy` and
+  `failed-vs-human` (`tests/session_import.rs`). Re-measured from the saved
+  sessions, the doubling was a constant per board in every arm of P04.1,
+  P04.2, Q07.2, Q07.3 and Q10.4, so no comparison and no verdict moves; only
+  the absolute numbers drop, on the seven boards whose input has unfixed or
+  protected wiring. `clearance_violations` was mostly the doubled copper:
+  kit-dev-coldfire 1,056 to 10, z10_module 375 to 7, the unpoured canary
+  322 to 6, smoothieboard 210 to 0 (P04.1's 210 to 211 is 0 to 1),
+  interf_u 168 to 0, sonde_xilinx 6 to 0. `vias` drops by the input's
+  repeated vias (253, 92, 79, 84, 42, 3) and `length_mm` by its repeated
+  copper (9,412, 1,754, 1,574, 5,101, 0 and 638 mm; GP8B 160 mm). `unrouted`
+  and `pour_lost_pins` don't change; `below_minimum_dsn` on the unpoured
+  canary reads 0. The KiCad-graded metrics don't have the problem in the
+  oracle's default flow, which strips the tracks before it exports the DSN,
+  so the session repeats nothing (`--keep-tracks` rests on KiCad's
+  importer, not checked). The plugin's DSNs, used by N05, Q13, Q14, Q16
+  and K09.9, mark the existing copper `fix`, which a session does not
+  repeat, so `power-traces` and the other measures read them right. The
+  router's own `--result-json` statistics are taken on the routed board in
+  memory and were right all along.
 
 "Measured" in a Q or X **Accept:** clause means all of the above:
 preregistered, at least three distinct boards plus the owner variants,

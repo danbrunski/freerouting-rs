@@ -10,10 +10,12 @@
 //!   (`tools/corpus/prep.sh` writes `prepped/<id>.human.dsn`).
 //!
 //! For every incomplete connection (airline) of the board after importing
-//! the session, the report lists the net, the two endpoints (the pins of
-//! each connected cluster), the distance, and what the human's copper did for
-//! the same two ends: whether it connected them, on which layers, with how
-//! many vias, at which widths and with how much **clearance headroom**.
+//! the session (in place of the board's wiring that the session repeats,
+//! [`crate::ses_diff::import_routed_session`]), the report lists the net,
+//! the two endpoints (the pins of each connected cluster), the distance, and
+//! what the human's copper did for the same two ends: whether it connected
+//! them, on which layers, with how many vias, at which widths and with how
+//! much **clearance headroom**.
 //!
 //! Each connection is tagged:
 //!
@@ -51,7 +53,6 @@ use freerouting::drc::DesignRulesChecker;
 use freerouting::drc::json::JsonValue;
 use freerouting::dsn::Session;
 use freerouting::geometry::{FloatPoint, IntBox, Shape};
-use freerouting::io::specctra::import_session;
 use freerouting::quality::feasibility::{FeasibilityOptions, Verdict, check_board};
 
 /// A pin as (component, pin name).
@@ -573,7 +574,7 @@ pub fn analyze(
     feasibility: Option<&FeasibilityOptions>,
 ) -> Report {
     let mut engine: RoutingBoard = unrouted.clone();
-    import_session(&mut engine, session);
+    crate::ses_diff::import_routed_session(&mut engine, session);
     let airlines = DesignRulesChecker::new(&engine).all_airlines();
     let infeasible: BTreeMap<PinName, f64> = feasibility
         .map(|opts| {

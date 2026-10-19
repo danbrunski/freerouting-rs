@@ -1,6 +1,9 @@
 //! `freerouting-dev widths board.dsn [session.ses] [--json out.json]`: the
 //! Q02.1 delivered-width report of a board, after importing a session when
-//! one is given (so it grades Java's own sessions too).
+//! one is given (so it grades Java's own sessions too). The session replaces
+//! the board's wiring that it repeats
+//! ([`crate::ses_diff::import_routed_session`]), so the board's own unfixed
+//! and user-fixed traces are reported once, not twice.
 
 use std::process::ExitCode;
 
@@ -19,7 +22,7 @@ pub fn widths_of(
     let mut board = load_board(dsn)?;
     if let Some(ses) = ses {
         let session = parse_session(&read_text(ses)?)?;
-        freerouting::io::specctra::import_session(&mut board, &session);
+        crate::ses_diff::import_routed_session(&mut board, &session);
     }
     Ok(report(&board))
 }

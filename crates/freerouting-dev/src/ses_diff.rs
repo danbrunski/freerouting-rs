@@ -3,9 +3,20 @@
 //! Each session is compared structurally ([`SessionGeometry`]) and by the
 //! statistics of the board after importing it ([`SessionStatistics`]).
 //! Two sessions are equivalent when neither differs.
+//!
+//! **The import replaces the input's wiring.** A session repeats every trace
+//! and via of the board it was written from except the system-fixed ones
+//! (the writer, like Java's `SesWriter`), so it repeats the input's own
+//! unfixed and user-fixed wiring too. Importing it into a plain copy of the
+//! input board put a second copy of that wiring on the board, which inflated
+//! the vias and the length, and left the input's unfixed traces in place
+//! where the router had moved or ripped them. [`import_routed_session`]
+//! first removes the wiring the session repeats, so the board is the routed
+//! board the session was written from; every measure here imports with it.
 
 use freerouting::board::BasicBoard;
-use freerouting::board::structure::Unit;
+use freerouting::board::items::{Item, ItemId};
+use freerouting::board::structure::{FixedState, Unit};
 use freerouting::drc::DesignRulesChecker;
 use freerouting::drc::json::JsonValue;
 use freerouting::dsn::Session;
@@ -104,11 +115,12 @@ pub struct ImportedSession {
 }
 
 impl ImportedSession {
-    /// Imports `session` into a copy of `board` and measures it.
+    /// Imports `session` into a copy of `board` ([`import_routed_session`])
+    /// and measures it.
     pub fn new(board: &BasicBoard, session: &Session) -> Self {
         let geometry = SessionGeometry::new(board, session);
         let mut copy = board.clone();
-        let import = import_session(&mut copy, session);
+        let import = import_routed_session(&mut copy, session);
         let statistics = SessionStatistics::of(&copy);
         let mut checker = DesignRulesChecker::new(&copy);
         let mut incomplete_by_net = Vec::new();
@@ -146,6 +158,43 @@ pub struct SesDiff {
     pub b: ImportedSession,
     /// Every net whose wires or vias differ, in name order.
     pub nets: Vec<NetDifference>,
+}
+
+/// Whether a session written from a board repeats its `item`: the session
+/// writer (`ses_writer::network_out`, Java `SesWriter.writeNetwork`) saves
+/// every trace and via but the system-fixed ones.
+pub fn session_repeats(item: &Item) -> bool {
+    (item.is_trace() || item.is_via()) && item.fixed_state() != FixedState::SystemFixed
+}
+
+/// Removes from `board` the traces and vias that a session of it repeats
+/// ([`session_repeats`]), user-fixed ones included. Returns how many it
+/// removed; an item of a component is never removed (the board forbids it),
+/// and none of a loaded board's traces or vias belongs to one.
+pub fn remove_session_wiring(board: &mut BasicBoard) -> usize {
+    let ids: Vec<ItemId> = board
+        .items()
+        .filter(|item| session_repeats(item))
+        .map(Item::id)
+        .collect();
+    let mut removed = 0;
+    for id in ids {
+        // `remove_item` refuses user-fixed items.
+        board.set_fixed_state(id, FixedState::Unfixed);
+        if board.remove_item(id) {
+            removed += 1;
+        }
+    }
+    removed
+}
+
+/// Imports `session` into `board` in place of the wiring the session
+/// repeats: the board becomes the routed board the session was written
+/// from, its system-fixed wiring once and the session's wiring once.
+/// `board` is the input the session was routed from.
+pub fn import_routed_session(board: &mut BasicBoard, session: &Session) -> SesImportSummary {
+    remove_session_wiring(board);
+    import_session(board, session)
 }
 
 /// Parses a session file's text.
@@ -366,10 +415,11 @@ fn format_value(v: f64) -> String {
 }
 
 impl SessionStatistics {
-    /// The statistics of a copy of `board` with `session` imported.
+    /// The statistics of a copy of `board` with `session` imported in place
+    /// of the wiring it repeats ([`import_routed_session`]).
     pub fn of_session(board: &BasicBoard, session: &Session) -> (Self, SesImportSummary) {
         let mut copy = board.clone();
-        let import = import_session(&mut copy, session);
+        let import = import_routed_session(&mut copy, session);
         (Self::of(&copy), import)
     }
 }

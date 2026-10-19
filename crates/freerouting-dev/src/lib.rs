@@ -56,6 +56,15 @@
 //! The statistics are `BoardStatistics` fields after the import, named as in
 //! Java's JSON: incomplete connections, clearance violations (the full
 //! clearance check), vias, total trace length in mm and bends.
+//!
+//! Every measure that imports a session into its input board (`ses-diff`,
+//! the bench's statistics, widths and tidiness, `widths`, `power-traces`,
+//! `tidy`, `failed-vs-human`) imports it in place of the wiring the session
+//! repeats ([`ses_diff::import_routed_session`]): a session holds every trace
+//! and via of the routed board but the system-fixed ones, the input's own
+//! unfixed and user-fixed wiring included, so an import on top of the input
+//! counted that wiring twice. `gate collect`'s `via_in_pad` counts only the
+//! vias the input does not have ([`gate_collect::added_via_in_pad`]).
 
 pub mod bench;
 pub mod bench_report;

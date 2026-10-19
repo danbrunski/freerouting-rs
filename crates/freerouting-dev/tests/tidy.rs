@@ -401,6 +401,31 @@ fn the_same_copper_from_a_session_and_a_kicad_pcb_scores_the_same() {
 }
 
 #[test]
+fn routed_copper_replaces_the_copper_the_board_already_has() {
+    // A board that carries the routed copper already, like an input with
+    // wiring of its own that the session repeats: the session or the
+    // `.kicad_pcb` imported again replaces it. (An exact second copy does not
+    // change these measures; a stale input trace the router ripped does,
+    // `tests/session_import.rs`.)
+    let files = write_files("again", &main_nets(), VIA);
+    let once = score(&files, &files.ses);
+    for routed in [&files.ses, &files.kicad] {
+        let (mut board, first) = routed_board(&files.dsn, &files.ses).unwrap();
+        let wiring = |b: &freerouting::board::BasicBoard| {
+            b.items().filter(|i| i.is_trace() || i.is_via()).count()
+        };
+        let copper = wiring(&board);
+        assert_eq!(
+            copper,
+            first.summary.wires_imported + first.summary.vias_imported
+        );
+        import_routed(&mut board, routed).unwrap();
+        assert_eq!(wiring(&board), copper, "{}", routed.display());
+        assert_eq!(tidy_board(&board), once, "{}", routed.display());
+    }
+}
+
+#[test]
 fn a_via_padstack_the_dsn_lacks_takes_the_first_via_type() {
     // the DSN names its via type VIA600, the .kicad_pcb's vias get KiCad's name
     let files = write_files("renamed", &main_nets(), "VIA600");

@@ -6,6 +6,11 @@
 //! line also gives `all`, every trace on a power layer of any net, inside
 //! its plane or not (N05 counts `router.power_layer_traces = none`'s
 //! traces with it, which must be 0).
+//!
+//! The session replaces the board's wiring that it repeats
+//! ([`crate::ses_diff::import_routed_session`]): the count is of the routed
+//! board, where an unfixed or user-fixed input trace on a power layer is one
+//! trace, not two.
 
 use std::process::ExitCode;
 
@@ -65,7 +70,7 @@ pub fn run(args: &[String]) -> Result<ExitCode, String> {
     let mut board = load_board(std::path::Path::new(dsn))?;
     if let Some(ses) = ses {
         let session = parse_session(&read_text(std::path::Path::new(ses))?)?;
-        freerouting::io::specctra::import_session(&mut board, &session);
+        crate::ses_diff::import_routed_session(&mut board, &session);
     }
     let lines = breach_lines(&board);
     let all = power_layer_trace_count(&board);

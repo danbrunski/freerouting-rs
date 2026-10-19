@@ -367,7 +367,9 @@ pub fn check_java(java: &str) -> Result<String, String> {
     }
 }
 
-/// Measures the SES a run wrote.
+/// Measures the SES a run wrote: the statistics of `board` with the SES
+/// imported in place of the input wiring it repeats
+/// ([`SessionStatistics::of_session`]), the routed board the engine wrote.
 pub fn measure(
     board: &freerouting::board::BasicBoard,
     ses: &Path,
@@ -380,14 +382,15 @@ pub fn measure(
 }
 
 /// Q02.1's delivered-width report of the SES a run wrote, imported into a
-/// copy of `board`.
+/// copy of `board` in place of the wiring the SES repeats
+/// ([`crate::ses_diff::import_routed_session`]).
 pub fn measure_widths(
     board: &freerouting::board::BasicBoard,
     ses: &Path,
 ) -> Result<freerouting::quality::neckdown::width_report::WidthReport, String> {
     let session = parse_session(&read_text(ses)?)?;
     let mut copy = board.clone();
-    freerouting::io::specctra::import_session(&mut copy, &session);
+    crate::ses_diff::import_routed_session(&mut copy, &session);
     Ok(freerouting::quality::neckdown::width_report::report(&copy))
 }
 
