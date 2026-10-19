@@ -337,7 +337,9 @@ impl TraceShover<'_> {
                 // whole convex area, enlarged by the compensation the tree
                 // applies before partitioning. Holes and concave areas are
                 // not bridged.
-                let convex = area.area().split_to_convex()?;
+                // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): the board's
+                // split switches (all four); Java's split when they are `true`.
+                let convex = area.area().split_to_convex_with(None, ctx.split_quirks)?;
                 if convex.len() != 1 {
                     return None;
                 }
@@ -461,4 +463,67 @@ fn wrap_around(
         result = result.combine(second);
     }
     result
+}
+
+#[cfg(test)]
+mod n06_tests {
+    use super::*;
+    use crate::board::split_switches::test_support::{board, split_fixed};
+    use crate::board::structure::FixedState;
+    use crate::settings::JavaQuirks;
+    use freerouting_geometry::{Area, IntPoint, PolylineArea, PolylineShape, Simplex, TileShape};
+
+    /// The call path of the area split in `spring_obstacle_shape`: an area with a
+    /// hole that cuts a corner off a box is one convex piece, wider than a tree
+    /// section, so the shape comes from the split under the board's switches.
+    ///
+    /// The two values give the same shape here and on every case found: on
+    /// 120,000 random triangles crossing a box the switches changed the piece
+    /// count from 3 to 4 at most (N06 follow-up, 2026-10-18), never to or from one
+    /// piece, which is all this site looks at.
+    #[test]
+    fn spring_shape_of_a_partitioned_area_uses_the_board_split() {
+        let outer = TileShape::IntBox(IntBox::new(0, 0, 200_000, 100_000));
+        let corner = TileShape::Simplex(Simplex::new(vec![
+            Line::new(
+                IntPoint::new(-10_000, -10_000),
+                IntPoint::new(40_000, -10_000),
+            ),
+            Line::new(
+                IntPoint::new(40_000, -10_000),
+                IntPoint::new(-10_000, 40_000),
+            ),
+            Line::new(
+                IntPoint::new(-10_000, 40_000),
+                IntPoint::new(-10_000, -10_000),
+            ),
+        ]));
+        let area = Area::PolylineArea(PolylineArea::new(
+            PolylineShape::from(outer),
+            vec![PolylineShape::from(corner)],
+        ));
+        let bounds = IntBox::new(-200_000, -200_000, 400_000, 300_000);
+        for quirks in [JavaQuirks::JAVA, split_fixed()] {
+            let quirks: JavaQuirks = quirks;
+            let pieces = area.split_to_convex_with(None, quirks.split()).unwrap();
+            assert_eq!(pieces.len(), 1);
+            let mut board = board(bounds, quirks);
+            let id = board.insert_obstacle(area.clone(), 0, 0, FixedState::SystemFixed);
+            let item = board.item(id).unwrap().clone();
+            let ctx = board.shape_context();
+            assert!(
+                board
+                    .search_trees()
+                    .default_tree()
+                    .tree_shape_count(&item, &ctx)
+                    > 1
+            );
+            let shover = TraceShover::new(&mut board);
+            let shape = shover.spring_obstacle_shape(&item, 0, true).expect("shape");
+            assert_eq!(
+                format!("{shape:?}"),
+                format!("{:?}", pieces[0].enlarge(0.0))
+            );
+        }
+    }
 }

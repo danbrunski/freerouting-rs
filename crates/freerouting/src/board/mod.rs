@@ -60,4 +60,7 @@ pub mod transaction;
 pub use transaction::{CheckPolicy, TransactionResult};
 pub mod obstacle_view;
 
+// N06: the cutouts' split switches on the board.
+pub(crate) mod split_switches;
+
 pub use obstacle_view::ObstacleShape;

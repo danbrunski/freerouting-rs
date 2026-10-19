@@ -55,6 +55,28 @@ impl RoutingBoard {
         ))
     }
 
+    /// [`RoutingBoard::new`] with the switches of the Java bugs (N06) set before
+    /// the outline is inserted ([`BasicBoard::new_with_java_quirks`]).
+    pub fn new_with_java_quirks(
+        bounding_box: IntBox,
+        layer_structure: LayerStructure,
+        outline_shapes: Vec<PolylineShape>,
+        outline_clearance_class: i32,
+        rules: BoardRules,
+        communication: Communication,
+        java_quirks: crate::settings::JavaQuirks,
+    ) -> Self {
+        RoutingBoard::from_basic(BasicBoard::new_with_java_quirks(
+            bounding_box,
+            layer_structure,
+            outline_shapes,
+            outline_clearance_class,
+            rules,
+            communication,
+            java_quirks,
+        ))
+    }
+
     /// A routing board around `board`, with no transient routing state.
     pub(crate) fn from_basic(board: BasicBoard) -> Self {
         RoutingBoard {

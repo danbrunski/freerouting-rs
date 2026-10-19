@@ -110,9 +110,19 @@ impl PolylineArea {
     /// Approximation of the nearest point of the area to `from_point`, computed from the
     /// convex pieces. `None` if the division into convex pieces fails or is empty.
     pub fn nearest_point_approx(&self, from_point: FloatPoint) -> Option<FloatPoint> {
+        self.nearest_point_approx_with(from_point, SplitQuirks::JAVA)
+    }
+
+    /// [`Self::nearest_point_approx`] from the convex pieces of
+    /// [`Self::split_to_convex_with`]`(None, quirks)` (N06: the cutouts' switches).
+    pub fn nearest_point_approx_with(
+        &self,
+        from_point: FloatPoint,
+        quirks: SplitQuirks,
+    ) -> Option<FloatPoint> {
         let mut min_dist = f64::MAX;
         let mut result = None;
-        for piece in self.split_to_convex(None)? {
+        for piece in self.split_to_convex_with(None, quirks)? {
             let Some(curr) = piece.nearest_point_approx(from_point) else {
                 continue;
             };

@@ -715,6 +715,19 @@ impl Area {
         }
     }
 
+    /// [`Area::nearest_point_approx`] with the switches of the cutouts (N06), which
+    /// reach only a [`PolylineArea`]'s holes.
+    pub fn nearest_point_approx_with(
+        &self,
+        from_point: FloatPoint,
+        quirks: crate::quirks::SplitQuirks,
+    ) -> Option<FloatPoint> {
+        match self {
+            Area::Shape(s) => s.nearest_point_approx(from_point),
+            Area::PolylineArea(a) => a.nearest_point_approx_with(from_point, quirks),
+        }
+    }
+
     /// The area turned by `factor` times 90 degrees around `pole`.
     pub fn turn_90_degree(&self, factor: i32, pole: IntPoint) -> Area {
         match self {

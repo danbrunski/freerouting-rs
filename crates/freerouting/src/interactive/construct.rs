@@ -432,7 +432,13 @@ impl Construction {
         }
         holes.push(PolylineShape::from(PolygonShape::new(&self.points())));
         let new_area = PolylineArea::new(border, holes);
-        if new_area.split_to_convex(None).is_none() {
+        // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): the board's split
+        // switches (all four), whose cached pieces the insertion below reuses; Java's
+        // split when they are `true`.
+        if new_area
+            .split_to_convex_with(None, board.java_quirks().split())
+            .is_none()
+        {
             return failed;
         }
         board.generate_snapshot();

@@ -98,7 +98,9 @@ impl BasicBoard {
     /// `nets`. An area that cannot be split into convex pieces (Java throws)
     /// is reported as not fitting.
     pub fn check_shape(&self, area: &Area, layer: i32, nets: &[i32], class: i32) -> bool {
-        let Some(tiles) = area.split_to_convex() else {
+        // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): the board's split
+        // switches (all four); Java's split when they are `true`.
+        let Some(tiles) = area.split_to_convex_with(None, self.java_quirks.split()) else {
             return false;
         };
         for tile in &tiles {

@@ -29,6 +29,7 @@ pub(crate) fn adjust_plane_autoroute_settings(board: &mut BasicBoard) -> bool {
     let layer_count = board.layer_count();
     let mut changed_layers = vec![false; layer_count];
     let mut nothing_changed = true;
+    let split = board.java_quirks().split();
     for id in board.conduction_areas() {
         let Some(item) = board.item(id) else {
             continue;
@@ -43,7 +44,9 @@ pub(crate) fn adjust_plane_autoroute_settings(board: &mut BasicBoard) -> bool {
         if !board.layer_structure.layers[layer as usize].is_signal {
             continue;
         }
-        let Some(pieces) = area.area().split_to_convex() else {
+        // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): the board's split
+        // switches (all four); Java's split when they are `true`.
+        let Some(pieces) = area.area().split_to_convex_with(None, split) else {
             continue;
         };
         let current_area: f64 = pieces.iter().map(|p| p.area()).sum();
@@ -74,4 +77,34 @@ pub(crate) fn adjust_plane_autoroute_settings(board: &mut BasicBoard) -> bool {
         }
     }
     !nothing_changed
+}
+
+#[cfg(test)]
+mod n06_tests {
+    use super::*;
+    use crate::board::split_switches::test_support::{
+        board, border_area, pieces_total, split_fixed,
+    };
+    use crate::settings::JavaQuirks;
+    use freerouting_geometry::IntBox;
+
+    /// The conduction area's share of the board follows the board's split
+    /// switches: Java's border-crossing cutout loses half the area, so a plane
+    /// that covers 30% under `false` stays a signal net under Java.
+    #[test]
+    fn plane_share_follows_the_split_switches() {
+        let area = border_area();
+        let java = pieces_total(&area, JavaQuirks::JAVA);
+        let fixed = pieces_total(&area, split_fixed());
+        assert!(java < 0.6 * fixed, "{java} {fixed}");
+        // An outline whose 30% lies halfway between the two totals.
+        let height = ((java + fixed) / 2.0 / 0.3 / 200_000.0) as i32;
+        let outline = IntBox::new(-100_000, -100_000, 100_000, height - 100_000);
+        for (quirks, plane) in [(JavaQuirks::JAVA, false), (split_fixed(), true)] {
+            let mut board = board(outline, quirks);
+            board.insert_conduction_area(area.clone(), 0, &[1], 0, false, FixedState::Unfixed);
+            assert_eq!(adjust_plane_autoroute_settings(&mut board), plane);
+            assert_eq!(board.rules.nets.get(1).unwrap().contains_plane(), plane);
+        }
+    }
 }

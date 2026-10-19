@@ -286,12 +286,17 @@ impl BasicBoard {
                 1
             }
             ItemKind::BoardOutline(outline) => {
+                let split = self.java_quirks.split();
                 match transform {
-                    ItemTransform::Translate(vector) => outline
-                        .transform_shapes(|s| s.translate_by(vector), |a| a.translate_by(vector)),
+                    ItemTransform::Translate(vector) => outline.transform_shapes(
+                        |s| s.translate_by(vector),
+                        |a| a.translate_by(vector),
+                        split,
+                    ),
                     ItemTransform::Turn90 { factor, pole } => outline.transform_shapes(
                         |s| s.turn_90_degree(*factor, *pole),
                         |a| a.turn_90_degree(*factor, *pole),
+                        split,
                     ),
                     ItemTransform::Rotate {
                         angle_in_degree,
@@ -301,11 +306,13 @@ impl BasicBoard {
                         outline.transform_shapes(
                             |s| s.rotate_approx(angle, *pole),
                             |a| a.rotate_approx(angle, *pole),
+                            split,
                         )
                     }
                     ItemTransform::ChangeSide { pole } => outline.transform_shapes(
                         |s| s.mirror_vertical(*pole),
                         |a| a.mirror_vertical(*pole),
+                        split,
                     ),
                 }
                 0

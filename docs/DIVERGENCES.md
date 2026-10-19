@@ -1454,11 +1454,18 @@ Both switches still default to `true` in both profiles. With the named switch `f
   line is the corner's own first division line, so neither merge test passes and the
   pieces are Java's (`the_simplex_switch_changes_no_piece`). The switch is inert.
 
-The drill pages' split (`autoroute/session/drills.rs`) and the tie-pin trace cutout
-(`BasicBoard::reduce_trace_shape_at_tie_pin`) follow the switches; the search trees'
-area and outline-keepout shapes still split with Java's code. Run statistics count
-`octagon_box_cutout_branch3_reached` and `simplex_prev_division_line_reached` in both
-arms. Registered batch evidence remains pending under N06.4.
+Every `Area` split of the board follows the switches (the N06 follow-up decided
+2026-10-18): the drill pages' split (`autoroute/session/drills.rs`), the tie-pin trace
+cutout (`BasicBoard::reduce_trace_shape_at_tie_pin`), the search trees' area and
+outline-keepout shapes and the outline's piece count (`ShapeContext::split_quirks`,
+`BoardOutline::keepout_split`), `check_shape`, `overlapping_items`, the spring-over shape,
+the interactive hole, the plane adjustment after reading and the interactive route's
+nearest target point (`board/split_switches.rs`, `tests/n06_area_splits.rs`). The reader
+builds the board with its final switches; a later change reinserts the items whose pieces
+change. Run statistics count `octagon_box_cutout_branch3_reached` and
+`simplex_prev_division_line_reached` in both arms, at the drill pages and the tie-pin
+cutout. N06.4 measured and accepted the batch at that reach; the wider reach is
+re-measured under N06.14's amendment 1.
 
 **N06.14 simplex cutouts outside N06.4's domain (explicit opt-in; promotion pending)**
 
@@ -1481,8 +1488,10 @@ finds no violation in 16,200 cutouts with every switch `false` (Java: 1,817). Th
 switches reach a batch run only in any-angle mode, whose plain search tree keeps simplex
 obstacles in the drill pages; 45 and 90 degree trees keep octagons and boxes
 (`tests/n06_cutout_reach.rs`). Run statistics count `cutout_hole_crosses_border_reached`
-and `simplex_octagon_half_corner_reached` in both arms. Registered evidence pending
-under N06.14 (`docs/roadmap/prereg/N06.14.json`).
+and `simplex_octagon_half_corner_reached` in both arms. Like N06.4's switches they act at
+every `Area` split of the board since the follow-up of 2026-10-18; in the corpus the
+stored areas' splits reach neither of them. Registered evidence pending under N06.14
+(`docs/roadmap/prereg/N06.14.json`, amendment 1).
 
 **N06.5 maze search and room fixes (explicit opt-in; promotion pending)**
 

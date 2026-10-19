@@ -104,6 +104,29 @@ impl BasicBoard {
         rules: BoardRules,
         communication: Communication,
     ) -> Self {
+        Self::new_with_java_quirks(
+            bounding_box,
+            layer_structure,
+            outline_shapes,
+            outline_clearance_class,
+            rules,
+            communication,
+            crate::settings::JavaQuirks::JAVA,
+        )
+    }
+
+    /// [`BasicBoard::new`] with the switches of the Java bugs (N06) set before the
+    /// outline is inserted, so every item enters the search trees split under the
+    /// board's final cutout switches (the reader's path).
+    pub fn new_with_java_quirks(
+        bounding_box: IntBox,
+        layer_structure: LayerStructure,
+        outline_shapes: Vec<PolylineShape>,
+        outline_clearance_class: i32,
+        rules: BoardRules,
+        communication: Communication,
+        java_quirks: crate::settings::JavaQuirks,
+    ) -> Self {
         let layer_count = layer_structure.count();
         let mut board = BasicBoard {
             items: UndoableObjects::new(),
@@ -127,7 +150,7 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
             contact_rule: Default::default(),
-            java_quirks: crate::settings::JavaQuirks::JAVA,
+            java_quirks,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -173,6 +196,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         }
     }
 
@@ -254,19 +278,6 @@ impl BasicBoard {
     // Snapshots (B01.3)
     // ------------------------------------------------------------------
 
-    /// The switches of the Java bugs kept for parity (N06,
-    /// `router.java_quirks.*`); [`crate::settings::JavaQuirks::JAVA`] unless a job
-    /// set them.
-    pub fn java_quirks(&self) -> crate::settings::JavaQuirks {
-        self.java_quirks
-    }
-
-    /// Sets the switches of the Java bugs kept for parity (N06). The job sets
-    /// them from the settings before it reads a session or routes.
-    pub fn set_java_quirks(&mut self, quirks: crate::settings::JavaQuirks) {
-        self.java_quirks = quirks;
-    }
-
     /// What Java serializes of this board (see [`BoardSnapshot`]).
     pub(crate) fn snapshot(&self) -> BoardSnapshot {
         BoardSnapshot {
@@ -339,6 +350,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         let ids: Vec<ItemId> = self.items.keys().copied().collect();
         for id in &ids {
@@ -476,11 +488,13 @@ impl BasicBoard {
 
     /// Inserts the tree shapes of item `id` into the search trees.
     pub(crate) fn insert_into_trees(&mut self, id: ItemId) {
+        self.sync_outline_split(id);
         let ctx = ShapeContext {
             rules: &self.rules,
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         if let Some(item) = self.items.get(&id) {
             self.search_trees.insert(item, &ctx);
@@ -503,6 +517,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         if let Some(item) = self.items.get(&id) {
             self.search_trees.reinsert_in(indexes, item, &ctx);
@@ -1077,7 +1092,7 @@ impl BasicBoard {
         self.remove_from_trees(id);
         if let Some(ItemKind::BoardOutline(outline)) = self.items.get_mut(&id).map(|i| &mut i.kind)
         {
-            outline.set_keepout_outside(value, bounding_box);
+            outline.set_keepout_outside(value, bounding_box, self.java_quirks.split());
         }
         self.insert_into_trees(id);
         self.note_changed(id);
@@ -1448,7 +1463,10 @@ impl BasicBoard {
     /// The items overlapping `area` on `layer`.
     pub fn overlapping_items(&self, area: &Area, layer: i32) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
-        for tile in area.split_to_convex().unwrap_or_default() {
+        // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): the board's split
+        // switches (all four); Java's split when they are `true`.
+        let pieces = area.split_to_convex_with(None, self.java_quirks.split());
+        for tile in pieces.unwrap_or_default() {
             result.extend(self.overlapping_objects(&tile, layer));
         }
         result
@@ -2359,6 +2377,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         self.search_trees
             .set_clearance_compensation_used(value, &self.items, &ctx);
@@ -2372,6 +2391,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         self.search_trees.rebuild(&self.items, &ctx);
         if self.autoroute_log.is_some() {
@@ -2617,6 +2637,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         self.search_trees
             .get_autoroute_tree(clearance_class, &self.items, &ctx)

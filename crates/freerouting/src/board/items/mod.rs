@@ -25,7 +25,7 @@ use std::fmt;
 
 use freerouting_geometry::{
     Area, FloatPoint, IntBox, IntPoint, Point, Polyline, PolylineShape, PolylineShapeOps, Shape,
-    TileShape, Vector,
+    SplitQuirks, TileShape, Vector,
 };
 
 use crate::board::structure::FixedState;
@@ -535,6 +535,8 @@ pub struct BoardOutline {
     keepout_outside_outline: bool,
     /// The number of convex pieces of the keepout area.
     keepout_piece_count: usize,
+    /// The cutouts' switches `keepout_piece_count` was taken with (N06).
+    keepout_split: SplitQuirks,
     layer_count: usize,
 }
 
@@ -548,6 +550,7 @@ impl BoardOutline {
             keepout_area: None,
             keepout_outside_outline: false,
             keepout_piece_count: 0,
+            keepout_split: SplitQuirks::JAVA,
             layer_count,
         }
     }
@@ -582,34 +585,77 @@ impl BoardOutline {
         self.keepout_area.as_ref()
     }
 
+    /// The cutouts' switches the keepout's pieces are split with (N06): the
+    /// board's [`JavaQuirks::split`](crate::settings::JavaQuirks::split) when the
+    /// keepout was generated, moved or last refreshed.
+    pub fn keepout_split(&self) -> SplitQuirks {
+        self.keepout_split
+    }
+
+    /// The convex pieces of the generated keepout under [`Self::keepout_split`];
+    /// `None` without a keepout or when the split fails. Their number is the one
+    /// [`Self::tile_shape_count`] counts with.
+    pub fn keepout_pieces(&self) -> Option<Vec<TileShape>> {
+        self.keepout_area
+            .as_ref()?
+            .split_to_convex_with(None, self.keepout_split)
+    }
+
+    /// Splits the keepout under `quirks` and keeps the piece count.
+    fn count_keepout_pieces(&mut self, quirks: SplitQuirks) {
+        self.keepout_split = quirks;
+        // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): with the other
+        // three split switches; Java's `splitToConvex` when they are `true`.
+        self.keepout_piece_count = self.keepout_pieces().map_or(0, |pieces| pieces.len());
+    }
+
+    /// Takes the keepout's piece count again under `quirks` if it was taken under
+    /// another value. True if the count was retaken (the caller reinserts the
+    /// outline into the search trees when its pieces changed).
+    pub(crate) fn refresh_keepout_split(&mut self, quirks: SplitQuirks) -> bool {
+        if self.keepout_split == quirks || self.keepout_area.is_none() {
+            self.keepout_split = quirks;
+            return false;
+        }
+        self.count_keepout_pieces(quirks);
+        true
+    }
+
     /// Java `generateKeepoutOutside` without the tree update, which the
-    /// board does.
-    pub(crate) fn set_keepout_outside(&mut self, value: bool, bounding_box: IntBox) {
+    /// board does; the keepout is split under `quirks` (the board's).
+    pub(crate) fn set_keepout_outside(
+        &mut self,
+        value: bool,
+        bounding_box: IntBox,
+        quirks: SplitQuirks,
+    ) {
         self.keepout_outside_outline = value;
         if value && self.keepout_area.is_none() {
             let area = Area::PolylineArea(freerouting_geometry::PolylineArea::new(
                 PolylineShape::from(bounding_box),
                 self.shapes.clone(),
             ));
-            self.keepout_piece_count = area.split_to_convex().map_or(0, |pieces| pieces.len());
             self.keepout_area = Some(area);
+            self.count_keepout_pieces(quirks);
         }
     }
 
     /// Transform both the stored outline and its generated keepout. Java only
-    /// stored the keepout transform, leaving the outline itself behind.
+    /// stored the keepout transform, leaving the outline itself behind. The moved
+    /// keepout is split under `quirks` (the board's).
     pub(crate) fn transform_shapes(
         &mut self,
         transform: impl Fn(&PolylineShape) -> PolylineShape,
         transform_area: impl FnOnce(&Area) -> Area,
+        quirks: SplitQuirks,
     ) {
         for shape in &mut self.shapes {
             *shape = transform(shape);
         }
         if let Some(area) = &self.keepout_area {
             let moved = transform_area(area);
-            self.keepout_piece_count = moved.split_to_convex().map_or(0, |pieces| pieces.len());
             self.keepout_area = Some(moved);
+            self.count_keepout_pieces(quirks);
         }
     }
 

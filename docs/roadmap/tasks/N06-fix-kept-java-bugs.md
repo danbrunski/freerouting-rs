@@ -457,6 +457,8 @@ These are marked or look like quirks but keep no bug:
         inserts items before it puts the switches on the board, and `prepare_job` puts the
         final switches on afterwards, so a split value that differs would need a tree rebuild.
         `unwired_area_splits_corpus_inventory` counts the reach.
+        Wired since by the follow-up decided 2026-10-18 (option (b)): see N06.4's "Wired at every
+        `Area` split" bullet; the re-measurement is N06.14's amendment 1.
       - `every_switch_has_a_parity_marker_at_its_site` (new, `tests/settings_java_quirks.rs`)
         scans `crates/freerouting/src` and `crates/freerouting-geometry/src`. Every id in
         `JavaQuirks::IDS` has a marker, and every marker names a known id. Before this audit
@@ -558,14 +560,36 @@ These are marked or look like quirks but keep no bug:
       - `tests/n06_cutout_reach.rs::drill_page_splits_report_both_counters_in_both_arms`:
         pass 1 of `Issue269-min_fr_test` reaches branch 3 7 times in each arm, and the simplex
         merge 0 times.
-    - [~] Not wired (N06.3's deferred read sites): the search trees' shapes of obstacle and conduction areas and of the
-      outline's generated keepout still split with Java's code in every arm. Those sites are
-      `board/search/mod.rs` `item_tree_shapes`/`board_outline_tree_shapes` and
-      `BoardOutline::keepout_piece_count` in `board/items/mod.rs`. They are outside this row's
-      files: the trees take a `ShapeContext`, which `shove/cutout.rs` also builds, and the
-      board's switches are set only after the reader inserts the items, so the tree shapes
-      would need a rebuild. `unwired_area_splits_corpus_inventory` (ignored, read-only)
-      reports per corpus board how often those splits reach the two branches.
+    - [x] Wired at every `Area` split (N06 follow-up, decided 2026-10-18, option (b) of N06.3's
+      audit; branch `land/n06-splits` on `490d177`). Until then the search trees' shapes of
+      obstacle and conduction areas and of the outline's generated keepout, and the board's other
+      area splits, kept Java's code in every arm. Now every split takes the board's
+      `JavaQuirks::split`: `board/search/mod.rs` (area tree shapes through the new
+      `ShapeContext::split_quirks`; the outline's keepout through `BoardOutline::keepout_pieces`),
+      `BoardOutline`'s piece count (`keepout_split`, retaken by generation, moves and a switch
+      change), `board/queries.rs` `check_shape`, `board/basic_board.rs` `overlapping_items`,
+      `shove/spring.rs`, `interactive/construct.rs`, `io/specctra/parser/dsn_file.rs` and the
+      interactive route's nearest target point (`Area::nearest_point_approx_with`, geometry). The
+      reader builds the board with its final switches before the first item
+      (`RoutingBoard::new_with_java_quirks`); `BasicBoard::set_java_quirks` reinserts, in item-list
+      order, only the items whose pieces change when the split switches change
+      (`board/split_switches.rs`). Each site carries a
+      `PARITY(quirk, java_quirks.octagon_box_cutout_branch3)` marker. Tests (all pass):
+      `tests/n06_area_splits.rs` (6: area tree shapes on the branch-3, border and half-corner
+      shapes, outline keepout and its move, `check_shape` and `overlapping_items`, the
+      interactive hole, a switch change after insertion, and `Issue756-tomu-fpga9` read with
+      every switch `false` against read with Java's and switched afterwards: equal pieces in every
+      tree, 2 of 1688 items differ from Java's), and the unit tests
+      `dsn_file::n06_tests::plane_share_follows_the_split_switches`,
+      `spring::n06_tests::spring_shape_of_a_partitioned_area_uses_the_board_split` and
+      `route::n06_tests::nearest_target_point_follows_the_split_switches`. With every switch
+      `true`: `PARITY_SET=tools/bench/sets/connection-parity.txt PARITY_MAX_JAVA_S=20 cargo test
+      --release -p freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
+      --test-threads=1`: exact 7 boards, 7 pass, 0 fail, 7 SES byte-identical. This item's
+      acceptance stands for the drill-page and tie-pin reach it was measured at; the wider reach
+      is re-measured under N06.14 (its amendment 1, the `octagon_box_cutout_branch3` arm). Corpus:
+      the stored-area splits reach branch 3 on `Issue756-tomu-fpga8` (1) and `-fpga9` (6) only;
+      canary-pwr's fixture and its plugin export have no stored area with holes (0).
     - [x] Registered before any number: `docs/roadmap/prereg/N06.4.json` (sha256
       `392f0310ee74989380bf1e8a5fb4f57f470cdeab0e3e98a238ee4d710d3dd598`) and
       `tools/bench/sets/n06-g.txt`.
@@ -1422,13 +1446,42 @@ These are marked or look like quirks but keep no bug:
     - [x] Defaults unchanged: both keys unset are `true` in both profiles; Java's path is the
       `true` branch at both `PARITY(quirk, java_quirks.<id>)` markers. DIVERGENCES: "N06.14
       simplex cutouts outside N06.4's domain" under "Java quirk switches, opt-in (N06)".
-    - [ ] Heavy run pending (orchestrator, one job at a time):
+    - [x] Amendment 1 (2026-10-18, before any N06.14 route): every `Area` split of the board now
+      follows the cutout switches (N06.4's "Wired at every `Area` split" bullet), so the engine
+      this registration names reaches further. `docs/roadmap/prereg/N06.14.json` sha256 now
+      `2255839225cbdf88e97d654df5157edcf46bb14cf7c431559094fee1f1f64d6a`, re-pinned in
+      `crates/freerouting-dev/tests/prereg_n06_14.rs` (6 tests, pass).
+      - Engine: the commit that lands the follow-up (on `490d177`); every arm sets
+        `octagon_box_cutout_branch3` explicitly.
+      - A fifth arm, `octagon_box_cutout_branch3` (`false`, both N06.14 keys `true`, its baseline
+        `baseline`), re-measures N06.4's accepted switch at the wider reach. Its pair
+        (`baseline`, `octagon_box_cutout_branch3`) is reported and judged on its own by the same
+        totals rule (`--arms baseline,octagon_box_cutout_branch3`).
+      - Hard guards: `via_in_pad` and `below_minimum` are "no new breach versus baseline" for
+        every pair, as N06.4's amendment 2 defines them (the baseline breaks the raw
+        `below_minimum` by design, through the pin neck-down).
+      - Rows: `fixtures/Issue756-tomu-fpga8.dsn` and `-fpga9.dsn` join `tools/bench/sets/n06-g2.txt`
+        (45 degree identity checks for N06.14's own arms). They are the only corpus boards where
+        the newly wired splits reach a switch: branch 3 in 1 and 6 stored-area cutouts (N06.4's
+        corpus inventory). Counted for this amendment (`N06_CUTOUT_DSNS`, load only): the five
+        old rows, canary-pwr's fixture and its plugin export
+        (`target/canary-handoff/2026-10-18-n06-g/pluginpath-9511d9a.dsn`) have 0 stored areas
+        with holes, so there the new sites reach no switch.
+      - `seen_before_registration` adds N06.4's routed numbers of the branch-3 switch on two
+        rows (Issue026-J2_reference 0 → 0 unrouted; canary-pwr 122 → 125 DSN, 41 → 43 plugin)
+        and A14's legacy numbers of the new rows (14 and 21 unrouted). No route was run for the
+        amendment.
+    - [ ] Heavy run pending (orchestrator, one job at a time), from main once `land/n06-3` and
+      `land/n06-splits` have landed:
       `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2`.
-      - `n06_run.py` exits non-zero when sessions differ, expected on the any-angle rows; it
-        writes `summary.json` with every run's counters first.
+      - `n06_run.py` (5 arms × 7 rows) exits non-zero when sessions differ, expected on the
+        any-angle rows and for the `octagon_box_cutout_branch3` arm; it writes `summary.json`
+        with every run's counters first.
       - Then grade each SES with `gate collect` and `freerouting-dev widths`, and judge the
-        pairs with `freerouting-dev gate --rule totals`; then the plugin canary run and grade,
-        per the registration's `plugin_canary` block.
+        verdict pair with `freerouting-dev gate --prereg docs/roadmap/prereg/N06.14.json` and
+        amendment 1's pair with `freerouting-dev gate --prereg docs/roadmap/prereg/N06.14.json
+        --arms baseline,octagon_box_cutout_branch3`; then the plugin canary run and grade, per
+        the registration's `plugin_canary` block.
       - Also the corpus inventory (read-only):
         `cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
 - [~] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A

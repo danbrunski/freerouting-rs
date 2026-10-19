@@ -140,14 +140,17 @@ fn drill_page_splits_report_both_counters_in_both_arms() {
     );
 }
 
-/// The splits a batch run makes with Java's code whatever the switches are: the
-/// search trees' shapes of obstacle and conduction areas (`board/search/mod.rs`) and of
-/// the board outline's generated keepout, which still call `split_to_convex`. Counts,
-/// per corpus board, how often those splits reach the four switches' branches (N06.4's
-/// two and N06.14's two); a board
-/// where they do is one where wiring those sites would change routes. Read-only (loads
-/// every fixture, never routes); run by the orchestrator with an absolute path in
-/// `N06_CUTOUT_COUNTERS_OUT`.
+/// The splits of the board's stored areas: the search trees' shapes of obstacle and
+/// conduction areas (`board/search/mod.rs`) and of the board outline's generated
+/// keepout. Until the N06 follow-up of 2026-10-18 they kept Java's code under every
+/// switch value (hence the name, which the registrations' commands use); since then
+/// they follow the board's switches like the drill pages. Counts, per corpus board, how
+/// often those splits reach the four switches' branches (N06.4's two and N06.14's two),
+/// with Java's code; a board where they do is one where the switches change these
+/// splits. Read-only (loads every fixture, never routes); run by the orchestrator with
+/// an absolute path in `N06_CUTOUT_COUNTERS_OUT`. `N06_CUTOUT_DSNS`, a list of
+/// absolute DSN paths separated by `:`, replaces the fixture walk (a plugin-exported
+/// board, say).
 #[test]
 #[ignore = "N06.4 corpus reachability report; set N06_CUTOUT_COUNTERS_OUT to an absolute path"]
 fn unwired_area_splits_corpus_inventory() {
@@ -182,14 +185,17 @@ fn unwired_area_splits_corpus_inventory() {
     );
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut files = Vec::new();
-    collect(&root.join("fixtures"), &mut files);
+    match std::env::var("N06_CUTOUT_DSNS") {
+        Ok(list) => files.extend(list.split(':').map(PathBuf::from)),
+        Err(_) => collect(&root.join("fixtures"), &mut files),
+    }
     files.sort();
     let mut rows = Vec::new();
     for path in files {
         let board = freerouting::drc::load_design(&std::fs::read(&path).unwrap());
         let name = path
             .strip_prefix(&root)
-            .unwrap()
+            .unwrap_or(&path)
             .to_str()
             .unwrap()
             .to_string();

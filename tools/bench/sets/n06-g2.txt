@@ -10,4 +10,8 @@ crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn
 crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn
 crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
 fixtures/Issue026-J2_reference.dsn
+# Amendment 1 (2026-10-18): the only corpus boards where the search trees' area splits reach a
+# switch (branch 3), for the octagon_box_cutout_branch3 arm at the wider reach; 45 degree rows.
+fixtures/Issue756-tomu-fpga8.dsn
+fixtures/Issue756-tomu-fpga9.dsn
 fixtures/canary-pwr/canary-pwr-9511d9a.dsn

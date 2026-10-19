@@ -3,7 +3,7 @@
   "id": "N06.14-simplex-cutouts",
   "registered": "2026-10-18",
   "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.14)",
-  "question": "Do the simplex cutout fixes outside N06.4's domain, router.java_quirks.cutout_hole_crosses_border=false (the stand-in division line of a corner on the outer border no longer clips later pieces, so no piece of a hole crossing the border vanishes) and router.java_quirks.simplex_octagon_half_corner=false (a corner that is not an integer point and lies on no outer border line is divided at its exact point, so the pieces beside it no longer overlap), each alone and both, keep the unrouted total within N02's totals rule (accept no-regress: correctness fixes) of Java's cutouts, with no via in a pad, no copper below the minimum and no new clearance or DRC error; do the 45 degree rows keep Java's sessions byte for byte; and how often does a run reach the two switches?",
+  "question": "Do the simplex cutout fixes outside N06.4's domain, router.java_quirks.cutout_hole_crosses_border=false (the stand-in division line of a corner on the outer border no longer clips later pieces, so no piece of a hole crossing the border vanishes) and router.java_quirks.simplex_octagon_half_corner=false (a corner that is not an integer point and lies on no outer border line is divided at its exact point, so the pieces beside it no longer overlap), each alone and both, keep the unrouted total within N02's totals rule (accept no-regress: correctness fixes) of Java's cutouts, with no via in a pad, no copper below the minimum and no new clearance or DRC error; do the 45 degree rows keep Java's sessions byte for byte; and how often does a run reach the two switches? Amendment 1: does N06.4's accepted router.java_quirks.octagon_box_cutout_branch3=false still keep N02's totals rule (no-regress) versus Java's cutouts when every Area split of the board follows it, not only the drill pages and the tie-pin cutout?",
   "rule": "totals",
   "totals": {
     "accept": "no-regress",
@@ -17,38 +17,47 @@
     "min_boards": 3
   },
   "noise_note": "canary-pwr's band is routing-quality.md's 10; every other board's band is the totals rule's default max(2, ceil(5 % of connections)) from the record's connections",
-  "engine": "freerouting-rs at the implementing commit (main 81afaba with N06.14's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys, each set explicitly",
+  "engine": "freerouting-rs at the commit that lands the N06 split-sites follow-up (branch land/n06-splits, on land/n06-3 490d177 = main 94d0620 plus N06.3's audit commit; the orchestrator builds main once both have landed), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the three router.java_quirks keys, each set explicitly",
   "arms": {
     "baseline": {
-      "engine": "freerouting-rs at the implementing commit (main 81afaba with N06.14's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys, each set explicitly",
-      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.cutout_hole_crosses_border=true --router.java_quirks.simplex_octagon_half_corner=true",
+      "engine": "freerouting-rs at the commit that lands the N06 split-sites follow-up (branch land/n06-splits, on land/n06-3 490d177 = main 94d0620 plus N06.3's audit commit; the orchestrator builds main once both have landed), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the three router.java_quirks keys, each set explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.octagon_box_cutout_branch3=true --router.java_quirks.cutout_hole_crosses_border=true --router.java_quirks.simplex_octagon_half_corner=true",
       "settings": {},
       "what": "both keys set to true: Java's simplex cutouts"
     },
     "cutout_hole_crosses_border": {
-      "engine": "freerouting-rs at the implementing commit (main 81afaba with N06.14's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys, each set explicitly",
-      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.cutout_hole_crosses_border=false --router.java_quirks.simplex_octagon_half_corner=true",
+      "engine": "freerouting-rs at the commit that lands the N06 split-sites follow-up (branch land/n06-splits, on land/n06-3 490d177 = main 94d0620 plus N06.3's audit commit; the orchestrator builds main once both have landed), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the three router.java_quirks keys, each set explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.octagon_box_cutout_branch3=true --router.java_quirks.cutout_hole_crosses_border=false --router.java_quirks.simplex_octagon_half_corner=true",
       "settings": {
         "router.java_quirks.cutout_hole_crosses_border": false
       },
       "what": "the border-corner fix alone"
     },
     "simplex_octagon_half_corner": {
-      "engine": "freerouting-rs at the implementing commit (main 81afaba with N06.14's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys, each set explicitly",
-      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.cutout_hole_crosses_border=true --router.java_quirks.simplex_octagon_half_corner=false",
+      "engine": "freerouting-rs at the commit that lands the N06 split-sites follow-up (branch land/n06-splits, on land/n06-3 490d177 = main 94d0620 plus N06.3's audit commit; the orchestrator builds main once both have landed), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the three router.java_quirks keys, each set explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.octagon_box_cutout_branch3=true --router.java_quirks.cutout_hole_crosses_border=true --router.java_quirks.simplex_octagon_half_corner=false",
       "settings": {
         "router.java_quirks.simplex_octagon_half_corner": false
       },
       "what": "the inexact-corner fix alone"
     },
     "all": {
-      "engine": "freerouting-rs at the implementing commit (main 81afaba with N06.14's diff), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the two router.java_quirks keys, each set explicitly",
-      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.cutout_hole_crosses_border=false --router.java_quirks.simplex_octagon_half_corner=false",
+      "engine": "freerouting-rs at the commit that lands the N06 split-sites follow-up (branch land/n06-splits, on land/n06-3 490d177 = main 94d0620 plus N06.3's audit commit; the orchestrator builds main once both have landed), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the three router.java_quirks keys, each set explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.octagon_box_cutout_branch3=true --router.java_quirks.cutout_hole_crosses_border=false --router.java_quirks.simplex_octagon_half_corner=false",
       "settings": {
         "router.java_quirks.cutout_hole_crosses_border": false,
         "router.java_quirks.simplex_octagon_half_corner": false
       },
       "what": "candidate: both N06.14 fixes"
+    },
+    "octagon_box_cutout_branch3": {
+      "engine": "freerouting-rs at the commit that lands the N06 split-sites follow-up (branch land/n06-splits, on land/n06-3 490d177 = main 94d0620 plus N06.3's audit commit; the orchestrator builds main once both have landed), one Linux release build for every arm; the default profile (enhanced, whose ENHANCED table does not touch java_quirks) and the default passes, so the arms differ only in the three router.java_quirks keys, each set explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.octagon_box_cutout_branch3=false --router.java_quirks.cutout_hole_crosses_border=true --router.java_quirks.simplex_octagon_half_corner=true",
+      "settings": {
+        "router.java_quirks.octagon_box_cutout_branch3": false
+      },
+      "baseline": "baseline",
+      "what": "amendment 1: N06.4's accepted switch at the wider reach (every Area split of the board: the drill pages, the tie-pin cutout, the search trees' area and outline-keepout shapes and the outline's piece count, check_shape, overlapping_items, the spring-over shape of an area, the interactive hole, the plane adjustment after reading, the route's nearest target point); both N06.14 keys true"
     }
   },
   "baseline_arm": "baseline",
@@ -75,18 +84,27 @@
           "simplex_octagon_half_corner"
         ],
         "rows": "all"
+      },
+      {
+        "arms": [
+          "baseline",
+          "octagon_box_cutout_branch3"
+        ],
+        "rows": "all"
       }
     ]
   },
-  "pairs_rule": "the verdict pair is judged by the totals block with the hard and guard metrics below; the reported pairs are the switch-by-switch bisection (N06's decisions: one switch per bug), run up front. On the two 45 degree rows (fixtures/Issue026-J2_reference.dsn, canary-pwr) every arm must show session_differences 0 and both reach counters 0; either failing is a bug in N06.14's diff or in its reach claim, not a verdict",
+  "pairs_rule": "the verdict pair (baseline, all) is judged by the totals block with the hard and guard metrics below; the reported pairs (baseline, cutout_hole_crosses_border) and (baseline, simplex_octagon_half_corner) are the switch-by-switch bisection (N06's decisions: one switch per bug), run up front. Amendment 1: the pair (baseline, octagon_box_cutout_branch3) has its own verdict under the same totals block and metrics, judged with freerouting-dev gate --prereg docs/roadmap/prereg/N06.14.json --arms baseline,octagon_box_cutout_branch3. On the 45 degree rows (fixtures/Issue026-J2_reference.dsn, canary-pwr, fixtures/Issue756-tomu-fpga8.dsn, fixtures/Issue756-tomu-fpga9.dsn) the arms baseline, cutout_hole_crosses_border, simplex_octagon_half_corner and all must show session_differences 0 and both N06.14 reach counters 0; either failing is a bug in N06.14's diff or in its reach claim, not a verdict. The octagon_box_cutout_branch3 arm is expected to differ from the baseline on 45 degree rows",
   "boards": {
     "set": "tools/bench/sets/n06-g2.txt",
-    "eligibility": "every row; no row is dropped after a number. Chosen before any routed number: the switches reach a drill page only in any-angle mode, so A07's three any-angle variants (the boards N06.12 registered for any-angle mode) are the measured rows; two 45 degree boards of n06-g.txt check that nothing changes where the switches are not reached; canary-pwr also goes through the KiCad plugin path (plugin_canary)",
+    "eligibility": "every row; no row is dropped after a number. Chosen before any routed number: the switches reach a drill page only in any-angle mode, so A07's three any-angle variants (the boards N06.12 registered for any-angle mode) are the measured rows; two 45 degree boards of n06-g.txt check that nothing changes where the switches are not reached; canary-pwr also goes through the KiCad plugin path (plugin_canary); amendment 1 adds fixtures/Issue756-tomu-fpga8.dsn and Issue756-tomu-fpga9.dsn, the only corpus boards where the newly wired splits reach a switch (branch 3: 1 and 6 cutouts of their stored areas, corpus_counter_note), chosen before any route under this registration; both are 45 degree boards, identity checks for N06.14's own arms",
     "files": {
       "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn": "52f0b5d19d9b78e505b89b7870e292835fbc398abeeba797159cd86edc803c47",
       "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": "fdd39050d654598ccf50a38f476af1e60d864ffa8757a213dbd3e2f77114e68e",
       "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": "df6535a679fa0d2720324497f827929db91b0c667b23cd97a2e627e2ee09c7ed",
       "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue756-tomu-fpga8.dsn": "074003db4dfd78342b1a41fde2c524e05acbb988f0e629fe9fda434abbfb8f09",
+      "fixtures/Issue756-tomu-fpga9.dsn": "ee19a6acdba2d104466debe0117ef6b8ca02ee6d77e637c6425dd8383e8ada89",
       "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a"
     }
   },
@@ -150,6 +168,13 @@
       "compared": false
     },
     {
+      "name": "octagon_box_cutout_branch3_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
       "name": "drills_computed",
       "role": "report",
       "kind": "int",
@@ -179,8 +204,8 @@
     }
   ],
   "metric_definitions": {
-    "via_in_pad": "freerouting-dev gate collect's count on the imported SES; plugin canary: tools/kicad-oracle/via_in_pad.py",
-    "below_minimum": "the nets with copper under their class width in freerouting-dev widths <DSN> <SES> (under_mm > 0); plugin canary: KiCad track_width errors",
+    "via_in_pad": "amendment 1, no new breach versus baseline (N06.4's amendment 2): an arm's via_in_pad is its count of vias in an SMD pad that the input has no via with that centre, padstack and nets for (main 4885a30's added_via_in_pad, on the imported SES; plugin canary: tools/kicad-oracle/via_in_pad.py) minus the baseline arm's count on the same row, floored at 0; the raw count is reported as via_in_pad_raw",
+    "below_minimum": "amendment 1, no new breach versus baseline (N06.4's amendment 2): on a DSN row, the number of the arm's delivered traces narrower than the board's narrowest class width that the input board does not already have, minus the baseline arm's number on the same row, floored at 0 (the router's pin neck-down puts copper under every class width by design, so the baseline breaks the raw count); the raw count is reported as below_minimum_raw and the nets under their class width (freerouting-dev widths, under_mm > 0) as below_class_width_nets, neither judged; plugin canary: KiCad's track_width errors minus the baseline arm's, floored at 0",
     "clearance_violations": "the router's clearance violations of the final board (RESULT board_statistics; gate collect's clearance_violations)",
     "drc_real": "plugin canary only: KiCad error-severity items other than unconnected items",
     "kicad_unconnected": "plugin canary only: KiCad's unconnected items after the import (canary grade.sh); the totals signal where it is a number",
@@ -191,7 +216,8 @@
     "drills_computed": "STATS total.counts.drills_computed",
     "vias": "gate collect's vias",
     "length_mm": "gate collect's length_mm",
-    "wall_seconds": "STATS total wall_seconds"
+    "wall_seconds": "STATS total wall_seconds",
+    "octagon_box_cutout_branch3_reached": "STATS total.counts.octagon_box_cutout_branch3_reached (N06.4's counter): the drill-page and tie-pin cutouts whose branch 3 changes a piece, counted in both arms. The newly wired splits are not counted per run; corpus_counter_command counts them per board"
   },
   "pass_rule": {
     "min_boards": 3,
@@ -199,18 +225,19 @@
     "max_regress": 0
   },
   "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress",
-  "keep_rule": "N06's accept rule for (b) fixes: a batch is accepted when the hard guards hold, no board regresses by more than twice its noise band and the total is not worse than the set's noise; a neutral fix stays in. If the verdict pair passes, N06.13 turns both switches off in ENHANCED through N05",
+  "keep_rule": "N06's accept rule for (b) fixes: a batch is accepted when the hard guards hold, no board regresses by more than twice its noise band and the total is not worse than the set's noise; a neutral fix stays in. If the verdict pair passes, N06.13 turns both switches off in ENHANCED through N05. Amendment 1, the pair (baseline, octagon_box_cutout_branch3): pass keeps N06.4's acceptance at the wider reach (N06.13 may promote the switch); fail is an operator decision: promote the switch without the wider reach (a separate switch for the newly wired splits), or not at all",
   "accept": [
     "Unit and invariant tests pin both behaviours of both switches (tests/cutout_invariant.rs: java_breaks_the_invariant_outside_the_two_rows, all_fixed_cutouts_tile_the_rest_on_the_extended_set, java_breaks_the_extended_set_through_each_switch).",
     "On the two 45 degree rows every arm's sessions equal the baseline's and both reach counters are 0.",
     "The verdict pair passes the totals rule (no-regress) with the hard and guard metrics.",
-    "Grade canary-pwr through the KiCad plugin path; no new real DRC, via-in-pad or below-minimum errors."
+    "Grade canary-pwr through the KiCad plugin path; no new real DRC, via-in-pad or below-minimum errors.",
+    "Amendment 1: the pair (baseline, octagon_box_cutout_branch3) passes the same totals rule (no-regress) with the hard and guard metrics, so N06.4's acceptance of octagon_box_cutout_branch3 holds at the wider reach."
   ],
   "stop_rule": "one registered run per arm per board; no reruns with other settings. No heavy run by the implementer.",
-  "orchestrator": "Build the release CLI in the worktree with CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target; from the repository root run orchestrator_command (it exits non-zero when sessions differ, which is expected on the any-angle rows, after writing summary.json with every run's counters); then grade each SES with gate collect and freerouting-dev widths, and judge the pairs with freerouting-dev gate --rule totals",
+  "orchestrator": "Build the release CLI in the worktree with CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target; from the repository root run orchestrator_command (it exits non-zero when sessions differ, which is expected on the any-angle rows, after writing summary.json with every run's counters); then grade each SES with gate collect and freerouting-dev widths, and judge the pairs with freerouting-dev gate --rule totals; amendment 1: also judge the pair (baseline, octagon_box_cutout_branch3) with freerouting-dev gate --prereg docs/roadmap/prereg/N06.14.json --arms baseline,octagon_box_cutout_branch3",
   "orchestrator_command": "cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2",
   "corpus_counter_command": "cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1",
-  "corpus_counter_note": "read-only: how often the search trees' area and outline-keepout splits, which keep Java's code in every arm, reach the four cutout switches per corpus board (the same report as N06.4's, with N06.14's two columns)",
+  "corpus_counter_note": "read-only: how often the splits of the boards' stored areas (the search trees' area and outline-keepout shapes, which since amendment 1 follow the switches) reach the four cutout switches per corpus board, with Java's code (the same report as N06.4's, with N06.14's two columns). At amendment 1: N06.4's run of this command (target/orchestrator/n06-g-corpus.json, 205 fixtures, 203 loaded) found branch 3 on Issue756-tomu-fpga8 (1 cutout, 4 area splits with holes) and Issue756-tomu-fpga9 (6, 13) only, and no other switch on any board. With N06_CUTOUT_DSNS (amendment 1, load only): every row of this registration, canary-pwr's fixture and its plugin export (target/canary-handoff/2026-10-18-n06-g/pluginpath-9511d9a.dsn, N06.4's export) included, has 0 stored areas with holes, so on those rows the newly wired sites reach no switch. Of the other new sites, check_shape and overlapping_items are interactive (keepout construction, selection, the GUI's inspect tool) and the route's nearest target point is the interactive router's; the spring-over shape and the plane adjustment split stored areas only",
   "plugin_canary": {
     "required": true,
     "source": "canary-pwr-rev1.0, the original KiCad project at canary 9511d9a; supplied by the orchestrator; never edit the source project",
@@ -219,17 +246,26 @@
     "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
     "route": "For each registered arm, run the release CLI on the plugin-exported DSN with the generated <stem>.args.json args verbatim, then the arm's explicit --router.java_quirks.* flags, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json. The same exported input serves every arm",
     "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
-    "grade": "canary grade.sh steps (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); kicad_unconnected joins canary-pwr's row of the totals; no new real DRC, via-in-pad or below-minimum error. canary-pwr is a 45 degree board, so its sessions are expected to equal the baseline's in every arm"
+    "grade": "canary grade.sh steps (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); kicad_unconnected joins canary-pwr's row of the totals; no new real DRC, via-in-pad or below-minimum error. canary-pwr is a 45 degree board, so its sessions are expected to equal the baseline's in every arm; amendment 1: except the octagon_box_cutout_branch3 arm, whose plugin row joins its pair's totals like the verdict pair's"
   },
   "not_registered": [
-    "the A14 exact set: legacy keeps both keys true, so A14 is unaffected",
-    "the search trees' area and outline-keepout splits: they keep Java's code in every arm (corpus_counter_command says where that matters)",
-    "N06.4's two switches: unset (true) in every arm; N06.4's own registration measures them"
+    "the A14 exact set: legacy keeps every key true, so A14 is unaffected",
+    "simplex_prev_division_line: unset (true) in every arm; inert (N06.4)",
+    "since amendment 1 no Area split of the board keeps Java's code under a false switch: the search trees' area and outline-keepout splits follow the switches too (N06 follow-up, 2026-10-18)"
   ],
-  "seen_before_registration": "only N06.14's unit and invariant tests and pass-1 reach counts (tests/n06_cutout_reach.rs): fixtures/Issue269-min_fr_test (not a row) reaches neither switch; Issue143-rpi_splitter-any pass 1 reaches cutout_hole_crosses_border 6 and simplex_octagon_half_corner 578 times under Java (0 and 659 with both fixes). While choosing the reach board, pass 1 (counters only, no routed totals) of Issue026-J2_reference-any reached them 14 and 512 times, scoring-mixed-layer-any 0 and 0, and the 45 degree fixtures Issue413-test, Issue433-my-board, TestSensel, Issue143-rpi_splitter, Issue954-polygon64 and Issue026-J2_reference 0 and 0. No routed number of any registered row, under any arm",
+  "seen_before_registration": "only N06.14's unit and invariant tests and pass-1 reach counts (tests/n06_cutout_reach.rs): fixtures/Issue269-min_fr_test (not a row) reaches neither switch; Issue143-rpi_splitter-any pass 1 reaches cutout_hole_crosses_border 6 and simplex_octagon_half_corner 578 times under Java (0 and 659 with both fixes). While choosing the reach board, pass 1 (counters only, no routed totals) of Issue026-J2_reference-any reached them 14 and 512 times, scoring-mixed-layer-any 0 and 0, and the 45 degree fixtures Issue413-test, Issue433-my-board, TestSensel, Issue143-rpi_splitter, Issue954-polygon64 and Issue026-J2_reference 0 and 0. No routed number of any registered row, under any arm. Amendment 1 (2026-10-18, before any N06.14 route): N06.4's registered run (engine 3b1bde6, drill-page and tie-pin reach only) routed octagon_box_cutout_branch3=false on two of these rows: fixtures/Issue026-J2_reference.dsn unrouted 0 -> 0 (vias 16 -> 14), and canary-pwr-9511d9a, DSN unrouted 122 -> 125 and the plugin row's kicad_unconnected 41 -> 43 (N06.4's done note). The two new rows' only routed numbers are A14's (profile legacy, every switch true, Java parity, target/orchestrator/heavy/a14-7a4f73b.log): Issue756-tomu-fpga8 14 unrouted, Issue756-tomu-fpga9 21 unrouted. The amendment's implementer routed nothing under any arm; its numbers are the load-only corpus counts in corpus_counter_note and the unit tests' piece totals",
   "decision_table": {
     "pass": "N06.14's measurement [x]; N06.13 turns cutout_hole_crosses_border and simplex_octagon_half_corner off in ENHANCED (N05) with their DIVERGENCES 'Profile enhanced' lines",
-    "fail": "both switches stay true in both profiles, with these numbers in N06.14 and N06.13; bisect by the reported pairs"
+    "fail": "both switches stay true in both profiles, with these numbers in N06.14 and N06.13; bisect by the reported pairs",
+    "octagon_box_cutout_branch3 pass": "N06.4's acceptance stands at the wider reach; N06.13 may turn octagon_box_cutout_branch3 off in ENHANCED (N05)",
+    "octagon_box_cutout_branch3 fail": "operator decision, with these numbers in N06.14 and N06.4: a separate switch for the newly wired splits, or octagon_box_cutout_branch3 stays true in both profiles"
   },
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "after": "the registration was written; no N06.14 route under any arm",
+      "reason": "decided 2026-10-18 (option (b) of N06.3's audit): every Area split of the board now follows the cutout switches (the search trees' area and outline-keepout shapes, the outline's piece count, check_shape, overlapping_items, the spring-over shape, the interactive hole, the plane adjustment, the route's nearest target point), not only the drill pages and the tie-pin cutout. That widens the engine this registration names and the reach of octagon_box_cutout_branch3, which N06.4 accepted at the narrower reach, so its acceptance is re-measured here; and a check of the hard guards before any number found, as N06.4's amendment 2 did, that the baseline arm breaks the registered below_minimum by design (pin neck-down)",
+      "changes": "(1) engine: the commit that lands the follow-up (branch land/n06-splits on 490d177), every arm. (2) octagon_box_cutout_branch3 is set explicitly in every arm: true in the four N06.14 arms, false in the new arm octagon_box_cutout_branch3 (baseline arm: baseline), whose pair (baseline, octagon_box_cutout_branch3) is reported in pairs and judged on its own with the totals block (--arms baseline,octagon_box_cutout_branch3). (3) rows: fixtures/Issue756-tomu-fpga8.dsn and Issue756-tomu-fpga9.dsn, the only corpus boards where the newly wired splits reach a switch (branch 3, 1 and 6 cutouts), added to boards.files and tools/bench/sets/n06-g2.txt; canary-pwr (fixture and plugin export) and the other rows have no stored area with holes. (4) via_in_pad and below_minimum: no new breach versus baseline, as N06.4's amendment 2 defines them (metric_definitions), for every pair. (5) octagon_box_cutout_branch3_reached joins the report metrics. pairs_rule, not_registered, corpus_counter_note, accept, keep_rule, decision_table, the plugin grade and the orchestrator steps say the same; the N06.14 arms' switches, the verdict pair, the rule and its noise are unchanged"
+    }
+  ]
 }

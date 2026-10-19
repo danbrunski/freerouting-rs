@@ -735,6 +735,10 @@ impl RouteSession {
     /// area point nearest to `from` (the first of equals), for the
     /// incomplete.
     pub fn calc_nearest_target_point(&mut self, board: &RoutingBoard, from: FloatPoint) {
+        // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): a target area's
+        // pieces under the board's split switches (all four); Java's split when they
+        // are `true`.
+        let split = board.java_quirks().split();
         let mut min_dist = f64::MAX;
         let mut nearest: Option<(FloatPoint, ItemId)> = None;
         for &(location, item) in &self.target_points {
@@ -756,7 +760,7 @@ impl RouteSession {
                     .flatten(),
                 TargetShape::Area { area, has_shapes } => (*has_shapes
                     && area.bounding_box().distance(from) < min_dist)
-                    .then(|| area.nearest_point_approx(from))
+                    .then(|| area.nearest_point_approx_with(from, split))
                     .flatten(),
             };
             if let Some(point) = candidate {
@@ -876,6 +880,39 @@ mod n06_tests {
                 !board.traces().is_empty(),
                 java,
                 "second pair {corner:?} -> {to:?}"
+            );
+        }
+    }
+
+    /// `calc_nearest_target_point`: a target conduction area's nearest point comes
+    /// from its pieces under the board's split switches. A point that Java's
+    /// border-crossing cutout leaves uncovered is its own nearest target point only
+    /// under `false`.
+    #[test]
+    fn nearest_target_point_follows_the_split_switches() {
+        use crate::board::split_switches::test_support::{
+            board, border_area, point_java_loses, split_fixed,
+        };
+        let area = border_area();
+        let at = point_java_loses(&area);
+        let bounds = IntBox::new(-200_000, -200_000, 200_000, 200_000);
+        for (quirks, java) in [
+            (crate::settings::JavaQuirks::JAVA, true),
+            (split_fixed(), false),
+        ] {
+            let mut board = board(bounds, quirks);
+            let id =
+                board.insert_conduction_area(area.clone(), 0, &[1], 0, false, FixedState::Unfixed);
+            let settings = EditSettings::for_board(&board);
+            let mut route = RouteSession::make_space(&board, &settings, at);
+            route.target_traces_and_areas = vec![id];
+            route.calc_nearest_target_point(&board, at);
+            assert_eq!(route.nearest_target_item, Some(id));
+            let nearest = route.nearest_target_point.expect("a target point");
+            assert_eq!(
+                nearest.distance(at) > 1.0,
+                java,
+                "{nearest:?} {at:?}, Java {java}"
             );
         }
     }

@@ -178,6 +178,7 @@ impl BasicBoard {
             padstacks: &self.library.padstacks,
             communication: &self.communication,
             layer_count: self.layer_structure.count(),
+            split_quirks: self.java_quirks.split(),
         };
         self.search_trees.clearance_value_changed(&self.items, &ctx);
     }

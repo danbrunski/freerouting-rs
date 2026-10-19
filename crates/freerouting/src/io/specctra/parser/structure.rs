@@ -573,13 +573,16 @@ fn create_board(ctx: &mut ReadContext, info: &mut BoardConstructionInfo) -> bool
                 .get(ItemClass::Area)
         }
     };
-    let mut board = RoutingBoard::new(
+    // N06: the board's switches before the first item, so every area enters the
+    // search trees split under them.
+    let mut board = RoutingBoard::new_with_java_quirks(
         bounds,
         board_layer_structure,
         outline_shapes,
         outline_clearance_class,
         rules,
         communication,
+        ctx.java_quirks,
     );
     board.log.append(&mut ctx.log);
     // The holes of the outline become keepouts.

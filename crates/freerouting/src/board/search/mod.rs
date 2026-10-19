@@ -30,6 +30,14 @@
 //! computed once per offset and tree kind, not again at every build. Single
 //! insertions and [`ShapeSearchTree::calculate_tree_shapes`] compute; a tree
 //! made with [`ShapeSearchTree::new`] has no memo.
+//!
+//! **The cutouts' switches (N06).** The tree shapes of an area with holes, and of
+//! the board outline's generated keepout, come from the convex split under the
+//! board's `router.java_quirks` cutout switches ([`ShapeContext::split_quirks`];
+//! the outline keeps the value its piece count was taken with,
+//! [`BoardOutline::keepout_split`]). [`SplitQuirks::JAVA`] is Java's split. The
+//! board fixes the value before it inserts an item; a change afterwards reinserts
+//! the items whose pieces change ([`crate::board::BasicBoard::set_java_quirks`]).
 
 pub mod audit;
 pub mod entries;
@@ -48,7 +56,7 @@ use std::sync::Arc;
 
 use freerouting_geometry::{
     Circle, FloatPoint, Line, Polyline, PolylineShapeOps, Shape, ShapeBoundingDirections,
-    TileShape, TileShapeOps,
+    SplitQuirks, TileShape, TileShapeOps,
 };
 
 use crate::board::items::{BoardOutline, Item, ItemId, ItemKind};
@@ -159,6 +167,10 @@ pub struct ShapeContext<'a> {
     pub padstacks: &'a Padstacks,
     pub communication: &'a Communication,
     pub layer_count: usize,
+    /// The board's switches of the cutouts' convex split (N06,
+    /// [`JavaQuirks::split`](crate::settings::JavaQuirks::split)), for the shapes of
+    /// areas with holes. [`SplitQuirks::JAVA`] is Java's split.
+    pub split_quirks: SplitQuirks,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -753,9 +765,13 @@ impl ShapeSearchTree {
                 }
             }
             ItemKind::Area(area) => {
+                // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): with
+                // `cutout_hole_crosses_border`, `simplex_octagon_half_corner` and
+                // `simplex_prev_division_line`, the board's split switches; Java's
+                // split when they are `true`.
                 let shapes = self.obstacle_area_tree_shapes(
                     item,
-                    area.area().split_to_convex(),
+                    area.area().split_to_convex_with(None, ctx.split_quirks),
                     area.layer(),
                     ctx,
                 );
@@ -978,8 +994,10 @@ impl ShapeSearchTree {
         let matrix = &ctx.rules.clearance_matrix;
         let mut result = Vec::new();
         if outline.keepout_outside_outline_generated() {
-            let Some(convex_shapes) = outline.keepout_area().and_then(|a| a.split_to_convex())
-            else {
+            // PARITY(quirk, java_quirks.octagon_box_cutout_branch3): the split switches
+            // the outline's piece count was taken with (the board's), Java's split when
+            // they are `true`.
+            let Some(convex_shapes) = outline.keepout_pieces() else {
                 return result;
             };
             for layer in 0..ctx.layer_count as i32 {
