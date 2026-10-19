@@ -202,7 +202,7 @@ inventory (N03.2) and has its own item, N06.15.
 
 | id | Rust | Java | The question | Reach | Proposal |
 |---|---|---|---|---|---|
-| `ripup_pass_no_unset` | autoroute/session/ripup.rs:12, 337; control.rs:138 | MazeRipupResolver.java:158-162, AutorouteControl.java:192 | `ripupPassNo` is never set, so the random detour factor `0.5 + r²` never fires; the batch router never had it (the 1.x import set it only in `ExpandTestState`) | batch, every rip-up from pass 4 on if enabled | Its own registration: switching on randomness Java never ran, deterministic by its reseed. Likely large either way. **Outcome (N06.12, 2026-10-18): measured, run pending.** Wired (`batch::connection::router_control` sets the pass number under `false`), tested (`tests/n06_judgement.rs`), counted (`ripup_random_pass_connections`, `ripup_random_factor_draws`) and registered as the verdict pair of `prereg/N06.12-ripup-pass.json` (accept: improve, since it adds behaviour Java never ran); stays `true` until the run accepts it |
+| `ripup_pass_no_unset` | autoroute/session/ripup.rs:12, 337; control.rs:138 | MazeRipupResolver.java:158-162, AutorouteControl.java:192 | `ripupPassNo` is never set, so the random detour factor `0.5 + r²` never fires; the batch router never had it (the 1.x import set it only in `ExpandTestState`) | batch, every rip-up from pass 4 on if enabled | Its own registration: switching on randomness Java never ran, deterministic by its reseed. Likely large either way. **Outcome (N06.12, 2026-10-18): measured; rejected by the run of 2026-10-19.** Wired (`batch::connection::router_control` sets the pass number under `false`), tested (`tests/n06_judgement.rs`), counted (`ripup_random_pass_connections`, `ripup_random_factor_draws`) and registered as the verdict pair of `prereg/N06.12-ripup-pass.json` (accept: improve, since it adds behaviour Java never ran). The run: total 47 → 47 and 1 new class-width breach (ReadPlaceScope), `gate: FAIL`, so it stays `true` in both profiles (N06.12's note) |
 | `insert_stale_trace_object` | autoroute/path/insert.rs:100 | FoundConnectionInserter.java:108-137 | `connectToTrace` uses the start or target trace object after the insertion split or removed it | batch, occasional | Leave: the split keeps the old geometry as the new pieces, so the stub lands on the same copper. **Outcome (N06.12): left as Java.** The stale object only supplies the geometry `connectToTrace` connects to (`insert.rs`, `trace_object`); a split keeps that geometry as its pieces, so the stub lands on the same copper and a fix that reads the pieces instead changes nothing on a split. The switch stays inert (`false` changes nothing) |
 | `in_front_of_pad_side0_flank` | shove/drill_check.rs:461 | ForcedPadRouter.java:86 | Side 0's flank clause takes `min`, where cases 2, 4 and 6 take `max`; inferred from symmetry | as `in_front_of_pad_typo` | An arm of batch S, only together with the typo fix. **Outcome (N06.12): follows N06.7's run.** Wired and tested by N06.7 (`side0_flank_switch_both_behaviours`, counter `shove_in_front_of_pad_flank_flips`) and registered as `prereg/N06.7.json`'s reported arm `all_flank`, judged against `all` only if batch S is accepted; otherwise it stays `true`. N06.7's done note records the result |
 | `opt_threshold_fraction` | optimize/batch/mod.rs:197-212, settings/path.rs:357-364 | BatchOptimizer.java:367-377 | A threshold in (0, 0.1) is multiplied by 100 (Java logs it as a heuristic); a CLI value below 0.001 is scaled twice | only JSON or environment values in (0, 0.1) | Leave Java's heuristic; fix the double scaling of the CLI. **Outcome (N06.12): heuristic left as Java (`true` in both profiles, `false` tested by `threshold_fraction_switch_both_behaviours`); the double scaling fixed as a port fix in both profiles** (`SettingsPatch::improvement_threshold_scaled`; `a_cli_threshold_below_a_thousandth_is_scaled_once`, `a_cli_threshold_is_scaled_once`; DIVERGENCES "Settings"). (a)-like: no A14 board, Java reference case (`-oit 0.035`, `4.0`, `0.05`) or plugin option (1-100 %) passes a CLI value below 0.001 |
@@ -210,7 +210,7 @@ inventory (N03.2) and has its own item, N06.15.
 | `rules_autoroute_settings_reenable` | io/specctra/rules_reader.rs:21-29 | RulesReader.java | A rules file's `autoroute_settings` re-enables every layer and the optimizer | in, `-dr` only | Decide with C04: a settings semantics choice. **Outcome (N06.12): left as Java.** C04's decisions keep it on purpose: a rules file's `autoroute_settings` are the file's whole routing setup, laid over the merged settings and the CLI (C04.3, `rules_autoroute_settings_override_cli`), and `AutorouteSettings.readScope` seeds every layer and the optimizer on. C04 makes no other settings-semantics choice, so the switch stays inert (`false` changes nothing) |
 | `direction_compare_zero` | geometry/direction.rs:346 | Direction.java | `compare_to` handles the zero direction lopsidedly | batch, edge case | Leave: a quirk, not clearly wrong. **Outcome (N06.12): left as Java.** An ordering of the zero direction is a convention, not a bug; changing it would reorder sorted directions with no correct order to aim for. The switch stays inert (the geometry crate has no settings access) |
 | `route_stubs_layer_test` | drc/route_stubs.rs:9-12, 136 | WindowRouteStubs.java:73-74 | Both via bounds are compared with the contact's first layer, so the stub layer is always the last | out (route-stubs list) | Leave until the intent is clear. **Outcome (N06.12): left as Java.** It changes only the route-stubs report's layer, not routing; which layer the report should name for a via stub is not clear from Java, so there is no fix to test. The switch stays inert |
-| `any_angle_skip_length_squared` | optimize/tighten/any_angle.rs:43-45 | TraceTightenerAnyAngle.java:22, 774, 896 | `SKIP_LENGTH = 10` is compared with a squared distance (effectively 3.2 units) | batch, any-angle mode only | Measure in any-angle mode, or leave. **Outcome (N06.12): measured, run pending.** Cheap to include: a reported arm of `prereg/N06.12-ripup-pass.json` over three any-angle variant boards (A07's `-any.dsn`), counted (`any_angle_skip_length_flips`) and tested (`any_angle::tests::skip_length_switch_both_behaviours_and_counter`); judged no-regress (a typo-like fix), stays `true` until the run |
+| `any_angle_skip_length_squared` | optimize/tighten/any_angle.rs:43-45 | TraceTightenerAnyAngle.java:22, 774, 896 | `SKIP_LENGTH = 10` is compared with a squared distance (effectively 3.2 units) | batch, any-angle mode only | Measure in any-angle mode, or leave. **Outcome (N06.12): measured; accepted on its test by the run of 2026-10-19.** Cheap to include: a reported arm of `prereg/N06.12-ripup-pass.json` over A07's any-angle variant boards, counted (`any_angle_skip_length_flips`) and tested (`any_angle::tests::skip_length_switch_both_behaviours_and_counter`); judged no-regress (a typo-like fix). Two of the three any-angle rows were dropped because the engine can't route them in bounded memory (amendments 2 and 3). The counter is 0 and every session is identical, so it is accepted on its test for N06.13 |
 | `polyline_array_reversal` | optimize/tighten/mod.rs:19-22, 491 | Polyline.java (`new Polyline(Line[])`) | The constructor reverses lines in the caller's array, and later reads see that | batch | Leave: no clear correct fix. **Outcome (N06.12): left as Java.** Later reads of the caller's array (bisection steps, changed areas, accepted lines) depend on the reversal, and `normalized` replays it; copying the array would change those reads with no reference for the intended ones. The switch stays inert |
 | `avoid_acid_traps_disabled` | optimize/tighten/mod.rs:377-381 | TraceTightener (`if (true) return polyline;`) | Java turned the acid-trap step off | batch | Leave: enabling it is a feature (a Q candidate), not a fix. **Outcome (N06.12): left as Java; noted as a Q candidate** (turn on Java's dead acid-trap step and measure it as a quality change under N02). The switch stays inert |
 
@@ -231,7 +231,8 @@ These are marked or look like quirks but keep no bug:
 - `PolylineTrace.change` also ignores a new polyline that is a strict prefix or suffix of the old
   one by identity (trace_ops.rs:685). Pull-tight never drops end lines, so it is probably
   unreachable. N06.8 checks it: the counter `trace_change_prefix_suffix_ignored` read 0 in
-  every light run (N06.8's note); the registered run confirms it.
+  every light run and in every run of N06.8's registered run (24 DSN runs, 4 plugin arms), which
+  confirms it unreachable on those boards (N06.8's done note).
 
 ## Checklist
 
@@ -1078,7 +1079,7 @@ These are marked or look like quirks but keep no bug:
       counter is 0, so it is accepted by the same rule. No totals arithmetic is needed. Accepted for
       N06.13: `in_front_of_pad_typo`, `store_trace_class_self_compare`, `rational_perp_projection`
       (all (b)) and `in_front_of_pad_side0_flank` ((c), N06.12). `ENHANCED` is unchanged here.
-- [~] **N06.8 — Batch P, pull-tight:**
+- [x] **N06.8 — Batch P, pull-tight:**
   - `smooth_loses_trace`: test the failure conditions before removing, or re-insert the old
     trace;
   - `pull_tight_reused_lines_change`: report a change only when `change_trace` changed the
@@ -1131,8 +1132,8 @@ These are marked or look like quirks but keep no bug:
       profile `legacy`, default passes, plus canary-pwr through the plugin path (N06.10's
       procedure). Rule: reachability (both switch counters 0 and sessions identical:
       accepted on tests), else N02 totals, no-regress, set noise 11.14.
-    - [ ] Heavy run pending (orchestrator, release build of the tree carrying this diff, from
-      its root): `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.8.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-p`
+    - [x] Heavy run (done 2026-10-18, below), release build of the measured tree, from
+      its root: `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.8.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-p`
       (24 runs; the arms' binary is
       `/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting`;
       it exits non-zero after the last run if a session differs, and then the totals rule
@@ -1140,6 +1141,70 @@ These are marked or look like quirks but keep no bug:
       (the registration's `plugin_canary`: export once, route the 4 arms with the exported
       args plus `--router.profile=legacy` and the arm's two flags, grade each distinct
       session with canary's `grade.sh`).
+  - *Done 2026-10-18:* the **Accept:** clause holds: the batch is measured. Worktree
+    `target/orchestrator/n06r3/wt` (branch `land/n06-runs3`, main `ceeebdf`), one Linux release
+    CLI (sha256 `b3951c88…`, `--version` git `ceeebdf3771c`).
+    - Amendment 1, written before any N06.8 route (sha256 now
+      `82559f27411307f47d9765163e4c32e5b6cd5babce1a06ce4d4ee54c7478d9de`, re-pinned in
+      `prereg_n06_8.rs`, 4 tests pass). It follows N06.5's amendment:
+      - The engine base moves to main `ceeebdf` (N06.8's diff is `bbd1336`). Every switch added
+        since (N06.12, N06.14, N06.15) defaults to `true`, and `ENHANCED` is unchanged.
+      - The plugin row joins `boards.files` (hashed as its export, `dff4a914…`) and
+        `boards.outside_runner`.
+      - Hard metrics are counted on every row with option (b), no new breach versus baseline,
+        because the pin neck-down puts J2 (a row) under its narrowest class width on Java's
+        baseline. The plugin row's baseline configuration is the graded `986e30bd…` one (0
+        via-in-pad, 0 `track_width`).
+      - The verdict comes from `gate --prereg --all-pairs`.
+      - `seen_before_registration` is added (it was missing). It names the light runs at
+        registration, and the baseline-configuration numbers that existed before the amendment
+        (J2 by N06.7/N06.5, the plugin row's `986e30bd…`). No candidate arm had been run on any
+        row.
+    - `n06_run.py`: 24 runs (6 rows × 4 arms), exit 0, "Sessions identical": every arm's SES
+      equals its row's baseline byte for byte. Every run's statistics show `optimizer_pass`, so
+      the batch optimizer ran its pull-tight candidates on every row. The numbers come from the
+      router's manifests, and every arm gives the same values. Below class width is the scratch
+      tool `target/orchestrator/n06r3/n06m`'s raw count (it reads each SES at the writer's
+      scale), and its unrouted and via counts match the manifests on all 24 runs:
+
+      | row | connections | unrouted | clearance | vias | length mm | below class width (raw) |
+      |---|---|---|---|---|---|---|
+      | Issue026-J2_reference | 33 | 0 | 0 | 16 | 371.16 | 37 |
+      | Issue155-CH376_MCP795_Module | 53 | 0 | 0 | 14 | 828.10 | 13 |
+      | Issue508-DAC2020_bm06 | 98 | 0 | 0 | 20 | 577.09 | 23 |
+      | Issue558-dev-board | 96 | 0 | 0 | 33 | 1120.69 | 55 |
+      | Issue217-8088sbc | 235 | 0 | 0 | 20 | 4852.11 | 55 |
+      | Issue034-Green14SegLED | 147 | 0 | 0 | 44 | 2909.44 | 79 |
+
+      In every run `pull_tight_smooth_lost_traces`, `pull_tight_reused_lines_flips` and
+      `trace_change_prefix_suffix_ignored` are 0, and so is `via_in_pad` (raw and new).
+    - Plugin row: canary 9511d9a (`git archive`, unedited), exported once at `ceeebdf` with
+      `canary-graded-flow.json` on WSL KiCad 10.0.7. The DSN body equals N06.5's export (only
+      line 1, its own path, differs), and so do the args. The 4 arms were routed with the exported
+      args, `--router.profile=legacy` and each arm's two flags
+      (`target/orchestrator/n06r3/route_arms.py`). They give one session, `986e30bd…`,
+      byte-identical to N06.7's, N06.5's and N06.6's. Router's count: 96 unrouted, 40 clearance,
+      187 vias. The three counters read 0 in every arm.
+    - Grade of that session (`headless_run.py import`, then canary `grade.sh` at `2a7e070b`,
+      `GRADE_REV=9511d9a`): 38 unconnected, 4 clearance, 5 starved thermals, 20 dangling vias
+      (warning), 0 via-in-pad, 0 `track_width`, 2 inner-layer tracks. This is N06.5's grade, in
+      every arm. Handoff: `target/canary-handoff/2026-10-18-n06-p/` (README.txt, SHA256SUMS).
+    - Gate, run from the worktree with `freerouting-dev` built at `ceeebdf`: `freerouting-dev gate
+      --records target/orchestrator/n06r3/records-p.json --prereg docs/roadmap/prereg/N06.8.json
+      --baseline target/orchestrator/n06r3/baseline-p.json --all-pairs`. The records are built by
+      `target/orchestrator/n06r3/build_records.py`, and the baseline file was written by the same
+      command with `--write-baseline`. Result: 0 refusals, `gate: PASS`.
+      - The verdict pair and both reported pairs PASS. Every row is neutral, the total is 38 → 38
+        (unrouted 0 → 0, `kicad_unconnected` 38 → 38) against a set noise of 11.14, and
+        `drc_real` is 9 → 9.
+    - Verdict: the reachability rule decides it. Both switch counters are 0 in every run and every
+      session equals its baseline, so no registered board reaches the branches.
+      - `smooth_loses_trace` and `pull_tight_reused_lines_change` are **accepted on their tests**
+        (both behaviours pinned above). The totals rule passes as well.
+      - The prefix/suffix identity case: `trace_change_prefix_suffix_ignored` is 0 in every run,
+        which confirms the reviewed list's claim that it is unreachable. It gets no switch.
+      - Batch P is **accepted**. Both switches are accepted for N06.13; `ENHANCED` is unchanged
+        here.
 - [~] **N06.9 — Batch O, batch optimizer:** `opt_first_pass_stops` (a clear inside a pass
   allows one more pass at normal ripup costs), `opt_equal_key_skip` (keep every sorted
   candidate).
@@ -1340,13 +1405,85 @@ These are marked or look like quirks but keep no bug:
         `optimize::tighten::any_angle::tests::skip_length_switch_both_behaviours_and_counter`.
       - Counters (`run_stats`, `--stats json` `total.counts`): `ripup_random_pass_connections`,
         `ripup_random_factor_draws`, `any_angle_skip_length_flips`, `rules_unknown_layer_scopes`.
-      - Heavy run pending (orchestrator, from the worktree root, release build of this tree):
-        `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.12-ripup-pass.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-c`
-        (24 runs; exits non-zero after the last run when a session differs, as it should for the
-        ripup arm), then the canary-pwr plugin row as in N06.10 (the registration's
-        `plugin_canary`: export once, route the 3 arms with the exported args plus
+      - Heavy run (done 2026-10-19, below), from the worktree root, release build of the
+        measured tree, every route under the memory cap of amendment 2:
+        `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.12-ripup-pass.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-c`
+        (18 runs after amendments 2 and 3; exits non-zero after the last run when a session
+        differs, as it does for the ripup arm), then the canary-pwr plugin row as in N06.10 (the
+        registration's `plugin_canary`: export once, route the 3 arms with the exported args plus
         `--router.profile=legacy` and the arm's two flags, grade each distinct session with
-        canary's `grade.sh`). N06.13 records the verdict.
+        canary's `grade.sh`).
+      - *Run 2026-10-19:* worktree `target/orchestrator/n06r3/wt` (branch `land/n06-runs3`,
+        main `ceeebdf`), the CLI of N06.8's run (sha256 `b3951c88…`, `--version` git
+        `ceeebdf3771c`).
+        - Amendment 1, written before any route (sha256 then `4264d309…`). It follows N06.5's
+          amendment: the engine base moves to main `ceeebdf` (N06.12's diff is `81afaba`). The
+          plugin row joins `boards.files` (`dff4a914…`) and `boards.outside_runner`. Hard metrics
+          on every row use option (b). The verdict pair is judged by `gate --prereg --arms
+          baseline,ripup_pass_no_unset`, and the reported pair by its own clause, since the
+          gate would apply `accept: improve` to it. `seen_before_registration` is added.
+        - Amendment 2 (2026-10-19) drops `Issue026-J2_reference-any` before any number of it
+          existed. The engine at `ceeebdf` can't route it in bounded memory: the baseline arm's
+          RSS was 5.4 GB at 11 s, and it aborted at a 6 GB cap within 30 s. Two uncapped
+          attempts of that route took the WSL machine down. This is tracked as a separate engine
+          bug. Every route now runs under an 8000000 kB address-space cap (`n06_run.py`'s
+          opt-in `N06_RUN_ULIMIT_KB`). Both cut-off attempts had completed the same 15 runs of
+          the 45° rows, byte for byte, and only their session hashes were seen
+          (`seen_before_registration` says so).
+        - Amendment 3 (2026-10-19, sha256 now
+          `f50fe24ea15af1bdad433eedbc7fdc8b37a2e6ba4a14c99e1d57a42561a465b6`, re-pinned in
+          `prereg_n06_12.rs`, 4 tests pass) drops `Issue143-rpi_splitter-any`. Its baseline arm
+          aborted at once under the cap (a 939524096-byte allocation failed), the same bug.
+          `scoring-mixed-layer-any` (1 connection) is the one any-angle row left; its baseline
+          arm routed under the cap in a probe whose exit status alone was read. The set noise is
+          now 11.14.
+        - `n06_run.py`: 18 runs (6 rows × 3 arms), exit 1, because the `ripup_pass_no_unset`
+          session differs on Green14SegLED, ReadPlaceScope and Mars-64. The 15 runs of the 45°
+          rows equal those of the cut-off attempts byte for byte. The numbers come from the
+          router's manifests, given as baseline → `ripup_pass_no_unset`. Below class width is
+          n06m's raw count. `any_angle_skip_length_squared` equals the baseline on every row:
+
+          | row | connections | unrouted | clearance | vias | length mm | below class width (raw) | random-pass connections | factor draws |
+          |---|---|---|---|---|---|---|---|---|
+          | Issue034-Green14SegLED | 147 | 0 → 0 | 0 → 0 | 44 → 43 | 2909.44 → 2950.27 | 79 → 79 | 36 → 38 | 0 → 7088 |
+          | Issue035-ReadPlaceScope | 240 | 2 → 2 | 152 → 152 | 170 → 171 | 5366.31 → 5370.73 | 80 → 81 | 89 → 72 | 0 → 5627 |
+          | Issue313-FastTest | 83 | 2 → 2 | 40 → 40 | 24 → 24 | 69.82 → 69.82 | 7 → 7 | 44 → 44 | 0 → 1103 |
+          | Issue054-tairakb | 264 | 5 → 5 | 0 → 0 | 147 → 147 | 3585.82 → 3585.82 | 42 → 42 | 109 → 109 | 0 → 45900 |
+          | Issue102-Mars-64-revE-rot00 | 106 | 0 → 0 | 64 → 64 | 149 → 146 | 3941.26 → 3875.96 | 55 → 44 | 5538 → 212 | 0 → 103457 |
+          | scoring-mixed-layer-any | 1 | 0 → 0 | 0 → 0 | 1 → 1 | 9.32 → 9.32 | 0 → 0 | 0 → 0 | 0 → 0 |
+
+          `any_angle_skip_length_flips` is 0 in every run, and `via_in_pad` is 0 (raw and new).
+          On FastTest and tairakb the factor draws, but the sessions are still identical.
+        - Plugin row: N06.8's export. The 3 arms give one session, `986e30bd…`. The exported
+          `--max-passes 1` runs no pass numbered 4 or later, so all three counters are 0 there.
+          Router's count: 96 unrouted, 40 clearance, 187 vias.
+        - Grade (the same procedure as N06.8's): 38 unconnected, 2 clearance, 5 starved
+          thermals, 20 dangling vias (warning), 0 via-in-pad, 0 `track_width`, 2 inner-layer
+          tracks. A second import and grade of the same bytes gave 4 clearance, as the grades of
+          N06.5 to N06.8 did. The import writes the board's items in another order each time, and
+          KiCad counts the +12V_BUS via's clearance pairs with +3V3_AON differently. All arms
+          share the one session and the first grade, so the pairs are unaffected. Handoff:
+          `target/canary-handoff/2026-10-18-n06-r/` (README.txt, SHA256SUMS).
+        - Gate (`freerouting-dev` at `ceeebdf`; records from `target/orchestrator/n06r3/build_records.py`;
+          baseline file written with `--write-baseline`): `freerouting-dev gate --records
+          target/orchestrator/n06r3/records-c.json --prereg docs/roadmap/prereg/N06.12-ripup-pass.json
+          --baseline target/orchestrator/n06r3/baseline-c.json --arms baseline,ripup_pass_no_unset`
+          gives 0 refusals and **`gate: FAIL`**.
+          - The total is 47 → 47 (unrouted 9 → 9, `kicad_unconnected` 38 → 38), which is no
+            improvement against a set noise of 11.14.
+          - Hard guard: ReadPlaceScope has 1 new trace under its narrowest class width (80 → 81).
+          - `--all-pairs` gives the same verdict pair and FAIL for the reported pair, which is
+            only reported (the gate applies `accept: improve` to it).
+        - Verdict:
+          - `ripup_pass_no_unset` is **rejected**. The random detour changes three sessions and
+            no unrouted count. It adds one class-width breach on ReadPlaceScope, and on Mars-64 it
+            saves 3 vias and 65 mm. It stays `true` (Java) in both profiles, with these numbers.
+            The two rows whose baseline never reaches a drawing pass (the any-angle row and the
+            plugin row) keep their sessions, as the reachability clause requires.
+          - `any_angle_skip_length_squared` is **accepted on its test**: `any_angle_skip_length_flips`
+            is 0 and every session equals its baseline. The one any-angle row left has a single
+            connection, so the run barely exercises the any-angle tightener (amendments 2 and 3).
+            It is accepted for N06.13 as a no-regress fix; `ENHANCED` is unchanged here.
     - `in_front_of_pad_side0_flank`: follows N06.7's registered run (arm `all_flank`).
     - `opt_threshold_fraction`: heuristic left as Java; the CLI double scaling fixed as a port
       fix in both profiles (`a_cli_threshold_below_a_thousandth_is_scaled_once` in

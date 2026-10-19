@@ -9,7 +9,9 @@ others) are routed by the registration's own procedure and skipped here.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
+import resource
 import shlex
 import subprocess
 
@@ -34,11 +36,23 @@ def final_statistics(manifest):
             'vias': total('vias', 'total_count')}
 
 
+def memory_cap():
+    """Opt-in address-space cap for every route, from N06_RUN_ULIMIT_KB (as `ulimit -v`, in
+    kB); unset or empty means no cap. A route over it aborts (n06_run.py then stops with
+    the route's error); the cap changes no routing work."""
+    kb = os.environ.get('N06_RUN_ULIMIT_KB', '').strip()
+    if not kb:
+        return None
+    limit = int(kb) * 1024
+    return lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('registration', type=Path)
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
+    preexec = memory_cap()
     registration = json.loads(args.registration.read_text())
     outside = set(registration['boards'].get('outside_runner', []))
     boards = {board: expected for board, expected in registration['boards']['files'].items()
@@ -64,7 +78,8 @@ def main():
             (directory / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
             print(f'{board}: {arm}', flush=True)
             with (directory / 'run.log').open('w') as log:
-                subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
+                subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True,
+                               preexec_fn=preexec)
             content = session.read_bytes()
             sessions[arm] = content
             # An arm may name its own baseline arm (N06.15: one per profile); by

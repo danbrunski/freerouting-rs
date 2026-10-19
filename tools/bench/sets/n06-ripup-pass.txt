@@ -13,8 +13,10 @@ fixtures/Issue054-tairakb.dsn
 fixtures/Issue102-Mars-64-revE-rot00.dsn
 # Any-angle boards for any_angle_skip_length_squared (A07's variants with (snap_angle none);
 # no fixture routes in any-angle mode):
-crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn
-crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn
+# (crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn was dropped by amendment 2, 2026-10-19: the engine at
+#  ceeebdf cannot route it in bounded memory; see boards.dropped.)
+# (crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn was dropped by amendment 3, 2026-10-19: its baseline aborts at
+#  the 8000000 kB cap; see boards.dropped.)
 crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
 # canary-pwr through the KiCad plugin path (the registration's plugin_canary; outside
 # n06_run.py): canary hardware/canary-pwr-rev1.0 at canary 9511d9a.

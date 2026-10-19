@@ -44,7 +44,11 @@ fn the_ripup_pass_registration_is_valid() {
         ]
     );
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 8);
+    // The DSN rows plus the plugin row (amendment 1: `canary-pwr-plugin`, hashed as
+    // its exported DSN, routed outside n06_run.py), less Issue026-J2_reference-any
+    // and Issue143-rpi_splitter-any (amendments 2 and 3: dropped for memory before
+    // any number of them).
+    assert_eq!(prereg.boards.len(), 7);
     assert!(prereg.totals_registered);
     assert_eq!(
         json().path("totals.accept").and_then(Json::as_str),
@@ -109,9 +113,20 @@ fn each_arm_sets_only_its_switch() {
 #[test]
 fn the_registered_inputs_hash_as_registered() {
     let json = json();
-    let Some(Json::Object(files)) = json.path("boards.files") else {
+    let Some(Json::Object(all)) = json.path("boards.files") else {
         panic!("boards.files")
     };
+    // The rows routed outside n06_run.py (amendment 1) are the plugin row only; its
+    // input is the plugin's export, which is not in the repository.
+    let Some(Json::Array(outside)) = json.path("boards.outside_runner") else {
+        panic!("boards.outside_runner")
+    };
+    let outside: Vec<&str> = outside.iter().filter_map(Json::as_str).collect();
+    assert_eq!(outside, ["canary-pwr-plugin"]);
+    let files: Vec<_> = all
+        .iter()
+        .filter(|(row, _)| !outside.contains(&row.as_str()))
+        .collect();
     let set = std::fs::read_to_string(repo().join(SET)).unwrap();
     let rows: Vec<&str> = set
         .lines()
@@ -119,7 +134,7 @@ fn the_registered_inputs_hash_as_registered() {
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
         .collect();
     assert_eq!(rows.len(), files.len());
-    for (input, want) in files {
+    for &(input, want) in &files {
         assert!(rows.contains(&input.as_str()), "{input} missing from {SET}");
         let bytes = std::fs::read(repo().join(input)).unwrap_or_else(|e| panic!("{input}: {e}"));
         assert_eq!(
@@ -134,13 +149,18 @@ fn the_registered_inputs_hash_as_registered() {
             );
         }
     }
-    assert_eq!(rows.iter().filter(|r| r.ends_with("-any.dsn")).count(), 3);
+    // One any-angle row remains after amendments 2 and 3 dropped J2's and rpi_splitter's.
+    assert_eq!(rows.iter().filter(|r| r.ends_with("-any.dsn")).count(), 1);
+    assert!(
+        json.path("boards.dropped").is_some(),
+        "amendments 2 and 3 record the dropped rows"
+    );
 }
 
 #[test]
 fn the_ripup_pass_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "b39a51fe095788593e2bc4c27ebc4b7d67f9b35b235a101fa63d03c1fc76de23"
+        "f50fe24ea15af1bdad433eedbc7fdc8b37a2e6ba4a14c99e1d57a42561a465b6"
     );
 }
