@@ -168,6 +168,14 @@ Prerequisites: N01; each candidate's own accepted measurement.
     corpus boards from the commands' 150 um floor) hold in both arms. KiCad unconnected summed over
     the 8 graded rows 234 → 186; canary-pwr-9511d9a 49 → **32**, clean. The plugin's `enhanced`
     keeps K09.9's `sweep = free`. Sessions: `target/canary-handoff/2026-10-18-q104/`.
+    *Correction 2026-10-18:* the `via_in_pad` 42 / 6 lines and the unpoured canary DSN's
+    `below_minimum` 3 were a measurement artifact, not the router. The session repeats the
+    input's own vias and traces, and they were counted again (see "Engine-model `via_in_pad`"
+    in `docs/roadmap/routing-quality.md`). Corrected, all three are 0 in every arm, and the
+    verdict is still **FAIL**. The gate's primary pair reads improved 9 of 25, regressed 6
+    (the six corpus `below_minimum` rows), neutral 10. The eligible-row rule reads
+    `sweep-fixed` 8 / 6 / 7, `sweep-free` 9 / 6 / 6 and `opt+sweep+opt` 13 / 5 / 3
+    (improve / regress / neutral).
 
   Sessions for canary's official grade: `target/canary-handoff/2026-10-18-n05/` (8 SESs, the
   plugin DSN, `SHA256SUMS`, `README.txt` with flags and the self-grade).

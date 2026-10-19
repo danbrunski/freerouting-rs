@@ -9,7 +9,7 @@
 //! | `unrouted`, `clearance_violations`, `vias`, `length_mm`, `bends` | the bench run's statistics (Freerouting's board model) |
 //! | `wall_seconds` | the bench's median wall time |
 //! | `tidy_<measure>_median`, `tidy_<measure>_p90` | the run's tidiness score ([`crate::tidy`], Q15.2), for `detour`, `bends_per_10mm`, `acute`, `jogs` and `vias`; from the bench run's `tidiness`, or the oracle summary's when the bench has none. Reported, not judged. |
-//! | `via_in_pad` | vias whose copper overlaps an SMD pad, counted on the imported SES minus those already in the input board ([`via_in_pad_count`]) |
+//! | `via_in_pad` | vias whose copper overlaps an SMD pad, counted on the imported SES, leaving out the vias the input board already has ([`session_via_in_pad`]) |
 //! | `drc_real`, `drc_real_by_type`, `below_minimum`, `kicad_unconnected` | the oracle's summary (KiCad's DRC) |
 //! | tags `kicad_version`, `engine_commit` | the oracle and the jar name |
 //!
@@ -18,11 +18,14 @@
 //! arm `graded: false`: "not graded" is never a pass. A board the bench
 //! skipped or couldn't find makes the run `partial`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use freerouting::board::BasicBoard;
+use freerouting::board::items::Item;
+use freerouting::geometry::IntPoint;
 use freerouting::io::specctra::import_session;
+use freerouting::library::PadstackId;
 use freerouting::quality::feasibility::report::sha256_hex;
 
 use crate::gate::{TAG_KEYS, to_writer};
@@ -91,40 +94,75 @@ pub fn bench_dir_name(written: &str) -> String {
 /// The vias whose copper overlaps an SMD pad of the board (Java fork's
 /// `via_in_pad.py`: a via in a pad is a failure, not a quality note).
 pub fn via_in_pad_count(board: &BasicBoard) -> usize {
+    vias_in_pads(board).count()
+}
+
+/// The vias of `board` whose copper overlaps an SMD pad (a pin on one layer),
+/// of any net, on a layer both reach.
+fn vias_in_pads(board: &BasicBoard) -> impl Iterator<Item = &Item> + '_ {
     let smd_pins: Vec<_> = board
         .items()
         .filter(|item| item.is_pin())
         .filter_map(|item| item.drill())
         .filter(|drill| drill.first_layer == drill.last_layer)
         .collect();
-    let mut count = 0;
-    for item in board.items().filter(|item| item.is_via()) {
-        let Some(via) = item.drill() else { continue };
-        let overlaps = (via.first_layer..=via.last_layer).any(|layer| {
-            let Some(via_shape) = via.shape_on_layer(layer) else {
+    board
+        .items()
+        .filter(|item| item.is_via())
+        .filter(move |item| {
+            let Some(via) = item.drill() else {
                 return false;
             };
-            let via_box = via_shape.bounding_box();
-            smd_pins.iter().any(|pin| {
-                pin.shape_on_layer(layer).is_some_and(|pad| {
-                    pad.bounding_box().intersects_box(&via_box) && pad.intersects(via_shape)
+            (via.first_layer..=via.last_layer).any(|layer| {
+                let Some(via_shape) = via.shape_on_layer(layer) else {
+                    return false;
+                };
+                let via_box = via_shape.bounding_box();
+                smd_pins.iter().any(|pin| {
+                    pin.shape_on_layer(layer).is_some_and(|pad| {
+                        pad.bounding_box().intersects_box(&via_box) && pad.intersects(via_shape)
+                    })
                 })
             })
-        });
-        if overlaps {
-            count += 1;
-        }
-    }
-    count
+        })
+}
+
+/// What makes two vias the same via: centre, padstack and nets.
+type ViaKey = (IntPoint, PadstackId, Vec<i32>);
+
+fn via_key(item: &Item) -> Option<ViaKey> {
+    let drill = item.drill()?;
+    Some((drill.center, drill.padstack, item.net_numbers().to_vec()))
 }
 
 /// Vias in pads that the session adds to the board (those already in the
 /// input are not the router's).
+///
+/// A session repeats the input's wiring (the writer, like Java's
+/// `SesWriter`, saves every via and trace but the system-fixed ones), and
+/// importing it into the input board adds a second copy of each repeated
+/// input via. So a via in a pad counts only when the input has no via with
+/// the same centre, padstack and nets. A difference of plain counts counted
+/// every repeated input via in a pad again: the designer's 42 thermal vias in
+/// smoothieboard's exposed pads and 6 vias touching pads on kit-dev-coldfire
+/// read as the router's in every arm.
 pub fn session_via_in_pad(board: &BasicBoard, ses_path: &Path) -> Result<usize, String> {
     let session = parse_session(&read_text(ses_path)?)?;
     let mut routed = board.clone();
     import_session(&mut routed, &session);
-    Ok(via_in_pad_count(&routed).saturating_sub(via_in_pad_count(board)))
+    Ok(added_via_in_pad(board, &routed))
+}
+
+/// The vias in pads of `routed` that are not vias of `input`.
+pub fn added_via_in_pad(input: &BasicBoard, routed: &BasicBoard) -> usize {
+    let input_vias: BTreeSet<ViaKey> = input
+        .items()
+        .filter(|item| item.is_via())
+        .filter_map(via_key)
+        .collect();
+    vias_in_pads(routed)
+        .filter(|item| via_key(item).is_none_or(|key| !input_vias.contains(&key)))
+        .count()
 }
 
 fn read_json(path: &Path) -> Result<Json, String> {

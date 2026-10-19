@@ -4,11 +4,13 @@
 
 use std::path::{Path, PathBuf};
 
+use freerouting::io::specctra::import_session;
 use freerouting_dev::gate::{Class, Settings, baseline_from, check};
 use freerouting_dev::gate_collect::{
-    ArmSource, CollectOptions, bench_dir_name, collect, session_via_in_pad,
+    ArmSource, CollectOptions, bench_dir_name, collect, session_via_in_pad, via_in_pad_count,
 };
 use freerouting_dev::json_read::Json;
+use freerouting_dev::ses_diff::parse_session;
 use freerouting_dev::{load_board, read_text};
 
 const BOARD: &str = "Issue508-SMD-routing-issue-demo";
@@ -79,6 +81,67 @@ fn via_in_pad_counts_only_the_vias_the_session_adds() {
     );
     assert_eq!(session_via_in_pad(&board, &dir.join("bad.ses")).unwrap(), 1);
     assert!(session_via_in_pad(&board, &dir.join("missing.ses")).is_err());
+}
+
+/// The demo board with a fixed via on pad U1-1 in its wiring, as a designer's
+/// thermal via in an exposed pad: the input already has a via in a pad.
+fn board_with_via_in_pad() -> String {
+    let text = read_text(&fixtures().join(format!("{BOARD}.dsn"))).unwrap();
+    let anchor = "(wiring\n";
+    assert!(text.contains(anchor));
+    text.replacen(
+        anchor,
+        &format!(
+            "{anchor}    (via \"Via[0-1]_600:300_um\" 72000 -44600 (net NET_CROSS_A) (type protect))\n"
+        ),
+        1,
+    )
+}
+
+/// `session` with `via` (session units) added to net NET_CROSS_A.
+fn with_via(session: &str, x: i32, y: i32) -> String {
+    let anchor = "(net \"NET_CROSS_A\"\n";
+    assert!(session.contains(anchor));
+    session.replacen(
+        anchor,
+        &format!(
+            "{anchor}        (via \"Via[0-1]_600:300_um\" {x}.0 {y}.0\n          (type protect)\n        )\n"
+        ),
+        1,
+    )
+}
+
+#[test]
+fn a_via_in_a_pad_that_the_input_already_has_is_not_the_sessions() {
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("gate-collect-input-vip");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("board.dsn"), board_with_via_in_pad()).unwrap();
+    let board = load_board(&dir.join("board.dsn")).unwrap();
+    assert_eq!(via_in_pad_count(&board), 1);
+    // The session repeats the input's via (as every SES does): importing it
+    // puts a second copy on the board, which is not a via the session adds.
+    let repeated = with_via(&java_ses(), 720000, -446000);
+    std::fs::write(dir.join("repeated.ses"), &repeated).unwrap();
+    let mut routed = board.clone();
+    import_session(&mut routed, &parse_session(&repeated).unwrap());
+    // Two copies on pad U1-1: a difference of counts would read 2 - 1 = 1.
+    assert_eq!(via_in_pad_count(&routed), 2);
+    assert_eq!(
+        session_via_in_pad(&board, &dir.join("repeated.ses")).unwrap(),
+        0
+    );
+    // A session that dropped the input's via adds none either.
+    std::fs::write(dir.join("dropped.ses"), java_ses()).unwrap();
+    assert_eq!(
+        session_via_in_pad(&board, &dir.join("dropped.ses")).unwrap(),
+        0
+    );
+    // A new via on pad U1-6 is the session's.
+    std::fs::write(dir.join("added.ses"), with_via(&repeated, 780000, -446000)).unwrap();
+    assert_eq!(
+        session_via_in_pad(&board, &dir.join("added.ses")).unwrap(),
+        1
+    );
 }
 
 #[test]

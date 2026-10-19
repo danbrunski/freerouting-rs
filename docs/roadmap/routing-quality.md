@@ -138,6 +138,25 @@ construction. It is still tested with `ses-diff`.
   committed.
 - Use `freerouting-dev bench` and `ses-diff` (F02), `freerouting-dev gate`
   (F03.1), and a via-in-pad check like the Java fork's `via_in_pad.py`.
+- **Engine-model `via_in_pad`** (`gate_collect::session_via_in_pad`, the
+  metric for boards without a `.kicad_pcb`): a session via whose copper
+  overlaps an SMD pad of any net, on a layer both reach, and that the input
+  has no via of the same centre, padstack and nets. The session repeats the
+  input's vias (all but system-fixed ones), so importing it adds a second copy
+  of each. Up to 2026-10-18 the metric took "in-pad count after import minus
+  in-pad count of the input", which counted every repeated input via in a pad
+  again. Those were the designer's vias, never the router's: 42 thermal vias
+  in smoothieboard's exposed pads (centres inside the pad) and 6 on
+  kit-dev-coldfire (annulus over a same-net pad, centre outside). Java's
+  reference sessions read the same 42 and 6. Corrected, both read 0 in every
+  arm of P04.1, P04.2, Q07.2, Q07.3 and Q10.4. No verdict changes; the
+  corrected counts are in Q10.4's note in N05.3. The KiCad oracle
+  (`tools/kicad-oracle/via_in_pad.py`) counts a via whose centre lies in any
+  pad, through-hole pads included. The engine model is stricter on annuli
+  (it counts a touching annulus) and looser on through-hole pads (it skips
+  them). Other measures that import a session into the input board double
+  the input's wiring the same way. One of them is Q10.4's helper's
+  `below_minimum_dsn`: the unpoured canary DSN's 3 were input traces.
 
 "Measured" in a Q or X **Accept:** clause means all of the above:
 preregistered, at least three distinct boards plus the owner variants,
