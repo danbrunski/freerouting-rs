@@ -225,5 +225,12 @@
     "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" fixtures/canary-pwr/presets/canary-graded-flow.json",
     "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade. Retain export/import logs, versions, source hashes and grades."
   },
-  "not_registered": "time (the fixes change no work budget); the enhanced profile (the arms run under legacy so that only the switches differ from Java)"
+  "not_registered": "time (the fixes change no work budget); the enhanced profile (the arms run under legacy so that only the switches differ from Java)",
+  "amendments": [
+    {
+      "date": "2026-10-18",
+      "reason": "main moved on before any N06.7 route (N06.4, N06.5, N06.6, N06.8, N06.12 and Q16.5 were committed after b93bcd0); the registered measurement runs on the tree that would take the promotion. Written before any route of N06.7",
+      "changes": "(1) engine base moved from origin/main b93bcd0 with N06.7's diff to main 3b1bde6 (N06.7's diff committed as 1dac842). Every java_quirks switch added since defaults to true (Java), ENHANCED is unchanged, and the arms run under legacy with all four keys explicit, so the arms still differ only in the four keys. The arms' engine, settings and command texts are unchanged; the command's relative binary path target/orchestrator/n06-target/release/freerouting is resolved from the worktree root. (2) Hard-guard check before any number: via_in_pad and below_minimum are the plugin row's only (metric_definitions), and that row runs under legacy (no neck-down) with the canary-graded-flow args. N06.10's graded plugin-path run of the same configuration (legacy, the same exported args, every java_quirks key true) had 0 via-in-pad and 0 below-minimum (KiCad track_width), so the baseline arm does not break a hard guard by construction of the options; the guards are unchanged. (3) How the verdict is computed: freerouting-dev gate --prereg cannot take this registration's records (the DSN rows carry no KiCad grade, so their hard metrics would be null and UNGRADED, and canary-pwr-plugin is not in boards.files, so it would be REFUSED); the accept list is applied by a script to n06_run.py's summary.json (statistics: unrouted, clearance_violations) and the plugin row's grade, exactly as the accept text states, with the registered noise bands. Boards, metrics, arms, the rule and the accept text unchanged"
+    }
+  ]
 }

@@ -8,6 +8,9 @@
 //! Registered 2026-10-18 before any routing number. A later change goes in the
 //! file's `amendments` with the reason and updates the hash here in the same
 //! change.
+//! Amended once, 2026-10-18, before any route: the engine base moved to main 3b1bde6;
+//! the hard guards were checked and are unchanged; the verdict is applied by script
+//! (the gate's prereg mode cannot take the plugin row or the ungraded DSN rows).
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -143,6 +146,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_batch_s_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "5f9b910c8a0258c0aa5fc29b0acde6b788626b481169b79ece235acaaeda94a4"
+        "45a043ee9dea8b66457f66bc239e557dc5802fd68cbb885c9dfcb1246b594dc1"
     );
 }

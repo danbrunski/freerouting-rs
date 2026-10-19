@@ -5,6 +5,11 @@
 //!
 //! Registered 2026-10-18 before any routing number. A later change goes in the file's
 //! `amendments` with the reason and updates the hash here in the same change.
+//! Amended twice, 2026-10-18, before any route of N06.4: the engine base moved to main
+//! 3b1bde6; `below_minimum` and `via_in_pad` count new breaches versus the baseline arm
+//! (the registered under-class-width count included neck-down tapers and pin neck-downs,
+//! which the baseline draws by design), skipping the input's own wiring that an SES
+//! import repeats; the router's own statistics come from its result manifest.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -137,6 +142,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_batch_g_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "392f0310ee74989380bf1e8a5fb4f57f470cdeab0e3e98a238ee4d710d3dd598"
+        "3e2a4eac471ce1f37ab11f48dc0a590b1525f2c87f2386df874e8031141ac402"
     );
 }

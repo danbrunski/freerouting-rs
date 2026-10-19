@@ -404,7 +404,7 @@ These are marked or look like quirks but keep no bug:
       target): `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p
       freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
       --test-threads=1`: exact 7 boards, 7 pass, 0 fail, 7 SES byte-identical.
-- [~] **N06.4 — Batch G, geometry cutouts:** `simplex_prev_division_line`,
+- [x] **N06.4 — Batch G, geometry cutouts:** `simplex_prev_division_line`,
   `octagon_box_cutout_branch3`.
   - First, an invariant test that fails on Java's code: over random holes in boxes and
     simplexes, the piece areas sum to outer minus inner, with no two pieces overlapping.
@@ -459,7 +459,7 @@ These are marked or look like quirks but keep no bug:
       - `tests/n06_cutout_reach.rs::drill_page_splits_report_both_counters_in_both_arms`:
         pass 1 of `Issue269-min_fr_test` reaches branch 3 7 times in each arm, and the simplex
         merge 0 times.
-    - [ ] Not wired: the search trees' shapes of obstacle and conduction areas and of the
+    - [~] Not wired (N06.3's deferred read sites): the search trees' shapes of obstacle and conduction areas and of the
       outline's generated keepout still split with Java's code in every arm. Those sites are
       `board/search/mod.rs` `item_tree_shapes`/`board_outline_tree_shapes` and
       `BoardOutline::keepout_piece_count` in `board/items/mod.rs`. They are outside this row's
@@ -482,7 +482,7 @@ These are marked or look like quirks but keep no bug:
       the `true` branch at both `PARITY(quirk, java_quirks.<id>)` markers.
       `cargo test -p freerouting-geometry -p freerouting --no-fail-fast` (private target):
       134 suites, 1508 passed, 0 failed, 33 ignored. No parity set was run (dispatch rule).
-    - [ ] Heavy run pending (orchestrator, one job at a time):
+    - [x] Heavy run (done 2026-10-18, below):
       `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.4.json --out target/orchestrator/n06-g`.
       - `n06_run.py` exits non-zero when sessions differ, which is expected for the branch-3
         arms. It writes `summary.json` with every run's counters first.
@@ -491,6 +491,84 @@ These are marked or look like quirks but keep no bug:
       - Then the plugin canary run and grade, per the registration's `plugin_canary` block.
       - Also the corpus inventory (read-only; the path must be absolute):
         `N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
+  - *Done 2026-10-18:* both **Accept:** clauses hold. The invariant holds with both switches
+    `false` (above), and the batch is measured and passes the accept rule. Worktree
+    `target/orchestrator/n06r1/wt` (branch `land/n06-runs1`, main `3b1bde6`), one Linux release
+    CLI (sha256 `693ec4aa…`, git `3b1bde6b8e05`), default profile `enhanced`.
+    - Two amendments, both written before any N06.4 route (sha256 now
+      `3e2a4eac471ce1f37ab11f48dc0a590b1525f2c87f2386df874e8031141ac402`, re-pinned in
+      `prereg_n06_4.rs`, 4 tests pass).
+      - The engine base moves from b93bcd0 to `3b1bde6` (N06.4's diff is `5607634`).
+      - Hard-guard check: the registered `below_minimum` (nets under their class width) counts
+        `enhanced`'s neck-down tapers. Amendment 1 changed it to traces under each board's
+        narrowest class width (option a). N06.7's run, on the three rows the batches share, then
+        showed that the router's pin neck-down breaks that too: 37 traces on Issue026's baseline
+        and 11 on bm08's. So amendment 2 makes both `below_minimum` and `via_in_pad` "no new breach
+        versus baseline" (option b): the arm's count minus the baseline arm's, floored at 0, with
+        the raw counts reported.
+      - `via_in_pad` is counted as main `4885a30`'s `added_via_in_pad`.
+      - The router's statistics come from its result manifest.
+    - Measurement tools: none of the grading uses `freerouting-dev gate collect`, `bench` or
+      `widths`. The engine-model counts come from a scratch tool on the engine API
+      (`target/orchestrator/n06r1/n06m`). Before importing the SES, it strips the input's wiring
+      that the session repeats, as main `019b260` does; it skips vias and traces the input already
+      has, as `4885a30` does; and it reads the SES at the writer's scale (`ses_reader_scale =
+      false`; Java's reader misplaces Issue676's session). Its unrouted, clearance and via counts
+      match the router's manifests on all 16 runs. The gate is `freerouting-dev` built at
+      `3b1bde6`; it only judges records and imports nothing.
+    - `n06_run.py`: 16 runs (4 rows × 4 arms). It exits 1 because sessions differ, which is
+      expected. Hard checks hold: on every row the simplex arm's SES equals the baseline's and
+      `all`'s equals the branch-3 arm's (sha256), and `simplex_prev_division_line_reached` is 0 in
+      every run.
+
+      | row | arm | unrouted | clearance | vias | length mm | branch3 reached | drills computed | below class width (raw) |
+      |---|---|---|---|---|---|---|---|---|
+      | Issue026-J2_reference | baseline | 0 | 0 | 16 | 371.16 | 1770 | 10724 | 37 |
+      | | all | 0 | 0 | 14 | 379.61 | 1589 | 7318 | 36 |
+      | Issue508-DAC2020_bm08 | baseline | 0 | 0 | 1 | 94.82 | 277 | 974 | 11 |
+      | | all (same SES) | 0 | 0 | 1 | 94.82 | 277 | 867 | 11 |
+      | Issue676-ch32v-tx118s | baseline | 0 | 0 | 6 | 14.26 | 0 | 0 | 0 |
+      | | all (same SES) | 0 | 0 | 6 | 14.26 | 0 | 0 | 0 |
+      | canary-pwr-9511d9a | baseline | 122 | 40 | 142 | 1436.80 | 393149 | 3144790 | 33 |
+      | | all | 125 | 40 | 138 | 1452.04 | 386471 | 2713302 | 30 |
+
+      `via_in_pad` is 0 everywhere, raw and new.
+    - Plugin row: the same export as N06.7's (canary `9511d9a`, `canary-graded-flow.json`, WSL
+      KiCad 10.0.7). The 4 arms were routed with the exported args and each arm's two flags. The
+      baseline and simplex arms give one SES, `bed461b2…`, byte-identical to Q16.4's plugin-path
+      session at b93bcd0. The branch-3 arm and `all` give `2953523d…`. The router's own count is 102
+      → 104 unrouted, 40 → 40 clearance, 166 → 161 vias; branch 3 is reached 106178 → 138839 times
+      and the simplex merge 0.
+    - Grades (`headless_run.py import`, then canary `grade.sh` at `2a7e070b` with
+      `GRADE_REV=9511d9a`, WSL KiCad 10.0.7):
+      - baseline: 41 unconnected, 8 starved thermals, 17 dangling vias (warning);
+      - candidate: 43 unconnected, 7 starved thermals, 24 dangling vias.
+      - Both have 0 via-in-pad, 0 `track_width`, 0 clearance and 0 inner-layer tracks.
+
+      Handoff: `target/canary-handoff/2026-10-18-n06-g/` (README.txt, SHA256SUMS).
+    - Gate, run from this worktree: `freerouting-dev gate --records
+      target/orchestrator/n06r1/records-g.json --baseline target/orchestrator/n06r1/baseline-g.json
+      --prereg docs/roadmap/prereg/N06.4.json` (records built by
+      `target/orchestrator/n06r1/build_records_g.py`).
+      - 0 refusals and **PASS** (totals verdict: accept).
+      - Signals: Issue026, bm08 and Issue676 unrouted 0 → 0 (band 2 each); canary-pwr
+        `kicad_unconnected` 41 → 43 (+2, band 10).
+      - The total changes by +2 against a set noise of 10.58, and no board is worse by more than
+        twice its band.
+      - Guards: `drc_real` 8 → 7, clearance unchanged, no new via in a pad or trace under the
+        minimum.
+      - The DSN unrouted of canary-pwr (122 → 125) is reported, not the row's signal.
+      - The reported pairs, judged by script (the gate judges only the primary pair): on every row,
+        the branch-3 arm's records equal `all`'s, so the same verdict holds, and the simplex arm's
+        equal the baseline's (neutral).
+    - Corpus inventory (the registered command): 1 passed. Of 205 DSN files, 203 load. The unwired
+      search-tree area splits reach branch 3 on two boards only, Issue756-tomu-fpga8 (1) and
+      tomu-fpga9 (6), neither a registered row, and the simplex merge on none. The outline-keepout
+      splits reach neither. Output in `target/orchestrator/n06-g-corpus.json`.
+    - Verdict: batch G **accepted** under the decisions' rule. Accepted for N06.13:
+      `octagon_box_cutout_branch3` (measured, neutral within noise) and
+      `simplex_prev_division_line` (inert: no session changes and its counter is 0; accepted on its
+      tests, and N06.13 decides on promoting inert switches). `ENHANCED` is unchanged here.
 - [~] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
   `session.clear()` before `InitFailed`, which also makes the rekey dead under `enhanced`),
   `failed_attempt_ripped_carryover` (snapshot and restore the set per attempt),
@@ -643,7 +721,7 @@ These are marked or look like quirks but keep no bug:
       grade each distinct session with canary's `grade.sh`). The done note then gives
       `fanout_retries` and `fanout_retries_succeeded` summed over the rows for `baseline`
       and for `fanout_stale_drill_carry` and `all`.
-- [~] **N06.7 — Batch S, shove:** `in_front_of_pad_typo`, `store_trace_class_self_compare`,
+- [x] **N06.7 — Batch S, shove:** `in_front_of_pad_typo`, `store_trace_class_self_compare`,
   `rational_perp_projection` (the arm with `in_front_of_pad_side0_flank` follows if the batch
   is accepted).
   - **Accept:** the batch is measured; the (c) arm is measured or explained.
@@ -689,13 +767,59 @@ These are marked or look like quirks but keep no bug:
       `clearance_violations` and `vias` (the manifest's `board_statistics`) into
       `summary.json`; a smoke run on `fixtures/scoring-perfect-two-pin.dsn` (debug build, 6
       arms) wrote them and the four counters.
-    - [ ] Heavy run pending (orchestrator, release build of this tree):
+    - [x] Heavy run (done 2026-10-18, below):
       `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.7.json --out target/orchestrator/n06-s`
       (30 runs; it exits non-zero after the last run if a session differs, and then the
       totals rule applies to `summary.json`'s `statistics`). Then the canary-pwr plugin row as
       in N06.10 (the registration's `plugin_canary`: export once, route the 6 arms with the
       exported args plus `--router.profile=legacy` and the arm's four flags, grade each
       distinct session with canary's `grade.sh`).
+  - *Done 2026-10-18:* both **Accept:** clauses hold. The batch is measured, and the (c) arm
+    `all_flank` is measured. Worktree `target/orchestrator/n06r1/wt` (branch `land/n06-runs1`, main
+    `3b1bde6`), one Linux release CLI (sha256 `693ec4aa…`, `--version` git `3b1bde6b8e05`).
+    - Amendment 1, written before any route (sha256 now
+      `45a043ee9dea8b66457f66bc239e557dc5802fd68cbb885c9dfcb1246b594dc1`, re-pinned in
+      `prereg_n06_7.rs`, 4 tests pass). It moves the engine base from b93bcd0 to `3b1bde6`
+      (N06.7's diff is `1dac842`) and says how the verdict is applied. The gate's `--prereg` mode
+      can't take these records: the DSN rows have no KiCad grade, so their hard metrics would be
+      null, and `canary-pwr-plugin` isn't in `boards.files`. So the accept list is applied by
+      script. Hard-guard check: `via_in_pad` and `below_minimum` belong to the plugin row only, and
+      N06.10's graded run of the same configuration had 0 of each, so the baseline breaks no hard
+      guard. The guards are unchanged.
+    - `n06_run.py`: 30 runs (5 rows × 6 arms), exit 0, "Sessions identical". In every run
+      `session_differences` is 0, and so are all four counters (`shove_in_front_of_pad_typo_flips`,
+      `shove_in_front_of_pad_flank_flips`, `shove_store_trace_class_flips`,
+      `shove_rational_projection_flips`).
+
+      | row | unrouted | clearance_violations | vias (every arm) |
+      |---|---|---|---|
+      | Issue026-J2_reference | 0 | 0 | 16 |
+      | Issue508-DAC2020_bm08 | 0 | 0 | 1 |
+      | Issue676-ch32v-tx118s | 0 | 0 | 6 |
+      | Issue313-FastTest | 2 | 40 | 24 |
+      | Issue027-zMRETestFixture | 0 | 0 | 24 |
+      These come from the router's own result manifests. No `freerouting-dev` import-based
+      measure is used, so neither main `4885a30` nor main `019b260` affects them.
+    - Plugin row: canary-pwr at canary `9511d9a` (`git archive`, unedited), exported once with
+      `headless_run.py export` and `canary-graded-flow.json` (sha256 `a9124f66…`) on WSL KiCad
+      10.0.7. Its args equal N06.10's export. The DSN differs from N06.10's export only in the
+      fiducial footprint's image (FID4–6 have their own image with a mask outline): plugin changes
+      since 298af02. The 6 arms were routed with the exported args, `--router.profile=legacy` and each
+      arm's four flags (`target/orchestrator/n06r1/plugin/route_arms.py`): one session for all 6
+      (sha256 `986e30bd…`), with every flip counter 0. The router's own count was 96 unrouted, 40
+      clearance and 187 vias.
+    - Grade of that one session (`headless_run.py import`, then canary `hardware/tools/grade.sh` at
+      canary `2a7e070b` with `GRADE_REV=9511d9a`, WSL KiCad 10.0.7): 38 unconnected, 4 clearance
+      errors (Power_High 0.25 mm), 5 starved thermals, 20 dangling vias (warning), 0 via-in-pad,
+      0 `track_width` (below minimum), and 2 inner-layer tracks (+12V_BUS on Power.Cu, 12.94 mm).
+      These are the legacy profile's errors, as in N06.10, and every arm has them identically.
+      Handoff: `target/canary-handoff/2026-10-18-n06-s/` (README.txt, SHA256SUMS).
+    - Verdict: the reachability rule. No registered board reaches any of the branches, and every
+      session equals its baseline, so the batch is **accepted on its tests**: both behaviours are
+      pinned per switch (above). `all_flank` against `all`: the sessions are identical and the flank
+      counter is 0, so it is accepted by the same rule. No totals arithmetic is needed. Accepted for
+      N06.13: `in_front_of_pad_typo`, `store_trace_class_self_compare`, `rational_perp_projection`
+      (all (b)) and `in_front_of_pad_side0_flank` ((c), N06.12). `ENHANCED` is unchanged here.
 - [~] **N06.8 — Batch P, pull-tight:**
   - `smooth_loses_trace`: test the failure conditions before removing, or re-insert the old
     trace;
