@@ -24,7 +24,6 @@ use std::path::{Path, PathBuf};
 use freerouting::board::BasicBoard;
 use freerouting::board::items::Item;
 use freerouting::geometry::IntPoint;
-use freerouting::io::specctra::import_session;
 use freerouting::library::PadstackId;
 use freerouting::quality::feasibility::report::sha256_hex;
 
@@ -149,7 +148,7 @@ fn via_key(item: &Item) -> Option<ViaKey> {
 pub fn session_via_in_pad(board: &BasicBoard, ses_path: &Path) -> Result<usize, String> {
     let session = parse_session(&read_text(ses_path)?)?;
     let mut routed = board.clone();
-    import_session(&mut routed, &session);
+    crate::ses_diff::import_at_writer_scale(&mut routed, &session);
     Ok(added_via_in_pad(board, &routed))
 }
 

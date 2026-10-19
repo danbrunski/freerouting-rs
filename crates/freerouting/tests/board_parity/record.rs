@@ -297,7 +297,8 @@ pub fn route_board(root: &Path, reference: &Reference, out: &Path, sink: Sink) -
     let rust = parse_session(&ses).expect("Rust's session parses");
     record.apply(compare_sessions(&input, &java, &rust));
     let mut java_board = input.clone();
-    import_session(&mut java_board, &java);
+    // At the writer's scale, like the comparison above (Issue676's factor is not 1).
+    import_at_writer_scale(&mut java_board, &java);
     record.d8_java = d8_breaches(&java_board, &input);
     record
 }

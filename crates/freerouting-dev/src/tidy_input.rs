@@ -1,7 +1,7 @@
 //! The routed copper `tidy` reads: a session file or a `.kicad_pcb` (Q15.1).
 //!
 //! Both end as a Specctra [`Session`] imported into the board by
-//! `import_session`, so the copper is scored by one code path whichever file
+//! [`import_at_writer_scale`], so the copper is scored by one code path whichever file
 //! it came from. The routed copper replaces the board's own: a session
 //! repeats the board's traces and vias but the system-fixed ones
 //! ([`import_routed_session`]), and a `.kicad_pcb` holds all of them, so
@@ -30,9 +30,9 @@ use freerouting::board::structure::Unit;
 use freerouting::dsn::Session;
 use freerouting::dsn::ast::{LayerRef, Point, Routes, SessionNet, Shape, Via, Wire, WiringItem};
 use freerouting::io::kicad::{DesignKind, ReadOptions, design_kind, read_kicad_input};
-use freerouting::io::specctra::{SesImportSummary, import_session};
+use freerouting::io::specctra::SesImportSummary;
 
-use crate::ses_diff::{import_routed_session, parse_session};
+use crate::ses_diff::{import_at_writer_scale, import_routed_session, parse_session};
 use crate::{load_board, read_text};
 
 /// What importing the routed copper did.
@@ -43,7 +43,8 @@ pub struct Imported {
     pub via_substitutions: usize,
 }
 
-/// Board units per session unit: what `read_session` divides by.
+/// Board units per session unit: what the writer divides by and the
+/// writer-scale reader ([`import_at_writer_scale`]) multiplies by.
 fn session_denominator(board: &BasicBoard) -> f64 {
     let c = &board.communication;
     c.coordinate_transform.dsn_to_board(1.0) / f64::from(c.resolution)
@@ -121,12 +122,12 @@ pub fn kicad_session(board: &BasicBoard, path: &Path) -> Result<(Session, usize)
         .map_err(|e| format!("{}: {e}", path.display()))?;
     let denominator = session_denominator(board);
     let c = &board.communication;
-    // Reader coordinates are micrometres; the session's are board units times
-    // the denominator.
+    // Reader coordinates are micrometres; the session's are board units divided
+    // by the denominator, as the writer writes them.
     let convert = |v: f64| {
         c.coordinate_transform
             .dsn_to_board(Unit::scale(v, Unit::Um, c.unit))
-            * denominator
+            / denominator
     };
     let point = |p: &Point| Point::new(convert(p.x), convert(p.y));
     let fallback = first_via_padstack(board);
@@ -217,7 +218,7 @@ pub fn import_routed(board: &mut BasicBoard, path: &Path) -> Result<Imported, St
             let (session, via_substitutions) = kicad_session(board, path)?;
             board.delete_all_traces_and_vias();
             Ok(Imported {
-                summary: import_session(board, &session),
+                summary: import_at_writer_scale(board, &session),
                 via_substitutions,
             })
         }

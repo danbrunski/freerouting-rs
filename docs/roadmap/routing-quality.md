@@ -190,6 +190,14 @@ construction. It is still tested with `ses-diff`.
   decided a mark; P04.2's 5 % clause is on work-limit hits, which the
   doubling doesn't touch. The re-measured offsets are constant per board
   across arms, so no ratio-based rule could have moved either.
+  *Since 2026-10-18* `freerouting-dev` also reads every session at the scale
+  the writer used (`ses_diff::import_at_writer_scale`, `ses_reader_scale`
+  off whatever the route used), where it had read Java's divide-by-scale. The
+  two differ only where `dsn_to_board(1) / resolution` is not 1, which among
+  the 185 board fixtures is `Issue676-ch32v-tx118s` (0.1) alone: its wiring
+  landed 100 times off the board, so the dev tools read 12 connections unrouted
+  where the router's `--result-json` says 0 (`tests/ses_scale.rs`). Boards of
+  the P04, Q07 and Q10 sweeps have factor 1 and read the same as before.
 
 "Measured" in a Q or X **Accept:** clause means all of the above:
 preregistered, at least three distinct boards plus the owner variants,

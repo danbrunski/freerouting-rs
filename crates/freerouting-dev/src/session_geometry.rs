@@ -2,7 +2,8 @@
 //! structurally: net by net, as multisets, in board coordinates.
 //!
 //! A wire is (layer, half width, point list); a via is (padstack, position).
-//! Coordinates are converted the way `read_session` converts them, so a
+//! Coordinates are converted the way the writer-scale reader converts them
+//! (`ses_diff::import_at_writer_scale`), so a
 //! number written `1000` or `1000.0`, the order of nets and wires, and the
 //! direction a path is written in don't count.
 
@@ -51,7 +52,8 @@ pub struct SessionGeometry {
     pub denominator: f64,
 }
 
-/// Converts session coordinates to board units like `read_session`.
+/// Converts session coordinates to board units like the writer-scale reader
+/// (`ses_reader_scale` off): board = session times `denominator`.
 struct Converter {
     denominator: f64,
 }
@@ -66,7 +68,7 @@ impl Converter {
     }
 
     fn coordinate(&self, value: f64) -> i32 {
-        round_to_i32(value / self.denominator)
+        round_to_i32(value * self.denominator)
     }
 
     fn point(&self, x: f64, y: f64) -> (i32, i32) {
@@ -74,7 +76,7 @@ impl Converter {
     }
 
     fn half_width(&self, width: f64) -> i32 {
-        round_to_i32(width / (2.0 * self.denominator))
+        round_to_i32(width * self.denominator / 2.0)
     }
 }
 
@@ -245,7 +247,7 @@ pub fn net_differences(a: &SessionGeometry, b: &SessionGeometry) -> Vec<NetDiffe
 /// A board coordinate printed in session units (`denominator` board units
 /// per session unit), without a fraction when it is whole.
 pub fn session_number(value: i32, denominator: f64) -> String {
-    let v = f64::from(value) * denominator;
+    let v = f64::from(value) / denominator;
     if v.fract() == 0.0 && v.abs() < 1e15 {
         format!("{}", v as i64)
     } else {
@@ -317,6 +319,8 @@ mod tests {
     #[test]
     fn session_numbers_drop_whole_fractions() {
         assert_eq!(session_number(1000, 1.0), "1000");
-        assert_eq!(session_number(-15, 0.5), "-7.5");
+        // The writer divides board units by the denominator.
+        assert_eq!(session_number(-15, 0.5), "-30");
+        assert_eq!(session_number(3, 4.0), "0.75");
     }
 }

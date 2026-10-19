@@ -50,7 +50,8 @@
 //!
 //! Wires are compared as multisets of (layer, half width, point list) and
 //! vias as multisets of (padstack, position) per net, in board coordinates
-//! converted exactly as `read_session` converts them. The order of nets and
+//! converted as the writer-scale reader converts them
+//! ([`ses_diff::import_at_writer_scale`]). The order of nets and
 //! items, the number format (`1000` or `1000.0`) and the direction a path is
 //! written in don't count. Placement and pin swaps are not compared.
 //!
@@ -64,7 +65,10 @@
 //! repeats ([`ses_diff::import_routed_session`]): a session holds every trace
 //! and via of the routed board but the system-fixed ones, the input's own
 //! unfixed and user-fixed wiring included, so an import on top of the input
-//! counted that wiring twice. `gate collect`'s `via_in_pad` counts only the
+//! counted that wiring twice. They all read the session at the scale the
+//! writer used (`router.java_quirks.ses_reader_scale` off, whatever the route
+//! used), so the copper lands where the router put it (Issue676's session read
+//! with Java's scale is 100 times off). `gate collect`'s `via_in_pad` counts only the
 //! vias the input does not have ([`gate_collect::added_via_in_pad`]).
 
 pub mod bench;

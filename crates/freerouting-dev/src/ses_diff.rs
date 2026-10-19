@@ -188,13 +188,35 @@ pub fn remove_session_wiring(board: &mut BasicBoard) -> usize {
     removed
 }
 
+/// Imports `session` into `board` at the scale the writer used
+/// (`router.java_quirks.ses_reader_scale` off, whatever the board's
+/// switches are), and restores the board's switches afterwards.
+///
+/// Java's reader divides session coordinates by the factor the writer
+/// divides board coordinates by, so the two are inverse only where the
+/// factor is 1. On `Issue676-ch32v-tx118s` (0.1) the default reader puts the
+/// router's wiring 100 times off the board, and a measure reads 12 nets
+/// unrouted where the router's own result says 0. A measurement must place
+/// the copper where the router put it, so every freerouting-dev import goes
+/// through here.
+pub fn import_at_writer_scale(board: &mut BasicBoard, session: &Session) -> SesImportSummary {
+    let saved = board.java_quirks();
+    let fixed = saved
+        .with("ses_reader_scale", false)
+        .expect("ses_reader_scale is a java_quirks switch");
+    board.set_java_quirks(fixed);
+    let summary = import_session(board, session);
+    board.set_java_quirks(saved);
+    summary
+}
+
 /// Imports `session` into `board` in place of the wiring the session
 /// repeats: the board becomes the routed board the session was written
 /// from, its system-fixed wiring once and the session's wiring once.
 /// `board` is the input the session was routed from.
 pub fn import_routed_session(board: &mut BasicBoard, session: &Session) -> SesImportSummary {
     remove_session_wiring(board);
-    import_session(board, session)
+    import_at_writer_scale(board, session)
 }
 
 /// Parses a session file's text.

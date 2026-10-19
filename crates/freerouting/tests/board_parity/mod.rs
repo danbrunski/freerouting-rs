@@ -18,13 +18,13 @@ use freerouting::board::items::ItemId;
 use freerouting::board::{BasicBoard, BoardSnapshot, RoutingBoard};
 use freerouting::drc::json::JsonValue;
 use freerouting::dsn::Session;
-use freerouting::io::specctra::{SesStyle, import_session, write_ses};
+use freerouting::io::specctra::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, RulesChoice, prepare_job};
 use freerouting::settings::board::BoardRouterSettings;
 use freerouting::settings::profile::{legacy_pin, require_legacy};
 use freerouting::settings::{ResolveContext, RouterSettings, Source};
 
-use crate::ses_diff::{STATISTIC_FIELDS, SesDiff, parse_session};
+use crate::ses_diff::{STATISTIC_FIELDS, SesDiff, import_at_writer_scale, parse_session};
 
 /// The first differing nets a record keeps.
 const MAX_NETS: usize = 10;
