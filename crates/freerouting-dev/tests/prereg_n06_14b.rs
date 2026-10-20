@@ -1,8 +1,8 @@
 //! Pins N06.14's second registration (`docs/roadmap/prereg/N06.14b.json`): the simplex
 //! cutouts' two Java-bug fixes, `router.java_quirks.cutout_hole_crosses_border` and
-//! `simplex_octagon_half_corner`, each alone and both, against Java's cutouts, under profile
-//! `enhanced` with the 2026-10-20 round-2 candidates fixed in every arm, judged by N02's
-//! totals rule with `accept: no-regress`, and run by `tools/bench/n06_run.py`.
+//! `simplex_octagon_half_corner`, both together (amendment 1), against Java's cutouts, under
+//! profile `enhanced` with the 2026-10-20 round-2 candidates fixed in every arm, judged by
+//! N02's totals rule with `accept: no-regress`, and run by `tools/bench/n06_run.py`.
 //!
 //! Registered 2026-10-20 before any number under it, after `N06.14.json`'s run showed its
 //! reach claim ("any-angle mode only") wrong: canary-pwr, a 45 degree board, reaches both
@@ -10,6 +10,10 @@
 //! crate). A new file rather than an amendment, because `N06.14.json` has numbers. A later
 //! change goes in the file's `amendments` with the reason and updates the hash here in the
 //! same change.
+//!
+//! Amendment 1 (2026-10-20; decided 2026-10-20: measurement runs stay a few minutes): the two
+//! one-switch arms are dropped, so `baseline` and `all` are the only arms and the verdict pair
+//! judges both switches together; each distinct plugin session is graded once.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -53,19 +57,11 @@ fn the_n06_14b_registration_is_valid() {
     assert_eq!(prereg.names.base, "baseline");
     assert_eq!(prereg.names.cand, "all");
     let arms: Vec<&str> = prereg.arms.keys().map(String::as_str).collect();
-    assert_eq!(
-        arms,
-        [
-            "all",
-            "baseline",
-            "cutout_hole_crosses_border",
-            "simplex_octagon_half_corner"
-        ]
-    );
+    assert_eq!(arms, ["all", "baseline"], "amendment 1 keeps two arms");
     assert_eq!(prereg.set.as_deref(), Some(SET));
     assert_eq!(prereg.boards.len(), 8, "7 DSN rows and the plugin row");
     assert!(prereg.totals_registered);
-    assert_eq!(prereg.amendments, 0);
+    assert_eq!(prereg.amendments, 1);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     for name in [
         "via_in_pad",
@@ -105,12 +101,7 @@ fn each_arm_sets_its_two_switches_and_the_same_six_others() {
     let json = json();
     let text = text();
     let at = |arm: &str| text.find(&format!("\"{arm}\": {{")).expect(arm);
-    let expect = [
-        ("baseline", "true", "true"),
-        ("cutout_hole_crosses_border", "false", "true"),
-        ("simplex_octagon_half_corner", "true", "false"),
-        ("all", "false", "false"),
-    ];
+    let expect = [("baseline", "true", "true"), ("all", "false", "false")];
     for (arm, border, half) in expect {
         assert!(
             at("baseline") <= at(arm),
@@ -244,6 +235,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_n06_14b_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "9417fb2c253a4e54d04406599ee7b2b8742ef64aae1ce4c0c2115fa1c6ef6b6b"
+        "68f90bf5e1acb3b812115244541edfcf3d0a03ecd7d68c8c6f4465b56195acb7"
     );
 }

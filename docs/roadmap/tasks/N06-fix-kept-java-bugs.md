@@ -1627,8 +1627,8 @@ These are marked or look like quirks but keep no bug:
       |---|---|---|---|---|
       | `simplex_prev_division_line` | b | G (N06.4) | accepted on tests; promoted in round 2 | N06.4 accepted it inert at the drill-page reach (counter 0, sessions identical); at every `Area` split (N06.14's run, 2026-10-20) `simplex_prev_division_line_reached` 0 in 40 runs and 0 in the corpus inventory; `the_simplex_switch_changes_no_piece` |
       | `octagon_box_cutout_branch3` | b | G (N06.4) | rejected | N06.4 gate PASS at the drill-page reach (+2 against noise 10.58); at every `Area` split (N06.14's run under its amendment 2, amendment 1's pair) `gate: FAIL`: `below_minimum` 33 → 34 on canary-pwr's DSN, total 196 → 201 (noise 21.40). Decided 2026-10-20: no separate switch for the newly wired splits (canary-pwr has 0 stored areas with holes, so the breach is at the drill-page reach under today's engine); stays `true` in both profiles |
-      | `cutout_hole_crosses_border` | b | G2 (N06.14) | pending: no verdict | N06.14's run: the 45 degree identity check fails on canary-pwr (counter 109 on its DSN); a corrected registration (N06.14 `[~]`) measures it; `true` in both profiles |
-      | `simplex_octagon_half_corner` | b | G2 (N06.14) | pending: no verdict | likewise (counter 4686 on canary-pwr's DSN, sessions differ); `true` in both profiles |
+      | `cutout_hole_crosses_border` | b | G2 (N06.14) | accepted (with `simplex_octagon_half_corner`); not promoted yet | N06.14b's run (amendment 1, 2026-10-20: the two switches together in arm `all`, engine `c8b91b7`): `gate: PASS`, totals 196 → 208 (+12, noise 21.40), no hard-guard or guard breach on 8 of 8 rows, consistency check holds; counter 109 → 384 on canary-pwr's DSN; `true` in both profiles until promoted |
+      | `simplex_octagon_half_corner` | b | G2 (N06.14) | accepted (with `cutout_hole_crosses_border`); not promoted yet | the same run and pair (counter 4686 → 5372 on canary-pwr's DSN, canary DSN 122 → 129 and plugin 39 → 44 KiCad unconnected, inside bands 10); `true` in both profiles until promoted |
       | `init_failure_room_leak` | b | M (N06.5) | accepted on tests | `maze_init_failure_room_leaks` 0 in 35 runs and the plugin row; gate PASS, 38 → 38 |
       | `failed_attempt_ripped_carryover` | b | M (N06.5) | accepted on tests | `maze_ripped_carryovers` 0 |
       | `ortho_zero_width_room` | b | M (N06.5) | accepted, neutral | 254 and 61 flips on the two 90° rows, sessions identical |
@@ -1936,7 +1936,7 @@ These are marked or look like quirks but keep no bug:
       sessions identical (9 rows rise); router wall seconds summed 80.0 → 83.7. Verdict:
       **promotion confirmed** on the quick rows; the five entries stay in `ENHANCED`.
 
-- [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
+- [x] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and
   `target/orchestrator/operator-decisions.md`, "2026-10-18 N06.4" and "N06.12 follow-ups").
   - Switches in `settings/java_quirks.rs` and the geometry `SplitQuirks`, `true` = Java; fixes
@@ -2233,8 +2233,8 @@ These are marked or look like quirks but keep no bug:
         Noise: canary-pwr 10, the plugin row 10, others the default.
       - `seen_before_registration` gives amendment 2's numbers: DSN 122 → 129, plugin 39 → 44,
         total 196 → 208 (noise 21.40); counters 109 / 4686 (DSN) and 16 / 1552 (plugin).
-    - [ ] Heavy run (orchestrator, one route at a time, every route under the cap): heavy run
-      pending: `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14b.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2b`
+    - [x] Heavy run (orchestrator, one route at a time, every route under the cap), as first
+      registered: `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14b.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2b`
       (exits 1 when sessions differ, after writing `summary.json`), then the plugin row:
       `cd /home/thebo/code/freerouting-rs && OWN_FLAGS=9 N06_RUN_ULIMIT_KB=8000000 python3 target/orchestrator/n06r5/route_plugin.py docs/roadmap/prereg/N06.14b.json target/orchestrator/n06r5/plugin arms-14b`
       (the exported DSN `target/orchestrator/n06r5/plugin/work/canary-pwr.dsn`, sha256
@@ -2252,6 +2252,87 @@ These are marked or look like quirks but keep no bug:
       - `n06m/Cargo.toml` and `grade.sh` point at `target/orchestrator/n06r5/wt`, which is gone.
         Recreate it first with `git worktree add --detach target/orchestrator/n06r5/wt <landed
         commit>`, and rebuild `n06m` into `n06-target`.
+    - [x] Amendment 1 (2026-10-20; decided 2026-10-20: measurement runs stay a few minutes, Java
+      compatibility ranks below short measurement cycles): `docs/roadmap/prereg/N06.14b.json`
+      sha256 now `68f90bf5e1acb3b812115244541edfcf3d0a03ecd7d68c8c6f4465b56195acb7`, re-pinned in
+      `crates/freerouting-dev/tests/prereg_n06_14b.rs` (5 tests, pass).
+      - Two arms, `baseline` and `all` (both N06.14 keys `false`); their commands are unchanged.
+        The one-switch arms and their reported pairs are dropped, so the verdict covers both
+        switches together. Rows unchanged: every DSN row but canary-pwr's routes in under 30 s
+        (tomu-fpga9 29.0–29.7 s, the slowest), and canary-pwr's DSN and plugin rows stay
+        measured. Each distinct plugin session is graded once.
+      - Written after numbers existed, and recorded in `seen_before_registration`: the run as
+        first registered was started twice (four arms). The first start was cut off by a full
+        disk after 24 of 28 routes. The second start was stopped on the amendment's instruction
+        after the same 24 routes. All 24 sessions were byte-identical between the two starts. The
+        numbers read are listed in `seen_before_registration`. No plugin route or grade ran
+        before the amendment.
+  - *Done 2026-10-20 (N06.14b, amendment 1):* worktree `target/orchestrator/n06d/wt` (branch
+    `land/n06-14c`, main `a25c82f`; engine and CLI at `c8b91b7`).
+    - CLI `target/orchestrator/n06-target/release/freerouting`, sha256 `95d2ada2…` (`freerouting
+      0.1.0 (git c8b91b7d75f4)`), the release build of `c8b91b7` copied from
+      `target/orchestrator/n06-13b-base/release/`. `freerouting-dev` (`48a2db10…`) and `n06m`
+      (`9ad443bd…`) were built from `target/orchestrator/n06r5/wt`, recreated detached at
+      `c8b91b7`.
+    - Runs: `N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py
+      docs/roadmap/prereg/N06.14b.json --out target/orchestrator/n06-g2b` gave 14 runs, all exit
+      0, and exit 1 overall because sessions differ. Plugin row: `OWN_FLAGS=9 route_plugin.py …
+      arms-14b`, 2 routes, exit 0 each. The plugin sessions are `22de6d8b` (baseline) and
+      `27ff331a` (`all`), byte-identical to N06.14 amendment 2's at `08062e2`. Measuring tool
+      (`n06m`, input wiring stripped) on every DSN run: `via_in_pad` raw 0 on every row.
+
+      | row | `baseline` unrouted / vias / below min. raw / clearance | `all` |
+      |---|---|---|
+      | J2-any | 0 / 10 / 25 / 0 | 0 / 12 / 15 / 0, differs |
+      | rpi_splitter-any | 0 / 2 / 13 / 0 | 0 / 2 / 7 / 0, differs |
+      | scoring-mixed-layer-any | 0 / 1 / 0 / 0 | identical |
+      | Issue026-J2_reference (45°, identity row) | 0 / 16 / 37 / 0 | identical |
+      | Issue756-tomu-fpga8 | 14 / 162 / 0 / 72 | identical |
+      | Issue756-tomu-fpga9 | 21 / 163 / 2 / 72 | identical |
+      | canary-pwr-9511d9a DSN | 122 / 142 / 33 / 40 | 129 / 144 / 29 / 40, differs |
+      | canary-pwr-plugin (KiCad unconnected / router unrouted / vias) | 39 / 97 / 181 | 44 / 101 / 165, differs |
+
+      Wall time: canary DSN 441.7 and 412.2 s, plugin row 78.5 and 99.7 s, every other route
+      at most 29.0 s.
+    - Reach counters (`--stats`), `baseline` → `all`:
+      - `cutout_hole_crosses_border_reached`: J2-any 2460 → 28, rpi-any 455 → 20, canary DSN
+        109 → 384, plugin 16 → 106, every other row 0.
+      - `simplex_octagon_half_corner_reached`: J2-any 26710 → 13175, rpi-any 15867 → 16072,
+        canary DSN 4686 → 5372, plugin 1552 → 1921, every other row 0.
+      - `octagon_box_cutout_branch3_reached`: canary DSN 398259 → 413484, plugin 101679 → 128803.
+      - `simplex_prev_division_line_reached`: 0 in all 16 runs.
+      - `any_angle_room_side_mismatches`: J2-any 3 → 3, rpi-any 40 → 0, 0 on every 45 degree row.
+    - Grade (plugin import with the same options, canary `grade.sh` with tools at `2a7e070b`,
+      `GRADE_REV=9511d9a`, WSL KiCad 10.0.7, one grade per session, run only while no other
+      `kicad-cli` was running):
+      - `22de6d8b`: 39 unconnected, 5 starved_thermal, 0 clearance, 0 shorting_items,
+        0 track_width, 0 via-in-pad, 0 inner-layer tracks;
+      - `27ff331a`: 44, 5, 0, 0, 0, 0, 0.
+
+      `drc_real` is 5 in both arms. The grades equal amendment 2's two grades of the same
+      sessions.
+    - Gate (`freerouting-dev` at `c8b91b7`). The baseline file was written first with
+      `--write-baseline`. Then `gate --records … --baseline … --prereg
+      docs/roadmap/prereg/N06.14b.json` reported `1 amendment(s): 0 refusal(s)`, `judged 8 of 8
+      row(s)`:
+      - total 196 → 208 (+12; canary DSN 122 → 129 in band 10, plugin 39 → 44 in band 10, the
+        other six rows 0 change); set noise 21.40;
+      - `totals verdict: accept`, `gate: PASS`;
+      - hard metrics `via_in_pad` and `below_minimum` 0 → 0 on every row, and guards
+        `clearance_violations` and `drc_real` equal on every row.
+    - Consistency check (`pairs_rule`) holds. The rows outside tomu-fpga8/9 where both arms
+      count 0 for both switches are scoring-mixed-layer-any and J2, and both have
+      `session_differences` 0. The J2 identity prediction holds: counters 0 in both arms,
+      identical sessions. tomu-fpga8/9 are also identical.
+    - Verdict: **both switches accepted together** (the decision table's "pass"). N06.13's table
+      records both as accepted. Promotion into `ENHANCED` (N05, with their DIVERGENCES "Profile
+      enhanced" lines) is a separate N06.13 step, and both keys stay `true` in both profiles
+      until then. No switch was measured alone; per amendment 1, measuring either alone needs
+      a new registration.
+    - Accept clauses: the invariant and reach clauses are the `[x]` items above. The
+      registration came before any number (N06.14b as registered). Its amendment 1 came after
+      the numbers listed in it (decided 2026-10-20). The measurement under the accept rule is
+      this run.
 - [x] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
   deeper level of `TraceShover.insert`'s recursion moves a via of another net (`shoveVias`) onto a
   substitute piece that is not on the board yet; the piece is then inserted over it, a short. Make
