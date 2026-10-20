@@ -39,8 +39,9 @@
 //! (`zero_improvement_needs_a_board_without_vias`).
 //! So the clear inside a pass is mostly a pass without a winner.
 //!
-//! **Kept Java quirks** (DIVERGENCES, "Java bugs kept on purpose"), each
-//! behind its `router.java_quirks` switch (N06.9), `true` = Java:
+//! **Kept Java quirks** (DIVERGENCES, "Java bugs kept under `legacy`"), each
+//! behind its `router.java_quirks` switch (N06.9), `true` = Java; profile
+//! `enhanced` turns the first two off (N06.13, 2026-10-20):
 //! - `opt_first_pass_stops`: a pass with the increased ripup costs that has
 //!   no adopted winner (or a winner of 0 %) clears the costs inside the
 //!   pass, so the loop sees an improvement below the threshold and stops

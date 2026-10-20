@@ -61,9 +61,13 @@ fn work_counts_of_issue433() {
                     ("doors_expanded", 3008),
                     // N06.13: profile `enhanced`'s Java-bug fixes add 148 tree
                     // nodes to the maze search (90488 and 173255 before); the
-                    // routes and every other count are unchanged.
+                    // routes and every other count are unchanged. Its second
+                    // round adds 637 more (173403 before): the shove's
+                    // pending-piece check (`shove_via_into_pending_piece =
+                    // false`) queries the tree outside the work meter, so
+                    // `maze_work_units` and the routes stay.
                     ("maze_work_units", 90636),
-                    ("tree_nodes_visited", 173403),
+                    ("tree_nodes_visited", 174040),
                 ],
             ),
             (

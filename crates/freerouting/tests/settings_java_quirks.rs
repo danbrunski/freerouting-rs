@@ -38,13 +38,17 @@ const CORES: usize = 8;
 /// by N06.16) and 11 of kind (c).
 const SWITCH_COUNT: usize = 46;
 
-/// The switches profile `enhanced` turns off (N06.13, 2026-10-19), in inventory
-/// order: the accepted batches M (N06.5), F (N06.6), S (N06.7), P (N06.8), I
-/// (N06.10) and U (N06.11), and N06.12's flank, rules-scope and skip-length fixes.
-/// Not promoted: the cutout switches (N06.4, N06.14; re-measured by N06.14), the
-/// optimizer's (N06.9, pending), `shove_via_into_pending_piece` (N06.15, pending),
-/// `ripup_pass_no_unset` (rejected) and the (c) rows left as Java.
-const PROMOTED: [&str; 30] = [
+/// The switches profile `enhanced` turns off (N06.13), in inventory order. The
+/// first round (2026-10-19): the accepted batches M (N06.5), F (N06.6), S
+/// (N06.7), P (N06.8), I (N06.10) and U (N06.11), and N06.12's flank,
+/// rules-scope and skip-length fixes. The second round (2026-10-20):
+/// `simplex_prev_division_line` (N06.4, inert), the optimizer's two (N06.9),
+/// `shove_via_into_pending_piece` (N06.15) and `any_angle_room_side_index`
+/// (N06.16). Not promoted: `octagon_box_cutout_branch3` and `ripup_pass_no_unset`
+/// (rejected), N06.14's two cutout switches (no verdict) and the (c) rows left as
+/// Java.
+const PROMOTED: [&str; 35] = [
+    "simplex_prev_division_line",
     "init_failure_room_leak",
     "failed_attempt_ripped_carryover",
     "ortho_zero_width_room",
@@ -58,6 +62,8 @@ const PROMOTED: [&str; 30] = [
     "rational_perp_projection",
     "smooth_loses_trace",
     "pull_tight_reused_lines_change",
+    "opt_first_pass_stops",
+    "opt_equal_key_skip",
     "dsn_via_alias",
     "dsn_class_class_pairs",
     "dsn_shape_bbox",
@@ -72,6 +78,8 @@ const PROMOTED: [&str; 30] = [
     "route_change_layer_no_via",
     "route_connect_inner_break",
     "select_extension_ignores_filter",
+    "shove_via_into_pending_piece",
+    "any_angle_room_side_index",
     "in_front_of_pad_side0_flank",
     "rules_unknown_layer_scope",
     "any_angle_skip_length_squared",
@@ -260,13 +268,13 @@ fn the_job_carries_the_switches_to_the_board_and_the_control() {
 
     // A switch the profile leaves `true` turned off, a promoted one turned back on.
     let cli = parse_cli_arguments(&[
-        "--router.java_quirks.opt_equal_key_skip=false".to_string(),
+        "--router.java_quirks.ripup_pass_no_unset=false".to_string(),
         "--router.java_quirks.dsn_shape_bbox=true".to_string(),
     ]);
     input.cli = Some(cli.patch);
     let prepared = prepare_job(&input, &ctx()).expect("loads");
     let want = enhanced_quirks()
-        .with("opt_equal_key_skip", false)
+        .with("ripup_pass_no_unset", false)
         .and_then(|q| q.with("dsn_shape_bbox", true))
         .unwrap();
     assert_eq!(prepared.board.java_quirks(), want);

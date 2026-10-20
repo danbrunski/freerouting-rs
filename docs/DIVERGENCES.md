@@ -41,9 +41,11 @@ Each crate's docs carry the full detail; this file is the index.
 **Java bugs kept on purpose** (changing them would change routing results; N06 sorts every
 kept bug and schedules its fix under profile `enhanced`; see
 [N06](roadmap/tasks/N06-fix-kept-java-bugs.md)): `Simplex.cutoutFrom` never setting its
-previous division line, the no-op branch 3 in IntOctagon's box cutout (N06.4's switches, `true`
-in both profiles until N06.14's amendment 1 re-measures them; see "Java quirk switches, opt-in"
-below). `RationalPoint.perpendicularProjection` is kept under `legacy` only: profile `enhanced`
+previous division line (kept under `legacy` only: profile `enhanced` assigns it,
+`router.java_quirks.simplex_prev_division_line = false`, N06.4, promoted by N06.13's second round;
+the pieces are Java's either way), the no-op branch 3 in IntOctagon's box cutout
+(`octagon_box_cutout_branch3`, `true` in both profiles: N06.14's run at every `Area` split rejected
+its fix; see "Java quirk switches, opt-in" below). `RationalPoint.perpendicularProjection` is kept under `legacy` only: profile `enhanced`
 fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted by N06.13).
 
 ## freerouting-dsn
@@ -740,13 +742,15 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   stays `IntOctagon.EMPTY`, `EMPTY.enlarge(w)` is `EMPTY` again and `optChangedArea` skips the
   tightener; only `Integer.MAX_VALUE` (no clip) pull-tightens after a move
   (`RoutingBoard::move_drill_item`, test `move_drill_item_finite_tidy_skips_pull_tight`).
-- Java bug kept on purpose (found by N03.2): a shove substitute piece goes on the board only
+- Java bug kept under `legacy` (found by N03.2; profile `enhanced` fixes it,
+  `router.java_quirks.shove_via_into_pending_piece = false`, N06.15, promoted by N06.13's second
+  round): a shove substitute piece goes on the board only
   after the recursive inserts of its own shapes, and a deeper level's `shoveVias` may move a
   via of another net onto the piece meanwhile. The move's check (`DrillItemMover.check`,
   `forcedPad`) cannot see a piece that is not on the board, so the piece is inserted over the
   via, a short (`TraceShover.java:544-569`, `ForcedPadRouter.java:413-438`; N03.2 traced it on
-  GP8B). Switch `router.java_quirks.shove_via_into_pending_piece`, `true` (Java) in both
-  profiles; N06.15 measures it (`shove::insert` module docs).
+  GP8B). `legacy` keeps the switch `true` (Java); N06.15 measured the fix (`shove::insert` module
+  docs).
 - Where Java throws out of an insert (a substitute piece without a tree shape in
   `ShapeAndEntrySide`; `insertTraceWithoutCleaning` rejecting the new trace, fewer than two
   corners or zero length, so that `combine` throws a `NullPointerException`), the port reports
@@ -821,7 +825,8 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   (`optRouteItemOnBoard`); the port reads no clock there. `optimizer.timeout` is armed by the
   pipeline as a full stop (`StopLevel::All`), checked before each pass and each chunk, and
   the pass it lands in adopts no unfinished winner (`optimizer_timeout_is_a_full_stop`).
-- Java bugs kept on purpose (`optimize::batch` module docs): a first pass without a winner,
+- Java bugs kept under `legacy` (`optimize::batch` module docs; profile `enhanced` fixes the
+  first two since N06.13's second round, N06.9): a first pass without a winner,
   or whose winner has an `improvement_percentage` of 0 (which needs a board without vias:
   `ItemRouteResult`'s guard, not its integer division,
   `zero_improvement_needs_a_board_without_vias`), clears the increased ripup costs inside the
@@ -829,7 +834,7 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   order skips every item whose key equals an earlier one for the whole pass
   (`equal_key_skips_rest_of_pass`); an improvement threshold in (0, 0.1) is multiplied by 100.
   N06.9 puts the first two behind `router.java_quirks.opt_first_pass_stops` and
-  `opt_equal_key_skip` (both `true`, Java's, in both profiles until their measurement):
+  `opt_equal_key_skip` (`true`, Java's, under `legacy`; `false` under `enhanced`):
   `false` goes on for one pass at normal ripup costs after such a clear, as Java's comment
   intends (`first_pass_switch_both_behaviours`, `pass_end_decision_both_behaviours`), and
   keeps every sorted candidate (`equal_key_switch_keeps_every_candidate`).
@@ -1489,14 +1494,20 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 
 Fixes of kept Java bugs behind `router.java_quirks.<id>`: unset (`true`) is Java's
 behaviour, `false` the fix, and `legacy` keeps every switch unset. N06.13 (2026-10-19)
-promoted the 30 switches of the accepted batches into `enhanced`, one line each under
-"Profile `enhanced`"; the others stay `true` in both profiles until their measurement
+promoted the 30 switches of the accepted batches into `enhanced`, and its second round
+(2026-10-20) five more (`simplex_prev_division_line`, N06.9's two, N06.15's and N06.16's), one
+line each under "Profile `enhanced`"; the others stay `true` in both profiles until their
+measurement, or for good when it rejected them
 ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md)).
 
-**N06.4 geometry cutout fixes (explicit opt-in; promotion pending)**
+**N06.4 geometry cutout fixes (`simplex_prev_division_line` in profile `enhanced` since N06.13's second round)**
 
-Both switches still default to `true` in both profiles: N06.13 holds them back until
-N06.14's amendment 1 re-measures them at every `Area` split. With the named switch `false`:
+Unset is `true` (Java). N06.14's amendment 1 re-measured both at every `Area` split:
+`simplex_prev_division_line` stayed inert (counter 0 in 40 runs), and N06.13's second round
+(2026-10-20) sets it `false` in `enhanced`. `octagon_box_cutout_branch3` failed there (gate
+FAIL: `below_minimum` 33 → 34 on canary-pwr's DSN, total 196 → 201) and, decided 2026-10-20,
+stays `true` in both profiles with no separate switch for the newly wired splits. With the
+named switch `false`:
 - `octagon_box_cutout_branch3`: branch 3 of `IntOctagon::cutout_from_box` (the upper
   right divide line switched to horizontal, `IntOctagon.java:1206-1223`) trims the upper
   right octagon's top to the widened upper box, as branch 2 does on the left; Java's
@@ -1700,9 +1711,10 @@ profiles. With the named switch `false`:
 `run_stats` counts `ripup_random_pass_connections` and `any_angle_skip_length_flips` in
 either arm, `ripup_random_factor_draws` (only under `false`) and `rules_unknown_layer_scopes`.
 
-**N06.15 shove fix (explicit opt-in; promotion pending)**
+**N06.15 shove fix (profile `enhanced` since N06.13's second round)**
 
-`shove_via_into_pending_piece` still defaults to `true` in both profiles. With it `false`, a
+Unset is `true` (Java): `legacy` keeps it, `enhanced` sets it `false` (N06.13, 2026-10-20). With
+it `false`, a
 shove substitute piece's shapes are queried again before the piece goes on the board, and the
 shove fails at a via of another net found there (the shove-failing obstacle is the via), as the
 insert fails at a via in its way; callers undo as for any failed shove
@@ -1711,12 +1723,13 @@ via arrives the shove is Java's (`shove_insert_with_the_pending_piece_fix_matche
 A trace of another net inserted onto a pending piece later in the same recursion is not
 covered. `run_stats` counts `shove_via_into_pending_pieces` and
 `shove_pending_piece_foreign_traces` in either arm, with queries that leave the work meter
-alone. Registered in `prereg/N06.15.json` under `legacy` and `enhanced`; the run is pending.
+alone. Registered in `prereg/N06.15.json` under `legacy` and `enhanced`; its run of 2026-10-20
+passed both pairs (under `enhanced` 312 → 319, noise 69.24).
 
-**N06.16 any-angle room sides (explicit opt-in; promotion pending)**
+**N06.16 any-angle room sides (profile `enhanced` since N06.13's second round)**
 
-`any_angle_room_side_index` still defaults to `true` in both profiles, and Java's path is
-unbounded: an any-angle room neighbour's touching side is taken on the room's own shape (an
+`any_angle_room_side_index` is `true` (Java) unset and under `legacy`, and `false` under
+`enhanced` (N06.13, 2026-10-20). Java's path is unbounded: an any-angle room neighbour's touching side is taken on the room's own shape (an
 `IntOctagon` has 8 border lines, degenerate ones too), while `tryRemoveEdge` and
 `calculateNewIncompleteRooms` index its `toSimplex()`; a side past the simplex's last line never
 ends the gap walk, which adds incomplete rooms until memory runs out. Java at the pin and the
@@ -1725,7 +1738,9 @@ port both run out of memory on A07's `Issue026-J2_reference-any` (fanout pass 1)
 neighbour sort are taken on the simplex, so a gap walk ends within `n + 1` steps
 (`neighbours_any::tests::room_side_index_switch_both_behaviours`,
 `tests/n06_any_angle_rooms.rs`). Only the plain (any-angle) tree reaches it; `run_stats`
-counts `any_angle_room_side_mismatches` in either arm. No measurement is registered yet.
+counts `any_angle_room_side_mismatches` in either arm. `prereg/N06.16.json`'s run of
+2026-10-20 accepted it under `enhanced`: both boards abort at the 8000000 kB cap under `true` and route
+under `false`, and the other 6 rows are identical.
 
 ## Profile `enhanced`
 
@@ -1774,9 +1789,12 @@ checks that this list and the table agree.
 The `java_quirks` lines below are N06's Java-bug fixes that N06.13 promoted on 2026-10-19, each
 under N06's accept rule: measured and neutral, or not reached by any registered row and accepted
 on its tests (both behaviours pinned). They were measured under `legacy`; their confirmation
-under `enhanced` (`enhanced` at the parent commit against `enhanced` with them) is registered in
-`docs/roadmap/prereg/N06.13-promotion.json`, and its run is pending. An explicit
-`--router.java_quirks.<id>=true` brings Java's bug back.
+under `enhanced` (`enhanced` at the parent commit against `enhanced` with them,
+`docs/roadmap/prereg/N06.13-promotion.json`) passed on 2026-10-20 (total 210 → 208). The last
+five lines are N06.13's second round (2026-10-20): N06.9, N06.15 and N06.16 measured under
+`enhanced` with the first round's 30, and `simplex_prev_division_line` is accepted on its tests;
+the round's confirmation is registered in `docs/roadmap/prereg/N06.13-promotion-2.json`, and its
+run is pending. An explicit `--router.java_quirks.<id>=true` brings Java's bug back.
 
 - `java_quirks.init_failure_room_leak` = `false` (N06.13 from N06.5,
   `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): a failed
@@ -1911,3 +1929,32 @@ under `enhanced` (`enhanced` at the parent commit against `enhanced` with them) 
   every session identical on 6 DSN rows and canary-pwr's plugin path): the any-angle end smoothing
   compares a squared end segment with `SKIP_LENGTH` squared (10 units, not 3.2; any-angle mode
   only); accepted on `skip_length_switch_both_behaviours_and_counter`.
+- `java_quirks.simplex_prev_division_line` = `false` (N06.13 from N06.4,
+  `docs/roadmap/prereg/N06.4.json`, batch G, and N06.14's run at every `Area` split,
+  `docs/roadmap/prereg/N06.14.json`: `simplex_prev_division_line_reached` 0 in 40 runs and in the
+  corpus inventory): `Simplex::cutout_from` assigns its previous division line (geometry
+  cutouts). Neither merge test passes with it, so the pieces are Java's; accepted on
+  `the_simplex_switch_changes_no_piece`.
+- `java_quirks.opt_first_pass_stops` = `false` (N06.13 from N06.9, `docs/roadmap/prereg/N06.9.json`,
+  batch O under `enhanced`: gate PASS, every row's four arms one session, total 76 → 76, set noise
+  19.95, 6 rows with canary-pwr's plugin path): an optimizer pass without a winner goes on for one
+  pass at normal ripup costs instead of stopping the loop (Batch optimizer); neutral, accepted on
+  `first_pass_switch_both_behaviours` and `pass_end_decision_both_behaviours`.
+- `java_quirks.opt_equal_key_skip` = `false` (N06.13 from N06.9, `docs/roadmap/prereg/N06.9.json`,
+  batch O under `enhanced`: gate PASS, total 76 → 76, set noise 19.95): the optimizer's candidate
+  order keeps every sorted candidate, not only the first of each `(x, y, layer)` key; neutral,
+  accepted on `equal_key_switch_keeps_every_candidate`.
+- `java_quirks.shove_via_into_pending_piece` = `false` (N06.13 from N06.15,
+  `docs/roadmap/prereg/N06.15.json`, both pairs gate PASS; under `enhanced` total 312 → 319, set
+  noise 69.24, Protein 89 → 96 unrouted within its band of 23, no new router clearance violation
+  or KiCad short on 7 DSN rows and canary-pwr's plugin path): a shove fails at a via of another
+  net that its recursion moved onto a substitute piece not yet on the board, instead of inserting
+  the piece over it, a short (Shove insert); accepted as a no-regress correctness fix
+  (`pending_piece_switch_both_behaviours_and_counters`).
+- `java_quirks.any_angle_room_side_index` = `false` (N06.13 from N06.16,
+  `docs/roadmap/prereg/N06.16.json`, under `enhanced`: under Java's indexes `Issue026-J2_reference-any`
+  and `Issue143-rpi_splitter-any` abort at the 8000000 kB cap, under the fix they route with 0 unrouted
+  and 0 clearance violations (the registered abort rule); the other 6 rows gate PASS, 0 → 0,
+  sessions identical): any-angle room neighbours take their touching sides, corners and sort on
+  the room's simplex, so the gap walk ends (Autoroute room graph; any-angle mode only); accepted
+  on `room_side_index_switch_both_behaviours`.

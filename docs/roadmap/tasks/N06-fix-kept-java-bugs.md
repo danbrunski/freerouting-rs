@@ -1625,10 +1625,10 @@ These are marked or look like quirks but keep no bug:
 
       | id | kind | batch | outcome | evidence |
       |---|---|---|---|---|
-      | `simplex_prev_division_line` | b | G (N06.4) | pending: held back | N06.4 accepted it inert at the drill-page reach (counter 0, sessions identical); b26d04e widened its reach to every `Area` split, re-measured by N06.14 amendment 1 |
-      | `octagon_box_cutout_branch3` | b | G (N06.4) | pending: held back | N06.4 gate PASS at the drill-page reach (+2 against noise 10.58); N06.14 amendment 1's arm re-measures it at every `Area` split |
-      | `cutout_hole_crosses_border` | b | G2 (N06.14) | pending | N06.14's heavy run |
-      | `simplex_octagon_half_corner` | b | G2 (N06.14) | pending | N06.14's heavy run |
+      | `simplex_prev_division_line` | b | G (N06.4) | accepted on tests; promoted in round 2 | N06.4 accepted it inert at the drill-page reach (counter 0, sessions identical); at every `Area` split (N06.14's run, 2026-10-20) `simplex_prev_division_line_reached` 0 in 40 runs and 0 in the corpus inventory; `the_simplex_switch_changes_no_piece` |
+      | `octagon_box_cutout_branch3` | b | G (N06.4) | rejected | N06.4 gate PASS at the drill-page reach (+2 against noise 10.58); at every `Area` split (N06.14's run under its amendment 2, amendment 1's pair) `gate: FAIL`: `below_minimum` 33 → 34 on canary-pwr's DSN, total 196 → 201 (noise 21.40). Decided 2026-10-20: no separate switch for the newly wired splits (canary-pwr has 0 stored areas with holes, so the breach is at the drill-page reach under today's engine); stays `true` in both profiles |
+      | `cutout_hole_crosses_border` | b | G2 (N06.14) | pending: no verdict | N06.14's run: the 45 degree identity check fails on canary-pwr (counter 109 on its DSN); a corrected registration (N06.14 `[~]`) measures it; `true` in both profiles |
+      | `simplex_octagon_half_corner` | b | G2 (N06.14) | pending: no verdict | likewise (counter 4686 on canary-pwr's DSN, sessions differ); `true` in both profiles |
       | `init_failure_room_leak` | b | M (N06.5) | accepted on tests | `maze_init_failure_room_leaks` 0 in 35 runs and the plugin row; gate PASS, 38 → 38 |
       | `failed_attempt_ripped_carryover` | b | M (N06.5) | accepted on tests | `maze_ripped_carryovers` 0 |
       | `ortho_zero_width_room` | b | M (N06.5) | accepted, neutral | 254 and 61 flips on the two 90° rows, sessions identical |
@@ -1642,8 +1642,8 @@ These are marked or look like quirks but keep no bug:
       | `rational_perp_projection` | b | S (N06.7) | accepted on tests | flip counter 0 |
       | `smooth_loses_trace` | b | P (N06.8) | accepted on tests | counter 0, 24 runs and the plugin row identical; gate PASS, 38 → 38 |
       | `pull_tight_reused_lines_change` | b | P (N06.8) | accepted on tests | counter 0 |
-      | `opt_first_pass_stops` | b | O (N06.9) | pending | N06.9's heavy run |
-      | `opt_equal_key_skip` | b | O (N06.9) | pending | N06.9's heavy run |
+      | `opt_first_pass_stops` | b | O (N06.9) | accepted, neutral; promoted in round 2 | under `enhanced`: gate PASS, total 76 → 76 (noise 19.95), every row's four arms one session; the optimizer ran on 3 of 6 rows and added no pass |
+      | `opt_equal_key_skip` | b | O (N06.9) | accepted, neutral; promoted in round 2 | likewise; no session changed |
       | `dsn_via_alias` | b | I (N06.10) | accepted on tests | `dsn_via_alias_reached` 0 in 40 runs and on 203 corpus boards |
       | `dsn_class_class_pairs` | b | I (N06.10) | accepted on tests | its counter 0, likewise |
       | `dsn_shape_bbox` | b | I (N06.10) | accepted on tests | its counter 0, likewise |
@@ -1658,7 +1658,8 @@ These are marked or look like quirks but keep no bug:
       | `route_change_layer_no_via` | b | U (N06.11) | accepted on tests | interactive only |
       | `route_connect_inner_break` | b | U (N06.11) | accepted on tests | interactive only |
       | `select_extension_ignores_filter` | b | U (N06.11) | accepted on tests | interactive only |
-      | `shove_via_into_pending_piece` | b | N06.15 | pending | N06.15's heavy run |
+      | `shove_via_into_pending_piece` | b | N06.15 | accepted (no-regress); promoted in round 2 | both pairs `gate: PASS`; `enhanced` 312 → 319 (noise 69.24), Protein 89 → 96 within its band of 23 (via counter 2 → 3), no new clearance violation or short |
+      | `any_angle_room_side_index` | b | N06.16 | accepted (abort rule); promoted in round 2 | under `enhanced`: J2-any and rpi_splitter-any abort at the 8000000 kB cap under `true` and route under `false` (0 unrouted, 0 clearance, `via_in_pad_raw` 0); the other 6 rows gate PASS, 0 → 0, sessions identical |
       | `ripup_pass_no_unset` | c | N06.12 | rejected | total 47 → 47 (noise 11.14), 1 new trace under ReadPlaceScope's narrowest class width (80 → 81), `gate: FAIL`; stays `true` in both profiles |
       | `insert_stale_trace_object` | c | N06.12 | left as Java (inert) | the split keeps the old geometry |
       | `in_front_of_pad_side0_flank` | c | S (N06.7, arm `all_flank`) | accepted on tests | flank counter 0, sessions identical to `all`'s |
@@ -1815,6 +1816,45 @@ These are marked or look like quirks but keep no bug:
       - `opt_first_pass_stops`, `opt_equal_key_skip` (N06.9) and `shove_via_into_pending_piece`
         (N06.15) were accepted on 2026-10-20 (their items) and are not promoted yet.
       - Not ticked: the two N06.14 switches have no verdict, and the branch-3 decision is open.
+  - *Partial 2026-10-20 (second round):* worktree `target/orchestrator/n06p2/wt`, branch
+    `land/n06-promo2` on main `c8b91b7`. 35 switches promoted (30 + 5), 2 rejected, 2 pending, 7
+    left as Java (46 ids; the table above is updated). Not ticked: `cutout_hole_crosses_border` and
+    `simplex_octagon_half_corner` have no verdict (N06.14 `[~]`), and the round's confirmation
+    run is a heavy run.
+    - [x] Promoted: `simplex_prev_division_line` (accepted on tests), `opt_first_pass_stops` and
+      `opt_equal_key_skip` (N06.9), `shove_via_into_pending_piece` (N06.15) and
+      `any_angle_room_side_index` (N06.16), as `router.java_quirks.<id> = false` in `ENHANCED`
+      (`settings/profile.rs`, one `Difference` each, measurement strings `N06_4_PREV_DIVISION_LINE`,
+      `N06_9_OPTIMIZER`, `N06_15_PENDING_PIECE`, `N06_16_ROOM_SIDES`), one DIVERGENCES line each
+      under "Profile `enhanced`" (the section's opening paragraph now says round 1's confirmation
+      passed and names round 2's registration), and each field's help text naming `enhanced`'s
+      `false` (`settings/fields.rs`). "Kept on purpose" pointers: the geometry paragraph (the
+      previous division line kept under `legacy` only, branch 3 rejected), the shove-insert bullet
+      and the optimizer bullet now say "kept under `legacy`"; the N06 section's N06.4, N06.15 and
+      N06.16 blocks say they are in `enhanced`; the module docs of `shove::insert`,
+      `autoroute::session::neighbours_any` and `optimize::batch` name the profile.
+    - [x] Not promoted, recorded in the table: `octagon_box_cutout_branch3` **rejected** (N06.14's
+      run under its amendment 2, the branch-3 pair: `gate: FAIL`, `below_minimum` 33 → 34 on
+      canary-pwr's DSN, total 196 → 201; decided 2026-10-20: no separate switch for the newly wired
+      splits, because canary-pwr has 0 stored areas with holes, so the breach is at the drill-page
+      reach under today's engine); it stays `true` in both profiles. `cutout_hole_crosses_border`
+      and `simplex_octagon_half_corner` stay `true` in both profiles until N06.14's corrected
+      registration measures them.
+    - [x] Tests: `tests/settings_java_quirks.rs::legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set`
+      (`PROMOTED` now 35 ids in inventory order; `the_job_carries_the_switches_to_the_board_and_the_control`
+      turns `ripup_pass_no_unset` off as the switch the profile leaves `true`, where it took
+      `opt_equal_key_skip`); `tests/settings_profile.rs::enhanced_turns_off_the_promoted_java_quirks`
+      (35 entries, each `false` under `enhanced` and unset under `legacy`, an explicit `true` beats
+      the profile); `crates/freerouting-cli/tests/profiles.rs::dump_settings_shows_the_promoted_java_quirks`
+      and `crates/freerouting-gui/tests/ui_load_quirks.rs` (`PROMOTED` 35). Tests of a kept quirk's
+      `true` half now pin `legacy`: `tests/batch_optimizer.rs` loads `equal_key_skips_rest_of_pass`,
+      `equal_key_switch_keeps_every_candidate`, `first_pass_without_winner_stops` and
+      `first_pass_switch_both_behaviours` with `routed_legacy` (they failed under `enhanced`).
+      `crates/freerouting-dev/tests/prereg_n06_13.rs` keeps round 1's 30 (ENHANCED without the
+      second round's five). The P01.3 microbench takes Issue433's new maze count:
+      `tree_nodes_visited` 173403 → 174040, `maze_work_units` 90636 and the routes unchanged; with
+      `--router.java_quirks.shove_via_into_pending_piece=true` added to its load the count is 173403
+      again, so it is the pending-piece check's tree query, which leaves the work meter alone.
 
 - [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and

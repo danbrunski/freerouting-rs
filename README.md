@@ -38,8 +38,9 @@ Enhanced changes three things so far, each accepted by a measurement on real boa
 Java. The ones no board reaches are now fixed outright. Each of the others has a fix behind
 `router.java_quirks.<id>`; unset means Java's behaviour, and Legacy keeps every one. A fix
 joins Enhanced once its measurement accepts it, including a fix that changes nothing on the
-measured boards: 30 of them so far (the maze search, the fanout, shove, pull-tight, the DSN and
-SES readers, the reports and interactive editing). `--router.java_quirks.<id>=true` brings one
+measured boards: 35 of them so far (the maze search, the fanout, shove, pull-tight, the batch
+optimizer, the any-angle room graph, the DSN and SES readers, the reports and interactive
+editing). `--router.java_quirks.<id>=true` brings one
 bug back. Options that won only on one kind of board are offered as **Experimental**, with that
 board class in their help text.
 

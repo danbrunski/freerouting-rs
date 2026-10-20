@@ -42,7 +42,8 @@
 //! `java_quirks.shove_via_into_pending_piece` off, the piece's shapes are queried
 //! again before it is inserted and the shove fails at such a via. A trace of
 //! another net inserted there later in the same recursion is not covered (the
-//! counter `shove_pending_piece_foreign_traces` measures it).
+//! counter `shove_pending_piece_foreign_traces` measures it). `legacy` keeps
+//! Java's bug; profile `enhanced` turns the switch off (N06.13, 2026-10-20).
 
 use std::collections::BTreeSet;
 

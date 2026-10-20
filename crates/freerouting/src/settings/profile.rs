@@ -35,7 +35,11 @@
 //! Java-bug fixes (`java_quirks.<id> = false`) that N06's batches accepted:
 //! they were measured under `legacy`, and
 //! `docs/roadmap/prereg/N06.13-promotion.json` registers their confirmation
-//! under `enhanced`. Adding one is one entry
+//! under `enhanced`. Its second round (2026-10-20) added five more:
+//! `simplex_prev_division_line` (inert, on its tests), N06.9's two optimizer
+//! fixes, `shove_via_into_pending_piece` (N06.15) and
+//! `any_angle_room_side_index` (N06.16); `N06.13-promotion-2.json` registers
+//! that round's confirmation. Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
 //! entry is a valid settings key and value, and that `enhanced` sets it.
@@ -255,6 +259,32 @@ pub const ENHANCED: &[Difference] = &[
         value: "false",
         measurement: N06_12_SKIP_LENGTH,
     },
+    // N06.13's second round (2026-10-20): the fixes accepted after the first.
+    Difference {
+        path: "java_quirks.simplex_prev_division_line",
+        value: "false",
+        measurement: N06_4_PREV_DIVISION_LINE,
+    },
+    Difference {
+        path: "java_quirks.opt_first_pass_stops",
+        value: "false",
+        measurement: N06_9_OPTIMIZER,
+    },
+    Difference {
+        path: "java_quirks.opt_equal_key_skip",
+        value: "false",
+        measurement: N06_9_OPTIMIZER,
+    },
+    Difference {
+        path: "java_quirks.shove_via_into_pending_piece",
+        value: "false",
+        measurement: N06_15_PENDING_PIECE,
+    },
+    Difference {
+        path: "java_quirks.any_angle_room_side_index",
+        value: "false",
+        measurement: N06_16_ROOM_SIDES,
+    },
 ];
 
 // The N06 Java-bug fixes promoted by N06.13 (2026-10-19), one measurement per
@@ -295,6 +325,32 @@ const N06_12_SKIP_LENGTH: &str = "N06.13 from N06.12 (docs/roadmap/prereg/N06.12
                                   reported arm, under legacy): any_angle_skip_length_flips 0 and \
                                   every session identical to Java's on 6 DSN rows and canary-pwr's \
                                   plugin path; accepted on its test";
+
+// N06.13's second round (2026-10-20). N06.9, N06.15 and N06.16 measured under
+// `enhanced` with the first round's 30 fixes; the confirmation of the round is
+// docs/roadmap/prereg/N06.13-promotion-2.json.
+
+const N06_4_PREV_DIVISION_LINE: &str = "N06.13 from N06.4 (docs/roadmap/prereg/N06.4.json, batch \
+                                        G, and N06.14's run at every Area split, \
+                                        docs/roadmap/prereg/N06.14.json): \
+                                        simplex_prev_division_line_reached 0 in 40 runs and 0 \
+                                        in the corpus inventory; the fix gives Java's pieces \
+                                        (the_simplex_switch_changes_no_piece); accepted on its \
+                                        tests";
+const N06_9_OPTIMIZER: &str = "N06.13 from N06.9 (docs/roadmap/prereg/N06.9.json, batch O, under \
+                               enhanced): gate PASS, every row's four arms one session, total \
+                               76 -> 76 (set noise 19.95) over 6 rows, canary-pwr's plugin path \
+                               among them; neutral";
+const N06_15_PENDING_PIECE: &str = "N06.13 from N06.15 (docs/roadmap/prereg/N06.15.json, under \
+                                    enhanced and legacy): gate PASS in both pairs; enhanced \
+                                    total 312 -> 319 (set noise 69.24), Protein 89 -> 96 \
+                                    within its band, no new clearance violation or short on 7 \
+                                    DSN rows and canary-pwr's plugin path";
+const N06_16_ROOM_SIDES: &str = "N06.13 from N06.16 (docs/roadmap/prereg/N06.16.json, under \
+                                 enhanced): J2-any and rpi_splitter-any abort at the 8000000 kB \
+                                 cap under Java's indexes and route with 0 unrouted, 0 clearance \
+                                 under the fix (the abort rule); the other 6 rows gate PASS, \
+                                 0 -> 0, sessions identical";
 
 /// `legacy` changes nothing.
 const LEGACY: &[Difference] = &[];

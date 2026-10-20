@@ -37,7 +37,8 @@
 //! keeps Java's indexes; `false` takes the sides, corners and the sort on the
 //! simplex, so every index is one of the simplex's lines and a gap walk ends
 //! within `n + 1` steps. Counted in both arms
-//! (`any_angle_room_side_mismatches`).
+//! (`any_angle_room_side_mismatches`). `legacy` keeps Java's indexes; profile
+//! `enhanced` takes the simplex's (N06.13, 2026-10-20).
 //!
 //! One case Java goes on with and the port does not: a point touch on no
 //! border line of the room or the neighbour (Java logs

@@ -24,7 +24,7 @@ use freerouting_gui::{App, Prompt};
 
 /// The switches `enhanced` turns off (N06.13), as `settings_java_quirks.rs`
 /// lists them.
-const PROMOTED: usize = 30;
+const PROMOTED: usize = 35;
 
 fn scratch(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("gl-{name}-{}", std::process::id()));

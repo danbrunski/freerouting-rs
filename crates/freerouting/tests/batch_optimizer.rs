@@ -48,9 +48,10 @@ use freerouting::optimize::batch::{
 };
 use freerouting::scoring::BoardStatistics;
 use freerouting::settings::board::BoardRouterSettings;
+use freerouting::settings::profile::legacy_pin;
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{
-    ItemSelectionStrategy, JavaQuirks, ResolveContext, RouterSettings, Source,
+    ItemSelectionStrategy, JavaQuirks, ResolveContext, RouterSettings, SettingsPatch, Source,
 };
 
 const BM01: &str = "fixtures/Issue508-DAC2020_bm01.dsn";
@@ -71,13 +72,29 @@ struct Loaded {
 
 /// Loads `dsn` through the job's load sequence with `profile` at the testing priority.
 fn load(dsn: &str, profile: TestingProfile) -> Loaded {
+    load_sources(dsn, vec![(Source::Testing, profile.patch)])
+}
+
+/// [`load`] under profile `legacy`, where every `router.java_quirks` switch is Java's: the
+/// tests of a kept Java quirk's `true` half (N06.13 turned N06.9's two off in `enhanced`).
+fn load_legacy(dsn: &str, profile: TestingProfile) -> Loaded {
+    load_sources(
+        dsn,
+        vec![
+            (Source::Testing, profile.patch),
+            (Source::Testing, legacy_pin()),
+        ],
+    )
+}
+
+fn load_sources(dsn: &str, sources: Vec<(Source, SettingsPatch)>) -> Loaded {
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("board");
     let mut input = JobInput::new(bytes, JobInput::design_name_of(file_name));
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
-    input.extra_sources = vec![(Source::Testing, profile.patch)];
+    input.extra_sources = sources;
     let prepared =
         prepare_job(&input, &ResolveContext { cores: 8 }).unwrap_or_else(|e| panic!("{dsn}: {e}"));
     Loaded {
@@ -110,6 +127,13 @@ fn reference_ses(dsn: &str) -> String {
 /// `dsn` with `ses` imported and unfixed, optimizer settings from `profile`.
 fn routed(dsn: &str, ses: &str, profile: TestingProfile) -> Loaded {
     let mut loaded = load(dsn, profile);
+    import(&mut loaded.board, ses, true);
+    loaded
+}
+
+/// [`routed`] under profile `legacy` ([`load_legacy`]).
+fn routed_legacy(dsn: &str, ses: &str, profile: TestingProfile) -> Loaded {
+    let mut loaded = load_legacy(dsn, profile);
     import(&mut loaded.board, ses, true);
     loaded
 }
@@ -202,7 +226,7 @@ impl EqualKeys {
 }
 
 fn equal_keys() -> EqualKeys {
-    let mut loaded = routed(BM08, BM08_SES, TestingProfile::default());
+    let mut loaded = routed_legacy(BM08, BM08_SES, TestingProfile::default());
     let board = &mut loaded.board;
     let rules = &board.rules;
     let rule = rules.via_rules.nth(0).expect("a via rule");
@@ -736,7 +760,8 @@ fn run_batch_loop_sets_zero_passes_when_bypassed() {
 fn first_pass_without_winner_stops() {
     let mut profile = optimizer_profile(10, 200);
     profile.patch.optimizer.max_autoroute_passes = Some(0);
-    let mut loaded = routed(BM08, BM08_SES, profile);
+    let mut loaded = routed_legacy(BM08, BM08_SES, profile);
+    assert!(loaded.router.java_quirks().opt_first_pass_stops);
     let hash = loaded.board.state_hash();
     let run = run(&mut loaded, 2);
     assert_eq!(run.passes, 1, "{:?}", run.log);
@@ -747,7 +772,7 @@ fn first_pass_without_winner_stops() {
     // The pass was gated as not improved and the incumbent came back.
     assert!(pass.rejection.is_some());
     let deep = {
-        let mut copy = routed(BM08, BM08_SES, TestingProfile::default()).board;
+        let mut copy = routed_legacy(BM08, BM08_SES, TestingProfile::default()).board;
         copy = copy.deep_copy();
         copy.state_hash()
     };
@@ -766,12 +791,12 @@ fn first_pass_switch_both_behaviours() {
         profile.patch.optimizer.max_autoroute_passes = Some(0);
         profile
     };
-    let mut java = routed(BM08, BM08_SES, profile());
+    let mut java = routed_legacy(BM08, BM08_SES, profile());
     assert!(java.router.java_quirks().opt_first_pass_stops);
     let java_run = run(&mut java, 2);
     assert_eq!(java_run.passes, 1, "{:?}", java_run.log);
 
-    let mut fixed = routed(BM08, BM08_SES, profile());
+    let mut fixed = routed_legacy(BM08, BM08_SES, profile());
     let quirks = JavaQuirks::JAVA
         .with("opt_first_pass_stops", false)
         .unwrap();

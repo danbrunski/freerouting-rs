@@ -33,11 +33,23 @@ fn registration() -> Prereg {
     Prereg::parse(&text).unwrap_or_else(|e| panic!("{FILE} is invalid: {e:?}"))
 }
 
-/// The switches `enhanced`'s table turns off, sorted.
+/// The switches N06.13's second round added to `ENHANCED` (2026-10-20), measured by
+/// `N06.13-promotion-2.json`, not by this registration.
+const SECOND_ROUND: [&str; 5] = [
+    "simplex_prev_division_line",
+    "opt_first_pass_stops",
+    "opt_equal_key_skip",
+    "shove_via_into_pending_piece",
+    "any_angle_room_side_index",
+];
+
+/// The switches the first round turned off: `enhanced`'s table without the
+/// second round's, sorted.
 fn promoted() -> Vec<&'static str> {
     let mut ids: Vec<&str> = ENHANCED
         .iter()
         .filter_map(|d| d.path.strip_prefix("java_quirks."))
+        .filter(|id| !SECOND_ROUND.contains(id))
         .collect();
     ids.sort_unstable();
     ids
@@ -148,7 +160,7 @@ fn the_arms_differ_only_in_the_promoted_switches() {
     assert_eq!(
         keys,
         promoted(),
-        "the candidate's settings are ENHANCED's switches"
+        "the candidate's settings are the first round's switches"
     );
     assert_eq!(keys.len(), 30);
 }

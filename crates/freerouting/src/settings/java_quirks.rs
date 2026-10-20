@@ -6,10 +6,12 @@
 //! behaviour, `false` selects the fix. Unset is `true`, and `legacy` keeps every
 //! switch unset, so `legacy` is Java; `enhanced`'s table (N05,
 //! [`ENHANCED`](super::profile::ENHANCED)) turns a switch off only once its batch is
-//! accepted. N06.13 turned off the 30 that N06's batches accepted; the cutout
-//! switches (N06.4, N06.14), the optimizer's (N06.9), `shove_via_into_pending_piece`
-//! (N06.15), the rejected `ripup_pass_no_unset` and the (c) rows left as Java stay
-//! `true` in both profiles. The keys are `opt` table entries without a default, as every
+//! accepted. N06.13 turned off the 30 that N06's batches accepted (2026-10-19) and,
+//! in its second round (2026-10-20), `simplex_prev_division_line` (N06.4), the
+//! optimizer's two (N06.9), `shove_via_into_pending_piece` (N06.15) and
+//! `any_angle_room_side_index` (N06.16). The rejected `octagon_box_cutout_branch3`
+//! and `ripup_pass_no_unset`, N06.14's two cutout switches (no verdict yet) and the
+//! (c) rows left as Java stay `true` in both profiles. The keys are `opt` table entries without a default, as every
 //! key that is not Java's, so Java's settings dump stays as it was.
 //!
 //! [`JavaQuirks`] is the resolved value: built once from the settings at job start,

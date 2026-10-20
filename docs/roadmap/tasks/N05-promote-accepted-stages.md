@@ -362,3 +362,35 @@ Prerequisites: N01; each candidate's own accepted measurement.
     208 against noise 65.25; no new hard-guard breach (via_in_pad and below_minimum option (b) 0
     on every row), no DSN row's clearance count up. `freerouting-dev gate --prereg`: 0 refusals,
     `gate: PASS`. Verdict: **promotion confirmed**; the 30 entries stay in `ENHANCED`.
+
+  - **2026-10-20, accepted (N06.13, the second round of N06's Java-bug fixes): 5 more
+    `router.java_quirks.<id> = false`**, 35 in all, one `ENHANCED` entry and one DIVERGENCES
+    "Profile `enhanced`" line each; the exact list is pinned by
+    `tests/settings_java_quirks.rs::legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set`
+    (`PROMOTED`, 35 ids) and each entry under both profiles by
+    `tests/settings_profile.rs::enhanced_turns_off_the_promoted_java_quirks`. Unlike the first
+    round, three of the four measurements ran under `enhanced` with the first round's 30:
+    - `simplex_prev_division_line` (N06.4, `prereg/N06.4.json`, and N06.14's run at every `Area`
+      split, `prereg/N06.14.json`): `simplex_prev_division_line_reached` 0 in 40 runs and in the
+      corpus inventory, Java's pieces either way: accepted on its tests.
+    - `opt_first_pass_stops`, `opt_equal_key_skip` (N06.9, `prereg/N06.9.json`, `c5af6d94…`,
+      under `enhanced`): gate PASS, every row's four arms one session, total 76 → 76 (noise
+      19.95): neutral.
+    - `shove_via_into_pending_piece` (N06.15, `prereg/N06.15.json`, `04376de5…`): both pairs PASS;
+      under `enhanced` 312 → 319 (noise 69.24), Protein 89 → 96 within its band of 23, no new
+      clearance violation or short.
+    - `any_angle_room_side_index` (N06.16, `prereg/N06.16.json`, `9dad8e7a…`, under `enhanced`):
+      J2-any and rpi_splitter-any abort at the 8000000 kB cap under `true` and route under `false`
+      (the abort rule); the other 6 rows PASS, 0 → 0.
+
+    Not promoted: `octagon_box_cutout_branch3` (rejected: N06.14's branch-3 pair `gate: FAIL`,
+    `below_minimum` 33 → 34 on canary-pwr's DSN, total 196 → 201; decided 2026-10-20, no separate
+    switch for the newly wired splits), `cutout_hole_crosses_border` and
+    `simplex_octagon_half_corner` (N06.14, no verdict), `ripup_pass_no_unset` (rejected) and the
+    seven (c) rows left as Java. The round has its own confirmation under `enhanced`, registered
+    before any number in `docs/roadmap/prereg/N06.13-promotion-2.json` (N06.13's note gives its
+    hash and the command): `enhanced` at the round's parent against the round's commit, round 1's
+    21 DSN rows plus J2-any and rpi_splitter-any (N06.16's abort rule for their baseline) plus
+    canary-pwr through the plugin path, N02 totals, no-regress, hard guards no new breach versus
+    baseline. Run pending; a FAIL is bisected by switch group and a failing group leaves
+    `ENHANCED`.
