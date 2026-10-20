@@ -467,6 +467,29 @@ pub fn record_pre_existing_violations(board: &mut RoutingBoard) {
     board.pre_existing_clearance_violations_count = count;
 }
 
+/// The first merge of [`prepare_job`] without a board: the defaults, the
+/// design's `autoroute_settings` and `sources`, in that order, with the merge's
+/// warnings. It is what a front-end needs to know the readers'
+/// `router.java_quirks.*` ([`JavaQuirks::from_patch`] of the result's
+/// `java_quirks`) before it reads the board, as `prepare_job` does.
+pub fn first_merge(
+    pcb: Option<&Pcb>,
+    sources: &[(Source, SettingsPatch)],
+    ctx: &ResolveContext,
+) -> (SettingsPatch, Vec<LogLine>) {
+    let mut all = vec![(Source::Defaults, defaults(ctx))];
+    if let Some(pcb) = pcb {
+        all.push((Source::Dsn, patch_from_dsn(pcb)));
+    }
+    all.extend(sources.iter().cloned());
+    let merged = resolve(&all, ctx);
+    let mut log = Vec::new();
+    for warning in &merged.warnings {
+        push(&mut log, LogLevel::Warn, warning.clone());
+    }
+    (merged.patch, log)
+}
+
 /// The settings of a design before the user changes any (G07.1): the first
 /// merge of [`prepare_job`] (defaults, the design's `autoroute_settings`
 /// and `sources`) with the board-specific tuning of step 3, **on the board
@@ -485,17 +508,7 @@ pub fn prepare_job_settings(
     sources: &[(Source, SettingsPatch)],
     ctx: &ResolveContext,
 ) -> (SettingsPatch, Vec<LogLine>) {
-    let mut all = vec![(Source::Defaults, defaults(ctx))];
-    if let Some(pcb) = pcb {
-        all.push((Source::Dsn, patch_from_dsn(pcb)));
-    }
-    all.extend(sources.iter().cloned());
-    let merged = resolve(&all, ctx);
-    let mut log = Vec::new();
-    for warning in &merged.warnings {
-        push(&mut log, LogLevel::Warn, warning.clone());
-    }
-    let mut patch = merged.patch;
+    let (mut patch, log) = first_merge(pcb, sources, ctx);
     if patch.layer_count() != board.layer_count() {
         patch.set_layer_count(board.layer_count());
     }

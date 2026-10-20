@@ -347,6 +347,31 @@ impl Draft {
             .collect()
     }
 
+    /// The settings a job starts with: `baseline`, the user's kept
+    /// `overrides`, then the front-end mode's router flags `router`. The flags
+    /// win over the saved settings, as the command line does over a settings
+    /// file, and a `--profile` moves the values that are still the profile's
+    /// first (N01.3). The one place that merge is made, for the job
+    /// ([`App::autoroute_patch`](crate::app::App)) and for the readers'
+    /// `java_quirks.*` before the board is read
+    /// ([`crate::session::LoadSettings`]).
+    pub fn user_patch(
+        baseline: SettingsPatch,
+        overrides: &[(String, String)],
+        router: &SettingsPatch,
+        cores: usize,
+    ) -> SettingsPatch {
+        let mut draft = Draft::new(baseline, cores);
+        draft.apply_overrides(overrides);
+        if router.profile.is_some()
+            && let Ok(profile) = freerouting::settings::Profile::of_patch(router)
+        {
+            draft.set_profile(profile);
+        }
+        draft.patch.apply_from(router);
+        draft.patch
+    }
+
     /// Puts kept overrides on the draft. A path or text that does not parse
     /// is ignored (a settings file written by another version). A kept
     /// profile is switched to first, so the other values land on it.

@@ -166,6 +166,15 @@ The app is a board viewer for now. Nothing in it edits or routes.
   GUI routes and lists stages with `freerouting_stages::registry()` (N05.1: Freerouting's stages plus
   the KRT ones; the GUI does not depend on `freerouting-krt`). Not yet looked at by the owner: the layout and the look of the
   new rows.
+- **Boards are read with the job's `java_quirks` (decided 2026-10-20, follow-up of N06.13).** Every
+  load path (File > Open, a drop, Reload, a session, `-de`, a `.kicad_pcb`) goes through `App::start_load`
+  and `session::load_all`, which read the board with `session::LoadSettings`: the profile, the saved
+  control values and the front-end router flags, merged as the job's settings are
+  (`Draft::user_patch`, `job::prepare::first_merge`). So the DSN reader's `dsn_*` switches, the session
+  import's `ses_reader_scale` and the area-split switches (tree order, D5) are the CLI's. A switch changed
+  in the settings dialog after the board is open still reaches the board when routing starts
+  (`prepare_board_for_routing`, `set_java_quirks`), the switched-after-read path; reload the board to read it
+  with the new switches. Tests: `tests/ui_load_quirks.rs`.
 - **Autorouter (G07, `routing.rs`, `app_routing.rs`, `dialogs/autoroute_settings.rs`,
   `panels/{progress,routing_summary}.rs`, `overlays/routing.rs`).** The toolbar's Autoroute button
   (`Command::StartRouting`) starts the engine's `run_pipeline` on its own thread with the settings of

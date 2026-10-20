@@ -17,8 +17,13 @@ use freerouting::board::items::ItemId;
 use freerouting::board::{BoardChanges, RoutingBoard};
 use freerouting::dsn::{self, Pcb, Session as SesFile};
 use freerouting::io::kicad::{DesignKind, ReadOptions, design_kind, read_kicad_input};
-use freerouting::io::specctra::{BoardReadResult, SesImportSummary, build_board, import_session};
+use freerouting::io::specctra::{
+    BoardReadResult, SesImportSummary, build_board_with, import_session,
+};
+use freerouting::job::prepare::first_merge;
+use freerouting::settings::{JavaQuirks, ResolveContext, SettingsPatch};
 
+use crate::dialogs::autoroute_settings::Draft;
 use crate::scene::{Flattener, Scene};
 use crate::stats::LoadTimings;
 use crate::view::Tessellation;
@@ -288,14 +293,49 @@ pub fn find_design(session_path: &Path, session: &SesFile) -> Option<PathBuf> {
     })
 }
 
-/// The engine board of a design. The board comes out of the read result by
-/// value.
+/// The settings a board is read with: what the GUI will route with, so that
+/// the readers' `router.java_quirks.*` (the DSN reader's, the session
+/// import's `ses_reader_scale`) are those of the job and not Java's, and the
+/// board's tree order is the CLI's (`prepare_job` reads with the first merge's
+/// switches).
+///
+/// The merge is `prepare_job`'s first one with the GUI's sources: the
+/// profile's defaults, the design's `autoroute_settings`, the user's saved
+/// control values and the front-end mode's router flags
+/// ([`Draft::user_patch`](crate::dialogs::autoroute_settings::Draft::user_patch),
+/// the patch the job starts with). A switch the user changes after the board
+/// is open still reaches the board when routing starts
+/// (`prepare_board_for_routing`, `BasicBoard::set_java_quirks`), which
+/// reinserts the items whose split changes; that board takes the
+/// switched-after-read path and can route differently from one read with the
+/// final switches (`board/split_switches.rs`, D5).
+#[derive(Clone, Debug, Default)]
+pub struct LoadSettings {
+    /// The saved control values (`Settings::autoroute`).
+    pub autoroute: Vec<(String, String)>,
+    /// The front-end mode's router flags (`FrontEndOptions::router`).
+    pub router: SettingsPatch,
+}
+
+impl LoadSettings {
+    /// The `router.java_quirks.*` switches to read `pcb` with.
+    pub fn java_quirks(&self, pcb: &Pcb) -> JavaQuirks {
+        let ctx = ResolveContext::from_machine();
+        let (baseline, _warnings) = first_merge(Some(pcb), &[], &ctx);
+        let patch = Draft::user_patch(baseline, &self.autoroute, &self.router, ctx.cores);
+        JavaQuirks::from_patch(&patch.java_quirks)
+    }
+}
+
+/// The engine board of a design, read with `quirks`. The board comes out of
+/// the read result by value.
 fn build(
     pcb: &Pcb,
+    quirks: JavaQuirks,
     design_path: &Path,
     warnings: &mut Vec<String>,
 ) -> Result<RoutingBoard, String> {
-    match build_board(pcb) {
+    match build_board_with(pcb, quirks) {
         BoardReadResult::Success { board, warnings: w } => {
             warnings.extend(w);
             Ok(*board)
@@ -324,7 +364,19 @@ fn build(
 /// The session's wires and vias are imported by the engine
 /// (`import_session`, the port of Java's `SesReader.read`) on top of the
 /// design's own wiring, as Java's GUI does.
+///
+/// [`LoadSettings::default`] stands for a GUI without saved settings or
+/// flags: the default profile's switches.
 pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, String> {
+    load_with(path, current, &LoadSettings::default())
+}
+
+/// [`load`] with the settings the board is read with ([`LoadSettings`]).
+pub fn load_with(
+    path: &Path,
+    current: Option<CurrentDesign>,
+    settings: &LoadSettings,
+) -> Result<Loaded, String> {
     let is_session = path
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("ses"));
@@ -357,7 +409,8 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
         (Arc::new(pcb), path.to_path_buf())
     };
     let phase = Instant::now();
-    let mut board = build(&pcb, &design_path, &mut warnings)?;
+    let quirks = settings.java_quirks(&pcb);
+    let mut board = build(&pcb, quirks, &design_path, &mut warnings)?;
     let ses_summary = ses.map(|file| import_session(&mut board, &file));
     // From here on the board records what changes, so an edit patches the
     // drawing instead of rebuilding it (G05.5).
@@ -396,10 +449,14 @@ pub fn load(path: &Path, current: Option<CurrentDesign>) -> Result<Loaded, Strin
 
 /// Reads `paths` in order: a design, then optionally a session on top of it.
 /// `current` is the design already open, for a session without a design file.
-pub fn load_all(paths: &[PathBuf], mut current: Option<CurrentDesign>) -> Result<Loaded, String> {
+pub fn load_all(
+    paths: &[PathBuf],
+    mut current: Option<CurrentDesign>,
+    settings: &LoadSettings,
+) -> Result<Loaded, String> {
     let mut last = None;
     for path in paths {
-        let loaded = load(path, current.take())?;
+        let loaded = load_with(path, current.take(), settings)?;
         current = Some((
             loaded.session.design.clone(),
             loaded.session.paths.design.clone(),
@@ -468,8 +525,9 @@ mod tests {
         )
     }
 
-    /// The statistics of the path that `tests/reference_drc.rs` compares
-    /// with Java: `build_board`, then `read_session`.
+    /// The statistics of the engine path (`tests/reference_drc.rs` compares
+    /// it with Java under Java's switches): `build_board_with` the default
+    /// profile's switches, then `read_session`.
     fn engine_counts(dsn: &Path, ses: &Path) -> (usize, usize, usize) {
         let result = dsn_board(dsn);
         let mut board = *result;
@@ -478,7 +536,10 @@ mod tests {
     }
 
     fn dsn_board(dsn: &Path) -> Box<RoutingBoard> {
-        match build_board(&read_design(dsn).unwrap().0) {
+        // The switches of the default profile, as `load` reads with.
+        let pcb = read_design(dsn).unwrap().0;
+        let quirks = LoadSettings::default().java_quirks(&pcb);
+        match build_board_with(&pcb, quirks) {
             BoardReadResult::Success { board, .. } => board,
             other => panic!("{}: {other:?}", dsn.display()),
         }

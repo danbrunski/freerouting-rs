@@ -48,21 +48,14 @@ impl App {
             let resolve = ResolveContext::from_machine();
             let (baseline, _warnings) =
                 prepare_job_settings(&b.session.board, Some(&b.session.design), &[], &resolve);
-            let mut draft = Draft::new(baseline.clone(), resolve.cores);
-            draft.apply_overrides(&self.settings.autoroute);
-            // The router flags of the front-end mode (`-mp`, `-mt`, `--router.*`,
-            // ...; G08.4, K02.5) win over the saved settings, as the command
-            // line does over a settings file. A `--profile` moves the values
-            // that are still the profile's first (N01.3).
-            let router = &self.files.frontend.options.router;
-            if router.profile.is_some()
-                && let Ok(profile) = freerouting::settings::Profile::of_patch(router)
-            {
-                draft.set_profile(profile);
-            }
-            draft.patch.apply_from(router);
+            let patch = Draft::user_patch(
+                baseline.clone(),
+                &self.settings.autoroute,
+                &self.files.frontend.options.router,
+                resolve.cores,
+            );
             self.autoroute.baseline = Some(baseline);
-            self.autoroute.applied = Some(draft.patch);
+            self.autoroute.applied = Some(patch);
         }
         self.autoroute.applied.clone()
     }

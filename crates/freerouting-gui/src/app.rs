@@ -455,10 +455,15 @@ impl App {
     ) {
         let (tx, rx) = mpsc::channel();
         let (ctx, files, synthetic) = (ctx.clone(), paths.clone(), self.synthetic);
+        // The board is read with the switches the job will route with.
+        let settings = session::LoadSettings {
+            autoroute: self.settings.autoroute.clone(),
+            router: self.files.frontend.options.router.clone(),
+        };
         self.load_started = Some(Instant::now());
         self.view.renderer.clock.reset_first_paint();
         std::thread::spawn(move || {
-            let loaded = session::load_all(&files, current).map(|mut loaded| {
+            let loaded = session::load_all(&files, current, &settings).map(|mut loaded| {
                 if let Some((nx, ny)) = synthetic {
                     crate::bench_synthetic::tile_loaded(&mut loaded, nx, ny);
                 }

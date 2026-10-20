@@ -19,10 +19,18 @@
 //!
 //! Tree order is part of the routing result (D5), so with a split switch
 //! `false` a board switched after reading can route differently from one read
-//! with the switches. The CLI reads with the job's switches; the GUI reads with
-//! Java's and switches before routing, as `prepare_job` does when a rules file
-//! changes `java_quirks`. N06's measurements use the CLI path. With every split
-//! switch `true` nothing is reinserted, and both paths are the same.
+//! with the switches. The CLI reads with the job's switches
+//! ([`prepare_job`](crate::job::prepare::prepare_job)'s first merge), and so
+//! does the GUI: every load path (open, drop, reload, a session, the `-de`
+//! front-end mode, a `.kicad_pcb`) reads with the switches of the profile plus
+//! the user's saved settings and the front-end flags
+//! (`freerouting_gui::session::LoadSettings`), so both give the same tree
+//! order. Only a switch changed after the load (the settings dialog, a rules
+//! file that sets `java_quirks`) takes the switched-after-read path:
+//! `prepare_board_for_routing` calls [`BasicBoard::set_java_quirks`] and the
+//! board can route differently from one read with the final switches. N06's
+//! measurements use the CLI path. With every split switch `true` nothing is
+//! reinserted, and the paths are the same.
 //!
 //! [`ShapeContext::split_quirks`]: crate::board::search::ShapeContext::split_quirks
 
