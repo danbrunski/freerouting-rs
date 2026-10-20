@@ -698,6 +698,32 @@ These are marked or look like quirks but keep no bug:
       `octagon_box_cutout_branch3` (measured, neutral within noise) and
       `simplex_prev_division_line` (inert: no session changes and its counter is 0; accepted on its
       tests, and N06.13 decides on promoting inert switches). `ENHANCED` is unchanged here.
+    - *Wider reach re-measured 2026-10-20 (N06.14 amendment 1's arm, amendment 2's engine:
+      main `08062e2`, `--router.profile=enhanced` with the 30 promoted fixes,
+      `any_angle_room_side_index=false` in every arm):* the arm `octagon_box_cutout_branch3` sets
+      both of this batch's switches `false` against the baseline's `true`, on N06.14's 7 DSN rows
+      plus the plugin row (canary `9511d9a`, graded-flow options).
+      - `gate --prereg docs/roadmap/prereg/N06.14.json --arms baseline,octagon_box_cutout_branch3`:
+        0 refusals, 8 rows. Total 196 → 201 (+5, all from canary-pwr's DSN, 122 → 127 unrouted;
+        plugin row 39 → 39 KiCad unconnected; J2 0 → 0 with 16 → 14 vias; tomu-fpga8 and -fpga9
+        sessions identical), set noise 21.40.
+      - Hard guard broken: canary-pwr's DSN has 33 → 34 traces under the narrowest class width
+        (`below_minimum` 1), so `totals verdict: reject`, `gate: FAIL`. N06.4's own run at
+        `3b1bde6` had 33 → 30 on that row.
+      - The wider reach adds nothing on canary-pwr: amendment 1's load-only count
+        (`N06_CUTOUT_DSNS`) found 0 stored areas with holes in canary-pwr-9511d9a and N06.4's plugin
+        export (the corpus inventory has only `canary-pwr-1a7df77-addonly`, also 0). So the change from N06.4's numbers comes from the engine and profile moving
+        on (`3b1bde6` → `08062e2`, `enhanced`'s 30 fixes), not from the newly wired splits. This is
+        an inference from the counts; no run isolated it.
+      - `simplex_prev_division_line_reached` is 0 in all 40 runs, and the inventory's stored-area
+        and outline-keepout columns for it are 0 on all 203 boards. The arm's differences are
+        therefore branch 3's, and `simplex_prev_division_line` stays inert at the wider reach (it
+        remains accepted on tests).
+      - Outcome: this item's acceptance of `octagon_box_cutout_branch3` stands only for the
+        drill-page reach at `3b1bde6`. At the wider reach under today's `enhanced` it fails, and
+        N06.14's decision table makes the next step an operator decision: a separate switch for
+        the newly wired splits, or the switch stays `true` in both profiles. Until then N06.13
+        does not promote it.
 - [x] **N06.5 — Batch M, maze search and rooms:** `init_failure_room_leak` (with the fix
   `session.clear()` before `InitFailed`, which also makes the rekey dead under `enhanced`),
   `failed_attempt_ripped_carryover` (snapshot and restore the set per attempt),
@@ -1772,6 +1798,23 @@ These are marked or look like quirks but keep no bug:
       **promotion confirmed**; the 30 entries stay in `ENHANCED`. Canary handoff:
       `target/canary-handoff/2026-10-20-n06-13/` (README.txt, SHA256SUMS). Not ticked: the 7
       pending (b) rows' batches.
+    - *Outcomes 2026-10-20 (N06.14's and N06.16's runs, main `08062e2`):* `ENHANCED` is
+      unchanged here; promotion is the next step.
+      - `any_angle_room_side_index` (b, N06.16): **accepted**, measured under `enhanced`. Under
+        `true` J2-any and rpi_splitter-any abort at the cap; the abort rule gives both rows to the
+        fix, and the other 6 rows gate PASS, 0 → 0, sessions identical. Next round: promote.
+      - `cutout_hole_crosses_border` and `simplex_octagon_half_corner` (b, N06.14): **no
+        verdict**. N06.14's registered 45 degree identity check fails on canary-pwr (both counters
+        above 0, and the half-corner fix changes its sessions). Both stay `true` in both profiles
+        until a corrected registration measures them (N06.14 `[~]`).
+      - `octagon_box_cutout_branch3` (b, N06.4): **failed at the wider reach** (gate FAIL, 1 new
+        trace under the narrowest class width on canary-pwr's DSN). Operator decision per N06.14's
+        decision table; not promoted.
+      - `simplex_prev_division_line` (b, N06.4): inert at the wider reach (counter 0 in 40 runs,
+        inventory columns 0); accepted on tests, as before.
+      - `opt_first_pass_stops`, `opt_equal_key_skip` (N06.9) and `shove_via_into_pending_piece`
+        (N06.15) were accepted on 2026-10-20 (their items) and are not promoted yet.
+      - Not ticked: the two N06.14 switches have no verdict, and the branch-3 decision is open.
 
 - [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and
@@ -1868,7 +1911,7 @@ These are marked or look like quirks but keep no bug:
         rows (Issue026-J2_reference 0 → 0 unrouted; canary-pwr 122 → 125 DSN, 41 → 43 plugin)
         and A14's legacy numbers of the new rows (14 and 21 unrouted). No route was run for the
         amendment.
-    - [ ] Heavy run pending (orchestrator, one job at a time), from main once `land/n06-3` and
+    - [x] Heavy run (done 2026-10-20 under amendment 2, see below) (orchestrator, one job at a time), from main once `land/n06-3` and
       `land/n06-splits` have landed:
       `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2`.
       - `n06_run.py` (5 arms × 7 rows) exits non-zero when sessions differ, expected on the
@@ -1887,8 +1930,110 @@ These are marked or look like quirks but keep no bug:
         and 3 did. With the key `false`, each row routed under a 4 GB cap in a check of 4 runs
         whose peak RSS and exit status alone were read (default profile; N06.14's keys and
         `octagon_box_cutout_branch3` all `true`, then all `false`): at most 57 MB, exit 0.
+        Lifted 2026-10-20 by amendment 2 (the key `false` in every arm).
       - Also the corpus inventory (read-only):
         `cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
+    - [x] Amendment 2 (2026-10-20, after the build and the plugin export, before any N06.14
+      route): `docs/roadmap/prereg/N06.14.json` sha256 now
+      `987fbb62c5bac23da88584445f41aee20ccb151cd5b7e818272d66f682f8f431`, re-pinned in
+      `crates/freerouting-dev/tests/prereg_n06_14.rs` (7 tests, pass).
+      - Engine main `08062e2`, CLI sha256 `ff058860…` (git `08062e2f2615`). The registration named
+        the default profile, `enhanced`, "whose ENHANCED table does not touch java_quirks"; since
+        `e0610fc` it sets the 30 keys N06.13 promoted. Every arm now gives
+        `--router.profile=enhanced` explicitly. N06.9's and N06.15's accepted switches are not
+        promoted, so they are Java's in every arm; no cutout key is in `ENHANCED`.
+      - Every arm sets `--router.java_quirks.any_angle_room_side_index=false` (decided 2026-10-20;
+        the same value in all arms) and `simplex_prev_division_line` explicitly: `false` only in
+        the `octagon_box_cutout_branch3` arm, which so measures N06.4's two switches together.
+        `simplex_prev_division_line_reached` and `any_angle_room_side_mismatches` join the report
+        metrics.
+      - Plugin row `canary-pwr-plugin` in `boards.files` (hashed as its export) and
+        `boards.outside_runner`, band 10. Export: canary `9511d9a` (git archive, board sha256
+        `15aa06a3…`), `canary-graded-flow.json`, kicad-plugin at `08062e2`, WSL KiCad 10.0.7: DSN
+        `e6297c7d…`, args `c6351b8d…` (`--max-passes 1 --router.min_trace_width_um=150
+        --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free
+        --router.autorouter.sweep_passes=2`). N06.4's export of the same source (`77302b7d…`)
+        differs: the plugin changed since.
+      - Hard guards `via_in_pad` and `below_minimum` stay option (b), no new breach versus
+        baseline; the guards `clearance_violations` (DSN rows) and `drc_real` (plugin row) are no
+        new breach versus baseline. Verdict pairs as registered: `gate --prereg` for (`baseline`,
+        `all`), `--arms baseline,octagon_box_cutout_branch3` for amendment 1's pair.
+      - `seen_before_registration`: N06.13's confirmation had routed this baseline's configuration
+        (but for the any-angle key) on J2, canary-pwr's DSN and scoring-mixed-layer-any; N06.16
+        had routed J2-any and rpi_splitter-any under `legacy`; no route of these arms at this
+        engine was seen.
+  - *Partial 2026-10-20:* the registered run is done and graded, but it gives no verdict for the
+    two N06.14 switches: the registration's own 45 degree identity check fails on canary-pwr, which
+    its `pairs_rule` calls "a bug in N06.14's diff or in its reach claim, not a verdict". The
+    branch-3 pair fails its hard guard (N06.4's note below). Worktree
+    `target/orchestrator/n06r5/wt` (branch `land/n06-runs5`, main `08062e2`); every route under
+    `ulimit -v 8000000`, one at a time. Remaining: find where a 45 degree board reaches
+    `Simplex::cutout_from` (the drill-page split or the tie-pin cutout of
+    `BasicBoard::reduce_trace_shape_at_tie_pin`), correct the reach claim, and register a new
+    measurement with canary-pwr as a measured row (N06.14 follow-up; an operator decision).
+    - Runs: `N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14.json
+      --out target/orchestrator/n06-g2`: 35 runs, all exit 0, exit 1 overall because sessions
+      differ. Plugin row: 5 routes with the exported args, exit 0 each. Measuring tool (the engine
+      at `08062e2`, input wiring stripped, the SES read at the writer's scale) on every DSN run;
+      `via_in_pad` raw 0 on every row of every arm.
+
+      | row | baseline | `cutout_hole_crosses_border` | `simplex_octagon_half_corner` | `all` | `octagon_box_cutout_branch3` |
+      |---|---|---|---|---|---|
+      | J2-any unrouted / vias / below min. raw | 0 / 10 / 25 | 0 / 10 / 22, differs | 0 / 12 / 15, differs | 0 / 12 / 15, differs | 0 / 10 / 16, differs |
+      | rpi_splitter-any | 0 / 2 / 13 | identical | 0 / 2 / 7, differs | 0 / 2 / 7, differs | identical |
+      | scoring-mixed-layer-any | 0 / 1 / 0 | identical | identical | identical | identical |
+      | Issue026-J2_reference (45°) | 0 / 16 / 37 | identical | identical | identical | 0 / 14 / 36, differs |
+      | Issue756-tomu-fpga8 (45°) | 14 / 162 / 0 | identical | identical | identical | identical |
+      | Issue756-tomu-fpga9 (45°) | 21 / 163 / 2 | identical | identical | identical | identical |
+      | canary-pwr-9511d9a DSN (45°) | 122 / 142 / 33 | identical | 129 / 144 / 29, differs | 129 / 144 / 29, differs | 127 / 134 / **34**, differs |
+      | canary-pwr-plugin KiCad unconnected / router unrouted / vias | 39 / 97 / 181 | identical | 44 / 101 / 165, differs | 44 / 101 / 165, differs | 39 / 96 / 193, differs |
+
+      Router clearance is equal across the arms on every DSN row (0; tomu 72; canary 40).
+      Wall time on canary's DSN: 430, 433, 431, 409 and 377 s; plugin row 78, 79, 101, 101 and 93 s.
+    - Reach counters (`--stats`, counted in both arms), baseline arm → the arm's own:
+      `cutout_hole_crosses_border_reached` J2-any 2127 → 2274, rpi-any 425 → 425, canary DSN 109,
+      plugin 16, every other row 0; `simplex_octagon_half_corner_reached` J2-any 22833 → 11939,
+      rpi-any 14820 → 14852, canary DSN 4686 → 5372, plugin 1552 → 1921, every other row 0;
+      `octagon_box_cutout_branch3_reached` J2 1770 → 1589, tomu-fpga9 408 → 408, canary DSN 398259 →
+      420225, plugin 101679 → 118538; `simplex_prev_division_line_reached` 0 in all 40 runs;
+      `any_angle_room_side_mismatches` J2-any 3, rpi-any 36 (0 in the half-corner arms), 0 on every
+      45 degree row.
+    - Identity check (registered for J2, tomu-fpga8, tomu-fpga9 and canary-pwr in the four N06.14
+      arms: sessions equal to the baseline's, both N06.14 counters 0): holds on J2 and both tomu
+      boards; **fails on canary-pwr**, DSN and plugin. Its baseline reaches both switches (109 and
+      4686 on the DSN, 16 and 1552 on the plugin row) although the board is 45 degree and
+      `any_angle_room_side_mismatches` is 0, so the any-angle neighbour calculation is not used. The
+      half-corner fix then changes both sessions. The border fix alone leaves both sessions
+      identical. So the reach claim ("only in any-angle mode") is wrong.
+    - Grades of the plugin row (plugin import with the same options, canary `grade.sh` and tools at
+      `2a7e070b`, `GRADE_REV=9511d9a`, WSL KiCad 10.0.7), each distinct session graded twice on
+      separate copies, both grades equal: baseline = border arm (`22de6d8b`) 39 unconnected, 5
+      starved_thermal, 0 clearance, 0 shorting_items, 0 track_width, 0 schematic parity, 0
+      via-in-pad, 0 inner-layer tracks; half-corner = `all` (`27ff331a`) 44, 5, 0, 0, 0, 0, 0, 0;
+      branch 3 (`71dd5fdb`) 39, 5, 0, 0, 0, 0, 0, 0 (plus 1 `track_dangling` warning).
+      `drc_real` 5 in every arm. Handoff: `target/canary-handoff/2026-10-20-n06-g2/` (README.txt,
+      SHA256SUMS).
+    - Gate (`freerouting-dev` at `08062e2`, baseline file written first with `--write-baseline`;
+      0 refusals, 8 of 8 rows judged in every pair):
+      - (`baseline`, `all`): total 196 → 208 (+12; canary DSN +7, plugin +5), set noise 21.40,
+        `totals verdict: accept`, `gate: PASS`. Under the `pairs_rule` this is not a verdict,
+        because the identity check failed on canary-pwr.
+      - (`baseline`, `cutout_hole_crosses_border`): 196 → 196, PASS. (`baseline`,
+        `simplex_octagon_half_corner`): 196 → 208, PASS (the whole of `all`'s change).
+      - (`baseline`, `octagon_box_cutout_branch3`): 196 → 201 (+5, canary DSN 122 → 127), but
+        `FAILS: hard guard: fixtures/canary-pwr/canary-pwr-9511d9a.dsn.below_minimum = 1` (33 → 34
+        traces under the narrowest class width), `totals verdict: reject`, `gate: FAIL`.
+    - Corpus inventory (the registered read-only command; 205 DSN files, 203 load,
+      `target/orchestrator/n06-g2-corpus.json`): stored-area splits reach branch 3 on
+      Issue756-tomu-fpga8 (1) and tomu-fpga9 (6), as N06.4 found. They also reach
+      `cutout_hole_crosses_border` on the same two boards (12 and 8). N06.4's inventory had no
+      N06.14 columns, so amendment 1's "no other switch on any board" did not cover them. Both tomu
+      rows' sessions are identical in every N06.14 arm. No other board reaches any of the four
+      switches at those splits.
+    - Verdict: **none for `cutout_hole_crosses_border` and `simplex_octagon_half_corner`**: both
+      stay `true` in both profiles, and N06.13 does not promote them. Amendment 1's pair
+      **fails**, so N06.4's branch-3 acceptance does not carry to the wider reach (decision table:
+      operator decision).
 - [x] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
   deeper level of `TraceShover.insert`'s recursion moves a via of another net (`shoveVias`) onto a
   substitute piece that is not on the board yet; the piece is then inserted over it, a short. Make
@@ -2122,3 +2267,53 @@ These are marked or look like quirks but keep no bug:
       0 failed, 55 ignored; four suites that route none of these boards (`reference_drc` and
       the GUI's `ui_render`, `ui_viewer`, `ui_windows`) abort on the address-space cap itself
       and pass without it (4, 7, 5 and 19 tests).
+    - [x] Measured 2026-10-20 for promotion (worktree `target/orchestrator/n06r5/wt`, branch
+      `land/n06-runs5`, main `08062e2`; CLI sha256 `ff058860…`). It was registered before any number
+      under it: `docs/roadmap/prereg/N06.16.json` (sha256
+      `9dad8e7a0c826d08d33b9667325456af6a201205ead4a2b1803c6b4498a08753`, 0 amendments),
+      `tools/bench/sets/n06-16.txt`, pinned by `crates/freerouting-dev/tests/prereg_n06_16.rs`
+      (6 tests, pass). It was written and pinned while N06.14's run was routing this fix arm's
+      configuration, before any of that run's numbers was read.
+      - Arms: `baseline` (`true`, Java) and `fix` (`false`), both `--router.profile=enhanced` (the
+        30 promoted fixes), the key set explicitly.
+      - Rows: the three `*-any.dsn` variants (J2, rpi_splitter, scoring-mixed-layer); identity rows
+        `Issue026-J2_reference`, `Issue143-rpi_splitter` and `Issue508-DAC2020_bm08` (45°) and the
+        J2 and rpi_splitter `-90` variants.
+      - Rule: N02 totals, no-regress. The registered abort rule: a row whose baseline aborts at
+        the `ulimit -v 8000000` cap (SIGABRT or Rust's `memory allocation of … failed`) is the
+        fix's win if the fix completes with `via_in_pad_raw` 0 and router clearance 0. Its totals
+        contribution is reported, not gated, and the other rows are gated with `--rows`.
+      - Plain-tree check, by code reading: the any-angle neighbour calculation runs only on the
+        plain search tree (`select_calculation_mode`), and `get_autoroute_tree` builds that tree
+        only for a board with no angle restriction, or for a net in clearance class 0. N06.16's note
+        did not say this; the identity rows test it.
+      - `tools/bench/n06_run.py` now honours an `abort_rule` block (it logs the abort and goes
+        on) and records each route's exit status and peak RSS (`os.wait4`).
+      - Run: `N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.16.json
+        --out target/orchestrator/n06-16`, 16 routes, one at a time.
+      - Abort rule:
+        - J2-any: the baseline aborts with exit −6 and `memory allocation of 1879048192 bytes
+          failed` at a peak RSS of 6.79 GB. The fix completes in 56.7 MB and 4.4 s with 0
+          unrouted, 0 clearance, 10 vias and `via_in_pad_raw` 0 (25 traces under the narrowest
+          class width, reported).
+        - rpi_splitter-any: the baseline aborts with exit −6 and `… 939524096 bytes failed` at
+          7.00 GB. The fix completes in 48.3 MB and 2.4 s with 0 unrouted, 0 clearance, 2 vias and
+          `via_in_pad_raw` 0 (13 reported).
+        - Both rows are the fix's wins; their totals contribution is fix 0 + 0 unrouted, reported.
+      - The other 6 rows: both arms' sessions are byte-identical, and
+        `any_angle_room_side_mismatches` is 0 in both arms on all five 45 and 90 degree rows (and
+        on scoring-mixed-layer-any). So the plain tree is not used there.
+        `freerouting-dev gate --prereg docs/roadmap/prereg/N06.16.json --rows <those 6>` (baseline
+        file first): 0 refusals, 6 neutral, total 0 → 0, set noise 4.90, `totals verdict: accept`,
+        `gate: PASS`.
+      - Counter on the fix arm: J2-any 3 and rpi_splitter-any 36 side mismatches; 35971 and 15354
+        rooms completed.
+      - Cross-check: the fix arm's sessions on J2-any, rpi_splitter-any, scoring-mixed-layer-any and
+        Issue026-J2_reference are byte-identical to N06.14's baseline arm (the same configuration).
+      - The switch's tests pass in release at `08062e2` under the cap:
+        `neighbours_any::tests::room_side_index_switch_both_behaviours` and
+        `tests/n06_any_angle_rooms.rs::any_angle_fanout_pass_stays_bounded_with_the_fix`.
+      - Verdict: **accepted** (abort rule on 2 rows, totals PASS on 6). It is a candidate for
+        N06.13's next promotion round into `ENHANCED`; `ENHANCED` is unchanged here.
+      - Canary: no row (45 degree board, the counter is 0 on canary-pwr in every N06.14 arm);
+        `target/canary-handoff/2026-10-20-n06-16/README.txt`.

@@ -1,0 +1,191 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.16-any-angle-room-sides",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.16; outcome for N06.13)",
+  "question": "Under profile enhanced, the profile it would be promoted into, does router.java_quirks.any_angle_room_side_index=false (the any-angle neighbour calculation takes the touching sides, point-touch sides, first and last corners and the neighbour sort on the room's simplex, so every side indexes the lines the gap walk uses and the walk ends within n + 1 steps) finish the any-angle rows that Java's indexes (true) cannot finish in bounded memory, keep N02's totals rule (accept no-regress: a correctness fix) on the rows both arms finish, with no via in a pad, no copper below the minimum and no new clearance error, and leave every 45 and 90 degree row's session byte for byte with the counter any_angle_room_side_mismatches 0?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted"
+    ],
+    "noise": {},
+    "min_boards": 3
+  },
+  "noise_note": "every row's band is the totals rule's default max(2, ceil(5 % of connections)) from the record's connections",
+  "engine": "freerouting-rs at main 08062e2, one Linux release build for both arms (/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting, sha256 ff058860c7f19ce6457f9cb9b61853f13959cb36125c12a337ecad62fdaae072, --version git 08062e2f2615, built with CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 cargo build --release -p freerouting-cli); profile enhanced given explicitly (--router.profile=enhanced): since main e0610fc it sets 30 router.java_quirks keys to false (N06.13's promotion; any_angle_skip_length_squared, connect_to_trace_swapped_width, drc_units_10000_per_mm, drill_destination_room_index, dsn_class_class_pairs, dsn_shape_bbox, dsn_unit_ignored, dsn_via_alias, edge_corner_not_advanced, failed_attempt_ripped_carryover, fanout_pin_order_names, fanout_stale_drill_carry, in_front_of_pad_side0_flank, in_front_of_pad_typo, init_failure_room_leak, move_drill_tidy_region, ortho_zero_width_room, pull_tight_reused_lines_change, rational_perp_projection, route_change_layer_no_via, route_connect_inner_break, route_result_int_via_ratio, rules_matrix_trees_not_rebuilt, rules_unknown_layer_scope, select_extension_ignores_filter, ses_reader_scale, smooth_loses_trace, snapshot_drops_compensation, stats_line_ab_length, store_trace_class_self_compare); N06.9's and N06.15's accepted switches are not promoted and the cutout switches are pending (N06.14), so they keep Java's value (unset, true) in both arms; the default passes; the arms differ only in router.java_quirks.any_angle_room_side_index, which each sets explicitly",
+  "arms": {
+    "baseline": {
+      "engine": "freerouting-rs at main 08062e2, one Linux release build for both arms (/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting, sha256 ff058860c7f19ce6457f9cb9b61853f13959cb36125c12a337ecad62fdaae072, --version git 08062e2f2615, built with CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 cargo build --release -p freerouting-cli); profile enhanced given explicitly (--router.profile=enhanced): since main e0610fc it sets 30 router.java_quirks keys to false (N06.13's promotion; any_angle_skip_length_squared, connect_to_trace_swapped_width, drc_units_10000_per_mm, drill_destination_room_index, dsn_class_class_pairs, dsn_shape_bbox, dsn_unit_ignored, dsn_via_alias, edge_corner_not_advanced, failed_attempt_ripped_carryover, fanout_pin_order_names, fanout_stale_drill_carry, in_front_of_pad_side0_flank, in_front_of_pad_typo, init_failure_room_leak, move_drill_tidy_region, ortho_zero_width_room, pull_tight_reused_lines_change, rational_perp_projection, route_change_layer_no_via, route_connect_inner_break, route_result_int_via_ratio, rules_matrix_trees_not_rebuilt, rules_unknown_layer_scope, select_extension_ignores_filter, ses_reader_scale, smooth_loses_trace, snapshot_drops_compensation, stats_line_ab_length, store_trace_class_self_compare); N06.9's and N06.15's accepted switches are not promoted and the cutout switches are pending (N06.14), so they keep Java's value (unset, true) in both arms; the default passes; the arms differ only in router.java_quirks.any_angle_room_side_index, which each sets explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.any_angle_room_side_index=true",
+      "settings": {},
+      "what": "Java's room-side indexes (the octagon's border lines)"
+    },
+    "fix": {
+      "engine": "freerouting-rs at main 08062e2, one Linux release build for both arms (/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting, sha256 ff058860c7f19ce6457f9cb9b61853f13959cb36125c12a337ecad62fdaae072, --version git 08062e2f2615, built with CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 cargo build --release -p freerouting-cli); profile enhanced given explicitly (--router.profile=enhanced): since main e0610fc it sets 30 router.java_quirks keys to false (N06.13's promotion; any_angle_skip_length_squared, connect_to_trace_swapped_width, drc_units_10000_per_mm, drill_destination_room_index, dsn_class_class_pairs, dsn_shape_bbox, dsn_unit_ignored, dsn_via_alias, edge_corner_not_advanced, failed_attempt_ripped_carryover, fanout_pin_order_names, fanout_stale_drill_carry, in_front_of_pad_side0_flank, in_front_of_pad_typo, init_failure_room_leak, move_drill_tidy_region, ortho_zero_width_room, pull_tight_reused_lines_change, rational_perp_projection, route_change_layer_no_via, route_connect_inner_break, route_result_int_via_ratio, rules_matrix_trees_not_rebuilt, rules_unknown_layer_scope, select_extension_ignores_filter, ses_reader_scale, smooth_loses_trace, snapshot_drops_compensation, stats_line_ab_length, store_trace_class_self_compare); N06.9's and N06.15's accepted switches are not promoted and the cutout switches are pending (N06.14), so they keep Java's value (unset, true) in both arms; the default passes; the arms differ only in router.java_quirks.any_angle_room_side_index, which each sets explicitly",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --stats json --stats-out {STATS} --result-json={RESULT} --router.java_quirks.any_angle_room_side_index=false",
+      "settings": {
+        "router.java_quirks.any_angle_room_side_index": false
+      },
+      "what": "candidate: the room's simplex for every side index"
+    }
+  },
+  "baseline_arm": "baseline",
+  "candidate_arm": "fix",
+  "pairs": {
+    "verdict": {
+      "arms": [
+        "baseline",
+        "fix"
+      ],
+      "rows": "all"
+    },
+    "reported": []
+  },
+  "abort_rule": {
+    "arms": [
+      "baseline"
+    ],
+    "rule": "A row whose baseline route aborts at the memory cap (every route runs under ulimit -v 8000000, in kB; abort = the CLI process ends by SIGABRT, exit status -6 in Python's subprocess, or its log has Rust's 'memory allocation of <n> bytes failed'; the exit status and the log are kept) counts as the fix's win if the fix arm completes on that row (exit 0, a session written) without a hard-guard breach. With no baseline to anchor option (b), the hard guards on such a row are raw: via_in_pad_raw 0 (no via in an SMD pad that the input has no via for) and the router's clearance_violations 0; below_minimum_raw is reported, not judged (the router's pin neck-down puts copper under the class width by design, N06.4 amendment 2). The row's totals contribution (the fix's unrouted) is reported but not gated. A fix arm that aborts or fails on any row, a baseline that fails in any other way, or an aborted-baseline row whose fix breaks a guard, is a fail of the verdict",
+    "runner": "tools/bench/n06_run.py with abort_rule: a route of a listed arm that aborts as defined above is logged in summary.json (exit, aborted, alloc_failure) and the run goes on; any other failed route stops the run as before"
+  },
+  "pairs_rule": "The verdict pair (baseline, fix): first the abort rule on every row whose baseline aborted; then freerouting-dev gate --prereg docs/roadmap/prereg/N06.16.json --rows <every row whose baseline did not abort> judges the totals block with the hard and guard metrics on those rows (via_in_pad and below_minimum no new breach versus baseline, option (b); clearance_violations not above the baseline's). The verdict passes when both pass. On the identity rows (fixtures/Issue026-J2_reference.dsn, fixtures/Issue143-rpi_splitter.dsn, fixtures/Issue508-DAC2020_bm08.dsn and the two -90 variants) both arms must show session_differences 0 and any_angle_room_side_mismatches 0; either failing is a bug in N06.16's reach claim, not a verdict",
+  "boards": {
+    "set": "tools/bench/sets/n06-16.txt",
+    "eligibility": "every row; no row is dropped after a number. Chosen before any routed number under this registration: every any-angle variant in crates/freerouting/tests/data/autoroute-variants/*-any.dsn (J2-any, rpi_splitter-any, scoring-mixed-layer-any: the rows where the switch is reached), the 45 degree originals of the two boards that blow up plus Issue508-DAC2020_bm08 (small), and the two 90 degree variants, as identity checks: the counter only fires in the any-angle neighbour calculation, which the autoroute uses only with the plain search tree (SortedRoomNeighbours.selectCalculationMode; crates/freerouting/src/autoroute/session/mod.rs select_calculation_mode), and the autoroute tree is the plain one only when the board has no trace angle restriction (board/search/mod.rs get_autoroute_tree), or a net routes in the default tree's clearance class 0. N06.16's note does not state this; the identity rows check it",
+    "files": {
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn": "52f0b5d19d9b78e505b89b7870e292835fbc398abeeba797159cd86edc803c47",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": "fdd39050d654598ccf50a38f476af1e60d864ffa8757a213dbd3e2f77114e68e",
+      "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": "df6535a679fa0d2720324497f827929db91b0c667b23cd97a2e627e2ee09c7ed",
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue143-rpi_splitter.dsn": "d079367aee3e3bf8c68d589d0cfba9fdbabf16693491a7873af459016e2680fe",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5",
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn": "59c980e5d0492bc58d9f6736e362ca5428a579bcf05ef608d520425847c5143c",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn": "2607907a008dff2782967539c433a3c09d577a29a05d8725c03e571e067cb8b7"
+    }
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "any_angle_room_side_mismatches",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "rooms_completed",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "peak_rss_kb",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "no new breach versus baseline (option (b), N06.4 amendment 2): the arm's count of vias in an SMD pad that the input has no via with that centre, padstack and nets for, minus the baseline arm's on the same row, floored at 0; raw count via_in_pad_raw. One measuring tool on the engine at 08062e2 for both arms (the input's session wiring stripped before the SES is imported, the SES read at the writer's scale)",
+    "below_minimum": "no new breach versus baseline (option (b)): the arm's delivered traces narrower than the board's narrowest class width that the input does not have, minus the baseline arm's, floored at 0; raw count below_minimum_raw; the same tool",
+    "clearance_violations": "the router's clearance violations of the final board (result.json board_statistics)",
+    "unrouted": "connections.incomplete_count of the final board (result.json board_statistics); the totals signal",
+    "aborted": "1 when the arm's route aborted at the memory cap (abort_rule), else 0",
+    "session_differences": "n06_run.py: 1 when the arm's SES differs from the baseline's (or either has none)",
+    "any_angle_room_side_mismatches": "STATS total.counts.any_angle_room_side_mismatches (N06.16's counter, both arms): neighbour calculations whose room has more border lines than its simplex",
+    "rooms_completed": "STATS total.counts.rooms_completed",
+    "vias": "result.json board_statistics vias.total_count",
+    "length_mm": "the measuring tool's trace length",
+    "wall_seconds": "STATS total wall_seconds",
+    "peak_rss_kb": "the route's peak resident set (n06_run.py: os.wait4's ru_maxrss of the route; Linux counts the forked runner's image before exec, so its floor is the runner's own resident set, about 17 MB)"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the abort rule",
+  "keep_rule": "N06's accept rule for (b) fixes: accepted when the abort rule holds on every aborted-baseline row, and on the other rows the hard guards hold, no board regresses by more than twice its noise band and the total is not worse than the set's noise; a neutral fix stays in. If it passes, N06.13's next promotion round turns any_angle_room_side_index off in ENHANCED (N05) with its DIVERGENCES 'Profile enhanced' line; legacy keeps Java's indexes",
+  "accept": [
+    "The switch's tests (N06.16's done note) pass at the engine.",
+    "On the identity rows both arms' sessions are identical and the counter is 0.",
+    "Every aborted-baseline row passes the abort rule.",
+    "The other rows pass the totals rule (no-regress) with the hard and guard metrics."
+  ],
+  "stop_rule": "one registered run per arm per board; no reruns with other settings",
+  "orchestrator": "Build the release CLI from the worktree; from the worktree root run orchestrator_command (n06_run.py honours abort_rule and records peak RSS; it exits non-zero when sessions differ, after writing summary.json); run the measuring tool on each SES; build records with every row (an aborted baseline's metrics null); apply the abort rule by script; judge the other rows with freerouting-dev gate --prereg docs/roadmap/prereg/N06.16.json --rows <those rows> (baseline file first with --write-baseline)",
+  "orchestrator_command": "cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.16.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-16",
+  "not_registered": [
+    "profile legacy: it keeps Java's indexes (unset, true) and A14's exact set has no any-angle row",
+    "the plugin path: canary-pwr is a 45 degree board, where the switch is not reached",
+    "time and memory as criteria: wall_seconds and peak_rss_kb are reported only"
+  ],
+  "seen_before_registration": "N06.16's own numbers (2026-10-19, main fed332f, before the promotion; profile legacy, 4 GB cap): J2-any aborts at 3.40 GB in 5.2 s under true and routes in 56 MB, 5.8 s with 0 incomplete and 0 violations under false; rpi_splitter-any aborts at 3.53 GB in optimizer pass 3 under true and routes in 49 MB, 1.65 s with 0 incomplete under false; scoring-mixed-layer-any gives one SES in both arms (0 mismatches); tests/n06_any_angle_rooms.rs: fanout pass 1 of J2-any under false routes 37 of 39 connections with 3 side mismatches. N06.14's hold note: 4 runs of J2-any and rpi_splitter-any under the default profile of the time (enhanced before the promotion) with the key false, peak RSS (at most 57 MB) and exit status (0) read only. N06.13's confirmation (2026-10-20) routed this baseline arm's configuration (enhanced with the 30 fixes, the key true) on scoring-mixed-layer-any (0 unrouted, 1 via), Issue026-J2_reference (0 unrouted, 16 vias), Issue026-J2_reference-90 (0, 16), Issue143-rpi_splitter-90 (0, 2) and Issue508-DAC2020_bm08 (0, 1). N06.14's amendment-2 run (started 2026-10-20 at engine 08062e2, before this registration was written) routes this fix arm's exact configuration (enhanced, the key false, every cutout key true) as its baseline arm on J2-any, rpi_splitter-any, scoring-mixed-layer-any and Issue026-J2_reference; none of its numbers or logs was read before this registration was written and pinned. fixtures/Issue143-rpi_splitter.dsn was routed by earlier checklists under other engines (A14, legacy); no number of it under enhanced at this engine was seen",
+  "decision_table": {
+    "pass": "N06.16's measurement accepted; N06.13's next promotion round may turn any_angle_room_side_index off in ENHANCED",
+    "fail": "the switch stays true in both profiles, with these numbers in N06.16 and N06.13; an identity-row failure is a bug to fix before any verdict"
+  },
+  "amendments": []
+}

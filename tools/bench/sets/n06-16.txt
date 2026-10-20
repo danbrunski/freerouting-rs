@@ -1,0 +1,14 @@
+# N06.16: router.java_quirks.any_angle_room_side_index (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.16.json: Java's room-side indexes (true) against the
+# room's simplex (false), under profile enhanced. Every any-angle variant (the rows that reach
+# the switch; J2-any and rpi_splitter-any abort at the memory cap under true, the abort rule):
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn
+crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
+# Identity checks (sessions and the counter must not change): two 45 degree originals of the
+# boards above, a small 45 degree board and the two 90 degree variants.
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue143-rpi_splitter.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn
