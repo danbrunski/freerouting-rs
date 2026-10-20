@@ -1855,6 +1855,43 @@ These are marked or look like quirks but keep no bug:
       `tree_nodes_visited` 173403 → 174040, `maze_work_units` 90636 and the routes unchanged; with
       `--router.java_quirks.shove_via_into_pending_piece=true` added to its load the count is 173403
       again, so it is the pending-piece check's tree query, which leaves the work meter alone.
+    - [x] `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release
+      -p freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
+      --test-threads=1` under `ulimit -v 8000000` (private target, at `0bf562b`'s tree): 7 boards,
+      all `exact`, all `byte_equal`, all `pass` (`target/parity/summary.json` in the worktree).
+    - [x] Gate (private target, `CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0`): `cargo fmt --all --check`;
+      `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test --workspace
+      --no-fail-fast`: 263 suites, 2606 passed, 0 failed, 56 ignored (the first run, before the
+      `batch_optimizer` and microbench fixes above, failed only those 5 tests);
+      `python3 tools/roadmap/checklists.py status --strict` clean.
+    - [x] Confirmation registered before any number: `docs/roadmap/prereg/N06.13-promotion-2.json`
+      (sha256 `773ec7a061a67f130fd5c6d4f113b066da68d1f289ecff8ae5b01d062b6eb921`, 0 amendments), set
+      `tools/bench/sets/n06-13-promotion-2.txt`, pinned by
+      `crates/freerouting-dev/tests/prereg_n06_13_2.rs` (5 tests pass). Arms `enhanced_main` (main
+      `c8b91b7`, the round's parent) and `enhanced_promoted` (`0bf562b`, the round's commit), both
+      `--router.profile=enhanced` and no other router flag. Rows: round 1's 21 DSN rows, then
+      `Issue026-J2_reference-any` and `Issue143-rpi_splitter-any` (their baseline aborts at the cap
+      under `any_angle_room_side_index = true`, so N06.16's `abort_rule` judges them: the
+      candidate's win if it completes with `via_in_pad_raw` 0 and router clearance 0, reported not
+      gated), plus canary-pwr at canary 2a7e070b through the plugin path with the plugin's default
+      options (`outside_runner`, routed with `--router.profile=enhanced` added to the exported
+      args). N02 totals, `accept: no-regress`; hard guards option (b), no new breach versus the
+      baseline (the baseline already breaks an absolute `below_minimum`); every route under the
+      8000000 kB cap. A FAIL is bisected by switch group. The registration is in the commit after
+      `0bf562b`, so the run reads it from the main checkout once landed.
+    - [~] heavy run pending (orchestrator, one job at a time, after this branch lands):
+      `cd /home/thebo/code/freerouting-rs && git worktree add --detach target/orchestrator/n06-13b-base-wt c8b91b7d75f40879ab8415562fc7f3c4361114fb && git worktree add --detach target/orchestrator/n06-13b-cand-wt 0bf562b81f8d271d1951b7d763da96219578646a && (cd target/orchestrator/n06-13b-base-wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-base cargo build --release -p freerouting-cli) && cd target/orchestrator/n06-13b-cand-wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-cand cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py /home/thebo/code/freerouting-rs/docs/roadmap/prereg/N06.13-promotion-2.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13b`
+      (46 runs; it exits non-zero when a session differs, which is expected: the aborted baseline
+      rows always differ). Then the plugin row as the registration's `plugin_canary` says: write
+      `{"schema": 4, "profile": "enhanced"}` as `route-options.json`, export canary 2a7e070b's
+      `hardware/canary-pwr-rev1.0` once with `python3 -I kicad-plugin/headless_run.py export`,
+      route both arms' binaries with the exported args plus `--router.profile=enhanced --stats json
+      --stats-out <arm>/stats.json --result-json=<arm>/result.json` under `ulimit -v 8000000`, grade
+      each distinct session with canary's `grade.sh` (`GRADE_REV=2a7e070b`). Then the measuring
+      tool on each DSN session, the abort rule on the aborted-baseline rows, and `freerouting-dev
+      gate --records <records> --baseline <baseline> --prereg
+      docs/roadmap/prereg/N06.13-promotion-2.json --rows <the rows whose baseline did not abort>`
+      (baseline file first with `--write-baseline`).
 
 - [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and

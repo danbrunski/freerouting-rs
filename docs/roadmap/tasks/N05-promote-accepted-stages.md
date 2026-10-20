@@ -388,8 +388,8 @@ Prerequisites: N01; each candidate's own accepted measurement.
     switch for the newly wired splits), `cutout_hole_crosses_border` and
     `simplex_octagon_half_corner` (N06.14, no verdict), `ripup_pass_no_unset` (rejected) and the
     seven (c) rows left as Java. The round has its own confirmation under `enhanced`, registered
-    before any number in `docs/roadmap/prereg/N06.13-promotion-2.json` (N06.13's note gives its
-    hash and the command): `enhanced` at the round's parent against the round's commit, round 1's
+    before any number in `docs/roadmap/prereg/N06.13-promotion-2.json` (sha256 `773ec7a0…`, pinned by
+    `crates/freerouting-dev/tests/prereg_n06_13_2.rs`; N06.13's note gives the command): `enhanced` at the round's parent against the round's commit, round 1's
     21 DSN rows plus J2-any and rpi_splitter-any (N06.16's abort rule for their baseline) plus
     canary-pwr through the plugin path, N02 totals, no-regress, hard guards no new breach versus
     baseline. Run pending; a FAIL is bisected by switch group and a failing group leaves

@@ -44,8 +44,9 @@ kept bug and schedules its fix under profile `enhanced`; see
 previous division line (kept under `legacy` only: profile `enhanced` assigns it,
 `router.java_quirks.simplex_prev_division_line = false`, N06.4, promoted by N06.13's second round;
 the pieces are Java's either way), the no-op branch 3 in IntOctagon's box cutout
-(`octagon_box_cutout_branch3`, `true` in both profiles: N06.14's run at every `Area` split rejected
-its fix; see "Java quirk switches, opt-in" below). `RationalPoint.perpendicularProjection` is kept under `legacy` only: profile `enhanced`
+(`octagon_box_cutout_branch3`, `true` in both profiles: N06.14's run at every `Area` split
+rejected its fix; see "Java quirk switches, opt-in" below). `RationalPoint.perpendicularProjection`
+is kept under `legacy` only: profile `enhanced`
 fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted by N06.13).
 
 ## freerouting-dsn
@@ -1729,7 +1730,8 @@ passed both pairs (under `enhanced` 312 → 319, noise 69.24).
 **N06.16 any-angle room sides (profile `enhanced` since N06.13's second round)**
 
 `any_angle_room_side_index` is `true` (Java) unset and under `legacy`, and `false` under
-`enhanced` (N06.13, 2026-10-20). Java's path is unbounded: an any-angle room neighbour's touching side is taken on the room's own shape (an
+`enhanced` (N06.13, 2026-10-20). Java's path is unbounded: an any-angle room neighbour's
+touching side is taken on the room's own shape (an
 `IntOctagon` has 8 border lines, degenerate ones too), while `tryRemoveEdge` and
 `calculateNewIncompleteRooms` index its `toSimplex()`; a side past the simplex's last line never
 ends the gap walk, which adds incomplete rooms until memory runs out. Java at the pin and the
@@ -1739,8 +1741,8 @@ neighbour sort are taken on the simplex, so a gap walk ends within `n + 1` steps
 (`neighbours_any::tests::room_side_index_switch_both_behaviours`,
 `tests/n06_any_angle_rooms.rs`). Only the plain (any-angle) tree reaches it; `run_stats`
 counts `any_angle_room_side_mismatches` in either arm. `prereg/N06.16.json`'s run of
-2026-10-20 accepted it under `enhanced`: both boards abort at the 8000000 kB cap under `true` and route
-under `false`, and the other 6 rows are identical.
+2026-10-20 accepted it under `enhanced`: both boards abort at the 8000000 kB cap under `true`
+and route under `false`, and the other 6 rows are identical.
 
 ## Profile `enhanced`
 
@@ -1952,9 +1954,9 @@ run is pending. An explicit `--router.java_quirks.<id>=true` brings Java's bug b
   the piece over it, a short (Shove insert); accepted as a no-regress correctness fix
   (`pending_piece_switch_both_behaviours_and_counters`).
 - `java_quirks.any_angle_room_side_index` = `false` (N06.13 from N06.16,
-  `docs/roadmap/prereg/N06.16.json`, under `enhanced`: under Java's indexes `Issue026-J2_reference-any`
-  and `Issue143-rpi_splitter-any` abort at the 8000000 kB cap, under the fix they route with 0 unrouted
-  and 0 clearance violations (the registered abort rule); the other 6 rows gate PASS, 0 → 0,
+  `docs/roadmap/prereg/N06.16.json`, under `enhanced`: under Java's indexes
+  `Issue026-J2_reference-any` and `Issue143-rpi_splitter-any` abort at the 8000000 kB cap, under
+  the fix they route with 0 unrouted and 0 clearance violations (the registered abort rule); the other 6 rows gate PASS, 0 → 0,
   sessions identical): any-angle room neighbours take their touching sides, corners and sort on
   the room's simplex, so the gap walk ends (Autoroute room graph; any-angle mode only); accepted
   on `room_side_index_switch_both_behaviours`.

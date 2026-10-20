@@ -1,0 +1,291 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N06.13-promotion-2",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/N06-fix-kept-java-bugs.md (N06.13), through docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3)",
+  "question": "N06.13's second promotion round turns five more accepted Java-bug fixes off in profile enhanced, the default: router.java_quirks.simplex_prev_division_line, router.java_quirks.opt_first_pass_stops, router.java_quirks.opt_equal_key_skip, router.java_quirks.shove_via_into_pending_piece, router.java_quirks.any_angle_room_side_index = false. N06.9, N06.15 and N06.16 measured theirs under enhanced with the first round's 30 fixes, each switch alone; simplex_prev_division_line is accepted on its tests (counter 0 at every Area split). Does profile enhanced with the five (the promotion commit, --router.profile=enhanced) keep every registered board within N02's totals rule (accept no-regress: correctness fixes) of profile enhanced without them (the promotion commit's parent, --router.profile=enhanced), with no new hard-guard breach versus that baseline, no new router clearance violation, no new KiCad real DRC error or short on canary-pwr's plugin path with the plugin's default options, and, on the two any-angle rows whose baseline aborts at the memory cap, a bounded route without a raw guard breach (the abort rule)?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "unrouted",
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "canary-pwr-plugin": 10
+    },
+    "min_boards": 3
+  },
+  "engine": "two Linux release builds of freerouting-rs: the baseline arm's at the parent of the promotion commit, the candidate arm's at the promotion commit; both arms give --router.profile=enhanced and no other router flag, so they differ only in ENHANCED's five second-round java_quirks entries",
+  "arms": {
+    "enhanced_main": {
+      "engine": "freerouting-rs at main c8b91b7 (the parent of the promotion commit, branch land/n06-promo2), one Linux release build; profile enhanced given explicitly, whose table has power_layer_traces = none, neck_width_um = 300, via_clearance = net_class and the first round's 30 java_quirks entries (N06.13, main e0610fc); the five second-round switches keep Java's value (unset, true)",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-base/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --stats json --stats-out {STATS} --result-json={RESULT}",
+      "settings": {},
+      "what": "baseline: profile enhanced as it is before the second round (the five switches true)"
+    },
+    "enhanced_promoted": {
+      "engine": "freerouting-rs at the promotion commit 0bf562b (main c8b91b7 plus N06.13's second round, which changes ENHANCED, the switches' help texts, docs and tests only; branch land/n06-promo2), one Linux release build; profile enhanced given explicitly, whose table adds the five entries",
+      "command": "/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-cand/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --stats json --stats-out {STATS} --result-json={RESULT}",
+      "settings": {
+        "router.java_quirks.simplex_prev_division_line": false,
+        "router.java_quirks.opt_first_pass_stops": false,
+        "router.java_quirks.opt_equal_key_skip": false,
+        "router.java_quirks.shove_via_into_pending_piece": false,
+        "router.java_quirks.any_angle_room_side_index": false
+      },
+      "what": "candidate: profile enhanced with the five second-round switches false, from the profile table (no java_quirks flag)"
+    }
+  },
+  "baseline_arm": "enhanced_main",
+  "candidate_arm": "enhanced_promoted",
+  "pairs": [
+    [
+      "enhanced_main",
+      "enhanced_promoted"
+    ]
+  ],
+  "abort_rule": {
+    "arms": [
+      "enhanced_main"
+    ],
+    "rule": "N06.16's abort rule: a row whose baseline route aborts at the memory cap (every route runs under ulimit -v 8000000, in kB; abort = the CLI process ends by SIGABRT, exit status -6 in Python's subprocess, or its log has Rust's 'memory allocation of <n> bytes failed'; the exit status and the log are kept) counts as the candidate's win if the candidate completes on that row (exit 0, a session written) without a raw guard breach: with no baseline to anchor option (b), the guards on such a row are via_in_pad_raw 0 (no via in an SMD pad that the input has no via for) and the router's clearance_violations 0; below_minimum_raw is reported, not judged (the router's pin neck-down puts copper under the class width by design, N06.4 amendment 2). The row's totals contribution (the candidate's unrouted) is reported but not gated. Expected to apply to Issue026-J2_reference-any and Issue143-rpi_splitter-any, whose any_angle_room_side_index = true route aborts at the cap (N06.16's run, 2026-10-20), but it applies to any row whose baseline aborts. A candidate route that aborts or fails on any row, a baseline that fails in any other way, or an aborted-baseline row whose candidate breaks a raw guard, is a FAIL of the verdict",
+    "runner": "tools/bench/n06_run.py with abort_rule: a route of a listed arm that aborts as defined above is logged in summary.json (exit, aborted, peak_rss_kb; no session) and the run goes on; any other failed route stops the run"
+  },
+  "pairs_rule": "The verdict pair (enhanced_main, enhanced_promoted): first the abort rule on every row whose baseline aborted; then freerouting-dev gate --prereg docs/roadmap/prereg/N06.13-promotion-2.json --rows <every row whose baseline did not abort, the plugin row included> judges the totals block with the hard and guard metrics on those rows. The verdict passes when both pass",
+  "boards": {
+    "set": "tools/bench/sets/n06-13-promotion-2.txt",
+    "eligibility": "every row; no row is dropped after a number. Round 1's 21 DSN rows and its plugin row, plus the two any-angle rows N06.16 made routable in bounded memory",
+    "files": {
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn": "59c980e5d0492bc58d9f6736e362ca5428a579bcf05ef608d520425847c5143c",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn": "2607907a008dff2782967539c433a3c09d577a29a05d8725c03e571e067cb8b7",
+      "fixtures/Issue026-J2_reference.dsn": "878b19e25675ac618de3224ae82d252068def794e6ee8d226582ca3d41f0b6d2",
+      "fixtures/Issue508-DAC2020_bm08.dsn": "5d3acaaac47c1851d439150e3b70751b85fe1e8b8afc55278f1487b692b32bc5",
+      "fixtures/Issue676-ch32v-tx118s.dsn": "7270f70a8d1964801fc476826291a83d82d00bee00a346aea01fe55b2b63359e",
+      "fixtures/Issue957-smoke-ldo-led.dsn": "090e615ca832eb4aa13f76fe1ca8be36cf9f45027f48aa8126512c72580178f5",
+      "fixtures/Issue367-Charger.dsn": "7ce9353ef668555d39956b6b1b96aca5cff83091d26ab89bb4c59c3c13b62a38",
+      "fixtures/Issue756-tomu-fpga.dsn": "c5279c56697b86e9e8189ffa3ee0036eaeafaa661c07df25dbe6c066ef16a9ee",
+      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
+      "fixtures/Issue313-FastTest.dsn": "95b92720ead8c3de87ae67bd34b87625cd14ac858e85dd9c6836ac479c3e1a30",
+      "fixtures/Issue027-zMRETestFixture.dsn": "59c692fe9468fe8909b08c55705a175d30db39d7fe164a5363f1da43d03fbd44",
+      "fixtures/Issue155-CH376_MCP795_Module.dsn": "3080de09e60d0a713d8904016c694bbf9a79668b10a0d070d1a123023302a5d7",
+      "fixtures/Issue508-DAC2020_bm06.dsn": "31f38102d90a1bb4b901d4ca8d1877eb41752281ffa9de9f53a3cf69ba5231e2",
+      "fixtures/Issue558-dev-board.dsn": "f1d70cb705bd0ee4c415519dfde6c036c3bd46c2675d3d9e5fa2bfdb5d7ea480",
+      "fixtures/Issue217-8088sbc.dsn": "d7caa5a23e834c86829b4f9029691bac0410261eacfca90aff8d052e1ba2dfad",
+      "fixtures/Issue034-Green14SegLED.dsn": "17bf07ff18a668faaad7f4b575199672b4cff34649efe49e32eca59d2c76de63",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "fixtures/Issue035-ReadPlaceScope.dsn": "69300e8bca77acccc1bd3d8799c18c728fc86e22415b9e1385565adb2610ed01",
+      "fixtures/Issue054-tairakb.dsn": "965f7154d19bec679916128ef1c07e15a97dedc6a52000e097726b5ff0e90969",
+      "fixtures/Issue102-Mars-64-revE-rot00.dsn": "3a7066d3ff441d495afb18f17a967c60a774a3d4fd7baf6438d727bdeb9c0dc5",
+      "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": "df6535a679fa0d2720324497f827929db91b0c667b23cd97a2e627e2ee09c7ed",
+      "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn": "52f0b5d19d9b78e505b89b7870e292835fbc398abeeba797159cd86edc803c47",
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": "fdd39050d654598ccf50a38f476af1e60d864ffa8757a213dbd3e2f77114e68e",
+      "canary-pwr-plugin": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58"
+    },
+    "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path with the plugin's default options (plugin_canary below), outside n06_run.py. Its hash is the sha256 of the source board hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb at canary 2a7e070b (git show 2a7e070b:<path>), because the plugin exports it at run time; the exported DSN's and args' sha256 are recorded with the result",
+    "outside_runner": [
+      "canary-pwr-plugin"
+    ],
+    "dropped_before_registration": "the rows of N06.9 (batch O: bm01, bm02 and the KiCad demos), N06.15 (GP8B, smoothieboard, Protein, CPU-85, bm01, Mars-64) and N06.16's identity rows not in round 1's set (Issue143-rpi_splitter.dsn): each switch's own measurement ran them; this confirmation keeps round 1's set so the two rounds are judged on the same boards, plus the two any-angle rows",
+    "bands": "each DSN row is its own board; its band is N02's default, max(2, ceil(5 % of the row's connections)), connections = the enhanced_main arm's board_statistics.connections.maximum_count (n06_run.py copies it into summary.json's statistics.connections); the plugin row's band is 10. fixtures/canary-pwr/canary-pwr-9511d9a.dsn (canary 9511d9a, the DSN fixture) and canary-pwr-plugin (canary 2a7e070b, the plugin path) are two boards. An aborted-baseline row has no band: its contribution is reported, not gated"
+  },
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_shorting_items",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "connections",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "session_differences",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "below_minimum_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "kicad_clearance",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "plugin_unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "peak_rss_kb",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "optimizer_passes",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "simplex_prev_division_line_reached",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_via_into_pending_pieces",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "shove_pending_piece_foreign_traces",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "any_angle_room_side_mismatches",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "rooms_completed",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "unrouted, clearance_violations, vias, connections": "a DSN row's result manifest's board_statistics (connections.incomplete_count, clearance_violations.total_count, vias.total_count, connections.maximum_count): Freerouting's board model on the routed board; n06_run.py copies them into summary.json as `statistics`. The plugin row's record carries unrouted null and its router count as plugin_unrouted, so its signal is kicad_unconnected; its clearance_violations is null (the router's count is reported)",
+    "via_in_pad, below_minimum": "option (b), no new breach versus baseline (the f1 rule: no registration carries a hard guard the baseline already breaks): the arm's count minus the enhanced_main arm's count on the same row, floored at 0; the raw counts are reported as via_in_pad_raw and below_minimum_raw. On a DSN row the raw counts are counted on the routed board by one measuring tool on the engine API at the baseline commit for both arms, with the input's session wiring stripped and the session read at the writer's scale: vias in an SMD pad the input has no via for, and delivered traces narrower than the board's narrowest class width that the input does not already have. On the plugin row via_in_pad is via_in_pad.py's count and below_minimum KiCad's track_width error count. On an aborted-baseline row the abort rule's raw guards apply instead",
+    "drc_real, kicad_shorting_items, kicad_clearance, kicad_unconnected": "the plugin row's grade (canary hardware/tools/grade.sh, GRADE_REV=2a7e070b): real DRC errors, shorting_items, clearance items (reported only: re-imports of one session have graded 2 and 4, N06.12's note) and unconnected items. Each distinct session's first grade counts",
+    "session_differences": "n06_run.py: 1 if the candidate's SES differs byte for byte from the enhanced_main arm's on that row, or either has none (an aborted baseline writes none)",
+    "wall_seconds": "the router's stats.json total wall_seconds per run (reported)",
+    "aborted": "1 when the arm's route aborted at the memory cap (abort_rule), else 0; n06_run.py records it with the exit status",
+    "peak_rss_kb": "the route's peak resident set (n06_run.py: os.wait4's ru_maxrss of the route; Linux counts the forked runner's image before exec, so its floor is the runner's own resident set, about 17 MB)",
+    "optimizer_passes": "the number of optimizer_pass phases in the run's STATS (the reach of opt_first_pass_stops, which has no counter)",
+    "simplex_prev_division_line_reached, shove_via_into_pending_pieces, shove_pending_piece_foreign_traces, any_angle_room_side_mismatches, rooms_completed": "the run_stats counters (--stats json, total.counts), counted in either arm: the reach of simplex_prev_division_line, of shove_via_into_pending_piece (vias found on a pending piece, and other nets' traces there, which the fix does not cover) and of any_angle_room_side_index; opt_equal_key_skip has no counter, so session_differences is its reach"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "accept": [
+    "The verdict pair (enhanced_main, enhanced_promoted) as pairs_rule says. The abort rule on every aborted-baseline row. On the other rows N02's totals rule with accept no-regress, judged by freerouting-dev gate --prereg --rows on records built from n06_run.py's summary.json and the plugin row. Hard guards: via_in_pad and below_minimum as option (b), no new breach versus the baseline arm on any row; no DSN row's clearance_violations above its baseline's; on the plugin row drc_real and kicad_shorting_items not above the baseline's. Then the candidate's unrouted summed over the gated DSN rows plus the plugin row's kicad_unconnected at most the baseline's plus the set's noise, sqrt of the sum of the bands squared; no board worse by more than twice its band.",
+    "PASS: the five entries stay in ENHANCED, and N06.13 records the numbers.",
+    "FAIL: the round is bisected by switch group (simplex_prev_division_line; N06.9's two; shove_via_into_pending_piece; any_angle_room_side_index). Each group is judged alone by the same rule, on the candidate binary with the other groups' switches set back to true by flags, under an amendment written before those runs. A group whose own pair fails leaves ENHANCED: its switches stay true in both profiles, with these numbers."
+  ],
+  "stop_rule": "One run per arm per row, the plugin row's included; no rerun with other settings. No route by the implementer.",
+  "memory_cap": "every route of this registration, the plugin row's included, runs under an 8000000 kB address-space cap: n06_run.py's opt-in N06_RUN_ULIMIT_KB=8000000 for the DSN rows, and ulimit -v 8000000 for the plugin routes. The cap changes no routing work",
+  "orchestrator_command": "cd /home/thebo/code/freerouting-rs && git worktree add --detach target/orchestrator/n06-13b-base-wt c8b91b7d75f40879ab8415562fc7f3c4361114fb && git worktree add --detach target/orchestrator/n06-13b-cand-wt 0bf562b81f8d271d1951b7d763da96219578646a && (cd target/orchestrator/n06-13b-base-wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-base cargo build --release -p freerouting-cli) && cd target/orchestrator/n06-13b-cand-wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-cand cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py /home/thebo/code/freerouting-rs/docs/roadmap/prereg/N06.13-promotion-2.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13b",
+  "orchestrator": "Run orchestrator_command once this registration is on main. The commit after the candidate adds it, so the candidate's worktree does not hold it, and the command reads it from the main checkout; its sha256 is pinned in crates/freerouting-dev/tests/prereg_n06_13_2.rs; before landing, the same file in the branch's worktree target/orchestrator/n06p2/wt serves. It builds the two binaries the arms name, then, from the candidate's worktree root (the boards' relative paths and n06_run.py, which equals the baseline's), runs each arms.command on each DSN row of boards.files (23 rows x 2 arms = 46 runs), checks the input hashes, logs a baseline abort at the cap and goes on (abort_rule), compares each candidate SES with the baseline's and writes summary.json (session_differences, counts, statistics, exit, peak_rss_kb, aborted). It exits non-zero after the last run when a session differs, which is expected (an aborted baseline row always differs). Then the plugin row (plugin_canary). Then the measuring tool on each DSN session, the abort rule by script, and freerouting-dev gate --records <records> --baseline <baseline> --prereg docs/roadmap/prereg/N06.13-promotion-2.json --rows <the rows whose baseline did not abort> (the baseline file written first by the same command with --write-baseline), with freerouting-dev built at the baseline commit.",
+  "paired_rule_note": "pass_rule is retained for gate parser validation; the registered verdict uses totals with accept=no-regress and the hard guards above.",
+  "plugin_canary": {
+    "required": true,
+    "source": "CANary hardware/canary-pwr-rev1.0, the original KiCad project at canary 2a7e070b, the current board base (git archive, unedited); never edit the source project.",
+    "source_sha256": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58",
+    "options": {
+      "schema": 4,
+      "profile": "enhanced"
+    },
+    "options_note": "the plugin's default options: profile_defaults('enhanced'), what a new board starts from (as Q16.5's registration), written to <PLUGIN_WORK>/route-options.json before the export",
+    "export_command": "python3 -I kicad-plugin/headless_run.py export \"{CANARY_BOARD}\" \"{PLUGIN_WORK}\" \"{PLUGIN_WORK}/route-options.json\"",
+    "route": "Export once, with kicad-plugin at the promotion commit on WSL KiCad 10.0.7, before any route. For each arm, run that arm's release CLI (the binary its command names) on the exported DSN with the generated <stem>.args.json args verbatim, then --router.profile=enhanced, --stats json --stats-out <arm>/stats.json and --result-json=<arm>/result.json, under ulimit -v 8000000. No java_quirks flag. One exported input and one argument list serve both arms. Compare the candidate's session with the baseline's.",
+    "import_command": "python3 -I kicad-plugin/headless_run.py import \"{CANARY_BOARD}\" \"{PLUGIN_SES}\" \"{PLUGIN_ROUTED_BOARD}\" \"{PLUGIN_WORK}/route-options.json\"",
+    "grade": "Grade each distinct session's imported copy with canary hardware/tools/grade.sh (GRADE_REV=2a7e070b; ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py); arms with a byte-identical session share one grade, and each session's first grade counts. Record shorting_items and clearance separately. Retain the export and import logs, versions, the exported DSN's and args' sha256 and the grades."
+  },
+  "not_registered": "a second seed (the router is deterministic); legacy (unchanged by the promotion; the small parity check shows it); the switches one by one (N06.9, N06.15 and N06.16 measured them; a failed verdict is bisected by group as accept says); octagon_box_cutout_branch3 (rejected), cutout_hole_crosses_border and simplex_octagon_half_corner (no verdict), which stay true in both arms",
+  "seen_before_registration": "No route of either arm at these engines under this registration, on any row. Before it: round 1's confirmation (2026-10-20) routed enhanced with the 30 (this baseline's table) at c04b3f5 on round 1's 21 DSN rows and the plugin row (its N06.13 note), and the per-switch numbers of N06.9, N06.15 and N06.16 under enhanced with the 30 (their items): N06.16's run had J2-any and rpi_splitter-any abort at the cap under any_angle_room_side_index = true and route with 0 unrouted under false; N06.14's run routed those two rows with the key false; those runs were at main 08062e2, and main c8b91b7 adds f4c7ccf (the GUI and prepare_job read a board with the job's switches) and docs. At registration the implementer routed nothing under profile enhanced: the light parity check routed the connection-parity set under legacy, which neither arm runs",
+  "amendments": []
+}

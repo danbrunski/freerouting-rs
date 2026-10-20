@@ -1,0 +1,37 @@
+# N06.13's second promotion round: its confirmation (docs/roadmap/tasks/N06-fix-kept-java-bugs.md),
+# registered in docs/roadmap/prereg/N06.13-promotion-2.json: profile enhanced at the parent of the
+# round's commit against enhanced with the five second-round router.java_quirks switches `false`
+# (simplex_prev_division_line, opt_first_pass_stops, opt_equal_key_skip,
+# shove_via_into_pending_piece, any_angle_room_side_index), both arms --router.profile=enhanced.
+# Round 1's 21 DSN rows (tools/bench/sets/n06-13-promotion.txt, the same order) plus the two
+# any-angle rows N06.16 made routable in bounded memory; their baseline aborts at the cap and the
+# registration's abort_rule judges them. Routed by tools/bench/n06_run.py under
+# N06_RUN_ULIMIT_KB=8000000.
+# Round 1's rows:
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-90.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-90.dsn
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue508-DAC2020_bm08.dsn
+fixtures/Issue676-ch32v-tx118s.dsn
+fixtures/Issue957-smoke-ldo-led.dsn
+fixtures/Issue367-Charger.dsn
+fixtures/Issue756-tomu-fpga.dsn
+fixtures/Issue269-z10_module.dsn
+fixtures/Issue313-FastTest.dsn
+fixtures/Issue027-zMRETestFixture.dsn
+fixtures/Issue155-CH376_MCP795_Module.dsn
+fixtures/Issue508-DAC2020_bm06.dsn
+fixtures/Issue558-dev-board.dsn
+fixtures/Issue217-8088sbc.dsn
+fixtures/Issue034-Green14SegLED.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+fixtures/Issue035-ReadPlaceScope.dsn
+fixtures/Issue054-tairakb.dsn
+fixtures/Issue102-Mars-64-revE-rot00.dsn
+crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
+# The any-angle rows (N06.16; abort rule):
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn
+# canary-pwr through the KiCad plugin path with the plugin's default options (the
+# registration's plugin_canary; outside n06_run.py): canary hardware/canary-pwr-rev1.0 at
+# canary 2a7e070b.
