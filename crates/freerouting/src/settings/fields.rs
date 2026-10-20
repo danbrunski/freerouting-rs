@@ -349,6 +349,8 @@ settings_table! {
                 "Fanout time limit as `HH:mm:ss`, `mm:ss` or `ss`."),
             (algorithm, String, opt, None, None, "algorithm", [], Flat::No, true,
                 "Fanout stage id (A10.2); unset is `freerouting-fanout`."),
+            (pin_escape, String, opt, None, None, "pinEscape", [], Flat::No, true,
+                "Straight escape stubs at the board minimum width on fine-pitch QFN, QFP and SOIC pins before the fanout: `off` (unset) or `straight` (Q21)."),
         }
         optimizer, OptimizerPatch, OptimizerSettings, "optimizer",
         "Configuration of the post-route optimizer." {

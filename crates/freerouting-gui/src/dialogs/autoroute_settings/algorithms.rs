@@ -265,10 +265,60 @@ fn stage_choice(ui: &mut egui::Ui, draft: &mut Draft, slot: &StageSlot) {
     }
 }
 
+/// Text options with a fixed set of values, shown as a choice instead of a
+/// text field: the path and its values, the first being what unset means
+/// (picking it clears the option).
+pub const CHOICE_OPTIONS: &[(&str, &[&str])] = &[(
+    "fanout.pin_escape",
+    &freerouting::autoroute::stages::pin_escape::MODES,
+)];
+
+impl Draft {
+    /// Picks `value` for the choice option `path` ([`CHOICE_OPTIONS`]): the
+    /// first value clears the option, any other sets it.
+    pub fn set_choice(&mut self, path: &str, value: &str) {
+        let Some((_, values)) = CHOICE_OPTIONS.iter().find(|(p, _)| *p == path) else {
+            return;
+        };
+        let Some(field) = field_by_path(path) else {
+            return;
+        };
+        if values.first() == Some(&value) {
+            (field.clear)(&mut self.patch);
+        } else if values.contains(&value) {
+            (field.set)(&mut self.patch, FieldValue::Str(value.to_string()));
+        }
+    }
+}
+
+fn choice_value(ui: &mut egui::Ui, draft: &mut Draft, path: &'static str, values: &[&str]) {
+    let current = match draft.get(path) {
+        Some(FieldValue::Str(v)) if !v.trim().is_empty() => v,
+        _ => values.first().copied().unwrap_or_default().to_string(),
+    };
+    let mut chosen = current.clone();
+    egui::ComboBox::from_id_salt(("autoroute_choice", path))
+        .selected_text(chosen.as_str())
+        .show_ui(ui, |ui| {
+            for value in values {
+                ui.selectable_value(&mut chosen, value.to_string(), *value);
+            }
+        })
+        .response
+        .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::ComboBox, true, path));
+    if chosen != current {
+        draft.set_choice(path, &chosen);
+    }
+}
+
 fn option_value(ui: &mut egui::Ui, draft: &mut Draft, path: &'static str) {
     let Some(field) = field_by_path(path) else {
         return;
     };
+    if let Some((_, values)) = CHOICE_OPTIONS.iter().find(|(p, _)| *p == path) {
+        choice_value(ui, draft, path, values);
+        return;
+    }
     match (field.kind, draft.get(path)) {
         (FieldKind::Bool, value) => {
             let mut on = matches!(value, Some(FieldValue::Bool(true)));

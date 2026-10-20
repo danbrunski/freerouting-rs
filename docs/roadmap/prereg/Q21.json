@@ -1,0 +1,62 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q21.4-pin-escape",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/Q21-fine-pitch-pin-escapes.md (Q21.4)",
+  "question": "With the board minimums as floors (Q18), does router.fanout.pin_escape = straight (Q21.2-Q21.3: X10's straight stubs at max(board minimum, min(class width, neck-down width)) on parts with edge rows at a pitch of at most 0.65 mm, before the fanout) leave fewer KiCad-unconnected items than off on the KiCad 6+ row whose connections the floor cost (mydevboard-rp2040dev) and on canary-pwr, with zero routing-caused manufacturing breaches and zero vias in pads in both arms, and how many of Q21.1's open pads does it connect again?",
+  "rule": "totals",
+  "rule_text": "Hand-judged from the table (two boards, below the gate's three; the gate is not run): the option is kept as a setting off by default in both profiles unless it routes worse (more KiCad unconnected) on every board it acts on, in which case the owner decides whether it stays (Q21.4's accept). A board where the straight arm has a routing-caused manufacturing breach or a via in a pad fails the guard: that is a bug in the stage, fixed before Q21 closes, and the row is rerun once after the fix (an amendment names the fix). Turning the option on in enhanced is a separate decision after this item (Q21's decisions) and not judged here.",
+  "arms": {
+    "off": {
+      "engine": "freerouting-rs release CLI of branch land/q21 (main 6b59998 plus Q21.2-Q21.3), one Linux build for both arms (its sha256 in the done note); the plugin of the same worktree (kicad-plugin/headless_run.py); KiCad 10.0.7",
+      "command": "ulimit -v 8000000; timeout -k 10 LIMIT tools/kicad-oracle/grade.sh --out OUT/off/BOARD --export plugin OUT/off.options.json PROJECT -- target/orchestrator/q21/target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false -mp 1 --router.scoring.start_ripup_costs=1500",
+      "options": {"schema": 5, "profile": "enhanced"},
+      "settings": {},
+      "what": "the plugin's default enhanced run (its sweep, keepouts and Board Setup minimums), one routing pass and rip-up start cost 1500 as Q18.6 for time; no pin escape"
+    },
+    "straight": {
+      "engine": "as off",
+      "command": "as off with OUT/straight.options.json and --out OUT/straight/BOARD",
+      "options": {"schema": 5, "profile": "enhanced", "pin_escape": true},
+      "settings": {"router.fanout.pin_escape": "straight"},
+      "what": "off plus the plugin's Q21 checkbox, which passes --router.fanout.pin_escape=straight"
+    }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "straight",
+  "boards": {
+    "set": "tools/bench/sets/q21-pin-escape.txt",
+    "files": {
+      "target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb": "ae2d86d1f74f27f1a1ae549c5dc03920cb1923dd01c67994b15940798df8f703",
+      "target/orchestrator/q21/canary-pwr-9511d9a3/canary-pwr.kicad_pcb": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1"
+    },
+    "projects": {
+      "target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb": "target/corpus/projects/mydevboard-rp2040dev",
+      "target/orchestrator/q21/canary-pwr-9511d9a3/canary-pwr.kicad_pcb": "target/orchestrator/q21/canary-pwr-9511d9a3"
+    },
+    "why": "Q18.6 pair A: mydevboard is the only KiCad 6+ row whose KiCad unconnected rose with the floor (34 -> 56); slice fell (12 -> 11, its two newly open connections through-hole, no qualifying part); laser-backplane and vfo did not change. canary-pwr (U1, 38 pins at 0.5 mm) is the owner's benchmark board. Qualifying parts (crates/freerouting-krt/tests/qfn_escape.rs qualifying_parts_on_a_set, measured before any routing): mydevboard U1 56 pins at 0.4 mm and J1 20 pins at 0.5 mm; canary-pwr U1 38 at 0.5 mm, U3 10 at 0.5 mm, U6 and U8 8 at 0.65 mm."
+  },
+  "grading": "every route inside tools/kicad-oracle/grade.sh --export plugin (the plugin's export and fix-ups, the router flags it passes, its SES import; KiCad 10.0.7 DRC under the project's own rules), one KiCad grade per arm and row (each session is graded once); kicad-cli only while `pgrep -a kicad-cli` shows none, one at a time; vias in pads by tools/kicad-oracle/via_in_pad.py on the routed board",
+  "limits": "ulimit -v 8000000 on every route; timeout 600 s for canary-pwr, 120 s for mydevboard, on the whole grade.sh call; a run that hits its limit is reported as TIMEOUT and is not graded",
+  "metrics": [
+    {"name": "via_in_pad", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "below_minimum", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "manufacturing_breaches", "role": "hard", "kind": "int", "direction": "lower"},
+    {"name": "kicad_unconnected", "role": "score", "kind": "int", "direction": "lower"},
+    {"name": "q21_1_pads_open", "role": "report", "kind": "int", "direction": "lower"},
+    {"name": "drc_real", "role": "report", "kind": "int", "direction": "lower"}
+  ],
+  "metric_definitions": {
+    "via_in_pad": "via_in_pad.py's vias_in_pads on the routed board",
+    "below_minimum": "the summary's copper.below_minimum track_width + via_diameter + via_drill (copper under the Board Setup minimums, counted from the routed board's geometry)",
+    "manufacturing_breaches": "the sum of the routing-caused KiCad items (summary drc_real_by_type) of the manufacturing rule types: clearance, copper_edge_clearance, hole_clearance, hole_to_hole, holes_co_located, track_width, via_diameter, annular_width, drill_out_of_range, microvia_drill_out_of_range, shorting_items, tracks_crossing, solder_mask_bridge, items_not_allowed; the other routing-caused types (via_dangling, track_dangling, starved_thermal and the rest) are reported by type, not judged",
+    "kicad_unconnected": "summary unconnected_items of the routed board",
+    "q21_1_pads_open": "mydevboard only: how many of Q21.1's 29 SMD pads (U1's 26 and U3's 3 that were reached before the floor and open after it in Q18.6's mp1) appear in the routed board's unconnected items (routed/drc.json); the rest came back",
+    "drc_real": "summary drc_real, every routing-caused type"
+  },
+  "keep_rule": "kept as a setting off by default unless straight has more KiCad unconnected than off on both rows (it acts on both); then the owner decides whether it stays. Never removed for a guard failure: the stage is fixed and the row rerun once (decided 2026-10-20: fix, don't remove gains).",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings",
+  "not_registered": ["straight as an enhanced default", "a widening or bent escape", "more passes or the full plugin default (-mp unset) for time"],
+  "timing": "registered after Q21.2-Q21.3 were built and tested and before any route of either arm on either row",
+  "amendments": []
+}

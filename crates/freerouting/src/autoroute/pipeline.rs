@@ -271,6 +271,10 @@ pub fn run_pipeline_with(
     if let Err(e) = crate::quality::sweep::check_settings(settings) {
         return Err(fail(PipelineError::UnknownStage(e), board));
     }
+    // Q21: an unknown `router.fanout.pin_escape` value fails before routing.
+    if let Err(e) = crate::autoroute::stages::pin_escape::check_settings(settings) {
+        return Err(fail(PipelineError::UnknownStage(e), board));
+    }
     // Q04.1: an invalid `router.quantum_stop` value fails before routing.
     if let Err(e) = crate::quality::stop_rule::check_settings(settings) {
         return Err(fail(PipelineError::UnknownStage(e), board));

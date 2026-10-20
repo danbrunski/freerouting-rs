@@ -406,6 +406,13 @@ class Dialog(wx.Dialog):
         self.pass_hint = wx.CheckBox(flow_box, label="Stop at the pass that won last time" + (f" ({saved.pass_hint})" if saved.pass_hint else ""))
         self.pass_hint.SetValue(saved.use_pass_hint)
         self.saved_pass_hint = saved.pass_hint
+        self.pin_escape = wx.CheckBox(flow_box, label="Escape fine-pitch pins straight (QFN, QFP, SOIC)")
+        self.pin_escape.SetValue(saved.pin_escape)
+        self.pin_escape.SetToolTip(
+            "Before routing, a straight stub out of each pin of a part with edge rows at 0.65 mm pitch "
+            "or less, at least the board's minimum track width; a pin where it would break a "
+            "clearance gets none (--router.fanout.pin_escape=straight, Q21)"
+        )
 
     def add_k10_controls(self, saved, page):
         """The K10 fields: what the router reads, and the .kicad_dru switch."""
@@ -446,6 +453,7 @@ class Dialog(wx.Dialog):
             ("Completion sweep", self.sweep),
             ("Sweep passes", self.sweep_passes),
             ("", self.pass_hint),
+            ("", self.pin_escape),
         )
         group.Add(labelled_grid(group.GetStaticBox(), rows), 0, wx.EXPAND)
         return group
@@ -510,6 +518,7 @@ class Dialog(wx.Dialog):
         self.sweep.SetSelection(options.SWEEPS.index(opts.sweep))
         self.sweep_passes.SetValue("" if opts.sweep_passes is None else str(opts.sweep_passes))
         self.pass_hint.SetValue(opts.use_pass_hint)
+        self.pin_escape.SetValue(opts.pin_escape)
         for key, (choice, ids) in self.stage_choices.items():
             if opts.stages.get(key) in ids:
                 choice.SetSelection(ids.index(opts.stages[key]))
@@ -564,6 +573,7 @@ class Dialog(wx.Dialog):
             "sweep": options.SWEEPS[max(self.sweep.GetSelection(), 0)],
             "sweep_passes": self.sweep_passes.GetValue(),
             "use_pass_hint": self.pass_hint.GetValue(),
+            "pin_escape": self.pin_escape.GetValue(),
         }
 
     def fill_stages_group(self, group, saved):

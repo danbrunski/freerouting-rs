@@ -1,0 +1,13 @@
+# Q21.4 (docs/roadmap/prereg/Q21.json): the rows where Q18's track-width floor cost connections
+# and the straight pin escape can act, plus canary-pwr. Each row is a KiCad project's
+# .kicad_pcb, routed and graded through the plugin's own export and import by
+# `tools/kicad-oracle/grade.sh --export plugin OPTIONS.json <the row's directory>`, so the router
+# gets the plugin's flags, the Board Setup minimums among them (`options.board_minimum_args`).
+# Paths are relative to the main checkout's root (read only); the canary row is canary's
+# hardware/canary-pwr-rev1.0 at 9511d9a3 (canary-pwr.kicad_pcb, .kicad_pro, .kicad_dru written
+# there by `git -C ../canary show 9511d9a3:hardware/canary-pwr-rev1.0/<file>`).
+# Left out: slice-dcmt-bread-slice (Q18.6 pair A unconnected 12 -> 11; its two connections open
+# after the floor are through-hole, and it has no part the escape qualifies), laser-backplane and
+# vfo (no unconnected change in pair A).
+target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb
+target/orchestrator/q21/canary-pwr-9511d9a3/canary-pwr.kicad_pcb

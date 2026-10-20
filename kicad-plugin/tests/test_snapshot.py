@@ -230,6 +230,7 @@ def test_every_k09_option_is_either_checked_or_allowed():
         "sweep_passes",
         "use_pass_hint",
         "pass_hint",
+        "pin_escape",  # Q21: a router flag
     }
     from dataclasses import fields
 
@@ -272,7 +273,7 @@ def test_the_new_fields_round_trip_and_older_files_load(tmp_path):
     import json
 
     saved = json.loads(path.read_text(encoding="utf-8"))
-    assert saved["schema"] == 4 and saved["board_input"] == "kicad_pcb" and saved["apply_kicad_rules"] is True
+    assert saved["schema"] == 5 and saved["board_input"] == "kicad_pcb" and saved["apply_kicad_rules"] is True
     # the defaults are not written
     options.save(path, RouteOptions())
     assert "board_input" not in json.loads(path.read_text(encoding="utf-8"))

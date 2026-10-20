@@ -94,7 +94,7 @@ def test_save_load_save_gives_equal_json(tmp_path):
     assert loaded == chosen
     options.save(second, loaded)
     assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")
-    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 4
+    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 5
 
 
 def test_defaults_round_trip_too(tmp_path):
@@ -481,3 +481,43 @@ def test_router_args_carry_the_board_minimums():
         "--router.board_minimums.track_width_um=150",
         "--router.copper_to_edge_clearance_um=500",
     ]
+
+
+# --- Q21: the straight pin escape ------------------------------------------------
+
+
+def test_pin_escape_is_off_under_both_profiles_and_passes_its_flag_when_on():
+    for profile in options.PROFILES:
+        opts = options.profile_defaults(profile)
+        assert opts.pin_escape is False
+        assert not any("pin_escape" in a for a in opts.to_args(board_min_trace_width_um=200))
+    on = replace(options.profile_defaults("enhanced"), pin_escape=True)
+    args = on.to_args(board_min_trace_width_um=200)
+    assert "--router.fanout.pin_escape=straight" in args
+    # Before the fix-ups' engine flags and the stage choices, after the sweep.
+    assert args.index("--router.autorouter.sweep=free") < args.index("--router.fanout.pin_escape=straight")
+    assert "--router.fanout.pin_escape=straight" in on.to_args(for_gui=True)
+
+
+def test_pin_escape_is_saved_per_board_and_restored(tmp_path):
+    path = tmp_path / "route-options.json"
+    on = replace(options.profile_defaults("enhanced"), pin_escape=True)
+    options.save(path, on)
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored == {"schema": 5, "profile": "enhanced", "pin_escape": True}
+    assert options.load(path) == on
+    # Off is the default and is left out of the file.
+    options.save(path, options.profile_defaults("legacy"))
+    assert "pin_escape" not in json.loads(path.read_text(encoding="utf-8"))
+    # A schema 4 file (before Q21) loads with the option off; a bad value keeps it off.
+    assert RouteOptions.from_dict({"schema": 4, "profile": "enhanced"}).pin_escape is False
+    assert RouteOptions.from_dict({"schema": 5, "profile": "enhanced", "pin_escape": "yes"}).pin_escape is False
+    assert RouteOptions.from_dict({"schema": 5, "profile": "legacy", "pin_escape": True}).pin_escape is True
+    assert 5 in options.READABLE_SCHEMAS and 4 in options.READABLE_SCHEMAS
+
+
+def test_the_form_sets_pin_escape():
+    chosen, errors = options.from_form({"profile": "enhanced", "pin_escape": True})
+    assert errors == [] and chosen.pin_escape is True
+    chosen, errors = options.from_form({"profile": "enhanced"})
+    assert errors == [] and chosen.pin_escape is False

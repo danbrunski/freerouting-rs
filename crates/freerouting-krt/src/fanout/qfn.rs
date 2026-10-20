@@ -18,7 +18,12 @@
 //! side (the pin field united with the package outline), `c` the largest
 //! clearance of the net's class on the layer and `w` the class half-width:
 //! - narrow half-width `n = min(w, neck-down half-width)`, never below the
-//!   board's minimum (B05: Java `neckdownHalfWidth`, D8);
+//!   board's minimum (B05: Java `neckdownHalfWidth`, D8): every caller passes
+//!   [`min_trace_half_width`], which is the larger of `router.min_trace_width_um`
+//!   and Q18's board minimum (`router.board_minimums.track_width_um`, or the
+//!   narrowest class width with `board_minimums.from_classes`). A stub that
+//!   keeps no clearance at that width is rejected by its transaction and the
+//!   pin gets none (Q21, `tests/pin_escape.rs`);
 //! - a pin whose class is wider than `n`, or whose net has a conduction
 //!   area on another layer (a plane-net pin), needs room `r`: `w`, or the
 //!   radius of its class's via. Its stub runs narrow to

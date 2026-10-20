@@ -25,6 +25,8 @@ use crate::board::items::ItemId;
 use crate::board::routing_board::RoutingBoard;
 use crate::settings::RouterSettings;
 
+use super::pin_escape::{self, PinEscape};
+
 // ---------------------------------------------------------------------
 // Placeholders for the stages later checklists port
 // ---------------------------------------------------------------------
@@ -526,6 +528,12 @@ impl StageSelection {
                 .chain(sp.diff_pairs.iter().map(|id| StageChoice {
                     key: "router.special.diff_pairs",
                     id: id.clone(),
+                    from_default: false,
+                }))
+                // Q21: `router.fanout.pin_escape = straight` (unset or off adds nothing).
+                .chain(PinEscape::of(settings).stage().map(|id| StageChoice {
+                    key: pin_escape::SETTINGS_KEY,
+                    id: id.to_string(),
                     from_default: false,
                 }))
                 .collect(),

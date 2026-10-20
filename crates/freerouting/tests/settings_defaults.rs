@@ -156,6 +156,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("fanout.fallback_to_board_vias", b(true)),
         ("fanout.timeout", None),
         ("fanout.algorithm", None),
+        // Q21: unset, which is off.
+        ("fanout.pin_escape", None),
         // optimizer.
         ("optimizer.enabled", b(true)),
         ("optimizer.algorithm", s("freerouting-optimizer")),

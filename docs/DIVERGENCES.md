@@ -318,6 +318,10 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `quality::sweep`) are settings fields Java does not have, unset by default (no sweep, Java's
   routing). An unknown `sweep` value or a negative `sweep_passes` fails the job before routing,
   naming the key (`unknown_sweep_settings_are_refused_before_routing`).
+- `fanout.pin_escape` (Q21, `autoroute::stages::pin_escape`) is a settings field Java does not
+  have, unset (`off`) in both profiles. An unknown value fails the job before routing, naming the
+  key (`tests/pin_escape_setting.rs`; `freerouting-krt`'s
+  `an_unknown_pin_escape_value_is_refused_before_routing`).
 - `via_clearance` (Q14, `autoroute::via_clearance`) is a settings field Java does not have,
   unset by default (`via_info`: Java's rule, a routed via takes its via info's clearance class).
   `net_class` gives every via the autorouter checks or inserts for a net its net class's via
@@ -709,6 +713,20 @@ maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
   incomplete connection without (`sole_wall_ends_complete_with_the_sweep_and_incomplete_without`);
   off is the unchanged engine (`off_is_the_unchanged_engine`, and the A14 gate). Off by default
   until Q10.4's measurement.
+
+**Straight pin escapes** (`router.fanout.pin_escape`, Q21; `freerouting-krt` stage
+`krt-pin-escape`, tests `crates/freerouting-krt/tests/pin_escape.rs`)
+- New, with no Java counterpart (Java's only pre-pass is `BatchFanout`, which ends each SMD pin in
+  a via): with `router.fanout.pin_escape=straight` the job runs X10's QFN/QFP/SOIC stubs
+  (`fanout::qfn::escape`) before the fanout. On each part with edge rows at a pitch of at most
+  0.65 mm, each pin gets one straight trace along its outward axis, past the package outline, at
+  `max(board minimum, min(class width, neck-down width))`; a stub that fails the exact clearance
+  check at that width is not inserted. On a 0.4 mm QFN with 0.2 mm pads and a 0.2 mm minimum the
+  stubs are 0.2 mm and leave every neighbour its 0.2 mm
+  (`stubs_at_a_0p2_minimum_on_a_0p4_qfn_run_straight_out_and_keep_their_clearance`), at 0.35 mm
+  pitch none fits (`a_0p35_pitch_where_no_0p2_stub_fits_gets_no_stubs`), and no stub is below the
+  minimum (`no_stub_is_ever_below_the_board_minimum`). Off (unset) in both profiles and the
+  unchanged engine (`off_is_byte_identical_to_unset_and_straight_logs_its_stubs`).
 
 **Shove checks** (`shove`, O03; tests `tests/board_probe_shove.rs`)
 - The fast cutout (`ShapeTraceEntries.fastCutoutTrace`) of a trace with a segment that has
@@ -1565,6 +1583,11 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   and three KiCad demos through the plugin's headless path: KiCad unconnected 95 → 74 against a
   set noise of 17.14, no new clearance error). Pinned by
   `test_options.py::test_enhanced_adds_the_completion_sweep_and_legacy_does_not`.
+- **Straight pin escapes are a checkbox, off under both profiles** (`options.pin_escape`, Q21,
+  route-options schema 5): "Escape fine-pitch pins straight" on the Advanced tab passes
+  `--router.fanout.pin_escape=straight`; off passes nothing. Pinned by
+  `test_options.py::test_pin_escape_is_off_under_both_profiles_and_passes_its_flag_when_on` and
+  `test_route_dialog.py::test_the_pin_escape_checkbox_is_saved_and_reaches_the_router`.
 
 ## Java quirk switches, opt-in (N06)
 

@@ -1175,6 +1175,52 @@ fn an_option_reset_returns_the_profile_value() {
     );
 }
 
+/// Q21.3: the fanout row's `fanout.pin_escape` choice sets the key, and
+/// picking `off` clears it again (the profile's unset).
+#[test]
+fn the_pin_escape_choice_sets_the_key() {
+    let mut h = plain_harness(&[ISSUE159]);
+    exec(&mut h, Command::ShowAutorouteSettings);
+    h.get_by_label("Algorithms").click();
+    let _ = h.run_ok();
+    assert_eq!(dialog(&h).get("fanout.pin_escape"), None, "off by default");
+    h.get_by_role_and_label(Role::ComboBox, "fanout.pin_escape")
+        .scroll_to_me();
+    let _ = h.run_ok();
+    h.get_by_role_and_label(Role::ComboBox, "fanout.pin_escape")
+        .click();
+    let _ = h.run_ok();
+    h.get_by_label("straight").click();
+    let _ = h.run_ok();
+    let draft = dialog(&h);
+    assert_eq!(
+        draft.get("fanout.pin_escape"),
+        Some(FieldValue::Str("straight".to_string()))
+    );
+    assert!(draft.differs_from_profile("fanout.pin_escape"));
+    // Applied, the job's settings carry it.
+    exec(
+        &mut h,
+        Command::ApplyAutorouteSettings(Box::new(draft.patch.clone())),
+    );
+    let kept: BTreeMap<_, _> = h
+        .state()
+        .settings_snapshot()
+        .autoroute
+        .into_iter()
+        .collect();
+    assert_eq!(
+        kept.get("fanout.pin_escape").map(String::as_str),
+        Some("straight")
+    );
+    // `off` clears it.
+    let mut draft = draft;
+    draft.set_choice("fanout.pin_escape", "off");
+    assert_eq!(draft.get("fanout.pin_escape"), None);
+    draft.set_choice("fanout.pin_escape", "bent");
+    assert_eq!(draft.get("fanout.pin_escape"), None, "not a value");
+}
+
 /// N05.1: the Algorithms section offers the KRT stages besides Freerouting's.
 #[test]
 fn the_algorithms_section_offers_the_krt_stages() {

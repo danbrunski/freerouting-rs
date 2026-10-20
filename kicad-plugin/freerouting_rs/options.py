@@ -25,6 +25,7 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `apply_kicad_rules` | `--apply-design-rules`, only with `board_input = kicad_pcb` (K10.3) | off |
 | `profile` | `--profile legacy` (N01.3) | `legacy` or `enhanced` (default, no flag) |
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
+| `pin_escape` | `--router.fanout.pin_escape=straight` (Q21) | off (default, no flag) under both profiles |
 
 `profile` is the routing profile: `legacy` gives results identical to Java
 Freerouting, `enhanced` (the router's default) the accepted improvements.
@@ -54,11 +55,12 @@ import re
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
-SCHEMA = 4
+SCHEMA = 5
 # Schema 1 (K02.1) wrote every option and had no profile; schema 2 (N01) had
-# no K09 fields; schema 3 (K09) had no K10 fields. All still load: a field a
-# file leaves out takes the profile's default (`profile_defaults`).
-READABLE_SCHEMAS = (1, 2, 3, 4)
+# no K09 fields; schema 3 (K09) had no K10 fields; schema 4 (K10) had no
+# `pin_escape` (Q21). All still load: a field a file leaves out takes the
+# profile's default (`profile_defaults`).
+READABLE_SCHEMAS = (1, 2, 3, 4, 5)
 OPTIONS_FILE = "route-options.json"
 
 # The router's routing profiles (N01): `legacy` is Java Freerouting's results,
@@ -155,6 +157,9 @@ class RouteOptions:
     # K10: the direct read of the board (snapshot.py).
     board_input: str = INPUT_DSN
     apply_kicad_rules: bool = False  # --apply-design-rules; kicad_pcb only
+    # Q21: straight escape stubs at the board minimum width on fine-pitch QFN,
+    # QFP and SOIC pins before routing (`router.fanout.pin_escape`).
+    pin_escape: bool = False
 
     # --- the argument list ---------------------------------------------------
 
@@ -195,6 +200,8 @@ class RouteOptions:
             args.append(f"--router.autorouter.sweep={self.sweep}")
             if self.sweep_passes is not None:
                 args.append(f"--router.autorouter.sweep_passes={self.sweep_passes}")
+        if self.pin_escape:
+            args.append("--router.fanout.pin_escape=straight")
         if self.apply_kicad_rules and self.board_input == INPUT_KICAD_PCB and not for_gui:
             # The GUI reads the rules file without applying it (it has no such switch).
             args.append("--apply-design-rules")
@@ -264,6 +271,9 @@ class RouteOptions:
         if isinstance(v, bool):
             out.rule_area_fixup = v
         _restore_k09(out, data)
+        v = data.get("pin_escape")
+        if isinstance(v, bool):
+            out.pin_escape = v
         return out
 
 
@@ -585,6 +595,8 @@ def from_form(values):
     options.rule_area_fixup = bool(values.get("rule_area_fixup", True))
     _form_k09(options, values, errors, number)
     _form_k10(options, values, errors)
+    if "pin_escape" in values:
+        options.pin_escape = bool(values["pin_escape"])
     if profile not in PROFILES:
         errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
     stages = values.get("stages", {})

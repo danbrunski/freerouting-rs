@@ -127,6 +127,7 @@ field they lack takes the profile's default):
 | `fix_existing` | every track and via is locked in memory before the export and through the import, so a run only adds (KiCad's import keeps locked copper); the lock states come back afterwards | off |
 | `start_ripup_costs`, `sweep`, `sweep_passes` | `--router.scoring.start_ripup_costs`, Q10's `--router.autorouter.sweep` and `sweep_passes` | router defaults |
 | `use_pass_hint`, `pass_hint` | after a run the plugin stores the routing pass that ended with the fewest incomplete connections; with the option on, the next run stops there (`--max-passes`) | off |
+| `pin_escape` | Q21's checkbox "Escape fine-pitch pins straight (QFN, QFP, SOIC)" (Advanced tab, Flow group): `--router.fanout.pin_escape=straight`, a straight stub at the board minimum width out of each pin of a part with edge rows at ≤ 0.65 mm pitch before routing; route-options schema 5 | off, both profiles |
 
 - **Presets** (`presets.py`, dialog group "Presets": a drop-down, **Apply**, **Save as preset...**).
   A preset is a JSON file in the options format (`route-options.json`'s) with a `name` and an

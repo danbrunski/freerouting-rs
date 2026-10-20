@@ -91,6 +91,7 @@ pub const SLOTS: &[SlotDesc] = &[
             "fanout.pin_sorting_order",
             "fanout.fallback_to_board_vias",
             "fanout.timeout",
+            "fanout.pin_escape",
         ],
     },
     SlotDesc {

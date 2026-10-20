@@ -702,6 +702,7 @@ pub trait Optimizer {
 }
 
 pub mod catalog;
+pub mod pin_escape;
 mod registry;
 
 pub use registry::{

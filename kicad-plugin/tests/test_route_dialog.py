@@ -60,7 +60,7 @@ def test_the_options_are_saved_and_reach_the_router(env):
     dialog.timeout.SetValue("10m")
     dialog.on_route(None)
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 4 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
+    assert saved["schema"] == 5 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
     # The router failed to write a session ("echo"): the dialog shows its output.
     failure = ui.messages[-1][0]
     assert "Routing failed (exit code 0)" in failure
@@ -539,3 +539,20 @@ def test_fix_existing_locks_the_tracks_into_the_snapshot(env):
     dialog.on_route(None)
     assert states == [[True, True]]  # written as fixed copper (the reader: type fix)
     assert [t.IsLocked() for t in tracks] == [False, True]  # and restored afterwards
+
+
+def test_the_pin_escape_checkbox_is_saved_and_reaches_the_router(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("echo")
+    assert dialog.pin_escape.GetValue() is False
+    assert page_of(dialog.pin_escape, dialog) is dialog.pages[2]  # Advanced
+    assert dialog.pin_escape.parent.label == "Flow"
+    dialog.on_route(None)
+    assert "--router.fanout.pin_escape=straight" not in ui.messages[-1][0].splitlines()
+    dialog.pin_escape.SetValue(True)
+    dialog.on_route(None)
+    assert "--router.fanout.pin_escape=straight" in ui.messages[-1][0].splitlines()
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == 5 and saved["pin_escape"] is True
+    again = make_dialog("echo")
+    assert again.pin_escape.GetValue() is True

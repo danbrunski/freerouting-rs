@@ -12,11 +12,23 @@
 //! on the other components only, with its passes, budgets and order
 //! unchanged. Unselected, nothing here runs and sessions stay
 //! Freerouting's.
+//!
+//! **Pin escape (Q21).** `router.fanout.pin_escape = "straight"` runs
+//! [`KrtPinEscape`] (board stage [`PIN_ESCAPE_STAGE`], before the fanout):
+//! the same stubs ([`escape`]) on every qualifying part and nothing else,
+//! whether the fanout runs or not. Its floor is the board minimum
+//! ([`min_trace_half_width`](freerouting::autoroute::control::min_trace_half_width),
+//! which includes `router.board_minimums.track_width_um`), so no stub is
+//! narrower than the board allows, and a stub that doesn't keep its
+//! clearance at that width is not inserted. Unset or `off`, nothing runs.
 
 use std::collections::BTreeSet;
 
 use freerouting::autoroute::batch::fanout::{FanoutRun, NoFanoutObserver};
-use freerouting::autoroute::stages::{FanoutStage, FanoutSummary, StageCtx, StageRegistry};
+pub use freerouting::autoroute::stages::pin_escape::PIN_ESCAPE_STAGE;
+use freerouting::autoroute::stages::{
+    BoardStage, FanoutStage, FanoutSummary, StageCtx, StagePhase, StageRegistry, StageReport,
+};
 use freerouting::board::RoutingBoard;
 
 pub mod bga;
@@ -52,10 +64,38 @@ impl FanoutStage for KrtQfnEscape {
     }
 }
 
-/// Registers `krt-qfn-escape`.
+/// The `krt-pin-escape` board stage (Q21, module docs): the stubs of
+/// [`escape`] before the fanout, selected by `router.fanout.pin_escape`.
+#[derive(Clone, Debug, Default)]
+pub struct KrtPinEscape {
+    /// The report of the last run.
+    pub last_report: Option<EscapeReport>,
+}
+
+impl BoardStage for KrtPinEscape {
+    fn id(&self) -> &'static str {
+        PIN_ESCAPE_STAGE
+    }
+
+    fn phase(&self) -> StagePhase {
+        StagePhase::BeforeFanout
+    }
+
+    fn run(&mut self, board: &mut RoutingBoard, ctx: &mut StageCtx) -> StageReport {
+        let report = escape(board, ctx.board_settings, ctx.cancel);
+        let log = report.log(board);
+        self.last_report = Some(report);
+        StageReport { log }
+    }
+}
+
+/// Registers `krt-qfn-escape` and `krt-pin-escape`.
 pub(crate) fn register(registry: &mut StageRegistry) {
     registry
         .fanout
         .insert(QFN_ESCAPE_ID, |_| Box::new(KrtQfnEscape::default()));
+    registry
+        .board_stages
+        .insert(PIN_ESCAPE_STAGE, |_| Box::new(KrtPinEscape::default()));
     bga::register(registry);
 }
