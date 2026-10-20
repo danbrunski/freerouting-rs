@@ -7,7 +7,10 @@
 //! of the outline's generated keepout ([`ShapeContext::split_quirks`]), the
 //! outline's piece count, `check_shape`, `overlapping_items`, the spring-over
 //! shape of an area, the interactive hole and the plane adjustment after reading.
-//! With every switch `true` each split is Java's.
+//! With every switch `true` each split is Java's. `legacy` keeps all four `true`;
+//! profile `enhanced` sets `simplex_prev_division_line`, `cutout_hole_crosses_border`
+//! and `simplex_octagon_half_corner` `false` (N06.13's second and third rounds) and
+//! keeps the rejected `octagon_box_cutout_branch3` `true`.
 //!
 //! The reader builds the board with its final switches before it inserts an
 //! item ([`BasicBoard::new_with_java_quirks`]), so the trees hold the switched

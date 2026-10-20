@@ -213,7 +213,7 @@ fn dump_settings_shows_the_profile_and_the_sources() {
 }
 
 /// N06.13: with no flag the job runs `enhanced`, whose table turns off the
-/// 35 promoted `router.java_quirks` switches; `legacy` leaves every switch
+/// 37 promoted `router.java_quirks` switches; `legacy` leaves every switch
 /// unset (Java), and an explicit `true` beats the profile.
 #[test]
 fn dump_settings_shows_the_promoted_java_quirks() {
@@ -239,7 +239,7 @@ fn dump_settings_shows_the_promoted_java_quirks() {
         .iter()
         .filter_map(|d| d.path.strip_prefix("java_quirks."))
         .collect();
-    assert_eq!(promoted.len(), 35);
+    assert_eq!(promoted.len(), 37);
     let default = quirks(&[]);
     assert_eq!(default.len(), freerouting::settings::JavaQuirks::IDS.len());
     for (id, value, from_profile) in &default {

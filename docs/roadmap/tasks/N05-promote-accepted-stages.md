@@ -401,8 +401,23 @@ Prerequisites: N01; each candidate's own accepted measurement.
     candidate's win under N06.16's abort rule and the other 18 sessions are byte-identical:
     **promotion confirmed on the quick rows**; the five entries stay in `ENHANCED`.
 
+  - **2026-10-20, accepted (N06.13, the third and last round of N06's Java-bug fixes): 2 more
+    `router.java_quirks.<id> = false`**, 37 in all, one `ENHANCED` entry and one DIVERGENCES
+    "Profile `enhanced`" line each; pinned as above (`PROMOTED`, 37 ids;
+    `enhanced_turns_off_the_promoted_java_quirks`, 37 entries).
+    - `cutout_hole_crosses_border`, `simplex_octagon_half_corner` (N06.14, `prereg/N06.14b.json`,
+      `68f90bf5…`, amendment 1, both together under `enhanced` with the 35 earlier fixes):
+      `gate: PASS`, total 196 → 208 (noise 21.40), canary-pwr's DSN 122 → 129 and plugin path
+      39 → 44 KiCad unconnected within their bands of 10, no hard-guard or guard breach on 8 rows.
+
+    No separate confirmation (decided 2026-10-20: measurement runs stay a few minutes; the
+    measurement is the confirmation): N06.14b's candidate arm routed `--router.profile=enhanced`
+    with every `java_quirks` key at this round's `ENHANCED` value. Not promoted, for good:
+    `octagon_box_cutout_branch3` and `ripup_pass_no_unset` (rejected) and the seven (c) rows left
+    as Java. N06 has no switch left to measure.
+
   *Partial 2026-10-20:* no run of N05.3's own is pending. The list waits for the measurements cut
   to minutes on 2026-10-20 (decided 2026-10-20: measurement runs stay a few minutes): N03.3
   (`prereg/N03.json`, new), N04.3 (`N04.json` amendment 3), Q04.4 (`Q04.json` amendment 2),
-  Q08.3, Q11.6, Q12.5 and Q16.5 (each amended), plus X13, K11 and N06's open items, which other
+  Q08.3, Q11.6, Q12.5 and Q16.5 (each amended), plus X13 and K11, which other
   checklists own.

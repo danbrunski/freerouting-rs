@@ -44,11 +44,13 @@ const SWITCH_COUNT: usize = 46;
 /// rules-scope and skip-length fixes. The second round (2026-10-20):
 /// `simplex_prev_division_line` (N06.4, inert), the optimizer's two (N06.9),
 /// `shove_via_into_pending_piece` (N06.15) and `any_angle_room_side_index`
-/// (N06.16). Not promoted: `octagon_box_cutout_branch3` and `ripup_pass_no_unset`
-/// (rejected), N06.14's two cutout switches (no verdict) and the (c) rows left as
-/// Java.
-const PROMOTED: [&str; 35] = [
+/// (N06.16). The third round (2026-10-20): N06.14's two cutout switches. Not
+/// promoted: `octagon_box_cutout_branch3` and `ripup_pass_no_unset` (rejected) and
+/// the (c) rows left as Java.
+const PROMOTED: [&str; 37] = [
     "simplex_prev_division_line",
+    "cutout_hole_crosses_border",
+    "simplex_octagon_half_corner",
     "init_failure_room_leak",
     "failed_attempt_ripped_carryover",
     "ortho_zero_width_room",

@@ -182,7 +182,7 @@ fn enhanced_turns_off_the_promoted_java_quirks() {
         .iter()
         .filter(|d| d.path.starts_with("java_quirks."))
         .collect();
-    assert_eq!(promoted.len(), 35);
+    assert_eq!(promoted.len(), 37);
     for difference in promoted {
         assert_eq!(difference.value, "false", "{}", difference.path);
         assert_enhanced_sets(difference.path, "false", None, "true");

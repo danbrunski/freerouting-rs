@@ -37,8 +37,8 @@ settings access.
 | Settings fields, paths and the settings file | `settings/fields.rs` (`RouterSettings`), `settings/path.rs` |
 | What the switches ride on | `BoardRouterSettings` (`settings/board.rs`), `AutorouteControl` (`autoroute/control.rs`), `BasicBoard` (`board/basic_board.rs`), `ReadContext` (`io/specctra/parser/mod.rs`), geometry `split_to_convex` (`freerouting-geometry/src/shapes/`) |
 | A test pinning each bug's Java behaviour | the "Test pinning Java today" columns below |
-| The A14 exact set (106 boards, byte-identical to Java) | `tests/autoroute_board_parity.rs`; the command is in [A14](archive/A14-board-parity-gate.md)'s done note (about 1.5 h, release) |
-| Measurement: preregistration, board sets, baselines | `docs/roadmap/routing-quality.md` "How to measure a quality change"; `docs/roadmap/prereg/*.json`; `tools/bench/sets/*.txt`; Q14 is a worked example ([Q14](archive/Q14-via-clearance-follows-net-class.md), `prereg/Q14.json`, `sets/q14-via-clearance.txt`) |
+| The A14 exact set (106 boards, byte-identical to Java) | `tests/autoroute_board_parity.rs`; the command is in [A14](A14-board-parity-gate.md)'s done note (about 1.5 h, release) |
+| Measurement: preregistration, board sets, baselines | `docs/roadmap/routing-quality.md` "How to measure a quality change"; `docs/roadmap/prereg/*.json`; `tools/bench/sets/*.txt`; Q14 is a worked example ([Q14](Q14-via-clearance-follows-net-class.md), `prereg/Q14.json`, `sets/q14-via-clearance.txt`) |
 
 This checklist adds the `router.java_quirks.*` switches, the fixes behind them, and their
 measurements.
@@ -1605,7 +1605,7 @@ These are marked or look like quirks but keep no bug:
       `cargo test -p freerouting -p freerouting-cli --no-fail-fast` 1574 passed, 0 failed, 33
       ignored (155 suites); the N06 pin tests `prereg_n06_{4,5,6,7,8,9,12}` 28 passed;
       `python3 tools/roadmap/checklists.py status --strict` clean.
-- [~] **N06.13 — Results and promotion.**
+- [x] **N06.13 — Results and promotion.**
   - Each batch's registration and numbers go in its item.
   - Each accepted switch is turned off in `enhanced` through N05, with its DIVERGENCES line under
     "Profile `enhanced`".
@@ -1627,8 +1627,8 @@ These are marked or look like quirks but keep no bug:
       |---|---|---|---|---|
       | `simplex_prev_division_line` | b | G (N06.4) | accepted on tests; promoted in round 2 | N06.4 accepted it inert at the drill-page reach (counter 0, sessions identical); at every `Area` split (N06.14's run, 2026-10-20) `simplex_prev_division_line_reached` 0 in 40 runs and 0 in the corpus inventory; `the_simplex_switch_changes_no_piece` |
       | `octagon_box_cutout_branch3` | b | G (N06.4) | rejected | N06.4 gate PASS at the drill-page reach (+2 against noise 10.58); at every `Area` split (N06.14's run under its amendment 2, amendment 1's pair) `gate: FAIL`: `below_minimum` 33 → 34 on canary-pwr's DSN, total 196 → 201 (noise 21.40). Decided 2026-10-20: no separate switch for the newly wired splits (canary-pwr has 0 stored areas with holes, so the breach is at the drill-page reach under today's engine); stays `true` in both profiles |
-      | `cutout_hole_crosses_border` | b | G2 (N06.14) | accepted (with `simplex_octagon_half_corner`); not promoted yet | N06.14b's run (amendment 1, 2026-10-20: the two switches together in arm `all`, engine `c8b91b7`): `gate: PASS`, totals 196 → 208 (+12, noise 21.40), no hard-guard or guard breach on 8 of 8 rows, consistency check holds; counter 109 → 384 on canary-pwr's DSN; `true` in both profiles until promoted |
-      | `simplex_octagon_half_corner` | b | G2 (N06.14) | accepted (with `cutout_hole_crosses_border`); not promoted yet | the same run and pair (counter 4686 → 5372 on canary-pwr's DSN, canary DSN 122 → 129 and plugin 39 → 44 KiCad unconnected, inside bands 10); `true` in both profiles until promoted |
+      | `cutout_hole_crosses_border` | b | G2 (N06.14) | accepted (with `simplex_octagon_half_corner`); promoted in round 3 | N06.14b's run (amendment 1, 2026-10-20: the two switches together in arm `all`, engine `c8b91b7`): `gate: PASS`, totals 196 → 208 (+12, noise 21.40), no hard-guard or guard breach on 8 of 8 rows, consistency check holds; counter 109 → 384 on canary-pwr's DSN |
+      | `simplex_octagon_half_corner` | b | G2 (N06.14) | accepted (with `cutout_hole_crosses_border`); promoted in round 3 | the same run and pair (counter 4686 → 5372 on canary-pwr's DSN, canary DSN 122 → 129 and plugin 39 → 44 KiCad unconnected, inside bands 10) |
       | `init_failure_room_leak` | b | M (N06.5) | accepted on tests | `maze_init_failure_room_leaks` 0 in 35 runs and the plugin row; gate PASS, 38 → 38 |
       | `failed_attempt_ripped_carryover` | b | M (N06.5) | accepted on tests | `maze_ripped_carryovers` 0 |
       | `ortho_zero_width_room` | b | M (N06.5) | accepted, neutral | 254 and 61 flips on the two 90° rows, sessions identical |
@@ -1935,6 +1935,50 @@ These are marked or look like quirks but keep no bug:
       `optimizer_passes` equal per row (22 → 22); `rooms_completed` 1064740 → 1094485 with the
       sessions identical (9 rows rise); router wall seconds summed 80.0 → 83.7. Verdict:
       **promotion confirmed** on the quick rows; the five entries stay in `ENHANCED`.
+  - *Done 2026-10-20 (third and last round):* worktree `target/orchestrator/n06p3/wt`, branch
+    `land/n06-promo3` on main `d920207`. 37 switches promoted (30 + 5 + 2), 2 rejected, 0 pending,
+    7 left as Java (46 ids; the table above is updated). Every (b) row now ends accepted (34,
+    promoted) or rejected with numbers (`octagon_box_cutout_branch3`), which is the **Accept:**
+    clause; the (c) rows end promoted (3), rejected (`ripup_pass_no_unset`) or left as Java (7).
+    - [x] Promoted: `cutout_hole_crosses_border` and `simplex_octagon_half_corner` (N06.14,
+      accepted together by `prereg/N06.14b.json` amendment 1, sha256 `68f90bf5…`: `gate: PASS`,
+      total 196 → 208 against noise 21.40, no hard-guard or guard breach on 8 of 8 rows), as
+      `router.java_quirks.<id> = false` in `ENHANCED` (`settings/profile.rs`, one `Difference`
+      each, measurement string `N06_14_SIMPLEX_CUTOUTS`), one DIVERGENCES line each under
+      "Profile `enhanced`" (the opening paragraph now says round 2's confirmation passed and
+      names round 3's), each field's help text naming `enhanced`'s `false` (`settings/fields.rs`).
+      "Kept on purpose" pointers: the geometry paragraph names the two cutout bugs as kept under
+      `legacy` only; the N06 section's opening paragraph and its N06.14 block say they are in
+      `enhanced` and give N06.14b's numbers; the module docs of `settings::java_quirks` and
+      `board::split_switches` name the profile.
+    - [x] Confirmation: no separate run (decided 2026-10-20: measurement runs stay a few
+      minutes; the measurement is the confirmation). N06.14b's candidate arm `all` routed
+      `--router.profile=enhanced` at main `c8b91b7` (the first round's 30) with the second round's
+      five `false`, `octagon_box_cutout_branch3=true` and both N06.14 keys `false`: every
+      `java_quirks` key at the value this round's `ENHANCED` gives it, and no other router flag,
+      so that arm is post-promotion `enhanced` and its `gate: PASS` against `baseline` (the
+      parent's `enhanced`) is this round's confirmation. Between `c8b91b7` and this round's parent
+      `d920207` the engine and CLI source changed only in docs and in round 2's `ENHANCED`
+      entries, which the arm set explicitly (`git diff --stat c8b91b7 d920207` over every crate's `src`:
+      7 files, profile tables, help texts and module docs).
+    - [x] Tests: `tests/settings_java_quirks.rs::legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set`
+      (`PROMOTED` now 37 ids in inventory order); `tests/settings_profile.rs::enhanced_turns_off_the_promoted_java_quirks`
+      (37 entries, each `false` under `enhanced` and unset under `legacy`, an explicit `true` beats
+      the profile); `crates/freerouting-cli/tests/profiles.rs::dump_settings_shows_the_promoted_java_quirks`
+      and `crates/freerouting-gui/tests/ui_load_quirks.rs` (`PROMOTED` 37); README "37 of them".
+      `crates/freerouting-dev/tests/prereg_n06_13.rs` keeps round 1's 30 (`ENHANCED` without
+      the later rounds' seven, `LATER_ROUNDS`); `prereg_n06_13_2.rs` already pins only its own
+      five. No test of a Java half moved: the cutout tests set their switches explicitly
+      (`n06_cutout_reach.rs`, `n06_area_splits.rs`, `cutout_invariant.rs`), and the P01.3
+      microbench's work counts are unchanged (`work_counts_of_issue433` passes as it was).
+    - [x] `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release
+      -p freerouting --test autoroute_board_parity -- --ignored autoroute_board_parity
+      --test-threads=1` under `ulimit -v 8000000` (private target): 7 boards, all `exact`, all
+      `byte_equal`, all `pass` (`target/parity/summary.json` in the worktree).
+    - [x] Gate (private target, `CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0`): `cargo fmt --all --check`;
+      `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test --workspace
+      --no-fail-fast`: 267 suites, 2620 passed, 0 failed, 56 ignored (first run, no test needed a
+      fix); `python3 tools/roadmap/checklists.py status --strict` clean.
 
 - [x] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and

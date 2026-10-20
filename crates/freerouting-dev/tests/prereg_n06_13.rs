@@ -33,23 +33,25 @@ fn registration() -> Prereg {
     Prereg::parse(&text).unwrap_or_else(|e| panic!("{FILE} is invalid: {e:?}"))
 }
 
-/// The switches N06.13's second round added to `ENHANCED` (2026-10-20), measured by
-/// `N06.13-promotion-2.json`, not by this registration.
-const SECOND_ROUND: [&str; 5] = [
+/// The switches N06.13's second and third rounds added to `ENHANCED` (2026-10-20),
+/// measured by `N06.13-promotion-2.json` and `N06.14b.json`, not by this registration.
+const LATER_ROUNDS: [&str; 7] = [
     "simplex_prev_division_line",
     "opt_first_pass_stops",
     "opt_equal_key_skip",
     "shove_via_into_pending_piece",
     "any_angle_room_side_index",
+    "cutout_hole_crosses_border",
+    "simplex_octagon_half_corner",
 ];
 
 /// The switches the first round turned off: `enhanced`'s table without the
-/// second round's, sorted.
+/// later rounds', sorted.
 fn promoted() -> Vec<&'static str> {
     let mut ids: Vec<&str> = ENHANCED
         .iter()
         .filter_map(|d| d.path.strip_prefix("java_quirks."))
-        .filter(|id| !SECOND_ROUND.contains(id))
+        .filter(|id| !LATER_ROUNDS.contains(id))
         .collect();
     ids.sort_unstable();
     ids

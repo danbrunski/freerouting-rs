@@ -40,12 +40,16 @@ Each crate's docs carry the full detail; this file is the index.
 
 **Java bugs kept on purpose** (changing them would change routing results; N06 sorts every
 kept bug and schedules its fix under profile `enhanced`; see
-[N06](roadmap/tasks/N06-fix-kept-java-bugs.md)): `Simplex.cutoutFrom` never setting its
+[N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)): `Simplex.cutoutFrom` never setting its
 previous division line (kept under `legacy` only: profile `enhanced` assigns it,
 `router.java_quirks.simplex_prev_division_line = false`, N06.4, promoted by N06.13's second round;
 the pieces are Java's either way), the no-op branch 3 in IntOctagon's box cutout
 (`octagon_box_cutout_branch3`, `true` in both profiles: N06.14's run at every `Area` split
-rejected its fix; see "Java quirk switches, opt-in" below). `RationalPoint.perpendicularProjection`
+rejected its fix; see "Java quirk switches, opt-in" below), and the two simplex cutout bugs
+outside N06.4's domain, a hole crossing the outer border and an undivided half-integer corner
+(kept under `legacy` only: profile `enhanced` fixes both,
+`router.java_quirks.cutout_hole_crosses_border` and `simplex_octagon_half_corner = false`,
+N06.14, promoted by N06.13's third round). `RationalPoint.perpendicularProjection`
 is kept under `legacy` only: profile `enhanced`
 fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted by N06.13).
 
@@ -100,7 +104,7 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   scanner's current identifier.
 - Logged messages go to `BasicBoard::log_messages`; only the wiring warnings are
   returned, as in Java.
-- Kept under `legacy` ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md); profile `enhanced`
+- Kept under `legacy` ([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md); profile `enhanced`
   fixes both, `dsn_via_alias` and `dsn_class_class_pairs`, N06.10, promoted by N06.13): the
   `via_padstack_names` aliasing with the first class's `use_via` list, and class-class rules
   pairing only the first known class with the others (Java shares one iterator).
@@ -715,7 +719,7 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
   half changed; the port skips the missing leaf and finishes the cutout. The
   `trace-entries` probe hits it on `Issue026-J2_reference` at cutout sample 37
   (`JAVA_CUTOUT_EXCEPTIONS`); every line before it is equal.
-- Java bugs kept under `legacy` ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md); profile
+- Java bugs kept under `legacy` ([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md); profile
   `enhanced` fixes all four, N06.13): `ForcedPadRouter.inFrontOfPad` for from side 0 takes
   `min(lineA.x + lineA.y, lineB.x + lineB.x)` (`ForcedPadRouter.java:78`; test
   `in_front_of_pad_keeps_java_typo`), and `ShapeTraceEntries.storeTrace` compares a
@@ -886,7 +890,7 @@ Q08; tests `tests/quality_budget.rs`, `quality::budget::tests`)
 
 **Connection insertion** (`autoroute::path::insert`, `autoroute::connection`, A06; tests
 `tests/autoroute_probe_insert.rs`, `autoroute::connection::tests`)
-- Java bug kept under `legacy` ([N06](roadmap/tasks/N06-fix-kept-java-bugs.md); fixed under
+- Java bug kept under `legacy` ([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md); fixed under
   `enhanced` since N06.13): when `MazeSearchEngine.getInstance`
   returns null or throws, `AutorouteEngine.autorouteConnection` returns `FAILED` before
   `clear()` (`AutorouteEngine.java:142-150`), so the start rooms it completed stay in the
@@ -1496,10 +1500,11 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 Fixes of kept Java bugs behind `router.java_quirks.<id>`: unset (`true`) is Java's
 behaviour, `false` the fix, and `legacy` keeps every switch unset. N06.13 (2026-10-19)
 promoted the 30 switches of the accepted batches into `enhanced`, and its second round
-(2026-10-20) five more (`simplex_prev_division_line`, N06.9's two, N06.15's and N06.16's), one
-line each under "Profile `enhanced`"; the others stay `true` in both profiles until their
-measurement, or for good when it rejected them
-([N06](roadmap/tasks/N06-fix-kept-java-bugs.md)).
+(2026-10-20) five more (`simplex_prev_division_line`, N06.9's two, N06.15's and N06.16's), and
+its third round (2026-10-20) N06.14's two, one line each under "Profile `enhanced`"; the others
+stay `true` in both profiles for good: their measurement rejected them, or they are (c) rows left
+as Java
+([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)).
 
 **N06.4 geometry cutout fixes (`simplex_prev_division_line` in profile `enhanced` since N06.13's second round)**
 
@@ -1537,9 +1542,10 @@ file, takes the switched-after-read path. Run statistics count `octagon_box_cuto
 cutout. N06.4 measured and accepted the batch at that reach; the wider reach is
 re-measured under N06.14's amendment 1.
 
-**N06.14 simplex cutouts outside N06.4's domain (explicit opt-in; promotion pending)**
+**N06.14 simplex cutouts outside N06.4's domain (profile `enhanced` since N06.13's third round)**
 
-Both switches still default to `true` in both profiles. With the named switch `false`
+Unset is `true` (Java): `legacy` keeps both, `enhanced` sets both `false` (N06.13, 2026-10-20).
+With the named switch `false`
 (`Simplex::cutout_from`, `crates/freerouting-geometry/src/shapes/simplex.rs`):
 - `cutout_hole_crosses_border`: the stand-in division line of a corner on the outer
   border (the hole edge before it) no longer acts as a division line: it neither clips
@@ -1564,8 +1570,9 @@ boxes only. Run statistics count `cutout_hole_crosses_border_reached` and
 `simplex_octagon_half_corner_reached` in both arms. Like N06.4's switches they act at
 every `Area` split of the board since the follow-up of 2026-10-18; in the corpus the
 stored areas' splits reach `cutout_hole_crosses_border` on Issue756-tomu-fpga8 (12) and
--fpga9 (8) only. Registered evidence pending under N06.14
-(`docs/roadmap/prereg/N06.14b.json`; `N06.14.json`'s run gave no verdict).
+-fpga9 (8) only. `prereg/N06.14b.json`'s run of 2026-10-20 (amendment 1, both switches
+together under `enhanced`) accepted them: `gate: PASS`, total 196 → 208 against noise 21.40, no
+hard-guard or guard breach; `N06.14.json`'s run gave no verdict.
 
 **N06.5 maze search and room fixes (profile `enhanced` since N06.13)**
 
@@ -1795,8 +1802,10 @@ under `enhanced` (`enhanced` at the parent commit against `enhanced` with them,
 `docs/roadmap/prereg/N06.13-promotion.json`) passed on 2026-10-20 (total 210 → 208). The last
 five lines are N06.13's second round (2026-10-20): N06.9, N06.15 and N06.16 measured under
 `enhanced` with the first round's 30, and `simplex_prev_division_line` is accepted on its tests;
-the round's confirmation is registered in `docs/roadmap/prereg/N06.13-promotion-2.json`, and its
-run is pending. An explicit `--router.java_quirks.<id>=true` brings Java's bug back.
+the round's confirmation (`docs/roadmap/prereg/N06.13-promotion-2.json`) passed on the quick rows
+on 2026-10-20 (unrouted 34 → 34). The last two lines are its third round (2026-10-20): N06.14b
+measured them under `enhanced` with the 35 earlier fixes, and that run's candidate arm is
+`enhanced` with them, so it is the round's confirmation. An explicit `--router.java_quirks.<id>=true` brings Java's bug back.
 
 - `java_quirks.init_failure_room_leak` = `false` (N06.13 from N06.5,
   `docs/roadmap/prereg/N06.5.json`, batch M: gate PASS, total 38 → 38, set noise 10.95): a failed
@@ -1960,3 +1969,16 @@ run is pending. An explicit `--router.java_quirks.<id>=true` brings Java's bug b
   sessions identical): any-angle room neighbours take their touching sides, corners and sort on
   the room's simplex, so the gap walk ends (Autoroute room graph; any-angle mode only); accepted
   on `room_side_index_switch_both_behaviours`.
+- `java_quirks.cutout_hole_crosses_border` = `false` (N06.13 from N06.14,
+  `docs/roadmap/prereg/N06.14b.json`, amendment 1, both N06.14 switches together under `enhanced`
+  with the 35 earlier fixes: gate PASS, total 196 → 208, set noise 21.40, canary-pwr's DSN
+  122 → 129 and plugin path 39 → 44 KiCad unconnected within their bands of 10, no hard-guard or
+  guard breach on 8 rows): a simplex cutout's stand-in division line at a corner on the outer
+  border no longer clips later pieces, so no piece goes missing where a hole crosses the outer
+  border (geometry cutouts; reached in any-angle mode and on 45 degree boards with a trace off 45
+  degrees); accepted on `java_breaks_the_invariant_outside_the_two_rows` and
+  `all_fixed_cutouts_tile_the_rest_on_the_extended_set`.
+- `java_quirks.simplex_octagon_half_corner` = `false` (N06.13 from N06.14, the same run and pair):
+  a simplex cutout divides a hole corner that is not an integer point at its exact point, along
+  the nearest lines through integer points, so the pieces no longer overlap (geometry cutouts);
+  accepted on the same tests.

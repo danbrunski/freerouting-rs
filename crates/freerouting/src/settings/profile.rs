@@ -39,7 +39,11 @@
 //! `simplex_prev_division_line` (inert, on its tests), N06.9's two optimizer
 //! fixes, `shove_via_into_pending_piece` (N06.15) and
 //! `any_angle_room_side_index` (N06.16); `N06.13-promotion-2.json` registers
-//! that round's confirmation. Adding one is one entry
+//! that round's confirmation. Its third round (2026-10-20) added N06.14's two
+//! simplex cutout fixes, `cutout_hole_crosses_border` and
+//! `simplex_octagon_half_corner`, accepted together by
+//! `docs/roadmap/prereg/N06.14b.json`, whose candidate arm was this table's
+//! `enhanced`. Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
 //! entry is a valid settings key and value, and that `enhanced` sets it.
@@ -285,6 +289,17 @@ pub const ENHANCED: &[Difference] = &[
         value: "false",
         measurement: N06_16_ROOM_SIDES,
     },
+    // N06.13's third round (2026-10-20): N06.14's two simplex cutout fixes.
+    Difference {
+        path: "java_quirks.cutout_hole_crosses_border",
+        value: "false",
+        measurement: N06_14_SIMPLEX_CUTOUTS,
+    },
+    Difference {
+        path: "java_quirks.simplex_octagon_half_corner",
+        value: "false",
+        measurement: N06_14_SIMPLEX_CUTOUTS,
+    },
 ];
 
 // The N06 Java-bug fixes promoted by N06.13 (2026-10-19), one measurement per
@@ -351,6 +366,16 @@ const N06_16_ROOM_SIDES: &str = "N06.13 from N06.16 (docs/roadmap/prereg/N06.16.
                                  cap under Java's indexes and route with 0 unrouted, 0 clearance \
                                  under the fix (the abort rule); the other 6 rows gate PASS, \
                                  0 -> 0, sessions identical";
+
+// N06.13's third round (2026-10-20). N06.14b measured the pair under `enhanced`
+// with the first two rounds' 35 fixes; its candidate arm is this table, so that
+// run is the round's confirmation.
+
+const N06_14_SIMPLEX_CUTOUTS: &str = "N06.13 from N06.14 (docs/roadmap/prereg/N06.14b.json, \
+                                      amendment 1, both switches together under enhanced): \
+                                      gate PASS, total 196 -> 208 (set noise 21.40), canary-pwr's \
+                                      DSN 122 -> 129 and plugin path 39 -> 44 within their bands \
+                                      of 10, no hard-guard or guard breach on 8 rows";
 
 /// `legacy` changes nothing.
 const LEGACY: &[Difference] = &[];
