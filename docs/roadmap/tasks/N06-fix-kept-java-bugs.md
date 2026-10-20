@@ -1819,8 +1819,8 @@ These are marked or look like quirks but keep no bug:
   - *Partial 2026-10-20 (second round):* worktree `target/orchestrator/n06p2/wt`, branch
     `land/n06-promo2` on main `c8b91b7`. 35 switches promoted (30 + 5), 2 rejected, 2 pending, 7
     left as Java (46 ids; the table above is updated). Not ticked: `cutout_hole_crosses_border` and
-    `simplex_octagon_half_corner` have no verdict (N06.14 `[~]`), and the round's confirmation
-    run is a heavy run.
+    `simplex_octagon_half_corner` have no verdict (N06.14 `[~]`); the round's confirmation
+    passed on the quick rows (below).
     - [x] Promoted: `simplex_prev_division_line` (accepted on tests), `opt_first_pass_stops` and
       `opt_equal_key_skip` (N06.9), `shove_via_into_pending_piece` (N06.15) and
       `any_angle_room_side_index` (N06.16), as `router.java_quirks.<id> = false` in `ENHANCED`
@@ -1879,19 +1879,62 @@ These are marked or look like quirks but keep no bug:
       baseline (the baseline already breaks an absolute `below_minimum`); every route under the
       8000000 kB cap. A FAIL is bisected by switch group. The registration is in the commit after
       `0bf562b`, so the run reads it from the main checkout once landed.
-    - [~] heavy run pending (orchestrator, one job at a time, after this branch lands):
-      `cd /home/thebo/code/freerouting-rs && git worktree add --detach target/orchestrator/n06-13b-base-wt c8b91b7d75f40879ab8415562fc7f3c4361114fb && git worktree add --detach target/orchestrator/n06-13b-cand-wt 0bf562b81f8d271d1951b7d763da96219578646a && (cd target/orchestrator/n06-13b-base-wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-base cargo build --release -p freerouting-cli) && cd target/orchestrator/n06-13b-cand-wt && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-cand cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py /home/thebo/code/freerouting-rs/docs/roadmap/prereg/N06.13-promotion-2.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13b`
-      (46 runs; it exits non-zero when a session differs, which is expected: the aborted baseline
-      rows always differ). Then the plugin row as the registration's `plugin_canary` says: write
-      `{"schema": 4, "profile": "enhanced"}` as `route-options.json`, export canary 2a7e070b's
-      `hardware/canary-pwr-rev1.0` once with `python3 -I kicad-plugin/headless_run.py export`,
-      route both arms' binaries with the exported args plus `--router.profile=enhanced --stats json
-      --stats-out <arm>/stats.json --result-json=<arm>/result.json` under `ulimit -v 8000000`, grade
-      each distinct session with canary's `grade.sh` (`GRADE_REV=2a7e070b`). Then the measuring
-      tool on each DSN session, the abort rule on the aborted-baseline rows, and `freerouting-dev
-      gate --records <records> --baseline <baseline> --prereg
-      docs/roadmap/prereg/N06.13-promotion-2.json --rows <the rows whose baseline did not abort>`
-      (baseline file first with `--write-baseline`).
+    - [x] Confirmation run (the quick rows only).
+      *Done 2026-10-20:* amendment 1 written before any route (decided 2026-10-20: the
+      confirmation keeps only the quick rows, to save time): 20 DSN rows kept in the set's order;
+      dropped `Issue269-z10_module`, `canary-pwr-9511d9a`, `Issue102-Mars-64-revE-rot00` and the
+      plugin row (each above 2 min per route in round 1's confirmation; they include the only
+      round-1 row where `shove_via_into_pending_pieces` was reached, Mars-64 with 2, and both
+      canary-pwr rows; N06.15 and N06.9 measured those switches under `enhanced` on their own
+      rows). Set file and `boards.files` match, `totals.noise` and `outside_runner` emptied;
+      registration sha256 `852080d15efcf2683780c0712c529e099ebff409841bcbc2860aec5e3ea70436`
+      (1 amendment; the amendment's row count was corrected from 19 to 20 after the run started,
+      before any number was read), re-pinned in `prereg_n06_13_2.rs` (5 passed). Run:
+      `N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py <worktree>/docs/roadmap/prereg/N06.13-promotion-2.json
+      --out target/orchestrator/n06-13c` from a worktree of main `f86b9c5`, binaries
+      `n06-13b-base` (sha256 `95d2ada2…`, git `c8b91b7d75f4`) and `n06-13b-cand` (`e748023f…`,
+      git `0bf562b81f8d`): 40 routes, exit 1 (sessions differ only on the two aborted-baseline
+      rows). Abort rule: `Issue026-J2_reference-any` and `Issue143-rpi_splitter-any` baselines
+      abort at the cap (exit −6, "memory allocation of 1879048192 / 939524096 bytes failed", peak
+      RSS 6793088 / 7009724 kB); the candidate completes on both (exit 0, 0 unrouted,
+      `via_in_pad_raw` 0, clearance 0; `below_minimum_raw` 25 / 13 reported; peak RSS 58000 /
+      46856 kB; `any_angle_room_side_mismatches` 3 / 40), so both rows are the candidate's win.
+      The other 18 rows: every session byte-identical, measured by round 1's `n06m` rebuilt on
+      the engine at `c8b91b7` for both arms (`via_in_pad_raw` 0 everywhere, `below_minimum_raw`
+      equal per row, 447 → 447):
+
+      | row | unrouted | clearance | vias | below min. raw | session |
+      |---|---|---|---|---|---|
+      | `Issue026-J2_reference-90` | 0 | 0 | 16 | 1 | identical |
+      | `Issue143-rpi_splitter-90` | 0 | 0 | 2 | 0 | identical |
+      | `Issue026-J2_reference` | 0 | 0 | 16 | 37 | identical |
+      | `Issue508-DAC2020_bm08` | 0 | 0 | 1 | 11 | identical |
+      | `Issue676-ch32v-tx118s` | 0 | 0 | 6 | 0 | identical |
+      | `Issue957-smoke-ldo-led` | 1 | 0 | 14 | 0 | identical |
+      | `Issue367-Charger` | 9 | 1 | 15 | 0 | identical |
+      | `Issue756-tomu-fpga` | 15 | 72 | 162 | 0 | identical |
+      | `Issue313-FastTest` | 2 | 40 | 24 | 7 | identical |
+      | `Issue027-zMRETestFixture` | 0 | 0 | 31 | 39 | identical |
+      | `Issue155-CH376_MCP795_Module` | 0 | 0 | 14 | 13 | identical |
+      | `Issue508-DAC2020_bm06` | 0 | 0 | 20 | 23 | identical |
+      | `Issue558-dev-board` | 0 | 0 | 34 | 61 | identical |
+      | `Issue217-8088sbc` | 0 | 0 | 20 | 55 | identical |
+      | `Issue034-Green14SegLED` | 0 | 0 | 44 | 79 | identical |
+      | `Issue035-ReadPlaceScope` | 2 | 152 | 170 | 79 | identical |
+      | `Issue054-tairakb` | 5 | 0 | 147 | 42 | identical |
+      | `scoring-mixed-layer-any` | 0 | 0 | 1 | 0 | identical |
+      | `Issue026-J2_reference-any` | aborted → 0 | – → 0 | – → 10 | – → 25 | abort rule |
+      | `Issue143-rpi_splitter-any` | aborted → 0 | – → 0 | – → 2 | – → 13 | abort rule |
+
+      `freerouting-dev gate --records … --baseline … --prereg
+      docs/roadmap/prereg/N06.13-promotion-2.json --rows <the 18 rows>` (built at `c8b91b7`;
+      baseline file written first with `--write-baseline` on the full records): 0 refusals,
+      judged 18 of 20 rows, 18 neutral; unrouted 34 → 34 (change 0), set noise 61.01; `totals
+      verdict: accept`, `gate: PASS`. Reported: `simplex_prev_division_line_reached`,
+      `shove_via_into_pending_pieces` and `shove_pending_piece_foreign_traces` 0 in every run;
+      `optimizer_passes` equal per row (22 → 22); `rooms_completed` 1064740 → 1094485 with the
+      sessions identical (9 rows rise); router wall seconds summed 80.0 → 83.7. Verdict:
+      **promotion confirmed** on the quick rows; the five entries stay in `ENHANCED`.
 
 - [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and

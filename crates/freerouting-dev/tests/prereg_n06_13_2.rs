@@ -7,7 +7,9 @@
 //! address-space cap.
 //!
 //! Registered 2026-10-20 before any route of either arm. A later change goes in the file's
-//! `amendments` with the reason and updates the hash here in the same change.
+//! `amendments` with the reason and updates the hash here in the same change. Amendment 1
+//! (decided 2026-10-20: the confirmation keeps only the quick rows, to save time) drops the
+//! three DSN rows above 2 min per route in round 1's confirmation and the plugin row.
 use std::path::{Path, PathBuf};
 
 use freerouting::settings::profile::ENHANCED;
@@ -18,6 +20,12 @@ const FILE: &str = "docs/roadmap/prereg/N06.13-promotion-2.json";
 const SET: &str = "tools/bench/sets/n06-13-promotion-2.txt";
 const ROUND_1_SET: &str = "tools/bench/sets/n06-13-promotion.txt";
 const PLUGIN_ROW: &str = "canary-pwr-plugin";
+/// Round 1's rows amendment 1 drops (each above 2 min per route in round 1's confirmation).
+const DROPPED: [&str; 3] = [
+    "fixtures/Issue269-z10_module.dsn",
+    "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+    "fixtures/Issue102-Mars-64-revE-rot00.dsn",
+];
 const BASE_BIN: &str =
     "/home/thebo/code/freerouting-rs/target/orchestrator/n06-13b-base/release/freerouting";
 const CAND_BIN: &str =
@@ -80,7 +88,11 @@ fn the_second_round_registration_is_valid() {
         [("enhanced_main", "enhanced_promoted", PairRole::Listed)]
     );
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 24, "23 DSN rows and the plugin row");
+    assert_eq!(
+        prereg.boards.len(),
+        20,
+        "20 DSN rows, no plugin row (amendment 1)"
+    );
     assert!(prereg.totals_registered);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     for name in [
@@ -184,9 +196,8 @@ fn the_arms_differ_only_in_the_second_round_switches() {
     }
 }
 
-/// The rows are round 1's 21 DSN rows in its order, then the two any-angle rows; every
-/// DSN row hashes as registered; the plugin row is hashed as its source board and routed
-/// outside the runner.
+/// The rows are round 1's 21 DSN rows in its order less the three amendment 1 drops, then
+/// the two any-angle rows; every DSN row hashes as registered; the plugin row is dropped.
 #[test]
 fn the_registered_inputs_hash_as_registered() {
     let json = json();
@@ -196,24 +207,16 @@ fn the_registered_inputs_hash_as_registered() {
     let Some(Json::Array(outside)) = json.path("boards.outside_runner") else {
         panic!("boards.outside_runner")
     };
-    let outside: Vec<&str> = outside.iter().filter_map(Json::as_str).collect();
-    assert_eq!(outside, [PLUGIN_ROW]);
+    assert!(outside.is_empty());
     let rows = set_rows(SET);
     let mut want = set_rows(ROUND_1_SET);
+    want.retain(|r| !DROPPED.contains(&r.as_str()));
     want.extend(ANY_ROWS.iter().map(|r| r.to_string()));
     assert_eq!(rows, want);
-    assert_eq!(rows.len(), 23);
-    assert_eq!(rows.len() + 1, files.len());
+    assert_eq!(rows.len(), 20);
+    assert_eq!(rows.len(), files.len());
+    assert!(!files.iter().any(|(input, _)| input == PLUGIN_ROW));
     for (input, want) in files {
-        if input == PLUGIN_ROW {
-            assert_eq!(
-                want.as_str(),
-                json.path("plugin_canary.source_sha256")
-                    .and_then(Json::as_str),
-                "the plugin row is hashed as its source board"
-            );
-            continue;
-        }
         assert!(rows.contains(input), "{input} missing from {SET}");
         let bytes = std::fs::read(repo().join(input)).unwrap_or_else(|e| panic!("{input}: {e}"));
         assert_eq!(
@@ -222,10 +225,21 @@ fn the_registered_inputs_hash_as_registered() {
             "{input}"
         );
     }
-    assert_eq!(
-        json.path("totals.noise.canary-pwr-plugin")
-            .and_then(Json::as_f64),
-        Some(10.0)
+    let Some(Json::Object(noise)) = json.path("totals.noise") else {
+        panic!("totals.noise")
+    };
+    assert!(noise.is_empty(), "no plugin row, so no registered band");
+    let Some(Json::Array(amendments)) = json.path("amendments") else {
+        panic!("amendments")
+    };
+    assert_eq!(amendments.len(), 1);
+    assert!(
+        amendments[0]
+            .path("reason")
+            .and_then(Json::as_str)
+            .is_some_and(
+                |r| r.starts_with("decided 2026-10-20: the confirmation keeps only the quick rows")
+            )
     );
 }
 
@@ -276,6 +290,6 @@ fn the_abort_rule_and_the_memory_cap() {
 fn the_second_round_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "773ec7a061a67f130fd5c6d4f113b066da68d1f289ecff8ae5b01d062b6eb921"
+        "852080d15efcf2683780c0712c529e099ebff409841bcbc2860aec5e3ea70436"
     );
 }

@@ -11,9 +11,7 @@
       "unrouted",
       "kicad_unconnected"
     ],
-    "noise": {
-      "canary-pwr-plugin": 10
-    },
+    "noise": {},
     "min_boards": 3
   },
   "engine": "two Linux release builds of freerouting-rs: the baseline arm's at the parent of the promotion commit, the candidate arm's at the promotion commit; both arms give --router.profile=enhanced and no other router flag, so they differ only in ENHANCED's five second-round java_quirks entries",
@@ -65,7 +63,6 @@
       "fixtures/Issue957-smoke-ldo-led.dsn": "090e615ca832eb4aa13f76fe1ca8be36cf9f45027f48aa8126512c72580178f5",
       "fixtures/Issue367-Charger.dsn": "7ce9353ef668555d39956b6b1b96aca5cff83091d26ab89bb4c59c3c13b62a38",
       "fixtures/Issue756-tomu-fpga.dsn": "c5279c56697b86e9e8189ffa3ee0036eaeafaa661c07df25dbe6c066ef16a9ee",
-      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
       "fixtures/Issue313-FastTest.dsn": "95b92720ead8c3de87ae67bd34b87625cd14ac858e85dd9c6836ac479c3e1a30",
       "fixtures/Issue027-zMRETestFixture.dsn": "59c692fe9468fe8909b08c55705a175d30db39d7fe164a5363f1da43d03fbd44",
       "fixtures/Issue155-CH376_MCP795_Module.dsn": "3080de09e60d0a713d8904016c694bbf9a79668b10a0d070d1a123023302a5d7",
@@ -73,19 +70,14 @@
       "fixtures/Issue558-dev-board.dsn": "f1d70cb705bd0ee4c415519dfde6c036c3bd46c2675d3d9e5fa2bfdb5d7ea480",
       "fixtures/Issue217-8088sbc.dsn": "d7caa5a23e834c86829b4f9029691bac0410261eacfca90aff8d052e1ba2dfad",
       "fixtures/Issue034-Green14SegLED.dsn": "17bf07ff18a668faaad7f4b575199672b4cff34649efe49e32eca59d2c76de63",
-      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
       "fixtures/Issue035-ReadPlaceScope.dsn": "69300e8bca77acccc1bd3d8799c18c728fc86e22415b9e1385565adb2610ed01",
       "fixtures/Issue054-tairakb.dsn": "965f7154d19bec679916128ef1c07e15a97dedc6a52000e097726b5ff0e90969",
-      "fixtures/Issue102-Mars-64-revE-rot00.dsn": "3a7066d3ff441d495afb18f17a967c60a774a3d4fd7baf6438d727bdeb9c0dc5",
       "crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn": "df6535a679fa0d2720324497f827929db91b0c667b23cd97a2e627e2ee09c7ed",
       "crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn": "52f0b5d19d9b78e505b89b7870e292835fbc398abeeba797159cd86edc803c47",
-      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": "fdd39050d654598ccf50a38f476af1e60d864ffa8757a213dbd3e2f77114e68e",
-      "canary-pwr-plugin": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58"
+      "crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn": "fdd39050d654598ccf50a38f476af1e60d864ffa8757a213dbd3e2f77114e68e"
     },
     "plugin_row": "canary-pwr-plugin: canary-pwr through the KiCad plugin path with the plugin's default options (plugin_canary below), outside n06_run.py. Its hash is the sha256 of the source board hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb at canary 2a7e070b (git show 2a7e070b:<path>), because the plugin exports it at run time; the exported DSN's and args' sha256 are recorded with the result",
-    "outside_runner": [
-      "canary-pwr-plugin"
-    ],
+    "outside_runner": [],
     "dropped_before_registration": "the rows of N06.9 (batch O: bm01, bm02 and the KiCad demos), N06.15 (GP8B, smoothieboard, Protein, CPU-85, bm01, Mars-64) and N06.16's identity rows not in round 1's set (Issue143-rpi_splitter.dsn): each switch's own measurement ran them; this confirmation keeps round 1's set so the two rounds are judged on the same boards, plus the two any-angle rows",
     "bands": "each DSN row is its own board; its band is N02's default, max(2, ceil(5 % of the row's connections)), connections = the enhanced_main arm's board_statistics.connections.maximum_count (n06_run.py copies it into summary.json's statistics.connections); the plugin row's band is 10. fixtures/canary-pwr/canary-pwr-9511d9a.dsn (canary 9511d9a, the DSN fixture) and canary-pwr-plugin (canary 2a7e070b, the plugin path) are two boards. An aborted-baseline row has no band: its contribution is reported, not gated"
   },
@@ -287,5 +279,12 @@
   },
   "not_registered": "a second seed (the router is deterministic); legacy (unchanged by the promotion; the small parity check shows it); the switches one by one (N06.9, N06.15 and N06.16 measured them; a failed verdict is bisected by group as accept says); octagon_box_cutout_branch3 (rejected), cutout_hole_crosses_border and simplex_octagon_half_corner (no verdict), which stay true in both arms",
   "seen_before_registration": "No route of either arm at these engines under this registration, on any row. Before it: round 1's confirmation (2026-10-20) routed enhanced with the 30 (this baseline's table) at c04b3f5 on round 1's 21 DSN rows and the plugin row (its N06.13 note), and the per-switch numbers of N06.9, N06.15 and N06.16 under enhanced with the 30 (their items): N06.16's run had J2-any and rpi_splitter-any abort at the cap under any_angle_room_side_index = true and route with 0 unrouted under false; N06.14's run routed those two rows with the key false; those runs were at main 08062e2, and main c8b91b7 adds f4c7ccf (the GUI and prepare_job read a board with the job's switches) and docs. At registration the implementer routed nothing under profile enhanced: the light parity check routed the connection-parity set under legacy, which neither arm runs",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-20",
+      "after": "the registration and the two release builds the arms name; before any route of either arm on any row",
+      "reason": "decided 2026-10-20: the confirmation keeps only the quick rows, to save time. The dropped rows each took more than 2 min per route in round 1's confirmation (its N06.13 note; wall_seconds base/cand: Issue269-z10_module 172.7/177.2, canary-pwr-9511d9a 443.5/414.4, Issue102-Mars-64-revE-rot00 120.0/189.3, the plugin row's routes 128.7/103.1). They include the only round-1 row where shove_via_into_pending_pieces was reached (Mars-64, 2) and both canary-pwr rows (the DSN fixture and the plugin path); N06.15 and N06.9 measured those switches under enhanced with round 1's 30 fixes on their own rows (N06.15: GP8B, smoothieboard, Protein, CPU-85, bm01, Mars-64; N06.9: batch O), so this confirmation no longer covers them",
+      "changes": "(1) Rows: boards.files and tools/bench/sets/n06-13-promotion-2.txt keep 20 DSN rows, in the set's order: Issue026-J2_reference-90, Issue143-rpi_splitter-90, Issue026-J2_reference, Issue508-DAC2020_bm08, Issue676-ch32v-tx118s, Issue957-smoke-ldo-led, Issue367-Charger, Issue756-tomu-fpga, Issue313-FastTest, Issue027-zMRETestFixture, Issue155-CH376_MCP795_Module, Issue508-DAC2020_bm06, Issue558-dev-board, Issue217-8088sbc, Issue034-Green14SegLED, Issue035-ReadPlaceScope, Issue054-tairakb, scoring-mixed-layer-any, and the two abort-rule rows Issue026-J2_reference-any and Issue143-rpi_splitter-any; their hashes are unchanged. Dropped: fixtures/Issue269-z10_module.dsn, fixtures/canary-pwr/canary-pwr-9511d9a.dsn, fixtures/Issue102-Mars-64-revE-rot00.dsn and the plugin row canary-pwr-plugin (plugin_canary is not run; its block stays as registered text only). boards.outside_runner is now empty and totals.noise drops the plugin row's band of 10, so every DSN row's band is N02's default; the KiCad guards drc_real and kicad_shorting_items and the signal kicad_unconnected have no row. (2) Engines: the arms' commands as registered; baseline release CLI sha256 95d2ada28e50cd366bc6e49886c9bc6467fa37ded8ac169bdabb5af35746c660 (--version git c8b91b7d75f4), candidate release CLI sha256 e748023f9b24c3b563e4a21034a66996931d2e996d4c27a07ceca123032eec32 (--version git 0bf562b81f8d). (3) Runner: N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py on this file, from a worktree of main f86b9c5 (n06_run.py and the kept boards equal the candidate's), --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13c. (4) Tools: the DSN rows' via_in_pad and below_minimum raw counts come from round 1's measuring binary (n06m) rebuilt on the engine at the baseline commit c8b91b7 for both arms, and freerouting-dev gate is built at c8b91b7. (5) The arms, settings, metrics, rule, the abort rule, the memory cap, the DSN rows' bands and the accept text are otherwise unchanged; pairs_rule's gate runs on every kept row whose baseline did not abort (no plugin row)"
+    }
+  ]
 }
