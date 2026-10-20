@@ -31,13 +31,6 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::neckdown::bounded_neck::POLICY_ID, |s| {
             Box::new(super::neckdown::bounded_neck::BoundedNeck::from_settings(s))
         });
-    // Q08.1: the `earned-budget` connection router
-    // (`router.autorouter.connection_router`).
-    registry
-        .connection_router
-        .insert(super::budget::ROUTER_ID, |s| {
-            Box::new(super::budget::EarnedBudget::from_settings(s))
-        });
     // Q04.1: the `quantum-stop` pass controller
     // (`router.autorouter.pass_controller`).
     registry

@@ -81,7 +81,7 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
   `no_progress_or_no_pop_stops`, `a_stop_latches_until_the_next_search`,
   `a_search_without_a_limit_is_never_extended`.
 
-- [~] **Q08.2 — Off means identical; on is deterministic.**
+- [x] **Q08.2 — Off means identical; on is deterministic.**
   - **Accept:**
     - with the default connection router, `ses-diff` shows identical
       sessions on `benchmark`;
@@ -130,8 +130,13 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
   `canary-pwr-pours1` determinism run that fits its timeout (needs a Q08.json amendment for the
   loaded run's timeout: an unlimited-pass route takes 520 to 570 s here, not the 100 s of the
   5-pass bench runs amendment 2 quoted); moot if Q08.3's removal lands.
+  *Done 2026-10-20:* the only remainder, `canary-pwr-pours1`'s loaded determinism run, is moot
+  (decided 2026-10-20): Q08.3's keep rule failed and `earned-budget` is removed (Q08.3's note),
+  so no option is left to be deterministic. The off-means-identical clause held throughout (small
+  parity check above) and holds after the removal (Q08.3's done note: the same small parity
+  check, 7/7 exact).
 
-- [~] **Q08.3 — Measurement.**
+- [x] **Q08.3 — Measurement.**
   Preregister (F03.4). Arms: default and `earned-budget`. Boards:
   `benchmark` boards where J01 recorded work-limit cut-offs, plus
   `canary-pwr` and its variants. Signal: unrouted. Guards: vias, `drc_real`,
@@ -277,3 +282,23 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
   `maze_budget_extensions` / `maze_budget_extra_units` counters in `run_stats.rs`,
   `crates/freerouting/tests/quality_budget.rs`, and the "Earned budget extension" block of
   `docs/DIVERGENCES.md`; this note keeps the numbers.
+  *Done 2026-10-20:* measured (the run above); the keep rule failed, so per the decision table's
+  fail row `earned-budget` is removed, and the removal commit is this change. Removed:
+  `quality/budget.rs` and its `pub mod`, the `earned-budget` registration in
+  `quality/register.rs`, `autoroute/session/budget.rs` and the session's hook (`budget`,
+  `first_estimate`, `best_estimate`, `set_budget_policy`, `has_budget_policy`,
+  `observe_estimate`, the Q08 branch of `is_stop_requested`, the estimate call in
+  `session/search.rs`), `FreeroutingConnectionRouter::route_with_budget`, `attempt_budgeted`,
+  `route_connection_hooked` and the `budget` parameters of `route_connection_counted` and
+  `search_and_locate`, `WorkLimit::extend`, the `maze_budget_extensions` and
+  `maze_budget_extra_units` counters (`COUNTERS` 55 -> 53), `tests/quality_budget.rs`, and the
+  DIVERGENCES block. Kept as the record: `docs/roadmap/prereg/Q08.json` and
+  `crates/freerouting-dev/tests/prereg_q08.rs` (now with the id and E as constants; 6 passed).
+  `router.autorouter.connection_router=earned-budget` is now refused:
+  `autoroute_batch_control::the_removed_earned_budget_router_is_refused_naming_the_known_routers`
+  ("unknown stage id 'earned-budget' in router.autorouter.connection_router; known ids:
+  freerouting-connection, transactional-ripup"). Default routing unchanged:
+  `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting --test
+  autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1` (1 passed, 7 of 7
+  boards exact, SES bytes equal); `cargo test --workspace --no-fail-fast` 2619 passed, 0 failed,
+  56 ignored. Status lines: `docs/roadmap/routing-quality.md` §8 and the Q00 README's Q08 row.

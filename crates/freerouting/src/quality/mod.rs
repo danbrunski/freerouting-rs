@@ -4,7 +4,6 @@
 //! Each checklist appends its own `pub mod` line here.
 
 pub mod attribution;
-pub mod budget;
 pub mod congestion;
 pub mod feasibility;
 pub mod neckdown;

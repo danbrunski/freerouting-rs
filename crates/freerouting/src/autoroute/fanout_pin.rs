@@ -207,7 +207,6 @@ fn attempt(
         ripped,
         &mut engine.drills,
         None,
-        None,
     );
     if retry && connected(&result) {
         crate::run_stats::record_n06(crate::run_stats::Counter::FanoutRetriesSucceeded);

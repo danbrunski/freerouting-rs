@@ -355,6 +355,13 @@ reports −29 incomplete nets over 150 boards for this rule; its "grace"
 variant measured worse and is not ported. It is a quality change because it
 changes where Java's limits cut.
 
+Status: measured and removed (decided by Q08.3's keep rule, 2026-10-20). No
+maze work limit fired on any quick benchmark row or on `canary-pwr-pours1`, so
+no extension was granted: unrouted 122 -> 122 on the only eligible row, gate
+FAIL. The numbers are in Q08.3's note in
+[Q08](tasks/archive/Q08-earned-budget-extension.md); the registration stays in
+`docs/roadmap/prereg/Q08.json`.
+
 ### Handled elsewhere
 
 - **KiCad rule areas.** KiCad's DSN export turns a rule area that bans only

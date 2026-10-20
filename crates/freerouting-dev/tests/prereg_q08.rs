@@ -26,6 +26,13 @@ use freerouting_dev::json_read::Json;
 
 const FILE: &str = "docs/roadmap/prereg/Q08.json";
 
+/// The candidate's router id and its E, as the engine had them when Q08.3
+/// measured it (`quality::budget::{ROUTER_ID, DEFAULT_MAX_EXTENSIONS}`). The
+/// router failed the keep rule and was removed (decided by Q08.3's keep rule,
+/// 2026-10-20); this file stays as the record of the registration.
+const REMOVED_ROUTER_ID: &str = "earned-budget";
+const REMOVED_MAX_EXTENSIONS: u32 = 4;
+
 fn repo() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
@@ -60,7 +67,7 @@ fn the_q08_registration_is_valid_and_names_its_arms_boards_and_rule() {
 }
 
 /// The candidate's command is the default's plus the router id, and the
-/// registered E is the engine's.
+/// registered E is the one the engine had.
 #[test]
 fn the_arms_differ_only_in_the_connection_router() {
     let text = std::fs::read_to_string(repo().join(FILE)).unwrap();
@@ -76,14 +83,11 @@ fn the_arms_differ_only_in_the_connection_router() {
         format!(
             "{} --router.autorouter.connection_router={}",
             command("default"),
-            freerouting::quality::budget::ROUTER_ID
+            REMOVED_ROUTER_ID
         )
     );
     let e = json.path("defaults.E").and_then(Json::as_str).expect("E");
-    assert!(e.starts_with(&format!(
-        "{} ",
-        freerouting::quality::budget::DEFAULT_MAX_EXTENSIONS
-    )));
+    assert!(e.starts_with(&format!("{REMOVED_MAX_EXTENSIONS} ")));
 }
 
 /// Every registered board is in the repository and hashes as registered.

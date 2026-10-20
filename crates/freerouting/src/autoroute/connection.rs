@@ -61,7 +61,6 @@ use freerouting_geometry::Stoppable;
 use super::control::AutorouteControl;
 use super::path::{InsertError, Located, RipupCosts, insert_located, locate};
 use super::session::Session;
-use super::session::budget::BudgetPolicy;
 use super::session::drills::DrillCarry;
 use super::session::search::{MazeSearch, SearchResult, SearchSettings};
 use super::session::sink::{NoExtraCost, SearchSink};
@@ -164,26 +163,6 @@ pub fn route_connection_with_widths<S: SearchSink>(
     engine: &mut DrillCarry,
     widths: Option<&dyn WidthPolicy>,
 ) -> (AttemptResult, S) {
-    route_connection_hooked(
-        board, start, dest, ctrl, limits, ripped, sink, engine, widths, None,
-    )
-}
-
-/// [`route_connection_with_widths`] whose search asks `budget` when its
-/// work limit fires (Q08, [`BudgetPolicy`]); `None` is Java's stop.
-#[allow(clippy::too_many_arguments)]
-fn route_connection_hooked<S: SearchSink>(
-    board: &mut RoutingBoard,
-    start: &BTreeSet<ItemId>,
-    dest: &BTreeSet<ItemId>,
-    ctrl: &AutorouteControl,
-    limits: RouteLimits<'_>,
-    ripped: Ripped<'_>,
-    sink: S,
-    engine: &mut DrillCarry,
-    widths: Option<&dyn WidthPolicy>,
-    budget: Option<&mut dyn BudgetPolicy>,
-) -> (AttemptResult, S) {
     let Ripped { items, mut costs } = ripped;
     let before = RippedBefore::take(ctrl, items, costs.as_deref());
     let stop = limits.stop;
@@ -198,7 +177,6 @@ fn route_connection_hooked<S: SearchSink>(
         sink,
         engine,
         widths,
-        budget,
     );
     let (result, located) = match searched {
         Searched::InitFailed => {
@@ -284,7 +262,6 @@ fn conclude_attempt(
 /// ([`run_stats`](crate::run_stats), P01.2), with the A04 sink
 /// [`WorkCounters`](super::session::sink::WorkCounters), whose counts go to
 /// the statistics. The sink only observes, so the result is the same.
-/// `budget` is asked when the work limit fires (Q08); `None` is Java's stop.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn route_connection_counted(
     board: &mut RoutingBoard,
@@ -295,10 +272,9 @@ pub(crate) fn route_connection_counted(
     ripped: Ripped<'_>,
     engine: &mut DrillCarry,
     widths: Option<&dyn WidthPolicy>,
-    budget: Option<&mut dyn BudgetPolicy>,
 ) -> AttemptResult {
     if !crate::run_stats::enabled() {
-        return route_connection_hooked(
+        return route_connection_with_widths(
             board,
             start,
             dest,
@@ -308,13 +284,12 @@ pub(crate) fn route_connection_counted(
             super::session::sink::NoopSink,
             engine,
             widths,
-            budget,
         )
         .0;
     }
     let Ripped { items, costs } = ripped;
     let ripped_before = items.len();
-    let (result, counters) = route_connection_hooked(
+    let (result, counters) = route_connection_with_widths(
         board,
         start,
         dest,
@@ -327,7 +302,6 @@ pub(crate) fn route_connection_counted(
         super::session::sink::WorkCounters::default(),
         engine,
         widths,
-        budget,
     );
     let added = items.len().saturating_sub(ripped_before);
     crate::run_stats::record_connection(&counters, result.state, added);
@@ -408,14 +382,10 @@ fn search_and_locate<S: SearchSink>(
     sink: S,
     engine: &mut DrillCarry,
     widths: Option<&dyn WidthPolicy>,
-    budget: Option<&mut dyn BudgetPolicy>,
 ) -> (Searched, S) {
     let angle = board.rules.trace_angle_restriction();
     let mut session = Session::new(board, ctrl, limits.stop, limits.work_limit);
     session.set_width_policy(widths);
-    if budget.is_some() {
-        session.set_budget_policy(budget);
-    }
     // PARITY(quirk, java_quirks.fanout_stale_drill_carry): the engine's drill pages
     // (`AutorouteEngine.java:91`).
     session.install_drill_carry(std::mem::take(engine));

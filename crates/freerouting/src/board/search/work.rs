@@ -230,12 +230,6 @@ impl WorkLimit {
         self.max_units
     }
 
-    /// Allows `units` more units, saturating at `i64::MAX` as the
-    /// constructor does (Q08's earned budget; Java never extends a limit).
-    pub fn extend(&mut self, units: u64) {
-        self.max_units = self.max_units.saturating_add(units).min(i64::MAX as u64);
-    }
-
     /// The units done on `meter` since the limit was created.
     pub fn units_done(&self, meter: &WorkMeter) -> u64 {
         debug_assert_eq!(

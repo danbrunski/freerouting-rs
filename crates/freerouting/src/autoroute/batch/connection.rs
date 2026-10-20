@@ -59,7 +59,6 @@ use super::strict_drc::apply_strict_drc_after_route;
 use crate::autoroute::connection::{Ripped, RouteLimits, route_connection_counted};
 use crate::autoroute::control::AutorouteControl;
 use crate::autoroute::path::RipupCosts;
-use crate::autoroute::session::budget::BudgetPolicy;
 use crate::autoroute::session::drills::DrillCarry;
 use crate::autoroute::session::ripup::draws_random_factor;
 use crate::autoroute::session::search::SearchSettings;
@@ -238,26 +237,6 @@ pub(crate) fn attempt_with_widths(
     costs: &mut RipupCosts,
     widths: Option<&dyn WidthPolicy>,
 ) -> AttemptResult {
-    attempt_budgeted(
-        board, start, dest, control, limit, ctx, ripped, costs, widths, None,
-    )
-}
-
-/// [`attempt_with_widths`] whose search asks `budget` when the work limit
-/// fires (Q08); `None` is Java's stop.
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn attempt_budgeted(
-    board: &mut RoutingBoard,
-    start: &BTreeSet<ItemId>,
-    dest: &BTreeSet<ItemId>,
-    control: &AutorouteControl,
-    limit: &WorkLimit,
-    ctx: &StageCtx,
-    ripped: &mut BTreeSet<ItemId>,
-    costs: &mut RipupCosts,
-    widths: Option<&dyn WidthPolicy>,
-    budget: Option<&mut dyn BudgetPolicy>,
-) -> AttemptResult {
     let limits = RouteLimits {
         settings: SearchSettings::from_router(ctx.board_settings),
         stop: Some(ctx.cancel),
@@ -276,7 +255,6 @@ pub(crate) fn attempt_budgeted(
         ripped,
         &mut DrillCarry::default(),
         widths,
-        budget,
     )
 }
 
@@ -407,23 +385,6 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
         p: &ConnectionParams,
         ctx: &mut StageCtx,
     ) -> ConnectionOutcome {
-        self.route_with_budget(board, task, p, ctx, None)
-    }
-}
-
-impl FreeroutingConnectionRouter {
-    /// [`ConnectionRouter::route`] whose maze searches (the connection's and
-    /// its plane fallback's, not the neck-down retry's) ask `budget` when
-    /// the work limit fires (Q08's `earned-budget`). Each search starts the
-    /// policy anew ([`BudgetPolicy::on_start`]); `None` is Java's router.
-    pub fn route_with_budget(
-        &mut self,
-        board: &mut RoutingBoard,
-        task: &RouteTask,
-        p: &ConnectionParams,
-        ctx: &mut StageCtx,
-        mut budget: Option<&mut dyn BudgetPolicy>,
-    ) -> ConnectionOutcome {
         // PARITY: :42-46 before :48, and Java's catch returns FAILED.
         let Some(control) = router_control(board, task, p, ctx) else {
             return failed_outcome(AttemptResult::new(AttemptState::Failed));
@@ -454,7 +415,7 @@ impl FreeroutingConnectionRouter {
 
         let mut ripped = BTreeSet::new();
         let mut costs = RipupCosts::new();
-        let mut result = attempt_budgeted(
+        let mut result = attempt(
             board,
             &start,
             &dest,
@@ -463,8 +424,6 @@ impl FreeroutingConnectionRouter {
             ctx,
             &mut ripped,
             &mut costs,
-            None,
-            budget.as_deref_mut(),
         );
         if result.state == AttemptState::Failed
             && let Some(fallback) = fallback
@@ -472,7 +431,7 @@ impl FreeroutingConnectionRouter {
             // PARITY: :100-109, a new session, the same limit.
             dest = fallback;
             airline = calculate_airline(board, &start, &dest);
-            result = attempt_budgeted(
+            result = attempt(
                 board,
                 &start,
                 &dest,
@@ -481,8 +440,6 @@ impl FreeroutingConnectionRouter {
                 ctx,
                 &mut ripped,
                 &mut costs,
-                None,
-                budget,
             );
         }
         if result.state == AttemptState::Routed {

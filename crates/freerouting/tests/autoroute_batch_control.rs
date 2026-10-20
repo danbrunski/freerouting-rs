@@ -317,6 +317,29 @@ fn unknown_per_stage_id_is_an_error_naming_the_key_and_the_known_ids() {
     assert_eq!(error.known, ["freerouting-unrouted-report"]);
 }
 
+/// Q08's `earned-budget` connection router failed its keep rule and was
+/// removed (decided by Q08.3's keep rule, 2026-10-20): the id is now refused
+/// like any unknown one, naming the routers that remain.
+#[test]
+fn the_removed_earned_budget_router_is_refused_naming_the_known_routers() {
+    let settings = settings_with(|p| p.autorouter.connection_router = Some("earned-budget".into()));
+    let selection = StageSelection::from_settings(&settings);
+    let error = StageRegistry::builtin()
+        .build(&selection, &settings)
+        .unwrap_err();
+    assert_eq!(error.key, "router.autorouter.connection_router");
+    assert_eq!(error.id, "earned-budget");
+    assert_eq!(
+        error.known,
+        ["freerouting-connection", "transactional-ripup"]
+    );
+    assert_eq!(
+        error.to_string(),
+        "unknown stage id 'earned-budget' in router.autorouter.connection_router; known ids: \
+         freerouting-connection, transactional-ripup"
+    );
+}
+
 #[test]
 fn listed_board_stages_are_built_in_order() {
     let settings = settings_with(|p| {
