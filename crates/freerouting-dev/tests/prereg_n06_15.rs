@@ -61,7 +61,9 @@ fn the_pending_piece_registration_is_valid() {
     );
     assert!(prereg.pairs.iter().all(|p| p.rows.is_none()));
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 7);
+    // The DSN rows plus the plugin row (amendment 2: `canary-pwr-plugin`, hashed as
+    // its exported DSN, routed outside n06_run.py).
+    assert_eq!(prereg.boards.len(), 8);
     assert!(
         prereg
             .boards
@@ -149,9 +151,20 @@ fn each_arm_sets_its_profile_and_the_switch() {
 #[test]
 fn the_registered_inputs_hash_as_registered() {
     let json = json();
-    let Some(Json::Object(files)) = json.path("boards.files") else {
+    let Some(Json::Object(all)) = json.path("boards.files") else {
         panic!("boards.files")
     };
+    // The rows routed outside n06_run.py (amendment 2) are the plugin row only; its
+    // input is the plugin's export, which is not in the repository.
+    let Some(Json::Array(outside)) = json.path("boards.outside_runner") else {
+        panic!("boards.outside_runner")
+    };
+    let outside: Vec<&str> = outside.iter().filter_map(Json::as_str).collect();
+    assert_eq!(outside, ["canary-pwr-plugin"]);
+    let files: Vec<_> = all
+        .iter()
+        .filter(|(row, _)| !outside.contains(&row.as_str()))
+        .collect();
     let set = std::fs::read_to_string(repo().join(SET)).unwrap();
     let rows: Vec<&str> = set
         .lines()
@@ -159,7 +172,7 @@ fn the_registered_inputs_hash_as_registered() {
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
         .collect();
     assert_eq!(rows.len(), files.len());
-    for (input, want) in files {
+    for &(input, want) in &files {
         assert!(rows.contains(&input.as_str()), "{input} missing from {SET}");
         let bytes = std::fs::read(repo().join(input)).unwrap_or_else(|e| panic!("{input}: {e}"));
         assert_eq!(
@@ -184,6 +197,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_pending_piece_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "397fd09cc28f80dc88e778adef33e0d9a8d8e059b21896f841aca6c9e2ceb663"
+        "04376de54af271cdb1e5bb58a69de0bc627be3a9036df2f935c82f5b9b8efe6e"
     );
 }

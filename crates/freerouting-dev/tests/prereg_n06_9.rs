@@ -70,6 +70,12 @@ fn each_arm_sets_only_its_switches() {
     for (arm, ids) in expect {
         let spec = json.path(&format!("arms.{arm}")).expect(arm);
         let command = spec.get("command").and_then(Json::as_str).expect("command");
+        // Amendment 1: every arm names its profile (enhanced) explicitly.
+        assert_eq!(
+            command.matches("--router.profile=enhanced").count(),
+            1,
+            "{arm}: {command}"
+        );
         let flags = command.matches("--router.java_quirks.").count();
         assert_eq!(flags, ids.len(), "{arm}: {command}");
         let Some(Json::Object(settings)) = spec.get("settings") else {
@@ -123,6 +129,6 @@ fn the_registered_inputs_hash_as_registered() {
 fn the_batch_o_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "b8be8b1aae14f390d3a2de0a52f72853d525a13bf7881f03fced9541df8ec449"
+        "c5af6d94f4788a36f0d4184026cae59d6554a4fce36a83cd5940203283de07bb"
     );
 }

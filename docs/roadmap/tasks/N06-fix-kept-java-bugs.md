@@ -1210,7 +1210,7 @@ These are marked or look like quirks but keep no bug:
         which confirms the reviewed list's claim that it is unreachable. It gets no switch.
       - Batch P is **accepted**. Both switches are accepted for N06.13; `ENHANCED` is unchanged
         here.
-- [~] **N06.9 — Batch O, batch optimizer:** `opt_first_pass_stops` (a clear inside a pass
+- [x] **N06.9 — Batch O, batch optimizer:** `opt_first_pass_stops` (a clear inside a pass
   allows one more pass at normal ripup costs), `opt_equal_key_skip` (keep every sorted
   candidate).
   - This is the batch most likely to move `canary-pwr`, because it runs in every default run.
@@ -1263,7 +1263,7 @@ These are marked or look like quirks but keep no bug:
       `tests/reference_optimize.rs` and `java_ports.rs` tests in the workspace run
       (`cargo test --workspace --no-fail-fast`, private target: 230 suites, 2421 passed,
       0 failed, 53 ignored).
-    - [ ] Heavy run pending (orchestrator, one job at a time; release build of this tree):
+    - [x] Heavy run pending (orchestrator, one job at a time; release build of this tree):
       - Each row and each arm runs `freerouting -de {DSN} -do {SES} --gui.enabled=false
         --result-json {OUT}/result.json {ROW_FLAGS} {ARM_FLAGS}`. `{ARM_FLAGS}` is empty for
         `java`, `--router.java_quirks.opt_first_pass_stops=false` for `first_pass`,
@@ -1281,6 +1281,77 @@ These are marked or look like quirks but keep no bug:
         arm should give the same session. The registration records `optimizer_bypassed` per
         row. The claim that batch O "most likely moves canary-pwr" holds only where the
         router completes.
+  - *Done 2026-10-20:* the registered heavy run (heavy slot; worktree
+    `target/orchestrator/n06r4/wt`, branch `land/n06-runs4` on main `ed603f5`; one Linux release
+    CLI, sha256 `14712a93…`, `--version` git `ed603f538d3c`; every route under `ulimit -v
+    8000000`, one route and one kicad-cli at a time).
+    - Amendment 1, written after the build and the input hash checks and before any route
+      (sha256 now `c5af6d94f4788a36f0d4184026cae59d6554a4fce36a83cd5940203283de07bb`, re-pinned in
+      `prereg_n06_9.rs`, which now also checks that every arm names `--router.profile=enhanced`;
+      4 tests pass):
+      - The engine moves to main `ed603f5`. The registration ran "the default profile (enhanced,
+        whose ENHANCED table does not touch java_quirks)"; since N06.13 (main `e0610fc`)
+        `ENHANCED` sets 30 `java_quirks` keys to `false`, so every arm now gives
+        `--router.profile=enhanced` explicitly and names the binary, and an arm means enhanced with
+        those 30 fixes. Neither of the two keys is among them; the arms still differ only in them.
+      - No row routes in any-angle mode (no `snap_angle` in the DSN rows or in the demos' KiCad
+        exports), so `any_angle_room_side_index` keeps its default in every arm.
+      - `n06_run.py` cannot run this registration (per-row `ROW_FLAGS`, `{OUT}`, demo rows), so
+        `target/orchestrator/n06r4/run_o.py` substitutes the registered commands; every route
+        appends `--stats json` (observation only) because `phases.optimizer.duration_seconds` is
+        null at `ed603f5`, and `optimizer_seconds` is the stats' `optimizer_pass` seconds.
+      - canary-plugin45 (already in `boards.files`, `0c49b990…`) is graded with canary's
+        `grade.sh` (tools at 2a7e070b, the first that takes `GRADE_REV`) and `GRADE_REV=b1994423`,
+        twice per distinct session, the first grade counting.
+      - Hard metrics are option (b), no new breach versus the `java` arm (raw counts reported).
+        bm01 and bm02 read with the scratch tool `target/orchestrator/n06r4/n06m` on the engine at
+        `ed603f5` (input wiring stripped, SES at the writer's scale); `below_minimum` is the
+        registered nets-under-class-width count. Demo `drc_real` is `grade.sh`'s minus its
+        starved thermals, as registered.
+      - The verdict comes from `freerouting-dev gate --prereg --all-pairs`.
+      - `seen_before_registration` is unchanged; the amendment names the earlier routes of these
+        rows under other engines and settings (N05.3, Q14, K09, the Q series). No row had been
+        routed under this engine, profile and arms.
+    - First attempt aborted on a runner bug: a relative `--out` with the arm directory as working
+      directory, so the CLI could not write the four canary-plugin45 sessions (exit 1, no SES);
+      its `run.log` tail showed the `java` arm's router count (97 unrouted, 40 clearance). The bm01
+      `java` route was stopped. The same commands then ran with an absolute directory
+      (`target/orchestrator/n06r4/n06-o`, the attempt kept in `n06-o-attempt1`).
+    - 24 routes, all `COMPLETED`, none at the cap. On every row the four arms wrote the same
+      session byte for byte, so each row's values hold in every arm:
+
+      | row | connections | unrouted | KiCad unconnected | clearance | drc_real | vias | optimizer passes | optimizer s | wall s (java / both) | session |
+      |---|---|---|---|---|---|---|---|---|---|---|
+      | canary-plugin45 | 313 | 97 | 39 | 40 | 0 | 181 | bypassed (97 unrouted) | 0 | 78.3 / 78.2 | `ad6a4f0d` |
+      | bm01 | 195 | 0 | – | 0 | – | 141 | 1 | 19.2 / 19.7 | 48.4 / 49.0 | `c7c63cf1` |
+      | bm02 | 34 | 0 | – | 0 | – | 9 | 4 | 0.25 / 0.25 | 0.4 / 0.4 | `7d1d1ee8` |
+      | interf_u | 201 | 0 | 12 | 0 | 0 | 43 | 1 | 2.4 / 2.5 | 8.3 / 8.5 | `400acd82` |
+      | pic_programmer | 126 | 0 | 2 | 1 | 2 | 0 | bypassed (no vias, length within 5 %) | 0 | 0.3 / 0.3 | `7cae2a6b` |
+      | CM5_MINIMA_3 | 409 | 7 | 23 | 1 | 40 | 171 | bypassed (7 unrouted) | 0 | 40.3 / 40.1 | `5c63e547` |
+
+      Hard metrics: `via_in_pad` raw 0 on every row and arm; `below_minimum` raw 0 on every row
+      (KiCad `track_width` 0; bm01 and bm02 0 nets under their class width, while the traces under
+      the narrowest class width are 105 and 16, equal in every arm); option (b) 0 everywhere.
+      `optimizer_score`: bm01 0.0, bm02 820.0, interf_u 569.26 in every arm.
+    - canary-plugin45 grade (canary `grade.sh`, tools 2a7e070b, `GRADE_REV=b1994423`, WSL KiCad
+      10.0.7), graded twice on separate copies, both grades equal: 39 unconnected, 5
+      starved_thermal, 0 clearance, 0 shorting_items, 0 `track_width`, 0 schematic parity, 12
+      via_dangling (warning), 0 via-in-pad, 0 inner-layer tracks. Handoff:
+      `target/canary-handoff/2026-10-20-n06-o/` (README.txt, SHA256SUMS).
+    - Gate (`freerouting-dev` built at `ed603f5`, from the worktree): `freerouting-dev gate
+      --records target/orchestrator/n06r4/records-o.json --baseline
+      target/orchestrator/n06r4/baseline-o.json --prereg docs/roadmap/prereg/N06.9.json
+      --all-pairs` (records by `target/orchestrator/n06r4/build_records_o.py`, the baseline
+      written first by the same command with `--write-baseline`): 0 refusals, 6 of 6 rows judged,
+      every row neutral, total 76 → 76 (KiCad unconnected 76 → 76, unrouted 0 → 0), set noise
+      19.95, `gate: PASS` for the verdict pair `java → both` and both reported pairs.
+    - Reach: neither switch has a `run_stats` counter. The optimizer ran on 3 of the 6 rows (bm01
+      1 pass, bm02 4, interf_u 1, the same in every arm): `opt_first_pass_stops = false` added no
+      pass anywhere, and `opt_equal_key_skip = false` changed no session.
+    - Verdict: batch O passes as a neutral fix. Both switches are **accepted for N06.13**. By the
+      decision table N06.13 turns both off in `ENHANCED`; `ENHANCED` is unchanged here. The
+      claim that batch O "most likely moves canary-pwr" does not hold on the plugin path: the
+      optimizer never runs there (preflight guard 1).
 - [x] **N06.10 — Batch I, inputs and reports:** the five DSN and SES rows, `stats_line_ab_length`,
   `route_result_int_via_ratio`, `drc_units_10000_per_mm`.
   - **Accept:**
@@ -1818,7 +1889,7 @@ These are marked or look like quirks but keep no bug:
         `octagon_box_cutout_branch3` all `true`, then all `false`): at most 57 MB, exit 0.
       - Also the corpus inventory (read-only):
         `cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
-- [~] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
+- [x] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
   deeper level of `TraceShover.insert`'s recursion moves a via of another net (`shoveVias`) onto a
   substitute piece that is not on the board yet; the piece is then inserted over it, a short. Make
   N03.2's env-gated prototype (`target/orchestrator/n03/scratch/n03-2-fix-prototype.patch`) a switch.
@@ -1893,7 +1964,7 @@ These are marked or look like quirks but keep no bug:
       compares an arm with its own `baseline` arm when it names one, and copies each run's
       `connections` (the band's input) into `summary.json`; a smoke run of the four arms on
       `fixtures/scoring-perfect-two-pin.dsn` wrote them.
-    - [ ] Heavy run pending (orchestrator, from the worktree root, release build of this tree):
+    - [x] Heavy run pending (orchestrator, from the worktree root, release build of this tree):
       `CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.15.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-v`
       (28 runs; it exits non-zero after the last run when a session differs, and then the totals
       rule applies to `summary.json`'s `statistics` per verdict pair). Then the canary-pwr plugin
@@ -1907,6 +1978,87 @@ These are marked or look like quirks but keep no bug:
       `cargo test -p freerouting -p freerouting-cli --no-fail-fast` 1577 passed, 0 failed, 33
       ignored (155 suites); the N06 pin tests `prereg_n06_{4,5,6,7,8,9,12,14,15}` 37 passed;
       `python3 tools/roadmap/checklists.py status --strict` clean.
+  - *Done 2026-10-20:* the registered heavy run (heavy slot; worktree
+    `target/orchestrator/n06r4/wt`, branch `land/n06-runs4` on main `ed603f5`; one Linux release
+    CLI at the path the arms name, sha256 `14712a93…`, `--version` git `ed603f538d3c`; every route
+    under `N06_RUN_ULIMIT_KB=8000000` or `ulimit -v 8000000`, one route and one kicad-cli at a
+    time).
+    - Amendment 2, written after the build and the plugin export and before any registered route
+      (sha256 now `04376de54af271cdb1e5bb58a69de0bc627be3a9036df2f935c82f5b9b8efe6e`, re-pinned in
+      `prereg_n06_15.rs`, whose input test now leaves out `boards.outside_runner`; 4 tests pass):
+      - The engine moves to main `ed603f5`. Since N06.13 (main `e0610fc`) `ENHANCED` sets 30
+        `java_quirks` keys to `false`, so the `enhanced` arms measure the switch on top of those
+        30 fixes, which is the enhanced the fix would join. The arms already gave
+        `--router.profile`; their commands are unchanged. `legacy` is unaffected.
+      - The plugin row `canary-pwr-plugin` joins `boards.files`, hashed as its export (`155313a1…`:
+        canary 2a7e070b, `canary-graded-flow.json`, kicad-plugin at `ed603f5`, args
+        `ed73bb12…`), and `boards.outside_runner`.
+      - Hard metrics are option (b), no new breach versus each arm's own baseline arm. The DSN
+        rows are read with the scratch tool `target/orchestrator/n06r4/n06m` on the engine at
+        `ed603f5`.
+      - The verdict comes from `gate --prereg --all-pairs`, after the reachability clauses.
+      - No row is any-angle, so `any_angle_room_side_index` keeps its default in every arm.
+      - `seen_before_registration` is unchanged. The amendment names N06.13's routes of z10_module
+        and of a default-options canary export under enhanced at the default bounds.
+    - `n06_run.py`: 28 runs, all `COMPLETED`, none at the cap. It exits 1 because three sessions
+      differ from their baseline: GP8B `legacy_fix`, Protein `legacy_fix` and Protein
+      `enhanced_fix`. The numbers below come from the router's manifests. Counters are
+      `shove_via_into_pending_pieces` / `shove_pending_piece_foreign_traces` per arm, in the order
+      legacy baseline, legacy fix, enhanced baseline, enhanced fix:
+
+      | row | connections (band) | legacy unrouted | enhanced unrouted | vias (4 arms) | via counter | trace counter | router clearance |
+      |---|---|---|---|---|---|---|---|
+      | Issue066-Project_GP8B | 759 (38) | 61 → **59** | 48 → 48 | 690, 691, 695, 695 | 2, 1, 0, 0 | 1, 1, 0, 0 | 0 in all arms |
+      | Issue145-smoothieboard | 793 (40) | 19 → 19 | 15 → 15 | 488, 488, 481, 481 | 0 | 0 | 42 in all arms |
+      | Issue113-Protein | 444 (23) | 78 → **87** | 89 → **96** | 250, 246, 263, 264 | 1, 1, 2, 3 | 0 | 0 in all arms |
+      | Issue269-z10_module | 237 (12) | 37 → 37 | 37 → 37 | 129, 129, 131, 131 | 0 | 0 | 10 in all arms |
+      | Issue753-CPU-85_r104 | 569 (29) | 57 → 57 | 57 → 57 | 183, 183, 167, 167 | 0 | 0 | 76 in all arms |
+      | Issue508-DAC2020_bm01 | 195 (10) | 24 → 24 | 21 → 21 | 126, 126, 132, 132 | 0 | 0 | 0 in all arms |
+      | Issue593-BBD_Mars-64 | 106 (6) | 33 → 33 | 30 → 30 | 126, 126, 130, 130 | 0 | 0 | 0 in all arms |
+
+      GP8B's `legacy` arms repeat the light run at registration (61 → 59, counter 2). The
+      `enhanced` arms no longer reach the branch on GP8B: the 30 fixes change its route, so it
+      ends at 48 unrouted in both arms, with the counter at 0. Hard metrics: `via_in_pad` raw is 0
+      in every run. The raw count of traces below the narrowest class width falls or stays in
+      every fix arm (GP8B 267 → 257, Protein 98 → 86 and 106 → 80, the others equal), so option
+      (b) is 0 everywhere.
+    - Plugin row (canary 2a7e070b's board, sha256 `17b597a0…`, exported once; each arm's CLI
+      runs with the exported args, then its `--router.profile` and switch flag,
+      `target/orchestrator/n06r4/route_v.py`). Each fix arm writes its baseline's session:
+      `legacy` gives `0722867c…` (router: 80 unrouted, 133 clearance, 193 vias, 41 s) and
+      `enhanced` gives `a6b070cd…` (77 unrouted, 133 clearance, 195 vias, 53–55 s). Both
+      counters are 0 in all four arms.
+    - Grades of the two sessions: plugin import with the same options, then canary `grade.sh` with
+      tools at 2a7e070b and `GRADE_REV=2a7e070b`, on WSL KiCad 10.0.7. Each session was imported
+      and graded twice on separate copies, and both grades agree.
+      - `legacy`: 14 unconnected, 4 starved_thermal, 0 clearance, 0 shorting_items, 0
+        `track_width`, 0 schematic parity, 0 via-in-pad, 0 inner-layer tracks.
+      - `enhanced`: 15 unconnected, 4 starved_thermal, 0 clearance, 0 shorting_items, 0
+        `track_width`, 0 parity, 0 via-in-pad, 0 inner-layer tracks.
+      - Handoff: `target/canary-handoff/2026-10-20-n06-v/` (README.txt, SHA256SUMS).
+    - Gate, run from the worktree with `freerouting-dev` built at `ed603f5`: `freerouting-dev gate
+      --records target/orchestrator/n06r4/records-v.json --baseline
+      target/orchestrator/n06r4/baseline-v.json --prereg docs/roadmap/prereg/N06.15.json
+      --all-pairs`. The records come from `target/orchestrator/n06r4/build_records_v.py`, and the
+      baseline file was written first by the same command with `--write-baseline`. Result: 0
+      refusals, 8 of 8 rows judged per pair, `gate: PASS`.
+      - `legacy_baseline → legacy_fix`: GP8B improve, Protein regress (+9, band 23), the others
+        neutral. The total is 323 → 330 (unrouted 309 → 316, plugin KiCad unconnected 14 → 14)
+        against a set noise of 69.24. PASS.
+      - `enhanced_baseline → enhanced_fix`: Protein regress (+7), the others neutral. The total is
+        312 → 319 (unrouted 297 → 304, plugin 15 → 15), noise 69.24. PASS.
+      - No row is worse than twice its band, and the hard guards hold: no DSN row's router
+        clearance rises, and the plugin row's shorting_items, clearance and `drc_real` (4 → 4)
+        are unchanged.
+    - Verdict:
+      - Reachability: the counter is above 0 on GP8B (`legacy`) and Protein (both profiles), and
+        those sessions differ. So the totals rule decides, and both pairs pass as a no-regress
+        correctness fix.
+      - The cost is Protein's 7 to 9 more unrouted connections, within its band. Under
+        `enhanced`, GP8B no longer reaches the branch.
+      - `shove_via_into_pending_piece` is **accepted for N06.13** under `enhanced`, which is
+        N03.3's answer; the `legacy` pair passes too, and `legacy` keeps the switch `true`.
+        `ENHANCED` is unchanged here.
 - [x] **N06.16 — Any-angle memory blow-up:** `any_angle_room_side_index` (the (b) row added above).
   A `legacy` route of A07's `Issue026-J2_reference-any` reached 5.4 GB at 11 s and two uncapped
   attempts took the WSL machine down (N06.12's amendment 2); `Issue143-rpi_splitter-any` aborted
