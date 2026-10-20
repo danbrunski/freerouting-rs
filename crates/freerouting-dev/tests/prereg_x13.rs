@@ -105,7 +105,7 @@ fn every_arm_names_its_rows_and_the_registered_commits() {
 fn the_x13_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "10733a3bad3b6ace886e6bbe0a0baa31e0f2a870c563fab42a275f02ebe18049",
+        "ca960b3f9dc451b6d2c28c028b87be82c78bd3c55161b337bc85f9c206425150",
         "docs/roadmap/prereg/X13.json changed: record the change in its amendments"
     );
 }

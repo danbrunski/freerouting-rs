@@ -1,4 +1,4 @@
-# X13 head-to-head rerun (docs/roadmap/tasks/X13-head-to-head-rerun.md), registered in
+# X13 head-to-head rerun (docs/roadmap/tasks/archive/X13-head-to-head-rerun.md), registered in
 # docs/roadmap/prereg/X13.json. Source boards; the arms route prepared copies (X01's for
 # pic_programmer and interf_u, X13's for sonde_xilinx, a git archive for canary-pwr).
 # KiCad 10.0.7 (WSL-native) for every grade; never mix KiCad versions.

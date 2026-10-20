@@ -98,7 +98,7 @@
       "canary-pwr-2a7e070b": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58",
       "interf_u": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1",
       "pic_programmer": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5",
-      "sonde_xilinx": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998"
+      "sonde_xilinx": "bf51f2f73be37f575928a715cade9e5a97afdf5f582f7305e9b5dacb09bc678a"
     },
     "files_note": "pic_programmer and interf_u: X01's prepared inputs (checked at registration: unchanged in $X01_DIR). canary-pwr: the archived board, unedited and not refilled (the plugin refills before its export; KRT fills itself). sonde_xilinx: the source's hash until heavy_run.prepare has run; amendment 1 replaces it with the prepared board's hash before the first engine run (as X01 amendment 1)",
     "rows_chosen": "X13's decision names ecc83, sonde, StickHub, interf_u, coldfire and canary-pwr (the pilot's boards); X13.1's accept names X01's 4 demos (pic_programmer, interf_u, kit-dev-coldfire-xilinx_5213, video). Under the 2026-10-20 rules (a measurement run takes a few minutes in total and never an hour; canary-pwr may run; every other board routes well under a minute; one KiCad grade per session) the rows are the ones every registered arm routes quickly: pic_programmer (X01: java 3.8 s engine, krt 16.6 s), sonde_xilinx (48 connections; freerouting-rs 0.37 s in Q04's bench), interf_u for fr-legacy only (X01 java 45.7 s engine; krt 282.6 s, so krt-strict is not run there), and canary-pwr.",
@@ -262,5 +262,18 @@
     "estimate": "about 12 to 15 min in total, most of it canary-pwr: KRT 260 s on canary 9511d9a in X01, the plugin route 103 to 129 s on 2a7e070b in N06.13's round 1; every demo route under 50 s by X01's and Q04's times; 9 KiCad grades (7 demo, 2 canary; no input is graded again), plus pcbnew steps that are not grades (sonde's strip and refill, the plugin's export and import)"
   },
   "seen_before_registration": "No route of any arm at a25c82f24c90af5edfc75601ed96e00605ab47b9 or of krt-strict on any registered row before this registration; the implementer routed and graded nothing. Seen: (1) X01 (KiCad 10.0.7, its prereg 32a86ec8...): pic_programmer java 2 unconnected / drc_real 2 / 0 vias / 1541.1 mm / 3.8 s engine, krt (without --no-power-tap-neckdown) 0 / 6 (silk_overlap) / 38 / 1557.5 mm / 16.6 s; interf_u java 13 / 11 / 75 / 4979.3 mm / 45.7 s, krt 18 / 9 / 163 / 4190.6 mm / 282.6 s; coldfire java 49 / 218, krt 11 / 10 (8 vias in pads); video java 170 / 206, krt 111 / 41 (8 vias in pads); canary-pwr 9511d9a (canary-23's grade): java 47 unconnected, krt 35 with 22 vias in pads and 701 inner-layer tracks. (2) The 2026-10-15 pilot (Java de7a4fd2c, KiCad 10.0.5), unrouted / new copper DRC / mm under class width: sonde Freerouting 3 / 2 / 35, KRT strict 0 / 0 / 0; ecc83 0 / 0 / 0 for all; StickHub 29 / 161 / 42 vs strict 8 / 39 / 0; interf_u 13 / 11 / 162 vs 18 / 8 / 70; canary-pwr 78 / 57 / 175 vs 60 / 29 / 122; coldfire 44 / 214 / 290 vs 15 / 7 / 187. (3) freerouting-rs on canary 2a7e070b: canary-7a's 14 unconnected (plugin path at b93bcd0 with -mp 1, ripup 1500, sweep free x2, not the default options); N06.13 round 1's plugin row with default options (enhanced): 17 (main 0e3f1d5) and 15 (e0610fc) unconnected, routes of 103 to 129 s. (4) Q04's bench: Issue690-sonde_xilinx (the DSN fixture of the sonde demo, not this prepared board) routes in 0.26 to 0.37 s.",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-20",
+      "reason": "Amendment 1, as registered (heavy_run.prepare): heavy_run.prepare ran before any engine run on any registered row. The sonde_xilinx source (d0dee876..., 208 tracks, 0 arcs, 3 vias, 1 copper zone, 25 footprints) was copied, stripped and refilled by tools/krt-h2h/prep_board.py with KiCad 10.0.7's pcbnew; the prepared board has 0 tracks, 0 arcs and 0 vias and keeps its 1 copper zone and 25 footprints ($X13/boards/sonde_xilinx/log/before.json, after.json). The registered input is now the prepared board. pic_programmer and interf_u were checked unchanged (796ce2f9..., 832b5066...). Nothing else changes.",
+      "changes": {
+        "boards.files": {
+          "sonde_xilinx": {
+            "from": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998",
+            "to": "bf51f2f73be37f575928a715cade9e5a97afdf5f582f7305e9b5dacb09bc678a"
+          }
+        }
+      }
+    }
+  ]
 }

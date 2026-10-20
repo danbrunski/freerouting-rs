@@ -31,7 +31,7 @@ board parity (rung 3).
 | [X10](archive/X10-qfn-escape.md) ✅ | QFN/QFP escape stubs as a fanout stage, paired with Q02 | S–M / medium | rung 3; A10; B05; B09; Q02; F04 |
 | [X11](archive/X11-bus-ordering-and-attraction.md) ✅ | Bus detection, middle-out order, attraction cost | S–M / medium | rung 3; A10; A04 cost hook; F04 |
 | [X12](archive/X12-bga-escape-planner.md) ✅ | Dense-BGA channel escape planner as a fanout stage | L / high | rung 3; A10; K05.5 (part frames); B09; F04 |
-| [X13](X13-head-to-head-rerun.md) | X01 again: freerouting-rs (legacy, enhanced+sweep, plugin) against KRT held to the rules; where KRT still wins, why | M / low: report only | X01 harness; Q10; K09; Q15 |
+| [X13](archive/X13-head-to-head-rerun.md) ✅ | X01 again: freerouting-rs (legacy, enhanced+sweep, plugin) against KRT held to the rules; where KRT still wins, why | M / low: report only | X01 harness; Q10; K09; Q15 |
 
 Sizes: S under about 2k lines of Rust, M 2–5k, L 5–10k.
 
