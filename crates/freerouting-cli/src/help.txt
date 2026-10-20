@@ -18,7 +18,6 @@ ROUTING PROFILES
 EXPERIMENTAL OPTIONS
   Off in every profile, each with the board class it wins on and its
   measured numbers in --list-stages (the "Experimental" section):
-  --router.via_clearance=net_class, --router.cleanup.remove_stubs=true,
   --router.room_order=canonical, --router.work_unit=leaves, and the stage
   --router.special.diff_pairs=krt-diffpair. They are kept under N02's rule:
   they win on a nameable board class or wait for a measurement, and none is

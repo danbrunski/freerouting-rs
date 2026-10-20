@@ -41,7 +41,7 @@ use freerouting::quality::stubs::{StubCleanup, input_copper, is_removable_stub, 
 use freerouting::scoring::BoardStatistics;
 use freerouting::settings::profile::legacy_pin;
 use freerouting::settings::profiles::TestingProfile;
-use freerouting::settings::{Profile, ResolveContext, Source};
+use freerouting::settings::{FieldValue, Profile, ResolveContext, Source};
 
 const STUBS: &str = "crates/freerouting/tests/data/quality/q16-stubs.dsn";
 
@@ -270,7 +270,7 @@ fn with_the_setting_unset_or_off_the_pipeline_removes_nothing() {
 }
 
 #[test]
-fn the_setting_is_listed_with_the_optimizer_and_unset_in_both_profiles() {
+fn the_setting_is_listed_with_the_optimizer_unset_in_legacy_and_on_in_enhanced() {
     let registry = StageRegistry::builtin();
     for profile in [Profile::Legacy, Profile::Enhanced] {
         let slots = catalog(&registry, profile, 8);
@@ -280,6 +280,8 @@ fn the_setting_is_listed_with_the_optimizer_and_unset_in_both_profiles() {
             .flat_map(|s| s.options.iter())
             .find(|o| o.path == "cleanup.remove_stubs")
             .expect("the option is listed");
-        assert_eq!(option.default, None, "{profile:?}");
+        // N05.3 (Q16.5): profile `enhanced` turns the cleanup on.
+        let expected = (profile == Profile::Enhanced).then_some(FieldValue::Bool(true));
+        assert_eq!(option.default, expected, "{profile:?}");
     }
 }

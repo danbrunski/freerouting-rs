@@ -504,7 +504,7 @@ settings_table! {
         cleanup, CleanupPatch, CleanupSettings, "cleanup",
         "The final cleanup after the last routing or optimizer step (Q16; not a Java section)." {
             (remove_stubs, bool, opt, None, None, "removeStubs", [], Flat::No, true,
-                "Remove routed vias and traces that connect fewer than two items of their net, counted as KiCad counts contacts, at the end of the run (unset: off; Q16)."),
+                "Remove routed vias and traces that connect fewer than two items of their net, counted as KiCad counts contacts, at the end of the run (unset: off, profile `legacy`; Q16); profile `enhanced` turns it on (N05.3)."),
         }
         transaction, TransactionPatch, TransactionSettings, "transaction",
         "The `transactional-ripup` connection router (Q11; not a Java section)." {

@@ -23,7 +23,8 @@
 //!    stop ([`StopLevel::All`]), and disarmed when it ends; the stage's log
 //!    lines go into the job log;
 //! 5. Q16's stub cleanup ([`remove_stubs`](crate::quality::stubs::remove_stubs))
-//!    when `router.cleanup.remove_stubs` is on (unset is off): after the
+//!    when `router.cleanup.remove_stubs` is on (unset is off; profile `enhanced`
+//!    sets it, N05.3): after the
 //!    optimizer and the board stages of its phase, also after a stop; it
 //!    keeps every trace and via of the board as handed in;
 //! 6. [`RouterEvents::finished`] hands the board to the listener by move;

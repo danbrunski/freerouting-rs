@@ -525,3 +525,6 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
   its 96 unrouted items open at 0.06 s with and without any option (the stripped demo; cause not
   diagnosed), and canary-pwr routes to 26 unconnected with the board's minimums as floors (the coordinator
   recorded 18 on the plugin path before Q18).
+  - *Promoted 2026-10-20:* `cleanup.remove_stubs = true` joined profile `enhanced` under N05.3
+    (decided 2026-10-20: the one failed guard, sonde-xilinx `clearance` = 1, is in both arms and
+    comes from copper text the DSN lacks, Q22; the cleanup's own results passed every guard).

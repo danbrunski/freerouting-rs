@@ -174,6 +174,13 @@ fn enhanced_sets_via_clearance_net_class() {
 }
 
 #[test]
+fn enhanced_sets_cleanup_remove_stubs() {
+    // N05.3 from Q16.5, docs/roadmap/prereg/Q16-5.json: the final stub cleanup
+    // runs; unset (off, Java leaves the stubs) under `legacy`.
+    assert_enhanced_sets("cleanup.remove_stubs", "true", None, "false");
+}
+
+#[test]
 fn enhanced_sets_neck_down_widen_back() {
     // N05.3 from Q17.4, docs/roadmap/prereg/Q17.4.json: the necked retry's
     // narrow traces are widened back to the class width where they fit;

@@ -441,6 +441,27 @@ Prerequisites: N01; each candidate's own accepted measurement.
     this `enhanced`. canary-7a's grade: canary's own `grade.sh` in the measurement, one grade per
     distinct session (decided 2026-10-20: no separate pass).
 
+  - **2026-10-20, accepted (Q16.5): `router.cleanup.remove_stubs = true`** (Q16's final stub
+    cleanup with Q16.4's contacts and Q16.5's connected-contacts guard). Registration
+    `docs/roadmap/prereg/Q16-5.json` (amendment 2, sha256 `a17c579f…`, pinned by
+    `crates/freerouting-dev/tests/prereg_q16_5.rs`); boards canary-pwr (d6199b48, plugin path),
+    sonde-xilinx and complex_hierarchy; engine b98074e, arms `enhanced-default` and
+    `enhanced-default+cleanup`. N02 totals, `accept: no-regress`: KiCad unconnected 108 → 108
+    (set noise 9.11); canary-pwr dangling vias 8 → 0 with unconnected 26 → 26, no new DRC item,
+    the cleanup run and its rerun byte-identical (`cmp`) on all three boards. `freerouting-dev
+    gate` printed **FAIL** on one hard guard, `sonde xilinx.clearance = 1`; decided 2026-10-20:
+    the sonde clearance item is in both arms and comes from copper text the DSN lacks (Q22), so
+    it is not the candidate's effect and the setting is promoted. Thin evidence: only canary-pwr
+    has a stub to remove. `ENHANCED` entry (`settings/profile.rs`), DIVERGENCES "Profile
+    `enhanced`" line `cleanup.remove_stubs`, `tests/settings_profile.rs::enhanced_sets_cleanup_remove_stubs`,
+    `tests/stage_catalog.rs::defaults_follow_the_profile` (the optimizer slot's
+    `cleanup.remove_stubs` defaults to `true` under `enhanced` only), the option left
+    `EXPERIMENTAL` (`catalog.rs`, `--list-stages`, `help.txt`, `freerouting-cli/tests/profiles.rs`),
+    help text in `settings/fields.rs`. No separate confirmation (decided 2026-10-20: the
+    measurement is the confirmation): the candidate arm ran `--router.cleanup.remove_stubs=true`
+    on `enhanced` at b98074e, which is this `enhanced` plus the setting. Q20 (the output check,
+    `repair` in `enhanced`) may still promote.
+
   *Partial 2026-10-20:* no run of N05.3's own is pending. The list waits for the measurements cut
   to minutes on 2026-10-20 (decided 2026-10-20: measurement runs stay a few minutes): N03.3
   (`prereg/N03.json`, new), N04.3 (`N04.json` amendment 3), Q04.4 (`Q04.json` amendment 2),

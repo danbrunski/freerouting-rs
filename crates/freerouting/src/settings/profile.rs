@@ -44,7 +44,8 @@
 //! `simplex_octagon_half_corner`, accepted together by
 //! `docs/roadmap/prereg/N06.14b.json`, whose candidate arm was this table's
 //! `enhanced`. Q17.4 (2026-10-20) added `neck_down.widen_back = true` on top
-//! of the necked retry at 300 um. Adding one is one entry
+//! of the necked retry at 300 um, and Q16.5 (decided 2026-10-20) added
+//! `cleanup.remove_stubs = true`. Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
 //! entry is a valid settings key and value, and that `enhanced` sets it.
@@ -130,6 +131,16 @@ pub const ENHANCED: &[Difference] = &[
                       manufacturing rules; with no board minimum supplied, the narrowest class \
                       width of the design is the minimum track width); its cost measured in \
                       Q18.6 (docs/roadmap/prereg/Q18.json)",
+    },
+    Difference {
+        path: "cleanup.remove_stubs",
+        value: "true",
+        measurement: "N05.3 from Q16.5 (docs/roadmap/prereg/Q16-5.json, amendment 2, sha256 \
+                      a17c579f..., under enhanced): the final stub cleanup; canary-pwr dangling \
+                      vias 8 -> 0, KiCad unconnected 26 -> 26, no new DRC item, deterministic \
+                      (decided 2026-10-20: the gate's one hard-guard breach, sonde-xilinx \
+                      clearance = 1, is in both arms and comes from copper text the DSN lacks, \
+                      Q22)",
     },
     Difference {
         path: "java_quirks.init_failure_room_leak",

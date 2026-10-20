@@ -104,8 +104,8 @@ fn defaults_follow_the_profile() {
         .expect("the option");
     assert_eq!(passes.default, Some(FieldValue::Int(20)));
     // `enhanced` lists the same apart from its table's keys that are stage
-    // options: the neck width, the via clearance and the widen-back (N05.3;
-    // `power_layer_traces` is no option).
+    // options: the neck width, the via clearance, the widen-back and the stub
+    // cleanup (N05.3; `power_layer_traces` is no option).
     let mut expected = legacy.clone();
     for slot in &mut expected {
         for option in &mut slot.options {
@@ -118,6 +118,10 @@ fn defaults_follow_the_profile() {
                 option.default = Some(FieldValue::Str("net_class".into()));
             }
             if option.path == "neck_down.widen_back" {
+                assert_eq!(option.default, None);
+                option.default = Some(FieldValue::Bool(true));
+            }
+            if option.path == "cleanup.remove_stubs" {
                 assert_eq!(option.default, None);
                 option.default = Some(FieldValue::Bool(true));
             }
@@ -189,9 +193,10 @@ fn experimental_options_are_real_listed_marked_and_unset_in_every_profile() {
             );
         }
     }
-    // The N02.4 sort: these three options are the in-tree opt-ins
-    // (`via_clearance` left the list when N05.3 put `net_class` in `enhanced`).
-    for key in ["cleanup.remove_stubs", "room_order", "work_unit"] {
+    // The N02.4 sort: these two options are the in-tree opt-ins
+    // (`via_clearance` and `cleanup.remove_stubs` left the list when N05.3 put
+    // them in `enhanced`).
+    for key in ["room_order", "work_unit"] {
         assert!(seen.iter().any(|(_, k)| *k == key), "{key} is experimental");
     }
     // Nothing else is marked.

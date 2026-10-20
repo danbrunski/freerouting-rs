@@ -349,8 +349,8 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `the_necked_retry_stays_at_the_board_minimum`, `vias_under_the_board_minimums_are_made_at_the_floor`,
   `routed_vias_meet_the_board_minimums`).
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
-  by default and in both profiles (off: Java leaves the stubs of unfinished connections on the
-  board). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
+  by default and in `legacy` (off: Java leaves the stubs of unfinished connections on the
+  board); profile `enhanced` turns it on (N05.3, the "Profile `enhanced`" line below). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
   that phase's board stages, also after a stop: every trace or via the router inserted during
   the run (no item of the board as handed to `run_pipeline` is ever removed, locked or not, so a
   designer's unfinished track stays) that is unfixed, of one net, dangling as KiCad counts it
@@ -1824,6 +1824,17 @@ checks that this list and the table agree.
   under it (`tests/board_minimums.rs`, `from_classes_floors_at_the_narrowest_class_width`); a
   known minimum (`board_minimums.track_width_um`, the plugin's or a `.kicad_pro`'s) replaces it.
   Java necks down to the pin's width, floored only by `min_trace_width_um`.
+- `cleanup.remove_stubs` = `true` (N05.3 from Q16.5, `docs/roadmap/prereg/Q16-5.json`, amendment 2,
+  sha256 `a17c579f…`; decided 2026-10-20): the final cleanup (above, `quality::stubs`) removes the
+  routed vias and traces that join fewer than two items of their net, as KiCad counts contacts;
+  Java leaves them. Judged by N02's totals rule (`accept: no-regress`) over canary-pwr's plugin
+  path, sonde-xilinx and complex_hierarchy: KiCad unconnected 108 → 108 (set noise 9.11),
+  canary-pwr's dangling vias 8 → 0 with unconnected 26 → 26, no new DRC item, and the cleanup
+  run and its rerun byte-identical on all three. The gate printed FAIL on one hard guard,
+  sonde-xilinx `clearance` = 1, which is in both arms (their sessions are byte-identical) and
+  comes from copper text the DSN does not carry (Q22): decided 2026-10-20 that it is not the
+  candidate's effect. Thin evidence: only canary-pwr has a stub to remove. The known limit
+  (a trace ending inside a plane's outline outside KiCad's fill is kept as a joint) stands.
 
 The `java_quirks` lines below are N06's Java-bug fixes that N06.13 promoted on 2026-10-19, each
 under N06's accept rule: measured and neutral, or not reached by any registered row and accepted

@@ -133,12 +133,7 @@ fn list_stages_marks_the_experimental_options_and_stages() {
         .iter()
         .filter_map(|e| string_of(member(e, "key")))
         .collect();
-    for key in [
-        "router.cleanup.remove_stubs",
-        "router.room_order",
-        "router.work_unit",
-        "krt-diffpair",
-    ] {
+    for key in ["router.room_order", "router.work_unit", "krt-diffpair"] {
         assert!(listed.iter().any(|k| k == key), "{key} in {listed:?}");
     }
     // The option is marked inside its slot too.
@@ -151,14 +146,7 @@ fn list_stages_marks_the_experimental_options_and_stages() {
         }
     }
     marked.sort();
-    assert_eq!(
-        marked,
-        [
-            "router.cleanup.remove_stubs",
-            "router.room_order",
-            "router.work_unit"
-        ]
-    );
+    assert_eq!(marked, ["router.room_order", "router.work_unit"]);
     let out = run_in(&dir, &["--list-stages"]);
     let text = stdout(&out);
     assert!(
