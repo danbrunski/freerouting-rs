@@ -244,6 +244,12 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
     `clearance_violations` equal on every row. So a longer canary timeout would not change the
     verdict. With the canary's interrupted count the nodes fall 34.1 %, but that count is cut
     short by the timeout.
+  - *Correction 2026-10-20 (Q19, bed86e2):* this table's d3c `drc_real` counts were graded
+    under KiCad's default rules, not the boards' own: `grade.sh` dropped the `.kicad_pro` that
+    KiCad converts from these KiCad 4 boards. Under their own rules the baseline's `clearance`
+    is 0 on d3c-0496 (was 169) and d3c-0599 (was 88), and d3c-0496's `drc_real` is 208, not 400
+    (Q19.3). The verdict stands without the `drc_real` guard: the canary timeout fails the run,
+    and the signal and speed clauses fail on their own.
 - [~] **N03.4 — The faster tree** (P04.3's plan, only after N03.3 accepts an arm).
   - Try a bulk-loaded R-tree with struct-of-arrays bounds, plus incremental leaf
     updates. The result sets must be identical, so routes are identical against
