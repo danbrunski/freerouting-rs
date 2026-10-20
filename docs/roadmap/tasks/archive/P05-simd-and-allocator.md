@@ -47,7 +47,7 @@ only a profile showing it.
 
 ## Checklist
 
-- [~] **P05.1 — Struct-of-arrays bounds for the tree's hot loop.**
+- [x] **P05.1 — Struct-of-arrays bounds for the tree's hot loop.**
   If P01 shows overlap queries are hot, store each tree node's children's
   bounds as struct-of-arrays and test them in a loop the compiler can
   vectorize. Check the assembly for vector instructions
@@ -72,7 +72,25 @@ only a profile showing it.
   above; kept. The quiet-machine re-run and the six long boards are dropped (decided 2026-10-20:
   measurement runs stay a few minutes)." Owner of the decision: P00 (the series' README).
 
-- [~] **P05.2 — Explicit SIMD octagon tests.**
+  *Done 2026-10-20:* closed on the evidence of the 2026-10-18 note, checked to exist:
+  - result sets: `crates/freerouting/tests/tree_lanes.rs` and `shape_tree::tests::{lane_queries_equal_scalar_queries,
+    mixed_kinds_take_the_scalar_path}` and `crates/freerouting-geometry/tests/simd_lanes.rs` are in
+    the tree; `target/orchestrator/p05/logs/tree-lanes-release.log` and `tree-lanes-B.log` end in
+    `test result: ok`, `EXIT 0`;
+  - SES (the small parity check, decided 2026-10-20: Java-identity clauses are met by it):
+    `target/orchestrator/p05/logs/parity-B.log` (`connection-parity.txt`), `parity-bench-small.log`
+    (the nine quick `benchmark` boards, 21.8 s) and `parity-bench753.log` (`Issue753-CPU-85_r104`,
+    46.1 s), each `autoroute_board_parity ... ok`, `EXIT 0`;
+  - before and after: callgrind base `kernel/overlap` 43,012,728 in
+    `target/orchestrator/p05/logs/cg-base.json` and `ov-base.cg` (`cdc9865`), layout A 30,569,862
+    in `ov-p051.cg`; the kept layout B's 22,748,250 (-47.1 %) and the indicative wall times
+    (overlap 1.75x / 1.80x) are recorded in the 2026-10-18 note and
+    `target/orchestrator/p05/progress-p05.md` (the raw microbench output was not kept);
+  - kept: faster on every count and timing.
+  The quiet-machine re-run and the six long `benchmark` boards are dropped (decided 2026-10-20:
+  measurement runs stay a few minutes, no quiet-machine wall-time guards).
+
+- [x] **P05.2 — Explicit SIMD octagon tests.**
   Only if P05.1's autovectorized loop leaves a measurable gap. Test 8 octagon
   bounds per comparison with `core::arch` (SSE4.1/AVX2 on x86_64, NEON on
   aarch64) behind runtime detection, with a scalar fallback.
@@ -94,7 +112,17 @@ only a profile showing it.
   trial is `target/orchestrator/p05/p05.2-avx2-trial.patch`; the quiet-machine confirmation is
   dropped (decided 2026-10-20)." Owner of the decision: P00.
 
-- [~] **P05.3 — Allocator trial.**
+  *Done 2026-10-20:* tried and rejected. Evidence checked to exist: the trial is
+  `target/orchestrator/p05/p05.2-avx2-trial.patch` (6,822 bytes); the agreement test, callgrind
+  `kernel/overlap` 22,748,250 -> 20,107,833 (-11.6 %) and the wall ratios 0.953x
+  (`Issue433-my-board`) / 1.026x (`Issue145-smoothieboard`) are in the 2026-10-18 note and
+  `target/orchestrator/p05/progress-p05.md` ("P05.2 AVX2 trial REJECTED"); the raw microbench
+  output was not kept. Below the 1.2x the clause asks even by instruction count (1.13x at most);
+  nothing of the trial is in the tree (`grep -n avx2 crates/freerouting-geometry/src/simd.rs`:
+  none), so the CI clause does not apply. The quiet-machine confirmation is dropped (decided
+  2026-10-20: no quiet-machine wall-time guards).
+
+- [x] **P05.3 — Allocator trial.**
   Try `mimalloc` as the global allocator in the CLI and GUI binaries, never in
   the library crates.
   - **Accept:**
@@ -115,3 +143,18 @@ only a profile showing it.
   Proposed close note (not ticked here): "*Done 2026-10-20:* tried and removed (numbers above);
   not adopted (decided 2026-10-20: no quiet-machine wall-time run, and the RSS gain needs a purge
   setting behind a further dependency)." Owner of the decision: P00.
+
+  *Done 2026-10-20:* tried, removed, numbers recorded (the clause's "otherwise remove it and record
+  the numbers"). Evidence checked to exist: the trial is
+  `target/orchestrator/p05/p05.3-mimalloc-trial.patch` (4,577 bytes); the RSS proxy numbers above
+  are in `target/orchestrator/p05/logs/rss.log` (system 78,516 / 92,088 / 118,200 KiB, after drop
+  76,980; mimalloc defaults 121,812 / 138,264 / 142,524, after drop 142,524) and `rss-purge.log`
+  (purge delay 0: 51,476 / 52,236 / 60,296, after drop 32,268); identical SES in
+  `target/orchestrator/p05/logs/cli-ab.log` (`SES:identical` on 8 boards, the 7 named plus
+  `Issue649-kicad_ecc83-pp_input_board_v1`). That log's time fields are empty and it ends `EXIT
+  143`, so the CLI wall times above survive only in the 2026-10-18 note and
+  `target/orchestrator/p05/progress-p05.md`; the ±2 % clause is not judged on them. No `mimalloc`
+  in any `Cargo.toml` or `main.rs` (`grep -rn mimalloc Cargo.toml crates/*/Cargo.toml
+  crates/*/src/main.rs`: none). Not adopted (decided 2026-10-20: no quiet-machine wall-time run,
+  and the RSS gain needs a purge setting behind a further dependency, `cty` via the crate's
+  `extended` feature).

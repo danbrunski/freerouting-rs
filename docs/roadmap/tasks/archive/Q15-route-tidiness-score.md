@@ -68,7 +68,7 @@ Prerequisites: F03 (the bench and gate), F02.6 (the KiCad oracle), C05 (the SES 
     wires are cut where another wire touches a corner, because the engine's connectivity only
     joins trace ends.
 
-- [~] **Q15.2 — In the bench and the grader.** `freerouting-dev bench` and the KiCad grading
+- [x] **Q15.2 — In the bench and the grader.** `freerouting-dev bench` and the KiCad grading
   scripts (`tools/kicad-oracle/grade.sh`) add the five measures to their records, and
   `compare` shows them.
   - **Accept:** a bench run on the P04 set shows them; the records' schema is documented.
@@ -115,7 +115,39 @@ Prerequisites: F03 (the bench and gate), F02.6 (the KiCad oracle), C05 (the SES 
      --gui.enabled=false"`, then `tidiness` in `target/q15/grade-ecc83/summary.json`.
   Owner: this item; X13 reads the records.
 
-- [~] **Q15.3 — A baseline.** Score Java's route references, freerouting-rs `legacy`, and
+  *Done 2026-10-20:* both runs of the 2026-10-20 note, from release builds of `freerouting` and
+  `freerouting-dev` of main `f4cafa2` (`CARGO_BUILD_JOBS=2`, own target dir), load 4.4 to 4.8, no
+  quiet-machine condition (decided 2026-10-20):
+  1. `bash -c 'ulimit -v 8000000; freerouting-dev bench --set tools/bench/sets/quick-benchmark.txt
+     --rust <release>/freerouting --runs 1 --max-load off --timeout 120 --out <dir>'`: exit 0, all
+     9 rows finished (none timed out; `canary-pwr-pours1` 100.14 s, the others 0.02 to 5.41 s),
+     every run in `bench.json` has a `tidiness` object (`format`, `connections`, `skipped`,
+     `nets`, `bend_degrees`, `jog_widths`, `measures`), and `bench.md` has the second table:
+
+     | board | connections | detour | bends/10mm | acute | jogs | vias/conn |
+     |---|---|---|---|---|---|---|
+     | Issue433-my-board | 9 | 1.15 / 1.41 | 2.08 / 6.13 | 0.00 / 0.00 | 0.00 / 1.00 | 0.00 / 2.00 |
+     | Issue649-kicad_ecc83-pp_input_board_v1 | 14 | 1.06 / 1.08 | 1.03 / 2.71 | 0.00 / 0.00 | 0.00 / 1.00 | 0.00 / 0.00 |
+     | Issue508-DAC2020_bm02 | 34 | 1.10 / 1.35 | 2.80 / 10.13 | 0.00 / 0.00 | 0.00 / 1.00 | 0.00 / 1.00 |
+     | Issue690-sonde_xilinx | 38 | 1.17 / 1.64 | 2.74 / 3.99 | 0.00 / 0.00 | 1.00 / 3.00 | 0.00 / 0.00 |
+     | Issue508-DAC2020_bm07 | 86 | 1.13 / 1.46 | 4.12 / 8.37 | 0.00 / 0.00 | 0.00 / 2.00 | 0.00 / 1.00 |
+     | Issue508-DAC2020_bm10 | 199 | 1.14 / 1.74 | 2.51 / 7.55 | 0.00 / 0.00 | 0.00 / 2.00 | 0.00 / 2.00 |
+     | Issue093-interf_u | 162 | 1.08 / 1.48 | 0.73 / 2.44 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 2.00 |
+     | Issue555-CNH_Functional_Tester_1 | 151 | 1.07 / 1.23 | 0.69 / 1.84 | 0.00 / 0.00 | 0.00 / 1.00 | 0.00 / 0.00 |
+     | canary-pwr-pours1 | 135 | 1.09 / 1.72 | 4.49 / 12.66 | 0.00 / 0.00 | 0.00 / 2.00 | 0.00 / 1.00 |
+
+     (median / p90 per connection; `canary-pwr-pours1` ran 3 passes, its bound, with 122
+     incomplete, so its row scores what was routed);
+  2. `FREEROUTING_DEV=<release>/freerouting-dev tools/kicad-oracle/grade.sh --out <dir>
+     /usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb -- bash -c "ulimit -v 8000000; exec timeout -k
+     10 120 <release>/freerouting -de '{DSN}' -do '{SES}' --gui.enabled=false"` (KiCad 10.0.7, one
+     grade): exit 0, `graded: drc_real=0 preexisting=17 unconnected_items=0 (input 14)`, and
+     `summary.json` has `tidiness`: 14 connections, 0 skipped, 8 nets, detour 1.06 / 1.08,
+     bends/10mm 1.03 / 2.71, acute 0 / 0, jogs 0 / 1, vias 0 / 0.
+  The schema clause is the 2026-10-17 note's (4): `tools/bench/README.md` ("Tidiness (Q15.2)", "The
+  record"), `tools/kicad-oracle/README.md` (`tidiness`) and the `gate_collect` module table.
+
+- [x] **Q15.3 — A baseline.** Score Java's route references, freerouting-rs `legacy`, and
   `enhanced` with the sweep on the X13 boards.
   - **Accept:** a table in the done note, used by X13.
 
@@ -161,3 +193,26 @@ Prerequisites: F03 (the bench and gate), F02.6 (the KiCad oracle), C05 (the SES 
   `tools/bench/q15-baseline.sh legacy target/q15/baseline` and `tools/bench/q15-baseline.sh
   enhanced-sweep target/q15/baseline`; the two printed tables go here beside the `java-ref` rows.
   Owner: this item; X13 uses the table.
+
+  *Done 2026-10-20:* `tools/bench/q15-baseline.sh legacy <dir>` and `tools/bench/q15-baseline.sh
+  enhanced-sweep <dir>` with `FREEROUTING`/`FREEROUTING_DEV` set to release builds of main
+  `f4cafa2`, each route under `ulimit -v 8000000` and `timeout 120`: both exit 0, 1.9 s and 2.2 s
+  for the three boards. Coldfire is left out (decided 2026-10-20: measurement runs stay a few
+  minutes); its `java-ref` row is in the table above.
+
+  | board | arm | connections | incomplete | detour | bends/10mm | acute | jogs | vias/conn |
+  |---|---|---|---|---|---|---|---|---|
+  | Issue690-ecc83 | legacy | 8 | 6 | 1.12 / 1.27 | 2.60 / 3.89 | 0.00 / 0.00 | 1.00 / 4.00 | 0.00 / 0.00 |
+  | Issue690-sonde_xilinx | legacy | 38 | 11 | 1.17 / 1.64 | 2.74 / 3.99 | 0.00 / 0.00 | 1.00 / 3.00 | 0.00 / 0.00 |
+  | Issue093-interf_u | legacy | 162 | 19 | 1.08 / 1.48 | 0.73 / 2.44 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 2.00 |
+  | Issue690-ecc83 | enhanced-sweep | 8 | 6 | 1.12 / 1.27 | 2.60 / 3.89 | 0.00 / 0.00 | 1.00 / 4.00 | 0.00 / 0.00 |
+  | Issue690-sonde_xilinx | enhanced-sweep | 38 | 11 | 1.17 / 1.64 | 2.74 / 3.99 | 0.00 / 0.00 | 1.00 / 3.00 | 0.00 / 0.00 |
+  | Issue093-interf_u | enhanced-sweep | 162 | 19 | 1.08 / 1.48 | 0.73 / 2.44 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 2.00 |
+
+  All three arms score the same on these boards because the sessions are the same: `cmp` finds
+  each `legacy` SES byte-identical to Java's reference in `fixtures/reference/route/` and to the
+  `enhanced-sweep` SES. The sweep added nothing: its log says "Add-only sweep (free) reached its
+  pass limit: 2 pass(es)" with incomplete 6 -> 6 (ecc83), 11 -> 11 (sonde) and 19 -> 19
+  (interf_u), violations 0 -> 0. On these three boards tidiness does not separate the arms;
+  X13's grading list ("Q15's tidiness score when it exists") reads this table and the
+  `tidiness` records of Q15.2.
