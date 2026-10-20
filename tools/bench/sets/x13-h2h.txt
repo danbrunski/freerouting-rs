@@ -1,0 +1,16 @@
+# X13 head-to-head rerun (docs/roadmap/tasks/X13-head-to-head-rerun.md), registered in
+# docs/roadmap/prereg/X13.json. Source boards; the arms route prepared copies (X01's for
+# pic_programmer and interf_u, X13's for sonde_xilinx, a git archive for canary-pwr).
+# KiCad 10.0.7 (WSL-native) for every grade; never mix KiCad versions.
+#
+# KiCad's bundled demos. pic_programmer and interf_u route X01's prepared inputs
+# ($X01_DIR/boards/<row>/prepared); interf_u carries only the fr-legacy arm (the check
+# against X01's Java arm).
+/usr/share/kicad/demos/pic_programmer
+/usr/share/kicad/demos/interf_u
+# Copied to sonde_xilinx.kicad_pcb/.kicad_pro (the source name has a space), then stripped and
+# refilled with tools/krt-h2h/prep_board.py.
+/usr/share/kicad/demos/sonde xilinx
+# The owner's board at canary 2a7e070b (git archive, unedited; hand-laid copper kept), graded
+# with canary's hardware/tools/grade.sh at GRADE_REV=2a7e070b.
+~/code/canary/hardware/canary-pwr-rev1.0

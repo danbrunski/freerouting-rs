@@ -48,11 +48,36 @@ Prerequisites: X01's harness (`tools/krt-h2h/`); Q10; K09 for the plugin arm.
 
 ## Checklist
 
-- [ ] **X13.1 — Rerun.** Register the arms, boards and versions (freerouting-rs commit,
+- [~] **X13.1 — Rerun.** Register the arms, boards and versions (freerouting-rs commit,
   KRT commit) before the first number. Then run every arm.
   - **Accept:**
     - one table, same columns as X01's plus the tidiness score;
     - `fr-legacy` matches X01's Java arm on the 4 demos, or the difference is explained.
+  - *Partial 2026-10-20:* registered, nothing routed. `docs/roadmap/prereg/X13.json`, sha256
+    `10733a3bad3b6ace886e6bbe0a0baa31e0f2a870c563fab42a275f02ebe18049`, pinned by
+    `crates/freerouting-dev/tests/prereg_x13.rs` (`cargo test -p freerouting-dev --test
+    prereg_x13`: 3 passed); set `tools/bench/sets/x13-h2h.txt`. Versions: freerouting-rs
+    `a25c82f`, kicad-plugin at the same commit, KRT `0486e799` (X01's export and venv), KiCad
+    10.0.7 for every grade, no Java run (X01's recorded Java arm is the reference). Arms:
+    `fr-legacy` (`--router.profile=legacy --router.scoring.start_ripup_costs=1500`, X01's Java
+    flags) on pic_programmer, interf_u and sonde_xilinx; `fr-enhanced-sweep` on pic_programmer
+    and sonde_xilinx; `fr-plugin` (default options) on canary-pwr, where it stands in for
+    `fr-enhanced-sweep`; `krt-strict` (X01's krt flags plus `--no-power-tap-neckdown`) on
+    pic_programmer, sonde_xilinx and canary-pwr. Rows, under the 2026-10-20 time rules:
+    X01's prepared pic_programmer and interf_u, sonde_xilinx (prepared in the run; its hash goes
+    in amendment 1 before the first route), canary-pwr at canary `2a7e070b` graded by canary's
+    `grade.sh` with `tools/krt-h2h/wsl-kicad-bin`. Dropped before registration: ecc83 (0 for every
+    pilot arm), StickHub (KRT's time unknown), coldfire and video (X01: 313 to 3825 s), so the
+    `fr-legacy` check covers 2 of X01's 4 demos (DSN hash equal to X01's, then `ses-diff` against
+    X01's Java SES). `tools/krt-h2h/run.sh` gained the arms `fr-legacy`, `fr-enhanced-sweep`,
+    `krt-strict` and `ROUTE_ULIMIT_KB` (`bash -n` clean; not yet run on a board). **Heavy run
+    pending**: the registration's `heavy_run` steps in order (setup, prepare, amendment 1,
+    `cd $R && export X01_DIR=$X13 X01_TIMEOUT=120 ROUTE_ULIMIT_KB=8000000 && for row in
+    pic_programmer sonde_xilinx; do for arm in fr-legacy fr-enhanced-sweep krt-strict; do
+    tools/krt-h2h/run.sh --arm $arm --board $row --allow-load --load-wait 0; done; done &&
+    tools/krt-h2h/run.sh --arm fr-legacy --board interf_u --allow-load --load-wait 0`, then the
+    legacy check and the canary steps), every route under `ulimit -v 8000000`, one at a time;
+    estimated 12 to 15 min. Then the table and the accept clauses (X13.1).
 - [ ] **X13.2 — Where KRT still wins, find out why.** Use `classify.py` on each board where
   `krt-strict` leaves fewer unrouted than `fr-enhanced+sweep`. For each class with at least
   3 connections, name the part of KRT's flow that routes them: its order, its fanout, its

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Routes one X01 board with one arm, grades it and writes one record (X01.5).
+# Routes one X01 board with one arm, grades it and writes one record (X01.5; X13.1's arms).
 #
-#   tools/krt-h2h/run.sh --arm java|krt|krt-kicad --board ROW [--rep N] [--allow-load]
-#                        [--max-load L] [--load-wait SECONDS]
+#   tools/krt-h2h/run.sh --arm java|krt|krt-kicad|krt-strict|fr-legacy|fr-enhanced-sweep
+#                        --board ROW [--rep N] [--allow-load] [--max-load L] [--load-wait SECONDS]
 #
 # ROW is a row of docs/roadmap/prereg/X01.json, prepared by prep.sh under $X01_DIR/boards/ROW.
 # Before starting, waits up to --load-wait (default 600) s for the 1-minute load average to be
@@ -18,6 +18,15 @@
 #            and no pcbnew reachable, then grade_routed.sh on the result. canary-pwr: no
 #            grading here, as above.
 # krt-kicad  the same with kicad-cli-shim.sh as kicad-cli (optional, reported only).
+# krt-strict X13: the krt arm with --no-power-tap-neckdown added (docs/roadmap/prereg/X13.json).
+# fr-legacy, fr-enhanced-sweep
+#            X13: the freerouting-rs CLI FR_BIN in place of the jar, graded as the java arm
+#            (grade.sh --keep-tracks); fr-legacy gives --router.profile=legacy and the java
+#            arm's --router.scoring.start_ripup_costs=1500, fr-enhanced-sweep
+#            --router.profile=enhanced --router.autorouter.sweep=free
+#            --router.autorouter.sweep_passes=2. Not for the canary-pwr row.
+# ROUTE_ULIMIT_KB, when set, caps every route's address space (ulimit -v, kB); grading is not
+# capped.
 # Then copper_stats.py (vias and length added) and via_in_pad_kicad.py on the routed board.
 #
 # Writes $X01_DIR/runs/ROW/ARM[-repN]/record.json (metrics, commands, environment set, exit
@@ -31,11 +40,20 @@ JAVA_HEAP=${JAVA_HEAP:--Xmx3g}
 JAR="$X01_DIR/java/freerouting-$JAVA_PIN.jar"
 KRT_FLAGS=(--nets '*' --fab-tier standard --escalation off --same-net-pad-clearance 0.1
   --no-fix-drc-settings --keep-input-copper)
+KRT_STRICT_FLAGS=("${KRT_FLAGS[@]}" --no-power-tap-neckdown)
+FR_BIN=${FR_BIN:-}
+FR_LEGACY_FLAGS=(--router.profile=legacy --router.scoring.start_ripup_costs=1500)
+FR_SWEEP_FLAGS=(--router.profile=enhanced --router.autorouter.sweep=free
+  --router.autorouter.sweep_passes=2)
+CAP=()
+if [[ -n "${ROUTE_ULIMIT_KB:-}" ]]; then
+  CAP=(/bin/bash -c 'ulimit -v "$0" && exec "$@"' "$ROUTE_ULIMIT_KB")
+fi
 CANARY_ROW=canary-pwr-9511d9a
 CANARY_DSN="$REPO_ROOT/fixtures/canary-pwr/canary-pwr-9511d9a.dsn"
 
 usage() {
-  echo "usage: $0 --arm java|krt|krt-kicad --board ROW [--rep N] [--allow-load] [--max-load L] [--load-wait S]" >&2
+  echo "usage: $0 --arm java|krt|krt-kicad|krt-strict|fr-legacy|fr-enhanced-sweep --board ROW [--rep N] [--allow-load] [--max-load L] [--load-wait S]" >&2
   exit 2
 }
 ARM="" ROW="" REP="" ALLOW_LOAD="" MAX_LOAD=1.0 LOAD_WAIT=600
@@ -50,7 +68,7 @@ while [[ $# -gt 0 ]]; do
     *) usage ;;
   esac
 done
-[[ "$ARM" =~ ^(java|krt|krt-kicad)$ && -n "$ROW" ]] || usage
+[[ "$ARM" =~ ^(java|krt|krt-kicad|krt-strict|fr-legacy|fr-enhanced-sweep)$ && -n "$ROW" ]] || usage
 PREP_DIR="$X01_DIR/boards/$ROW/prepared"
 INPUT=$(ls "$PREP_DIR"/*.kicad_pcb 2> /dev/null | head -n 1)
 [[ -n "$INPUT" ]] || { echo "no prepared board for $ROW (run prep.sh)" >&2; exit 2; }
@@ -108,9 +126,26 @@ case "$ARM" in
       ROUTED="$GRADE_DIR/routed/$BASE.kicad_pcb"
     fi
     ;;
-  krt | krt-kicad)
+  fr-legacy | fr-enhanced-sweep)
+    [[ -x "$FR_BIN" ]] || { echo "FR_BIN is not an executable freerouting-rs CLI" >&2; exit 2; }
+    [[ "$ROW" != "$CANARY_ROW" ]] || { echo "$ARM does not route $CANARY_ROW" >&2; exit 2; }
+    FR_FLAGS=("${FR_SWEEP_FLAGS[@]}")
+    [[ "$ARM" == fr-legacy ]] && FR_FLAGS=("${FR_LEGACY_FLAGS[@]}")
+    ENGINE=("${CAP[@]}" "$FR_BIN" -de {DSN} -do {SES} --gui.enabled=false "${FR_FLAGS[@]}")
+    ENGINE_CMD="${ENGINE[*]}"
+    "$ORACLE_DIR/grade.sh" --out "$GRADE_DIR" --keep-tracks "$INPUT" -- \
+      "${TIMER[@]}" timeout "$TIMEOUT" "${ENGINE[@]}" > "$OUT/grade.log" 2>&1
+    GRADE_EXIT=$?
+    ENGINE_EXIT=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('engine_exit', ''))" \
+      "$GRADE_DIR/summary.json" 2> /dev/null)
+    OUTPUT="$GRADE_DIR/work/$BASE.ses"
+    ROUTED="$GRADE_DIR/routed/$BASE.kicad_pcb"
+    ;;
+  krt | krt-kicad | krt-strict)
     [[ -x "$KRT_VENV/bin/python" ]] || { echo "no KRT venv (run setup-krt.sh)" >&2; exit 2; }
-    if [[ "$ARM" == krt ]]; then RUN_PATH=$(no_kicad_path) || exit 2; else RUN_PATH=$(shim_path) || exit 2; fi
+    if [[ "$ARM" != krt-kicad ]]; then RUN_PATH=$(no_kicad_path) || exit 2; else RUN_PATH=$(shim_path) || exit 2; fi
+    RUN_FLAGS=("${KRT_FLAGS[@]}")
+    [[ "$ARM" == krt-strict ]] && RUN_FLAGS=("${KRT_STRICT_FLAGS[@]}")
     mkdir -p "$OUT/input" "$OUT/routed"
     cp "$PREP_DIR"/* "$OUT/input/"
     chmod u+w "$OUT"/input/*
@@ -118,12 +153,12 @@ case "$ARM" in
     for ext in kicad_pro kicad_dru; do
       [[ -f "$PREP_DIR/$BASE.$ext" ]] && cp "$PREP_DIR/$BASE.$ext" "$OUT/routed/" && chmod u+w "$OUT/routed/$BASE.$ext"
     done
-    ENGINE_CMD="$KRT_VENV/bin/python -E -s py_router/route.py {IN} {OUT} ${KRT_FLAGS[*]}"
+    ENGINE_CMD="${CAP[*]} $KRT_VENV/bin/python -E -s py_router/route.py {IN} {OUT} ${RUN_FLAGS[*]}"
     ENV_SET="PATH=$RUN_PATH; KICAD_CLI unset; cwd $KRT_EXPORT"
     [[ "$ARM" == krt-kicad ]] && ENV_SET="$ENV_SET; KRT_SHIM_LOG=$OUT/shim.log"
     (cd "$KRT_EXPORT" && env -u KICAD_CLI PATH="$RUN_PATH" KRT_SHIM_LOG="$OUT/shim.log" \
-      "${TIMER[@]}" timeout "$TIMEOUT" "$KRT_VENV/bin/python" -E -s py_router/route.py \
-      "$OUT/input/$BASE.kicad_pcb" "$OUTPUT" "${KRT_FLAGS[@]}") > "$OUT/engine.log" 2>&1
+      "${TIMER[@]}" timeout "$TIMEOUT" "${CAP[@]}" "$KRT_VENV/bin/python" -E -s py_router/route.py \
+      "$OUT/input/$BASE.kicad_pcb" "$OUTPUT" "${RUN_FLAGS[@]}") > "$OUT/engine.log" 2>&1
     ENGINE_EXIT=$?
     ROUTED="$OUTPUT"
     ;;
@@ -132,7 +167,7 @@ END=$(date +%s.%N)
 LOAD_AFTER=$(load1)
 WALL=$(python3 -c "import sys; print(round(float(sys.argv[2]) - float(sys.argv[1]), 2))" "$START" "$END")
 
-if [[ "$ARM" != java && "$ROW" != "$CANARY_ROW" ]]; then
+if [[ "$ARM" == krt* && "$ROW" != "$CANARY_ROW" ]]; then
   python3 - "$OUT/meta-in.json" "$ENGINE_CMD" "$ENGINE_EXIT" "$WALL" << 'PY'
 import json, sys
 json.dump({"engine_command": sys.argv[2], "engine_exit": int(sys.argv[3]),

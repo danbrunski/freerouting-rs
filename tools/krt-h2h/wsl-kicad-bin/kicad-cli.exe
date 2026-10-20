@@ -1,0 +1,3 @@
+#!/bin/bash
+# See conv.sh.
+exec "$(dirname "$0")/conv.sh" /usr/bin/kicad-cli "$@"

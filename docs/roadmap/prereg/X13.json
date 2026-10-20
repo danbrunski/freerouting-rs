@@ -1,0 +1,266 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "X13-head-to-head-rerun",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/X13-head-to-head-rerun.md (X13.1)",
+  "question": "Held to each board's own design rules (D8) and graded by the same KiCad 10.0.7 DRC with the input board's DRC subtracted, does KiCadRoutingTools in its strict mode (krt-strict) still leave fewer KiCad-unconnected items than freerouting-rs at main a25c82f (profile enhanced with the add-only sweep on the demos, a default-options plugin run on canary-pwr), on which rows, and at what cost in vias, length, time, memory and tidiness? And does freerouting-rs profile legacy reproduce X01's Java arm on the X01 demos it reruns? A report, not a keep rule: it picks X13.2's boards and changes no default.",
+  "verdict": "none: a report (X13, 'Report, not a keep rule'). The registered outputs are the table (report.table) and the two per-row comparisons in report.comparisons. pass_rule is kept for the parser only and judges nothing.",
+  "engine": "freerouting-rs at main a25c82f24c90af5edfc75601ed96e00605ab47b9, one Linux release build of freerouting-cli and freerouting-dev from a detached worktree (heavy_run.setup); the plugin arm runs kicad-plugin from that same worktree. KRT 0486e799144050d4e826f71bb31acdc7275af2a2 from X01's git archive export and venv ($X01_DIR/krt, $X01_DIR/venv; built and recorded by X01.2, krt-env.json), unchanged since X01 (KiCadRoutingTools HEAD is still that commit at registration). No Java run: X01's recorded Java arm (jar a773a70ec, sha256 c9b7da4a...) is the reference for fr-legacy (decided 2026-10-20: Java compatibility is a lower priority; no Java arm unless the item cannot be answered without it).",
+  "arms": {
+    "fr-enhanced-sweep": {
+      "engine": "freerouting-rs a25c82f24c90af5edfc75601ed96e00605ab47b9, $FR (target/orchestrator/x13/fr-target/release/freerouting)",
+      "command": "$FR -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+      "rows": [
+        "pic_programmer",
+        "sonde_xilinx"
+      ],
+      "settings": {
+        "profile": "enhanced",
+        "router.autorouter.sweep": "free",
+        "router.autorouter.sweep_passes": 2,
+        "other": "nothing else: the checklist's flags only (no start_ripup_costs, no pass limit, no min_trace_width_um)"
+      },
+      "runner": "tools/krt-h2h/run.sh --arm fr-enhanced-sweep (DSN exported by tools/kicad-oracle/grade.sh --keep-tracks from the prepared board, as X01's java arm)"
+    },
+    "fr-legacy": {
+      "engine": "freerouting-rs a25c82f24c90af5edfc75601ed96e00605ab47b9, the same binary",
+      "command": "$FR -de {DSN} -do {SES} --gui.enabled=false --router.profile=legacy --router.scoring.start_ripup_costs=1500",
+      "rows": [
+        "pic_programmer",
+        "interf_u",
+        "sonde_xilinx"
+      ],
+      "settings": {
+        "profile": "legacy",
+        "router.scoring.start_ripup_costs": 1500,
+        "other": "X01's java arm's flags with the jar replaced: Java's default pass limit and optimizer"
+      },
+      "runner": "tools/krt-h2h/run.sh --arm fr-legacy"
+    },
+    "fr-plugin": {
+      "engine": "freerouting-rs a25c82f24c90af5edfc75601ed96e00605ab47b9 through kicad-plugin at a25c82f24c90af5edfc75601ed96e00605ab47b9 (K09.9 has landed): headless_run.py export with the plugin's default options, the same binary, headless_run.py import",
+      "command": "$FR -de {PLUGIN_DSN} -do {SES} --progress json --result-json {RESULT} <the args of {PLUGIN_WORK}/canary-pwr.args.json, verbatim>",
+      "rows": [
+        "canary-pwr-2a7e070b"
+      ],
+      "settings": {
+        "options": {
+          "schema": 4,
+          "profile": "enhanced"
+        },
+        "options_note": "profile_defaults('enhanced'): what a new board starts from, sweep free (K09.9); the argument order is the plugin's (tools.route_args: files, --progress json, --result-json, then the option flags)"
+      },
+      "what": "on canary-pwr this arm stands in for fr-enhanced-sweep (X13.2 compares krt-strict with it there): the operator's path, and the plugin's enhanced default already adds the sweep; fr-enhanced-sweep is not run on canary-pwr (time rule)"
+    },
+    "krt-strict": {
+      "engine": "KiCadRoutingTools 0486e799144050d4e826f71bb31acdc7275af2a2 (X01's export, venv and grid_router.so, sha256 2a2648ff...)",
+      "command": "$X01_DIR/venv/bin/python -E -s py_router/route.py {IN} {OUT} --nets '*' --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper --no-power-tap-neckdown",
+      "rows": [
+        "pic_programmer",
+        "sonde_xilinx",
+        "canary-pwr-2a7e070b"
+      ],
+      "settings": {
+        "options": "X01's krt arm (--fab-tier standard, --escalation off, --same-net-pad-clearance 0.1, --no-fix-drc-settings, --keep-input-copper) plus the pilot's strict --no-power-tap-neckdown (X13: 'held to the board's rules')",
+        "environment": "as X01's krt arm: cwd $X01_DIR/krt, PATH=$X01_DIR/venv/bin:$X01_DIR/nokicad-bin, KICAD_CLI unset (no kicad-cli; KRT may still reach KiCad's exact fill through /usr/bin/python3, X01 amendment 3, recorded from its log)"
+      },
+      "runner": "demos: tools/krt-h2h/run.sh --arm krt-strict (then grade_routed.sh); canary-pwr: heavy_run.canary"
+    }
+  },
+  "baseline_arm": "fr-enhanced-sweep",
+  "candidate_arm": "krt-strict",
+  "not_registered": "KRT's default arm (breaks the rules, D8; X13); fr-enhanced-sweep and fr-legacy on canary-pwr and fr-plugin on the demos (the time rule; on canary-pwr fr-plugin is the enhanced+sweep arm); a Java arm (decided 2026-10-20); determinism repeats (D2; X01.5 measured both engines); krt-kicad (X01.2: KRT made no KiCad call through the shim)",
+  "boards": {
+    "set": "tools/bench/sets/x13-h2h.txt",
+    "kicad": "10.0.7 (WSL-native /usr/bin/kicad-cli and the system python3's pcbnew) for every grade, canary-pwr's included (canary's grade.sh with KICAD_BIN=tools/krt-h2h/wsl-kicad-bin)",
+    "sources": {
+      "canary-pwr-2a7e070b": {
+        "path": "~/code/canary/hardware/canary-pwr-rev1.0 at canary 2a7e070b (git archive; the board base and the number to beat, 14, at registration; canary HEAD c2020a48 adds the operator's hand routing to 6 unconnected and is not the input)",
+        "kicad_pcb": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58",
+        "kicad_pro": "c44fd214855fda1b99f15ad13cea069a915f1e34bda8591258e076ec7b6fab77",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8"
+      },
+      "interf_u": {
+        "path": "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb; X01's prepared input $X01_DIR/boards/interf_u/prepared (X01 amendment 1)",
+        "kicad_pcb": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e"
+      },
+      "pic_programmer": {
+        "path": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb; X01's prepared input $X01_DIR/boards/pic_programmer/prepared",
+        "kicad_pcb": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb"
+      },
+      "sonde_xilinx": {
+        "path": "/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb (KiCad 10.0.7), copied as sonde_xilinx.kicad_pcb with its .kicad_pro as sonde_xilinx.kicad_pro (no .kicad_dru), then stripped and refilled (heavy_run.prepare)",
+        "kicad_pcb": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998",
+        "kicad_pro": "ee60a96f93cc36549b52da9b3eea9547d5ea1e83a671c449668987edfb73a901"
+      }
+    },
+    "files": {
+      "canary-pwr-2a7e070b": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58",
+      "interf_u": "832b50665ec009d94faaacd12d6c0c517667b72a7579507668f20e05ff8b5ed1",
+      "pic_programmer": "796ce2f97aa32f01ad61886818d707416e6b7f50fc6c74766d3717867fd446c5",
+      "sonde_xilinx": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998"
+    },
+    "files_note": "pic_programmer and interf_u: X01's prepared inputs (checked at registration: unchanged in $X01_DIR). canary-pwr: the archived board, unedited and not refilled (the plugin refills before its export; KRT fills itself). sonde_xilinx: the source's hash until heavy_run.prepare has run; amendment 1 replaces it with the prepared board's hash before the first engine run (as X01 amendment 1)",
+    "rows_chosen": "X13's decision names ecc83, sonde, StickHub, interf_u, coldfire and canary-pwr (the pilot's boards); X13.1's accept names X01's 4 demos (pic_programmer, interf_u, kit-dev-coldfire-xilinx_5213, video). Under the 2026-10-20 rules (a measurement run takes a few minutes in total and never an hour; canary-pwr may run; every other board routes well under a minute; one KiCad grade per session) the rows are the ones every registered arm routes quickly: pic_programmer (X01: java 3.8 s engine, krt 16.6 s), sonde_xilinx (48 connections; freerouting-rs 0.37 s in Q04's bench), interf_u for fr-legacy only (X01 java 45.7 s engine; krt 282.6 s, so krt-strict is not run there), and canary-pwr.",
+    "dropped_before_registration": {
+      "ecc83": "the pilot routed it to 0 unrouted, 0 new DRC items and 0 mm under class width with every arm: no signal",
+      "stickhub": "KRT's time on it was never measured (the pilot gives none) and X01 left it out (CC BY-NC-SA); not provably quick",
+      "kit-dev-coldfire-xilinx_5213": "X01: krt 313 s, java 485 s",
+      "video": "X01: krt 3825 s, java 3397 s"
+    }
+  },
+  "grading": {
+    "demos": "tools/kicad-oracle (F02.6) as X01: the fr arms through grade.sh --keep-tracks on the prepared board (run.sh), krt-strict through tools/krt-h2h/grade_routed.sh on KRT's routed board against the prepared input; the board's ORIGINAL .kicad_pro/.kicad_dru over both graded boards, copper severities forced to error, kicad-cli pcb drc --severity-all --refill-zones, the prepared input's own items subtracted. Q15.2's tidiness is added by both graders from FREEROUTING_DEV",
+    "canary-pwr": "canary's hardware/tools/grade.sh from a git archive of canary 2a7e070b, GRADE_REV=2a7e070b, KICAD_BIN=tools/krt-h2h/wsl-kicad-bin (WSL KiCad 10.0.7, as N06.13's plugin row): the routed .kicad_pcb replaces the board as is (fr-plugin: the plugin's headless import of the SES; krt-strict: KRT's board), then kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py and inner_tracks.py. Nothing is subtracted (canary's rule: a result counts when its only errors are unconnected items and starved thermals); drc_real is every error other than unconnected and starved_thermal. Tidiness and copper statistics from freerouting-dev tidy and copper_stats.py (no KiCad)",
+    "one_grade_per_session": "every session or routed board is graded once (decided 2026-10-20); no regrade",
+    "not_graded": "exit 2, a timeout, a memory-cap abort, a crash or no output fails that row for that arm and is reported with its exit status; never a pass, never rerun under this registration"
+  },
+  "timeout": "per route, timeout(1): 120 s on the demo rows (X01_TIMEOUT=120), 900 s on canary-pwr. It only stops a run; a stopped run is not graded (grading.not_graded)",
+  "memory_cap": "every route runs under ulimit -v 8000000 (kB): run.sh's ROUTE_ULIMIT_KB=8000000 on the demo rows, /bin/bash -c 'ulimit -v 8000000 && exec ...' on canary-pwr. KiCad steps (prepare, export, import, grade) are not capped. X01's krt peak RSS: 0.47 GB pic_programmer, 2.56 GB canary-pwr 9511d9a, 4.1 GB interf_u",
+  "load_rule": "the machine is shared: run.sh --allow-load --load-wait 0; the 1-minute load before and after is recorded and wall time is an upper bound (report only). One route or KiCad job at a time",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "demos: tools/krt-h2h/via_in_pad_kicad.py on the routed board; canary-pwr: canary via_in_pad.py"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "demos: grader copper.json below_minimum; canary-pwr: KiCad track_width plus annular_width and hole errors"
+    },
+    {
+      "name": "inner_tracks",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "canary-pwr only: canary inner_tracks.py (tracks on the In1 power layer)"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower",
+      "source": "demos: grader summary drc_real; canary-pwr: grade.sh errors other than unconnected and starved_thermal"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower",
+      "source": "KiCad unconnected_items of the routed board after refill"
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false,
+      "source": "tools/krt-h2h/copper_stats.py: vias added relative to the input"
+    },
+    {
+      "name": "length_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false,
+      "tol": 1e-06,
+      "source": "tools/krt-h2h/copper_stats.py: segment and arc length added relative to the input"
+    },
+    {
+      "name": "under_class_width_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false,
+      "source": "demos: grader copper.json, copper narrower than its net class"
+    },
+    {
+      "name": "starved_thermal",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false,
+      "source": "KiCad starved_thermal items (canary's secondary score)"
+    },
+    {
+      "name": "tidiness",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false,
+      "source": "freerouting-dev tidy (Q15): median and p90 of detour, bends_per_10mm, acute, jogs and vias per connection; demos from the graders, canary-pwr from the routed .kicad_pcb with the plugin's exported DSN for the pins (both arms read the board with the hand copper, so it counts the same for both)"
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "peak_rss_mb",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false,
+      "source": "/usr/bin/time %M of the route"
+    },
+    {
+      "name": "engine_exit",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "report": {
+    "table": "one markdown table, X01.8's columns (board, arm, unrouted, drc_real, vias, length mm, vias in pads, below min, time s) plus peak RSS, under class width and the tidiness medians, one line per (row, arm) run; a row an arm could not have graded is listed as that arm's failure",
+    "comparisons": {
+      "krt_still_wins": "per row with both: krt-strict 'wins' a row when its kicad_unconnected is below the baseline arm's (fr-enhanced-sweep; fr-plugin on canary-pwr) AND it adds no breach versus that arm: via_in_pad, below_minimum and inner_tracks not above the baseline arm's on the row, and drc_real not above it (hard guards as 'no new breach versus baseline', decided 2026-10-18). A lower count with a new breach is reported as 'fewer unrouted, rules broken', not a win. X13.2 takes the rows krt-strict wins; if it wins none, X13.2's done note says so",
+      "legacy_matches_x01_java": "on pic_programmer and interf_u, fr-legacy matches X01's java arm when (1) grade.sh exported the same DSN as in X01 (sha256 40daa127eda51057ab22bb926cc82cc79206a2196fe6f7e39ff8ac7dafb8d88f and 0a176aec8f4ba173000df318ed57e0052bf1c790f39ef2adadebdd23b69b5851) and (2) freerouting-dev ses-diff of that DSN, X01's java SES (3dcecedb592e7acaeb920f6a1ac96f99183da06dd57907c5411a5f89cf7a935f, 12bdd9cb5b9fa96ad9716dd0c4cd4077c660dbd41ae7b3af70c60a8e7f2c2691) and fr-legacy's SES exits 0. Then kicad_unconnected, drc_real and vias equal X01's (2, 2, 0 and 13, 11, 75). Otherwise the difference is explained from ses-diff's first differing nets and the DSN diff, with no rerun. kit-dev-coldfire-xilinx_5213 and video are not rerun (time rule): the accept clause's other two demos are reported as not checked"
+    }
+  },
+  "heavy_run": {
+    "note": "run by the orchestrator, from the main checkout once this registration has landed, in this order, one route or KiCad job at a time. The environment block is exported first. No step reroutes or regrades",
+    "environment": "export R=/home/thebo/code/freerouting-rs X13=/home/thebo/code/freerouting-rs/target/orchestrator/x13/run X01=/home/thebo/code/freerouting-rs/target/orchestrator/x01 FRWT=/home/thebo/code/freerouting-rs/target/orchestrator/x13/fr-wt FR=/home/thebo/code/freerouting-rs/target/orchestrator/x13/fr-target/release/freerouting FR_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/x13/fr-target/release/freerouting FREEROUTING_DEV=/home/thebo/code/freerouting-rs/target/orchestrator/x13/fr-target/release/freerouting-dev C=/home/thebo/code/freerouting-rs/target/orchestrator/x13/run/canary B=/home/thebo/code/freerouting-rs/target/orchestrator/x13/run/canary/src/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
+    "setup": [
+      "git -C $R worktree add --detach $FRWT a25c82f24c90af5edfc75601ed96e00605ab47b9",
+      "cd $FRWT && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/x13/fr-target cargo build --release -p freerouting-cli -p freerouting-dev",
+      "mkdir -p $X13/boards $C && for d in krt venv nokicad-bin; do ln -sfn $X01/$d $X13/$d; done && ln -sfn $X01/boards/pic_programmer $X13/boards/pic_programmer && ln -sfn $X01/boards/interf_u $X13/boards/interf_u",
+      "sha256sum $X13/boards/pic_programmer/prepared/pic_programmer.kicad_pcb $X13/boards/interf_u/prepared/interf_u.kicad_pcb  # must equal boards.files"
+    ],
+    "prepare": [
+      "D=$X13/boards/sonde_xilinx S='/usr/share/kicad/demos/sonde xilinx' && mkdir -p $D/source $D/prepared $D/log && cp \"$S/sonde xilinx.kicad_pcb\" $D/source/sonde_xilinx.kicad_pcb && cp \"$S/sonde xilinx.kicad_pro\" $D/source/sonde_xilinx.kicad_pro && chmod u+w $D/source/* && cp $D/source/sonde_xilinx.kicad_pro $D/prepared/",
+      "cd $R && D=$X13/boards/sonde_xilinx && python3 tools/krt-h2h/prep_board.py count $D/source/sonde_xilinx.kicad_pcb $D/log/before.json > $D/log/count-before.log 2>&1 && python3 tools/krt-h2h/prep_board.py strip $D/source/sonde_xilinx.kicad_pcb $D/prepared/sonde_xilinx.kicad_pcb $D/log/strip.json > $D/log/strip.log 2>&1 && python3 tools/krt-h2h/prep_board.py refill $D/prepared/sonde_xilinx.kicad_pcb $D/log/refill.json > $D/log/refill.log 2>&1 && python3 tools/krt-h2h/prep_board.py count $D/prepared/sonde_xilinx.kicad_pcb $D/log/after.json > $D/log/count-after.log 2>&1 && sha256sum $D/prepared/sonde_xilinx.kicad_pcb",
+      "write amendment 1 (boards.files.sonde_xilinx: the prepared hash; 0 tracks and vias after, zone count kept) and update the pin test's hash, before any engine run"
+    ],
+    "demos": [
+      "cd $R && export X01_DIR=$X13 X01_TIMEOUT=120 ROUTE_ULIMIT_KB=8000000 && for row in pic_programmer sonde_xilinx; do for arm in fr-legacy fr-enhanced-sweep krt-strict; do tools/krt-h2h/run.sh --arm $arm --board $row --allow-load --load-wait 0; done; done && tools/krt-h2h/run.sh --arm fr-legacy --board interf_u --allow-load --load-wait 0"
+    ],
+    "legacy_check": [
+      "for row in pic_programmer interf_u; do sha256sum $X13/runs/$row/fr-legacy/grade/work/$row.dsn; $FREEROUTING_DEV ses-diff $X01/runs/$row/java/grade/work/$row.dsn $X01/runs/$row/java/grade/work/$row.ses $X13/runs/$row/fr-legacy/grade/work/$row.ses --json $X13/runs/$row/fr-legacy/ses-diff-x01-java.json; echo \"$row ses-diff exit $?\"; done"
+    ],
+    "canary": [
+      "mkdir -p $C/src $C/ctools $C/work $C/fr-plugin/routed $C/krt-strict/input $C/krt-strict/routed && git -C /home/thebo/code/canary archive 2a7e070b hardware/canary-pwr-rev1.0 | tar -x -C $C/src && git -C /home/thebo/code/canary archive 2a7e070b hardware/tools | tar -x -C $C/ctools && sha256sum $B  # must equal boards.files",
+      "printf '{\\n  \"schema\": 4,\\n  \"profile\": \"enhanced\"\\n}\\n' > $C/work/route-options.json && cd $FRWT && python3 -I kicad-plugin/headless_run.py export $B $C/work $C/work/route-options.json > $C/export.log 2>&1; echo \"export exit $?\"; sha256sum $C/work/canary-pwr.dsn $C/work/canary-pwr.args.json",
+      "cd $C/fr-plugin && /usr/bin/time -o time.txt -f '%e %M' timeout 900 /bin/bash -c 'ulimit -v 8000000 && exec python3 -I -c \"import json, os, sys; a = json.load(open(sys.argv[1]))[\\\"args\\\"]; os.execv(sys.argv[2], [sys.argv[2], \\\"-de\\\", sys.argv[3], \\\"-do\\\", sys.argv[4], \\\"--progress\\\", \\\"json\\\", \\\"--result-json\\\", sys.argv[5], *a])\" \"$@\"' _ $C/work/canary-pwr.args.json $FR $C/work/canary-pwr.dsn $C/fr-plugin/canary-pwr.ses $C/fr-plugin/canary-pwr.result.json > route.log 2>&1; echo \"route exit $?\"",
+      "cd $FRWT && python3 -I kicad-plugin/headless_run.py import $B $C/fr-plugin/canary-pwr.ses $C/fr-plugin/routed/canary-pwr.kicad_pcb $C/work/route-options.json > $C/fr-plugin/import.log 2>&1; echo \"import exit $?\"",
+      "cp $C/src/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb $C/src/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pro $C/src/hardware/canary-pwr-rev1.0/canary-pwr.kicad_dru $C/krt-strict/input/ && cp $C/src/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pro $C/src/hardware/canary-pwr-rev1.0/canary-pwr.kicad_dru $C/krt-strict/routed/ && chmod u+w $C/krt-strict/input/* $C/krt-strict/routed/*",
+      "cd $X01/krt && env -u KICAD_CLI PATH=$X01/venv/bin:$X01/nokicad-bin /usr/bin/time -o $C/krt-strict/time.txt -f '%e %M' /usr/bin/timeout 900 /bin/bash -c 'ulimit -v 8000000 && exec \"$@\"' _ $X01/venv/bin/python -E -s py_router/route.py $C/krt-strict/input/canary-pwr.kicad_pcb $C/krt-strict/routed/canary-pwr.kicad_pcb --nets '*' --fab-tier standard --escalation off --same-net-pad-clearance 0.1 --no-fix-drc-settings --keep-input-copper --no-power-tap-neckdown > $C/krt-strict/engine.log 2>&1; echo \"krt exit $?\"",
+      "for arm in fr-plugin krt-strict; do GRADE_REV=2a7e070b KICAD_BIN=$R/tools/krt-h2h/wsl-kicad-bin bash $C/ctools/hardware/tools/grade.sh /home/thebo/code/canary/hardware/canary-pwr-rev1.0 $C/$arm/routed/canary-pwr.kicad_pcb $C/$arm/grade > $C/$arm/grade.log 2>&1; python3 -I $R/tools/krt-h2h/copper_stats.py $C/$arm/routed/canary-pwr.kicad_pcb $B $C/$arm/copper_added.json; $FREEROUTING_DEV tidy $C/work/canary-pwr.dsn $C/$arm/routed/canary-pwr.kicad_pcb --json $C/$arm/tidy.json > $C/$arm/tidy.log 2>&1; done"
+    ],
+    "estimate": "about 12 to 15 min in total, most of it canary-pwr: KRT 260 s on canary 9511d9a in X01, the plugin route 103 to 129 s on 2a7e070b in N06.13's round 1; every demo route under 50 s by X01's and Q04's times; 9 KiCad grades (7 demo, 2 canary; no input is graded again), plus pcbnew steps that are not grades (sonde's strip and refill, the plugin's export and import)"
+  },
+  "seen_before_registration": "No route of any arm at a25c82f24c90af5edfc75601ed96e00605ab47b9 or of krt-strict on any registered row before this registration; the implementer routed and graded nothing. Seen: (1) X01 (KiCad 10.0.7, its prereg 32a86ec8...): pic_programmer java 2 unconnected / drc_real 2 / 0 vias / 1541.1 mm / 3.8 s engine, krt (without --no-power-tap-neckdown) 0 / 6 (silk_overlap) / 38 / 1557.5 mm / 16.6 s; interf_u java 13 / 11 / 75 / 4979.3 mm / 45.7 s, krt 18 / 9 / 163 / 4190.6 mm / 282.6 s; coldfire java 49 / 218, krt 11 / 10 (8 vias in pads); video java 170 / 206, krt 111 / 41 (8 vias in pads); canary-pwr 9511d9a (canary-23's grade): java 47 unconnected, krt 35 with 22 vias in pads and 701 inner-layer tracks. (2) The 2026-10-15 pilot (Java de7a4fd2c, KiCad 10.0.5), unrouted / new copper DRC / mm under class width: sonde Freerouting 3 / 2 / 35, KRT strict 0 / 0 / 0; ecc83 0 / 0 / 0 for all; StickHub 29 / 161 / 42 vs strict 8 / 39 / 0; interf_u 13 / 11 / 162 vs 18 / 8 / 70; canary-pwr 78 / 57 / 175 vs 60 / 29 / 122; coldfire 44 / 214 / 290 vs 15 / 7 / 187. (3) freerouting-rs on canary 2a7e070b: canary-7a's 14 unconnected (plugin path at b93bcd0 with -mp 1, ripup 1500, sweep free x2, not the default options); N06.13 round 1's plugin row with default options (enhanced): 17 (main 0e3f1d5) and 15 (e0610fc) unconnected, routes of 103 to 129 s. (4) Q04's bench: Issue690-sonde_xilinx (the DSN fixture of the sonde demo, not this prepared board) routes in 0.26 to 0.37 s.",
+  "amendments": []
+}
