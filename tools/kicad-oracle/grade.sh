@@ -16,7 +16,9 @@
 # DSN with pcbnew.ExportSpecctraDSN; remove the keepouts KiCad exports for rule areas that allow
 # tracks and vias; run the engine; strip the SES (placement ...) scope and import it with
 # pcbnew.ImportSpecctraSES; copy the ORIGINAL project rules over both staged boards (a router
-# never grades itself under rules it wrote) and force the copper classes to error; run
+# never grades itself under rules it wrote; a project without a .kicad_pro gets the one KiCad
+# migrated from the original board's own rules, summary `rules`) and force the copper classes
+# to error; run
 # `kicad-cli pcb drc --severity-all --refill-zones --format json` on the unrouted and the routed
 # board; count copper from the geometry; subtract what the unrouted input already reports.
 # Writes OUT/summary.json and prints one line. When freerouting-dev is built the summary also has
@@ -110,7 +112,11 @@ stage() {
   chmod u+w "$1"/*
 }
 
-# The original rules, with the copper classes forced to error.
+# The original rules, with the copper classes forced to error. A project without a .kicad_pro
+# (a KiCad 4 or 5 board keeps its net classes and setup in the board file, KiCad 6+ moves them to
+# the project when it loads it) gets the .kicad_pro KiCad wrote when it first saved the original
+# board, before any routing (Q19): without it kicad-cli grades under KiCad's defaults, 0.2 mm
+# clearance where such a board may say 0.15.
 original_rules() {
   local ext
   for ext in kicad_pro kicad_dru; do
@@ -118,6 +124,8 @@ original_rules() {
     if [[ -f "$PROJECT/$BASE.$ext" ]]; then
       cp "$PROJECT/$BASE.$ext" "$1/"
       chmod u+w "$1/$BASE.$ext"
+    elif [[ $ext == kicad_pro && $RULES == board ]]; then
+      cp "$OUT/work/rules/$BASE.kicad_pro" "$1/"
     fi
   done
   [[ -f "$1/$BASE.kicad_pro" ]] && python3 "$LIB" force-errors "$1/$BASE.kicad_pro"
@@ -131,6 +139,17 @@ stage "$OUT/unrouted"
 REMOVED_TRACKS=$(python3 -c "import json, sys; print(json.load(open(sys.argv[1]))['removed_tracks_and_vias'])" \
   "$OUT/unrouted/$BASE.kicad_pcb.strip.json")
 mv "$OUT/unrouted/$BASE.kicad_pcb.strip.json" "$OUT/work/strip.json"
+# Where the grading rules come from: the project's .kicad_pro, KiCad's migration of the board's
+# own rules (the .kicad_pro the strip step's SaveBoard wrote from the original board), or
+# KiCad's defaults.
+RULES=defaults
+if [[ -f "$PROJECT/$BASE.kicad_pro" ]]; then
+  RULES=project
+elif [[ -f "$OUT/unrouted/$BASE.kicad_pro" ]]; then
+  mkdir -p "$OUT/work/rules"
+  cp "$OUT/unrouted/$BASE.kicad_pro" "$OUT/work/rules/$BASE.kicad_pro"
+  RULES=board
+fi
 "$KICAD_PYTHON" "$STEPS" export "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.kicad.dsn" \
   "$OUT/work/areas.json" > "$OUT/work/export.log" 2>&1 ||
   not_graded "DSN export failed (see $OUT/work/export.log)"
@@ -152,14 +171,14 @@ END=$(date +%s.%N)
 ENGINE_SECONDS=$(python3 -c "import sys; print(round(float(sys.argv[2]) - float(sys.argv[1]), 2))" "$START" "$END")
 
 python3 - "$META" "$PROJECT" "$BASE" "$CLI_VERSION" "$ENGINE_EXIT" "$ENGINE_SECONDS" \
-  "$KEEPOUTS_REMOVED" "$OUT" "${REMOVED_TRACKS:-0}" "${ENGINE[@]}" << 'PY'
+  "$KEEPOUTS_REMOVED" "$OUT" "${REMOVED_TRACKS:-0}" "$RULES" "${ENGINE[@]}" << 'PY'
 import json, sys
-meta, project, base, version, rc, secs, removed, out, removed_tracks = sys.argv[1:10]
+meta, project, base, version, rc, secs, removed, out, removed_tracks, rules = sys.argv[1:11]
 removed_tracks = int(removed_tracks)
 json.dump({"project": project, "board": base, "kicad_version": version,
-           "engine_command": " ".join(sys.argv[10:]), "engine_exit": int(rc),
+           "engine_command": " ".join(sys.argv[11:]), "engine_exit": int(rc),
            "engine_seconds": float(secs), "keepouts_removed": int(removed),
-           "input_tracks_and_vias_removed": removed_tracks, "out_dir": out},
+           "input_tracks_and_vias_removed": removed_tracks, "rules": rules, "out_dir": out},
           open(meta, "w"), indent=2)
 PY
 META_READY=1

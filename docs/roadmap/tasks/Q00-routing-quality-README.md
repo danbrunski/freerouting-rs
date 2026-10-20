@@ -31,6 +31,7 @@ implementation is never edited, so default results stay byte-identical.
 | [Q15](archive/Q15-route-tidiness-score.md) ✅ | A measured tidiness score (detour, bends, acute corners, jogs, vias per connection) in the bench and the grader | S / low: report only | F03, F02.6, C05 |
 | [Q16](Q16-no-dangling-stubs.md) | A final cleanup removes dangling vias and trace stubs left by unfinished connections (32 on the owner's canary plugin run) | S / low: removal of copper that connects nothing | Q10, N02, F02.6 |
 | [Q17](archive/Q17-neck-only-in-the-pin-field.md) ✅ | Neck down only within reach of the pins (Q02.3's width policy in the search, the `bounded-neck` stage) and widen back with tapers (Q02.5), measured against `enhanced`'s retry at 300 µm | M / high: width policy inside the maze search | Q02.1–Q02.2, N02, N05 |
+| [Q19](archive/Q19-copper-clearance-shortfall.md) ✅ | Routed copper keeps the board's clearance: the 169 + 88 KiCad `clearance` errors on d3c-0496 and d3c-0599 were the oracle grading KiCad 4 boards under KiCad's 0.2 mm default; it now grades under the board's own migrated rules (0 errors) | S / low: grader only, no route changes | F02.6, N03 |
 
 Sizes: S under about 1k lines of Rust, M 1–3k, L more.
 

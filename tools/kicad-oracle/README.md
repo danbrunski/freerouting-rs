@@ -34,7 +34,13 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
 4. Strips the SES `(placement ...)` scope and imports it with
    `pcbnew.ImportSpecctraSES` into a copy of the unrouted board.
 5. Copies the board's **original** `.kicad_pro`/`.kicad_dru` over both staged
-   boards (a router must not grade itself under rules it wrote) and forces
+   boards (a router must not grade itself under rules it wrote). A project
+   without a `.kicad_pro` gets the one KiCad wrote when step 2 first saved the
+   original board (Q19): a KiCad 4 or 5 board keeps its net classes and setup
+   in the board file, KiCad 6+ moves them to the project, and without that
+   file `kicad-cli` grades under KiCad's defaults (0.2 mm clearance where
+   `d3c-0496` says 0.1524). `summary.json`'s `rules` says which: `project`,
+   `board` or `defaults`. Then forces
    `clearance`, `shorting_items`, `tracks_crossing`, `hole_clearance`,
    `hole_to_hole`, `holes_co_located` and `copper_edge_clearance` to `error`
    in the staged project, so a board whose author set `clearance` to
@@ -60,7 +66,7 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
 
 `summary.json`: `graded`, `kicad_version`, `board`, `engine_command`,
 `engine_exit`, `engine_seconds`, `keepouts_removed`,
-`input_tracks_and_vias_removed`, `drc_real` and `drc_real_by_type`
+`input_tracks_and_vias_removed`, `rules`, `drc_real` and `drc_real_by_type`
 (router-attributable), `preexisting`, `unconnected_items` and
 `input_unconnected_items`, `routed_by_type`, `input_by_type`,
 `capped_types`, `netclass_clearance`, `copper`, `originals_unchanged`,
@@ -129,3 +135,5 @@ comparison.
 | `tests/test_oracle_lib.py` | plain python3 | unit tests: `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` |
 | `tests/run-oracle-tests.sh` | bash + KiCad + Java | end-to-end checks (via in pad, graze under a warning-level clearance, pre-existing edge item, missing `kicad-cli`, KiCad processes and checksums) |
 | `tests/inject.py`, `tests/make_edge_board.py` | python3 / KiCad's python | session edits and the synthetic edge board for those checks |
+| `tests/run-legacy-rules-test.sh` | bash + KiCad, no Java | Q19.2: a KiCad 4 board without a `.kicad_pro` grades under its own 0.15 mm net-class clearance (`rules: board`), not KiCad's 0.2 mm default; a 0.12 mm gap is still reported |
+| `tests/make_legacy_board.py` | plain python3 | that check's board (written as KiCad 4 text) and its two sessions |
