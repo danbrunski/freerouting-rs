@@ -218,3 +218,50 @@ totals rule), N05 (the promotion recipe).
      --write-baseline` and the same with `--all-pairs`; the per-class narrowed copper of the wide
      classes and the wall times go in the done note.
   4. The canary sessions to `target/canary-handoff/2026-10-20-q17-4/` for canary-7a's grade.
+  *Partial 2026-10-20 (run):* the registered run, no amendment (registration sha256 `b3d4ad49…`
+  re-checked by the gate: 0 amendments, 0 refusals). Engine main a25c82f in a detached worktree, one
+  release build (`freerouting` sha256 `11d806d262c5…`, `freerouting-dev` `dd1dc02d2dc9…`); every
+  input hash matched `boards.files` and `project_files` before the first route. 18 routes, one at a
+  time, 10:24–10:36, all exit 0, none aborted; summed route time 196.5 s (`enhanced`), 205.9 s
+  (`widen-back`), 193.5 s (`bounded-neck-widen-back`). Runner fixes, no registered setting changed:
+  build in the detached engine worktree; route exit codes recorded; KiCad steps wait for any other
+  `kicad-cli`; the canary grade under `timeout 900` without the route's `ulimit`; the corpus rows'
+  `via_in_pad.py` re-run on the routed boards after the batch (the runner kept a font warning as the
+  first line; all 0). Raw logs, `records.json`, `summary.json`, the gate outputs and the runner:
+  `target/orchestrator/q174/run/`. Per row, `enhanced` / `widen-back` / `bounded-neck-widen-back`
+  (KiCad unconnected; KiCad clearance-type errors raw; narrowed copper `under_board_setup_mm`; route
+  s). Via in pad, below minimum width, power-layer traces and inner tracks are 0 in every arm on every
+  row; no new hard breach in either candidate.
+
+  | row | KiCad unconnected | clearance raw | under mm | route s |
+  |---|---|---|---|---|
+  | canary-plugin45 | 39 / 39 (same SES) / 42 | 0 / 0 / 0 | 48.9 / 48.9 / 65.5 | 78.5 / 78.9 / 93.0 |
+  | canary-9511d9a-mp1sweep | 33 / 38 / 37 | 2 / 0 / 0 | 354.3 / 293.9 / 154.5 | 96.8 / 106.0 / 71.7 |
+  | interf_u | 12 / 11 / 10 | 0 / 0 / 0 | 1.8 / 1.8 / 1.8 | 9.9 / 9.4 / 12.4 |
+  | pic_programmer | 2 / 2 / 2 | 2 / 2 / 2 | 0.6 / 0.6 / 0.6 | 0.3 / 0.3 / 0.3 |
+  | flight-computer-core-board | 5 / 5 / 5 (same SES) | 0 / 0 / 0 | 0 / 0 / 0 | 0.36 / 0.43 / 0.36 |
+  | cm4-edge-ai-carrier | 73 / 73 / 75 | 5 / 5 / 1 | 56.2 / 55.3 / 53.4 | 10.7 / 10.9 / 15.7 |
+  | total | 164 / 168 / 171 | | 461.8 / 400.6 / 275.8 | 196.5 / 205.9 / 193.5 |
+
+  Narrowed copper per wide class, delivered / under the class width in mm (`freerouting-dev widths`):
+  canary-9511d9a Power_High 300.1/237.3, 317.9/176.7, 147.2/73.7; Power 374.2/79.6, 412.5/96.7,
+  335.3/43.7; GND 171.5/13.0, 166.7/11.2, 182.1/21.0; Switch_Node 13.9/11.8, 11.5/9.3, 7.7/5.6 (largest:
+  `+5V_BUCK` 122.8 of 125.7 mm under in `enhanced`, 58.5 of 98.1 in `widen-back`; `GND` 21.0 of 182.1
+  in `bounded-neck-widen-back`). canary-plugin45 Power 406.8/23.6, =, 398.9/33.9; Power_High
+  311.1/13.6, =, 133.4/9.6; GND 186.2/5.9, =, 199.1/17.3. interf_u Power 333.6/1.8, 333.4/1.8,
+  332.5/1.8; pic_programmer POWER 151.4/0.6 in every arm; flight-computer Ignitor 42.1/0 in every arm;
+  cm4 Power 162.6/28.7, 162.2/27.9, 159.0/25.8 (`+3V3` 23.6, 22.7, 22.7 mm under). Gate
+  (`freerouting-dev gate --records records.json --baseline baseline.json --prereg
+  docs/roadmap/prereg/Q17.4.json`): `--write-baseline` wrote `baseline.json`; the primary pair against
+  it `gate: PASS`; `--all-pairs`: `enhanced -> widen-back` total 164 -> 168 (+4), set noise 15.42,
+  canary-pwr +5 (band 10), PASS; `enhanced -> bounded-neck-widen-back` 164 -> 171 (+7), canary-pwr +7
+  (band 10), cm4 +2 (band 6), PASS; `gate: PASS`. pic_programmer's two clearance-type items are a
+  copper text the router does not see (`1=>>` on top_layer) crossing `/DATA-RB7` in every arm (KiCad
+  calls one of them `shorting_items` in `widen-back`); the input has none. Keep rule: neither candidate
+  beats `enhanced` on unconnected by more than 15.42; both narrow less copper (400.6 and 275.8 against
+  461.8 mm), so both are accepted, and the rule picks the lower unconnected total: **`widen-back`
+  (168 against 171) is accepted**. Per the decision table N05 adds `router.neck_down.widen_back =
+  true` to ENHANCED with a DIVERGENCES "Profile enhanced" line; the retry at 300 stays. Canary
+  sessions with SHA256SUMS and README (flags, self-grade, widths):
+  `target/canary-handoff/2026-10-20-q17-4/`. Remains: the promotion (N05) and canary-7a's grade of
+  those sessions.
