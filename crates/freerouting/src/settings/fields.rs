@@ -285,6 +285,8 @@ settings_table! {
             "Work limit unit (N03.1): `nodes` (Java's search-tree nodes visited, the default) or `leaves` (leaves returned)."),
         (pad_contacts, String, opt, None, None, "padContacts", [], Flat::No, true,
             "Where a trace end connects to a pin (N04): `center` (unset, Java: only at the pin's centre) or `inside_pad` (wherever the trace's round end overlaps the pin's pad on the trace's layer, KiCad's rule)."),
+        (output_check, String, opt, None, None, "outputCheck", [], Flat::No, true,
+            "The board-rule check before saving (Q20): `off` (unset, Java), `report` (log and count the routed copper that breaks a board rule) or `repair` (remove it, retry its connections once, remove what still breaks a rule; profile `enhanced`'s value)."),
     }
     sections {
         autorouter, AutorouterPatch, AutorouterSettings, "autorouter",

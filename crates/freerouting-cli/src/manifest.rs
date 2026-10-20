@@ -38,6 +38,13 @@
 //! `--router.neck_down.strict=true`) the manifest gets `widths` after
 //! `rip_stats`: the `freerouting-widths/1` report of the wide nets' delivered
 //! widths and the narrowing ledger (`quality::neckdown`).
+//!
+//! **Output check (Q20.3).** With `--router.output_check=report` or `repair`
+//! (profile `enhanced`'s value) the manifest gets `output_check` after
+//! `widths`: `{mode, checked, found, removed, retried, repaired, left_open,
+//! remaining, by_rule, input}`
+//! (`freerouting::quality::output_check::OutputCheck::to_json`). With `off`
+//! the key is absent.
 
 use std::path::Path;
 
@@ -458,6 +465,11 @@ pub fn build(input: &ManifestInput<'_>) -> JsonValue {
         (
             "widths",
             summary.and_then(|s| s.widths.as_ref().map(|w| w.to_json())),
+        ),
+        // Q20.3: what the output check did, when `router.output_check` is on.
+        (
+            "output_check",
+            summary.and_then(|s| s.output_check.as_ref().map(|c| c.to_json())),
         ),
     ]
     .into_iter()

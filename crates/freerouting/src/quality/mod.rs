@@ -7,6 +7,7 @@ pub mod attribution;
 pub mod congestion;
 pub mod feasibility;
 pub mod neckdown;
+pub mod output_check;
 pub mod output_guard;
 pub mod pour_audit;
 pub mod pour_guard;

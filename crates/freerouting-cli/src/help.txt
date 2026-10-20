@@ -110,7 +110,16 @@ PLUGIN FLAGS (not in Java)
       events are counted, never timed.
   --result-json <file>
       Write a machine-readable result manifest (Java's RoutingResultManifest,
-      schema version 1) when the run ends, also when it failed.
+      schema version 1) when the run ends, also when it failed. With
+      --router.output_check=report or repair (profile enhanced's value) it
+      has one more key, output_check: mode, checked (routed traces and vias
+      checked), found (their breaches of the board's rules), removed,
+      retried (connections tried again), repaired, left_open, remaining,
+      by_rule (breaches per rule: clearance, copper_edge_clearance, keepout,
+      track_width, via_diameter, drill_out_of_range, annular_width,
+      hole_clearance, solder_mask_bridge, via_in_pad, track_dangling,
+      via_dangling), input (the input's own breaches per rule, never
+      changed).
       Setting: result_json
   --timeout <duration>
       Stop the job after this long and keep the best board: 90s, 10m, 2h,

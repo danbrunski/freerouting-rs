@@ -72,6 +72,11 @@ pub const DELETE_ALL_CONFIRM: &str = "Delete all traces and vias of the board? \
 pub const CLEARANCE_TITLE: &str = "Clearance Violations";
 pub const CLEARANCE_TEMPLATE: &str = "A clearance violation of {{clearance_mm}} mm exists between {{item_a}} and {{item_b}} at {{location}} on layer {{layer}}.";
 pub const CLEARANCE_EMPTY: &str = "No clearance violations found.";
+// Q20.3: Info > Board Rules.
+pub const MENU_BOARD_RULES: &str = "Board Rules";
+pub const BOARD_RULES_TITLE: &str = "Board Rules";
+pub const BOARD_RULES_EMPTY: &str = "No copper breaks a board rule.";
+pub const BOARD_RULE_TEMPLATE: &str = "{{rule}}: {{items}} at {{location}}{{layer}}";
 pub const BOARD_OUTLINE: &str = "board outline";
 pub const COMPONENT_KEEPOUT: &str = "component keepout";
 pub const CONDUCTION_AREA: &str = "conduction area";

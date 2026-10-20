@@ -130,10 +130,21 @@ impl BasicBoard {
     /// Port of `Item.clearanceViolations` and its `Via` override, which
     /// drops same-net violations of an escape via on its SMD layer.
     pub fn clearance_violations(&self, id: ItemId) -> Vec<ClearanceViolation> {
+        self.clearance_violations_within(id, self.rules.clearance_tolerance_um)
+    }
+
+    /// [`clearance_violations`](Self::clearance_violations) with the
+    /// shortfall tolerance `tolerance_um` in place of the board's
+    /// `clearance_tolerance_um` (Q20's output check uses 0). Not Java.
+    pub fn clearance_violations_within(
+        &self,
+        id: ItemId,
+        tolerance_um: f64,
+    ) -> Vec<ClearanceViolation> {
         let Some(item) = self.item(id) else {
             return Vec::new();
         };
-        let raw = self.item_clearance_violations(item);
+        let raw = self.item_clearance_violations(item, tolerance_um);
         match &item.kind {
             ItemKind::Via(via) if via.is_escape_via && via.escape_via_smd_layer >= 0 => raw
                 .into_iter()
@@ -188,13 +199,13 @@ impl BasicBoard {
             / f64::from(self.communication.resolution.max(1))
     }
 
-    fn item_clearance_violations(&self, item: &Item) -> Vec<ClearanceViolation> {
+    fn item_clearance_violations(&self, item: &Item, tolerance_um: f64) -> Vec<ClearanceViolation> {
         let mut result = Vec::new();
         let tree = self.search_trees.default_tree();
         let matrix = &self.rules.clearance_matrix;
         let compensation_used = self.search_trees.is_clearance_compensation_used();
         let unit_to_um = self.board_unit_to_um_factor();
-        let mut tolerance_um = self.rules.clearance_tolerance_um;
+        let mut tolerance_um = tolerance_um;
         if !tolerance_um.is_finite() || tolerance_um < 0.0 {
             tolerance_um = 0.0;
         }

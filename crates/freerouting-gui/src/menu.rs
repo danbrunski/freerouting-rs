@@ -201,6 +201,7 @@ fn analysis_menus(ui: &mut egui::Ui, out: &mut Vec<Command>, board_open: bool) {
                 ),
                 (text::MENU_UNCONNECTED_ROUTE, ListKind::Unconnected),
                 (text::MENU_ZONE_ISLANDS, ListKind::ZoneIslands),
+                (text::MENU_BOARD_RULES, ListKind::BoardRules),
             ] {
                 item(ui, out, label, Command::ShowList(kind));
             }

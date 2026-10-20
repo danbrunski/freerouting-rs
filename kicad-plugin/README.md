@@ -8,7 +8,15 @@ Its toolbar button opens a dialog that:
   router's progress live, and imports the session back into the board. **Stop and keep result**
   finishes the current step and imports the best board so far; **Abort** kills the router and
   imports nothing. A summary (connections routed and incomplete, vias, length, time) follows the
-  import, with a warning when connections are left.
+  import, with a warning when connections are left. Under profile Enhanced the router checks
+  its routed copper against the board's rules before it saves (`router.output_check=repair`,
+  Q20), and the summary adds a **Rule check** line from the manifest's `output_check` object:
+  `found` (routed breaches, per rule in `by_rule`: `clearance`, `copper_edge_clearance`,
+  `keepout`, `track_width`, `via_diameter`, `drill_out_of_range`, `annular_width`,
+  `hole_clearance`, `solder_mask_bridge`, `via_in_pad`, `track_dangling`, `via_dangling`),
+  `removed`, `retried`, `repaired` and `left_open` (connections that only fit by breaking a rule
+  stay unrouted); `input` counts the board's own violations, which are never changed, and a
+  `remaining` above 0 (`report` mode) adds a warning.
 - **Route in GUI**: the same export, then `freerouting-gui -de board.dsn -do board.ses` with the
   options; the window routes after its countdown and writes the session when routing ends or the
   window closes, and the plugin imports it. **Terminate** kills the window and imports nothing.

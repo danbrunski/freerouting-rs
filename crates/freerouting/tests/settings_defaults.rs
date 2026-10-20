@@ -131,6 +131,7 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("room_order", None),
         ("work_unit", None),
         ("pad_contacts", None),
+        ("output_check", None),
         // autorouter.
         ("autorouter.enabled", b(true)),
         ("autorouter.algorithm", s("freerouting-router")),

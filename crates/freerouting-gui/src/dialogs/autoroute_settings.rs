@@ -118,6 +118,11 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
     ),
     ("wire_keepout", "quality option without a Java control"),
     ("pad_contacts", "quality option without a Java control"),
+    ("output_check", "quality option without a Java control"),
+    (
+        "solder_mask_expansions",
+        "per-pad data (Q18.7), filled in by the KiCad plugin or read from a .kicad_pcb",
+    ),
     ("result_json", "a file path for the CLI's result manifest"),
     (
         "autorouter.save_intermediate_stages",

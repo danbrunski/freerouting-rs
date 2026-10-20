@@ -362,6 +362,22 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   manufacturing rules). The KiCad plugin and a `.kicad_pcb` input fill it in. Unset, nothing
   changes (`tests/solder_mask.rs`: `a_front_expansion_keeps_other_nets_out_of_the_aperture`,
   `a_back_expansion_leaves_the_front_alone`, `an_expansion_within_the_clearance_changes_nothing`).
+- `output_check` (Q20, `quality::output_check`, `drc::board_rules`) is a settings field Java does
+  not have (`off | report | repair`; unset is `off`, Java's: the session is written as the router
+  leaves it). On, `run_pipeline` checks the input copper once before the fanout (one log line,
+  "the board already has N violation(s)", never changed) and the routed copper last, after the
+  stub cleanup and also after a stop, against the board's rules as the router models them
+  (`check_board_rules`: clearance, copper-to-edge clearance, keepouts, track width and via
+  diameter, drill and annular ring under `board_minimums.*`, hole clearance, vias in pads,
+  dangling traces and vias); `report` logs and counts, `repair` removes the routed traces and
+  vias of every breach and the stubs that leaves, retries the affected nets' incomplete
+  connections once with rip-up off (one pass, ascending net and item order, not after a full
+  stop) and removes what still breaches, so routed copper that breaks a board rule is never
+  saved (`tests/quality_output_check.rs`, `tests/drc_board_rules.rs`). A board whose routed
+  copper breaks nothing is written as with `off` (`a_clean_board_gives_the_session_of_off`).
+  Copper that only differs from the input by the router's split counts as input
+  (`InputCopper`). A trace end is dangling when its end point lies on no copper of its net
+  (KiCad's anchor rule; Q16's cleanup uses the round end's overlap).
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
   by default and in `legacy` (off: Java leaves the stubs of unfinished connections on the
   board); profile `enhanced` turns it on (N05.3, the "Profile `enhanced`" line below). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
@@ -1239,6 +1255,11 @@ plugin_flags}.rs`)
   absent (`the_manifest_carries_the_widths_only_with_the_diagnostic`). With strict sizes a run
   that wrote its output exits 3 instead of 0 when some reported net has copper under its class
   width (KRT's `--strict-sizes`; `strict_sizes_exit_3_exactly_when_copper_ships_under_width`).
+- With `--router.output_check=report` or `repair` (profile `enhanced`'s value, Q20.3) the
+  manifest gets `output_check` after `widths`: `{mode, checked, found, removed, retried, repaired,
+  left_open, remaining, by_rule, input}`; with `off` (profile `legacy`) the key is absent
+  (`result_json_output_check.rs`, `the_manifest_carries_the_output_check`; under `enhanced`
+  `a_routed_run_writes_every_key` expects Java's keys plus `output_check`).
 - Stopping: a stdin reader acts on `stop` (stop everything) and `stop-router` (Java's
   `requestStopAutoRouter`); end of input is not a stop (`stdin_eof_is_not_a_stop`). Java's CLI
   has no such channel. Ctrl-C and SIGTERM (SIGINT, SIGTERM and SIGHUP on Unix, Ctrl-C and
@@ -1281,6 +1302,9 @@ users would notice is listed. Texts follow the English Java bundles.)
 - Unconnected traces and vias (`WindowUnconnectedRoute`): rows come from the engine's
   `all_unconnected_items()` (split nets, dangling traces, dangling vias), with Java's
   row text; Java lists groups of connected traces and vias that touch no pin or area.
+- Info > Board Rules (Q20.3, `panels/board_rules.rs`) lists the engine's board-rule check
+  (`drc::check_board_rules`) on the open board under its own rules; Java has no such list
+  (`the_list_shows_the_boards_breaches`).
 - Zone islands have an Info list (Info > Zone Islands) that Java lacks, with the text of
   the DRC report. Info > Run DRC is new too: the check runs in the background after
   every edit, and Run DRC forces a run.
@@ -1901,6 +1925,12 @@ checks that this list and the table agree.
   cm4-edge-ai-carrier (set noise 15.42; canary-pwr +5 within its band of 10), narrowed copper on
   the wide classes (`freerouting-dev widths`, under the class width) 461.8 → 400.6 mm, no new via
   in a pad, copper below the minimum, KiCad clearance-type error or power-layer trace.
+
+- `output_check` = `repair` (decided 2026-10-20, Q20: routed copper that breaks a board rule is
+  never saved; a correctness rule, joined without a keep rule; its cost measured in Q20.6,
+  `docs/roadmap/prereg/Q20.json`): see `output_check` under "freerouting (board model)".
+  Java writes the session as the router leaves it (`tests/quality_output_check.rs`,
+  `the_profiles_set_repair_and_off`).
 
 - `board_minimums.from_classes` = `true` (decided 2026-10-20, Q18.2; its cost measured in Q18.6,
   `docs/roadmap/prereg/Q18.json`): with no board minimum supplied (a bare DSN carries none), the

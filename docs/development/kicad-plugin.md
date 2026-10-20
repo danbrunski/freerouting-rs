@@ -90,6 +90,11 @@ promotion is made here; historical 33-versus-39 counts are not an accepted A/B.
   the same. The summary after the import starts with `Profile: Legacy` or `Profile: Enhanced`
   (the manifest's `settings_snapshot.profile` when the router wrote one, else the profile the
   plugin asked for).
+  Under Enhanced the router checks its routed copper against the board's rules before saving
+  (`router.output_check=repair`, Q20); `summary.output_check_lines` adds a **Rule check** line
+  from the manifest's `output_check` (breaches found per rule, removed, retried, repaired, left
+  open), a line for the board's own violations (`input`, never changed) and a warning when a
+  `report` run saved breaches (`test_summary.py::test_the_output_check_is_summarised`).
 - **Advanced** (the Advanced tab's Stages group): one choice per stage slot that takes one stage, read
   from the router with `freerouting --list-stages=json --profile <p>` for each profile when the
   dialog opens (`tools.query_stages`, `options.parse_stage_listing`). Each choice starts at the

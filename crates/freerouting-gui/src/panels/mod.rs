@@ -4,6 +4,7 @@
 //! `Harness::new_ui_state`.
 
 pub mod about;
+pub mod board_rules;
 pub mod board_stats;
 pub mod colors;
 pub mod components;

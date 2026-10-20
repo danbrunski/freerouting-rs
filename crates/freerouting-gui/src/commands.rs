@@ -321,6 +321,8 @@ pub enum ListKind {
     ClearanceViolations,
     Unconnected,
     ZoneIslands,
+    /// Q20.3: the breaches of the board's rules.
+    BoardRules,
     // G04: lists over the board's own data.
     Nets,
     Components,

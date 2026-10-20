@@ -386,6 +386,9 @@ fn prepare_board(
     profile.set_max_passes(max_passes);
     profile.patch.autorouter.pass_controller = controller.map(str::to_string);
     profile.patch.quantum_stop.repeat = repeat;
+    // The scripted passes' 100-unit traces are under the board's minimum
+    // width; Q20's output check would remove them all before saving.
+    profile.patch.output_check = Some("off".to_string());
     let mut input = JobInput::new(bytes, JobInput::design_name_of(dsn));
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);

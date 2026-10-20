@@ -96,3 +96,27 @@ def test_the_summary_names_the_profile():
     assert summary.format_summary(m, 396, profile="enhanced").startswith("Profile: Legacy\n")
     m["settings_snapshot"] = {"profile": 3}
     assert summary.format_summary(m, 396).startswith("Profile: Enhanced\n")
+
+
+def test_the_output_check_is_summarised():
+    m = manifest("j2")
+    assert "Rule check" not in summary.format_summary(m, 396)
+    m["output_check"] = {
+        "mode": "repair", "checked": 40, "found": 3, "removed": 4, "retried": 2,
+        "repaired": 1, "left_open": 1, "remaining": 0,
+        "by_rule": {"via_dangling": 2, "track_width": 1},
+        "input": {"clearance": 1},
+    }
+    text = summary.format_summary(m, 396)
+    assert (
+        "Rule check: 3 breach(es) of the board's rules in routed copper "
+        "(track_width 1, via_dangling 2); removed 4, retried 2 connection(s), repaired 1, "
+        "left open 1"
+    ) in text
+    assert "The board already had 1 rule violation(s), left as they were: clearance 1" in text
+    assert "WARNING: " not in text.split("Rule check")[1]
+    m["output_check"] = {"mode": "report", "found": 0, "remaining": 0, "input": {}}
+    assert "Rule check: no routed copper breaks a board rule" in summary.format_summary(m, 396)
+    m["output_check"] = {"mode": "report", "found": 2, "remaining": 2, "by_rule": {"clearance": 2}}
+    text = summary.format_summary(m, 396)
+    assert "WARNING: 2 routed breach(es) of the board's rules were saved." in text

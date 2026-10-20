@@ -84,7 +84,11 @@ fn a_routed_run_writes_every_key() {
     assert_eq!(code(&out), 0, "{log}");
     let (text, manifest) = read_manifest(&dir, "result.json");
 
-    assert_eq!(keys(&manifest), TOP_LEVEL_KEYS);
+    // Q20.3: profile `enhanced` runs the output check, whose key follows
+    // Java's.
+    let mut expected = TOP_LEVEL_KEYS.to_vec();
+    expected.push("output_check");
+    assert_eq!(keys(&manifest), expected);
     assert_eq!(number(member(&manifest, "schema_version")), Some(1));
     assert_eq!(number(member(&manifest, "exit_code")), Some(0));
     assert_eq!(

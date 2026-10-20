@@ -25,6 +25,7 @@ use std::collections::BTreeMap;
 use super::overrides::um_to_board_units;
 use super::{LogLevel, LogLine};
 use crate::board::BasicBoard;
+use crate::board::items::ItemId;
 use crate::settings::RouterSettings;
 
 /// One pad's solder-mask expansion per outer side, µm.
@@ -113,6 +114,69 @@ fn raised_class(board: &mut BasicBoard, base: i32, front: i32, back: i32) -> i32
     new
 }
 
+/// One listed pad's expansions in board units, per outer side: what
+/// [`pin_expansions`] resolves an entry to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PinExpansion {
+    pub pin: ItemId,
+    /// On the top layer.
+    pub front: i32,
+    /// On the bottom layer.
+    pub back: i32,
+}
+
+/// The pins `list` names, with their expansions in board units, in the
+/// order of `list` (a pin name matching several pins gives several); and
+/// the `<component>:<pin>` of the entries that match no pin. Entries
+/// without an aperture on either side are left out.
+pub fn pin_expansions(
+    board: &BasicBoard,
+    list: &[MaskExpansion],
+) -> (Vec<PinExpansion>, Vec<String>) {
+    let mut pins: BTreeMap<(String, String), Vec<ItemId>> = BTreeMap::new();
+    for id in board.pins() {
+        let Some(item) = board.item(id) else { continue };
+        let component = board
+            .components
+            .get(crate::board::structure::ComponentId(item.component_id()))
+            .map(|c| c.name.clone());
+        if let (Some(component), Some(pin)) = (component, board.pin_name(item)) {
+            pins.entry((component, pin.to_owned()))
+                .or_default()
+                .push(id);
+        }
+    }
+    let mut found = Vec::new();
+    let mut unknown = Vec::new();
+    for e in list {
+        let (front, back) = (
+            um_to_board_units(board, e.front_um),
+            um_to_board_units(board, e.back_um),
+        );
+        let Some(ids) = pins.get(&(e.component.clone(), e.pin.clone())) else {
+            unknown.push(format!("{}:{}", e.component, e.pin));
+            continue;
+        };
+        if front <= 0 && back <= 0 {
+            continue;
+        }
+        found.extend(ids.iter().map(|&pin| PinExpansion { pin, front, back }));
+    }
+    (found, unknown)
+}
+
+/// The pads' expansions `settings` list on `board`, for the output check
+/// (Q20.1, `drc::board_rules`); empty if the setting is unset or invalid
+/// ([`apply_solder_mask_expansions`] logs that).
+pub fn settings_pin_expansions(board: &BasicBoard, settings: &RouterSettings) -> Vec<PinExpansion> {
+    let Some(text) = settings.solder_mask_expansions.as_deref() else {
+        return Vec::new();
+    };
+    parse_expansions(text)
+        .map(|list| pin_expansions(board, &list).0)
+        .unwrap_or_default()
+}
+
 /// Applies `router.solder_mask_expansions` (module docs); returns the log.
 pub fn apply_solder_mask_expansions(
     board: &mut BasicBoard,
@@ -130,39 +194,14 @@ pub fn apply_solder_mask_expansions(
             }];
         }
     };
-    let mut pins: BTreeMap<(String, String), Vec<_>> = BTreeMap::new();
-    for id in board.pins() {
-        let Some(item) = board.item(id) else { continue };
-        let component = board
-            .components
-            .get(crate::board::structure::ComponentId(item.component_id()))
-            .map(|c| c.name.clone());
-        if let (Some(component), Some(pin)) = (component, board.pin_name(item)) {
-            pins.entry((component, pin.to_owned()))
-                .or_default()
-                .push(id);
-        }
-    }
-    let mut unknown = Vec::new();
-    let mut changed = Vec::new();
-    for e in &list {
-        let (front, back) = (
-            um_to_board_units(board, e.front_um),
-            um_to_board_units(board, e.back_um),
-        );
-        let Some(ids) = pins.get(&(e.component.clone(), e.pin.clone())) else {
-            unknown.push(format!("{}:{}", e.component, e.pin));
-            continue;
-        };
-        if front <= 0 && back <= 0 {
-            continue;
-        }
-        for &id in ids {
-            let base = board.item(id).map_or(1, |i| i.clearance_class());
-            let class = raised_class(board, base, front, back);
-            changed.push((id, class));
-        }
-    }
+    let (pins, unknown) = pin_expansions(board, &list);
+    let changed: Vec<(ItemId, i32)> = pins
+        .iter()
+        .map(|p| {
+            let base = board.item(p.pin).map_or(1, |i| i.clearance_class());
+            (p.pin, raised_class(board, base, p.front, p.back))
+        })
+        .collect();
     let mut lines = Vec::new();
     if !unknown.is_empty() {
         lines.push(LogLine {

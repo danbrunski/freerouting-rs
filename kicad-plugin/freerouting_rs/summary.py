@@ -79,6 +79,47 @@ def profile_label(manifest, profile=None):
     return PROFILE_LABELS["enhanced"]
 
 
+def _rules_text(rules):
+    """`clearance 1, track_width 2` for a `{rule: count}` object, in key order."""
+    if not isinstance(rules, dict):
+        return ""
+    return ", ".join(f"{rule} {count}" for rule, count in sorted(rules.items()) if _int(count))
+
+
+def output_check_lines(manifest):
+    """The summary lines of the manifest's `output_check` (Q20.3), none when the
+    router did not run the check (`--router.output_check=off`, profile Legacy)."""
+    check = _get(manifest, "output_check")
+    if not isinstance(check, dict):
+        return []
+    mode = check.get("mode")
+    found = _int(check.get("found")) or 0
+    lines = []
+    if found == 0:
+        lines.append("Rule check: no routed copper breaks a board rule")
+    else:
+        detail = _rules_text(check.get("by_rule"))
+        line = f"Rule check: {found} breach(es) of the board's rules in routed copper ({detail})"
+        if mode == "repair":
+            line += (
+                f"; removed {_int(check.get('removed')) or 0}, retried "
+                f"{_int(check.get('retried')) or 0} connection(s), repaired "
+                f"{_int(check.get('repaired')) or 0}, left open {_int(check.get('left_open')) or 0}"
+            )
+        lines.append(line)
+    input_rules = check.get("input")
+    input_total = sum(_int(v) or 0 for v in input_rules.values()) if isinstance(input_rules, dict) else 0
+    if input_total:
+        lines.append(
+            f"The board already had {input_total} rule violation(s), left as they were: "
+            f"{_rules_text(input_rules)}"
+        )
+    remaining = _int(check.get("remaining")) or 0
+    if remaining:
+        lines.append(f"WARNING: {remaining} routed breach(es) of the board's rules were saved.")
+    return lines
+
+
 def format_summary(manifest, elapsed_ms=None, profile=None):
     """The summary text, several lines. `manifest` None gives a one-line note.
     `profile` is the profile the run was started with (see the module docs)."""
@@ -105,6 +146,7 @@ def format_summary(manifest, elapsed_ms=None, profile=None):
         lines.append(f"Run state: {state}")
     if violations:
         lines.append(f"Clearance violations: {violations}")
+    lines.extend(output_check_lines(manifest))
     if incomplete:
         noun = "connection is" if incomplete == 1 else "connections are"
         lines.append("")

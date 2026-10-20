@@ -83,7 +83,12 @@ The app is a board viewer for now. Nothing in it edits or routes.
   Length Violations, Clearance Violations, Unconnected traces and vias and
   Zone Islands open list windows (`panels/object_list.rs` is the generic one:
   Select, Invert, Info (the item info window), Recalculate and a filter). Select
-  sets the selection and zooms to it. Run DRC forces a new run. Other > Delete
+  sets the selection and zooms to it. Info > Board Rules (Q20.3,
+  `panels/board_rules.rs`) lists the engine's board-rule check
+  (`drc::check_board_rules`) on the board as it is: clearance, copper-to-edge
+  clearance, keepouts, hole clearance, vias in pads, dangling traces and vias,
+  under the board's own rules (no job minimums; a run's own output check, with
+  its minimums, writes its counts to the log). Run DRC forces a new run. Other > Delete
   All Traces and Vias (also a toolbar button) asks first, takes a snapshot and
   deletes (and unfills the conduction areas, as Java does); Undo/Redo
   (`U`/`B`, `Ctrl+Z`/`Ctrl+Y`, toolbar) restore the snapshots, and the scene is

@@ -1,0 +1,12 @@
+# Q20.5 (docs/roadmap/prereg/Q20.json): the cost of the output check (router.output_check, Q20),
+# `off` against `repair`. The rows are Q18's set's KiCad-graded rows with their own KiCad 6+
+# project (.kicad_pro) and canary-pwr, each with its Board Setup minimums as the KiCad plugin
+# passes them (copied from tools/bench/sets/q18-board-minimums.txt). Paths are relative to the
+# main checkout. tools/bench/quick-arm.sh with ROW_FLAGS=1 appends the words after the path to
+# the arm's command.
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn --router.board_minimums.track_width_um=150 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250
+target/corpus/prepped/mydevboard-rp2040dev.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/prepped/slice-dcmt-bread-slice.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/prepped/flight-computer-core-board.dsn --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=250 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250
+target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=600 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/prepped/vfo-controller-catvfoctrl.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250

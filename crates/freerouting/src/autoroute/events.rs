@@ -161,6 +161,9 @@ pub struct RunSummary {
     /// The delivered widths of the wide nets and the narrowing ledger, when
     /// the `widths` diagnostic ran (Q02.1, Q02.2).
     pub widths: Option<crate::quality::neckdown::NeckdownReport>,
+    /// What Q20's output check did, when `router.output_check` was `report`
+    /// or `repair`. The CLI's result JSON and the GUI's DRC list read it.
+    pub output_check: Option<Box<crate::quality::output_check::OutputCheck>>,
 }
 
 /// One message from the router to its listeners.
@@ -648,6 +651,7 @@ mod tests {
             verdicts: None,
             rip_stats: None,
             widths: None,
+            output_check: None,
         };
         let (sink, receiver) = EventSink::channel(1);
         let reader = thread::spawn(move || receiver.recv().unwrap());

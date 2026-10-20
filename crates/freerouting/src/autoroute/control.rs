@@ -618,7 +618,7 @@ pub fn narrowest_class_half_width(board: &BasicBoard) -> i32 {
 }
 
 /// `um` micrometres in board units (0 when `um` is not positive).
-fn um_to_units(board: &BasicBoard, um: f64) -> f64 {
+pub(crate) fn um_to_units(board: &BasicBoard, um: f64) -> f64 {
     if um <= 0.0 {
         return 0.0;
     }

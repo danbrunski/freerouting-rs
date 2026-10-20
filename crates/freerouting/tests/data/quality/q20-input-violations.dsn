@@ -1,0 +1,49 @@
+(pcb q20-input-violations.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q20 synthetic fixture")
+    (host_version "Q20.4: the input wiring breaks two rules: net E is 0.1 mm wide, net F runs 0.1 mm from E")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary (path pcb 0  0 0  40000 0  40000 30000  0 30000  0 0))
+    (via "Via[0-1]_600:300_um")
+    (rule (width 200) (clearance 200))
+  )
+  (placement
+    (component SMD
+      (place S1 5000 15000 front 0)
+      (place S2 35000 15000 front 0)
+      (place S4 5000 5000 front 0)
+      (place S5 35000 5000 front 0)
+      (place S6 5000 25000 front 0)
+      (place S7 35000 25000 front 0)
+      (place S8 5000 28000 front 0)
+      (place S9 35000 28000 front 0)
+    )
+  )
+  (library
+    (image SMD (pin SmdPad 1 0 0))
+    (padstack SmdPad (shape (rect F.Cu -300 -300 300 300)) (attach off))
+    (padstack "Via[0-1]_600:300_um" (shape (circle F.Cu 600)) (shape (circle B.Cu 600)) (attach off))
+    (padstack "Via[0-1]_400:300_um" (shape (circle F.Cu 400)) (shape (circle B.Cu 400)) (attach off))
+  )
+  (network
+    (net A (pins S1-1 S2-1))
+    (net D (pins S4-1 S5-1))
+    (net E (pins S6-1 S7-1))
+    (net F (pins S8-1 S9-1))
+    (class kicad_default "" A D E F
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 200) (clearance 200))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 100  5000 25000  35000 25000) (net E))
+    (wire (path F.Cu 200  5000 28000  15000 28000  15000 25250  25000 25250  25000 28000  35000 28000) (net F))
+  )
+)

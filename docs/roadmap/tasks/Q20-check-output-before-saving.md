@@ -41,7 +41,7 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
 
 ## Checklist
 
-- [ ] **Q20.1 — The check covers the board's rules.** On routed copper, the engine's DRC
+- [~] **Q20.1 — The check covers the board's rules.** On routed copper, the engine's DRC
   reports each of these:
   - clearance between nets;
   - track width under the board minimum;
@@ -59,8 +59,79 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
     - on the Q18 board set (`tools/bench/sets/q18-board-minimums.txt`), the router's check and
       KiCad's DRC under the board's own rules agree on routing-caused items, with every
       disagreement explained in the done note.
+  - *Partial 2026-10-20:* `drc::board_rules::check_board_rules` (new, re-exported from `drc`)
+    reports, on the board's traces and vias, `clearance`, `copper_edge_clearance` (the outline's
+    `board_edge` class), `keepout`, `track_width`, `via_diameter`, `drill_out_of_range`,
+    `annular_width` (the floors of `AutorouteControl`, `BoardRuleLimits::of`), `hole_clearance`
+    (copper of another net against a via's or through-hole pin's drill, `rules.hole_clearance`;
+    the clearance pairs the search tree's hole inflation alone makes are left to it),
+    `solder_mask_bridge` (each pad `router.solder_mask_expansions` lists, enlarged by its own front or back expansion: `BoardRuleLimits::mask_openings`), `via_in_pad`,
+    `track_dangling` (end point on no copper of its net, KiCad's anchor rule) and `via_dangling`
+    (Q16's `stub_contacts`); each breach is `Origin::Routed` or `Origin::Input`
+    (`InputCopper`: the loaded traces and vias, a via with an input via's centre, padstack and
+    nets, a trace piece whose ends lie on an input trace of its nets, layer and width), with the
+    routed items a repair may remove. Tests (`crates/freerouting/tests/drc_board_rules.rs`, 13
+    green; one synthetic board written in the test, a breaching and a clean case per rule):
+    `clearance_between_nets`, `track_width_under_the_board_minimum`,
+    `via_diameter_drill_and_annular_ring_under_the_minimums`, `copper_to_edge_clearance`,
+    `copper_inside_a_keepout`, `hole_to_copper_clearance` (a pad's hole and a via's own hole),
+    `solder_mask_bridge_for_the_listed_pads`, `vias_in_pads`, `dangling_traces_and_vias`,
+    `input_copper_is_marked_input_and_routed_copper_routed`, `the_check_is_deterministic`,
+    `a_straight_connection_breaks_no_rule`. KiCad agreement on the Q18 set: the check on Q18.6's
+    kept `mp1` sessions (`board_rules_on_kept_sessions`, ignored; `Q20_DATA_ROOT=<main checkout>
+    Q20_SES_DIR=target/orchestrator/q18/out/mp1 Q20_SET=tools/bench/sets/q18-board-minimums.txt
+    Q20_FLAGS="<mp1's flags>"`) against those sessions' KiCad 10.0.7 grades (`drc_real_by_type`,
+    routed minus input):
 
-- [ ] **Q20.2 — Check and repair before saving.** After the optimizer, and before the session is
+    | row | check, routed | KiCad routing-caused |
+    |---|---|---|
+    | mydevboard | via_dangling 6 | via_dangling 6, starved_thermal 1 |
+    | slice | via_dangling 2 | via_dangling 2, copper_edge_clearance 2, starved_thermal 5 |
+    | flight-computer | via_dangling 5 | via_dangling 5, starved_thermal 1 |
+    | laser-backplane | 0 | track_dangling 33 |
+    | vfo | via_dangling 11 | via_dangling 11, starved_thermal 4 |
+    | canary-pwr-9511d9a | via_dangling 26, track_dangling 1 | via_dangling 26, track_dangling 1, starved_thermal 5 (the canary grade's totals) |
+
+    The disagreements: `starved_thermal` is KiCad's zone fill (thermal spokes it pours), no
+    routing rule; slice's 2 `copper_edge_clearance` are the "Segment on Margin" the DSN does not
+    carry (Q18.5); laser's 33 `track_dangling` are trace ends inside a DSN plane outline of their
+    net (e.g. `Net-(D1-K)`'s F.Cu polygon at 108.9..110.1 × 93.6..94.2 mm, the trace end at
+    (109.975, 94.011) mm) where KiCad's fill of that zone does not reach: a plane is its DSN
+    outline in the router's model, not KiCad's fill (Q16.3's known limit). The check takes
+    0.001-0.011 s per board in release (that table was taken at the DRC's 1 µm tolerance; the
+    check now has none, see below). Clearance and hole clearance are measured with tolerance 0
+    (`drc::board_rules::CHECK_TOLERANCE_UM`, `BasicBoard::clearance_violations_within`; Q22's
+    decision: KiCad reports clearance items 0.5-0.8 µm short, which the DRC's default
+    `router.clearance_tolerance_um` = 1 µm would pass): `clearance_has_no_tolerance` (0.5 µm short
+    is reported; the DRC at its default passes it). A breach is routed only if one of its items is
+    copper the router placed (`InputCopper`), so Q22.1's 31 input-only items, moved under 1 µm by
+    KiCad's `%.6g` DSN export, are reported as input and never removed. The mask rule
+    (2026-10-20, after Q18.7 landed): `BoardRuleLimits::with_mask_expansions` reads the pads
+    from `router.solder_mask_expansions` through `job::solder_mask::pin_expansions`, the lookup
+    `apply_solder_mask_expansions` uses, so the check and the router's raised clearance classes
+    name the same pins; a pad's top-layer opening is its F.Cu shape enlarged by the front
+    expansion, the bottom one its last layer's shape by the back expansion, and copper that only
+    touches the opening (one board unit smaller than the expansion) is no breach, because the
+    router puts it exactly there. `OutputChecker::start` passes the settings, so
+    `router.output_check` checks it. Tests: `drc_board_rules::solder_mask_bridge_for_the_listed_pads`
+    (a trace 0.25 mm from a pad with a 0.3 mm opening is reported, one at exactly 0.3 mm or at
+    0.6 mm is not, an unlisted pad's trace is not, a back-only expansion leaves an F.Cu trace
+    alone while a front one flags it) and `quality_output_check::copper_inside_a_pads_mask_aperture_is_found_and_repaired`
+    (`report` counts one `solder_mask_bridge` and keeps the trace; `repair` removes it, retries
+    net A once, and the new route keeps out of the aperture: 0 breaches, 0 incomplete). In the
+    router's model a breach of an opening is also a `clearance` breach (the listed pad's class
+    is raised to the expansion), so the rule names the cause KiCad names. The Margin and
+    Edge.Cuts lines of Q18.5 and the board's own mask apertures of Q18.7 are keepouts in the
+    router's model (`edge_clearance`, `solder_mask`), which `check_board_rules` reports as
+    `keepout` (every non-conduction area; `copper_inside_a_keepout`), never as
+    `copper_edge_clearance` (that is the outline's `board_edge` class alone). Remains: the copper
+    the DSN does not carry (footprint `fp_line` copper and board copper text and graphics, Q22.4,
+    running) and `.kicad_dru` clearances by item type (Q22.5, K13), which the check sees once
+    they are router obstacles and rules; then this comparison again for slice, whose two
+    `copper_edge_clearance` the Margin keepout should now turn into router-side `keepout`
+    avoidance (not re-measured here).
+
+- [x] **Q20.2 — Check and repair before saving.** After the optimizer, and before the session is
   written, run the check on routed items:
   - `report` logs and counts;
   - `repair` removes the breaching routed items, retries the affected connections once, checks
@@ -73,8 +144,35 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
     - two runs give identical sessions;
     - with `off`, connection-parity stays 7 of 7 exact under `legacy`;
     - on a board where the check finds nothing, the session is byte-identical to `off`'s.
+  - *Done 2026-10-20:* setting `router.output_check` (`settings/fields.rs`; unset is `off`;
+    an unknown value fails the job before routing), `quality::output_check` (new):
+    `OutputChecker::start` on the board as loaded (input copper, Q20.4's log line),
+    `OutputChecker::finish` in `run_pipeline` after the optimizer, its board stages and Q16's
+    stub cleanup (also after a stop; no retry after a full stop): `report` logs and counts;
+    `repair` removes the routed items of every breach and the stubs that leaves (input copper
+    kept), retries the incomplete connections of the affected nets once (`retry_pass`: pass 1 of
+    a fresh pipeline of the job's stages, ordering filtered to those nets in ascending (net,
+    item) order, rip-up off, no repeated-failure rip-up, its own stop token), checks again and
+    removes what still breaches until a round finds none. `RunSummary::output_check` and
+    `PipelineOutcome::output_check` carry the counts; the final figures are recomputed when the
+    check changed the board. `ENHANCED` gets `output_check = repair` (decided 2026-10-20, no
+    keep rule); DIVERGENCES lines under "freerouting (board model)" and "Profile `enhanced`".
+    Tests (`crates/freerouting/tests/quality_output_check.rs`, 9 green, fixture
+    `tests/data/quality/q20-output-check.dsn`, hook stage `Breach` after the optimizer: a 0.1 mm
+    trace for net A in place of its wiring and a lone 0.4 mm via of net D, minimums 0.2 mm track
+    and 0.5 mm via): `repair_removes_the_breaching_trace_and_via_and_retries_them` (found
+    `track_width` and `via_diameter`, retried 1, repaired 1, left open 0, the session has no
+    `Via[0-1]_400:300_um` and no trace under 2000 units, the board complete);
+    `a_connection_that_fits_only_below_the_rules_is_left_unrouted` (q18-neck-floor: PWR2's
+    0.12 mm trace removed, retried, left open, nothing under 0.2 mm saved);
+    `two_runs_give_the_same_session`; `report_counts_and_changes_nothing` (and `off` writes the
+    same session); `a_clean_board_gives_the_session_of_off` (found 0, SES byte-identical);
+    `the_profiles_set_repair_and_off`; `modes_parse_and_unknown_values_are_refused`. Legacy:
+    `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting --test
+    autoroute_board_parity -- --ignored autoroute_board_parity`: 7 of 7 `[exact]`, `bytes true`
+    (run after Q20.2 and again on the final tree, tolerance 0 included).
 
-- [ ] **Q20.3 — Say what the check did.** Report it in four places:
+- [x] **Q20.3 — Say what the check did.** Report it in four places:
   - the run log, one line per rule plus a total;
   - `--result-json`, a field `output_check: {checked, found, removed, retried, repaired,
     left_open, by_rule}`;
@@ -82,14 +180,43 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
   - the desktop app's DRC list.
   - **Accept:** a test per surface, and the fields documented in the CLI help and the plugin
     README.
+  - *Done 2026-10-20:* run log: `Output check (<mode>): N routed trace(s) and via(s) checked, F
+    breach(es) of the board's rules found.`, one `Output check: <rule> <n>` line per rule, then
+    the repair's totals, with no time so equal runs log equal lines (`two_runs_give_the_same_session`
+    compares the logs; the times are `OutputCheck::check_seconds` and `seconds`;
+    `repair_removes_the_breaching_trace_and_via_and_retries_them`
+    reads `track_width 1`; CLI `result_json_output_check.rs::the_run_log_has_a_line_per_rule_and_a_total`).
+    `--result-json`: key `output_check` after `widths` with `{mode, checked, found, removed,
+    retried, repaired, left_open, remaining, by_rule, input}` (`OutputCheck::to_json`; no time,
+    so two equal runs write equal manifests but for durations), absent with `off`
+    (`result_json_output_check.rs::the_manifest_carries_the_output_check`;
+    `result_json.rs::a_routed_run_writes_every_key` now expects Java's keys plus `output_check`
+    under `enhanced`); documented in `crates/freerouting-cli/src/help.txt` (`--result-json`).
+    Plugin: `summary.output_check_lines` (a **Rule check** line, the input's violations, a
+    warning when breaches were saved; `test_summary.py::test_the_output_check_is_summarised`;
+    `python3 -m pytest kicad-plugin/tests`: 367 passed, 19 skipped), documented in
+    `kicad-plugin/README.md`. Desktop app: Info > Board Rules (`panels/board_rules.rs`, a list
+    window of the engine's check on the open board under its own rules;
+    `panels::board_rules::tests::the_list_shows_the_boards_breaches`), and the run's output-check
+    lines reach the GUI log with the job log; `docs/development/gui.md` updated.
 
-- [ ] **Q20.4 — Input copper is reported, not changed.** Violations already present in the
+- [x] **Q20.4 — Input copper is reported, not changed.** Violations already present in the
   input are logged once at load with their count and rule ("the board already has N
   violations: …"). The repair never removes or moves input copper.
   - **Accept:** a fixture with a pre-existing clearance violation and a pre-existing narrow
     track routes with both kept and reported, and nothing new breaks a rule.
+  - *Done 2026-10-20:* `OutputChecker::start` checks the board as loaded once and logs
+    `Output check: the board already has N violation(s): <rule n, ...>; input copper is
+    reported, never changed.`; the counts are `OutputCheck::input` (the manifest's `input`). The
+    repair removes only items `InputCopper` does not contain, and its stub removal keeps every
+    input piece. Fixture `tests/data/quality/q20-input-violations.dsn` (net E's input track
+    0.1 mm wide, net F's input track 0.1 mm from it; A and D to route): 
+    `input_violations_are_reported_once_and_kept` (input `track_width` 1 and `clearance` 1,
+    the load line logged once, found 0 and removed 0 after routing A and D, the 0.1 mm track
+    still on the board), `the_repair_never_removes_input_copper` (the hook's breaches removed,
+    every input trace and via id still on the board).
 
-- [ ] **Q20.5 — Register the cost measurement.** Write `docs/roadmap/prereg/Q20.json` before
+- [x] **Q20.5 — Register the cost measurement.** Write `docs/roadmap/prereg/Q20.json` before
   any number:
   - **Arms:** `off` and `repair`.
   - **Boards:** the Q18 set's KiCad 6+ rows and canary-pwr, a few minutes in all.
@@ -97,8 +224,17 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
   - **Guards:** zero routing-caused breaches in the `repair` arm.
   - **Report:** KiCad unconnected, route time and the check's own time.
   - **Accept:** the registration and its pin test are in, with no number yet.
+  - *Done 2026-10-20:* `docs/roadmap/prereg/Q20.json` (id `Q20.6-output-check-cost`, arms `off`
+    and `repair` differing only in `--router.output_check`, Q18.6's `mp1` flags; set
+    `tools/bench/sets/q20-output-check.txt`: canary-pwr-9511d9a, mydevboard, slice,
+    flight-computer, laser-backplane and vfo with Q18's row flags; one KiCad grade per distinct
+    session; hard `via_in_pad` and `check_remaining` (the repair arm's saved breaches, must be
+    0), guard `kicad_rule_breaches`, report KiCad unconnected, unrouted, route and check
+    seconds), registered before any run, sha256 246ab47e…, pinned by
+    `crates/freerouting-dev/tests/prereg_q20.rs` (3 green: valid with its arms and board
+    hashes, the arms differ only in the check and the rows are Q18's, the hash).
 
-- [ ] **Q20.6 — Measure the cost.** Run Q20.5 as registered.
+- [x] **Q20.6 — Measure the cost.** Run Q20.5 as registered.
   - **Accept:**
     - the per-board table is in the done note;
     - `repair` has zero breaches;
@@ -106,3 +242,41 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
     - the check's time is under 5 % of route time on every row, or the rows over it are
       named;
     - the `ENHANCED` entry and a DIVERGENCES line are in.
+  - *Done 2026-10-20:* run as registered on `land/q20` (main 91b540d plus the Q20 diff, the
+    check at tolerance 0 per Q22; release CLI sha256 0f32f198…), `tools/bench/quick-arm.sh`-style
+    routes under `ulimit -v 8000000` and timeout, outputs in `target/orchestrator/q20/out/<arm>/`,
+    graded once per distinct session by `tools/bench/grade-distinct.sh` (`kicad-cli` only while
+    none ran). Per row, `off` → `repair` (route seconds are one run each; the check's figures from
+    the repair log's `Output check:` lines and the manifest's `output_check`; the measuring build
+    still logged the stage's and the checks' seconds, which the final tree keeps off the log so
+    that equal runs log equal lines, `quality_transaction.rs::off_is_byte_identical`):
+
+    | row | KiCad unconnected | unrouted | route s | check s (share) | stage s (share) | found | removed | retried | repaired | left open | remaining | KiCad covered breaches | SES |
+    |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    | canary-pwr-9511d9a | 46 → 33 | 110 → 96 | 52.01 → 58.84 | 0.013 (0.02 %) | 6.399 (10.9 %) | 27 (track_dangling 1, via_dangling 26) | 51 | 39 | 14 | 25 | 0 | 27 → 0 | differ |
+    | mydevboard | 56 → 56 | 62 → 62 | 3.79 → 4.31 | 0.005 (0.1 %) | 0.221 (5.1 %) | 6 (via_dangling) | 10 | 7 | 0 | 7 | 0 | 6 → 0 | differ |
+    | slice | 11 → 11 | 6 → 6 | 0.41 → 0.45 | 0.002 (0.4 %) | 0.004 (0.9 %) | 2 (via_dangling) | 3 | 0 | 0 | 0 | 0 | 4 → 0 | differ |
+    | flight-computer | 6 → 4 | 4 → 3 | 0.30 → 0.53 | 0.008 (1.5 %) | 0.112 (21 %) | 5 (via_dangling) | 11 | 3 | 1 | 2 | 0 | 5 → 0 | differ |
+    | laser-backplane | 70 → 70 | 45 → 45 | 0.39 → 0.52 | 0.001 (0.2 %) | 0.001 (0.2 %) | 0 | 0 | 0 | 0 | 0 | 0 | 33 → 33 | identical |
+    | vfo | 14 → 12 | 1 → 0 | 0.42 → 0.58 | 0.004 (0.7 %) | 0.035 (6.0 %) | 11 (via_dangling) | 18 | 1 | 1 | 0 | 0 | 11 → 0 | differ |
+
+    - *Zero breaches:* `check_remaining` (the manifest's `output_check.remaining`) is 0 on every
+      row. KiCad's covered-type breaches (`kicad_rule_breaches`) are 0 in `repair` on five rows;
+      laser-backplane keeps its 33 `track_dangling` in both arms (identical sessions): trace ends
+      inside a DSN plane outline that KiCad's fill does not reach, a breach the router's model
+      cannot see (named in the registration and Q20.1). slice's 2 `copper_edge_clearance` (off)
+      were the dangling +5V via at (124.50, 122.72) and its 1.40 mm stub against the Margin line;
+      `repair` removed both. `via_in_pad` is 0 in both arms on every row (canary's
+      `via_in_pad.py`; KiCad and the check report none on the corpus rows). Not covered and
+      unchanged or fewer: `starved_thermal` (zone fill) 5/5 slice, 1 → 0 mydevboard, 1/1
+      flight-computer, 4 → 3 vfo, 5/5 canary.
+    - *Identical where nothing was found:* laser-backplane is the only row with `found` 0, and
+      its `off` and `repair` sessions are byte-identical (`cmp`); its grade is shared.
+    - *Time:* the check itself is under 5 % of route time on every row (at most 1.5 %). The
+      whole stage (checks, removals and the retry pass) is over 5 % on canary-pwr (10.9 %),
+      flight-computer (21 %), vfo (6.0 %) and mydevboard (5.1 %); all of that is the retry pass.
+    - *Score:* KiCad unconnected is never worse (−13 canary, −2 flight-computer, −2 vfo), as is
+      unrouted (−14, −1, −1): the retry pass also routes connections of the affected nets that
+      were open before the check.
+    - *ENHANCED and DIVERGENCES:* `settings/profile.rs` sets `output_check = repair` in
+      `ENHANCED` (Q20.2); `docs/DIVERGENCES.md` has the `output_check` line and the profile line.

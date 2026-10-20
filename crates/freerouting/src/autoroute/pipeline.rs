@@ -27,7 +27,13 @@
 //!    sets it, N05.3): after the
 //!    optimizer and the board stages of its phase, also after a stop; it
 //!    keeps every trace and via of the board as handed in;
-//! 6. [`RouterEvents::finished`] hands the board to the listener by move;
+//! 6. Q20's output check ([`OutputChecker`](crate::quality::output_check::OutputChecker))
+//!    when `router.output_check` is `report` or `repair` (unset is off): it
+//!    checks the input copper once before the fanout and the routed copper
+//!    last, after the stub cleanup and also after a stop; `repair` removes
+//!    routed copper that breaks a board rule and retries those connections
+//!    once (not after a full stop);
+//! 7. [`RouterEvents::finished`] hands the board to the listener by move;
 //!    with no listener the board comes back in [`PipelineOutcome::board`].
 //!
 //! `run_pipeline` writes nothing: SES writing is C05's and the job flow
@@ -143,6 +149,8 @@ pub struct PipelineOutcome {
     pub stubs: Option<crate::quality::stubs::StubCleanup>,
     /// Q04.3's output guard, if `router.autorouter.output_guard` was on.
     pub output_guard: Option<crate::quality::output_guard::GuardOutcome>,
+    /// Q20's output check, if `router.output_check` was `report` or `repair`.
+    pub output_check: Option<crate::quality::output_check::OutputCheck>,
     /// True if the job deadline fired.
     pub timed_out: bool,
     /// Java's job log lines.
@@ -247,6 +255,21 @@ pub fn run_pipeline_with(
     // Q16: the copper of the board as loaded, which the stub cleanup keeps.
     let input_copper = crate::quality::stubs::enabled(settings)
         .then(|| crate::quality::stubs::input_copper(&board));
+    // Q20: an invalid `router.output_check` value fails before routing; the
+    // check takes the input copper and logs its breaches once.
+    if let Err(e) = crate::quality::output_check::check_settings(settings) {
+        return Err(fail(PipelineError::UnknownStage(e), board));
+    }
+    let output_checker =
+        crate::quality::output_check::OutputChecker::start(&board, settings, job.board_settings);
+    if let Some(checker) = &output_checker {
+        for text in checker.load_log() {
+            log.push(LogLine {
+                level: LogLevel::Info,
+                text: text.clone(),
+            });
+        }
+    }
 
     // PARITY: RoutingPipeline.java:115-123, the fanout-only run sets
     // `max_passes = 0` for the loop.
@@ -401,15 +424,45 @@ pub fn run_pipeline_with(
         });
         outcome.stubs = Some(cleanup);
     }
+    // Q20: the output check, last before the board is handed over.
+    if let Some(checker) = &output_checker {
+        let check = if cancel.is_stop_requested() {
+            checker.finish(&mut board, None)
+        } else {
+            let mut retry = |board: &mut RoutingBoard, nets: &std::collections::BTreeSet<i32>| {
+                let Ok(mut stages) = registry.build(&selection, settings) else {
+                    return;
+                };
+                let mut runner = executor(settings, job.board_settings);
+                crate::quality::output_check::retry_pass(
+                    board,
+                    nets,
+                    &mut stages,
+                    runner.as_mut(),
+                    &ctx,
+                );
+            };
+            checker.finish(&mut board, Some(&mut retry))
+        };
+        log.extend(check.log.iter().map(|text| LogLine {
+            level: LogLevel::Info,
+            text: text.clone(),
+        }));
+        outcome.output_check = Some(check);
+    }
     outcome.timed_out = watcher.finish();
 
     let stubs_removed = outcome.stubs.is_some_and(|s| s.removed() > 0);
-    let figures =
-        if outcome.optimizer.is_some() || stubs_removed || loop_outcome.final_figures.is_none() {
-            crate::autoroute::batch::snapshot::BoardFigures::of(&board, settings)
-        } else {
-            loop_outcome.final_figures.clone().unwrap_or_default()
-        };
+    let checked = outcome.output_check.as_ref().is_some_and(|c| c.changed());
+    let figures = if outcome.optimizer.is_some()
+        || stubs_removed
+        || checked
+        || loop_outcome.final_figures.is_none()
+    {
+        crate::autoroute::batch::snapshot::BoardFigures::of(&board, settings)
+    } else {
+        loop_outcome.final_figures.clone().unwrap_or_default()
+    };
     let initial_unrouted = if outcome.loop_ran {
         loop_outcome.initial_unrouted
     } else {
@@ -432,6 +485,7 @@ pub fn run_pipeline_with(
         verdicts: None,
         rip_stats: None,
         widths: None,
+        output_check: outcome.output_check.clone().map(Box::new),
     };
     for diagnostic in lock_diagnostics(&diagnostics).iter_mut() {
         diagnostic.finish(&board, &ctx, &mut outcome.summary);

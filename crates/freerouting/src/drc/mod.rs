@@ -40,3 +40,10 @@ pub use route_stubs::{RouteStub, RouteStubKind, route_stubs};
 // B09.3: the fill model of conduction areas and own-net connectivity.
 pub mod fill_model;
 pub use fill_model::{FillIsland, FillPolygon, conduction_fill, island_outline, net_components};
+
+// Q20.1: the board's manufacturing rules on routed and input copper.
+pub mod board_rules;
+pub use board_rules::{
+    BoardRule, BoardRuleCounts, BoardRuleLimits, BoardRuleViolation, InputCopper, Origin,
+    check_board_rules,
+};

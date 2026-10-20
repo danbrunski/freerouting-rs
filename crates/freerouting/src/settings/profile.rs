@@ -143,6 +143,13 @@ pub const ENHANCED: &[Difference] = &[
                       Q22)",
     },
     Difference {
+        path: "output_check",
+        value: "repair",
+        measurement: "decided 2026-10-20 (Q20: routed copper that breaks a board rule is \
+                      never saved; a correctness rule, no keep rule); its cost measured in \
+                      Q20.6 (docs/roadmap/prereg/Q20.json)",
+    },
+    Difference {
         path: "java_quirks.init_failure_room_leak",
         value: "false",
         measurement: N06_5_MAZE,

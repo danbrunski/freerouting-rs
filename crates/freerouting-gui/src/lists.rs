@@ -10,7 +10,7 @@ use crate::analysis::{Analysis, Tag};
 use crate::commands::{Command, ListKind};
 use crate::panels::object_list::{ListSpec, ListWindow, Row};
 use crate::panels::{
-    components, incompletes, islands, length, library, nets, unconnected, violations,
+    board_rules, components, incompletes, islands, length, library, nets, unconnected, violations,
 };
 use crate::session::Session;
 use crate::text;
@@ -23,6 +23,7 @@ pub struct Lists {
     clearance: ListWindow,
     unconnected: ListWindow,
     islands: ListWindow,
+    board_rules: ListWindow,
     // G04: lists over the board's own data. Their rows are built when the
     // window opens and on Recalculate, and again when the board or the unit
     // changes, never every frame.
@@ -44,6 +45,7 @@ impl Lists {
             ListKind::ClearanceViolations => &mut self.clearance,
             ListKind::Unconnected => &mut self.unconnected,
             ListKind::ZoneIslands => &mut self.islands,
+            ListKind::BoardRules => &mut self.board_rules,
             ListKind::Nets => &mut self.nets,
             ListKind::Components => &mut self.components,
             ListKind::Packages => &mut self.packages,
@@ -72,6 +74,7 @@ impl Lists {
             ListKind::ClearanceViolations => &self.clearance,
             ListKind::Unconnected => &self.unconnected,
             ListKind::ZoneIslands => &self.islands,
+            ListKind::BoardRules => &self.board_rules,
             ListKind::Nets => &self.nets,
             ListKind::Components => &self.components,
             ListKind::Packages => &self.packages,
@@ -122,6 +125,7 @@ impl Lists {
                 let d = analysis.drc(session)?;
                 Some(islands::rows(board, &d.islands))
             }
+            ListKind::BoardRules => Some(board_rules::rows(board)),
             ListKind::Nets => Some(nets::rows(board, Unit::Mm, false, &BTreeMap::new())),
             ListKind::Components => Some(components::rows(board)),
             ListKind::Packages => Some(library::package_rows(board)),
@@ -194,6 +198,11 @@ impl Lists {
                 ListKind::ZoneIslands,
                 text::ISLANDS_TITLE,
                 text::ISLANDS_EMPTY,
+            ),
+            (
+                ListKind::BoardRules,
+                text::BOARD_RULES_TITLE,
+                text::BOARD_RULES_EMPTY,
             ),
         ] {
             let window = self.window(kind);

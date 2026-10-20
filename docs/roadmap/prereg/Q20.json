@@ -1,0 +1,110 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q20.6-output-check-cost",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/Q20-check-output-before-saving.md (Q20.5, Q20.6)",
+  "question": "What does the output check (router.output_check=repair, profile enhanced's value since Q20.2) cost against off: KiCad unconnected items, route time and the check's own time, and does repair save zero breaches of the board's rules?",
+  "rule": "paired",
+  "keep_rule": "none: decided 2026-10-20, repair joins ENHANCED as a correctness rule without a keep rule (as Q19); this measurement reports its cost and checks the guard, it does not decide the promotion",
+  "arms": {
+    "off": {
+      "engine": "freerouting-rs release CLI of branch land/q20 (main f486b34 plus Q20.1-Q20.4), one Linux build for both arms (its sha256 in the done note); the default profile enhanced; routed by tools/bench/quick-arm.sh, which adds --result-json OUT/ARM/<board>.result.json and keeps the log",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --stats json --router.output_check=off {ROW_FLAGS}",
+      "settings": {
+        "router.output_check": "off"
+      },
+      "what": "no check: the session as the router leaves it (Q18.6's mp1 flags)"
+    },
+    "repair": {
+      "engine": "the same build",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --stats json --router.output_check=repair {ROW_FLAGS}",
+      "settings": {
+        "router.output_check": "repair"
+      },
+      "what": "the check before saving: routed copper that breaks a board rule is removed, its connections retried once, what still breaks a rule removed"
+    }
+  },
+  "baseline_arm": "off",
+  "candidate_arm": "repair",
+  "boards": {
+    "set": "tools/bench/sets/q20-output-check.txt",
+    "eligibility": "every row of the set: Q18's set's rows that KiCad grades with their own KiCad 6+ .kicad_pro (mydevboard, slice, flight-computer, laser-backplane, vfo) and canary-pwr-9511d9a; fixed here before any run",
+    "board_flags": "the set file's per-row flags (ROW_FLAGS=1): each row's Board Setup minimums, as the plugin passes them",
+    "files": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "target/corpus/prepped/mydevboard-rp2040dev.dsn": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753",
+      "target/corpus/prepped/slice-dcmt-bread-slice.dsn": "864260cbe7f5b10e66dfca1eb72d5992142ab9c31aba2911408dbbca871b8074",
+      "target/corpus/prepped/flight-computer-core-board.dsn": "e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86",
+      "target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn": "bbf5efcf28e4071395dda11c95744e4d9ed557e37d9f6bdc324f046c1ce9de5b",
+      "target/corpus/prepped/vfo-controller-catvfoctrl.dsn": "4896cc4b6a640c482cdd2c7e8a2e88e3ef86d5b1e811a19446c4a39fd3ff12a4"
+    }
+  },
+  "grading": "one KiCad grade per distinct session (tools/bench/grade-distinct.sh: an arm whose session is byte-identical to the other's shares its grade): the corpus rows by tools/kicad-oracle/grade.sh (Q19's grader, the board's own rules), canary-pwr-9511d9a by Q10's canary grade; kicad-cli only while `pgrep -a kicad-cli` shows none; every route under ulimit -v 8000000 and timeout (600 s canary, 120 s others)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "check_remaining",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_rule_breaches",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "route_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "check_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "check_found",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "as Q11.json amendment 2, raw",
+    "check_remaining": "the repair arm's guard (Q20.5: zero routing-caused breaches): the result manifest's output_check.remaining, the routed breaches of the board's rules the router saved; must be 0 on every row of repair; null in off (no check runs)",
+    "kicad_rule_breaches": "KiCad's routing-caused errors of the rule types the check covers (drc_real_by_type, routed minus input: clearance, copper_edge_clearance, track_width, via_diameter, annular_width, drill_out_of_range, hole_clearance, solder_mask_bridge, track_dangling, via_dangling; canary: the same types of its grade), raw; reported per row with each breach the router's model cannot see named (Q20.1: Margin-layer lines until Q18.5, trace ends inside a DSN plane outline whose KiCad fill does not reach them, mask openings until Q18.7)",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session",
+    "unrouted": "the result manifest's board_statistics.connections.incomplete_count",
+    "route_seconds": "/usr/bin/time's elapsed seconds of the route (quick-arm.sh's .time); other sessions' routes may overlap: reported, not compared",
+    "check_seconds": "the check's own time: the repair arm's log line 'Output check: ... (checks X s)' (the board-rule checks; the retry pass is route time); its share of route_seconds is reported per row, rows over 5 % named",
+    "check_found": "output_check.found: the routed breaches the first check found"
+  },
+  "report": "per row and arm: kicad_unconnected, unrouted, route_seconds, check_seconds (and its share of route_seconds), check_found, removed, retried, repaired, left_open, check_remaining, kicad_rule_breaches by type; whether the two sessions are byte-identical (they must be where check_found is 0)",
+  "stop_rule": "one run per arm and row (decided 2026-10-20: a few minutes in all, one KiCad grade per distinct session)",
+  "timing": "registered before any Q20.6 number; Q20.1's comparison of the check with KiCad on Q18.6's kept mp1 sessions is not a run of these arms",
+  "amendments": []
+}
