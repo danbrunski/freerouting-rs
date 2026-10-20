@@ -1,0 +1,379 @@
+# Q22 — Routed output keeps the board's copper and hole clearance
+
+Opened 2026-10-20 from the grades of N04.3 and Q16.5 ([archive/N04](archive/N04-contacts-inside-pads.md),
+[archive/Q16](archive/Q16-no-dangling-stubs.md)). Decided 2026-10-20: routing never breaks the
+board's manufacturing rules, graded under the board's own rules. Routing-caused `clearance` and
+`hole_clearance` are 0 in every arm.
+
+N04.3's `center` arm is the default `enhanced` (main `b98074e`, Board Setup minimums passed,
+`grade.sh --keep-tracks`; grades in `target/orchestrator/n04q16/out/n04/center/<row>/`). Its
+KiCad `drc_real_by_type` counted these routing-caused items:
+
+| Row | clearance | hole_clearance | below_minimum |
+|---|---|---|---|
+| pcietest | 237 | 70 | 0 |
+| cm4-edge-ai | 25 | 0 | 0 |
+| nudac | 0 | 18 | 0 |
+| ch32v003 | 5 | 0 | 0 |
+| mydevboard | 1 | 0 | 0 |
+| vna-usb-pd | 2 | 0 | 0 |
+| picodebugger | 1 | 0 | 0 |
+| canary-pwr | 0 | 0 | 4 (`annular_width`) |
+
+Q16.5's base arm (the plugin path, `target/orchestrator/n04q16/out/q165/runs/q165-base/`) had 1
+`clearance` on sonde-xilinx.
+
+Q22.1 found that 41 of these 364 items involve copper the router placed. All 41 cross copper or a
+rule that the DSN never gave the router. Another 31 are input tracks and vias that the DSN round
+trip moved by less than 1 µm. The remaining 292 come from the grader. No routed item breaks a
+rule that the DSN carries.
+
+Q20's output check can only see what the router knows. Q22.4 and Q22.5 are what let it see these
+items.
+
+Prerequisites: Q18 (the floors and the minimums), Q19 (grading under the board's own rules), F02.6
+(the KiCad oracle).
+
+## Decisions made here
+
+- **What counts as routing-caused.** A KiCad item is routing-caused when at least one of its items
+  is a track or via that the input board doesn't have with the same coordinates (to the
+  nanometre), width, layer and net.
+  - Pads, footprint graphics, text, zones and unchanged input tracks and vias are input copper.
+  - An item made only of input copper is pre-existing, whatever the input report listed. KiCad
+    stops a type at 199 items and lists a pair once per copper layer, so the two reports don't
+    list the same pairs.
+  - Moved input copper counts as routing-caused (Q22.2).
+- **Copper that was on the board comes back at its own coordinates** on the DSN path (Q22.3).
+  K13.2 does the same for the `.kicad_pcb` path.
+- **Whatever the DSN export drops becomes an obstacle or a rule, never an exception in the
+  grader.** That covers:
+  - footprint copper graphics, and board copper text and graphics (Q22.4);
+  - `.kicad_dru` clearances between item types (Q22.5);
+  - pad-local clearances on the grader's path (Q22.6).
+
+  These are fixes to the input, so they apply in every profile, as Q18's floors do. The parity
+  fixtures are bare DSNs and don't change. A connection that only fits through such copper stays
+  open. Its cost in unconnected items is reported, not judged (as in Q18).
+- **The grader can route the DSN the plugin writes** (Q22.6), so that a measurement and a plugin
+  run see the same rules. The bare export stays selectable.
+- **For Q20:** the engine DRC's `router.clearance_tolerance_um` defaults to 1.0 µm. That would let
+  through the 0.5–0.8 µm breaches KiCad reported here, so Q20.1's check needs a tolerance of 0.
+
+## File ownership
+
+| Item | New files | May edit |
+|---|---|---|
+| Q22.2 | `tools/kicad-oracle/tests/test_routing_caused.py` | `tools/kicad-oracle/oracle_lib.py` (`subtract_preexisting`, `summarize`), `tools/kicad-oracle/kicad_steps.py` (`import_session`, a copper-geometry dump), `tools/kicad-oracle/grade.sh` (the summarize call), `tools/kicad-oracle/README.md` |
+| Q22.3 | `kicad-plugin/freerouting_rs/restore_copper.py`, `kicad-plugin/tests/test_restore_copper.py` | `kicad-plugin/freerouting_rs/export_flow.py` (`after_import` only), `kicad-plugin/freerouting_rs/plugin.py` (`import_ses`: hand the detached originals to the restore), `kicad-plugin/headless_run.py` (`import`), `tools/kicad-oracle/kicad_steps.py` (`import_session`) |
+| Q22.4 | `kicad-plugin/freerouting_rs/copper_graphics.py`, `kicad-plugin/tests/test_copper_graphics.py`, `crates/freerouting-kicad/tests/copper_graphics.rs`, a fixture under `crates/freerouting/tests/data/kicad/` | `kicad-plugin/freerouting_rs/kicad_board.py` (`collect`), `kicad-plugin/freerouting_rs/dsn_fixups.py` (`apply`), `kicad-plugin/freerouting_rs/export_flow.py` (`fix_dsn`), `crates/freerouting-kicad/src/{footprints.rs,read.rs}` |
+| Q22.5 | `crates/freerouting-kicad/tests/dru_item_types.rs`, a fixture under `crates/freerouting/tests/data/kicad/` | `crates/freerouting-kicad/src/dru.rs`, `crates/freerouting/src/io/kicad.rs`, `crates/freerouting/src/job/prepare.rs`, `crates/freerouting-cli/src/{args.rs,help.txt}`, `kicad-plugin/freerouting_rs/export_flow.py` (`router_args`), `docs/DIVERGENCES.md` |
+| Q22.6 | `tools/kicad-oracle/tests/run-plugin-export-test.sh` | `tools/kicad-oracle/grade.sh`, `tools/kicad-oracle/README.md`, `kicad-plugin/headless_run.py` |
+| Q22.7–Q22.8 | `docs/roadmap/prereg/Q22.json`, `tools/bench/sets/q22-clearance.txt`, `crates/freerouting-dev/tests/prereg_q22.rs` | — |
+| Q22.9 | — (runs only, under `target/orchestrator/q22/`) | — |
+
+Sequencing:
+- **Q22.2 and Q22.6 can start now.** They touch only `tools/kicad-oracle/` and
+  `headless_run.py`.
+- **Q22.3 and Q22.4 wait for Q18.5 and Q18.7.** Both edit `export_flow.py` (different functions),
+  and Q22.4 also edits `dsn_fixups.py`, `kicad_board.py` and `crates/freerouting-kicad/src/`. Q18.5
+  (Edge.Cuts and Margin keepouts) and Q18.7 (solder mask) are editing those files now. Q22.4 should
+  reuse the keepout writer they add.
+- **K13.1–K13.4 also own those files**, `crates/freerouting-kicad/src/**` and `export_flow.py`.
+- **No Q22 item touches Q20's files** (`crates/freerouting/src/drc/`, `quality/`).
+
+## Checklist
+
+- [x] **Q22.1 — Find the causes.** Classify every routing-caused `clearance`, `hole_clearance` and
+  `below_minimum` item of N04.3's `center` arm and Q16.5's sonde-xilinx:
+  - (i) a rule or copper that the DSN doesn't carry;
+  - (ii) a geometry or rounding shortfall in the router;
+  - (iii) a stage that skips its clearance check;
+  - (iv) a drill that the router models differently;
+  - (v) something else.
+
+  Then answer canary-pwr's 18 → 26 from the saved records.
+  - **Accept:**
+    - counts per row and cause;
+    - one worked example per cause, with coordinates, the rule KiCad applied and what the DSN
+      says for that pair;
+    - the canary answer, with what remains for Q22.9.
+  - *Done 2026-10-20:* read-only, from saved grades. No route was run, no build was made and no
+    KiCad run was needed.
+    - **Method.** Scripts in `target/orchestrator/q22/scratch/`:
+      - `classify.py ROW_DIR [verbose]` uses `oracle_lib.subtract_preexisting` and then
+        `pcbcopper.py`, which matches each item's uuid in the routed board to the input board
+        (to the nanometre, then to 1 µm).
+      - `copper_graphics.py` counts copper graphics and text.
+    - **Counts.** The causes below split the 364 items:
+
+      | Row | Items | (i) DSN lacks it | (v-a) export moves input copper | (v-b) input violation counted again | (v-c) grader's import | (ii) / (iii) / (iv) |
+      |---|---|---|---|---|---|---|
+      | pcietest | clearance 237, hole 70 | 38 | 0 | 269 (199 + 70) | 0 | 0 |
+      | cm4-edge-ai | clearance 25 | 0 | 25 | 0 | 0 | 0 |
+      | nudac | hole 18 | 0 | 0 | 18 | 0 | 0 |
+      | ch32v003 | clearance 5 | 2 | 3 | 0 | 0 | 0 |
+      | mydevboard | clearance 1 | 0 | 1 | 0 | 0 | 0 |
+      | vna-usb-pd | clearance 2 | 0 | 2 | 0 | 0 | 0 |
+      | picodebugger | clearance 1 | 0 | 0 | 1 | 0 | 0 |
+      | canary-pwr | annular_width 4 | 0 | 0 | 0 | 4 | 0 |
+      | sonde-xilinx (Q16.5) | clearance 1 | 1 | 0 | 0 | 0 | 0 |
+      | **total** | 364 | **41** | **31** | **288** | **4** | **0** |
+
+      - Only the 41 items under (i) involve routed copper.
+      - The 31 under (v-a) involve only input tracks and vias, each within 1 µm of where it was.
+        The input grades had nothing for those pairs.
+      - The 288 under (v-b) are made only of input copper and repeat the input's own breaches.
+      - (ii), (iii) and (iv) are 0: no routed item breaks a clearance that the DSN gives the pair,
+        and every `hole_clearance` item is input copper only.
+    - **(i), footprint copper graphics (pcietest, 38).**
+      - What was routed: `Track [unconnected-(J8-Pin_2-Pad2)]` on B.Cu, (143.18, 130.48)–(143.18,
+        133.52), 0.1778 mm wide. It joins J8's two pads numbered 2 (footprint `matseng:WW37`,
+        `duplicate_pad_numbers_are_jumpers no`).
+      - What it crosses: the footprint's own `fp_line`, 0.5 mm wide on B.Cu between the same two
+        pads. KiCad calls it `Segment [<no net>] of J8`.
+      - KiCad's verdict: `Clearance violation ( clearance 0.1778 mm; actual 0.0000 mm)`. 0.1778 mm
+        is the Default class; the line has no net.
+      - What the DSN says: the net is `(pins J8-2 J8-2@1)`. The image `matseng:WW37` carries the
+        37 lines only as `(outline (path signal 500 …))`. An outline is drawing only: the module
+        docs of `crates/freerouting-kicad/src/image_outlines.rs` say so ("they do not influence
+        routing").
+      - All 38 items are the same case: 3.04 mm tracks between duplicate pads of J5, J6, J8 and
+        J11–J14, laid over those lines.
+    - **(i), a `.kicad_dru` item-type rule (ch32v003, 2).**
+      - What was routed: `Track [unconnected-(J1-SHIELD-PadS1)]` on B.Cu, (145.9956,
+        91.9703)–(152.1207, 91.9703), 0.2032 mm wide.
+      - What it passes: the input GND vias (Ø0.6 mm) at (150.05, 92.56) and (148.05, 92.57), at
+        0.1881 and 0.1981 mm.
+      - KiCad's verdict: `rule 'Pad to Track clearance)' clearance 0.2000 mm`. The rule is
+        `(condition "A.isPlated() && B.Type == 'track'")` in the project's `.kicad_dru`, and a via
+        is plated.
+      - What the DSN says: `(clearance 127)`, in the structure and in all six classes. The router
+        kept at least 0.127 mm.
+      - KiCad's export ignores the `.kicad_dru`. `dru.rs` (K07.5) reads it only for a `.kicad_pcb`
+        input, and reports item-type conditions as unsupported.
+    - **(i), copper text (sonde-xilinx, Q16.5 base, plugin path, 1).**
+      - What was routed: `Track [/PWR_3,3-5V]` on F.Cu, (169.672, 80.137)–(162.952, 80.137),
+        0.635 mm wide.
+      - What it crosses: `gr_text "GND"` on F.Cu at (162.56, 81.28), 1.524 mm high with a
+        0.381 mm stroke.
+      - KiCad's verdict: `( clearance 0.2540 mm; actual 0.0000 mm)`, plus one `shorting_items`
+        between `<no net>` and `/PWR_3,3-5V`.
+      - What the DSN says: `(clearance 254)`, no keepout, and nothing for the text.
+      - The same gap is latent on other rows. Copper text: sonde-xilinx 8, pic_programmer 19,
+        complex_hierarchy 2. Copper graphics: vfo 3 `gr_poly`, flight-computer 1 `fp_poly`,
+        slice 1 `fp_poly`. N04.3's routes happened to miss them.
+    - **(v-a), the export rounds input copper (cm4-edge-ai 25, ch32v003 3, mydevboard 1, vna-usb-pd
+      2).**
+      - The input: the diff pair `/CM4 Core/PCIe_RX_N`/`_P` on F.Cu, 0.2 mm wide. N runs
+        (194.175, 75.427512)–(192.322488, 73.575) and P runs (193.825, 75.572488)–(192.177512,
+        73.925). The gap is 0.15000 mm, the PCIe class's `diff_pair_gap`.
+      - The export: KiCad's `ExportSpecctraDSN` prints coordinates with `%.6g`
+        (`crates/freerouting-kicad/src/fmt6g.rs`), which is 1 µm at 100 mm and beyond. The DSN wire
+        reads `(path F.Cu 200 194175 -76142.9 194175 -75427.5 192322 -73575)`.
+      - The round trip: the router passes the wire through unchanged (SES `1923220 -735750`, in
+        0.1 µm units). `ImportSpecctraSES` rebuilds it at (192.322, 73.575) and (192.178, 73.925),
+        and the gap becomes 0.14933 mm.
+      - KiCad's verdict: `netclass 'PCIe' (diff pair) clearance 0.1500 mm; actual 0.1493 mm`.
+      - What the DSN says: class `PCIe,Default` with `(clearance 200)`. It has no diff-pair gap.
+      - All 31 are 0.5–0.8 µm short:
+        - cm4: 23 Track–Track at 0.7 µm (diff pairs), Track–Via 0.5 µm, Pad–Via 0.6 µm;
+        - ch32v003: 3 at 0.6 µm;
+        - mydevboard: 1 at 0.5 µm (via (198.06689, 106.69344) → (198.067, 106.693));
+        - vna-usb-pd: 2 at 0.8 µm (via (89.141384, 121.858616) → DSN `89141.4 -121859`).
+
+      The plugin's default path does the same round trip. Only `fix_existing` locks the input
+      copper so that `ImportSpecctraSES` keeps it.
+    - **(v-b), input breaches counted again (pcietest 269, nudac 18, picodebugger 1).**
+      - picodebugger: `PTH pad 35 [unconnected-(PicoProbe1-ADC_VREF-Pad35)]` and the input
+        `Track [/PP_UART_Tx]` (65.151, 86.868)–(89.4795, 86.868) give `( clearance 0.2000 mm;
+        actual 0.1730 mm)` in both grades. The routed report lists the pad first and the input
+        report lists the track first. `subtract_preexisting` matches on the first item's
+        position, and those positions are 13.1 mm apart.
+      - pcietest: all 269 are pairs of a connector's `PTH pad N` and its own footprint line (actual
+        0, or the line over the pad's hole). `shorting_items` is at KiCad's 199 cap in both
+        grades, so each grade lists a different subset, under `shorting_items`, `clearance` or
+        `hole_clearance`.
+      - nudac: input vias and tracks sit 0.235 mm from a 0.25 mm hole clearance, 15 µm short, in
+        the input's own design. The export moved them by less than 0.5 µm. KiCad lists a pair up
+        to once per copper layer, and the two grades list different pairs.
+        - Matched as unordered pairs, 57 of the 60 routed `hole_clearance` items have a twin in
+          the input.
+        - The rest measure 0.235 mm on the input geometry too. For example, `Track [I2C0_SDA]`
+          (23.622, 10.80284)–(23.622, 11.747), 0.25 mm wide, against `Via [USB_DN]` (24.132,
+          11.477515) with a 0.3 mm drill.
+    - **(v-c), the grader's import (canary-pwr, 4).** The 4 `annular_width` items are vias the
+      router placed.
+      - Example: `Via [+12V_BUS]` at (144.0234, 55.2516), with the SES padstack
+        `Via[0-3]_600:300_um` (a 0.15 mm ring).
+      - `kicad_steps.py import_session` calls only `ImportSpecctraSES`. KiCad takes the drill
+        from the Power_High class (`Via[0-3]_800:400_um`, 0.4 mm), so the via becomes 0.6/0.4.
+      - KiCad's verdict: `min annular width 0.1500 mm; actual 0.1000 mm`.
+      - The plugin's `export_flow.after_import` (`kicad_board.fix_via_drills`, K09) sets the drill
+        back to 0.3. Q16.5's plugin-path grade has no `annular_width`.
+    - **The `inside_pad` arm** has the same causes, plus one more (i) on canary-pwr. `Track [GND]`
+      passes 0.5235 mm from FID3's no-net fiducial, against `pad clearance 0.6000 mm`. The plugin's
+      `edge_and_pad_keepouts` carries pad-local clearances, but `grade.sh`'s bare export doesn't.
+    - **Canary-pwr, 18 → 26.**
+      - **The 18 has no saved session or grade.** The record is canary commit `d6199b48`'s
+        message: freerouting-rs `b93bcd0`, "the operator's options", 18 at rip-up cost 1500 and at
+        1400, "clean, both In2 islands whole". Searching `target/orchestrator` and
+        `target/canary-handoff` for the board's sha256 `25395aeb…` finds only Q16.5's runs.
+      - **By that record, the 18 broke no rule.** Canary's `hardware/tools/grade.sh` at
+        `d6199b48` counts a result only when the only errors are unconnected items and starved
+        thermals. The board's `.kicad_pro` has `clearance`, `hole_clearance`,
+        `copper_edge_clearance`, `annular_width` and `track_width` at error. So the 26 is not the
+        honest version of the 18. The two runs used different setups.
+      - **The options differ.** The 18 used the preset in
+        `../canary/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json`: `max_passes` 1,
+        `start_ripup_costs` 1500, `sweep_passes` 2, class widths, Power_High and Switch_Node
+        pours fixed, and GND's outer pours dropped. That file is dated 6 h after `d6199b48`;
+        assumed to be the same preset. The 26 used `{"profile": "enhanced"}`: rip-up 100
+        ("source: defaults"), 18 passes and then the sweep, and every pour exported as a plane.
+        The code also differs by 56 commits (`b93bcd0..b98074e`).
+      - **No floor explains the gap.**
+        - The track floor of 150 µm is the 18-run's own `min_trace_width_um=150`.
+        - Both via types in the DSN (600:300 and 800:400) meet 400/300/150, so no via is made at
+          floor size and `route.log` has no via warning.
+        - The plugin's 0.3 mm edge strips were in both runs.
+        - Only the 250 µm hole clearance is new ("28 hole keepouts reclassified": 7 NPTH holes on
+          4 layers). No unconnected end lies within 3 mm of one of them.
+      - **11 of the 26 unconnected are pour islands.** These are zone–zone or zone–pad pairs on
+        GND (3), +12V_BUS (2), +12V_PROT, +5V_PI, +5V_BUCK, LTC_SW, +12V_RAW and VCAP. Fixed pours
+        and dropped GND pours avoid that kind.
+      - **Verdict: the run setup, not a floor.** No run has checked this yet; Q22.9 runs it.
+
+- [ ] **Q22.2 — The grader counts what routing caused.** Two changes to the grader:
+  - `oracle_lib` takes the routed and input copper (uuid → geometry, from both boards) and applies
+    this checklist's definition. An item with a track or via that the input doesn't have, at the
+    same nanometre geometry, is routing-caused. Any other item is pre-existing, whatever the input
+    report listed.
+  - `kicad_steps.py import_session` applies the plugin's via-drill correction (`ses_vias.vias`
+    and `kicad_board.fix_via_drills`), loading those modules by path and never through the plugin
+    package.
+  - **Accept:**
+    - unit tests, written from scratch:
+      - an input pair listed in the other order is pre-existing;
+      - an input pair the input report left out, as under the 199 cap, is pre-existing;
+      - a moved input track is routing-caused;
+      - a routed track is routing-caused;
+    - the saved N04.3 `center` grades, summarized again with no new KiCad run:
+      - pcietest: `clearance` 237 → 38 and `hole_clearance` 70 → 0;
+      - picodebugger: 1 → 0;
+      - cm4, nudac, ch32v003, mydevboard and vna-usb-pd unchanged, because their copper moved
+        (that is Q22.3);
+    - canary-pwr's saved `center` session, imported again and graded with one DRC:
+      `annular_width` 4 → 0;
+    - `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` passes.
+
+- [ ] **Q22.3 — Input copper comes back at its own coordinates.** After `ImportSpecctraSES`, each
+  imported track or via that matches an unlocked original of the same net, layer and width (or
+  size and drill) gets the original back. "Matches" means within the export's `%.6g` bound: 0.5 µm
+  per coordinate under 1 m, plus the session's 0.1 µm.
+  - A routed track end within that bound of a restored end moves onto it.
+  - Anything moved further stays as imported.
+  - The plugin (`after_import`), `headless_run.py import` and the grader's `import_session` all
+    run the same code.
+  - **Accept:**
+    - plugin tests with the stub `pcbnew`:
+      - an input track that `%.6g` rounds comes back at its nanometre coordinates;
+      - a routed track that ends on it follows;
+      - a track the router moved 2 µm stays as imported;
+    - the saved N04.3 `center` sessions of cm4, ch32v003, mydevboard, vna-usb-pd and nudac, each
+      imported again with one KiCad DRC:
+      - routing-caused `clearance`: cm4 25 → 0, ch32v003 5 → 2 (the Q22.5 pair), mydevboard 1 → 0,
+        vna-usb-pd 2 → 0;
+      - nudac's `hole_clearance` 18 → 0;
+      - KiCad unconnected unchanged on all five;
+    - `python3 -m pytest kicad-plugin/tests` passes.
+
+- [ ] **Q22.4 — Copper graphics and copper text are obstacles.** On copper layers:
+  - footprint lines, rectangles, polygons, arcs, circles and visible text;
+  - board-level graphics and text.
+
+  Each one reaches the router as a keepout on its layer. Its clearance is the one KiCad applies:
+  the larger of the net's class clearance and the Default class's. A copper shape that KiCad gives
+  a net becomes fixed copper of that net instead. Net-tie footprints keep their ties. This lives in
+  the plugin's DSN fix-ups and in the `.kicad_pcb` reader, with K13.1's table row "copper text".
+  - **Accept:**
+    - a plugin test and a reader test on one fixture written for the purpose: a B.Cu `fp_line`
+      between two same-numbered pads, and an F.Cu `gr_text` on the only short path. Both become
+      keepouts, the same in both inputs;
+    - an engine test on that fixture: the route goes round them, or the connection stays open;
+    - pcietest routed with its `center` flags through the fixed export: 0 routing-caused items
+      against footprint graphics (38 before);
+    - sonde-xilinx on the plugin path: 0 (1 before);
+    - KiCad unconnected reported for both.
+
+- [ ] **Q22.5 — `.kicad_dru` clearances between item types.**
+  - `dru.rs` learns the conditions `A.Type` (`'track'`, `'via'`, `'pad'`), `A.isPlated()` and
+    `A.Pad_Type`. It maps each onto the DSN's typed clearances: `via_wire`, `pin_wire`,
+    `smd_wire`, `via_via` and so on.
+  - For a DSN input, the router reads the board's `.kicad_dru` given on the command line, and the
+    plugin passes it.
+  - A rule the router can't express:
+    - if it asks for more than the DSN gives, it is applied to every pair its item types allow,
+      with a warning naming it;
+    - if it asks for the same or less, it is reported and left out. KiCad lets a matching
+      custom rule lower a class clearance, and the router keeping the larger value is safe.
+  - **Accept:**
+    - `crates/freerouting-kicad/tests/dru_item_types.rs`, one test per condition, including a
+      net class with its own clearance (`wire` is clearance class 1 in the DSN reader);
+    - ch32v003 routed with its `center` flags: 0 routing-caused items under `'Pad to Track
+      clearance)'` (2 before);
+    - a DIVERGENCES line (Java's plugin never applies the `.kicad_dru`), module docs and a
+      pinning test;
+    - `cargo fmt`, `clippy` and the touched crates' tests pass.
+
+- [ ] **Q22.6 — The grader can route the plugin's export.**
+  - `grade.sh --export plugin OPTIONS.json` exports with `headless_run.py export` (the plugin's
+    fix-ups, and its router flags ahead of the engine command's), and imports with
+    `headless_run.py import`.
+  - Without the flag, nothing changes.
+  - **Accept:**
+    - `tools/kicad-oracle/tests/run-plugin-export-test.sh`: the graded DSN is byte-identical to
+      `headless_run.py export`'s;
+    - canary-pwr (N04.3's `ab786fcc`) routed with the `inside_pad` flags on the plugin export: 0
+      routing-caused `clearance` (1 before, FID3);
+    - the README documents the flag.
+
+- [ ] **Q22.7 — Register the re-measurement.** Write `docs/roadmap/prereg/Q22.json` and
+  `tools/bench/sets/q22-clearance.txt` before any number.
+  - **Boards:**
+    - N04.3's rows with a breach: pcietest, cm4-edge-ai, nudac, ch32v003, mydevboard, vna-usb-pd
+      and picodebugger;
+    - canary-pwr at `ab786fcc`;
+    - the demos with copper text: sonde-xilinx and pic_programmer;
+    - two clean rows: flight-computer and laser-backplane.
+
+    That is a few minutes in all.
+  - **Arms:** `before` (main) and `q22` (Q22.2–Q22.6), with each row's Board Setup minimums and
+    `--export plugin` in both.
+  - **Grading:** one KiCad grade per distinct session.
+  - **Guards:** routing-caused `clearance`, `hole_clearance` and `below_minimum` (including
+    `annular_width`) are 0 in `q22` on every row.
+  - **Report:** KiCad unconnected and route time.
+  - **Accept:** the registration and its pin test (`prereg_q22.rs`) are in, with no number yet.
+
+- [ ] **Q22.8 — Re-measure.** Run Q22.7 as registered.
+  - **Accept:**
+    - the per-row table is in the done note;
+    - every guard is 0 in `q22`;
+    - the change in KiCad unconnected is given per row, with the rows that Q22.4's obstacles cost
+      named.
+
+- [ ] **Q22.9 — Canary-pwr: which change costs 18 → 26.** Two runs, one at a time, with main's
+  release CLI. Each route is about 2 min, under `ulimit -v 8000000` and `timeout 600`.
+  - **Arm (a), floors off.** Route Q16.5's base DSN
+    (`target/orchestrator/n04q16/out/q165/runs/q165-base/canary-pwr/work/canary-pwr.dsn`) with
+    `--router.min_trace_width_um=150 --router.autorouter.sweep=free`, without the five Q18 flags.
+    Its difference from the 26 is the floors' cost.
+  - **Arm (b), the preset.** Route the `d6199b48` board
+    (`target/orchestrator/q165/scratch/canary-d6199b48/`) through `headless_run.py export` with
+    a copy of the preset `route-options.json`. Its difference from the 26 is the options' cost.
+
+  Grade both as `target/orchestrator/n04q16/scratch/q165r-arm.sh`'s grade stage does, on a fresh
+  copy of the `d6199b48` project. If (b) gives about 18, the 56 commits don't cost it either.
+  - **Accept:**
+    - both rows' KiCad unconnected and copper errors are in the done note;
+    - the 18 → 26 change is attributed to floors, options or code, each with its number.
