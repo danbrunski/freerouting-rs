@@ -23,7 +23,7 @@ use crate::arc::{
     ARC_HIGH_DEF, ErrorLoc, circle_polygon, convex_hull, round_chamfered_rect,
     transform_arc_to_polygon, transform_oval_to_polygon,
 };
-use crate::fmt6g::{c_fmt_6g, c_fmt_fixed6};
+use crate::fmt6g::{c_fmt_fixed6, push_c_fmt_6g};
 use crate::footprints::{Footprint, GKind, Graphic, Pad, PadShape, normalize_360};
 use crate::layers::{CuMask, Layers};
 use crate::legacy::{Angle, Pt, rotate_origin};
@@ -45,8 +45,18 @@ pub struct PadstackDef {
 }
 
 /// The printed form of a shape, stripped like `StripUseless`.
+///
+/// The numbers are appended in place ([`push_c_fmt_6g`]): the reader keys
+/// every outline shape of every footprint, 1.8 million numbers on
+/// `jetson-agx-thor-baseboard` (K13.4).
 pub fn shape_key(shape: &Shape) -> String {
-    let f = c_fmt_6g;
+    let mut s = String::with_capacity(64);
+    let numbers = |s: &mut String, points: &[Point]| {
+        for p in points {
+            push_c_fmt_6g(s, p.x);
+            push_c_fmt_6g(s, p.y);
+        }
+    };
     match shape {
         Shape::Rect {
             layer,
@@ -54,63 +64,58 @@ pub fn shape_key(shape: &Shape) -> String {
             y1,
             x2,
             y2,
-        } => format!(
-            "rect{}{}{}{}{}",
-            layer.name(),
-            f(*x1),
-            f(*y1),
-            f(*x2),
-            f(*y2)
-        ),
+        } => {
+            s.push_str("rect");
+            s.push_str(layer.name());
+            for v in [x1, y1, x2, y2] {
+                push_c_fmt_6g(&mut s, *v);
+            }
+        }
         Shape::Circle {
             layer,
             diameter,
             center,
         } => {
-            let mut s = format!("circle{}{}", layer.name(), f(*diameter));
+            s.push_str("circle");
+            s.push_str(layer.name());
+            push_c_fmt_6g(&mut s, *diameter);
             if center.x != 0.0 || center.y != 0.0 {
-                s.push_str(&f(center.x));
-                s.push_str(&f(center.y));
+                push_c_fmt_6g(&mut s, center.x);
+                push_c_fmt_6g(&mut s, center.y);
             }
-            s
         }
         Shape::Polygon {
             layer,
             aperture_width,
             points,
         } => {
-            let mut s = format!("polygon{}{}", layer.name(), f(*aperture_width));
-            for p in points {
-                s.push_str(&f(p.x));
-                s.push_str(&f(p.y));
-            }
-            s
+            s.push_str("polygon");
+            s.push_str(layer.name());
+            push_c_fmt_6g(&mut s, *aperture_width);
+            numbers(&mut s, points);
         }
         Shape::Path {
             layer,
             width,
             points,
         } => {
-            let mut s = format!("path{}{}", layer.name(), f(*width));
-            for p in points {
-                s.push_str(&f(p.x));
-                s.push_str(&f(p.y));
-            }
-            s
+            s.push_str("path");
+            s.push_str(layer.name());
+            push_c_fmt_6g(&mut s, *width);
+            numbers(&mut s, points);
         }
         Shape::PolylinePath {
             layer,
             width,
             points,
         } => {
-            let mut s = format!("polyline_path{}{}", layer.name(), f(*width));
-            for p in points {
-                s.push_str(&f(p.x));
-                s.push_str(&f(p.y));
-            }
-            s
+            s.push_str("polyline_path");
+            s.push_str(layer.name());
+            push_c_fmt_6g(&mut s, *width);
+            numbers(&mut s, points);
         }
     }
+    s
 }
 
 fn pt(x: f64, y: f64) -> Point {

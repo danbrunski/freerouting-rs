@@ -115,10 +115,72 @@ rules).
     the GUI process (only the version pre-check applies). A `SaveBoard` failure still ends the run with the
     snapshot error, as before.
 
-- [ ] **K13.4 — Load time.** The reader's board for `jetson-agx-thor-baseboard` builds in 3.7 s
+- [x] **K13.4 — Load time.** The reader's board for `jetson-agx-thor-baseboard` builds in 3.7 s
   against 1.6 s for the DSN (K10). Profile it, then fix it or record why it stays.
   - **Accept:** before and after load times for `jetson` and `CM5_MINIMA_3` (arcs), release
     build, one run each.
+
+  *Done 2026-10-20:* boards are the KiCad 10 demos with KiCad 10.0.7's exports from `target/kicad-corpus/demos`
+  (`<stem>.kicad10.dsn`, the files `kicad_parity.rs::corpus_timing` uses), copied to `target/orchestrator/k134/boards`.
+  **Method:** a scratch harness, not committed, that times the calls `corpus_timing` times:
+  `read_kicad_input` + `build_board` for the `.kicad_pcb` and `fs::read_to_string` + `Pcb::parse` + `build_board`
+  for the DSN. Release build, one run each, before (`825540f`) and after built side by side and run alternately.
+  Load and DRC through the CLI (`freerouting-rs -de FILE -drc out.json`, wall time, as K10.5 timed load) is in the
+  last column.
+
+  | Board | Input | before: read + build (ms) | after: read + build (ms) | CLI `-drc` before → after (s) |
+  |---|---|---|---|---|
+  | `jetson-agx-thor-baseboard` | `.kicad_pcb` | 1116 + 2099 = 3215 | 714 + 1623 = 2338 | 6.18 → 5.40 |
+  | `jetson-agx-thor-baseboard` | DSN export | 39 + 1316 = 1355 | 39 + 888 = 927 | 2.93 → 2.47 |
+  | `CM5_MINIMA_3` | `.kicad_pcb` | 22 + 94 = 115 | 20 + 90 = 110 | 0.42 → 0.40 |
+  | `CM5_MINIMA_3` | DSN export | 2 + 45 = 47 | 2 + 39 = 41 | 0.15 → 0.14 |
+
+  The base numbers are lower than K07.6's 3698 / 1636 ms, which were medians on a loaded machine.
+  - **Profile** (`valgrind --tool=callgrind` on the harness, `jetson`, instructions, inclusive), before:
+    - the reader: `fmt6g::c_fmt_g` 7.2 G, called from `pads::shape_key` for the image keys. It ran two exact
+      float conversions per number. `NodeRef::line` took 3.9 G: `line_col` counted newlines from the start of the
+      85 MB file for every rule area it reported;
+    - the builder, in both arms: `wiring::subnets` took 9.8 G. `Nets::get_all_by_name` scanned all 25,615 nets
+      with `equals_ignore_case` for each of the 24,319 wires and vias. `insert_component`'s per-pin
+      `get_by_name` took 0.6 G more;
+    - the builder, `.kicad_pcb` only: `normalize_all_traces` 12.5 G against 2.4 G for the DSN.
+  - **Fixes** (pure speed-ups; nothing the board holds changes):
+    - `crates/freerouting-kicad/src/fmt6g.rs`: `push_c_fmt_g` / `push_c_fmt_6g` take the fixed style's digits
+      from the one `{:e}` conversion and append in place. `c_fmt_g` wraps them.
+      `fmt6g::tests::matches_the_two_conversion_form` compares them with the old two-conversion form on more than
+      800,000 values: random bit patterns and coordinates, the rounding boundaries `k·10^e ± 0.5·10^(e-p)` and
+      their neighbours, precisions 1 to 8, 17, 30 and 60, and the NaN, infinity and zero cases, also appended
+      after other text. `tests/numbers.rs::c_fmt_6g_matches_printf_on_200_values` (the printf vectors) and
+      `c_fmt_6g_named_cases` still pass;
+    - `crates/freerouting-kicad/src/pads.rs`: `shape_key` appends the numbers with `push_c_fmt_6g`;
+    - `crates/freerouting-kicad/src/sexpr/tree.rs`: `Tree` finds the newline offsets once (a `OnceLock`, on
+      the first `position`), and `position` binary-searches them.
+      `sexpr::tree::position_tests::indexed_positions_equal_line_col_at_every_offset` compares it with `line_col`
+      at every offset of a text with multi-byte characters and CRLF;
+    - `crates/freerouting/src/io/specctra/parser/wiring.rs`: `NetNames` is a `BTreeMap<CaseInsensitive, Vec<i32>>`
+      of net numbers, built once in `read_wiring` and `insert_components`, which add no nets. `subnets` and
+      `insert_component` (`network.rs`) look up there. `CaseInsensitive` equality is `equals_ignore_case`, both
+      comparing `lower(upper(c))` per character. `wiring::net_names_tests::net_names_find_what_the_scans_find`
+      checks that the index finds what both scans find, in the same order, for `GND`/`gnd`, `ß`/`SS`,
+      `İ`/`i`/`ı`, `Σ`/`σ`/`ς` and `ǅ`/`ǆ`/`Ǆ`, subnets 0 to 3. Java's reader scans the same way, so this is
+      structure only (D1).
+  - **Identical output:** before and after, on both boards and both inputs, the harness hashed (FNV-1a 64) the
+    reader's `Pcb` (`{:?}`), its warnings and its `ReadReport`, the built board's `write_dsn`, the default search
+    tree's `fingerprint` and `content_digest`, the item count and the builder's warnings. All equal (`jetson`
+    `.kicad_pcb`: AST `7709b2478a2a594d`, DSN `d8dc191a355f5b64` 21,051,860 bytes, tree `c4ea9ae4b95b6682` /
+    `db67d5072bdf2f40`, 358,982 items; DSN export: `4dfe1a7afd94f986`, 359,002 items; `CM5` `.kicad_pcb`
+    `b3d04c7ff0e8285e`, DSN `024bdd5e81f91809`). The CLI's DRC reports differ only in `date`.
+    `tools/parity-check.sh --no-probes`: connection parity PASS, 7 exact of 7.
+  - **Why the rest of the gap stays** (`jetson` 2338 against 927 ms; callgrind after the fixes, 42.5 G against
+    60.9 G before):
+    - read 714 ms against 39: the reader parses the 85 MB board instead of the 7 MB export. `Tree::parse` takes
+      1.8 G, `read_footprints` 1.5 G, and `push_c_fmt_g` 3.1 G: 1.81 million numbers printed in `%.6g` so that
+      images group as KiCad's export groups them (`read.rs::image_key`, left alone because it is Q22.4's file);
+    - build 1623 ms against 888, the arcs: 2,303 of the 21,082 wires are flattened track arcs, so the wires have
+      77,973 path points against the export's 43,233 (one chord per arc, K06.5). `normalize_all_traces` takes
+      12.5 G against 2.4 G. `split_trace` makes 58,988 overlap queries against 24,248 and 1,018,574 segment
+      intersections against 90,606. `insert_shapes` takes 4.9 G against 2.3 G. That is geometry the DSN does not
+      carry, and `CM5_MINIMA_3`'s +50 ms build is the same cause.
 
 - [x] **K13.5 — Register the measurement.** Write `docs/roadmap/prereg/K13.json` and
   `tools/bench/sets/k13-input.txt` before any number:

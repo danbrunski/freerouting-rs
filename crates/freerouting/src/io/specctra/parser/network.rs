@@ -11,6 +11,7 @@ use freerouting_geometry::{Area, IntPoint, Point, PolylineArea, Shape, Vector};
 
 use super::library::find_padstack;
 use super::structure::contains_wire_clearance_pair;
+use super::wiring::NetNames;
 use super::{NetKey, PinKey, ReadContext};
 use crate::board::RoutingBoard;
 use crate::board::items::AreaKind;
@@ -938,6 +939,8 @@ pub(crate) fn insert_components(ctx: &mut ReadContext, placement: Option<&ast::P
         .into_iter()
         .map(|(pin, nets)| (pin.clone(), nets.into_iter().cloned().collect()))
         .collect();
+    // Java scans the nets for each pin's net; no net is added here.
+    let names = NetNames::new(&ctx.board().rules.nets);
     // Placement resolution declares its own unit; its integer is grid
     // precision, not a multiplier on DSN coordinates. Package-local offsets
     // remain in the PCB unit and are not converted here.
@@ -955,14 +958,14 @@ pub(crate) fn insert_components(ctx: &mut ReadContext, placement: Option<&ast::P
     for component in &placement.components {
         for place in &component.places {
             if factor == 1.0 {
-                insert_component(ctx, place, &component.image, &nets_by_pin);
+                insert_component(ctx, place, &component.image, &nets_by_pin, &names);
             } else {
                 let mut converted = place.clone();
                 if let Some(location) = &mut converted.location {
                     location.at.x *= factor;
                     location.at.y *= factor;
                 }
-                insert_component(ctx, &converted, &component.image, &nets_by_pin);
+                insert_component(ctx, &converted, &component.image, &nets_by_pin, &names);
             }
         }
     }
@@ -973,6 +976,7 @@ fn insert_component(
     place: &ast::Place,
     image: &str,
     nets_by_pin: &HashMap<PinKey, Vec<NetKey>>,
+    names: &NetNames,
 ) {
     let transform = ctx.coordinate_transform;
     let board = ctx.board();
@@ -1052,7 +1056,7 @@ fn insert_component(
         let mut net_numbers: Vec<i32> = Vec::new();
         if let Some(nets) = nets_by_pin.get(&PinKey::new(&place.name, &package_pin.name)) {
             for net in nets {
-                match board.rules.nets.get_by_name(&net.name.0, net.subnet_number) {
+                match names.get(&board.rules.nets, &net.name.0, net.subnet_number) {
                     Some(board_net) => net_numbers.push(board_net.net_number),
                     None => board
                         .log

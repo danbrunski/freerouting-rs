@@ -17,9 +17,10 @@
 //! buffer, so one `u32` pair addresses both.
 
 use std::borrow::Cow;
+use std::sync::OnceLock;
 
 use super::lexer::{Lexer, TokenKind, unescape};
-use crate::error::{KicadError, line_col};
+use crate::error::KicadError;
 
 /// A byte range of the source (or of the synthesised-text buffer).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -54,6 +55,11 @@ pub struct Tree<'a> {
     extra: String,
     nodes: Vec<Node>,
     children: Vec<u32>,
+    /// The byte offsets of the source's `\n`s, found on the first
+    /// [`NodeRef::position`]. Counting them from the start of the file on
+    /// every call took about 0.2 s of an 85 MB board's read (K13.4), where
+    /// the reader asks for the line of every rule area.
+    newlines: OnceLock<Vec<u32>>,
 }
 
 impl<'a> Tree<'a> {
@@ -113,6 +119,7 @@ impl<'a> Tree<'a> {
             extra: String::new(),
             nodes,
             children,
+            newlines: OnceLock::new(),
         })
     }
 
@@ -440,7 +447,7 @@ impl<'a> NodeRef<'a> {
     /// from the start of the file, so use it for messages only.
     pub fn position(&self) -> (u32, u32) {
         match self.offset() {
-            Some(o) => line_col(self.tree.src, o),
+            Some(o) => self.tree.line_col(o),
             None => (0, 0),
         }
     }
@@ -459,5 +466,50 @@ impl<'a> NodeRef<'a> {
             column,
             message: message.into(),
         }
+    }
+}
+
+impl Tree<'_> {
+    /// [`line_col`](crate::error::line_col) of a source offset, with the
+    /// newline offsets found once.
+    fn line_col(&self, offset: usize) -> (u32, u32) {
+        let src = self.src;
+        let mut end = offset.min(src.len());
+        while !src.is_char_boundary(end) {
+            end -= 1;
+        }
+        let newlines = self
+            .newlines
+            .get_or_init(|| src.match_indices('\n').map(|(i, _)| i as u32).collect());
+        // the newlines before `end`, as `line_col` counts them
+        let before = newlines.partition_point(|&p| (p as usize) < end);
+        let line_start = before
+            .checked_sub(1)
+            .map_or(0, |i| newlines[i] as usize + 1);
+        let column = src[line_start..end].chars().count() + 1;
+        ((before + 1) as u32, column as u32)
+    }
+}
+
+#[cfg(test)]
+mod position_tests {
+    use super::*;
+    use crate::error::line_col;
+
+    /// The indexed position equals `line_col` at every offset, also inside
+    /// multi-byte characters and on the newlines themselves.
+    #[test]
+    fn indexed_positions_equal_line_col_at_every_offset() {
+        let src = "(a\n  (b \"é\u{1F600}x\")\r\n\n(c 1)\n)\n";
+        let tree = Tree::parse(src).unwrap();
+        for offset in 0..=src.len() + 2 {
+            assert_eq!(
+                tree.line_col(offset),
+                line_col(src, offset),
+                "offset {offset}"
+            );
+        }
+        let empty = Tree::parse("").unwrap();
+        assert_eq!(empty.line_col(0), line_col("", 0));
     }
 }

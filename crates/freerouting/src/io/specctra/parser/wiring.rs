@@ -2,6 +2,8 @@
 //!
 //! Port of `io.specctra.parser.Wiring.readScope`.
 
+use std::collections::BTreeMap;
+
 use freerouting_dsn::ast;
 use freerouting_geometry::jmath::{d2i, round_to_i32};
 use freerouting_geometry::{FloatPoint, IntBox, IntPoint, Line, Point, Polygon, Polyline};
@@ -13,28 +15,69 @@ use crate::board::RoutingBoard;
 use crate::board::items::ItemId;
 use crate::board::structure::FixedState;
 use crate::library::PadstackId;
-use crate::rules::{ItemClass, NetClassId};
+use crate::rules::{ItemClass, Net, NetClassId, Nets};
+use crate::util::CaseInsensitive;
+
+/// The board's net numbers by name (any case, Java `equalsIgnoreCase`), each
+/// list in net-number order.
+///
+/// Java's `Nets.getNets` scans every net for each wire, via and pin, which is
+/// quadratic on big boards (`jetson-agx-thor-baseboard`: 25,615 nets, 24,319
+/// wires and vias and 7,303 pins took about 0.4 s of a 1.3 s build, K13.4).
+/// The placement and wiring scopes add no nets, so [`read_wiring`] and
+/// `insert_components` build this once, and the lookups return what the
+/// scans return, in the same order.
+pub(super) struct NetNames(BTreeMap<CaseInsensitive, Vec<i32>>);
+
+impl NetNames {
+    pub(super) fn new(nets: &Nets) -> Self {
+        let mut map: BTreeMap<CaseInsensitive, Vec<i32>> = BTreeMap::new();
+        for net in nets.iter() {
+            map.entry(CaseInsensitive(net.name.clone()))
+                .or_default()
+                .push(net.net_number);
+        }
+        NetNames(map)
+    }
+
+    fn numbers(&self, name: &str) -> &[i32] {
+        self.0
+            .get(&CaseInsensitive(name.to_owned()))
+            .map_or(&[], Vec::as_slice)
+    }
+
+    /// Java `Nets.getNet(name, subnet)`: the first net with both, as
+    /// [`Nets::get_by_name`] finds it.
+    pub(super) fn get<'a>(&self, nets: &'a Nets, name: &str, subnet: i32) -> Option<&'a Net> {
+        self.numbers(name)
+            .iter()
+            .filter_map(|&number| nets.get(number))
+            .find(|n| n.subnet_number == subnet)
+    }
+}
 
 /// The board nets of a DSN net id: the subnet if one is given, else all
 /// subnets of the name (Java `Wiring.getSubnets`).
-fn subnets(board: &RoutingBoard, net: Option<&ast::NetId>) -> Vec<(i32, NetClassId)> {
+fn subnets(
+    board: &RoutingBoard,
+    names: &NetNames,
+    net: Option<&ast::NetId>,
+) -> Vec<(i32, NetClassId)> {
     let Some(net) = net else {
         return Vec::new();
     };
     let subnet = net.subnet.unwrap_or(0);
+    let nets = &board.rules.nets;
     if subnet > 0 {
-        board
-            .rules
-            .nets
-            .get_by_name(&net.name, subnet)
+        names
+            .get(nets, &net.name, subnet)
             .map(|n| vec![(n.net_number, n.net_class())])
             .unwrap_or_default()
     } else {
-        board
-            .rules
-            .nets
-            .get_all_by_name(&net.name)
+        names
+            .numbers(&net.name)
             .iter()
+            .filter_map(|&number| nets.get(number))
             .map(|n| (n.net_number, n.net_class()))
             .collect()
     }
@@ -51,11 +94,12 @@ fn box_contains(b: &IntBox, p: FloatPoint) -> bool {
 /// Reads the wiring scope. Returns false where Java's reader does (a via
 /// with an unknown padstack).
 pub(crate) fn read_wiring(ctx: &mut ReadContext, wiring: &ast::Wiring) -> bool {
+    let names = NetNames::new(&ctx.board().rules.nets);
     for item in &wiring.items {
         match item {
-            ast::WiringItem::Wire(wire) => read_wire(ctx, wire),
+            ast::WiringItem::Wire(wire) => read_wire(ctx, &names, wire),
             ast::WiringItem::Via(via) => {
-                if !read_via(ctx, via) {
+                if !read_via(ctx, &names, via) {
                     return false;
                 }
             }
@@ -69,7 +113,7 @@ pub(crate) fn read_wiring(ctx: &mut ReadContext, wiring: &ast::Wiring) -> bool {
 }
 
 /// Java `Wiring.readWireScope`.
-fn read_wire(ctx: &mut ReadContext, wire: &ast::Wire) {
+fn read_wire(ctx: &mut ReadContext, names: &NetNames, wire: &ast::Wire) {
     let structure = ctx.layer_structure.clone();
     let mut path: Option<DsnShape> = None;
     let mut border: Option<DsnShape> = None;
@@ -101,7 +145,7 @@ fn read_wire(ctx: &mut ReadContext, wire: &ast::Wire) {
     let scope = ctx.scope_identifier.clone();
     let board = ctx.board.as_mut().expect("board");
     let default_class = board.rules.default_net_class();
-    let found = subnets(board, wire.net.as_ref());
+    let found = subnets(board, names, wire.net.as_ref());
     let net_numbers: Vec<i32> = found.iter().map(|(n, _)| *n).collect();
     let net_class = found.last().map_or(default_class, |(_, c)| *c);
     let mut clearance_class = -1;
@@ -276,7 +320,7 @@ fn via_exists(
 }
 
 /// Java `Wiring.readViaScope`. False if the padstack is unknown.
-fn read_via(ctx: &mut ReadContext, via: &ast::Via) -> bool {
+fn read_via(ctx: &mut ReadContext, names: &NetNames, via: &ast::Via) -> bool {
     ctx.scope_identifier = via.padstack.clone();
     if let Some(net) = &via.net {
         ctx.scope_identifier = net.name.clone();
@@ -297,7 +341,7 @@ fn read_via(ctx: &mut ReadContext, via: &ast::Via) -> bool {
         ctx.warn(message);
         return false;
     };
-    let found = subnets(board, via.net.as_ref());
+    let found = subnets(board, names, via.net.as_ref());
     let mut messages = Vec::new();
     if let Some(net) = &via.net
         && found.is_empty()
@@ -350,4 +394,58 @@ fn read_via(ctx: &mut ReadContext, via: &ast::Via) -> bool {
         ctx.warn(message);
     }
     true
+}
+
+#[cfg(test)]
+mod net_names_tests {
+    use super::*;
+
+    /// The index finds what `Nets::get_all_by_name` and `Nets::get_by_name`
+    /// find, in the same order, for names that differ only in case
+    /// (including characters whose case mapping is not one to one).
+    #[test]
+    fn net_names_find_what_the_scans_find() {
+        let mut nets = Nets::default();
+        let names = [
+            ("GND", 1),
+            ("gnd", 2),
+            ("Gnd", 1),
+            ("VCC", 1),
+            ("ß", 1),
+            ("SS", 1),
+            ("İ", 1),
+            ("i", 1),
+            ("I", 3),
+            ("ı", 1),
+            ("Σ", 1),
+            ("ς", 2),
+            ("σ", 3),
+            ("ǅ", 1),
+            ("ǆ", 2),
+            ("Ǆ", 3),
+        ];
+        for (name, subnet) in names {
+            nets.add(name, subnet, false, NetClassId(0));
+        }
+        let index = NetNames::new(&nets);
+        let queries = [
+            "gnd", "GND", "vcc", "ß", "ss", "ẞ", "i", "İ", "ı", "I", "σ", "ς", "Σ", "ǅ", "ǆ",
+            "none", "",
+        ];
+        for query in queries {
+            let scanned: Vec<i32> = nets
+                .get_all_by_name(query)
+                .iter()
+                .map(|n| n.net_number)
+                .collect();
+            assert_eq!(index.numbers(query), scanned.as_slice(), "{query}");
+            for subnet in 0..4 {
+                assert_eq!(
+                    index.get(&nets, query, subnet).map(|n| n.net_number),
+                    nets.get_by_name(query, subnet).map(|n| n.net_number),
+                    "{query} subnet {subnet}"
+                );
+            }
+        }
+    }
 }
