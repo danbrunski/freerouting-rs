@@ -35,7 +35,7 @@ change of direction; this series carries it out.
 |---|---|---|---|
 | [N01](archive/N01-routing-profiles.md) ✅ | `router.profile = legacy \| enhanced`; parity tests pin `legacy`; CLI, GUI and plugin default to `enhanced` | M / medium: touches settings defaults everywhere | C02 settings table |
 | [N02](archive/N02-keep-rule-for-defaults.md) ✅ | The totals-within-noise keep rule in `freerouting-dev gate`, and where the noise band comes from | S / low | F03.1, F03.4 |
-| [N03](N03-free-the-tree-again.md) | P04's canonical room order, judged again under N02 on fresh boards; if kept, it is `enhanced`'s default, and then the faster tree (P04.3) | L / high: changes routes everywhere | N01, N02; P04's saved patch |
+| [N03](archive/N03-free-the-tree-again.md) ✅ | P04's canonical room order, judged again under N02 on fresh boards; if kept, it is `enhanced`'s default, and then the faster tree (P04.3) | L / high: changes routes everywhere | N01, N02; P04's saved patch |
 | [N04](N04-contacts-inside-pads.md) | A trace end inside a same-net pad counts as connected (KiCad's rule) in `enhanced` | S–M / medium | N01 |
 | [N05](N05-promote-accepted-stages.md) | Each accepted Q, X or K improvement becomes part of `enhanced`; the CLI registers the KRT stages | S per stage | N01; each stage's own measurement |
 | [N06](archive/N06-fix-kept-java-bugs.md) ✅ | The 54 Java bugs kept for parity: 12 dead ones fixed outright, 31 fixed under `enhanced` behind per-bug `router.java_quirks.*` switches in 8 measured batches, 11 judgement calls | M–L / medium: geometry and search changes | N01, N02, N05 |

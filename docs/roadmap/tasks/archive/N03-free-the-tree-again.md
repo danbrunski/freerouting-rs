@@ -145,7 +145,7 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
     on router violations and KiCad `shorting_items`/clearance per arm, and runs the arms
     in the profile they would join (`enhanced`). If the shove fix lands as a quirk
     switch first, all three arms get the same value of it.
-- [~] **N03.3 — Measure under N02's rule.**
+- [x] **N03.3 — Measure under N02's rule.**
   - Register before the first number, on boards P04 didn't use:
     - the PCBWorld D3-C set;
     - canary-pwr variants not in `p04.txt`;
@@ -188,7 +188,63 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
      --router.room_order=$1 --router.work_unit=$2"; done; done`;
   4. records as N03.json's `grading` says (`tree_nodes_visited` from the `--stats` totals), then
      `freerouting-dev gate --records <records> --prereg docs/roadmap/prereg/N03.json`.
-- [ ] **N03.4 — The faster tree** (P04.3's plan, only after N03.3 accepts an arm).
+
+  *Done 2026-10-20:* measured as registered; **no arm is accepted** (the keep rule's fail row:
+  both keys stay unset in both profiles, N03.4 does not start).
+  - **Engine.** main `8918a1b` (`freerouting 0.1.0 (git 8918a1b4ced4)`), one release build of
+    `freerouting-cli` and `freerouting-dev` in a detached worktree (`CARGO_BUILD_JOBS=2`), both
+    arms; profile `enhanced`; the 15 input hashes equal `N03.json`'s `files`. Load average 10 to
+    13 on 8 cores during the runs (other agents' builds and measurements; no quiet-machine
+    condition). Outputs `target/orchestrator/n03/out/`, scripts `target/orchestrator/n03/run/`.
+  - **Steps 1 to 3** ran as the commands above, one route and one KiCad run at a time, from the
+    repository root with `O=target/orchestrator/n03/out`. Runner details, no route changed: the
+    demo command also writes `--result-json` (the result manifest the `grading` reads, as
+    `quick-arm.sh` does on the DSN rows); `via_in_pad` is `freerouting-dev gate collect`'s count
+    on each session, one collect per arm, because a demo's DSN is exported per grade run and the
+    two arms' exports differ in their `pcb` name line only.
+  - **Stop rule fired.** The candidate's canary-pwr-9511d9a route hit the 600 s timeout (exit
+    124, 14 passes done; the CLI wrote the interrupted board, 122 unrouted, which was not graded);
+    the baseline's took 450.35 s (18 passes). Under the stop rule the measurement is incomplete,
+    and the gate fails the run on that row:
+    ```
+    UNGRADED fixtures/canary-pwr/canary-pwr-9511d9a.dsn.canonical+leaves: not graded: timeout: the measurement is incomplete. A board that can't be graded fails the run
+    gate: FAIL
+    ```
+    (`freerouting-dev gate --records target/orchestrator/n03/out/records.json --baseline
+    target/orchestrator/n03/out/base.json --prereg docs/roadmap/prereg/N03.json
+    --write-baseline`, exit 1). No rerun (one registered run per arm per row).
+  - **KiCad.** d3c-0581's KiCad DRC of the *unrouted* input hung (no CPU for 17 minutes, as in
+    Q07) in both arms, and both `kicad-cli` runs were killed, so that row's signal is the router's
+    `unrouted` (4 → 4) and it has no `drc_real`. Demos: both arms' sessions are byte-identical on
+    all four (graded twice anyway, equal). No `shorting_items` on any graded row.
+  - **Table** (`tree+nodes` → `canonical+leaves`; the canary candidate's router values are the
+    interrupted board's):
+  | row | KiCad unconnected | drc_real | unrouted | clearance | vias | tree nodes (M) | wall s |
+  |---|---|---|---|---|---|---|---|
+  | d3c-0400-laptimer58-chickadee | 13 → 13 | 17 → 17 | 2 → 2 | 0 → 0 | 26 → 26 | 19 → 16 | 0.45 → 0.47 |
+  | d3c-0423-induction-hob-temp… | 4 → 6 | 32 → 40 | 0 → 0 | 0 → 0 | 27 → 25 | 115 → 66 | 2.15 → 0.71 |
+  | d3c-0448-uedaino-uedaino | 0 → 1 | 56 → 60 | 1 → 2 | 0 → 0 | 74 → 66 | 300 → 287 | 9.78 → 9.18 |
+  | d3c-0473-data-manager-data-… | 5 → 9 | 66 → 74 | 0 → 0 | 0 → 0 | 40 → 38 | 381 → 936 | 2.37 → 5.06 |
+  | d3c-0496-kitspace-f-91w | 14 → 6 | 400 → 475 | 16 → 8 | 1 → 1 | 72 → 71 | 430 → 506 | 12.16 → 20.65 |
+  | d3c-0520-rgbmatrixpanelcpld… | 8 → 7 | 48 → 37 | 0 → 0 | 0 → 0 | 15 → 24 | 664 → 57 | 3.5 → 0.82 |
+  | d3c-0546-ozinverter-ozinver… | 3 → 3 | 20 → 19 | 0 → 0 | 0 → 0 | 2 → 1 | 73 → 66 | 0.5 → 0.51 |
+  | d3c-0571-brushless-esc-brus… | 19 → 14 | 168 → 158 | 0 → 0 | 0 → 0 | 46 → 42 | 405 → 122 | 4.49 → 2.19 |
+  | d3c-0581-a123-battery-integ… | – → – | – → – | 4 → 4 | 0 → 0 | 61 → 61 | 113 → 111 | 1.47 → 1.79 |
+  | d3c-0599-rgbmatrixpanelcpld… | 20 → 18 | 383 → 410 | 0 → 0 | 0 → 0 | 20 → 21 | 478 → 437 | 3.92 → 4.25 |
+  | canary-pwr-9511d9a | 65 → – | 0 → – | 129 → 122 | 40 → 40 | 144 → 144 | 24,988 → 15,792 | 450.35 → 600 (timeout) |
+  | complex_hierarchy | 0 → 0 | 0 → 0 | 7 → 7 | 0 → 0 | 0 → 0 | 11 → 11 | 1.07 → 0.67 |
+  | ecc83-pp | 0 → 0 | 0 → 0 | 6 → 6 | 0 → 0 | 0 → 0 | 5 → 5 | 0.23 → 0.17 |
+  | pic_programmer | 0 → 0 | 0 → 0 | 10 → 10 | 1 → 1 | 6 → 6 | 53 → 48 | 0.78 → 0.6 |
+  | sonde-xilinx | 0 → 0 | 0 → 0 | 11 → 11 | 0 → 0 | 3 → 3 | 16 → 16 | 0.35 → 1.89 |
+  - **The rest would fail too.** On the 14 complete rows (a hand sum, not a gate verdict): the
+    signal is 90 → 81 (change -9, set noise 28.57), tree nodes visited 3,063 M → 2,685 M (-12.4 %,
+    under the 20 % the speed clause needs), and the `drc_real` guard breaks on 5 boards: d3c-0423
+    32 → 40, d3c-0448 56 → 60, d3c-0473 66 → 74, d3c-0496 400 → 475 (KiCad `clearance` 169 → 214)
+    and d3c-0599 383 → 410 (`clearance` 88 → 108). `via_in_pad` is 0 and router
+    `clearance_violations` equal on every row. So a longer canary timeout would not change the
+    verdict. With the canary's interrupted count the nodes fall 34.1 %, but that count is cut
+    short by the timeout.
+- [~] **N03.4 — The faster tree** (P04.3's plan, only after N03.3 accepts an arm).
   - Try a bulk-loaded R-tree with struct-of-arrays bounds, plus incremental leaf
     updates. The result sets must be identical, so routes are identical against
     N03.3's build.
@@ -203,3 +259,14 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
   minutes on 2026-10-20), and the arm N03.4 builds on is `canonical+leaves`; the wall-time clause
   is met by before/after runs on that set and P01's callgrind counts, with no quiet-machine
   condition (decided 2026-10-20). Not started: it waits for N03.3's verdict.
+  *Partial 2026-10-20:* not started. The item runs "only after N03.3 accepts an arm", and N03.3
+  accepted none (its done note: the canary candidate timed out, and on the other rows the
+  `drc_real` guard breaks on 5 boards and the nodes fall 12.4 %); N03.json's keep rule says N03.4
+  does not start. The default tree stays Java's (`MinAreaTree` shape, `tree` room order, `nodes`
+  work unit), as after P04.3. Remainder, an operator decision owned by N00 (the series' open
+  questions): close N03.4, or register another measurement of an order that does not depend on
+  the tree's shape.
+  *Closed 2026-10-20:* decided 2026-10-20: N03.4 is closed, not run. Its precondition failed, and
+  a faster tree whose results don't depend on its shape needs an accepted order first. No new
+  order is registered: the routing-quality work goes to `enhanced`'s guard failures (Q18) instead.
+  The box stays `[~]` because no Accept clause was met.
