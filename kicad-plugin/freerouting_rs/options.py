@@ -334,7 +334,10 @@ def _restore_k09(out, data):
 # `enhanced` profile necks a connection down only where it fails at full
 # width (`router.neck_width_um = 300`), which N05.3 measured against class
 # narrowing (docs/roadmap/prereg/N05-neck-down.json: no-regress, copper under
-# the Board Setup width 848.9 -> 310.4 mm), so the plugin passes no flag for it.
+# the Board Setup width 848.9 -> 310.4 mm), and widens the retry's narrow
+# traces back to the class width where they fit (`router.neck_down.widen_back
+# = true`, Q17.4: docs/roadmap/prereg/Q17.4.json, narrowed copper on the wide
+# classes 461.8 -> 400.6 mm), so the plugin passes no flag for either.
 PROFILE_DEFAULTS = {
     "legacy": {},
     "enhanced": {"sweep": "free"},

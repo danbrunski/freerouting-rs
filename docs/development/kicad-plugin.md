@@ -195,7 +195,10 @@ Under `enhanced` the plugin keeps the Board Setup class widths and passes no nec
 engine's `enhanced` profile sets `router.neck_width_um = 300` (Java's necked retry of a failed
 connection), which N05.3 accepted against class narrowing on 2026-10-18
 (`docs/roadmap/prereg/N05-neck-down.json`: KiCad unconnected 103 → 106 within noise 17.14,
-copper under the Board Setup width 848.9 → 310.4 mm where the narrowing acted). `class_widths`
+copper under the Board Setup width 848.9 → 310.4 mm where the narrowing acted), and
+`router.neck_down.widen_back = true` (the retry's narrow traces widened back to the class width
+where they fit), which Q17.4 accepted on 2026-10-20 (`docs/roadmap/prereg/Q17.4.json`: KiCad
+unconnected 164 → 168 within noise 15.42, narrowed copper on the wide classes 461.8 → 400.6 mm). `class_widths`
 (a preset or `auto`) still narrows a class when chosen.
 
 ## The dev machine (Windows 11, KiCad 10.0)

@@ -104,7 +104,7 @@ fn defaults_follow_the_profile() {
         .expect("the option");
     assert_eq!(passes.default, Some(FieldValue::Int(20)));
     // `enhanced` lists the same apart from its table's keys that are stage
-    // options: the neck width and the via clearance (N05.3;
+    // options: the neck width, the via clearance and the widen-back (N05.3;
     // `power_layer_traces` is no option).
     let mut expected = legacy.clone();
     for slot in &mut expected {
@@ -116,6 +116,10 @@ fn defaults_follow_the_profile() {
             if option.path == "via_clearance" {
                 assert_eq!(option.default, None);
                 option.default = Some(FieldValue::Str("net_class".into()));
+            }
+            if option.path == "neck_down.widen_back" {
+                assert_eq!(option.default, None);
+                option.default = Some(FieldValue::Bool(true));
             }
         }
     }

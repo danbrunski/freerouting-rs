@@ -43,7 +43,8 @@
 //! simplex cutout fixes, `cutout_hole_crosses_border` and
 //! `simplex_octagon_half_corner`, accepted together by
 //! `docs/roadmap/prereg/N06.14b.json`, whose candidate arm was this table's
-//! `enhanced`. Adding one is one entry
+//! `enhanced`. Q17.4 (2026-10-20) added `neck_down.widen_back = true` on top
+//! of the necked retry at 300 um. Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
 //! entry is a valid settings key and value, and that `enhanced` sets it.
@@ -112,6 +113,15 @@ pub const ENHANCED: &[Difference] = &[
                       via takes its net class's clearance (Q14); KiCad unconnected 263 -> 261 \
                       (set noise 42.70), KiCad net-class via clearance errors 2 -> 1, canary-pwr's \
                       plugin path 1 -> 0",
+    },
+    Difference {
+        path: "neck_down.widen_back",
+        value: "true",
+        measurement: "N05.3 from Q17.4 (docs/roadmap/prereg/Q17.4.json, sha256 b3d4ad49..., \
+                      under enhanced): the necked retry's narrow traces widened back to the \
+                      class width where they fit; gate PASS, KiCad unconnected 164 -> 168 (set \
+                      noise 15.42), narrowed copper on the wide classes 461.8 -> 400.6 mm, no \
+                      hard-guard breach",
     },
     Difference {
         path: "java_quirks.init_failure_room_leak",

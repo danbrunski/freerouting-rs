@@ -472,7 +472,7 @@ settings_table! {
             (path_mm, f64, opt, None, None, "pathMm", [], Flat::No, true,
                 "`bounded-neck` (Q17.2): the neck distance D in mm from each pin instead of courtyard plus one pitch (unset: courtyard plus pitch)."),
             (widen_back, bool, opt, None, None, "widenBack", [], Flat::No, true,
-                "Widen a neck-down retry's narrow traces back to the class width in 0.5 mm pieces where they fit, with 4-step tapers (Q17.3; unset: off)."),
+                "Widen a neck-down retry's narrow traces back to the class width in 0.5 mm pieces where they fit, with 4-step tapers (Q17.3; unset: off, profile `legacy`); profile `enhanced` turns it on (N05.3)."),
         }
         length_matching, LengthMatchingPatch, LengthMatchingSettings, "lengthMatching",
         "Length and time matching targets (X07.2; not a Java section)." {

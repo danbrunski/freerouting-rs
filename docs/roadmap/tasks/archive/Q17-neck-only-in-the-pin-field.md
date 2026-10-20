@@ -12,7 +12,7 @@ Q02 designed the better rule and built only its pure functions
 (`quality/neckdown/bounded.rs`: `room_within`, `neck_distance`, `pitch`,
 `neck_width`). Q02.3's width policy inside the maze search, Q02.4's fixture and
 Q02.5's widen-back were never built (see their notes in
-[archive/Q02](archive/Q02-neck-down-through-pin-fields.md)). This checklist
+[archive/Q02](Q02-neck-down-through-pin-fields.md)). This checklist
 builds them. It measures them against today's `enhanced` (`neck_width_um = 300`),
 not against Java.
 
@@ -149,7 +149,7 @@ totals rule), N05 (the promotion recipe).
   - `tools/determinism-check.sh`: q02-qfn-power with `bounded-neck` and the switch identical
     (`cc07d01fc2e16861…`), q17-pinch-22mm with the retry at 400 µm and the switch identical
     (`6b2e39c552478a54…`).
-- [~] **Q17.4 — Measure under N02.** Register first, on the boards of
+- [x] **Q17.4 — Measure under N02.** Register first, on the boards of
   `N05-neck-down.json` (the canary-pwr plugin DSN, the canary-pwr 9511d9a DSN with
   its Board Setup widths, interf_u, pic_programmer, CM5_MINIMA_3) plus two
   corpus boards with wide classes it has not seen.
@@ -265,3 +265,18 @@ totals rule), N05 (the promotion recipe).
   sessions with SHA256SUMS and README (flags, self-grade, widths):
   `target/canary-handoff/2026-10-20-q17-4/`. Remains: the promotion (N05) and canary-7a's grade of
   those sessions.
+  *Done 2026-10-20:* every clause holds. Hard guards: via in pad, below minimum width and
+  power-layer traces 0 in every arm on every row, KiCad clearance-type errors no new breach
+  (the run note above; `freerouting-dev gate`: PASS). Promotion: N05.3 added
+  `router.neck_down.widen_back = true` to `ENHANCED` (`crates/freerouting/src/settings/profile.rs`,
+  measurement string naming `docs/roadmap/prereg/Q17.4.json`, sha256 `b3d4ad49…`), with the
+  DIVERGENCES "Profile `enhanced`" line `neck_down.widen_back` = `true` (164 → 168 within noise
+  15.42, narrowed copper 461.8 → 400.6 mm), the help text in `settings/fields.rs` and
+  `tests/settings_profile.rs::enhanced_sets_neck_down_widen_back` (`enhanced` sets it, `legacy`
+  leaves it unset, an explicit `false` beats the profile) and
+  `tests/stage_catalog.rs::defaults_follow_the_profile`; the retry at 300 stays. The plugin
+  passes no neck-down flag, so its `enhanced` takes it from the engine. canary-7a's grade: met by
+  canary's own `grade.sh` run in the measurement, one grade per distinct canary session
+  (decided 2026-10-20: one grade per distinct session; no separate pass). No separate confirmation
+  (decided 2026-10-20: the measurement is the confirmation): the `widen-back` arm ran
+  `--router.profile=enhanced --router.neck_down.widen_back=true` at a25c82f.

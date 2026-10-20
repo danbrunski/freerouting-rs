@@ -416,6 +416,31 @@ Prerequisites: N01; each candidate's own accepted measurement.
     `octagon_box_cutout_branch3` and `ripup_pass_no_unset` (rejected) and the seven (c) rows left
     as Java. N06 has no switch left to measure.
 
+  - **2026-10-20, accepted (Q17.4): `router.neck_down.widen_back = true`** (Q17.3's stage, on top
+    of the necked retry at 300 µm, which stays). Registration `docs/roadmap/prereg/Q17.4.json`
+    (sha256 `b3d4ad49…` before any number, no amendment), pinned by
+    `crates/freerouting-dev/tests/prereg_q17_4.rs`; set `tools/bench/sets/q17-4.txt`
+    (canary-plugin45, canary-9511d9a-mp1sweep, interf_u, pic_programmer,
+    flight-computer-core-board, cm4-edge-ai-carrier); engine a25c82f, every arm
+    `--router.profile=enhanced`. N02 totals, `accept: no-regress`; `freerouting-dev gate`:
+    **PASS** (0 refusals, 0 amendments); `enhanced -> widen-back` KiCad unconnected 164 → 168
+    (+4, set noise 15.42; canary-pwr +5 within its band of 10); narrowed copper on the wide classes
+    (`under_board_setup_mm`) 461.8 → 400.6 mm; via in pad, below minimum width, power-layer traces
+    and inner tracks 0 on every row, no new KiCad clearance-type error (canary-9511d9a 2 → 0).
+    Q17.4's keep rule picked `widen-back` over `bounded-neck-widen-back` (also PASS, 171, 275.8
+    mm) by the lower unconnected total. `ENHANCED` entry (`settings/profile.rs`, measurement
+    string naming the registration), DIVERGENCES "Profile `enhanced`" line `neck_down.widen_back`,
+    `tests/settings_profile.rs::enhanced_sets_neck_down_widen_back` (16 tests green) and
+    `tests/stage_catalog.rs::defaults_follow_the_profile` (the neck-down slot's `widen_back` option
+    defaults to `true` under `enhanced` only), help text in `settings/fields.rs`. Gate:
+    `cargo test --workspace --no-fail-fast` green, `PARITY_SET=tools/bench/sets/connection-parity.txt`
+    (legacy) 7/7 exact, SES byte-identical. The plugin passes no neck-down flag (`kicad-plugin/freerouting_rs/options.py`
+    `PROFILE_DEFAULTS`), so its `enhanced` gets the setting from the engine. No separate
+    confirmation (decided 2026-10-20: the measurement is the confirmation): Q17.4's `widen-back`
+    arm ran `--router.profile=enhanced --router.neck_down.widen_back=true` at a25c82f, which is
+    this `enhanced`. canary-7a's grade: canary's own `grade.sh` in the measurement, one grade per
+    distinct session (decided 2026-10-20: no separate pass).
+
   *Partial 2026-10-20:* no run of N05.3's own is pending. The list waits for the measurements cut
   to minutes on 2026-10-20 (decided 2026-10-20: measurement runs stay a few minutes): N03.3
   (`prereg/N03.json`, new), N04.3 (`N04.json` amendment 3), Q04.4 (`Q04.json` amendment 2),

@@ -174,6 +174,18 @@ fn enhanced_sets_via_clearance_net_class() {
 }
 
 #[test]
+fn enhanced_sets_neck_down_widen_back() {
+    // N05.3 from Q17.4, docs/roadmap/prereg/Q17.4.json: the necked retry's
+    // narrow traces are widened back to the class width where they fit;
+    // unset (off, Java ships them narrow) under `legacy`.
+    assert_eq!(
+        parsed("neck_down.widen_back", "true"),
+        Some(FieldValue::Bool(true))
+    );
+    assert_enhanced_sets("neck_down.widen_back", "true", None, "false");
+}
+
+#[test]
 fn enhanced_turns_off_the_promoted_java_quirks() {
     // N05.3 and N06.13: each promoted switch is `false` under `enhanced` and
     // unset (`true`, Java's bug) under `legacy`; an explicit `true` beats the

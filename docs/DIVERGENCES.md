@@ -1794,6 +1794,17 @@ checks that this list and the table agree.
   tinytapeout-demo, RoyalBlue54L-Feather, slice-dcmt-bread-slice and CM5_MINIMA_3 (set noise
   42.70; canary-pwr 36 → 41), net-class via clearance errors 2 → 1 (canary-pwr's `+12V_PROT`
   via 1 → 0), no via in a pad, copper below the minimum or power-layer trace.
+- `neck_down.widen_back` = `true` (N05.3 from Q17.4, `docs/roadmap/prereg/Q17.4.json`, sha256
+  `b3d4ad49…`, no amendment): after the necked retry at 300 µm (`neck_width_um` above) inserts a
+  connection, its new traces under the class width are widened back to the class width in 0.5 mm
+  pieces wherever the exact clearance check passes, with 4-step tapers (Q17.3,
+  `quality::neckdown::widen_back`); Java ships the retry's traces narrow over their whole length.
+  Judged by N02's totals rule (`accept: no-regress`, `freerouting-dev gate`: PASS) against
+  `enhanced` without it: KiCad unconnected 164 → 168 over canary-pwr (plugin path and the
+  9511d9a Board Setup widths DSN), interf_u, pic_programmer, flight-computer-core-board and
+  cm4-edge-ai-carrier (set noise 15.42; canary-pwr +5 within its band of 10), narrowed copper on
+  the wide classes (`freerouting-dev widths`, under the class width) 461.8 → 400.6 mm, no new via
+  in a pad, copper below the minimum, KiCad clearance-type error or power-layer trace.
 
 The `java_quirks` lines below are N06's Java-bug fixes that N06.13 promoted on 2026-10-19, each
 under N06's accept rule: measured and neutral, or not reached by any registered row and accepted

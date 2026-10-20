@@ -1,5 +1,5 @@
 # Q17.4: the neck-down candidates (Q17.3's widen-back after enhanced's retry at 300 um, Q17.2's
-# bounded-neck with the widen-back) against profile enhanced (docs/roadmap/tasks/Q17-neck-only-in-the-pin-field.md),
+# bounded-neck with the widen-back) against profile enhanced (docs/roadmap/tasks/archive/Q17-neck-only-in-the-pin-field.md),
 # registered in docs/roadmap/prereg/Q17.4.json. The two canary rows count as one board.
 # canary-pwr: the plugin's stored export (Board Setup widths of canary b1994423) and the 9511d9a fixture with
 # its Board Setup widths (1.5 mm Power_High and Switch_Node), routed by the CLI:
