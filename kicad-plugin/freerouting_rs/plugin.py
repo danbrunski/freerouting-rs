@@ -19,7 +19,21 @@ from pathlib import Path
 import pcbnew
 import wx
 
-from . import dropdowns, export_flow, kicad_board, layout, options, presets, progress, routing, snapshot, tools, version
+from . import (
+    dropdowns,
+    export_flow,
+    input_choice,
+    kicad_board,
+    layout,
+    options,
+    presets,
+    progress,
+    routing,
+    snapshot,
+    summary,
+    tools,
+    version,
+)
 
 TITLE = "freerouting-rs"
 TICK_MS = 100
@@ -231,6 +245,8 @@ class Dialog(wx.Dialog):
         self.board_dir = pcb.parent
         self.dsn = self.work_dir / (pcb.stem + ".dsn")
         self.design = self.dsn  # what the router reads: the DSN, or the snapshot (K10)
+        self.used = None  # the options of the prepared run: `board_input` is `dsn` after a fallback (K13.3)
+        self.fallback_reason = None  # why the DSN ran in place of the snapshot, else None
         self.ses = self.work_dir / (pcb.stem + ".ses")
         self.result_json = routing.manifest_path(self.work_dir, pcb.stem)
         self.router = tools.find_tool(tools.ROUTER)
@@ -670,34 +686,34 @@ class Dialog(wx.Dialog):
             tools.log_line(self.work_dir, f"could not save the route options: {e}")
         return chosen
 
-    def export(self, chosen):
+    def export(self, chosen, fallback_reason=None):
         """Exports and fixes up the DSN, or takes the board snapshot (K10),
-        and sets `self.design` to the file the router reads. Returns `(ok,
-        router_args, locked)`; `locked` are the tracks `fix_existing` locked,
-        which stay locked until `kicad_board.restore_locks` after the import."""
-        self.design = snapshot.design_path(self.work_dir, self.stem, chosen.board_input)
-        if snapshot.wanted(chosen):
-            ok, extra, lines, locked = export_flow.prepare_snapshot(
-                self.board, pcbnew, self.work_dir, self.stem, self.board_dir, chosen
-            )
-            if not ok:
-                log_lines(self.work_dir, self.design, lines)
-                self.error(f"KiCad could not save a snapshot of the board to\n{self.design}\n\n" + "\n".join(lines))
-                return False, [], []
-        else:
-            ok, extra, lines, locked = export_flow.prepare(self.board, pcbnew, self.dsn, chosen, export_dsn)
-            if not ok:
-                log_lines(self.work_dir, self.design, lines)
-                self.error(f"KiCad could not export the board to\n{self.dsn}\n\n" + "\n".join(lines))
-                return False, [], []
+        and sets `self.design` to the file the router reads. A snapshot the
+        reader refuses is replaced by the DSN export (`input_choice`, K13.3);
+        `fallback_reason` is the router's refusal when it came after the
+        first run. `self.used` holds the options the run uses, `self.fallback_reason`
+        the reason. Returns `(ok, router_args, locked)`; `locked` are the tracks
+        `fix_existing` locked, which stay locked until
+        `kicad_board.restore_locks` after the import."""
+        prepared = input_choice.prepare(
+            self.board, pcbnew, self.work_dir, self.stem, self.board_dir, self.dsn, chosen, export_dsn, fallback_reason
+        )
+        self.design, self.used, self.fallback_reason = prepared.design, prepared.opts, prepared.reason
+        if not prepared.ok:
+            log_lines(self.work_dir, self.design, prepared.lines)
+            if prepared.input == options.INPUT_KICAD_PCB:
+                self.error(f"KiCad could not save a snapshot of the board to\n{self.design}\n\n" + "\n".join(prepared.lines))
+            else:
+                self.error(f"KiCad could not export the board to\n{self.dsn}\n\n" + "\n".join(prepared.lines))
+            return False, [], []
         try:
-            export_flow.save_arguments(self.board, pcbnew, self.design, chosen, extra, lines)
+            export_flow.save_arguments(self.board, pcbnew, self.design, prepared.opts, prepared.args, prepared.lines)
         except OSError as e:
-            kicad_board.restore_locks(locked)
+            kicad_board.restore_locks(prepared.locked)
             self.error(f"Could not save routing arguments:\n{e}")
             return False, [], []
-        log_lines(self.work_dir, self.design, lines)
-        return True, extra, locked
+        log_lines(self.work_dir, self.design, prepared.lines)
+        return True, prepared.args, prepared.locked
 
     def on_route(self, _evt):
         chosen = self.read_options()
@@ -707,18 +723,28 @@ class Dialog(wx.Dialog):
         if not ok:
             return
         try:
-            self.route(chosen, extra)
+            refusal = self.route(chosen, extra)
+            if refusal:  # the router refused the snapshot at load time: the DSN, once (K13.3)
+                kicad_board.restore_locks(locked)
+                locked = []
+                ok, extra, locked = self.export(chosen, refusal)
+                if ok:
+                    self.route(chosen, extra)
         finally:
             kicad_board.restore_locks(locked)
 
     def route(self, chosen, extra):
+        """Routes `self.design` (prepared by `export`; `self.used` are its
+        options, `chosen` the saved ones). Returns the reader's reason when the
+        router refused a snapshot at load time and nothing was routed, so
+        `on_route` can run the DSN; None otherwise."""
         self.ses.unlink(missing_ok=True)
         self.result_json.unlink(missing_ok=True)
         run = routing.RouteRun(
             self.router,
             self.design,
             self.ses,
-            export_flow.router_args(self.board, chosen, extra),
+            export_flow.router_args(self.board, self.used, extra),
             self.result_json,
             chosen.profile,
         )
@@ -730,15 +756,20 @@ class Dialog(wx.Dialog):
         with RouteProgressDialog(self, run) as progress_dialog:
             progress_dialog.ShowModal()
         tools.log_line(self.work_dir, f"{time.strftime('%Y-%m-%d %H:%M:%S')} route: " + run.state.text())
-        if snapshot.wanted(chosen):  # the reader's report and warnings (K10.3)
+        if snapshot.wanted(self.used):  # the reader's report and warnings (K10.3)
             log_lines(self.work_dir, self.design, snapshot.reader_lines(run.lines))
         if run.aborted:
             wx.MessageBox("Routing aborted. The board was not changed.", TITLE, wx.OK, self)
             return
+        if snapshot.wanted(self.used) and run.returncode != 0 and not run.ses_written():
+            refusal = input_choice.load_refusal(run.lines)
+            if refusal:
+                return refusal
         if run.returncode != 0 or not run.ses_written():
             self.error(run.failure_text())
             return
         self.remember_pass(chosen, run.state.best_pass())
+        summary.merge_input(self.result_json, self.used.board_input, self.fallback_reason)
         self.finish_import(self.ses, run.summary_text(), stopped=run.stopped)
 
     def remember_pass(self, chosen, best):
@@ -767,9 +798,9 @@ class Dialog(wx.Dialog):
 
     def route_gui(self, chosen, extra):
         self.ses.unlink(missing_ok=True)
-        if snapshot.wanted(chosen) and chosen.apply_kicad_rules:
+        if snapshot.wanted(self.used) and self.used.apply_kicad_rules:
             log_lines(self.work_dir, self.design, ["Route in GUI reads the .kicad_dru but does not apply it (use Route)"])
-        run = routing.GuiRun(self.gui, self.design, self.ses, export_flow.router_args(self.board, chosen, extra, for_gui=True))
+        run = routing.GuiRun(self.gui, self.design, self.ses, export_flow.router_args(self.board, self.used, extra, for_gui=True))
         try:
             run.start()
         except OSError as e:

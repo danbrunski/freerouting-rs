@@ -766,6 +766,14 @@ unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's ru
   sweep and the pass hint are engine flags or board locks and work. The rule-area fix-up (K01.2) does nothing
   (the reader maps rule areas by flags); the run log says so once.
 - **Presets** (see above) work with both inputs.
+- **Fallback to the DSN (K13.3, `input_choice.py`).** When the reader refuses the snapshot, the run uses the
+  DSN export instead and routes that, so the input choice never fails a run. Two refusals are recognised: the
+  snapshot's `(version N)` below 20201115 (before routing), and the router's `There was a parse error while
+  reading board file at '<name>': <reason>` error line with exit 1 and no session (the DSN is exported and routed
+  once; a failure without that line is not retried, and a `SaveBoard` failure is still an error). The run log gets
+  one `input: ...` line, and `<stem>.result.json` gets `input` (`kicad_pcb`|`dsn`) and `input_fallback_reason`
+  (null when none), which the result summary shows as `Input: ...`. The saved option stays `kicad_pcb`.
+  `headless_run.py` has no fallback. Tests: `test_input_choice.py`.
 - **Tests:** `test_snapshot.py` (paths and argument lists for both inputs and non-ASCII names, the staged
   files, the fall-back, the options check), `test_route_dialog.py` (`test_route_with_the_snapshot_...`,
   the detaching import, refusal, `fix_existing`), `test_snapshot_headless.py` (real pcbnew and CLI: the track in

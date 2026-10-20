@@ -77,11 +77,43 @@ rules).
     - on `One-Air-Max`, the pre-existing `/Solar_module/SYS`–`VBAT` violation counts against
       the same segment pairs as on the original board.
 
-- [ ] **K13.3 — Fall back to the DSN export.** When the reader refuses the snapshot, the plugin
+- [x] **K13.3 — Fall back to the DSN export.** When the reader refuses the snapshot, the plugin
   exports the DSN instead and routes that. The run log and the result summary name the input
   that ran and why.
   - **Accept:** plugin tests with the stub `pcbnew` (`kicad-plugin/tests/stub_ui.py`) for a
     KiCad 5 board, for an unsupported construct, and for the normal case.
+
+  *Done 2026-10-20:* new `kicad-plugin/freerouting_rs/input_choice.py` (`prepare`, `snapshot_refusal`,
+  `load_refusal`, `input_line`), `summary.merge_input`/`input_line`, and `plugin.py` (`export` calls
+  `input_choice.prepare`; `on_route` runs the DSN once when `route` returns a load refusal). Two refusals:
+  - the snapshot's `(version N)` below 20201115 (the reader's `FIRST_SUPPORTED_VERSION`), checked before routing;
+  - the router's error line `There was a parse error while reading board file at '<name>': <reason>` with
+    exit 1 and no session. Run by hand against a debug `freerouting-rs` on a KiCad 5 file and on an unclosed
+    list: both gave that line in the JSON log and exit 1, and `load_refusal` read the reason from both.
+
+  The run log gets `input: kicad_pcb (the board snapshot, read directly)`, `input: dsn (KiCad's DSN
+  export, as chosen)` or `input: dsn (KiCad's DSN export; fallback from kicad_pcb because <reason>)`.
+  `<stem>.result.json` gets `input` and `input_fallback_reason` (null when none), and the summary a
+  line `Input: ...`. Tests in `kicad-plugin/tests/test_input_choice.py` (stub pcbnew and fake router mode
+  `route-refuse-kicad`):
+  - `test_a_kicad_5_board_is_exported_as_a_dsn_without_routing_the_snapshot`: KiCad 5 board, one
+    SaveBoard and one DSN export, the router gets the `.dsn` and no `--apply-design-rules`, the log names the
+    version;
+  - `test_a_kicad_5_board_result_names_the_dsn_and_why`: the same through the fake router, result.json
+    `input` is `dsn` with the reason, the summary shows it;
+  - `test_a_construct_the_router_refuses_exports_the_dsn_and_routes_once_more`: unsupported construct, the
+    first run refused, the DSN exported and routed once, no error box, reason `line 7, column 3: ...` in
+    result.json, summary and log;
+  - `test_the_normal_case_routes_the_snapshot_and_says_so`: normal case, no export, `input` `kicad_pcb`,
+    reason null;
+  - `test_a_failure_that_is_not_a_load_refusal_is_not_retried`, `test_the_dsn_input_chosen_is_recorded_without_a_reason`,
+    `test_fix_existing_locks_are_restored_around_the_fallback`, `test_view_with_a_kicad_5_snapshot_opens_the_dsn`,
+    plus unit tests of `snapshot_refusal` (7 versions), `load_refusal`, `merge_input`.
+
+  `python3 -m pytest kicad-plugin/tests`: 421 passed, 19 skipped. Not covered: `headless_run.py` has no
+  fallback (its `kicad_pcb` runs stay strict for graded runs), and Route in GUI cannot see a refusal inside
+    the GUI process (only the version pre-check applies). A `SaveBoard` failure still ends the run with the
+    snapshot error, as before.
 
 - [ ] **K13.4 — Load time.** The reader's board for `jetson-agx-thor-baseboard` builds in 3.7 s
   against 1.6 s for the DSN (K10). Profile it, then fix it or record why it stays.

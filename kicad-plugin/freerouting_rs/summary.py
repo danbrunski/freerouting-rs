@@ -11,12 +11,16 @@ Fields used (Java's `RoutingResultManifest` names):
 the time the sum of `phases.*.duration_seconds` unless the caller has the
 `done` event's `elapsed_ms`.
 
+K13.3: `merge_input` adds `input` and `input_fallback_reason` to the manifest
+after the run, and the line after the profile names them.
+
 The first line names the routing profile (N01.3): `settings_snapshot.profile`
 of the manifest when the router wrote it, else the profile the plugin asked
 for, else the router's default, Enhanced.
 """
 
 import json
+import os
 
 try:  # as part of the plugin package
     from . import progress
@@ -120,6 +124,35 @@ def output_check_lines(manifest):
     return lines
 
 
+def merge_input(path, name, reason):
+    """K13.3: records the input the run used in the manifest at `path`, as
+    `input` (`kicad_pcb` or `dsn`) and `input_fallback_reason` (None when the
+    chosen input ran). Returns False, writing nothing, when there is no
+    manifest to add to."""
+    manifest = load_manifest(path)
+    if manifest is None:
+        return False
+    manifest["input"] = name
+    manifest["input_fallback_reason"] = reason
+    tmp = str(path) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(manifest, f)
+    os.replace(tmp, path)
+    return True
+
+
+def input_line(manifest):
+    """`Input: kicad_pcb` or `Input: dsn (fallback from kicad_pcb: <reason>)`
+    from the keys of `merge_input`; None when the manifest has none."""
+    name = _get(manifest, "input")
+    if name not in ("kicad_pcb", "dsn"):
+        return None
+    reason = _get(manifest, "input_fallback_reason")
+    if isinstance(reason, str) and reason:
+        return f"Input: {name} (fallback from kicad_pcb: {reason})"
+    return f"Input: {name}"
+
+
 def format_summary(manifest, elapsed_ms=None, profile=None):
     """The summary text, several lines. `manifest` None gives a one-line note.
     `profile` is the profile the run was started with (see the module docs)."""
@@ -134,6 +167,8 @@ def format_summary(manifest, elapsed_ms=None, profile=None):
     state = _get(manifest, "final_state")
 
     lines = [f"Profile: {profile_label(manifest, profile)}"]
+    if input_line(manifest):
+        lines.append(input_line(manifest))
     if maximum is not None and incomplete is not None:
         routed = max(maximum - incomplete, 0)
         lines.append(f"Connections: {routed} of {maximum} routed, {incomplete} incomplete")

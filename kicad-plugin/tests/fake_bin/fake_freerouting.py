@@ -18,6 +18,10 @@ Modes (the first argument after the script):
              leaves nothing
   route-fail prints an error log event and exits 1 without output
   route-noise like `route`, with a plain text line and a cut-off JSON line
+  route-refuse-kicad like `route`, but a `-de` file ending in `.kicad_pcb` is refused
+             the way the real CLI refuses a board its reader cannot use (K13.3):
+             an error log event "There was a parse error while reading board file
+             at '<name>': <reason>", exit 1, no session
 
 `--list-stages=json` prints a small stage listing in every mode but `fail`.
 """
@@ -62,6 +66,15 @@ def write_outputs(incomplete=0):
 
 mode = sys.argv[1]
 args = sys.argv[2:]
+
+if mode == "route-refuse-kicad":
+    if option("-de") and option("-de").endswith(".kicad_pcb") and "--version" not in args:
+        name = os.path.basename(option("-de"))
+        emit({"event": "start", "schema_version": 1, "mode": "route"})
+        emit({"event": "log", "level": "error", "text": f"There was a parse error while reading board file at '{name}': line 7, column 3: unsupported construct (test)"})
+        emit({"event": "done", "exit_code": 1, "state": "terminated", "elapsed_ms": 0})
+        sys.exit(1)
+    mode = "route"
 
 # `--list-stages=json` (N01.4) in every mode but `fail`: a small listing with a
 # second connection router, an optional slot and a list slot.
