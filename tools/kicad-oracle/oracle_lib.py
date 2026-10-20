@@ -270,6 +270,118 @@ def subtract_preexisting(routed, unrouted):
     return real, pre
 
 
+# Q22.2: what routing caused. A KiCad item is routing-caused when it involves a track or via that
+# the input board does not have, at the same nanometre geometry, width (a via: diameter and
+# drill), layer and net. Pads, footprint graphics, text, zones and unchanged input tracks and vias
+# are input copper, and an item made only of input copper is pre-existing, whatever the input
+# report listed: KiCad lists a pair as (A, B) in one report and (B, A) in the other, once per
+# copper layer, and stops a type at DRC_CAP items, so two reports of the same copper do not list
+# the same pairs.
+_COPPER_SCOPE = re.compile(r"^\t\((segment|arc|via)\b", re.MULTILINE)
+_TOKEN = re.compile(r'\(|\)|"(?:[^"\\]|\\.)*"|[^\s()]+')
+
+
+def _parse_sexpr(text):
+    """The nested lists of one s-expression (quotes removed from strings)."""
+    stack = [[]]
+    for m in _TOKEN.finditer(text):
+        token = m.group(0)
+        if token == "(":
+            stack.append([])
+        elif token == ")":
+            node = stack.pop()
+            stack[-1].append(node)
+        else:
+            stack[-1].append(token[1:-1] if token.startswith('"') else token)
+    return stack[0][0]
+
+
+def _field(node, name):
+    return next((c for c in node if isinstance(c, list) and c and c[0] == name), None)
+
+
+def _nm(mm_text):
+    return round(float(mm_text) * 1e6)
+
+
+def _point_nm(node):
+    return (_nm(node[1]), _nm(node[2]))
+
+
+def copper_key(record):
+    """The identity of a track or via at nanometre precision: ends in either order,
+    width, layer and net; a via's position, diameter, drill, layers and net."""
+    if record["kind"] == "via":
+        return ("via", record["net"], record["at"], record["size"], record["drill"], record["layers"])
+    ends = tuple(sorted((record["start"], record["end"])))
+    return (record["kind"], record["net"], ends, record.get("mid"), record["width"], record["layer"])
+
+
+def read_copper(pcb_text):
+    """uuid -> record of every segment, arc and via of a .kicad_pcb text written by KiCad
+    (top-level items start after one tab). Coordinates and sizes in integer nanometres."""
+    items = {}
+    for m in _COPPER_SCOPE.finditer(pcb_text):
+        start = m.start() + 1  # the opening parenthesis, after the tab
+        node = _parse_sexpr(pcb_text[start:scope_end(pcb_text, start)])
+        uuid = _field(node, "uuid") or _field(node, "tstamp")
+        net = _field(node, "net")
+        record = {"kind": node[0], "net": net[1] if net and len(net) > 1 else ""}
+        try:
+            if node[0] == "via":
+                record["at"] = _point_nm(_field(node, "at"))
+                record["size"] = _nm(_field(node, "size")[1])
+                record["drill"] = _nm(_field(node, "drill")[1])
+                record["layers"] = tuple(_field(node, "layers")[1:])
+            else:
+                record["start"] = _point_nm(_field(node, "start"))
+                record["end"] = _point_nm(_field(node, "end"))
+                if node[0] == "arc":
+                    record["mid"] = _point_nm(_field(node, "mid"))
+                record["width"] = _nm(_field(node, "width")[1])
+                record["layer"] = _field(node, "layer")[1]
+        except (TypeError, IndexError, ValueError):
+            continue  # not a copper item this reader understands
+        if uuid and len(uuid) > 1:
+            items[uuid[1]] = record
+    return items
+
+
+def input_copper_keys(input_copper):
+    return {copper_key(record) for record in input_copper.values()}
+
+
+def routed_item(item, routed_copper, input_keys):
+    """True when a DRC item is a track or via the input board does not have. A track or via the
+    routed board cannot identify (no uuid, a uuid it does not know) counts as routed."""
+    record = routed_copper.get(item.get("uuid"))
+    if record is None:
+        return bool(re.match(r"(Track|Arc|Via|Through via|Blind/buried via|Micro via)\b", item.get("description", "")))
+    return copper_key(record) not in input_keys
+
+
+# Types whose items name a zone (and a pad) and no track: what routing cut out of a pour. They
+# keep the report-to-report match, so a thermal that routing starved still counts.
+FILL_TYPES = ("starved_thermal", "isolated_copper")
+
+
+def split_routing_caused(violations, routed_copper, input_copper, input_violations=()):
+    """(routing-caused, pre-existing) violations of the routed board. `routed_copper` and
+    `input_copper` are `read_copper` results of the two boards. `input_violations` only serves
+    FILL_TYPES."""
+    input_keys = input_copper_keys(input_copper)
+    fill_pool = [v for v in input_violations if v.get("type") in FILL_TYPES]
+    real, pre = [], []
+    for v in violations:
+        if any(routed_item(i, routed_copper, input_keys) for i in v.get("items", [])):
+            real.append(v)
+        elif v.get("type") in FILL_TYPES:
+            matched, _ = subtract_preexisting([v], fill_pool)
+            (real if matched else pre).append(v)
+        else:
+            pre.append(v)
+    return real, pre
+
 def by_type(violations):
     return dict(sorted(collections.Counter(v.get("type", "?") for v in violations).items()))
 
@@ -279,11 +391,22 @@ def capped_types(counts):
     return sorted(t for t, n in counts.items() if n == DRC_CAP)
 
 
-def summarize(routed_drc, unrouted_drc, copper, meta):
-    """The summary dict of one grading and its exit code."""
-    real, pre = subtract_preexisting(
-        routed_drc.get("violations", []), unrouted_drc.get("violations", [])
-    )
+def summarize(routed_drc, unrouted_drc, copper, meta, routed_copper=None, input_copper=None):
+    """The summary dict of one grading and its exit code. With the copper of both boards
+    (`read_copper`) an item is routing-caused when it involves a track or via the input does not
+    have (Q22.2); without them the old report-to-report match applies."""
+    basis = "copper" if routed_copper is not None and input_copper is not None else "report"
+    if basis == "copper":
+        real, pre = split_routing_caused(
+            routed_drc.get("violations", []),
+            routed_copper,
+            input_copper,
+            unrouted_drc.get("violations", []),
+        )
+    else:
+        real, pre = subtract_preexisting(
+            routed_drc.get("violations", []), unrouted_drc.get("violations", [])
+        )
     routed_counts = by_type(routed_drc.get("violations", []))
     below_minimum = copper.get("below_minimum", {}) if copper else {}
     below_total = sum(below_minimum.values())
@@ -295,6 +418,7 @@ def summarize(routed_drc, unrouted_drc, copper, meta):
             "drc_real": len(real),
             "drc_real_by_type": by_type(real),
             "preexisting": len(pre),
+            "routing_caused_basis": basis,
             "unconnected_items": len(routed_drc.get("unconnected_items", [])),
             "input_unconnected_items": len(unrouted_drc.get("unconnected_items", [])),
             "routed_by_type": routed_counts,
@@ -348,7 +472,8 @@ USAGE = """usage: python3 oracle_lib.py COMMAND ...
   fix-keepouts IN.dsn AREAS.json OUT.dsn          prints the number removed
   class-widths IN.dsn OUT.json
   force-errors PROJECT.kicad_pro                  rewrites it in place
-  summarize ROUTED_DRC.json INPUT_DRC.json COPPER.json META.json OUT.json
+  summarize ROUTED_DRC.json INPUT_DRC.json COPPER.json META.json OUT.json [ROUTED.kicad_pcb INPUT.kicad_pcb]
+                                                  the boards switch on the Q22.2 copper match
   add-tidiness SUMMARY.json TIDY.json            adds `tidiness`; a missing TIDY.json changes nothing
   netclass-clearance DRC.json                    prints the net-class clearance counts as JSON
   not-graded REASON OUT.json [META.json]"""
@@ -371,14 +496,22 @@ def main(argv):
             json.dump(class_widths(_read(args[0])), f)
     elif command == "force-errors" and len(args) == 1:
         _write(args[0], force_copper_errors(_read(args[0])))
-    elif command == "summarize" and len(args) == 5:
+    elif command == "summarize" and len(args) in (5, 7):
         routed = _load_json(args[0])
         unrouted = _load_json(args[1])
         meta = _load_json(args[3], {})
         if routed is None or unrouted is None:
             summary, code = not_graded("a DRC report is missing or unreadable", meta), EXIT_NOT_GRADED
         else:
-            summary, code = summarize(routed, unrouted, _load_json(args[2], {}), meta)
+            routed_copper = input_copper = None
+            if len(args) == 7:
+                try:
+                    routed_copper, input_copper = read_copper(_read(args[5])), read_copper(_read(args[6]))
+                except OSError:
+                    routed_copper = input_copper = None
+            summary, code = summarize(
+                routed, unrouted, _load_json(args[2], {}), meta, routed_copper, input_copper
+            )
         with open(args[4], "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
         if summary["graded"]:

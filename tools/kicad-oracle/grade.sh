@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Grades a router's session with KiCad's own DRC, an oracle independent of Freerouting's model.
 #
-#   tools/kicad-oracle/grade.sh [--out DIR] [--keep-tracks] PROJECT [--] ENGINE_COMMAND...
+#   tools/kicad-oracle/grade.sh [--out DIR] [--keep-tracks] [--export plugin OPTIONS.json]
+#                               PROJECT [--] ENGINE_COMMAND...
 #
 # PROJECT         a KiCad project directory holding exactly one .kicad_pcb, or the .kicad_pcb
 #                 itself; its .kicad_pro and .kicad_dru (same base name) are the board's rules.
@@ -11,6 +12,14 @@
 # --out           the work directory (default: a new directory under TMPDIR)
 # --keep-tracks   grade the board's existing tracks and vias too (default: strip them first,
 #                 so the engine routes the whole board)
+# --export plugin OPTIONS.json
+#                 route the DSN the KiCad plugin writes (Q22.6): `kicad-plugin/headless_run.py export`
+#                 with OPTIONS.json (a route-options.json) writes the DSN, with the plugin's fix-ups,
+#                 and the router flags the plugin would pass (OUT/work/BASE.args.json); the SES is
+#                 imported with `headless_run.py import`. The flags go into the engine command at
+#                 `{PLUGIN_ARGS}` (one shell-quoted string, for `bash -c`), else right after the
+#                 `{SES}` argument, so the command's own flags come later and win. Without the flag
+#                 the bare `ExportSpecctraDSN` is routed, as before.
 #
 # Steps: stage copies of the .kicad_pcb/.kicad_pro/.kicad_dru; strip tracks and vias; export the
 # DSN with pcbnew.ExportSpecctraDSN; remove the keepouts KiCad exports for rule areas that allow
@@ -20,7 +29,10 @@
 # migrated from the original board's own rules, summary `rules`) and force the copper classes
 # to error; run
 # `kicad-cli pcb drc --severity-all --refill-zones --format json` on the unrouted and the routed
-# board; count copper from the geometry; subtract what the unrouted input already reports.
+# board; count copper from the geometry; count what routing caused (Q22.2): a DRC item is
+# routing-caused when it involves a track or via that the unrouted board does not have at the same
+# nanometre coordinates, width, layer and net (the import also sets each routed via's drill back to
+# its session padstack's, as the plugin does).
 # Writes OUT/summary.json and prints one line. When freerouting-dev is built the summary also has
 # `tidiness` (Q15.2, see the README).
 #
@@ -37,17 +49,28 @@ KICAD_CLI=${KICAD_CLI:-kicad-cli}
 KICAD_PYTHON=${KICAD_PYTHON:-python3}
 LIB="$HERE/oracle_lib.py"
 STEPS="$HERE/kicad_steps.py"
+HEADLESS="$HERE/../../kicad-plugin/headless_run.py"
 
 usage() {
-  echo "usage: $0 [--out DIR] [--keep-tracks] PROJECT_DIR [--] ENGINE_COMMAND... ({DSN} {SES})" >&2
+  echo "usage: $0 [--out DIR] [--keep-tracks] [--export plugin OPTIONS.json] PROJECT_DIR [--] ENGINE_COMMAND... ({DSN} {SES})" >&2
   exit 2
 }
 
-OUT="" KEEP_TRACKS=""
+OUT="" KEEP_TRACKS="" EXPORT=bare PLUGIN_OPTIONS=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --out) OUT=${2:-}; shift 2 || usage ;;
     --keep-tracks) KEEP_TRACKS=--keep-tracks; shift ;;
+    --export)
+      case "${2:-}" in
+        plugin)
+          [[ -f "${3:-}" ]] || { echo "--export plugin needs an OPTIONS.json (a route-options.json)" >&2; exit 2; }
+          EXPORT=plugin
+          PLUGIN_OPTIONS=$(cd "$(dirname "$3")" && pwd)/$(basename "$3")
+          shift 3 ;;
+        bare) EXPORT=bare; shift 2 ;;
+        *) usage ;;
+      esac ;;
     -*) usage ;;
     *) break ;;
   esac
@@ -150,20 +173,46 @@ elif [[ -f "$OUT/unrouted/$BASE.kicad_pro" ]]; then
   cp "$OUT/unrouted/$BASE.kicad_pro" "$OUT/work/rules/$BASE.kicad_pro"
   RULES=board
 fi
-"$KICAD_PYTHON" "$STEPS" export "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.kicad.dsn" \
-  "$OUT/work/areas.json" > "$OUT/work/export.log" 2>&1 ||
-  not_graded "DSN export failed (see $OUT/work/export.log)"
-KEEPOUTS_REMOVED=$(python3 "$LIB" fix-keepouts "$OUT/work/$BASE.kicad.dsn" "$OUT/work/areas.json" \
-  "$OUT/work/$BASE.dsn") || not_graded "keepout fix failed"
+PLUGIN_ARGS=()
+if [[ $EXPORT == plugin ]]; then
+  # The plugin's own export and fix-ups (its rule-area fix-up replaces fix-keepouts), in its own
+  # process: the board is only read, nothing is saved. Writes work/BASE.dsn and work/BASE.args.json.
+  "$KICAD_PYTHON" -I "$HEADLESS" export "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work" "$PLUGIN_OPTIONS" \
+    > "$OUT/work/export.log" 2>&1 || not_graded "the plugin's DSN export failed (see $OUT/work/export.log)"
+  [[ -s "$OUT/work/$BASE.dsn" && -s "$OUT/work/$BASE.args.json" ]] ||
+    not_graded "the plugin's export wrote no DSN or arguments (see $OUT/work/export.log)"
+  mapfile -t PLUGIN_ARGS < <(python3 -c "import json, sys; print(*json.load(open(sys.argv[1]))['args'], sep='\n')" \
+    "$OUT/work/$BASE.args.json")
+  KEEPOUTS_REMOVED=plugin
+else
+  "$KICAD_PYTHON" "$STEPS" export "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.kicad.dsn" \
+    "$OUT/work/areas.json" > "$OUT/work/export.log" 2>&1 ||
+    not_graded "DSN export failed (see $OUT/work/export.log)"
+  KEEPOUTS_REMOVED=$(python3 "$LIB" fix-keepouts "$OUT/work/$BASE.kicad.dsn" "$OUT/work/areas.json" \
+    "$OUT/work/$BASE.dsn") || not_graded "keepout fix failed"
+fi
 python3 "$LIB" class-widths "$OUT/work/$BASE.dsn" "$OUT/work/classwidths.json"
 
 DSN="$OUT/work/$BASE.dsn"
 SES="$OUT/work/$BASE.ses"
 ARGS=()
+PLUGIN_JOINED=$(python3 -c "import shlex, sys; print(shlex.join(sys.argv[1:]))" "${PLUGIN_ARGS[@]}")
+PLUGIN_PLACED=""
 for arg in "${ENGINE[@]}"; do
   arg=${arg//\{DSN\}/$DSN}
-  ARGS+=("${arg//\{SES\}/$SES}")
+  if [[ $arg == *"{PLUGIN_ARGS}"* ]]; then
+    arg=${arg//\{PLUGIN_ARGS\}/$PLUGIN_JOINED}
+    PLUGIN_PLACED=1
+  fi
+  arg=${arg//\{SES\}/$SES}
+  ARGS+=("$arg")
+  if [[ $EXPORT == plugin && -z $PLUGIN_PLACED && $arg == "$SES" ]]; then
+    ARGS+=("${PLUGIN_ARGS[@]}")
+    PLUGIN_PLACED=1
+  fi
 done
+[[ $EXPORT != plugin || -n $PLUGIN_PLACED ]] ||
+  not_graded "--export plugin: the engine command has neither {PLUGIN_ARGS} nor a {SES} argument to put the plugin's router flags after"
 START=$(date +%s.%N)
 (cd "$OUT/work" && "${ARGS[@]}") > "$OUT/work/engine.log" 2>&1
 ENGINE_EXIT=$?
@@ -171,24 +220,37 @@ END=$(date +%s.%N)
 ENGINE_SECONDS=$(python3 -c "import sys; print(round(float(sys.argv[2]) - float(sys.argv[1]), 2))" "$START" "$END")
 
 python3 - "$META" "$PROJECT" "$BASE" "$CLI_VERSION" "$ENGINE_EXIT" "$ENGINE_SECONDS" \
-  "$KEEPOUTS_REMOVED" "$OUT" "${REMOVED_TRACKS:-0}" "$RULES" "${ENGINE[@]}" << 'PY'
+  "$KEEPOUTS_REMOVED" "$OUT" "${REMOVED_TRACKS:-0}" "$RULES" "$EXPORT" "$PLUGIN_OPTIONS" \
+  "${ENGINE[@]}" << 'PY'
 import json, sys
-meta, project, base, version, rc, secs, removed, out, removed_tracks, rules = sys.argv[1:11]
+meta, project, base, version, rc, secs, removed, out, removed_tracks, rules, export, options = sys.argv[1:13]
 removed_tracks = int(removed_tracks)
-json.dump({"project": project, "board": base, "kicad_version": version,
-           "engine_command": " ".join(sys.argv[11:]), "engine_exit": int(rc),
-           "engine_seconds": float(secs), "keepouts_removed": int(removed),
-           "input_tracks_and_vias_removed": removed_tracks, "rules": rules, "out_dir": out},
-          open(meta, "w"), indent=2)
+summary = {"project": project, "board": base, "kicad_version": version,
+           "engine_command": " ".join(sys.argv[13:]), "engine_exit": int(rc),
+           "engine_seconds": float(secs),
+           "keepouts_removed": int(removed) if removed.isdigit() else removed,
+           "input_tracks_and_vias_removed": removed_tracks, "rules": rules, "export": export,
+           "out_dir": out}
+if export == "plugin":
+    summary["plugin_options"] = options
+json.dump(summary, open(meta, "w"), indent=2)
 PY
 META_READY=1
 [[ -s "$SES" ]] || not_graded "the engine wrote no SES (exit $ENGINE_EXIT, see $OUT/work/engine.log)"
 
 python3 "$LIB" strip-placement "$SES" "$OUT/work/$BASE.noplace.ses"
 stage "$OUT/routed"
-"$KICAD_PYTHON" "$STEPS" import "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.noplace.ses" \
-  "$OUT/routed/$BASE.kicad_pcb" > "$OUT/work/import.log" 2>&1 ||
-  not_graded "SES import failed (see $OUT/work/import.log)"
+if [[ $EXPORT == plugin ]]; then
+  # The plugin's own import: the via-drill correction, the zone refill and (for fix_existing)
+  # the locks of the input copper.
+  "$KICAD_PYTHON" -I "$HEADLESS" import "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.noplace.ses" \
+    "$OUT/routed/$BASE.kicad_pcb" "$PLUGIN_OPTIONS" > "$OUT/work/import.log" 2>&1 ||
+    not_graded "SES import failed (see $OUT/work/import.log)"
+else
+  "$KICAD_PYTHON" "$STEPS" import "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.noplace.ses" \
+    "$OUT/routed/$BASE.kicad_pcb" > "$OUT/work/import.log" 2>&1 ||
+    not_graded "SES import failed (see $OUT/work/import.log)"
+fi
 
 for variant in unrouted routed; do
   dir="$OUT/$variant"
@@ -222,7 +284,7 @@ if [[ -x "$FREEROUTING_DEV" ]]; then
     rm -f "$OUT/tidy.json"
 fi
 python3 "$LIB" summarize "$OUT/routed/drc.json" "$OUT/unrouted/drc.json" "$OUT/routed/copper.json" \
-  "$META" "$SUMMARY"
+  "$META" "$SUMMARY" "$OUT/routed/$BASE.kicad_pcb" "$OUT/unrouted/$BASE.kicad_pcb"
 STATUS=$?
 python3 "$LIB" add-tidiness "$SUMMARY" "$OUT/tidy.json"
 echo "summary: $SUMMARY (KiCad $CLI_VERSION)"

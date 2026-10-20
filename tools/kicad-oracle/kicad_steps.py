@@ -10,12 +10,22 @@
 Never imports the freerouting-rs plugin package. Started from the 2026-10-15
 head-to-head scripts prep.py, import_ses.py and stats.py. Uses
 BOARD.Tracks() (GetTracks() fails in KiCad 10.0.5).
+
+`import` also applies the plugin's via-drill correction (Q22.2): KiCad's
+ImportSpecctraSES takes a routed via's drill from its net class, not from the
+session's padstack (`Via[0-3]_600:300_um` is 0.6 / 0.3), and the plugin sets it
+back (`ses_vias.vias`, `kicad_board.fix_via_drills`). Both modules are plain
+Python files loaded by path from kicad-plugin/freerouting_rs, never through the
+plugin package.
 """
 
 import json
 import sys
+from pathlib import Path
 
 import pcbnew
+
+PLUGIN_MODULES = Path(__file__).resolve().parent.parent.parent / "kicad-plugin" / "freerouting_rs"
 
 
 def dsn_point(point):
@@ -74,13 +84,38 @@ def export(path, dsn, areas_json):
     return 0
 
 
+class _TracksBoard:
+    """`fix_via_drills` calls GetTracks(), which fails in KiCad 10.0.5; Tracks() works."""
+
+    def __init__(self, board):
+        self._board = board
+
+    def GetTracks(self):
+        return self._board.Tracks()
+
+
+def fix_via_drills(board, ses):
+    """The plugin's correction of the vias ImportSpecctraSES drilled with the class's drill.
+    Returns the number of vias changed."""
+    sys.path.insert(0, str(PLUGIN_MODULES))
+    try:
+        import kicad_board
+        import ses_vias
+    finally:
+        sys.path.remove(str(PLUGIN_MODULES))
+    with open(ses, encoding="utf-8", errors="replace") as f:
+        session_vias = ses_vias.vias(f.read())
+    return kicad_board.fix_via_drills(_TracksBoard(board), session_vias)
+
+
 def import_session(unrouted, ses, out):
     board = pcbnew.LoadBoard(unrouted)
     if not pcbnew.ImportSpecctraSES(board, ses):
         print("SES import failed", file=sys.stderr)
         return 1
+    changed = fix_via_drills(board, ses)
     pcbnew.SaveBoard(out, board)
-    print("SES imported")
+    print("SES imported, fix_via_drills reported %d" % changed)
     return 0
 
 

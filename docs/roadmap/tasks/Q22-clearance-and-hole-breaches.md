@@ -243,7 +243,7 @@ Sequencing:
         and dropped GND pours avoid that kind.
       - **Verdict: the run setup, not a floor.** No run has checked this yet; Q22.9 runs it.
 
-- [ ] **Q22.2 — The grader counts what routing caused.** Two changes to the grader:
+- [x] **Q22.2 — The grader counts what routing caused.** Two changes to the grader:
   - `oracle_lib` takes the routed and input copper (uuid → geometry, from both boards) and applies
     this checklist's definition. An item with a track or via that the input doesn't have, at the
     same nanometre geometry, is routing-caused. Any other item is pre-existing, whatever the input
@@ -258,13 +258,72 @@ Sequencing:
       - a moved input track is routing-caused;
       - a routed track is routing-caused;
     - the saved N04.3 `center` grades, summarized again with no new KiCad run:
-      - pcietest: `clearance` 237 → 38 and `hole_clearance` 70 → 0;
+      - pcietest: `clearance` 237 → 127 and `hole_clearance` 70 → 0 (amended 2026-10-20, was 38);
       - picodebugger: 1 → 0;
-      - cm4, nudac, ch32v003, mydevboard and vna-usb-pd unchanged, because their copper moved
+      - nudac `hole_clearance` 18 → 54 (amended 2026-10-20, was unchanged);
+      - cm4, ch32v003, mydevboard and vna-usb-pd unchanged, because their copper moved
         (that is Q22.3);
     - canary-pwr's saved `center` session, imported again and graded with one DRC:
       `annular_width` 4 → 0;
     - `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` passes.
+  - *Partial 2026-10-20:* the code, the tests and the canary and picodebugger clauses are in. Two
+    numbers of the second Accept clause differ from the prediction, and the grader is right in both
+    (the prediction came from Q22.1's classification of the old `real` set).
+    - **Done.**
+      - `oracle_lib.read_copper` reads the segments, arcs and vias of both `.kicad_pcb` files (uuid
+        to nanometre geometry), and `split_routing_caused` applies the definition above. `grade.sh`
+        passes both boards to `summarize` (`routing_caused_basis: copper`; five arguments keep the
+        old match and say `report`).
+      - `kicad_steps.py import` runs the plugin's `ses_vias.vias` and
+        `kicad_board.fix_via_drills`, loaded by path (through `Tracks()`, which works in 10.0.5).
+      - `starved_thermal` and `isolated_copper` items name a zone and no track, so they keep the old
+        report match (`FILL_TYPES`, pinned by `FillTypesTest`): a thermal that routing starved still
+        counts. This is the one place the definition was narrowed.
+      - Tests: `tools/kicad-oracle/tests/test_routing_caused.py` (18: pair in the other order,
+        pair absent from the input report, moved track at 1 nm either way, moved or re-drilled
+        via, routed track, routed track over a footprint line with an input twin, arc, unknown
+        uuid, FILL_TYPES, `summarize`, the `summarize` command) and `test_import_via_drill.py`
+        (needs `pcbnew`; a `Via[0-1]_600:300_um` on a 0.8 / 0.4 mm class: 0.6 / 0.4 without the fix,
+        0.6 / 0.3 with it, checked by removing the call). `python3 -m unittest discover -s
+        tools/kicad-oracle/tests -p 'test_*.py'`: 35 tests OK.
+      - Saved N04.3 `center` grades, summarized again with no KiCad run
+        (`oracle_lib.py summarize` with the two boards, `drc_real_by_type` old to new):
+
+        | Row | Before | After |
+        |---|---|---|
+        | picodebugger | clearance 1 | none (pair listed in the other order) |
+        | pcietest | clearance 237, hole_clearance 70, shorting_items 68 | clearance **127**, hole_clearance 0, shorting_items 125 |
+        | cm4-edge-ai | clearance 25 | clearance 25 |
+        | ch32v003 | clearance 5, starved_thermal 1 | clearance 5, starved_thermal 1 |
+        | mydevboard | clearance 1 | clearance 1 |
+        | vna-usb-pd | clearance 2 | clearance 2 |
+        | nudac | hole_clearance 18 | hole_clearance **54** |
+
+      - canary-pwr's saved `center` session, imported again with `kicad_steps.py import` (the
+        fix set 4 vias from drill 0.4 to 0.3: 123 + 4 vias at 0.6 / 0.3, none at 0.6 / 0.4) and
+        graded with one `kicad-cli` DRC: `annular_width` 4 to 0 (`track_dangling` 1 and
+        `via_dangling` 33 unchanged; KiCad unconnected 48 as before).
+    - **The two differences.**
+      - pcietest `clearance` is 127, not 38. Of the 127 routed items, 89 were hidden by the old
+        match: the input report lists J8's pad 1 against the footprint line at the same spot, with
+        the track's net (`[unconnected-(J8-Pin_1-Pad1)]`), and the old matcher called the routed
+        track against that line its twin. All 127 involve a track that has no nanometre or 1 µm
+        match in the input (checked with a throwaway script over the saved boards: 127 `new`, 0 `moved`). Q22.1's 38 counted only the items the old match
+        left. `shorting_items` 68 to 125 is the same cause. All of it is Q22.4's.
+      - nudac `hole_clearance` is 54, not 18. 54 items involve an input track or via that the DSN
+        round trip moved by under 1 µm (39 with one moved item, 15 with two). The old match hid
+        36 of them against the input's twin. They are routing-caused by this item's definition
+        ("moved input copper counts"), and Q22.3 restores them.
+    - **Other rows that the definition changes** (all moved input copper, to be restored by Q22.3):
+      vfo-controller 0 to `copper_edge_clearance` 3, `track_dangling` 1, `via_dangling` 1;
+      openmuscle-flexgrid 0 to `via_dangling` 1. flight-computer `track_dangling` 1 to 0 (an input
+      track). pcietest `solder_mask_bridge` 103 and `track_dangling` stay pre-existing pad pairs,
+      and `track_dangling` 1 appears (moved).
+    - *Done 2026-10-20:* decided 2026-10-20: the second Accept clause is amended to the grader's
+      numbers (pcietest `clearance` 127, nudac `hole_clearance` 54). The predicted 38 and
+      "unchanged" came from Q22.1's classification of the old matcher's `real` set. The 127 are
+      Q22.4's (routed tracks over footprint copper lines), the 54 Q22.3's (input copper moved
+      under 1 µm). The `FILL_TYPES` narrowing stays. Every clause above now holds.
 
 - [ ] **Q22.3 — Input copper comes back at its own coordinates.** After `ImportSpecctraSES`, each
   imported track or via that matches an unlocked original of the same net, layer and width (or
@@ -325,7 +384,7 @@ Sequencing:
       pinning test;
     - `cargo fmt`, `clippy` and the touched crates' tests pass.
 
-- [ ] **Q22.6 — The grader can route the plugin's export.**
+- [x] **Q22.6 — The grader can route the plugin's export.**
   - `grade.sh --export plugin OPTIONS.json` exports with `headless_run.py export` (the plugin's
     fix-ups, and its router flags ahead of the engine command's), and imports with
     `headless_run.py import`.
@@ -336,6 +395,31 @@ Sequencing:
     - canary-pwr (N04.3's `ab786fcc`) routed with the `inside_pad` flags on the plugin export: 0
       routing-caused `clearance` (1 before, FID3);
     - the README documents the flag.
+  - *Done 2026-10-20:*
+    - `grade.sh --export plugin OPTIONS.json`: the DSN comes from `headless_run.py export` on the
+      unrouted board (`OUT/work/BASE.dsn` and `BASE.args.json`), the plugin's router flags go into
+      the engine command at `{PLUGIN_ARGS}` or right after its `{SES}` argument (the command's own
+      flags come later and win; a command with neither is not graded), and the SES is imported by
+      `headless_run.py import`. `meta.json` records `export` and `plugin_options`. Without the flag
+      the script is unchanged apart from Q22.2's `summarize` arguments. `headless_run.py` needed no
+      change.
+    - `tools/kicad-oracle/tests/run-plugin-export-test.sh WORK_DIR` (legacy board of
+      `make_legacy_board.py`, a recording engine): 7 `ok`, no `FAIL`. The graded DSN is
+      byte-identical to the one `headless_run.py export` writes to the same path (the DSN's first
+      line names its own path, so the test exports again to it and compares); it carries the 8
+      edge-strip keepouts that the bare export lacks; the engine got `--max-passes 3 --seed 7` and
+      the board minimums after `{SES}` and before its own `--engine-flag`; `{PLUGIN_ARGS}` in a
+      `bash -c` string; no place for the flags gives exit 2 with `graded: false`; without the flag the
+      engine got only `DSN SES --engine-flag` and `export` is `bare`.
+    - canary-pwr (`n04q16/canary-ab786fcc`, `--keep-tracks`, `{"schema": 4}` options, release CLI
+      built from main `91b540d`, `--router.pad_contacts=inside_pad`, `ulimit -v 8000000`):
+      routing-caused `clearance` **0** through the plugin export (`drc_real_by_type`
+      `starved_thermal` 1, `track_dangling` 9; KiCad unconnected 58; 227 s; the plugin's DSN had
+      128 edge strips and 6 pad circles). The control, same binary and flags on the bare export:
+      `clearance` 1, FID3 (`pad clearance 0.6000 mm; actual 0.5235 mm`), `track_dangling` 15,
+      unconnected 74, 212 s. The plugin arm routes 16 fewer unconnected items; the arms also differ
+      in `--router.autorouter.sweep=free`, `--router.min_trace_width_um=150` and the plugin's 128 edge strips and 6 pad circles, so the 16 is not a measurement of the flag.
+    - README: "`--export plugin OPTIONS.json` (Q22.6)", the summary fields and the files table.
 
 - [ ] **Q22.7 — Register the re-measurement.** Write `docs/roadmap/prereg/Q22.json` and
   `tools/bench/sets/q22-clearance.txt` before any number.

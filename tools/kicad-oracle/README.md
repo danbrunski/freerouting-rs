@@ -9,7 +9,8 @@ and starts from the scripts of the 2026-10-15 head-to-head
 `summarize.py`, `run_board.sh`).
 
 ```sh
-tools/kicad-oracle/grade.sh [--out DIR] [--keep-tracks] <project-dir or .kicad_pcb> -- \
+tools/kicad-oracle/grade.sh [--out DIR] [--keep-tracks] [--export plugin OPTIONS.json] \
+  <project-dir or .kicad_pcb> -- \
   java -jar freerouting.jar -de {DSN} -do {SES} --gui.enabled=false \
   --router.autorouter.max_passes=5 --router.optimizer.enabled=false
 tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine command>
@@ -32,7 +33,14 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
    `.kicad_pcb`. On `canary-pwr` that is the 26 x 26 mm fan inlet on B.Cu.
 3. Runs the engine with `{DSN}` and `{SES}` replaced.
 4. Strips the SES `(placement ...)` scope and imports it with
-   `pcbnew.ImportSpecctraSES` into a copy of the unrouted board.
+   `pcbnew.ImportSpecctraSES` into a copy of the unrouted board. The import
+   then does what the plugin does (`fix_via_drills`, K09; Q22.2): KiCad takes a
+   routed via's diameter from the session's padstack but its drill from the
+   net class, so a `Via[0-3]_600:300_um` on a net of a 0.8 / 0.4 mm class came
+   back 0.6 / 0.4 and KiCad's DRC reported an annular ring of 0.1 mm
+   (canary-pwr, 4 `annular_width` items); the drill is set back to the
+   padstack's 0.3 mm. `kicad_steps.py` loads `kicad-plugin/freerouting_rs/`'s
+   `ses_vias.py` and `kicad_board.py` by path, never the plugin package.
 5. Copies the board's **original** `.kicad_pro`/`.kicad_dru` over both staged
    boards (a router must not grade itself under rules it wrote). A project
    without a `.kicad_pro` gets the one KiCad wrote when step 2 first saved the
@@ -59,15 +67,34 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
    under-width length. Net-to-class widths come from the `(class ...)` scopes
    of the DSN KiCad exported (`GetEffectiveNetClass()` returned an unwrapped
    object in 10.0.5).
-7. Subtracts what the unrouted input already reports: a routed item is
-   pre-existing when an input item has the same type and net pair (from the
-   `[net]` names in the item descriptions) and lies within 0.5 mm. Writes
-   `OUT/summary.json` and prints one line.
+7. Counts what routing caused (Q22.2). `oracle_lib.read_copper` reads every
+   segment, arc and via of the routed and the unrouted `.kicad_pcb` (uuid to
+   geometry in nanometres). A DRC item is **routing-caused** when at least one
+   of its items is a track or via that the unrouted board does not have with
+   the same coordinates (to the nanometre; the order of a track's ends does
+   not matter), width, layer and net (a via: position, diameter, drill, layers
+   and net). Pads, footprint graphics, text, zones and unchanged input tracks
+   and vias are input copper, and an item made only of input copper is
+   pre-existing, whatever the input report listed: KiCad prints a pair in
+   either order, once per copper layer, and stops a type at its cap, so the two
+   reports do not list the same pairs. The old match (same type, net pair and
+   position within 0.5 mm) counted a pair that the input report listed in the
+   other order twice, and hid a routed track over a footprint line when the
+   input listed the line against a same-net pad (pcietest). The exception:
+   `starved_thermal` and `isolated_copper` items name only a zone and a pad,
+   so no track tells input from routing there; they keep the old report match,
+   and a thermal that routing starved still counts. Input copper that the
+   DSN round trip moved by 1 nm or more is routing-caused until Q22.3 restores
+   it. Writes `OUT/summary.json` and prints one line. Without the two boards
+   (`oracle_lib.py summarize` with five arguments) the old match applies and
+   `routing_caused_basis` says `report`.
 
 `summary.json`: `graded`, `kicad_version`, `board`, `engine_command`,
-`engine_exit`, `engine_seconds`, `keepouts_removed`,
-`input_tracks_and_vias_removed`, `rules`, `drc_real` and `drc_real_by_type`
-(router-attributable), `preexisting`, `unconnected_items` and
+`engine_exit`, `engine_seconds`, `keepouts_removed` (`plugin` with
+`--export plugin`), `input_tracks_and_vias_removed`, `rules`, `export` (`bare` or
+`plugin`, with `plugin_options`), `drc_real` and `drc_real_by_type`
+(router-attributable), `preexisting`, `routing_caused_basis` (`copper`, or
+`report` for the old match), `unconnected_items` and
 `input_unconnected_items`, `routed_by_type`, `input_by_type`,
 `capped_types`, `netclass_clearance`, `copper`, `originals_unchanged`,
 `exit_code`; or `graded: false` with a `reason`.
@@ -100,6 +127,30 @@ a failed export or import, no SES). "Not graded" never counts as a pass.
 Copper narrower than its net class is reported, not part of the exit status:
 D8 allows a short neck-down at a pin, whose bound is Q02's.
 
+## `--export plugin OPTIONS.json` (Q22.6)
+
+By default the grader routes KiCad's bare `ExportSpecctraDSN` plus the rule-area
+keepout fix of step 2. A KiCad user routes the DSN the **plugin** writes, with
+its fix-ups (edge strips, pad-local clearances, class widths, pours) and its
+router flags, so a measurement that routes the bare export can pass where a
+plugin run fails (canary-pwr's FID3 pad clearance: 1 `clearance` item). With
+`--export plugin OPTIONS.json` (a `route-options.json`, what the plugin's dialog
+saves; `{"schema": 4}` is the defaults):
+
+- the DSN is exported by `python3 -I kicad-plugin/headless_run.py export` on the
+  unrouted board into `OUT/work/`, together with `BASE.args.json`, the router
+  flags `RouteOptions.to_args` gives plus the board's minimums; the rule-area fix
+  of step 2 is the plugin's own;
+- the engine command gets those flags at `{PLUGIN_ARGS}` (replaced by one
+  shell-quoted string, for `bash -c "... {PLUGIN_ARGS} ..."`), or else right
+  after its `{SES}` argument, so the command's own flags come later and win. A
+  command with neither is not graded (exit 2);
+- the SES is imported by `headless_run.py import` (the via-drill fix, the zone
+  refill, and the input copper locked for `fix_existing`).
+
+Without the flag nothing changes. `tests/run-plugin-export-test.sh WORK_DIR`
+checks that the graded DSN is byte-identical to `headless_run.py export`'s.
+
 ## KiCad installs
 
 `KICAD_CLI` (default `kicad-cli`) and `KICAD_PYTHON` (default `python3`, which
@@ -128,11 +179,13 @@ comparison.
 |---|---|---|
 | `grade.sh` | bash | the steps above |
 | `grade-set.sh` | bash | `grade.sh` over a set file, `grades.tsv` |
-| `kicad_steps.py` | KiCad's python (`pcbnew`) | strip, export, import, copper statistics, pad list (tests) |
-| `oracle_lib.py` | plain python3 | keepout fix, SES placement strip, class widths, severity forcing, pre-existing subtraction, summary |
+| `kicad_steps.py` | KiCad's python (`pcbnew`) | strip, export, import (with the via-drill fix), copper statistics, pad list (tests) |
+| `oracle_lib.py` | plain python3 | keepout fix, SES placement strip, class widths, severity forcing, `.kicad_pcb` copper reader, routing-caused split (Q22.2), summary |
 | `dangling_visible.py` | KiCad's python (`pcbnew`) | splits KiCad's `via_dangling`/`track_dangling` into what the DSN shows and the plane-fill limit (a via or track end inside a DSN plane of its net, outside KiCad's fill), Q16.4 |
 | `tests/test_dangling_visible.py` | plain python3 | unit tests of its DSN plane reader and point-in-polygon test |
-| `tests/test_oracle_lib.py` | plain python3 | unit tests: `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` |
+| `tests/test_oracle_lib.py`, `tests/test_routing_caused.py` | plain python3 | unit tests: `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` |
+| `tests/test_import_via_drill.py` | KiCad's python (skipped without `pcbnew`) | the import sets a `Via[0-1]_600:300_um` on a 0.8 / 0.4 mm class to drill 0.3 mm |
+| `tests/run-plugin-export-test.sh` | bash + KiCad, no Java | Q22.6: `--export plugin` routes the plugin's DSN (byte-identical to `headless_run.py export`'s), passes its flags, `{PLUGIN_ARGS}`, not graded without a place for them |
 | `tests/run-oracle-tests.sh` | bash + KiCad + Java | end-to-end checks (via in pad, graze under a warning-level clearance, pre-existing edge item, missing `kicad-cli`, KiCad processes and checksums) |
 | `tests/inject.py`, `tests/make_edge_board.py` | python3 / KiCad's python | session edits and the synthetic edge board for those checks |
 | `tests/run-legacy-rules-test.sh` | bash + KiCad, no Java | Q19.2: a KiCad 4 board without a `.kicad_pro` grades under its own 0.15 mm net-class clearance (`rules: board`), not KiCad's 0.2 mm default; a 0.12 mm gap is still reported |
