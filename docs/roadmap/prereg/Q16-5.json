@@ -19,16 +19,16 @@
   },
   "arms": {
     "enhanced-default": {
-      "engine": "freerouting-rs release CLI at main 1dac842 plus Q16.5's diff (the stub cleanup's guard on its contacts' touch graph being connected, quality::stubs::contacts_are_connected), built from target/orchestrator/q165/wt; profile enhanced as it is there; through kicad-plugin/headless_run.py (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
+      "engine": "freerouting-rs release CLI of main b98074e (amendments 1 and 2; Q16.5's guard and Q18's board minimums are on main), one build for every arm, built at target/orchestrator/n04q16/target from the detached worktree target/orchestrator/n04q16/eng; profile enhanced as it is there; through kicad-plugin/headless_run.py of the same checkout (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
       "options": {
         "schema": 4,
         "profile": "enhanced"
       },
-      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --result-json {RESULT} {ARGS}, where {ARGS} is the argument list kicad-plugin/headless_run.py export writes for the options above (RouteOptions.to_args: --router.min_trace_width_um=<the board's Board Setup min_track_width> when above 0, then --router.autorouter.sweep=free; no class widths, fixed pours, dropped pours, pass limit or ripup cost)",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --progress json --result-json {RESULT} {ARGS}, where {ARGS} is the argument list kicad-plugin/headless_run.py export writes for the options above (RouteOptions.to_args: --router.min_trace_width_um=<the board's Board Setup min_track_width> when above 0, then --router.autorouter.sweep=free; no class widths, fixed pours, dropped pours, pass limit or ripup cost; plus, from main b98074e, the board's Board Setup minimums --router.board_minimums.{track_width,via_diameter,via_drill,via_annular}_um and --router.copper_to_edge_clearance_um, which export_flow.router_args adds by itself)",
       "what": "baseline: the plugin's default enhanced options (profile_defaults('enhanced'), the options a new board starts from), the cleanup unset"
     },
     "enhanced-default+cleanup": {
-      "engine": "as enhanced-default",
+      "engine": "freerouting-rs release CLI of main b98074e (amendments 1 and 2; Q16.5's guard and Q18's board minimums are on main), one build for every arm, built at target/orchestrator/n04q16/target from the detached worktree target/orchestrator/n04q16/eng; profile enhanced as it is there; through kicad-plugin/headless_run.py of the same checkout (the plugin's export, fix-ups, arguments and ImportSpecctraSES), WSL KiCad 10.0.7",
       "options": {
         "schema": 4,
         "profile": "enhanced"
@@ -48,7 +48,7 @@
       "demos/complex_hierarchy/complex_hierarchy.kicad_pcb (stripped)": "c01d7d83138fd5946d233e637cf748470659e366aac5005c3df19bd459310e52"
     }
   },
-  "grading": "kicad-cli pcb drc --refill-zones --save-board --severity-all --format json on the board ImportSpecctraSES saved (canary-pwr also --schematic-parity), twice, on two copies of the project made after the import; canary's via_in_pad.py and inner_tracks.py from the d6199b48 archive (WSL KiCad python); tools/kicad-oracle/dangling_visible.py on the first saved board, its DRC report and the DSN of the run. drc_real = error-severity violations other than unconnected_items and starved_thermal, minus the same types on the unrouted input (graded the same way, twice), with solder_mask_bridge taken as the smaller count of the two gradings on both sides; below_minimum = the track_width errors",
+  "grading": "kicad-cli pcb drc --refill-zones --save-board --severity-all --format json on the board ImportSpecctraSES saved (canary-pwr also --schematic-parity), once per distinct session (amendment 1), under the project's own .kicad_pro with its copper severities forced to error (tools/kicad-oracle/oracle_lib.py force-errors, as grade.sh does; amendment 2); canary's via_in_pad.py and inner_tracks.py from the d6199b48 archive (WSL KiCad python); tools/kicad-oracle/dangling_visible.py on the saved board, its DRC report and the DSN of the run. drc_real, below_minimum, edge_clearance, hole_clearance, clearance: routed minus the unrouted input (graded the same way) by type; solder_mask_bridge is left out of drc_real",
   "metrics": [
     {
       "name": "via_in_pad",
@@ -58,6 +58,24 @@
     },
     {
       "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "edge_clearance",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "hole_clearance",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance",
       "role": "hard",
       "kind": "int",
       "direction": "lower"
@@ -128,7 +146,21 @@
       "after": "the registration and the prepared inputs (hashes, scripts); before any registered route or grade of either arm on any board, and before any input grade",
       "reason": "decided 2026-10-20: measurement runs stay a few minutes: every board but canary-pwr routes in well under a minute, the whole run takes minutes, one KiCad grade per distinct session. tinytapeout-demo's routes took 1038.3 and 1113.9 s (target/orchestrator/vc/scratch/runs/tinytapeout-demo/, graded runs of the Rust engine), and One-Air-Max has no recorded route time; the double grading would grade every session twice",
       "changes": "(1) Boards: files keeps canary-pwr (canary d6199b48, plugin path), sonde-xilinx (0.5 s graded, target/orchestrator/p04/runs/oracle-tree-nodes) and complex_hierarchy (14.1 s graded, target/orchestrator/meas/runs/x02); One-Air-Max (no recorded route time) and tinytapeout-demo (1038.3 to 1113.9 s) are dropped. min_boards 3 is met by the three. (2) Grading: one kicad-cli DRC per distinct session and one per input (no second copy); drc_real leaves solder_mask_bridge out (the checklist's alternative, 'drc_real excluding it', chosen here before any number) instead of the smaller count of two gradings; every other number is that grading's. Scripts: target/orchestrator/q165/scratch/q165q-arm.sh, input165q.sh and analyze165q.py (sha256 bdf76c6c..., cb8bd340..., 40827ab0...), q165-arm.sh, input165.sh and analyze165.py with one DRC, the router under the cap below, and the three rows. (3) Determinism: the candidate's rerun is routed and compared with cmp, not graded (q165q-arm.sh with GRADE=0). (4) Every route runs under ulimit -v 8000000 with timeout 600 for canary-pwr and timeout 120 for the demos, in place of timeout -k 10 3600; a timeout leaves the measurement incomplete. (5) Engine: Q16.5's diff is on main, so the arms run one release build of main at the run (--version in the note) with the main checkout's kicad-plugin scripts. Nothing else changes: question, options, metrics, hard guards, totals block"
+    },
+    {
+      "date": "2026-10-20",
+      "after": "amendment 1; before any registered route or grade of either arm on any board, and before any input grade (one smoke run of the scripts on the KiCad microwave demo, which is no board of this registration)",
+      "reason": "decided 2026-10-20: (1) manufacturing rules are absolute: routing-caused below_minimum, copper_edge_clearance, hole_clearance, clearance, via_diameter and annular_width are 0, graded under the board's own rules; (2) every route gets the board's minimums as the plugin passes them (Q18, main b98074e); (3) KiCad-graded rows use only KiCad 6+ projects with their own .kicad_pro (the three rows have one: canary-pwr's d6199b48 archive and the two demos' copied .kicad_pro); (4) two arms, one KiCad grade per distinct session",
+      "changes": "(1) Metrics: below_minimum is the routing-caused track_width + via_diameter + annular_width + drill_out_of_range errors (was the track_width errors, raw); new hard metrics edge_clearance (copper_edge_clearance), hole_clearance and clearance (routing-caused, routed minus input); via_in_pad is the routed count minus the input's. A candidate value above 0 is a hard breach; a breach identical in both arms that comes from a known open engine bug (the Margin-layer edge clearance the DSN does not carry yet, Q18.5) is reported next to the verdict and not counted against the candidate (the gate cannot tell: the judgement reads its output and the table). (2) The arms are unchanged (the plugin's default enhanced options); main b98074e's plugin passes the Board Setup minimums by itself (export_flow.router_args), so the arms' arguments now carry --router.board_minimums.* and --router.copper_to_edge_clearance_um too. (3) Grading: the project's .kicad_pro with its copper severities forced to error before every DRC (inputs too), one DRC per distinct session: where the base and cleanup SES are byte-identical (cmp) the cleanup arm takes the base grade. (4) Scripts (target/orchestrator/n04q16/scratch/, sha256 prefixes): q165-all.sh (fbc36ebc), q165r-arm.sh (fbf2db91; stages route and grade), q165r-input.sh (b158f794) and analyze165r.py (83218173), replacing q165q-arm.sh, input165q.sh and analyze165q.py; the inputs (canary d6199b48 archive, stripped demos, default-options.json) are the registered ones in target/orchestrator/q165/scratch. (5) Engine: one release build of main b98074e; the plugin scripts of the same checkout. Boards, options, the totals block, determinism and the timeouts (600/120 s under ulimit -v 8000000) are unchanged."
     }
   ],
-  "seen_before_registration": "no routing number of either arm on these boards under this registration's engine. Before the registration: the coordinator's report that canary d6199b48 has 136 KiCad unconnected unrouted and routes to 18 on the plugin path (engine and options not given to this registration); the Board Setup minimums and class widths above (read from the .kicad_pro files), the stripped boards' hashes and the routed demos' pad and via counts (from the files). Q16.4's graded runs (other boards, other options) motivated the guard change and the double grading."
+  "seen_before_registration": "no routing number of either arm on these boards under this registration's engine. Before the registration: the coordinator's report that canary d6199b48 has 136 KiCad unconnected unrouted and routes to 18 on the plugin path (engine and options not given to this registration); the Board Setup minimums and class widths above (read from the .kicad_pro files), the stripped boards' hashes and the routed demos' pad and via counts (from the files). Q16.4's graded runs (other boards, other options) motivated the guard change and the double grading.",
+  "metric_definitions": {
+    "below_minimum": "raw, routing-caused (decided 2026-10-20: manufacturing rules are absolute): the routed board's KiCad errors minus the unrouted input's, by type, track_width + via_diameter + annular_width + drill_out_of_range (amendment 1 had the track_width errors, raw)",
+    "edge_clearance": "raw, routing-caused: copper_edge_clearance errors, routed minus input",
+    "hole_clearance": "raw, routing-caused: hole_clearance errors, routed minus input",
+    "clearance": "raw, routing-caused: clearance errors, routed minus input",
+    "via_in_pad": "canary's via_in_pad.py on the saved routed board minus the same count on the input board (a via the input already had is not counted)",
+    "drc_real": "error-severity violations other than unconnected_items, starved_thermal and solder_mask_bridge, routed minus input, by type (amendment 1)"
+  }
 }

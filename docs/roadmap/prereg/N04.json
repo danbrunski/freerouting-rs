@@ -16,10 +16,10 @@
     },
     "min_boards": 3
   },
-  "engine": "freerouting-rs release CLI of main at the run (amendment 3; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
+  "engine": "freerouting-rs release CLI of main b98074e (amendments 3 and 4; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
   "arms": {
     "center": {
-      "engine": "freerouting-rs release CLI of main at the run (amendment 3; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
+      "engine": "freerouting-rs release CLI of main b98074e (amendments 3 and 4; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
       "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.pad_contacts=center",
       "settings": {
         "router.pad_contacts": "center"
@@ -27,7 +27,7 @@
       "what": "baseline: Java's rule, a trace end touches a pin only at its centre (unset)"
     },
     "inside_pad": {
-      "engine": "freerouting-rs release CLI of main at the run (amendment 3; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
+      "engine": "freerouting-rs release CLI of main b98074e (amendments 3 and 4; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
       "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.pad_contacts=inside_pad",
       "settings": {
         "router.pad_contacts": "inside_pad"
@@ -55,121 +55,121 @@
       "demo-complex_hierarchy": {
         "board": "demo-complex_hierarchy",
         "input": "/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=203.2 --router.board_minimums.via_diameter_um=889 --router.board_minimums.via_drill_um=508 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "demo-ecc83-pp": {
         "board": "demo-ecc83-pp",
         "input": "/usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "demo-pic_programmer": {
         "board": "demo-pic_programmer",
         "input": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=250 --router.board_minimums.via_diameter_um=900 --router.board_minimums.via_drill_um=500 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "demo-sonde-xilinx": {
         "board": "demo-sonde-xilinx",
         "input": "/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=203.2 --router.board_minimums.via_diameter_um=889 --router.board_minimums.via_drill_um=508 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "cc1101-module-cc1101-module": {
         "board": "cc1101-module-cc1101-module",
         "input": "target/corpus/projects/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=50 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "ch32v003-usb-devboard-ch32v003-usb-devboard": {
         "board": "ch32v003-usb-devboard-ch32v003-usb-devboard",
         "input": "target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=203.2 --router.board_minimums.via_diameter_um=457.2 --router.board_minimums.via_drill_um=203.2 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "cm4-edge-ai-carrier-cm4-edge-ai-carrier": {
         "board": "cm4-edge-ai-carrier-cm4-edge-ai-carrier",
         "input": "target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.via_diameter_um=450 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "flight-computer-core-board": {
         "board": "flight-computer-core-board",
         "input": "target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=250 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "laser-backplane-dvi-laserbackplane-dvi": {
         "board": "laser-backplane-dvi-laserbackplane-dvi",
         "input": "target/corpus/projects/laser-backplane-dvi-laserbackplane-dvi/laser-backplane-dvi-laserbackplane-dvi.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=600 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "macroprocessor-diode-matrix-rom-dip": {
         "board": "macroprocessor-diode-matrix-rom-dip",
         "input": "target/corpus/projects/macroprocessor-diode-matrix-rom-dip/macroprocessor-diode-matrix-rom-dip.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "mydevboard-rp2040dev": {
         "board": "mydevboard-rp2040dev",
         "input": "target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "nudac-nudac": {
         "board": "nudac-nudac",
         "input": "target/corpus/projects/nudac-nudac/nudac-nudac.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=152.4 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=254 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "openmuscle-flexgrid-om-flexgrid-rigid-pcb": {
         "board": "openmuscle-flexgrid-om-flexgrid-rigid-pcb",
         "input": "target/corpus/projects/openmuscle-flexgrid-om-flexgrid-rigid-pcb/openmuscle-flexgrid-om-flexgrid-rigid-pcb.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "pcietestpcb-pcietest": {
         "board": "pcietestpcb-pcietest",
         "input": "target/corpus/projects/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=127 --router.board_minimums.via_diameter_um=300 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "picodebugger-picoprobetester": {
         "board": "picodebugger-picoprobetester",
         "input": "target/corpus/projects/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=150 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.hole_clearance_um=200",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "slice-dcmt-bread-slice": {
         "board": "slice-dcmt-bread-slice",
         "input": "target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "solarmeshtasticnode-meshtasticnode-bq25185": {
         "board": "solarmeshtasticnode-meshtasticnode-bq25185",
         "input": "target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=90 --router.board_minimums.via_diameter_um=450 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=125 --router.copper_to_edge_clearance_um=200 --router.hole_clearance_um=200",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "vfo-controller-catvfoctrl": {
         "board": "vfo-controller-catvfoctrl",
         "input": "target/corpus/projects/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "vna-usb-pd": {
         "board": "vna-usb-pd",
         "input": "target/corpus/projects/vna-usb-pd/vna-usb-pd.kicad_pcb",
-        "ROW_FLAGS": "",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=130 --router.board_minimums.via_diameter_um=508 --router.board_minimums.via_drill_um=254 --router.board_minimums.via_annular_um=127 --router.copper_to_edge_clearance_um=10",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
       "canary-pwr": {
         "board": "canary-pwr",
-        "input": "../canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
-        "ROW_FLAGS": "",
+        "input": "target/orchestrator/n04q16/canary-ab786fcc/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
+        "ROW_FLAGS": "--router.board_minimums.track_width_um=150 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       }
     },
@@ -197,7 +197,7 @@
       "canary-pwr": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1"
     }
   },
-  "grading": "WSL KiCad 10.0.7 for every row, one job at a time: tools/kicad-oracle/grade.sh --keep-tracks <input> -- <arm command>. When two arms' sessions are byte-identical the session is graded once. A row grade.sh cannot grade (exit 2) falls back to the router's unrouted count, as the totals block's signal says. The canary-pwr sessions go to target/canary-handoff/ for canary's official grade",
+  "grading": "WSL KiCad 10.0.7 for every row, one job at a time, by target/orchestrator/n04q16/scratch/n04-row.sh: tools/kicad-oracle/grade.sh --keep-tracks <input> -- <center arm command>; the inside_pad arm is routed on the center run's exported DSN and graded (grade.sh with the engine `cp <ses> {SES}`) only when its SES differs from center's (cmp); equal sessions share one grade. The grade is under the board's own rules (grade.sh after Q19: the project's .kicad_pro, summary `rules`). A row grade.sh cannot grade (exit 2) falls back to the router's unrouted count, as the totals block's signal says. The canary-pwr sessions go to target/canary-handoff/ for canary's official grade",
   "metrics": [
     {
       "name": "via_in_pad",
@@ -207,6 +207,24 @@
     },
     {
       "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "edge_clearance",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "hole_clearance",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance",
       "role": "hard",
       "kind": "int",
       "direction": "lower"
@@ -260,15 +278,18 @@
     }
   ],
   "metric_definitions": {
-    "via_in_pad": "tools/kicad-oracle/via_in_pad.py on the routed board (vias of the session only; a via the input already had is not counted)",
-    "below_minimum": "kicad-oracle's copper.below_minimum",
+    "via_in_pad": "tools/kicad-oracle/via_in_pad.py on the routed board minus the same count on the kept-tracks input (vias of the session only; a via the input already had is not counted)",
+    "below_minimum": "raw, routing-caused (decided 2026-10-20: manufacturing rules are absolute): KiCad's drc_real_by_type (the routed board's errors minus the kept-tracks input's, grade.sh) track_width + via_diameter + annular_width + drill_out_of_range",
     "drc_real": "kicad-oracle's drc_real (router-attributable: the input's own items subtracted)",
     "kicad_unconnected": "kicad-oracle's unconnected_items of the routed board",
     "unrouted": "the router's final unrouted count (its log); the signal for a row KiCad could not grade",
-    "router_initial_unrouted": "the router's unrouted count before routing (its log, 'Auto-routing stage started ... for N unrouted items')",
+    "router_initial_unrouted": "the router's unrouted count before routing (the result manifest of a run with the arm's rule is not that: the engine log line 'Auto-routing stage started ... for N unrouted items', read from the inside_pad arm's engine.log, or the center arm's work/engine.log)",
     "kicad_input_unconnected": "kicad-oracle's input_unconnected_items (the board as given, tracks kept); N04.1 asks that it equal router_initial_unrouted",
     "vias": "vias of the routed board (kicad-oracle's copper.vias)",
-    "wall_seconds": "the engine's wall time (kicad-oracle's engine_seconds)"
+    "wall_seconds": "the engine's wall time (kicad-oracle's engine_seconds)",
+    "edge_clearance": "raw, routing-caused: drc_real_by_type.copper_edge_clearance",
+    "hole_clearance": "raw, routing-caused: drc_real_by_type.hole_clearance",
+    "clearance": "raw, routing-caused: drc_real_by_type.clearance"
   },
   "pass_rule": {
     "min_boards": 3,
@@ -303,6 +324,12 @@
       "after": "the registration and amendments 1 and 2; before any registered route or grade of either arm on any row",
       "reason": "decided 2026-10-20: measurement runs stay a few minutes: every row but canary-pwr routes in well under a minute, the whole run takes minutes, one KiCad grade per distinct session. The registered 43 rows (two arms each, three of them taking 7 to 18 minutes per route) would take hours",
       "changes": "(1) Rows: boards.rows and boards.files keep 20 rows, the 19 whose longest recorded route took at most 25 s and canary-pwr; each time is the largest total.wall_seconds of a release CLI --stats JSON for the board's DSN, or the largest Rust engine_seconds of a tools/kicad-oracle summary.json, under target/orchestrator/<dir>/ (routes from scratch; with the tracks kept a route has less to do): demo-complex_hierarchy 14.1 s graded (meas/runs/x02); demo-ecc83-pp 0.0 s (q07), 3.2 s graded (k02); demo-pic_programmer 0.3 s (n06r4), 2.2 s graded (meas/runs/x02); demo-sonde-xilinx 0.5 s graded (p04); cc1101-module-cc1101-module 1.0 s (q07); ch32v003-usb-devboard-ch32v003-usb-devboard 0.8 s (q07); cm4-edge-ai-carrier-cm4-edge-ai-carrier 22.4 s (q07); flight-computer-core-board 0.5 s (q07); laser-backplane-dvi-laserbackplane-dvi 0.4 s (q07); macroprocessor-diode-matrix-rom-dip 1.1 s (q07); mydevboard-rp2040dev 18.9 s (q07); nudac-nudac 13.8 s (q07); openmuscle-flexgrid-om-flexgrid-rigid-pcb 12.1 s (q07); pcietestpcb-pcietest 8.9 s (q07); picodebugger-picoprobetester 0.3 s (q07); slice-dcmt-bread-slice 0.5 s (q07); solarmeshtasticnode-meshtasticnode-bq25185 1.6 s (q07); vfo-controller-catvfoctrl 1.0 s (q07), 1.8 s graded (q10); vna-usb-pd 4.8 s (q07); canary-pwr the canary-pwr row (3.7 to 199.1 s graded, k02; its DSN's default passes 414 to 452 s, n06-13, n06-g). Dropped for their route time or for having none recorded: demo-CM5_MINIMA_3 39.8 to 106.2 s graded (vc), demo-kit-dev-coldfire-xilinx_5213 446.1 s graded (k02), demo-RoyalBlue54L-Feather 92.6 to 140.1 s graded (vc), demo-tinytapeout-demo 1038.3 to 1113.9 s graded (vc), demo-interf_u 4.9 to 8.4 s routed (p04, q07) but 262.3 s in a graded run (meas/runs/x02), demo-ecc83-pp_v2, demo-multichannel_mixer, demo-multichannel_mixer-unrouted, demo-One-Air-Max and demo-StickHub (no recorded route time), eprom-card-80bus 86.2 s, fc-rom-vomitter-nescart 1222.4 s, healthypi-move 155.4 s, loratracker-hat 77.0 s, microzed-carrier 245.6 s (q07; 399.9 s graded, q13), miniscope-v4 350.9 s, moteus-c1 148.4 s, overlord 115.4 s, pcie-active-backplane 84.9 s, pocketsdr-v3-0 230.7 s, wisweep-driver-board 31.7 s (q07), m-fc-g474 22.6 s routed (q07) but 61.5 s graded (q13), rio-iceshield 27.9 s routed (q07) but 31.0 s graded (q10). tools/bench/sets/n04-pad-contacts.txt lists the kept rows. The eligibility text is unchanged for the kept rows; min_boards 3 is unchanged. (2) Grading: as registered (grade.sh --keep-tracks with the arm command); when the two arms' sessions are byte-identical the session is graded once (the registration's grading already says so). (3) Every route runs under ulimit -v 8000000 with timeout 600 for canary-pwr and timeout 120 for the other rows (in the arm command given to grade.sh); a timeout leaves the measurement incomplete. (4) Engine: one release build of main at the run. Nothing else changes: question, arms' settings, metrics, totals block, the via-connectivity check"
+    },
+    {
+      "date": "2026-10-20",
+      "after": "the registration and amendments 1 to 3; before any registered route or grade of either arm on any row (one smoke run of the driver on the KiCad microwave demo, which is no row of this registration)",
+      "reason": "decided 2026-10-20: (1) manufacturing rules are absolute: routing-caused below_minimum, copper_edge_clearance, hole_clearance and clearance are 0, graded under the board's own rules (grade.sh with Q19's fix, summary `rules`); (2) every route gets the board's minimums as the plugin passes them (Q18); (3) KiCad-graded rows use only KiCad 6+ projects with their own .kicad_pro; (4) two arms, one KiCad grade per distinct session",
+      "changes": "(1) Metrics: below_minimum is redefined from copper.below_minimum to the routing-caused track_width + via_diameter + annular_width + drill_out_of_range errors of drc_real_by_type; new hard metrics edge_clearance (copper_edge_clearance), hole_clearance and clearance (routing-caused, from drc_real_by_type); via_in_pad is the routed board's count minus the kept-tracks input's. A candidate value above 0 is a hard breach. A breach identical in both arms that comes from a known open engine bug (the Margin-layer edge clearance the DSN does not carry yet, Q18.5) is reported next to the verdict and not counted against the candidate; the gate cannot tell, so the judgement reads the gate's output and the table. (2) Every row's ROW_FLAGS is its Board Setup minimums read from its .kicad_pro board.design_settings.rules as tools/bench/sets/q18-board-minimums.txt does (min_track_width, min_via_diameter, min_through_hole_diameter, min_via_annular_width -> --router.board_minimums.{track_width,via_diameter,via_drill,via_annular}_um, min_copper_edge_clearance -> --router.copper_to_edge_clearance_um, min_hole_clearance -> --router.hole_clearance_um; 0 passes nothing; identical flags in both arms), listed after the path in tools/bench/sets/n04-pad-contacts.txt. grade.sh exports the DSN through pcbnew, so the plugin's own flags are not passed; the flags are the plugin's (Q18.3) plus the two clearances. (3) All 20 rows have their own .kicad_pro (checked: no KiCad 4/5 row, none dropped). (4) canary-pwr's input is the git archive of canary ab786fcc (hardware/canary-pwr-rev1.0 into target/orchestrator/n04q16/canary-ab786fcc), sha256 15aa06a3... as registered: ../canary now has a later commit checked out (2187d5c7, board 284c0308...), so the registered ../canary path no longer holds the registered file. (5) Grading/driver: n04-row.sh as in `grading`; engine: main b98074e (Q18) release CLI, one build for every arm, ulimit -v 8000000 and timeout 600 (canary-pwr) or 120. (6) Rows, arms' settings, the totals block and the noise block are unchanged."
     }
   ]
 }

@@ -5,23 +5,25 @@
 # Amendment 3 (decided 2026-10-20: measurement runs stay a few minutes): the 19 rows whose
 # longest recorded route took at most 25 s, plus canary-pwr; the times and the dropped rows
 # are in the amendment.
-/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb
-/usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb
-/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
-/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb
-target/corpus/projects/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb
-target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb
-target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb
-target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb
-target/corpus/projects/laser-backplane-dvi-laserbackplane-dvi/laser-backplane-dvi-laserbackplane-dvi.kicad_pcb
-target/corpus/projects/macroprocessor-diode-matrix-rom-dip/macroprocessor-diode-matrix-rom-dip.kicad_pcb
-target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb
-target/corpus/projects/nudac-nudac/nudac-nudac.kicad_pcb
-target/corpus/projects/openmuscle-flexgrid-om-flexgrid-rigid-pcb/openmuscle-flexgrid-om-flexgrid-rigid-pcb.kicad_pcb
-target/corpus/projects/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb
-target/corpus/projects/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb
-target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb
-target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb
-target/corpus/projects/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb
-target/corpus/projects/vna-usb-pd/vna-usb-pd.kicad_pcb
-../canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb
+# Amendment 4 (decided 2026-10-20): a row's line is its path, then its Board Setup minimums as router
+# flags (` --router...`, ROW_FLAGS in N04.json); canary-pwr's path is the git archive of canary ab786fcc.
+/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb --router.board_minimums.track_width_um=203.2 --router.board_minimums.via_diameter_um=889 --router.board_minimums.via_drill_um=508 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10
+/usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10
+/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb --router.board_minimums.track_width_um=250 --router.board_minimums.via_diameter_um=900 --router.board_minimums.via_drill_um=500 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10
+/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb --router.board_minimums.track_width_um=203.2 --router.board_minimums.via_diameter_um=889 --router.board_minimums.via_drill_um=508 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=10
+target/corpus/projects/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=50 --router.hole_clearance_um=250
+target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb --router.board_minimums.track_width_um=203.2 --router.board_minimums.via_diameter_um=457.2 --router.board_minimums.via_drill_um=203.2 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250
+target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb --router.board_minimums.via_diameter_um=450 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=250 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250
+target/corpus/projects/laser-backplane-dvi-laserbackplane-dvi/laser-backplane-dvi-laserbackplane-dvi.kicad_pcb --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=600 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/projects/macroprocessor-diode-matrix-rom-dip/macroprocessor-diode-matrix-rom-dip.kicad_pcb --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/projects/nudac-nudac/nudac-nudac.kicad_pcb --router.board_minimums.track_width_um=152.4 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=254 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/projects/openmuscle-flexgrid-om-flexgrid-rigid-pcb/openmuscle-flexgrid-om-flexgrid-rigid-pcb.kicad_pcb --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/projects/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb --router.board_minimums.track_width_um=127 --router.board_minimums.via_diameter_um=300 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.hole_clearance_um=250
+target/corpus/projects/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb --router.board_minimums.track_width_um=150 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.hole_clearance_um=200
+target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb --router.board_minimums.track_width_um=90 --router.board_minimums.via_diameter_um=450 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=125 --router.copper_to_edge_clearance_um=200 --router.hole_clearance_um=200
+target/corpus/projects/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/projects/vna-usb-pd/vna-usb-pd.kicad_pcb --router.board_minimums.track_width_um=130 --router.board_minimums.via_diameter_um=508 --router.board_minimums.via_drill_um=254 --router.board_minimums.via_annular_um=127 --router.copper_to_edge_clearance_um=10
+target/orchestrator/n04q16/canary-ab786fcc/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb --router.board_minimums.track_width_um=150 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250

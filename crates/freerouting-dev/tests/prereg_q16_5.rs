@@ -18,7 +18,14 @@
 //! complex_hierarchy (One-Air-Max has no recorded route time, tinytapeout-demo
 //! takes over 17 minutes), one KiCad grading per session with
 //! `solder_mask_bridge` left out of `drc_real`, the router under `ulimit -v
-//! 8000000` and `timeout 600`/`120`; the hash below is the amended file's.
+//! 8000000` and `timeout 600`/`120`.
+//!
+//! Amendment 2 (decided 2026-10-20, before any route or grade): manufacturing
+//! rules are absolute (hard metrics edge_clearance, hole_clearance, clearance;
+//! below_minimum routing-caused), the arms run main b98074e whose plugin
+//! passes the Board Setup minimums, the project's rules grade with copper
+//! severities forced to error, and identical sessions share one grade; the
+//! hash below is the amended file's.
 //!
 //! The boards are outside the repository (the owner's canary repo and KiCad's
 //! demos), so their hashes are checked by the run, not here.
@@ -54,10 +61,13 @@ fn the_q16_5_registration_is_valid_and_names_its_arms_boards_and_rule() {
     );
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
-        &metrics[..6],
+        &metrics[..9],
         [
             "via_in_pad",
             "below_minimum",
+            "edge_clearance",
+            "hole_clearance",
+            "clearance",
             "via_dangling_dsn",
             "track_dangling_dsn",
             "drc_real",
@@ -70,7 +80,7 @@ fn the_q16_5_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert!(totals.noise.is_empty(), "every band is N02's default");
     assert_eq!(totals.min_boards, 3);
     assert_eq!(totals.speed, None);
-    assert_eq!(prereg.amendments, 1);
+    assert_eq!(prereg.amendments, 2);
 }
 
 #[test]
@@ -106,6 +116,6 @@ fn the_q16_5_registration_uses_the_plugin_default_options_and_no_q16_board() {
 fn the_q16_5_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "bafc82c2fce24bda57cce527cc803bdc6946c9f573ee3843faff15ecdff36edc"
+        "a17c579f1675b332d6c8673b319de3eb3e4f565dd832a152bc5eeb282c9e4912"
     );
 }

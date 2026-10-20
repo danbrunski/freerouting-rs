@@ -134,7 +134,7 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     equivalent (Issue110-RelayModule differs only in the non-ASCII component name, as in N06's
     A14); cutoff 15/15 pass, all byte-identical (class sums 1316 unrouted, 1743 violations, 4670
     vias, Java = Rust); java-failure 3/3; 0 D8 breaches added.
-- [~] **Q16.3 — Measure under N02 (no-regress).** Register first: `canary-pwr` via the plugin
+- [x] **Q16.3 — Measure under N02 (no-regress).** Register first: `canary-pwr` via the plugin
   path plus the K09 boards.
   - **Accept:**
     - KiCad's `via_dangling` and `track_dangling` are 0 on every board;
@@ -223,7 +223,10 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     note once Q16.5 has its verdict: "*Done <date>:* measured as registered, gate FAIL on two hard
     guards (table above); the setting stayed unset; the follow-up is Q16.4 and Q16.5 (verdict
     <PASS/FAIL>)."
-- [~] **Q16.4 — Contacts counted as KiCad counts them, measured again.** Q16.3 failed on two
+  - *Done 2026-10-20:* measured as registered, gate FAIL on two hard guards (table above); the setting
+    stayed unset; the follow-up is Q16.4 and Q16.5 (verdict FAIL on one hard guard that both arms
+    share, see Q16.5).
+- [x] **Q16.4 — Contacts counted as KiCad counts them, measured again.** Q16.3 failed on two
   stubs the stage judged by Java's normal contacts and by the DSN's plane outlines; the operator's
   decisions are in Q16.3's "Remains".
   - **Accept:**
@@ -358,7 +361,10 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     verdict: "*Done <date>:* the code, fixtures and known limit as above; measured as registered,
     gate FAIL on four hard guards (table and causes above); the follow-up is Q16.5 (verdict
     <PASS/FAIL>)."
-- [~] **Q16.5 — Connected contacts, measured on fresh boards.** Q16.4 failed on its options (the
+  - *Done 2026-10-20:* the code, fixtures and known limit as above; measured as registered, gate FAIL on
+    four hard guards (table and causes above); the follow-up is Q16.5 (verdict FAIL on one hard guard that
+    both arms share, see Q16.5).
+- [x] **Q16.5 — Connected contacts, measured on fresh boards.** Q16.4 failed on its options (the
   plugin45 width below two demos' Board Setup minimum), on a via its guard kept though its removal
   splits nothing, and on KiCad's `solder_mask_bridge` noise; the operator's decision of 2026-10-18
   is Q16.4's "Remains".
@@ -472,3 +478,50 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
      then `freerouting-dev gate --records $Q/records-q165.json --baseline $Q/baseline-q165.json
      --prereg docs/roadmap/prereg/Q16-5.json --write-baseline` and the same without
      `--write-baseline` for the verdict.
+
+  *Done 2026-10-20 (verdict: gate FAIL on one hard guard that both arms share; the cleanup's own effect
+  passes every guard; `cleanup.remove_stubs` stays unset in both profiles pending an operator reading):*
+  measured as registered in `docs/roadmap/prereg/Q16-5.json`, **amendment 2** (before any route or
+  grade; sha256 `a17c579f1675b332d6c8673b319de3eb3e4f565dd832a152bc5eeb282c9e4912`, pin test
+  `prereg_q16_5.rs` 3 passed). Amendment 2 folds in the rules decided 2026-10-20: new hard metrics
+  `edge_clearance`, `hole_clearance`, `clearance`, `below_minimum` = routing-caused track_width +
+  via_diameter + annular_width + drill_out_of_range (routed minus input, by type), `via_in_pad` routed minus
+  input; the project's `.kicad_pro` with its copper severities forced to error before every DRC (inputs
+  too); the arms run main b98074e (`freerouting 0.1.0 (git b98074e1d5e3)`), whose plugin path passes the
+  Board Setup minimums by itself (`--router.board_minimums.*`, `--router.copper_to_edge_clearance_um`, plus
+  `--router.min_trace_width_um` and `--router.autorouter.sweep=free`); one KiCad grade per distinct
+  session. The three boards have their own `.kicad_pro` (KiCad 6+). Inputs hash as registered
+  (`25395aeb…`, `d069f606…`, `c01d7d83…`); input KiCad unconnected 136 / 48 / 87. Scripts
+  `target/orchestrator/n04q16/scratch/{q165-all.sh,q165r-arm.sh,q165r-input.sh,analyze165r.py}` (sha256
+  prefixes `fbc36ebc`, `fbf2db91`, `b158f794`, `83218173`; plugin scripts from a detached worktree of
+  main), outputs `target/orchestrator/n04q16/out/q165/` (`records-q165.json`, `gate-q165.txt`). Every
+  route under `ulimit -v 8000000` and `timeout` 600 (canary) / 120, none timed out. Commands: `q165-all.sh`
+  (inputs, then per board the base, cleanup and cleanup-rerun routes, `cmp`, and one grading per distinct
+  session), then `analyze165r.py` and `freerouting-dev gate --records … --baseline … --prereg … --write-baseline`
+  and the same without it.
+
+  | board | arm | KiCad unconnected (input) | via_dangling (DSN-visible) | track_dangling | drc_real | hard (via_in_pad / below / edge / hole / clearance) | route s |
+  |---|---|---|---|---|---|---|---|
+  | canary-pwr d6199b48 | base | 26 (136) | 8 (8) | 0 | 0 | 0 / 0 / 0 / 0 / 0 | 107.8 |
+  | canary-pwr | cleanup | 26 | 0 (0) | 0 | 0 | 0 / 0 / 0 / 0 / 0 | 108.3 |
+  | sonde-xilinx | base = cleanup (SES byte-identical, one grade) | 2 (48) | 0 | 0 | 2 (clearance 1, shorting_items 1) | 0 / 0 / 0 / 0 / 1 | 0.3 |
+  | complex_hierarchy | base = cleanup (identical, one grade) | 80 (87) | 0 | 0 | 0 | 0 / 0 / 0 / 0 / 0 | 0.1 |
+
+  Determinism: the cleanup run and its rerun are byte-identical on all three boards (`cmp`). Gate:
+  `total 108 -> 108 (change 0); set noise 9.11` (bands 7, 5, 3), no worse row, canary-pwr `improve`;
+  `FAILS: hard guard: sonde xilinx.clearance = 1`, **`gate: FAIL`**, `totals verdict: reject`. Reading the
+  one breach: it is in the base session as well (the two sessions are the same bytes, the cleanup removed
+  nothing there), and it is KiCad's `clearance` + `shorting_items` between a `/PWR_3,3-5V` track and the
+  board's `PCB text 'GND'` on top_copper at (162.56, 81.28), copper text the DSN does not carry (the same
+  kind of gap as the Margin layer of Q18.5, but not a known open item until now). The cleanup's own
+  effect: canary-pwr dangling vias 8 -> 0 with unconnected 26 -> 26 and no new error; nothing else changes.
+  The registered clauses: the guard (`quality::stubs::contacts_are_connected`) and the kit-dev fixture
+  (`a_via_whose_contacts_meet_only_through_one_another_goes`, `a_via_joining_two_groups_of_contacts_is_kept`)
+  were Done 2026-10-18 (note above); the registration on boards Q16.3 and Q16.4 did not use, with the plugin's
+  minimums and `solder_mask_bridge` left out of `drc_real`, is this run. The last clause (N05 adds
+  `cleanup.remove_stubs` if accepted) is not triggered by the gate's verdict; see the operator decision in
+  the report. Thin evidence: only canary-pwr has a stub to remove (the two demos' sessions are identical with
+  and without the setting). Observed on the way, not part of the verdict: `complex_hierarchy` leaves 80 of
+  its 96 unrouted items open at 0.06 s with and without any option (the stripped demo; cause not
+  diagnosed), and canary-pwr routes to 26 unconnected with the board's minimums as floors (the coordinator
+  recorded 18 on the plugin path before Q18).

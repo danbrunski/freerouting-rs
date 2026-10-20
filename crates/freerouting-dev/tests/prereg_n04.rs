@@ -14,8 +14,12 @@
 //! `amendments` with the reason and updates the hash here in the same
 //! commit. Amendment 3 (decided 2026-10-20: measurement runs stay a few
 //! minutes, before any graded number) keeps the 19 rows whose longest recorded
-//! route took at most 25 s plus canary-pwr; the hash below is the amended
-//! file's.
+//! route took at most 25 s plus canary-pwr. Amendment 4 (decided 2026-10-20,
+//! before any graded number) makes the manufacturing rules absolute (hard
+//! metrics edge_clearance, hole_clearance, clearance; below_minimum
+//! routing-caused), gives every row its Board Setup minimums as router flags
+//! (the set file's lines) and reads canary-pwr from the git archive of canary
+//! ab786fcc; the hash below is the amended file's.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -48,15 +52,15 @@ fn the_pad_contacts_registration_is_valid() {
         20,
         "amendment 3: 19 quick rows and canary-pwr"
     );
-    assert_eq!(prereg.amendments, 3);
+    assert_eq!(prereg.amendments, 4);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         &metrics[..4],
         [
             "via_in_pad",
             "below_minimum",
-            "drc_real",
-            "kicad_unconnected"
+            "edge_clearance",
+            "hole_clearance"
         ]
     );
 }
@@ -78,9 +82,26 @@ fn the_pad_contacts_inputs_are_the_registered_ones() {
         .map(str::to_string)
         .collect();
     assert_eq!(set.len(), rows.len(), "{SET} lists every row once");
+    let (prereg, _) = registration();
+    let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        &metrics[4..8],
+        ["clearance", "drc_real", "kicad_unconnected", "unrouted"],
+        "amendment 4: the hard metrics are via_in_pad, below_minimum, edge_clearance, hole_clearance, clearance"
+    );
     for (row, spec) in rows {
         let path = spec.get("input").and_then(Json::as_str).expect("input");
-        assert!(set.iter().any(|l| l == path), "{path} missing from {SET}");
+        // Amendment 4: a row's line is its path, then its Board Setup minimums as router flags.
+        let flags = spec
+            .get("ROW_FLAGS")
+            .and_then(Json::as_str)
+            .expect("ROW_FLAGS");
+        let line = if flags.is_empty() {
+            path.to_string()
+        } else {
+            format!("{path} {flags}")
+        };
+        assert!(set.contains(&line), "{line} missing from {SET}");
         let sha = files
             .get(row)
             .and_then(Json::as_str)
@@ -92,9 +113,13 @@ fn the_pad_contacts_inputs_are_the_registered_ones() {
         };
         let Ok(bytes) = std::fs::read(&full) else {
             assert!(
-                ["/usr/share/kicad/demos/", "target/corpus/", "../canary/"]
-                    .iter()
-                    .any(|p| path.starts_with(p)),
+                [
+                    "/usr/share/kicad/demos/",
+                    "target/corpus/",
+                    "target/orchestrator/",
+                ]
+                .iter()
+                .any(|p| path.starts_with(p)),
                 "{path} is missing"
             );
             continue;
@@ -111,6 +136,6 @@ fn the_pad_contacts_inputs_are_the_registered_ones() {
 fn the_n04_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().0.sha256,
-        "58f9ee9e2f7f534b76c542150b9f2ca069cfd6157372a7e901a40067668ec523"
+        "6c05efdfffd50da9073a205863441fbb68fdd6c64a5fd98a437e90bce1d04c24"
     );
 }
