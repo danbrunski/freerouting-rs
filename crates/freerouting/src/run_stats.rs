@@ -193,10 +193,15 @@ pub enum Counter {
     /// N06.15: shove substitute pieces about to be inserted that overlap a trace of
     /// another net (the case the switch leaves to Java in both arms).
     ShovePendingPieceForeignTraces,
+    /// N06.16: any-angle neighbour calculations whose room shape has more border
+    /// lines than its simplex, so that Java's touching sides (taken on the shape)
+    /// and its gap walk (on the simplex) index different lines; the calculations
+    /// `any_angle_room_side_index = false` indexes on the simplex.
+    AnyAngleRoomSideMismatches,
 }
 
 /// Every counter, in the order of [`Counts`].
-pub const COUNTERS: [Counter; 54] = [
+pub const COUNTERS: [Counter; 55] = [
     Counter::ConnectionsAttempted,
     Counter::ConnectionsRouted,
     Counter::ConnectionsFailed,
@@ -251,6 +256,7 @@ pub const COUNTERS: [Counter; 54] = [
     Counter::RulesUnknownLayerScopes,
     Counter::ShoveViaIntoPendingPieces,
     Counter::ShovePendingPieceForeignTraces,
+    Counter::AnyAngleRoomSideMismatches,
 ];
 
 impl Counter {
@@ -311,6 +317,7 @@ impl Counter {
             Counter::RulesUnknownLayerScopes => "rules_unknown_layer_scopes",
             Counter::ShoveViaIntoPendingPieces => "shove_via_into_pending_pieces",
             Counter::ShovePendingPieceForeignTraces => "shove_pending_piece_foreign_traces",
+            Counter::AnyAngleRoomSideMismatches => "any_angle_room_side_mismatches",
         }
     }
 }

@@ -32,9 +32,9 @@ use freerouting::settings::{
 
 const CORES: usize = 8;
 
-/// The N06 inventory: 34 rows of kind (b) (two added by N06.14, one by N06.15) and
-/// 11 of kind (c).
-const SWITCH_COUNT: usize = 45;
+/// The N06 inventory: 35 rows of kind (b) (two added by N06.14, one by N06.15 and one
+/// by N06.16) and 11 of kind (c).
+const SWITCH_COUNT: usize = 46;
 
 fn ctx() -> ResolveContext {
     ResolveContext { cores: CORES }

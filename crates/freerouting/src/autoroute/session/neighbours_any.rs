@@ -26,6 +26,19 @@
 //! room's original shape (the `roomShape` field, captured before the cuts),
 //! so they are computed when the neighbour is built.
 //!
+//! `router.java_quirks.any_angle_room_side_index` (N06.16): Java takes the
+//! touching sides on the room's own shape, but `tryRemoveEdge` and
+//! `calculateNewIncompleteRooms` index its `toSimplex()`. An `IntOctagon` room
+//! has 8 border lines, degenerate ones too, and its simplex fewer, so the
+//! indexes name different lines; a side past the simplex's last line is never
+//! reached by the gap walk (`prevNo` stays below the line count), which then
+//! adds incomplete rooms until memory runs out (Java: `OutOfMemoryError` on A07's
+//! `Issue026-J2_reference-any` and `Issue143-rpi_splitter-any`). `true` (unset)
+//! keeps Java's indexes; `false` takes the sides, corners and the sort on the
+//! simplex, so every index is one of the simplex's lines and a gap walk ends
+//! within `n + 1` steps. Counted in both arms
+//! (`any_angle_room_side_mismatches`).
+//!
 //! One case Java goes on with and the port does not: a point touch on no
 //! border line of the room or the neighbour (Java logs
 //! "touchingSideNoOfRoom >= 0 expected" and keeps side `-1`, which the
@@ -45,6 +58,7 @@ use super::{Room, RoomError, RoomId, Session};
 use crate::board::items::ItemId;
 use crate::board::search::rooms::IncompleteRoom;
 use crate::board::search::{ObjectEntry, TreeObject};
+use crate::run_stats::{self, Counter, record_n06};
 
 const NPE: RoomError = RoomError::NullPointer {
     at: "SortedRoomNeighbours.calculate",
@@ -267,7 +281,10 @@ impl Session<'_> {
                 a.shape_index.cmp(&b.shape_index)
             }
         });
-        let comparator_room = room_shape.clone();
+        let simplex_sides =
+            side_simplex(&room_shape, self.control.quirks.any_angle_room_side_index);
+        let side_shape = simplex_sides.as_ref().unwrap_or(&room_shape);
+        let comparator_room = side_shape.clone();
         // PARITY: TreeSet.add with a comparator that is not transitive.
         let mut set = JavaTreeSet::new(move |a: &NeighbourAny, b: &NeighbourAny| {
             compare_any(&comparator_room, a, b)
@@ -298,20 +315,20 @@ impl Session<'_> {
                 continue;
             }
             if dimension == 1 {
-                let Some(sides) = room_shape.touching_sides(&current_shape) else {
+                let Some(sides) = side_shape.touching_sides(&current_shape) else {
                     continue;
                 };
                 set.insert(NeighbourAny::new(
                     object,
                     current_shape,
-                    &room_shape,
+                    side_shape,
                     sides,
                     (false, false),
                 ));
                 self.door_to_line_neighbour(completed, object, index, &intersection)?;
             } else {
                 let neighbour =
-                    point_touch_neighbour(object, current_shape, &room_shape, &intersection)?;
+                    point_touch_neighbour(object, current_shape, side_shape, &intersection)?;
                 set.insert(neighbour);
             }
         }
@@ -497,7 +514,17 @@ impl Session<'_> {
         let mut middle: Option<Line> = None;
         let mut current = gap.last_side;
         let mut first_time = true;
+        let mut steps = 0;
         loop {
+            // The fix's bound (N06.16): every side is one of the simplex's
+            // lines, so the walk reaches `first_side` within one lap, or two
+            // when it starts there (`at_last && first_time`).
+            steps += 1;
+            debug_assert!(
+                self.control.quirks.any_angle_room_side_index
+                    || steps <= room.border_line_count() + 1,
+                "the gap walk ends within n + 1 steps"
+            );
             let mut corner_cut_off = false;
             if let Some(contained) = contained
                 && current == gap.last_side
@@ -588,6 +615,24 @@ struct Gap {
     cut: (Point, Point),
 }
 
+/// `router.java_quirks.any_angle_room_side_index` (N06.16): the shape the
+/// neighbours' sides index, `None` for the room's own shape (Java, `java`) and
+/// the room's simplex under the fix. The calculation is counted in both arms
+/// when the two have different border line counts.
+// PARITY(quirk, java_quirks.any_angle_room_side_index): Java takes the touching
+// sides on `roomShape` (SortedRoomNeighbours.java:189, 253, 288, 296) and indexes
+// its `toSimplex()` with them (:419, :511).
+pub(crate) fn side_simplex(room_shape: &TileShape, java: bool) -> Option<TileShape> {
+    if java && !run_stats::enabled() {
+        return None;
+    }
+    let simplex = room_shape.to_simplex();
+    if simplex.border_line_count() != room_shape.border_line_count() {
+        record_n06(Counter::AnyAngleRoomSideMismatches);
+    }
+    (!java).then_some(TileShape::Simplex(simplex))
+}
+
 /// A neighbour touching the room in one point (`:283-323`).
 fn point_touch_neighbour(
     object: TreeObject,
@@ -643,6 +688,49 @@ mod tests {
         let result =
             point_touch_neighbour(TreeObject::Item(ItemId(1)), point.clone(), &room, &point);
         assert_eq!(result.err(), Some(NO_TOUCHING_SIDE));
+    }
+
+    /// `any_angle_room_side_index` (N06.16), the octagon room of the
+    /// `Issue026-J2_reference-any` fanout scaled down: the triangle x >= 0,
+    /// y >= 0, x + y <= 100 as an `IntOctagon` has 8 border lines and a 3-line
+    /// simplex. A neighbour along its diagonal touches octagon side 3 (Java),
+    /// past the simplex's last line, which `prev_no` never reaches, so Java's
+    /// gap walk never ends; the fix takes simplex side 1, the same line.
+    #[test]
+    fn room_side_index_switch_both_behaviours() {
+        let room = TileShape::IntOctagon(TileShape::get_instance_octagon(
+            0, 0, 100, 100, -100, 100, 0, 100,
+        ));
+        let beyond = TileShape::IntOctagon(TileShape::get_instance_octagon(
+            0, 0, 100, 100, -100, 100, 100, 200,
+        ));
+        let simplex = room.to_simplex();
+        assert_eq!(
+            (room.border_line_count(), simplex.border_line_count()),
+            (8, 3)
+        );
+
+        assert!(
+            side_simplex(&room, true).is_none(),
+            "Java indexes the octagon"
+        );
+        let (java_side, _) = room.touching_sides(&beyond).expect("a line touch");
+        assert_eq!(java_side, 3);
+        let walk = TileShape::Simplex(simplex.clone());
+        assert!(
+            (0..3).all(|side| walk.prev_no(side) != java_side),
+            "the gap walk never reaches Java's side"
+        );
+
+        let fixed = side_simplex(&room, false).expect("the fix indexes the simplex");
+        let (fixed_side, _) = fixed.touching_sides(&beyond).expect("a line touch");
+        assert_eq!(fixed_side, 1);
+        assert_eq!(fixed.border_line(fixed_side), room.border_line(java_side));
+
+        // A box room has as many lines as its simplex: both arms index alike.
+        let square = simplex_box(0, 0, 100, 100);
+        let fixed_square = side_simplex(&square, false).expect("the fix's shape");
+        assert_eq!(fixed_square.border_line_count(), square.border_line_count());
     }
 
     /// Neighbours sort by the touching side of the room, then by the

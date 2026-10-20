@@ -1665,6 +1665,20 @@ covered. `run_stats` counts `shove_via_into_pending_pieces` and
 `shove_pending_piece_foreign_traces` in either arm, with queries that leave the work meter
 alone. Registered in `prereg/N06.15.json` under `legacy` and `enhanced`; the run is pending.
 
+**N06.16 any-angle room sides (explicit opt-in; promotion pending)**
+
+`any_angle_room_side_index` still defaults to `true` in both profiles, and Java's path is
+unbounded: an any-angle room neighbour's touching side is taken on the room's own shape (an
+`IntOctagon` has 8 border lines, degenerate ones too), while `tryRemoveEdge` and
+`calculateNewIncompleteRooms` index its `toSimplex()`; a side past the simplex's last line never
+ends the gap walk, which adds incomplete rooms until memory runs out. Java at the pin and the
+port both run out of memory on A07's `Issue026-J2_reference-any` (fanout pass 1) and
+`Issue143-rpi_splitter-any` (optimizer pass 3). With it `false`, the sides, the corners and the
+neighbour sort are taken on the simplex, so a gap walk ends within `n + 1` steps
+(`neighbours_any::tests::room_side_index_switch_both_behaviours`,
+`tests/n06_any_angle_rooms.rs`). Only the plain (any-angle) tree reaches it; `run_stats`
+counts `any_angle_room_side_mismatches` in either arm. No measurement is registered yet.
+
 ## Profile `enhanced`
 
 `router.profile` (N01, D10) picks the defaults a job starts from: `legacy` is Java Freerouting

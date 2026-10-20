@@ -14,6 +14,8 @@ The inventory (N06.1, 2026-10-17) is the table below, with 54 rows:
   `simplex_octagon_half_corner`).
 - **1 more of kind (b),** added 2026-10-18 by N06.15: the shove bug N03.2 found
   (`shove_via_into_pending_piece`).
+- **1 more of kind (b),** added 2026-10-19 by N06.16: the any-angle room side indexes whose
+  Java path runs out of memory (`any_angle_room_side_index`).
 
 The rows come from:
 - `docs/DIVERGENCES.md` "Java bugs kept on purpose" (geometry, DSN, board model, shove,
@@ -76,6 +78,7 @@ Whoever implements an item (the `implementer` agent, or Codex):
 | N06.4–N06.11 | the files in their rows' Rust column, their tests, `tools/bench/sets/n06-*.txt`, `docs/roadmap/prereg/N06.*.json`. The batches touch disjoint files except `autoroute/connection.rs` (M and F) and `optimize/pull_tight.rs` (P only), so run M and F one after the other |
 | N06.14 | `geometry/shapes/simplex.rs`, `geometry/line.rs` (`nearest_through_integer_points`), `geometry/quirks.rs`, `geometry/tests/cutout_invariant.rs`, its two keys in `settings/fields.rs` and `settings/java_quirks.rs`, its two counters in `run_stats.rs`, `tests/n06_cutout_reach.rs`, `tools/bench/sets/n06-g2.txt`, `docs/roadmap/prereg/N06.14.json` |
 | N06.12, N06.13 | their rows' files; `settings/profile.rs` (`ENHANCED`) and the DIVERGENCES "Profile `enhanced`" section, through N05 |
+| N06.16 | `autoroute/session/neighbours_any.rs`, the key (`settings/fields.rs`, `settings/java_quirks.rs`, `tests/settings_java_quirks.rs`), one `run_stats` counter, `tests/n06_any_angle_rooms.rs` |
 | N06.15 | `shove/insert.rs` and its `insert_pending_tests.rs`, the unmetered clearance query (`board/search/mod.rs`, `board/basic_board.rs`), the key (`settings/fields.rs`, `settings/java_quirks.rs`, `tests/settings_java_quirks.rs`), two `run_stats` counters, `tests/reference_shove_insert.rs`, `tools/bench/n06_run.py` (an arm's own `baseline`), `prereg/N06.15.json`, `sets/n06-pending-piece.txt`, `freerouting-dev/tests/prereg_n06_15.rs` |
 
 ## Decisions made here
@@ -193,6 +196,7 @@ Rust paths are under `crates/freerouting/src/` unless they start with `geometry/
 | `route_connect_inner_break` | interactive/route.rs:28-30, 641-646 | gui/interactive/Route.java:411-415 | Only the inner loop is left, so the second corner pair is tried from the added corner | GUI | U | none |
 | `select_extension_ignores_filter` | interactive/select.rs:19-22 | InspectedItemState.java:75ff | After an extension's filter, the inspect state stays even with an empty selection | GUI | U | none |
 | `shove_via_into_pending_piece` (added by N06.15, found by N03.2) | shove/insert.rs:259-274 (`insert_substitute_pieces`), 312-381 (`checks_pending_piece`, `foreign_via_in_pending_piece`) | optimize/TraceShover.java:544-569, actions/ForcedPadRouter.java:413-438, actions/DrillItemMover.java:173-248 (`shoveVias`) | A substitute piece goes on the board only after the recursive inserts of its own shapes; a deeper level's `shoveVias` may move a via of another net onto the piece meanwhile, and its move check (`check`, `forcedPad`) cannot see the piece, so the piece is inserted over the via: a short. **Question:** fail the shove there? **Proposal:** before the piece is inserted, query its shapes again with its clearance and fail the shove at the first via of another net (the prototype of N03.2). **Remaining case:** a trace of another net inserted onto the pending piece later in the same recursion; a clearance re-query also finds the pieces placed against it at exactly the clearance (1,076 pieces on bm01 in three `legacy` passes, final board 0 violations), so it is only counted, as copper overlap (`shove_pending_piece_foreign_traces`) | batch, rare: GP8B `legacy` tree pass 3 once, canonical twice, `enhanced` tree pass 1 once (N03.2); 0 on the 15 A14 boards and the probe stages N06.15 tried | N06.15 | none (the bug has no Java recording; `pending_piece_switch_both_behaviours_and_counters` pins both halves) |
+| `any_angle_room_side_index` (added by N06.16) | autoroute/session/neighbours_any.rs:285 (`sorted_neighbours_any`), 623 (`side_simplex`), 507 (`gap_rooms_any`) | expansion/SortedRoomNeighbours.java:189, 253, 288, 296 (sides on `roomShape`), 419, 511 (`toSimplex()`) | An any-angle neighbour's touching side indexes the room's own shape (an `IntOctagon`: 8 border lines, degenerate ones too), the edge removal and the gap walk its simplex (redundant lines removed). A side past the simplex's last line is never reached by `prevNo`, so the gap walk adds incomplete rooms until memory runs out. Fix: take the sides, corners and the sort on the simplex | batch, any-angle mode only: rooms of the plain tree with an octagon shape (3 calculations in a whole `Issue026-J2_reference-any` route, 10 in `Issue143-rpi_splitter-any`) | N06.16 | `room_side_index_switch_both_behaviours` (Java's path is unbounded on the two boards, so no recording) |
 
 Batches: **G** geometry cutouts (**G2**: N06.14's two rows), **M** maze search and rooms, **F** fanout, **S** shove, **P** pull-tight,
 **O** batch optimizer, **I** inputs and reports, **U** GUI and interactive. The last row was found after the
@@ -425,6 +429,7 @@ These are marked or look like quirks but keep no bug:
       | `route_connect_inner_break` | `interactive/route.rs:605` | wired | `interactive::route::tests::failed_first_corner_pair_switch_stops_disconnected_second_leg` |
       | `select_extension_ignores_filter` | `interactive/select.rs:162` | wired | `interactive_editor.rs::extension_filter_switch_exits_empty_inspection` |
       | `shove_via_into_pending_piece` | `shove/insert.rs:259` | wired (N06.15) | `shove::insert::pending_tests::pending_piece_switch_both_behaviours_and_counters` |
+      | `any_angle_room_side_index` | `autoroute/session/neighbours_any.rs:623` | wired (N06.16, added after this audit) | `neighbours_any::tests::room_side_index_switch_both_behaviours` |
       | `ripup_pass_no_unset` | `autoroute/batch/connection.rs:202`, `autoroute/session/ripup.rs:343` | wired | `n06_judgement.rs::ripup_pass_no_switch_both_behaviours_and_counters` |
       | `insert_stale_trace_object` | `autoroute/path/insert.rs:115` | inert (N06.12: the split keeps the old geometry, so the stub lands on the same copper) | none, the behaviours do not differ |
       | `in_front_of_pad_side0_flank` | `shove/drill_check.rs:542` | wired | `n06_shove.rs::side0_flank_switch_both_behaviours` |
@@ -1619,6 +1624,14 @@ These are marked or look like quirks but keep no bug:
         amendment 1's pair with `freerouting-dev gate --prereg docs/roadmap/prereg/N06.14.json
         --arms baseline,octagon_box_cutout_branch3`; then the plugin canary run and grade, per
         the registration's `plugin_canary` block.
+      - Hold (2026-10-19, N06.16): the fix exists (`any_angle_room_side_index = false`), but the
+        hold is not lifted by it. Every N06.14 arm leaves that key unset (`true`, Java's unbounded
+        path), so the two any-angle rows still run out of memory. Lifting it needs an amendment of
+        `prereg/N06.14.json` that sets `router.java_quirks.any_angle_room_side_index=false` in
+        every arm (the same value in all arms), or drops the two rows as N06.12's amendments 2
+        and 3 did. With the key `false`, each row routed under a 4 GB cap in a check of 4 runs
+        whose peak RSS and exit status alone were read (default profile; N06.14's keys and
+        `octagon_box_cutout_branch3` all `true`, then all `false`): at most 57 MB, exit 0.
       - Also the corpus inventory (read-only):
         `cd /home/thebo/code/freerouting-rs && N06_CUTOUT_COUNTERS_OUT=/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2-corpus.json CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo test --release -p freerouting --test n06_cutout_reach unwired_area_splits_corpus_inventory -- --ignored --test-threads=1`.
 - [~] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
@@ -1710,3 +1723,66 @@ These are marked or look like quirks but keep no bug:
       `cargo test -p freerouting -p freerouting-cli --no-fail-fast` 1577 passed, 0 failed, 33
       ignored (155 suites); the N06 pin tests `prereg_n06_{4,5,6,7,8,9,12,14,15}` 37 passed;
       `python3 tools/roadmap/checklists.py status --strict` clean.
+- [x] **N06.16 — Any-angle memory blow-up:** `any_angle_room_side_index` (the (b) row added above).
+  A `legacy` route of A07's `Issue026-J2_reference-any` reached 5.4 GB at 11 s and two uncapped
+  attempts took the WSL machine down (N06.12's amendment 2); `Issue143-rpi_splitter-any` aborted
+  at once (amendment 3).
+  - **Accept:** the stage, function and data structure named; Java's behaviour on both boards
+    recorded from a Java run at the pin; a bounded fix behind a switch (`true` = Java) with a
+    both-behaviours test, a counter in both arms and a bounded regression test on the smallest
+    reproducing case; defaults unchanged; the small parity check's exact boards byte-identical.
+  - *Done 2026-10-19:* worktree `target/orchestrator/anymem/wt`, branch `land/anyangle-mem` on
+    main `fed332f`; every route and test of these boards ran under `ulimit -v 4000000`.
+    - Cause: `autoroute/session/neighbours_any.rs`, `gap_rooms_any` (the loop of
+      `SortedRoomNeighbours.calculateNewIncompleteRooms`, Java :555-648) never ends, and each
+      lap pushes an incomplete room (and a door) onto the session's `rooms` vector until an
+      allocation fails (`RawVec::grow_one` under `calculate_neighbours_any` ←
+      `add_complete_room` ← `complete_expansion_room` ← `calculate_expansion_rooms` ←
+      `page_drills` ← `find_connection` ← `fanout_pin`, by gdb at the abort). The room is an
+      `IntOctagon` (a triangle, J2: x ≥ 1189922, y ≥ -982651, x + y ≤ 335144), 8 border lines;
+      the neighbours' sides come from `roomShape.touchingSides` on those 8 (Java :189, 253, 288,
+      296), the walk indexes `roomShape.toSimplex()` (Java :511), 3 lines. A neighbour on the
+      diagonal has side 3; `prevNo` on 3 lines never returns 3, so `current == first_side`
+      never holds. rpi: a 4-line simplex, side 5, the same loop.
+    - Java at `a773a70ec` (frozen jar `freerouting-a773a70ec.jar`, `-Xmx4g`, default settings,
+      one run at a time): J2-any logs `Simplex.corner: no must be less than lines.length - 1`
+      (Java clamps the index) in the fanout and ends in `OutOfMemoryError` ("thrown from the
+      UncaughtExceptionHandler"), 4.56 GB RSS, killed at 1:55 after the job thread died at
+      1:00. rpi-any routes (pass 1 complete, score 1000), runs optimizer passes 1 and 2 and
+      ends in `OutOfMemoryError: Java heap space` in pass 3, exit 1 at 0:59, 4.56 GB. The port
+      fails at the same stages (J2: fanout pass 1; rpi: optimizer pass 3), so this is Java's own
+      behaviour, kept under `true`.
+    - Switch: `router.java_quirks.any_angle_room_side_index` (`settings/fields.rs`,
+      `settings/java_quirks.rs`, `fix_item` N06.16, `IDS` now 46). `false` takes the touching
+      sides, the point-touch sides, the first and last corners and the neighbour sort on the
+      room's simplex (`side_simplex`, marker `PARITY(quirk, java_quirks.any_angle_room_side_index)`),
+      so every side indexes the lines `tryRemoveEdge` and the walk use; a debug assertion in
+      `gap_rooms_any` checks the fix's bound (at most `n + 1` steps). Counter
+      `any_angle_room_side_mismatches` (`run_stats.rs`, both arms): neighbour calculations whose
+      room has more border lines than its simplex.
+    - Tests: `neighbours_any::tests::room_side_index_switch_both_behaviours` (the J2 triangle
+      scaled down: octagon side 3 past the 3-line simplex, which `prev_no` never reaches, under
+      `true`; simplex side 1, the same line, under `false`); `tests/n06_any_angle_rooms.rs::any_angle_fanout_pass_stays_bounded_with_the_fix`
+      (fanout pass 1 of J2-any under `false`: 39 connections, 37 routed, 2,210 rooms completed,
+      limit 20,000, 3 side mismatches, 0.61 s); `tests/settings_java_quirks.rs` 11 pass
+      (`SWITCH_COUNT` 46); `tests/n06_cutout_reach.rs` 1 pass. The `true` arm is not run in a
+      test: it is unbounded.
+    - Peak RSS, release CLI, `--router.profile=legacy`, 4 GB cap: J2-any 3.40 GB and abort
+      (`memory allocation of 939524096 bytes failed`) at 5.2 s under `true`; 56 MB, 5.8 s, exit
+      0, 0 incomplete, 0 violations under `false`. rpi-any 3.53 GB and abort at 2.6 s (optimizer
+      pass 3) under `true`; 49 MB, 1.65 s, exit 0, 0 incomplete under `false`.
+      `scoring-mixed-layer-any`: identical SES in both arms, 9 MB, 0 mismatches. A dev build
+      (debug assertions on) routed both boards under `false`: 54 MB and 58 MB, no panic.
+    - Defaults unchanged: unset is `true` in both profiles, and the `true` path computes the
+      same shapes as before. DIVERGENCES: "N06.16 any-angle room sides" under "Java quirk
+      switches, opt-in (N06)". Promotion needs a registered measurement (N06.13).
+    - Parity, release, under the cap: `PARITY_SET=tools/bench/sets/connection-parity.txt
+      PARITY_MAX_JAVA_S=20 cargo test --release -p freerouting --test autoroute_board_parity --
+      --ignored autoroute_board_parity --test-threads=1`: 7 boards, all `exact`, all
+      `byte_equal` (`target/parity/summary.json`). The default path is unchanged, so the 60-board
+      set was not run.
+    - Gate: `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D warnings`;
+      `cargo test --workspace --no-fail-fast -- --test-threads=2` under the cap: 2,533 passed,
+      0 failed, 55 ignored; four suites that route none of these boards (`reference_drc` and
+      the GUI's `ui_render`, `ui_viewer`, `ui_windows`) abort on the address-space cap itself
+      and pass without it (4, 7, 5 and 19 tests).
