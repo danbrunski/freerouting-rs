@@ -446,7 +446,7 @@ Sequencing:
     - the change in KiCad unconnected is given per row, with the rows that Q22.4's obstacles cost
       named.
 
-- [ ] **Q22.9 — Canary-pwr: which change costs 18 → 26.** Two runs, one at a time, with main's
+- [x] **Q22.9 — Canary-pwr: which change costs 18 → 26.** Two runs, one at a time, with main's
   release CLI. Each route is about 2 min, under `ulimit -v 8000000` and `timeout 600`.
   - **Arm (a), floors off.** Route Q16.5's base DSN
     (`target/orchestrator/n04q16/out/q165/runs/q165-base/canary-pwr/work/canary-pwr.dsn`) with
@@ -461,3 +461,73 @@ Sequencing:
   - **Accept:**
     - both rows' KiCad unconnected and copper errors are in the done note;
     - the 18 → 26 change is attributed to floors, options or code, each with its number.
+  - *Done 2026-10-20:* four routes and four KiCad grades, one at a time.
+    - **Setup.**
+      - Binary: main `5a701e2` release CLI (`freerouting-rs 0.1.0 (git 5a701e274f34)`), sha256
+        `94da5875191a8bfec24b4a951d58187cdf1fd5dfc1a72a78d5b2e7b5b2184c52`. The plugin and
+        oracle scripts come from the same checkout.
+      - Script: `target/orchestrator/q229/scratch/q229-arm.sh` (sha256 prefix `07975a8f`). It
+        is `q165r-arm.sh` for canary-pwr only, with the binary renamed `freerouting-rs`. It
+        adds a `DSN=` mode, which routes a saved DSN with only the given flags, and a
+        `NOFLOORS=1` mode, which drops the Q18 flags from the export's args.
+      - Every row starts from a fresh copy of `q165/scratch/canary-d6199b48/` (sha256
+        `25395aeb…`). Routes ran under `ulimit -v 8000000` and `timeout 600`. None timed out
+        and every rc was 0.
+      - The grade is `q165r-arm.sh`'s grade stage: `headless_run.py import` with the row's
+        options, `oracle_lib.py force-errors`, then one `kicad-cli pcb drc
+        --schematic-parity --refill-zones --severity-all` (KiCad 10.0.7). Outputs are in
+        `target/orchestrator/q229/runs/<row>/`.
+    - **The reference row.** The 26 is Q16.5's `q165-base` canary-pwr row (b98074e, options
+      `{"schema": 4, "profile": "enhanced"}`).
+      - Its DSN (`…/q165-base/canary-pwr/work/canary-pwr.dsn`, sha256 `30d1adde…`) and its
+        flags are on record. Its binary (`n04q16/target/release/freerouting`) is gone.
+      - So row (c) reruns that DSN with those 8 flags on main's binary.
+      - The "five Q18 flags" are six: the four `--router.board_minimums.*`,
+        `--router.copper_to_edge_clearance_um=300` and `--router.hole_clearance_um=250`.
+        Arm (a) drops all six.
+    - **The preset.** `q229/scratch/preset-route-options.json` is a copy of canary's current
+      `freerouting-rs/route-options.json` (sha256 `1ffe579f…`).
+      - The copy at `d6199b48` (`4f828997…`) differs only by an explicit `"sweep": "free"`, and
+        the export writes `--router.autorouter.sweep=free` either way.
+      - The router args match the 18-era record (canary's `canary-pwr.args.json`): `--max-passes
+        1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500
+        --router.autorouter.sweep=free --router.autorouter.sweep_passes=2`.
+      - Main's export adds the six Q18 flags and Q18.7's
+        `--router.solder_mask_expansions=FID3:@1=500,0;FID2:@1=500,0;FID1:@1=500,0;FID4:@1=0,500;FID5:@1=0,500;FID6:@1=0,500`.
+      - Row (d) drops all seven. That makes it the 18's own setup on main's code.
+    - **Rows.** Copper errors are 0 of every type in every row, so 0 are routing-caused:
+      `clearance`, `hole_clearance`, `copper_edge_clearance`, `track_width`, `annular_width`,
+      `via_diameter`, `drill_out_of_range`, `shorting_items` and `solder_mask_bridge` are all
+      absent from `drc.json`. The other items are `starved_thermal` (error; the input has 0) and
+      `lib_footprint_mismatch` 6 (warning; the input has 6). Every row has `via_in_pad` 0 and
+      inner tracks 0.
+
+      | Row | DSN (sha256) | Router flags | Route s | KiCad unconnected (zone-involved) | starved_thermal | via_dangling | SES sha256 |
+      |---|---|---|---|---|---|---|---|
+      | 26 (record, b98074e) | q165-base `30d1adde…` | min_trace 150, sweep free, the six Q18 flags | 107.8 | 26 (11) | 1 | 8 | `669662cf…` |
+      | (c) the 26 on main | q165-base `30d1adde…` | the same 8 flags | 121.2 | **26** (11) | 1 | 0 | `6f6afb3a…` |
+      | (a) floors off | q165-base `30d1adde…` | `--router.min_trace_width_um=150 --router.autorouter.sweep=free` | 95.2 | **23** (5) | 4 | 0 | `da680def…` |
+      | (b) the preset | main's export with the preset, `8feb7b97…` | the preset's 5 flags + the six Q18 flags + solder_mask_expansions | 54.1 | **16** (3) | 3 | 0 | `fadfd110…` |
+      | (d) the preset, floors off | main's export with the preset, `71ec9316…` (differs from (b) only in the DSN's path line) | the preset's 5 flags only | 33.5 | **19** (4) | 7 | 0 | `9eb64a1e…` |
+
+      Commands: `DSN=scratch/q165-base.dsn q229-arm.sh route c-26-main
+      scratch/default-options.json -- <8 flags>`; the same for `a-floors-off` with 2 flags;
+      `q229-arm.sh route b-preset scratch/preset-route-options.json`; `NOFLOORS=1 q229-arm.sh
+      route d-preset-floors-off scratch/preset-route-options.json`. Each was then graded with
+      `q229-arm.sh grade <row> x`.
+      - Router summaries: (c) 34 unrouted, 117 violations, score 853.62, the same as the
+        record. (a) 36 / 97 / 845.93. (b) 76 / 138 / 664.55. (d) 81 / 118 / 643.55.
+      - Row (c) has the record's 26 unconnected items, net by net. Its 0 dangling vias come
+        from `cleanup.remove_stubs` (N05.3).
+    - **Attribution of 18 → 26 (+8).** 18 → (d) 19 → (b) 16 → (c) 26.
+      - **Options: +10.** (b) 16 → (c) 26 is the same code, the same floors and the same board,
+        with the preset swapped for `{"profile": "enhanced"}`. 8 of the 10 are pour islands
+        (zone-involved: 3 → 11). The preset fixes the Power_High and Switch_Node pours and drops
+        GND's outer pours.
+      - **Floors: −3 on the preset, +3 on the defaults.** With the preset, (d) 19 → (b) 16. With
+        the defaults, (a) 23 → (c) 26. On the 26's path, floors cost 3, not 8.
+      - **Code: +1.** The 18 (b93bcd0, plugin path, canary's `grade.sh`, KiCad 10.0.5) → (d)
+        19 (5a701e2, this grade, 10.0.7). The 18 has no saved session, so this +1 also holds
+        any difference in export and grading. From b98074e to main the code adds 0: the
+        record's 26 → (c) 26.
+      - Verdict: the options. The preset on main with the floors gives 16, under the 18.
