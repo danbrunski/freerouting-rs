@@ -224,6 +224,12 @@ it depends on.
   - **D4 and D5 relax for `enhanced` only.** The search tree may stop
     matching Java's shape there (N03); `legacy` keeps the Java tree.
   - The work is the N series ([N00](tasks/N00-beyond-java-README.md)).
+- **D11 — `legacy` is Java, frozen, on the small parity set (decided 2026-10-20, N07.2).**
+  `legacy` stays byte-identical to Java at `a773a70ec` on the connection-parity set
+  (`tools/bench/sets/connection-parity.txt`) and the probe tests. Nothing new is ported from
+  Java, the pin does not move, and the full A14 runs only on request. Java compatibility ranks
+  below `enhanced`'s routing quality, and N07.3–N07.5 trim the rules and tests to this
+  ([N07](tasks/N07-lighten-java-parity.md)).
 
 ## Verification ladder
 

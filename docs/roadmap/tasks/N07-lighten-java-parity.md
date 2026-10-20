@@ -24,7 +24,8 @@ Prerequisites: N01 (profiles), N06 (the quirk switches).
     and the fixes apply in both profiles.
 
   Recommendation: (a). The parity set runs in about a minute, (a) changes no route, and (a) keeps
-  a regression net for the shared search code.
+  a regression net for the shared search code. **Decided 2026-10-20: (a)**, the small parity set
+  (D11 in `docs/roadmap/port-completion.md`).
 - **Nothing `enhanced` already has is lost.** Under either choice its 37 fixes and every accepted
   stage stay, and its sessions stay byte-identical through the cleanup (N07.4).
 
@@ -50,12 +51,18 @@ Prerequisites: N01 (profiles), N06 (the quirk switches).
   - **Accept:** the table is in the done note, with each test group's run time from one
     `cargo test` run.
 
-- [ ] **N07.2 — Choose `legacy`'s contract.** Put options (a) and (b), N07.1's numbers and the
+- [x] **N07.2 — Choose `legacy`'s contract.** Put options (a) and (b), N07.1's numbers and the
   recommendation to the owner.
   - **Accept:**
     - the owner's choice is recorded as "decided <date>: …" in `docs/roadmap/port-completion.md`
       and here;
     - if the owner doesn't answer, it stays open.
+
+  *Done 2026-10-20:* decided 2026-10-20: option (a), "yeah do the small parity set". `legacy`
+  stays byte-identical to Java at `a773a70ec` on connection-parity and the probes. Nothing new
+  is ported from Java, and the full A14 runs only on request. Recorded as D11 in
+  `docs/roadmap/port-completion.md`. The choice was made before N07.1's inventory, on the
+  recommendation's grounds. N07.4 therefore takes its (a) branch: only dead switch plumbing goes.
 
 - [ ] **N07.3 — Rules for changes that only touch `enhanced`.** A change behind a profile entry
   or a setting that `legacy` leaves unset needs only its own test and a DIVERGENCES line. It needs
