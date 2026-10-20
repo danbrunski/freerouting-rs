@@ -1543,13 +1543,17 @@ Both switches still default to `true` in both profiles. With the named switch `f
 `tests/cutout_invariant.rs`: `java_breaks_the_invariant_outside_the_two_rows` pins both
 cases under all 16 switch values, and `all_fixed_cutouts_tile_the_rest_on_the_extended_set`
 finds no violation in 16,200 cutouts with every switch `false` (Java: 1,817). The
-switches reach a batch run only in any-angle mode, whose plain search tree keeps simplex
-obstacles in the drill pages; 45 and 90 degree trees keep octagons and boxes
-(`tests/n06_cutout_reach.rs`). Run statistics count `cutout_hole_crosses_border_reached`
-and `simplex_octagon_half_corner_reached` in both arms. Like N06.4's switches they act at
+switches reach a batch run wherever a drill page or the tie-pin cutout holds a simplex
+tree shape: in any-angle mode (the plain search tree keeps every obstacle's simplex) and
+on 45 degree boards whose wiring has a trace with a line off 45 degrees, whose tree shape
+the 45 degree tree keeps as a simplex as Java's does (canary-pwr's 5 fixed segments;
+`tests/n06_cutout_reach.rs`, `tests/n06_cutout_reach_45.rs`). The 90 degree tree keeps
+boxes only. Run statistics count `cutout_hole_crosses_border_reached` and
+`simplex_octagon_half_corner_reached` in both arms. Like N06.4's switches they act at
 every `Area` split of the board since the follow-up of 2026-10-18; in the corpus the
-stored areas' splits reach neither of them. Registered evidence pending under N06.14
-(`docs/roadmap/prereg/N06.14.json`, amendment 1).
+stored areas' splits reach `cutout_hole_crosses_border` on Issue756-tomu-fpga8 (12) and
+-fpga9 (8) only. Registered evidence pending under N06.14
+(`docs/roadmap/prereg/N06.14b.json`; `N06.14.json`'s run gave no verdict).
 
 **N06.5 maze search and room fixes (profile `enhanced` since N06.13)**
 

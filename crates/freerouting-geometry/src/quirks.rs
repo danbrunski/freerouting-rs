@@ -49,6 +49,16 @@
 ///
 /// Inside the domain of N06.4's invariant test (holes inside the outer shape with
 /// integer corners) the two N06.14 switches change no piece.
+///
+/// The two N06.14 switches act only in
+/// [`Simplex::cutout_from_counted`](crate::Simplex::cutout_from_counted), which
+/// [`TileShape::cutout_counted`](crate::TileShape::cutout_counted) runs when either shape
+/// is a simplex (a box or octagon is converted, as Java's `cutoutFrom(Simplex)`
+/// overloads do). So they are reached in any-angle mode, whose tree keeps every obstacle's own
+/// shape, and on a 45 degree board too: its search tree keeps the simplex shape of every trace
+/// with a line that is not a multiple of 45 degrees, and the drill page or tie-pin cutout
+/// with such a shape in it goes through the simplex code (N06.14's correction of
+/// 2026-10-20). A 90 degree tree holds boxes only.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct SplitQuirks {
     pub simplex_prev_division_line: bool,

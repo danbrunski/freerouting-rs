@@ -8,9 +8,12 @@
 //! `simplex_prev_division_line` are reached in a batch run.
 //!
 //! N06.14's two switches live in `Simplex::cutout_from`, which a drill page reaches only
-//! with simplex obstacles. In 45 and 90 degree modes the search trees keep octagons and
-//! boxes, so the drill pages never get there (0 on every board checked, below); in
-//! any-angle mode (the plain tree) they do, hundreds of times per pass.
+//! with a simplex tree shape in it. In any-angle mode (the plain tree) every obstacle keeps
+//! its simplex, so a pass reaches them hundreds of times. The 90 degree tree keeps boxes
+//! only and never does. The 45 degree tree keeps octagons, except for traces with a line
+//! off 45 degrees, whose tree shapes stay simplexes: a 45 degree board with such wiring
+//! reaches both switches (canary-pwr, `tests/n06_cutout_reach_45.rs`). The 45 degree
+//! board below, which has no wiring, reaches neither.
 mod autoroute_common;
 
 use autoroute_common::{Loaded, load};
@@ -92,7 +95,7 @@ fn drill_page_splits_report_both_counters_in_both_arms() {
         "cutout_hole_crosses_border and simplex_octagon_half_corner reached, Java, N06.4 \
          fixed, N06.14 fixed: {n06_14:?}"
     );
-    // A 45 degree board: no simplex reaches a drill page.
+    // A 45 degree board without wiring: no simplex tree shape, so no simplex cutout.
     assert!(n06_14.iter().all(|&c| c == (0, 0)), "{n06_14:?}");
     // An any-angle board: its plain tree keeps the simplex obstacles.
     let mut any_angle = Vec::new();

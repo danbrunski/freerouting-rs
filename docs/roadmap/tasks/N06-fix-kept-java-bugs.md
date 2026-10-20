@@ -76,7 +76,7 @@ Whoever implements an item (the `implementer` agent, or Codex):
 | N06.2 | the files of the 12 (a) rows and their tests; the DIVERGENCES lines of those rows |
 | N06.3 | `settings/fields.rs`, `settings/path.rs`, a new `settings/java_quirks.rs`, `settings/board.rs`, `autoroute/control.rs` (the `quirks` field only), `board/basic_board.rs` (the field, `deep_copy`, the snapshot), `io/specctra/parser/mod.rs` (`ReadContext`), the geometry `split_to_convex_with` entry points, `tests/settings_java_quirks.rs` |
 | N06.4–N06.11 | the files in their rows' Rust column, their tests, `tools/bench/sets/n06-*.txt`, `docs/roadmap/prereg/N06.*.json`. The batches touch disjoint files except `autoroute/connection.rs` (M and F) and `optimize/pull_tight.rs` (P only), so run M and F one after the other |
-| N06.14 | `geometry/shapes/simplex.rs`, `geometry/line.rs` (`nearest_through_integer_points`), `geometry/quirks.rs`, `geometry/tests/cutout_invariant.rs`, its two keys in `settings/fields.rs` and `settings/java_quirks.rs`, its two counters in `run_stats.rs`, `tests/n06_cutout_reach.rs`, `tools/bench/sets/n06-g2.txt`, `docs/roadmap/prereg/N06.14.json` |
+| N06.14 | `geometry/shapes/simplex.rs`, `geometry/line.rs` (`nearest_through_integer_points`), `geometry/quirks.rs`, `geometry/tests/cutout_invariant.rs`, its two keys in `settings/fields.rs` and `settings/java_quirks.rs`, its two counters in `run_stats.rs`, `tests/n06_cutout_reach.rs`, `tests/n06_cutout_reach_45.rs`, `tools/bench/sets/n06-g2.txt`, `tools/bench/sets/n06-g2b.txt`, `docs/roadmap/prereg/N06.14.json`, `docs/roadmap/prereg/N06.14b.json`, `freerouting-dev/tests/prereg_n06_14b.rs` |
 | N06.12, N06.13 | their rows' files; `settings/profile.rs` (`ENHANCED`) and the DIVERGENCES "Profile `enhanced`" section, through N05 |
 | N06.16 | `autoroute/session/neighbours_any.rs`, the key (`settings/fields.rs`, `settings/java_quirks.rs`, `tests/settings_java_quirks.rs`), one `run_stats` counter, `tests/n06_any_angle_rooms.rs` |
 | N06.15 | `shove/insert.rs` and its `insert_pending_tests.rs`, the unmetered clearance query (`board/search/mod.rs`, `board/basic_board.rs`), the key (`settings/fields.rs`, `settings/java_quirks.rs`, `tests/settings_java_quirks.rs`), two `run_stats` counters, `tests/reference_shove_insert.rs`, `tools/bench/n06_run.py` (an arm's own `baseline`), `prereg/N06.15.json`, `sets/n06-pending-piece.txt`, `freerouting-dev/tests/prereg_n06_15.rs` |
@@ -164,7 +164,7 @@ Rust paths are under `crates/freerouting/src/` unless they start with `geometry/
 |---|---|---|---|---|---|---|
 | `simplex_prev_division_line` | geometry/shapes/simplex.rs:460-463 | Simplex.java:730, 860 | `nextDivisionLine = prevDivisionLine` is backwards, so the previous line stays null and pieces at sharp inner corners can overlap | batch, hot: drill pages of every pass (`split_to_convex`), area tree shapes, any shape with a simplex | G | maybe `simplex_cutout_and_rotation_like_java` |
 | `octagon_box_cutout_branch3` | geometry/shapes/int_octagon.rs:742-746 | IntOctagon.java:1206-1223 | Branch 3 moves the box to the octagon's right edge but rebuilds the octagon unchanged (branch 2 trims it), so the pieces overlap | batch, hot: drill pages, area tree shapes | G | none |
-| `cutout_hole_crosses_border` | geometry/shapes/simplex.rs:586 (`CrossFirstLine`, :219) | Simplex.java:731-732, 756-768, 809-824 | A corner of the cut-out part on the outer border is not divided; its stand-in division line (the hole edge before it) still clips later pieces as the first division line, and turns that clipping on as a corner's last line, so pieces of a hole crossing the border vanish (half the rest in the pinned case). Fix: only divided corners' lines take part | batch, any-angle mode only: drill pages with simplex obstacles (45 and 90 degree trees keep octagons and boxes); the search trees' area splits (unwired, Java's code) | G2 (N06.14) | `java_breaks_the_invariant_outside_the_two_rows` |
+| `cutout_hole_crosses_border` | geometry/shapes/simplex.rs:586 (`CrossFirstLine`, :219) | Simplex.java:731-732, 756-768, 809-824 | A corner of the cut-out part on the outer border is not divided; its stand-in division line (the hole edge before it) still clips later pieces as the first division line, and turns that clipping on as a corner's last line, so pieces of a hole crossing the border vanish (half the rest in the pinned case). Fix: only divided corners' lines take part | batch: drill pages and the tie-pin cutout holding a simplex tree shape, so any-angle mode and 45 degree boards with a trace off 45 degrees (corrected 2026-10-20: canary-pwr's fixed wiring; the 90 degree tree keeps boxes only); every `Area` split since 2026-10-18 (stored areas: tomu-fpga8 and -fpga9) | G2 (N06.14) | `java_breaks_the_invariant_outside_the_two_rows` |
 | `simplex_octagon_half_corner` | geometry/shapes/simplex.rs:737 (`calc_division_lines`, `Division`, :170) | Simplex.java:1042-1057 | A corner that is not an integer point is taken to lie on the outer border and is not divided; an odd-parity octagon's diagonal corner or an enlarged simplex's corner lies inside, and the pieces beside it overlap (755,786 units² in the pinned case). Fix: divide a corner on no outer line at its exact point, each side taking the nearest line through integer points on its own side (`Line::nearest_through_integer_points`) | as `cutout_hole_crosses_border` | G2 (N06.14) | `java_breaks_the_invariant_outside_the_two_rows` |
 | `init_failure_room_leak` | autoroute/connection.rs:31-40, 280, 670; session/rooms.rs:263 | AutorouteEngine.java:142-150 | A failed `getInstance` returns before `clear()`, so completed start rooms stay as obstacles | batch, rare (an init work limit or room error) | M | `an_init_failure_leaks_its_rooms_and_a_later_session_moves_them_aside` |
 | `failed_attempt_ripped_carryover` | autoroute/connection.rs:26, 236; fanout_pin.rs:34 | AutorouteEngine.java:188, 227; RoutingBoard.java:1090-1125 | A rejected attempt leaves the ripped set filled, so the next attempt rips the earlier path's items | batch, rare (a retry after a disabled-layer or locate rejection) | M | `a_path_ending_on_a_disabled_signal_layer_fails_and_keeps_the_ripped_set` |
@@ -1865,15 +1865,16 @@ These are marked or look like quirks but keep no bug:
       `simplex_octagon_half_corner_reached` (`run_stats.rs`, `record_split_reach`), at the
       drill-page split and the tie-pin cutout. The fixes sit in `Simplex::cutout_from`, which
       a drill page reaches only with simplex obstacles: the 45 and 90 degree search trees
-      keep octagons and boxes, the plain (any-angle) tree keeps simplexes.
+      keep octagons and boxes, the plain (any-angle) tree keeps simplexes. (Wrong for the 45
+      degree tree's traces: see "Reach corrected 2026-10-20" below.)
       `tests/n06_cutout_reach.rs::drill_page_splits_report_both_counters_in_both_arms`: pass 1
       of `Issue269-min_fr_test` reaches neither (all arms); pass 1 of
       `Issue143-rpi_splitter-any` reaches them 6 and 578 times under Java (0 and 659 with both
       fixes). While choosing that board, pass 1 of `Issue026-J2_reference-any` gave 14 and 512,
       `scoring-mixed-layer-any` 0 and 0, and the 45 degree fixtures Issue413-test,
       Issue433-my-board, TestSensel, Issue143-rpi_splitter, Issue954-polygon64 and
-      Issue026-J2_reference 0 and 0. So the switches are reachable, in any-angle mode only, and
-      are measured, not accepted on tests. `unwired_area_splits_corpus_inventory` reports the
+      Issue026-J2_reference 0 and 0. So the switches are reachable and are measured, not
+      accepted on tests. (The claim written here, "in any-angle mode only", was wrong.) `unwired_area_splits_corpus_inventory` reports the
       two new columns for the search trees' area splits (Java's code in every arm).
     - [x] Registered before any routed number: `docs/roadmap/prereg/N06.14.json` (sha256
       `1b945407a39a72fd9c27f061c73f842b28e6cb1529dfc5408173721f38680c99`) and
@@ -1967,10 +1968,9 @@ These are marked or look like quirks but keep no bug:
     its `pairs_rule` calls "a bug in N06.14's diff or in its reach claim, not a verdict". The
     branch-3 pair fails its hard guard (N06.4's note below). Worktree
     `target/orchestrator/n06r5/wt` (branch `land/n06-runs5`, main `08062e2`); every route under
-    `ulimit -v 8000000`, one at a time. Remaining: find where a 45 degree board reaches
-    `Simplex::cutout_from` (the drill-page split or the tie-pin cutout of
-    `BasicBoard::reduce_trace_shape_at_tie_pin`), correct the reach claim, and register a new
-    measurement with canary-pwr as a measured row (N06.14 follow-up; an operator decision).
+    `ulimit -v 8000000`, one at a time. Remaining (2026-10-20): the reach claim is corrected and
+    a new measurement is registered (`docs/roadmap/prereg/N06.14b.json`, below); its heavy run
+    is pending.
     - Runs: `N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14.json
       --out target/orchestrator/n06-g2`: 35 runs, all exit 0, exit 1 overall because sessions
       differ. Plugin row: 5 routes with the exported args, exit 0 each. Measuring tool (the engine
@@ -2034,6 +2034,104 @@ These are marked or look like quirks but keep no bug:
       stay `true` in both profiles, and N06.13 does not promote them. Amendment 1's pair
       **fails**, so N06.4's branch-3 acceptance does not carry to the wider reach (decision table:
       operator decision).
+  - *Partial 2026-10-20 (reach corrected, re-registered):* worktree `target/orchestrator/n06b/wt`
+    (branch `land/n06-14b`, on main `c8b91b7`). No route was run.
+    - [x] Reach corrected 2026-10-20. A 45 degree board reaches `Simplex::cutout_from` through
+      the tree shapes of traces with a line off 45 degrees. Java at `a773a70ec` does the same.
+      - Tree shapes: the 45 degree tree replaces pin, via, area and outline shapes by bounding
+        octagons (`ShapeSearchTree45Degree.java:510-563`; `board/search/mod.rs`
+        `drill_item_tree_shapes`, `regularize`). Trace shapes come from the base class
+        (`ShapeSearchTree.java:1120-1131` → `Polyline.offsetShapes`, `Polyline.java:358-512`;
+        `board/search/mod.rs` `tree_shapes_of` → `trace_offset_shape` →
+        `geometry/polyline.rs` `offset_shape`). That result simplifies to an octagon only when
+        every line is a multiple of 45 degrees (`Simplex.simplify`/`isIntOctagon`,
+        `Simplex.java:60-70`, `:365-379`). Any other trace keeps a simplex tree shape.
+      - Drill pages: `DrillPage.getDrills` (`DrillPage.java:63-103`) → `PolylineArea.splitToConvex`
+        → `TileShape.cutout`. In Rust: `Session::page_drills` → `calculate_page_drills` and
+        `page_cutouts` (`autoroute/session/drills.rs`) → `PolylineArea::split_to_convex_counted`
+        (`geometry/shapes/polyline_area.rs`) → `TileShape::cutout_counted`
+        (`geometry/shapes/tile_shape.rs`, `cutout_from_box`/`_octagon`/`_simplex`) →
+        `Simplex::cutout_from_counted`. The cutout calls it when either shape is a simplex:
+        Java's `IntBox.cutoutFrom(Simplex)` (`IntBox.java:759-760`) and
+        `IntOctagon.cutoutFrom(Simplex)` (`IntOctagon.java:1708-1709`) call `toSimplex` the same
+        way. Every piece a simplex hole cuts is a simplex, so the page's later octagon holes
+        (pads, vias) go through the simplex code too.
+      - Tie-pin cutout: `MazeSearchEngine.java:166-178` → `reduceTraceShapeAtTiePin`
+        (`ShapeSearchTree.java:935-965`). In Rust: `autoroute/session/init.rs` →
+        `BasicBoard::reduce_trace_shape_at_tie_pin` (`board/basic_board.rs`). Only a trace of
+        another net with a simplex tree shape that ends on a pin of more than one net reaches
+        it. The four boards checked have 0 such pins.
+      - Gates: the tree kind (45 degree for these boards; the 90 degree tree keeps boxes,
+        `offsetBox`, so it never gets there) and the trace's angles. The counters count at
+        both sites in both arms and are recorded only with statistics on. No switch gates it.
+        `octagon_box_cutout_branch3` is not on this path: branch 3 lives in
+        `IntOctagon::cutout_from_box_counted` and calls no simplex code, so the lead about it
+        is refuted.
+      - Sources on the rows: canary-pwr has 5 fixed any-angle segments in its DSN and its plugin
+        export (6 simplex tree shapes). tomu-fpga8 has 140 protected any-angle traces (147
+        shapes). Amendment 2's canary-pwr baseline SES also has one router-made segment one
+        unit off 45 degrees (B.Cu 1500, (1160960,-544113) to (1157596,-540750); its origin was
+        not traced). The registered rows and the plugin export have 0 tie pins.
+      - Test, new: `crates/freerouting/tests/n06_cutout_reach_45.rs::a_45_degree_board_reaches_the_simplex_cutout_only_through_any_angle_traces`
+        (pass, 3.8 s). It computes every drill page of one net's session at load:
+        - canary-pwr: 460 pages, 5 holding a simplex shape; reach (`cutout_hole_crosses_border`,
+          `simplex_octagon_half_corner`) (0, 14);
+        - tomu-fpga8: 448 pages, 40 holding one; (33, 701);
+        - J2: 84 pages, none; (0, 0).
+
+        No page without a simplex tree shape reaches either switch, and no non-trace item has
+        a simplex shape in the 45 degree tree. A run reaches only the pages its maze search
+        computes: amendment 2's tomu-fpga8 run computed 0 drills, and tomu-fpga9 2695 with both
+        counters 0.
+      - Load-only inventory (`unwired_area_splits_corpus_inventory`, `N06_CUTOUT_DSNS` = the 7
+        DSN rows and amendment 2's plugin export, 1 passed): stored areas with holes only on
+        tomu-fpga8 (`cutout_hole_crosses_border` 12) and tomu-fpga9 (8). The plugin export has
+        none.
+      - Docs corrected: `geometry/quirks.rs` (`SplitQuirks`), `tests/n06_cutout_reach.rs`
+        header, DIVERGENCES "N06.14 simplex cutouts outside N06.4's domain", and this file's
+        two inventory rows.
+      - Not changed: `tools/bench/sets/n06-g2.txt`, the old registration's set, which keeps its
+        old comment.
+    - [x] Registered again before any number under it: `docs/roadmap/prereg/N06.14b.json`
+      (sha256 `9417fb2c253a4e54d04406599ee7b2b8742ef64aae1ce4c0c2115fa1c6ef6b6b`), set
+      `tools/bench/sets/n06-g2b.txt` (the same 7 DSN rows), pinned by
+      `crates/freerouting-dev/tests/prereg_n06_14b.rs` (5 tests, pass).
+      - A new file, not amendment 3: `N06.14.json` has numbers, and routing-quality.md does not
+        edit arms, cells, signals or guards after a number exists.
+      - Engine: main `c8b91b7`. Profile `--router.profile=enhanced`. Every arm sets
+        `octagon_box_cutout_branch3=true`, and `false` for `simplex_prev_division_line`,
+        `any_angle_room_side_index`, `opt_first_pass_stops`, `opt_equal_key_skip` and
+        `shove_via_into_pending_piece` (the same values in every arm).
+      - Arms: `baseline` (both N06.14 keys `true`), each key alone `false`, and `all`.
+      - Rows: every row is measured, canary-pwr's DSN and plugin rows included.
+        `Issue026-J2_reference` is the only identity row. Its predicted counters are 0, and a
+        counter above 0 there is reported as a wrong prediction, not a void verdict. A
+        consistency check replaces the old identity check: on every row but tomu-fpga8/9, a
+        pair whose arms both count 0 must have identical sessions.
+      - Hard guards `via_in_pad`, `below_minimum` and guards `clearance_violations`,
+        `drc_real`: no new breach versus baseline (option (b)). Rule N02 totals, no-regress.
+        Noise: canary-pwr 10, the plugin row 10, others the default.
+      - `seen_before_registration` gives amendment 2's numbers: DSN 122 → 129, plugin 39 → 44,
+        total 196 → 208 (noise 21.40); counters 109 / 4686 (DSN) and 16 / 1552 (plugin).
+    - [ ] Heavy run (orchestrator, one route at a time, every route under the cap): heavy run
+      pending: `cd /home/thebo/code/freerouting-rs && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-target cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.14b.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-g2b`
+      (exits 1 when sessions differ, after writing `summary.json`), then the plugin row:
+      `cd /home/thebo/code/freerouting-rs && OWN_FLAGS=9 N06_RUN_ULIMIT_KB=8000000 python3 target/orchestrator/n06r5/route_plugin.py docs/roadmap/prereg/N06.14b.json target/orchestrator/n06r5/plugin arms-14b`
+      (the exported DSN `target/orchestrator/n06r5/plugin/work/canary-pwr.dsn`, sha256
+      `e6297c7d…`, and its args `c6351b8d…`).
+      - Then grade as amendment 2 did: the measuring tool (`n06r5/n06m_all.sh`
+        `/home/thebo/code/freerouting-rs/target/orchestrator/n06-g2b`) and `freerouting-dev
+        widths` on every DSN run. Grade each distinct plugin session twice
+        (`n06r5/grade.sh <arm>/output.ses <dir>`). Build the records with
+        `n06r5/build_records.py docs/roadmap/prereg/N06.14b.json …`.
+      - Then `freerouting-dev gate --records <r> --baseline <b> --prereg
+        docs/roadmap/prereg/N06.14b.json --write-baseline` first. After that, the verdict pair
+        without `--arms`, and `--arms baseline,cutout_hole_crosses_border` and `--arms
+        baseline,simplex_octagon_half_corner`. Check the consistency rule from the two
+        summaries.
+      - `n06m/Cargo.toml` and `grade.sh` point at `target/orchestrator/n06r5/wt`, which is gone.
+        Recreate it first with `git worktree add --detach target/orchestrator/n06r5/wt <landed
+        commit>`, and rebuild `n06m` into `n06-target`.
 - [x] **N06.15 — The shove bug N03.2 found:** `shove_via_into_pending_piece` (the last (b) row). A
   deeper level of `TraceShover.insert`'s recursion moves a via of another net (`shoveVias`) onto a
   substitute piece that is not on the board yet; the piece is then inserted over it, a short. Make

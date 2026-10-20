@@ -1,0 +1,18 @@
+# N06.14b: the simplex cutouts' kept Java bugs outside N06.4's domain
+# (docs/roadmap/tasks/N06-fix-kept-java-bugs.md, item N06.14), registered in
+# docs/roadmap/prereg/N06.14b.json: router.java_quirks.cutout_hole_crosses_border and
+# simplex_octagon_half_corner, each alone and both, against Java's cutouts (both true). The rows of
+# n06-g2.txt, chosen again under the corrected reach claim: the switches live in Simplex::cutout_from,
+# which a drill page reaches whenever a tree shape in it is a simplex. Any-angle mode keeps every
+# obstacle's simplex; a 45 degree tree keeps the simplex tree shape of every trace with a line off
+# 45 degrees (loaded any-angle wiring, or a router-made trace off by a unit), and octagons for
+# everything else; a 90 degree tree keeps boxes only. Every row is measured; J2 (no wiring) is also
+# the identity row. canary-pwr also goes through the KiCad plugin path (the registration's
+# plugin_canary block).
+crates/freerouting/tests/data/autoroute-variants/Issue026-J2_reference-any.dsn
+crates/freerouting/tests/data/autoroute-variants/Issue143-rpi_splitter-any.dsn
+crates/freerouting/tests/data/autoroute-variants/scoring-mixed-layer-any.dsn
+fixtures/Issue026-J2_reference.dsn
+fixtures/Issue756-tomu-fpga8.dsn
+fixtures/Issue756-tomu-fpga9.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
