@@ -1,0 +1,20 @@
+# K13.5 (docs/roadmap/prereg/K13.json): the plugin's two board inputs, `dsn` (KiCad's DSN export)
+# against `kicad_pcb` (the board snapshot, read directly), with the same options, each row routed and
+# graded by `tools/kicad-reader/plugin-input-ab.sh <arm> <row> <options.json> <out>`.
+# Rows: K10.5's ten boards (archive/K10-plugin-direct-board-read.md) and the canary-pwr plugin row
+# (N06.13's, canary 2a7e070b). Every row is a KiCad 6+ project with its own .kicad_pro.
+# Paths are relative to the main checkout's root (under target/, not in git); the copies were made
+# 2026-10-20: the demos with `cp -r` of their folders from WSL KiCad 10.0.7's /usr/share/kicad/demos,
+# the canary rows with `git -C ../canary archive <commit> hardware/canary-pwr-rev1.0`.
+# After `#`: the row's pass cap (K13's few-minute rule, the same in both arms) and its timeout.
+target/orchestrator/k135/boards/ecc83/ecc83-pp.kicad_pcb  # no cap, 300 s
+target/orchestrator/k135/boards/interf_u/interf_u.kicad_pcb  # no cap, 300 s
+target/orchestrator/k135/boards/complex_hierarchy/complex_hierarchy.kicad_pcb  # no cap, 300 s
+target/orchestrator/k135/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb  # max_passes 1, fanout 1 pass, 600 s
+target/orchestrator/k135/boards/cm5_minima/CM5_MINIMA_3.kicad_pcb  # no cap, 300 s
+target/orchestrator/k135/boards/canary-1a7df77/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb  # no cap, 900 s
+target/orchestrator/k135/boards/openair-max/One-Air-Max.kicad_pcb  # no cap, 300 s
+target/orchestrator/k135/boards/video/video.kicad_pcb  # max_passes 1, fanout 1 pass, 600 s
+target/orchestrator/k135/boards/vme-wren/vme-wren.kicad_pcb  # max_passes 1, fanout 1 pass, 600 s
+target/orchestrator/k135/boards/jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_pcb  # max_passes 1, fanout 1 pass, 600 s
+target/orchestrator/k135/boards/canary-2a7e070b/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb  # no cap, 900 s

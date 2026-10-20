@@ -1,0 +1,458 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "K13.6-board-input",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/K13-kicad-pcb-input-by-default.md (K13.5 registers, K13.6 measures, K13.7 switches the default if K13's switch rule passes)",
+  "question": "With the plugin's default options (profile enhanced) and the board's own Board Setup minimums, does the board snapshot read directly (board_input = kicad_pcb) route K10.5's ten boards and the canary-pwr plugin row with zero routing-caused manufacturing breaches on every board, graded by KiCad under each board's own rules, and with a total KiCad-unconnected count over the set no higher than KiCad's DSN export (board_input = dsn, the current default)?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "ecc83-pp": 0,
+      "interf_u": 0,
+      "complex_hierarchy": 0,
+      "kit-dev-coldfire-xilinx_5213": 0,
+      "CM5_MINIMA_3": 0,
+      "canary-pwr-1a7df77": 0,
+      "One-Air-Max": 0,
+      "video": 0,
+      "vme-wren": 0,
+      "jetson-agx-thor-baseboard": 0,
+      "canary-pwr-plugin-2a7e070b": 0
+    },
+    "min_boards": 3
+  },
+  "noise_why": "0 on every row, so the gate's total clause is K13's 'no higher' exactly (accept no-regress passes when the change is at most the set noise, sqrt(sum band^2) = 0). The gate's per-board clause (no board worse than twice its band) then fails on any board where kicad_pcb has more unconnected; K13's rule does not block on such a board, so that clause is overridden by keep_rule (below) and is not a refusal of the switch",
+  "engine": "freerouting-rs release CLI (target/release/freerouting-rs) of main when K13.6 runs, after K13.1-K13.4 have landed; one Linux build for both arms (cargo build --release -p freerouting-cli, CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0, in a detached worktree of that commit with its own CARGO_TARGET_DIR); the KiCad plugin and tools/kicad-oracle of the same worktree; WSL KiCad 10.0.7 (kicad-cli and pcbnew, the script refuses a mismatch). K13.6's first amendment, written after the build and before any route, names the commit, the binary's sha256 and `freerouting-rs --version`",
+  "arms": {
+    "dsn": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=LIMIT ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=OUT/kicad_pcb/ROW tools/kicad-reader/plugin-input-ab.sh dsn BOARD OUT/ROW.options.json OUT/dsn/ROW -- ROW_ARGS",
+      "board_input": "dsn",
+      "options": {
+        "schema": 5,
+        "profile": "enhanced",
+        "board_input": "dsn"
+      },
+      "settings": {},
+      "what": "baseline, the plugin's current default input: `headless_run.py export` (pcbnew.ExportSpecctraDSN and the plugin's DSN fix-ups: the rule-area fix-up, edge and pad keepouts), the router flags the plugin passes (<stem>.args.json: --router.min_trace_width_um and Q18's Board Setup minimums, copper-to-edge and hole clearance (options.BOARD_MINIMUM_SETTINGS, read from the board), Q18.7's --router.solder_mask_expansions (export_flow.solder_mask_args, which names DSN padstacks: this path only), Q10's --router.autorouter.sweep=free), the session imported whole by `headless_run.py import` (ImportSpecctraSES, placement included, the via-drill correction and the zone refill)"
+    },
+    "kicad_pcb": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=LIMIT ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=OUT/dsn/ROW tools/kicad-reader/plugin-input-ab.sh kicad_pcb BOARD OUT/ROW.options.json OUT/kicad_pcb/ROW -- ROW_ARGS",
+      "board_input": "kicad_pcb",
+      "options": {
+        "schema": 5,
+        "profile": "enhanced",
+        "board_input": "kicad_pcb"
+      },
+      "settings": {},
+      "what": "candidate: `headless_run.py snapshot` (the zones refilled, pcbnew.SaveBoard of the board with aSkipSettings and SaveProjectCopy of the live project beside it, K10.1-K10.2), the router flags from <stem>.args.json: the same as dsn's but for Q18.7's solder-mask expansions, which the snapshot path does not pass (whether the reader carries mask expansion itself is K13.1's row); the same import. The DSN rewrites (edge_and_pad_keepouts, on in the defaults) have no DSN text here and do nothing; headless_run does not refuse them, only the dialog's form does (K10.4). The router reads the board's rules and Margin/Edge.Cuts lines itself"
+    }
+  },
+  "baseline_arm": "dsn",
+  "candidate_arm": "kicad_pcb",
+  "pairs": {
+    "verdict": [
+      "dsn",
+      "kicad_pcb"
+    ],
+    "reported": [
+      [
+        "kicad_pcb",
+        "dsn"
+      ]
+    ]
+  },
+  "pairs_why": "the verdict pair judges kicad_pcb's hard metrics (K13's zero-breach clause) and the total; the reported pair, printed by --all-pairs and not counted, makes the gate check the same hard metrics on dsn (the guard holds in both arms)",
+  "options": {
+    "file": "OUT/ROW.options.json, written before any route: the row's `options` (boards.rows) as JSON; the script copies it per arm and sets `board_input` to the arm's value",
+    "default": {
+      "schema": 5,
+      "profile": "enhanced"
+    },
+    "default_why": "the plugin's defaults: options.profile_defaults('enhanced').to_dict() at registration is {\"schema\": 5, \"profile\": \"enhanced\"} (sweep free from the profile, unlimited passes, threads automatic, optimizer on, edge_and_pad_keepouts on, fix_existing off, apply_kicad_rules off). The Board Setup minimums are not options: the plugin reads them from the board in both arms (export_flow.router_args)",
+    "pass_cap": {
+      "options": {
+        "max_passes": 1
+      },
+      "router_args": [
+        "--router.fanout.max_passes=1"
+      ]
+    },
+    "pass_cap_why": "K13's few-minute rule. The plugin's Maximum passes (max_passes 1: --max-passes 1) caps the routing passes; it does not cap the fanout's own passes (fanout.max_passes, 20 by default), so --router.fanout.max_passes=1 goes after the plugin's flags (ROW_ARGS). Applied in both arms to every row whose route took over 3 minutes in K10.5 or was not measured there for that reason, canary-pwr excepted (decided 2026-10-20: canary-pwr routes stay allowed): kit-dev-coldfire-xilinx_5213, video, vme-wren, jetson-agx-thor-baseboard"
+  },
+  "pass_cap_record": "chosen from K10.5's route logs (target/orchestrator/k105/out/<arm>/<board>/route.log, release c8b91b7, unlimited passes, threads 2, optimizer on, keepouts off, one run each), the only route times on record for these boards: video (dsn) fanout passes 1-6 took 19, 37, 34, 33, 33, 34 s, routing passes 30-47 s each until the stop rule after 18, then the sweep's two passes 30 and 34 s, 1040 s in all; kit-dev-coldfire (dsn) fanout pass 2 alone took 298 s, routing passes 3-6 s, 468 s in all. With one fanout pass and one routing pass that record gives about 19 + 47 + 64 = 130 s for video and about 11 + 6 + 8 = 25 s for kit-dev-coldfire. vme-wren (69.6 MB) and jetson-agx-thor-baseboard (84.8 MB) have no per-pass record: K10.5 left them out because their uncapped routes took over 3 minutes (its run was interrupted in vme-wren's dsn arm and kept no log), so their cap is the same and their timeout bounds them",
+  "boards": {
+    "set": "tools/bench/sets/k13-input.txt",
+    "eligibility": "every row; fixed before any run, none dropped after a number. K10.5's ten boards (the five K02 demos, canary-pwr at canary 1a7df77, and K07.6's One-Air-Max, video, vme-wren, jetson-agx-thor-baseboard) and the canary-pwr plugin row of N06.13 (canary 2a7e070b). Every row is a KiCad 6+ board (version 20241229 or later) with its own .kicad_pro (routing-quality.md: KiCad-graded rows use KiCad 6+ projects only), so every arm grades with rules = project",
+    "rows": {
+      "ecc83-pp": {
+        "input": "target/orchestrator/k135/boards/ecc83/ecc83-pp.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/ecc83/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 300,
+        "k10_5_route_s": {
+          "dsn": 0.2,
+          "kicad_pcb": 0.2
+        }
+      },
+      "interf_u": {
+        "input": "target/orchestrator/k135/boards/interf_u/interf_u.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/interf_u/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 300,
+        "k10_5_route_s": {
+          "dsn": 1.2,
+          "kicad_pcb": 1.2
+        }
+      },
+      "complex_hierarchy": {
+        "input": "target/orchestrator/k135/boards/complex_hierarchy/complex_hierarchy.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/complex_hierarchy/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 300,
+        "k10_5_route_s": {
+          "dsn": 0.2,
+          "kicad_pcb": 0.2
+        }
+      },
+      "kit-dev-coldfire-xilinx_5213": {
+        "input": "target/orchestrator/k135/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced",
+          "max_passes": 1
+        },
+        "router_args": [
+          "--router.fanout.max_passes=1"
+        ],
+        "pass_cap": true,
+        "timeout_s": 600,
+        "k10_5_route_s": {
+          "dsn": 467.7,
+          "kicad_pcb": 488.2
+        }
+      },
+      "CM5_MINIMA_3": {
+        "input": "target/orchestrator/k135/boards/cm5_minima/CM5_MINIMA_3.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/cm5_minima/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20250513,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 300,
+        "k10_5_route_s": {
+          "dsn": 22.9,
+          "kicad_pcb": 61.4
+        }
+      },
+      "canary-pwr-1a7df77": {
+        "input": "target/orchestrator/k135/boards/canary-1a7df77/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
+        "source": "canary 1a7df77 hardware/canary-pwr-rev1.0 (git archive, unedited; K10.5's canary-pwr row, the commit K09's header names; its .kicad_pcb is byte-identical to canary 9511d9a3's, Q21's copy)",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 900,
+        "k10_5_route_s": {
+          "dsn": 319.5,
+          "kicad_pcb": 255.1
+        }
+      },
+      "One-Air-Max": {
+        "input": "target/orchestrator/k135/boards/openair-max/One-Air-Max.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/openair-max/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 300,
+        "k10_5_route_s": {
+          "dsn": 60.5,
+          "kicad_pcb": 61.7
+        }
+      },
+      "video": {
+        "input": "target/orchestrator/k135/boards/video/video.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/video/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced",
+          "max_passes": 1
+        },
+        "router_args": [
+          "--router.fanout.max_passes=1"
+        ],
+        "pass_cap": true,
+        "timeout_s": 600,
+        "k10_5_route_s": {
+          "dsn": 1040.3,
+          "kicad_pcb": 1028.3
+        }
+      },
+      "vme-wren": {
+        "input": "target/orchestrator/k135/boards/vme-wren/vme-wren.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/vme-wren/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced",
+          "max_passes": 1
+        },
+        "router_args": [
+          "--router.fanout.max_passes=1"
+        ],
+        "pass_cap": true,
+        "timeout_s": 600
+      },
+      "jetson-agx-thor-baseboard": {
+        "input": "target/orchestrator/k135/boards/jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/jetson-agx-thor-baseboard/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced",
+          "max_passes": 1
+        },
+        "router_args": [
+          "--router.fanout.max_passes=1"
+        ],
+        "pass_cap": true,
+        "timeout_s": 600
+      },
+      "canary-pwr-plugin-2a7e070b": {
+        "input": "target/orchestrator/k135/boards/canary-2a7e070b/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
+        "source": "canary 2a7e070b hardware/canary-pwr-rev1.0 (git archive, unedited, including the operator's freerouting-rs/ folder, which the script does not read): N06.13's plugin row (plugin_canary, source_sha256 17b597a0...), routed there with the plugin's default options",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "options": {
+          "schema": 5,
+          "profile": "enhanced"
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 900
+      }
+    },
+    "files": {
+      "ecc83-pp": "0ab45f4f8c90ac877e3313a1888d875107f2be3fc2b2f40cfb7927873b35260c",
+      "interf_u": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e",
+      "complex_hierarchy": "d5f4162d4c766448832723d139f9e0fcb88a17c82340f10f6f6dc6c2042f0d69",
+      "kit-dev-coldfire-xilinx_5213": "392cf6bf4b9b62beb435f965ccd7671a46decb17f947b74bfde482acd2132a5e",
+      "CM5_MINIMA_3": "123e209e6245cbcc344c1c70b425dcb44a12cd0a2d05f00a39d3f2e7ff307ffa",
+      "canary-pwr-1a7df77": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "One-Air-Max": "a577ba5e2b337c9b827f3c30256161a1893da8303d278fb7db10dba4f02ea810",
+      "video": "f620675158ddd5c61e5ce9e15f4c92b230ae1df1cbcec6c502b8ce266e4007ea",
+      "vme-wren": "1c76ac238b04babc238d2d50585858988fb3f6c4f8d0fbacc738cfe4862fff5b",
+      "jetson-agx-thor-baseboard": "e61179b68ac151376f5552f91a8acc2aed46f0cc4cd9c771049490735cdbf3f8",
+      "canary-pwr-plugin-2a7e070b": "17b597a0a30467b6511c57c40c8857b2bf2bf75250a5cf6477b44d2f0f21eb58"
+    },
+    "rules_files": {
+      "ecc83-pp": {
+        "kicad_pro": "8a943fac4b0cc3ed4fa83ccc83a6e15b9326178845ada0aa906df63f0672e975"
+      },
+      "interf_u": {
+        "kicad_pro": "b9908a96e6113e6e51f488482108dc87aa5d9bcd838f9e3345c85e0db09bffa9"
+      },
+      "complex_hierarchy": {
+        "kicad_pro": "55438416ca7fd46b5bad22da2693e9c43240060977d06daabcba084aa17e2804"
+      },
+      "kit-dev-coldfire-xilinx_5213": {
+        "kicad_pro": "d6ca906944730a3eae31ba3d9240c6966424b0d80ba76e80710e39d7b23c4637"
+      },
+      "CM5_MINIMA_3": {
+        "kicad_pro": "aa5b004bb45d70028612f6591b2cd5fa4754095e7542dbbca974753e4399526a"
+      },
+      "canary-pwr-1a7df77": {
+        "kicad_pro": "c98f01964c5057eea501718117e296d01f2d2d9a7893813ac5cdc5b0571ce764",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8"
+      },
+      "One-Air-Max": {
+        "kicad_pro": "d64469625e0a2d874a7073dd13145a37ab1d33218cc2150fb55fe6f424911fa5"
+      },
+      "video": {
+        "kicad_pro": "329241ed4d9d176ef51adcec457a7c072e4bbc1b6500738622ebeaeba74d6c7f"
+      },
+      "vme-wren": {
+        "kicad_pro": "bda72a1d94f4ddfc6a918fd430f459d2d82b124e508646db1f49f071f29ebf5d",
+        "kicad_dru": "90f428d6594827b01257218aaf92a73d4d5307d5535bb7e49462ca426adf0199"
+      },
+      "jetson-agx-thor-baseboard": {
+        "kicad_pro": "36a2d42b52b71cde1709a17c058d509a62e85e34341134d5e079af74db527191",
+        "kicad_dru": "afef3270ffbaa078e6136ea87f9a2fbbc2a186bab5073aae6bf8aae871ef30aa"
+      },
+      "canary-pwr-plugin-2a7e070b": {
+        "kicad_pro": "c44fd214855fda1b99f15ad13cea069a915f1e34bda8591258e076ec7b6fab77",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8"
+      }
+    },
+    "why": "Paths are relative to the main checkout's root, under target/ (not in git); a missing copy is re-made from the source named per row and must hash as registered. The demos are WSL KiCad 10.0.7's (/usr/share/kicad/demos, the copies byte-identical to it on 2026-10-20). canary-pwr-1a7df77 and canary-pwr-plugin-2a7e070b are two boards (two commits of the design, as N06.13 counts its two canary rows). rules_files pins the .kicad_pro and .kicad_dru each grade reads"
+  },
+  "script": {
+    "path": "tools/kicad-reader/plugin-input-ab.sh",
+    "sha256": "17af015a4adfffd328704c5bf7243af8b75315a81010effbc393275df5d1f8af",
+    "what": "K13.5's version: per router call ulimit -v ROUTE_MEMORY_KB and timeout -k 10 ROUTE_TIMEOUT_S; grading as tools/kicad-oracle/grade.sh --keep-tracks on the plugin's own import (the input board as given and the routed board, each with the project's original .kicad_pro/.kicad_dru and the copper classes forced to error, kicad-cli pcb drc --severity-all --refill-zones, oracle_lib.summarize with both boards' copper: Q22.2's routing_caused_basis copper); SHARE_GRADE_WITH shares the grade of a byte-identical session"
+  },
+  "grading": "one KiCad grade per distinct session: per row the dsn arm runs first, then kicad_pcb with SHARE_GRADE_WITH=OUT/dsn/ROW; when the two sessions are byte-identical the kicad_pcb arm copies dsn's grade (summary grade_shared_with) and grades nothing. Every grade is under the board's own rules (summary `rules`, Q19: `project` on every row here). kicad-cli only while `pgrep -a kicad-cli` shows none, one job at a time; the routes one at a time too",
+  "limits": "every router call (the load check and the route) under ulimit -v 8000000 and timeout -k 10 of the row's timeout_s (300 s for ecc83-pp, interf_u, complex_hierarchy, CM5_MINIMA_3 and One-Air-Max, whose K10.5 routes took at most 62 s; 600 s for the four capped rows; 900 s for the two canary-pwr rows, whose K10.5 routes took 255-320 s uncapped). A call that hits its timeout or is killed by a signal (exit status 124 or above) is recorded as aborted = 1, is not graded and is not rerun",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "manufacturing_breaches",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "errors_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "routing_caused_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drc_real",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "prepare_load_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "route_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "input_unconnected",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "summary via_in_pad: tools/kicad-oracle/via_in_pad.py's vias_in_pads on the routed board minus the input board's, floored at 0 (the demos' own vias in pads are not routing's); a hard metric because the gate requires it (D8: a via in a pad is a failure)",
+    "below_minimum": "summary below_minimum: routed tracks and vias (those whose nanometre copper key, oracle_lib.copper_key, the input board does not have) narrower than the Board Setup minimum track width, with a diameter under the minimum via diameter or a drill under the minimum through-hole drill (kicad_steps.py stats' board_minimums_mm), summed",
+    "manufacturing_breaches": "summary manufacturing_breaches: the routing-caused KiCad DRC items (oracle_lib.summarize with both boards' copper, Q22.2: an item is routing-caused when it involves a track or via the input board does not have at the same nanometre coordinates, width, layer and net) of the types clearance, hole_clearance, hole_to_hole, copper_edge_clearance, track_width, via_diameter, annular_width, drill_out_of_range, solder_mask_bridge, shorting_items, summed. The other routing-caused types are in routing_caused_by_type",
+    "kicad_unconnected": "summary unconnected: kicad-cli's unconnected_items on the routed board",
+    "errors_by_type": "summary violations: every DRC item of severity error on the routed board, by type (copper classes forced to error), pre-existing ones included",
+    "routing_caused_by_type": "summary routing_caused_by_type, every type",
+    "drc_real": "the sum of routing_caused_by_type",
+    "prepare_load_seconds": "summary prepare_s + load_s: the plugin's export or snapshot (headless pcbnew) plus the router's `-de FILE -drc` (parse, build, check)",
+    "route_seconds": "summary route_s",
+    "input_unconnected": "summary input_unconnected: kicad-cli's unconnected_items on the input board as given",
+    "via_in_pad_raw": "summary via_in_pad_raw, the routed board's count with the input's vias in pads",
+    "aborted": "summary aborted"
+  },
+  "guards": "Decided 2026-10-20 (routing-quality.md, order of importance item 1): in both arms, zero routing-caused manufacturing breaches on every board: manufacturing_breaches = 0 and below_minimum = 0, absolutely (not 'no new breach versus the baseline'), and via_in_pad = 0 (D8). The gate checks kicad_pcb in the verdict pair and dsn in the reported pair. A dsn breach is reported and named as a defect of the current default; it does not decide the switch, which K13's rule judges on kicad_pcb",
+  "keep_rule": "K13's switch rule (decided 2026-10-20, docs/roadmap/tasks/K13-kicad-pcb-input-by-default.md 'Decisions made here'), copied: The default changes once K13.6's measurement shows: `kicad_pcb` has zero routing-caused manufacturing breaches on every board, graded under the board's own rules (`docs/roadmap/routing-quality.md`, order of importance item 1); `kicad_pcb`'s total KiCad unconnected over the set is no higher than `dsn`'s. A board where `kicad_pcb` grades worse doesn't block the switch, but K13.6 explains it. If `kicad_pcb` has a breach that `dsn` doesn't, the switch waits for its fix.",
+  "keep_rule_by_hand": "The gate cannot express 'a worse board does not block' together with 'no higher' (its per-board clause), so K13.6 applies the rule by hand from the 22 summary.json files and the gate's output: (1) a row is judged when both arms are graded (aborted 0, graded true); every other row is listed with its reason, and with any unjudged row the verdict is recorded as 'not met on the full set', which K13.7 takes only with the owner's acceptance of the listed rows; (2) zero clause: on every judged row kicad_pcb's manufacturing_breaches, below_minimum and via_in_pad are 0, the gate's HARD lines of the verdict pair; any kicad_pcb breach, whether dsn has it too or not, makes the switch wait for its fix; (3) total clause: the sum of kicad_pcb's kicad_unconnected over the judged rows is at most dsn's, the gate's 'totals verdict' with noise 0; (4) every judged row where kicad_pcb has more kicad_unconnected or more routing-caused items of any type than dsn is explained in K13.6's note and does not block (the gate's 'WORSE than 2 x its band' lines are this list); (5) the verdict is 'switch' when (1) judged every row and (2) and (3) hold, else 'keep dsn' with the clause that failed. The gate is run for its checks: `freerouting-dev gate --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/K13.json --write-baseline` and then `freerouting-dev gate --records records.json --prereg docs/roadmap/prereg/K13.json --all-pairs`, where records.json carries per row and arm the metrics above from summary.json and the input sha256; it must report 0 refusals",
+  "report": "per row and arm: kicad_unconnected (and input_unconnected), errors_by_type, routing_caused_by_type, manufacturing_breaches, below_minimum, via_in_pad, prepare_load_seconds (prepare_s + load_s), route_seconds, aborted, the session sha256 and whether the grade is shared; the totals of kicad_unconnected per arm over the judged rows; the routing-caused items of each arm that also appear on the input board at the same place and type (pre-existing violations counted again on copper the round trip re-laid, K13.2), named, not subtracted",
+  "known_effects": "Both arms import the session whole, as the plugin does: ImportSpecctraSES deletes the board's unlocked tracks and vias and adds the session's, and places the footprints (fix_existing is off by default). Existing copper comes back at the router's resolution (the DSN export rounds to %.6g, the reader to 0.1 um, K13.2), and copper that moved by even 1 nm counts as routing-caused on the copper basis, so a violation already on a board (One-Air-Max's SYS/VBAT gap, video's 0.1992 mm gap on the dsn arm, K10.5) can count as a routing-caused breach in either arm. That is the guard as decided, not subtracted here",
+  "stop_rule": "one registered run per arm and row; no reruns with other settings; an aborted route is recorded and not rerun. A change after the first number goes in `amendments` with its reason",
+  "seen_before_registration": "K10.5 (release c8b91b7, options {\"schema\": 4, \"threads\": 2, \"edge_and_pad_keepouts\": false}, unlimited passes, no pass cap, KiCad's DRC counting every error, not the routing-caused basis) graded eight of these rows, both arms (archive/K10, K10.5's table): kicad_pcb the same on ecc83-pp, interf_u, complex_hierarchy, kit-dev-coldfire-xilinx_5213; better on CM5_MINIMA_3 (195 -> 4 errors), canary-pwr 1a7df77 (42 -> 38 unconnected) and video (1 -> 0 errors); worse on One-Air-Max (14 -> 15 clearance). N06.13 routed the canary-pwr plugin row on the dsn path only (default options, KiCad unconnected 17 -> 15 between two engines). No row has been routed with these options, caps or grading in either arm; the implementer routed and graded nothing",
+  "not_registered": [
+    "the dialog: in KiCad, board_input = kicad_pcb with the default options is refused by the form while edge_and_pad_keepouts is on (K10.4); that is K13.7's to resolve, not measured here",
+    "fix_existing, apply_kicad_rules or any other option off its default",
+    "uncapped routes of the four capped rows",
+    "Windows KiCad 10.0.5, and KiCad 11's IPC path",
+    "grade.sh's stripped-board grading (the plugin routes the board as it is)"
+  ],
+  "decision_table": {
+    "switch": "K13.7: board_input defaults to kicad_pcb with an options schema bump, saved dsn choices kept, a DIVERGENCES line",
+    "keep dsn": "K13.6 records the clause that failed and the rows behind it; dsn stays the default"
+  },
+  "timing": "registered 2026-10-20 at main b78845e, before K13.1, K13.2 and K13.4 landed and before any route or grade of either arm on any row",
+  "amendments": []
+}

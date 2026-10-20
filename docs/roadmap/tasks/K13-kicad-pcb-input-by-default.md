@@ -120,7 +120,7 @@ rules).
   - **Accept:** before and after load times for `jetson` and `CM5_MINIMA_3` (arcs), release
     build, one run each.
 
-- [ ] **K13.5 — Register the measurement.** Write `docs/roadmap/prereg/K13.json` and
+- [x] **K13.5 — Register the measurement.** Write `docs/roadmap/prereg/K13.json` and
   `tools/bench/sets/k13-input.txt` before any number:
   - **Boards:** K10.5's ten boards, plus the canary-pwr plugin row.
   - **Arms:** `dsn` and `kicad_pcb`, with the same options, through
@@ -133,7 +133,48 @@ rules).
   - **Accept:** the registration and its pin test (`crates/freerouting-dev/tests/prereg_k13.rs`)
     are in, with no number yet.
 
-- [ ] **K13.6 — Measure.** Run K13.5 as registered.
+  *Done 2026-10-20:* registered at main `b78845e`, **no number yet**: nothing was routed or graded.
+  - **Files.** `docs/roadmap/prereg/K13.json` (id `K13.6-board-input`, sha256
+    `a470fa311beffa3f80af1663c251fdf3234445b3d213c34bbc00668ee7408770`),
+    `tools/bench/sets/k13-input.txt` (11 rows),
+    `crates/freerouting-dev/tests/prereg_k13.rs`, and `tools/kicad-reader/plugin-input-ab.sh`.
+    The registration pins the script's sha256, `17af015a…`.
+  - **Boards.** K10.5's ten boards and N06.13's canary-pwr plugin row (canary `2a7e070b`), copied
+    to `target/orchestrator/k135/boards/`. The demos are `cp -r` of WSL KiCad 10.0.7's
+    `/usr/share/kicad/demos` folders. The canary rows are `git archive` of
+    `hardware/canary-pwr-rev1.0` at `1a7df77` (K10.5's) and `2a7e070b`. All 11 are KiCad 6+
+    (version 20241229 or later) and have their own `.kicad_pro`. Each `.kicad_pcb` and its
+    `.kicad_pro`/`.kicad_dru` are hashed in `boards.files` and `boards.rules_files`.
+  - **Arms.** `dsn` against `kicad_pcb`, both with the options `{"schema": 5, "profile":
+    "enhanced"}` (`profile_defaults('enhanced')`). The plugin reads the Board Setup minimums from
+    the board on both paths. The two commands differ only in the arm's name.
+  - **Pass cap** (the few-minute rule): the plugin's `max_passes: 1` plus
+    `--router.fanout.max_passes=1`, the same in both arms. It applies to `vme-wren` and
+    `jetson-agx-thor-baseboard`, and also to `kit-dev-coldfire-xilinx_5213` and `video`, whose
+    K10.5 routes took 468 s and 1040 s.
+    - Source: K10.5's route logs (`target/orchestrator/k105/out/<arm>/<board>/route.log`). Video's
+      fanout passes took 19–37 s each and its routing passes 30–47 s each; kit-dev's fanout pass 2
+      alone took 298 s. That gives about 130 s for video and 25 s for kit-dev.
+    - `vme-wren` and `jetson` have no per-pass record (K10.5: "over 3 min"), so their 600 s
+      timeout bounds them.
+  - **Limits.** `ulimit -v 8000000` and `timeout -k 10` on every router call: 300 s, 600 s for
+    the capped rows, 900 s for canary-pwr. An aborted route is recorded and not rerun.
+  - **Grading.** One grade per distinct session (`SHARE_GRADE_WITH`), under the project's own
+    rules. Routing-caused items are counted on grade.sh's copper basis (Q22.2).
+  - **Guards and keep rule.** The guards (zero routing-caused manufacturing breaches, below-minimum
+    copper and vias in pads, in both arms) and K13's switch rule are copied into the
+    registration. The gate runs with `"rule": "totals"`, noise 0 on every row and the pair
+    `[kicad_pcb, dsn]` reported. Because the gate's per-board clause is stricter, K13.6 applies the
+    switch rule by hand (`keep_rule_by_hand`).
+  - **Test and gate.** `cargo test -p freerouting-dev --test prereg_k13`: 6 passed. The board
+    hashes were checked against the copies, and a changed hash fails the test. `cargo fmt --all
+    --check` and `cargo clippy -p freerouting-dev --tests -- -D warnings` are clean.
+
+- [ ] **K13.6 — Measure.** Run K13.5 as registered, after K13.1, K13.2 and K13.4 are on main
+  (decided 2026-10-20: both arms re-lay unlocked input copper, so until K13.2 a violation already
+  on the board counts as routing-caused in both). It starts with one smoke run of
+  `plugin-input-ab.sh` on a board outside the set. A script fix that smoke run needs is a
+  registration amendment before any registered row runs.
   - **Accept:**
     - the per-board table (unconnected, errors by type, prepare + load time, route time) is in
       the done note;
@@ -145,6 +186,10 @@ rules).
   - `board_input` defaults to `kicad_pcb`, with an options schema bump;
   - saved `dsn` choices are kept;
   - the dialog stops calling it experimental;
+  - the dialog accepts `kicad_pcb` with the default options. Today it refuses the pair because
+    `edge_and_pad_keepouts` is on by default (K10.4), while `headless_run.py snapshot` accepts it
+    and the option does nothing there (found in K13.5). The option is ignored, and the dialog
+    says so, on `kicad_pcb`;
   - the plugin docs and README say which input runs and how to pick the other;
   - a DIVERGENCES line notes that Java's plugin exports a DSN.
   - **Accept:**
