@@ -438,3 +438,46 @@ def test_class_widths_text_round_trips():
     assert error is None and widths == {"GND": 0.4, "Power_High": 0.3}
     assert options.parse_class_widths("AUTO") == ("auto", None)
     assert options.parse_class_widths("") == ({}, None)
+
+
+def test_board_minimums_become_hard_floors():
+    """Q18: Board Setup's minimums pass as the router's board minimums and
+    copper-to-edge clearance; unknown or non-positive values pass nothing."""
+    from options import board_minimum_args
+
+    assert board_minimum_args({}) == []
+    assert board_minimum_args(
+        {
+            "m_CopperEdgeClearance": 500000,
+            "m_HoleClearance": 250000,
+            "m_MinThroughDrill": 300000,
+            "m_TrackMinWidth": 200000,
+            "m_ViasMinAnnularWidth": 100000,
+            "m_ViasMinSize": 500000,
+        }
+    ) == [
+        "--router.board_minimums.track_width_um=200",
+        "--router.board_minimums.via_diameter_um=500",
+        "--router.board_minimums.via_drill_um=300",
+        "--router.board_minimums.via_annular_um=100",
+        "--router.copper_to_edge_clearance_um=500",
+        "--router.hole_clearance_um=250",
+    ]
+    assert board_minimum_args({"m_TrackMinWidth": 0, "m_ViasMinSize": None, "m_MinThroughDrill": 127000}) == [
+        "--router.board_minimums.via_drill_um=127"
+    ]
+
+
+def test_router_args_carry_the_board_minimums():
+    import types
+
+    import export_flow
+
+    board = types.SimpleNamespace(
+        GetDesignSettings=lambda: types.SimpleNamespace(m_TrackMinWidth=150000, m_CopperEdgeClearance=500000)
+    )
+    assert export_flow.router_args(board, RouteOptions()) == [
+        "--router.min_trace_width_um=150",
+        "--router.board_minimums.track_width_um=150",
+        "--router.copper_to_edge_clearance_um=500",
+    ]

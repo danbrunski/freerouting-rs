@@ -393,5 +393,7 @@ pub fn apply_all(
     lines.extend(apply_plane_nets(board, settings));
     lines.extend(apply_plane_as_obstacle(board, settings));
     lines.extend(apply_clearance_tolerance(board, settings));
+    // Q18: not Java's; nothing without a board via minimum.
+    lines.extend(super::via_minimums::apply_via_minimums(board, settings));
     lines
 }

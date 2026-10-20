@@ -76,6 +76,73 @@ impl ClassDef {
     }
 }
 
+/// Board Setup's minimum manufacturing rules
+/// (`board.design_settings.rules`, Q18), in nm. A rule the file leaves out
+/// (or no project file) is KiCad's default, as KiCad itself loads it (the
+/// reader takes KiCad 6+ boards only, whose rules live in the project)
+/// (`board_design_settings.h`: track 0.2 mm, via 0.5 mm, through drill
+/// 0.3 mm, annular ring 0.1 mm, copper to edge 0.5 mm, copper to hole 0.25 mm); `None` when the file
+/// sets it to 0 (KiCad's "no minimum"). The router takes them as hard floors
+/// (`router.board_minimums.*`, `router.copper_to_edge_clearance_um`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BoardMinimums {
+    /// `min_track_width` (`m_TrackMinWidth`).
+    pub track_width: Option<i32>,
+    /// `min_via_diameter` (`m_ViasMinSize`).
+    pub via_diameter: Option<i32>,
+    /// `min_through_hole_diameter` (`m_MinThroughDrill`).
+    pub through_drill: Option<i32>,
+    /// `min_via_annular_width` (`m_ViasMinAnnularWidth`).
+    pub via_annular: Option<i32>,
+    /// `min_copper_edge_clearance` (`m_CopperEdgeClearance`).
+    pub copper_edge_clearance: Option<i32>,
+    /// `min_hole_clearance` (`m_HoleClearance`): copper to a drilled hole.
+    pub hole_clearance: Option<i32>,
+}
+
+impl Default for BoardMinimums {
+    /// KiCad's defaults.
+    fn default() -> Self {
+        BoardMinimums {
+            track_width: Some(mm_to_nm(0.2)),
+            via_diameter: Some(mm_to_nm(0.5)),
+            through_drill: Some(mm_to_nm(0.3)),
+            via_annular: Some(mm_to_nm(0.1)),
+            copper_edge_clearance: Some(mm_to_nm(0.5)),
+            hole_clearance: Some(mm_to_nm(0.25)),
+        }
+    }
+}
+
+impl BoardMinimums {
+    /// No minimum known.
+    pub const NONE: BoardMinimums = BoardMinimums {
+        track_width: None,
+        via_diameter: None,
+        through_drill: None,
+        via_annular: None,
+        copper_edge_clearance: None,
+        hole_clearance: None,
+    };
+
+    /// The minimums of a `rules` object; a missing key keeps KiCad's default.
+    pub fn of_rules(rules: &Value) -> BoardMinimums {
+        let d = BoardMinimums::default();
+        let rule = |key, default: Option<i32>| match mm(rules, key) {
+            Some(v) => Some(v).filter(|v| *v > 0),
+            None => default,
+        };
+        BoardMinimums {
+            track_width: rule("min_track_width", d.track_width),
+            via_diameter: rule("min_via_diameter", d.via_diameter),
+            through_drill: rule("min_through_hole_diameter", d.through_drill),
+            via_annular: rule("min_via_annular_width", d.via_annular),
+            copper_edge_clearance: rule("min_copper_edge_clearance", d.copper_edge_clearance),
+            hole_clearance: rule("min_hole_clearance", d.hole_clearance),
+        }
+    }
+}
+
 /// What the reader takes from a `.kicad_pro`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Project {
@@ -91,6 +158,9 @@ pub struct Project {
     pub max_error: i32,
     /// `board.design_settings.rules.min_hole_clearance`, nm (default 0.25 mm).
     pub hole_clearance: i32,
+    /// Board Setup's minimum manufacturing rules (Q18); KiCad's defaults
+    /// where the file leaves them out, unknown where it sets them to 0.
+    pub minimums: BoardMinimums,
     /// Problems worth a warning.
     pub notes: Vec<String>,
 }
@@ -105,6 +175,7 @@ impl Default for Project {
             assignments: Vec::new(),
             max_error: mm_to_nm(0.005),
             hole_clearance: mm_to_nm(0.25),
+            minimums: BoardMinimums::default(),
             notes: Vec::new(),
         }
     }
@@ -157,6 +228,7 @@ impl Project {
             if let Some(v) = mm(rules, "min_hole_clearance") {
                 p.hole_clearance = v;
             }
+            p.minimums = BoardMinimums::of_rules(rules);
         }
         let Some(ns) = root.get("net_settings") else {
             return Ok(p);

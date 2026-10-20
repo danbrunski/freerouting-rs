@@ -328,6 +328,26 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   (`tests/via_clearance_net_class.rs`); an unknown value fails the job, naming the key. Unset
   (Java's rule) under profile `legacy`; N05.3 made `net_class` `enhanced`'s default (see
   "Profile `enhanced`").
+- `board_minimums.*` (Q18, `settings::board::BoardMinimums`, `autoroute::control`) are settings
+  fields Java does not have, unset by default: the board's minimum manufacturing rules as hard
+  floors, decided 2026-10-20 (routing never breaks them, in every profile, whenever they are
+  known). `track_width_um` floors `AutorouteControl::min_trace_half_width`, so no trace the
+  router creates is narrower: Java's pin neck-downs (search and inserter), the fanout's micro
+  neck-down, the necked retry, `bounded-neck` and KRT's fanouts all read that floor; a class
+  width below it is raised to it. A via type below `via_diameter_um`, `via_drill_um` or
+  `via_annular_um` is made at the floor size before routing (`job::via_minimums`: a round
+  padstack `Via[<from>-<to>]_<diameter>:<drill>_um` at `max(drill, min drill)` and
+  `max(diameter, min diameter, drill + 2 · min annular)`, the via type's name, clearance class
+  and rules unchanged; one warning per net class names the class), and the control's via rule
+  drops any via type still below them (a backstop). `from_classes` takes the
+  narrowest class width of the design as the track minimum when `track_width_um` is unset
+  (`enhanced`; see "Profile `enhanced`"). Java's `min_trace_width_um` floor alone let the pin
+  neck-down ship 0.15 mm tracks on boards whose Board Setup minimum is 0.2 mm (Q11.6's grades:
+  vfo 72, mydevboard 74 KiCad `track_width` errors); with the floor a neck that does not fit
+  leaves the connection open. Unset, nothing changes (`tests/board_minimums.rs`:
+  `java_pin_neck_down_goes_under_the_class_width`, `the_board_minimum_floors_the_pin_neck_down`,
+  `the_necked_retry_stays_at_the_board_minimum`, `vias_under_the_board_minimums_are_made_at_the_floor`,
+  `routed_vias_meet_the_board_minimums`).
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
   by default and in both profiles (off: Java leaves the stubs of unfinished connections on the
   board). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
@@ -1029,6 +1049,16 @@ Differences from KiCad's own DSN export, which is what Java reads. The reader bu
 tree as the export everywhere else (`crates/freerouting-kicad/tests/{structure,copper}.rs`
 compare them on 12 committed boards and the 56-board corpus).
 
+- The `.kicad_pro`'s Board Setup minimums (`min_track_width`, `min_via_diameter`,
+  `min_through_hole_diameter`, `min_via_annular_width`, `min_copper_edge_clearance`,
+  `min_hole_clearance`; Q18, `project::BoardMinimums`, in `Extras::board_minimums`) are read,
+  KiCad's defaults where the file leaves one out or there is no project file (0.2, 0.5, 0.3,
+  0.1, 0.5 and 0.25 mm), unknown where it sets 0; the DSN export does not carry them. A
+  `.kicad_pcb` job sets them as `router.board_minimums.*`, `router.copper_to_edge_clearance_um`
+  and `router.hole_clearance_um` at the DSN's settings priority
+  (`job::prepare::board_minimums_patch`; the command line wins), so the router never goes below
+  them (`tests/board_minimums.rs`, `a_kicad_pcb_input_passes_its_board_setup_minimums`,
+  `kicad_board_minimums_default_to_kicads_and_zero_is_none`).
 - Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
   area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
   footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
@@ -1460,6 +1490,13 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   class's drill, not its padstack's (a 0.6 mm via on a 0.4 mm-drill class got a 0.1 mm annular
   ring on `canary-pwr`); the plugin sets the session's drill after the import
   (`ses_vias.py`, pinned by `test_imported_vias_get_the_sessions_drill_not_the_class_drill`).
+- **Board Setup's minimums are passed as hard floors** (Q18, `options.board_minimum_args`,
+  `export_flow.router_args`): `m_TrackMinWidth`, `m_ViasMinSize`, `m_MinThroughDrill`,
+  `m_ViasMinAnnularWidth`, `m_CopperEdgeClearance` and `m_HoleClearance` become
+  `--router.board_minimums.{track_width_um, via_diameter_um, via_drill_um, via_annular_um}`,
+  `--router.copper_to_edge_clearance_um` and `--router.hole_clearance_um`, under both profiles;
+  a value of 0 passes nothing. Pinned by `test_options.py::test_board_minimums_become_hard_floors` and
+  `test_router_args_carry_the_board_minimums`.
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,
@@ -1780,6 +1817,13 @@ checks that this list and the table agree.
   cm4-edge-ai-carrier (set noise 15.42; canary-pwr +5 within its band of 10), narrowed copper on
   the wide classes (`freerouting-dev widths`, under the class width) 461.8 → 400.6 mm, no new via
   in a pad, copper below the minimum, KiCad clearance-type error or power-layer trace.
+
+- `board_minimums.from_classes` = `true` (decided 2026-10-20, Q18.2; its cost measured in Q18.6,
+  `docs/roadmap/prereg/Q18.json`): with no board minimum supplied (a bare DSN carries none), the
+  narrowest class width of the design is the minimum track width, so no neck-down ships copper
+  under it (`tests/board_minimums.rs`, `from_classes_floors_at_the_narrowest_class_width`); a
+  known minimum (`board_minimums.track_width_um`, the plugin's or a `.kicad_pro`'s) replaces it.
+  Java necks down to the pin's width, floored only by `min_trace_width_um`.
 
 The `java_quirks` lines below are N06's Java-bug fixes that N06.13 promoted on 2026-10-19, each
 under N06's accept rule: measured and neutral, or not reached by any registered row and accepted

@@ -253,6 +253,12 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("transaction.rule", None),
         ("transaction.depth", None),
         ("transaction.rip_factor", None),
+        // Q18: unset, which is unknown (no floor).
+        ("board_minimums.track_width_um", None),
+        ("board_minimums.via_diameter_um", None),
+        ("board_minimums.via_drill_um", None),
+        ("board_minimums.via_annular_um", None),
+        ("board_minimums.from_classes", None),
         // P02.1: unset, which is off.
         ("debug.audit_incremental", None),
     ];

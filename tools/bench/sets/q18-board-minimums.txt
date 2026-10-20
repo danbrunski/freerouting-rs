@@ -1,0 +1,26 @@
+# Q18 (docs/roadmap/prereg/Q18.json): Q11's 11 eligible rows (Q11.json `eligible`) and
+# d3c-0496-kitspace-f-91w, each with its Board Setup minimums as the KiCad plugin passes them
+# (`options.board_minimum_args`): read from the row's KiCad project `board.design_settings.rules`
+# (`min_track_width`, `min_via_diameter`, `min_through_hole_diameter`, `min_via_annular_width`,
+# `min_copper_edge_clearance`, `min_hole_clearance`; a 0 passes nothing). d3c-0496's project has
+# no .kicad_pro, so its flags are KiCad's defaults (what KiCad's DRC grades it by). The
+# fixtures/Issue*.dsn rows have no KiCad project: no flags (profile `enhanced` then floors the
+# track width at the narrowest class width). canary-pwr's project is canary's
+# hardware/canary-pwr-rev1.0 at 9511d9a3; the corpus rows' are target/corpus/projects/<board>,
+# d3c-0496's target/corpus-d3c/projects/<board>.
+# tools/bench/quick-arm.sh with ROW_FLAGS=1 appends the words after the path to the arm's
+# command; without it the row is the path alone.
+# d3c-0496 is information only since Q18.json's amendment 2 (KiCad-graded rows need a KiCad 6+
+# .kicad_pro, decided 2026-10-20); it stays listed because its routes were measured.
+fixtures/Issue433-my-board.dsn
+fixtures/Issue690-sonde_xilinx.dsn
+fixtures/Issue508-DAC2020_bm10.dsn
+fixtures/Issue093-interf_u.dsn
+fixtures/Issue555-CNH_Functional_Tester_1.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn --router.board_minimums.track_width_um=150 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=150 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250
+target/corpus/prepped/mydevboard-rp2040dev.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus/prepped/slice-dcmt-bread-slice.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=400 --router.board_minimums.via_drill_um=200 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/prepped/flight-computer-core-board.dsn --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=250 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=300 --router.hole_clearance_um=250
+target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=600 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=50 --router.copper_to_edge_clearance_um=25 --router.hole_clearance_um=250
+target/corpus/prepped/vfo-controller-catvfoctrl.dsn --router.board_minimums.track_width_um=200 --router.board_minimums.via_diameter_um=500 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250
+target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn --router.board_minimums.track_width_um=152.4 --router.board_minimums.via_diameter_um=460 --router.board_minimums.via_drill_um=300 --router.board_minimums.via_annular_um=100 --router.copper_to_edge_clearance_um=500 --router.hole_clearance_um=250

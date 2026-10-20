@@ -69,6 +69,26 @@ pub const CONTROLS: &[(&str, &str)] = &[
 /// rules file.
 pub const CLI_ONLY: &[(&str, &str)] = &[
     (
+        "board_minimums.track_width_um",
+        "a board rule (Q18), passed by the KiCad plugin or read from a .kicad_pro",
+    ),
+    (
+        "board_minimums.via_diameter_um",
+        "a board rule (Q18), passed by the KiCad plugin or read from a .kicad_pro",
+    ),
+    (
+        "board_minimums.via_drill_um",
+        "a board rule (Q18), passed by the KiCad plugin or read from a .kicad_pro",
+    ),
+    (
+        "board_minimums.via_annular_um",
+        "a board rule (Q18), passed by the KiCad plugin or read from a .kicad_pro",
+    ),
+    (
+        "board_minimums.from_classes",
+        "the profile's choice (Q18): enhanced on, legacy off",
+    ),
+    (
         "copper_to_edge_clearance_um",
         "board override of the job, set with the CLI or a settings file",
     ),

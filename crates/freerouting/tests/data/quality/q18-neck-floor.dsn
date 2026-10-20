@@ -1,0 +1,99 @@
+(pcb q18-neck-floor.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q18 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 20000  0 20000  0 0)
+    )
+    (via VIA600)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component BIG_PAD
+      (place J3 3000 15000 front 0)
+    )
+    (component ROW3
+      (place U3 27000 15000 front 0)
+    )
+    (component SMALL_PAD
+      (place P1 3000 10000 front 0)
+      (place P2 27000 10000 front 0)
+    )
+  )
+  (library
+    (image BIG_PAD
+      (pin BIG 1 0 0)
+    )
+    (image ROW3
+      (pin ROW 1 -350 0)
+      (pin ROW 2 0 0)
+      (pin ROW 3 350 0)
+    )
+    (image SMALL_PAD
+      (pin SMALL 1 0 0)
+    )
+    (padstack BIG
+      (shape (circle F.Cu 2000))
+      (attach off)
+    )
+    (padstack SMALL
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack ROW
+      (shape (rect F.Cu -60 -350 60 350))
+      (attach off)
+    )
+    (padstack VIA600
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net PWR2 (pins J3-1 U3-2))
+    (net X1 (pins U3-1))
+    (net X3 (pins U3-3))
+    (net SIG (pins P1-1 P2-1))
+    (class kicad_default SIG X1 X3
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+    (class Narrow_Pin PWR2
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

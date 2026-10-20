@@ -37,6 +37,18 @@
 //! ([`power_layer_traces`](super::power_layer_traces)); the default is
 //! Java's per-layer rule ([`AutorouteControl::own_plane_layers`]).
 //!
+//! **Beyond Java (Q18): the board's minimums are hard floors.**
+//! `router.board_minimums.*` ([`BoardMinimums`](crate::settings::board::BoardMinimums))
+//! raise [`AutorouteControl::min_trace_half_width`] to the board's minimum
+//! track width ([`board_min_trace_half_width`]; with `from_classes`, profile
+//! `enhanced`, the narrowest class width when no minimum is known), so no
+//! neck-down that reads it (the pin neck-downs, the micro neck-down, the
+//! necked retry, `bounded-neck`) goes below it; `init_net` raises a narrower
+//! class width to it, and `rebuild_via_info` drops the via types below the
+//! minimum via diameter or drill
+//! ([`via_meets_minimums`](AutorouteControl::via_meets_minimums)). Unset, every
+//! value is Java's (`tests/board_minimums.rs`).
+//!
 //! Java's `settings` field and the debug-only `fanoutStartPinName` are not
 //! carried; the settings a search reads are copied into the fields here.
 //! Where Java throws (a missing net, no via rule at all, a net class
@@ -131,6 +143,17 @@ pub struct AutorouteControl {
     /// `minTraceHalfWidth`, `46bf9e2ef`, after the pin; unset changes
     /// nothing).
     pub min_trace_half_width: i32,
+    /// Q18: half the board's minimum track width in board units
+    /// ([`board_min_trace_half_width`]); every class width is raised to it.
+    /// 0 is no floor (Java).
+    pub board_min_trace_half_width: i32,
+    /// Q18: the board's minimum via diameter, drill and annular ring in
+    /// board units (`router.board_minimums.via_*`); the via rule drops the
+    /// vias below them, a backstop (`job::via_minimums` has made every via
+    /// type at least the floor size). 0 is no floor (Java).
+    pub min_via_diameter: f64,
+    pub min_via_drill: f64,
+    pub min_via_annular: f64,
     /// Whether each layer may be used for routing.
     pub layer_active: Vec<bool>,
     pub layer_count: usize,
@@ -288,6 +311,10 @@ impl AutorouteControl {
             bend_costs,
             with_neckdown: settings.automatic_neckdown(),
             min_trace_half_width: min_trace_half_width(board, settings),
+            board_min_trace_half_width: board_min_trace_half_width(board, settings),
+            min_via_diameter: um_to_units(board, settings.board_minimums().via_diameter_um),
+            min_via_drill: um_to_units(board, settings.board_minimums().via_drill_um),
+            min_via_annular: um_to_units(board, settings.board_minimums().via_annular_um),
             layer_active,
             layer_count,
             trace_half_width: vec![0; layer_count],
@@ -376,7 +403,10 @@ impl AutorouteControl {
                 return Err(ControlError::NoSuchNet(width_net));
             }
             let layer = i as i32;
-            self.trace_half_width[i] = rules.trace_half_width(width_net, layer);
+            // Q18: no class width below the board minimum (0 without one).
+            self.trace_half_width[i] = rules
+                .trace_half_width(width_net, layer)
+                .max(self.board_min_trace_half_width);
             self.compensated_trace_half_width[i] = self.trace_half_width[i]
                 + rules
                     .clearance_matrix
@@ -421,7 +451,20 @@ impl AutorouteControl {
         net_number: i32,
     ) -> Result<(), ControlError> {
         let rules = &board.rules;
-        let vias = self.via_rule_vias(rules).to_vec();
+        let mut vias = self.via_rule_vias(rules).to_vec();
+        if self.min_via_diameter > 0.0 || self.min_via_drill > 0.0 || self.min_via_annular > 0.0 {
+            // Q18: the vias below the board minimums are not placed; the
+            // rule is the remaining ones (possibly none: no via at all).
+            let kept: Vec<ViaInfoId> = vias
+                .iter()
+                .copied()
+                .filter(|via| self.via_meets_minimums(board, *via))
+                .collect();
+            if kept.len() != vias.len() {
+                self.merged_via_rule = Some(kept.clone());
+                vias = kept;
+            }
+        }
         self.via_clearance_class = match vias.first() {
             Some(via) => self.via_info_clearance_class(rules.via_infos.get(*via)),
             None => 1,
@@ -475,6 +518,27 @@ impl AutorouteControl {
         Ok(())
     }
 
+    /// Q18: true if the via type `via` is no smaller than the board's
+    /// minimum via diameter (its narrowest pad shape on any layer), drill and
+    /// annular ring (half the diameter less the drill); the drill
+    /// ([`Padstack::get_drill_radius`](crate::library::padstack::Padstack::get_drill_radius):
+    /// from a KiCad style padstack name, else estimated from the pad).
+    pub fn via_meets_minimums(&self, board: &BasicBoard, via: ViaInfoId) -> bool {
+        let info = board.rules.via_infos.get(via);
+        let Some(padstack) = board.library.padstacks.get(info.padstack) else {
+            return true;
+        };
+        let drill = 2.0 * padstack.get_drill_radius();
+        let Some(diameter) = crate::job::via_minimums::padstack_diameter(board, info.padstack)
+        else {
+            return drill >= self.min_via_drill;
+        };
+        // A rounding unit of slack, as `job::via_minimums` makes them.
+        diameter + 0.5 >= self.min_via_diameter
+            && drill + 0.5 >= self.min_via_drill
+            && diameter - drill + 0.5 >= 2.0 * self.min_via_annular
+    }
+
     /// Java `neckdownHalfWidth(pin, layer)` (`46bf9e2ef`): the half width a
     /// neck-down into `pin` on `layer` uses, the pin's own
     /// `getTraceNeckdownHalfwidth`, but never less than
@@ -504,19 +568,81 @@ fn own_plane_layers(board: &BasicBoard, net_number: i32) -> Vec<bool> {
 
 /// Java `AutorouteControl.minTraceHalfWidth(board, settings)`
 /// (`46bf9e2ef`): `router.min_trace_width_um` in board units, halved and
-/// rounded up; 0 when the setting is unset or not positive.
+/// rounded up; 0 when the setting is unset or not positive. Q18: never less
+/// than the board's minimum track width ([`board_min_trace_half_width`]), so
+/// every neck-down that reads it (the pin neck-downs of the search and the
+/// inserter, the fanout's micro neck-down, the necked retry, `bounded-neck`
+/// and KRT's fanouts) stays at or above the board minimum.
 pub fn min_trace_half_width(board: &BasicBoard, settings: &BoardRouterSettings) -> i32 {
-    let min_width_um = settings.min_trace_width_um();
-    if min_width_um <= 0.0 {
+    um_to_half_width(board, settings.min_trace_width_um())
+        .max(board_min_trace_half_width(board, settings))
+}
+
+/// Q18: half the board's minimum track width in board units, rounded up:
+/// `router.board_minimums.track_width_um` when known, else with
+/// `router.board_minimums.from_classes` the narrowest class width of the
+/// design ([`narrowest_class_half_width`]), else 0 (no floor, Java).
+pub fn board_min_trace_half_width(board: &BasicBoard, settings: &BoardRouterSettings) -> i32 {
+    let minimums = settings.board_minimums();
+    if minimums.track_width_um > 0.0 {
+        um_to_half_width(board, minimums.track_width_um)
+    } else if minimums.from_classes {
+        narrowest_class_half_width(board)
+    } else {
+        0
+    }
+}
+
+/// The narrowest positive trace half width of the net classes that nets of
+/// `board` use, over its signal layers (0 without one).
+pub fn narrowest_class_half_width(board: &BasicBoard) -> i32 {
+    let rules = &board.rules;
+    let classes: std::collections::BTreeSet<_> = (1..=rules.nets.max_net_number())
+        .filter_map(|n| rules.nets.get(n).map(|net| net.net_class()))
+        .collect();
+    let signal: Vec<i32> = (0..board.layer_count())
+        .filter(|i| board.layer_structure.layers[*i].is_signal)
+        .map(|i| i as i32)
+        .collect();
+    classes
+        .iter()
+        .flat_map(|class| {
+            let class = rules.net_classes.get(*class);
+            signal
+                .iter()
+                .map(move |layer| class.trace_half_width(*layer))
+        })
+        .filter(|w| *w > 0)
+        .min()
+        .unwrap_or(0)
+}
+
+/// `um` micrometres in board units (0 when `um` is not positive).
+fn um_to_units(board: &BasicBoard, um: f64) -> f64 {
+    if um <= 0.0 {
+        return 0.0;
+    }
+    let resolution = board.communication.resolution.max(1);
+    Unit::scale(
+        um * f64::from(resolution),
+        Unit::Um,
+        board.communication.unit,
+    )
+}
+
+/// `um` micrometres as a half width in board units, rounded up; 0 when `um`
+/// is not positive.
+fn um_to_half_width(board: &BasicBoard, um: f64) -> i32 {
+    if um <= 0.0 {
         return 0;
     }
     let resolution = board.communication.resolution.max(1);
-    let min_width = Unit::scale(
-        min_width_um * f64::from(resolution),
+    let width = Unit::scale(
+        um * f64::from(resolution),
         Unit::Um,
         board.communication.unit,
     );
-    crate::geometry::jmath::d2i((min_width / 2.0).ceil())
+    crate::geometry::jmath::d2i((width / 2.0).ceil())
 }
 
 /// `isPureSmdNet` (`AutorouteControl.java:195-208`): the net has

@@ -75,7 +75,25 @@ def router_args(board, opts, extra_args=(), for_gui=False):
         minimum = nm / 1000.0 if nm and nm > 0 else None
     except Exception:  # older pcbnew without the attribute
         minimum = None
-    return opts.to_args(minimum, for_gui=for_gui, extra_args=extra_args)
+    return opts.to_args(minimum, for_gui=for_gui, extra_args=extra_args) + options.board_minimum_args(
+        board_minimums_nm(board)
+    )
+
+
+def board_minimums_nm(board):
+    """Q18: the Board Setup minimums of `options.BOARD_MINIMUM_SETTINGS`, in
+    nanometres; an attribute this pcbnew does not have is left out."""
+    out = {}
+    try:
+        settings = board.GetDesignSettings()
+    except Exception:  # not a board
+        return out
+    for attr, _key in options.BOARD_MINIMUM_SETTINGS:
+        try:
+            out[attr] = getattr(settings, attr)
+        except Exception:  # an older pcbnew without the attribute
+            continue
+    return out
 
 
 def save_arguments(board, pcbnew, design, opts, extra_args=(), lines=()):

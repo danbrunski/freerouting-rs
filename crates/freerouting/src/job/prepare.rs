@@ -58,6 +58,7 @@ use super::overrides::{self, OverrideState};
 use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
 use crate::dsn::ast::{Pcb, RulesFile};
+use crate::io::kicad::reader::project::BoardMinimums;
 pub use crate::io::kicad::{
     DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input, same_file,
 };
@@ -160,6 +161,18 @@ impl JobInput {
             text,
         });
         self.read_log = warnings.chain(report).collect();
+        // Q18: the `.kicad_pro`'s Board Setup minimums are hard floors, at
+        // the DSN's priority: a config file sets them below, the command
+        // line over them.
+        if let Some(patch) = board_minimums_patch(&read.extras.board_minimums) {
+            self.extra_sources.push((
+                Source::Custom {
+                    name: BOARD_MINIMUMS_SOURCE.to_owned(),
+                    priority: Source::Dsn.priority(),
+                },
+                patch,
+            ));
+        }
         self.kicad_source = Some(read.source());
         self.pcb = Some(read.pcb);
     }
@@ -172,6 +185,24 @@ impl JobInput {
             None => file_name.to_string(),
         }
     }
+}
+
+/// The name of the settings source of a `.kicad_pro`'s Board Setup minimums.
+pub const BOARD_MINIMUMS_SOURCE: &str = "kicad_pro board minimums";
+
+/// Q18: the settings of a `.kicad_pro`'s Board Setup minimums
+/// (`router.board_minimums.*`, `router.copper_to_edge_clearance_um` and
+/// `router.hole_clearance_um`), or `None` when the file gives none.
+pub fn board_minimums_patch(minimums: &BoardMinimums) -> Option<SettingsPatch> {
+    let um = |nm: Option<i32>| nm.map(|nm| f64::from(nm) / 1000.0);
+    let mut patch = SettingsPatch::default();
+    patch.board_minimums.track_width_um = um(minimums.track_width);
+    patch.board_minimums.via_diameter_um = um(minimums.via_diameter);
+    patch.board_minimums.via_drill_um = um(minimums.through_drill);
+    patch.board_minimums.via_annular_um = um(minimums.via_annular);
+    patch.copper_to_edge_clearance_um = um(minimums.copper_edge_clearance);
+    patch.hole_clearance_um = um(minimums.hole_clearance);
+    (*minimums != BoardMinimums::NONE).then_some(patch)
 }
 
 /// Why a job could not be prepared. The text is Java's.

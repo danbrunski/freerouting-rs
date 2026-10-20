@@ -36,7 +36,14 @@ fn both_profiles_route_and_enhanced_is_the_default() {
     let (legacy, dir_legacy) = route("profile-legacy", &["--profile", "legacy"]);
     let (enhanced, dir_enhanced) = route("profile-enhanced", &["--router.profile=enhanced"]);
     let (default, dir_default) = route("profile-default", &[]);
-    for out in [&legacy, &enhanced, &default] {
+    let (unfloored, dir_unfloored) = route(
+        "profile-enhanced-unfloored",
+        &[
+            "--router.profile=enhanced",
+            "--router.board_minimums.from_classes=false",
+        ],
+    );
+    for out in [&legacy, &enhanced, &default, &unfloored] {
         assert_eq!(code(out), 0, "{}", stderr(out));
     }
     let ses = |dir: &std::path::Path| std::fs::read(dir.join("out.ses")).unwrap();
@@ -45,9 +52,11 @@ fn both_profiles_route_and_enhanced_is_the_default() {
         ses(&dir_enhanced) == ses(&dir_default),
         "enhanced is the default"
     );
+    // Q18's class floor (`board_minimums.from_classes`) touches J2's pin
+    // neck-downs; without it, `enhanced` routes J2 as `legacy` does.
     assert!(
-        ses(&dir_legacy) == ses(&dir_enhanced),
-        "enhanced equals legacy on a board its differences do not touch"
+        ses(&dir_legacy) == ses(&dir_unfloored),
+        "enhanced equals legacy on a board its other differences do not touch"
     );
 }
 

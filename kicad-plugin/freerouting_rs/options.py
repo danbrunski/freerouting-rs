@@ -468,6 +468,32 @@ def stage_defaults(slots):
     return {key: default for key, _, _, default in slots}
 
 
+# Q18: KiCad's Board Setup minimums and the router settings they become (hard
+# floors: no routed trace below them, a via type below them routed at the floor
+# size, copper kept from the outline and from drilled holes).
+BOARD_MINIMUM_SETTINGS = (
+    ("m_TrackMinWidth", "router.board_minimums.track_width_um"),
+    ("m_ViasMinSize", "router.board_minimums.via_diameter_um"),
+    ("m_MinThroughDrill", "router.board_minimums.via_drill_um"),
+    ("m_ViasMinAnnularWidth", "router.board_minimums.via_annular_um"),
+    ("m_CopperEdgeClearance", "router.copper_to_edge_clearance_um"),
+    ("m_HoleClearance", "router.hole_clearance_um"),
+)
+
+
+def board_minimum_args(minimums_nm):
+    """The router flags of the board's minimums (Q18). `minimums_nm` maps a
+    `BOARD_DESIGN_SETTINGS` attribute name of `BOARD_MINIMUM_SETTINGS` to its
+    value in nanometres; a missing or non-positive value passes nothing (the
+    router then treats it as unknown). In `BOARD_MINIMUM_SETTINGS` order."""
+    args = []
+    for attr, key in BOARD_MINIMUM_SETTINGS:
+        nm = minimums_nm.get(attr)
+        if isinstance(nm, (int, float)) and nm > 0:
+            args.append(f"--{key}={_fmt(nm / 1000.0)}")
+    return args
+
+
 def _fmt(number):
     """`2.5`, `150`, `0.05`: no trailing zeros, no exponent."""
     text = f"{float(number):.6f}".rstrip("0").rstrip(".")

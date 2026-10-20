@@ -73,7 +73,11 @@ const TWO_PIN: &str = "fixtures/scoring-perfect-two-pin.dsn";
 
 /// Loads `dsn` through the job's load sequence with `extra` at
 /// `source`'s priority.
-fn load_with(dsn: &str, source: Source, extra: SettingsPatch) -> Loaded {
+fn load_with(dsn: &str, source: Source, mut extra: SettingsPatch) -> Loaded {
+    // Java's references: profile `legacy` unless the test picks one.
+    if extra.profile.is_none() {
+        extra.profile = Some("legacy".to_string());
+    }
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("board");

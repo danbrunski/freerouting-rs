@@ -515,6 +515,19 @@ settings_table! {
             (rip_factor, i32, opt, None, None, "ripFactor", [], Flat::No, true,
                 "Rip cost of a net ripped k times this run times 1 + rip_factor * k (Q11.5; unset or 0: off)."),
         }
+        board_minimums, BoardMinimumsPatch, BoardMinimumsSettings, "boardMinimums",
+        "The board's minimum manufacturing rules (Q18; not a Java section): hard floors no routed copper goes below. The KiCad plugin and a `.kicad_pcb` input fill them from Board Setup." {
+            (track_width_um, f64, opt, None, None, "trackWidthUm", [], Flat::No, true,
+                "The board's minimum track width in micrometers (KiCad `m_TrackMinWidth`): no routed trace, neck-downs included, is narrower (unset: unknown)."),
+            (via_diameter_um, f64, opt, None, None, "viaDiameterUm", [], Flat::No, true,
+                "The board's minimum via diameter in micrometers (KiCad `m_ViasMinSize`): a smaller via type is routed at the floor size, with a warning naming its net class (unset: unknown)."),
+            (via_drill_um, f64, opt, None, None, "viaDrillUm", [], Flat::No, true,
+                "The board's minimum through-hole drill in micrometers (KiCad `m_MinThroughDrill`): a via type with a smaller drill is routed at the floor size (unset: unknown)."),
+            (via_annular_um, f64, opt, None, None, "viaAnnularUm", [], Flat::No, true,
+                "The board's minimum via annular ring in micrometers (KiCad `m_ViasMinAnnularWidth`): a via type below the via minimums is routed at the floor size, `drill + 2 * annular` at least (unset: unknown)."),
+            (from_classes, bool, opt, None, None, "fromClasses", [], Flat::No, true,
+                "With `track_width_um` unset, the narrowest class width in the design is the minimum track width (unset: off, profile `legacy`, Java's neck-downs); profile `enhanced` turns it on (Q18)."),
+        }
         java_quirks, JavaQuirksPatch, JavaQuirksSettings, "javaQuirks",
         "The Java bugs kept for parity, one switch each (N06; not a Java section). Unset is `true`, Java's behaviour; profile `legacy` keeps every switch `true`, profile `enhanced` turns off the fixes N06.13 promoted." {
             (simplex_prev_division_line, bool, opt, None, None, "simplexPrevDivisionLine", [], Flat::No, true,

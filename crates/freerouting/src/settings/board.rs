@@ -227,6 +227,7 @@ pub struct BoardRouterSettings {
     trace_pull_tight_accuracy: i32,
     neck_width_um: f64,
     min_trace_width_um: f64,
+    board_minimums: BoardMinimums,
     strict_drc: bool,
     via_clearance: ViaClearanceMode,
     java_quirks: super::java_quirks::JavaQuirks,
@@ -287,6 +288,7 @@ impl BoardRouterSettings {
                 .min_trace_width_um
                 .filter(|w| *w > 0.0)
                 .unwrap_or(0.0),
+            board_minimums: BoardMinimums::of(settings),
             strict_drc: settings.strict_drc,
             via_clearance: ViaClearanceMode::of(settings),
             java_quirks: super::java_quirks::JavaQuirks::from_settings(settings),
@@ -406,6 +408,21 @@ impl BoardRouterSettings {
         self.min_trace_width_um
     }
 
+    /// `router.board_minimums.*` (Q18): the board's minimum manufacturing
+    /// rules, the hard floors of every routed trace and via.
+    pub fn board_minimums(&self) -> BoardMinimums {
+        self.board_minimums
+    }
+
+    /// These settings with the board minimums `minimums` (Q18), for callers
+    /// that build the settings by hand.
+    pub fn with_board_minimums(&self, minimums: BoardMinimums) -> BoardRouterSettings {
+        BoardRouterSettings {
+            board_minimums: minimums,
+            ..self.clone()
+        }
+    }
+
     /// `strictDrc`.
     pub fn strict_drc(&self) -> bool {
         self.strict_drc
@@ -431,5 +448,56 @@ impl BoardRouterSettings {
             java_quirks: quirks,
             ..self.clone()
         }
+    }
+}
+
+/// The board's minimum manufacturing rules (`router.board_minimums.*`, Q18),
+/// in micrometres; 0 is unknown.
+///
+/// They are hard floors, not preferences: every trace the router creates,
+/// neck-downs included, is at least [`track_width_um`](Self::track_width_um)
+/// wide, and a via type whose diameter, drill or annular ring is below
+/// [`via_diameter_um`](Self::via_diameter_um),
+/// [`via_drill_um`](Self::via_drill_um) or
+/// [`via_annular_um`](Self::via_annular_um) is routed at the floor size
+/// ([`crate::job::via_minimums`]). With the track minimum unknown and
+/// [`from_classes`](Self::from_classes) on (profile `enhanced`), the
+/// narrowest class width of the design is the track minimum. All unknown
+/// (profile `legacy`, nothing supplied) is Java's behaviour.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct BoardMinimums {
+    /// The minimum track width (KiCad `m_TrackMinWidth`).
+    pub track_width_um: f64,
+    /// The minimum via diameter (KiCad `m_ViasMinSize`).
+    pub via_diameter_um: f64,
+    /// The minimum through-hole drill (KiCad `m_MinThroughDrill`).
+    pub via_drill_um: f64,
+    /// The minimum via annular ring (KiCad `m_ViasMinAnnularWidth`).
+    pub via_annular_um: f64,
+    /// The narrowest class width stands for an unknown track minimum.
+    pub from_classes: bool,
+}
+
+impl BoardMinimums {
+    /// The minimums of `settings`; a value that is not positive is unknown.
+    pub fn of(settings: &RouterSettings) -> BoardMinimums {
+        let m = &settings.board_minimums;
+        let known = |v: Option<f64>| v.filter(|v| v.is_finite() && *v > 0.0).unwrap_or(0.0);
+        BoardMinimums {
+            track_width_um: known(m.track_width_um),
+            via_diameter_um: known(m.via_diameter_um),
+            via_drill_um: known(m.via_drill_um),
+            via_annular_um: known(m.via_annular_um),
+            from_classes: m.from_classes.unwrap_or(false),
+        }
+    }
+
+    /// True if no minimum is known and none is derived: Java's behaviour.
+    pub fn is_off(&self) -> bool {
+        self.track_width_um <= 0.0
+            && self.via_diameter_um <= 0.0
+            && self.via_drill_um <= 0.0
+            && self.via_annular_um <= 0.0
+            && !self.from_classes
     }
 }

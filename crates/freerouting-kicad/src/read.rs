@@ -44,6 +44,9 @@ pub struct Extras {
     pub stackup: Vec<StackupLayer>,
     /// `(die_length ...)` of pads: component, pin, length in nm.
     pub die_lengths: Vec<DieLength>,
+    /// The `.kicad_pro`'s Board Setup minimums (Q18); all unknown without
+    /// a project file.
+    pub board_minimums: crate::project::BoardMinimums,
 }
 
 /// A pad's `die_length`.
@@ -269,6 +272,7 @@ pub fn read_with_rules(
     let mut extras = Extras {
         stackup: read_stackup(board),
         die_lengths: Vec::new(),
+        board_minimums: project.minimums,
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();

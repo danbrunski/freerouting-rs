@@ -55,6 +55,10 @@ const DEV_BOARD: &str = "fixtures/Issue558-dev-board.dsn";
 fn load_testing(dsn: &str, mut profile: TestingProfile) -> Loaded {
     profile.set_job_timeout("00:01:00");
     profile.set_max_passes(100);
+    // Java's fixture tests: profile `legacy` unless the test picks one.
+    if profile.patch.profile.is_none() {
+        profile.patch.profile = Some("legacy".to_string());
+    }
     let path = repo_root().join(dsn);
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{dsn}: {e}"));
     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("board");

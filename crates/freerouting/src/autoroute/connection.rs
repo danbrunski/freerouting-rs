@@ -920,6 +920,11 @@ mod tests {
     fn min_trace_width_floors_the_pin_neckdown_and_unset_changes_nothing() {
         let mut input = JobInput::new(BOARD.as_bytes().to_vec(), "unit-connection");
         input.rules = RulesChoice::None;
+        // Java's floor alone: profile `legacy` (enhanced adds Q18's class floor).
+        input.extra_sources.push((
+            crate::settings::Source::Testing,
+            crate::settings::profile::legacy_pin(),
+        ));
         let prepared = prepare_job(&input, &ResolveContext { cores: 1 }).expect("the board loads");
         let board = prepared.board;
         let net = board

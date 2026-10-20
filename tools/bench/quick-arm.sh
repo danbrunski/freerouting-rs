@@ -17,6 +17,8 @@
 # A missing row prints `MISSING`, a route that hits its limit prints `TIMEOUT` (the measurement
 # is then incomplete: no gate). Run from the repository root. Prints one line per row:
 # arm, board, wall seconds, peak kB, exit status.
+# With ROW_FLAGS=1 (Q18) the words after a row's path are that row's own flags, appended after
+# ROUTER ARGS (the later flag wins); without it only the first word is read.
 set -u
 if [[ $# -lt 4 ]]; then
   sed -n '2,19p' "$0" >&2
@@ -26,15 +28,18 @@ bin=$1; out=$2; arm=$3; set=$4; shift 4
 [[ ${1:-} == -- ]] && shift
 mkdir -p "$out/$arm"
 ulimit -v 8000000
-for dsn in $(grep -v '^[[:space:]]*#' "$set" | awk 'NF {print $1}'); do
+while read -r dsn row_flags; do
+  [[ -z ${dsn:-} || $dsn == \#* ]] && continue
+  extra=()
+  [[ ${ROW_FLAGS:-0} == 1 ]] && read -r -a extra <<< "${row_flags%%#*}"
   name=$(basename "$dsn" .dsn)
   if [[ ! -e $dsn ]]; then echo "MISSING $dsn"; continue; fi
   limit=120
   [[ $dsn == *canary-pwr* ]] && limit=600
   /usr/bin/time -f '%e %M' -o "$out/$arm/$name.time" timeout -k 10 "$limit" "$bin" -de "$dsn" \
-    -do "$out/$arm/$name.ses" --result-json "$out/$arm/$name.result.json" "$@" \
-    > "$out/$arm/$name.log" 2>&1
+    -do "$out/$arm/$name.ses" --result-json "$out/$arm/$name.result.json" "$@" "${extra[@]}" \
+    > "$out/$arm/$name.log" 2>&1 < /dev/null
   code=$?
   [[ $code -eq 124 || $code -eq 137 ]] && echo "TIMEOUT $arm $name after ${limit}s"
   printf '%s\t%s\t%s\texit %s\n' "$arm" "$name" "$(tail -1 "$out/$arm/$name.time")" "$code"
-done
+done < <(grep -v '^[[:space:]]*#' "$set")

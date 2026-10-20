@@ -53,12 +53,17 @@ fn work_counts_of_issue433() {
             (
                 "maze",
                 &[
+                    // Q18.2: profile `enhanced`'s `board_minimums.from_classes`
+                    // floors the pin neck-down at the narrowest class width, and
+                    // one connection that only fit necked below it stays open (7
+                    // routed, 6076 pushes, 3008 doors, 90636 work units and
+                    // 174040 tree nodes before).
                     ("connections", 7),
-                    ("routed", 7),
+                    ("routed", 6),
                     ("queue_pops", 952),
-                    ("queue_pushes", 6076),
+                    ("queue_pushes", 6080),
                     ("rooms_completed", 241),
-                    ("doors_expanded", 3008),
+                    ("doors_expanded", 3010),
                     // N06.13: profile `enhanced`'s Java-bug fixes add 148 tree
                     // nodes to the maze search (90488 and 173255 before); the
                     // routes and every other count are unchanged. Its second
@@ -66,26 +71,29 @@ fn work_counts_of_issue433() {
                     // pending-piece check (`shove_via_into_pending_piece =
                     // false`) queries the tree outside the work meter, so
                     // `maze_work_units` and the routes stay.
-                    ("maze_work_units", 90636),
-                    ("tree_nodes_visited", 174040),
+                    ("maze_work_units", 91206),
+                    ("tree_nodes_visited", 173457),
                 ],
             ),
             (
                 "pull_tight",
+                // Q18.2: on the maze kernel's board (one connection fewer):
+                // 11, 49, 9279, 16 and 47 before; the DRC 46 items and 56920
+                // tree nodes.
                 &[
-                    ("traces_before", 11),
-                    ("corners_before", 49),
-                    ("tree_nodes_visited", 9279),
-                    ("traces_after", 16),
-                    ("corners_after", 47),
+                    ("traces_before", 7),
+                    ("corners_before", 39),
+                    ("tree_nodes_visited", 8966),
+                    ("traces_after", 11),
+                    ("corners_after", 33),
                 ],
             ),
             (
                 "drc",
                 &[
                     ("checks", 20),
-                    ("items", 46),
-                    ("tree_nodes_visited", 56920),
+                    ("items", 42),
+                    ("tree_nodes_visited", 51840),
                     ("violations", 0),
                 ],
             ),

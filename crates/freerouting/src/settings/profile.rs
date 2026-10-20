@@ -124,6 +124,14 @@ pub const ENHANCED: &[Difference] = &[
                       hard-guard breach",
     },
     Difference {
+        path: "board_minimums.from_classes",
+        value: "true",
+        measurement: "decided 2026-10-20 (Q18.2: routing never breaks the board's minimum \
+                      manufacturing rules; with no board minimum supplied, the narrowest class \
+                      width of the design is the minimum track width); its cost measured in \
+                      Q18.6 (docs/roadmap/prereg/Q18.json)",
+    },
+    Difference {
         path: "java_quirks.init_failure_room_leak",
         value: "false",
         measurement: N06_5_MAZE,

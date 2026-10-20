@@ -152,7 +152,18 @@ fn the_apply_design_rules_switch_changes_the_class_rules() {
     }
     let board = arg(&dir.join("classes.kicad_pcb"));
     let route = |name: &str, extra: &[&str]| {
-        let mut args = vec!["-de", board.as_str(), "-do", name, "--max-passes", "1"];
+        // The project has no Board Setup rules, so KiCad's 0.2 mm minimum
+        // track width would floor class Fast's 0.1 mm (Q18); this test is
+        // about the rule file, so the board minimum is set under it.
+        let mut args = vec![
+            "-de",
+            board.as_str(),
+            "-do",
+            name,
+            "--max-passes",
+            "1",
+            "--router.board_minimums.track_width_um=100",
+        ];
         args.extend_from_slice(extra);
         let out = run_in(&dir, &args);
         assert_eq!(code(&out), 0, "{}", stderr(&out));

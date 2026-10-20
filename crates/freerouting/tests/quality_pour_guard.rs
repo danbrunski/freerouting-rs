@@ -49,6 +49,13 @@ fn prepare(dsn: &str, extra: &[(&str, &str)]) -> Result<PreparedJob, JobError> {
     let mut input = JobInput::new(bytes, JobInput::design_name_of(dsn));
     input.rules = RulesChoice::Adjacent;
     input.dsn_dir = path.parent().map(Path::to_path_buf);
+    // These boards pin routes that predate Q18's class floor (`enhanced`'s
+    // `board_minimums.from_classes`); what is tested here is not the width.
+    profile
+        .patch
+        .board_minimums
+        .from_classes
+        .get_or_insert(false);
     input.extra_sources = vec![(Source::Testing, profile.patch)];
     prepare_job(&input, &ResolveContext { cores: 1 })
 }
