@@ -116,6 +116,20 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
   `tools/determinism-check.sh` runs on `canary-pwr-pours1` and on `Issue093-interf_u` in place of
   `Issue145-smoothieboard` (226 s per route), and the per-board extensions come from the quick
   benchmark rows (Q08.json amendment 2). Remainder: Q08.3's steps 3 and 4.
+  *Partial 2026-10-20 (run):* Q08.3's run (release CLI `af3b05ee3577`, its note below).
+  Per-board extensions and extra work: `maze_budget_extensions` 0 and `maze_budget_extra_units` 0
+  (0 % of `maze_work_units` and of `tree_nodes_visited`) on all 8 quick benchmark rows and on
+  `canary-pwr-pours1`, and every `earned-budget` session is byte-identical (`cmp`) to the default
+  arm's. `tools/determinism-check.sh` with the `earned-budget` command: `Issue093-interf_u`
+  identical (both exit 0); `canary-pwr-pours1` **incomplete**: the idle run exit 0, the loaded
+  run (8 burners, load 3.67 before, 11.62 after) hit the registered `timeout -k 10 600` (exit 124;
+  the CLI's SIGTERM handler cancels and saves the best board so far), so the script reports
+  "different: exit status 0 idle, 124 loaded". Its saved SES is byte-identical to the idle run's,
+  and the idle run's to both arms' registered sessions (three earned-budget runs at different
+  loads, one session), but a cancelled run does not prove the full route. Remainder: a
+  `canary-pwr-pours1` determinism run that fits its timeout (needs a Q08.json amendment for the
+  loaded run's timeout: an unlimited-pass route takes 520 to 570 s here, not the 100 s of the
+  5-pass bench runs amendment 2 quoted); moot if Q08.3's removal lands.
 
 - [~] **Q08.3 — Measurement.**
   Preregister (F03.4). Arms: default and `earned-budget`. Boards:
@@ -195,3 +209,71 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
      `maze_budget_extensions` and `maze_budget_extra_units / tree_nodes_visited`.
   Operator decision taken with the amendment (recommended answer): the one board in the records
   with a work-limit hit, `canary-pwr-2026-10-15-1747-unpoured` (357 s per route), stays out.
+  *Partial 2026-10-20 (run):* measured; **gate FAIL, removal pending.** Engine: release CLI and
+  `freerouting-dev` of main `af3b05e` (`freerouting --version`: `git af3b05ee3577`), built in a
+  detached worktree; run from that worktree's root, one route at a time, under `ulimit -v 8000000`
+  and `timeout -k 10 120` (`600` for canary-pwr) as `tools/bench/quick-arm.sh` applies (no runner
+  fix was needed); other agents routed at the same time (load average 3 to 8).
+  1. Default arm (`quick-arm.sh $B $O default tools/bench/sets/quick-benchmark.txt --
+     --router.optimizer.enabled=false --stats json`): 9 rows, all exit 0.
+  2. Amendment 3 of `docs/roadmap/prereg/Q08.json` (after step 1, before any `earned-budget`
+     route; sha256 `a53e55772fb2a14ed4637f91cedc7c499158913e4a376b2998d42103ebf25bb2`, re-pinned
+     in `crates/freerouting-dev/tests/prereg_q08.rs`, 6 passed): total `maze_work_limit_hits` of
+     the default arm is 0 on every row (Issue433 0, Issue649 0, bm02 0, sonde_xilinx 0, bm07 0,
+     bm10 0, interf_u 0, CNH 0, canary-pwr-pours1 0), so no benchmark row is eligible and `files`
+     keeps `canary-pwr-pours1` only.
+  3. `earned-budget` arm (the same plus `--router.autorouter.connection_router=earned-budget`) on
+     all 9 rows, all exit 0.
+
+  | row | arm | unrouted | vias | clearance | wall s | `maze_work_limit_hits` | extensions |
+  |---|---|---|---|---|---|---|---|
+  | Issue433-my-board | default / earned | 0 / 0 | 4 / 4 | 0 / 0 | 0.04 / 0.04 | 0 / 0 | 0 / 0 |
+  | Issue649-kicad_ecc83 | default / earned | 0 / 0 | 0 / 0 | 0 / 0 | 0.01 / 0.01 | 0 / 0 | 0 / 0 |
+  | Issue508-DAC2020_bm02 | default / earned | 0 / 0 | 13 / 13 | 0 / 0 | 0.13 / 0.12 | 0 / 0 | 0 / 0 |
+  | Issue690-sonde_xilinx | default / earned | 11 / 11 | 3 / 3 | 0 / 0 | 0.36 / 0.33 | 0 / 0 | 0 / 0 |
+  | Issue508-DAC2020_bm07 | default / earned | 0 / 0 | 27 / 27 | 0 / 0 | 0.48 / 0.42 | 0 / 0 | 0 / 0 |
+  | Issue508-DAC2020_bm10 | default / earned | 0 / 0 | 150 / 150 | 0 / 0 | 5.73 / 5.24 | 0 / 0 | 0 / 0 |
+  | Issue093-interf_u | default / earned | 19 / 19 | 84 / 84 | 0 / 0 | 1.13 / 1.04 | 0 / 0 | 0 / 0 |
+  | Issue555-CNH_Functional_Tester_1 | default / earned | 1 / 1 | 15 / 15 | 6 / 6 | 5.97 / 5.47 | 0 / 0 | 0 / 0 |
+  | canary-pwr-pours1 (judged) | default / earned | 122 / 122 | 129 / 129 | 70 / 70 | 568.70 / 523.46 | 0 / 0 | 0 / 0 |
+
+  Unrouted, vias and clearance are `freerouting-dev ses-diff` statistics of each arm's SES
+  imported into its DSN (`connections.incomplete_count`, `vias.total_count`,
+  `clearance_violations.total_count`); wall is `/usr/bin/time`; the counts are the `--stats` JSON
+  totals. `maze_budget_extra_units` is 0 on every row; `tree_nodes_visited` is equal in both arms
+  on every row (canary-pwr-pours1 29 510 522 037). Every `earned-budget` SES is byte-identical
+  (`cmp`) to the default's and `ses-diff` finds them equivalent; via_in_pad 0 in both arms.
+  4. Determinism (Q08.2's note above): `Issue093-interf_u` identical; `canary-pwr-pours1`
+     incomplete (the loaded run hit the 600 s timeout, exit 124; its saved SES equals the idle
+     run's).
+  5. Records: a bench.json per arm built from these runs, `freerouting-dev gate collect --engine
+     rust --group fixtures/canary-pwr/=canary-pwr` (via_in_pad), plus `connections` (313, the
+     default run's `connections.maximum_count`) and the report counts; then `freerouting-dev gate
+     --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/Q08.json`
+     (baseline written first with `--write-baseline`):
+     ```
+     prereg Q08.3-earned-budget (sha256 a53e55772fb2a14ed4637f91cedc7c499158913e4a376b2998d42103ebf25bb2, 3 amendment(s)): 0 refusal(s)
+     pair default -> earned-budget; judged 1 of 1 row(s)
+       fixtures/canary-pwr/canary-pwr-pours1.dsn [canary-pwr]: neutral  via_in_pad 0->0, vias 129->129, clearance_violations 70->70, unrouted 122->122, ...
+     totals rule (accept: improve, >= 3 distinct boards):
+       canary-pwr [unrouted]: 122 -> 122 (change 0, band 10)
+       FAILS: REFUSED: a change is judged on >= 3 DISTINCT boards; this run has N=1. Rows of one board count once
+       FAILS: the total does not improve (change 0) and the speed clause does not hold
+       totals verdict: reject
+     gate: FAIL
+     ```
+     Wall-time clause: no judged row granted an extension, so it holds by amendment 2 (3); the
+     verdict is the gate's. Run files: `target/orchestrator/q08/run/` (deleted after the note).
+
+  Keep rule: (1) fails, so the decision table's fail row applies: `earned-budget` is removed.
+  Remainder (removal pending, not done here): remove `crates/freerouting/src/quality/budget.rs`
+  (and `pub mod budget` in `quality/mod.rs`), the `earned-budget` entry in
+  `quality/register.rs`, the session's budget hook (`autoroute/session/budget.rs`, `pub mod
+  budget`, the `budget`/`first_estimate`/`best_estimate` fields, `set_budget_policy`,
+  `has_budget_policy`, `observe_estimate` and the limit check's Q08 branch in
+  `autoroute/session/mod.rs`, the `has_budget_policy` call in `autoroute/session/search.rs`),
+  `route_with_budget` and the `budget` parameters in `autoroute/batch/connection.rs` and
+  `autoroute/connection.rs`, `WorkLimit::extend` in `board/search/work.rs`, the
+  `maze_budget_extensions` / `maze_budget_extra_units` counters in `run_stats.rs`,
+  `crates/freerouting/tests/quality_budget.rs`, and the "Earned budget extension" block of
+  `docs/DIVERGENCES.md`; this note keeps the numbers.
