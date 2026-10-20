@@ -13,7 +13,14 @@
 //! Amendment 1 (decided 2026-10-20: measurement runs stay a few minutes, before any
 //! registered run): the 15 quick rows of `tools/bench/sets/q10-sweep-quick.txt`, the arms
 //! `mp1`, Q11.1's sweep arms, `ripcost-best` and `strict` (the others dropped), rip stats in
-//! every command, one KiCad grade per distinct session; the hash below is the amended file's.
+//! every command, one KiCad grade per distinct session.
+//!
+//! Amendment 2 (2026-10-20, before any registered run): the engine (main 3330f36), the runner
+//! and the metric sources made precise, hard guards "no new breach versus baseline" (one records
+//! file per pair).
+//!
+//! Amendment 3 (2026-10-20, after `mp1`'s runs and before any candidate run): `eligible` (11
+//! rows) and `ripcost-best` = `ripcost-5000`; the hash below is the amended file's.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -122,7 +129,7 @@ fn the_q11_registration_uses_the_totals_rule_and_its_settings_exist() {
 fn the_q11_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "9a1c2d795c92c3849b745807debf2585397fad55f9729470e257c9ef4c0e783c"
+        "e57691f5b225400dd07e92d6a2b6ee24f4da87c1ab35f63fd255da9bc9b87139"
     );
 }
 
@@ -134,7 +141,7 @@ fn amendment_1_keeps_two_pairs_and_the_quick_rows() {
     let Some(Json::Array(amendments)) = json.path("amendments") else {
         panic!("amendments")
     };
-    assert_eq!(amendments.len(), 1);
+    assert!(amendments.len() >= 2);
     let reason = amendments[0].get("reason").and_then(Json::as_str).unwrap();
     assert!(reason.starts_with("decided 2026-10-20: measurement runs stay a few minutes"));
     let Some(Json::Array(pairs)) = json.path("pairs") else {
@@ -158,4 +165,40 @@ fn amendment_1_keeps_two_pairs_and_the_quick_rows() {
             "{name}"
         );
     }
+}
+
+/// Amendment 2: the engine, runner and metric sources, written before any registered run.
+#[test]
+fn amendment_2_names_the_engine_and_the_hard_guard_reading() {
+    let json = Json::parse(&text()).unwrap();
+    let Some(Json::Array(amendments)) = json.path("amendments") else {
+        panic!("amendments")
+    };
+    let changes = amendments[1].get("changes").and_then(Json::as_str).unwrap();
+    assert!(changes.contains("main 3330f36"));
+    assert!(changes.contains("'no new breach versus baseline'"));
+    let after = amendments[1].get("after").and_then(Json::as_str).unwrap();
+    assert!(after.contains("before any registered run"));
+}
+
+/// Amendment 3: the eligible rows and Q11.1's best arm.
+#[test]
+fn amendment_3_writes_eligible_and_names_ripcost_best() {
+    let json = Json::parse(&text()).unwrap();
+    let Some(Json::Array(eligible)) = json.path("eligible") else {
+        panic!("eligible")
+    };
+    assert_eq!(eligible.len(), 11);
+    let prereg = registration();
+    for row in eligible {
+        let row = row.as_str().unwrap();
+        assert!(prereg.boards.iter().any(|(path, _)| path == row), "{row}");
+    }
+    let best = json
+        .path("arms.ripcost-best.command")
+        .and_then(Json::as_str);
+    let five = json
+        .path("arms.ripcost-5000.command")
+        .and_then(Json::as_str);
+    assert_eq!(best, five);
 }

@@ -48,7 +48,7 @@ evidence.
 
 ## Checklist
 
-- [~] **Q11.1: rip-cost sweep, no code.** `start_ripup_costs` ∈ {1500, 5000, 20000}
+- [x] **Q11.1: rip-cost sweep, no code.** `start_ripup_costs` ∈ {1500, 5000, 20000}
   and pass 1 with rip-up off, on the eligible boards. This bounds what Q11 can gain.
   - **Accept:** a table in the done note, with Q05.1 rip stats per arm.
   - *Not run 2026-10-18 (heavy run pending, the heavy slot is another agent's):* per eligible board
@@ -91,6 +91,45 @@ evidence.
        `eligible` (rows where `mp1` leaves an incomplete connection) and names `ripcost-best`.
     Owner: this item, run in Q00's Q10-Q12 measurement family with Q11.6 and Q12.5 (Q12.5 reuses
     the `mp1` runs).
+  - *Done 2026-10-20:* run under Q11.json amendments 1-3 (sha256 now
+    `e57691f5b225400dd07e92d6a2b6ee24f4da87c1ab35f63fd255da9bc9b87139`, re-pinned in
+    `crates/freerouting-dev/tests/prereg_q11.rs`, 6 passed). Amendment 2 (before any run): engine
+    main `3330f36` (`freerouting --version`: git `3330f369a2ab`; one release build from a detached
+    worktree, CLI sha256 `a6bc2d82…`, default profile `enhanced`), runner and metric sources made
+    precise, hard guards "no new breach versus baseline". Amendment 3 (after `mp1`, before any
+    candidate): `eligible` = the 11 rows `mp1` leaves incomplete (not Issue649, bm02, bm07,
+    mccx11) and `ripcost-best` = `ripcost-5000`. Routes: `tools/bench/quick-arm.sh` (each under
+    `ulimit -v 8000000`, `timeout 600`/`120`; no timeout), outputs in
+    `target/orchestrator/q1112/out/<arm>/`; KiCad: `tools/bench/grade-distinct.sh`, 15 grades for
+    the 24 corpus and canary sessions. Per row: router unrouted (KiCad unconnected where graded) /
+    vias / rip stats `ripping_attempts-rips-reroutes` (the manifest's `rip_stats`):
+
+    | row | mp1 | ripcost-5000 | ripcost-20000 | ripcost-near-off |
+    |---|---|---|---|---|
+    | Issue433-my-board | 2 / 7 / 0-0-0 | 2 / 7 / 0-0-0 | 2 / 7 / 0-0-0 | 2 / 7 / 0-0-0 |
+    | Issue649-kicad_ecc83-pp_input_board_v1 | 0 / 0 / 0-0-0 | 0 / 0 / 0-0-0 | 0 / 0 / 0-0-0 | 0 / 0 / 0-0-0 |
+    | Issue508-DAC2020_bm02 | 0 / 14 / 0-0-0 | 0 / 14 / 0-0-0 | 0 / 20 / 0-0-0 | 0 / 20 / 0-0-0 |
+    | Issue690-sonde_xilinx | 11 / 3 / 0-0-0 | 11 / 3 / 0-0-0 | 11 / 3 / 0-0-0 | 11 / 3 / 0-0-0 |
+    | Issue508-DAC2020_bm07 | 0 / 32 / 2-2-2 | 0 / 32 / 2-2-2 | 0 / 32 / 2-2-2 | 0 / 32 / 2-2-2 |
+    | Issue508-DAC2020_bm10 | 2 / 161 / 10-12-10 | 2 / 161 / 10-12-10 | 2 / 161 / 11-12-10 | 0 / 165 / 8-8-8 |
+    | Issue093-interf_u | 19 / 84 / 0-0-0 | 19 / 84 / 0-0-0 | 19 / 84 / 0-0-0 | 19 / 84 / 0-0-0 |
+    | Issue555-CNH_Functional_Tester_1 | 1 / 32 / 1-1-1 | 1 / 32 / 1-1-1 | 1 / 32 / 1-1-1 | 1 / 32 / 1-1-1 |
+    | canary-pwr-9511d9a | 115 (50) / 165 / 42-60-29 | 106 (42) / 177 / 39-54-23 | 105 (42) / 178 / 38-51-25 | 110 (44) / 163 / 47-59-26 |
+    | mydevboard-rp2040dev | 37 (34) / 29 / 35-40-11 | 32 (29) / 36 / 34-46-14 | 39 (33) / 28 / 33-47-15 | 35 (31) / 43 / 26-36-16 |
+    | slice-dcmt-bread-slice | 4 (12) / 14 / 3-3-1 | 4 (12) / 14 / 3-3-1 | 4 (12) / 14 / 3-3-1 | 4 (12) / 14 / 3-3-1 |
+    | flight-computer-core-board | 1 (5) / 28 / 0-0-0 | 1 (5) / 28 / 0-0-0 | 1 (5) / 28 / 0-0-0 | 1 (5) / 28 / 0-0-0 |
+    | laser-backplane-dvi-laserbackplane-dvi | 45 (70) / 3 / 0-0-0 | 45 (70) / 3 / 0-0-0 | 45 (70) / 3 / 0-0-0 | 45 (70) / 3 / 0-0-0 |
+    | vfo-controller-catvfoctrl | 1 (14) / 33 / 6-7-4 | 1 (14) / 31 / 4-6-3 | 0 (13) / 24 / 2-2-1 | 0 (13) / 24 / 2-2-1 |
+    | mccx11-hardware-sx1262-433mhz-reverse-engineering | 0 (0) / 0 / 0-0-0 | 0 (0) / 0 / 0-0-0 | 0 (0) / 0 / 0-0-0 | 0 (0) / 0 / 0-0-0 |
+    | sum | 238 (185) / 559 / rips 123, reroutes 56 | 224 (172) / 576 / rips 122, reroutes 52 | 229 (175) / 562 / rips 116, reroutes 53 | 228 (175) / 566 / rips 109, reroutes 53 |
+
+    Sums over the 11 eligible rows. KiCad unconnected over the six graded eligible rows: 185 /
+    172 / 175 / 175, so `ripcost-best` is `ripcost-5000` (amendment 3). canary-pwr-9511d9a: 50
+    / 42 / 42 / 44 KiCad-unconnected, every arm clean (no error but unconnected and starved
+    thermals, 0 via-in-pad, 0 inner-layer tracks). "near-off" still rips (canary: 47 attempts,
+    59 rips): the capped cost does not price rip-up out. Re-land share (reroutes / rips) on
+    canary: 29/60, 23/54, 25/51, 26/59. Wall times overlapped other sessions' routes: reported,
+    not compared.
 - [x] **Q11.2: the wrapper, arm `strict`.** Commit only if every victim connection
   re-lands.
   - **Accept:**
@@ -170,7 +209,7 @@ evidence.
     `the_factors_are_one_plus_f_times_k` (unit), `a_rip_factor_of_0_is_unset`, and the
     `strict+ripfactor` arm in `off_is_byte_identical` and `every_arm_is_deterministic`. Spot
     check on canary-pwr-9511d9a pass 1 (strict, f=2): 95 unrouted in 91.6 s.
-- [~] **Q11.6: measurement** (prereg draft `docs/roadmap/prereg/Q11.json (draft)`).
+- [x] **Q11.6: measurement** (prereg draft `docs/roadmap/prereg/Q11.json (draft)`).
   - Arms: `mp1` (baseline), `Q11.1-best`, `strict`, `count`, `depth1`, `strict+Q11.5`,
     each also followed by an Q10 sweep.
   - **Accept:** measured.
@@ -199,6 +238,50 @@ evidence.
     3. records as Q11.json's `grading` says, then `freerouting-dev gate --records <records>
        --prereg docs/roadmap/prereg/Q11.json --eligible` (the pair `mp1`, `strict`) and the same
        with `--arms ripcost-best,strict`; the job log's "Transactional rip-up" tally per row.
+  - *Done 2026-10-20:* measured under Q11.json amendments 1-3 (Q11.1's note: engine main
+    `3330f36`, the same build and runner). `strict` routed every row inside its limit
+    (canary-pwr-9511d9a 126.4 s). Per row: router unrouted (KiCad unconnected where graded) /
+    vias / raw `below_minimum` (KiCad `track_width` errors on graded rows, else engine-model
+    traces under the narrowest class width); the tally is the job log's "Transactional rip-up"
+    line (transactions, committed, rolled back (retries routed), victim nets, re-landed; 0 re-rips
+    refused everywhere):
+
+    | row | mp1 | ripcost-best (5000) | strict | strict tally |
+    |---|---|---|---|---|
+    | Issue433-my-board | 2 / 7 / 0 | 2 / 7 / 0 | 2 / 7 / 0 | 0, 0, 0 (0), 0, 0 |
+    | Issue649-kicad_ecc83-pp_input_board_v1 (not eligible) | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0, 0, 0 (0), 0, 0 |
+    | Issue508-DAC2020_bm02 (not eligible) | 0 / 14 / 19 | 0 / 14 / 19 | 0 / 14 / 19 | 0, 0, 0 (0), 0, 0 |
+    | Issue690-sonde_xilinx | 11 / 3 / 0 | 11 / 3 / 0 | 11 / 3 / 0 | 0, 0, 0 (0), 0, 0 |
+    | Issue508-DAC2020_bm07 (not eligible) | 0 / 32 / 45 | 0 / 32 / 45 | 0 / 32 / 45 | 2, 2, 0 (0), 2, 2 |
+    | Issue508-DAC2020_bm10 | 2 / 161 / 60 | 2 / 161 / 60 | 0 / 157 / 64 | 9, 9, 0 (0), 10, 10 |
+    | Issue093-interf_u | 19 / 84 / 0 | 19 / 84 / 0 | 19 / 84 / 0 | 0, 0, 0 (0), 0, 0 |
+    | Issue555-CNH_Functional_Tester_1 | 1 / 32 / 30 | 1 / 32 / 30 | 1 / 32 / 29 | 1, 1, 0 (0), 1, 1 |
+    | canary-pwr-9511d9a | 115 (50) / 165 / 0 | 106 (42) / 177 / 0 | 92 (31) / 208 / 0 | 52, 30, 22 (2), 98, 72 |
+    | mydevboard-rp2040dev | 37 (34) / 29 / 74 | 32 (29) / 36 / 57 | 31 (29) / 33 / 72 | 43, 22, 21 (0), 86, 65 |
+    | slice-dcmt-bread-slice | 4 (12) / 14 / 16 | 4 (12) / 14 / 16 | 2 (11) / 15 / 16 | 3, 3, 0 (0), 3, 3 |
+    | flight-computer-core-board | 1 (5) / 28 / 0 | 1 (5) / 28 / 0 | 1 (5) / 28 / 0 | 0, 0, 0 (0), 0, 0 |
+    | laser-backplane-dvi-laserbackplane-dvi | 45 (70) / 3 / 10 | 45 (70) / 3 / 10 | 45 (70) / 3 / 10 | 0, 0, 0 (0), 0, 0 |
+    | vfo-controller-catvfoctrl | 1 (14) / 33 / 72 | 1 (14) / 31 / 56 | 1 (13) / 35 / 77 | 5, 3, 2 (0), 7, 4 |
+    | mccx11-hardware-sx1262-433mhz-reverse-engineering (not eligible) | 0 (0) / 0 / 0 | 0 (0) / 0 / 0 | 0 (0) / 0 / 0 | 0, 0, 0 (0), 0, 0 |
+
+    Records: `target/orchestrator/q1112/rec-q11-mp1-strict.json`, `rec-q11-best-strict.json`
+    (option (b) against each pair's baseline). Gate:
+    - `freerouting-dev gate --records rec-q11-mp1-strict.json --baseline base-q11.json --prereg
+      docs/roadmap/prereg/Q11.json --eligible`: "0 refusal(s)", "judged 11 of 15 row(s)", total
+      220 -> 192 (change -28), set noise 27.62; "FAILS: hard guard:
+      fixtures/Issue508-DAC2020_bm10.dsn.below_minimum = 4", "... vfo-controller-catvfoctrl.dsn.below_minimum
+      = 5", "... vfo-controller-catvfoctrl.dsn.drc_real 85 -> 93"; "totals verdict: reject", "gate:
+      FAIL" (exit 1).
+    - `... --records rec-q11-best-strict.json --eligible --arms ripcost-best,strict`: total 207 ->
+      192 (change -15), noise 27.62; hard guard below_minimum on bm10 (4), mydevboard (15), vfo
+      (21), drc_real mydevboard 65 -> 88 and vfo 70 -> 93; "FAILS: the improvement 15 does not
+      exceed the set noise 27.62"; "totals verdict: reject", "gate: FAIL".
+    - **Verdict: `strict` fails both pairs, so the keep rule does not keep it.** canary-pwr gains
+      19 KiCad-unconnected against `mp1` (50 -> 31) and 11 against `ripcost-best` (42 -> 31), with
+      43 more vias than `mp1`; the rejection comes from new narrow traces (the commands' 150 um
+      floor with `enhanced`'s neck-down, on the extra connections) and, against `ripcost-best`,
+      from the summed improvement. The decision table's fail branch (remove `quality/transaction.rs`
+      and the rip-factor hook) is not carried out here: it is reported for the orchestrator.
 
 ## Expected
 

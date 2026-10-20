@@ -13,7 +13,14 @@
 //! Amendment 1 (decided 2026-10-20: measurement runs stay a few minutes, before any
 //! registered run): the 15 quick rows of `tools/bench/sets/q10-sweep-quick.txt`, the arms
 //! `mpdef`, `portfolio4` and `mp1` (Q11.json's `mp1` command, so one run serves both), one
-//! KiCad grade per distinct session; the hash below is the amended file's.
+//! KiCad grade per distinct session.
+//!
+//! Amendment 2 (2026-10-20, before any registered run): the engine (main 3330f36, the build of
+//! Q11.json's amendment 2), the runner and the metric sources made precise, hard guards "no new
+//! breach versus baseline" (one records file per pair).
+//!
+//! Amendment 3 (2026-10-20, after `mp1`'s runs and before any candidate run): `eligible`, the
+//! same 11 rows as Q11.json's; the hash below is the amended file's.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -110,7 +117,7 @@ fn the_q12_registration_uses_the_totals_rule_and_its_settings_exist() {
 fn the_q12_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "342635f960aba7a644f97cceb009c9274dd2be62b62fd80b1bc4a7f065b2e9ab"
+        "840f008bc17a5e1b3e1d1414cdc6cfe3f87a3e9e59490ed8d792ae81d871764d"
     );
 }
 
@@ -132,4 +139,44 @@ fn amendment_1_shares_mp1_with_q11() {
     };
     let reason = amendments[0].get("reason").and_then(Json::as_str).unwrap();
     assert!(reason.starts_with("decided 2026-10-20: measurement runs stay a few minutes"));
+}
+
+/// Amendment 2 is Q11.json's amendment 2 (one build and one grading for the shared runs), plus
+/// the portfolio's work sum.
+#[test]
+fn amendment_2_matches_q11s() {
+    let amendment = |file: &str| {
+        let text = std::fs::read_to_string(repo().join(file)).unwrap();
+        let json = Json::parse(&text).unwrap();
+        let Some(Json::Array(amendments)) = json.path("amendments") else {
+            panic!("amendments")
+        };
+        amendments[1]
+            .get("changes")
+            .and_then(Json::as_str)
+            .unwrap()
+            .to_string()
+    };
+    let q11 = amendment("docs/roadmap/prereg/Q11.json");
+    let q12 = amendment(FILE);
+    assert!(q12.starts_with(&q11));
+    assert!(q12.contains("every portfolio arm"));
+}
+
+/// Amendment 3: the eligible rows are Q11.json's (one `mp1` run decides both).
+#[test]
+fn amendment_3_shares_eligible_with_q11() {
+    let eligible = |file: &str| {
+        let text = std::fs::read_to_string(repo().join(file)).unwrap();
+        let json = Json::parse(&text).unwrap();
+        let Some(Json::Array(rows)) = json.path("eligible") else {
+            panic!("eligible")
+        };
+        rows.iter()
+            .map(|r| r.as_str().unwrap().to_string())
+            .collect::<Vec<_>>()
+    };
+    let q12 = eligible(FILE);
+    assert_eq!(q12.len(), 11);
+    assert_eq!(q12, eligible("docs/roadmap/prereg/Q11.json"));
 }

@@ -76,7 +76,19 @@
       "target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn": "c7bc16b327a495e34e6c457f6d5d79df5bad46beb55c15b304494cf8273c946f"
     }
   },
-  "eligible": null,
+  "eligible": [
+    "fixtures/Issue433-my-board.dsn",
+    "fixtures/Issue690-sonde_xilinx.dsn",
+    "fixtures/Issue508-DAC2020_bm10.dsn",
+    "fixtures/Issue093-interf_u.dsn",
+    "fixtures/Issue555-CNH_Functional_Tester_1.dsn",
+    "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+    "target/corpus/prepped/mydevboard-rp2040dev.dsn",
+    "target/corpus/prepped/slice-dcmt-bread-slice.dsn",
+    "target/corpus/prepped/flight-computer-core-board.dsn",
+    "target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn",
+    "target/corpus/prepped/vfo-controller-catvfoctrl.dsn"
+  ],
   "grading": "tools/kicad-oracle/grade.sh where a .kicad_pcb exists (copper severities forced to error, input DRC subtracted, refill on); canary-pwr by canary-23 (ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py)",
   "metrics": [
     {
@@ -181,6 +193,18 @@
       "after": "the registration; before any registered run of any arm on any row (Q12.1-Q12.4's spot checks on canary-pwr-9511d9a and Issue433-my-board are not runs of this registration)",
       "reason": "decided 2026-10-20: measurement runs stay a few minutes: every row routes in well under a minute except canary-pwr's DSN, two arms where the question allows (here the verdict pair and the pass-1 baseline Q11 already runs), one KiCad grade per distinct session. The registered 5 arms on 30 rows would take hours",
       "changes": "(1) Rows: boards.files keeps the 15 rows of tools/bench/sets/q10-sweep-quick.txt, as Q11.json's amendment 1 (each row's longest recorded route time and its target/orchestrator/<dir>/ are in that file; canary-pwr-9511d9a's default passes took 414.4 to 451.7 s in n06-13 and n06-g, under the 600 s limit); dropped for their route time: bm01, CPU-85, z10_module, smoothieboard, LogicBoard_smt, GP8B, coldfire, contribution-board, the five canary-pwr variants, eprom-card-80bus and rio-iceshield. The eligibility rule and min_boards 3 are unchanged. (2) Arms: mpdef (baseline), portfolio4 (candidate) and mp1 (reported pair and eligibility), mp1's command equal to Q11.json's mp1 (plus --router.special.diagnostics=rip-stats, report-only) so its runs serve both; portfolio4+restart2 and portfolio4+Q10+Q11 are dropped. (3) Grading: one KiCad grade per distinct session; the 8 benchmark rows have no .kicad_pcb and use the router's unrouted count. Q12.3's peak resident memory is the portfolio4 run's /usr/bin/time maximum resident set (LogicBoard_smt is not a row: its fanout alone outlasts 170 s). (4) Every route runs under ulimit -v 8000000 with timeout 600 for canary-pwr-9511d9a and timeout 120 for the other rows; a timeout leaves the measurement incomplete. Nothing else changes: question, metrics, totals block, guard_extra, stop_rule"
+    },
+    {
+      "date": "2026-10-20",
+      "after": "amendment 1; before any registered run of any arm on any row",
+      "reason": "the run's engine, runner and grading made precise before any number (amendment 1 names 'main at the run' and the grade scripts, not the metric sources), with the hard-guard reading every measurement since N06.4 uses",
+      "changes": "(1) Engine: amendment 1's 'main at the run' is main 3330f36 (freerouting --version: git 3330f369a2ab), one Linux release build of freerouting-cli and freerouting-dev from a detached worktree of that commit (CLI sha256 a6bc2d82eceaf406...), default profile enhanced, every arm. (2) Runner: tools/bench/quick-arm.sh, which adds --result-json (the result manifest) to each route, and every route also gets --stats json (output only: the per-stage counters next to the SES, for work_units); outputs in target/orchestrator/q1112/out/<arm>/<board>.*. (3) Grading made precise: canary-pwr-9511d9a through Q10's canary grade (target/orchestrator/q10/s104/canary-grade.sh with its WSL kicad-cli shim, canary 9511d9a3: ses_import.py, kicad-cli pcb drc --schematic-parity --refill-zones --severity-all, via_in_pad.py, inner_tracks.py): kicad_unconnected = unconnected items, drc_real = error items other than unconnected items and starved thermals, below_minimum_raw = track_width errors, via_in_pad_raw = via_in_pad.py's count; the corpus rows through tools/kicad-oracle/grade.sh on target/corpus/projects/<id> with the engine `cp <session> {SES}` (tools/bench/grade-distinct.sh): kicad_unconnected = unconnected_items, drc_real = drc_real, below_minimum_raw = the sum of copper.below_minimum; the benchmark rows: kicad_unconnected and drc_real null (a null pair is not compared), below_minimum_raw = the session's traces narrower than the board's narrowest class width that the input does not have. On the benchmark and corpus rows via_in_pad_raw = added vias in SMD pads (main 4885a30's added_via_in_pad). Hard guards via_in_pad and below_minimum are 'no new breach versus baseline' (decided 2026-10-18: no registration carries a hard guard the baseline already breaks; the commands' 150 um floor with enhanced's neck-down breaks the raw KiCad track_width minimum in every arm, Q10.4): the arm's raw count minus the pair's baseline arm's raw count on the same row, floored at 0, so one records file per pair as rule_text says; the raw counts are reported in the done note. On every row: pour_lost_pins = quality::pour_audit::audit (input board against input + SES), vias and length_mm = the imported session's statistics, all three by a scratch tool on the engine API at the same commit (N06.13's n06m plus Q10's pour audit, target/orchestrator/q1112/q11m); unrouted = the result manifest's board_statistics.connections.incomplete_count (the log's final unrouted count) and connections = its maximum_count (the default noise band of rows without a registered band); work_units = maze_work_units of the --stats total; wall_seconds = /usr/bin/time's elapsed seconds (other sessions' routes and builds ran at the same time: reported, not compared). (4) Numbering: the `eligible` amendment that amendment 1's notes call amendment 2 is amendment 3. Written before any registered run of any arm on any row. Nothing else changes: arms, commands, rows, metrics, totals block, pairs, keep and stop rules The work_units sum covers every portfolio arm and the optimizer (the --stats total counts them all, checked on a scratch route of Issue433-my-board with portfolio 2, not a registered command)."
+    },
+    {
+      "date": "2026-10-20",
+      "after": "mp1's registered runs; before any candidate arm runs",
+      "reason": "the registration's eligibility rule: `eligible` is written as an amendment before any candidate arm runs",
+      "changes": "eligible: the 11 rows on which mp1 (main 3330f36, amendment 2) left at least one incomplete connection, 11 distinct boards (all but Issue649-kicad_ecc83-pp_input_board_v1, Issue508-DAC2020_bm02, Issue508-DAC2020_bm07 and mccx11-hardware-sx1262-433mhz-reverse-engineering, complete under mp1); the verdicts are read on these rows (freerouting-dev gate --eligible), every registered row is still run and recorded. Written after mp1's runs (and Q11.1's sweep arms, which are not candidates) and before any candidate arm runs. Nothing else changes"
     }
   ]
 }

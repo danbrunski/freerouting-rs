@@ -110,7 +110,7 @@ an arm, never the default.
     `squeaky_order_puts_failed_then_victim_nets_first_and_keeps_planes_first`. Determinism:
     `tools/determinism-check.sh` on `q12-channel.dsn` (restarts 2, 2 threads) and on Issue433
     (restarts 2): "identical".
-- [~] **Q12.3: memory and time guard.** A board clone's peak memory times K must stay
+- [x] **Q12.3: memory and time guard.** A board clone's peak memory times K must stay
   under a setting (WSL limits: see the memory notes).
   - **Accept:** canary-pwr and LogicBoard_smt with K = 4; peak resident memory in the
     done note.
@@ -136,7 +136,34 @@ an arm, never the default.
   <date>:* canary-pwr K = 4 peak RSS 109636 KB (1 thread) and 175556 KB (2 threads); Q12.5's
   portfolio4 rows <table>; LogicBoard_smt dropped (decided 2026-10-20)." No new run is needed
   beyond Q12.5's.
-- [~] **Q12.4: order-spread report.** Per board: min, median and max incomplete count
+  - *Done 2026-10-20:* canary-pwr K = 4 peak RSS 109636 KB (1 thread) and 175556 KB (2 threads)
+    (the 2026-10-18 measurement above); Q12.5's registered `portfolio4` run (`-mp 1`, K = 4, the
+    host's 8 threads, the guard ran "4 at a time" on every row) and a 1-thread diagnostic run of
+    the same command plus `--router.autorouter.max_threads=1` (not a registered run; every SES
+    byte-identical to the registered run's, `cmp` on all 15 rows), `/usr/bin/time` `%M` from
+    `target/orchestrator/q1112/out/{portfolio4,diag-portfolio4-t1}/<board>.time`:
+
+    | row | peak RSS kB, 4 at a time (registered) | 1 at a time (diagnostic) |
+    |---|---|---|
+    | Issue433-my-board | 12672 | 11392 |
+    | Issue649-kicad_ecc83-pp_input_board_v1 | 12160 | 11136 |
+    | Issue508-DAC2020_bm02 | 18048 | 18368 |
+    | Issue690-sonde_xilinx | 15744 | 12644 |
+    | Issue508-DAC2020_bm07 | 32304 | 21720 |
+    | Issue508-DAC2020_bm10 | 270748 | 101796 |
+    | Issue093-interf_u | 28540 | 19824 |
+    | Issue555-CNH_Functional_Tester_1 | 239616 | 122128 |
+    | canary-pwr-9511d9a | 361236 | 152592 |
+    | mydevboard-rp2040dev | 69552 | 32072 |
+    | slice-dcmt-bread-slice | 32220 | 20000 |
+    | flight-computer-core-board | 28908 | 19120 |
+    | laser-backplane-dvi-laserbackplane-dvi | 17280 | 13428 |
+    | vfo-controller-catvfoctrl | 42404 | 23888 |
+    | mccx11-hardware-sx1262-433mhz-reverse-engineering | 11136 | 10752 |
+
+    The largest, canary-pwr-9511d9a at 4 at a time, is 353 MiB, under the 2048 MiB default limit
+    and the 8000000 kB `ulimit -v`. LogicBoard_smt dropped (decided 2026-10-20).
+- [x] **Q12.4: order-spread report.** Per board: min, median and max incomplete count
   (and KiCad count where graded) over the K arms.
   - **Accept:** a table on the eligible boards in the done note. It is proposed as the
     per-board noise quantum for later keep rules (an F03 amendment, the
@@ -155,7 +182,31 @@ an arm, never the default.
   `tools/bench/sets/q10-sweep-quick.txt`): the "Portfolio:" line of each `portfolio4` log in
   `target/q11-q12/portfolio4/<board>.log`, and KiCad counts where Q12.5 grades a row. No run of
   its own.
-- [~] **Q12.5: measurement** (prereg `docs/roadmap/prereg/Q12.json`, registered).
+  - *Done 2026-10-20:* from Q12.5's registered `portfolio4` run (the job logs'
+    "Portfolio arm i" and "Portfolio:" lines, `target/orchestrator/q1112/out/portfolio4/<board>.log`),
+    on the 11 eligible rows (Q12.json amendment 3). Router incomplete count per arm (0 configured,
+    1 conflict-rounds, 2 inside-out, 3 shuffle-1); KiCad unconnected only for the kept arm's
+    session (the other arms write no session):
+
+    | board | arms 0-3 incomplete | min / median / max | kept arm | kept arm KiCad |
+    |---|---|---|---|---|
+    | Issue433-my-board | 2, 0, 2, 2 | 0 / 2 / 2 | 1 conflict-rounds | - |
+    | Issue690-sonde_xilinx | 11, 11, 11, 11 | 11 / 11 / 11 | 0 configured | - |
+    | Issue508-DAC2020_bm10 | 2, 1, 3, 1 | 1 / 1.5 / 3 | 1 conflict-rounds | - |
+    | Issue093-interf_u | 19, 19, 19, 19 | 19 / 19 / 19 | 0 configured | - |
+    | Issue555-CNH_Functional_Tester_1 | 1, 2, 1, 2 | 1 / 1.5 / 2 | 0 configured | - |
+    | canary-pwr-9511d9a | 115, 107, 108, 112 | 107 / 110 / 115 | 1 conflict-rounds | 44 |
+    | mydevboard-rp2040dev | 37, 31, 37, 32 | 31 / 34.5 / 37 | 1 conflict-rounds | 29 |
+    | slice-dcmt-bread-slice | 4, 3, 4, 3 | 3 / 3.5 / 4 | 1 conflict-rounds | 9 |
+    | flight-computer-core-board | 1, 1, 1, 1 | 1 / 1 / 1 | 0 configured | 5 |
+    | laser-backplane-dvi-laserbackplane-dvi | 45, 45, 45, 45 | 45 / 45 / 45 | 0 configured | 70 |
+    | vfo-controller-catvfoctrl | 1, 4, 2, 3 | 1 / 2.5 / 4 | 0 configured | 14 |
+
+    The spread is 0 on four boards; where it is not, `conflict-rounds` wins 5 times and the
+    configured order 2 (CNH, vfo); max minus min is 8 on canary-pwr, 6 on mydevboard, 3 on vfo, 2
+    on Issue433 and bm10, 1 on CNH and slice. Proposed to F03 as the per-board noise quantum (the
+    orchestrator's call, F03 amendment).
+- [x] **Q12.5: measurement** (prereg `docs/roadmap/prereg/Q12.json`, registered).
   - Arms: `mp1`, `mpdef`, `portfolio4`, `portfolio4+restart2`, and `portfolio4` with
     Q10 and Q11 on.
   - Work is reported against `mpdef`'s, since the portfolio is meant to replace
@@ -192,6 +243,60 @@ an arm, never the default.
        `--stats` totals), then `freerouting-dev gate --records <records> --prereg
        docs/roadmap/prereg/Q12.json --eligible` and `guard_extra` (work at most 1.5x `mpdef`'s)
        per row; Q12.4's spread table from the `portfolio4` logs.
+  - *Done 2026-10-20:* measured under Q12.json amendments 1-3 (sha256 now
+    `840f008bc17a5e1b3e1d1414cdc6cfe3f87a3e9e59490ed8d792ae81d871764d`, re-pinned in
+    `crates/freerouting-dev/tests/prereg_q12.rs`, 6 passed): engine main `3330f36` (Q11.1's
+    build), `mp1` shared with Q11.1, `eligible` the same 11 rows. **canary-pwr-9511d9a's `mpdef`
+    route hit its 600 s limit** (`TIMEOUT mpdef canary-pwr-9511d9a after 600s`, interrupted
+    after pass 17, 115 unrouted; other sessions' routes ran at the same time, load average about
+    6), so by amendment 1 that row is incomplete and not graded; the stop rule allows no rerun.
+    Per row: router unrouted (KiCad unconnected where graded) / vias; work `maze_work_units` of
+    the `--stats` total against `mpdef`'s:
+
+    | row | mp1 | mpdef | portfolio4 | work p4/mpdef: registered (4 threads) / 1-thread diagnostic | wall s mpdef / p4 |
+    |---|---|---|---|---|---|
+    | Issue433-my-board | 2 / 7 | 1 / 7 | 0 / 7 | 1.14 / 0.36 | 1.28 / 0.04 |
+    | Issue649-kicad_ecc83-pp_input_board_v1 (not eligible) | 0 / 0 | 0 / 0 | 0 / 0 | 15.37 / 3.94 | 0.10 / 0.01 |
+    | Issue508-DAC2020_bm02 (not eligible) | 0 / 14 | 0 / 10 | 0 / 14 | 1.25 / 0.42 | 0.93 / 0.16 |
+    | Issue690-sonde_xilinx | 11 / 3 | 11 / 3 | 11 / 3 | 1.51 / 0.41 | 1.72 / 0.05 |
+    | Issue508-DAC2020_bm07 (not eligible) | 0 / 32 | 0 / 32 | 0 / 32 | 1.78 / 0.52 | 3.31 / 0.60 |
+    | Issue508-DAC2020_bm10 | 2 / 161 | 0 / 155 | 1 / 160 | 4.20 / 1.24 | 23.99 / 7.73 |
+    | Issue093-interf_u | 19 / 84 | 19 / 84 | 19 / 84 | 1.63 / 0.41 | 3.64 / 0.11 |
+    | Issue555-CNH_Functional_Tester_1 | 1 / 32 | 1 / 32 | 1 / 32 | 14.53 / 3.65 | 10.32 / 3.11 |
+    | canary-pwr-9511d9a | 115 (50) / 165 | timeout at 600 s | 107 (44) / 162 | n/a | 600.05 / 59.49 |
+    | mydevboard-rp2040dev | 37 (34) / 29 | 37 (34) / 29 | 31 (29) / 36 | 1.01 / 0.32 | 53.38 / 7.34 |
+    | slice-dcmt-bread-slice | 4 (12) / 14 | 2 (11) / 13 | 3 (9) / 8 | 9.59 / 2.84 | 0.44 / 0.39 |
+    | flight-computer-core-board | 1 (5) / 28 | 1 (6) / 24 | 1 (5) / 28 | 7.97 / 2.50 | 0.36 / 0.39 |
+    | laser-backplane-dvi-laserbackplane-dvi | 45 (70) / 3 | 45 (70) / 3 | 45 (70) / 3 | 1.00 / 1.00 | 0.32 / 0.32 |
+    | vfo-controller-catvfoctrl | 1 (14) / 33 | 0 (10) / 27 | 1 (14) / 33 | 1.22 / 0.39 | 2.29 / 0.87 |
+    | mccx11-hardware-sx1262-433mhz-reverse-engineering (not eligible) | 0 (0) / 0 | 0 (0) / 0 | 0 (0) / 0 | 1.00 / 1.00 | 0.02 / 0.02 |
+
+    Gate (records `target/orchestrator/q1112/rec-q12-mpdef-p4.json`, `rec-q12-mp1-p4.json`):
+    - `freerouting-dev gate --records rec-q12-mpdef-p4.json --prereg docs/roadmap/prereg/Q12.json
+      --write-baseline ...` refuses: "UNGRADED fixtures/canary-pwr/canary-pwr-9511d9a.dsn.mpdef:
+      not graded: timeout (amendment 1: the measurement is incomplete). A board that can't be
+      graded fails the run", "gate: FAIL".
+    - Trial on the 10 other eligible rows (not the registered verdict; `--rule totals --accept
+      improve` on a records copy without the canary row): total 163 -> 159 (change -4), set noise
+      25.75; "FAILS: hard guard: fixtures/Issue508-DAC2020_bm10.dsn.below_minimum = 7",
+      "...flight-computer-core-board.dsn.drc_real 1 -> 6", "...vfo-controller-catvfoctrl.dsn.below_minimum
+      = 3", "...vfo-controller-catvfoctrl.dsn.drc_real 75 -> 85", "FAILS: the improvement 4 does
+      not exceed the set noise 25.75"; "totals verdict: reject". No canary value can turn it: the
+      hard guards fail on rows that ran.
+    - `guard_extra` (work at most 1.5x `mpdef`'s on every board) fails on 6 eligible rows with the
+      registered numbers (sonde 1.51, bm10 4.20, interf_u 1.63, CNH 14.53, slice 9.59, flight 7.97)
+      and on 3 with the 1-thread numbers (CNH 3.65, slice 2.84, flight 2.50).
+    - Reported pair `--arms mp1,portfolio4 --eligible`: total 220 -> 203 (change -17), noise 27.62,
+      hard guard bm10 below_minimum = 8, "the improvement 17 does not exceed the set noise 27.62",
+      "totals verdict: reject"; canary-pwr 50 -> 44 KiCad-unconnected, clean.
+    - **Verdict: `portfolio4` fails (UNGRADED baseline row, hard guards, noise, guard_extra); the
+      keep rule does not keep it.** The decision table's fail branch (remove
+      `quality/portfolio/`) is not carried out here: it is reported for the orchestrator.
+    - Work counter defect found here: with arms running at once, each arm's per-stage counters
+      take in the other arms' work, so `--stats` totals of a parallel portfolio run are about 3.3
+      to 4x the 1-thread run's for the same session (canary 10389292397 vs 3098294240, CNH
+      2466277992 vs 619374061). `work_units` here is the registered (4-thread) figure; the
+      1-thread figures are a diagnostic. Not fixed here (engine work).
 
 ## Expected [I]
 
