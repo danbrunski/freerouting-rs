@@ -353,3 +353,12 @@ Prerequisites: N01; each candidate's own accepted measurement.
     promotion commit, 21 DSN rows plus canary-pwr (canary 2a7e070b) through the plugin path with
     default options, N02 totals, no-regress, option (b) hard guards. Run pending (N06.13's note
     gives the command); a FAIL is bisected by batch and a failing batch leaves `ENHANCED`.
+    *Measured 2026-10-20* (N06.13's note has the table): amendment 1 (sha256 `8c15ca4c…`) names
+    the engines, base main `0e3f1d5` and candidate `c04b3f5`, which landed as main `e0610fc` (the
+    same diff rebased over `8c952e7` and `5006992`). 42 DSN runs and both plugin routes completed
+    under the cap; 4 DSN sessions and the plugin session differ. Unrouted 193 → 193 over the 21 DSN
+    rows, plugin row KiCad unconnected 17 → 15 (graded twice, both grades equal: 4 → 1
+    starved_thermal, 0 clearance, 0 shorting, 0 track_width, 0 via-in-pad in both), total 210 →
+    208 against noise 65.25; no new hard-guard breach (via_in_pad and below_minimum option (b) 0
+    on every row), no DSN row's clearance count up. `freerouting-dev gate --prereg`: 0 refusals,
+    `gate: PASS`. Verdict: **promotion confirmed**; the 30 entries stay in `ENHANCED`.

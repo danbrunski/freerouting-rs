@@ -230,6 +230,6 @@ fn every_route_runs_under_the_memory_cap() {
 fn the_promotion_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "cd57a3af1e9836f075d8bb5059076202844186ba56ffdafea66cdcd4bd6b5d24"
+        "8c15ca4ce63f320b834a87b5c064830021508fd77284cd282e3cc0cd3ff7b390"
     );
 }

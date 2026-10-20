@@ -1626,7 +1626,7 @@ These are marked or look like quirks but keep no bug:
       through the plugin path with the plugin's default options (`outside_runner`, hashed as its
       source board). N02 totals, `accept: no-regress`; hard guards option (b), no new breach versus
       baseline; every route under an 8000000 kB cap.
-    - [ ] Heavy run pending (orchestrator, one job at a time), after this diff lands as one commit:
+    - [x] Heavy run (done 2026-10-20, see Measured below) (orchestrator, one job at a time), after this diff lands as one commit:
       `cd /home/thebo/code/freerouting-rs && PROMOTION=<sha of the commit that lands land/n06-13> && git worktree add --detach target/orchestrator/n06-13-base-wt "$PROMOTION~1" && git worktree add --detach target/orchestrator/n06-13-cand-wt "$PROMOTION" && (cd target/orchestrator/n06-13-base-wt && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-base cargo build --release -p freerouting-cli) && cd target/orchestrator/n06-13-cand-wt && CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/n06-13-cand cargo build --release -p freerouting-cli && N06_RUN_ULIMIT_KB=8000000 python3 tools/bench/n06_run.py docs/roadmap/prereg/N06.13-promotion.json --out /home/thebo/code/freerouting-rs/target/orchestrator/n06-13`
       (42 runs; it exits non-zero when a session differs, which is expected). Then the plugin row
       (the registration's `plugin_canary`: write `{"schema": 4, "profile": "enhanced"}` as the
@@ -1635,6 +1635,72 @@ These are marked or look like quirks but keep no bug:
       `GRADE_REV=2a7e070b`), then `freerouting-dev gate --records <records> --baseline <baseline>
       --prereg docs/roadmap/prereg/N06.13-promotion.json` (baseline file first with
       `--write-baseline`). A FAIL is bisected by batch as the registration's `accept` says.
+    - *Measured 2026-10-20:* the registered confirmation ran (heavy slot, one route at a time,
+      every route under the 8000000 kB cap). Amendment 1, written after the builds and the plugin
+      export and before any route, names the engines: baseline `enhanced_main` main `0e3f1d5`
+      (CLI sha256 `8f9cbacc…`), candidate `enhanced_promoted` `c04b3f5` (CLI `a1a4f4c5…`), the
+      promotion as registered; it landed as main `e0610fc`, the same diff (added and removed lines
+      equal) rebased over `8c952e7` (plugin installer only) and `5006992` (N06.16's default-true
+      switch). Registration sha256 now
+      `8c15ca4ce63f320b834a87b5c064830021508fd77284cd282e3cc0cd3ff7b390`, re-pinned in
+      `crates/freerouting-dev/tests/prereg_n06_13.rs`. Plugin row: canary 2a7e070b's board
+      (sha256 `17b597a0…`, as registered) exported with `{"schema": 4, "profile": "enhanced"}`:
+      DSN sha256 `52942eba5f1ba63bde8a5c69f9863af5badfb61efab9fa083542b348cd8e0ba3`, args
+      `ec2dcc99…` (`--router.min_trace_width_um=150 --router.autorouter.sweep=free`).
+      `n06_run.py`: 42 runs, all `COMPLETED` (no abort at the cap), exit 1 because 4 sessions
+      differ (zMRETestFixture, dev-board, ReadPlaceScope, Mars-64). Below-minimum and via-in-pad
+      raw counts by one tool on the engine at `0e3f1d5` for both arms (the input's wiring
+      stripped, the session read at the writer's scale).
+
+      | row | unrouted | KiCad unconnected | clearance | vias | below min. raw | via in pad raw | session |
+      |---|---|---|---|---|---|---|---|
+      | `Issue026-J2_reference-90` | 0 | – | 0 | 16 | 1 | 0 | identical |
+      | `Issue143-rpi_splitter-90` | 0 | – | 0 | 2 | 0 | 0 | identical |
+      | `Issue026-J2_reference` | 0 | – | 0 | 16 | 37 | 0 | identical |
+      | `Issue508-DAC2020_bm08` | 0 | – | 0 | 1 | 11 | 0 | identical |
+      | `Issue676-ch32v-tx118s` | 0 | – | 0 | 6 | 0 | 0 | identical |
+      | `Issue957-smoke-ldo-led` | 1 | – | 0 | 14 | 0 | 0 | identical |
+      | `Issue367-Charger` | 9 | – | 1 | 15 | 0 | 0 | identical |
+      | `Issue756-tomu-fpga` | 15 | – | 72 | 162 | 0 | 0 | identical |
+      | `Issue269-z10_module` | 37 | – | 10 | 131 | 2 | 0 | identical |
+      | `Issue313-FastTest` | 2 | – | 40 | 24 | 7 | 0 | identical |
+      | `Issue027-zMRETestFixture` | 0 | – | 0 | 35 → 31 | 40 → 39 | 0 | differs |
+      | `Issue155-CH376_MCP795_Module` | 0 | – | 0 | 14 | 13 | 0 | identical |
+      | `Issue508-DAC2020_bm06` | 0 | – | 0 | 20 | 23 | 0 | identical |
+      | `Issue558-dev-board` | 0 | – | 0 | 34 | 61 | 0 | differs |
+      | `Issue217-8088sbc` | 0 | – | 0 | 20 | 55 | 0 | identical |
+      | `Issue034-Green14SegLED` | 0 | – | 0 | 44 | 79 | 0 | identical |
+      | `canary-pwr-9511d9a` | 122 | – | 40 | 142 | 33 | 0 | identical |
+      | `Issue035-ReadPlaceScope` | 2 | – | 152 | 170 | 80 → 79 | 0 | differs |
+      | `Issue054-tairakb` | 5 | – | 0 | 147 | 42 | 0 | identical |
+      | `Issue102-Mars-64-revE-rot00` | 0 | – | 64 | 149 → 126 | 55 → 53 | 0 | differs |
+      | `scoring-mixed-layer-any` | 0 | – | 0 | 1 | 0 | 0 | identical |
+      | `canary-pwr-plugin` | router 29 → 31 | 17 → 15 | router 109 → 109; KiCad 0 → 0 | 193 → 186 | 0 | 0 | differs |
+      Plugin row grades (plugin import with the same options, canary `grade.sh` and tools at
+      2a7e070b, `GRADE_REV=2a7e070b`, WSL KiCad 10.0.7), each session imported and graded twice on
+      separate copies, both grades equal: `enhanced_main` (`c5370c72`) 17 unconnected, 4
+      starved_thermal, 0 clearance, 0 shorting_items, 0 track_width, 0 schematic parity, 0
+      via-in-pad, 0 inner-layer tracks (drc_real 4); `enhanced_promoted` (`d28e8e86`) 15
+      unconnected, 1 starved_thermal, 0 clearance, 0 shorting_items, 0 track_width, 0 parity, 0
+      via-in-pad, 0 inner (drc_real 1). Hard guards: via_in_pad and below_minimum option (b) 0 on
+      every row (the raw counts fall or stay); no DSN row's clearance count rises; plugin drc_real
+      4 → 1, shorting 0 → 0. `freerouting-dev gate --records … --baseline … --prereg
+      docs/roadmap/prereg/N06.13-promotion.json` (built at `0e3f1d5`, whose freerouting-dev source
+      equals `c04b3f5`'s; baseline file written first with `--write-baseline`): 0 refusals, 22 of
+      22 rows judged, 21 neutral and the plugin row improve; unrouted 193 → 193, KiCad unconnected
+      17 → 15, total 210 → 208 (change −2), set noise 65.25; `totals verdict: accept`,
+      `gate: PASS`. Reported: Mars-64's route took 120 → 189 s (`wall_seconds`), zMRETestFixture
+      27 → 23 s, the plugin row 129 → 103 s. Reach counters (counted in either arm), summed
+      over the 22 rows, main → promoted: `maze_edge_corner_flips` 392473 → 572724,
+      `maze_ortho_zero_width_room_flips` 307 → 308 (J2-90 254 → 255, its session identical),
+      `fanout_stale_drill_carries` 330 → 329 (`fanout_retries_succeeded` 8 → 5; plugin row 5 → 2),
+      and `shove_rational_projection_flips` 764 → 2088, which N06.7's legacy runs never reached:
+      under `enhanced` it fires on CH376 (6, 6), bm06 (22, 22) and the canary DSN (10, 10) with
+      their sessions identical, ReadPlaceScope (20, 20) and Mars-64 (706 → 2030), whose sessions
+      differ. Every other promoted switch's counter is 0 in both arms. Verdict:
+      **promotion confirmed**; the 30 entries stay in `ENHANCED`. Canary handoff:
+      `target/canary-handoff/2026-10-20-n06-13/` (README.txt, SHA256SUMS). Not ticked: the 7
+      pending (b) rows' batches.
 
 - [~] **N06.14 — Simplex cutouts outside N06.4's domain:** `cutout_hole_crosses_border`,
   `simplex_octagon_half_corner` (the two (b) rows added above, from N06.4's note and
