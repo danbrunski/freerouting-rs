@@ -22,7 +22,19 @@
 //!    board and its `autoroute_settings` onto the merged settings
 //!    ([`apply_rules_file`]), **after** the CLI and every other source;
 //! 6. the tuning and the net-class exclusions again;
-//! 7. the SES import.
+//! 7. the SES import;
+//! 8. the clearance violations of the board as it is now are recorded as
+//!    the board's pre-existing ones ([`record_pre_existing_violations`]).
+//!
+//! **The pre-existing violations.** Java counts them in
+//! `HeadlessBoardManager.scheduleDeferredPostLoadProcessing`, a background
+//! thread started after step 4 (`preExistingClearanceViolationsCount`, which
+//! `BoardStatistics` waits for); its count races the rules file and the
+//! session import. The port counts once, after every step that changes the
+//! board, the Rust-only `router.wire_keepout`, `router.pad_contacts` and pour
+//! guard included, so the statistics' `router_introduced_count` counts only
+//! what routing added. Without a rules file, a session and those settings
+//! the count is Java's (`tests/pre_existing_violations.rs`).
 //!
 //! **The scheduler's second merge runs only with a rules file.** Java
 //! re-merges at `RoutingJobScheduler.java:101-174`: the sources again, the
@@ -430,6 +442,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let guard = pour_guard::install(&mut board, &settings)
         .map_err(|e| JobError::Settings(e.to_string()))?;
     log.extend(guard);
+    record_pre_existing_violations(&mut board);
     let board_settings = BoardRouterSettings::from_settings(&settings);
     Ok(PreparedJob {
         board,
@@ -441,6 +454,17 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         ses_summary,
         rules_path,
     })
+}
+
+/// Records the board's clearance violations as its pre-existing ones (Java
+/// `preExistingClearanceViolationsCount`, set by the post-load DRC of
+/// `HeadlessBoardManager`), so that the statistics count only the violations
+/// beyond these as router introduced. See the module docs for when it runs.
+pub fn record_pre_existing_violations(board: &mut RoutingBoard) {
+    let count = crate::drc::DesignRulesChecker::new(board)
+        .all_clearance_violations()
+        .len();
+    board.pre_existing_clearance_violations_count = count;
 }
 
 /// The settings of a design before the user changes any (G07.1): the first
@@ -548,6 +572,7 @@ pub fn prepare_board_for_routing(
         Ok(line) => log.extend(line),
         Err(e) => push(&mut log, LogLevel::Error, e.to_string()),
     }
+    record_pre_existing_violations(board);
     let board_settings = BoardRouterSettings::from_settings(&settings);
     RoutingReady {
         settings,

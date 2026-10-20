@@ -209,6 +209,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn` with the `cda540f` route session that
   race left net +5V in the outline's edge-pin-net cache and hid 6 trace-to-outline
   violations; with the `a773a70ec` session Java and the port report the same.
+- A routing job's pre-existing clearance violations (`BasicBoard.preExistingClearanceViolationsCount`,
+  the statistics' `pre_existing_count`, which `router_introduced_count` subtracts) are counted
+  once, on the board `prepare_job` (and the GUI's `prepare_board_for_routing`) hands to the
+  router: after the rules file, the session import and the Rust-only `router.wire_keepout`,
+  `router.pad_contacts` and pour guard. Java counts them in a background thread started
+  after the overrides, which races the rules file and the session import. Without those the
+  count is Java's (`tests/pre_existing_violations.rs`). Before 2026-10-19 the port never
+  counted them, so every violation of a loaded board was reported as router introduced.
 - The session reader imports the wires of `Issue676-ch32v-tx118s.dsn` (1 000 000 units
   per mm). Java's `SesReader` fails on all 48 with a ClassCastException
   (RationalVector to IntVector) and imports none.
