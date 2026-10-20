@@ -43,8 +43,18 @@ construction. It is still tested with `ses-diff`.
   component nudges), not repeat runs of one file. Routing is deterministic
   (D2), so repeat runs of one file are identical and tell you nothing. Compare
   only runs with identical input bytes and settings.
+- **KiCad-graded rows use KiCad 6+ projects only** (decided 2026-10-20). A row that KiCad
+  grades needs a project with its own `.kicad_pro`; 5.99 nightlies such as `picodvi` and
+  `vna-usb-pd` count. A KiCad 4/5 board (`(version 4` or `20171130`, as in all 11
+  `target/corpus-d3c` projects) gets its rules from what KiCad converts. For settings those
+  versions lacked, such as the minimum annular ring or hole clearance, the conversion fills in
+  KiCad's defaults, and those can contradict the design: d3c-0496's own 0.46/0.3 mm via has a
+  0.08 mm ring against the converted 0.1 mm minimum. Such boards stay usable as router-only
+  (DSN) rows. Registrations already made keep their sets.
 - **Order of importance:**
-  1. clearance violations: none new, ever
+  1. manufacturing rules: none, ever (decided 2026-10-20). Under the board's own rules, routed
+     copper adds no clearance, track width, via diameter, drill or annular ring, copper-to-edge
+     or hole-clearance error. This is an absolute guard, not "no new breach versus baseline".
   2. vias in pads: none, ever
   3. unrouted connections
   4. vias and length
