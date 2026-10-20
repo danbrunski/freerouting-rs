@@ -208,7 +208,7 @@ K10.5 has to show don't hurt:
   on by default (K09.9), so the user unticks it first
   (`test_the_defaults_refuse_the_snapshot_until_the_keepouts_are_off`).
 
-- [~] **K10.5 — Measured against the DSN path.** Route each board both ways with the
+- [x] **K10.5 — Measured against the DSN path.** Route each board both ways with the
   same options and grade both with KiCad's DRC (F02.6). Boards:
   - the five K02 demo boards;
   - `canary-pwr` with the options of the owner's plugin run in K09's header (68 unconnected on
@@ -246,6 +246,59 @@ K10.5 has to show don't hurt:
   Then fill the table (unconnected, violations by type, prepare+load time per arm), explain every board where
   `kicad_pcb` grades worse (tie to K07.6's open differences: merged traces, courtyards, keepout order,
   `One-Air-Max`'s pin/via violation) and record the owner's answer on the default (question 1).
+  *Done 2026-10-20:* release `freerouting` built from `c8b91b7`; `tools/kicad-reader/plugin-input-ab.sh <arm> <board>
+  $O out/<arm>/<board>` once per board and arm, one at a time, each under `ulimit -v 8000000` and `timeout 3600`
+  (WSL KiCad 10.0.7; `$O` as above: unlimited passes, `threads 2`, optimizer on, `edge_and_pad_keepouts` off, the
+  rest default, `rule_area_fixup` on so it acts on the DSN arm only). `canary-pwr` is canary `1a7df77`'s
+  `hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb` (the commit K09's header names), `git archive`d into
+  `target/orchestrator/k105/canary-src`. The K07.6 boards are KiCad's demos (`/usr/share/kicad/demos/`). Errors
+  only (`kicad-cli pcb drc --refill-zones --severity-all`); time = prepare (the plugin's export or snapshot,
+  headless pcbnew) + load (`freerouting -de FILE -drc`), in s, release, one run each; route in s. Summaries and
+  DRC reports: `target/orchestrator/k105/out/<arm>/<board>/{summary,drc}.json`.
+
+  | Board | dsn: unc. | dsn: errors by type | dsn: prep + load | dsn: route | kicad_pcb: unc. | kicad_pcb: errors by type | kicad_pcb: prep + load | kicad_pcb: route |
+  |---|---|---|---|---|---|---|---|---|
+  | `ecc83-pp` | 0 | 0 | 0.31 + 0.02 = 0.33 | 0.2 | 0 | 0 | 0.29 + 0.02 = 0.31 | 0.2 |
+  | `interf_u` | 0 | 2 (starved_thermal 2) | 0.45 + 0.04 = 0.49 | 1.2 | 0 | 2 (starved_thermal 2) | 0.49 + 0.05 = 0.54 | 1.2 |
+  | `complex_hierarchy` | 0 | 0 | 0.62 + 0.04 = 0.66 | 0.2 | 0 | 0 | 0.68 + 0.05 = 0.73 | 0.2 |
+  | `kit-dev-coldfire-xilinx_5213` | 0 | 0 | 0.76 + 0.14 = 0.90 | 467.7 | 0 | 0 | 0.84 + 0.16 = 1.00 | 488.2 |
+  | `CM5_MINIMA_3` | 0 | 195 (clearance 191, copper_edge_clearance 2, courtyards_overlap 2) | 1.17 + 0.17 = 1.34 | 22.9 | 0 | 4 (copper_edge_clearance 2, courtyards_overlap 2) | 1.19 + 0.49 = 1.68 | 61.4 |
+  | `canary-pwr` | 42 | 26 (clearance 10, copper_edge_clearance 2, hole_clearance 1, solder_mask_bridge 8, starved_thermal 5) | 0.64 + 0.03 = 0.67 | 319.5 | 38 | 22 (clearance 7, copper_edge_clearance 2, hole_clearance 1, solder_mask_bridge 5, starved_thermal 7) | 0.66 + 0.05 = 0.71 | 255.1 |
+  | `One-Air-Max` | 3 | 228 (clearance 14, drill_out_of_range 199, padstack_invalid 4, solder_mask_bridge 10, zones_intersect 1) | 0.97 + 0.09 = 1.06 | 60.5 | 3 | 229 (clearance 15, drill_out_of_range 199, padstack_invalid 4, solder_mask_bridge 10, zones_intersect 1) | 1.00 + 0.11 = 1.11 | 61.7 |
+  | `video` | 0 | 1 (clearance 1) | 3.36 + 0.33 = 3.69 | 1040.3 | 0 | 0 | 2.77 + 0.35 = 3.12 | 1028.3 |
+  | `vme-wren` | not measured: route over 3 min (decided 2026-10-20: measurement runs stay a few minutes) | | | | | | | |
+  | `jetson-agx-thor-baseboard` | not measured: route over 3 min (decided 2026-10-20: measurement runs stay a few minutes) | | | | | | | |
+
+  - **Where the arms differ:**
+    - `CM5_MINIMA_3`, dsn worse by 191: the board has 200 track arcs. KiCad's export writes each as one chord (K06.5),
+      and the import replaces the unlocked tracks with the session's, so the chords of the 100 ohm and 90 ohm
+      diff pairs clash (191 Track/Track clearance errors, 113 of netclass `100ohm` and 78 of `90ohm`). The reader
+      follows the arcs as polylines (the routed board has 5058 segments against 2058). That is also why its load
+      (0.49 s against 0.17 s) and route (61 s against 23 s) take longer.
+    - `video`, dsn worse by 1: a clearance of 0.1992 mm against 0.2 mm between existing `/WRCAD-` and `/MXA5`
+      tracks on B.Cu, from the export's `%.6g` (K00 question 2).
+    - `canary-pwr`, kicad_pcb better by 4 unconnected and 4 errors, inside canary's ±10 noise (K09). By type it has
+      2 more `starved_thermal` (7 against 5) and 3 fewer each of `clearance` and `solder_mask_bridge`: a different
+      route from a different input, not a reader item. The DSN arm's 42 is not comparable with the header's 68,
+      which came from a router build before K09 and Q10.
+    - **`One-Air-Max`, kicad_pcb worse by 1 clearance error** (15 against 14). The extra error is not new copper. The
+      original board already has a clearance error of 0.091 mm against 0.1 mm between existing `/Solar_module/SYS`
+      and `/Solar_module/VBAT` tracks on `In1.Cu` (KiCad calls the layer `PWR`), reported twice on the board as it
+      ships (`kicad-cli pcb drc` on a copy: pairs SYS 8.0070 mm/VBAT 4.9243 mm and SYS 2.8057 mm/VBAT 1.5429 mm). Both
+      arms keep those tracks, with their ends rounded: the export to `%.6g` (63.64705 to 63.6471, 175.333656 to
+      175.334), the reader to 0.1 µm (63.647, 175.3337). KiCad counts the same near-touch against 2 segment pairs
+      on the DSN arm and 3 on the reader's. This is the precision difference K07.6 lists (K00 question 2), on a
+      violation that was there before routing. The routed copper grades the same (the other 228 errors and
+      the 3 unconnected match by type; the `drill_out_of_range` vias differ in place but not in number). It is
+      not K07.6's `One-Air-Max` pin/via difference (11 against 10), which is the router's own DRC.
+    - The other four demo boards grade the same on both arms. Prepare + load differ by at most 0.1 s, except
+      `CM5` (+0.34 s, the arcs) and `video` (-0.57 s).
+  - **Question 1, decided 2026-10-18** (the README open-question recommendations were accepted): switch the default to
+    `kicad_pcb` only if it grades the same or better on every K10.5 board, otherwise keep `dsn` and list the
+    boards that hold it back. **Applied to these numbers: keep `dsn`.** The boards that hold it back:
+    `One-Air-Max` (one more error, the pre-existing violation counted against one more segment pair, above), and
+    `vme-wren` and `jetson-agx-thor-baseboard` (not measured). On the other seven boards `kicad_pcb` grades the same
+    (4) or better (`CM5_MINIMA_3`, `canary-pwr`, `video`). The default is unchanged in code.
 
 - [x] **K10.6 — When to write to the open board.** Write down the trigger in
   `kicad-plugin.md`. A live write (KRT's `board.Add` plus `pcbnew.Refresh()`) is taken
@@ -262,7 +315,7 @@ K10.5 has to show don't hurt:
   refills after added copper with Q10's note on pours cut by added traces), and that the item must decide undo
   (unverified for both paths; the detaching import lets the runner record removed tracks).
 
-- [~] **K10.7 — Documentation.** `kicad-plugin.md` and the plugin README describe
+- [x] **K10.7 — Documentation.** `kicad-plugin.md` and the plugin README describe
   `board_input`, the staged project files, `apply_kicad_rules`, the K09 restriction and
   K10.5's numbers.
   - **Accept:** each fact names its test or item.
@@ -271,6 +324,15 @@ K10.5 has to show don't hurt:
   `apply_kicad_rules`, the K09 restriction, K10.6, each fact naming its test or item) and `kicad-plugin/README.md`
   describe everything but **K10.5's numbers**, which wait for the heavy run (the smoke result is in the section).
   Fill the table there when K10.5 is done.
+
+  *Done 2026-10-20:* K10.5's numbers are in `docs/development/kicad-plugin.md` (the K10.5 bullet of "The plugin reads
+  the board directly (K10)": per board and arm unconnected / errors and prepare + load time, the two boards not
+  measured and why, the cause of each difference with its item (K06.5 arcs, K00 question 2 precision, K09's ±10
+  noise, K07.6's precision difference on `One-Air-Max`), and the default kept under question 1's rule; the section's
+  intro now says the default was decided by K10.5) and in `kicad-plugin/README.md` (the "Board input" bullet: the
+  eight-board result and why DSN stays the default, naming K10.5). The other facts (`board_input`, the staged
+  project files, `apply_kicad_rules`, the K09 restriction) were already there, each naming its test or item
+  (partial note above).
 
 ## Open questions for the owner
 

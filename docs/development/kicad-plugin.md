@@ -711,7 +711,7 @@ not worth a change until a board shows a connection lost to it.
 stay the default: the DSN path is what the Java comparison (A14) and the graded runs of K02 and K09 used,
 and KiCad 11's IPC API keeps exactly these two board operations (K01.5). `kicad_pcb` changes only what the
 router reads; the result still comes back through `ImportSpecctraSES` (`plugin.import_ses`, which detaches the
-unlocked tracks first, 9bc7ee6). Making it the default is the owner's decision after K10.5.
+unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's rule: it stays `dsn` (below).
 
 - **The snapshot** (`snapshot.py`, `export_flow.prepare_snapshot`): on KiCad's UI thread, `pcbnew.SaveBoard(path,
   board, True)` (`aSkipSettings`) writes `freerouting-rs/<stem>.kicad_pcb` beside where `<stem>.dsn` would be, so
@@ -752,10 +752,34 @@ unlocked tracks first, 9bc7ee6). Making it the default is the owner's decision a
   the detaching import, refusal, `fix_existing`), `test_snapshot_headless.py` (real pcbnew and CLI: the track in
   memory, the unsaved class clearance, the unchanged board's DRC equals the snapshot's, route and
   `ImportSpecctraSES` with no error), `headless_run.py snapshot`.
-- **K10.5, measured against the DSN path:** `tools/kicad-reader/plugin-input-ab.sh` (one arm per call). Smoke
-  only so far: the dev board (`Issue558`), one pass, both arms 11 unconnected, 12 copper-to-edge and 4
-  hole-clearance errors, prepare 0.18 s (export) against 0.20 s (snapshot). The graded table is pending (the
-  checklist has the commands).
+- **K10.5, measured against the DSN path** (`tools/kicad-reader/plugin-input-ab.sh`, one arm per call; 2026-10-20,
+  release build of `c8b91b7`, WSL KiCad 10.0.7, unlimited passes, 2 threads, optimizer on, `edge_and_pad_keepouts`
+  off; KiCad DRC errors with zones refilled; time = the plugin's export or snapshot + the router's load, in s; the
+  full table, by violation type and with route times, is in K10.5's done note):
+
+  | Board | dsn: unconnected / errors | kicad_pcb: unconnected / errors | dsn: time | kicad_pcb: time |
+  |---|---|---|---|---|
+  | `ecc83-pp` | 0 / 0 | 0 / 0 | 0.33 | 0.31 |
+  | `interf_u` | 0 / 2 | 0 / 2 | 0.49 | 0.54 |
+  | `complex_hierarchy` | 0 / 0 | 0 / 0 | 0.66 | 0.73 |
+  | `kit-dev-coldfire-xilinx_5213` | 0 / 0 | 0 / 0 | 0.90 | 1.00 |
+  | `CM5_MINIMA_3` | 0 / 195 | 0 / 4 | 1.34 | 1.68 |
+  | `canary-pwr` (canary `1a7df77`) | 42 / 26 | 38 / 22 | 0.67 | 0.71 |
+  | `One-Air-Max` | 3 / 228 | 3 / 229 | 1.06 | 1.11 |
+  | `video` | 0 / 1 | 0 / 0 | 3.69 | 3.12 |
+
+  `vme-wren` and `jetson-agx-thor-baseboard` were not measured: their routes take over 3 minutes (decided
+  2026-10-20: measurement runs stay a few minutes). Where the arms differ (K10.5): `CM5`'s 191 extra clearance
+  errors on the DSN arm are its diff-pair arcs exported as one chord each (K06.5; the reader follows them);
+  `video`'s one is an existing 0.1992 mm gap from the export's `%.6g` (K00 question 2); `canary-pwr`'s 4 and 4 are
+  routing noise inside canary's ±10 (K09). `One-Air-Max`'s one extra error on the snapshot is a violation the board
+  ships with (existing `SYS`/`VBAT` tracks on `In1.Cu` 0.091 mm apart), which KiCad counts against one more segment
+  pair after the reader's 0.1 µm rounding than after the export's `%.6g` (K07.6's precision difference). Under
+  question 1's rule (decided 2026-10-18: switch only if `kicad_pcb` grades the same or better on every K10.5
+  board) **the default stays `dsn`**, held back by `One-Air-Max` and the two unmeasured boards. The time to
+  prepare and load is the same within 0.1 s except `CM5` (+0.34 s, the arcs) and `video` (-0.57 s). Smoke run
+  before (2026-10-17, dev board `Issue558`, one pass, debug build): both arms 11 unconnected, 12 copper-to-edge
+  and 4 hole-clearance errors.
 
 **K10.6: when to write to the open board.** A live write (KiCad Routing Tools' `board.Add(PCB_TRACK)` plus
 `pcbnew.Refresh()`) is not worth doing while a session carries everything a stage produces: tracks, vias and
@@ -813,6 +837,6 @@ run `freerouting -de <board>.kicad_pcb -do <board>.routed.kicad_pcb` (the capabi
 `.kicad_pcb` in `output_formats`), and have KiCad open or revert to the routed copy; through the IPC API
 it would have to reload the board from disk, because the writer edits the file, not the open document.
 The plugin must replace the board itself (the writer never overwrites its input) and only after the user
-accepts the result. Planned: [K10](../roadmap/tasks/K10-plugin-direct-board-read.md) adds the direct read as a plugin
-option and keeps the SES import, and [K11](../roadmap/tasks/K11-kicad11-ipc-plugin.md) is the KiCad 11
+accepts the result. [K10](../roadmap/tasks/archive/K10-plugin-direct-board-read.md) added the direct read as a plugin
+option and kept the SES import; [K11](../roadmap/tasks/K11-kicad11-ipc-plugin.md) (planned) is the KiCad 11
 plugin on the IPC API.

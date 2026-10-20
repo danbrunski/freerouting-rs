@@ -30,6 +30,10 @@ Its toolbar button opens a dialog that:
   router's own `.kicad_pcb` reader. DSN stays the default. It is refused while an option that rewrites the
   DSN is on (class widths, fixed or dropped pours, edge and pad keepouts, opened plane layers); "Apply the
   project's .kicad_dru rules" passes `--apply-design-rules`. The result comes back through the same SES import.
+  Measured on eight boards (K10.5, `docs/development/kicad-plugin.md`): the snapshot grades the same on four,
+  better on three (`CM5_MINIMA_3` 4 errors against 195, because KiCad's DSN export turns track arcs into one
+  chord each; `canary-pwr` 38 unconnected against 42; `video` 0 errors against 1) and one error worse on
+  `One-Air-Max` (a violation the board already has, counted once more), so DSN stays the default.
 - **Open in viewer**: exports the board and opens it (plus the last `.ses`, if any) in
   `freerouting-gui`.
 - **Import SES...**: imports any Specctra session file into the board.
