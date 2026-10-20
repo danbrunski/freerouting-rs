@@ -19,15 +19,21 @@ does not carry. The router now gets these as flags or from the `.kicad_pro`:
 - the rules KiCad converts for old boards (Q19).
 
 The board file carries all of them. This checklist makes `kicad_pcb` the plugin's default once
-it meets question 1's rule. `dsn` stays selectable.
+it meets K13's switch rule (below). `dsn` stays selectable.
 
 Prerequisites: K10, Q18 (minimums read from the `.kicad_pro`), Q19 (grading under the board's own
 rules).
 
 ## Decisions made here
 
-- **The default changes only after K13.6's measurement passes question 1's rule.** If a board
-  still holds it back, the owner decides with that board's explanation in hand.
+- **The switch rule replaces question 1's rule for K13** (decided 2026-10-20; question 1's rule
+  was "the same or better on every board"). The default changes once K13.6's measurement shows:
+  - `kicad_pcb` has zero routing-caused manufacturing breaches on every board, graded under the
+    board's own rules (`docs/roadmap/routing-quality.md`, order of importance item 1);
+  - `kicad_pcb`'s total KiCad unconnected over the set is no higher than `dsn`'s.
+
+  A board where `kicad_pcb` grades worse doesn't block the switch, but K13.6 explains it. If
+  `kicad_pcb` has a breach that `dsn` doesn't, the switch waits for its fix.
 - **Results still come back through `ImportSpecctraSES`** (K10's decision). Writing to the
   open board stays out of scope.
 - **When the reader refuses a board, the plugin falls back to the DSN export** and says so.
@@ -91,7 +97,7 @@ rules).
     few minutes, the same cap in both arms.
   - **Grading:** one KiCad grade per distinct session, under the board's own rules.
   - **Guards:** zero routing-caused breaches of the manufacturing rules in both arms.
-  - **Keep rule:** question 1's.
+  - **Keep rule:** K13's switch rule (zero breaches, total unconnected no higher).
   - **Accept:** the registration and its pin test (`crates/freerouting-dev/tests/prereg_k13.rs`)
     are in, with no number yet.
 
@@ -100,10 +106,10 @@ rules).
     - the per-board table (unconnected, errors by type, prepare + load time, route time) is in
       the done note;
     - every board where `kicad_pcb` grades worse is explained;
-    - the verdict under question 1's rule is recorded.
+    - the verdict under K13's switch rule is recorded.
 
-- [ ] **K13.7 — Switch the default.** Only if K13.6 passes, or the owner accepts the listed
-  exceptions:
+- [ ] **K13.7 — Switch the default.** Only if K13.6 passes the switch rule, or the owner
+  accepts the listed exceptions:
   - `board_input` defaults to `kicad_pcb`, with an options schema bump;
   - saved `dsn` choices are kept;
   - the dialog stops calling it experimental;
