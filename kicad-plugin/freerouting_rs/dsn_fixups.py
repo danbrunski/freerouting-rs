@@ -206,6 +206,22 @@ class Dsn:
                         pass
         return DEFAULT_CLEARANCE_MM
 
+    def min_clearance_mm(self):
+        """The smallest untyped clearance of the structure's and the classes'
+        rules (Q18.7), else the default."""
+        scopes = list(_children(self.structure, "rule")) if self.structure else []
+        for cls in self.classes.values():
+            scopes += _children(cls, "rule")
+        values = []
+        for rule in scopes:
+            for c in _children(rule, "clearance"):
+                if len(c.children) == 2 and not c.children[1].is_list:
+                    try:
+                        values.append(float(c.children[1].text) / 1000.0)
+                    except ValueError:
+                        pass
+        return min(values) if values else self.default_clearance_mm()
+
     def default_width_mm(self):
         for rule in _children(self.structure, "rule") if self.structure else []:
             for w in _children(rule, "width"):

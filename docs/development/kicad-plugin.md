@@ -146,6 +146,16 @@ field they lack takes the profile's default):
 - **After the import** the plugin sets every routed via's drill from the session padstack
   (`ses_vias.py`): KiCad 10's `ImportSpecctraSES` takes the drill from the net class, which gave
   0.6 mm vias a 0.4 mm drill and a 0.1 mm annular ring on `canary-pwr`.
+- **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
+  manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
+  shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named
+  `edge_clearance` on every copper layer, grown by `m_CopperEdgeClearance` (slice-dcmt-bread-slice:
+  21 Margin shapes, 186 keepouts), and every board-level F.Mask/B.Mask shape as keepouts named
+  `solder_mask` on its side's copper (slice-dcmt-bread-slice: 2 filled polygons, 2 keepouts;
+  KiCad 10's `IsAnyFill` stands in for the removed `IsFilled`); `export_flow.solder_mask_args` passes the pads whose mask
+  aperture reaches past the DSN's smallest class clearance as `--router.solder_mask_expansions`
+  (pocketsdr-v3-0: its 9 test points, 0.1016 mm on B.Mask). Both log one line in `plugin.log`.
+  Tests: `test_edge_graphics.py`, `test_solder_mask.py`.
 - Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
   `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),
   `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`.

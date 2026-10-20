@@ -11,8 +11,11 @@ KiCad's UI thread only.
 `prepare_snapshot` is the K10 form: the board snapshot the router reads
 directly, with none of those DSN steps (`snapshot.py`).
 
-Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), then the
-K09 fix-ups (`dsn_fixups`). After `ImportSpecctraSES`, `after_import` sets the
+Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), the
+Edge.Cuts, Margin and board mask-aperture keepouts (Q18.5, Q18.7, `edge_graphics`,
+always on), then the
+K09 fix-ups (`dsn_fixups`); the pads' solder-mask apertures go to the router as
+a flag (Q18.7, `solder_mask_args`). After `ImportSpecctraSES`, `after_import` sets the
 drills KiCad's import takes from the net class instead of the session. A fix-up that fails is logged with a WARNING and
 leaves the DSN as it was before that step; it never blocks routing.
 """
@@ -24,6 +27,7 @@ from pathlib import Path
 try:  # inside the plugin package
     from . import (
         dsn_fixups,
+        edge_graphics,
         kicad_areas,
         kicad_board,
         options,
@@ -33,6 +37,7 @@ try:  # inside the plugin package
     )
 except ImportError:  # tests and headless scripts put this folder on sys.path
     import dsn_fixups
+    import edge_graphics
     import kicad_areas
     import kicad_board
     import options
@@ -127,6 +132,39 @@ def fix_rule_areas(board, pcbnew, dsn):
     return lines or ["no rule areas on the board"]
 
 
+def fix_edge_graphics(board, pcbnew, dsn):
+    """Q18.5: the Edge.Cuts and Margin shapes the export leaves out, as copper
+    keepouts, and the board's own F.Mask/B.Mask apertures (Q18.7)
+    (`edge_graphics`). Always on: routing never breaks the board's edge
+    clearance or bridges a mask aperture. Returns the log lines (none with nothing to keep out)."""
+    try:
+        facts = kicad_board.edge_graphics(board, pcbnew)
+        text = _read(dsn)
+        new_text, lines = edge_graphics.apply(text, facts)
+        if new_text != text:
+            _write(dsn, new_text)
+    except Exception as e:  # never block routing on the fix-up
+        lines = [f"WARNING: edge-graphic keepouts skipped: {e!r}"]
+    return lines
+
+
+def solder_mask_args(board, pcbnew, dsn):
+    """Q18.7: the router flag that keeps other nets out of the pads' mask
+    apertures (`kicad_board.mask_expansions`), for the pads whose aperture
+    reaches past the smallest clearance of the exported DSN. Returns
+    `(args, log_lines)`; never raises."""
+    try:
+        floor = dsn_fixups.Dsn(_read(dsn)).min_clearance_mm()
+        pads = kicad_board.mask_expansions(board, pcbnew, floor)
+    except Exception as e:  # never block routing on it
+        return [], [f"WARNING: solder-mask apertures skipped: {e!r}"]
+    if not pads:
+        return [], []
+    return options.solder_mask_args(pads), [
+        f"solder mask: {len(pads)} pad(s) whose aperture reaches past their clearance kept clear of other nets"
+    ]
+
+
 def fix_dsn(board, pcbnew, dsn, opts):
     """K09: the fix-ups `opts` asks for. Returns `(router_args, log_lines)`;
     `router_args` carries the engine flags of `fixed_pour_mode = engine`."""
@@ -171,7 +209,11 @@ def prepare(board, pcbnew, dsn, opts, export):
         return False, [], [f"ERROR: routing preparation failed: {e}"], []
     if opts.rule_area_fixup:
         lines += fix_rule_areas(board, pcbnew, dsn)
+    lines += fix_edge_graphics(board, pcbnew, dsn)
+    mask_args, mask_lines = solder_mask_args(board, pcbnew, dsn)
+    lines += mask_lines
     args, more = fix_dsn(board, pcbnew, dsn, opts)
+    args = mask_args + args
     if locked:
         more.append(f"fix existing: {len(locked)} track(s) and via(s) exported as fixed")
     return True, args, lines + more, locked

@@ -32,6 +32,10 @@
 //!   ([`zones::make_plane`]); [`tracks`] merges segments and arcs into wires;
 //!   [`vias`] reads vias and their padstacks. [`report`] says what the reader
 //!   decided ([`ReadReport`], in [`KicadRead::report`]).
+//! - Q18 adds [`edge_keepouts`] (the Edge.Cuts and Margin shapes the outline
+//!   does not carry, as copper keepouts named `edge_clearance`, and the
+//!   board's own mask apertures, named `solder_mask`) and [`mask`]
+//!   (the pads' solder-mask expansions, in [`read::Extras::solder_mask`]).
 //! - K08 adds [`write`]: the copper index of the file
 //!   ([`KicadRead::copper_index`]), the geometry diff against a routed board,
 //!   and the text splice that writes the routed copper into a copy of the
@@ -86,6 +90,7 @@
 pub mod arc;
 pub mod classes;
 pub mod dru;
+pub mod edge_keepouts;
 pub mod error;
 pub mod fmt6g;
 pub mod footprints;
@@ -93,6 +98,7 @@ pub mod header;
 pub mod image_outlines;
 pub mod layers;
 pub mod legacy;
+pub mod mask;
 pub mod nets;
 pub mod network;
 pub mod outline;

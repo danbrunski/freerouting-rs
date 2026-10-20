@@ -1,6 +1,6 @@
 # Q18 — Board minimums as hard floors, and strict rip-up's guards
 
-Opened 2026-10-20 from Q11.6 ([archive/Q11](archive/Q11-transactional-ripup.md)). Strict
+Opened 2026-10-20 from Q11.6 ([archive/Q11](Q11-transactional-ripup.md)). Strict
 transactional rip-up (`router.autorouter.connection_router=transactional-ripup`,
 `quality/transaction.rs`) routed much more than Java's rip-up on Q11's 15 quick rows (total
 220 -> 192 against `mp1`; canary-pwr-9511d9a 50 -> 31 KiCad unconnected), but failed hard
@@ -144,7 +144,7 @@ Prerequisites: Q11 (the router), N02 (the totals rule), N05 (the promotion recip
     `min_via_annular_width` read. DIVERGENCES `board_minimums.*` line. Q18.6: 0 routing-caused
     `via_diameter`, `annular_width` and `drill_out_of_range` on every graded row of `mp1` and
     `strict` (and on the information row d3c-0496, `before` 71 `annular_width` → 0).
-- [~] **Q18.5 — Copper keeps the board's copper-to-edge and copper-to-hole clearance.** With
+- [x] **Q18.5 — Copper keeps the board's copper-to-edge and copper-to-hole clearance.** With
   `m_CopperEdgeClearance` and `m_HoleClearance` supplied (the plugin, a `.kicad_pro`, or the CLI's
   `--router.copper_to_edge_clearance_um` and `--router.hole_clearance_um`), both kept as
   obstacles.
@@ -176,7 +176,32 @@ Prerequisites: Q11 (the router), N02 (the totals rule), N05 (the promotion recip
     reader (Margin-layer lines; for KiCad 6+ boards also Edge.Cuts segments outside the exported
     outline), then 0 on slice (`bash target/orchestrator/q18/runs.sh mp1 strict` and
     `BOARDS=slice-dcmt-bread-slice bash target/orchestrator/q18/grade.sh mp1 strict`).
-- [~] **Q18.6 — Quick re-measurement** (`docs/roadmap/prereg/Q18.json`, set
+  - *Done 2026-10-20:* the remainder. Every Margin shape and every Edge.Cuts shape off the
+    outline's outer contours (outline holes, lines that close nothing, all of Edge.Cuts when the
+    bounding box stands in for a malformed outline) becomes keepouts named `edge_clearance` on
+    every copper layer, the rectangle around each straight piece grown by the edge clearance +
+    half the Margin stroke − the DSN's default clearance (at least 1 µm; curves by the chord
+    error + 1 µm). Plugin: `edge_graphics.py` (new), `kicad_board.edge_graphics`,
+    `export_flow.fix_edge_graphics` (always on); tests `test_edge_graphics.py` (e.g.
+    `test_a_margin_line_becomes_a_keepout_on_every_copper_layer`,
+    `test_a_malformed_outline_exports_the_bounding_box_so_every_line_inside_is_kept`,
+    `test_hole_contours_get_the_edge_clearance_too`). Reader: `crates/freerouting-kicad/src/edge_keepouts.rs`
+    (new), wired in `read.rs`; tests `tests/edge_keepouts.rs` (fixture
+    `tests/data/q18-edge-graphics.kicad_pcb`:
+    `margin_and_loose_edge_cuts_shapes_become_keepouts_on_every_copper_layer`,
+    `the_keepouts_follow_the_projects_edge_clearance`, `the_keepouts_round_trip_through_dsn_text`)
+    and `kicad_parity.rs::edge_keepouts_are_the_only_extra_keepouts` (motorizedopener,
+    tastexx-pcb, outline). DIVERGENCES lines in the freerouting-kicad and kicad-plugin sections.
+    Re-measure (`target/orchestrator/q18b`: one release build of the land/q18b worktree on main
+    b98074e, sha256 28cf6822…; the plugin's keepouts applied to the prepped DSNs by `edge_prep.py`,
+    slice 21 shapes → 186 keepouts, d3c-0496 76 → 152; `runs.sh` = Q18's flags, `ulimit -v
+    8000000`, `timeout 120`; KiCad 10.0.7 grades by `grade.sh`): routing-caused
+    `copper_edge_clearance` slice 2 / 2 → **0 / 0** (`mp1` / `strict`), `hole_clearance` 0 / 0;
+    d3c-0496 (information) edge 24 / 57 → 0 / 0. The other rows' inputs do not change:
+    mydevboard, vfo, laser-backplane and flight-computer prepped DSNs byte-identical after
+    `edge_prep.py` (`cmp`), canary-pwr-9511d9a gets 0 keepouts (8 Edge.Cuts shapes, all on the
+    outline), so Q18.6's 0 stands for them.
+- [x] **Q18.6 — Quick re-measurement** (`docs/roadmap/prereg/Q18.json`, set
   `tools/bench/sets/q18-board-minimums.txt`, pinned by
   `crates/freerouting-dev/tests/prereg_q18.rs`; decided 2026-10-20: a few minutes per run,
   canary-pwr fine, one grade per distinct session). Pair A: `before` (main's behaviour) against
@@ -225,13 +250,66 @@ Prerequisites: Q11 (the router), N02 (the totals rule), N05 (the promotion recip
     33), set noise 27.62: **totals verdict: reject**. Gate of the default path: small parity
     (`PARITY_SET=tools/bench/sets/connection-parity.txt`) 7/7 exact. Remains: edge 0 on slice
     and d3c-0496 after Q18.5's remainder.
-- [ ] **Q18.7 — Solder-mask bridges of tracks over foreign pads** (d3c-0496, information only
+  - *Done 2026-10-20:* the remainder, after Q18.5's and Q18.7's keepouts (same build and scripts
+    as Q18.5's note, `target/orchestrator/q18b/out`, KiCad 10.0.7; routing-caused counts;
+    `smb` = `solder_mask_bridge`; below as above):
+
+    | row | arm | below | edge | hole | smb | KiCad unconnected | unrouted | drc_real |
+    |---|---|---|---|---|---|---|---|---|
+    | slice | mp1 / strict (Q18.6) | 0 / 0 | 2 / 2 | 0 / 0 | – | 11 / 9 | 6 / 4 | 9 / 9 |
+    | slice | mp1 / strict (edge keepouts) | 0 / 0 | 0 / 0 | 0 / 0 | 2 / 0 | 11 / 6 | 7 / 2 | 8 / 4 |
+    | slice | mp1 / strict (+ mask keepouts) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 10 / 6 | 7 / 2 | 5 / 4 |
+    | mydevboard | mp1 / strict | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 56 / 55 | 62 / 58 | 7 / 6 |
+    | vfo | mp1 = strict (one session) | 0 | 0 | 0 | 0 | 14 | 1 | 15 |
+    | pocketsdr-v3-0 (Q18.7, mask flag) | mp1 / strict | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 54 / 76 | 25 / 44 | 472 / 534 |
+    | d3c-0496 (information) | mp1 / strict | 1 / 1 | 0 / 0 | 0 / 0 | 13 / 12 | 28 / 24 | 31 / 26 | 43 / 43 |
+    | d3c-0496 (information, mask flag) | mp1 / strict | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 31 / 24 | 35 / 25 | 28 / 21 |
+
+    Hard guards 0 in both arms on every re-measured row; the rows whose input did not change
+    (Q18.5's note) keep Q18.6's 0. slice's `mp1` smb 2 were Track /BR2 against its two filled
+    F.Mask `gr_poly` (exposed motor-driver zones), gone with Q18.7's board mask keepouts.
+    pocketsdr-v3-0's `strict` hit the 120 s timeout (exit 124; the session written by then was
+    graded), and its 446 / 469 `clearance` items are the board's 0.127 mm minimum against its
+    0.09 mm class (Q19's grader area, not a hard guard here). slice's
+    second-pass cost: unconnected 11 → 10 (`mp1`), 9 → 6 (`strict`). Small parity
+    (`PARITY_SET=tools/bench/sets/connection-parity.txt`): `autoroute_board_parity ... ok`.
+- [x] **Q18.7 — Solder-mask bridges of tracks over foreign pads** (d3c-0496, information only
   since amendment 2: KiCad `solder_mask_bridge` Pad–Track 7; Q18.6: `before` 17, `mp1` 11,
   `strict` 22). Not cheap once Q18.4-Q18.5 are in: the router has no
   solder-mask geometry (a DSN carries no mask layers or expansion), so it needs the mask openings
   from the plugin or the `.kicad_pcb` reader as keepouts per copper layer.
   - **Accept:** a test where a track would cross a foreign pad's mask opening and does not;
     0 routing-caused `solder_mask_bridge` Pad–Track on a KiCad 6+ board that shows them.
+  - *Done 2026-10-20:* count first: routing-caused `solder_mask_bridge` Track–Pad / Via–Pad
+    between different nets in the Q18 grades of KiCad 6+ boards 0; in every saved KiCad 6+ grade
+    6 (pocketsdr-v3-0 in q07's oracle-java, inside-out and conflict-rounds grades, 2 each: TP9
+    /CLKOUT, B.Mask expansion 0.1016 mm over a 0.09 mm class clearance), so implemented.
+    Pads: the expansion (pad `solder_mask_margin`, else footprint, else board
+    `pad_to_mask_clearance`, per side with a mask layer) of every pad whose expansion exceeds the
+    smallest class clearance goes to the router as the new `router.solder_mask_expansions`
+    (`<component>:<pin>=<front um>,<back um>;…`); `job::solder_mask` gives each such pin a
+    clearance class copy raised to the expansion on the top / bottom layer, so other nets keep
+    max(clearance, expansion). Filled by the plugin (`kicad_board.mask_expansions`,
+    `export_flow.solder_mask_args`, always on) and the `.kicad_pcb` reader (`mask.rs`,
+    `Extras::solder_mask`, `job::prepare::solder_mask_patch`). Board-level F.Mask / B.Mask
+    shapes (apertures no pad owns) become keepouts named `solder_mask` on their side's copper
+    (plugin `edge_graphics.mask_polygons`, reader `edge_keepouts::mask_polygons`; KiCad 10's
+    `IsAnyFill` for the removed `IsFilled`). Tests: `crates/freerouting/tests/solder_mask.rs`
+    (fixture `q18-mask-bridge.dsn` / `.kicad_pcb`, a 0.2 mm trace past a foreign test point:
+    `without_the_expansion_the_trace_passes_inside_the_mask_aperture` gap 0.2 mm,
+    `a_front_expansion_keeps_other_nets_out_of_the_aperture` gap ≥ 0.4999 mm,
+    `a_back_expansion_leaves_the_front_alone`, `an_expansion_within_the_clearance_changes_nothing`,
+    `a_kicad_pcb_input_carries_the_pads_mask_expansions`, plus parse / warning tests);
+    `tests/edge_keepouts.rs::the_boards_mask_apertures_become_keepouts_on_their_copper_side`;
+    plugin `test_solder_mask.py` (5) and `test_edge_graphics.py`'s mask tests (7). DIVERGENCES
+    lines in the freerouting, freerouting-kicad and kicad-plugin sections. Measured (Q18.6's
+    table, routing-caused): d3c-0496 smb (Pad–Track 7, Pad–Via 1, the rest Pad–Pad of its
+    27 U2 pads) 13 / 12 → **0 / 0** with the plugin's flag (27 pads, 0.2 mm on F.Mask), cost
+    unconnected 28 → 31 (`mp1`), 24 → 24 (`strict`); slice (KiCad 6+) Track–mask-polygon smb 2
+    → **0** (`mp1`); pocketsdr-v3-0 (KiCad 6+, 9 test points) 0 / 0 with the flag. Not shown:
+    pocketsdr's own bridges no longer occur under the current router even without the flag
+    (`nomask` arm: smb 0, unconnected 46), so on a KiCad 6+ board the Pad–Track clause rests on
+    the d3c-0496 run (a KiCad 4 board) and the fixture test.
 - [x] **Q18.8 — Strict's remainder.** Once the floors are in, anything strict still breaks.
   - **Accept:** strict's hard metrics and drc_real against `mp1` per row from Q18.6, each
     difference explained or fixed with a test.

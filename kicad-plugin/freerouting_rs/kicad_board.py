@@ -136,6 +136,125 @@ def _zones(board, pcbnew):
     return out
 
 
+def _pt(pcbnew, p):
+    return (_mm(pcbnew, p.x), _mm(pcbnew, p.y))
+
+
+def _filled(item):
+    """Whether a PCB_SHAPE is filled: `IsFilled` up to KiCad 9, `IsAnyFill`
+    (solid or hatched) from KiCad 10."""
+    for name in ("IsFilled", "IsAnyFill", "IsSolidFill"):
+        method = getattr(item, name, None)
+        if method is not None:
+            return bool(method())
+    return False
+
+
+def _edge_shapes(pcbnew, item, layer):
+    """The `edge_graphics` dicts of one PCB_SHAPE (a polygon gives one per ring)."""
+    kind = item.GetShape()
+    width = _mm(pcbnew, item.GetWidth())
+    filled = _filled(item)
+
+    def mk(name, points):
+        return {"layer": layer, "width_mm": width, "kind": name, "points": points, "filled": filled}
+
+    if kind == pcbnew.SHAPE_T_SEGMENT:
+        return [mk("polyline", [_pt(pcbnew, item.GetStart()), _pt(pcbnew, item.GetEnd())])]
+    if kind == getattr(pcbnew, "SHAPE_T_RECTANGLE", getattr(pcbnew, "SHAPE_T_RECT", None)):
+        return [mk("ring", [_pt(pcbnew, c) for c in item.GetRectCorners()])]
+    if kind == pcbnew.SHAPE_T_ARC:
+        return [mk("arc", [_pt(pcbnew, item.GetStart()), _pt(pcbnew, item.GetArcMid()), _pt(pcbnew, item.GetEnd())])]
+    if kind == pcbnew.SHAPE_T_CIRCLE:
+        x, y = _pt(pcbnew, item.GetCenter())
+        return [mk("circle", [(x, y), (x + _mm(pcbnew, item.GetRadius()), y)])]
+    if kind == pcbnew.SHAPE_T_POLY:
+        return [mk("ring", ring) for ring in _chains(pcbnew, item.GetPolyShape()) if ring]
+    if kind == pcbnew.SHAPE_T_BEZIER:
+        rebuild = getattr(item, "RebuildBezierToSegmentsPointsList", None)
+        if rebuild is not None:
+            try:
+                rebuild(5000)  # 5 um, edge_graphics.SAGITTA_MM
+            except TypeError:  # an older pcbnew takes the width
+                rebuild(item.GetWidth())
+        return [mk("polyline", [_pt(pcbnew, p) for p in item.GetBezierPoints()])]
+    return []
+
+
+def edge_graphics(board, pcbnew):
+    """Q18.5: what `edge_graphics.apply` reads. The edge clearance
+    (`m_CopperEdgeClearance`, mm), the outer contours of the outline KiCad's
+    DSN export writes (`GetBoardPolygonOutlines` with the bounding box
+    inferred, as the export does), and every Edge.Cuts and Margin shape of the
+    board and its footprints, in board order then footprint order, and every
+    F.Mask and B.Mask shape of the board itself (Q18.7)."""
+    edge = _mm(pcbnew, board.GetDesignSettings().m_CopperEdgeClearance)
+    outline = pcbnew.SHAPE_POLY_SET()
+    try:
+        board.GetBoardPolygonOutlines(outline, True)
+    except TypeError:  # an older pcbnew
+        board.GetBoardPolygonOutlines(outline)
+    rings = [
+        [_pt(pcbnew, ch.CPoint(k)) for k in range(ch.PointCount())]
+        for ch in (outline.Outline(i) for i in range(outline.OutlineCount()))
+    ]
+    layers = ((pcbnew.Edge_Cuts, "Edge.Cuts"), (pcbnew.Margin, "Margin"))
+    # Q18.7: the board's own solder-mask shapes (apertures no pad owns)
+    masks = ((getattr(pcbnew, "F_Mask", None), "F.Mask"), (getattr(pcbnew, "B_Mask", None), "B.Mask"))
+    items = [(item, True) for item in board.GetDrawings()]
+    for fp in board.GetFootprints():
+        items += [(item, False) for item in fp.GraphicalItems()]
+    shapes = []
+    for item, on_board in items:
+        item = item.Cast() if hasattr(item, "Cast") else item
+        if not hasattr(item, "GetShape"):  # texts
+            continue
+        layer = item.GetLayer()
+        name = next((n for lid, n in layers if layer == lid), None)
+        if name is None and on_board:
+            name = next((n for lid, n in masks if lid is not None and layer == lid), None)
+        if name is not None:
+            shapes += _edge_shapes(pcbnew, item, name)
+    return {"edge_clearance_mm": edge, "outline_mm": rings, "shapes": shapes}
+
+
+def _expansion(pad, layer):
+    try:
+        return pad.GetSolderMaskExpansion(layer)
+    except TypeError:  # KiCad 8: one expansion for the pad
+        return pad.GetSolderMaskExpansion()
+
+
+def mask_expansions(board, pcbnew, floor_mm):
+    """Q18.7: the pads whose solder-mask aperture reaches past `floor_mm` (the
+    smallest clearance the router keeps, `Dsn.min_clearance_mm`), as `{"ref",
+    "pin", "front_mm", "back_mm"}` in footprint and pad order (0 for a side
+    without an aperture or an expansion within the floor). `pin` is the DSN pin name of KiCad's export: the pad number,
+    `<number>@<n>` for its n-th repeat; non-plated holes are not pins."""
+    npth = getattr(pcbnew, "PAD_ATTRIB_NPTH", None)
+    sides = ((pcbnew.F_Cu, pcbnew.F_Mask), (pcbnew.B_Cu, pcbnew.B_Mask))
+    out = []
+    for fp in board.GetFootprints():
+        seen = {}
+        for pad in fp.Pads():
+            if pad.GetAttribute() == npth or not any(pad.IsOnLayer(cu) for cu, _ in sides):
+                continue
+            number = pad.GetNumber()
+            if number and number not in seen:
+                seen[number] = 0
+                pin = number
+            else:
+                seen[number] = seen.get(number, 0) + 1
+                pin = f"{number}@{seen[number]}"
+            per_side = []
+            for cu, mask in sides:
+                e = _expansion(pad, cu) if pad.IsOnLayer(cu) and pad.IsOnLayer(mask) else 0
+                per_side.append(_mm(pcbnew, e) if _mm(pcbnew, e) > floor_mm else 0.0)
+            if any(per_side):
+                out.append({"ref": fp.GetReference(), "pin": pin, "front_mm": per_side[0], "back_mm": per_side[1]})
+    return out
+
+
 def collect(board, pcbnew):
     """The board facts `dsn_fixups.apply` reads (see its module docs)."""
     edge, bbox, rings = _edge(board, pcbnew)

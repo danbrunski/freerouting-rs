@@ -282,7 +282,7 @@ evidence.
       floor with `enhanced`'s neck-down, on the extra connections) and, against `ripcost-best`,
       from the summed improvement. The decision table's fail branch (remove `quality/transaction.rs`
       and the rip-factor hook) is not carried out here: it is reported for the orchestrator.
-    - decided 2026-10-20: kept, not removed; follow-up [Q18](../Q18-board-minimums-and-strict-ripup.md).
+    - decided 2026-10-20: kept, not removed; follow-up [Q18](Q18-board-minimums-and-strict-ripup.md).
 
 ## Expected
 

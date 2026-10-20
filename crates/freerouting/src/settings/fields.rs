@@ -251,6 +251,8 @@ settings_table! {
             Flat::No, true, "Copper to board edge clearance in micrometers."),
         (hole_clearance_um, f64, req, Some(0.0), 0.0, "holeClearanceUm", [], Flat::No, true,
             "Hole clearance in micrometers."),
+        (solder_mask_expansions, String, opt, None, None, "solderMaskExpansions", [], Flat::No, true,
+            "Pads whose solder-mask aperture reaches past their clearance, as `<component>:<pin>=<front um>,<back um>` entries separated by `;`: other nets' traces and vias keep at least that far from the pad on that outer layer (Q18.7). The KiCad plugin and a `.kicad_pcb` input fill it in; unset (the default) changes nothing."),
         (clearance_tolerance_um, f64, req, Some(1.0), 0.0, "clearanceToleranceUm", [], Flat::No, true,
             "Clearance shortfalls up to this value are treated as rounding noise (micrometers)."),
         (plane_nets, Vec<String>, req, Some(Vec::new()), Vec::new(), "planeNets", [], Flat::No, true,

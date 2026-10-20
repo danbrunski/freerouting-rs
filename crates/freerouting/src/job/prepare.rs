@@ -173,6 +173,16 @@ impl JobInput {
                 patch,
             ));
         }
+        // Q18.7: the pads' solder-mask apertures, at the same priority.
+        if let Some(patch) = solder_mask_patch(&read.extras.solder_mask) {
+            self.extra_sources.push((
+                Source::Custom {
+                    name: SOLDER_MASK_SOURCE.to_owned(),
+                    priority: Source::Dsn.priority(),
+                },
+                patch,
+            ));
+        }
         self.kicad_source = Some(read.source());
         self.pcb = Some(read.pcb);
     }
@@ -203,6 +213,32 @@ pub fn board_minimums_patch(minimums: &BoardMinimums) -> Option<SettingsPatch> {
     patch.copper_to_edge_clearance_um = um(minimums.copper_edge_clearance);
     patch.hole_clearance_um = um(minimums.hole_clearance);
     (*minimums != BoardMinimums::NONE).then_some(patch)
+}
+
+/// The name of the settings source of a `.kicad_pcb`'s pad mask apertures.
+pub const SOLDER_MASK_SOURCE: &str = "kicad_pcb solder mask";
+
+/// Q18.7: `router.solder_mask_expansions` of the reader's pads, or `None`
+/// when no pad's aperture matters.
+pub fn solder_mask_patch(
+    pads: &[freerouting_kicad::mask::PadMaskExpansion],
+) -> Option<SettingsPatch> {
+    if pads.is_empty() {
+        return None;
+    }
+    let list: Vec<_> = pads
+        .iter()
+        .map(|p| super::solder_mask::MaskExpansion {
+            component: p.component.clone(),
+            pin: p.pin.clone(),
+            front_um: f64::from(p.front_nm) / 1000.0,
+            back_um: f64::from(p.back_nm) / 1000.0,
+        })
+        .collect();
+    Some(SettingsPatch {
+        solder_mask_expansions: Some(super::solder_mask::format_expansions(&list)),
+        ..SettingsPatch::default()
+    })
 }
 
 /// Why a job could not be prepared. The text is Java's.

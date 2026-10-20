@@ -114,6 +114,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("max_threads", threads.clone()),
         ("copper_to_edge_clearance_um", f64v(250.0)),
         ("hole_clearance_um", f64v(0.0)),
+        // Q18.7: unset, no pad's mask aperture known.
+        ("solder_mask_expansions", None),
         ("clearance_tolerance_um", f64v(1.0)),
         ("plane_nets", empty_list()),
         ("plane_as_obstacle", b(false)),

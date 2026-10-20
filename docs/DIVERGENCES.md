@@ -348,6 +348,16 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `java_pin_neck_down_goes_under_the_class_width`, `the_board_minimum_floors_the_pin_neck_down`,
   `the_necked_retry_stays_at_the_board_minimum`, `vias_under_the_board_minimums_are_made_at_the_floor`,
   `routed_vias_meet_the_board_minimums`).
+- `solder_mask_expansions` (Q18.7, `job::solder_mask`) is a settings field Java does not have,
+  unset by default: pads whose solder-mask aperture reaches past their clearance, as
+  `<component>:<pin>=<front um>,<back um>` entries separated by `;`. Each listed pin gets a
+  clearance class of its own (`<class>+mask<front>/<back>`, a copy of its class with every
+  clearance on the top layer raised to at least the front expansion and on the bottom layer to
+  the back one), so other nets' traces and vias keep out of the aperture, which KiCad's DRC
+  flags as `solder_mask_bridge` (decided 2026-10-20: routing never breaks the board's
+  manufacturing rules). The KiCad plugin and a `.kicad_pcb` input fill it in. Unset, nothing
+  changes (`tests/solder_mask.rs`: `a_front_expansion_keeps_other_nets_out_of_the_aperture`,
+  `a_back_expansion_leaves_the_front_alone`, `an_expansion_within_the_clearance_changes_nothing`).
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
   by default and in `legacy` (off: Java leaves the stubs of unfinished connections on the
   board); profile `enhanced` turns it on (N05.3, the "Profile `enhanced`" line below). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
@@ -1059,6 +1069,37 @@ compare them on 12 committed boards and the 56-board corpus).
   (`job::prepare::board_minimums_patch`; the command line wins), so the router never goes below
   them (`tests/board_minimums.rs`, `a_kicad_pcb_input_passes_its_board_setup_minimums`,
   `kicad_board_minimums_default_to_kicads_and_zero_is_none`).
+- **Edge.Cuts and Margin shapes the export leaves out are copper keepouts** (Q18.5,
+  `edge_keepouts`): KiCad's DRC keeps copper `min_copper_edge_clearance` from every Edge.Cuts
+  shape (its centreline) and Margin shape (its stroke), but the export writes only the outline
+  (the boundary, and its holes as `signal` keepouts held at the default clearance). The reader
+  adds keepouts named `edge_clearance` on every copper layer: the rectangle around each straight
+  piece of every Margin shape and every Edge.Cuts shape not on an outer contour (holes, lines
+  that close nothing, all of Edge.Cuts when the bounding box stands in for a malformed outline),
+  grown by the edge clearance plus half the Margin stroke minus the default clearance (at least
+  1 µm; curves by their chord error and 1 µm more). slice-dcmt-bread-slice's Margin lines gave
+  2 KiCad `copper_edge_clearance` errors in Q18.6. Pinned by `tests/edge_keepouts.rs`
+  (`margin_and_loose_edge_cuts_shapes_become_keepouts_on_every_copper_layer`,
+  `the_keepouts_follow_the_projects_edge_clearance`) and `kicad_parity.rs`'s
+  `edge_keepouts_are_the_only_extra_keepouts` (motorizedopener, tastexx-pcb and the synthetic
+  outline have them; the comparison with the export leaves them out).
+- **Pads' solder-mask expansions** (Q18.7, `mask`, `Extras::solder_mask`): a pad's
+  `solder_mask_margin`, else its footprint's, else the board's `pad_to_mask_clearance`, per
+  side with a mask layer, for the pads whose expansion exceeds the smallest class clearance; a
+  `.kicad_pcb` job passes them as `router.solder_mask_expansions` at the DSN's priority
+  (`job::prepare::solder_mask_patch`). The export carries no mask. Pinned by
+  `tests/solder_mask.rs::a_kicad_pcb_input_carries_the_pads_mask_expansions`.
+- **The board's own solder-mask apertures are copper keepouts** (Q18.7, `edge_keepouts`): KiCad's
+  DRC flags copper of two nets in one mask aperture (`solder_mask_bridge`), and a board-level
+  F.Mask or B.Mask shape is an aperture no pad owns (slice-dcmt-bread-slice's two filled
+  `gr_poly` over its motor-driver zones gave 2 Track bridges in the Q18.7 re-measure). The reader
+  adds keepouts named `solder_mask` on the top (F.Mask) or bottom (B.Mask) copper layer: a filled
+  shape's own polygon (a circle grown by the maximum error and 1 µm), and its stroke, or an
+  unfilled shape's, the rectangles within half the stroke of each piece. They hold every net
+  out, the net of the copper under the aperture too. Footprint mask shapes are left to the pads'
+  expansions. Pinned by
+  `tests/edge_keepouts.rs::the_boards_mask_apertures_become_keepouts_on_their_copper_side`; the
+  `kicad_parity.rs` comparison leaves them out.
 - Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
   area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
   footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
@@ -1497,6 +1538,24 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `--router.copper_to_edge_clearance_um` and `--router.hole_clearance_um`, under both profiles;
   a value of 0 passes nothing. Pinned by `test_options.py::test_board_minimums_become_hard_floors` and
   `test_router_args_carry_the_board_minimums`.
+- **Edge.Cuts and Margin shapes off the outline become keepouts** (Q18.5, `edge_graphics.py`,
+  `export_flow.fix_edge_graphics`, always on): after KiCad's export, the same keepouts as the
+  `.kicad_pcb` reader's (see freerouting-kicad), named `edge_clearance`, corners rounded to
+  1 µm, before the structure's `(via ...)`; the DSN then differs from KiCad's export. Pinned by
+  `test_edge_graphics.py` (`test_a_margin_line_becomes_a_keepout_on_every_copper_layer`,
+  `test_edge_cuts_on_the_outline_add_nothing`,
+  `test_a_malformed_outline_exports_the_bounding_box_so_every_line_inside_is_kept`).
+- **Pads' solder-mask apertures go to the router** (Q18.7, `kicad_board.mask_expansions`,
+  `export_flow.solder_mask_args`): every pad whose `GetSolderMaskExpansion` on an outer side
+  with a mask layer exceeds the exported DSN's smallest class clearance becomes an entry of
+  `--router.solder_mask_expansions` (pin names as KiCad's export writes them, `<n>@<k>` for a
+  repeated number). Pinned by `test_solder_mask.py`.
+- **The board's own solder-mask apertures become keepouts** (Q18.7, `edge_graphics.mask_polygons`,
+  part of `export_flow.fix_edge_graphics`, always on): the reader's `solder_mask` keepouts (see
+  freerouting-kicad) written into the exported DSN, corners rounded to 1 µm. Pinned by
+  `test_edge_graphics.py` (`test_a_filled_front_mask_polygon_keeps_the_top_copper_out_of_it`,
+  `test_a_back_mask_shape_goes_on_the_bottom_copper`,
+  `test_kicad_board_collects_the_boards_mask_shapes_but_not_the_footprints`).
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,

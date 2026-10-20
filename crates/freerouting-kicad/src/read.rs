@@ -47,6 +47,9 @@ pub struct Extras {
     /// The `.kicad_pro`'s Board Setup minimums (Q18); all unknown without
     /// a project file.
     pub board_minimums: crate::project::BoardMinimums,
+    /// The pads whose solder-mask aperture reaches past the smallest clearance
+    /// of the board's net classes, in pin order (Q18.7, [`crate::mask`]).
+    pub solder_mask: Vec<crate::mask::PadMaskExpansion>,
 }
 
 /// A pad's `die_length`.
@@ -176,6 +179,8 @@ pub fn read_with_rules(
     lap("nets");
     warnings.extend(nets.warnings.iter().cloned());
     let mut footprints = read_footprints(board, &nets, &mut warnings)?;
+    let masks = crate::mask::read_masks(board);
+    let board_mask = crate::mask::board_expansion(board);
     lap("footprints");
 
     // FromBOARD: component ids must be unique or a session could not come back.
@@ -247,6 +252,9 @@ pub fn read_with_rules(
         }
     }
     let outline = board_outline(&board_shapes, &footprints, project.max_error, true);
+    // Q18.5: the Edge.Cuts and Margin shapes the outline does not carry, from
+    // the footprints as filed (before the flip).
+    let edge_graphics = crate::edge_keepouts::edge_graphics(&board_shapes, &footprints);
     lap("outline");
     if outline.malformed {
         warnings.push(Warning {
@@ -273,6 +281,7 @@ pub fn read_with_rules(
         stackup: read_stackup(board),
         die_lengths: Vec::new(),
         board_minimums: project.minimums,
+        solder_mask: Vec::new(),
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();
@@ -289,6 +298,17 @@ pub fn read_with_rules(
             if pin.net > 0 {
                 pins_by_code[pin.net as usize]
                     .push(PinRef::new(component_id.clone(), pin.id.clone()));
+            }
+            let (front_nm, back_nm) = masks.get(fp_index).map_or((0, 0), |m| {
+                crate::mask::expansion(m, pin.pad_index, board_mask)
+            });
+            if front_nm > 0 || back_nm > 0 {
+                extras.solder_mask.push(crate::mask::PadMaskExpansion {
+                    component: component_id.clone(),
+                    pin: pin.id.clone(),
+                    front_nm,
+                    back_nm,
+                });
             }
             if let Some(nm) = fp.pads[pin.pad_index].die_length {
                 extras.die_lengths.push(DieLength {
@@ -451,6 +471,16 @@ pub fn read_with_rules(
         .as_ref()
         .map(|c| c.values)
         .unwrap_or_else(|| table.values_of_name("Default"));
+    // Q18.7: only an aperture wider than some class's clearance can matter
+    let min_clearance = in_use
+        .iter()
+        .map(|c| c.values.clearance)
+        .chain([default_values.clearance])
+        .min()
+        .unwrap_or(0);
+    extras
+        .solder_mask
+        .retain(|e| e.front_nm.max(e.back_nm) > min_clearance);
     // (name, diameter, top, bottom, drill)
     let mut via_defs: Vec<(String, i32, usize, usize, i32)> = vec![(
         via_name(
@@ -600,6 +630,23 @@ pub fn read_with_rules(
         }
     }
     report.planes = planes.len();
+    let (edge_rects, _) = crate::edge_keepouts::edge_rects(
+        &edge_graphics,
+        &outline.outlines,
+        project.minimums.copper_edge_clearance.unwrap_or(0),
+        default_values.clearance,
+        project.max_error,
+    );
+    let copper_names: Vec<String> = (0..copper).map(|p| layers.name(p).to_owned()).collect();
+    keepouts.extend(crate::edge_keepouts::edge_keepouts(
+        &edge_rects,
+        &copper_names,
+    ));
+    // Q18.7: the board's own mask apertures, on the copper of their side.
+    if let (Some(front), Some(back)) = (copper_names.first(), copper_names.last()) {
+        let masks = crate::edge_keepouts::mask_polygons(&board_shapes, project.max_error);
+        keepouts.extend(crate::edge_keepouts::mask_keepouts(&masks, front, back));
+    }
 
     let clearance = um(i64::from(default_values.clearance));
     let structure = Structure {

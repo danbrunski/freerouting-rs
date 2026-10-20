@@ -395,5 +395,9 @@ pub fn apply_all(
     lines.extend(apply_clearance_tolerance(board, settings));
     // Q18: not Java's; nothing without a board via minimum.
     lines.extend(super::via_minimums::apply_via_minimums(board, settings));
+    // Q18.7: not Java's; nothing without `router.solder_mask_expansions`.
+    lines.extend(super::solder_mask::apply_solder_mask_expansions(
+        board, settings,
+    ));
     lines
 }

@@ -13,6 +13,13 @@
 //! - geometry: items matched by kind, layers, nets and name, nearest
 //!   position, within the tolerance of KiCad's `%.6g` formatting.
 //!
+//! The reader's Q18.5 edge-clearance keepouts (named
+//! `freerouting_kicad::edge_keepouts::KEEPOUT_NAME`, which KiCad's export does
+//! not write), and its Q18.7 mask-aperture keepouts (`MASK_KEEPOUT_NAME`), are
+//! taken out of the reader's tree before the comparison;
+//! [`edge_keepouts_are_the_only_extra_keepouts`] pins that they are exactly
+//! the named ones, one per rectangle and copper layer.
+//!
 //! Every difference is a `(board, key)` pair that [`EXPECTED_DIFFERENCES`]
 //! lists with its reason. A difference that is not listed fails the test as a
 //! reader bug; a listed one that no longer occurs fails it too, so the table
@@ -64,9 +71,25 @@ fn unwrap_board(r: BoardReadResult, what: &str) -> RoutingBoard {
 }
 
 /// The reader board and the export board of one `.kicad_pcb`.
+/// The reader's tree without its Q18.5 edge-clearance keepouts, and how many
+/// it had.
+fn without_edge_keepouts(mut pcb: Pcb) -> (Pcb, usize) {
+    use freerouting_kicad::edge_keepouts::{KEEPOUT_NAME, MASK_KEEPOUT_NAME};
+    let keepouts = &mut pcb.structure.as_mut().unwrap().keepouts;
+    let before = keepouts.len();
+    keepouts.retain(|k| {
+        !matches!(
+            k.area.name.as_deref(),
+            Some(KEEPOUT_NAME | MASK_KEEPOUT_NAME)
+        )
+    });
+    let removed = before - keepouts.len();
+    (pcb, removed)
+}
+
 fn both(path: &Path) -> (RoutingBoard, RoutingBoard) {
     let input = read_kicad_input(path, ReadOptions::default()).unwrap();
-    let reader = unwrap_board(build_board(&input.pcb), "reader");
+    let reader = unwrap_board(build_board(&without_edge_keepouts(input.pcb).0), "reader");
     let export_path = path.with_extension("kicad10.dsn");
     let export = Pcb::parse(&std::fs::read_to_string(&export_path).unwrap()).unwrap();
     let export = unwrap_board(build_board(&export), "export");
@@ -815,6 +838,35 @@ fn rule_area_and_plane_differences_are_exactly_the_documented_ones() {
             "{name}: via keepouts"
         );
     }
+}
+
+/// Q18.5: the reader's only extra full keepouts are the edge-clearance ones:
+/// with them the reader's board has exactly that many more `area:keepout`
+/// items, and boards with a closed outline and no Margin shape (the most of
+/// the fixtures) have none.
+#[test]
+fn edge_keepouts_are_the_only_extra_keepouts() {
+    let mut with_some = Vec::new();
+    for path in boards() {
+        let name = board_name(&path);
+        let input = read_kicad_input(&path, ReadOptions::default()).unwrap();
+        let full = unwrap_board(build_board(&input.pcb), "reader");
+        let (stripped, removed) = without_edge_keepouts(input.pcb);
+        let stripped = unwrap_board(build_board(&stripped), "reader");
+        let count = |b: &RoutingBoard| {
+            b.items()
+                .filter(|i| kind_label(i) == "area:keepout")
+                .count()
+        };
+        assert_eq!(count(&full), count(&stripped) + removed, "{name}");
+        if removed > 0 {
+            with_some.push(name);
+        }
+    }
+    // the circular cutout of motorizedopener, the outline holes of
+    // tastexx-pcb and the slot of the synthetic outline: holes the export
+    // keeps at the default clearance only
+    assert_eq!(with_some, ["motorizedopener", "tastexx-pcb", "outline"]);
 }
 
 /// A trace that differs from the export's is a track arc the reader followed.

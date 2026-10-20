@@ -1,0 +1,76 @@
+(pcb q18-mask-bridge.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs Q18.7 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  30000 0  30000 20000  0 20000  0 0)
+    )
+    (via VIA600)
+    (rule
+      (width 200)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component SMALL_PAD
+      (place P1 3000 10000 front 0)
+      (place P2 27000 10000 front 0)
+    )
+    (component TEST_POINT
+      (place TP1 15000 10700 front 0)
+    )
+  )
+  (library
+    (image SMALL_PAD
+      (pin SMALL 1 0 0)
+    )
+    (image TEST_POINT
+      (pin TP 1 0 0)
+    )
+    (padstack SMALL
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack TP
+      (shape (circle F.Cu 800))
+      (attach off)
+    )
+    (padstack VIA600
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net SIG (pins P1-1 P2-1))
+    (net CLK (pins TP1-1))
+    (class kicad_default SIG CLK
+      (circuit
+        (use_via VIA600)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

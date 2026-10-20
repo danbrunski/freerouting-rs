@@ -18,6 +18,7 @@ pub mod outputs;
 pub mod overrides;
 pub mod prepare;
 pub mod run;
+pub mod solder_mask;
 pub mod via_minimums;
 
 /// How loud a [`LogLine`] is (Java's `FRLogger` levels).

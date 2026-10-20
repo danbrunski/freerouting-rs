@@ -494,6 +494,15 @@ def board_minimum_args(minimums_nm):
     return args
 
 
+def solder_mask_args(pads):
+    """Q18.7: `--router.solder_mask_expansions` of `kicad_board.mask_expansions`
+    (`<ref>:<pin>=<front um>,<back um>;...`), or nothing without such a pad."""
+    if not pads:
+        return []
+    entries = [f"{p['ref']}:{p['pin']}={_fmt(p['front_mm'] * 1000)},{_fmt(p['back_mm'] * 1000)}" for p in pads]
+    return ["--router.solder_mask_expansions=" + ";".join(entries)]
+
+
 def _fmt(number):
     """`2.5`, `150`, `0.05`: no trailing zeros, no exponent."""
     text = f"{float(number):.6f}".rstrip("0").rstrip(".")
