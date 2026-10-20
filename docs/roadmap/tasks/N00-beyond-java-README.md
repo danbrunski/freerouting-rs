@@ -39,6 +39,7 @@ change of direction; this series carries it out.
 | [N04](N04-contacts-inside-pads.md) | A trace end inside a same-net pad counts as connected (KiCad's rule) in `enhanced` | S–M / medium | N01 |
 | [N05](N05-promote-accepted-stages.md) | Each accepted Q, X or K improvement becomes part of `enhanced`; the CLI registers the KRT stages | S per stage | N01; each stage's own measurement |
 | [N06](archive/N06-fix-kept-java-bugs.md) ✅ | The 54 Java bugs kept for parity: 12 dead ones fixed outright, 31 fixed under `enhanced` behind per-bug `router.java_quirks.*` switches in 8 measured batches, 11 judgement calls | M–L / medium: geometry and search changes | N01, N02, N05 |
+| [N07](N07-lighten-java-parity.md) | Decide what `legacy` must still guarantee (frozen exact, or Java-like), then trim the Java rules, quirk plumbing and parity tests to it | S–M / low: `enhanced` stays byte-identical | N01, N06 |
 
 ## Order
 
@@ -65,3 +66,4 @@ K09 (plugin export options) are the expected big wins on `canary-pwr`.
 | N03 | the restored canonical-order code (from `target/orchestrator/p04/p04-rejected-canonical-leaves.patch`), a new tree module | `board/search/complete_shape.rs`, `work.rs`, P04's files |
 | N04 | — | `board/basic_board.rs` (contacts), its tests |
 | N05 | — | the profile table (N01), `crates/freerouting-stages` (`freerouting_krt::register`, N05.1) |
+| N07 | `tools/parity-check.sh` | `AGENTS.md` ("Matching Java"), `.claude/agents/implementer.md`, `settings/java_quirks.rs` and the quirk sites (under N07.2's option (b)), `docs/DIVERGENCES.md`, `docs/development/ci-workflow.yml` |

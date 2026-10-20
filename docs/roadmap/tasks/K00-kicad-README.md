@@ -25,6 +25,7 @@ KiCadRoutingTools (KRT) report (§6, §8, "Proposed roadmap changes").
 | [K10](archive/K10-plugin-direct-board-read.md) ✅ | An option for the plugin to snapshot the open board (`SaveBoard`) and route the `.kicad_pcb` with the reader instead of KiCad's DSN export; results still come back through `ImportSpecctraSES`; measured against the DSN path, the owner picks the default | M / medium: graded by KiCad on the K02 boards and `canary-pwr` | K02, K07; K09 (K10.4) |
 | [K11](K11-kicad11-ipc-plugin.md) | KiCad 11 has no SWIG: an IPC-API plugin that keeps the DSN/SES flow (`RunBoardJobExportSpecctraDsn`, `ImportSpecctraSession`), a dialog without wx, both plugins in one package | M / high: the API is new and unwrapped by `kipy` | K02, K03; K10 (K11.6); a KiCad 11 release candidate or release date (K11.2 onward) |
 | [K12](archive/K12-plugin-cli-preparation.md) ✅ | Shared plugin/script preparation and invocation, zone refills, current minimum width and input/argument records | S / medium: verified with real KiCad exports and small-board routing | K09, K10 |
+| [K13](K13-kicad-pcb-input-by-default.md) | The plugin reads the board directly (`board_input = kicad_pcb`) by default once that grades the same or better on K10.5's boards: what each input carries, existing copper returned unchanged, a DSN fallback, load time, the measurement and the switch | M / medium: the reader must carry every rule the DSN path now gets as flags | K10, Q18, Q19 |
 
 The report's PLG-1 is K01, PLG-2 is K02, PLG-1.5 (PCM) grew into K03, and
 KIC-1 is split over K04–K07. KRT's proposed K01–K10 are folded in: its
@@ -67,6 +68,7 @@ K01–K03. Its numbering is not used.
 | Writer (K08) | `crates/freerouting-kicad/src/write/**` | — |
 | Plugin input (K10) | `kicad-plugin/freerouting_rs/snapshot.py` | `kicad-plugin/freerouting_rs/{plugin,options,routing}.py` (after K09's edits land), `crates/freerouting-cli/src/` (K10.3, one switch) |
 | IPC plugin (K11) | `kicad-plugin/ipc/**`, `tools/kicad-ipc/**` | `kicad-plugin/{install,package}.py`, `tools/install_plugin.py` |
+| Input default (K13) | reader tests under `crates/freerouting-kicad/tests/`, `tools/bench/sets/k13-input.txt` | `crates/freerouting-kicad/src/**`, `kicad-plugin/freerouting_rs/{snapshot,export_flow,plugin,options}.py`, `tools/kicad-reader/plugin-input-ab.sh` |
 
 The plugin lane and the reader lane are disjoint and can run in parallel.
 Within each lane the checklists run in order.
