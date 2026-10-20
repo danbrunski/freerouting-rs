@@ -73,6 +73,7 @@ pub mod merge;
 pub mod path;
 pub mod profile;
 pub mod profiles;
+pub mod removed;
 pub mod text;
 pub mod timespan;
 pub mod types;

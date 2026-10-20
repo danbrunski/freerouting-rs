@@ -297,6 +297,29 @@ an arm, never the default.
       to 4x the 1-thread run's for the same session (canary 10389292397 vs 3098294240, CNH
       2466277992 vs 619374061). `work_units` here is the registered (4-thread) figure; the
       1-thread figures are a diagnostic. Not fixed here (engine work).
+    - *Removed 2026-10-20* (decided by Q12.5's fail branch): `quality/portfolio/{mod,arms}.rs`
+      and its `pub mod`; the Q07 orders it re-applied and nothing else uses
+      (`quality/ordering/{mod,conflicts,conflict_rounds,inside_out}.rs`, still on tag
+      `archive/q07-orderings`), their three PROVENANCE rows and the engine crate's
+      `GPL-3.0-only AND MIT` licence (back to the workspace's `GPL-3.0-only`); the pipeline's
+      `run_routing` call, `check_settings` and `PipelineOutcome::portfolio`; the batch loop's
+      `start_batch_loop` / `continue_batch_loop` / `LoopStart` split and `LoopOutcome::portfolio`
+      (`batch_loop.rs` and `pipeline.rs` are byte-identical to `b599290~1`); the settings fields
+      `autorouter.portfolio`, `autorouter.restarts`, `autorouter.portfolio_memory_mb` and their
+      GUI `CLI_ONLY` rows; `tests/quality_portfolio.rs`, `tests/quality_ordering.rs`,
+      `tests/data/quality/q12-channel.dsn`; the DIVERGENCES block. The three keys are now refused
+      (`settings::removed`, `SetError::Removed`): the CLI exits 2, a settings file fails to read,
+      an environment variable warns, each naming the valid `router.autorouter` keys
+      (`exit_codes::removed_portfolio_settings_are_usage_errors`, `tests/settings_removed.rs`,
+      4 passed). The work counter defect goes with it: the counters stay process-wide
+      (`run_stats`), and no stage scope runs on several threads at once any more; the dated
+      note is in `run_stats.rs`'s module docs. Default routing unchanged:
+      `PARITY_SET=tools/bench/sets/connection-parity.txt cargo test --release -p freerouting
+      --test autoroute_board_parity -- --ignored autoroute_board_parity --test-threads=1`
+      (1 passed, 7 of 7 boards exact, SES bytes equal); `cargo test --workspace --no-fail-fast`
+      2595 passed, 0 failed, 55 ignored. Kept as the record: `docs/roadmap/prereg/Q12.json` and
+      `crates/freerouting-dev/tests/prereg_q12.rs` (its settings check accepts a removed key; 6
+      passed). Status lines: `docs/roadmap/routing-quality.md` §9 and the Q00 README's Q12 row.
 
 ## Expected [I]
 

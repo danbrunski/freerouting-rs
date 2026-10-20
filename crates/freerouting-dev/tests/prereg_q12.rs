@@ -21,6 +21,10 @@
 //!
 //! Amendment 3 (2026-10-20, after `mp1`'s runs and before any candidate run): `eligible`, the
 //! same 11 rows as Q11.json's; the hash below is the amended file's.
+//!
+//! The registered run rejected `portfolio4`, and the portfolio was removed (decided by Q12.5's
+//! fail branch, 2026-10-20); this file stays as the record of the registration, and the engine's
+//! `settings::removed` refuses its keys.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -81,7 +85,8 @@ fn the_q12_registration_is_valid_and_names_its_arms_and_boards() {
 }
 
 /// The totals block is N02's, and every arm command names the settings the
-/// arm registers.
+/// arm registers. Each is a setting, or one the portfolio's removal retired
+/// (`router.autorouter.portfolio`, now refused).
 #[test]
 fn the_q12_registration_uses_the_totals_rule_and_its_settings_exist() {
     let json = Json::parse(&text()).unwrap();
@@ -106,7 +111,8 @@ fn the_q12_registration_uses_the_totals_rule_and_its_settings_exist() {
             );
             let path = key.strip_prefix("router.").expect("a router key");
             assert!(
-                freerouting::settings::fields::field_by_path(path).is_some(),
+                freerouting::settings::fields::field_by_path(path).is_some()
+                    || freerouting::settings::removed::find_property(key).is_some(),
                 "{name}: {key} is not a setting"
             );
         }

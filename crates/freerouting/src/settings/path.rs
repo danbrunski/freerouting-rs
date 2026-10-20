@@ -10,6 +10,7 @@
 use std::fmt;
 
 use super::fields::{FIELDS, SECTIONS, SettingsPatch};
+use super::removed::RemovedSetting;
 use super::text::{
     java_float_to_string, java_split, parse_boolean, parse_double, parse_float, parse_int,
     parse_long,
@@ -27,6 +28,8 @@ pub enum SetError {
     /// The field exists but the value does not fit (Java's
     /// `NumberFormatException` or `IllegalArgumentException`).
     BadValue(String),
+    /// A key the port had and removed ([`super::removed`]; not Java).
+    Removed(&'static RemovedSetting),
 }
 
 impl fmt::Display for SetError {
@@ -36,6 +39,7 @@ impl fmt::Display for SetError {
                 write!(f, "No field found with name or SerializedName: {name}")
             }
             SetError::BadValue(message) => f.write_str(message),
+            SetError::Removed(removed) => f.write_str(&removed.message()),
         }
     }
 }
@@ -61,7 +65,12 @@ pub fn snake_to_lower_camel(name: &str) -> String {
 
 /// `ReflectionUtil.getFieldByNameOrSerializedName` for one candidate field.
 /// `json` is `None` for a field without a `@SerializedName`.
-fn name_matches(segment: &str, json: Option<&str>, alternates: &[&str], java: &str) -> bool {
+pub(super) fn name_matches(
+    segment: &str,
+    json: Option<&str>,
+    alternates: &[&str],
+    java: &str,
+) -> bool {
     let camel = snake_to_lower_camel(segment);
     let serialized = |s: &str| {
         equals_ignore_case(s, segment)
@@ -216,8 +225,13 @@ impl SettingsPatch {
                 let Some(&name) = rest.first() else {
                     return Err(not_a_leaf(first));
                 };
-                let field = find_in_section(section, name)
-                    .ok_or_else(|| SetError::UnknownPath(name.to_string()))?;
+                let field =
+                    find_in_section(section, name).ok_or_else(|| {
+                        match super::removed::find(section.name, name) {
+                            Some(removed) => SetError::Removed(removed),
+                            None => SetError::UnknownPath(name.to_string()),
+                        }
+                    })?;
                 if rest.len() > 1 {
                     return Err(SetError::UnknownPath(rest[1].to_string()));
                 }

@@ -30,7 +30,15 @@
 //! `write`. A stage's
 //! record is the counters' change between its start and its end, plus its
 //! wall time. Stages do not nest and run on one thread; the counters they
-//! read are process-wide.
+//! read are process-wide, so a stage's record also takes in any work another
+//! thread does while it is open. Work that routes on several threads at
+//! once must hold its counts back with `capture` and add them in a fixed
+//! order, as the optimizer does. Q12.5 (2026-10-20) found the pass-1
+//! portfolio broke this: its arms' pass stages ran at once on scoped threads,
+//! so each arm's records took in the other arms' work and a 4-thread run's
+//! `--stats` totals were 3.3 to 4 times the 1-thread run's for the same
+//! session. The portfolio was removed the same day (Q12.5's fail branch);
+//! no stage scope runs concurrently now.
 //!
 //! **Determinism.** The counts of a run are a function of the input and the
 //! settings; the wall times are the only part that varies. A test routes a

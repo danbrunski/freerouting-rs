@@ -362,6 +362,25 @@ FAIL. The numbers are in Q08.3's note in
 [Q08](tasks/archive/Q08-earned-budget-extension.md); the registration stays in
 `docs/roadmap/prereg/Q08.json`.
 
+### 9. Pass-1 portfolio (Q12)
+
+Route pass 1 in K deterministic orders (the configured one, Q07's
+`conflict-rounds` and `inside-out`, seeded shuffles) on board clones in
+parallel and keep the best, then rerun pass 1 with the failed and ripped nets
+first (squeaky-wheel restarts). Its order spread became the per-board band of
+the totals rule above (Q12.4).
+
+Status: measured and removed (decided by Q12.5's fail branch, 2026-10-20).
+`portfolio4` against `mpdef`: hard guards fail on `Issue508-DAC2020_bm10`
+(below_minimum 7), `vfo-controller-catvfoctrl` (below_minimum 3, drc_real
+75 -> 85) and `flight-computer-core-board` (drc_real 1 -> 6); the total
+163 -> 159 is within the set noise 25.75; the work guard (at most 1.5x
+`mpdef`'s) fails on 6 rows. `quality/portfolio/` and the Q07 orders it
+re-applied (`quality/ordering/`, still on tag `archive/q07-orderings`) are
+removed, and its three settings keys are refused. The numbers are in Q12.5's
+note in [Q12](tasks/archive/Q12-pass-1-portfolio.md); the registration stays
+in `docs/roadmap/prereg/Q12.json`.
+
 ### Handled elsewhere
 
 - **KiCad rule areas.** KiCad's DSN export turns a rule area that bans only

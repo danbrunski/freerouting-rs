@@ -25,6 +25,56 @@ fn names_in(dir: &std::path::Path) -> Vec<String> {
     names
 }
 
+/// Q12's portfolio keys were removed (2026-10-20, Q12.5's fail branch): a
+/// command line or settings file that sets one is a usage error that names
+/// the valid `router.autorouter` keys, and nothing is written.
+#[test]
+fn removed_portfolio_settings_are_usage_errors() {
+    let dir = dir_with_fixture("exit-removed");
+    for flag in [
+        "--router.autorouter.portfolio=4",
+        "--router.autorouter.restarts=2",
+        "--router.autorouter.portfolio_memory_mb=512",
+    ] {
+        let out = run_in(&dir, &["-de", FIXTURE, "-do", "o.ses", flag]);
+        assert_eq!(code(&out), 2, "{flag}: {}", stderr(&out));
+        let key = flag.trim_start_matches("--").split('=').next().unwrap();
+        let text = format!("{}{}", stdout(&out), stderr(&out));
+        assert!(
+            text.contains(&format!("{key} was removed on 2026-10-20")),
+            "{flag}: {text}"
+        );
+        assert!(
+            text.contains("valid router.autorouter settings: ") && text.contains("max_passes"),
+            "{flag}: {text}"
+        );
+        assert_eq!(names_in(&dir), [FIXTURE], "{flag}");
+    }
+    std::fs::write(
+        dir.join("portfolio.json"),
+        r#"{"router": {"autorouter": {"portfolio": 4}}}"#,
+    )
+    .unwrap();
+    let out = run_in(
+        &dir,
+        &[
+            "--settings",
+            "portfolio.json",
+            "-de",
+            FIXTURE,
+            "-do",
+            "o.ses",
+        ],
+    );
+    assert_eq!(code(&out), 2, "{}", stderr(&out));
+    let text = format!("{}{}", stdout(&out), stderr(&out));
+    assert!(
+        text.contains("router.autorouter.portfolio was removed on 2026-10-20"),
+        "{text}"
+    );
+    assert!(!dir.join("o.ses").exists());
+}
+
 #[test]
 fn usage_errors_exit_2() {
     let dir = dir_with_fixture("exit-usage");

@@ -409,9 +409,9 @@ pub enum RelayLevels {
 
 /// Runs `work` on this thread while a helper thread raises `local` to
 /// `job`'s stop level every [`STOP_RELAY_INTERVAL`] (`levels` says which
-/// stops pass). For work on a board copy with its own token (a portfolio
-/// arm, a sweep pass) whose router copies the job's stop into the token only
-/// when a connection starts: with the relay a stop also ends the connection
+/// stops pass). For work on a board copy with its own token (a sweep pass)
+/// whose router copies the job's stop into the token only when a connection
+/// starts: with the relay a stop also ends the connection
 /// in progress (its maze search, its insertion's normalization). Without a
 /// stop request on `job` the helper never touches `local`, so the result is
 /// the same.

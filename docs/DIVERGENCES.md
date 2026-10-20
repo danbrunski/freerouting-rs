@@ -366,25 +366,6 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   nets in pass 1 where Java needs pass 2 (`tests/quality_transaction.rs`). Its tally goes into
   the job log ("Transactional rip-up ..."). An invalid value fails the job before routing,
   naming the key. Q11.6 measures it (`docs/roadmap/prereg/Q11.json`).
-- `autorouter.portfolio`, `autorouter.restarts` and `autorouter.portfolio_memory_mb` (Q12,
-  `quality::portfolio`) are settings fields Java does not have, unset by default and in no
-  profile (Java's batch loop). With `portfolio = K` (or `restarts > 0`, which runs `K = 1`) the
-  job runs the batch loop's start (the fanout) once, then the rest of the loop (passes, finish,
-  Q10's sweep if on) on K clones of the post-fanout board, one per arm of a fixed list: the
-  configured ordering, Q07's `conflict-rounds` and `inside-out` pass-1 orders (re-applied from
-  tag `archive/q07-orderings`, never registered as orderings of their own), and Java's pass-1
-  list with its signal nets shuffled by `java.util.Random` seeds 1, 2, …; it keeps the arm with
-  the fewest incomplete connections, then the higher router score, then the lower index. Each
-  restart routes pass 1 in the current best's order with its failed nets first and its ripped
-  nets next, and the best of all is kept; the optimizer runs once on it. Arms run on up to
-  `autorouter.max_threads` threads and merge in arm order, and the memory guard only lowers how
-  many run at once, so no result depends on threads or memory. `portfolio = 1` gives the job's
-  SES byte for byte; on `Issue433-my-board.dsn` arm 1 (`conflict-rounds`) routes the connection
-  Java's order leaves; on `tests/data/quality/q12-channel.dsn` a restart routes the failed net B
-  first and completes the board (`tests/quality_portfolio.rs`). While the arms route, no
-  progress or board delta is sent, report-only diagnostics see no arm's connections, and the
-  P02.1 audit covers no arm. A negative value fails the job before routing, naming the key.
-  Q12.5 measures it (`docs/roadmap/prereg/Q12.json`).
 - `transaction.rip_factor` (Q11.5) is rip-count protection Java does not have: with factor
   `f > 0` the transactional router hands the maze search, through
   `ConnectionParams::ripup_factors` and `AutorouteControl::ripup_factors`, a factor `1 + f * k`
@@ -1110,6 +1091,13 @@ log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_par
 - Log lines go to stderr without timestamps, prefixed `warning: ` or `error: `. The stage
   summary stops after the score (no JVM CPU or heap figures). `1 violation` is singular, as in
   Java, so `compare.py`'s regex misses a one-violation board.
+- A router setting the port had and removed (`settings::removed`: Q12's `autorouter.portfolio`,
+  `autorouter.restarts` and `autorouter.portfolio_memory_mb`, removed 2026-10-20 by Q12.5's fail
+  branch) is refused, where Java warns about an unknown field and routes on. On the command line
+  it exits 2 before any work; in a settings file it fails the read (an explicit `--settings`
+  file exits 2, the default file is skipped with a warning); from an environment variable it is
+  a warning. The message names the key, the date, the reason and the valid `router.autorouter`
+  keys (`removed_portfolio_settings_are_usage_errors`, `tests/settings_removed.rs`).
 - `--compare-boards` and `--calculate-benchmark-scores` are recognized and exit 2 with
   `not supported; use freerouting-dev ses-diff`; a command line without `-de` and `-do` is an
   error with exit 2 (Java opens the GUI), and `-de x.json` (KiCad JSON) is refused, also with 2.
@@ -1174,9 +1162,9 @@ plugin_flags}.rs`)
   suppressed. Java's `normalizeTraces` has no stop check, so a net whose split and combine
   oscillate runs all 2000 passes after a stop: on `Issue690-kit-dev-coldfire-xilinx_5213` the GND
   net held one fanout pin for about 280 s, and a SIGTERM took over 5 minutes. Without a stop request
-  the result is Java's (`tests/normalize_stop.rs`). A portfolio arm and a sweep pass, which route
-  on their own token, also get the job's stop while a connection runs (`with_stop_relay`, every
-  20 ms), where Java has no such stages.
+  the result is Java's (`tests/normalize_stop.rs`). A sweep pass, which routes on its own token,
+  also gets the job's stop while a connection runs (`with_stop_relay`, every 20 ms), where Java
+  has no such stage.
 - `--profile legacy|enhanced` (N01.3) is the routing profile (`router.profile`, see "Profile
   `enhanced`"); Java has no such flag, and `--profile.<key>=<value>` (Java's user profile) is still
   accepted and ignored. `--list-stages[=json]` and `--dump-settings[=json]` (N01.4) print the stage

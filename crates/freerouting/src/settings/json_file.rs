@@ -13,6 +13,8 @@
 //!   are not read; `layers` is.
 //! - Flat autorouter and cost keys apply only where the nested value is
 //!   unset, with one deprecation warning for the autorouter keys.
+//! - A key the port removed ([`super::removed`], not Java) fails the read
+//!   with a message naming the valid keys of its section.
 
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -345,6 +347,9 @@ pub fn patch_from_router_json(value: &JsonValue) -> Result<JsonSettings, String>
                 JsonValue::Null => {}
                 JsonValue::Object(inner) => {
                     for (field_name, field_value) in inner {
+                        if let Some(removed) = super::removed::find_json(section.name, field_name) {
+                            return Err(removed.message());
+                        }
                         if let Some(field) = FIELDS.iter().find(|f| {
                             f.section == section.name && field_matches_json(f, field_name)
                         }) && let Some(converted) = gson_value(field.kind, field_value)?

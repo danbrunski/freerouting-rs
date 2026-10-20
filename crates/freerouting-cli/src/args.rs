@@ -47,6 +47,9 @@
 //!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
+//! - A router setting the port removed (`--router.autorouter.portfolio=4`,
+//!   [`freerouting::settings::removed`]) is a usage error naming the valid
+//!   keys of its section; Java has no such keys.
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -707,6 +710,9 @@ fn parse_long_flag(argv: &[String], i: usize, out: &mut Args) -> usize {
                     "scoring-version" | "router-scoring-version" | "optimizer-scoring-version"
                 );
             if router_setting {
+                if let Some(removed) = freerouting::settings::removed::find_property(name) {
+                    out.usage_errors.push(removed.message());
+                }
                 return i;
             }
             if name == "settings" {

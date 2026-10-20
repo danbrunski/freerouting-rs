@@ -9,9 +9,7 @@
 //!    anything changes);
 //! 2. the routing stage (`runRoutingStage`, `:107-128`): when the router is
 //!    enabled (`autorouter.enabled && max_passes >= 0`) and no router stop
-//!    was requested, the batch loop
-//!    ([`run_batch_loop`](crate::autoroute::batch::batch_loop::run_batch_loop),
-//!    or Q12's portfolio in its place when it is on); otherwise, with
+//!    was requested, the batch loop ([`run_batch_loop`]); otherwise, with
 //!    the fanout enabled, a fanout-only run: Java sets `max_passes = 0`
 //!    for the loop; the port also disables the router explicitly (N06.2);
 //! 3. the session dropped (`finishAutoroute`): the port keeps no autoroute
@@ -48,7 +46,9 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::autoroute::batch::batch_loop::{LoopOutcome, LoopStages, PassExecutor, PassRecord};
+use crate::autoroute::batch::batch_loop::{
+    LoopOutcome, LoopStages, PassExecutor, PassRecord, run_batch_loop,
+};
 use crate::autoroute::batch::pass::PassRunner;
 use crate::autoroute::batch::report::NoRoutableLayer;
 use crate::autoroute::events::{CancelToken, CompletionStatus, RouterEvents, RunSummary};
@@ -142,9 +142,6 @@ pub struct PipelineOutcome {
     pub stubs: Option<crate::quality::stubs::StubCleanup>,
     /// Q04.3's output guard, if `router.autorouter.output_guard` was on.
     pub output_guard: Option<crate::quality::output_guard::GuardOutcome>,
-    /// Q12's pass-1 portfolio, if `router.autorouter.portfolio` or
-    /// `restarts` was on.
-    pub portfolio: Option<crate::quality::portfolio::PortfolioOutcome>,
     /// True if the job deadline fired.
     pub timed_out: bool,
     /// Java's job log lines.
@@ -281,10 +278,6 @@ pub fn run_pipeline_with(
     if let Err(e) = crate::quality::transaction::check_settings(settings) {
         return Err(fail(PipelineError::UnknownStage(e), board));
     }
-    // Q12: a negative `portfolio` or `restarts` fails before routing.
-    if let Err(e) = crate::quality::portfolio::check_settings(settings) {
-        return Err(fail(PipelineError::UnknownStage(e), board));
-    }
     let watcher = Watcher::new(Arc::clone(&job.cancel));
     if let Some(limit) = job.deadline {
         watcher.arm(limit, StopLevel::All);
@@ -321,18 +314,12 @@ pub fn run_pipeline_with(
             controller: loop_pipeline.pass_controller.as_mut(),
             board_stages: &mut loop_pipeline.board_stages,
         };
-        // Q12: the batch loop, or the pass-1 portfolio in its place (off by
-        // default: then it is `run_batch_loop`).
-        match crate::quality::portfolio::run_routing(
+        match run_batch_loop(
             &mut board,
             &mut stages,
             runner.as_mut(),
             &mut ctx,
             &timed_out,
-            &crate::quality::portfolio::PortfolioEnv {
-                registry,
-                selection: &selection,
-            },
         ) {
             Ok(result) => {
                 loop_outcome = result;
@@ -450,7 +437,6 @@ pub fn run_pipeline_with(
     outcome.restores = loop_outcome.restores;
     outcome.restored_best = loop_outcome.restored_best;
     outcome.output_guard = loop_outcome.output_guard;
-    outcome.portfolio = loop_outcome.portfolio;
     outcome.log = log;
     outcome.board = job.events.finished(board, outcome.summary.clone());
     Ok(outcome)
