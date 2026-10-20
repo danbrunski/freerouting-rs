@@ -118,7 +118,7 @@ run after the first restore that can't beat pass 1 would have saved about
   `quantum_stop_is_registered_and_selected_by_the_pass_controller_key`. DIVERGENCES line under
   "freerouting (board model)" with the other settings fields.
 
-- [~] **Q04.2 — Byte-identical where it only saves time.**
+- [x] **Q04.2 — Byte-identical where it only saves time.**
   For each board in `benchmark` and `owner`, route with the default controller
   and with `quantum-stop`, and record the pass of the last score improvement
   in the default run.
@@ -178,7 +178,50 @@ run after the first restore that can't beat pass 1 would have saved about
   The rows whose `qs_stop` pass is below `last_improvement` go to Q04.4 (amendment 3 of
   Q04.json); `identical` must be `yes` on every other row.
 
-- [~] **Q04.3 — Two-axis output guard.**
+  *Done 2026-10-20:* run with the release CLI of main (`freerouting 0.1.0 (git 0630b826b30e)`,
+  built in a detached worktree with `CARGO_BUILD_JOBS=2 cargo build --release -p freerouting-cli
+  -p freerouting-dev`), steps 1 to 3 of the note above, every route under `ulimit -v 8000000`
+  with the note's timeouts, one route at a time, other agents routing alongside (load average 3
+  to 12); outputs in `target/orchestrator/q04/run/` (`table-quick.tsv`, `table-canary.tsv`).
+  Passes and wall seconds per arm, the default run's last score improvement, the pass where
+  `quantum-stop` stopped (`-`: it never did) and `cmp` of the two SES files:
+
+  | board | default | last improvement | quantum-stop | stopped | identical |
+  |---|---|---|---|---|---|
+  | Issue433-my-board | 3, 0.04 | 2 | 3, 0.04 | - | yes |
+  | Issue649-kicad_ecc83 | 2, 0.02 | 1 | 2, 0.02 | - | yes |
+  | Issue508-DAC2020_bm02 | 2, 0.13 | 1 | 2, 0.12 | - | yes |
+  | Issue690-sonde_xilinx | 18, 0.34 | 1 | 12, 0.24 | 12 (restore checks) | yes |
+  | Issue508-DAC2020_bm07 | 3, 0.41 | 2 | 3, 0.41 | - | yes |
+  | Issue508-DAC2020_bm10 | 5, 5.40 | 4 | 5, 5.40 | - | yes |
+  | Issue093-interf_u | 18, 1.29 | 1 | 2, 0.20 | 2 (repeat) | yes |
+  | Issue555-CNH_Functional_Tester_1 | 18, 5.51 | 3 | 4, 4.83 | 4 (repeat) | no |
+  | canary-pwr-pours1 | 18, 513.19 | 1 | 12, 315.15 | 12 (restore checks) | yes |
+
+  Clause 1: the restore-check rule fired on sonde and canary-pwr-pours1, both after the last
+  improvement, and both sessions are identical (the final best-board restore puts pass 1's board
+  back). The repeat stop (Q04.5, amendment 1) fired on interf_u (identical) and CNH, which differs
+  (`freerouting-dev ses-diff`: not equivalent; vias 15 default against 16, unrouted 1 and
+  clearance violations 6 in both): the default run changes the board at pass 12 (state hash
+  `685656b7…` to `6ae912dc…`) at pass 3's printed score 993.10, and the final best-board restore
+  needs a strictly higher history score, so the default saves the pass-12 board while the
+  candidate's stop at pass 4 saves pass 3's. That is the case Q04.5's done note names (the repeat
+  stop is identical only where the later passes leave the board alone); CNH goes to Q04.4
+  (amendment 3). Clause 2: the table; time saved: sonde 0.34 -> 0.24 s, interf_u 1.29 -> 0.20 s,
+  CNH 5.51 -> 4.83 s, canary-pwr-pours1 513.19 -> 315.15 s (-38.6 %, 18 -> 12 passes); stopped
+  before the last change of the saved board: CNH only; stopped before the last score improvement
+  as the runner reads it (the printed two-decimal score): none. Clause 3:
+  `tools/determinism-check.sh --out target/orchestrator/q04/run/det2 -- bash -c "ulimit -v
+  8000000; mkdir -p {OUT} && timeout -k 10 600 <cli> -de fixtures/canary-pwr/canary-pwr-pours1.dsn
+  -do {OUT}/out.ses --router.optimizer.enabled=false --router.autorouter.pass_controller=quantum-stop
+  --router.quantum_stop.repeat=true"` printed `identical`, both runs exit 0 (the loaded one at load
+  12.28, 9 min 51 s), and the idle SES equals the registered `quantum-stop` run's. Runner fixes:
+  step 3 as written passed `-do {OUT}` without `.ses`, which the CLI refuses, so `{OUT}` became a
+  directory; the first canary-pwr attempt of step 2 timed out at 600 s in the default arm (16
+  passes, while another agent's determinism burners ran, load 11.7) and was rerun once after they
+  stopped (`run/attempt1/`). For K09.7: canary-pwr-pours1's row is identical and 38.6 % faster.
+
+- [x] **Q04.3 — Two-axis output guard.**
   Source: KRT `improvement_gate.py` (#600; on spartan6_4layer a run lost 36
   nets and gained 43 while disconnected pads went from 83 to 154).
   Rust design: `quality::output_guard::OutputGuard` wraps any
@@ -238,7 +281,17 @@ run after the first restore that can't beat pass 1 would have saved about
   scope (decided 2026-10-20: measurement runs stay a few minutes)." Not ticked: the recommended
   answer is to take Q04.2's step 1, which costs about a minute.
 
-- [~] **Q04.4 — Measurement where the stop changes results.**
+  *Done 2026-10-20:* the fixture clause: `cargo test -p freerouting --test quality_output_guard` on
+  main 0630b826b30e, 9 passed (the tests the 2026-10-18 note lists, among them
+  `the_batch_run_rips_the_walls_and_the_guard_saves_the_input_wiring`, which checks the logged
+  axes "lost 2, gained 3; unconnected pins 3 -> 4" and that the saved board is worse on neither
+  axis). The benchmark clause on the 8 quick benchmark boards (decided 2026-10-20: measurement
+  runs stay a few minutes; the other 7 take 49 to 702 s per route): Q04.2's step 1 with `GUARD=1`
+  (release CLI of main 0630b826b30e, `target/orchestrator/q04/run/table-quick.tsv`) has
+  `guard_identical` yes and `guard_kept` yes on all 8 rows (433, ecc83, bm02, sonde, bm07, bm10,
+  interf_u, CNH): the guard never fired and every guarded SES equals the unguarded one.
+
+- [x] **Q04.4 — Measurement where the stop changes results.**
   Only boards where Q04.2 found an earlier stop. Preregister (F03.4): arms
   default and `quantum-stop`; signal: wall time; guards: unrouted, vias,
   `drc_real`.
@@ -272,6 +325,28 @@ run after the first restore that can't beat pass 1 would have saved about
   `via_in_pad` count, the printed wall seconds), and `freerouting-dev gate --records <records>
   --prereg docs/roadmap/prereg/Q04.json`; no further route. If fewer than 3 distinct rows remain,
   the numbers go here and quantum-stop stays opt-in (the registration's procedure).
+
+  *Done 2026-10-20:* measured; the gate cannot pass, so quantum-stop is not kept for a default and
+  gets no DIVERGENCES "kept" line. Amendment 3 of `docs/roadmap/prereg/Q04.json` (after Q04.2's
+  run, before any records or verdict; it quotes Q04.2's table; sha256
+  `46f2154c2a1d334ded52672ac3386b6fb59266b217db9894c6eb135ffee3d690`, re-pinned in
+  `crates/freerouting-dev/tests/prereg_q04.rs`, `cargo test -p freerouting-dev --test prereg_q04`:
+  3 passed) narrows `files` to `Issue555-CNH_Functional_Tester_1`, the one row whose sessions
+  differ; no row stopped before its last score improvement. Records
+  (`target/orchestrator/q04/gate/records.json`, `freerouting-dev gate collect --engine rust` over
+  bench files built from Q04.2's SES files, their `ses-diff` statistics and the printed walls, no
+  route repeated), default against quantum-stop: unrouted 1 / 1, vias 15 / 16, clearance
+  violations 6 / 6, via_in_pad 0 / 0, wall 5.51 / 4.83 s (-12.3 %). `freerouting-dev gate --records
+  … --prereg docs/roadmap/prereg/Q04.json --baseline … --write-baseline`: "REFUSED prereg:
+  totals.noise names board canary-pwr, which no row of the run has" and "gate: FAIL"; it fails on
+  the registration's own terms too: 1 distinct board against `min_boards` 3, the vias guard rises
+  by 1, and the speed clause needs -20 %. Unrouted rises on no board (equal on all 9 Q04.2 rows).
+  Time saved per board: the Q04.2 table (sonde -29 %, interf_u -84 %, CNH -12 %, canary-pwr-pours1
+  -38.6 % with an identical session; the five others never stopped early). Not a verdict, for the
+  record: over all 9 rows the summed wall time is 526.33 -> 326.41 s (-38.0 %) with equal unrouted
+  on every row and vias up 1 on CNH only. quantum-stop and the repeat stop stay opt-in settings,
+  unset in both profiles; whether they stay at all is N02's keep-or-delete rule, as the
+  registration's keep rule says.
 - [x] **Q04.5 — Repeat stop.** Added 2026-10-18 from Q04.2's short check: on boards whose
   passes leave the same board (`Issue093-interf_u`: 18 passes, one board; CNH: 4 distinct
   boards), the history never holds 8 boards, so no restore check runs and `quantum-stop` saves

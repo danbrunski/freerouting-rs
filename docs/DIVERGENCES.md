@@ -408,7 +408,10 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   falls after the last score improvement the saved session is Java's
   (`a_stop_after_the_last_improvement_saves_the_same_session`; `Issue690-sonde_xilinx`: 12 passes
   instead of 18, byte-identical SES). An invalid value fails the job before routing, naming the
-  key. Q04.4 measures it (`docs/roadmap/prereg/Q04.json`).
+  key. Measured 2026-10-20 (Q04.2): it fired on `Issue690-sonde_xilinx` and canary-pwr-pours1
+  (18 → 12 passes, 513 → 315 s), both after the last improvement, both with byte-identical SES.
+  It stays opt-in and outside `enhanced` (Q04.4 did not pass; `docs/roadmap/prereg/Q04.json`,
+  amendment 3).
 - `quantum_stop.repeat` (Q04.5, `autoroute::batch::batch_loop`) is a settings field Java does not
   have, unset by default and in both profiles (off: Java runs on to its own stops; its same-hash
   stop is commented out). It is independent of the pass controller. On, a pass that leaves the
@@ -420,8 +423,8 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   repeat would also have left the board alone: `Issue093-interf_u` stops at pass 2 of 18 with a
   byte-identical SES (`tests/quality_stop_rule.rs`), while `Issue555-CNH_Functional_Tester_1`
   repeats at pass 4 and its default run later changes the board at pass 12 (same score, other
-  hash), so its SES differs. Q04.4 measures it with the `quantum-stop` arm
-  (`docs/roadmap/prereg/Q04.json`, amendment 1).
+  hash), so its SES differs (vias 15 against 16). Q04.4 measured it on CNH 2026-10-20 and
+  failed (`docs/roadmap/prereg/Q04.json`, amendment 3); it stays opt-in and outside `enhanced`.
 - `autorouter.output_guard` (Q04.3, `quality::output_guard`) is a settings field Java does not
   have, unset by default and in both profiles (off: Java saves the best board of the run whatever
   the input was). On, the batch loop keeps a B01 snapshot of the board it was handed and, in its

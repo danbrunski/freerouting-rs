@@ -12,7 +12,10 @@
 //! 2026-10-20: measurement runs stay a few minutes, before any run under the
 //! amended candidate): the 8 quick benchmark boards and `canary-pwr-pours1`
 //! (`tools/bench/sets/quick-benchmark.txt`), Q04.2's runs serve as Q04.4's,
-//! no quiet-machine condition; the hash below is the amended file's.
+//! no quiet-machine condition. Amendment 3 (2026-10-20, after Q04.2's run,
+//! before any Q04.4 records): the rows narrowed to
+//! `Issue555-CNH_Functional_Tester_1`, the one board whose sessions differ;
+//! the hash below is the amended file's.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -37,8 +40,8 @@ fn the_q04_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert_eq!(prereg.names.cand, "quantum-stop");
     let arms: Vec<&str> = prereg.arms.keys().map(String::as_str).collect();
     assert_eq!(arms, ["default", "quantum-stop"]);
-    // Amendment 2: the 8 quick benchmark boards and canary-pwr-pours1.
-    assert_eq!(prereg.boards.len(), 9);
+    // Amendment 3: Q04.2's run left one row, CNH_Functional_Tester_1.
+    assert_eq!(prereg.boards.len(), 1);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         metrics,
@@ -57,8 +60,8 @@ fn the_q04_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert_eq!(totals.min_boards, 3);
     assert!(totals.speed.is_some(), "the speed clause on wall_seconds");
     assert_eq!(
-        prereg.amendments, 2,
-        "Q04.5's repeat stop and the quick rows"
+        prereg.amendments, 3,
+        "Q04.5's repeat stop, the quick rows and Q04.2's rows"
     );
     let text = std::fs::read_to_string(repo().join(FILE)).unwrap();
     assert!(text.contains("--router.quantum_stop.repeat=true"));
@@ -84,6 +87,6 @@ fn the_q04_registration_states_the_defaults_the_engine_uses() {
 fn the_q04_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "28abf21d0c2e44d63960062c7b06bb2aa7aa075ede546c2275be087f26a1df6a"
+        "46f2154c2a1d334ded52672ac3386b6fb59266b217db9894c6eb135ffee3d690"
     );
 }
