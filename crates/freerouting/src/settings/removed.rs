@@ -5,7 +5,7 @@
 //! still sets one learns that the stage is gone instead of routing without
 //! it unawares. The error ([`RemovedSetting::message`]) names the key, when
 //! and why it went, and the keys of its section that remain:
-//! - the `freerouting` command line (`--router.autorouter.portfolio=4`)
+//! - the `freerouting-rs` command line (`--router.autorouter.portfolio=4`)
 //!   refuses it as a usage error (exit 2) before it loads anything;
 //! - a settings JSON file that sets one fails to read with that text: an
 //!   explicit `--settings` file is refused, the default file is skipped

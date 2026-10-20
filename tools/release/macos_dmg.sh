@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # R01.6 fallback when `cargo packager --formats app,dmg` fails: build freerouting-rs.app by hand
 # and wrap it in a compressed DMG with hdiutil. macOS only.
-#   macos_dmg.sh <dir with the universal freerouting and freerouting-gui> <out dir>
+#   macos_dmg.sh <dir with the universal freerouting-rs and freerouting-gui> <out dir>
 set -euo pipefail
 bins="$1"
 out="$2"
@@ -10,7 +10,7 @@ version="$(python3 "$repo/tools/release/check_version.py" | awk '$1 == "workspac
 app="$out/freerouting-rs.app"
 rm -rf "$app" "$out"/*.dmg
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$bins/freerouting-gui" "$bins/freerouting" "$app/Contents/MacOS/"
+cp "$bins/freerouting-gui" "$bins/freerouting-rs" "$app/Contents/MacOS/"
 cp "$repo/crates/freerouting-gui/icons/icon.icns" "$app/Contents/Resources/icon.icns"
 cp "$repo/LICENSE" "$repo/THIRD_PARTY_NOTICES.md" "$app/Contents/Resources/"
 cat > "$app/Contents/Info.plist" <<PLIST

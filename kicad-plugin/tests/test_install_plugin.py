@@ -155,7 +155,9 @@ def test_running_finds_our_exes_in_tasklist_output():
         '"kicad.exe","77","Console","1","900,000 K"\n'
     )
     assert ip.running(csv) == ["freerouting-gui.exe"]
-    assert ip.running('"FREEROUTING.EXE","1","Console","1","1 K"\n') == ["freerouting.exe"]
+    assert ip.running('"FREEROUTING-RS.EXE","1","Console","1","1 K"\n') == ["freerouting-rs.exe"]
+    # Java Freerouting's launcher has the old name; it is not ours.
+    assert ip.running('"freerouting.exe","9","Console","1","1 K"\n') == []
     assert ip.running("") == []
 
 

@@ -171,7 +171,7 @@ def route(board_path, work, options_path, router):
     ses.unlink(missing_ok=True)
     result.unlink(missing_ok=True)
     run = routing.RouteRun(
-        tools.Tool("freerouting", router),
+        tools.Tool(tools.ROUTER, router),
         design,
         ses,
         recipe["args"],

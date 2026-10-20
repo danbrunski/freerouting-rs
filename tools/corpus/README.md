@@ -49,7 +49,7 @@ baselines do not change:
 ```sh
 FR_CORPUS_DIR=target/corpus-d3c tools/corpus/fetch.sh --manifest tools/corpus/pcbworld-d3c.json
 FR_CORPUS_DIR=target/corpus-d3c tools/corpus/prep.sh
-freerouting-dev bench --set tools/bench/sets/pcbworld-d3c.txt --rust target/release/freerouting --out <dir>
+freerouting-dev bench --set tools/bench/sets/pcbworld-d3c.txt --rust target/release/freerouting-rs --out <dir>
 ```
 
 Eleven boards (`left_out` names the twelfth chosen):

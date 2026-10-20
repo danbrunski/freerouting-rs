@@ -8,7 +8,7 @@
 #
 # Environment:
 #   FREEROUTING_GUI_BIN  the GUI (default target/release/freerouting-gui)
-#   FREEROUTING_CLI_BIN  the CLI (default target/release/freerouting)
+#   FREEROUTING_CLI_BIN  the CLI (default target/release/freerouting-rs)
 #   SMOKE_OUT            keep the last screenshot taken while the job ran here
 #   SMOKE_TIMEOUT        seconds to wait for the GUI to exit (default 120)
 #
@@ -34,7 +34,7 @@ passes=${2:-}
 export SMOKE_FIXTURE=$(cd "$(dirname "$fixture")" && pwd)/$(basename "$fixture")
 export SMOKE_PASSES=$passes
 export SMOKE_BIN=${FREEROUTING_GUI_BIN:-$root/target/release/freerouting-gui}
-cli=${FREEROUTING_CLI_BIN:-$root/target/release/freerouting}
+cli=${FREEROUTING_CLI_BIN:-$root/target/release/freerouting-rs}
 export SMOKE_TIMEOUT=${SMOKE_TIMEOUT:-120}
 for bin in "$SMOKE_BIN" "$cli"; do
     [ -x "$bin" ] || { echo "frontend-smoke.sh: build the release binaries first (cargo build --release -p freerouting-gui -p freerouting-cli): $bin" >&2; exit 2; }

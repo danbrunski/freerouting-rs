@@ -30,7 +30,7 @@ release.
 
 | File | What |
 |---|---|
-| `freerouting-rs-<v>-linux-x86_64.tar.gz` | `freerouting`, `freerouting-gui`, `kicad-plugin/`, `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `LICENSES/` |
+| `freerouting-rs-<v>-linux-x86_64.tar.gz` | `freerouting-rs`, `freerouting-gui`, `kicad-plugin/`, `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `LICENSES/` |
 | `freerouting-rs-<v>-linux-x86_64.AppImage` | The GUI (and the CLI beside it inside the image) as one file; built by `tools/release/make_appimage.sh` (appimagetool) |
 | `freerouting-rs-<v>-windows-x86_64.zip` | The two exes, `kicad-plugin\`, README, LICENSE, notices |
 | `freerouting-rs-<v>-windows-x86_64.msi` | Installer for both exes (WiX through cargo-packager) |
@@ -105,13 +105,13 @@ if the packager step fails. cargo-packager's last release was in late 2025, so k
 the fallbacks.
 
 The GUI has no `--version` (it would open a window); the smoke checks use the CLI's
-`freerouting --version` (in the tar, in the installed MSI, inside the `.app`) and the GUI's
+`freerouting-rs --version` (in the tar, in the installed MSI, inside the `.app`) and the GUI's
 `--screenshot ... --exit`.
 
 ## The build stamp
 
-`freerouting::build_info::{VERSION, GIT_SHA}` (engine crate `build.rs`) feed `freerouting
---version` (`freerouting <version> (git <12 hex>)`) and the GUI's About. The sha comes from
+`freerouting::build_info::{VERSION, GIT_SHA}` (engine crate `build.rs`) feed `freerouting-rs
+--version` (`freerouting-rs <version> (git <12 hex>)`) and the GUI's About. The sha comes from
 `FREEROUTING_GIT_SHA` (the workflow sets it to `github.sha`), else `git rev-parse --short=12
 HEAD` in a checkout, else `unknown` (a source tarball). Release (non-debug) builds re-stamp when
 HEAD moves; a debug build keeps the sha of its first build so a commit does not recompile the

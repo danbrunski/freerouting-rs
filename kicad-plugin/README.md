@@ -3,7 +3,7 @@
 An action plugin for the KiCad PCB editor (tested with KiCad 10.0 on Windows).
 Its toolbar button opens a dialog that:
 
-- **Route**: exports the board to Specctra DSN, runs `freerouting -de board.dsn -do board.ses
+- **Route**: exports the board to Specctra DSN, runs `freerouting-rs -de board.dsn -do board.ses
   --progress json --result-json board.result.json` with the options of the dialog, shows the
   router's progress live, and imports the session back into the board. **Stop and keep result**
   finishes the current step and imports the best board so far; **Abort** kills the router and

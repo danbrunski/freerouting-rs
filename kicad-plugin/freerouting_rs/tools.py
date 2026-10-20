@@ -2,7 +2,7 @@
 
 Kept free of pcbnew and wx imports so it can be exercised outside KiCad.
 
-Each tool (`freerouting` for headless routing, `freerouting-gui` for the
+Each tool (`freerouting-rs` for headless routing, `freerouting-gui` for the
 viewer) is looked up in this order:
 
 1. `bin_dir` from settings.json next to this file (written by install.py),
@@ -35,7 +35,7 @@ SETTINGS_FILE = HERE / "settings.json"
 BOARD_SETTINGS_FILE = "plugin.json"
 PLUGIN_LOG = "plugin.log"
 
-ROUTER = "freerouting"
+ROUTER = "freerouting-rs"
 VIEWER = "freerouting-gui"
 
 # The PCM package (K03) carries both executables per platform under

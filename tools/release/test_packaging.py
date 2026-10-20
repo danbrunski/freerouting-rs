@@ -23,7 +23,7 @@ import sha256sums  # noqa: E402
 
 def fake_bins(directory, exe=""):
     directory.mkdir(parents=True, exist_ok=True)
-    for name in ("freerouting", "freerouting-gui"):
+    for name in ("freerouting-rs", "freerouting-gui"):
         (directory / (name + exe)).write_bytes(b"\x7fELF fake " + name.encode())
 
 
@@ -42,12 +42,12 @@ class ArchiveTest(unittest.TestCase):
         with tarfile.open(path) as tar:
             names = tar.getnames()
             top = "freerouting-rs-9.8.7-linux-x86_64/"
-            for want in ("freerouting", "freerouting-gui", "README.md", "LICENSE",
+            for want in ("freerouting-rs", "freerouting-gui", "README.md", "LICENSE",
                          "THIRD_PARTY_NOTICES.md", "kicad-plugin/freerouting_rs/plugin.py"):
                 self.assertIn(top + want, names)
             self.assertTrue(any(n.startswith(top + "LICENSES/") for n in names))
             self.assertFalse(any("__pycache__" in n or "/tests/" in n for n in names), names)
-            self.assertEqual(tar.getmember(top + "freerouting").mode, 0o755)
+            self.assertEqual(tar.getmember(top + "freerouting-rs").mode, 0o755)
             self.assertEqual(tar.getmember(top + "README.md").mode, 0o644)
 
     def test_windows_zip_has_exe_names(self):
@@ -57,7 +57,7 @@ class ArchiveTest(unittest.TestCase):
         with zipfile.ZipFile(path) as z:
             names = z.namelist()
         top = "freerouting-rs-9.8.7-windows-x86_64/"
-        for want in ("freerouting.exe", "freerouting-gui.exe", "THIRD_PARTY_NOTICES.md", "LICENSE"):
+        for want in ("freerouting-rs.exe", "freerouting-gui.exe", "THIRD_PARTY_NOTICES.md", "LICENSE"):
             self.assertIn(top + want, names)
 
     def test_archive_is_reproducible(self):

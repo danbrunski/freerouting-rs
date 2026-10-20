@@ -23,7 +23,7 @@ Each speed-up records both, before and after.
 |---|---|
 | `valgrind --tool=callgrind` + `callgrind_annotate` | Works on the release build, about 50× slower than native: a DRC of `Issue178-KeebMaker_Sofle_Choc` takes 2.4 s |
 | `samply record` | **Does not work.** `perf_event_paranoid` is 2 and samply refuses to start: `In order for samply to work with a non-root user, this level needs to be set to 1 or lower` (samply 0.13.1, installed with `cargo install samply --locked`). It needs `echo 1 \| sudo tee /proc/sys/kernel/perf_event_paranoid`, a system setting that was not changed. On a machine where that is 1, the recipe below applies. There is no `perf` binary for the WSL kernel either |
-| `freerouting --stats json` | Works; per-stage work counts and times (P01.2) |
+| `freerouting-rs --stats json` | Works; per-stage work counts and times (P01.2) |
 | `freerouting-dev microbench` | Works; fixed-work kernels (P01.3) |
 | `tools/bench/callgrind.sh` | Works; instruction-count baselines (P01.4) |
 
@@ -34,7 +34,7 @@ profilers can name functions and lines. The code is the same code as
 `release`.
 
 ```sh
-cargo build --profile profiling -p freerouting-cli       # target/profiling/freerouting
+cargo build --profile profiling -p freerouting-cli       # target/profiling/freerouting-rs
 cargo build --profile profiling -p freerouting-dev
 ```
 
@@ -44,7 +44,7 @@ Use `CARGO_BUILD_JOBS=2` here; the first build takes about 45 s.
 
 ```sh
 taskset -c 0 valgrind --tool=callgrind --callgrind-out-file=drc.out \
-    target/profiling/freerouting -drc -de fixtures/Issue178-KeebMaker_Sofle_Choc.dsn \
+    target/profiling/freerouting-rs -drc -de fixtures/Issue178-KeebMaker_Sofle_Choc.dsn \
     < /dev/null > /dev/null
 python3 tools/bench/callgrind_top.py drc.out --top 5
 ```
@@ -72,7 +72,7 @@ wildcard):
 ```sh
 taskset -c 0 valgrind --tool=callgrind --callgrind-out-file=drc-only.out \
     --toggle-collect='*DesignRulesChecker::generate_report*' \
-    target/profiling/freerouting -drc -de fixtures/Issue178-KeebMaker_Sofle_Choc.dsn \
+    target/profiling/freerouting-rs -drc -de fixtures/Issue178-KeebMaker_Sofle_Choc.dsn \
     < /dev/null > /dev/null
 ```
 
@@ -118,7 +118,7 @@ Not usable on this machine (see above). Where it is allowed:
 ```sh
 cargo install samply --locked
 samply record --save-only -o drc.json.gz -- \
-    target/profiling/freerouting -drc -de fixtures/Issue178-KeebMaker_Sofle_Choc.dsn
+    target/profiling/freerouting-rs -drc -de fixtures/Issue178-KeebMaker_Sofle_Choc.dsn
 samply load drc.json.gz            # the Firefox Profiler UI in a browser
 ```
 
@@ -151,7 +151,7 @@ A new `std::collections::HashMap` in the engine undoes (2): use
 ## `--stats json`: counts per stage
 
 ```sh
-target/release/freerouting -de board.dsn -do out.ses --stats json
+target/release/freerouting-rs -de board.dsn -do out.ses --stats json
 # writes out.ses.stats.json; --stats-out <file> names the file
 ```
 
@@ -235,7 +235,7 @@ A deliberately slower build (one extra `Vec::with_capacity` in
 cargo build --release -p freerouting-cli -p freerouting-dev
 target/release/freerouting-dev bench --set tools/bench/sets/benchmark.txt \
     --java ~/code/freerouting/logs/jars/freerouting-a773a70ec.jar \
-    --rust target/release/freerouting --runs 3 --out <scratch>/bench
+    --rust target/release/freerouting-rs --runs 3 --out <scratch>/bench
 ```
 
 See `tools/bench/README.md` for the options and the quiet-machine rule. The

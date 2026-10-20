@@ -19,10 +19,10 @@ sys.path.insert(0, str(TESTS))  # install.py's parent is added by test_install
 
 @pytest.fixture
 def make_fake_router(tmp_path):
-    """Returns make(mode, name="freerouting") -> path of an executable that
+    """Returns make(mode, name="freerouting-rs") -> path of an executable that
     behaves like fake_bin/fake_freerouting.py in `mode`."""
 
-    def make(mode, name="freerouting"):
+    def make(mode, name="freerouting-rs"):
         script = FAKE_BIN / "fake_freerouting.py"
         d = tmp_path / f"fake-{mode}"
         d.mkdir(exist_ok=True)

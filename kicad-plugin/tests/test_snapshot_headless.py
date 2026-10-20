@@ -1,5 +1,5 @@
 """K10.1 and K10.2 against a real pcbnew (WSL: KiCad 10.0.7's system python3)
-and the real `freerouting` CLI, on a copy of the Issue558 dev board.
+and the real `freerouting-rs` CLI, on a copy of the Issue558 dev board.
 
 Skipped, with the reason, when no python3 imports pcbnew, no router that reads
 a `.kicad_pcb` is found (`FREEROUTING_RS_BIN`, else `target/release` or
@@ -43,7 +43,7 @@ def tools():
         pytest.skip("no python3 that imports pcbnew")
     router = find_router()
     if router is None:
-        pytest.skip("no freerouting executable (set FREEROUTING_RS_BIN)")
+        pytest.skip("no freerouting-rs executable (set FREEROUTING_RS_BIN)")
     probe = subprocess.run([router, "--capabilities"], capture_output=True, text=True, timeout=60)
     if '"flags"' not in probe.stdout or "--apply-design-rules" not in probe.stdout:
         pytest.skip(f"{router} predates K10.3")

@@ -5,7 +5,7 @@
 #
 #   tools/bench/quick-arm.sh BIN OUT ARM SET [-- ROUTER ARGS...]
 #
-# BIN   the release CLI (target/release/freerouting of the build the registration names)
+# BIN   the release CLI (target/release/freerouting-rs of the build the registration names)
 # OUT   the output directory; the arm's files go to OUT/ARM/<board>.{ses,log,time,result.json}
 # ARM   the arm's name in the registration
 # SET   a board set (tools/bench/sets/*.txt): the first word of every line that is not a comment

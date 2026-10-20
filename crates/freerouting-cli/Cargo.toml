@@ -14,7 +14,7 @@ name = "freerouting_cli"
 path = "src/lib.rs"
 
 [[bin]]
-name = "freerouting"
+name = "freerouting-rs"
 path = "src/main.rs"
 
 [dependencies]

@@ -11,7 +11,7 @@ into `--out` and prints the zip's path. One zip holds every platform's binaries
 platform, `<platform>/` or `bin-<platform>/` (the release workflow downloads its artifacts
 as `bin-<platform>/`), with platform one of `windows-x86_64`, `macos-universal`,
 `linux-x86_64`. `PLATFORM=DIR` names one platform's folder directly. Each folder needs
-`freerouting` and `freerouting-gui` (`.exe` on Windows); nothing else in it is packaged.
+`freerouting-rs` and `freerouting-gui` (`.exe` on Windows); nothing else in it is packaged.
 A missing platform is an error unless `--allow-missing` (local builds with one OS).
 
 Layout of the zip (all the places KiCad's validator allows: `metadata.json`,
@@ -54,7 +54,7 @@ METADATA = HERE / "metadata.json"
 ICON = HERE / "resources" / "icon.png"
 
 PLATFORMS = ("windows-x86_64", "macos-universal", "linux-x86_64")
-TOOLS = ("freerouting", "freerouting-gui")
+TOOLS = ("freerouting-rs", "freerouting-gui")
 # Copied from the repository root into plugins/ (F04.1). KiCad's validator allows nothing
 # but metadata.json, resources/icon.png and plugins/** in a package.
 NOTICE_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")

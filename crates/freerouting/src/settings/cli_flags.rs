@@ -1,6 +1,6 @@
 //! The router flags of the command line that both front ends share (K02.5).
 //!
-//! The CLI (`freerouting`) and the GUI's front-end mode
+//! The CLI (`freerouting-rs`) and the GUI's front-end mode
 //! (`freerouting-gui -de d.dsn -do o.ses`) take the same router flags, so the
 //! mapping from arguments to a [`SettingsPatch`] lives here and neither
 //! binary has a copy of it:

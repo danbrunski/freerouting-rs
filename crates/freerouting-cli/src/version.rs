@@ -1,13 +1,19 @@
 //! `--version` and `--capabilities` (C08.2): the handshake the KiCad plugin
 //! pins on (K01.4, K02).
 //!
-//! `--version` prints one line, `freerouting <crate version> (git <sha>)`,
+//! `--version` prints one line, `freerouting-rs <crate version> (git <sha>)`,
 //! where the sha comes from the engine's `build.rs` (R01.2:
 //! `FREEROUTING_GIT_SHA`, else `git rev-parse --short=12 HEAD`, else
 //! `unknown`) through [`freerouting::build_info`]. `--capabilities` prints JSON:
 //! the version, the output formats, every flag from the tables in
 //! [`args`](crate::args), the exit codes, the schema versions of the
 //! progress stream and the result manifest, and the registered stage ids.
+//!
+//! The executable is `freerouting-rs` (`freerouting-rs.exe`), and both outputs
+//! name it so: the `--version` line and the capabilities' `name`. Java's
+//! launcher is `freerouting`, so the two can be installed side by side and a
+//! lookup by name can't pick up Java's (DIVERGENCES, "Command line and job
+//! outputs"). The flags, outputs and exit codes are still Java's.
 
 use freerouting::drc::json::JsonValue;
 
@@ -27,7 +33,7 @@ pub const CAPABILITIES_SCHEMA_VERSION: u32 = 1;
 
 /// The `--version` line, without the newline.
 pub fn version_line() -> String {
-    format!("freerouting {VERSION} (git {GIT_SHA})")
+    format!("freerouting-rs {VERSION} (git {GIT_SHA})")
 }
 
 fn strings(items: impl IntoIterator<Item = impl Into<String>>) -> JsonValue {
@@ -113,7 +119,7 @@ pub fn capabilities() -> JsonValue {
             "schema_version".to_string(),
             int(CAPABILITIES_SCHEMA_VERSION),
         ),
-        ("name".to_string(), JsonValue::string("freerouting")),
+        ("name".to_string(), JsonValue::string("freerouting-rs")),
         ("version".to_string(), JsonValue::string(VERSION)),
         ("git".to_string(), JsonValue::string(GIT_SHA)),
         ("java_pin".to_string(), JsonValue::string(JAVA_PIN)),
@@ -164,7 +170,7 @@ mod tests {
     #[test]
     fn the_version_line_has_the_documented_shape() {
         let line = version_line();
-        let rest = line.strip_prefix("freerouting ").unwrap();
+        let rest = line.strip_prefix("freerouting-rs ").unwrap();
         let (version, rest) = rest.split_once(" (git ").unwrap();
         assert_eq!(version.split('.').count(), 3, "{line}");
         assert!(version.split('.').all(|p| p.parse::<u32>().is_ok()));

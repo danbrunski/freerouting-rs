@@ -4,7 +4,7 @@ Kept free of pcbnew and wx imports. `__version__` equals the workspace
 version in the repository's `Cargo.toml` (tests/test_version.py checks it;
 R01.1's release gate keeps the two equal).
 
-The router prints `freerouting <x.y.z> (<sha>)` for `--version` (C08's
+The router prints `freerouting-rs <x.y.z> (<sha>)` for `--version` (C08's
 format). The plugin and the router must agree on major.minor.
 """
 
@@ -13,7 +13,7 @@ import re
 __version__ = "0.1.0"
 
 _VERSION_LINE = re.compile(
-    r"^freerouting\s+(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(?P<pre>[-+][0-9A-Za-z.+-]*)?"
+    r"^freerouting-rs\s+(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(?P<pre>[-+][0-9A-Za-z.+-]*)?"
     r"(?:\s+\((?:git\s+)?(?P<sha>[0-9A-Za-z]+)\))?$"
 )
 
@@ -23,7 +23,7 @@ MISMATCH = "mismatch"
 
 
 def parse_router_version(text):
-    """Parses the output of `freerouting --version`. Returns
+    """Parses the output of `freerouting-rs --version`. Returns
     (major, minor, patch, sha_or_None) or None when it is not that format.
     Only the first non-empty line counts."""
     for line in (text or "").splitlines():

@@ -118,7 +118,7 @@ def test_scripted_route_matches_direct_plugin_invocation(board):
     python, pcb, opts, folder = board
     router = find_router()
     if router is None:
-        pytest.skip("no freerouting executable")
+        pytest.skip("no freerouting-rs executable")
     work = folder / "route"
     original = pcb.read_bytes()
     run(python, "-I", HEADLESS, "route", pcb, work, opts, router)
@@ -129,7 +129,7 @@ def test_scripted_route_matches_direct_plugin_invocation(board):
     direct = folder / "direct" / "dev-board.ses"
     direct.parent.mkdir()
     job = routing.RouteRun(
-        router_tools.Tool("freerouting", router),
+        router_tools.Tool("freerouting-rs", router),
         work / "dev-board.dsn",
         direct,
         recipe(work)["args"],

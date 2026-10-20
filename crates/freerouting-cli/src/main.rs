@@ -1,4 +1,4 @@
-//! `freerouting` command-line entry point.
+//! `freerouting-rs` command-line entry point.
 //!
 //! This file holds no behaviour: the arguments, the flow and the log live in
 //! the library (`args`, `cli`, `log`), and the flow itself in the engine

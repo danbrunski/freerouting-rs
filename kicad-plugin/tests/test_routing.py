@@ -9,7 +9,7 @@ import tools
 
 
 def tool_for(path):
-    return tools.Tool("freerouting", path)
+    return tools.Tool("freerouting-rs", path)
 
 
 def make_run(make_fake_router, tmp_path, mode, options=(), name="board"):

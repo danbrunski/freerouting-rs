@@ -43,7 +43,7 @@ from typing import List, NamedTuple, Optional
 ROOT = Path(__file__).resolve().parent.parent
 INSTALL = ROOT / "kicad-plugin" / "install.py"
 PACKAGES = ("freerouting-cli", "freerouting-gui")
-EXES = ("freerouting", "freerouting-gui")
+EXES = ("freerouting-rs", "freerouting-gui")
 MIN_PYTHON = (3, 8)
 # A release build of both packages with its dependencies.
 MIN_FREE_GB = 6

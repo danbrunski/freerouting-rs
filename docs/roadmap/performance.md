@@ -177,7 +177,7 @@ cargo build --release -p freerouting-cli -p freerouting-dev
 JAVA_TOOL_OPTIONS=-Xmx3g target/release/freerouting-dev bench \
     --set tools/bench/sets/benchmark.txt \
     --java ~/code/freerouting/logs/jars/freerouting-a773a70ec.jar \
-    --rust "$PWD/target/release/freerouting" --runs 3 --out <scratch>/bench
+    --rust "$PWD/target/release/freerouting-rs" --runs 3 --out <scratch>/bench
 ```
 
 `--out` is made absolute by the bench (it was not at first: the bench runs each engine in the board's

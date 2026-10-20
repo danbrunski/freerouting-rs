@@ -4,7 +4,7 @@
 #   tools/kicad-ipc/run-probe.sh WORK ROUTER BOARD.kicad_pcb...
 #
 # WORK      an empty folder for copies and results
-# ROUTER    a freerouting binary (target/release/freerouting)
+# ROUTER    a freerouting-rs binary (target/release/freerouting-rs)
 # BOARD     boards to probe; each is copied with its .kicad_pro and .kicad_dru
 #
 # Environment:

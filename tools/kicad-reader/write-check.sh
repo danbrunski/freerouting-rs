@@ -6,7 +6,7 @@
 #
 # On copies in a scratch folder (the originals are never touched; the script checks):
 #   path A  pcbnew.LoadBoard + pcbnew.ImportSpecctraSES + pcbnew.SaveBoard (what the plugin does),
-#   path B  freerouting -de <board>.kicad_pcb+<session.ses> -do <board>.kicad_pcb with the
+#   path B  freerouting-rs -de <board>.kicad_pcb+<session.ses> -do <board>.kicad_pcb with the
 #           autorouter, fanout and optimizer off, so the session is all that changes (K08.4),
 # then `kicad-cli pcb drc --format json --severity-all --refill-zones` on both, one at a time,
 # and a comparison of the violations by type and of the unconnected count. The .kicad_pro and
@@ -29,7 +29,7 @@ repo="$(cd "$here/../.." && pwd)"
 canary="$(cd "$repo/.." && pwd)/canary"
 KICAD_PYTHON="${KICAD_PYTHON:-python3}"
 KICAD_CLI="${KICAD_CLI:-kicad-cli}"
-FREEROUTING="${FREEROUTING:-$repo/target/release/freerouting}"
+FREEROUTING="${FREEROUTING:-$repo/target/release/freerouting-rs}"
 
 if [ -d "$src" ]; then
   mapfile -t found < <(find "$src" -maxdepth 1 -name '*.kicad_pcb' | sort)
@@ -40,7 +40,7 @@ else
 fi
 [ -f "$board" ] || { echo "no such board: $board" >&2; exit 2; }
 [ -f "$ses" ] || { echo "no such session: $ses" >&2; exit 2; }
-[ -x "$FREEROUTING" ] || { echo "no freerouting CLI at $FREEROUTING (cargo build --release)" >&2; exit 2; }
+[ -x "$FREEROUTING" ] || { echo "no freerouting-rs CLI at $FREEROUTING (cargo build --release)" >&2; exit 2; }
 command -v "$KICAD_CLI" > /dev/null 2>&1 || { echo "kicad-cli not found ('$KICAD_CLI')" >&2; exit 2; }
 cli_version="$("$KICAD_CLI" version 2>/dev/null | tr -d '\r' | head -1)"
 py_version="$("$KICAD_PYTHON" -I -c 'import pcbnew; print(pcbnew.GetBuildVersion())' 2>/dev/null | tail -1)"

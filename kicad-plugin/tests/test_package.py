@@ -142,16 +142,16 @@ def test_denylist_not_allowlist(fake_bins, tmp_path):
     (src / "tests").mkdir()
     (src / "tests" / "test_x.py").write_text("")
     (src / "bin" / "linux-x86_64").mkdir(parents=True)
-    (src / "bin" / "linux-x86_64" / "freerouting").write_text("stale local build")
+    (src / "bin" / "linux-x86_64" / "freerouting-rs").write_text("stale local build")
     (src / "mod.pyc").write_bytes(b"\0")
     zip_path, _ = build(fake_bins, tmp_path / "out", plugin_src=src)
     with zipfile.ZipFile(zip_path) as zf:
         names = set(zf.namelist())
-        assert zf.read("plugins/bin/linux-x86_64/freerouting") == zf_bytes(fake_bins, "linux-x86_64", "freerouting")
+        assert zf.read("plugins/bin/linux-x86_64/freerouting-rs") == zf_bytes(fake_bins, "linux-x86_64", "freerouting-rs")
     assert "plugins/brand_new_module.py" in names and "plugins/sub/helper.py" in names
     for bad in ("plugins/settings.json", "plugins/__pycache__/a.cpython-312.pyc", "plugins/tests/test_x.py", "plugins/mod.pyc"):
         assert bad not in names
-    assert "plugins/bin/linux-x86_64/freerouting" in names  # the bundled one, not the stale copy
+    assert "plugins/bin/linux-x86_64/freerouting-rs" in names  # the bundled one, not the stale copy
 
 
 def zf_bytes(fake_bins, platform, tool):

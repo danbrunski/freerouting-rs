@@ -21,7 +21,7 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   CARGO_PACKAGER_VERSION: "0.11.8"
-  # The build stamp for `freerouting --version` (R01.2): 12 hex digits of the commit.
+  # The build stamp for `freerouting-rs --version` (R01.2): 12 hex digits of the commit.
   FREEROUTING_GIT_SHA: ${{ github.sha }}
 
 jobs:
@@ -59,7 +59,7 @@ jobs:
       - name: Build
         run: cargo build --release --locked -p freerouting-cli -p freerouting-gui
       - name: glibc floor (at most 2.35)
-        run: tools/release/glibc_floor.sh 2.35 target/release/freerouting target/release/freerouting-gui
+        run: tools/release/glibc_floor.sh 2.35 target/release/freerouting-rs target/release/freerouting-gui
       - name: tar.gz
         run: python3 tools/release/package_archive.py --platform linux-x86_64 --bin-dir target/release --out dist
       - name: "AppImage (appimagetool; why not cargo-packager is in tools/release/make_appimage.sh)"
@@ -70,10 +70,10 @@ jobs:
         run: |
           tar tzf dist/freerouting-rs-*-linux-x86_64.tar.gz | tee /tmp/tar-listing
           grep -q THIRD_PARTY_NOTICES.md /tmp/tar-listing
-      - name: freerouting --version in ubuntu:22.04
+      - name: freerouting-rs --version in ubuntu:22.04
         run: |
           mkdir unpacked && tar xzf dist/freerouting-rs-*-linux-x86_64.tar.gz -C unpacked --strip-components=1
-          docker run --rm -v "$PWD/unpacked:/w:ro" ubuntu:22.04 /w/freerouting --version
+          docker run --rm -v "$PWD/unpacked:/w:ro" ubuntu:22.04 /w/freerouting-rs --version
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: linux
@@ -83,7 +83,7 @@ jobs:
         with:
           name: bin-linux-x86_64
           path: |
-            target/release/freerouting
+            target/release/freerouting-rs
             target/release/freerouting-gui
           if-no-files-found: error
 
@@ -141,7 +141,7 @@ jobs:
         run: |
           $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Where-Object { $_.FullName -match 'Hostx64\\x64' } | Select-Object -First 1
-          foreach ($exe in "freerouting.exe", "freerouting-gui.exe") {
+          foreach ($exe in "freerouting-rs.exe", "freerouting-gui.exe") {
             $deps = & $dumpbin.FullName /dependents "target\x86_64-pc-windows-msvc\release\$exe"
             $deps | Write-Host
             if ($deps -match 'VCRUNTIME|MSVCP') { throw "$exe depends on the Visual C++ runtime" }
@@ -149,7 +149,7 @@ jobs:
       - name: File properties carry the version
         run: |
           $want = python tools/release/check_version.py | Select-String '^workspace\s+(\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }
-          foreach ($exe in "freerouting.exe", "freerouting-gui.exe") {
+          foreach ($exe in "freerouting-rs.exe", "freerouting-gui.exe") {
             $got = (Get-Item "target\x86_64-pc-windows-msvc\release\$exe").VersionInfo.ProductVersion
             Write-Host "$exe ProductVersion $got"
             if (-not $got.StartsWith($want)) { throw "$exe ProductVersion $got, want $want" }
@@ -171,8 +171,8 @@ jobs:
         run: |
           $msi = (Get-ChildItem dist\freerouting-rs-*.msi | Select-Object -First 1).FullName
           Start-Process msiexec -ArgumentList "/i `"$msi`" /qn /l*v install.log" -Wait -NoNewWindow
-          $exe = Get-ChildItem "$env:ProgramFiles", "$env:LOCALAPPDATA\Programs" -Recurse -Filter freerouting.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $exe) { Get-Content install.log -Tail 60; throw "freerouting.exe not installed" }
+          $exe = Get-ChildItem "$env:ProgramFiles", "$env:LOCALAPPDATA\Programs" -Recurse -Filter freerouting-rs.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Get-Content install.log -Tail 60; throw "freerouting-rs.exe not installed" }
           & $exe.FullName --version
           if ($LASTEXITCODE -ne 0) { throw "--version exited $LASTEXITCODE" }
           $dir = $exe.DirectoryName
@@ -187,7 +187,7 @@ jobs:
         with:
           name: bin-windows-x86_64
           path: |
-            target/x86_64-pc-windows-msvc/release/freerouting.exe
+            target/x86_64-pc-windows-msvc/release/freerouting-rs.exe
             target/x86_64-pc-windows-msvc/release/freerouting-gui.exe
           if-no-files-found: error
 
@@ -211,7 +211,7 @@ jobs:
       - name: lipo
         run: |
           mkdir -p universal
-          for bin in freerouting freerouting-gui; do
+          for bin in freerouting-rs freerouting-gui; do
             lipo -create -output "universal/$bin" "target/aarch64-apple-darwin/release/$bin" "target/x86_64-apple-darwin/release/$bin"
             echo "$bin: $(lipo -archs "universal/$bin")"
             test "$(lipo -archs "universal/$bin")" = "x86_64 arm64"
@@ -238,7 +238,7 @@ jobs:
           dmg="$(ls dist/freerouting-rs-*-macos-universal.dmg)"
           mount="$(hdiutil attach "$dmg" -nobrowse | awk -F'\t' '/\/Volumes\// {print $NF}' | head -1)"
           # The GUI has no --version (it would open a window); the CLI beside it in the bundle does.
-          "$mount/freerouting-rs.app/Contents/MacOS/freerouting" --version
+          "$mount/freerouting-rs.app/Contents/MacOS/freerouting-rs" --version
           test -x "$mount/freerouting-rs.app/Contents/MacOS/freerouting-gui"
           hdiutil detach "$mount"
       - uses: actions/upload-artifact@v7.0.2

@@ -9,7 +9,7 @@ docker build -t freerouting-rs/kicad-nightly tools/kicad-ipc     # latest kicad-
 python3 -m venv $V && $V/bin/pip install kicad-python grpcio-tools
 # classes for KiCad's api/proto at the nightly's commit (kipy lacks the 11.0 messages)
 $V/bin/python -m grpc_tools.protoc -I api/proto --python_out=$GEN <every .proto>
-PY=$V/bin/python PROTO_GEN=$GEN tools/kicad-ipc/run-probe.sh WORK target/release/freerouting \
+PY=$V/bin/python PROTO_GEN=$GEN tools/kicad-ipc/run-probe.sh WORK target/release/freerouting-rs \
   fixtures/kicad/Issue558-dev-board-autoroute-demo/dev-board.kicad_pcb ...
 ```
 

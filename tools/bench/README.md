@@ -3,7 +3,7 @@
 `freerouting-dev bench` routes a set of boards with the Java and the Rust
 engine and times them on a quiet machine. `freerouting-dev ses-diff` compares
 two sessions for one board. Both live in the dev-only crate
-`crates/freerouting-dev`, so the user-facing `freerouting` command line stays
+`crates/freerouting-dev`, so the user-facing `freerouting-rs` command line stays
 Java-compatible.
 
 ## `freerouting-dev bench`
@@ -12,7 +12,7 @@ Java-compatible.
 cargo build --release -p freerouting-dev
 target/release/freerouting-dev bench --set tools/bench/sets/benchmark.txt \
   --java ~/code/freerouting/logs/jars/freerouting-a773a70ec.jar \
-  [--rust target/release/freerouting] --runs 3 --out <scratch>/bench
+  [--rust target/release/freerouting-rs] --runs 3 --out <scratch>/bench
 ```
 
 - **Engines.** `--java <jar>` runs `java -jar <jar>` (Java 25 or newer:
@@ -264,7 +264,7 @@ signal on a busy one there are callgrind instruction counts:
   runs and compares them with `callgrind-baseline.json` in percent
   (`--compare`);
 - `callgrind_top.py` sums a callgrind profile per function;
-- `freerouting --stats json` writes work counts and times per stage.
+- `freerouting-rs --stats json` writes work counts and times per stage.
 
 All of them are described in
 [docs/development/profiling.md](../../docs/development/profiling.md).

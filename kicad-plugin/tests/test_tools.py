@@ -12,7 +12,7 @@ def touch(path):
     return path
 
 
-def exe(d, name="freerouting"):
+def exe(d, name="freerouting-rs"):
     return Path(d) / (name + tools.EXE_SUFFIX)
 
 
@@ -20,7 +20,19 @@ def exe(d, name="freerouting"):
 
 
 def test_nothing_found(isolated_env):
-    assert tools.find_tool("freerouting") is None
+    assert tools.find_tool("freerouting-rs") is None
+
+
+def test_java_freerouting_on_path_is_not_the_router(isolated_env, monkeypatch):
+    # Java Freerouting's launcher is `freerouting`; the router is `freerouting-rs`.
+    path_dir = isolated_env / "path"
+    java = exe(path_dir, "freerouting")
+    java.parent.mkdir()
+    java.write_text("#!/bin/sh\n")
+    java.chmod(0o755)
+    monkeypatch.setenv("PATH", str(path_dir))
+    assert tools.ROUTER == "freerouting-rs"
+    assert tools.find_tool(tools.ROUTER) is None
 
 
 def test_lookup_order_each_source_wins_over_later_ones(isolated_env, monkeypatch):
@@ -36,37 +48,37 @@ def test_lookup_order_each_source_wins_over_later_ones(isolated_env, monkeypatch
     on_path.chmod(0o755)
 
     # ~/.cargo/bin is the last native source, so PATH must beat it:
-    assert Path(tools.find_tool("freerouting").exe).resolve() == on_path.resolve()
+    assert Path(tools.find_tool("freerouting-rs").exe).resolve() == on_path.resolve()
     # FREEROUTING_RS_BIN beats PATH
     in_env = touch(exe(env_dir))
-    assert tools.find_tool("freerouting").exe == in_env
+    assert tools.find_tool("freerouting-rs").exe == in_env
     # settings.json bin_dir beats FREEROUTING_RS_BIN
     in_settings = touch(exe(settings_dir))
-    assert tools.find_tool("freerouting").exe == in_settings
+    assert tools.find_tool("freerouting-rs").exe == in_settings
     # remove the winners one by one: each falls back to the next source
     in_settings.unlink()
-    assert tools.find_tool("freerouting").exe == in_env
+    assert tools.find_tool("freerouting-rs").exe == in_env
     in_env.unlink()
-    assert Path(tools.find_tool("freerouting").exe).resolve() == on_path.resolve()
+    assert Path(tools.find_tool("freerouting-rs").exe).resolve() == on_path.resolve()
     on_path.unlink()
-    assert tools.find_tool("freerouting").exe == cargo
+    assert tools.find_tool("freerouting-rs").exe == cargo
 
 
 def test_other_tool_name_is_not_confused(isolated_env, monkeypatch):
     d = isolated_env / "bin"
-    touch(exe(d, "freerouting"))
+    touch(exe(d, "freerouting-rs"))
     monkeypatch.setenv("FREEROUTING_RS_BIN", str(d))
     assert tools.find_tool("freerouting-gui") is None
-    assert tools.find_tool("freerouting") is not None
+    assert tools.find_tool("freerouting-rs") is not None
 
 
 def test_wsl_fallback_only_on_windows(isolated_env, monkeypatch):
     monkeypatch.setattr(tools, "load_settings", lambda: {"wsl_bin_dir": "/opt/fr/", "wsl_distro": "Ubuntu"})
     monkeypatch.setattr(tools, "IS_WINDOWS", False)
-    assert tools.find_tool("freerouting") is None
+    assert tools.find_tool("freerouting-rs") is None
     monkeypatch.setattr(tools, "IS_WINDOWS", True)
-    tool = tools.find_tool("freerouting")
-    assert tool.via_wsl and tool.exe == "/opt/fr/freerouting" and tool.wsl_distro == "Ubuntu"
+    tool = tools.find_tool("freerouting-rs")
+    assert tool.via_wsl and tool.exe == "/opt/fr/freerouting-rs" and tool.wsl_distro == "Ubuntu"
 
 
 def test_native_beats_wsl_on_windows(isolated_env, monkeypatch):
@@ -74,7 +86,7 @@ def test_native_beats_wsl_on_windows(isolated_env, monkeypatch):
     native = touch(exe(d))
     monkeypatch.setattr(tools, "load_settings", lambda: {"bin_dir": str(d), "wsl_bin_dir": "/opt/fr"})
     monkeypatch.setattr(tools, "IS_WINDOWS", True)
-    tool = tools.find_tool("freerouting")
+    tool = tools.find_tool("freerouting-rs")
     assert not tool.via_wsl and tool.exe == native
 
 
@@ -129,18 +141,18 @@ def test_unc_path_raises(monkeypatch):
 
 
 def test_native_command_stringifies(tmp_path):
-    tool = tools.Tool("freerouting", tmp_path / "freerouting")
-    assert tool.command(["-de", tmp_path / "a.dsn", 5]) == [str(tmp_path / "freerouting"), "-de", str(tmp_path / "a.dsn"), "5"]
+    tool = tools.Tool("freerouting-rs", tmp_path / "freerouting-rs")
+    assert tool.command(["-de", tmp_path / "a.dsn", 5]) == [str(tmp_path / "freerouting-rs"), "-de", str(tmp_path / "a.dsn"), "5"]
     assert not tool.via_wsl
 
 
 def test_wsl_command_translates_paths_and_picks_distro(monkeypatch):
     monkeypatch.setattr(tools, "windows_to_wsl_path", lambda p: "/mnt/c/" + Path(p).name)
-    tool = tools.Tool("freerouting", "/opt/fr/freerouting", wsl_distro="Ubuntu")
+    tool = tools.Tool("freerouting-rs", "/opt/fr/freerouting-rs", wsl_distro="Ubuntu")
     cmd = tool.command(["-de", Path("b.dsn"), "-mp", 3])
-    assert cmd == ["wsl.exe", "-d", "Ubuntu", "--", "/opt/fr/freerouting", "-de", "/mnt/c/b.dsn", "-mp", "3"]
-    default = tools.Tool("freerouting", "/opt/fr/freerouting", wsl_distro="")
-    assert default.via_wsl and default.command(["x"])[:3] == ["wsl.exe", "--", "/opt/fr/freerouting"]
+    assert cmd == ["wsl.exe", "-d", "Ubuntu", "--", "/opt/fr/freerouting-rs", "-de", "/mnt/c/b.dsn", "-mp", "3"]
+    default = tools.Tool("freerouting-rs", "/opt/fr/freerouting-rs", wsl_distro="")
+    assert default.via_wsl and default.command(["x"])[:3] == ["wsl.exe", "--", "/opt/fr/freerouting-rs"]
     assert "default distro" in default.describe()
 
 
@@ -156,26 +168,26 @@ class FakeProc:
 
 
 def test_finish_route_decodes_utf8():
-    tool = tools.Tool("freerouting", Path("fr"))
+    tool = tools.Tool("freerouting-rs", Path("fr"))
     assert tools.finish_route(tool, FakeProc("routed \u00e4\u00f6\n".encode("utf-8"), 0)) == (0, "routed \u00e4\u00f6")
 
 
 def test_finish_route_decodes_wsl_utf16():
-    tool = tools.Tool("freerouting", "/opt/fr", wsl_distro="")
+    tool = tools.Tool("freerouting-rs", "/opt/fr", wsl_distro="")
     raw = "Wsl/Service/WSL_E_DISTRO_NOT_FOUND\r\n".encode("utf-16-le")
     code, out = tools.finish_route(tool, FakeProc(raw, 1))
     assert (code, out) == (1, "Wsl/Service/WSL_E_DISTRO_NOT_FOUND")
 
 
 def test_finish_route_native_tool_never_tries_utf16():
-    tool = tools.Tool("freerouting", Path("fr"))
+    tool = tools.Tool("freerouting-rs", Path("fr"))
     raw = "ab".encode("utf-16-le")
     assert "\x00" in tools.finish_route(tool, FakeProc(raw))[1]
 
 
 def test_start_and_finish_route_with_fake_binary(make_fake_router, tmp_path):
     fake = make_fake_router("echo")
-    tool = tools.Tool("freerouting", fake)
+    tool = tools.Tool("freerouting-rs", fake)
     proc = tools.start_route(tool, tmp_path / "a.dsn", tmp_path / "a.ses")
     code, out = tools.finish_route(tool, proc)
     assert code == 0

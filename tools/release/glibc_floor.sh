@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R01.4: fail when a binary needs a newer glibc than the floor.
-#   glibc_floor.sh 2.35 target/release/freerouting target/release/freerouting-gui
+#   glibc_floor.sh 2.35 target/release/freerouting-rs target/release/freerouting-gui
 # Prints the highest GLIBC_x.y symbol version of each binary (objdump -T).
 set -euo pipefail
 floor="$1"

@@ -6,7 +6,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
 ## How it works
 
 - `freerouting_rs/plugin.py`: the dialog. **Route** saves the options, exports the board with
-  `pcbnew.ExportSpecctraDSN`, runs `freerouting -de board.dsn -do board.ses --progress json
+  `pcbnew.ExportSpecctraDSN`, runs `freerouting-rs -de board.dsn -do board.ses --progress json
   --result-json board.result.json <options>` and imports the SES with `pcbnew.ImportSpecctraSES`
   (K02). A progress dialog shows the phase, pass and routed/failed/incomplete counts live, the
   router's log lines, **Stop and keep result** and **Abort**; a summary follows the import.
@@ -48,7 +48,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   `freerouting-rs/plugin.json`), one log line per area in `freerouting-rs/plugin.log`.
   Footprint-owned areas (written into the `(image ...)`) are only listed in a warning.
 - `freerouting_rs/version.py` (K01.3): `__version__` (equals the workspace version) and the
-  check against `freerouting --version` (`tools.query_version`, 10 s timeout). A major.minor
+  check against `freerouting-rs --version` (`tools.query_version`, 10 s timeout). A major.minor
   mismatch disables Route; an unparsable answer is "unknown" (allowed, with a warning). The
   CLI has no `--version` until C08, so today every router shows "unknown".
 - `install.py`: copies `freerouting_rs/` into KiCad's user `scripting/plugins` folder and
@@ -96,7 +96,7 @@ promotion is made here; historical 33-versus-39 counts are not an accepted A/B.
   open), a line for the board's own violations (`input`, never changed) and a warning when a
   `report` run saved breaches (`test_summary.py::test_the_output_check_is_summarised`).
 - **Advanced** (the Advanced tab's Stages group): one choice per stage slot that takes one stage, read
-  from the router with `freerouting --list-stages=json --profile <p>` for each profile when the
+  from the router with `freerouting-rs --list-stages=json --profile <p>` for each profile when the
   dialog opens (`tools.query_stages`, `options.parse_stage_listing`). Each choice starts at the
   saved one or the profile's; one that differs passes `--router.<key>=<id>` (sorted by key). A
   router without `--list-stages` gives an empty group with a note. Slots that take a list
@@ -286,7 +286,7 @@ option sits on and the cut to the screen), `test_layout.py` (the page heights), 
 (when the dark-list fix applies, and its Win32 calls against fakes), and
 `test_cli_integration.py` (the real CLI: all options, Stop, Abort, summary against `-drc`).
 The last one uses `FREEROUTING_RS_BIN` (a directory), else `target/release` or `target/debug`, and
-skips with the reason when no `freerouting` with `--capabilities` is found.
+skips with the reason when no `freerouting-rs` with `--capabilities` is found.
 
 ## SWIG, IPC API and KiCad versions (K01.5)
 
@@ -393,7 +393,7 @@ uploaded:** the KiCad repository submission and the GitHub release need the owne
   icon is a `render.py` run plus a copy), `package.py`, `update_metadata.py`, `validate_pcm.py`.
 - **Build.** `python3 kicad-plugin/package.py --bin <dir> --out <dir>`; `<dir>` holds
   `bin-<platform>/` (the release workflow's artifact names) or `<platform>/`, for
-  `windows-x86_64`, `macos-universal`, `linux-x86_64`, each with `freerouting` and
+  `windows-x86_64`, `macos-universal`, `linux-x86_64`, each with `freerouting-rs` and
   `freerouting-gui` (`.exe` on Windows). `--bin linux-x86_64=target/release` names one platform;
   `--allow-missing` builds a partial package for local tests. Output:
   `freerouting-rs-<version>-pcm.zip` and `<zip>.meta.json` (sidecar: `version`, `file`, `sha256`,
@@ -656,7 +656,7 @@ that stayed behind) under "Verified" above. The item stays partial until then.
 
 ## Direct `.kicad_pcb` input (K07)
 
-`freerouting -de board.kicad_pcb`, the GUI's File > Open and `freerouting::io::read_design` read a KiCad
+`freerouting-rs -de board.kicad_pcb`, the GUI's File > Open and `freerouting::io::read_design` read a KiCad
 board without `ExportSpecctraDSN`, so a plugin can hand the CLI the board file. KiCad 11 (K00 question 5;
 SWIG removal verified in K01.5) drops `ExportSpecctraDSN`; a master that exports pours as
 `(wire (polygon ...))` instead of planes (it does, K11.1) would not matter either. Bringing the
@@ -811,7 +811,7 @@ tracks, so Undo restores them; a `board.Add` would need its own commit). Until t
 
 ## Direct `.kicad_pcb` writer (K08)
 
-`freerouting -de board.kicad_pcb -do routed.kicad_pcb` (and `freerouting::io::kicad::write_kicad_board`)
+`freerouting-rs -de board.kicad_pcb -do routed.kicad_pcb` (and `freerouting::io::kicad::write_kicad_board`)
 writes the routed board into a **copy** of the `.kicad_pcb` without `ImportSpecctraSES`, so together with
 the K07 reader neither direction needs KiCad's Specctra code (`crates/freerouting-kicad/src/write/`).
 
@@ -852,7 +852,7 @@ segments, where `ImportSpecctraSES` gets every arc as the session's chords.
 
 **Using it from the plugin on KiCad 11** (not done; the plugin still imports the SES, K02). KiCad master
 removed SWIG (K01.5), so `pcbnew.ImportSpecctraSES` goes away. The plugin could instead save the board,
-run `freerouting -de <board>.kicad_pcb -do <board>.routed.kicad_pcb` (the capabilities JSON lists
+run `freerouting-rs -de <board>.kicad_pcb -do <board>.routed.kicad_pcb` (the capabilities JSON lists
 `.kicad_pcb` in `output_formats`), and have KiCad open or revert to the routed copy; through the IPC API
 it would have to reload the board from disk, because the writer edits the file, not the open document.
 The plugin must replace the board itself (the writer never overwrites its input) and only after the user

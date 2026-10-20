@@ -6,10 +6,10 @@ use common::*;
 use freerouting::drc::json::JsonValue;
 use freerouting_cli::args::{EXTRA_FLAGS, FLAGS, LONG_FLAGS};
 
-/// `^freerouting \d+\.\d+\.\d+ \(git ([0-9a-f]{12}|unknown)\)$`, by hand (the
+/// `^freerouting-rs \d+\.\d+\.\d+ \(git ([0-9a-f]{12}|unknown)\)$`, by hand (the
 /// workspace has no regex crate in the CLI).
 fn matches_version_line(line: &str) -> bool {
-    let Some(rest) = line.strip_prefix("freerouting ") else {
+    let Some(rest) = line.strip_prefix("freerouting-rs ") else {
         return false;
     };
     let Some((version, rest)) = rest.split_once(" (git ") else {
@@ -46,14 +46,24 @@ fn version_prints_one_line() {
 
 #[test]
 fn the_version_line_matcher_rejects_other_lines() {
-    assert!(matches_version_line("freerouting 0.1.0 (git abcdef123456)"));
-    assert!(matches_version_line("freerouting 12.3.45 (git unknown)"));
-    assert!(!matches_version_line("freerouting 0.1 (git abcdef123456)"));
-    assert!(!matches_version_line("freerouting 0.1.0 (git abcdef12345)"));
-    assert!(!matches_version_line(
-        "freerouting 0.1.0 (git ABCDEFG12345)"
+    assert!(matches_version_line(
+        "freerouting-rs 0.1.0 (git abcdef123456)"
     ));
-    assert!(!matches_version_line("freerouting 0.1.0"));
+    assert!(matches_version_line("freerouting-rs 12.3.45 (git unknown)"));
+    assert!(!matches_version_line(
+        "freerouting-rs 0.1 (git abcdef123456)"
+    ));
+    assert!(!matches_version_line(
+        "freerouting-rs 0.1.0 (git abcdef12345)"
+    ));
+    assert!(!matches_version_line(
+        "freerouting-rs 0.1.0 (git ABCDEFG12345)"
+    ));
+    assert!(!matches_version_line("freerouting-rs 0.1.0"));
+    // The executable's old name, which Java's launcher also has.
+    assert!(!matches_version_line(
+        "freerouting 0.1.0 (git abcdef123456)"
+    ));
 }
 
 fn names_of(value: Option<&JsonValue>) -> Vec<String> {
@@ -73,6 +83,10 @@ fn capabilities_is_json_and_lists_every_flag() {
     assert_eq!(code(&out), 0, "{}", stderr(&out));
     let doc = JsonValue::parse(&stdout(&out)).expect("valid JSON");
 
+    assert_eq!(
+        string_of(member(&doc, "name")).as_deref(),
+        Some("freerouting-rs")
+    );
     assert_eq!(
         string_of(member(&doc, "version")).as_deref(),
         Some(env!("CARGO_PKG_VERSION"))

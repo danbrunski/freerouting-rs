@@ -210,7 +210,7 @@ fn sample_result() -> BenchResult {
             },
             Engine {
                 name: "rust",
-                command: vec!["freerouting".into()],
+                command: vec!["freerouting-rs".into()],
             },
         ],
         default_bounds: Bounds {

@@ -1,5 +1,5 @@
 //! Developer tools for the freerouting-rs port, kept out of the
-//! user-facing `freerouting` command line so that stays Java-compatible.
+//! user-facing `freerouting-rs` command line so that stays Java-compatible.
 //!
 //! The `freerouting-dev` binary has these subcommands:
 //!

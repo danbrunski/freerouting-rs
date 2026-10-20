@@ -1,11 +1,11 @@
-"""A stand-in for the freerouting executable, used by the plugin tests.
+"""A stand-in for the freerouting-rs executable, used by the plugin tests.
 
     fake_freerouting.py <mode> [args...]
 
 Modes (the first argument after the script):
-  ok         `--version` prints "freerouting 0.1.0 (abc1234)"
-  newer      `--version` prints "freerouting 0.2.0 (abc1234)"
-  patch      `--version` prints "freerouting 0.1.9 (abc1234)"
+  ok         `--version` prints "freerouting-rs 0.1.0 (abc1234)"
+  newer      `--version` prints "freerouting-rs 0.2.0 (abc1234)"
+  patch      `--version` prints "freerouting-rs 0.1.9 (abc1234)"
   garbage    `--version` prints text that is not a version line
   fail       prints a version line but exits 3
   sleep      sleeps 30 s before answering (to hit the timeout)
@@ -84,7 +84,7 @@ if "--list-stages=json" in args and mode != "fail":
     sys.exit(0)
 
 if mode in ("route", "route-slow", "route-fail", "route-noise") and "--version" in args:
-    print("freerouting 0.1.0 (abc1234)")
+    print("freerouting-rs 0.1.0 (abc1234)")
 elif mode == "route-fail":
     emit({"event": "start", "schema_version": 1, "mode": "route"})
     emit({"event": "log", "level": "error", "text": "Couldn't load the input file"})
@@ -123,11 +123,11 @@ elif mode == "echo":
     print("\n".join(args))
 elif mode == "sleep":
     time.sleep(30)
-    print("freerouting 0.1.0 (abc1234)")
+    print("freerouting-rs 0.1.0 (abc1234)")
 elif mode == "fail":
-    print("freerouting 0.1.0 (abc1234)")
+    print("freerouting-rs 0.1.0 (abc1234)")
     sys.exit(3)
 elif mode == "garbage":
     print("Usage: freerouting [OPTIONS]")
 else:
-    print({"ok": "0.1.0", "newer": "0.2.0", "patch": "0.1.9"}[mode].join(["freerouting ", " (abc1234)"]))
+    print({"ok": "0.1.0", "newer": "0.2.0", "patch": "0.1.9"}[mode].join(["freerouting-rs ", " (abc1234)"]))

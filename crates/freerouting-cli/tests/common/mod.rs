@@ -29,7 +29,7 @@ pub fn copy_fixtures(dir: &Path, names: &[&str]) {
 
 /// Runs the `freerouting` binary in `dir`.
 pub fn run_in(dir: &Path, args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_freerouting"))
+    Command::new(env!("CARGO_BIN_EXE_freerouting-rs"))
         .args(args)
         .current_dir(dir)
         .env_remove("FREEROUTING_TEST_ABORT_BEFORE_RENAME")

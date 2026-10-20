@@ -1,4 +1,4 @@
-//! The `freerouting` command line as a library, so tests can call it.
+//! The `freerouting-rs` command line as a library, so tests can call it.
 //!
 //! - [`args`]: Java's two argument parsers as one (C07.1 to C07.3).
 //! - [`cli`]: what the arguments do: help, the DRC mode and the job.

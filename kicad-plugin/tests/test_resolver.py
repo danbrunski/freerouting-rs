@@ -30,7 +30,7 @@ CASES = [
 @pytest.fixture
 def bundle(tmp_path, monkeypatch):
     """A package-style `bin/` with all three platform folders, each holding
-    non-executable `freerouting` and `freerouting-gui` files."""
+    non-executable `freerouting-rs` and `freerouting-gui` files."""
     root = tmp_path / "pkg" / "bin"
     for platform in tools.BUNDLE_PLATFORMS:
         for name in (tools.ROUTER, tools.VIEWER):
@@ -79,14 +79,14 @@ def test_package_without_this_platform_is_none(bundle, monkeypatch):
 @pytest.mark.skipif(os.name == "nt", reason="no executable bit on Windows")
 def test_missing_exec_bit_is_set(bundle, monkeypatch):
     fake_system(monkeypatch, "linux", "x86_64")
-    router = bundle / "linux-x86_64" / "freerouting"
+    router = bundle / "linux-x86_64" / "freerouting-rs"
     assert not os.access(router, os.X_OK)
     tools.bundled_bin_dir()
-    for name in ("freerouting", "freerouting-gui"):
+    for name in ("freerouting-rs", "freerouting-gui"):
         mode = (bundle / "linux-x86_64" / name).stat().st_mode
         assert mode & stat.S_IXUSR and os.access(bundle / "linux-x86_64" / name, os.X_OK)
     # other platforms' folders are not touched
-    assert not os.access(bundle / "macos-universal" / "freerouting", os.X_OK)
+    assert not os.access(bundle / "macos-universal" / "freerouting-rs", os.X_OK)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="no executable bit on Windows")
@@ -106,32 +106,32 @@ def test_lookup_order_with_the_bundle(isolated_env, bundle, monkeypatch):
     tmp = isolated_env
     fake_system(monkeypatch, "linux", "x86_64")
     settings_dir, env_dir, path_dir = tmp / "settings", tmp / "env", tmp / "path"
-    cargo = tmp / "home" / ".cargo" / "bin" / "freerouting"
+    cargo = tmp / "home" / ".cargo" / "bin" / "freerouting-rs"
     cargo.parent.mkdir(parents=True)
     cargo.write_text("")
     monkeypatch.setattr(tools, "load_settings", lambda: {"bin_dir": str(settings_dir)})
     monkeypatch.setenv("FREEROUTING_RS_BIN", str(env_dir))
     monkeypatch.setenv("PATH", str(path_dir))
-    on_path = path_dir / "freerouting"
+    on_path = path_dir / "freerouting-rs"
     on_path.parent.mkdir()
     on_path.write_text("#!/bin/sh\n")
     on_path.chmod(0o755)
-    in_env = env_dir / "freerouting"
+    in_env = env_dir / "freerouting-rs"
     in_env.parent.mkdir()
     in_env.write_text("")
-    in_settings = settings_dir / "freerouting"
+    in_settings = settings_dir / "freerouting-rs"
     in_settings.parent.mkdir()
     in_settings.write_text("")
-    bundled = bundle / "linux-x86_64" / "freerouting"
+    bundled = bundle / "linux-x86_64" / "freerouting-rs"
 
-    assert tools.find_tool("freerouting").exe == in_settings  # a developer's explicit bin_dir wins
+    assert tools.find_tool("freerouting-rs").exe == in_settings  # a developer's explicit bin_dir wins
     in_settings.unlink()
-    assert tools.find_tool("freerouting").exe == bundled  # then the package's binaries
+    assert tools.find_tool("freerouting-rs").exe == bundled  # then the package's binaries
     assert tools.find_tool("freerouting-gui").exe == bundle / "linux-x86_64" / "freerouting-gui"
     bundled.unlink()
-    assert tools.find_tool("freerouting").exe == in_env
+    assert tools.find_tool("freerouting-rs").exe == in_env
     in_env.unlink()
-    assert Path(tools.find_tool("freerouting").exe).resolve() == on_path.resolve()
+    assert Path(tools.find_tool("freerouting-rs").exe).resolve() == on_path.resolve()
 
 
 def test_unsupported_platform_message(bundle, monkeypatch):
@@ -159,14 +159,14 @@ def test_resolver_works_on_an_unpacked_package(tmp_path, monkeypatch):
         for tool in package.TOOLS:
             f = bins / platform / package.exe_name(tool, platform)
             f.parent.mkdir(parents=True, exist_ok=True)
-            f.write_text("#!/bin/sh\necho freerouting 0.1.0\n")
+            f.write_text("#!/bin/sh\necho freerouting-rs 0.1.0\n")
     zip_path, _ = package.build([str(bins)], tmp_path / "out")
     unpacked = tmp_path / "unpacked"
     with zipfile.ZipFile(zip_path) as zf:
         for info in zf.infolist():  # extract() drops the Unix mode bits, like wxZip does
             zf.extract(info, unpacked)
     plugin_dir = unpacked / "plugins"
-    assert not os.access(plugin_dir / "bin" / "linux-x86_64" / "freerouting", os.X_OK)
+    assert not os.access(plugin_dir / "bin" / "linux-x86_64" / "freerouting-rs", os.X_OK)
 
     spec = importlib.util.spec_from_file_location("tools_unpacked", plugin_dir / "tools.py")
     mod = importlib.util.module_from_spec(spec)
@@ -176,6 +176,6 @@ def test_resolver_works_on_an_unpacked_package(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "SETTINGS_FILE", tmp_path / "no-settings.json")
     monkeypatch.delenv("FREEROUTING_RS_BIN", raising=False)
 
-    tool = mod.find_tool("freerouting")
-    assert tool.exe == plugin_dir / "bin" / "linux-x86_64" / "freerouting"
+    tool = mod.find_tool("freerouting-rs")
+    assert tool.exe == plugin_dir / "bin" / "linux-x86_64" / "freerouting-rs"
     assert os.access(tool.exe, os.X_OK)

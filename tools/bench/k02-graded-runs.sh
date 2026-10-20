@@ -8,7 +8,7 @@
 # rule areas removed, which is what the plugin's K01.2 rewrite achieves) and the same
 # --router.min_trace_width_um, the board's Board Setup minimum track width (D8; the DSN does
 # not carry it, so the plugin passes it).
-#   rust  freerouting -de {DSN} -do {SES} --router.min_trace_width_um=W
+#   rust  freerouting-rs -de {DSN} -do {SES} --router.min_trace_width_um=W
 #         (the plugin's default options, nothing else; --result-json for the time and counts)
 #   java  java -Xmx3g -jar JAR -de {DSN} -do {SES} --gui.enabled=false
 #         --router.min_trace_width_um=W --router.optimizer.enabled=false

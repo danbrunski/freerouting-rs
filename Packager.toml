@@ -41,7 +41,7 @@ path = "freerouting-gui"
 main = true
 
 [[binaries]]
-path = "freerouting"
+path = "freerouting-rs"
 main = false
 
 [macos]

@@ -210,7 +210,7 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   The counts and bounds are Java's (`reference_load`,
   `fanout_counts_equal_the_per_pin_definition`); only the search-tree work the statistics
   add to a board's work meter is smaller. No work limit is open while they run.
-- The DRC command line (`freerouting -de board.dsn [board.ses] -drc [report.json]`)
+- The DRC command line (`freerouting-rs -de board.dsn [board.ses] -drc [report.json]`)
   does the post-load processing before importing the session. Java runs the post-load
   DRC in a background thread while it imports the session. On
   `Issue289-Autorouter_PCB_FHT-VGA_2024-03-25.dsn` with the `cda540f` route session that
@@ -1169,7 +1169,13 @@ compare them on 12 committed boards and the 56-board corpus).
 ## freerouting-cli
 
 **Command line and job outputs** (`freerouting-cli`; `freerouting::job::{run, outputs, deadline,
-log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_parity}.rs`)
+log}`; tests `crates/freerouting-cli/tests/{args_java, cli_outputs, settings_parity, version}.rs`)
+- The executable is `freerouting-rs` (`freerouting-rs.exe` on Windows); Java's launcher is
+  `freerouting`. Decided 2026-10-20, so that both can be installed side by side and nothing that
+  looks up `freerouting-rs` (the KiCad plugin, the installer, scripts) can pick up Java's.
+  `--version` prints `freerouting-rs <x.y.z> (git <sha>)` and `--capabilities` gives
+  `"name": "freerouting-rs"` (`the_version_line_matcher_rejects_other_lines`,
+  `capabilities_is_json_and_lists_every_flag`). The flags, outputs and exit codes are Java's.
 - One parser does the work of Java's `GlobalSettings.applyCommandLineArguments` and
   `CliSettings`; Java runs both and logs some warnings twice (`-mp`, `--router.max_passes`),
   Rust logs each once. `-mt` still does nothing headless; Rust adds an info line naming

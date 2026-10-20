@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R01.3/R01.4: the Linux AppImage, built with appimagetool from an AppDir assembled here.
-#   make_appimage.sh <dir with freerouting and freerouting-gui> <out dir>
+#   make_appimage.sh <dir with freerouting-rs and freerouting-gui> <out dir>
 #
 # Why not `cargo packager -f appimage`: with cargo-packager 0.11.8 (linuxdeploy inside) the
 # AppImage built and started on 2026-10-17 on Ubuntu 24.04 with Rust stable, but the GUI binary
@@ -33,7 +33,7 @@ fi
 
 app="$work/freerouting-rs.AppDir"
 mkdir -p "$app/usr/bin" "$app/usr/share/applications" "$app/usr/share/doc/freerouting-rs"
-cp "$bins/freerouting-gui" "$bins/freerouting" "$app/usr/bin/"
+cp "$bins/freerouting-gui" "$bins/freerouting-rs" "$app/usr/bin/"
 cp "$repo/LICENSE" "$repo/THIRD_PARTY_NOTICES.md" "$app/usr/share/doc/freerouting-rs/"
 cp -r "$repo/LICENSES" "$app/usr/share/doc/freerouting-rs/LICENSES"
 cp "$repo/crates/freerouting-gui/icons/icon-256.png" "$app/freerouting-gui.png"

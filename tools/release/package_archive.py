@@ -5,7 +5,7 @@
 
 Writes `freerouting-rs-<version>-<platform>.tar.gz` (`.zip` for a platform
 starting with `windows`) holding one top-level directory of the same name
-with: the two binaries (`freerouting`, `freerouting-gui`, `.exe` on Windows),
+with: the two binaries (`freerouting-rs`, `freerouting-gui`, `.exe` on Windows),
 `kicad-plugin/` (without caches and tests), `README.md`, `LICENSE`,
 `THIRD_PARTY_NOTICES.md` and `LICENSES/` (F04.1: every archive carries the
 notices). The archive is reproducible: entries are sorted, mtimes are fixed
@@ -42,7 +42,7 @@ def collect(repo, bin_dir, platform):
     """[(archive-relative path, source Path, executable)] sorted by path."""
     exe = ".exe" if platform.startswith("windows") else ""
     entries = []
-    for name in ("freerouting", "freerouting-gui"):
+    for name in ("freerouting-rs", "freerouting-gui"):
         src = Path(bin_dir) / (name + exe)
         if not src.is_file():
             raise SystemExit(f"missing binary: {src}")

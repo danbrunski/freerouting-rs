@@ -1,6 +1,6 @@
-"""The plugin's route path against the real `freerouting` CLI (K02.1 to K02.4).
+"""The plugin's route path against the real `freerouting-rs` CLI (K02.1 to K02.4).
 
-Skipped, with the reason, when no `freerouting` that routes is found: the
+Skipped, with the reason, when no `freerouting-rs` that routes is found: the
 directory in `FREEROUTING_RS_BIN`, else `target/release` or `target/debug` of
 the repository. Boards come from `fixtures/` (small ones; each test routes
 for a few seconds, longer in a debug build).
@@ -32,7 +32,7 @@ def find_router():
         candidates.append(os.environ["FREEROUTING_RS_BIN"])
     candidates += [str(REPO / "target" / "release"), str(REPO / "target" / "debug")]
     for d in candidates:
-        exe = os.path.join(d, "freerouting" + tools.EXE_SUFFIX)
+        exe = os.path.join(d, "freerouting-rs" + tools.EXE_SUFFIX)
         if os.path.isfile(exe):
             return exe
     return None
@@ -42,11 +42,11 @@ def find_router():
 def router():
     exe = find_router()
     if exe is None:
-        pytest.skip("no freerouting executable (set FREEROUTING_RS_BIN or build target/release)")
+        pytest.skip("no freerouting-rs executable (set FREEROUTING_RS_BIN or build target/release)")
     probe = subprocess.run([exe, "--capabilities"], capture_output=True, text=True, timeout=60)
     if probe.returncode != 0 or '"progress"' not in probe.stdout:
         pytest.skip(f"{exe} predates C08 (--capabilities, --progress json)")
-    return tools.Tool("freerouting", exe)
+    return tools.Tool("freerouting-rs", exe)
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def start(router, dsn, ses, work, args=()):
 
 
 def drc(router, dsn, ses, report=None):
-    """`freerouting -de <dsn> <ses> -drc [report]`: (log text, report dict)."""
+    """`freerouting-rs -de <dsn> <ses> -drc [report]`: (log text, report dict)."""
     args = ["-de", str(dsn), str(ses), "-drc"] + ([str(report)] if report else [])
     done = subprocess.run([str(router.exe), *args], capture_output=True, text=True, timeout=300)
     assert done.returncode == 0, done.stdout + done.stderr
@@ -127,7 +127,7 @@ def test_stop_after_the_first_route_event_keeps_a_loadable_board(router, board):
     assert run.stop() is True
     assert run.wait(timeout=600) == 0, "\n".join(run.lines[-15:])
     assert run.stopped and run.state.state == "completed" and run.ses_written()
-    # `freerouting -de dsn ses -drc` loads the session with no import error.
+    # `freerouting-rs -de dsn ses -drc` loads the session with no import error.
     log, _ = drc(router, dsn, ses)
     assert "SES file loaded for DRC:" in log and "Failed to load" not in log and "rror" not in log, log
     # The plugin never leaves a temp file behind.

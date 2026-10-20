@@ -21,7 +21,7 @@ shift 4
 [ "${1:-}" = "--" ] && shift
 case "$arm" in dsn|kicad_pcb) ;; *) echo "arm must be dsn or kicad_pcb" >&2; exit 2;; esac
 for f in "$board" "$opts"; do [ -f "$f" ] || { echo "no such file: $f" >&2; exit 2; }; done
-router="${FREEROUTING_BIN:-}"; [ -x "$router" ] || { echo "set FREEROUTING_BIN to the freerouting executable" >&2; exit 2; }
+router="${FREEROUTING_BIN:-}"; [ -x "$router" ] || { echo "set FREEROUTING_BIN to the freerouting-rs executable" >&2; exit 2; }
 command -v kicad-cli > /dev/null || { echo "kicad-cli not found" >&2; exit 2; }
 here="$(cd "$(dirname "$0")" && pwd)"; repo="$(cd "$here/../.." && pwd)"
 headless="$repo/kicad-plugin/headless_run.py"

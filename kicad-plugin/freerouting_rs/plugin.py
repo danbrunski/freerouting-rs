@@ -248,7 +248,7 @@ class Dialog(wx.Dialog):
         def found(tool):
             return tool.describe() if tool else "not found"
 
-        # Runs `freerouting --version` (up to 10 s) before the dialog shows.
+        # Runs `freerouting-rs --version` (up to 10 s) before the dialog shows.
         self.router_version = tools.query_version(self.router) if self.router else None
         if self.router:
             self.version_status, self.version_message = version.check(self.router_version)

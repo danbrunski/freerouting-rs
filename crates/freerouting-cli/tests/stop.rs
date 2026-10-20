@@ -50,7 +50,7 @@ fn spawn(
 ) -> (std::process::Child, std::path::PathBuf) {
     let dir = scratch(name);
     copy_fixtures(&dir, &[fixture]);
-    let mut command = Command::new(env!("CARGO_BIN_EXE_freerouting"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_freerouting-rs"));
     command
         .args(["-de", fixture, "-do", "out.ses"])
         .args(args)

@@ -13,14 +13,16 @@ def test_plugin_version_equals_workspace_version():
 
 
 def test_parse_router_version():
-    assert version.parse_router_version("freerouting 0.1.0 (abc1234)\n") == (0, 1, 0, "abc1234")
-    assert version.parse_router_version("freerouting 1.22.3") == (1, 22, 3, None)
-    assert version.parse_router_version("\nfreerouting 0.1.0-rc1 (deadbee)") == (0, 1, 0, "deadbee")
-    assert version.parse_router_version("freerouting 0.1.0 (abc1234)\nmore") == (0, 1, 0, "abc1234")
+    assert version.parse_router_version("freerouting-rs 0.1.0 (abc1234)\n") == (0, 1, 0, "abc1234")
+    assert version.parse_router_version("freerouting-rs 1.22.3") == (1, 22, 3, None)
+    assert version.parse_router_version("\nfreerouting-rs 0.1.0-rc1 (deadbee)") == (0, 1, 0, "deadbee")
+    assert version.parse_router_version("freerouting-rs 0.1.0 (abc1234)\nmore") == (0, 1, 0, "abc1234")
     # C08's real line: "(git <sha>)".
-    line = "freerouting 0.1.0 (git 813663cea882)"
+    line = "freerouting-rs 0.1.0 (git 813663cea882)"
     assert version.parse_router_version(line) == (0, 1, 0, "813663cea882")
-    for bad in ("", None, "Usage: freerouting", "freerouting 0.1 (x)", "other 0.1.0 (x)", "freerouting x.y.z"):
+    # "freerouting 0.1.0 (x)": the old name, which Java's launcher also has.
+    for bad in ("", None, "Usage: freerouting", "freerouting-rs 0.1 (x)", "other 0.1.0 (x)", "freerouting x.y.z",
+                "freerouting 0.1.0 (abc1234)"):
         assert version.parse_router_version(bad) is None
 
 
@@ -45,7 +47,7 @@ def test_check_unknown_is_allowed_with_warning():
 
 
 def query(make_fake_router, mode, **kw):
-    return tools.query_version(tools.Tool("freerouting", make_fake_router(mode)), **kw)
+    return tools.query_version(tools.Tool("freerouting-rs", make_fake_router(mode)), **kw)
 
 
 def test_fake_matching_version_accepted(make_fake_router):
@@ -78,4 +80,4 @@ def test_fake_sleeping_past_timeout_is_unknown(make_fake_router):
 
 
 def test_missing_executable_is_unknown(tmp_path):
-    assert tools.query_version(tools.Tool("freerouting", tmp_path / "nope")) is None
+    assert tools.query_version(tools.Tool("freerouting-rs", tmp_path / "nope")) is None

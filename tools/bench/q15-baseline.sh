@@ -5,7 +5,7 @@
 #
 # ARM is one of
 #   java-ref        score Java's route references (fixtures/reference/route/*.ses); runs nothing
-#   legacy          route each board with `freerouting --profile legacy`, then score the SES
+#   legacy          route each board with `freerouting-rs --profile legacy`, then score the SES
 #   enhanced-sweep  route with `--profile enhanced --router.autorouter.sweep=free
 #                   --router.autorouter.sweep_passes=2`, then score the SES
 #
@@ -23,7 +23,7 @@
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
-FREEROUTING=${FREEROUTING:-$ROOT/target/release/freerouting}
+FREEROUTING=${FREEROUTING:-$ROOT/target/release/freerouting-rs}
 FREEROUTING_DEV=${FREEROUTING_DEV:-$ROOT/target/release/freerouting-dev}
 ARM=${1:-}
 OUT=${2:-}
@@ -36,7 +36,7 @@ case "$ARM" in
 esac
 mkdir -p "$OUT"
 [[ -x "$FREEROUTING_DEV" ]] || { echo "build freerouting-dev first ($FREEROUTING_DEV)" >&2; exit 2; }
-[[ "$ARM" == java-ref || -x "$FREEROUTING" ]] || { echo "build freerouting first ($FREEROUTING)" >&2; exit 2; }
+[[ "$ARM" == java-ref || -x "$FREEROUTING" ]] || { echo "build freerouting-rs first ($FREEROUTING)" >&2; exit 2; }
 
 # fixture name and its pass bound in tools/java-reference/route-bounds.tsv
 BOARDS=(

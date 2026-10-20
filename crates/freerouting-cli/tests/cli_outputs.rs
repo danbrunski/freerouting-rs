@@ -259,7 +259,7 @@ fn existing_output_is_deleted_at_start() {
 #[test]
 fn killed_run_leaves_no_partial_file() {
     let dir = dir_with_fixture("killed");
-    let status = std::process::Command::new(env!("CARGO_BIN_EXE_freerouting"))
+    let status = std::process::Command::new(env!("CARGO_BIN_EXE_freerouting-rs"))
         .args([
             "-de",
             FIXTURE,

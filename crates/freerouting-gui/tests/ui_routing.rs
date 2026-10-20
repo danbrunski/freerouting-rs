@@ -303,7 +303,7 @@ fn gui_and_cli_write_identical_ses() {
         let gui = write_ses(&board(&h), &design, SesStyle::Java);
         let cli = cli_ses(file, &dir);
         if let Ok(dump) = std::env::var("G07_DUMP_SES") {
-            // For comparing with the real `freerouting -de x.dsn -do y.ses -mp 3`.
+            // For comparing with the real `freerouting-rs -de x.dsn -do y.ses -mp 3`.
             std::fs::write(
                 std::path::Path::new(&dump).join(format!("{file}.gui.ses")),
                 &gui,

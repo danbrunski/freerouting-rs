@@ -1,6 +1,6 @@
 USAGE
-  freerouting -de <design.dsn> -do <output.ses> [PARAMETERS]
-  freerouting -de <design.dsn> -drc [report.json] [PARAMETERS]
+  freerouting-rs -de <design.dsn> -do <output.ses> [PARAMETERS]
+  freerouting-rs -de <design.dsn> -drc [report.json] [PARAMETERS]
 
 Settings are read from, in order of priority (the last wins): the built-in
 defaults, the routing profile, the settings file, the DSN file,
@@ -99,7 +99,7 @@ NOT SUPPORTED
 
 PLUGIN FLAGS (not in Java)
   --version
-      Print one line, `freerouting <version> (git <sha>)`, and exit.
+      Print one line, `freerouting-rs <version> (git <sha>)`, and exit.
   --capabilities
       Print what this build can do as JSON (version, output formats, every
       flag, exit codes, schema versions, stage ids) and exit.

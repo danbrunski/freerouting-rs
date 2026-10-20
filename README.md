@@ -2,7 +2,7 @@
 
 A Rust port of [Freerouting](https://github.com/freerouting/freerouting), the open-source
 Specctra DSN/SES autorouter for printed circuit boards. The port has three parts:
-- `freerouting`, a command line that routes a board;
+- `freerouting-rs`, a command line that routes a board;
 - `freerouting-gui`, a desktop app for viewing, routing and editing;
 - a KiCad plugin that routes the board open in KiCad's PCB editor.
 
@@ -153,12 +153,13 @@ The plugin's own documentation: [kicad-plugin/README.md](kicad-plugin/README.md)
 
 ```
 cargo build --release -p freerouting-cli -p freerouting-gui
-target/release/freerouting -de board.dsn -do board.ses             # route
-target/release/freerouting -de board.kicad_pcb -do routed.kicad_pcb  # a KiCad board, directly
-target/release/freerouting-gui fixtures/Issue754-avionics_hub.dsn    # the desktop app
+target/release/freerouting-rs -de board.dsn -do board.ses               # route
+target/release/freerouting-rs -de board.kicad_pcb -do routed.kicad_pcb  # a KiCad board, directly
+target/release/freerouting-gui fixtures/Issue754-avionics_hub.dsn       # the desktop app
 ```
 
-`freerouting --help` lists every option.
+`freerouting-rs --help` lists every option. The command is `freerouting-rs`, not Java
+Freerouting's `freerouting`, so the two can be installed side by side.
 
 The app opens a `.dsn` (optionally with its `.ses` as a second argument) or a `.kicad_pcb`, from
 the command line, from File > Open, or by dropping the file on the window. Scroll to zoom, drag to
@@ -177,7 +178,7 @@ OpenGL driver). Under WSL it runs through WSLg.
 | `freerouting` | The routing engine: board, rules, DRC, autorouter, optimizer |
 | `freerouting-krt` | Routing stages ported from KiCadRoutingTools |
 | `freerouting-stages` | The full stage registry (engine plus KRT stages) the CLI and GUI route with |
-| `freerouting-cli` | The `freerouting` command line |
+| `freerouting-cli` | The `freerouting-rs` command line |
 | `freerouting-gui` | The `freerouting-gui` desktop app (egui/eframe, wgpu) |
 | `freerouting-dev` | Developer tools: benchmarks, parity checks, the board corpus |
 

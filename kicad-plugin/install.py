@@ -96,7 +96,7 @@ def disable_shadow(folder, version_dir):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--bin-dir", help="folder holding freerouting(.exe) and freerouting-gui(.exe)")
+    ap.add_argument("--bin-dir", help="folder holding freerouting-rs(.exe) and freerouting-gui(.exe)")
     ap.add_argument("--wsl-bin-dir", help="Windows only: Linux folder inside WSL holding the executables")
     ap.add_argument("--wsl-distro", default="", help="WSL distribution to use (default: WSL's default)")
     ap.add_argument("--kicad-version", help="KiCad user folder version, e.g. 10.0")
