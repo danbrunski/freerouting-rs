@@ -1,0 +1,250 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N05.3-pin-escape",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/N05-promote-accepted-stages.md (N05.3); Q21's report: promotion needs a preregistered N05-style measurement on at least 3 boards",
+  "question": "Under profile enhanced at main 980fd6a, does router.fanout.pin_escape = straight (Q21: X10's straight stubs at max(board minimum, min(class width, neck-down width)) on parts with edge rows at a pitch of at most 0.65 mm, before the fanout) keep the KiCad-unconnected total within N02's totals rule (accept no-regress) and lower than off's, with no routing-caused manufacturing breach, no via in a pad and no copper below the Board Setup minimums that off does not have, on seven KiCad 6+ boards each with a part the stage acts on?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "mydevboard-rp2040dev": 7,
+      "canary-pwr": 10,
+      "vfo-controller-catvfoctrl": 6,
+      "flight-computer-core-board": 5,
+      "ch32v003-usb-devboard-ch32v003-usb-devboard": 4,
+      "solarmeshtasticnode-meshtasticnode-bq25185": 6,
+      "cc1101-module-cc1101-module": 3
+    },
+    "min_boards": 3
+  },
+  "noise_why": "canary-pwr 10 (N02: the canary-pwr variants' spread, as every N05 registration); the other rows max(2, ceil(5 % of connections)), connections = pad-to-pad connections of the board (sum over nets of pads - 1, pcbnew 10.0.7 on the files hashed below, counted before any arm ran): mydevboard 130 -> 7, vfo-controller 113 -> 6, flight-computer 98 -> 5, ch32v003 74 -> 4, solarmeshtastic 102 -> 6, cc1101-module 43 -> 3. Set noise sqrt(sum of squares) = 16.46",
+  "engine": "freerouting-rs release CLI of main 980fd6a, one Linux build for both arms (cargo build --release -p freerouting-cli -p freerouting-dev in the detached worktree target/orchestrator/n05pe/eng, CARGO_TARGET_DIR=target/orchestrator/n05pe/target, CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0; its sha256 in the done note); the plugin of the same worktree (kicad-plugin/headless_run.py); KiCad 10.0.7",
+  "arms": {
+    "enhanced": {
+      "engine": "as `engine`",
+      "command": "ulimit -v 8000000; timeout -k 10 LIMIT tools/kicad-oracle/grade.sh --out OUT/enhanced/BOARD --export plugin OUT/enhanced.options.json PROJECT -- ENGINE -de {DSN} -do {SES} --gui.enabled=false -mp 1 --router.scoring.start_ripup_costs=1500",
+      "options": {
+        "schema": 5,
+        "profile": "enhanced"
+      },
+      "settings": {},
+      "what": "baseline: the plugin's default enhanced run (its export fix-ups, sweep, keepouts and Board Setup minimums as the plugin passes them), one routing pass and rip-up start cost 1500 for time (as Q21.4); no pin escape"
+    },
+    "enhanced+pin_escape": {
+      "engine": "as `engine`",
+      "command": "as enhanced with OUT/enhanced+pin_escape.options.json and --out OUT/enhanced+pin_escape/BOARD",
+      "options": {
+        "schema": 5,
+        "profile": "enhanced",
+        "pin_escape": true
+      },
+      "settings": {
+        "router.fanout.pin_escape": "straight"
+      },
+      "what": "candidate: enhanced plus the plugin's pin-escape checkbox, which passes --router.fanout.pin_escape=straight"
+    }
+  },
+  "baseline_arm": "enhanced",
+  "candidate_arm": "enhanced+pin_escape",
+  "boards": {
+    "set": "tools/bench/sets/n05-pin-escape.txt",
+    "eligibility": "decided from the inputs before any route: a row is eligible when the board has a part freerouting_krt::fanout::qfn::qualifying_parts qualifies (X10's frame analysis: 4 or 2 opposite edge rows, at least 8 side pins, pitch at most 0.65 mm), measured by `cargo test --release -p freerouting-krt --test qfn_escape qualifying_parts_on_a_set -- --ignored` (load only, no routing) on the 30 corpus projects' prepped DSNs, the plugin-exported DSNs of the 18 KiCad 10.0.7 demo boards and canary-pwr's: 23 of the 30 corpus projects, 9 of the 18 demo boards and canary-pwr qualify. The rows are the eligible KiCad 6+ projects (own .kicad_pro) that are small enough to route in about 2 minutes or less per arm (at most 310 pad-to-pad connections, from the connection counts below, and a qualifying part of 10 or more side pins at 0.5 mm or finer, or canary-pwr's). Every row listed is run; none is dropped after a number",
+    "rows": {
+      "mydevboard-rp2040dev": {
+        "board": "mydevboard-rp2040dev",
+        "input": "target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb",
+        "project": "target/corpus/projects/mydevboard-rp2040dev",
+        "connections": 130,
+        "timeout_s": 120,
+        "qualifying_parts": "U1 56 pins at 0.4 mm, J1 20 at 0.5 mm"
+      },
+      "canary-pwr": {
+        "board": "canary-pwr",
+        "input": "target/orchestrator/q21/canary-pwr-9511d9a3/canary-pwr.kicad_pcb",
+        "project": "target/orchestrator/q21/canary-pwr-9511d9a3",
+        "connections": 309,
+        "timeout_s": 600,
+        "qualifying_parts": "U1 38 pins at 0.5 mm, U3 10 at 0.5 mm, U6 and U8 8 at 0.65 mm"
+      },
+      "vfo-controller-catvfoctrl": {
+        "board": "vfo-controller-catvfoctrl",
+        "input": "target/corpus/projects/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb",
+        "project": "target/corpus/projects/vfo-controller-catvfoctrl",
+        "connections": 113,
+        "timeout_s": 120,
+        "qualifying_parts": "U1 48 pins at 0.5 mm"
+      },
+      "flight-computer-core-board": {
+        "board": "flight-computer-core-board",
+        "input": "target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb",
+        "project": "target/corpus/projects/flight-computer-core-board",
+        "connections": 98,
+        "timeout_s": 120,
+        "qualifying_parts": "U5 28 pins at 0.5 mm, U4 8 at 0.65 mm"
+      },
+      "ch32v003-usb-devboard-ch32v003-usb-devboard": {
+        "board": "ch32v003-usb-devboard-ch32v003-usb-devboard",
+        "input": "target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb",
+        "project": "target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard",
+        "connections": 74,
+        "timeout_s": 120,
+        "qualifying_parts": "U3 20 pins at 0.4 mm, J1 20 at 0.5 mm"
+      },
+      "solarmeshtasticnode-meshtasticnode-bq25185": {
+        "board": "solarmeshtasticnode-meshtasticnode-bq25185",
+        "input": "target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb",
+        "project": "target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185",
+        "connections": 102,
+        "timeout_s": 120,
+        "qualifying_parts": "U1 10 pins at 0.4 mm"
+      },
+      "cc1101-module-cc1101-module": {
+        "board": "cc1101-module-cc1101-module",
+        "input": "target/corpus/projects/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb",
+        "project": "target/corpus/projects/cc1101-module-cc1101-module",
+        "connections": 43,
+        "timeout_s": 120,
+        "qualifying_parts": "U1 20 pins at 0.5 mm"
+      }
+    },
+    "files": {
+      "mydevboard-rp2040dev": "ae2d86d1f74f27f1a1ae549c5dc03920cb1923dd01c67994b15940798df8f703",
+      "canary-pwr": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "vfo-controller-catvfoctrl": "d94eb1696dfcb244058f9b438a61ed31db9093ce36fd2e5f576fe98b417a0def",
+      "flight-computer-core-board": "04ba05dff4a9058be6f61120125120459b80c0febc48e089481aeedec8aa5e30",
+      "ch32v003-usb-devboard-ch32v003-usb-devboard": "1f124ae435d7b8198d3e0224555a0ab96881f39148e4b42a84761be1d323b988",
+      "solarmeshtasticnode-meshtasticnode-bq25185": "0279deb206ba01ace9711a99de79043e6ea7c79000d272319e0c7c6e0e07b0c0",
+      "cc1101-module-cc1101-module": "e2dd0d5e750983fc6bfb6a2cab1752edf41e695d9c7ecb8bb4600e6892ecbabe"
+    },
+    "why": "mydevboard (U1 RP2040 QFN-56 at 0.4 mm) and canary-pwr (U1 at 0.5 mm) are Q21.4's two rows, whose result (57 -> 44 and 52 -> 51) is why the option exists; the five others are KiCad projects with a qualifying part that Q21 did not route (seen_before_registration). Paths are relative to the main checkout's root (read only); the canary row is canary's hardware/canary-pwr-rev1.0 at 9511d9a3 (target/orchestrator/q21/canary-pwr-9511d9a3, written by `git -C ../canary show 9511d9a3:hardware/canary-pwr-rev1.0/<file>`)"
+  },
+  "grading": "every route inside tools/kicad-oracle/grade.sh --export plugin (the plugin's export and fix-ups, the router flags it passes with the Board Setup minimums, its SES import; KiCad 10.0.7 DRC under the project's own rules); one KiCad grade per distinct session: when the two arms' sessions on a row are byte-identical the baseline's grade is used for both and the second grade is discarded unread; kicad-cli only while `pgrep -a kicad-cli` shows none, one at a time; vias in pads by tools/kicad-oracle/via_in_pad.py on the routed board",
+  "limits": "ulimit -v 8000000 on every route; timeout -k 10 on the whole grade.sh call, 600 s for canary-pwr and 120 s for the other rows; a run that hits its limit is recorded as aborted = 1 and TIMEOUT and is not graded or rerun; an arm with an aborted route is not accepted",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "manufacturing_breaches",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "connections",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "below_minimum_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "manufacturing_breaches_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drc_real",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad, below_minimum, manufacturing_breaches": "hard guards, no new breach versus baseline (decided 2026-10-18: no registration carries a hard guard the baseline already breaks): the arm's raw count minus the enhanced arm's raw count on the same row, floored at 0, so 0 in the enhanced arm by definition; the raw counts are reported as <name>_raw, and the report says whether each is 0 in both arms (expected: Q21.4 measured 0 in both arms on both its rows)",
+    "via_in_pad_raw": "tools/kicad-oracle/via_in_pad.py's vias_in_pads on the routed board",
+    "below_minimum_raw": "the summary's copper.below_minimum track_width + via_diameter + via_drill (copper under the Board Setup minimums, counted from the routed board's geometry)",
+    "manufacturing_breaches_raw": "the sum of the routing-caused KiCad items (summary drc_real_by_type) of the manufacturing rule types: clearance, copper_edge_clearance, hole_clearance, hole_to_hole, holes_co_located, track_width, via_diameter, annular_width, drill_out_of_range, microvia_drill_out_of_range, shorting_items, tracks_crossing, solder_mask_bridge, items_not_allowed; the other routing-caused types (via_dangling, track_dangling, starved_thermal and the rest) are reported in drc_real by type, not judged",
+    "kicad_unconnected": "summary unconnected_items of the routed board",
+    "unrouted": "the router's final unrouted count (its log's last `final score: ... (N unrouted`), reported",
+    "connections": "pad-to-pad connections of the board as counted in boards.rows",
+    "drc_real": "summary drc_real, every routing-caused type (starved_thermal included)",
+    "vias": "summary copper.vias",
+    "wall_seconds": "summary engine_seconds",
+    "aborted": "1 when the route hit its ulimit -v 8000000 or its timeout, else 0"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "N02's totals rule with accept no-regress, the other N05 registrations' form: freerouting-dev gate --prereg passes (0 refusals; every hard metric 0; the kicad_unconnected total not worse than the enhanced arm's by more than the set's noise; no board worse than twice its band; no aborted route) AND the candidate's kicad_unconnected total is lower than the enhanced arm's (change < 0; the stage exists to win connections back, so a tie does not promote it). Then router.fanout.pin_escape = straight joins ENHANCED. Otherwise the option stays off in both profiles and the verdict is recorded in N05.3. The plugin's checkbox and the CLI key stay either way.",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings; a timed-out route is recorded (aborted = 1) and not rerun",
+  "seen_before_registration": "Q21.4 (engine 6b59998 plus Q21.2-Q21.3, before Q20's output check) routed mydevboard-rp2040dev (off 57, straight 44 KiCad unconnected; 0 breaches) and canary-pwr 9511d9a3 (off 52, straight 51; 0 breaches), both arms, same flags. No other row has been routed with pin_escape = straight. Routes without it exist for flight-computer-core-board (Q17.4: 5 KiCad unconnected, 0.36 s) at older engines; none of the others has a number in this registration's form. The implementer routed nothing before this registration",
+  "not_registered": [
+    "pin_escape as anything but straight (it has no other value)",
+    "the optimizer, more passes or the plugin's full default (-mp unset), for time",
+    "boards over about 2 minutes per arm (CM5_MINIMA_3, tinytapeout-demo, RoyalBlue54L-Feather, jetson, vme-wren, video)",
+    "rows the gate's eligibility did not qualify (no part at a pitch of at most 0.65 mm with 8 side pins): eprom-card-80bus, macroprocessor-diode-matrix-rom-dip, mccx11, pcie-active-backplane, pcietest, picodebugger, slice-dcmt-bread-slice, interf_u, pic_programmer and the other demos listed by the eligibility run"
+  ],
+  "decision_table": {
+    "accepted": "N05 adds fanout.pin_escape = \"straight\" to ENHANCED (settings/profile.rs) with this measurement, a DIVERGENCES 'Profile enhanced' line, the profile test, a line under archived Q21",
+    "rejected": "the option stays off in both profiles; the verdict goes in N05.3"
+  },
+  "timing": "registered after the release CLI of main 980fd6a was built and the eligibility run measured, before any route of either arm on any row",
+  "amendments": []
+}

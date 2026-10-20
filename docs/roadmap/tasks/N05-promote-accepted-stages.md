@@ -462,8 +462,65 @@ Prerequisites: N01; each candidate's own accepted measurement.
     on `enhanced` at b98074e, which is this `enhanced` plus the setting. Q20 (the output check,
     `repair` in `enhanced`) may still promote.
 
-  *Partial 2026-10-20:* no run of N05.3's own is pending. The list waits for the measurements cut
-  to minutes on 2026-10-20 (decided 2026-10-20: measurement runs stay a few minutes): N03.3
-  (`prereg/N03.json`, new), N04.3 (`N04.json` amendment 3), Q04.4 (`Q04.json` amendment 2),
-  Q08.3, Q11.6, Q12.5 and Q16.5 (each amended), plus X13 and K11, which other
+  - **2026-10-20, accepted without a keep rule (Q20): `router.output_check = repair`.** Decided
+    2026-10-20: routed copper that breaks a board rule is never saved, a correctness rule joined
+    without a keep rule; its cost measured in Q20.6 (`docs/roadmap/prereg/Q20.json`). `ENHANCED`
+    entry in `settings/profile.rs`, DIVERGENCES "Profile `enhanced`" line `output_check`,
+    `tests/quality_output_check.rs::the_profiles_set_repair_and_off`.
+
+  - **2026-10-20, rejected (stays off in both profiles): `router.fanout.pin_escape = straight`**
+    (Q21's straight stubs at `max(board minimum, min(class width, neck-down width))` on parts with
+    edge rows at a pitch of at most 0.65 mm). Registration
+    `docs/roadmap/prereg/N05-pin-escape.json` (sha256 `8ebdf203…` before any number, no amendment),
+    pinned by `crates/freerouting-dev/tests/prereg_n05_pin_escape.rs` (4 tests); set
+    `tools/bench/sets/n05-pin-escape.txt`. Eligibility decided from the inputs, without routing:
+    `qualifying_parts_on_a_set` (load only) on the 30 corpus projects' prepped DSNs, the plugin-exported
+    DSNs of the 18 KiCad 10.0.7 demo boards and canary-pwr's: 23 of 30 corpus projects, 9 of 18 demo
+    boards and canary-pwr have a part X10 qualifies; the 7 rows are the small ones (at most 310
+    connections) with a qualifying part of 10 or more side pins at 0.5 mm or finer. Arms: `enhanced`
+    against `enhanced` plus the plugin's pin-escape checkbox (`--router.fanout.pin_escape=straight`);
+    one release build of main 980fd6a (`freerouting` sha256 `7fb07359…`), every route and KiCad 10.0.7
+    grade inside `tools/kicad-oracle/grade.sh --export plugin` (the plugin's export, fix-ups, Board
+    Setup minimums and import) with `-mp 1 --router.scoring.start_ripup_costs=1500`, `ulimit -v
+    8000000`, timeouts 120 s / 600 s (none hit), one grade per session (all 7 row pairs differ, so
+    14 grades). N02 totals rule, `accept: no-regress`, noise band max(2, ceil(5 % of connections)),
+    10 for canary-pwr; `freerouting-dev gate --records records.json --baseline baseline.json
+    --prereg ...`: **FAIL** on one hard clause, `ch32v003-usb-devboard.manufacturing_breaches = 2`
+    (0 refusals; totals verdict `reject` for that reason alone: total 156 → 147, −9 against set
+    noise 16.46, no board worse than twice its band).
+
+    | row | connections | KiCad unconnected off → straight | stubs | manufacturing breaches off / straight | drc_real | vias | wall s |
+    |---|---|---|---|---|---|---|---|
+    | mydevboard-rp2040dev | 130 | 57 → **55** | U1 56, J1 6 | 0 / 0 | 0 → 0 | 17 → 19 | 10.9 → 11.0 |
+    | canary-pwr 9511d9a3 | 309 | 52 → **51** | U1 33 (+4 widened), U3 5 (4 rejected), U6 3 (+2), U8 7 (+1) | 0 / 0 | 5 → 6 (starved_thermal) | 120 → 123 | 76.4 → 79.5 |
+    | vfo-controller-catvfoctrl | 113 | 13 → **11** | U1 25 | 0 / 0 | 2 → 4 (starved_thermal) | 26 → 25 | 0.45 → 0.93 |
+    | flight-computer-core-board | 98 | 6 → 7 | U4 6, U5 12 | 0 / 0 | 1 → 1 | 15 → 19 | 0.37 → 0.62 |
+    | ch32v003-usb-devboard | 74 | 17 → **15** | U3 19, J1 6 | **30 / 32** | 52 → 54 | 17 → 17 | 0.80 → 0.60 |
+    | solarmeshtastic-bq25185 | 102 | 1 → 1 | U1 7 (+1 via stub) | 0 / 0 | 1 → 2 (starved_thermal) | 47 → 48 | 1.9 → 2.1 |
+    | cc1101-module | 43 | 10 → **7** | U1 18 | 0 / 0 | 1 → 0 (via_dangling) | 7 → 6 | 0.75 → 0.49 |
+
+    Via in a pad 0 and copper below the Board Setup minimums 0 in all 14 runs. The one breach is
+    ch32v003's, and it is present in both arms: its `.kicad_dru` sets a 0.2 mm pad-to-track
+    clearance and a 0.33 mm PTH-to-track hole clearance as custom rules (conditions on plated pads
+    against tracks), which the DSN's clearance matrix does not express (the Q22 class), so the plain router breaks it 30 times (clearance 20, hole_clearance 9, hole_to_hole 1) and the
+    straight arm 32 (19, 11, 2). The 32 are pad-to-track and hole-to-track items of J1-J4's
+    through-hole pads and of vias, 1 of them at a pad of U3 or J1 (off: 3); items within 4 mm of U3
+    rise 7 → 17 because the session around U3 changed. I did not prove the +2 are not the stage's
+    doing. The registered hard clause is "no new breach versus the baseline" and counts them.
+    Straight lowers the total on 4 boards (mydevboard, canary-pwr, vfo-controller, cc1101), is neutral
+    on 1, and raises it by 1 on flight-computer-core-board (band 5). Verdict: rejected under the
+    registered clause; `fanout.pin_escape` stays off in both profiles, the checkbox and the CLI key stay.
+    Decided 2026-10-20: `pin_escape` is re-registered once Q22.5 brings `.kicad_dru` custom rules to
+    the router, with the absolute guard (zero routing-caused manufacturing breaches in each arm,
+    `docs/roadmap/routing-quality.md` order of importance item 1) instead of this registration's
+    "no new breach versus the baseline", on this set plus at least two eligible boards it did not
+    use. A metric that skips the rules the DSN lacks is not used: item 1 counts every board rule. mydevboard's 57 → 55
+    is less than Q21.4's 57 → 44 (engine 6b59998): main 980fd6a has Q18.5/Q18.7's margin and
+    mask apertures and Q20's repair, which Q21.4 did not.
+
+  *Partial 2026-10-20:* no run of N05.3's own is pending. The measurements the earlier note waited
+  for are closed and their checklists archived (N03.3, N04.3, Q04.4, Q08.3, Q11.6, Q12.5, X13;
+  their notes give the verdicts, none adds an `ENHANCED` entry; Q16.5 is above). What remains open: the
+  `pin_escape` re-registration after Q22.5 (decided above), and the measurements still pending in
+  K13.6 (the plugin's input default), Q22.8 (the clearance re-measurement) and K11, which other
   checklists own.

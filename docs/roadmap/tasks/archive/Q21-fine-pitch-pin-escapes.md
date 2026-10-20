@@ -200,3 +200,7 @@ minimums).
   zero vias in pads in both arms: the option is kept, off by default in both profiles.
   starved_thermal (a zone's thermal spokes, reported, not judged by the registration) is 5 → 6 on
   canary-pwr.
+
+  *N05.3 judged the promotion 2026-10-20* (`docs/roadmap/prereg/N05-pin-escape.json`, seven boards): total
+  156 -> 147 KiCad unconnected, but the gate failed one hard clause (ch32v003: 30 -> 32 manufacturing
+  breaches of custom rules the DSN lacks), so `pin_escape` stays off in both profiles. See N05.3.

@@ -1,0 +1,17 @@
+# N05.3 (docs/roadmap/prereg/N05-pin-escape.json): router.fanout.pin_escape = straight against
+# off, under profile enhanced. Each row is a KiCad 6+ project's .kicad_pcb, routed and graded
+# through the plugin's own export and import by
+# `tools/kicad-oracle/grade.sh --export plugin OPTIONS.json <the row's directory>`, so the
+# router gets the plugin's flags with the Board Setup minimums.
+# Eligibility is decided from the inputs: the board has a part freerouting_krt::fanout::qfn::
+# qualifying_parts qualifies (X10's frame: edge rows, at least 8 side pins, pitch at most
+# 0.65 mm); qualifying parts after each row, from qualifying_parts_on_a_set before any route.
+# Paths are relative to the main checkout's root (read only); the canary row is canary's
+# hardware/canary-pwr-rev1.0 at 9511d9a3 (Q21's copy).
+target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb  # U1 56 at 0.4, J1 20 at 0.5
+target/orchestrator/q21/canary-pwr-9511d9a3/canary-pwr.kicad_pcb  # U1 38 at 0.5, U3 10 at 0.5, U6 and U8 8 at 0.65
+target/corpus/projects/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb  # U1 48 at 0.5
+target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb  # U5 28 at 0.5, U4 8 at 0.65
+target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb  # U3 20 at 0.4, J1 20 at 0.5
+target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb  # U1 10 at 0.4
+target/corpus/projects/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb  # U1 20 at 0.5
