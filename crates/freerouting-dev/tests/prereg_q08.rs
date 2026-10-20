@@ -9,7 +9,10 @@
 //! 066c043306e327033f743a5a800c76b0c65eeb3f742d651b8bfa4f3ac455ec91, before
 //! any registered number. Amendment 1 (2026-10-18) discloses spot runs of
 //! both arms on five benchmark boards that preceded it (no effect seen) and
-//! changes nothing else; the hash below is the amended file's. The amendment it
+//! changes nothing else. Amendment 2 (decided 2026-10-20: measurement runs stay a
+//! few minutes) keeps the 8 quick benchmark boards and `canary-pwr-pours1`
+//! (`tools/bench/sets/quick-benchmark.txt`), drops the quiet-machine condition and
+//! names the determinism boards; the hash below is the amended file's. The amendment it
 //! announces (narrowing `files` to the eligible rows from the default arm's
 //! counts) and any later change go in its `amendments` with the reason and
 //! update the hash below in the same change.
@@ -38,9 +41,9 @@ fn the_q08_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert_eq!(prereg.names.cand, "earned-budget");
     let arms: Vec<&str> = prereg.arms.keys().map(String::as_str).collect();
     assert_eq!(arms, ["default", "earned-budget"]);
-    // The 16 benchmark boards and the 5 in-repository canary-pwr rows,
+    // Amendment 2: the 8 quick benchmark boards and canary-pwr-pours1,
     // before the eligibility amendment.
-    assert_eq!(prereg.boards.len(), 21);
+    assert_eq!(prereg.boards.len(), 9);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         &metrics[..4],
@@ -52,7 +55,7 @@ fn the_q08_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert_eq!(totals.noise.get("canary-pwr"), Some(&10.0));
     assert_eq!(totals.min_boards, 3);
     assert_eq!(totals.speed, None);
-    assert_eq!(prereg.amendments, 1);
+    assert_eq!(prereg.amendments, 2);
 }
 
 /// The candidate's command is the default's plus the router id, and the
@@ -101,6 +104,31 @@ fn the_registered_boards_hash_as_registered() {
 fn the_q08_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "faa4188e1f510e58e2d29963ba312a62e7815a420e4464ef986a7416d044be0a"
+        "0b82473af2ceedbc244c2fbacf0340f803040f53ec2e3edbe1fab3bbf94b8125"
     );
+}
+
+/// Amendment 2: every row is in the quick set, and the reason is the rule's.
+#[test]
+fn amendment_2_keeps_only_the_quick_rows() {
+    let text = std::fs::read_to_string(repo().join(FILE)).unwrap();
+    let json = Json::parse(&text).unwrap();
+    let Some(Json::Array(amendments)) = json.path("amendments") else {
+        panic!("amendments")
+    };
+    let reason = amendments[1].get("reason").and_then(Json::as_str).unwrap();
+    assert!(reason.starts_with("decided 2026-10-20: measurement runs stay a few minutes"));
+    let set = std::fs::read_to_string(repo().join("tools/bench/sets/quick-benchmark.txt")).unwrap();
+    let listed: Vec<&str> = set
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
+        .filter_map(|l| l.split_whitespace().next())
+        .collect();
+    let Some(Json::Object(files)) = json.path("boards.files") else {
+        panic!("boards.files")
+    };
+    let rows: Vec<&str> = files.keys().map(String::as_str).collect();
+    let mut sorted = listed.clone();
+    sorted.sort_unstable();
+    assert_eq!(rows, sorted);
 }

@@ -48,7 +48,7 @@ evidence.
 
 ## Checklist
 
-- [ ] **Q11.1: rip-cost sweep, no code.** `start_ripup_costs` ∈ {1500, 5000, 20000}
+- [~] **Q11.1: rip-cost sweep, no code.** `start_ripup_costs` ∈ {1500, 5000, 20000}
   and pass 1 with rip-up off, on the eligible boards. This bounds what Q11 can gain.
   - **Accept:** a table in the done note, with Q05.1 rip stats per arm.
   - *Not run 2026-10-18 (heavy run pending, the heavy slot is another agent's):* per eligible board
@@ -61,6 +61,36 @@ evidence.
     Operator decision (2026-10-18): the arm runs as `start_ripup_costs=1000000`, labelled
     "near-off" in the table (each item's rip cost is capped at `i32::MAX/100`, so rip-up is
     priced out, not switched off); Q11.1 stays no-code. The code here supports every other arm.
+  - *Partial 2026-10-20:* not run; cut to minutes (decided 2026-10-20: measurement runs stay a
+    few minutes). Amendment 1 of `docs/roadmap/prereg/Q11.json` (before any registered run;
+    sha256 `9a1c2d795c92c3849b745807debf2585397fad55f9729470e257c9ef4c0e783c`, re-pinned in
+    `crates/freerouting-dev/tests/prereg_q11.rs`, 4 passed) registers the sweep as arms `mp1`
+    (1500), `ripcost-5000`, `ripcost-20000` and `ripcost-near-off` (1000000) on the 15 quick rows
+    of `tools/bench/sets/q10-sweep-quick.txt` (route times and their sources in that file), every
+    command with `--router.special.diagnostics=rip-stats`; `ripcost-best` reuses the best arm's
+    runs. heavy run pending (one release build of main, `CARGO_BUILD_JOBS=2 cargo build --release
+    -p freerouting-cli`; from the repository root; one route at a time, every route under
+    `ulimit -v 8000000` and `timeout 600` for canary-pwr or `timeout 120` otherwise, which
+    `tools/bench/quick-arm.sh` applies; about 12 minutes: 4 canary-pwr pass-1 routes of about 44 s,
+    the quick rows' routes, and at most 4 KiCad grades of canary-pwr and 24 of the corpus rows),
+    with `B=target/release/freerouting; O=target/q11-q12; S=tools/bench/sets/q10-sweep-quick.txt;
+  F="--gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1
+  --router.special.diagnostics=rip-stats --stats json"; C="mydevboard-rp2040dev slice-dcmt-bread-slice
+  flight-computer-core-board laser-backplane-dvi-laserbackplane-dvi vfo-controller-catvfoctrl
+  mccx11-hardware-sx1262-433mhz-reverse-engineering"; K=/home/thebo/code/canary/hardware/canary-pwr-rev1.0`:
+    1. `tools/bench/quick-arm.sh $B $O mp1 $S -- $F`, then for `c` in 5000, 20000:
+       `tools/bench/quick-arm.sh $B $O ripcost-$c $S -- $F --router.scoring.start_ripup_costs=$c`,
+       and `tools/bench/quick-arm.sh $B $O ripcost-near-off $S -- $F
+       --router.scoring.start_ripup_costs=1000000`;
+    2. one KiCad grade per distinct session: `for b in $C; do tools/bench/grade-distinct.sh $O $b
+       target/corpus/projects/$b mp1 ripcost-5000 ripcost-20000 ripcost-near-off; done;
+       tools/bench/grade-distinct.sh $O canary-pwr-9511d9a $K mp1 ripcost-5000 ripcost-20000
+       ripcost-near-off` (the 8 benchmark rows have no `.kicad_pcb`: the router's unrouted count);
+    3. the table: per arm and row, unrouted (`$O/<arm>/<board>.result.json` `board_statistics`),
+       KiCad unconnected, vias and the manifest's `rip_stats`; then Q11.json's amendment 2 writes
+       `eligible` (rows where `mp1` leaves an incomplete connection) and names `ripcost-best`.
+    Owner: this item, run in Q00's Q10-Q12 measurement family with Q11.6 and Q12.5 (Q12.5 reuses
+    the `mp1` runs).
 - [x] **Q11.2: the wrapper, arm `strict`.** Commit only if every victim connection
   re-lands.
   - **Accept:**
@@ -140,7 +170,7 @@ evidence.
     `the_factors_are_one_plus_f_times_k` (unit), `a_rip_factor_of_0_is_unset`, and the
     `strict+ripfactor` arm in `off_is_byte_identical` and `every_arm_is_deterministic`. Spot
     check on canary-pwr-9511d9a pass 1 (strict, f=2): 95 unrouted in 91.6 s.
-- [ ] **Q11.6: measurement** (prereg draft `docs/roadmap/prereg/Q11.json (draft)`).
+- [~] **Q11.6: measurement** (prereg draft `docs/roadmap/prereg/Q11.json (draft)`).
   - Arms: `mp1` (baseline), `Q11.1-best`, `strict`, `count`, `depth1`, `strict+Q11.5`,
     each also followed by an Q10 sweep.
   - **Accept:** measured.
@@ -153,6 +183,22 @@ evidence.
     `--router.special.diagnostics=rip-stats` for the rip table; graded as Q11.json says, then
     `freerouting-dev gate --prereg docs/roadmap/prereg/Q11.json` per pair. Q11.1's
     `ripcost-best` value and the `eligible` list go into its `amendments` first.
+  - *Partial 2026-10-20:* not run; cut to minutes (decided 2026-10-20: measurement runs stay a
+    few minutes) by amendment 1 of Q11.json (sha256 `9a1c2d79…`, see Q11.1): 15 quick rows, arms
+    `mp1`, `ripcost-best` and `strict` only (`count`, `depth1`, `strict+ripfactor` and every
+    `+sweep` arm dropped, so the question's second half, after Q10's sweep, is not measured),
+    pairs (`mp1`, `strict`) and (`ripcost-best`, `strict`), one KiCad grade per distinct session.
+    Its `mp1` command is Q12.json's `mp1` (Q12.5 reuses the runs). heavy run pending, after
+    Q11.1's steps (same build and variables), about 5 minutes (one canary-pwr pass-1 route of
+    about 90 s with the wrapper, the quick rows, at most 7 KiCad grades):
+    1. `tools/bench/quick-arm.sh $B $O strict $S -- $F
+       --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict`;
+    2. `for b in $C; do tools/bench/grade-distinct.sh $O $b target/corpus/projects/$b mp1 strict;
+       done; tools/bench/grade-distinct.sh $O canary-pwr-9511d9a $K mp1 strict` (a session equal
+       to `mp1`'s shares its grade; `ripcost-best`'s grades are Q11.1's);
+    3. records as Q11.json's `grading` says, then `freerouting-dev gate --records <records>
+       --prereg docs/roadmap/prereg/Q11.json --eligible` (the pair `mp1`, `strict`) and the same
+       with `--arms ripcost-best,strict`; the job log's "Transactional rip-up" tally per row.
 
 ## Expected
 

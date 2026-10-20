@@ -155,6 +155,29 @@ run after the first restore that can't beat pass 1 would have saved about
   `docs/roadmap/prereg/Q04.json` narrows its rows), and the plugin's stop option (K09.7) waits for
   canary-pwr's row.
 
+  *Partial 2026-10-20:* not run; cut to minutes (decided 2026-10-20: measurement runs stay a few
+  minutes). The board clause "each board in `benchmark` and `owner`" is met by the quick rows:
+  amendment 2 of `docs/roadmap/prereg/Q04.json` (before any run under the amended candidate;
+  sha256 `28abf21d0c2e44d63960062c7b06bb2aa7aa075ede546c2275be087f26a1df6a`, re-pinned in
+  `crates/freerouting-dev/tests/prereg_q04.rs`, 3 passed) keeps the 8 benchmark boards whose
+  longest recorded route took at most 25 s and `canary-pwr-pours1`
+  (`tools/bench/sets/quick-benchmark.txt`, with each time's source), and makes this run's routes
+  Q04.4's registered runs. This replaces the remainder above. heavy run pending (one release
+  build of main, `CARGO_BUILD_JOBS=2 cargo build --release -p freerouting-cli`; from the
+  repository root; one route at a time; about 10 minutes, of which `canary-pwr-pours1` takes
+  about 8: two arms of about 100 s and its determinism check):
+  1. `mkdir -p target/q04; bash -c 'ulimit -v 8000000; GUARD=1 /home/thebo/code/freerouting-rs/target/orchestrator/q04/q04-heavy.sh target/release/freerouting
+     target/q04 120 <(grep -v canary-pwr tools/bench/sets/quick-benchmark.txt)' | tee
+     target/q04/table-quick.tsv` (default, quantum-stop with the repeat stop, and Q04.3's guard arm);
+  2. `bash -c 'ulimit -v 8000000; /home/thebo/code/freerouting-rs/target/orchestrator/q04/q04-heavy.sh target/release/freerouting target/q04 600 <(grep canary-pwr
+     tools/bench/sets/quick-benchmark.txt)' | tee target/q04/table-canary.tsv`;
+  3. `tools/determinism-check.sh --out target/q04/det -- bash -c "ulimit -v 8000000; timeout -k 10
+     600 target/release/freerouting -de fixtures/canary-pwr/canary-pwr-pours1.dsn -do {OUT}
+     --router.optimizer.enabled=false --router.autorouter.pass_controller=quantum-stop
+     --router.quantum_stop.repeat=true"`.
+  The rows whose `qs_stop` pass is below `last_improvement` go to Q04.4 (amendment 3 of
+  Q04.json); `identical` must be `yes` on every other row.
+
 - [~] **Q04.3 — Two-axis output guard.**
   Source: KRT `improvement_gate.py` (#600; on spartan6_4layer a run lost 36
   nets and gained 43 while disconnected pads went from 83 to 154).
@@ -202,6 +225,19 @@ run after the first restore that can't beat pass 1 would have saved about
   `GUARD=1 /home/thebo/code/freerouting-rs/target/orchestrator/q04/q04-heavy.sh target/release/freerouting <out> 7200 tools/bench/sets/benchmark.txt`
   (columns `guard_identical` and `guard_kept` must be `yes` on all 16 rows).
 
+  *Partial 2026-10-20:* the clause "on every `benchmark` board" is met by the quick benchmark
+  boards (decided 2026-10-20: measurement runs stay a few minutes; the other 7 take 49 to 702 s per
+  route, `tools/bench/sets/quick-benchmark.txt`). The nine-board release check above (2026-10-18:
+  the guard kept the routed board and every SES equalled the unguarded one on 433, ecc83, bm02,
+  sonde, bm07, bm01, bm10, interf_u and CNH) already covers those 8 boards and bm01, on the tree of
+  that date. heavy run pending: Q04.2's step 1 (`GUARD=1`) re-checks them on main; columns
+  `guard_identical` and `guard_kept` must be `yes` on its 8 rows. Proposed close note, if the
+  2026-10-18 check is taken as enough without a rerun: "*Done 2026-10-20:* the fixture clause as
+  above; the benchmark clause on the nine boards that route in under a minute (2026-10-18 release
+  check: guard kept the routed board, SES identical on all nine); the seven slow boards are out of
+  scope (decided 2026-10-20: measurement runs stay a few minutes)." Not ticked: the recommended
+  answer is to take Q04.2's step 1, which costs about a minute.
+
 - [~] **Q04.4 — Measurement where the stop changes results.**
   Only boards where Q04.2 found an earlier stop. Preregister (F03.4): arms
   default and `quantum-stop`; signal: wall time; guards: unrouted, vias,
@@ -225,6 +261,17 @@ run after the first restore that can't beat pass 1 would have saved about
   the amendment, then per arm and board the registered commands on a quiet machine, `freerouting-dev
   gate collect` and `freerouting-dev gate --prereg docs/roadmap/prereg/Q04.json`; if kept, the
   DIVERGENCES line with canary-pwr's time saved, and N05 decides `enhanced`.
+
+  *Partial 2026-10-20:* amendment 2 of Q04.json (sha256 `28abf21d…`, see Q04.2): rows from the
+  quick set only, Q04.2's runs of the two arms are the registered Q04.4 runs (nothing is routed
+  again), wall time as `q04-heavy.sh` prints it with no quiet-machine condition, the speed clause
+  unchanged. heavy run pending: Q04.2's steps 1 to 3 (about 10 minutes), then amendment 3 of
+  Q04.json narrowing `files` to the rows where quantum-stop stopped before the last improvement
+  (quoting `table-quick.tsv` and `table-canary.tsv`; CNH_Functional_Tester_1 is expected there,
+  Q04.5), records from those runs (`freerouting-dev ses-diff` statistics of each SES, the
+  `via_in_pad` count, the printed wall seconds), and `freerouting-dev gate --records <records>
+  --prereg docs/roadmap/prereg/Q04.json`; no further route. If fewer than 3 distinct rows remain,
+  the numbers go here and quantum-stop stays opt-in (the registration's procedure).
 - [x] **Q04.5 — Repeat stop.** Added 2026-10-18 from Q04.2's short check: on boards whose
   passes leave the same board (`Issue093-interf_u`: 18 passes, one board; CNH: 4 distinct
   boards), the history never holds 8 boards, so no restore check runs and `quantum-stop` saves

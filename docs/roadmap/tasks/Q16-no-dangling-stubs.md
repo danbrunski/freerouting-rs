@@ -218,6 +218,11 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     not KiCad's fill), and the hard clause becomes "no dangling via or track visible from the DSN";
     (3) a new registration on boards Q16.3 did not use. Sessions with and without the setting:
     `target/canary-handoff/2026-10-18-q16/`.
+  - *Partial 2026-10-20:* measured; nothing of Q16.3 is left to run. Its remainder is Q16.4's
+    (measured, see there) and through it Q16.5's, cut to minutes on 2026-10-20. Proposed close
+    note once Q16.5 has its verdict: "*Done <date>:* measured as registered, gate FAIL on two hard
+    guards (table above); the setting stayed unset; the follow-up is Q16.4 and Q16.5 (verdict
+    <PASS/FAIL>)."
 - [~] **Q16.4 — Contacts counted as KiCad counts them, measured again.** Q16.3 failed on two
   stubs the stage judged by Java's normal contacts and by the DSN's plane outlines; the operator's
   decisions are in Q16.3's "Remains".
@@ -347,6 +352,12 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
     options that respect their Board Setup minimum (no plugin45 `min_trace_width_um`), (b) takes
     the connected-graph guard if it is adopted, and (c) judges `solder_mask_bridge` without KiCad's
     pair-picking noise (for example by aperture, or by grading twice). Q16 stays open.
+  - *Partial 2026-10-20:* measured; nothing of Q16.4 is left to run. Its remainder, the operator's
+    decision of 2026-10-18, is Q16.5 (amended 2026-10-20 to minutes: three boards, one grading per
+    session, `solder_mask_bridge` out of `drc_real`). Proposed close note once Q16.5 has its
+    verdict: "*Done <date>:* the code, fixtures and known limit as above; measured as registered,
+    gate FAIL on four hard guards (table and causes above); the follow-up is Q16.5 (verdict
+    <PASS/FAIL>)."
 - [~] **Q16.5 — Connected contacts, measured on fresh boards.** Q16.4 failed on its options (the
   plugin45 width below two demos' Board Setup minimum), on a via its guard kept though its removal
   splits nothing, and on KiCad's `solder_mask_bridge` noise; the operator's decision of 2026-10-18
@@ -433,3 +444,31 @@ Prerequisites: Q10 (the sweep), N02 (the totals rule), F02.6 (the KiCad oracle).
        `../target/release/freerouting-dev gate --records $Q/records-q165.json --baseline $Q/baseline-q165.json
        --prereg docs/roadmap/prereg/Q16-5.json --write-baseline` and the same without
        `--write-baseline` for the verdict.
+
+  *Partial 2026-10-20:* not run; cut to minutes (decided 2026-10-20: measurement runs stay a few
+  minutes). Amendment 1 of `docs/roadmap/prereg/Q16-5.json` (before any route or grade; sha256
+  `bafc82c2fce24bda57cce527cc803bdc6946c9f573ee3843faff15ecdff36edc`, re-pinned in
+  `crates/freerouting-dev/tests/prereg_q16_5.rs`, 3 passed): boards canary-pwr, sonde-xilinx
+  (0.5 s graded, `target/orchestrator/p04/`) and complex_hierarchy (14.1 s graded,
+  `target/orchestrator/meas/runs/x02/`); One-Air-Max (no recorded route time) and
+  tinytapeout-demo (1038 to 1114 s, `target/orchestrator/vc/`) dropped; one KiCad DRC per session
+  and per input, with `drc_real` leaving `solder_mask_bridge` out (the Accept's alternative, chosen
+  before any number); the determinism rerun is routed and compared, not graded. The scripts are
+  `q165q-arm.sh`, `input165q.sh` and `analyze165q.py` in `$Q` (new; the registered ones with one
+  DRC, the cap and the three rows). This replaces the heavy run list above. heavy run pending
+  (`Q=/home/thebo/code/freerouting-rs/target/orchestrator/q165/scratch`; `R` the release CLI of main, `W` a checkout of main for the plugin scripts, both
+  defaulting to the main checkout; one at a time; about 15 minutes, of which canary-pwr's three
+  plugin-path routes and two gradings take most, up to about 25 if each route takes the 7
+  minutes its DSN can; the router runs under `ulimit -v 8000000` and `timeout 600` for canary-pwr
+  or `timeout 120` for the demos, inside `q165q-arm.sh`):
+  1. `for b in canary-pwr sonde-xilinx complex_hierarchy; do $Q/input165q.sh $b; done` (each
+     hash must equal the registration's);
+  2. `for b in canary-pwr sonde-xilinx complex_hierarchy; do R=$R W=$W $Q/q165q-arm.sh q165-base
+     $b; R=$R W=$W $Q/q165q-arm.sh q165-cleanup $b -- --router.cleanup.remove_stubs=true; GRADE=0
+     R=$R W=$W $Q/q165q-arm.sh q165-cleanup-rerun $b -- --router.cleanup.remove_stubs=true; cmp
+     $Q/runs/q165-cleanup/$b/work/$b.ses $Q/runs/q165-cleanup-rerun/$b/work/$b.ses && echo "CMP $b
+     identical"; done` (a `TIMEOUT` line stops the measurement);
+  3. `cd $W && python3 -I $Q/analyze165q.py docs/roadmap/prereg/Q16-5.json $Q/records-q165.json`,
+     then `freerouting-dev gate --records $Q/records-q165.json --baseline $Q/baseline-q165.json
+     --prereg docs/roadmap/prereg/Q16-5.json --write-baseline` and the same without
+     `--write-baseline` for the verdict.

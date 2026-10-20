@@ -152,6 +152,36 @@ Prerequisites: N01.
   the router (`router_initial_unrouted` under `inside_pad`) leaves it open. Those boards decide
   whether vias get the rule. If the verdict passes, N05 adds `pad_contacts = inside_pad` to
   `ENHANCED` (N05.2's procedure).
+
+  *Partial 2026-10-20:* not run; cut to minutes (decided 2026-10-20: measurement runs stay a few
+  minutes). Amendment 3 of `docs/roadmap/prereg/N04.json` (before any graded number; sha256
+  `58f9ee9e2f7f534b76c542150b9f2ca069cfd6157372a7e901a40067668ec523`, re-pinned in
+  `crates/freerouting-dev/tests/prereg_n04.rs`, 3 passed) keeps 20 rows: 4 demos (complex_hierarchy,
+  ecc83-pp, pic_programmer, sonde xilinx) and 15 corpus projects whose longest recorded route took
+  at most 25 s, plus canary-pwr; the amendment gives each time and its `target/orchestrator/`
+  source and the 23 rows dropped (CM5_MINIMA_3, coldfire, RoyalBlue54L, tinytapeout, interf_u's
+  262 s graded run, five demos with no recorded time, and ten slow corpus boards).
+  `tools/bench/sets/n04-pad-contacts.txt` lists the kept rows. This replaces the command above.
+  heavy run pending (from the repository root, one board at a time; about 25 minutes, of which
+  canary-pwr's two routes and grades take up to about 15; the router runs under `ulimit -v
+  8000000` and `timeout 600` for canary-pwr or `timeout 120` otherwise, KiCad without the cap):
+  ```
+  cargo build --release -p freerouting-cli -p freerouting-dev   # main, CARGO_BUILD_JOBS=2
+  R=$(pwd)/target/release
+  while IFS= read -r pcb; do case "$pcb" in '#'*|'') continue;; esac
+    b=$(basename "$pcb" .kicad_pcb); t=120; case "$pcb" in *canary*) t=600;; esac
+    for arm in center inside_pad; do
+      tools/kicad-oracle/grade.sh --out "target/n04/$arm/$b" --keep-tracks "$pcb" -- bash -c \
+        "ulimit -v 8000000; exec timeout -k 10 $t $R/freerouting -de '{DSN}' -do '{SES}' --gui.enabled=false --router.pad_contacts=$arm"
+      python3 tools/kicad-oracle/via_in_pad.py "target/n04/$arm/$b/routed/$(basename "$pcb")" \
+        "target/n04/$arm/$b/via_in_pad.json"
+    done
+  done < tools/bench/sets/n04-pad-contacts.txt
+  ```
+  then the records and the gate as above (`freerouting-dev gate --prereg
+  docs/roadmap/prereg/N04.json ...`), one grade per distinct session (where `cmp` finds the two
+  arms' sessions equal, the `inside_pad` row takes the `center` grade), and the via-connectivity
+  count on the kept rows.
 - [x] **N04.4 — A trace end on a same-net trace is connected (T junction).** Under
   `inside_pad`, a trace end that lies on a segment or an inner corner of another trace of a
   common net on the same layer is a normal contact, as KiCad connects it. The walkers of N04.2

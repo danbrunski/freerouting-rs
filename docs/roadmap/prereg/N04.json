@@ -16,10 +16,10 @@
     },
     "min_boards": 3
   },
-  "engine": "freerouting-rs at origin/main 1939d8b (N04.1-N04.3, router.pad_contacts) with N04.4's diff (T junctions), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
+  "engine": "freerouting-rs release CLI of main at the run (amendment 3; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
   "arms": {
     "center": {
-      "engine": "freerouting-rs at origin/main 1939d8b (N04.1-N04.3, router.pad_contacts) with N04.4's diff (T junctions), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
+      "engine": "freerouting-rs release CLI of main at the run (amendment 3; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
       "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.pad_contacts=center",
       "settings": {
         "router.pad_contacts": "center"
@@ -27,7 +27,7 @@
       "what": "baseline: Java's rule, a trace end touches a pin only at its centre (unset)"
     },
     "inside_pad": {
-      "engine": "freerouting-rs at origin/main 1939d8b (N04.1-N04.3, router.pad_contacts) with N04.4's diff (T junctions), one release build for every arm; profile enhanced (the default) for both arms, so they differ only in router.pad_contacts; unset settings route as origin/main (N04 changes nothing while the key is unset)",
+      "engine": "freerouting-rs release CLI of main at the run (amendment 3; N04.1-N04.4 landed; one release build for every arm, its --version git sha in N04.3's note); profile enhanced (the default) for both arms, so they differ only in router.pad_contacts",
       "command": "freerouting -de {DSN} -do {SES} --gui.enabled=false {ROW_FLAGS} --router.pad_contacts=inside_pad",
       "settings": {
         "router.pad_contacts": "inside_pad"
@@ -52,12 +52,6 @@
     "set": "tools/bench/sets/n04-pad-contacts.txt",
     "eligibility": "every KiCad demo of the WSL KiCad 10.0.7 install (/usr/share/kicad/demos) with at least one track, except the three largest (video, vme-wren, jetson-agx-thor-baseboard: hours per arm); every corpus project (target/corpus/projects) with at least one track; canary-pwr at canary ab786fcc as committed (78 tracks). Chosen by these properties only, before any number; no row is dropped after a number",
     "rows": {
-      "demo-CM5_MINIMA_3": {
-        "board": "demo-CM5_MINIMA_3",
-        "input": "/usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "demo-complex_hierarchy": {
         "board": "demo-complex_hierarchy",
         "input": "/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb",
@@ -70,69 +64,15 @@
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
-      "demo-ecc83-pp_v2": {
-        "board": "demo-ecc83-pp_v2",
-        "input": "/usr/share/kicad/demos/ecc83/ecc83-pp_v2.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-interf_u": {
-        "board": "demo-interf_u",
-        "input": "/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-kit-dev-coldfire-xilinx_5213": {
-        "board": "demo-kit-dev-coldfire-xilinx_5213",
-        "input": "/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-multichannel_mixer-unrouted": {
-        "board": "demo-multichannel_mixer-unrouted",
-        "input": "/usr/share/kicad/demos/multichannel/multichannel_mixer-unrouted.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-multichannel_mixer": {
-        "board": "demo-multichannel_mixer",
-        "input": "/usr/share/kicad/demos/multichannel/multichannel_mixer.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-One-Air-Max": {
-        "board": "demo-One-Air-Max",
-        "input": "/usr/share/kicad/demos/openair-max/One-Air-Max.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "demo-pic_programmer": {
         "board": "demo-pic_programmer",
         "input": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
-      "demo-RoyalBlue54L-Feather": {
-        "board": "demo-RoyalBlue54L-Feather",
-        "input": "/usr/share/kicad/demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "demo-sonde-xilinx": {
         "board": "demo-sonde-xilinx",
         "input": "/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-StickHub": {
-        "board": "demo-StickHub",
-        "input": "/usr/share/kicad/demos/stickhub/StickHub.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "demo-tinytapeout-demo": {
-        "board": "demo-tinytapeout-demo",
-        "input": "/usr/share/kicad/demos/tiny_tapeout/tinytapeout-demo.kicad_pcb",
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
@@ -154,27 +94,9 @@
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
-      "eprom-card-80bus": {
-        "board": "eprom-card-80bus",
-        "input": "target/corpus/projects/eprom-card-80bus/eprom-card-80bus.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "fc-rom-vomitter-nescart": {
-        "board": "fc-rom-vomitter-nescart",
-        "input": "target/corpus/projects/fc-rom-vomitter-nescart/fc-rom-vomitter-nescart.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "flight-computer-core-board": {
         "board": "flight-computer-core-board",
         "input": "target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "healthypi-move-hw-pc-healthypi-move-sensor-v9": {
-        "board": "healthypi-move-hw-pc-healthypi-move-sensor-v9",
-        "input": "target/corpus/projects/healthypi-move-hw-pc-healthypi-move-sensor-v9/healthypi-move-hw-pc-healthypi-move-sensor-v9.kicad_pcb",
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
@@ -184,39 +106,9 @@
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
-      "loratracker-hardware-loratracker-hat": {
-        "board": "loratracker-hardware-loratracker-hat",
-        "input": "target/corpus/projects/loratracker-hardware-loratracker-hat/loratracker-hardware-loratracker-hat.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "m-fc-g474-rev-a-m-fc": {
-        "board": "m-fc-g474-rev-a-m-fc",
-        "input": "target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "macroprocessor-diode-matrix-rom-dip": {
         "board": "macroprocessor-diode-matrix-rom-dip",
         "input": "target/corpus/projects/macroprocessor-diode-matrix-rom-dip/macroprocessor-diode-matrix-rom-dip.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "microzed-carrier-board-microzed-carrier-board-v4": {
-        "board": "microzed-carrier-board-microzed-carrier-board-v4",
-        "input": "target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "miniscope-v4-miniscope-v4-rigid-flex": {
-        "board": "miniscope-v4-miniscope-v4-rigid-flex",
-        "input": "target/corpus/projects/miniscope-v4-miniscope-v4-rigid-flex/miniscope-v4-miniscope-v4-rigid-flex.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "moteus-moteus-c1": {
-        "board": "moteus-moteus-c1",
-        "input": "target/corpus/projects/moteus-moteus-c1/moteus-moteus-c1.kicad_pcb",
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
@@ -238,18 +130,6 @@
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
-      "overlord-overlord": {
-        "board": "overlord-overlord",
-        "input": "target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "pcie-active-backplane-pcie-active-backplane-x16-4layer": {
-        "board": "pcie-active-backplane-pcie-active-backplane-x16-4layer",
-        "input": "target/corpus/projects/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie-active-backplane-pcie-active-backplane-x16-4layer.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "pcietestpcb-pcietest": {
         "board": "pcietestpcb-pcietest",
         "input": "target/corpus/projects/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb",
@@ -259,18 +139,6 @@
       "picodebugger-picoprobetester": {
         "board": "picodebugger-picoprobetester",
         "input": "target/corpus/projects/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "pocketsdr-v3-0": {
-        "board": "pocketsdr-v3-0",
-        "input": "target/corpus/projects/pocketsdr-v3-0/pocketsdr-v3-0.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
-      "rio-iceshield-rio-iceshield": {
-        "board": "rio-iceshield-rio-iceshield",
-        "input": "target/corpus/projects/rio-iceshield-rio-iceshield/rio-iceshield-rio-iceshield.kicad_pcb",
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
@@ -298,12 +166,6 @@
         "ROW_FLAGS": "",
         "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
       },
-      "wisweep-driver-board": {
-        "board": "wisweep-driver-board",
-        "input": "target/corpus/projects/wisweep-driver-board/wisweep-driver-board.kicad_pcb",
-        "ROW_FLAGS": "",
-        "grade": "tools/kicad-oracle/grade.sh --keep-tracks with the arm command as the engine, plus tools/kicad-oracle/via_in_pad.py on the routed board"
-      },
       "canary-pwr": {
         "board": "canary-pwr",
         "input": "../canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
@@ -313,48 +175,25 @@
     },
     "why": "the boards where the contact rule can matter: laid out in KiCad, with tracks that the router keeps",
     "files": {
-      "demo-CM5_MINIMA_3": "123e209e6245cbcc344c1c70b425dcb44a12cd0a2d05f00a39d3f2e7ff307ffa",
       "demo-complex_hierarchy": "d5f4162d4c766448832723d139f9e0fcb88a17c82340f10f6f6dc6c2042f0d69",
       "demo-ecc83-pp": "0ab45f4f8c90ac877e3313a1888d875107f2be3fc2b2f40cfb7927873b35260c",
-      "demo-ecc83-pp_v2": "9be2caf4c257a93fc2b3904add1061a4d2e23cde502a7846513ae7db6b214c30",
-      "demo-interf_u": "a740ce7fde77ab6af191e23ece21e57d36bb3c29325879248520dcd9ab47b57e",
-      "demo-kit-dev-coldfire-xilinx_5213": "392cf6bf4b9b62beb435f965ccd7671a46decb17f947b74bfde482acd2132a5e",
-      "demo-multichannel_mixer-unrouted": "149b2dce16e0f59adb78f87068f4137b7dafca0e991a0b21fdd967c873fd5ee9",
-      "demo-multichannel_mixer": "44b7c119a0d05c98e9f294659879184038a5f6c30073c04d9536990429ca413e",
-      "demo-One-Air-Max": "a577ba5e2b337c9b827f3c30256161a1893da8303d278fb7db10dba4f02ea810",
       "demo-pic_programmer": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
-      "demo-RoyalBlue54L-Feather": "535dbe212f43a8bab12b23277e176a94ac9694177258af2981c0e7b08e4b7252",
       "demo-sonde-xilinx": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998",
-      "demo-StickHub": "cee5a90f8803791cc55498d2576ed1f3416060d37701a02d4ec2937073c76051",
-      "demo-tinytapeout-demo": "0d26bf9b6d561e32cf610d428541d6433e60b45e1838f34f73467e25b9144814",
       "cc1101-module-cc1101-module": "e2dd0d5e750983fc6bfb6a2cab1752edf41e695d9c7ecb8bb4600e6892ecbabe",
       "ch32v003-usb-devboard-ch32v003-usb-devboard": "1f124ae435d7b8198d3e0224555a0ab96881f39148e4b42a84761be1d323b988",
       "cm4-edge-ai-carrier-cm4-edge-ai-carrier": "602134459697fce219f88e4d5402530888b451890c62952b5c1f0392a5681626",
-      "eprom-card-80bus": "4c3ff03fe1f0465481273d768ff2617cff87e7d2f17b4f8362c06f93dea925d2",
-      "fc-rom-vomitter-nescart": "08ab09d1a2d513e31d7d2463b9eed42a5f40de45618d25a94df0b8a8ec1a4030",
       "flight-computer-core-board": "04ba05dff4a9058be6f61120125120459b80c0febc48e089481aeedec8aa5e30",
-      "healthypi-move-hw-pc-healthypi-move-sensor-v9": "1f79516638fd2f88af185c157b13f46502035a8797e74b8d91d0d252a15d7e53",
       "laser-backplane-dvi-laserbackplane-dvi": "460d984ce7fc0daff6143887ba542fea66d9a4ef49bb5fcd8b282ae18560d10d",
-      "loratracker-hardware-loratracker-hat": "25a7e42ec9d0a6da7da20dcd9e2bdb523a222f9aad1c920c7d97df1c26041814",
-      "m-fc-g474-rev-a-m-fc": "2f944a91d2d3ed83069d3653ddd1f667678e6fde3a947dac3e4f1926191dd621",
       "macroprocessor-diode-matrix-rom-dip": "c6f0b678c6eb1874d0bc674bf9cde843c3b98a88a7e12309b1a96b8349e194c4",
-      "microzed-carrier-board-microzed-carrier-board-v4": "529c36213c1d8321b7284c66793d309c9fb3ac34d1ce59b3dd01a1314ce3ff8a",
-      "miniscope-v4-miniscope-v4-rigid-flex": "55ddba14035ad8ddec3997bbecf677dc4d86a03b3719d2347e163ab59340084e",
-      "moteus-moteus-c1": "55009c8c05b55c7ac7426857832b37bf56279c9bd3b4f886e3262a0a83804c27",
       "mydevboard-rp2040dev": "ae2d86d1f74f27f1a1ae549c5dc03920cb1923dd01c67994b15940798df8f703",
       "nudac-nudac": "834cbf033cc031a4b1939cc0b2663ed3806fff3786cdf7805438f65b3ff13ba6",
       "openmuscle-flexgrid-om-flexgrid-rigid-pcb": "1905abd390a96afd4bd94c3226b8ced024cec93ee5aae7fcecb47bff90c88ea6",
-      "overlord-overlord": "04437ed7eea48eaf6f1c6b127752953c432d045595273fb38f6c3f495a40c34b",
-      "pcie-active-backplane-pcie-active-backplane-x16-4layer": "d807a3e1149d6596c4d49dbb40f073f4f5c67b4d362470b75584ec351d7f8b67",
       "pcietestpcb-pcietest": "feb6d267a8e946942a83840170686d37e1d1871e53fb26c7647ce308e4652477",
       "picodebugger-picoprobetester": "279bb309ae5b99b333a3218cc9f45ac726488b12bffcf726bfd1341610b4def3",
-      "pocketsdr-v3-0": "fdf3e54733ce14496f05d271701b373b99a7b6cb40c8f8c352b16d1f47fbff34",
-      "rio-iceshield-rio-iceshield": "f6c79eb8053af4d10e6c2b37090ccac70d5aeb155746a29c5114f2f9003e7f23",
       "slice-dcmt-bread-slice": "091fa9692123f23b2eb0a7c28399fa3b36a9499f0974df7cf8333b0b14f74150",
       "solarmeshtasticnode-meshtasticnode-bq25185": "0279deb206ba01ace9711a99de79043e6ea7c79000d272319e0c7c6e0e07b0c0",
       "vfo-controller-catvfoctrl": "d94eb1696dfcb244058f9b438a61ed31db9093ce36fd2e5f576fe98b417a0def",
       "vna-usb-pd": "864b97903b5d8d7ec52fec29a7c6881a69e5f606c349cd018205e6d27c1b79e3",
-      "wisweep-driver-board": "f7ba9a47b44a5097a4379873da4c93102d2f787805e1b5dd58ac588d54fa8b93",
       "canary-pwr": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1"
     }
   },
@@ -458,6 +297,12 @@
       "date": "2026-10-18",
       "reason": "rule widened again before any graded number (N04.4): a trace end whose cap overlaps a same-net trace's copper on its layer (a T junction) connects to that trace, as KiCad connects it; the amended rule left ecc83's last open connection, a track ending on another track's inner corner",
       "changes": "question and the inside_pad arm's description name the T junction; engine base moved from origin/main 9c49979 with N04's diff to origin/main 1939d8b (N04.1-N04.3 committed) with N04.4's diff; seen_before_registration adds the T-junction rule's ecc83 numbers; rows, metrics, arms' commands and the totals block unchanged"
+    },
+    {
+      "date": "2026-10-20",
+      "after": "the registration and amendments 1 and 2; before any registered route or grade of either arm on any row",
+      "reason": "decided 2026-10-20: measurement runs stay a few minutes: every row but canary-pwr routes in well under a minute, the whole run takes minutes, one KiCad grade per distinct session. The registered 43 rows (two arms each, three of them taking 7 to 18 minutes per route) would take hours",
+      "changes": "(1) Rows: boards.rows and boards.files keep 20 rows, the 19 whose longest recorded route took at most 25 s and canary-pwr; each time is the largest total.wall_seconds of a release CLI --stats JSON for the board's DSN, or the largest Rust engine_seconds of a tools/kicad-oracle summary.json, under target/orchestrator/<dir>/ (routes from scratch; with the tracks kept a route has less to do): demo-complex_hierarchy 14.1 s graded (meas/runs/x02); demo-ecc83-pp 0.0 s (q07), 3.2 s graded (k02); demo-pic_programmer 0.3 s (n06r4), 2.2 s graded (meas/runs/x02); demo-sonde-xilinx 0.5 s graded (p04); cc1101-module-cc1101-module 1.0 s (q07); ch32v003-usb-devboard-ch32v003-usb-devboard 0.8 s (q07); cm4-edge-ai-carrier-cm4-edge-ai-carrier 22.4 s (q07); flight-computer-core-board 0.5 s (q07); laser-backplane-dvi-laserbackplane-dvi 0.4 s (q07); macroprocessor-diode-matrix-rom-dip 1.1 s (q07); mydevboard-rp2040dev 18.9 s (q07); nudac-nudac 13.8 s (q07); openmuscle-flexgrid-om-flexgrid-rigid-pcb 12.1 s (q07); pcietestpcb-pcietest 8.9 s (q07); picodebugger-picoprobetester 0.3 s (q07); slice-dcmt-bread-slice 0.5 s (q07); solarmeshtasticnode-meshtasticnode-bq25185 1.6 s (q07); vfo-controller-catvfoctrl 1.0 s (q07), 1.8 s graded (q10); vna-usb-pd 4.8 s (q07); canary-pwr the canary-pwr row (3.7 to 199.1 s graded, k02; its DSN's default passes 414 to 452 s, n06-13, n06-g). Dropped for their route time or for having none recorded: demo-CM5_MINIMA_3 39.8 to 106.2 s graded (vc), demo-kit-dev-coldfire-xilinx_5213 446.1 s graded (k02), demo-RoyalBlue54L-Feather 92.6 to 140.1 s graded (vc), demo-tinytapeout-demo 1038.3 to 1113.9 s graded (vc), demo-interf_u 4.9 to 8.4 s routed (p04, q07) but 262.3 s in a graded run (meas/runs/x02), demo-ecc83-pp_v2, demo-multichannel_mixer, demo-multichannel_mixer-unrouted, demo-One-Air-Max and demo-StickHub (no recorded route time), eprom-card-80bus 86.2 s, fc-rom-vomitter-nescart 1222.4 s, healthypi-move 155.4 s, loratracker-hat 77.0 s, microzed-carrier 245.6 s (q07; 399.9 s graded, q13), miniscope-v4 350.9 s, moteus-c1 148.4 s, overlord 115.4 s, pcie-active-backplane 84.9 s, pocketsdr-v3-0 230.7 s, wisweep-driver-board 31.7 s (q07), m-fc-g474 22.6 s routed (q07) but 61.5 s graded (q13), rio-iceshield 27.9 s routed (q07) but 31.0 s graded (q10). tools/bench/sets/n04-pad-contacts.txt lists the kept rows. The eligibility text is unchanged for the kept rows; min_boards 3 is unchanged. (2) Grading: as registered (grade.sh --keep-tracks with the arm command); when the two arms' sessions are byte-identical the session is graded once (the registration's grading already says so). (3) Every route runs under ulimit -v 8000000 with timeout 600 for canary-pwr and timeout 120 for the other rows (in the arm command given to grade.sh); a timeout leaves the measurement incomplete. (4) Engine: one release build of main at the run. Nothing else changes: question, arms' settings, metrics, totals block, the via-connectivity check"
     }
   ]
 }

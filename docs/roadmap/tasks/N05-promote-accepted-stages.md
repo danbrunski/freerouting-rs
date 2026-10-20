@@ -394,3 +394,15 @@ Prerequisites: N01; each candidate's own accepted measurement.
     canary-pwr through the plugin path, N02 totals, no-regress, hard guards no new breach versus
     baseline. Run pending; a FAIL is bisected by switch group and a failing group leaves
     `ENHANCED`.
+    *Measured 2026-10-20* (N06.13's note): amendment 1 of `N06.13-promotion-2.json` (sha256
+    `852080d1…`; decided 2026-10-20: the confirmation keeps only the quick rows, to save time)
+    dropped z10_module, canary-pwr-9511d9a, Mars-64 and the plugin row (each above 2 min per route);
+    on the 20 DSN rows the two aborted-at-the-cap baselines (J2-any, rpi_splitter-any) are the
+    candidate's win under N06.16's abort rule and the other 18 sessions are byte-identical:
+    **promotion confirmed on the quick rows**; the five entries stay in `ENHANCED`.
+
+  *Partial 2026-10-20:* no run of N05.3's own is pending. The list waits for the measurements cut
+  to minutes on 2026-10-20 (decided 2026-10-20: measurement runs stay a few minutes): N03.3
+  (`prereg/N03.json`, new), N04.3 (`N04.json` amendment 3), Q04.4 (`Q04.json` amendment 2),
+  Q08.3, Q11.6, Q12.5 and Q16.5 (each amended), plus X13, K11 and N06's open items, which other
+  checklists own.

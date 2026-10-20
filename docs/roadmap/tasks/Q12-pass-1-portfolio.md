@@ -127,6 +127,15 @@ an arm, never the default.
     LogicBoard_smt with K = 4: its fanout alone outlasts the 170 s short-run limit (a K = 1
     run was cut at 170.39 s, still in the fanout, 31952 KB), so it needs the heavy slot; its
     peak RSS can come from Q12.5's `portfolio4` run (`/usr/bin/time -f %M`); owner Q12.5, run in Q00's Q10-Q12 measurement family after P04.
+  *Partial 2026-10-20:* the LogicBoard_smt clause is dropped (decided 2026-10-20: measurement runs
+  stay a few minutes; every board but canary-pwr must route in well under a minute, and
+  LogicBoard_smt's fanout alone outlasts 170 s). The canary-pwr clause is met by the measurement
+  above (K = 4: 109636 KB at 1 thread, 175556 KB at 2). Q12.5's amended `portfolio4` run records
+  the peak resident set of every quick row and of canary-pwr-9511d9a (`tools/bench/quick-arm.sh`'s
+  `.time` file, `/usr/bin/time` `%M`). Proposed close note once those numbers are in: "*Done
+  <date>:* canary-pwr K = 4 peak RSS 109636 KB (1 thread) and 175556 KB (2 threads); Q12.5's
+  portfolio4 rows <table>; LogicBoard_smt dropped (decided 2026-10-20)." No new run is needed
+  beyond Q12.5's.
 - [~] **Q12.4: order-spread report.** Per board: min, median and max incomplete count
   (and KiCad count where graded) over the K arms.
   - **Accept:** a table on the eligible boards in the done note. It is proposed as the
@@ -142,7 +151,11 @@ an arm, never the default.
     (arms 104, 110, 106, 111); Issue433-my-board 0 / 1 / 1. Remainder: the table on every
     eligible board, with KiCad counts where graded, from Q12.5's registered `portfolio4` run
     (the "Portfolio:" line of each job log); owner Q12.5, run in Q00's Q10-Q12 measurement family after P04.
-- [ ] **Q12.5: measurement** (prereg `docs/roadmap/prereg/Q12.json`, registered).
+  *Partial 2026-10-20:* the table comes from Q12.5's amended run (15 quick rows,
+  `tools/bench/sets/q10-sweep-quick.txt`): the "Portfolio:" line of each `portfolio4` log in
+  `target/q11-q12/portfolio4/<board>.log`, and KiCad counts where Q12.5 grades a row. No run of
+  its own.
+- [~] **Q12.5: measurement** (prereg `docs/roadmap/prereg/Q12.json`, registered).
   - Arms: `mp1`, `mpdef`, `portfolio4`, `portfolio4+restart2`, and `portfolio4` with
     Q10 and Q11 on.
   - Work is reported against `mpdef`'s, since the portfolio is meant to replace
@@ -152,6 +165,33 @@ an arm, never the default.
     sha256 8467d77dcd989648691a0a29a4095aceb650bb6e3fcd2a20d707da2a2e0b5a98, pinned by
     `crates/freerouting-dev/tests/prereg_q12.rs`; N02 totals rule, Q11's boards
     (`tools/bench/sets/q10-sweep.txt`), `eligible` still to be filled as an amendment.
+  - *Partial 2026-10-20:* not run; cut to minutes (decided 2026-10-20: measurement runs stay a
+    few minutes). Amendment 1 of `docs/roadmap/prereg/Q12.json` (before any registered run;
+    sha256 `342635f960aba7a644f97cceb009c9274dd2be62b62fd80b1bc4a7f065b2e9ab`, re-pinned in
+    `crates/freerouting-dev/tests/prereg_q12.rs`, 4 passed): the 15 quick rows of
+    `tools/bench/sets/q10-sweep-quick.txt` (route times and sources in that file), arms `mpdef`
+    (baseline), `portfolio4` (candidate) and `mp1` (Q11.json's `mp1` command, its runs shared);
+    `portfolio4+restart2` and `portfolio4+Q10+Q11` dropped; one KiCad grade per distinct session.
+    heavy run pending (the build and variables of Q11.1's note: `B`, `O=target/q11-q12`, `S`, `C`,
+    `K`, and `G="--gui.enabled=false --router.scoring.start_ripup_costs=1500
+    --router.min_trace_width_um=150 --stats json"`; `--stats json` is output only, for
+    `work_units` (`maze_work_units` of `<board>.ses.stats.json`); one route at a time, `ulimit -v 8000000`, `timeout 600` for
+    canary-pwr and `timeout 120` otherwise through `tools/bench/quick-arm.sh`; about 14 minutes, of
+    which canary-pwr-9511d9a's `mpdef` route takes up to about 7.5 (414 to 452 s in n06-13 and
+    n06-g, under the 600 s limit; if it times out the measurement is incomplete) and its
+    `portfolio4` route about 1.5):
+    1. `mp1`: Q11.1's step 1 (shared; if Q11 has not run, `tools/bench/quick-arm.sh $B $O mp1 $S
+       -- $F` first, about 2 minutes), then Q12.json's amendment 2 writes `eligible`;
+    2. `tools/bench/quick-arm.sh $B $O mpdef $S -- $G` and `tools/bench/quick-arm.sh $B $O
+       portfolio4 $S -- $G -mp 1 --router.autorouter.portfolio=4` (the `.time` files hold Q12.3's
+       peak resident set);
+    3. `for b in $C; do tools/bench/grade-distinct.sh $O $b target/corpus/projects/$b mp1 mpdef
+       portfolio4; done; tools/bench/grade-distinct.sh $O canary-pwr-9511d9a $K mp1 mpdef
+       portfolio4`;
+    4. records as Q12.json's `grading` and `metric_definitions` say (`work_units` from the
+       `--stats` totals), then `freerouting-dev gate --records <records> --prereg
+       docs/roadmap/prereg/Q12.json --eligible` and `guard_extra` (work at most 1.5x `mpdef`'s)
+       per row; Q12.4's spread table from the `portfolio4` logs.
 
 ## Expected [I]
 

@@ -1,0 +1,21 @@
+# N03.3: router.room_order=canonical with router.work_unit=leaves against Java's tree order and
+# nodes visited (docs/roadmap/tasks/N03-free-the-tree-again.md), registered in
+# docs/roadmap/prereg/N03.json (route times and their sources there). Boards P04 did not use:
+# PCBWorld D3-C (FR_CORPUS_DIR=target/corpus-d3c tools/corpus/fetch.sh --manifest
+# tools/corpus/pcbworld-d3c.json, then prep.sh; skipped while missing), canary-pwr's DSN, and
+# KiCad 10.0.7 demos routed with their tracks kept (graded by grade.sh --keep-tracks).
+target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn
+target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn
+target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn
+target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn
+target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn
+target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn
+target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn
+target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn
+target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn
+target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb
+/usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb
+/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
+/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb

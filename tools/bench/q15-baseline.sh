@@ -9,10 +9,13 @@
 #   enhanced-sweep  route with `--profile enhanced --router.autorouter.sweep=free
 #                   --router.autorouter.sweep_passes=2`, then score the SES
 #
-# The two routing arms run the autorouter (minutes per board): run them on a quiet machine, in
-# the heavy-job slot, from a release build (`cargo build --release -p freerouting-cli
-# -p freerouting-dev`). Each uses the pass bound of Java's reference run
-# (tools/java-reference/route-bounds.tsv) and the optimizer off, like `bench` and the reference.
+# The two routing arms run the autorouter (seconds per board), one route at a time under
+# `ulimit -v 8000000` and `timeout 120` (decided 2026-10-20: measurement runs stay a few minutes),
+# from a release build (`cargo build --release -p freerouting-cli -p freerouting-dev`). Each uses
+# the pass bound of Java's reference run (tools/java-reference/route-bounds.tsv) and the
+# optimizer off, like `bench` and the reference. Issue690-kit-dev-coldfire-xilinx_5213 is left
+# out since 2026-10-20 (its fanout alone took 516 s in target/orchestrator/q07/runs/); its
+# java-ref row is in Q15.3's note.
 #
 # Writes OUT_DIR/<board>.<arm>.ses (routing arms), OUT_DIR/<board>.<arm>.tidy.json and prints a
 # Markdown table: connections scored, Java's incomplete count for the same session, and the
@@ -40,7 +43,6 @@ BOARDS=(
   "Issue690-ecc83 100"
   "Issue690-sonde_xilinx 100"
   "Issue093-interf_u 100"
-  "Issue690-kit-dev-coldfire-xilinx_5213 3"
 )
 echo "| board | arm | connections | incomplete | detour | bends/10mm | acute | jogs | vias/conn |"
 echo "|---|---|---|---|---|---|---|---|---|"
@@ -52,8 +54,9 @@ for entry in "${BOARDS[@]}"; do
   else
     SES="$OUT/$BOARD.$ARM.ses"
     rm -f "$SES"
-    "$FREEROUTING" "${ARGS[@]}" -de "$DSN" -do "$SES" --gui.enabled=false \
-      --router.autorouter.max_passes="$PASSES" --router.optimizer.enabled=false \
+    ( ulimit -v 8000000
+      exec timeout -k 10 120 "$FREEROUTING" "${ARGS[@]}" -de "$DSN" -do "$SES" --gui.enabled=false \
+        --router.autorouter.max_passes="$PASSES" --router.optimizer.enabled=false ) \
       > "$OUT/$BOARD.$ARM.log" 2>&1
   fi
   JSON="$OUT/$BOARD.$ARM.tidy.json"

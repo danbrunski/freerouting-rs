@@ -5,17 +5,22 @@
 //! pass 1 alone (`mp1`), judged by N02's totals rule. Registered 2026-10-18
 //! before any measured number (the spot checks of Q12.1-Q12.3's done notes
 //! run the portfolio arm alone, for crashes and determinism) as
-//! 8467d77dcd989648691a0a29a4095aceb650bb6e3fcd2a20d707da2a2e0b5a98. A
+//! 342635f960aba7a644f97cceb009c9274dd2be62b62fd80b1bc4a7f065b2e9ab. A
 //! later change (the `eligible` list, Q11.6's rule for the composed arm)
 //! goes in its `amendments` with the reason and updates the hash below in
 //! the same change.
+//!
+//! Amendment 1 (decided 2026-10-20: measurement runs stay a few minutes, before any
+//! registered run): the 15 quick rows of `tools/bench/sets/q10-sweep-quick.txt`, the arms
+//! `mpdef`, `portfolio4` and `mp1` (Q11.json's `mp1` command, so one run serves both), one
+//! KiCad grade per distinct session; the hash below is the amended file's.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
 use freerouting_dev::json_read::Json;
 
 const FILE: &str = "docs/roadmap/prereg/Q12.json";
-const SET: &str = "tools/bench/sets/q10-sweep.txt";
+const SET: &str = "tools/bench/sets/q10-sweep-quick.txt";
 
 fn repo() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -36,18 +41,9 @@ fn the_q12_registration_is_valid_and_names_its_arms_and_boards() {
     assert_eq!(prereg.names.base, "mpdef");
     assert_eq!(prereg.names.cand, "portfolio4");
     let arms: Vec<&str> = prereg.arms.keys().map(String::as_str).collect();
-    assert_eq!(
-        arms,
-        [
-            "mp1",
-            "mpdef",
-            "portfolio4",
-            "portfolio4+Q10+Q11",
-            "portfolio4+restart2"
-        ]
-    );
+    assert_eq!(arms, ["mp1", "mpdef", "portfolio4"]);
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 30);
+    assert_eq!(prereg.boards.len(), 15);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         &metrics[..6],
@@ -114,6 +110,26 @@ fn the_q12_registration_uses_the_totals_rule_and_its_settings_exist() {
 fn the_q12_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "8467d77dcd989648691a0a29a4095aceb650bb6e3fcd2a20d707da2a2e0b5a98"
+        "342635f960aba7a644f97cceb009c9274dd2be62b62fd80b1bc4a7f065b2e9ab"
     );
+}
+
+/// Amendment 1: `mp1` is Q11.json's `mp1`, so its runs serve both registrations.
+#[test]
+fn amendment_1_shares_mp1_with_q11() {
+    let json = Json::parse(&text()).unwrap();
+    let q11 = std::fs::read_to_string(repo().join("docs/roadmap/prereg/Q11.json")).unwrap();
+    let q11 = Json::parse(&q11).unwrap();
+    let command = |j: &Json| {
+        j.path("arms.mp1.command")
+            .and_then(Json::as_str)
+            .unwrap()
+            .to_string()
+    };
+    assert_eq!(command(&json), command(&q11));
+    let Some(Json::Array(amendments)) = json.path("amendments") else {
+        panic!("amendments")
+    };
+    let reason = amendments[0].get("reason").and_then(Json::as_str).unwrap();
+    assert!(reason.starts_with("decided 2026-10-20: measurement runs stay a few minutes"));
 }

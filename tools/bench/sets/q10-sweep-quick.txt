@@ -1,0 +1,33 @@
+# The quick rows of q10-sweep.txt (decided 2026-10-20: measurement runs stay a few minutes),
+# the rows of the 2026-10-20 amendments of Q11.json (Q11.1, Q11.6) and Q12.json (Q12.5). Each
+# time is the largest `total.wall_seconds` of the release CLI's `--stats` JSON for that board
+# under target/orchestrator/<dir>/ (default passes, most with the optimizer on; the registered
+# arms run pass 1 only, except Q12's mpdef), the directory named.
+# benchmark.txt
+fixtures/Issue433-my-board.dsn                                # 0.6 s (p03)
+fixtures/Issue649-kicad_ecc83-pp_input_board_v1.dsn           # 0.1 s (p03)
+fixtures/Issue508-DAC2020_bm02.dsn                            # 1.4 s (p03)
+fixtures/Issue690-sonde_xilinx.dsn                            # 1.1 s (q07)
+fixtures/Issue508-DAC2020_bm07.dsn                            # 3.5 s (p03)
+fixtures/Issue508-DAC2020_bm10.dsn                            # 23.3 s (p03)
+fixtures/Issue093-interf_u.dsn                                # 2.5 s (q07)
+fixtures/Issue555-CNH_Functional_Tester_1.dsn                 # 11.1 s (q07)
+# canary-pwr's DSN: pass 1 43.2 to 44.2 s (n06-i, n06-u), the default passes 414.4 to 451.7 s
+# (n06-13, n06-g)
+fixtures/canary-pwr/canary-pwr-9511d9a.dsn
+# kicad-corpus.txt, the 2-layer medium and hard rows (tools/corpus/fetch.sh then prep.sh;
+# skipped while missing)
+target/corpus/prepped/mydevboard-rp2040dev.dsn                # 18.9 s (q07)
+target/corpus/prepped/slice-dcmt-bread-slice.dsn              # 0.5 s (q07)
+target/corpus/prepped/flight-computer-core-board.dsn          # 0.5 s (q07)
+target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn  # 0.4 s (q07)
+target/corpus/prepped/vfo-controller-catvfoctrl.dsn           # 1.0 s (q07), 1.8 s graded (q10)
+target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn  # 0.0 s (q07)
+# Left out for their route time: Issue508-DAC2020_bm01 49.3 s (n06r4), Issue753-CPU-85_r104
+# 61.7 s (p03), Issue269-z10_module 200.9 s (n06-f), Issue145-smoothieboard 226.2 s (p04),
+# Issue219-LogicBoard_smt 434.7 s (p04), Issue066-Project_GP8B 500.4 s (p04),
+# Issue690-kit-dev-coldfire-xilinx_5213 550.4 s (q07), Issue420-contribution-board 702.4 s
+# (p04), canary-pwr-pours1/2/3 104.2/111.5/111.3 s, -pours-as-planes 107.8 s,
+# -2026-10-15-1747-unpoured 357.4 s (p04), eprom-card-80bus 86.2 s (q07),
+# rio-iceshield-rio-iceshield 27.9 s (q07) but 31.0 s in Q10's graded mp1+sweep run
+# (q10/s104/runs/mp1+sweep-free).

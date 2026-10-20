@@ -2,46 +2,26 @@
 # (docs/roadmap/tasks/N04-contacts-inside-pads.md), registered in docs/roadmap/prereg/N04.json:
 # KiCad demos and corpus boards with existing tracks, plus canary-pwr at canary ab786fcc,
 # each graded by tools/kicad-oracle/grade.sh --keep-tracks.
-/usr/share/kicad/demos/cm5_minima/CM5_MINIMA_3.kicad_pcb
+# Amendment 3 (decided 2026-10-20: measurement runs stay a few minutes): the 19 rows whose
+# longest recorded route took at most 25 s, plus canary-pwr; the times and the dropped rows
+# are in the amendment.
 /usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb
 /usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb
-/usr/share/kicad/demos/ecc83/ecc83-pp_v2.kicad_pcb
-/usr/share/kicad/demos/interf_u/interf_u.kicad_pcb
-/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb
-/usr/share/kicad/demos/multichannel/multichannel_mixer-unrouted.kicad_pcb
-/usr/share/kicad/demos/multichannel/multichannel_mixer.kicad_pcb
-/usr/share/kicad/demos/openair-max/One-Air-Max.kicad_pcb
 /usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
-/usr/share/kicad/demos/royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb
 /usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb
-/usr/share/kicad/demos/stickhub/StickHub.kicad_pcb
-/usr/share/kicad/demos/tiny_tapeout/tinytapeout-demo.kicad_pcb
 target/corpus/projects/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb
 target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb
 target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb
-target/corpus/projects/eprom-card-80bus/eprom-card-80bus.kicad_pcb
-target/corpus/projects/fc-rom-vomitter-nescart/fc-rom-vomitter-nescart.kicad_pcb
 target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb
-target/corpus/projects/healthypi-move-hw-pc-healthypi-move-sensor-v9/healthypi-move-hw-pc-healthypi-move-sensor-v9.kicad_pcb
 target/corpus/projects/laser-backplane-dvi-laserbackplane-dvi/laser-backplane-dvi-laserbackplane-dvi.kicad_pcb
-target/corpus/projects/loratracker-hardware-loratracker-hat/loratracker-hardware-loratracker-hat.kicad_pcb
-target/corpus/projects/m-fc-g474-rev-a-m-fc/m-fc-g474-rev-a-m-fc.kicad_pcb
 target/corpus/projects/macroprocessor-diode-matrix-rom-dip/macroprocessor-diode-matrix-rom-dip.kicad_pcb
-target/corpus/projects/microzed-carrier-board-microzed-carrier-board-v4/microzed-carrier-board-microzed-carrier-board-v4.kicad_pcb
-target/corpus/projects/miniscope-v4-miniscope-v4-rigid-flex/miniscope-v4-miniscope-v4-rigid-flex.kicad_pcb
-target/corpus/projects/moteus-moteus-c1/moteus-moteus-c1.kicad_pcb
 target/corpus/projects/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb
 target/corpus/projects/nudac-nudac/nudac-nudac.kicad_pcb
 target/corpus/projects/openmuscle-flexgrid-om-flexgrid-rigid-pcb/openmuscle-flexgrid-om-flexgrid-rigid-pcb.kicad_pcb
-target/corpus/projects/overlord-overlord/overlord-overlord.kicad_pcb
-target/corpus/projects/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie-active-backplane-pcie-active-backplane-x16-4layer.kicad_pcb
 target/corpus/projects/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb
 target/corpus/projects/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb
-target/corpus/projects/pocketsdr-v3-0/pocketsdr-v3-0.kicad_pcb
-target/corpus/projects/rio-iceshield-rio-iceshield/rio-iceshield-rio-iceshield.kicad_pcb
 target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb
 target/corpus/projects/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb
 target/corpus/projects/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb
 target/corpus/projects/vna-usb-pd/vna-usb-pd.kicad_pcb
-target/corpus/projects/wisweep-driver-board/wisweep-driver-board.kicad_pcb
 ../canary/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb

@@ -96,6 +96,25 @@ Prerequisites: F03 (the bench and gate), F02.6 (the KiCad oracle), C05 (the SES 
   `<dir>/bench.json` and the second table of `<dir>/bench.md`. Also pending, one live
   `grade.sh` on a small board with `FREEROUTING_DEV` set, to see `tidiness` in `summary.json`.
 
+  *Partial 2026-10-20:* the clause "a bench run on the P04 set" is met by its quick rows
+  (decided 2026-10-20: measurement runs stay a few minutes): `tools/bench/sets/quick-benchmark.txt`
+  holds the 8 benchmark boards of `p04.txt` whose longest recorded route took at most 25 s and
+  `canary-pwr-pours1` (97.6 to 104.2 s in P04's own bench runs, the same bench bounds), each time
+  with its `target/orchestrator/` source; the other 12 rows of `p04.txt` take 49 to 702 s. This
+  replaces the command above. heavy run pending (release builds of `freerouting` and
+  `freerouting-dev` of main, `CARGO_BUILD_JOBS=2`; about 3 minutes, `canary-pwr-pours1` about 100 s
+  of it; one run at a time):
+  1. `bash -c 'ulimit -v 8000000; target/release/freerouting-dev bench --set
+     tools/bench/sets/quick-benchmark.txt --rust target/release/freerouting --runs 1 --max-load off
+     --timeout 120 --out target/q15/bench'`, then read `tidiness` in `target/q15/bench/bench.json`
+     and the second table of `target/q15/bench/bench.md` (a row past 120 s is a timeout: the
+     clause then rests on the rows that finished);
+  2. `FREEROUTING_DEV=target/release/freerouting-dev tools/kicad-oracle/grade.sh --out
+     target/q15/grade-ecc83 /usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb -- bash -c "ulimit -v
+     8000000; exec timeout -k 10 120 $(pwd)/target/release/freerouting -de '{DSN}' -do '{SES}'
+     --gui.enabled=false"`, then `tidiness` in `target/q15/grade-ecc83/summary.json`.
+  Owner: this item; X13 reads the records.
+
 - [~] **Q15.3 — A baseline.** Score Java's route references, freerouting-rs `legacy`, and
   `enhanced` with the sweep on the X13 boards.
   - **Accept:** a table in the done note, used by X13.
@@ -131,3 +150,14 @@ Prerequisites: F03 (the bench and gate), F02.6 (the KiCad oracle), C05 (the SES 
   - `enhanced+sweep`: `tools/bench/q15-baseline.sh enhanced-sweep <dir>`
     (the same with `--profile enhanced --router.autorouter.sweep=free --router.autorouter.sweep_passes=2`).
   The script's routing arms were not run (no router run was allowed); only `java-ref` was.
+
+  *Partial 2026-10-20:* the board clause is cut to the quick X13 boards (decided 2026-10-20:
+  measurement runs stay a few minutes): coldfire is left out of the routing arms, since its fanout
+  alone took 516 s (`target/orchestrator/q07/runs/bench-conflict-rounds-A/`); its `java-ref` row
+  stays in the table above. `tools/bench/q15-baseline.sh` now routes ecc83, sonde and interf_u
+  (route times 0.1, 1.1 and 2.5 s, `tools/bench/sets/quick-benchmark.txt`), each route under
+  `ulimit -v 8000000` and `timeout 120`, no quiet-machine condition. heavy run pending (release
+  builds of `freerouting` and `freerouting-dev` of main; under a minute in all):
+  `tools/bench/q15-baseline.sh legacy target/q15/baseline` and `tools/bench/q15-baseline.sh
+  enhanced-sweep target/q15/baseline`; the two printed tables go here beside the `java-ref` rows.
+  Owner: this item; X13 uses the table.

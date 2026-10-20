@@ -145,7 +145,7 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
     on router violations and KiCad `shorting_items`/clearance per arm, and runs the arms
     in the profile they would join (`enhanced`). If the shove fix lands as a quirk
     switch first, all three arms get the same value of it.
-- [ ] **N03.3 — Measure under N02's rule.**
+- [~] **N03.3 — Measure under N02's rule.**
   - Register before the first number, on boards P04 didn't use:
     - the PCBWorld D3-C set;
     - canary-pwr variants not in `p04.txt`;
@@ -153,6 +153,41 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
   - Arms: `tree+nodes` (baseline), `canonical+nodes`, `canonical+leaves`.
   - **Accept:** measured. If one arm is accepted, it becomes `enhanced`'s default
     through N05, with a DIVERGENCES line.
+
+  *Partial 2026-10-20:* registered before any number as `docs/roadmap/prereg/N03.json` (sha256
+  `f60fab8344a4e00f63f5576373a9f1e66872b4bf41473b0cbf8277cf939be416`, pinned by
+  `crates/freerouting-dev/tests/prereg_n03.rs`, 4 passed), within the rule decided 2026-10-20
+  (measurement runs stay a few minutes): N02's totals rule, `accept: improve` with the speed
+  clause on `tree_nodes_visited` (signal within noise and nodes down at least 20 %, as P04.1 was
+  a speed win), hard guard `via_in_pad`, guards router `clearance_violations` and KiCad
+  `drc_real` (shorting and clearance items reported by type, N03.2), profile `enhanced`. Rows
+  (`tools/bench/sets/n03-room-order.txt`, 15): the 10 D3-C boards that route in at most 5.3 s
+  (glasgow, 961 s, left out), canary-pwr-9511d9a (the canary-pwr DSN not in `p04.txt`) and the
+  demos complex_hierarchy, ecc83-pp, pic_programmer and sonde xilinx routed with their tracks
+  kept; the registration's `eligibility` gives each time and its `target/orchestrator/` source.
+  Two arms, `tree+nodes` against `canonical+leaves` (decided 2026-10-20: two arms where the
+  question allows; the clause's `canonical+nodes` is not run, because under `nodes` the work
+  count, and so where a work limit fires, still depends on the tree's shape, which N03.4 needs
+  to change). heavy run pending (one release build of main, `CARGO_BUILD_JOBS=2 cargo build
+  --release -p freerouting-cli -p freerouting-dev`; from the repository root; one route at a time;
+  about 22 minutes, of which canary-pwr's two routes take about 15; the router under `ulimit -v
+  8000000` and `timeout 600` for canary-pwr or `timeout 120` otherwise), with
+  `B=target/release/freerouting; R=$(pwd)/target/release; O=target/n03;
+  N=tools/bench/sets/n03-room-order.txt`:
+  1. DSN rows: `tools/bench/quick-arm.sh $B $O tree+nodes <(grep -v /usr/share/ $N) --
+     --gui.enabled=false --stats json --router.room_order=tree --router.work_unit=nodes`, and the
+     same with `canonical+leaves` and `--router.room_order=canonical --router.work_unit=leaves`;
+  2. their grades, one per distinct session: `for n in $(grep -o 'd3c-[^/]*\.dsn' $N | sed
+     's/\.dsn$//'); do tools/bench/grade-distinct.sh $O $n target/corpus-d3c/projects/$n
+     tree+nodes canonical+leaves; done; tools/bench/grade-distinct.sh $O canary-pwr-9511d9a
+     /home/thebo/code/canary/hardware/canary-pwr-rev1.0 tree+nodes canonical+leaves`;
+  3. demos: `grep /usr/share/ $N | while IFS= read -r pcb; do b=$(basename "$pcb" .kicad_pcb);
+     for a in "tree nodes" "canonical leaves"; do set -- $a; tools/kicad-oracle/grade.sh --out
+     "$O/demo/$1+$2/$b" --keep-tracks "$pcb" -- bash -c "ulimit -v 8000000; exec timeout -k 10 120
+     $R/freerouting -de '{DSN}' -do '{SES}' --gui.enabled=false --stats json
+     --router.room_order=$1 --router.work_unit=$2"; done; done`;
+  4. records as N03.json's `grading` says (`tree_nodes_visited` from the `--stats` totals), then
+     `freerouting-dev gate --records <records> --prereg docs/roadmap/prereg/N03.json`.
 - [ ] **N03.4 — The faster tree** (P04.3's plan, only after N03.3 accepts an arm).
   - Try a bulk-loaded R-tree with struct-of-arrays bounds, plus incremental leaf
     updates. The result sets must be identical, so routes are identical against
@@ -163,3 +198,8 @@ Prerequisites: N01 (profiles), N02 (the totals rule), P04's patch, P02.1's audit
     - wall time and callgrind before and after;
     - the P02.1 audit is clean;
     - determinism in both modes.
+
+  Note 2026-10-20: "the N03.3 set" is `tools/bench/sets/n03-room-order.txt` (N03.json, cut to
+  minutes on 2026-10-20), and the arm N03.4 builds on is `canonical+leaves`; the wall-time clause
+  is met by before/after runs on that set and P01's callgrind counts, with no quiet-machine
+  condition (decided 2026-10-20). Not started: it waits for N03.3's verdict.

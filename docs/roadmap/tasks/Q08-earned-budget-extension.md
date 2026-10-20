@@ -110,8 +110,14 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
   default router, `determinism-check.sh` on `canary-pwr` and `Issue145-smoothieboard`, and the
   per-board extensions and extra-work share (Q08.3's report metrics `maze_budget_extensions`,
   `maze_budget_extra_units`, `tree_nodes_visited`).
+  *Partial 2026-10-20:* the clause "`ses-diff` shows identical sessions on `benchmark`" (the
+  default router unchanged) is met by the small parity check above (decided 2026-10-20: no full
+  A14; Java-identity clauses are met by `PARITY_SET=tools/bench/sets/connection-parity.txt`);
+  `tools/determinism-check.sh` runs on `canary-pwr-pours1` and on `Issue093-interf_u` in place of
+  `Issue145-smoothieboard` (226 s per route), and the per-board extensions come from the quick
+  benchmark rows (Q08.json amendment 2). Remainder: Q08.3's steps 3 and 4.
 
-- [ ] **Q08.3 — Measurement.**
+- [~] **Q08.3 — Measurement.**
   Preregister (F03.4). Arms: default and `earned-budget`. Boards:
   `benchmark` boards where J01 recorded work-limit cut-offs, plus
   `canary-pwr` and its variants. Signal: unrouted. Guards: vias, `drc_real`,
@@ -152,3 +158,40 @@ A10 (`ConnectionRouter` trait); F03.1, F03.4.
      then `freerouting-dev gate --records records.json --prereg docs/roadmap/prereg/Q08.json`,
      the wall-time median ratio by hand, and per benchmark board `maze_budget_extensions` and
      `maze_budget_extra_units / tree_nodes_visited` for Q08.2's note.
+
+  *Partial 2026-10-20:* not run; the run is cut to minutes (decided 2026-10-20: measurement
+  runs stay a few minutes). Amendment 2 of `docs/roadmap/prereg/Q08.json` (before any Q08 run;
+  sha256 `0b82473af2ceedbc244c2fbacf0340f803040f53ec2e3edbe1fab3bbf94b8125`, re-pinned in
+  `crates/freerouting-dev/tests/prereg_q08.rs`, 5 passed): rows are the 8 benchmark boards whose
+  longest recorded route took at most 25 s plus `canary-pwr-pours1`
+  (`tools/bench/sets/quick-benchmark.txt`, each time with the `target/orchestrator/` directory it
+  came from); the wall-time clause has no quiet-machine condition and is taken over the rows where
+  `earned-budget` granted an extension; the determinism boards are `canary-pwr-pours1` and
+  `Issue093-interf_u` (smoothieboard takes 226 s); no A14 (Q08.2's identity clause is met by its
+  small parity check). Disclosed in the amendment: earlier registrations' `--stats` show
+  `maze_work_limit_hits` 0 on every kept row, so fewer than 3 eligible boards are expected and
+  the decision table's fail row would then apply. This replaces the heavy run list above.
+  heavy run pending (one release build of main, `CARGO_BUILD_JOBS=2 cargo build --release -p
+  freerouting-cli`; from the repository root; one route at a time; about 11 minutes, of which
+  `canary-pwr-pours1` takes about 8: about 100 s per arm and about 5 minutes for its determinism
+  check; every route under `ulimit -v 8000000` and `timeout 600` for canary-pwr or `timeout 120`
+  otherwise, which `tools/bench/quick-arm.sh` applies):
+  1. `B=target/release/freerouting; O=target/q08; tools/bench/quick-arm.sh $B $O default
+     tools/bench/sets/quick-benchmark.txt -- --router.optimizer.enabled=false --stats json`;
+  2. amendment 3 of Q08.json: `files` narrowed to the benchmark rows whose
+     `$O/default/<board>.ses.stats.json` total `maze_work_limit_hits` is above 0, plus
+     `canary-pwr-pours1`, quoting each count; re-pin `prereg_q08.rs`;
+  3. `tools/bench/quick-arm.sh $B $O earned-budget tools/bench/sets/quick-benchmark.txt --
+     --router.optimizer.enabled=false --stats json --router.autorouter.connection_router=earned-budget`
+     (every quick row, for Q08.2's per-board extension counts; the gate reads the eligible rows);
+  4. `tools/determinism-check.sh --out $O/det-pours1 -- bash -c "ulimit -v 8000000; mkdir -p {OUT}
+     && timeout -k 10 600 $B -de fixtures/canary-pwr/canary-pwr-pours1.dsn -do {OUT}/out.ses
+     --router.optimizer.enabled=false --router.autorouter.connection_router=earned-budget"`, and
+     the same with `--out $O/det-interf_u`, `timeout -k 10 120` and `fixtures/Issue093-interf_u.dsn`;
+  5. records from the runs as Q08.json's `grading` says (`freerouting-dev ses-diff` statistics,
+     `via_in_pad`, the `.time` files' wall seconds, the `--stats` totals), then
+     `freerouting-dev gate --records <records> --prereg docs/roadmap/prereg/Q08.json`, the
+     wall-time ratio over the rows with an extension, and Q08.2's per-board
+     `maze_budget_extensions` and `maze_budget_extra_units / tree_nodes_visited`.
+  Operator decision taken with the amendment (recommended answer): the one board in the records
+  with a work-limit hit, `canary-pwr-2026-10-15-1747-unpoured` (357 s per route), stays out.

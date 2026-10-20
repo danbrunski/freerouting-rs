@@ -13,6 +13,13 @@
 //! `amendments` with the reason and updates the hash below in the same
 //! change.
 //!
+//! Amendment 1 (decided 2026-10-20: measurement runs stay a few minutes, before
+//! any route or grade): the boards canary-pwr, sonde-xilinx and
+//! complex_hierarchy (One-Air-Max has no recorded route time, tinytapeout-demo
+//! takes over 17 minutes), one KiCad grading per session with
+//! `solder_mask_bridge` left out of `drc_real`, the router under `ulimit -v
+//! 8000000` and `timeout 600`/`120`; the hash below is the amended file's.
+//!
 //! The boards are outside the repository (the owner's canary repo and KiCad's
 //! demos), so their hashes are checked by the run, not here.
 use std::path::{Path, PathBuf};
@@ -40,7 +47,11 @@ fn the_q16_5_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert_eq!(prereg.names.cand, "enhanced-default+cleanup");
     let arms: Vec<&str> = prereg.arms.keys().map(String::as_str).collect();
     assert_eq!(arms, ["enhanced-default", "enhanced-default+cleanup"]);
-    assert_eq!(prereg.boards.len(), 5);
+    assert_eq!(
+        prereg.boards.len(),
+        3,
+        "amendment 1: canary-pwr and two quick demos"
+    );
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         &metrics[..6],
@@ -59,7 +70,7 @@ fn the_q16_5_registration_is_valid_and_names_its_arms_boards_and_rule() {
     assert!(totals.noise.is_empty(), "every band is N02's default");
     assert_eq!(totals.min_boards, 3);
     assert_eq!(totals.speed, None);
-    assert_eq!(prereg.amendments, 0);
+    assert_eq!(prereg.amendments, 1);
 }
 
 #[test]
@@ -95,6 +106,6 @@ fn the_q16_5_registration_uses_the_plugin_default_options_and_no_q16_board() {
 fn the_q16_5_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "0408cd5a07c87033cee3758b54e1acccbf77cac94eba3a72c0404e5051423a6b"
+        "bafc82c2fce24bda57cce527cc803bdc6946c9f573ee3843faff15ecdff36edc"
     );
 }

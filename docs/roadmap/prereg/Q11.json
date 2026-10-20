@@ -19,121 +19,51 @@
   },
   "arms": {
     "mp1": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1",
+      "engine": "freerouting-rs release CLI of main at the run (amendment 1; one Linux build for every arm, its --version git sha in the note); the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.special.diagnostics=rip-stats",
       "settings": {},
       "what": "baseline: Java rip-up, pass 1"
     },
+    "ripcost-5000": {
+      "engine": "freerouting-rs release CLI of main at the run (amendment 1; one Linux build for every arm, its --version git sha in the note); the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.special.diagnostics=rip-stats --router.scoring.start_ripup_costs=5000",
+      "settings": {
+        "router.scoring.start_ripup_costs": "5000"
+      },
+      "what": "Q11.1's sweep (amendment 1): pass 1 at start_ripup_costs 5000; the later flag wins over the 1500 of the base command"
+    },
+    "ripcost-20000": {
+      "engine": "freerouting-rs release CLI of main at the run (amendment 1; one Linux build for every arm, its --version git sha in the note); the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.special.diagnostics=rip-stats --router.scoring.start_ripup_costs=20000",
+      "settings": {
+        "router.scoring.start_ripup_costs": "20000"
+      },
+      "what": "Q11.1's sweep (amendment 1): pass 1 at start_ripup_costs 20000; the later flag wins over the 1500 of the base command"
+    },
+    "ripcost-near-off": {
+      "engine": "freerouting-rs release CLI of main at the run (amendment 1; one Linux build for every arm, its --version git sha in the note); the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.special.diagnostics=rip-stats --router.scoring.start_ripup_costs=1000000",
+      "settings": {
+        "router.scoring.start_ripup_costs": "1000000"
+      },
+      "what": "Q11.1's sweep (amendment 1): pass 1 at start_ripup_costs 1000000 ('near-off': each item's rip cost is capped at i32::MAX/100, so rip-up is priced out, not switched off; operator decision 2026-10-18 in Q11.1); the later flag wins over the 1500 of the base command"
+    },
     "ripcost-best": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.scoring.start_ripup_costs={Q11.1}",
+      "engine": "freerouting-rs release CLI of main at the run (amendment 1; one Linux build for every arm, its --version git sha in the note); the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.special.diagnostics=rip-stats --router.scoring.start_ripup_costs={Q11.1}",
       "settings": {
         "router.scoring.start_ripup_costs": "{Q11.1}"
       },
-      "what": "baseline: pass 1 at the start_ripup_costs Q11.1's no-code sweep {1500, 5000, 20000} and rip-up-off arm chose (fewest kicad_unconnected summed over the eligible boards, ties by fewest vias), written here as an amendment that changes nothing else before any wrapper arm runs; the later flag wins over the 1500 of the base command. If rip-up off wins, the arm is pass 1 with rip-up off (the flag the Q11.1 note names)"
+      "what": "baseline: the Q11.1 arm (mp1 = 1500, ripcost-5000, ripcost-20000, ripcost-near-off) with the fewest kicad_unconnected summed over the eligible rows, ties by fewest vias; amendment 1: its records are that arm's runs (no run of its own), named in the amendment that writes `eligible`"
     },
     "strict": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict",
+      "engine": "freerouting-rs release CLI of main at the run (amendment 1; one Linux build for every arm, its --version git sha in the note); the default profile",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.special.diagnostics=rip-stats --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict",
       "settings": {
         "router.autorouter.connection_router": "transactional-ripup",
         "router.transaction.rule": "strict"
       },
       "what": "candidate: transaction, every victim net must re-land (Q11.2)"
-    },
-    "count": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=count",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "count"
-      },
-      "what": "candidate: transaction, the incomplete count must fall (Q11.3)"
-    },
-    "depth1": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=count --router.transaction.depth=1",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "count",
-        "router.transaction.depth": "1"
-      },
-      "what": "candidate: count, victims may rip once, no net twice (Q11.4)"
-    },
-    "strict+ripfactor": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict --router.transaction.rip_factor=2",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "strict",
-        "router.transaction.rip_factor": "2"
-      },
-      "what": "candidate: strict plus rip-count protection, rip cost times 1+2k (Q11.5)"
-    },
-    "mp1+sweep": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "settings": {
-        "router.autorouter.sweep": "free",
-        "router.autorouter.sweep_passes": "2"
-      },
-      "what": "baseline: as mp1, then Q10's add-only sweep (free, 2 passes)"
-    },
-    "ripcost-best+sweep": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.scoring.start_ripup_costs={Q11.1} --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "settings": {
-        "router.scoring.start_ripup_costs": "{Q11.1}",
-        "router.autorouter.sweep": "free",
-        "router.autorouter.sweep_passes": "2"
-      },
-      "what": "baseline: as ripcost-best, then Q10's add-only sweep (free, 2 passes)"
-    },
-    "strict+sweep": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "strict",
-        "router.autorouter.sweep": "free",
-        "router.autorouter.sweep_passes": "2"
-      },
-      "what": "candidate: as strict, then Q10's add-only sweep (free, 2 passes)"
-    },
-    "count+sweep": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=count --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "count",
-        "router.autorouter.sweep": "free",
-        "router.autorouter.sweep_passes": "2"
-      },
-      "what": "candidate: as count, then Q10's add-only sweep (free, 2 passes)"
-    },
-    "depth1+sweep": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=count --router.transaction.depth=1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "count",
-        "router.transaction.depth": "1",
-        "router.autorouter.sweep": "free",
-        "router.autorouter.sweep_passes": "2"
-      },
-      "what": "candidate: as depth1, then Q10's add-only sweep (free, 2 passes)"
-    },
-    "strict+ripfactor+sweep": {
-      "engine": "freerouting-rs at the commit that lands Q11's code (one Linux release build for every arm); the default profile",
-      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.connection_router=transactional-ripup --router.transaction.rule=strict --router.transaction.rip_factor=2 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
-      "settings": {
-        "router.autorouter.connection_router": "transactional-ripup",
-        "router.transaction.rule": "strict",
-        "router.transaction.rip_factor": "2",
-        "router.autorouter.sweep": "free",
-        "router.autorouter.sweep_passes": "2"
-      },
-      "what": "candidate: as strict+ripfactor, then Q10's add-only sweep (free, 2 passes)"
     }
   },
   "baseline_arm": "mp1",
@@ -144,55 +74,15 @@
       "strict"
     ],
     [
-      "mp1",
-      "count"
-    ],
-    [
-      "mp1",
-      "depth1"
-    ],
-    [
-      "mp1",
-      "strict+ripfactor"
-    ],
-    [
       "ripcost-best",
       "strict"
-    ],
-    [
-      "ripcost-best",
-      "count"
-    ],
-    [
-      "ripcost-best",
-      "depth1"
-    ],
-    [
-      "ripcost-best",
-      "strict+ripfactor"
-    ],
-    [
-      "mp1+sweep",
-      "strict+sweep"
-    ],
-    [
-      "mp1+sweep",
-      "count+sweep"
-    ],
-    [
-      "mp1+sweep",
-      "depth1+sweep"
-    ],
-    [
-      "mp1+sweep",
-      "strict+ripfactor+sweep"
     ]
   ],
-  "pairs_rule": "baseline_arm/candidate_arm name the primary pair for freerouting-dev gate; every pair is judged on its own by the totals rule; a candidate passes only if it passes against both mp1 and ripcost-best, and its +sweep arm is reported against mp1+sweep (the composed flow, Q00)",
+  "pairs_rule": "amendment 1: the verdict pair is (mp1, strict), judged by the totals rule; (ripcost-best, strict) is judged the same way and strict passes only if it passes both; the Q11.1 arms are Q11.1's table, not judged. Registered: baseline_arm/candidate_arm name the primary pair for freerouting-dev gate; every pair is judged on its own by the totals rule; a candidate passes only if it passes against both mp1 and ripcost-best, and its +sweep arm is reported against mp1+sweep (the composed flow, Q00)",
   "boards": {
-    "set": "tools/bench/sets/q10-sweep.txt",
+    "set": "tools/bench/sets/q10-sweep-quick.txt",
     "eligibility": "every board of tools/bench/sets/benchmark.txt, owner.txt and the 2-layer medium/hard rows of kicad-corpus.txt on which the unchanged engine at the registration commit (arm mp1) leaves at least one incomplete connection; the list goes into `eligible` below, as an amendment that changes nothing else, before any candidate arm runs. canary-pwr-9511d9a and pours1..3 count as one board (grouped, as in Q01.json).",
-    "grouped": "fixtures/canary-pwr/*.dsn are one board for pass_rule (the variants of one placement)",
+    "grouped": "none since amendment 1 (one canary-pwr row, canary-pwr-9511d9a); registered: fixtures/canary-pwr/*.dsn are one board for pass_rule",
     "board_flags": "none beyond the arm commands; the canary-pwr flags are in every command (start_ripup_costs 1500, min_trace_width_um 150), as Q10.json uses them",
     "why": "Q10's universe and eligibility rule: Q10, Q11 and Q12 are measured as one family (Q00), so they share the boards",
     "files": {
@@ -201,31 +91,16 @@
       "fixtures/Issue508-DAC2020_bm02.dsn": "45697050375579e553ddce9586405c177d0f4fb91cf64e0caf7cd263645cb320",
       "fixtures/Issue690-sonde_xilinx.dsn": "633bd6bba64d23dc39e011caa3c44a8382f94818367bc30254d6aaca698dd380",
       "fixtures/Issue508-DAC2020_bm07.dsn": "39d85afa3133caae9b274350183868ad1fce5a0c64e3d5c6874598a899007c85",
-      "fixtures/Issue508-DAC2020_bm01.dsn": "8ec7bea5e6f2637f4d0ac37571996c95990210d16730d58beb62be879bd30c5f",
       "fixtures/Issue508-DAC2020_bm10.dsn": "80ce94e3e10d176e90f728ed54be39ff1da7489eec5c055ecf3ec8c01a533218",
       "fixtures/Issue093-interf_u.dsn": "73a6eb52f27fa3316a791db5f647de0be5d8a369d8c1faf6e275e3c9d1464baa",
       "fixtures/Issue555-CNH_Functional_Tester_1.dsn": "4ba02ac7147bbef2ba00e3348392cc1339deca7b762ca5c975ba20d99e053d9e",
-      "fixtures/Issue269-z10_module.dsn": "b38deab1bc28760c993721ddd927dc0b599e7176e4176ed36d80d4158ed71fa0",
-      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
-      "fixtures/Issue753-CPU-85_r104.dsn": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
-      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
-      "fixtures/Issue145-smoothieboard.dsn": "064db6b93501e4049daa515c37805da1c31c21057b37c64cf534086632467dfa",
-      "fixtures/Issue219-LogicBoard_smt.dsn": "bffe922b51a45ea7816166f94488d37d6d3415c919d018af727e2d05257b76fc",
-      "fixtures/Issue420-contribution-board.dsn": "2b062515781ff5876c3cd851d844748a0acf48fd26e2b3c6c143fb457b2ce5a8",
       "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
-      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
-      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
-      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
-      "fixtures/canary-pwr/canary-pwr-pours-as-planes.dsn": "5d7c28a8b5fccc3f1f0c4b67400d81693cecc1def464421a1213fc960df52992",
-      "fixtures/canary-pwr/canary-pwr-2026-10-15-1747-unpoured.dsn": "34cbcd4395de90aa8533620c1b2bcb8138d761af2f1ed9f5773ba4d4daf2c1ef",
       "target/corpus/prepped/mydevboard-rp2040dev.dsn": "5019ca86d2ea97ced545d63f8b1c7ed787e81fe8233a35e704f05f0c4de01753",
       "target/corpus/prepped/slice-dcmt-bread-slice.dsn": "864260cbe7f5b10e66dfca1eb72d5992142ab9c31aba2911408dbbca871b8074",
       "target/corpus/prepped/flight-computer-core-board.dsn": "e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86",
       "target/corpus/prepped/laser-backplane-dvi-laserbackplane-dvi.dsn": "bbf5efcf28e4071395dda11c95744e4d9ed557e37d9f6bdc324f046c1ce9de5b",
       "target/corpus/prepped/vfo-controller-catvfoctrl.dsn": "4896cc4b6a640c482cdd2c7e8a2e88e3ef86d5b1e811a19446c4a39fd3ff12a4",
-      "target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn": "c7bc16b327a495e34e6c457f6d5d79df5bad46beb55c15b304494cf8273c946f",
-      "target/corpus/prepped/eprom-card-80bus.dsn": "199e96972cb3b4651f1131154382da47eda7f2ba3bdfb03b34991e4a7b44264b",
-      "target/corpus/prepped/rio-iceshield-rio-iceshield.dsn": "f390902a0b873eff6340805faad1185277f5ab3bee6eb22d186d5cb4821235e4"
+      "target/corpus/prepped/mccx11-hardware-sx1262-433mhz-reverse-engineering.dsn": "c7bc16b327a495e34e6c457f6d5d79df5bad46beb55c15b304494cf8273c946f"
     }
   },
   "eligible": null,
@@ -310,17 +185,25 @@
     "improve_all_but": 1,
     "max_regress": 0
   },
-  "keep_rule": "keep the best passing candidate as a setting (off by default, in no profile) only if it passes the totals rule against both mp1 and ripcost-best; with several passing, the fewest kicad_unconnected summed over the eligible boards, ties by fewest vias. A change to profile enhanced needs its own registration",
+  "keep_rule": "amendment 1: keep strict as a setting (off by default, in no profile) only if it passes the totals rule against both mp1 and ripcost-best. Registered: keep the best passing candidate as a setting (off by default, in no profile) only if it passes the totals rule against both mp1 and ripcost-best; with several passing, the fewest kicad_unconnected summed over the eligible boards, ties by fewest vias. A change to profile enhanced needs its own registration",
   "stop_rule": "one registered run per arm per board after P04's default-tree decision; no reruns with other settings, rules, depths or factors",
   "not_registered": [
     "rip factors other than 2",
     "depth above 1 (the router refuses it)",
-    "rule strict with depth 1 (built and tested, not an arm)"
+    "rule strict with depth 1 (built and tested, not an arm)",
+    "amendment 1: the arms count, depth1 and strict+ripfactor and every +sweep arm (dropped: two arms where the question allows)"
   ],
   "decision_table": {
     "pass": "keep the best passing arm as a setting (off by default); DIVERGENCES line",
     "fail": "remove quality/transaction.rs and the ripup_factor hook; Q11.1's table and the numbers stay in Q11.6's done note"
   },
   "timing": "measured only after P04's default-tree decision",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-20",
+      "after": "the registration; before any registered run of any arm on any row (the done notes' spot checks on canary-pwr-9511d9a are not runs of this registration)",
+      "reason": "decided 2026-10-20: measurement runs stay a few minutes: every row routes in well under a minute except canary-pwr's DSN, two arms where the question allows, one KiCad grade per distinct session. The registered 12 arms on 30 rows (each also with Q11.1's 4 sweep arms) would take hours",
+      "changes": "(1) Rows: boards.files keeps the 15 rows of tools/bench/sets/q10-sweep-quick.txt, with each row's longest recorded route time and the target/orchestrator/<dir>/ it came from in that file: 8 benchmark boards at most 23.3 s, canary-pwr-9511d9a (pass 1 43.2 to 44.2 s, n06-i, n06-u; the only canary-pwr row, so no grouping) and 6 corpus rows at most 18.9 s; dropped for their route time: bm01 49.3 s, CPU-85 61.7 s, z10_module 200.9 s, smoothieboard 226.2 s, LogicBoard_smt 434.7 s, GP8B 500.4 s, coldfire 550.4 s, contribution-board 702.4 s, canary-pwr-pours1/2/3, -pours-as-planes and -2026-10-15-1747-unpoured (104 to 357 s), eprom-card-80bus 86.2 s and rio-iceshield 31.0 s. The eligibility rule (arm mp1 leaves at least one incomplete connection; `eligible` written by an amendment before any candidate run) and min_boards 3 are unchanged. (2) Arms: mp1, Q11.1's three sweep arms ripcost-5000, ripcost-20000 and ripcost-near-off (start_ripup_costs 1000000, Q11.1's operator decision of 2026-10-18), ripcost-best (the best Q11.1 arm's runs, no run of its own) and strict; count, depth1, strict+ripfactor and every +sweep arm are dropped, so the question's second half (with Q10's sweep after both arms) is not measured. Every command gains --router.special.diagnostics=rip-stats (report-only, it changes no route: the field's help in settings/fields.rs) so that Q11.1's table has its rip stats from the same runs; the engine is one release build of main at the run (P04's default-tree decision, Java's tree, is made, so the timing clause holds). (3) Grading: one KiCad grade per distinct session (two arms with byte-identical sessions on a row share one grade); the 8 benchmark rows have no .kicad_pcb and use the router's unrouted count (the signal's second name). (4) Every route runs under ulimit -v 8000000 with timeout 600 for canary-pwr-9511d9a and timeout 120 for the other rows; a timeout leaves the measurement incomplete. Nothing else changes: question's first half, metrics, totals block, stop_rule"
+    }
+  ]
 }

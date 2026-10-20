@@ -12,7 +12,10 @@
 //! numbers seen before (N04.1's correctness test on ecc83) are named in its
 //! `seen_before_registration`. A later change goes in the file's
 //! `amendments` with the reason and updates the hash here in the same
-//! commit.
+//! commit. Amendment 3 (decided 2026-10-20: measurement runs stay a few
+//! minutes, before any graded number) keeps the 19 rows whose longest recorded
+//! route took at most 25 s plus canary-pwr; the hash below is the amended
+//! file's.
 use std::path::{Path, PathBuf};
 
 use freerouting_dev::gate_prereg::Prereg;
@@ -40,7 +43,12 @@ fn the_pad_contacts_registration_is_valid() {
     let arms: Vec<&str> = prereg.arms.keys().map(String::as_str).collect();
     assert_eq!(arms, ["center", "inside_pad"]);
     assert_eq!(prereg.set.as_deref(), Some(SET));
-    assert_eq!(prereg.boards.len(), 43);
+    assert_eq!(
+        prereg.boards.len(),
+        20,
+        "amendment 3: 19 quick rows and canary-pwr"
+    );
+    assert_eq!(prereg.amendments, 3);
     let metrics: Vec<&str> = prereg.specs.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         &metrics[..4],
@@ -103,6 +111,6 @@ fn the_pad_contacts_inputs_are_the_registered_ones() {
 fn the_n04_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().0.sha256,
-        "f96e590d3217af1f9cb8e14b108ad0d8596d1f2dcc14d3d63f97f2c4aac00da1"
+        "58f9ee9e2f7f534b76c542150b9f2ca069cfd6157372a7e901a40067668ec523"
     );
 }

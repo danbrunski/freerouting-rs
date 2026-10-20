@@ -1,0 +1,218 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "N03.3-canonical-room-order",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/N03-free-the-tree-again.md (N03.3)",
+  "question": "Under profile enhanced, does router.room_order=canonical with router.work_unit=leaves (N03.1: rooms completed in a sorted order and work counted in leaves returned, so a route does not depend on the search tree's shape) keep the unrouted total (KiCad-unconnected where graded) within the set's noise of the tree order with nodes visited (Java's), with no via in a pad, no new router clearance violation and no new KiCad DRC item (shorting_items and clearance among them, N03.2), while cutting the tree nodes visited by at least 20 %, on boards P04 did not use?",
+  "rule": "totals",
+  "rule_text": "N02 (docs/roadmap/tasks/archive/N02-keep-rule-for-defaults.md) with accept improve and its speed clause, as P04 was re-judged: the candidate passes when the hard guards hold on every board (via_in_pad 0 in the candidate; clearance_violations on the DSN rows and drc_real where KiCad grades not above the baseline's), no board is worse than twice its band, and either the summed signal improves by more than the set noise or it stays within the noise and the summed tree_nodes_visited drops by at least 20 %. pass_rule is the parser's paired rule, printed, not judged",
+  "totals": {
+    "accept": "improve",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": 10
+    },
+    "min_boards": 3,
+    "speed": {
+      "metric": "tree_nodes_visited",
+      "min_drop_percent": 20
+    }
+  },
+  "noise_note": "canary-pwr's band is routing-quality.md's 10; every other board's is the totals rule's default max(2, ceil(5 % of connections))",
+  "engine": "freerouting-rs release CLI of main at the run (one Linux build for both arms, its --version git sha in N03.3's note); profile enhanced (the default, the profile an accepted arm would join, N03.2), default passes and optimizer, so the arms differ only in router.room_order and router.work_unit",
+  "arms": {
+    "tree+nodes": {
+      "engine": "freerouting-rs release CLI of main at the run (one Linux build for both arms, its --version git sha in N03.3's note); profile enhanced (the default, the profile an accepted arm would join, N03.2), default passes and optimizer, so the arms differ only in router.room_order and router.work_unit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --router.room_order=tree --router.work_unit=nodes",
+      "settings": {
+        "router.room_order": "tree",
+        "router.work_unit": "nodes"
+      },
+      "what": "baseline: Java's depth-first room order and nodes-visited work unit (the unset default, set explicitly)"
+    },
+    "canonical+leaves": {
+      "engine": "freerouting-rs release CLI of main at the run (one Linux build for both arms, its --version git sha in N03.3's note); profile enhanced (the default, the profile an accepted arm would join, N03.2), default passes and optimizer, so the arms differ only in router.room_order and router.work_unit",
+      "command": "target/release/freerouting -de {DSN} -do {SES} --gui.enabled=false --stats json --router.room_order=canonical --router.work_unit=leaves",
+      "settings": {
+        "router.room_order": "canonical",
+        "router.work_unit": "leaves"
+      },
+      "what": "candidate: the canonical room order and the leaves work unit (N03.1), the pair N03.4's faster tree needs: under it a route does not depend on the tree's shape (tests/search_order_independence.rs canonical_routes_do_not_depend_on_tree_shape)"
+    }
+  },
+  "baseline_arm": "tree+nodes",
+  "candidate_arm": "canonical+leaves",
+  "boards": {
+    "set": "tools/bench/sets/n03-room-order.txt",
+    "eligibility": "boards P04 did not use (tools/bench/sets/p04.txt is benchmark.txt and five canary-pwr variants), of the three kinds N03.3 names, each routing quickly (decided 2026-10-20: measurement runs stay a few minutes; every board but canary-pwr in well under a minute). Chosen before any number of this registration by these properties and the recorded route times only (the largest total.wall_seconds of a release CLI --stats JSON, or the largest Rust engine_seconds of a kicad-oracle summary, under target/orchestrator/<dir>/): the PCBWorld D3-C set (tools/bench/sets/pcbworld-d3c.txt) but d3c-0677-kitspace-glasgow (961.2 s, q07), d3c-0400-laptimer58-chickadee 0.5 s, d3c-0423-induction-hob-temperature-sender 0.7 s, d3c-0448-uedaino-uedaino 3.6 s, d3c-0473-data-manager-data-manager 1.5 s, d3c-0496-kitspace-f-91w 5.3 s, d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative 1.5 s, d3c-0546-ozinverter-ozinverterkicad 0.3 s, d3c-0571-brushless-esc-brushless-esc 3.2 s, d3c-0581-a123-battery-integration-bcm 2.4 s, d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld 4.3 s (all q07); canary-pwr-9511d9a, the canary-pwr DSN not in p04.txt (default passes 414.4 to 451.7 s, n06-13, n06-g); and the KiCad 10.0.7 demos with tracks routed with their tracks kept: demo-complex_hierarchy 14.1 s graded (meas/runs/x02), demo-ecc83-pp 0.0 s (q07), 3.2 s graded (k02), demo-pic_programmer 0.3 s (n06r4), 2.2 s graded (meas/runs/x02), demo-sonde-xilinx 0.5 s graded (p04). Left out for their route time: the other demos with tracks (CM5_MINIMA_3 39.8 to 106.2 s, kit-dev-coldfire 446.1 s, RoyalBlue54L-Feather 92.6 to 140.1 s, tinytapeout-demo over 1000 s, interf_u 262.3 s in a graded run) and those with no recorded time (ecc83-pp_v2, multichannel_mixer, One-Air-Max, StickHub). No row is dropped after a number",
+    "rows": {
+      "target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0400-laptimer58-chickadee"
+      },
+      "target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0423-induction-hob-temperature-sender"
+      },
+      "target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0448-uedaino-uedaino"
+      },
+      "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0473-data-manager-data-manager"
+      },
+      "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0496-kitspace-f-91w"
+      },
+      "target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative"
+      },
+      "target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0546-ozinverter-ozinverterkicad"
+      },
+      "target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0571-brushless-esc-brushless-esc"
+      },
+      "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0581-a123-battery-integration-bcm"
+      },
+      "target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn": {
+        "input": "target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with the project target/corpus-d3c/projects/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld"
+      },
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": {
+        "input": "fixtures/canary-pwr/canary-pwr-9511d9a.dsn",
+        "route": "tools/bench/quick-arm.sh with the arm's arguments",
+        "grade": "tools/bench/grade-distinct.sh with canary's project (Q10's canary grade at canary 9511d9a3)"
+      },
+      "demo-complex_hierarchy": {
+        "input": "/usr/share/kicad/demos/complex_hierarchy/complex_hierarchy.kicad_pcb",
+        "route": "inside tools/kicad-oracle/grade.sh --keep-tracks, the arm command as the engine",
+        "grade": "that grade.sh run"
+      },
+      "demo-ecc83-pp": {
+        "input": "/usr/share/kicad/demos/ecc83/ecc83-pp.kicad_pcb",
+        "route": "inside tools/kicad-oracle/grade.sh --keep-tracks, the arm command as the engine",
+        "grade": "that grade.sh run"
+      },
+      "demo-pic_programmer": {
+        "input": "/usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb",
+        "route": "inside tools/kicad-oracle/grade.sh --keep-tracks, the arm command as the engine",
+        "grade": "that grade.sh run"
+      },
+      "demo-sonde-xilinx": {
+        "input": "/usr/share/kicad/demos/sonde xilinx/sonde xilinx.kicad_pcb",
+        "route": "inside tools/kicad-oracle/grade.sh --keep-tracks, the arm command as the engine",
+        "grade": "that grade.sh run"
+      }
+    },
+    "files": {
+      "target/corpus-d3c/prepped/d3c-0400-laptimer58-chickadee.dsn": "17d6cb7f1cd1ba60527b52f42ad18eb97085b0bd7c4f4cf4bcb852ab25bf9005",
+      "target/corpus-d3c/prepped/d3c-0423-induction-hob-temperature-sender.dsn": "1192e795f21e68fd4f0bb554029ccb0974855598804ca9cd2cd09bb014fbe552",
+      "target/corpus-d3c/prepped/d3c-0448-uedaino-uedaino.dsn": "52baf19c9f577ba22b6bbd97823267f8a6071a0750c0b48b16d8c3834c2fc01e",
+      "target/corpus-d3c/prepped/d3c-0473-data-manager-data-manager.dsn": "92e97bca65b4e76f28c72a07090c1e2e8732835d5ed33b7c122cebc90b4228f9",
+      "target/corpus-d3c/prepped/d3c-0496-kitspace-f-91w.dsn": "cf70ae4c9833df6c4eec02691e0d87b368aca2a90f57c5fe27b43aed6cf34041",
+      "target/corpus-d3c/prepped/d3c-0520-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld-negative.dsn": "757d56a178090552ec6a144448d22399ca2eb2e767cbba2474ec4c93009530d5",
+      "target/corpus-d3c/prepped/d3c-0546-ozinverter-ozinverterkicad.dsn": "308f07f5b546199522a274e985eb55befc661e3d1ab9c5ffca790bd1ca1dc296",
+      "target/corpus-d3c/prepped/d3c-0571-brushless-esc-brushless-esc.dsn": "c6129878b79be1e463155f3a9d9f533518e640a3bf7788897878ba70184bc344",
+      "target/corpus-d3c/prepped/d3c-0581-a123-battery-integration-bcm.dsn": "cc5a76a25cca83983029d2d69041ef61ccabf0f2dc7f18e844e60f25314c2ba1",
+      "target/corpus-d3c/prepped/d3c-0599-rgbmatrixpanelcpld-photonbackpack-rgbmatrixpanel-cpld.dsn": "adb60a7d37ca61746a35aa0a8f206a4ebb79b5fe41cc11adb3aea9fc85f9422b",
+      "fixtures/canary-pwr/canary-pwr-9511d9a.dsn": "65186b28353a003feeccb51f74cbc636a75a90519b90a8486f468c35141ecf1a",
+      "demo-complex_hierarchy": "d5f4162d4c766448832723d139f9e0fcb88a17c82340f10f6f6dc6c2042f0d69",
+      "demo-ecc83-pp": "0ab45f4f8c90ac877e3313a1888d875107f2be3fc2b2f40cfb7927873b35260c",
+      "demo-pic_programmer": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+      "demo-sonde-xilinx": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998"
+    }
+  },
+  "grading": "Freerouting's board model from each run's result manifest (--result-json board_statistics: unrouted, clearance_violations, vias) and gate collect's via_in_pad on the session; tree_nodes_visited is the --stats JSON's total; wall_seconds is /usr/bin/time's (tools/bench/quick-arm.sh) or grade.sh's engine_seconds, no quiet-machine condition. KiCad 10.0.7 (WSL), one grade per distinct session: the D3-C rows by tools/kicad-oracle/grade.sh with the engine cp <session> {SES} through tools/bench/grade-distinct.sh, canary-pwr-9511d9a by Q10's canary grade (target/orchestrator/q10/s104/canary-grade.sh at canary 9511d9a3) through the same script, the demos by grade.sh --keep-tracks with the arm command (both arms routed there; where the two sessions are byte-identical the candidate takes the baseline's grade). drc_real is kicad-oracle's router-attributable count (canary: the DRC errors other than unconnected items and starved thermals); its shorting_items and clearance items are reported by type (N03.2)",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_violations",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "tree_nodes_visited",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "if the candidate passes, N05 adds router.room_order=canonical and router.work_unit=leaves to ENHANCED (N05.2's procedure, an N05.3 line, the DIVERGENCES Profile enhanced entry) and N03.4 may start on this set; otherwise both keys stay unset in both profiles, the numbers go in N03.3's note, and N03.4 does not start",
+  "stop_rule": "one registered run per arm per row; no reruns with other settings. Every route runs under ulimit -v 8000000 with timeout 600 for canary-pwr-9511d9a and timeout 120 for the other rows; a timeout leaves the measurement incomplete (no gate)",
+  "not_registered": [
+    "the arm canonical+nodes the checklist lists (decided 2026-10-20: two arms where the question allows; under nodes the work count, and so where a work limit fires, still depends on the tree's shape, which N03.4 changes)",
+    "Java identity: legacy pins tree and nodes (N03.1); the small parity check covers it",
+    "the shove fix N03.2 prototyped (not landed; both arms get Java's shove)"
+  ],
+  "seen_before_registration": "no route of either arm on these rows under this registration's engine. Before it: P04.1 and P04.2's numbers on p04.txt (other boards), N03.2's GP8B analysis (another board), the route times quoted in eligibility (other registrations' runs, mostly Java's order and unit), and the input hashes",
+  "decision_table": {
+    "pass": "N05 adds both keys to ENHANCED; N03.4 starts",
+    "fail": "both keys stay off; N03.4 is not started; the numbers stay in N03.3's note"
+  },
+  "amendments": []
+}
