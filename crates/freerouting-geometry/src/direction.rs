@@ -346,10 +346,8 @@ impl Direction {
     /// x axis than `other`, 0 if equal, -1 otherwise. Reproduces Java's double dispatch,
     /// including its asymmetric treatment of the null direction.
     pub fn compare_to(&self, other: &Direction) -> i32 {
-        // PARITY(quirk, java_quirks.direction_compare_zero): Java's double dispatch
-        // orders the null direction lopsidedly. Left as Java by N06.12 (a convention,
-        // not a bug), and the geometry crate has no settings access, so the switch
-        // is inert: `false` changes nothing.
+        // Java, kept in both profiles: Java's double dispatch orders the null
+        // direction lopsidedly. N06.12 left it (a convention, not a bug).
         match (self, other) {
             (Direction::Int(a), Direction::Int(b)) => -b.compare_to_int_raw(a),
             (Direction::Int(a), Direction::BigInt(b)) => {

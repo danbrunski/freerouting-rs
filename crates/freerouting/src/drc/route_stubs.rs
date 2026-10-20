@@ -133,10 +133,9 @@ fn via_stub_layer(board: &BasicBoard, via: &Item) -> Option<i32> {
     if layers.any(|l| l != (first_contact_first, first_contact_last)) {
         return None;
     }
-    // PARITY(quirk, java_quirks.route_stubs_layer_test): WindowRouteStubs.java:72-77
-    // compares both via bounds with the contact's first layer. Left as Java by N06.12
-    // (which layer a via stub should name is unclear), so the switch is inert:
-    // `false` changes nothing.
+    // Java, kept in both profiles: WindowRouteStubs.java:72-77 compares both via
+    // bounds with the contact's first layer. N06.12 left it (which layer a via stub
+    // should name is unclear), and N07.4 removed its inert switch.
     if via.first_layer() >= first_contact_first && via.last_layer() <= first_contact_first {
         Some(first_contact_first)
     } else {

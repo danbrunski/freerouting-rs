@@ -40,6 +40,18 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'
 
+  # N07.5: `legacy` stays Java on the small parity set (D11): the probe tests and the
+  # connection-parity set, timed, in one command. The full A14 gate (`--full`, about 1.5 h)
+  # is not run here; it runs on request only.
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2.9.2
+      - run: tools/parity-check.sh
+
   plugin-tests:
     strategy:
       fail-fast: false

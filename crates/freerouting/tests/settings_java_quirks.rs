@@ -35,8 +35,8 @@ use freerouting::settings::{
 const CORES: usize = 8;
 
 /// The N06 inventory: 35 rows of kind (b) (two added by N06.14, one by N06.15 and one
-/// by N06.16) and 11 of kind (c).
-const SWITCH_COUNT: usize = 46;
+/// by N06.16) and 5 of kind (c) (N07.4 removed the six (c) switches no code read).
+const SWITCH_COUNT: usize = 40;
 
 /// The switches profile `enhanced` turns off (N06.13), in inventory order. The
 /// first round (2026-10-19): the accepted batches M (N06.5), F (N06.6), S
@@ -222,6 +222,33 @@ fn each_key_round_trips_through_a_settings_file() {
             JavaQuirks::JAVA,
             "{id}"
         );
+    }
+}
+
+/// N07.4: the six switches no code read are gone. A settings file that names one changes
+/// nothing, and the command line reports it as an unknown option.
+#[test]
+fn removed_inert_switches_are_unknown_keys() {
+    for id in [
+        "insert_stale_trace_object",
+        "rules_autoroute_settings_reenable",
+        "direction_compare_zero",
+        "route_stubs_layer_test",
+        "polyline_array_reversal",
+        "avoid_acid_traps_disabled",
+    ] {
+        assert!(!JavaQuirks::IDS.contains(&id), "{id}");
+        assert_eq!(JavaQuirks::JAVA.get(id), None, "{id}");
+        let text = format!(r#"{{"router": {{"java_quirks": {{"{id}": false}}}}}}"#);
+        let file = patch_from_config_text(&text).expect("a settings file");
+        let settings = resolved_legacy(vec![(Source::ConfigFile, file.patch)]);
+        assert_eq!(
+            JavaQuirks::from_settings(&settings),
+            JavaQuirks::JAVA,
+            "{id}"
+        );
+        let cli = parse_cli_arguments(&[format!("--{SETTINGS_PREFIX}{id}=false")]);
+        assert!(!cli.warnings.is_empty(), "{id}: no warning");
     }
 }
 

@@ -229,7 +229,10 @@ it depends on.
   (`tools/bench/sets/connection-parity.txt`) and the probe tests. Nothing new is ported from
   Java, the pin does not move, and the full A14 runs only on request. Java compatibility ranks
   below `enhanced`'s routing quality, and N07.3–N07.5 trim the rules and tests to this
-  ([N07](tasks/N07-lighten-java-parity.md)).
+  ([N07](tasks/archive/N07-lighten-java-parity.md)): a change that only touches `enhanced` needs
+  no Java probe, differential test or Java-derived expected value (AGENTS.md, "Matching
+  Java"), and `tools/parity-check.sh` runs the probe tests and the connection-parity set in
+  one command.
 
 ## Verification ladder
 

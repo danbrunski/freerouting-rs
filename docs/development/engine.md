@@ -105,7 +105,12 @@ value is Java's. It joins `enhanced` only through these steps, all in one diff:
    the result), the candidate's own checklist item ticked or annotated, and the
    help text of the field (`settings/fields.rs`) naming the profile's value.
 
-A parity run is unaffected: it pins `legacy`. A rejected candidate stays off, or
+A parity run is unaffected: it pins `legacy`. A change that only touches `enhanced`
+(its `ENHANCED` entry, or a setting `legacy` leaves unset) needs only its own test
+(step 4) and its DIVERGENCES line (step 3), with expected values from its own measured
+behaviour: no Java probe, no differential test, no Java-derived expected value (N07.3).
+Shared code that `legacy` also runs must keep the connection-parity set 7 of 7 exact
+(`tools/parity-check.sh`, below). A rejected candidate stays off, or
 is deleted under N02's keep-or-delete rule; its numbers stay in its checklist.
 
 ### Regenerating the reference
@@ -268,6 +273,7 @@ Engine sessions own these too. Details in each tool's README or header.
 | `crates/freerouting-dev`, binary `freerouting-dev` | Dev-only (`publish = false`). `ses-diff board.dsn a.ses b.ses [--json f]`: structural session comparison (wires and vias per net, in board coordinates) plus the statistics after importing each. `bench --set <file> --java <jar> [--rust <bin>] --runs N --out <dir>`: times both engines on a quiet machine (refuses above load 1.0 by default), optimizer off unless `--optimize`; writes `bench.json` and `bench.md`. `microbench board.dsn`: five hot kernels with fixed work counts (P01.3). See [tools/bench/README.md](../../tools/bench/README.md) and [profiling.md](profiling.md). |
 | `crates/freerouting/src/run_stats.rs` | Opt-in per-stage work counters (`--stats json`, P01.2): `enable()`, `stage(kind, index)` guards at load, fanout, each pass, each optimizer pass, DRC and write, and the counts of the maze search (through the A04 `WorkCounters` sink) and of the search trees' work meter. Off, it is one relaxed load per tree query. `util::HashMap`/`HashSet` are the engine's hash maps with a fixed hasher (callgrind counts repeat, P01.4); use them instead of `std`'s. |
 | `tools/determinism-check.sh --out <dir> [--ignore RE] -- <cmd with {OUT}>` | Runs a command idle and beside one busy loop per core, compares the outputs byte for byte. Test: `tools/test-determinism-check.sh`. |
+| `tools/parity-check.sh [--full] [--no-probes] [--no-parity]` | N07.5: the parity check in one command, timed. Step 1 runs the Java-probe tests (`crates/freerouting/tests/*probe*.rs`, release); step 2 runs `autoroute_board_parity` on `tools/bench/sets/connection-parity.txt` (`PARITY_SET`), every SES compared with Java's. Prints each step's time and `PARITY OK` or `PARITY FAILED`. `--full` routes all boards instead (the full A14 gate, about 1.5 h, on request only: AGENTS.md, "The machine"). The CI workflow runs it (`parity` job) instead of the full set. Run it after a change to code `legacy` also runs; a change that only touches `enhanced` does not need it (N07.3). |
 | `tools/bench/sets/*.txt` | Board sets: `connection-parity` (rung 2), `benchmark` (rungs 3 and 5), `owner` (`canary-pwr`), `kicad` (projects for the oracle). |
 | `tools/kicad-oracle/grade.sh <project> -- <engine with {DSN} {SES}>` | Grades a routed session with KiCad's own DRC (WSL KiCad 10.0.7) under the board's original rules, minus what the unrouted input reports, plus copper narrower than its net class. See [tools/kicad-oracle/README.md](../../tools/kicad-oracle/README.md). |
 

@@ -39,7 +39,7 @@ change of direction; this series carries it out.
 | [N04](archive/N04-contacts-inside-pads.md) ✅ | A trace end inside a same-net pad counts as connected (KiCad's rule) in `enhanced` | S–M / medium | N01 |
 | [N05](N05-promote-accepted-stages.md) | Each accepted Q, X or K improvement becomes part of `enhanced`; the CLI registers the KRT stages | S per stage | N01; each stage's own measurement |
 | [N06](archive/N06-fix-kept-java-bugs.md) ✅ | The 54 Java bugs kept for parity: 12 dead ones fixed outright, 31 fixed under `enhanced` behind per-bug `router.java_quirks.*` switches in 8 measured batches, 11 judgement calls | M–L / medium: geometry and search changes | N01, N02, N05 |
-| [N07](N07-lighten-java-parity.md) | Decide what `legacy` must still guarantee (frozen exact, or Java-like), then trim the Java rules, quirk plumbing and parity tests to it | S–M / low: `enhanced` stays byte-identical | N01, N06 |
+| [N07](archive/N07-lighten-java-parity.md) ✅ | Decide what `legacy` must still guarantee (frozen exact, or Java-like), then trim the Java rules, quirk plumbing and parity tests to it | S–M / low: `enhanced` stays byte-identical | N01, N06 |
 
 ## Order
 

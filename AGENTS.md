@@ -73,10 +73,17 @@ The workspace builds on WSL with limited memory, and heavy load has crashed it.
   `// PARITY(quirk, java_quirks.<id>):` at the site (N06).
 - **Profiles.** `legacy` is Java, and `enhanced` is the default. A change joins the `ENHANCED`
   table (`settings/profile.rs`) only after its preregistered measurement accepts it.
+- **`legacy` is frozen Java (D11).** It stays byte-identical to Java at the pin on the
+  connection-parity set and the probe tests; nothing new is ported from Java. Run both with
+  `tools/parity-check.sh`.
+- **A change that only touches `enhanced`** (an `ENHANCED` entry, or a setting `legacy` leaves
+  unset) needs its own test and a DIVERGENCES line. It needs no Java probe, no differential test
+  and no Java-derived expected value; its expected values come from its own measured behaviour.
+  Shared code that `legacy` also runs must keep connection-parity at 7 of 7 exact.
 - Java numeric semantics live in `freerouting_geometry::jmath` (`Math.round`, `round_to_i32`,
   `java.util.Random` and so on). Use those; never copy them.
-- Expected values in differential tests come from running Java at the pin, never from reasoning
-  about it. `tools/java-reference/probe.sh` runs a probe.
+- Expected values in differential tests (code `legacy` runs) come from running Java at the pin,
+  never from reasoning about it. `tools/java-reference/probe.sh` runs a probe.
 - Results are deterministic. No `HashMap`/`HashSet` iteration may reach the output; parallel
   work merges in a fixed order; a deadline may stop work but never change it.
 

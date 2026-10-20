@@ -32,9 +32,13 @@
 //!   ([`JavaQuirks::split`], `rational_perp_projection`).
 //!
 //! Every read site carries the marker `// PARITY(quirk, java_quirks.<id>):` beside
-//! Java's path. The seven inert switches (`simplex_prev_division_line` and the six
-//! (c) rows N06.12 left as Java, whose `false` changes nothing) carry it at the Java
-//! code they name; `tests/settings_java_quirks.rs` checks every id has one.
+//! Java's path. The inert `simplex_prev_division_line` (its `false` changes nothing)
+//! carries it at the Java code it names; `tests/settings_java_quirks.rs` checks every
+//! id has one. N07.4 removed six switches that no code read (N06.12's
+//! `insert_stale_trace_object`, `rules_autoroute_settings_reenable`,
+//! `direction_compare_zero`, `route_stubs_layer_test`, `polyline_array_reversal` and
+//! `avoid_acid_traps_disabled`, each left as Java with `false` changing nothing); their
+//! sites keep a plain comment, and a settings file naming one is now an unknown key.
 
 use freerouting_geometry::SplitQuirks;
 
@@ -142,16 +146,10 @@ java_quirks! {
     any_angle_room_side_index: "N06.16",
     // (c) rows.
     ripup_pass_no_unset: "N06.12",
-    insert_stale_trace_object: "N06.12",
     in_front_of_pad_side0_flank: "N06.12",
     opt_threshold_fraction: "N06.12",
     rules_unknown_layer_scope: "N06.12",
-    rules_autoroute_settings_reenable: "N06.12",
-    direction_compare_zero: "N06.12",
-    route_stubs_layer_test: "N06.12",
     any_angle_skip_length_squared: "N06.12",
-    polyline_array_reversal: "N06.12",
-    avoid_acid_traps_disabled: "N06.12",
 }
 
 impl Default for JavaQuirks {

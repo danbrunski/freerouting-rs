@@ -88,6 +88,13 @@ and there is no measured history for this repo yet, so pace by progress:
   `crates/freerouting/tests/data/java_drc_digest.tsv`, whose header
   names the pin (see `java_drc_digest.py`). `route` mode takes about
   1.5 h, so use the long-run pattern under "Drive a targeted gate".
+- `legacy` is frozen Java (D11): it stays byte-identical to Java at the pin on the
+  connection-parity set and the probe tests (`tools/parity-check.sh` runs both), and nothing
+  new is ported from Java.
+- A change that only touches `enhanced` (an `ENHANCED` entry, or a setting `legacy` leaves
+  unset) needs only its own test and a DIVERGENCES line. Write no Java probe, no differential
+  test and no Java-derived expected value for it; take expected values from its own measured
+  behaviour. Shared code that `legacy` also runs must keep connection-parity at 7 of 7 exact.
 - Anything not listed in `docs/DIVERGENCES.md` is meant to match Java.
   A difference that isn't listed is a bug in the port. A deliberate
   difference needs all three of these: a test that pins the Rust
@@ -99,8 +106,8 @@ and there is no measured history for this repo yet, so pace by progress:
   `tests/java_ports.rs`, grouped by Java package like the existing
   groups. In each group's doc comment, name the Java tests you did not
   port and say why.
-- Expected values in differential tests come from running Java at the
-  pin, never from reasoning about what Java would do (see
+- Expected values in differential tests (code `legacy` runs) come from
+  running Java at the pin, never from reasoning about what Java would do (see
   `crates/freerouting-geometry/tests/java_reference.rs`). To run a probe:
   1. `git -C ../freerouting worktree add --detach <scratchpad>/java-pin a773a70ec`
   2. Put `Probe.java` in the scratchpad (a class with a `main`), then run

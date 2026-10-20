@@ -1783,9 +1783,11 @@ profiles. With the named switch `false`:
   for `enhanced`; in its table since N06.13.
 - `in_front_of_pad_side0_flank` is N06.7's reported arm `all_flank`. `opt_threshold_fraction`
   keeps Java's heuristic (its `false` half: `threshold_fraction_switch_both_behaviours`).
-- Left as Java, `false` changes nothing: `insert_stale_trace_object`,
-  `rules_autoroute_settings_reenable`, `direction_compare_zero`, `route_stubs_layer_test`,
-  `polyline_array_reversal`, `avoid_acid_traps_disabled` (the reasons are in N06's (c) table).
+- Left as Java in both profiles, with no switch (N07.4 removed the six switches no code read;
+  `false` changed nothing): `insert_stale_trace_object`, `rules_autoroute_settings_reenable`,
+  `direction_compare_zero`, `route_stubs_layer_test`, `polyline_array_reversal`,
+  `avoid_acid_traps_disabled` (the reasons are in N06's (c) table). A settings file that names
+  one is now an unknown key (`tests/settings_java_quirks.rs::removed_inert_switches_are_unknown_keys`).
 
 `run_stats` counts `ripup_random_pass_connections` and `any_angle_skip_length_flips` in
 either arm, `ripup_random_factor_draws` (only under `false`) and `rules_unknown_layer_scopes`.

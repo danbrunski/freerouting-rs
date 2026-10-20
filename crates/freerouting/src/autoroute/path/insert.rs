@@ -112,8 +112,8 @@ pub fn insert_segments(
     segments: &[ResultItem],
     stop: Option<&dyn Stoppable>,
 ) -> Result<Inserted, InsertError> {
-    // PARITY(quirk, java_quirks.insert_stale_trace_object): Java holds the start and target items as objects
-    // (`:108-137`); a trace the insertion splits or removes leaves the board,
+    // Java, kept in both profiles (N06.12): Java holds the start and target items as
+    // objects (`:108-137`); a trace the insertion splits or removes leaves the board,
     // and `connectToTrace` still connects to the removed object's geometry.
     let target_object = target_item.and_then(|id| board.trace_object(id));
     let start_object = start_item.and_then(|id| board.trace_object(id));

@@ -129,6 +129,13 @@ them.
   `git -C ../freerouting show <pin>:<path>`. Expected values in differential
   tests come from running Java (`tools/java-reference/probe.sh`, F02.1),
   never from reasoning about what Java would do.
+- **`legacy` is frozen Java (D11), `enhanced` is free (N07.3).** `legacy` stays
+  byte-identical to Java at the pin on the connection-parity set and the probe
+  tests (`tools/parity-check.sh`). A change that only touches `enhanced` (an
+  `ENHANCED` entry, or a setting `legacy` leaves unset) needs only its own test
+  and a DIVERGENCES line: no Java probe, no differential test, no Java-derived
+  expected value. Shared code that `legacy` runs keeps connection-parity at 7 of
+  7 exact.
 - **Every deliberate difference from Java** gets three things: a test that
   pins it, a note in the module docs, and a line in
   [DIVERGENCES.md](../../DIVERGENCES.md). An expected mismatch lives in the
