@@ -149,7 +149,7 @@ totals rule), N05 (the promotion recipe).
   - `tools/determinism-check.sh`: q02-qfn-power with `bounded-neck` and the switch identical
     (`cc07d01fc2e16861…`), q17-pinch-22mm with the retry at 400 µm and the switch identical
     (`6b2e39c552478a54…`).
-- [ ] **Q17.4 — Measure under N02.** Register first, on the boards of
+- [~] **Q17.4 — Measure under N02.** Register first, on the boards of
   `N05-neck-down.json` (the canary-pwr plugin DSN, the canary-pwr 9511d9a DSN with
   its Board Setup widths, interf_u, pic_programmer, CM5_MINIMA_3) plus two
   corpus boards with wide classes it has not seen.
@@ -165,3 +165,56 @@ totals rule), N05 (the promotion recipe).
     - if an arm is accepted, N05 makes it `enhanced`'s neck-down, with a
       DIVERGENCES line;
     - canary-7a grades the canary sessions.
+  *Partial 2026-10-20:* registered before any number: `docs/roadmap/prereg/Q17.4.json`
+  (sha256 `b3d4ad492fb09fccb150bf142448f40ed21d041c049d35b086c1aa566a6bc2d9`, no amendment), set
+  `tools/bench/sets/q17-4.txt`, pinned by `crates/freerouting-dev/tests/prereg_q17_4.rs`
+  (`cargo test -p freerouting-dev --test prereg_q17_4`: 5 passed). Engine main a25c82f,
+  `--router.profile=enhanced` on every command. Arms (decided 2026-10-20: measurement runs stay
+  short, never an hour in total, so three arms): `enhanced` (the retry at 300); `widen-back`
+  (`--router.neck_down.widen_back=true`); `bounded-neck-widen-back`
+  (`--router.special.neck_down=bounded-neck --router.neck_down.widen_back=true`). The list's
+  `bounded-neck` without the widen-back is cut (it differs from bounded-neck-widen-back only inside
+  the neck zones; named in the registration's `not_registered`). Rows: canary-plugin45 (the stored
+  plugin export `plugin-b1994423.dsn`, CLI with the plugin's flags), canary-9511d9a-mp1sweep (the
+  Board Setup widths DSN, CLI), interf_u and pic_programmer (K09's stripped demos through
+  `kicad-plugin/headless_run.py`), and two corpus boards with a class wider than 300 µm that no
+  neck-down measurement used, routed and graded by `tools/kicad-oracle/grade.sh`:
+  flight-computer-core-board (Ignitor 400 µm; 0.34–0.51 s in Q10.4 and Q07) and cm4-edge-ai-carrier
+  (Power 500 µm; 22.4 s in Q07). CM5_MINIMA_3 is dropped (85.5–86.1 s per route in N05.3, no class
+  wider than 300 µm); eprom-card-80bus (65–86 s), moteus-c1 (148 s) and microzed-carrier-board
+  (302 s) are the slower wide-class corpus boards left out. N02 totals, `accept: no-regress`; hard
+  guards via in pad, below minimum width, KiCad clearance-type errors and power-layer traces, each
+  "no new breach versus baseline" (arm minus `enhanced`, floored at 0; raw counts reported);
+  `drc_real` and inner tracks as guards; keep rule: the gate passes and either the unconnected total
+  beats `enhanced` by more than the set noise or `under_board_setup_mm` (the width report's
+  narrowed copper of the wide nets) is lower. Expected route time about 9.5 min per arm, 29 min
+  for the three. heavy run pending, one route at a time, every route under `ulimit -v 8000000` and
+  `timeout -k 10 1800` (runner `target/orchestrator/q174/q174run.sh`, adapted from N05.3's
+  `neckrun.sh`):
+  1. `target/orchestrator/q174/q174run.sh build` (`cargo build --release -p freerouting-cli -p
+     freerouting-dev` in the worktree, binaries to `target/orchestrator/q174/run/bin/`, `SHA256SUMS`
+     written), then `q174run.sh hashes` and compare with `boards.files` and `boards.project_files`.
+  2. `q174run.sh batch`: for each arm in the order enhanced, widen-back, bounded-neck-widen-back:
+     - canary rows: `freerouting -de <DSN> -do route.ses --gui.enabled=false
+       --router.profile=enhanced <ROW_FLAGS> <ARM_FLAGS>`, then `freerouting-dev power-traces <DSN>
+       route.ses` and `freerouting-dev widths <DSN> route.ses --json widths.json`;
+     - demo rows (the plugin-row export): copy the stripped board, `python3 -I
+       kicad-plugin/headless_run.py export <pcb> <work> opts.json` with `{"schema": 4}`, route with
+       the exported `args` plus `--gui.enabled=false --router.profile=enhanced <ARM_FLAGS>`,
+       power-traces and widths on the exported DSN, then (unless the session equals an earlier
+       arm's) `headless_run.py import <pcb> <ses> <pcb> opts.json`, `kicad-cli pcb drc
+       --refill-zones --save-board --severity-all --format json`, canary's `via_in_pad.py` and
+       `inner_tracks.py`;
+     - corpus rows: `tools/kicad-oracle/grade.sh --out <dir> <project> -- <capped freerouting> -de
+       {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced <canary-9511d9a ROW_FLAGS>
+       <ARM_FLAGS>`, then power-traces, widths, `via_in_pad.py` and `inner_tracks.py` on
+       `<dir>/routed/<stem>.kicad_pcb`;
+
+     then each distinct canary session once: `GRADE_REV=<b1994423 | e21ee05e> KICAD_BIN=<N05.3's
+     kshim> bash ../canary/hardware/tools/grade.sh ../canary/hardware/canary-pwr-rev1.0 route.ses
+     <dir>`.
+  3. Write `records.json` from the graded numbers (as N05.3's `analyze.py`), then `freerouting-dev
+     gate --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/Q17.4.json
+     --write-baseline` and the same with `--all-pairs`; the per-class narrowed copper of the wide
+     classes and the wall times go in the done note.
+  4. The canary sessions to `target/canary-handoff/2026-10-20-q17-4/` for canary-7a's grade.

@@ -1,0 +1,298 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q17.4-neck-in-the-pin-field",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/Q17-neck-only-in-the-pin-field.md (Q17.4; the arms come from Q17.2's bounded-neck and Q17.3's widen-back)",
+  "question": "Under profile enhanced at main a25c82f, where a connection that fails at its class width is retried with every trace at 300 um (router.neck_width_um = 300, Java's necked retry), does Q17.3's widen-back after that retry, or Q17.2's bounded-neck stage (the neck only within D of a pin) with the widen-back, keep the KiCad-unconnected total within N02's totals rule (accept no-regress) with no new clearance, width, via-in-pad or power-layer-trace breach, and either beat the retry on unconnected by more than the set's noise or ship less copper under the Board Setup width of the wide classes?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected",
+      "unrouted"
+    ],
+    "noise": {
+      "canary-pwr": 10,
+      "interf_u": 8.2,
+      "pic_programmer": 4.3
+    },
+    "min_boards": 3
+  },
+  "noise_bands": {
+    "canary-pwr": "10 (N02: the canary-pwr variants' spread; its two rows count as one board, summed)",
+    "interf_u": "8.2, N05-neck-down.json's band",
+    "pic_programmer": "4.3, N05-neck-down.json's band",
+    "flight-computer-core-board": "not registered as a number: the gate's default band max(2, ceil(5 % of connections)), connections = the 'started with N unrouted' count of the enhanced arm's route log on the row (decided by the input; Q14.json's definition)",
+    "cm4-edge-ai-carrier": "as flight-computer-core-board"
+  },
+  "engine": "freerouting-rs at main a25c82f (the commit that lands this registration adds docs and a test only, no engine change), one Linux release build for every arm: cargo build --release -p freerouting-cli -p freerouting-dev in the worktree target/orchestrator/q174/wt with CARGO_TARGET_DIR=target/orchestrator/q174/target, the two binaries copied to target/orchestrator/q174/run/bin/ and their sha256 written to run/bin/SHA256SUMS before the first route; profile enhanced as it is at a25c82f (--router.profile=enhanced on every command; its ENHANCED table includes neck_width_um = 300, power_layer_traces = none, via_clearance = net_class and the N06 rounds' Java-bug fixes); demos and corpus boards graded with WSL KiCad 10.0.7",
+  "arms": {
+    "enhanced": {
+      "engine": "as `engine`",
+      "command": "{ROUTE} -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced {ROW_FLAGS}",
+      "settings": {},
+      "what": "baseline: enhanced as it is, Java's necked retry at 300 um along the whole path (FreeroutingNeckDown), no widen-back"
+    },
+    "widen-back": {
+      "engine": "as `engine`",
+      "command": "{ROUTE} -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced {ROW_FLAGS} --router.neck_down.widen_back=true",
+      "settings": {
+        "router.neck_down.widen_back": "true"
+      },
+      "what": "candidate: the same retry at 300 um, then Q17.3's widen-back (each new narrow trace in ascending id, in pieces of at most 0.5 mm, back to the class width where the exact clearance check passes, 4-step tapers, wide islands no longer than two tapers dropped) before the pull-tight"
+    },
+    "bounded-neck-widen-back": {
+      "engine": "as `engine`",
+      "command": "{ROUTE} -de {DSN} -do {SES} --gui.enabled=false --router.profile=enhanced {ROW_FLAGS} --router.special.neck_down=bounded-neck --router.neck_down.widen_back=true",
+      "settings": {
+        "router.special.neck_down": "bounded-neck",
+        "router.neck_down.widen_back": "true"
+      },
+      "what": "candidate: Q17.2's bounded-neck in place of the retry (the failed connection searched again with the pin's neck width in rooms within D = courtyard plus one pitch of a pin of the connection, the class width elsewhere) followed by the full widen-back; router.neck_width_um stays at enhanced's 300, which the bounded-neck policy does not read (only the narrowing ledger's attribution does)"
+    }
+  },
+  "baseline_arm": "enhanced",
+  "candidate_arm": "bounded-neck-widen-back",
+  "pairs": [
+    [
+      "enhanced",
+      "widen-back"
+    ],
+    [
+      "enhanced",
+      "bounded-neck-widen-back"
+    ]
+  ],
+  "pairs_rule": "each listed pair is judged on its own by the totals block with the hard and guard metrics below: freerouting-dev gate --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/Q17.4.json --write-baseline (the primary pair), then the same with --all-pairs instead of --write-baseline; records.json is written from the graded numbers. A candidate passes when its pair passes the gate and keep_rule's clause (2) holds for it",
+  "boards": {
+    "set": "tools/bench/sets/q17-4.txt",
+    "eligibility": "every row; no row is dropped after a number",
+    "rows": {
+      "canary-plugin45": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "route": "CLI on the stored plugin export: the DSN of the plugin run of 2026-10-17 (the plugin's export and DSN fix-ups, no re-export); its classes are canary b1994423's Board Setup (Power_High, Switch_Node, Power 0.3 mm, GND 0.4 mm)",
+        "ROW_FLAGS": "--max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "widths_against": "crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn",
+        "grade": "canary hardware/tools/grade.sh against hardware/canary-pwr-rev1.0 with GRADE_REV=b1994423",
+        "time_before": "N05.3 (f010b1e): 110.5 s without the retry, 104.2 s with it"
+      },
+      "canary-9511d9a-mp1sweep": {
+        "board": "canary-pwr",
+        "input": "crates/freerouting/tests/data/canary-pwr-n05/canary-pwr-9511d9a-board-setup-widths.dsn",
+        "route": "CLI; the fixture fixtures/canary-pwr/canary-pwr-9511d9a.dsn with its four narrowed class widths set back to canary 9511d9a's Board Setup (Power_High 1.5, Switch_Node 1.5, Power 0.5, GND 0.5 mm), the case neck-down is for",
+        "ROW_FLAGS": "--router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2",
+        "widths_against": "crates/freerouting/tests/data/canary-pwr-n05/canary-pwr-9511d9a-board-setup-widths.dsn",
+        "grade": "canary hardware/tools/grade.sh against hardware/canary-pwr-rev1.0 with GRADE_REV=e21ee05e4d003e90197843e7104b8b15617827cc (board blob unchanged since 9511d9a)",
+        "time_before": "N05.3 (f010b1e): 154.0 s with the retry (66.7 s on the narrowed DSN); about 7 min per route at main (2026-10-20)"
+      },
+      "interf_u": {
+        "board": "interf_u",
+        "input": "KiCad 10.0.7 demo /usr/share/kicad/demos/interf_u/interf_u.kicad_pcb, tracks and vias stripped by tools/kicad-oracle/kicad_steps.py strip (K09's board; copy at target/orchestrator/neck/scratch/boards/interf_u/)",
+        "route": "the plugin's headless path: python3 -I kicad-plugin/headless_run.py export {PCB} {WORK} opts.json with opts.json = {\"schema\": 4} (the plugin's enhanced defaults: sweep free), then the router with the exported argument list (WORK/<stem>.args.json `args`) as {ROW_FLAGS}",
+        "widths_against": "the exported DSN",
+        "grade": "headless_run.py import, kicad-cli pcb drc --refill-zones --save-board --severity-all --format json, canary's via_in_pad.py and inner_tracks.py (N05.3's demo steps)",
+        "time_before": "N05.3 (f010b1e): 11.1 / 13.3 / 9.9 s (narrowed, Board Setup, retry)"
+      },
+      "pic_programmer": {
+        "board": "pic_programmer",
+        "input": "KiCad 10.0.7 demo /usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb, stripped as interf_u (copy at target/orchestrator/neck/scratch/boards/pic_programmer/)",
+        "route": "as interf_u",
+        "widths_against": "the exported DSN",
+        "grade": "as interf_u",
+        "time_before": "N05.3 (f010b1e): 0.3 s in every arm"
+      },
+      "flight-computer-core-board": {
+        "board": "flight-computer-core-board",
+        "input": "target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb (F03.3's corpus; class Ignitor 400 um over 13 nets, kicad_default 250 um; its prepped DSN target/corpus/prepped/flight-computer-core-board.dsn hashes e28cfc69bb6c7801877300502ce6f8fb7070c634a2fec511d1149755a1da6c86)",
+        "route": "tools/kicad-oracle/grade.sh --out {OUT} {PROJECT} -- {ARM_COMMAND} (strips the tracks and vias, exports the DSN, routes, imports, grades)",
+        "ROW_FLAGS": "as canary-9511d9a-mp1sweep (canary's graded flow: -mp 1, sweep free, 2 sweep passes, start ripup 1500, minimum trace width 150 um)",
+        "widths_against": "grade.sh's routed DSN, {OUT}/work/<stem>.dsn",
+        "grade": "grade.sh's summary (KiCad DRC of the routed board minus the unrouted input's), canary's via_in_pad.py and inner_tracks.py on {OUT}/routed/<stem>.kicad_pcb",
+        "time_before": "Q10.4 (mp1 plus sweep): 0.34-0.41 s; Q07's java arm (5 passes, optimizer off): 0.51 s"
+      },
+      "cm4-edge-ai-carrier": {
+        "board": "cm4-edge-ai-carrier",
+        "input": "target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb (F03.3's corpus; 6 layers, class Power 500 um over 10 nets, kicad_default 200 um; its prepped DSN hashes d9b2cd2931f261fd045614c9f623db4e0a1b551e02eb5c841951f8f01def0f35)",
+        "route": "as flight-computer-core-board",
+        "ROW_FLAGS": "as canary-9511d9a-mp1sweep",
+        "widths_against": "grade.sh's routed DSN",
+        "grade": "as flight-computer-core-board",
+        "time_before": "Q07's java arm (5 passes, optimizer off): 22.4 s"
+      }
+    },
+    "selection": "N05-neck-down.json's rows less CM5_MINIMA_3, plus two corpus boards with a class wider than 300 um that no neck-down measurement has used. CM5_MINIMA_3 is dropped: 85.5-86.1 s per route in N05.3 and no class wider than 300 um (N05.3's retry left it byte-identical). Corpus boards: of the 30 prepped corpus boards, five have a class wider than 300 um (cm4-edge-ai-carrier Power 500, eprom-card-80bus 1000 on every net, flight-computer-core-board Ignitor 400, microzed-carrier-board Power 480, moteus-c1 Gate 384); the two fastest by earlier summaries are kept, eprom-card-80bus (65-86 s), moteus-c1 (148 s, Q07) and microzed-carrier-board (302 s, N05.3's power-layer run) are not",
+    "files": {
+      "canary-plugin45": "0c49b990a62403166f19134127cd8dd293499326e536647a41a1d7ff2cca5942",
+      "canary-9511d9a-mp1sweep": "294bc980847bd8cb76594e32cea8b0154ca247555d4919af70ca0966d4ec9b11",
+      "interf_u": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "pic_programmer": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49",
+      "flight-computer-core-board": "04ba05dff4a9058be6f61120125120459b80c0febc48e089481aeedec8aa5e30",
+      "cm4-edge-ai-carrier": "602134459697fce219f88e4d5402530888b451890c62952b5c1f0392a5681626"
+    },
+    "project_files": {
+      "flight-computer-core-board": "d0093e3c5cca680c10c2004d94d63aeca1d5084cd07c1f8dc6dd8a86604048b7",
+      "cm4-edge-ai-carrier": "12896630ee7bf7aa2e2af98cf668256f07c3bb24386264866fbb28610f7205fb"
+    },
+    "outside_repository": [
+      "interf_u",
+      "pic_programmer",
+      "flight-computer-core-board",
+      "cm4-edge-ai-carrier"
+    ],
+    "hashes": "files: the routed input of each row (the DSN of the canary rows, the stripped .kicad_pcb of the demos, the corpus project's .kicad_pcb); project_files: the corpus projects' .kicad_pro; the run checks every hash before its first route and stops on a mismatch"
+  },
+  "grading": "WSL KiCad 10.0.7, one job at a time; canary rows through canary's grade.sh with KICAD_BIN set to a WSL path shim (N05.3's, target/orchestrator/neck/scratch/kshim). Each distinct session is graded once: when two arms' sessions on a row are byte-identical, the earlier arm's grade (order enhanced, widen-back, bounded-neck-widen-back) is used for both and the later one is not graded (canary and demo rows); the corpus rows route inside tools/kicad-oracle/grade.sh, which grades as it routes, so an identical corpus session's second grade is discarded unread. The canary sessions go to target/canary-handoff/2026-10-20-q17-4/ (SESs, SHA256SUMS, README.txt with the flags, the self-grade and the widths) for canary-7a's official grade",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "clearance_errors",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "power_layer_traces",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "inner_tracks",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "connections",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "below_minimum_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "clearance_errors_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "power_layer_traces_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "under_board_setup_mm",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "vias",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad, below_minimum, clearance_errors, power_layer_traces": "hard guards, no new breach versus baseline (decided 2026-10-18: no registration carries a hard guard the baseline already breaks): the arm's raw count minus the enhanced arm's raw count on the same row, floored at 0, so 0 in the enhanced arm by definition; the raw counts are reported as <name>_raw",
+    "via_in_pad_raw": "canary's via_in_pad.py on the graded board (canary rows: grade.sh's line)",
+    "below_minimum_raw": "KiCad track_width errors on the graded board",
+    "clearance_errors_raw": "KiCad error items of type clearance, hole_clearance, shorting_items, track_width, copper_edge_clearance and tracks_crossing, minus the same types on the unrouted input (demos and corpus; the canary inputs have none)",
+    "power_layer_traces_raw": "every trace on a power-type layer of the routed DSN: freerouting-dev power-traces {DSN} {SES}, the `all` count (0 expected under enhanced's power_layer_traces = none)",
+    "drc_real": "KiCad error-severity items other than unconnected items and starved thermals, minus the same types on the unrouted input; not worse than the enhanced arm",
+    "inner_tracks": "canary's inner_tracks.py count on the graded board (on canary every inner layer is a plane; on cm4-edge-ai-carrier inner signal layers count, so it is held to the enhanced arm's, not to 0); not worse than the enhanced arm",
+    "kicad_unconnected": "KiCad's unconnected items after importing the session",
+    "unrouted": "the router's final unrouted count (its log's last `final score: ... (N unrouted`)",
+    "connections": "the 'started with N unrouted' count of the route log (the corpus rows' default noise band)",
+    "under_board_setup_mm": "copper of the wide nets shipped under the net's Board Setup class width: freerouting-dev widths {WIDTHS_AGAINST} {SES} --json, the sum of under_mm over the nets whose class is wider than the board's narrowest class. The per-class delivered and under-width lengths of the wide classes (canary: Power_High, Switch_Node, Power, GND; interf_u and pic_programmer: their classes wider than 300 um; flight-computer-core-board: Ignitor; cm4-edge-ai-carrier: Power) from the same report, and the largest under-width nets, go in the done note",
+    "vias": "vias in the session",
+    "wall_seconds": "the route's wall time (date before and after the router process; the corpus rows: grade.sh's engine_seconds)",
+    "aborted": "1 when the route was killed by its ulimit -v 8000000 or its timeout -k 10 1800, else 0"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "A candidate arm is accepted when (1) its pair passes freerouting-dev gate (no-regress totals: the kicad_unconnected total not worse than the enhanced arm's by more than the set's noise, no board worse than twice its band; every hard metric 0, i.e. no new breach versus the enhanced arm; drc_real and inner_tracks not worse than enhanced's on any row; no aborted route) and (2) either its kicad_unconnected total beats the enhanced arm's by more than the set's noise, or under_board_setup_mm summed over all rows is lower than the enhanced arm's (Q17's decision: beat the retry on unconnected, or tie it and narrow less copper). When both candidates are accepted, the one with the lower kicad_unconnected total is chosen; on equal totals the lower summed under_board_setup_mm; then the lower summed wall_seconds",
+  "decision_table": {
+    "widen-back accepted": "N05 adds router.neck_down.widen_back = true to ENHANCED (settings/profile.rs) with this measurement, a DIVERGENCES 'Profile enhanced' line and the profile test; the retry at 300 stays",
+    "bounded-neck-widen-back accepted": "N05 makes bounded-neck enhanced's neck-down (router.special.neck_down = bounded-neck, router.neck_down.widen_back = true) in place of the retry, with a DIVERGENCES 'Profile enhanced' line; router.neck_width_um stays as an option (Java's own setting) and leaves ENHANCED",
+    "neither accepted": "enhanced stays as it is; the numbers go in Q17.4's note; both stages stay opt-in (N02's keep-or-delete rule applied there)"
+  },
+  "stop_rule": "one registered run per arm per row; no reruns with other settings, neck widths or neck distances; an aborted route is recorded (aborted = 1) and not rerun, and an arm with an aborted route is not accepted under this registration",
+  "run_limits": "decided 2026-10-20: measurement runs stay short, never an hour in total; canary-pwr's two rows are kept, every other row routes in well under a minute by the earlier summaries (time_before), and the arm count is three. Expected route time per arm: about 7 min (9511d9a) + 1.8 min (plugin45) + under 40 s for the four other rows; about 29 min over the three arms, grading extra. Each route runs alone, under ulimit -v 8000000 and timeout -k 10 1800",
+  "memory_cap": "ulimit -v 8000000 (8 GB of address space) on every route",
+  "not_registered": [
+    "the arm bounded-neck without the widen-back, which Q17.4's list names: cut to keep the run short (run_limits). It differs from bounded-neck-widen-back only inside the neck zones, where bounded-neck alone keeps the neck and the widen-back widens what fits, so bounded-neck-widen-back is the stage as Q02 designed it (bounded neck plus piecewise widen-back with taper); a later registration may measure bounded-neck alone",
+    "CM5_MINIMA_3 (N05's no-change control): see boards.selection",
+    "router.neck_down.path_mm (KRT's fixed 2.5 mm neck length) and other neck widths",
+    "the plugin's canary export at a later canary commit: plugin45's stored DSN is the plugin row, as in N05.3"
+  ],
+  "seen_before_registration": "No route of any arm at a25c82f under this registration, on any row; the implementer routed nothing. Before it: N05.3 (2026-10-18, engine f010b1e, enhanced before the N06 rounds and via_clearance = net_class) routed the retry at 300 um, this registration's enhanced arm at an older engine, on four of these rows: canary-plugin45 36 KiCad unconnected, 32.6 mm under the Board Setup width, 104.2 s; canary-9511d9a-mp1sweep 35, 309.9 mm (Power_High 140.9 mm of 206.0 mm under width), 154.0 s; interf_u 12, 1.8 mm, 9.9 s; pic_programmer 2, 0.6 mm, 0.3 s. Later N06 registrations routed canary-pwr under enhanced, on other DSNs or flags (their notes). Q17.1 timed the Issue093-interf_u DSN fixture under legacy only (1.25-1.28 s, SES identical with and without the width policy); Q17.2 and Q17.3 measured only the fixtures q02-qfn-power, q17-pinch-22mm, q02-pinch and q03-qfn-0p5: no number of bounded-neck or the widen-back exists on a registered row. The corpus rows were routed by Q07 (cm4-edge-ai-carrier: 7 unrouted, 78-80 KiCad unconnected, 22.4 s; flight-computer-core-board: 1 unrouted, 0.51 s), Q10.4 (flight-computer-core-board: 1 unrouted, 5 KiCad unconnected, 28 vias, 591 mm, 0.34-0.41 s) and N04, at older engines and without these arms; F03.3's corpus listing counted 7 unrouted on cm4-edge-ai-carrier",
+  "amendments": []
+}

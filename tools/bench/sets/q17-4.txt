@@ -1,0 +1,15 @@
+# Q17.4: the neck-down candidates (Q17.3's widen-back after enhanced's retry at 300 um, Q17.2's
+# bounded-neck with the widen-back) against profile enhanced (docs/roadmap/tasks/Q17-neck-only-in-the-pin-field.md),
+# registered in docs/roadmap/prereg/Q17.4.json. The two canary rows count as one board.
+# canary-pwr: the plugin's stored export (Board Setup widths of canary b1994423) and the 9511d9a fixture with
+# its Board Setup widths (1.5 mm Power_High and Switch_Node), routed by the CLI:
+crates/freerouting/tests/data/canary-pwr-n05/plugin-b1994423.dsn
+crates/freerouting/tests/data/canary-pwr-n05/canary-pwr-9511d9a-board-setup-widths.dsn
+# KiCad 10.0.7 demos, tracks and vias stripped (outside the repository; K09.json's boards and hashes),
+# routed through the plugin's headless path (kicad-plugin/headless_run.py):
+#   /usr/share/kicad/demos/interf_u/interf_u.kicad_pcb
+#   /usr/share/kicad/demos/pic_programmer/pic_programmer.kicad_pcb
+# F03.3's corpus (outside the repository; tools/corpus/fetch.sh and prep.sh), a class wider than 300 um,
+# routed and graded by tools/kicad-oracle/grade.sh:
+#   target/corpus/projects/flight-computer-core-board/flight-computer-core-board.kicad_pcb   # Ignitor 400 um
+#   target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb   # Power 500 um
