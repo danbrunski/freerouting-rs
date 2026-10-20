@@ -165,24 +165,35 @@ def mask_polygons(facts):
         if shape["layer"] not in MASK_LAYERS:
             continue
         side = MASK_LAYERS.index(shape["layer"])
-        kind, pts = shape["kind"], [tuple(p) for p in shape["points"]]
-        width = shape.get("width_mm", 0.0)
         shapes += 1
-        if shape.get("filled") and kind in ("ring", "circle"):
-            if kind == "ring" and len(pts) >= 3:
-                out.append((side, pts))
-            elif kind == "circle":
-                (x, y), (px, py) = pts
-                r = math.hypot(px - x, py - y) + SAGITTA_MM + MIN_HALF_MM
-                n = max(8, _chords(r, 2.0 * math.pi))
-                step = 2 * math.pi / n
-                out.append((side, [(x + r * math.cos(step * i), y + r * math.sin(step * i)) for i in range(n)]))
-            if width <= 0:
-                continue
-        pieces, curved = _pieces(shape)
-        w = max(width / 2, MIN_HALF_MM) + (SAGITTA_MM + MIN_HALF_MM if curved else 0.0)
-        out += [(side, _quad(p, q, w)) for p, q in pieces]
+        body, strokes = shape_polygons(shape)
+        out += [(side, poly) for poly in ([body] if body else []) + strokes]
     return out, shapes
+
+
+def shape_polygons(shape):
+    """`(body, strokes)` of one shape (mm, KiCad's frame): the polygon of a
+    filled ring or circle (a circle `SAGITTA_MM` and 1 um wider), else None,
+    and the rectangles within half the stroke of each piece (curves cut into
+    chords, then `SAGITTA_MM` and 1 um wider), none for a filled shape without
+    a stroke. Q18.7's mask apertures and Q22.4's copper graphics."""
+    kind, pts = shape["kind"], [tuple(p) for p in shape["points"]]
+    width = shape.get("width_mm", 0.0)
+    body = None
+    if shape.get("filled") and kind in ("ring", "circle"):
+        if kind == "ring" and len(pts) >= 3:
+            body = pts
+        elif kind == "circle":
+            (x, y), (px, py) = pts
+            r = math.hypot(px - x, py - y) + SAGITTA_MM + MIN_HALF_MM
+            n = max(8, _chords(r, 2.0 * math.pi))
+            step = 2 * math.pi / n
+            body = [(x + r * math.cos(step * i), y + r * math.sin(step * i)) for i in range(n)]
+        if width <= 0:
+            return body, []
+    pieces, curved = _pieces(shape)
+    w = max(width / 2, MIN_HALF_MM) + (SAGITTA_MM + MIN_HALF_MM if curved else 0.0)
+    return body, [_quad(p, q, w) for p, q in pieces]
 
 
 def apply(dsn_text, facts):
@@ -199,7 +210,7 @@ def apply(dsn_text, facts):
 
     def keepout(name, layer, poly):
         coords = " ".join(f"{um(x)} {-um(y)}" for x, y in poly + poly[:1])
-        return f'    (keepout "{name}" (polygon {layer} 0 {coords})){dsn.nl}'
+        return f'    (keepout "{name}" (polygon {dsn.layer_token(layer)} 0 {coords})){dsn.nl}'
 
     lines = [keepout(KEEPOUT_NAME, layer, quad) for layer in layers for quad in rects]
     mask_lines = [keepout(MASK_KEEPOUT_NAME, layers[-1] if side else layers[0], poly) for side, poly in masks]

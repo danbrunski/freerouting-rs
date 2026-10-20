@@ -531,6 +531,8 @@ settings_table! {
                 "The board's minimum through-hole drill in micrometers (KiCad `m_MinThroughDrill`): a via type with a smaller drill is routed at the floor size (unset: unknown)."),
             (via_annular_um, f64, opt, None, None, "viaAnnularUm", [], Flat::No, true,
                 "The board's minimum via annular ring in micrometers (KiCad `m_ViasMinAnnularWidth`): a via type below the via minimums is routed at the floor size, `drill + 2 * annular` at least (unset: unknown)."),
+            (clearance_um, f64, opt, None, None, "clearanceUm", [], Flat::No, true,
+                "The board's minimum clearance in micrometers (KiCad `m_MinClearance`): every copper clearance below it is raised to it (unset: unknown; Q22.10)."),
             (from_classes, bool, opt, None, None, "fromClasses", [], Flat::No, true,
                 "With `track_width_um` unset, the narrowest class width in the design is the minimum track width (unset: off, profile `legacy`, Java's neck-downs); profile `enhanced` turns it on (Q18)."),
         }

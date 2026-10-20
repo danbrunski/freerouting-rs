@@ -36,6 +36,9 @@
 //!   does not carry, as copper keepouts named `edge_clearance`, and the
 //!   board's own mask apertures, named `solder_mask`) and [`mask`]
 //!   (the pads' solder-mask expansions, in [`read::Extras::solder_mask`]).
+//! - Q22.4 adds [`copper_graphics`]: copper shapes and copper texts, which the
+//!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); shapes
+//!   of a net with pins are left out with a warning.
 //! - K08 adds [`write`]: the copper index of the file
 //!   ([`KicadRead::copper_index`]), the geometry diff against a routed board,
 //!   and the text splice that writes the routed copper into a copy of the
@@ -89,6 +92,7 @@
 
 pub mod arc;
 pub mod classes;
+pub mod copper_graphics;
 pub mod dru;
 pub mod edge_keepouts;
 pub mod error;

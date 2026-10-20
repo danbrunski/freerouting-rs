@@ -488,6 +488,7 @@ BOARD_MINIMUM_SETTINGS = (
     ("m_ViasMinAnnularWidth", "router.board_minimums.via_annular_um"),
     ("m_CopperEdgeClearance", "router.copper_to_edge_clearance_um"),
     ("m_HoleClearance", "router.hole_clearance_um"),
+    ("m_MinClearance", "router.board_minimums.clearance_um"),  # Q22.10
 )
 
 

@@ -378,6 +378,16 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   Copper that only differs from the input by the router's split counts as input
   (`InputCopper`). A trace end is dangling when its end point lies on no copper of its net
   (KiCad's anchor rule; Q16's cleanup uses the round end's overlap).
+- `board_minimums.clearance_um` (Q22.10, `job::clearance_floor`) is a settings field Java does
+  not have, unset by default: the board's minimum clearance (KiCad Board Setup
+  `m_MinClearance`), a floor under every clearance of the matrix between two classes other than
+  `null`, on every layer, applied before the copper-to-edge and hole overrides (whose classes
+  keep their own values). KiCad's DRC applies it under every net class ("board minimum
+  clearance"); pocketsdr-v3-0 (Default class 0.09 mm, minimum 0.127 mm) had 446 routing-caused
+  `clearance` items in Q18's grades. Unset, nothing changes (`tests/clearance_floor.rs`:
+  `without_a_minimum_clearance_the_matrix_is_the_dsns`,
+  `the_board_minimum_clearance_raises_every_clearance_below_it`,
+  `routed_copper_keeps_the_board_minimum_clearance`).
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
   by default and in `legacy` (off: Java leaves the stubs of unfinished connections on the
   board); profile `enhanced` turns it on (N05.3, the "Profile `enhanced`" line below). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
@@ -1134,6 +1144,30 @@ compare them on 12 committed boards and the 56-board corpus).
   expansions. Pinned by
   `tests/edge_keepouts.rs::the_boards_mask_apertures_become_keepouts_on_their_copper_side`; the
   `kicad_parity.rs` comparison leaves them out.
+- **Copper shapes and copper texts are obstacles** (Q22.4, `copper_graphics`): KiCad's DRC
+  keeps other copper its clearance from every shape and visible text on a copper layer, and the
+  export writes none of them (footprint copper lines only as drawing outline; pcietest had 127
+  routed tracks over its connectors' B.Cu `fp_line`s, sonde-xilinx one over a `gr_text`). The
+  reader adds keepouts named `copper_graphic` on the shape's layer (a filled body, and the
+  rectangles within half the stroke of each piece) for a shape of no net, of a net-tie
+  footprint or of a net without pins, and keepouts named `copper_text` for a visible text: a
+  box that holds the glyphs (no font engine: `1.25 × width` per character plus the stroke, by
+  `1.8 × height` plus the stroke, a footprint text the square of half side `hypot(width,
+  height)`). A shape of a net with pins is left out, with the warning "copper graphics: N
+  shape(s) of a net left out (Q22.4 remainder)" (decided 2026-10-20: fixed wires of that net
+  covering it cut vfo-controller's route at 120 s with 7 unrouted; the remainder, one
+  conduction polygon of the net plus a keepout of its outline for other nets, is in Q22.4).
+  Pinned by `crates/freerouting-kicad/tests/copper_graphics.rs`
+  (`a_footprint_copper_line_becomes_a_keepout_on_its_layer`,
+  `a_copper_text_becomes_a_keepout_box_that_holds_its_glyphs`,
+  `a_shape_of_a_net_is_left_out_and_logged`,
+  `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts`) and the engine's
+  `tests/copper_graphics.rs` (`the_route_goes_round_the_copper_line_and_the_copper_text`).
+- The `.kicad_pro`'s minimum clearance (`min_clearance`, `m_MinClearance`; Q22.10,
+  `project::BoardMinimums::clearance`) is read, none where the file leaves it out (KiCad's
+  default is 0) or sets 0; a `.kicad_pcb` job sets it as `router.board_minimums.clearance_um`
+  (`job::prepare::board_minimums_patch`). Pinned by
+  `tests/clearance_floor.rs::a_kicad_pcb_input_passes_its_minimum_clearance`.
 - Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
   area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
   footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
@@ -1604,6 +1638,19 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_edge_graphics.py` (`test_a_filled_front_mask_polygon_keeps_the_top_copper_out_of_it`,
   `test_a_back_mask_shape_goes_on_the_bottom_copper`,
   `test_kicad_board_collects_the_boards_mask_shapes_but_not_the_footprints`).
+- **Copper shapes and copper texts become obstacles** (Q22.4, `copper_graphics.py`,
+  `kicad_board.copper_graphics`, `export_flow.fix_copper_graphics`, always on): after KiCad's
+  export, the reader's `copper_graphic` keepouts (see freerouting-kicad), corners rounded to
+  1 µm, and for a visible text keepouts of the outer outlines of KiCad's own glyph strokes
+  (`TransformTextToPolySet`; the box for a knockout text or a text box) named `copper_text`. A
+  shape of a net the DSN lists is left out and counted in the log, as in the reader. Pinned by
+  `test_copper_graphics.py` (`test_a_footprint_line_on_copper_becomes_a_keepout_on_its_layer`,
+  `test_a_copper_text_becomes_keepouts_of_its_glyph_outlines`,
+  `test_a_shape_of_a_net_is_left_out_and_logged`,
+  `test_kicad_board_collects_copper_shapes_and_visible_texts`).
+- **Board Setup's minimum clearance is passed** (Q22.10, `options.BOARD_MINIMUM_SETTINGS`):
+  `m_MinClearance` becomes `--router.board_minimums.clearance_um` under both profiles; 0 passes
+  nothing. Pinned by `test_min_clearance.py`.
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,

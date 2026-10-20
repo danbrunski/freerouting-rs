@@ -54,7 +54,7 @@ pub const MIN_HALF_NM: f64 = 1_000.0;
 /// An Edge.Cuts piece this close to an outer contour is the outline.
 pub const ON_OUTLINE_NM: f64 = 20_000.0;
 
-type F = (f64, f64);
+pub(crate) type F = (f64, f64);
 
 fn f(p: Pt) -> F {
     (f64::from(p.0), f64::from(p.1))
@@ -188,7 +188,7 @@ pub fn edge_rects(
 
 /// A closed polygon keepout (KiCad's frame, nm) in the DSN frame (µm, Y
 /// negated).
-fn keepout(name: &str, layer: &str, poly: &[F]) -> Keepout {
+pub(crate) fn keepout(name: &str, layer: &str, poly: &[F]) -> Keepout {
     let pt = |p: F| Point::new(um_f(p.0), -um_f(p.1));
     Keepout {
         kind: KeepoutKind::Keepout,
@@ -225,40 +225,57 @@ pub fn mask_polygons(board_shapes: &[Graphic], max_error: i32) -> Vec<(bool, Vec
             "B.Mask" => true,
             _ => continue,
         };
-        if g.filled {
-            let body: Vec<F> = match &g.kind {
-                GKind::Poly(pts) => pts.iter().map(|p| f(*p)).collect(),
-                GKind::Rect { start, end } => {
-                    vec![f(*start), f((end.0, start.1)), f(*end), f((start.0, end.1))]
-                }
-                GKind::Circle { start, end } => {
-                    let r = f64::from(end.0 - start.0).hypot(f64::from(end.1 - start.1))
-                        + f64::from(max_error)
-                        + 1_000.0;
-                    let arc = ShapeArc::from_centre_start_angle(
-                        *start,
-                        (start.0.wrapping_add(ki_round(r)), start.1),
-                        Angle(360.0),
-                    );
-                    arc.to_polyline(max_error).into_iter().map(f).collect()
-                }
-                _ => Vec::new(),
-            };
-            if body.len() >= 3 {
-                out.push((back, body));
-            }
-            if g.width <= 0 {
-                continue;
-            }
-        }
-        let (pieces, curved) = pieces(g, max_error);
-        let mut w = (f64::from(g.width) / 2.0).max(MIN_HALF_NM);
-        if curved {
-            w += f64::from(max_error) + 1_000.0;
-        }
-        out.extend(pieces.iter().map(|(p, q)| (back, quad(*p, *q, w).to_vec())));
+        let (body, strokes) = shape_polygons(g, max_error);
+        out.extend(body.into_iter().map(|b| (back, b)));
+        out.extend(strokes.into_iter().map(|s| (back, s)));
     }
     out
+}
+
+/// The filled body of a closed shape (a polygon, rectangle or circle; a
+/// circle the maximum error and 1 µm wider), if it is filled, and the
+/// rectangles within half the stroke of each straight piece (curves cut into
+/// chords at the maximum error, then the maximum error and 1 µm wider),
+/// unless a filled shape has no stroke. KiCad's frame, nm. Q18.7's mask
+/// apertures and Q22.4's copper graphics.
+pub(crate) fn shape_polygons(g: &Graphic, max_error: i32) -> (Option<Vec<F>>, Vec<Vec<F>>) {
+    let mut body = None;
+    if g.filled {
+        let pts: Vec<F> = match &g.kind {
+            GKind::Poly(pts) => pts.iter().map(|p| f(*p)).collect(),
+            GKind::Rect { start, end } => {
+                vec![f(*start), f((end.0, start.1)), f(*end), f((start.0, end.1))]
+            }
+            GKind::Circle { start, end } => {
+                let r = f64::from(end.0 - start.0).hypot(f64::from(end.1 - start.1))
+                    + f64::from(max_error)
+                    + 1_000.0;
+                let arc = ShapeArc::from_centre_start_angle(
+                    *start,
+                    (start.0.wrapping_add(ki_round(r)), start.1),
+                    Angle(360.0),
+                );
+                arc.to_polyline(max_error).into_iter().map(f).collect()
+            }
+            _ => Vec::new(),
+        };
+        if pts.len() >= 3 {
+            body = Some(pts);
+        }
+        if g.width <= 0 {
+            return (body, Vec::new());
+        }
+    }
+    let (pieces, curved) = pieces(g, max_error);
+    let mut w = (f64::from(g.width) / 2.0).max(MIN_HALF_NM);
+    if curved {
+        w += f64::from(max_error) + 1_000.0;
+    }
+    let strokes = pieces
+        .iter()
+        .map(|(p, q)| quad(*p, *q, w).to_vec())
+        .collect();
+    (body, strokes)
 }
 
 /// [`mask_polygons`] as DSN keepouts on `front` (F.Mask) or `back` (B.Mask).

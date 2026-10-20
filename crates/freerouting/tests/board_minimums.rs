@@ -334,6 +334,7 @@ fn kicad_board_minimums_default_to_kicads_and_zero_is_none() {
             via_annular: Some(100_000),
             copper_edge_clearance: Some(500_000),
             hole_clearance: Some(250_000),
+            clearance: None,
         }
     );
     let zero = Project::parse(

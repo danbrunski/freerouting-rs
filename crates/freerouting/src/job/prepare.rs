@@ -210,6 +210,7 @@ pub fn board_minimums_patch(minimums: &BoardMinimums) -> Option<SettingsPatch> {
     patch.board_minimums.via_diameter_um = um(minimums.via_diameter);
     patch.board_minimums.via_drill_um = um(minimums.through_drill);
     patch.board_minimums.via_annular_um = um(minimums.via_annular);
+    patch.board_minimums.clearance_um = um(minimums.clearance);
     patch.copper_to_edge_clearance_um = um(minimums.copper_edge_clearance);
     patch.hole_clearance_um = um(minimums.hole_clearance);
     (*minimums != BoardMinimums::NONE).then_some(patch)

@@ -187,8 +187,10 @@ class Dsn:
                     break
                 self.net_class[_unquote(tok.text)] = name
         self.layers = []  # (name, type, type atom node)
+        self.layer_tokens = {}  # name -> the DSN's own spelling, quotes kept
         for layer in _children(self.structure, "layer") if self.structure else []:
             name = _unquote(layer.children[1].text)
+            self.layer_tokens[name] = layer.children[1].text
             kind, atom = None, None
             for t in _children(layer, "type"):
                 if len(t.children) > 1:
@@ -251,6 +253,13 @@ class Dsn:
                 continue
             out.append((plane, _unquote(parts[1].text), _unquote(poly.children[1].text)))
         return out
+
+    def layer_token(self, name):
+        """The layer's name as the structure spells it: quoted when KiCad
+        quoted it (a user name such as "Top Layer, Top"); a name the DSN does
+        not list stays as it is. Unquoted, the router would read the first
+        word as the layer and drop the shape."""
+        return self.layer_tokens.get(name, name)
 
     def net_token(self, name):
         """The net's name as the DSN's network section spells it."""
@@ -341,7 +350,7 @@ def _edge_keepouts(board, dsn, layers):
         (x1 - w, y0 - o, x1 + o, y1 + o),
     ]
     out = [
-        f'    (keepout "" (rect {layer} {um(a)} {-um(d)} {um(c)} {-um(b)})){dsn.nl}'
+        f'    (keepout "" (rect {dsn.layer_token(layer)} {um(a)} {-um(d)} {um(c)} {-um(b)})){dsn.nl}'
         for layer in layers
         for a, b, c, d in strips
     ]
@@ -349,7 +358,7 @@ def _edge_keepouts(board, dsn, layers):
     for layer in layers:
         for quad in quads:
             coords = " ".join(f"{um(x)} {-um(y)}" for x, y in quad + quad[:1])
-            out.append(f'    (keepout "" (polygon {layer} 0 {coords})){dsn.nl}')
+            out.append(f'    (keepout "" (polygon {dsn.layer_token(layer)} 0 {coords})){dsn.nl}')
     return out
 
 
@@ -393,7 +402,7 @@ def _pad_keepouts(board, dsn, layers):
         x, y = pad["at_mm"]
         for layer in pad["layers"]:
             if layer in layers:
-                out.append(f'    (keepout "" (circle {layer} {um(dia)} {um(x)} {-um(y)})){dsn.nl}')
+                out.append(f'    (keepout "" (circle {dsn.layer_token(layer)} {um(dia)} {um(x)} {-um(y)})){dsn.nl}')
     return out
 
 
@@ -424,7 +433,7 @@ def apply(dsn_text, board, settings):
         fixed_nets.add((net, z["layer"]))
         token = dsn.net_token(net)
         for rect in fill_rects(z["fill"]):
-            fixed_wires.append(_wire(z["layer"], token, rect, dsn.nl))
+            fixed_wires.append(_wire(dsn.layer_token(z["layer"]), token, rect, dsn.nl))
     outer_layers = {z["layer"] for z in board.get("zones", []) if z["outer"]} | {"F.Cu", "B.Cu"}
     n_planes = 0
     for node, net, layer in dsn.planes():

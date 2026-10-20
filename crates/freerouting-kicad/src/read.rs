@@ -647,6 +647,26 @@ pub fn read_with_rules(
         let masks = crate::edge_keepouts::mask_polygons(&board_shapes, project.max_error);
         keepouts.extend(crate::edge_keepouts::mask_keepouts(&masks, front, back));
     }
+    // Q22.4: copper shapes and texts as keepouts; shapes of a net that has
+    // pins (and so is in the network) are left out and counted.
+    let copper_graphics =
+        crate::copper_graphics::read_copper_graphics(board, &layers, &nets, &mut warnings)?;
+    let has_net = |net: u32| {
+        net > 0
+            && pins_by_code
+                .get(net as usize)
+                .is_some_and(|pins| !pins.is_empty())
+    };
+    keepouts.extend(crate::copper_graphics::keepouts(
+        &copper_graphics,
+        &layers,
+        has_net,
+        project.max_error,
+    ));
+    warnings.extend(crate::copper_graphics::left_out_warning(
+        &copper_graphics,
+        has_net,
+    ));
 
     let clearance = um(i64::from(default_values.clearance));
     let structure = Structure {

@@ -13,7 +13,7 @@ directly, with none of those DSN steps (`snapshot.py`).
 
 Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), the
 Edge.Cuts, Margin and board mask-aperture keepouts (Q18.5, Q18.7, `edge_graphics`,
-always on), then the
+always on), the copper graphics and texts (Q22.4, `copper_graphics`, always on), then the
 K09 fix-ups (`dsn_fixups`); the pads' solder-mask apertures go to the router as
 a flag (Q18.7, `solder_mask_args`). After `ImportSpecctraSES`, `after_import` sets the
 drills KiCad's import takes from the net class instead of the session. A fix-up that fails is logged with a WARNING and
@@ -26,6 +26,7 @@ from pathlib import Path
 
 try:  # inside the plugin package
     from . import (
+        copper_graphics,
         dsn_fixups,
         edge_graphics,
         kicad_areas,
@@ -36,6 +37,7 @@ try:  # inside the plugin package
         snapshot,
     )
 except ImportError:  # tests and headless scripts put this folder on sys.path
+    import copper_graphics
     import dsn_fixups
     import edge_graphics
     import kicad_areas
@@ -148,6 +150,22 @@ def fix_edge_graphics(board, pcbnew, dsn):
     return lines
 
 
+def fix_copper_graphics(board, pcbnew, dsn):
+    """Q22.4: the copper shapes and texts the export leaves out, as keepouts
+    (`copper_graphics`; shapes of a net the DSN lists are left out and
+    counted). Always on: routing never crosses the board's own copper.
+    Returns the log lines (none with nothing on copper)."""
+    try:
+        facts = kicad_board.copper_graphics(board, pcbnew)
+        text = _read(dsn)
+        new_text, lines = copper_graphics.apply(text, facts)
+        if new_text != text:
+            _write(dsn, new_text)
+    except Exception as e:  # never block routing on the fix-up
+        lines = [f"WARNING: copper-graphic obstacles skipped: {e!r}"]
+    return lines
+
+
 def solder_mask_args(board, pcbnew, dsn):
     """Q18.7: the router flag that keeps other nets out of the pads' mask
     apertures (`kicad_board.mask_expansions`), for the pads whose aperture
@@ -210,6 +228,7 @@ def prepare(board, pcbnew, dsn, opts, export):
     if opts.rule_area_fixup:
         lines += fix_rule_areas(board, pcbnew, dsn)
     lines += fix_edge_graphics(board, pcbnew, dsn)
+    lines += fix_copper_graphics(board, pcbnew, dsn)
     mask_args, mask_lines = solder_mask_args(board, pcbnew, dsn)
     lines += mask_lines
     args, more = fix_dsn(board, pcbnew, dsn, opts)

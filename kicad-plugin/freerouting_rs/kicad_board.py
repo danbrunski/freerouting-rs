@@ -218,6 +218,74 @@ def edge_graphics(board, pcbnew):
     return {"edge_clearance_mm": edge, "outline_mm": rings, "shapes": shapes}
 
 
+def _cast(item):
+    """The item's own class; a PCB_FIELD (which `Cast` refuses) as it is."""
+    try:
+        return item.Cast() if hasattr(item, "Cast") else item
+    except TypeError:
+        return item
+
+
+def _text_polygons(pcbnew, item, max_error):
+    """Q22.4: the outer outlines (mm) of a text's copper: KiCad's own glyph
+    strokes (`TransformTextToPolySet`), or the box `TransformShapeToPolygon`
+    gives a knockout text or a text box."""
+    sps = pcbnew.SHAPE_POLY_SET()
+    knockout = bool(getattr(item, "IsKnockout", lambda: False)())
+    if knockout or hasattr(item, "GetShape") or not hasattr(item, "TransformTextToPolySet"):
+        item.TransformShapeToPolygon(sps, item.GetLayer(), 0, max_error, pcbnew.ERROR_OUTSIDE)
+    else:
+        item.TransformTextToPolySet(sps, 0, max_error, pcbnew.ERROR_OUTSIDE)
+    if hasattr(sps, "Simplify"):
+        try:
+            sps.Simplify()
+        except TypeError:  # KiCad 9 takes the mode
+            sps.Simplify(pcbnew.SHAPE_POLY_SET.PM_FAST)
+    out = []
+    for i in range(sps.OutlineCount()):
+        ch = sps.Outline(i)
+        out.append([_pt(pcbnew, ch.CPoint(k)) for k in range(ch.PointCount())])
+    return out
+
+
+def copper_graphics(board, pcbnew):
+    """Q22.4: what `copper_graphics.apply` reads. Every shape on a copper layer
+    of the board and its footprints (the `edge_graphics` dicts plus `net`:
+    its net name, empty for none or in a net-tie footprint), every visible
+    text on a copper layer (`layer`, `polygons`), in board order then
+    footprint order, and the number of net-tie shapes."""
+    is_copper = getattr(pcbnew, "IsCopperLayer", None)
+    try:
+        max_error = board.GetDesignSettings().m_MaxError
+    except AttributeError:
+        max_error = 5000
+    items = [(item, False) for item in board.GetDrawings()]
+    for fp in board.GetFootprints():
+        tie = bool(getattr(fp, "IsNetTie", lambda: False)())
+        fields = list(fp.GetFields()) if hasattr(fp, "GetFields") else []
+        items += [(item, tie) for item in list(fp.GraphicalItems()) + fields]
+    shapes, texts, ties = [], [], 0
+    for item, tie in items:
+        item = _cast(item)
+        layer = item.GetLayer()
+        if is_copper is not None and not is_copper(layer):
+            continue
+        name = _layer_name(board, layer)
+        if is_copper is None and not name.endswith(".Cu"):
+            continue
+        if hasattr(item, "GetText"):  # PCB_TEXT, PCB_FIELD, PCB_TEXTBOX
+            if hasattr(item, "IsVisible") and not item.IsVisible():
+                continue
+            texts.append({"layer": name, "polygons": _text_polygons(pcbnew, item, max_error)})
+        elif hasattr(item, "GetShape"):
+            net = "" if tie else (item.GetNetname() if hasattr(item, "GetNetname") else "")
+            ties += 1 if tie else 0
+            for shape in _edge_shapes(pcbnew, item, name):
+                shape["net"] = net
+                shapes.append(shape)
+    return {"shapes": shapes, "texts": texts, "net_tie_shapes": ties}
+
+
 def _expansion(pad, layer):
     try:
         return pad.GetSolderMaskExpansion(layer)

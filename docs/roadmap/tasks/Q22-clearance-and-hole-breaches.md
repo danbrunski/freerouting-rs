@@ -71,6 +71,7 @@ Prerequisites: Q18 (the floors and the minimums), Q19 (grading under the board's
 | Q22.6 | `tools/kicad-oracle/tests/run-plugin-export-test.sh` | `tools/kicad-oracle/grade.sh`, `tools/kicad-oracle/README.md`, `kicad-plugin/headless_run.py` |
 | Q22.7–Q22.8 | `docs/roadmap/prereg/Q22.json`, `tools/bench/sets/q22-clearance.txt`, `crates/freerouting-dev/tests/prereg_q22.rs` | — |
 | Q22.9 | — (runs only, under `target/orchestrator/q22/`) | — |
+| Q22.10 | `crates/freerouting/src/job/clearance_floor.rs`, `crates/freerouting/tests/clearance_floor.rs`, `kicad-plugin/tests/test_min_clearance.py` | `crates/freerouting/src/settings/fields.rs` (`board_minimums`), `crates/freerouting/src/job/overrides.rs` (`apply_all`), `crates/freerouting/src/job/prepare.rs` (`board_minimums_patch`), `crates/freerouting-kicad/src/project.rs` (`BoardMinimums`), `kicad-plugin/freerouting_rs/options.py` (`BOARD_MINIMUM_SETTINGS`), `docs/DIVERGENCES.md` |
 
 Sequencing:
 - **Q22.2 and Q22.6 can start now.** They touch only `tools/kicad-oracle/` and
@@ -346,7 +347,7 @@ Sequencing:
       - KiCad unconnected unchanged on all five;
     - `python3 -m pytest kicad-plugin/tests` passes.
 
-- [ ] **Q22.4 — Copper graphics and copper text are obstacles.** On copper layers:
+- [~] **Q22.4 — Copper graphics and copper text are obstacles.** On copper layers:
   - footprint lines, rectangles, polygons, arcs, circles and visible text;
   - board-level graphics and text.
 
@@ -363,6 +364,78 @@ Sequencing:
       against footprint graphics (38 before);
     - sonde-xilinx on the plugin path: 0 (1 before);
     - KiCad unconnected reported for both.
+  - *Partial 2026-10-20:* shapes of no net and copper text are keepouts; a shape of a net the
+    DSN lists is left out (decided 2026-10-20, option (c)). What landed:
+    - Fixture `crates/freerouting/tests/data/kicad/q22-copper-graphics.kicad_pcb`: J1's two pads
+      "2" (net N2) at (12, 10) and (18, 10) mm, a 0.5 mm B.Cu `fp_line` of no net between them, a
+      1.5 mm `gr_text "GND"` on F.Cu at (15, 10), and a filled F.Cu `gr_poly` of net FG under P1;
+      `kicad-plugin/tests/data/q22-copper-graphics.dsn` is KiCad 10.0.7's export of it.
+    - Plugin (`copper_graphics.py`, `kicad_board.copper_graphics`, `export_flow.fix_copper_graphics`
+      after `fix_edge_graphics`): `kicad-plugin/tests/test_copper_graphics.py`, 11 tests in the
+      venv and the pcbnew-gated one (KiCad 10.0.7's glyph strokes, 12.842..17.158 x
+      9.021..10.836 mm), run with the system `python3`. The line's keepout is (12950,
+      -10250)..(17050, -9750) µm on B.Cu; the text's keepouts are the glyphs' outer outlines on
+      F.Cu. The FG polygon is not written, and the log says
+      `copper graphics: 1 shape(s) of a net left out (Q22.4 remainder)`
+      (`test_a_shape_of_a_net_is_left_out_and_logged`,
+      `test_a_net_line_is_left_out_beside_the_keepouts`).
+    - Reader (`crates/freerouting-kicad/src/copper_graphics.rs`, called from `read.rs`):
+      `tests/copper_graphics.rs`, 4 tests: `a_footprint_copper_line_becomes_a_keepout_on_its_layer`
+      (the plugin's corners, to 1e-6 µm), `a_copper_text_becomes_a_keepout_box_that_holds_its_glyphs`
+      (12037.5..17962.5 x 8500..11500 µm, which holds the plugin's glyphs),
+      `a_shape_of_a_net_is_left_out_and_logged` (no keepout, no fixed wire, the same warning as
+      the plugin's log line) and `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts`.
+      "The same in both inputs": the line's keepout is identical. The text differs by design: the
+      reader has no font engine, so it keeps out a box that holds the glyphs (module docs and
+      DIVERGENCES).
+    - Engine (`crates/freerouting/tests/copper_graphics.rs`):
+      `without_the_obstacles_the_route_crosses_the_copper_graphics` (the control crosses one of
+      them) and `the_route_goes_round_the_copper_line_and_the_copper_text` (legacy and enhanced:
+      incomplete 0, gap to the line and to the text box >= 1999 board units, i.e. the 0.2 mm
+      clearance less 1 unit of rounding).
+    - Layer quoting (a bug on main too, fixed here; decided 2026-10-20 to land it with Q22.4).
+      vfo's DSN names its copper layers `"Top Layer, Top"` and `"Bottom Layer, Bottom"`, and
+      every plugin fix-up wrote the layer unquoted, so the router dropped those shapes ("wire
+      has no shape"), among them main's Q18.5/Q18.7 edge and mask keepouts (54 lines).
+      `Dsn.layer_token` is now used by `dsn_fixups` (edge, pad and pour keepouts and wires),
+      `edge_graphics` and `copper_graphics`; `kicad-plugin/tests/test_layer_tokens.py` has 5
+      tests. Of the measured rows, only vfo has such layer names.
+    - Re-measure (two arms, `grade.sh --export plugin {"schema": 4}`, `enhanced`, each row's
+      Board Setup flags from the plugin, release CLIs of main `a976e02` and of this change,
+      `ulimit -v 8000000`, `timeout 120`; `target/orchestrator/q22k/out/{before,q22k}`):
+      - pcietest (N04.3 `center` grade, `--keep-tracks`): routing-caused `clearance` 130 → **0**,
+        `shorting_items` 122 → 0, `hole_clearance`/`edge`/`solder_mask_bridge`/below-minimum 0 →
+        0; KiCad unconnected 4 → 4 (input 256). The plugin's DSN carried 259 `copper_graphic`
+        keepouts. Both arms stop at the 120 s limit (the CLI saves on SIGTERM).
+      - sonde-xilinx (plugin path, routed whole): `clearance` 2 → **0** (the 2 were one track
+        against "PCB text 'GND'"); KiCad unconnected 2 → 2 (input 48); 61 `copper_text` keepouts
+        from 8 texts.
+      - mydevboard: 0 → 0 in every class; unconnected 57 → 57.
+      - vfo, with this landing's code (net shapes left out, layers quoted; release CLI of the
+        branch on main `ba38e3f`, `timeout 300`, `target/orchestrator/q22k/out/q22k-optc/vfo`):
+        route 1.19 s → **17.02 s**, engine unrouted 0 → **5** (all of net FG), input check clean,
+        output check 0 breaches; KiCad unconnected 11 → **13** (input 87); routing-caused copper
+        errors 0 of every type (`clearance`, `hole_clearance`, `copper_edge_clearance`,
+        `shorting_items`, `solder_mask_bridge`, below-minimum); `drc_real` is `starved_thermal`
+        2 → 5. The DSN has 0 `copper_graphic` keepouts: the plugin left out vfo's 3 FG polygons
+        ("3 shape(s) of a net left out"). The 0 → 5 unrouted come from the Q18 edge and mask
+        keepouts that now load (the same DSN without the FG wires gave 16.95 s and 5 unrouted
+        before this change); their KiCad cost is graded again in Q22.8.
+    - The "38 before" in the third clause was Q22.1's count on the bare export; this re-measure
+      grades the plugin export, where the before arm has 130.
+  - *Partial 2026-10-20 (why net shapes are left out):* the branch first wrote a shape of a
+    listed net as fixed wires of that net (its stroke pieces, and a filled body in 50 µm strips
+    covered by 0.1 mm bands plus a 0.1 mm boundary wire). With the layers quoted, vfo's 3 FG
+    polygons became 665 fixed wires; the route was cut at 120 s with 7 unrouted and 940 router
+    violations and gave no SES, and the input check reported 1604 input violations
+    (`track_width` 665, bands under the 0.2 mm minimum; `copper_edge_clearance` 173; `keepout`
+    766, FG copper in the mask apertures). That code is not landed and not kept (decided
+    2026-10-20: option (a) does not reuse the strip covering).
+    - **Remains (option (a)):** one conduction polygon of the net for each such shape, plus a
+      keepout of its outline that holds only for other nets, in the plugin and the reader; then
+      vfo, miniscope (6 net shapes) and openair (2) graded again. Until then a track of another
+      net can cross a net shape of a listed net (KiCad reports it as `clearance` or
+      `shorting_items`).
 
 - [ ] **Q22.5 — `.kicad_dru` clearances between item types.**
   - `dru.rs` learns the conditions `A.Type` (`'track'`, `'via'`, `'pad'`), `A.isPlated()` and
@@ -437,6 +510,9 @@ Sequencing:
   - **Guards:** routing-caused `clearance`, `hole_clearance` and `below_minimum` (including
     `annular_width`) are 0 in `q22` on every row.
   - **Report:** KiCad unconnected and route time.
+  - **Limit** (added 2026-10-20, from Q22.4/Q22.10's re-measure): pcietest and pocketsdr-v3-0 get
+    at least 300 s, or a work budget. At 120 s both are cut by wall clock (the CLI saves on
+    SIGTERM). pocketsdr-v3-0 needs 217.8 s to complete with the board minimum clearance.
   - **Accept:** the registration and its pin test (`prereg_q22.rs`) are in, with no number yet.
 
 - [ ] **Q22.8 — Re-measure.** Run Q22.7 as registered.
@@ -531,3 +607,87 @@ Sequencing:
         any difference in export and grading. From b98074e to main the code adds 0: the
         record's 26 → (c) 26.
       - Verdict: the options. The preset on main with the floors gives 16, under the 18.
+
+- [x] **Q22.10 — The board's minimum clearance is a floor** (added 2026-10-20). pocketsdr-v3-0's
+  Q18 grades (`target/orchestrator/q18b/out/grade/mp1/pocketsdr-v3-0`) have 446 routing-caused
+  `clearance` items, every one "board minimum clearance 0.1270 mm" (e.g. `Track [+3.3V]` on F.Cu
+  at (155.1411, 97.54) against `Via [/PLL_CLK_B]` at (154.522, 97.9331), actual 0.0919 mm). Its
+  `.kicad_pro` has `min_clearance` 0.127 mm and one net class, Default, at 0.09 mm; KiCad's DSN
+  export carries only the class value, and KiCad's DRC takes the larger.
+  - `router.board_minimums.clearance_um` raises every clearance-matrix entry below it to it
+    (the copper-to-edge and hole classes keep their own rules). The plugin passes
+    `m_MinClearance`; a `.kicad_pcb` job reads `min_clearance` from the `.kicad_pro` (KiCad's
+    default is 0, no floor). `legacy` with nothing supplied stays Java.
+  - The other Board Setup constraints Q18 left out are listed with their KiCad key and whether
+    they apply to routed copper; the ones that do are floored or named as follow-ups.
+  - **Accept:**
+    - pinning tests for the engine, the reader and the plugin, written first; DIVERGENCES lines
+      and module docs;
+    - pocketsdr-v3-0 routed through the plugin's export with its Board Setup minimums: 0
+      routing-caused `clearance` (446 before), KiCad unconnected beside it;
+    - the list of the other constraints.
+  - *Done 2026-10-20:*
+    - Evidence checked first: the before arm's pocketsdr grade has 499 routing-caused `clearance`
+      items, each "board minimum clearance 0.1270 mm"; its `.kicad_pro` has `min_clearance` 0.127
+      and Default 0.09. Corpus scan: `min_clearance` above every class clearance only on
+      pocketsdr-v3-0 (0.127 vs 0.09) and overlord (0.175 vs 0.1).
+    - Engine: `crates/freerouting/src/job/clearance_floor.rs`, called first in
+      `overrides::apply_all`. It raises every entry between non-null classes on every layer
+      (except the board-edge and hole classes) to the floor, then reinserts the search-tree items,
+      and logs "Board minimum clearance 350.0 um (... board units): N class clearance(s) raised to
+      it." `crates/freerouting/tests/clearance_floor.rs`, 4 tests:
+      `without_a_minimum_clearance_the_matrix_is_the_dsns`,
+      `the_board_minimum_clearance_raises_every_clearance_below_it` (350 µm floor; the edge class
+      stays 2500), `routed_copper_keeps_the_board_minimum_clearance` (legacy without a floor
+      routes at 0.2 mm; legacy and enhanced with a 400 µm floor keep >= 3999 units), and
+      `a_kicad_pcb_input_passes_its_minimum_clearance` (the reader: missing key and 0 give None,
+      0.127 gives 127000 nm and `clearance_um` 127.0).
+    - Plugin: `options.BOARD_MINIMUM_SETTINGS` maps `m_MinClearance` to
+      `router.board_minimums.clearance_um`; `kicad-plugin/tests/test_min_clearance.py` 2 tests. With
+      KiCad's default of 0 nothing is passed, so `legacy` with nothing supplied stays Java
+      (`settings_defaults` pins `board_minimums.clearance_um` None).
+    - DIVERGENCES: an engine line (`board_minimums.clearance_um`), a freerouting-kicad line
+      (`min_clearance`) and a kicad-plugin line (`m_MinClearance`).
+    - pocketsdr-v3-0 through the plugin export with its Board Setup minimums (same arms as
+      Q22.4): routing-caused `clearance` 499 → **0**, `hole_to_hole` 2 → 0, hole/edge/smb/below-minimum
+      0 → 0. KiCad unconnected 40 → 48 at the 120 s limit (114 s complete before, cut at 120 s
+      after); with 300 s (`out/q22k-300s`) the run completes in 217.8 s with unconnected **39**,
+      `clearance` 0, engine "2 unrouted and 0 violations".
+    - The other Board Setup constraints (pcbnew defaults read from `BOARD_DESIGN_SETTINGS`):
+
+      | Constraint | KiCad key (`.kicad_pro` rules / pcbnew) | Applies to routed copper | State |
+      |---|---|---|---|
+      | Hole to hole | `min_hole_to_hole` / `m_HoleToHoleMin` (default 0.25 mm) | yes, via drill to via or pad drill | follow-up: different-net vias are kept apart by clearance plus annular rings (pocketsdr 2 → 0); same-net vias are not floored |
+      | Copper to mask aperture | `solder_mask_to_copper_clearance` / `m_SolderMaskToCopperClearance` (default 0) | yes, routed copper against another net's mask opening | follow-up: not added to Q18.7's mask keepouts; nonzero on mydevboard 0.005, fc-rom 0.05, solarmeshtastic 0.005 mm |
+      | Thermal spokes | `min_resolved_spokes` / `m_MinResolvedSpokes` (default 2) | indirectly: zone fill against routed copper (`starved_thermal`) | not floored |
+      | Microvia size and drill | `min_microvia_diameter`, `min_microvia_drill` / `m_MicroViasMinSize`, `m_MicroViasMinDrill` | no: the router places through vias only | n/a |
+      | Minimum connection width | `min_connection` / `m_MinConn` (default 0) | no: zone fill only | n/a |
+      | Silk and text | `min_silk_clearance`, `min_text_height`, `min_text_thickness` | no | n/a |
+
+- [ ] **Q22.11 — Vias of the same net keep the board's hole-to-hole distance** (added 2026-10-20;
+  decided 2026-10-20: routing never breaks the board's manufacturing rules, graded under the
+  board's own rules). KiCad's `min_hole_to_hole` (`m_HoleToHoleMin`, default 0.25 mm) applies
+  between any two drills, of any net. Q22.10 keeps vias of different nets apart (clearance plus
+  annular rings; pocketsdr-v3-0 `hole_to_hole` 2 → 0). Two vias of one net, and a via next to a
+  pad drill of its own net, have no floor.
+  - `router.board_minimums.hole_to_hole_um`: the plugin passes `m_HoleToHoleMin`; a `.kicad_pcb`
+    job reads `min_hole_to_hole` (KiCad's default when the key is missing). The router places no
+    via whose drill comes closer than that to another drill. `legacy` with nothing supplied stays
+    Java.
+  - **Accept:**
+    - pinning tests written first: an engine test where two vias of one net would sit closer
+      than the minimum; a reader test; a plugin test. DIVERGENCES lines;
+    - routing-caused `hole_to_hole` 0 on the Q22.7 rows, with KiCad unconnected beside it.
+
+- [ ] **Q22.12 — Copper keeps the board's solder-mask-to-copper clearance** (added 2026-10-20;
+  decided 2026-10-20: routing never breaks the board's manufacturing rules). KiCad's
+  `solder_mask_to_copper_clearance` (`m_SolderMaskToCopperClearance`, default 0) keeps copper of
+  another net that far from a mask aperture. Q18.7's mask keepouts cover only the aperture.
+  Nonzero on mydevboard (0.005 mm), fc-rom (0.05 mm) and solarmeshtastic (0.005 mm).
+  - The plugin and the `.kicad_pcb` reader grow Q18.7's mask keepouts (pad apertures and mask
+    graphics) by it.
+  - **Accept:**
+    - plugin and reader tests written first on a fixture with a nonzero value: the keepout is the
+      aperture grown by the clearance; with 0, nothing changes;
+    - fc-rom routed through the plugin's export: 0 routing-caused `solder_mask_bridge`, with KiCad
+      unconnected beside it.

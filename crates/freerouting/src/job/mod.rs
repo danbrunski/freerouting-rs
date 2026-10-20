@@ -12,6 +12,7 @@
 //!   a terminal state.
 //! - [`log`]: the log lines tools parse and the score format.
 
+pub mod clearance_floor;
 pub mod deadline;
 pub mod log;
 pub mod outputs;
