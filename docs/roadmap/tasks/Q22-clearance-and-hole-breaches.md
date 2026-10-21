@@ -905,7 +905,7 @@ Sequencing:
       |---|---|---|---|
       | Hole to hole | `min_hole_to_hole` / `m_HoleToHoleMin` (default 0.25 mm) | yes, via drill to via or pad drill | follow-up: different-net vias are kept apart by clearance plus annular rings (pocketsdr 2 → 0); same-net vias are not floored |
       | Copper to mask aperture | `solder_mask_to_copper_clearance` / `m_SolderMaskToCopperClearance` (default 0) | yes, routed copper against another net's mask opening | follow-up: not added to Q18.7's mask keepouts; nonzero on mydevboard 0.005, fc-rom 0.05, solarmeshtastic 0.005 mm |
-      | Thermal spokes | `min_resolved_spokes` / `m_MinResolvedSpokes` (default 2) | indirectly: zone fill against routed copper (`starved_thermal`) | not floored |
+      | Thermal spokes | `min_resolved_spokes` / `m_MinResolvedSpokes` (default 2) | indirectly: zone fill against routed copper (`starved_thermal`) | Q22.20: a `thermal_spoke` keepout along each spoke of every thermal-relief pad, carrying the pad's net (canary-pwr 6 → 0); 0 writes none |
       | Microvia size and drill | `min_microvia_diameter`, `min_microvia_drill` / `m_MicroViasMinSize`, `m_MicroViasMinDrill` | no: the router places through vias only | n/a |
       | Minimum connection width | `min_connection` / `m_MinConn` (default 0) | no: zone fill only | n/a |
       | Silk and text | `min_silk_clearance`, `min_text_height`, `min_text_thickness` | no | n/a |
@@ -1604,7 +1604,7 @@ Sequencing:
       `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: 7 of 7
       exact.
 
-- [ ] **Q22.20 — Routed copper leaves room for a zone's thermal spokes** (added 2026-10-21, from
+- [x] **Q22.20 — Routed copper leaves room for a zone's thermal spokes** (added 2026-10-21, from
   Q22.18's canary-pwr grade). Board Setup's `min_resolved_spokes` (default 2) is the one rule in
   Q22.10's table that routing breaks indirectly, and it was left "not floored". On canary-pwr
   `ab786fcc`, the final Q22.18 binary routes 38 KiCad unconnected against 58, but leaves 6
@@ -1625,3 +1625,80 @@ Sequencing:
       0 routing-caused `starved_thermal` and every Q22.8 guard 0, with KiCad unconnected beside
       38;
     - the DIVERGENCES line (enhanced only), and Q22.10's table row updated.
+  - *Done 2026-10-21:*
+    - Diagnosis (`target/orchestrator/q2218/runs/out-canary-q2218d`, KiCad 10.0.7's fill with
+      pcbnew, spokes probed half the gap past the pad's edge). GND zones on F.Cu and B.Cu:
+      priority 0, `thru_hole_only` (thermal for PTH), gap 0.5, spoke 0.5, clearance 0.3, minimum
+      width 0.2 mm; J1's pads are 1.7 mm round PTH with no pad or footprint overrides, spoke angle
+      45° (KiCad's default for a circle), `min_resolved_spokes` 2. KiCad's DRC
+      (`drc_test_provider_zone_connections.cpp`) counts the fill outlines crossing the pad grown by
+      half the gap, and ignores spokes into an island that connects only that pad. On the
+      unrouted board all 4 spokes of every pad reach the main fill. Routed:
+
+      | pad | layer | KiCad | spokes left (island area) | other-net copper in the spoke ways |
+      |---|---|---|---|---|
+      | J1-6 | B.Cu | 2 to isolated islands | 45° (1.0 mm²), 225° (1.4), 315° (19.7) | BUCK_PG along the header's outer edge (y 44.49, 45.02; 45°, 135°), /Supervisor/BUTTON (225°) |
+      | J1-14 | F.Cu | actual 1 | 45° (0.8) | +3V3_AON tracks at y 44.55..44.71 and its via (45°, 135°), MCU_NRST along the rows' midline y 47.617 (225°, 315°) |
+      | J1-14 | B.Cu | 1 to an isolated island | 45° (1.3), 315° (23.3) | BUCK_PG (45°, 135°), +3V3_AON x 122.41 and via (135°, 225°) |
+      | J1-20 | F.Cu | actual 1 | 135° (0.8) | +3V3_AON (45°, 135°), MCU_NRST and its via (225°, 315°) |
+      | J1-20 | B.Cu | 2 to isolated islands | 45° (1.3), 135° (1.3), 315° (12.6) | BUCK_PG (45°, 135°), /Pi_Interface/PI_NRST (225°), MCU_NRST (315°) |
+      | J1-25 | F.Cu | actual 1 | 135° (6.2) | PI_5V_OFF on the midline and its via (45°), /Pi_Interface/PI_3V3 at y 50.148 (225°, 315°) |
+
+      Every blocker is another net's track or via; no own-net track is involved.
+    - Fix, input-side for every profile like Q22.16 (only the plugin and the reader write it, so
+      `legacy` on Java's DSNs is unchanged): one rectangle per spoke KiCad builds
+      (`ZONE_FILLER::buildThermalSpokes`: a circle's spokes at 0/90/180/270° turned by the spoke
+      angle, another shape's at the spoke angle to its unrotated box grown by the gap and half the
+      minimum width, then the pad's orientation), from the pad's centre to the spoke's end plus
+      the spoke width and the zone's clearance, the spoke width plus twice the clearance wide, as
+      `keepout "thermal_spoke"` with `(clearance_class null)`, for each pad that a zone of its net
+      connects by thermal relief (pad `zone_connect` > footprint > zone; `thru_hole_only` for PTH
+      only) on a signal layer, where the zone's outline holds the pad's centre and the far end and
+      no higher-priority zone of another net or no-fill rule area holds the far end; none for
+      custom pads or with `min_resolved_spokes` 0. All spokes are kept, not just 2: KiCad also
+      needs the spokes' fill to reach more than the pad, and the free spokes are not known before
+      routing. Reader `crates/freerouting-kicad/src/thermal_spokes.rs` (`Project::min_resolved_spokes`),
+      plugin `kicad-plugin/freerouting_rs/thermal_spokes.py`, `kicad_board.thermal_facts`,
+      `export_flow.fix_thermal_spokes`; engine `io/specctra/parser/thermal_keepouts.rs`
+      (`board::items::THERMAL_SPOKE_KEEPOUT_NAME`, in `FITTED_KEEPOUT_NAMES`): the keepout
+      carries the net of the pins at the midpoints of its two short sides (the pad's centre and
+      the far end), so only other nets' traces and vias keep out; with none or two nets there it
+      is left out. A first fit (one net under the whole rectangle) left J5's 1.27 mm header
+      spokes out, as each overlaps the next pad: canary 6 → 1 `starved_thermal` (J5-9), 44
+      unconnected (`out-canary-q2220a`).
+    - Fixture `crates/freerouting/tests/data/quality/q22-thermal.kicad_pcb` (GND zone F.Cu+B.Cu,
+      J1 1.7 mm PTH, U2 2 x 1 mm SMD turned 20° with a 30° spoke angle, U3 PTH at 30°, U4 solid,
+      U5 1 mm PTH 1.27 mm from an A pad, P2 outside the zone, A from PA1 to PA2 across J1),
+      `q22-thermal-base.dsn` (KiCad 10.0.7's export) and `q22-thermal.dsn` (the plugin's output,
+      28 keepouts). Tests:
+      - engine `crates/freerouting/tests/thermal_spokes.rs`, 5:
+        `the_keepouts_carry_the_pads_net` (plugin and reader: 28, each carries GND, no obstacle
+        for A's pins), `another_nets_trace_leaves_the_spokes_free` (KiCad's export: A crosses a
+        spoke way; with the keepouts, legacy and enhanced, both inputs: 0 incomplete, A meets
+        none of the 28), `the_pad_is_still_reachable_by_its_own_net` (planes removed: GND reaches
+        every pad by traces, 0 incomplete), `the_output_check_reports_only_another_nets_trace_in_a_spoke_way`,
+        `the_dsn_writer_keeps_the_keepouts`;
+      - reader `crates/freerouting-kicad/tests/thermal_spokes.rs`, 4 (directions, lengths and
+        widths against KiCad's; the plugin's keepouts to its 1 µm rounding;
+        `min_resolved_spokes` 0; solid zone, higher-priority zone and no-fill rule area);
+      - plugin `kicad-plugin/tests/test_thermal_spokes.py`, 7, among them the pcbnew-gated
+        `test_the_fixture_through_pcbnew_gives_the_facts_and_kicads_spokes`: after KiCad 10.0.7's
+        own fill every keepout's axis holds filled copper half the gap past the pad (run with the
+        venv and `PYTHONPATH` at pcbnew's `dist-packages` module).
+    - canary-pwr `ab786fcc`, `target/orchestrator/q2220/runs/arm.sh` (Q22.18's, `{"schema": 5}`,
+      plugin export, `--timeout 600`), binary `target/orchestrator/q2220/bin/freerouting-rs-q2220b`,
+      one KiCad 10.0.7 grade (`out-canary-q2220b`): routing-caused 0 of every type (`starved_thermal`
+      6 → 0; manufacturing breaches 0), below minimum 0/0/0, via in pad 0 of 136
+      (`via_in_pad.py`), KiCad unconnected **40** (input 174; 38 before), route 459.0 s (353.0 s
+      before; stopped at its pass limit, engine 29 unrouted and 8 violations), 1290 tracks, 136
+      vias, 2363.6 mm. 125 keepouts in the DSN.
+    - DIVERGENCES: engine (`A thermal-spoke keepout carries its pad's net`), freerouting-kicad and
+      kicad-plugin (`Room for each thermal spoke is kept out of other nets`); not enhanced-only, as
+      Q22.16's keepouts are not. Q22.10's row updated.
+    - `legacy`: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: 7 of 7 exact (eq and bytes), PARITY OK. Gate: `cargo fmt --all --check`,
+      `cargo clippy --workspace --all-targets -- -D warnings` clean; `cargo test --workspace
+      --no-fail-fast` 2788 passed, 0 failed (the KiCad-export comparisons in `kicad_parity.rs`,
+      `tests/common/copper.rs` and `copper.rs::board_areas` drop `thermal_spoke` like the other
+      reader-only keepouts; `rule-areas` now has some); plugin `pytest kicad-plugin/tests` 495
+      passed, 22 skipped (498, 19 with pcbnew).

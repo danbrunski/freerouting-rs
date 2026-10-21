@@ -177,6 +177,10 @@ field they lack takes the profile's default):
   fingers), and logs each pad it cannot reach. Every mask keepout carries
   `(clearance_class null)` (Q22.18). Tests: `test_edge_graphics.py`, `test_solder_mask.py`,
   `test_footprint_masks.py`.
+  Each thermal spoke of a pad that a zone of its net connects by thermal relief gets a
+  `thermal_spoke` keepout the router fits to the pad's net (Q22.20, `thermal_spokes.py`,
+  `export_flow.fix_thermal_spokes`), so other nets leave Board Setup's `min_resolved_spokes`
+  room. Test: `test_thermal_spokes.py`.
 - Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
   `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),
   `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`,

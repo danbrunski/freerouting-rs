@@ -241,7 +241,7 @@ fn insert_fitted(ctx: &mut ReadContext, area: &DsnArea, layer: &str, group: &Gro
 }
 
 /// The pins whose shape on `layer` meets one of `pieces`, in id order.
-fn pins_in(board: &RoutingBoard, pieces: &[TileShape], layer: i32) -> BTreeSet<ItemId> {
+pub(super) fn pins_in(board: &RoutingBoard, pieces: &[TileShape], layer: i32) -> BTreeSet<ItemId> {
     let mut pins = BTreeSet::new();
     for piece in pieces {
         let shape = Shape::from(piece.clone());

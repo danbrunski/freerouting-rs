@@ -193,6 +193,10 @@ fn board_areas(board: &RoutingBoard) -> Vec<(String, String)> {
         .filter(|i| i.component_id() == 0)
         .filter_map(|i| i.as_area().map(|a| (a, i)))
         .filter(|(a, _)| !a.is_conduction_area())
+        // Q22.20: the thermal-spoke keepouts of the board's pads are no rule areas
+        .filter(|(a, _)| {
+            a.name.as_deref() != Some(freerouting_kicad::thermal_spokes::THERMAL_SPOKE_KEEPOUT_NAME)
+        })
         .map(|(a, _)| {
             (
                 format!("{:?}", a.kind),

@@ -79,12 +79,19 @@ fn without_edge_keepouts(mut pcb: Pcb) -> (Pcb, usize) {
     use freerouting_kicad::edge_keepouts::{KEEPOUT_NAME, MASK_KEEPOUT_NAME};
     use freerouting_kicad::footprint_masks::FOOTPRINT_MASK_KEEPOUT_NAME;
     use freerouting_kicad::pad_clearance::KEEPOUT_NAME as PAD_KEEPOUT_NAME;
+    use freerouting_kicad::thermal_spokes::THERMAL_SPOKE_KEEPOUT_NAME;
     let keepouts = &mut pcb.structure.as_mut().unwrap().keepouts;
     let before = keepouts.len();
     keepouts.retain(|k| {
         !matches!(
             k.area.name.as_deref(),
-            Some(KEEPOUT_NAME | MASK_KEEPOUT_NAME | PAD_KEEPOUT_NAME | FOOTPRINT_MASK_KEEPOUT_NAME)
+            Some(
+                KEEPOUT_NAME
+                    | MASK_KEEPOUT_NAME
+                    | PAD_KEEPOUT_NAME
+                    | FOOTPRINT_MASK_KEEPOUT_NAME
+                    | THERMAL_SPOKE_KEEPOUT_NAME
+            )
         )
     });
     let removed = before - keepouts.len();
@@ -870,7 +877,8 @@ fn edge_keepouts_are_the_only_extra_keepouts() {
     // the circular cutout of motorizedopener, the outline holes of
     // tastexx-pcb and the slot of the synthetic outline: holes the export
     // keeps at the default clearance only; Q22.16: the F.Mask circles of
-    // Test's mounting holes and the F.Mask polygons of dev-board's USB-C pads
+    // Test's mounting holes and the F.Mask polygons of dev-board's USB-C pads;
+    // Q22.20: the thermal-spoke keepouts of rule-areas' pads in its zones
     assert_eq!(
         with_some,
         [
@@ -878,7 +886,8 @@ fn edge_keepouts_are_the_only_extra_keepouts() {
             "motorizedopener",
             "dev-board",
             "tastexx-pcb",
-            "outline"
+            "outline",
+            "rule-areas"
         ]
     );
 }

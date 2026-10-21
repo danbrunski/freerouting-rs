@@ -276,6 +276,11 @@ pub const MASK_KEEPOUT_NAMES: [&str; 3] = [
     SHARED_PAD_KEEPOUT_NAME,
 ];
 
+/// The name of a keepout that keeps a thermal spoke's way out free of other
+/// nets (Q22.20, `io::specctra::parser::thermal_keepouts`): over pins of one
+/// net it carries that net, like [`PAD_KEEPOUT_NAME`].
+pub const THERMAL_SPOKE_KEEPOUT_NAME: &str = "thermal_spoke";
+
 /// The name of a net-tie footprint's copper-shape keepout (Q22.19): the DSN
 /// reader lets in the nets of the pins under it and under the `net_tie`
 /// keepouts it touches on its layer, however many, and keeps every other
@@ -284,11 +289,12 @@ pub const NET_TIE_KEEPOUT_NAME: &str = "net_tie";
 
 /// The names of every keepout the DSN reader fits to the pins under it
 /// ([`ObstacleArea::is_pad_keepout`]).
-pub const FITTED_KEEPOUT_NAMES: [&str; 4] = [
+pub const FITTED_KEEPOUT_NAMES: [&str; 5] = [
     BOARD_MASK_KEEPOUT_NAME,
     PAD_KEEPOUT_NAME,
     SHARED_PAD_KEEPOUT_NAME,
     NET_TIE_KEEPOUT_NAME,
+    THERMAL_SPOKE_KEEPOUT_NAME,
 ];
 
 /// A keepout or a conduction area.
@@ -350,7 +356,9 @@ impl ObstacleArea {
     /// (`io::specctra::parser::pad_keepouts`): a mask aperture (Q22.16,
     /// Q22.18; over pins of one net it carries that net, over pins of several
     /// nets none) or a net tie's copper shape (Q22.19; it carries the nets of
-    /// its pins, however many). It is no copper to the router, so it is an
+    /// its pins, however many) or a thermal spoke's way out (Q22.20,
+    /// `io::specctra::parser::thermal_keepouts`; it carries its pad's net).
+    /// It is no copper to the router, so it is an
     /// obstacle only for traces and vias of the nets it does not carry, never
     /// for pins or other areas.
     pub fn is_pad_keepout(&self) -> bool {

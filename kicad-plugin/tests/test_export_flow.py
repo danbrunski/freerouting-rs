@@ -38,6 +38,7 @@ def prepared(tmp_path, monkeypatch):
     monkeypatch.setattr(export_flow, "fix_rule_areas", lambda *_: events.append("areas") or [])
     monkeypatch.setattr(export_flow, "fix_edge_graphics", lambda *_: events.append("edges") or [])
     monkeypatch.setattr(export_flow, "fix_copper_graphics", lambda *_: events.append("copper") or [])
+    monkeypatch.setattr(export_flow, "fix_thermal_spokes", lambda *_: events.append("thermal") or [])
     monkeypatch.setattr(export_flow, "solder_mask_args", lambda *_: ([], events.append("mask") or []))
     monkeypatch.setattr(export_flow, "fix_dsn", lambda *_: ([], events.append("fixups") or []))
 
@@ -54,7 +55,7 @@ def test_refill_precedes_export_and_fixups(prepared):
     board, pcbnew, events, export, path = prepared
     ok, args, lines, locked = export_flow.prepare(board, pcbnew, path, options.RouteOptions(), export)
     assert ok and args == [] and locked == []
-    assert events == ["fill", "export", "areas", "edges", "copper", "mask", "fixups"]
+    assert events == ["fill", "export", "areas", "edges", "copper", "thermal", "mask", "fixups"]
     assert lines == ["zones refilled before routing export"]
 
 
@@ -101,7 +102,7 @@ def test_a_board_without_copper_zones_needs_no_filler(prepared):
     board, _, events, export, path = prepared
     board.Zones = lambda: []
     ok, _, _, _ = export_flow.prepare(board, object(), path, options.RouteOptions(), export)
-    assert ok and events == ["export", "areas", "edges", "copper", "mask", "fixups"]
+    assert ok and events == ["export", "areas", "edges", "copper", "thermal", "mask", "fixups"]
 
 
 def test_recipe_records_prepared_input_and_current_minimum(prepared):

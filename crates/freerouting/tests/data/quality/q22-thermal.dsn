@@ -1,0 +1,138 @@
+(pcb "q22-thermal.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  40000 -30000  0 -30000  0 0  40000 0  40000 -30000)
+    )
+    (plane GND (polygon F.Cu 0  10000 -5000  30000 -5000  30000 -25000  10000 -25000  10000 -5000))
+    (plane GND (polygon B.Cu 0  10000 -5000  30000 -5000  30000 -25000  10000 -25000  10000 -5000))
+    (keepout "thermal_spoke" (polygon F.Cu 0 20389 -15389 21980 -13798 21202 -13020 19611 -14611 20389 -15389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 19611 -15389 21202 -16980 21980 -16202 20389 -14611 19611 -15389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 19611 -14611 18020 -16202 18798 -16980 20389 -15389 19611 -14611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 20389 -14611 18798 -13020 18020 -13798 19611 -15389 20389 -14611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 13904 -9542 16512 -10001 16703 -8918 14096 -8458 13904 -9542) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 13458 -8904 13099 -10943 14182 -11134 14542 -9096 13458 -8904) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 14096 -8458 11488 -7999 11297 -9082 13904 -9542 14096 -8458) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 14542 -9096 14901 -7057 13818 -6866 13458 -8904 14542 -9096) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 26275 -21476 28224 -20351 27674 -19399 25725 -20524 26275 -21476) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 25524 -21275 26649 -23224 27601 -22674 26476 -20725 25524 -21275) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 25725 -20524 23776 -21649 24326 -22601 26275 -21476 25725 -20524) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 26476 -20725 25351 -18776 24399 -19326 25524 -21275 26476 -20725) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 24389 -9389 25732 -8045 24955 -7268 23611 -8611 24389 -9389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 23611 -9389 24955 -10732 25732 -9955 24389 -8611 23611 -9389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 23611 -8611 22268 -9955 23045 -10732 24389 -9389 23611 -8611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon F.Cu 0 24389 -8611 23045 -7268 22268 -8045 23611 -9389 24389 -8611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 20389 -15389 21980 -13798 21202 -13020 19611 -14611 20389 -15389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 19611 -15389 21202 -16980 21980 -16202 20389 -14611 19611 -15389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 19611 -14611 18020 -16202 18798 -16980 20389 -15389 19611 -14611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 20389 -14611 18798 -13020 18020 -13798 19611 -15389 20389 -14611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 26275 -21476 28224 -20351 27674 -19399 25725 -20524 26275 -21476) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 25524 -21275 26649 -23224 27601 -22674 26476 -20725 25524 -21275) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 25725 -20524 23776 -21649 24326 -22601 26275 -21476 25725 -20524) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 26476 -20725 25351 -18776 24399 -19326 25524 -21275 26476 -20725) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 24389 -9389 25732 -8045 24955 -7268 23611 -8611 24389 -9389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 23611 -9389 24955 -10732 25732 -9955 24389 -8611 23611 -9389) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 23611 -8611 22268 -9955 23045 -10732 24389 -9389 23611 -8611) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 24389 -8611 23045 -7268 22268 -8045 23611 -9389 24389 -8611) (clearance_class null))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component l:pth
+      (place J1 20000 -15000 front 0 (PN x))
+      (place U3 26000 -21000 front 0 (PN x))
+      (place U4 14000 -21000 front 0 (PN x))
+    )
+    (component l:pad
+      (place P2 35000 -15000 front 0 (PN x))
+      (place PA1 16500 -15000 front 0 (PN x))
+      (place PA2 23500 -15000 front 0 (PN x))
+    )
+    (component l:rect
+      (place U2 14000 -9000 front 0 (PN x))
+    )
+    (component l:pitch127
+      (place U5 24000 -9000 front 0 (PN x))
+    )
+  )
+  (library
+    (image l:pth
+      (pin Round[A]Pad_1700.000000_um 1 0 0)
+    )
+    (image l:pad
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+    )
+    (image l:rect
+      (pin Rect[T]Pad_2000.000000x1000.000000_um (rotate 20) 1 0 0)
+    )
+    (image l:pitch127
+      (pin Round[A]Pad_1000.000000_um 1 0 0)
+      (pin Round[A]Pad_1000.000000_um 2 1270 0)
+    )
+    (padstack Round[A]Pad_1000.000000_um
+      (shape (circle F.Cu 1000))
+      (shape (circle B.Cu 1000))
+      (attach off)
+    )
+    (padstack Round[A]Pad_1700.000000_um
+      (shape (circle F.Cu 1700))
+      (shape (circle B.Cu 1700))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_2000.000000x1000.000000_um
+      (shape (rect F.Cu -1000 -500 1000 500))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1000.000000_um
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net GND
+      (pins J1-1 P2-1 U2-1 U3-1 U4-1 U5-1)
+    )
+    (net A
+      (pins PA1-1 PA2-1 U5-2)
+    )
+    (class kicad_default A GND
+      (circuit
+        (use_via "Via[0-1]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

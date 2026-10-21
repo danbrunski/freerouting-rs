@@ -263,6 +263,8 @@ pub fn read_with_rules(
         project.max_error,
         project.solder_mask_to_copper,
     );
+    // Q22.20: the pads' thermal facts, from the footprints as filed.
+    let thermal_pads = crate::thermal_spokes::thermal_pads(&tree, &footprints);
     lap("outline");
     if outline.malformed {
         warnings.push(Warning {
@@ -688,6 +690,27 @@ pub fn read_with_rules(
         has_net,
         project.max_error,
     );
+
+    // Q22.20: room for the thermal spokes of the pads the zones of their net
+    // connect by thermal relief.
+    let thermal_zones = crate::thermal_spokes::thermal_zones(
+        &tree,
+        board_zones
+            .iter()
+            .chain(footprints.iter().flat_map(|fp| fp.zones_as_filed.iter())),
+    );
+    let signal: Vec<bool> = layers
+        .copper
+        .iter()
+        .map(|l| l.layer_type() == freerouting_dsn::ast::LayerType::Signal)
+        .collect();
+    let corridors = crate::thermal_spokes::corridors(
+        &thermal_pads,
+        &thermal_zones,
+        &signal,
+        project.min_resolved_spokes,
+    );
+    keepouts.extend(crate::thermal_spokes::thermal_keepouts(&corridors, &layers));
 
     // K13.1: pads' own larger clearances, as the plugin's K09.5 circles.
     if let (Some(front), Some(back)) = (copper_names.first(), copper_names.last()) {

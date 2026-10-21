@@ -355,6 +355,92 @@ def mask_expansions(board, pcbnew, floor_mm, clearance_nm=0):
     return out
 
 
+def _optional_mm(pcbnew, value):
+    """An optional override (KiCad 10: None when unset; older: 0 when unset), mm."""
+    return None if not value else _mm(pcbnew, value)
+
+
+def _pad_shape(pcbnew, pad, getter):
+    method = getattr(pad, getter)
+    try:
+        return method(pcbnew.F_Cu)
+    except TypeError:  # KiCad 9: one shape for the pad
+        return method()
+
+
+def _thermal_pad(board, pcbnew, fp, pad, copper, fp_connect):
+    shape = _pad_shape(pcbnew, pad, "GetShape")
+    try:
+        size = pad.GetSize(pcbnew.F_Cu)
+    except TypeError:
+        size = pad.GetSize()
+    try:
+        centre = pad.ShapePos(pcbnew.F_Cu)
+    except TypeError:
+        centre = pad.ShapePos()
+    w, h = _mm(pcbnew, size.x), _mm(pcbnew, size.y)
+    oval = getattr(pcbnew, "PAD_SHAPE_OVAL", None)
+    connect = pad.GetLocalZoneConnection()
+    connect = None if connect is None or int(connect) < 0 else int(connect)
+    return {
+        "net": pad.GetNetname(),
+        "centre_mm": _pt(pcbnew, centre),
+        "size_mm": (w, h),
+        "orient": pad.GetOrientationDegrees(),
+        "circle": shape == pcbnew.PAD_SHAPE_CIRCLE or (shape == oval and size.x == size.y),
+        "custom": shape == pcbnew.PAD_SHAPE_CUSTOM,
+        "pth": pad.GetAttribute() == pcbnew.PAD_ATTRIB_PTH,
+        "layers": [name for lid, name in copper if pad.IsOnLayer(lid)],
+        "zone_connect": fp_connect if connect is None else connect,
+        "gap_mm": _optional_mm(pcbnew, pad.GetLocalThermalGapOverride()),
+        "spoke_mm": _optional_mm(pcbnew, pad.GetLocalThermalSpokeWidthOverride()),
+        "angle": pad.GetThermalSpokeAngleDegrees(),
+    }
+
+
+def _thermal_zone(board, pcbnew, zone):
+    rule_area = bool(zone.GetIsRuleArea())
+    outline = zone.Outline()
+    ring = [_pt(pcbnew, outline.Outline(0).CPoint(k)) for k in range(outline.Outline(0).PointCount())] if outline.OutlineCount() else []
+    holes = [
+        [_pt(pcbnew, ch.CPoint(k)) for k in range(ch.PointCount())]
+        for ch in (outline.Hole(0, h) for h in range(outline.HoleCount(0) if outline.OutlineCount() else 0))
+    ]
+    no_fill = getattr(zone, "GetDoNotAllowZoneFills", getattr(zone, "GetDoNotAllowCopperPour", lambda: False))
+    priority = zone.GetAssignedPriority() if hasattr(zone, "GetAssignedPriority") else zone.GetPriority()
+    clearance = zone.GetLocalClearance()
+    return {
+        "net": "" if rule_area else zone.GetNetname(),
+        "layers": [_layer_name(board, lid) for lid in zone.GetLayerSet().Seq() if pcbnew.IsCopperLayer(lid)],
+        "priority": int(priority),
+        "connect": int(zone.GetPadConnection()),
+        "gap_mm": _mm(pcbnew, zone.GetThermalReliefGap()),
+        "spoke_mm": _mm(pcbnew, zone.GetThermalReliefSpokeWidth()),
+        "clearance_mm": _mm(pcbnew, clearance or 0),
+        "min_thickness_mm": _mm(pcbnew, zone.GetMinThickness()),
+        "outline_mm": ring,
+        "holes_mm": holes,
+        "rule_area": rule_area,
+        "no_fill": rule_area and bool(no_fill()),
+    }
+
+
+def thermal_facts(board, pcbnew):
+    """Q22.20: what `thermal_spokes.apply` reads. Board Setup's
+    `m_MinResolvedSpokes`, every pad of the board's footprints (footprint then
+    pad order) and every zone (the board's, then the footprints', in order),
+    in KiCad's frame and mm."""
+    copper = [(lid, _layer_name(board, lid)) for lid in board.GetEnabledLayers().CuStack()]
+    pads, zones = [], [_thermal_zone(board, pcbnew, z) for z in board.Zones()]
+    for fp in board.GetFootprints():
+        fp_connect = fp.GetLocalZoneConnection()
+        fp_connect = None if fp_connect is None or int(fp_connect) < 0 else int(fp_connect)
+        pads += [_thermal_pad(board, pcbnew, fp, pad, copper, fp_connect) for pad in fp.Pads()]
+    for fp in board.GetFootprints():
+        zones += [_thermal_zone(board, pcbnew, z) for z in fp.Zones()]
+    return {"min_resolved_spokes": int(board.GetDesignSettings().m_MinResolvedSpokes), "pads": pads, "zones": zones}
+
+
 def collect(board, pcbnew):
     """The board facts `dsn_fixups.apply` reads (see its module docs)."""
     edge, bbox, rings = _edge(board, pcbnew)

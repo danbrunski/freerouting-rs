@@ -44,6 +44,10 @@
 //!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); a
 //!   shape of a net with pins becomes conduction-area wires of that net with
 //!   `(attr obstacle)`.
+//! - Q22.20 adds [`thermal_spokes`]: one keepout per thermal spoke of each
+//!   pad that a zone of its net connects by thermal relief (`thermal_spoke`),
+//!   which the router fits to the pad's net, so other nets leave the spokes
+//!   room.
 //! - K13.1 adds [`pad_clearance`]: pads' own larger clearances, as circle
 //!   keepouts (`pad_clearance`), as the plugin's DSN fix-up writes them.
 //! - K08 adds [`write`]: the copper index of the file
@@ -122,6 +126,7 @@ pub mod read;
 pub mod report;
 pub mod rule_areas;
 pub mod sexpr;
+pub mod thermal_spokes;
 pub mod tracks;
 pub mod units;
 pub mod vias;

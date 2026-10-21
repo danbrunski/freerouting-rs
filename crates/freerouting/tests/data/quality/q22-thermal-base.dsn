@@ -1,0 +1,110 @@
+(pcb "q22-thermal.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  40000 -30000  0 -30000  0 0  40000 0  40000 -30000)
+    )
+    (plane GND (polygon F.Cu 0  10000 -5000  30000 -5000  30000 -25000  10000 -25000  10000 -5000))
+    (plane GND (polygon B.Cu 0  10000 -5000  30000 -5000  30000 -25000  10000 -25000  10000 -5000))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component l:pth
+      (place J1 20000 -15000 front 0 (PN x))
+      (place U3 26000 -21000 front 0 (PN x))
+      (place U4 14000 -21000 front 0 (PN x))
+    )
+    (component l:pad
+      (place P2 35000 -15000 front 0 (PN x))
+      (place PA1 16500 -15000 front 0 (PN x))
+      (place PA2 23500 -15000 front 0 (PN x))
+    )
+    (component l:rect
+      (place U2 14000 -9000 front 0 (PN x))
+    )
+    (component l:pitch127
+      (place U5 24000 -9000 front 0 (PN x))
+    )
+  )
+  (library
+    (image l:pth
+      (pin Round[A]Pad_1700.000000_um 1 0 0)
+    )
+    (image l:pad
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+    )
+    (image l:rect
+      (pin Rect[T]Pad_2000.000000x1000.000000_um (rotate 20) 1 0 0)
+    )
+    (image l:pitch127
+      (pin Round[A]Pad_1000.000000_um 1 0 0)
+      (pin Round[A]Pad_1000.000000_um 2 1270 0)
+    )
+    (padstack Round[A]Pad_1000.000000_um
+      (shape (circle F.Cu 1000))
+      (shape (circle B.Cu 1000))
+      (attach off)
+    )
+    (padstack Round[A]Pad_1700.000000_um
+      (shape (circle F.Cu 1700))
+      (shape (circle B.Cu 1700))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_2000.000000x1000.000000_um
+      (shape (rect F.Cu -1000 -500 1000 500))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1000.000000_um
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net GND
+      (pins J1-1 P2-1 U2-1 U3-1 U4-1 U5-1)
+    )
+    (net A
+      (pins PA1-1 PA2-1 U5-2)
+    )
+    (class kicad_default A GND
+      (circuit
+        (use_via "Via[0-1]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

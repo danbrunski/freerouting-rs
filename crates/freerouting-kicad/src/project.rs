@@ -180,6 +180,11 @@ pub struct Project {
     /// Board Setup's minimum manufacturing rules (Q18); KiCad's defaults
     /// where the file leaves them out, unknown where it sets them to 0.
     pub minimums: BoardMinimums,
+    /// `board.design_settings.rules.min_resolved_spokes`
+    /// (`m_MinResolvedSpokes`, KiCad's default 2): the thermal spokes KiCad's
+    /// DRC wants per pad. Q22.20: 0 writes no [`crate::thermal_spokes`]
+    /// keepouts.
+    pub min_resolved_spokes: i32,
     /// Problems worth a warning.
     pub notes: Vec<String>,
 }
@@ -196,6 +201,7 @@ impl Default for Project {
             hole_clearance: mm_to_nm(0.25),
             solder_mask_to_copper: 0,
             minimums: BoardMinimums::default(),
+            min_resolved_spokes: 2,
             notes: Vec::new(),
         }
     }
@@ -252,6 +258,9 @@ impl Project {
                 p.solder_mask_to_copper = v.max(0);
             }
             p.minimums = BoardMinimums::of_rules(rules);
+            if let Some(n) = rules.get("min_resolved_spokes").and_then(Value::as_i64) {
+                p.min_resolved_spokes = i32::try_from(n.max(0)).unwrap_or(i32::MAX);
+            }
         }
         let Some(ns) = root.get("net_settings") else {
             return Ok(p);

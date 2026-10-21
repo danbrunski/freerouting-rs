@@ -9,6 +9,7 @@ pub(crate) mod network;
 pub(crate) mod pad_keepouts;
 pub(crate) mod shape;
 pub(crate) mod structure;
+pub(crate) mod thermal_keepouts;
 pub(crate) mod wiring;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -138,6 +139,9 @@ pub(crate) struct ReadContext {
     /// Q22.16: the footprints' mask-aperture keepouts, inserted after the
     /// components (`pad_keepouts::insert_pad_keepouts`).
     pub pad_keepouts: Vec<shape::DsnArea>,
+    /// Q22.20: the thermal-spoke keepouts, inserted after the components
+    /// (`thermal_keepouts::insert_thermal_keepouts`).
+    pub thermal_keepouts: Vec<shape::DsnArea>,
     pub via_padstack_names: Option<Vec<String>>,
     pub via_at_smd_allowed: bool,
     pub snap_angle: AngleRestriction,
@@ -170,6 +174,7 @@ impl ReadContext {
             netlist: NetList::default(),
             plane_list: Vec::new(),
             pad_keepouts: Vec::new(),
+            thermal_keepouts: Vec::new(),
             via_padstack_names: None,
             via_at_smd_allowed: false,
             snap_angle: AngleRestriction::FortyfiveDegree,

@@ -5,7 +5,8 @@
 //!
 //! Not Java (Q22.16, Q22.18): a `keepout` named `solder_mask`,
 //! `solder_mask_pads` or `solder_mask_shared`, a solder-mask aperture, is
-//! inserted after the components ([`super::pad_keepouts`]).
+//! inserted after the components ([`super::pad_keepouts`]); so is Q22.20's
+//! `thermal_spoke` ([`super::thermal_keepouts`]).
 
 use crate::util::HashSet;
 
@@ -146,6 +147,13 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
             ast::KeepoutKind::PlaceKeepout => 2,
         };
         match DsnArea::resolve(&keepout.area, Some(&ctx.layer_structure), false) {
+            // Q22.20: fitted to the pins under it by its own rule.
+            Some(area)
+                if keepout.kind == ast::KeepoutKind::Keepout
+                    && super::thermal_keepouts::is_thermal_keepout(&area) =>
+            {
+                ctx.thermal_keepouts.push(area)
+            }
             // Q22.16: inserted once the pins are on the board.
             Some(area)
                 if keepout.kind == ast::KeepoutKind::Keepout

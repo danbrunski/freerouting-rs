@@ -1207,6 +1207,19 @@ compare them on 12 committed boards and the 56-board corpus).
   `the_output_check_lets_the_ties_nets_in_and_keeps_the_clearance`,
   `a_ties_pieces_share_its_nets_and_a_piece_with_no_pin_is_a_plain_keepout`,
   `the_dsn_writer_keeps_the_net_tie_keepout`).
+- **A thermal-spoke keepout carries its pad's net** (Q22.20,
+  `io::specctra::parser::thermal_keepouts`, `THERMAL_SPOKE_KEEPOUT_NAME`; Java reads the name
+  and ignores it): the KiCad plugin and the `.kicad_pcb` reader write one keepout named
+  `thermal_spoke` along each thermal spoke of a pad that a zone of its net connects by thermal
+  relief (see freerouting-kicad). It is inserted after the components and carries the net of
+  the pins under it, so the pad's net routes through it and traces and vias of every other net
+  keep out; like the mask keepouts it is an obstacle for traces and vias only. One with no pin
+  or pins of several nets under it is left out, with one log line. The DSN writer writes it back
+  under its name. A DSN without the name (Java's inputs) reads as before, so `legacy` on Java's
+  DSNs is unchanged. Pinned by `tests/thermal_spokes.rs` (`the_keepouts_carry_the_pads_net`,
+  `another_nets_trace_leaves_the_spokes_free`, `the_pad_is_still_reachable_by_its_own_net`,
+  `the_output_check_reports_only_another_nets_trace_in_a_spoke_way`,
+  `the_dsn_writer_keeps_the_keepouts`).
 - **Q20's output check finds copper inside a keepout that keeps no clearance** (Q22.18,
   `drc::board_rules`, `zero_clearance_keepouts`): the clearance check (Java's
   `clearance_violations`, as ported) reports a shortfall of the required clearance, so copper
@@ -1249,6 +1262,24 @@ compare them on 12 committed boards and the 56-board corpus).
   `solder_mask_pads` on its side's copper; the router fits it to the pins under it (see
   freerouting). A footprint with `(attr ... allow_soldermask_bridges)` gets none: KiCad's DRC
   ignores its apertures. Pinned by `tests/footprint_masks.rs`.
+- **Room for each thermal spoke is kept out of other nets** (Q22.20, `thermal_spokes`, every
+  profile; decided 2026-10-20: routing never breaks the board's manufacturing rules): KiCad's
+  DRC (`starved_thermal`) wants `min_resolved_spokes` (default 2) spokes per thermal pad to
+  reach fill connected to something else, and routed tracks of other nets in the spokes' way
+  took that fill (canary-pwr `ab786fcc`: 6 on J1's GND header pads). For every pad that a copper
+  zone of its net connects by thermal relief (the pad's `zone_connect`, else the footprint's,
+  else the zone's; `thru_hole_only` for plated through-hole pads) on a signal layer, the reader
+  writes one rectangle per spoke KiCad builds (`ZONE_FILLER::buildThermalSpokes`: a circle's
+  turned by its spoke angle, another shape's at the spoke angle to its unrotated box, then the
+  pad's orientation), from the pad's centre to the spoke's end plus the spoke's width and the
+  zone's clearance, the spoke's width plus twice the zone's clearance wide, named
+  `thermal_spoke` with `(clearance_class null)`; the router fits it to the pad's net (see
+  freerouting). None where the zone's outline misses the pad's centre or the far end, where a
+  higher-priority zone of another net or a no-fill rule area holds the far end, for a custom
+  pad, for a spoke narrower than the zone's minimum width, or when the project's
+  `min_resolved_spokes` is 0. Custom DRC rules are not read. Pinned by `tests/thermal_spokes.rs`
+  (`every_thermal_pad_gets_a_keepout_along_each_spoke`, `the_plugin_writes_the_same_keepouts`,
+  `min_resolved_spokes_zero_writes_none`, `no_keepout_where_the_zone_does_not_reach_the_spoke`).
 - **Pads under a footprint aperture that pads of several nets share are cut back to their part
   outside it** (Q22.16, decided 2026-10-20: option (b); `pad_trim`): a `solder_mask_pads`
   keepout over pads (any footprint's, overlapping by more than 1 µm²) of two or more nets becomes
@@ -1910,6 +1941,15 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_kicad_board_collects_copper_shapes_and_visible_texts`,
   `test_a_net_tie_shape_is_a_net_tie_keepout`,
   `test_the_net_tie_fixture_through_pcbnew_gives_the_routed_dsn`).
+- **Room for each thermal spoke is kept out of other nets** (Q22.20, `thermal_spokes.py`,
+  `kicad_board.thermal_facts`, `export_flow.fix_thermal_spokes`, always on): after KiCad's
+  export, the reader's `thermal_spoke` keepouts (see freerouting-kicad), from pcbnew's own pad
+  and zone settings (`GetThermalSpokeAngleDegrees`, `GetLocalZoneConnection`, the thermal
+  overrides, `m_MinResolvedSpokes`), corners rounded to 1 µm, before the structure's `(via ...)`.
+  Pinned by `test_thermal_spokes.py` (`test_the_fixture_gives_the_routed_dsn`,
+  `test_the_fixture_through_pcbnew_gives_the_facts_and_kicads_spokes`: after KiCad's own fill,
+  each keepout holds a spoke), whose output is the DSN `crates/freerouting/tests/thermal_spokes.rs`
+  routes.
 - **The project's `.kicad_dru` is passed for a DSN route** (Q22.5, `export_flow.kicad_dru_args`,
   always on, every profile): `--kicad-dru <board>.kicad_dru` when the file exists and the router
   reads KiCad's export; Java's plugin never applies the file. Not passed for the `.kicad_pcb`
