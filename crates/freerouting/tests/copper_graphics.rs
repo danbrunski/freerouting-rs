@@ -352,12 +352,12 @@ const ARC_BOARD: &str = r#"(kicad_pcb (version 20240108) (generator "pcbnew") (g
   (gr_arc (start 5 10) (mid 10 5) (end 15 10) (stroke (width 0.8) (type solid)) (layer "F.Cu") (net 1))
 )"#;
 
-#[test]
-fn the_pieces_of_a_stroked_shape_are_one_copper() {
+/// The number of net-shape areas of `board_text` and its board.
+fn net_shape_board(board_text: &str) -> (usize, RoutingBoard) {
     let path = repo_root().join("target/no-such-dir/arc.kicad_pcb");
     let read = freerouting::io::kicad::read_kicad_bytes(
         &path,
-        ARC_BOARD.as_bytes(),
+        board_text.as_bytes(),
         ReadOptions::default(),
     )
     .unwrap();
@@ -370,8 +370,57 @@ fn the_pieces_of_a_stroked_shape_are_one_copper() {
         .iter()
         .filter(|i| matches!(i, WiringItem::Wire(w) if w.attr.is_some()))
         .count();
+    (pieces, prepare(read, "legacy").board)
+}
+
+#[test]
+fn the_pieces_of_a_stroked_shape_are_one_copper() {
+    // the arc stays one area per chord (decided 2026-10-20, Q22.17: no
+    // merge); the chords' areas overlap, so P1, the arc and P2 are one group (Q22.4's
+    // contact rule)
+    let (pieces, board) = net_shape_board(ARC_BOARD);
     assert!(pieces > 2, "{pieces}");
-    let board = prepare(read, "legacy").board;
-    // the chords' areas overlap, so P1, the arc and P2 are one group
     assert_eq!(incomplete(&board), 0);
+    // a Bezier curve too
+    let curve = ARC_BOARD.replace(
+        "(gr_arc (start 5 10) (mid 10 5) (end 15 10)",
+        "(gr_curve (pts (xy 5 10) (xy 5 4) (xy 15 4) (xy 15 10))",
+    );
+    let (pieces, board) = net_shape_board(&curve);
+    assert!(pieces > 2, "{pieces}");
+    assert_eq!(incomplete(&board), 0);
+}
+
+/// Q22.17: a 0.4 mm F.Cu `gr_circle` of net A, radius 3 mm about (10, 10),
+/// stays one area per chord (decided 2026-10-20: no merge): A's pads P1 at
+/// (7, 10) and P2 at (13, 10), on the ring, are one group through the
+/// overlapping pieces; P3 at the centre, inside the ring, is not.
+#[test]
+fn a_stroked_circle_s_pieces_are_one_copper_and_its_inside_is_not() {
+    let pad = |name: &str, x: f64| {
+        format!(
+            r#"  (footprint "l:pad" (layer "F.Cu") (at {x} 10)
+    (property "Reference" "{name}") (property "Value" "x")
+    (pad "1" smd rect (at 0 0) (size 0.3 0.3) (layers "F.Cu") (net 1 "A")))
+"#
+        )
+    };
+    let ring = |pads: &str| {
+        format!(
+            r#"(kicad_pcb (version 20240108) (generator "pcbnew") (generator_version "8.0")
+  (layers (0 "F.Cu" signal) (31 "B.Cu" signal) (44 "Edge.Cuts" user))
+  (net 0 "")
+  (net 1 "A")
+  (gr_rect (start 0 0) (end 20 20) (stroke (width 0.05) (type solid)) (fill none) (layer "Edge.Cuts"))
+{pads}  (gr_circle (center 10 10) (end 13 10) (stroke (width 0.4) (type solid)) (fill none) (layer "F.Cu") (net 1))
+)"#
+        )
+    };
+    let two = pad("P1", 7.0) + &pad("P2", 13.0);
+    let (pieces, board) = net_shape_board(&ring(&two));
+    assert!(pieces > 2, "{pieces}");
+    assert_eq!(incomplete(&board), 0);
+    let three = two + &pad("P3", 10.0);
+    let (_, board) = net_shape_board(&ring(&three));
+    assert_eq!(incomplete(&board), 1);
 }

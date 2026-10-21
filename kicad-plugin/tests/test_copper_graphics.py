@@ -393,3 +393,55 @@ def test_the_fixture_through_pcbnew_gives_the_reader_s_obstacles():
         ("F.Cu", "FG", [(19.5, 14.5), (28.5, 14.5), (28.5, 13.5), (19.5, 13.5), (19.5, 14.5)]),
     ]
     assert log[-1] == "copper graphics: 2 shape(s) of a net as fixed copper of their net (2 areas)"
+
+
+# --- Q22.17: the pieces of a stroked arc cover it (decided 2026-10-20: no merge)
+
+FG_ARC = {
+    "layer": "F.Cu",
+    "width_mm": 0.6,
+    "kind": "arc",
+    "points": [(15.0, 10.0), (6.464466, 13.535534), (10.0, 5.0)],
+    "filled": False,
+    "net": "FG",
+}
+
+
+def _inside(poly, p):
+    odd = False
+    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+        if (y0 > p[1]) != (y1 > p[1]) and p[0] < x0 + (p[1] - y0) * (x1 - x0) / (y1 - y0):
+            odd = not odd
+    return odd
+
+
+def test_a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends():
+    """A 270 degree 0.6 mm arc of radius 5 about (10, 10), as the reader's
+    `a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends`: one area
+    per chord, and every sampled point of the stroke is in one of them."""
+    import math
+
+    text, log = copper_graphics.apply(DSN, facts([FG_ARC]))
+    areas = area_wires(text)
+    _body, strokes = edge_graphics.shape_polygons(FG_ARC)
+    assert len(areas) == len(strokes) > 20
+    assert all((layer, net) == ("F.Cu", "FG") for layer, net, _poly in areas)
+    assert log == [f"copper graphics: 1 shape(s) of a net as fixed copper of their net ({len(strokes)} areas)"]
+    pieces = [poly[:-1] for _layer, _net, poly in areas]
+
+    def covered(p):
+        return any(_inside(piece, p) for piece in pieces)
+
+    def at(deg, r):
+        a = math.radians(deg)
+        return (10.0 + r * math.cos(a), 10.0 + r * math.sin(a))
+
+    for k in range(541):
+        for side in (-1.0, -0.5, 0.0, 0.5, 1.0):
+            p = at(270.0 * k / 540, 5.0 + 0.3 * side)
+            assert covered(p), p
+    for ex, ey in (at(0.0, 5.0), at(270.0, 5.0)):
+        for k in range(36):
+            a = math.radians(10 * k)
+            p = (ex + 0.3 * math.cos(a), ey + 0.3 * math.sin(a))
+            assert covered(p), p

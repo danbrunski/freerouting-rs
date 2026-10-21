@@ -1304,7 +1304,7 @@ Sequencing:
       reader text amended.
     - `legacy`: `tools/parity-check.sh --no-probes` PASS, connection parity 7 exact.
 
-- [ ] **Q22.17 — Net shapes cost less to route around** (added 2026-10-20). Q22.4 makes each
+- [x] **Q22.17 — Net shapes cost less to route around** (added 2026-10-20). Q22.4 makes each
   copper shape of a listed net a fixed conduction area of its net. That is correct, but on
   miniscope its 111 area pieces, mostly arc chords at the 5 µm maximum error, leave 67 KiCad
   unconnected against main's 61 at an equal 270 s cap. Its best pass leaves 81 unrouted against
@@ -1315,10 +1315,88 @@ Sequencing:
     inside it (Java's rule). Count the pads on miniscope, vfo and openair that only overlap a net
     shape's edge, and fix the connection test for `enhanced` if KiCad calls them connected.
   - **Accept:**
-    - plugin and reader tests: a stroked arc shape becomes one area that covers the stroke;
+    - plugin and reader tests: a stroked arc shape's pieces (Q22.4's) cover the stroke
+      (amended 2026-10-20; decided 2026-10-20: no merge. Merged, (b) and Q22.4's pieces end
+      within 1 unrouted after the add-only sweeps on the grader's DSNs (60/60/59). Pass 1 moves
+      by up to ±10 with item order alone (order-0 runs: arcs; grader order: the ring). So the
+      representation is not the lever, and Q22.4's pieces stay, with the best pass 1 (81) and
+      grade (66) in the grader's order);
     - miniscope through the plugin's export at the same cap, one KiCad grade: 0 routing-caused
       copper errors, with KiCad unconnected beside Q22.4's 67 and main's 61;
     - the pad count, and its fix or the reason it stays.
+  - *Done 2026-10-20:* every Accept clause holds (the first as amended). No representation
+    change lands: the reader and the plugin are main's, and their DSN output is unchanged (the
+    plugin's, rerun on the board main's grade exported, is byte-identical to that grade's DSN;
+    the reader's source is main's). The miniscope clause is met by main's graded 66 with 0
+    routing-caused copper errors (below). Why one polygon routed differently from its pieces
+    was not found; the likely place is how the engine splits a concave area into convex pieces
+    (unverified).
+    - Tried and not landed. Option (b) (`net_outline.rs`, `copper_graphics.py`
+      `net_outlines`): a circle is one area: a disc, or a ring whose inside is a
+      `(window ...)` of the wire, cut at 25 µm (outer corners on the copper's tangents at
+      `R / cos(step / 2)`, inner corners on the inner circle, plus 1 µm of rounding), so the
+      polygon holds the copper. A convex rectangle or polygon with a stroke is its body grown by
+      half the stroke (unfilled: the body shrunk by it as the window). Segments, filled shapes
+      without a stroke, concave polygons, Bézier curves and arcs keep Q22.4's polygons. No union
+      code exists in freerouting-geometry or the reader (`pads.rs` uses hulls only), and none
+      was needed. Areas: miniscope 111 → 54 (the ring 1 instead of 58); openair 10 → 2; vfo
+      3 → 3. The "merged" arm also made an arc's stroke one polygon (outer edge, a square cap at
+      each end, inner edge; the whole ring or disc when the caps would meet): miniscope 111 → 6.
+      Both are reverted (decision above).
+    - Tests kept, all on Q22.4's pieces: reader `tests/copper_graphics.rs`
+      `a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends` (a 270° 0.6 mm `gr_arc`:
+      more than 20 pieces; every sampled point of the stroke and its round ends is in one);
+      plugin `test_copper_graphics.py`
+      `test_a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends` (17 passed with KiCad
+      10.0.7's pcbnew); engine `tests/copper_graphics.rs` `the_pieces_of_a_stroked_shape_are_one_copper`
+      (an arc and a `gr_curve` keep their chords, and Q22.4's contact rule joins them) and
+      `a_stroked_circle_s_pieces_are_one_copper_and_its_inside_is_not` (pads on the ring are one
+      group through its pieces; a pad at the centre is not). No DIVERGENCES line: no behaviour
+      changes.
+    - Pad count (pcbnew 10.0.7, `TransformShapeToPolygon` intersections, every net shape
+      against every pad of its net on its layer): miniscope 0 pads touch a net shape; vfo 7,
+      all 7 with the centre inside; openair 4, all 4 with the centre inside. **0 pads** only
+      overlap a net shape's edge, so Java's drill-centre rule stays (no case to fix). The input
+      tracks the grader strips: miniscope 2 end inside, vfo 30 end inside and 1 only crosses.
+    - Graded once per arm with KiCad 10.0.7 (`grade.sh --export plugin {"schema": 4}`,
+      enhanced, the router's `--timeout 270`, `ulimit -v 8000000`, `timeout 300`): the merged
+      version on main `643c890` (K13.1 and Q22.16 part in) against main `454785c` (`643c890`
+      plus docs and a prereg test) as the plugin; one release CLI for both (the merge touched no
+      DSN-path code), `target/orchestrator/q2217/out/{mine-rebased,main}`.
+      Routing-caused copper errors (`clearance`, `shorting_items`, `hole_clearance`,
+      `copper_edge_clearance`, `solder_mask_bridge`, below-minimum) are **0** in every row and
+      both arms:
+      | board | areas merged / main | best pass unrouted merged / main | KiCad unconnected merged / main (input) |
+      |---|---|---|---|
+      | miniscope | 6 / 111 | 91 / 81 | **72** / 66 (294); Q22.4's 67, old main's 61 |
+      | vfo | 3 / 3 | 5 / 5 | 14 / 14 (87) |
+      | openair | 2 / 10 | 62 / 57 | 63 / 58 (316) |
+
+      Option (b), on main `a82a230` (docs only since `643c890`), graded once the
+      same way (`target/orchestrator/q2217/out/mine-b`): miniscope **54** areas, best pass 91
+      unrouted (pass 1, the same as the merged arm), KiCad unconnected **94** (input 294),
+      routing-caused copper errors 0, route 270.17 s. Its 18 passes left no time for the
+      add-only sweep, which on the merged arm's run took 91 → 68 before the grade of 72.
+
+      vfo's `drc_real` is `starved_thermal` 6 in both arms; openair's are silk only (main also
+      `isolated_copper` 2). The 270 s cap is wall-clock: on an earlier run of the merged version on
+      `c2cc058`, slower passes left no time for the add-only sweep and miniscope graded 94.
+    - Load-free check (`freerouting-rs -mp 1`: pass 1 then two add-only sweeps, deterministic;
+      the plugin's miniscope DSN with its areas rewritten, `target/orchestrator/q2217/exp`),
+      unrouted after pass 1 → after the sweeps, three orders of the 6 shapes:
+      merged 79 → 60, 83 → 68, 82 → 55; Q22.4's pieces 72 → 53, 81 → 59, 78 → 57; no areas
+      69 → 56. Merged arcs with pieced rings give the merged numbers and pieced arcs with a
+      merged ring the pieced ones, exactly; cutting at 5 µm instead of 25 µm, and splitting
+      the arcs into ≤ 90° or ≤ 180° polygons, change nothing. The cost is the arcs as one
+      polygon, not their corner count or concavity, in that order. With the grader's own
+      shape order the plugin's DSNs give: option (b) 91 → 60, merged 91 → 60, main's pieces
+      81 → 59; there (b) differs from main only in the ring, so the ring merge is what moves
+      pass 1, the opposite of the order above. Both point to item-order sensitivity rather
+      than a cost of either form; after the sweeps the arms are within 1 unrouted. Pass 1 is
+      ~10 % faster merged (45 s against 50 s under load).
+    - Legacy: no code outside tests changes, so the DSN-reading code is main's; the merged and
+      (b) versions each gave `tools/parity-check.sh --no-probes` PARITY OK, connection parity 7
+      of 7 exact.
 
 - [ ] **Q22.18 — Mask keepouts keep only the clearance the mask rule asks** (added 2026-10-20,
   from Q22.16). Q18.7's board-level `solder_mask` keepouts and Q22.16's `solder_mask_pads`

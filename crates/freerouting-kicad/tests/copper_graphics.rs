@@ -217,3 +217,71 @@ fn net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts() {
     // no areas: the tie line has no net, LONE has no pins
     assert!(area_wires(&read).is_empty());
 }
+
+/// Q22.17: a 0.6 mm `gr_arc` of net A (whose pad P1 is at (50, 20)) of
+/// radius 5 about (10, 10), from angle 0 through 135° to 270° (KiCad's frame,
+/// Y down).
+const ARC_BOARD: &str = r#"(kicad_pcb (version 20240108) (generator "pcbnew") (generator_version "8.0")
+  (layers (0 "F.Cu" signal) (31 "B.Cu" signal) (44 "Edge.Cuts" user))
+  (net 0 "")
+  (net 1 "A")
+  (gr_rect (start 0 0) (end 60 30) (stroke (width 0.05) (type solid)) (fill none) (layer "Edge.Cuts"))
+  (footprint "l:pad" (layer "F.Cu") (at 50 20)
+    (property "Reference" "P1") (property "Value" "x")
+    (pad "1" smd rect (at 0 0) (size 0.6 0.6) (layers "F.Cu") (net 1 "A")))
+  (gr_arc (start 15 10) (mid 6.464466 13.535534) (end 10 5) (stroke (width 0.6) (type solid)) (layer "F.Cu") (net 1))
+)"#;
+
+/// Whether `p` (µm, DSN frame) is inside the closed polygon `poly`.
+fn inside(poly: &[(f64, f64)], p: (f64, f64)) -> bool {
+    let mut odd = false;
+    for w in poly.windows(2) {
+        let ((x0, y0), (x1, y1)) = (w[0], w[1]);
+        if (y0 > p.1) != (y1 > p.1) && p.0 < x0 + (p.1 - y0) * (x1 - x0) / (y1 - y0) {
+            odd = !odd;
+        }
+    }
+    odd
+}
+
+#[test]
+fn a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends() {
+    // decided 2026-10-20 (Q22.17): no merge; the arc stays one area per
+    // chord at the board's 5 µm maximum error
+    let read = freerouting_kicad::read(ARC_BOARD, None).unwrap();
+    let pieces: Vec<Vec<(f64, f64)>> = area_wires(&read)
+        .iter()
+        .map(|w| {
+            assert_eq!(w.shapes.len(), 1);
+            assert!(w.windows.is_empty());
+            shape_polygon(&w.shapes[0]).1
+        })
+        .collect();
+    assert!(pieces.len() > 20, "{}", pieces.len());
+    let covered = |(x, y): (f64, f64)| {
+        let p = (x * 1000.0, -y * 1000.0);
+        pieces.iter().any(|piece| inside(piece, p))
+    };
+    let (c, r, half) = ((10.0, 10.0), 5.0, 0.3);
+    let at = |deg: f64, radius: f64| {
+        let a = deg.to_radians();
+        (c.0 + radius * a.cos(), c.1 + radius * a.sin())
+    };
+    for k in 0..=540 {
+        let deg = 270.0 * f64::from(k) / 540.0;
+        for side in [-1.0, -0.5, 0.0, 0.5, 1.0] {
+            let p = at(deg, r + half * side);
+            assert!(covered(p), "{p:?} of the stroke is outside every piece");
+        }
+    }
+    for end in [at(0.0, r), at(270.0, r)] {
+        for k in 0..36 {
+            let a = f64::from(k * 10).to_radians();
+            let p = (end.0 + half * a.cos(), end.1 + half * a.sin());
+            assert!(
+                covered(p),
+                "{p:?} of the stroke's end is outside every piece"
+            );
+        }
+    }
+}
