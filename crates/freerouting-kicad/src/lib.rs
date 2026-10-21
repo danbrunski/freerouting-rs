@@ -107,6 +107,7 @@ pub mod copper_graphics;
 pub mod dru;
 pub mod edge_keepouts;
 pub mod error;
+pub mod fill_wires;
 pub mod fmt6g;
 pub mod footprint_masks;
 pub mod footprints;
