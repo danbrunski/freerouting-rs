@@ -136,7 +136,7 @@ fn the_registration_is_valid_and_names_its_arms_and_metrics() {
     assert_eq!(prereg.set.as_deref(), Some(SET));
     assert_eq!(prereg.boards.len(), ROWS.len());
     assert!(prereg.totals_registered);
-    assert_eq!(prereg.amendments, 0);
+    assert_eq!(prereg.amendments, 1);
     let roles: Vec<(&str, Role)> = prereg
         .specs
         .iter()
@@ -350,6 +350,6 @@ fn the_arms_differ_by_the_pin_escape_only() {
 fn the_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "fc3ccc691fa9e6636a3a53d0bfe6a46153f1f787b8c2a1df2e69ceeab319c4c3"
+        "741b55107260b88545bbbec14c0712dfaec1b5cb314f018889e63d455fb144da"
     );
 }

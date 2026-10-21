@@ -531,10 +531,61 @@ Prerequisites: N01; each candidate's own accepted measurement.
     types on the copper basis as `Q22.json` defines them, below-minimum copper, vias in pads); a
     baseline breach blocks the row and the promotion waits. Keep rule: N02 totals, `accept:
     no-regress`, and a lower total.
+    2026-10-21, amendment 1 before any route (sha256 `741b5510…`): run commit main `a800432`, binary
+    sha256 `30bd40cc…`, grader and plugin hashes, `options.SCHEMA` 5, KiCad 10.0.7, and the
+    `--all-pairs` step with `--baseline baseline.json` added (it exits 2 without it).
+  - **2026-10-21, rejected (stays off in both profiles): `router.fanout.pin_escape = straight`**,
+    registration `docs/roadmap/prereg/N05-pin-escape-2.json` (sha256 `741b5510…` with amendment 1,
+    written before any route; no other amendment). One release build of main `a800432` (binary
+    sha256 `30bd40cc…`), both arms' registered `grade.sh --export plugin` commands under `ulimit -v
+    8000000` and `timeout -k 10` 120 s / 600 s, row by row, `enhanced` first; no call hit its limit
+    (all 20 aborted = 0), every row graded in both arms on the copper basis, all 10 row pairs'
+    sessions differ (20 grades). Guards hold in both arms on every row: manufacturing breaches,
+    below-minimum copper (`below_minimum` and `below_minimum_all`) and vias in pads
+    (`via_in_pad` and `via_in_pad_raw`) are 0 in all 20 runs, so no row is blocked by the baseline.
+    `freerouting-dev gate --records records.json --baseline baseline.json --prereg … --write-baseline`
+    (0 refusals, baseline written, exit 0), then `… --all-pairs` with `--baseline baseline.json`
+    (amendment 1): verdict pair `enhanced -> enhanced+pin_escape` 0 refusals, no HARD line, totals
+    verdict accept, PASS; reported pair 0 refusals, no HARD line; `gate: PASS`. Total 218 → 236
+    (+18 against set noise 19.67; canary-pwr +20 with band 10, at twice its band, not past it).
+    Keep rule clause (4) fails: the candidate's KiCad-unconnected total is higher than enhanced's,
+    not lower, so the option is not promoted. It lowers 4 rows (flight-computer, picodvi, vfo,
+    vna-usb-pd: −5 together), leaves 2 equal and raises 4 (canary-pwr +20, cc1101, mydevboard,
+    openmuscle +1 each). Clauses (1)–(3) hold.
+
+    | row | conn. | KiCad unconnected (input) enh → pe | change / band | unrouted | routing-caused (pe) | vias | route s | stubs (pe, router log) |
+    |---|---|---|---|---|---|---|---|---|
+    | mydevboard-rp2040dev | 130 | 55 → 56 (89) | +1 / 7 | 58 → 59 | none | 19 → 22 | 11.57 → 14.45 | U1 56, J1 6 |
+    | canary-pwr 9511d9a3 | 309 | 48 → **68** (174) | +20 / 10 | 43 → 61 | none | 131 → 93 | 123.69 → 120.30 | U1 33 (+4 widened), U3 5 (4 rejected), U6 3 (+2), U8 7 (+1) |
+    | vfo-controller-catvfoctrl | 113 | 15 → 14 (87) | −1 / 6 | 9 → 8 | track_dangling 1 | 23 → 22 | 3.69 → 3.70 | U1 25 |
+    | flight-computer-core-board | 98 | 7 → 6 (62) | −1 / 5 | 4 → 4 | starved_thermal 1 | 16 → 15 | 0.50 → 0.52 | U4 6, U5 12 |
+    | ch32v003-usb-devboard | 74 | 44 → 44 (57) | 0 / 4 | 36 → 36 | none | 8 → 8 | 2.43 → 2.55 | J1 6, U3 0 (19 rejected) |
+    | solarmeshtastic-bq25185 | 102 | 9 → 9 (63) | 0 / 6 | 9 → 9 | none | 41 → 41 | 5.11 → 6.73 | U1 1 via stub (7 rejected) |
+    | cc1101-module | 43 | 22 → 23 (37) | +1 / 3 | 19 → 20 | none | 5 → 1 | 0.90 → 0.69 | U1 18 |
+    | vna-usb-pd | 73 | 2 → 1 (55) | −1 / 4 | 0 → 0 | none | 13 → 12 | 1.30 → 0.34 | J101 6, U101 10 |
+    | picodvi-picodvi | 102 | 12 → 10 (98) | −2 / 6 | 12 → 10 | none | 58 → 60 | 14.06 → 11.31 | J5 14, U1 29 (+1 via stub, 6 rejected) |
+    | openmuscle-flexgrid | 157 | 4 → 5 (145) | +1 / 8 | 1 → 1 | starved_thermal 1 | 110 → 117 | 8.86 → 7.26 | IC1 5 (+2 via stubs), J4 6, U1 22 (+1 via stub) |
+    | **total** | | **218 → 236** | +18 / 19.67 | 191 → 208 | | | | |
+
+    `enhanced` has no routing-caused item on any row (drc_real 0 in all 10); the candidate's 3
+    (track_dangling, starved_thermal) are outside the ten manufacturing types. Session sha256
+    (enhanced / pe), first 12 hex: mydevboard `a6a5914cc898` / `a48686b80a46`, canary-pwr
+    `9e319730f651` / `aaca58abe6bd`, vfo `092f50619693` / `3ff3f6f908ad`, flight-computer
+    `cc8fd37809ed` / `a9aefe11b430`, ch32v003 `1ac990ef49c1` / `b4d23c0c66f0`, solarmeshtastic
+    `487776105065` / `7a3b037b9d4b`, cc1101 `4672cfaa3354` / `26f7ad1c87de`, vna-usb-pd
+    `6117a5cb5f21` / `500f5d3d98ad`, picodvi `089d4205c516` / `46c3889332b3`, openmuscle
+    `23864533b8a2` / `43a2efa79ef0`. Outputs in `target/orchestrator/n05pe2/run/` (`out/`,
+    `records.json`, `table.json`, `baseline.json`, `gate-baseline.txt`, `gate-all-pairs.txt`,
+    `progress.md`). Compared with N05-pin-escape (main 980fd6a), ch32v003's 30 / 32 breaches are
+    gone in both arms (Q22's `.kicad_dru` rules), but plain enhanced now leaves 44 unconnected
+    there (17 at 980fd6a) and canary-pwr's candidate loses 20; neither was examined further.
+    Verdict per `decision_table`: rejected on keep_rule clause (4); `fanout.pin_escape` stays off in
+    both profiles, the checkbox and the CLI key stay.
 
   *Partial 2026-10-20:* no run of N05.3's own is pending. The measurements the earlier note waited
   for are closed and their checklists archived (N03.3, N04.3, Q04.4, Q08.3, Q11.6, Q12.5, X13;
   their notes give the verdicts, none adds an `ENHANCED` entry; Q16.5 is above). What remains open: the
-  `pin_escape` re-registration after Q22.5 (decided above), and the measurements still pending in
-  K13.6 (the plugin's input default), Q22.8 (the clearance re-measurement) and K11, which other
-  checklists own.
+  measurements still pending in K13.6 (the plugin's input default), Q22.8 (the clearance
+  re-measurement) and K11, which other checklists own. *Partial 2026-10-21:* the `pin_escape`
+  re-registration after Q22.5 has run (N05-pin-escape-2.json, rejected on its keep rule's clause
+  (4), above); N05.3 waits on K11.
