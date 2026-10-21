@@ -20,6 +20,8 @@
 #                 `{PLUGIN_ARGS}` (one shell-quoted string, for `bash -c`), else right after the
 #                 `{SES}` argument, so the command's own flags come later and win. Without the flag
 #                 the bare `ExportSpecctraDSN` is routed, as before.
+#                 OPTIONS.json is read as the DSN path whatever its `board_input` says (K13.7: a file
+#                 without the key means the board snapshot under the enhanced profile).
 #
 # Steps: stage copies of the .kicad_pcb/.kicad_pro/.kicad_dru; strip tracks and vias; export the
 # DSN with pcbnew.ExportSpecctraDSN; remove the keepouts KiCad exports for rule areas that allow
@@ -177,7 +179,11 @@ PLUGIN_ARGS=()
 if [[ $EXPORT == plugin ]]; then
   # The plugin's own export and fix-ups (its rule-area fix-up replaces fix-keepouts), in its own
   # process: the board is only read, nothing is saved. Writes work/BASE.dsn and work/BASE.args.json.
-  "$KICAD_PYTHON" -I "$HEADLESS" export "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work" "$PLUGIN_OPTIONS" \
+  # This is the DSN path: the options copy names `board_input: dsn`, as a file without the key reads as
+  # `kicad_pcb` under the enhanced profile (K13.7), and the import below needs the input to restore by.
+  python3 -I -c "import json, sys; d = json.load(open(sys.argv[1])); d['board_input'] = 'dsn'; json.dump(d, open(sys.argv[2], 'w'))" \
+    "$PLUGIN_OPTIONS" "$OUT/work/route-options.dsn.json" || not_graded "OPTIONS.json is not a JSON object"
+  "$KICAD_PYTHON" -I "$HEADLESS" export "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work" "$OUT/work/route-options.dsn.json" \
     > "$OUT/work/export.log" 2>&1 || not_graded "the plugin's DSN export failed (see $OUT/work/export.log)"
   [[ -s "$OUT/work/$BASE.dsn" && -s "$OUT/work/$BASE.args.json" ]] ||
     not_graded "the plugin's export wrote no DSN or arguments (see $OUT/work/export.log)"
@@ -244,7 +250,7 @@ if [[ $EXPORT == plugin ]]; then
   # The plugin's own import: the via-drill correction, the zone refill and (for fix_existing)
   # the locks of the input copper.
   "$KICAD_PYTHON" -I "$HEADLESS" import "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.noplace.ses" \
-    "$OUT/routed/$BASE.kicad_pcb" "$PLUGIN_OPTIONS" > "$OUT/work/import.log" 2>&1 ||
+    "$OUT/routed/$BASE.kicad_pcb" "$OUT/work/route-options.dsn.json" > "$OUT/work/import.log" 2>&1 ||
     not_graded "SES import failed (see $OUT/work/import.log)"
 else
   "$KICAD_PYTHON" "$STEPS" import "$OUT/unrouted/$BASE.kicad_pcb" "$OUT/work/$BASE.noplace.ses" \

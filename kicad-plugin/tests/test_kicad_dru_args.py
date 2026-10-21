@@ -21,9 +21,10 @@ def test_a_dsn_route_gets_the_kicad_dru(tmp_path):
     (tmp_path / "b.kicad_dru").write_text("(version 1)", encoding="utf-8")
     args = export_flow.router_args(board_at(pcb), RouteOptions())
     assert args[-2:] == ["--kicad-dru", str(tmp_path / "b.kicad_dru")]
-    # every profile: a fix to the input
+    # every profile: a fix to the input (K13.7: enhanced reads the snapshot by default, so the DSN is chosen)
     for profile in options.PROFILES:
-        assert "--kicad-dru" in export_flow.router_args(board_at(pcb), options.profile_defaults(profile))
+        dsn = replace(options.profile_defaults(profile), board_input=options.INPUT_DSN)
+        assert "--kicad-dru" in export_flow.router_args(board_at(pcb), dsn)
 
 
 def test_no_flag_without_a_file_for_the_gui_or_the_kicad_pcb_input(tmp_path):

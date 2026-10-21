@@ -23,7 +23,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   (`layout.py`, `Dialog.fit_to_display`) and the pages scroll; before the tabs, the stacked groups
   outgrew the screen and hid **Route in GUI** and the other buttons.
 - K02 modules (all pure Python except `plugin.py`): `options.py` (the route options, per board in
-  `freerouting-rs/route-options.json`, `"schema": 2`, defensive restore; `to_args()` builds the
+  `freerouting-rs/route-options.json`, `"schema": 6` since K13.7, defensive restore; `to_args()` builds the
   flags in a fixed order and always passes `--router.min_trace_width_um` from Board Setup's
   minimum track width, D8), `progress.py` (`parse_line` for C08's JSON lines, `ProgressState`,
   `pump_lines` = the reader thread's body), `summary.py` (the text after the import, from the
@@ -101,7 +101,7 @@ promotion is made here; historical 33-versus-39 counts are not an accepted A/B.
   saved one or the profile's; one that differs passes `--router.<key>=<id>` (sorted by key). A
   router without `--list-stages` gives an empty group with a note. Slots that take a list
   (`special.stages`, `special.diagnostics`) are not offered; the CLI sets them.
-- **The options file** (`route-options.json`, `"schema": 2`) stores the profile and only what
+- **The options file** (`route-options.json`, `"schema": 6`; schemas 1 to 5 still load) stores the profile and only what
   differs from it: options at their defaults and stage choices equal to the profile's are left
   out, so a board follows the profile until the user picks something else. A schema 1 file
   (every option written out) still loads, as Enhanced. An unknown profile or a malformed stage
@@ -758,12 +758,28 @@ not worth a change until a board shows a connection lost to it.
 
 ## The plugin reads the board directly (K10)
 
-**The option.** `board_input` (dialog: "Board input", saved in `route-options.json`, schema 4) is `dsn`
-(KiCad's `ExportSpecctraDSN`, the default) or `kicad_pcb` ("Board snapshot (experimental)"). DSN and SES
-stay the default: the DSN path is what the Java comparison (A14) and the graded runs of K02 and K09 used,
-and KiCad 11's IPC API keeps exactly these two board operations (K01.5). `kicad_pcb` changes only what the
-router reads; the result still comes back through `ImportSpecctraSES` (`plugin.import_ses`, which detaches the
-unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's rule: it stays `dsn` (below).
+**The option.** `board_input` (dialog: "Board input", saved in `route-options.json`) is `kicad_pcb` ("Board
+snapshot") or `dsn` ("KiCad's DSN export"). **Which runs by default (K13.7, decided 2026-10-21):** the
+Enhanced profile reads the board snapshot (`options.PROFILE_DEFAULTS`), and falls back to the DSN export, saying
+so, when the router's reader refuses the board (K13.3, below). The Legacy profile defaults to the DSN: Legacy is
+Java's results and Java's plugin reads a DSN (D11). To pick the other, use the Board page's "Board input" choice;
+the profile choice moves nothing else. `kicad_pcb` changes only what the router reads; the result still comes
+back through `ImportSpecctraSES` (`plugin.import_ses`, which detaches the unlocked tracks first, 9bc7ee6).
+KiCad 11's IPC API keeps exactly these two board operations (K01.5). Until K10.5 the default stayed `dsn`
+under question 1's rule; K13.6's measurement switched it (below).
+
+**Saved options (K13.7, schema 6).** `to_dict` leaves a default out, so before schema 6 a saved `dsn` was never
+written and a file without `board_input` meant `dsn`. Now a file keeps an explicit choice (`dsn` under
+Enhanced and `kicad_pcb` under Legacy are written), and a file without `board_input` takes the profile's
+default, with one exception: a file that names no input but turns on a DSN-only fix-up (`class_widths`,
+`fixed_pour_classes` as wires or `auto`, `drop_pour_nets`, `route_on_plane_layers`; `options.input_conflicts`)
+takes `dsn`, so a board's saved setup never refuses its own Route. A preset that leaves out `board_input` and
+turns such a fix-up on moves the input to `dsn` and logs a warning saying so (`presets.apply`); presets written by
+"Save as preset..." name every option and are unaffected. `apply_kicad_rules` is gone from the options (it
+decided nothing since K13.1) together with its greyed check box; a file or preset that has it still loads and
+is saved again as schema 6 without it. A board with no `route-options.json` opens on the snapshot (it still
+starts without the completion sweep: `load` returns the dataclass defaults with the profile's input). Tests:
+`test_board_input_default.py`, `test_input_choice.py` (the dialog), `test_snapshot.py`.
 
 - **The snapshot** (`snapshot.py`, `export_flow.prepare_snapshot`): on KiCad's UI thread, `pcbnew.SaveBoard(path,
   board, True)` (`aSkipSettings`) writes `freerouting-rs/<stem>.kicad_pcb` beside where `<stem>.dsn` would be, so
@@ -785,12 +801,11 @@ unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's ru
 - **The reader's report.** The router's own log lists the reader's report lines and warnings; after a Route run
   the plugin copies those (`snapshot.reader_lines`) to `plugin.log`.
 - **`apply_kicad_rules` (K10.3)** no longer decides anything (K13.1, decided 2026-10-20: the board's own rules
-  reach the router on both inputs). Every snapshot Route gets `--apply-design-rules`
+  reach the router on both inputs) and was dropped with schema 6 (K13.7). Every snapshot Route gets `--apply-design-rules`
   (`export_flow.kicad_dru_args`, as a DSN Route gets `--kicad-dru`), and the CLI applies a `.kicad_pcb`'s
   `.kicad_dru` by default anyway (`--no-design-rules` turns it off; `cli_kicad.rs::the_apply_design_rules_switch_changes_the_class_rules`:
   on the `classes` board the rule "fast tracks" takes the Fast wires from 0.1 mm to 0.3 mm in the session;
-  `design_rules_reach_the_board` is the engine-level test). The dialog's check box is ticked and greyed, and the
-  saved value is kept as it was (K13.7 can drop the field with its schema bump). "Route in GUI" reads the
+  `design_rules_reach_the_board` is the engine-level test). The dialog's check box is gone. "Route in GUI" reads the
   `.kicad_dru` but has no such switch and says so in the log, on the snapshot as on the DSN (no `--kicad-dru`
   either). The minimum track width stays `--router.min_trace_width_um` on both paths. The `-drc` mode does not
   apply the rules. Tests: `test_board_rules_both_inputs.py`.
@@ -822,7 +837,7 @@ unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's ru
   reading board file at '<name>': <reason>` error line with exit 1 and no session (the DSN is exported and routed
   once; a failure without that line is not retried, and a `SaveBoard` failure is still an error). The run log gets
   one `input: ...` line, and `<stem>.result.json` gets `input` (`kicad_pcb`|`dsn`) and `input_fallback_reason`
-  (null when none), which the result summary shows as `Input: ...`. The saved option stays `kicad_pcb`.
+  (null when none), which the result summary shows as `Input: ...`. The saved option stays what the user chose.
   `headless_run.py` has no fallback. Tests: `test_input_choice.py`.
 - **Tests:** `test_snapshot.py` (paths and argument lists for both inputs and non-ASCII names, the staged
   files, the fall-back, the options check), `test_route_dialog.py` (`test_route_with_the_snapshot_...`,
@@ -853,7 +868,9 @@ unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's ru
   ships with (existing `SYS`/`VBAT` tracks on `In1.Cu` 0.091 mm apart), which KiCad counts against one more segment
   pair after the reader's 0.1 µm rounding than after the export's `%.6g` (K07.6's precision difference). Under
   question 1's rule (decided 2026-10-18: switch only if `kicad_pcb` grades the same or better on every K10.5
-  board) **the default stays `dsn`**, held back by `One-Air-Max` and the two unmeasured boards. The time to
+  board) **the default stayed `dsn`** then, held back by `One-Air-Max` and the two unmeasured boards (K13.6 and K13.7 switched it on
+  2026-10-21: `docs/roadmap/prereg/K13.json`, nine judged rows with 0 manufacturing breaches and 68 unconnected against `dsn`'s 73;
+  `vme-wren` and `jetson-agx-thor-baseboard` accepted unjudged). The time to
   prepare and load is the same within 0.1 s except `CM5` (+0.34 s, the arcs) and `video` (-0.57 s). Smoke run
   before (2026-10-17, dev board `Issue558`, one pass, debug build): both arms 11 unconnected, 12 copper-to-edge
   and 4 hole-clearance errors.

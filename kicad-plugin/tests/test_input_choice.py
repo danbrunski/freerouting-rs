@@ -121,14 +121,16 @@ def env(tmp_path, monkeypatch, make_fake_router, isolated_env):
 
     pcbnew.SaveBoard = save_board
 
-    def make_dialog(mode, snapshot_text=KICAD_9):
+    def make_dialog(mode, snapshot_text=KICAD_9, saved=None):
         text["value"] = snapshot_text
+        if saved is not None:  # a route-options.json the board already has
+            folder = pcb.parent / "freerouting-rs"
+            folder.mkdir(exist_ok=True)
+            (folder / "route-options.json").write_text(json.dumps(saved), encoding="utf-8")
         router = make_fake_router(mode)
         monkeypatch.setattr(plugin.tools, "find_tool", lambda name: plugin.tools.Tool(name, router))
         monkeypatch.setattr(plugin.tools, "query_version", lambda tool, timeout=10: (0, 1, 0, "abc"))
-        dialog = plugin.Dialog(None, stub_ui.FakeBoard(pcb))
-        dialog.board_input.SetSelection(1)  # Board snapshot (kicad_pcb); the keepouts stay on (K13.7)
-        return dialog
+        return plugin.Dialog(None, stub_ui.FakeBoard(pcb))  # K13.7: the snapshot is the default input
 
     return make_dialog, ui, pcb.parent / "freerouting-rs"
 
@@ -153,10 +155,78 @@ def test_the_normal_case_routes_the_snapshot_and_says_so(env):
     assert text.startswith("Routed and imported the result into the board.")
     assert "Input: kicad_pcb" in text.splitlines() and "fallback" not in text
     assert "input: kicad_pcb (the board snapshot, read directly)" in log_of(work)
-    assert json.loads((work / "route-options.json").read_text(encoding="utf-8"))["board_input"] == "kicad_pcb"
+    assert "board_input" not in json.loads((work / "route-options.json").read_text(encoding="utf-8"))  # the default
 
 
 IGNORED = "Keep the board-edge and pad clearances"
+
+
+def test_a_board_with_no_saved_file_opens_on_the_snapshot_with_only_the_keepouts_note(env):
+    """K13.7: the default input, and no input note beyond the keepouts one."""
+    make_dialog, _ui, work = env
+    dialog = make_dialog("route")
+    assert not (work / "route-options.json").exists()
+    assert options.BOARD_INPUTS[dialog.board_input.GetSelection()] == "kicad_pcb"
+    assert dialog.input_note.label == options.input_ignored_note(options.profile_defaults())
+    assert IGNORED in dialog.input_note.label
+    assert dialog.input_note.label.count("ignored") == 1 and "DSN" not in dialog.input_note.label.split(":")[0]
+    assert "xperimental" not in " ".join(dialog.board_input.choices)
+
+
+def test_a_route_with_the_defaults_runs_the_snapshot(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route")
+    dialog.on_route(None)
+    assert len(ui.snapshots) == 1 and ui.exports == []
+    assert result(work)["input"] == "kicad_pcb" and result(work)["input_fallback_reason"] is None
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == 6 and "board_input" not in saved  # the default is not written
+
+
+def test_a_saved_dsn_choice_keeps_the_dsn(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route", saved={"schema": 6, "profile": "enhanced", "board_input": "dsn"})
+    assert dialog.board_input.GetSelection() == 0 and dialog.input_note.label == ""
+    dialog.on_route(None)
+    assert ui.snapshots == [] and len(ui.exports) == 1
+    assert json.loads((work / "route-options.json").read_text(encoding="utf-8"))["board_input"] == "dsn"
+
+
+def test_the_legacy_profile_opens_on_the_dsn(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route", saved={"schema": 6, "profile": "legacy"})
+    assert dialog.board_input.GetSelection() == 0
+    dialog.on_route(None)
+    assert ui.snapshots == [] and len(ui.exports) == 1
+
+
+def test_the_profile_choice_does_not_move_the_input(env):
+    make_dialog, _ui, _work = env
+    dialog = make_dialog("route")
+    dialog.profile.SetSelection(options.PROFILES.index("legacy"))
+    assert options.from_form(dialog.form_values())[0].board_input == "kicad_pcb"
+    assert dialog.board_input.GetSelection() == 1
+
+
+def test_a_schema_5_board_with_class_widths_and_no_choice_still_routes_on_the_dsn(env):
+    """The board's saved setup must not refuse its own Route (K13: a run never
+    fails just because of the input choice)."""
+    make_dialog, ui, work = env
+    dialog = make_dialog("route", saved={"schema": 5, "profile": "enhanced", "class_widths": {"GND": 0.4}})
+    assert dialog.board_input.GetSelection() == 0
+    dialog.on_route(None)
+    assert ui.snapshots == [] and len(ui.exports) == 1
+    assert ui.messages[-1][0].startswith("Routed and imported the result into the board.")
+
+
+def test_a_schema_5_file_with_apply_kicad_rules_routes_and_is_saved_as_schema_6(env):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route", saved={"schema": 5, "profile": "enhanced", "apply_kicad_rules": True})
+    assert "saved_kicad_rules" not in vars(dialog)
+    dialog.on_route(None)
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == 6 and "apply_kicad_rules" not in saved
+    assert len(ui.snapshots) == 1
 
 
 def test_the_defaults_route_the_snapshot_and_the_dialog_says_the_keepouts_are_ignored(env):
@@ -174,7 +244,7 @@ def test_the_defaults_route_the_snapshot_and_the_dialog_says_the_keepouts_are_ig
     log = log_of(work)
     assert [line for line in log.splitlines() if IGNORED in line and "ignored" in line]
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["board_input"] == "kicad_pcb" and saved.get("edge_and_pad_keepouts", True) is True
+    assert "board_input" not in saved and saved.get("edge_and_pad_keepouts", True) is True
 
 
 def test_the_note_follows_the_input_and_the_keepouts_box(env):
@@ -197,7 +267,7 @@ def test_the_note_follows_the_input_and_the_keepouts_box(env):
 def test_a_kicad_5_board_is_exported_as_a_dsn_without_routing_the_snapshot(env):
     make_dialog, ui, work = env
     dialog = make_dialog("echo", snapshot_text=KICAD_5)  # echo: records the one router call
-    dialog.apply_rules.SetValue(True)  # a snapshot-only switch; the DSN run must not get it
+    assert "apply_rules" not in vars(dialog)  # the check box is gone (K13.7); the DSN run must not get the snapshot switch
     dialog.on_route(None)
     assert len(ui.snapshots) == 1 and [Path(p) for p in ui.exports] == [work / "b.dsn"]
     args = ui.messages[-1][0].splitlines()
@@ -208,8 +278,8 @@ def test_a_kicad_5_board_is_exported_as_a_dsn_without_routing_the_snapshot(env):
     log = log_of(work)
     assert "input: dsn (KiCad's DSN export; fallback from kicad_pcb because" in log and "version 20171130" in log
     assert "ignored" not in log  # the DSN run applies the keepouts box
-    # the saved choice is the user's, not the fallback
-    assert json.loads((work / "route-options.json").read_text(encoding="utf-8"))["board_input"] == "kicad_pcb"
+    # the saved choice is the user's, not the fallback: the default, so nothing (a `dsn` would show the fallback leaked)
+    assert "board_input" not in json.loads((work / "route-options.json").read_text(encoding="utf-8"))
 
 
 def test_a_kicad_5_board_result_names_the_dsn_and_why(env):
@@ -227,7 +297,6 @@ def test_a_kicad_5_board_result_names_the_dsn_and_why(env):
 def test_a_construct_the_router_refuses_exports_the_dsn_and_routes_once_more(env):
     make_dialog, ui, work = env
     dialog = make_dialog("route-refuse-kicad")  # the snapshot looks fine to the pre-check
-    dialog.apply_rules.SetValue(True)
     dialog.on_route(None)
     assert len(ui.snapshots) == 1 and [Path(p) for p in ui.exports] == [work / "b.dsn"]
     assert ui.imports == [work / "b.ses"]  # the DSN run's session

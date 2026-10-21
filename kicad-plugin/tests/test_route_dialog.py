@@ -18,12 +18,15 @@ def env(tmp_path, monkeypatch, make_fake_router, isolated_env):
     pcb.parent.mkdir()
     pcb.write_text("", encoding="utf-8")
 
-    def make_dialog(mode):
+    def make_dialog(mode, snapshot=False):
         router = make_fake_router(mode)
         pkg_tools = plugin.tools
         monkeypatch.setattr(pkg_tools, "find_tool", lambda name: pkg_tools.Tool(name, router))
         monkeypatch.setattr(pkg_tools, "query_version", lambda tool, timeout=10: (0, 1, 0, "abc"))
-        return plugin.Dialog(None, stub_ui.FakeBoard(pcb))
+        dialog = plugin.Dialog(None, stub_ui.FakeBoard(pcb))
+        if not snapshot:  # the DSN tests: the default input is the snapshot (K13.7)
+            dialog.board_input.SetSelection(0)
+        return dialog
 
     return make_dialog, ui, pcb.parent / "freerouting-rs"
 
@@ -60,7 +63,7 @@ def test_the_options_are_saved_and_reach_the_router(env):
     dialog.timeout.SetValue("10m")
     dialog.on_route(None)
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 5 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
+    assert saved["schema"] == 6 and saved["profile"] == "enhanced" and saved["max_passes"] == 12 and saved["ignore_net_classes"] == ["GND", "Power"]
     # The router failed to write a session ("echo"): the dialog shows its output.
     failure = ui.messages[-1][0]
     assert "Routing failed (exit code 0)" in failure
@@ -208,7 +211,7 @@ def test_the_options_sit_on_three_tabs_and_the_buttons_stay_outside(env):
     assert [(page, title) for page, title in notebook.pages] == [(route, "Route"), (board, "Board and DSN"), (advanced, "Advanced")]
     assert notebook.parent is dialog
     on_route = [dialog.profile, dialog.passes, dialog.threads, dialog.optimizer, dialog.threshold, dialog.classes, dialog.timeout, dialog.seed, dialog.min_width]
-    on_board = [dialog.board_input, dialog.apply_rules, dialog.fix_areas, dialog.widths, dialog.fixed_pours, dialog.pour_mode, dialog.drop_pours, dialog.keepouts, dialog.open_layers, dialog.fix_existing]
+    on_board = [dialog.board_input, dialog.fix_areas, dialog.widths, dialog.fixed_pours, dialog.pour_mode, dialog.drop_pours, dialog.keepouts, dialog.open_layers, dialog.fix_existing]
     on_advanced = [dialog.ripup, dialog.sweep, dialog.sweep_passes, dialog.pass_hint] + [c for c, _ in dialog.stage_choices.values()]
     assert [page_of(c, dialog) for c in on_route] == [route] * len(on_route)
     assert [page_of(c, dialog) for c in on_board] == [board] * len(on_board)
@@ -415,17 +418,17 @@ def test_the_winning_pass_is_remembered_and_offered(env):
 # --- K10: the board snapshot as the router's input -----------------------------
 
 
-def snapshot_dialog(make_dialog, mode, rules=False):
-    dialog = make_dialog(mode)
-    dialog.board_input.SetSelection(1)  # Board snapshot
-    dialog.keepouts.SetValue(False)  # a DSN rewrite: refused on a snapshot
-    dialog.apply_rules.SetValue(rules)
+def snapshot_dialog(make_dialog, mode):
+    """The dialog on the board snapshot, the default input (K13.7), with the
+    keepouts box on: the snapshot ignores it."""
+    dialog = make_dialog(mode, snapshot=True)
+    assert dialog.board_input.GetSelection() == 1
     return dialog
 
 
 def test_route_with_the_snapshot_gives_the_router_the_kicad_pcb(env):
     make_dialog, ui, work = env
-    dialog = snapshot_dialog(make_dialog, "echo", rules=True)
+    dialog = snapshot_dialog(make_dialog, "echo")
     dialog.on_route(None)
     assert ui.snapshots == [(work / "b.kicad_pcb", True)]  # SaveBoard(path, board, aSkipSettings=True)
     assert ui.exports == []  # no DSN export
@@ -435,14 +438,14 @@ def test_route_with_the_snapshot_gives_the_router_the_kicad_pcb(env):
     assert lines[lines.index("-de") + 1] == str(work / "b.kicad_pcb")
     assert lines.count("--apply-design-rules") == 1
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    # K13.1: the check box is always on and greyed; the saved value stays the file's
-    assert saved["board_input"] == "kicad_pcb" and "apply_kicad_rules" not in saved
-    assert dialog.apply_rules.GetValue() is True
+    # K13.7: the snapshot is the default input, so it is not written; the `apply_kicad_rules` option and its check box are gone
+    assert "board_input" not in saved and "apply_kicad_rules" not in saved
+    assert "apply_rules" not in vars(dialog)
     log = (work / "plugin.log").read_text(encoding="utf-8")
     assert "rule-area fix-up not applied" in log and "snapshot: b.kicad_pcb" in log
 
 
-def test_the_rules_switch_is_passed_while_the_old_option_is_off(env):
+def test_the_rules_switch_is_passed_on_a_snapshot_route(env):
     # K13.1: the board's rules reach the router on both inputs.
     make_dialog, ui, work = env
     dialog = snapshot_dialog(make_dialog, "echo")
@@ -450,7 +453,7 @@ def test_the_rules_switch_is_passed_while_the_old_option_is_off(env):
     assert "--apply-design-rules" in ui.messages[-1][0].splitlines()
 
 
-def test_the_default_input_still_exports_the_dsn(env):
+def test_the_dsn_choice_exports_the_dsn(env):
     make_dialog, ui, work = env
     dialog = make_dialog("echo")
     dialog.on_route(None)
@@ -473,8 +476,7 @@ def test_the_snapshot_result_comes_back_through_the_detaching_import(env):
 
 def test_a_snapshot_with_a_dsn_rewrite_on_is_refused_before_anything_is_saved(env):
     make_dialog, ui, work = env
-    dialog = make_dialog("route")
-    dialog.board_input.SetSelection(1)  # the keepouts option is on by default and is only ignored (K13.7)
+    dialog = make_dialog("route", snapshot=True)  # the keepouts option is on by default and is only ignored (K13.7)
     dialog.widths.SetValue("GND=0.4")
     dialog.on_route(None)
     assert ui.snapshots == [] and ui.exports == [] and ui.imports == []
@@ -494,7 +496,7 @@ def test_a_failed_snapshot_says_so_and_routes_nothing(env, monkeypatch):
 
 def test_route_in_gui_and_the_viewer_take_the_snapshot_too(env, monkeypatch):
     make_dialog, ui, work = env
-    dialog = snapshot_dialog(make_dialog, "echo", rules=True)
+    dialog = snapshot_dialog(make_dialog, "echo")
     started = []
     plugin = sys.modules["freerouting_rs.plugin"]
     monkeypatch.setattr(plugin.tools, "open_viewer", lambda tool, design, ses=None: started.append((design, ses)))
@@ -556,6 +558,6 @@ def test_the_pin_escape_checkbox_is_saved_and_reaches_the_router(env):
     dialog.on_route(None)
     assert "--router.fanout.pin_escape=straight" in ui.messages[-1][0].splitlines()
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 5 and saved["pin_escape"] is True
+    assert saved["schema"] == 6 and saved["pin_escape"] is True
     again = make_dialog("echo")
     assert again.pin_escape.GetValue() is True

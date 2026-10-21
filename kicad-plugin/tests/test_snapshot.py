@@ -47,12 +47,14 @@ def test_the_argument_lists_for_both_inputs_with_non_ascii_names(tmp_path, stem)
         assert str(args[1]).endswith(stem + suffix)  # the name is kept character for character
 
 
-def test_the_dsn_input_is_the_default_and_adds_nothing():
-    assert RouteOptions().board_input == "dsn"
+def test_the_dsn_input_adds_nothing_and_the_enhanced_profile_wants_the_snapshot():
+    assert RouteOptions().board_input == "dsn"  # the dataclass default is legacy's (K13.7)
     assert not snapshot.wanted(RouteOptions())
     assert snapshot.wanted(opts())
+    assert snapshot.wanted(options.profile_defaults("enhanced"))
+    assert not snapshot.wanted(options.profile_defaults("legacy"))
     assert RouteOptions().to_args() == []
-    assert snapshot.router_args(RouteOptions(apply_kicad_rules=True)) == []
+    assert snapshot.router_args(RouteOptions()) == []
 
 
 # --- K10.3: the .kicad_dru switch -----------------------------------------------
@@ -60,21 +62,18 @@ def test_the_dsn_input_is_the_default_and_adds_nothing():
 
 def test_the_rules_switch_is_passed_for_every_snapshot_route_and_never_for_a_dsn():
     # K13.1: the board's rules reach the router on both inputs, so the
-    # snapshot gets the switch whatever `apply_kicad_rules` says;
-    # `export_flow.kicad_dru_args` adds it (test_board_rules_both_inputs.py).
+    # snapshot always gets the switch (the option `apply_kicad_rules` is gone,
+    # K13.7); `export_flow.kicad_dru_args` adds it (test_board_rules_both_inputs.py).
     assert opts().to_args() == []
-    assert opts(apply_kicad_rules=True).to_args() == []
-    assert snapshot.router_args(opts(apply_kicad_rules=True)) == ["--apply-design-rules"]
     assert snapshot.router_args(opts()) == ["--apply-design-rules"]
-    # not on a DSN input, whatever the option says
-    assert snapshot.router_args(RouteOptions(apply_kicad_rules=True)) == []
+    # not on a DSN input
+    assert snapshot.router_args(RouteOptions()) == []
 
 
 def test_the_run_log_notes_say_what_a_snapshot_does_not_do():
     assert any("rule-area fix-up not applied" in n for n in snapshot.notes(opts()))
     assert all("rule-area" not in n for n in snapshot.notes(opts(rule_area_fixup=False)))
-    for old in (False, True):
-        assert any("--apply-design-rules" in n for n in snapshot.notes(opts(apply_kicad_rules=old)))
+    assert any("--apply-design-rules" in n for n in snapshot.notes(opts()))
 
 
 def test_the_reader_lines_are_picked_out_of_the_router_log():
@@ -258,7 +257,7 @@ def run_headless_route(monkeypatch, tmp_path, saved):
     `(exit code, the preparation command)`."""
     headless = load_headless_run(monkeypatch)
     board = tmp_path / "proj" / "b.kicad_pcb"
-    board.parent.mkdir()
+    board.parent.mkdir(parents=True)
     path = tmp_path / "options.json"
     path.write_text(json.dumps({"schema": 4, **saved}), encoding="utf-8")
     calls = []
@@ -292,6 +291,31 @@ def test_headless_route_on_the_dsn_prints_no_note(monkeypatch, tmp_path, capsys)
     assert "ignored" not in capsys.readouterr().out
 
 
+def test_headless_route_follows_the_profile_when_the_options_name_no_input(monkeypatch, tmp_path):
+    """K13.7: a file without `board_input` takes the profile's input, as the dialog does."""
+    _, command = run_headless_route(monkeypatch, tmp_path / "a", {"profile": "enhanced"})
+    assert "snapshot" in command
+    _, command = run_headless_route(monkeypatch, tmp_path / "b", {"profile": "legacy"})
+    assert "export" in command
+    # a DSN-only fix-up and no choice keeps the DSN
+    _, command = run_headless_route(monkeypatch, tmp_path / "c", {"class_widths": {"GND": 0.4}})
+    assert "export" in command
+
+
+def test_headless_export_and_snapshot_modes_set_their_input_whatever_the_options_say(monkeypatch, tmp_path):
+    headless = load_headless_run(monkeypatch)
+    seen = []
+    headless.pcbnew.LoadBoard = lambda path: object()
+    monkeypatch.setattr(headless.export_flow, "prepare", lambda board, pcbnew, dsn, opts, export: seen.append(opts) or (False, [], [], []))
+    monkeypatch.setattr(headless.export_flow, "prepare_snapshot", lambda *a: seen.append(a[-1]) or (False, [], [], []))
+    path = tmp_path / "options.json"
+    path.write_text(json.dumps({"schema": 4, "profile": "enhanced"}), encoding="utf-8")
+    headless.export(str(tmp_path / "b.kicad_pcb"), str(tmp_path / "w"), str(path))
+    path.write_text(json.dumps({"schema": 6, "profile": "enhanced", "board_input": "dsn"}), encoding="utf-8")
+    headless.snapshot_mode(str(tmp_path / "b.kicad_pcb"), str(tmp_path / "w"), str(path), [])
+    assert [o.board_input for o in seen] == ["dsn", "kicad_pcb"]
+
+
 def test_every_k09_option_is_either_checked_or_allowed():
     """The K09 fields: five rewrite the DSN text and are refused; the rest are
     router flags or board locks and work on a snapshot. A new K09 option has to
@@ -311,7 +335,7 @@ def test_every_k09_option_is_either_checked_or_allowed():
 
     k09 = {f.name for f in fields(RouteOptions)} - {
         "max_passes", "threads", "optimizer", "improvement_threshold", "ignore_net_classes", "seed",
-        "min_trace_width_um", "timeout", "rule_area_fixup", "profile", "stages", "board_input", "apply_kicad_rules",
+        "min_trace_width_um", "timeout", "rule_area_fixup", "profile", "stages", "board_input",
     }  # fmt: skip
     assert k09 == checked | allowed
     assert options.input_conflicts(
@@ -345,18 +369,21 @@ def test_the_form_refuses_a_snapshot_with_a_dsn_option_on_and_names_it():
 
 def test_the_new_fields_round_trip_and_older_files_load(tmp_path):
     path = tmp_path / "route-options.json"
-    chosen = opts(apply_kicad_rules=True)
+    chosen = opts()
     options.save(path, chosen)
     assert options.load(path) == chosen
     import json
 
+    # K13.7: the snapshot is enhanced's default, so it is not written; a choice that differs is
     saved = json.loads(path.read_text(encoding="utf-8"))
-    assert saved["schema"] == 5 and saved["board_input"] == "kicad_pcb" and saved["apply_kicad_rules"] is True
-    # the defaults are not written
-    options.save(path, RouteOptions())
-    assert "board_input" not in json.loads(path.read_text(encoding="utf-8"))
-    # a schema 3 file has no K10 fields: the DSN input
-    assert RouteOptions.from_dict({"schema": 3, "profile": "enhanced"}).board_input == "dsn"
+    assert saved["schema"] == 6 and "board_input" not in saved and "apply_kicad_rules" not in saved
+    options.save(path, RouteOptions())  # the DSN input under enhanced
+    assert json.loads(path.read_text(encoding="utf-8"))["board_input"] == "dsn"
+    options.save(path, opts(profile="legacy"))
+    assert json.loads(path.read_text(encoding="utf-8"))["board_input"] == "kicad_pcb"
+    # a schema 3 file has no K10 fields: the profile's input
+    assert RouteOptions.from_dict({"schema": 3, "profile": "enhanced"}).board_input == "kicad_pcb"
+    assert RouteOptions.from_dict({"schema": 3, "profile": "legacy"}).board_input == "dsn"
     # bad values keep the default
     bad = {"schema": 4, "board_input": "svg", "apply_kicad_rules": "yes"}
     assert RouteOptions.from_dict(bad) == options.profile_defaults("enhanced")

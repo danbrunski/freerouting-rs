@@ -74,8 +74,9 @@ board class in their help text.
   - Rule areas are fixed up before routing. Optional DSN fix-ups (class widths, fixed or dropped
     pours, edge and pad clearances as keepouts) reproduce canary's export, and presets save a
     set of options for reuse.
-  - Instead of the DSN export, it can route a snapshot of the open board through the router's
-    own `.kicad_pcb` reader (experimental).
+  - It routes a snapshot of the open board through the router's own `.kicad_pcb` reader by default,
+    and uses KiCad's DSN export instead when the reader refuses the board, or when you pick it
+    (the Legacy profile defaults to the DSN, as Java's plugin does).
   - Net and part names outside ASCII round-trip intact (Java's plugin strips them).
   - A version check catches a mismatched router.
   - Its plugin-manager package, not yet published, carries the executables for Windows, macOS

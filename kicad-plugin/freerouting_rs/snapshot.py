@@ -5,8 +5,10 @@ router reads with its own `.kicad_pcb` reader, in place of KiCad's DSN export.
 `pcbnew.SaveBoard(path, board, aSkipSettings=True)` on KiCad's UI thread and
 pass the copy to the router. The result still comes back as a session through
 `ImportSpecctraSES` (plugin.py `import_ses`, which detaches the unlocked
-tracks first). DSN and SES stay the default: the DSN path is what the Java
-comparison and the graded runs of K02 and K09 used.
+tracks first). The snapshot is the default input of the `enhanced` profile
+(K13.7); `legacy` keeps the DSN, which is what the Java comparison and the
+graded runs of K02 and K09 used, and the DSN is the fallback when the reader
+refuses the board (`input_choice.py`).
 
 This file is pure Python, like the other modules but `plugin.py`: the paths,
 the files to stage and the arguments need neither pcbnew nor wx. The two

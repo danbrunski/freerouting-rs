@@ -33,18 +33,24 @@ Its toolbar button opens a dialog that:
   A **Preset** drop-down fills the dialog from option files in `freerouting-rs/presets/` next to the board
   (or the user's presets folder); **Save as preset...** writes one. The plugin ships none. After the import
   the plugin sets each routed via's drill from the session (KiCad's import takes the net class's).
-- **Board input** (experimental, K10): instead of KiCad's DSN export the plugin can save a snapshot of the
-  open board (`SaveBoard`, with the project's net classes from the live board) and route that with the
-  router's own `.kicad_pcb` reader. DSN stays the default. It is refused while an option that rewrites the
+- **Board input** (K10, the default since K13.7): the plugin saves a snapshot of the open board
+  (`SaveBoard`, with the project's net classes from the live board) and routes that with the router's own
+  `.kicad_pcb` reader, instead of KiCad's DSN export. When the reader refuses the board (a file older than
+  KiCad 6, or a construct it does not support) the plugin exports the DSN instead and says so. The Board
+  page's "Board input" picks the other input; the Legacy profile defaults to the DSN, as Java's plugin
+  reads a DSN. A board's saved choice is kept; a saved file without one takes the profile's default, except
+  that one with a DSN-only fix-up (below) keeps the DSN, and an older file's `apply_kicad_rules` is dropped
+  when it is saved again. The snapshot is refused while an option that rewrites the
   DSN is on (class widths, fixed or dropped pours, opened plane layers). The board-edge and pad clearances box
   (on by default) does not refuse it: the reader keeps those clearances itself, so the box is ignored on the
   snapshot, and the dialog and the run log say so. The project's
   `.kicad_dru` rules reach the router on both inputs (`--kicad-dru` for the DSN, `--apply-design-rules` for the
   snapshot; K13.1). The result comes back through the same SES import.
   Measured on eight boards (K10.5, `docs/development/kicad-plugin.md`): the snapshot grades the same on four,
-  better on three (`CM5_MINIMA_3` 4 errors against 195, because KiCad's DSN export turns track arcs into one
+  better on three (`CM5_MINIMA_3` 4 errors against 195, because KiCad's DSN export turned track arcs into one
   chord each; `canary-pwr` 38 unconnected against 42; `video` 0 errors against 1) and one error worse on
-  `One-Air-Max` (a violation the board already has, counted once more), so DSN stays the default.
+  `One-Air-Max` (a violation the board already has, counted once more). K13.6 then judged nine boards: the
+  snapshot had 0 manufacturing breaches and 68 unconnected against the DSN's 73, which made it the default.
 - **Open in viewer**: exports the board and opens it (plus the last `.ses`, if any) in
   `freerouting-gui`.
 - **Import SES...**: imports any Specctra session file into the board.

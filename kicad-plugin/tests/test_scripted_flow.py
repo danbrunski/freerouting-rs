@@ -39,7 +39,7 @@ def board(tmp_path):
     pcb = project / "dev-board.kicad_pcb"
     opts = tmp_path / "options.json"
     opts.write_text(
-        json.dumps({"schema": 4, "max_passes": 1, "optimizer": False, "threads": 2}),
+        json.dumps({"schema": 6, "board_input": "dsn", "max_passes": 1, "optimizer": False, "threads": 2}),
         encoding="utf-8",
     )
     return python, pcb, opts, tmp_path

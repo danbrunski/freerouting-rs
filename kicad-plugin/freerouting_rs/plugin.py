@@ -1,7 +1,9 @@
 """KiCad PCB editor action plugin for freerouting-rs.
 
-Exports the open board to Specctra DSN (or, with the experimental board input
-`kicad_pcb`, takes a snapshot of it with SaveBoard, K10), routes it with the freerouting-rs
+Takes a snapshot of the open board with SaveBoard (the board input
+`kicad_pcb`, the default of the `enhanced` profile since K13.7; K10) or exports
+it to Specctra DSN (`dsn`, `legacy`'s default, and the fallback when the
+router's reader refuses the snapshot, K13.3), routes it with the freerouting-rs
 command line (live progress, Stop and keep, Abort, a result summary) or in
 the GUI window ("Route in GUI"), imports the resulting SES session, and opens
 boards in the freerouting-rs viewer. Files go in a `freerouting-rs` folder
@@ -364,7 +366,7 @@ class Dialog(wx.Dialog):
             board_page,
             labelled_grid(
                 board_page,
-                (("Board input", self.board_input), ("", self.input_note), ("", self.apply_rules), ("", self.fix_areas)),
+                (("Board input", self.board_input), ("", self.input_note), ("", self.fix_areas)),
             ),
             self.fill_dsn_group(dsn_group),
         )
@@ -435,14 +437,17 @@ class Dialog(wx.Dialog):
         )
 
     def add_k10_controls(self, saved, page):
-        """The K10 fields: what the router reads, and the .kicad_dru switch."""
+        """The K10 field: what the router reads."""
         self.board_input = wx.Choice(page, choices=[options.BOARD_INPUT_LABELS[i] for i in options.BOARD_INPUTS])
         self.board_input.SetSelection(options.BOARD_INPUTS.index(saved.board_input))
         self.board_input.SetToolTip(
-            "What the router reads. KiCad's DSN export is the default. The board snapshot is "
+            "What the router reads. The board snapshot (the default of the Enhanced profile) is "
             "the open board saved with SaveBoard and read by the router's own reader (rule areas by "
             "their flags, track arcs, unsaved Board Setup changes); it cannot be combined with the "
-            "DSN fix-ups below, except the board-edge and pad clearances box, which it ignores. Experimental."
+            "DSN fix-ups below, except the board-edge and pad clearances box, which it ignores. "
+            "KiCad's DSN export is the default of the Legacy profile and the fallback when the "
+            "reader refuses the board. The .kicad_dru beside the board reaches the router on both "
+            "inputs (Route only)."
         )
         # K13.7: the keepouts box is on by default and does nothing on the
         # snapshot; a note says so instead of refusing the run.
@@ -455,16 +460,6 @@ class Dialog(wx.Dialog):
             "clearance and the pads' own clearances itself."
         )
         self.show_input_note()
-        # K13.1: the board's own rules reach the router on both inputs, so the
-        # box is always on and greyed; the saved value is kept as it was.
-        self.apply_rules = wx.CheckBox(page, label="Apply the project's .kicad_dru rules (always, both inputs; Route only)")
-        self.apply_rules.SetValue(True)
-        self.apply_rules.Disable()
-        self.apply_rules.SetToolTip(
-            "The .kicad_dru beside the board reaches the router on both inputs: --kicad-dru for the DSN export, "
-            "--apply-design-rules for the snapshot. Route in GUI reads it only."
-        )
-        self.saved_kicad_rules = saved.apply_kicad_rules
 
     def show_input_note(self):
         """The non-blocking note under the board input: the options that are on
@@ -484,10 +479,7 @@ class Dialog(wx.Dialog):
         self.show_input_note()
 
     def k10_values(self):
-        return {
-            "board_input": options.BOARD_INPUTS[max(self.board_input.GetSelection(), 0)],
-            "apply_kicad_rules": self.saved_kicad_rules,
-        }
+        return {"board_input": options.BOARD_INPUTS[max(self.board_input.GetSelection(), 0)]}
 
     def fill_dsn_group(self, group):
         rows = (
@@ -561,7 +553,6 @@ class Dialog(wx.Dialog):
         self.fix_areas.SetValue(opts.rule_area_fixup)
         self.profile.SetSelection(options.PROFILES.index(opts.profile))
         self.board_input.SetSelection(options.BOARD_INPUTS.index(opts.board_input))
-        self.saved_kicad_rules = opts.apply_kicad_rules
         self.widths.SetValue(options.format_class_widths(opts.class_widths))
         self.fixed_pours.SetValue(options.format_names(opts.fixed_pour_classes))
         self.pour_mode.SetSelection(options.POUR_MODES.index(opts.fixed_pour_mode))

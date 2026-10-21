@@ -141,7 +141,7 @@ its fix-ups (edge strips, pad-local clearances, class widths, pours) and its
 router flags, so a measurement that routes the bare export can pass where a
 plugin run fails (canary-pwr's FID3 pad clearance: 1 `clearance` item). With
 `--export plugin OPTIONS.json` (a `route-options.json`, what the plugin's dialog
-saves; `{"schema": 4}` is the defaults):
+saves; `{"schema": 6}` is the defaults; the options are read as the DSN path, `board_input` `dsn`, whatever the file says):
 
 - the DSN is exported by `python3 -I kicad-plugin/headless_run.py export` on the
   unrouted board into `OUT/work/`, together with `BASE.args.json`, the router

@@ -21,8 +21,7 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `min_trace_width_um` | `--router.min_trace_width_um=X` | above 0, unset = from the board |
 | `timeout` | `--timeout T` | `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS`, seconds; empty = none |
 | `rule_area_fixup` | (plugin side, K01.2) | on |
-| `board_input` | (plugin side, K10) what the router reads: `dsn` (KiCad's export, default) or `kicad_pcb` (a snapshot of the open board, read directly) | `dsn` |
-| `apply_kicad_rules` | kept for saved files, no effect since K13.1: every snapshot route gets `--apply-design-rules` (`export_flow.kicad_dru_args`), as a DSN route gets `--kicad-dru` | off |
+| `board_input` | (plugin side, K10) what the router reads: `kicad_pcb` (a snapshot of the open board, read directly) or `dsn` (KiCad's export) | `kicad_pcb` under `enhanced`, `dsn` under `legacy` (K13.7) |
 | `profile` | `--profile legacy` (N01.3) | `legacy` or `enhanced` (default, no flag) |
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
 | `pin_escape` | `--router.fanout.pin_escape=straight` (Q21) | off (default, no flag) under both profiles |
@@ -40,7 +39,7 @@ The GUI's front-end mode (`for_gui=True`) takes the same flags except
 setting that no stage reads headless, so it would do nothing.
 
 The options live in `<board dir>/freerouting-rs/route-options.json` with
-`"schema": 2`, not in `settings.json` (executable locations, rewritten by
+`"schema": 6`, not in `settings.json` (executable locations, rewritten by
 install.py). The file stores the profile and only the values that differ
 from it: an option at its default and a stage choice equal to the profile's
 are left out. A schema 1 file (every option written out, no profile) still
@@ -48,6 +47,15 @@ loads, as `enhanced`. Restoring is defensive (KRT's lesson): unknown keys are
 ignored, a value of the wrong type or outside its range keeps the default for
 that field, a file that is not JSON or has another `schema` gives the
 defaults, and none of it raises.
+
+K13.7 (schema 6): `board_input` defaults to `kicad_pcb` under `enhanced`
+(`PROFILE_DEFAULTS`); `legacy` keeps `dsn`, as Java's plugin exports a DSN. The
+file keeps an explicit choice: `to_dict` leaves a default out, so before schema
+6 a saved `dsn` was never written, and a file without `board_input` has no
+saved choice and takes the profile's default. One exception: a file without
+the choice that turns on a DSN-only fix-up (`input_conflicts`) takes `dsn`, so
+the board's own saved setup does not refuse its Route. `apply_kicad_rules` is
+gone (it decided nothing since K13.1); a file that has it still loads.
 """
 
 import json
@@ -55,12 +63,13 @@ import re
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
-SCHEMA = 5
+SCHEMA = 6
 # Schema 1 (K02.1) wrote every option and had no profile; schema 2 (N01) had
 # no K09 fields; schema 3 (K09) had no K10 fields; schema 4 (K10) had no
-# `pin_escape` (Q21). All still load: a field a file leaves out takes the
-# profile's default (`profile_defaults`).
-READABLE_SCHEMAS = (1, 2, 3, 4, 5)
+# `pin_escape` (Q21); schema 5 (Q21) still had `apply_kicad_rules` and never
+# wrote `board_input = dsn`, the default then (K13.7). All still load: a field
+# a file leaves out takes the profile's default (`profile_defaults`).
+READABLE_SCHEMAS = (1, 2, 3, 4, 5, 6)
 OPTIONS_FILE = "route-options.json"
 
 # The router's routing profiles (N01): `legacy` is Java Freerouting's results,
@@ -73,12 +82,13 @@ _STAGE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 AUTO = "auto"  # a fix-up list derived from the board (dsn_fixups.resolve)
 POUR_MODES = ("wires", "engine")
-# K10: what the router reads. `dsn` is KiCad's export (the default: the Java
-# comparison and K02/K09's graded flow); `kicad_pcb` a snapshot of the open
-# board read by the router's own reader.
+# K10: what the router reads. `dsn` is KiCad's export (the dataclass default,
+# so `legacy`'s: Java's plugin exports a DSN); `kicad_pcb` a snapshot of the
+# open board read by the router's own reader (`enhanced`'s, K13.7). The order
+# is kept: the dialog's choice uses the indexes.
 INPUT_DSN, INPUT_KICAD_PCB = "dsn", "kicad_pcb"
 BOARD_INPUTS = (INPUT_DSN, INPUT_KICAD_PCB)
-BOARD_INPUT_LABELS = {INPUT_DSN: "KiCad's DSN export", INPUT_KICAD_PCB: "Board snapshot (experimental)"}
+BOARD_INPUT_LABELS = {INPUT_DSN: "KiCad's DSN export", INPUT_KICAD_PCB: "Board snapshot"}
 SWEEPS = ("", "fixed", "free")
 RIPUP_RANGE = (1, 1000000)
 SWEEP_PASSES_RANGE = (1, 100)
@@ -155,8 +165,7 @@ class RouteOptions:
     use_pass_hint: bool = False
     pass_hint: int = None  # the pass that won last time (K09.7), written after a run
     # K10: the direct read of the board (snapshot.py).
-    board_input: str = INPUT_DSN
-    apply_kicad_rules: bool = False  # --apply-design-rules; kicad_pcb only
+    board_input: str = INPUT_DSN  # `enhanced` starts from kicad_pcb (PROFILE_DEFAULTS)
     # Q21: straight escape stubs at the board minimum width on fine-pitch QFN,
     # QFP and SOIC pins before routing (`router.fanout.pin_escape`).
     pin_escape: bool = False
@@ -271,6 +280,10 @@ class RouteOptions:
         v = data.get("pin_escape")
         if isinstance(v, bool):
             out.pin_escape = v
+        # K13.7: no saved choice, and a DSN-only fix-up on: the DSN (saved
+        # before the snapshot was the default, when `dsn` was never written).
+        if data.get("board_input") not in BOARD_INPUTS and input_conflicts(out):
+            out.board_input = INPUT_DSN
         return out
 
 
@@ -314,9 +327,6 @@ def _restore_k09(out, data):
     v = data.get("board_input")
     if v in BOARD_INPUTS:
         out.board_input = v
-    v = data.get("apply_kicad_rules")
-    if isinstance(v, bool):
-        out.apply_kicad_rules = v
 
 
 # The plugin's defaults per profile (K09.9): what each profile changes from the
@@ -345,9 +355,18 @@ def _restore_k09(out, data):
 # traces back to the class width where they fit (`router.neck_down.widen_back
 # = true`, Q17.4: docs/roadmap/prereg/Q17.4.json, narrowed copper on the wide
 # classes 461.8 -> 400.6 mm), so the plugin passes no flag for either.
+#
+# `enhanced` reads the open board directly (`board_input = kicad_pcb`, K13.7).
+# K13.6 (docs/roadmap/prereg/K13.json, 11 boards) judged nine rows: `kicad_pcb`
+# had 0 manufacturing breaches (clearance, below-minimum, via in pad) on all
+# nine and 68 KiCad-unconnected against `dsn`'s 73. vme-wren and
+# jetson-agx-thor-baseboard were not judged (both arms aborted at the 600 s
+# timeout); decided 2026-10-21: the default switches to `kicad_pcb` and those
+# two rows are accepted unjudged. `legacy` keeps `dsn`, the dataclass default:
+# it is Java's results and Java's plugin reads a DSN (D11).
 PROFILE_DEFAULTS = {
     "legacy": {},
-    "enhanced": {"sweep": "free"},
+    "enhanced": {"sweep": "free", "board_input": INPUT_KICAD_PCB},
 }
 
 
@@ -519,12 +538,16 @@ def _fmt(number):
 
 
 def load(path):
-    """Options from `path`; the defaults when it is absent or unreadable."""
+    """Options from `path`; the dataclass defaults, with the default profile's
+    board input (the snapshot under `enhanced`, K13.7), when it is absent or
+    unreadable. Not `profile_defaults(DEFAULT_PROFILE)`: that also turns on the
+    completion sweep, which a board with no file has not had so far (K09.9 sets
+    it only for a file that `from_dict` reads); the K13.7 note leaves that open."""
     try:
         with open(path, encoding="utf-8") as f:
             return RouteOptions.from_dict(json.load(f))
     except (OSError, ValueError):
-        return RouteOptions()
+        return replace(RouteOptions(), board_input=profile_defaults(DEFAULT_PROFILE).board_input)
 
 
 def save(path, options, stage_defaults=None):
@@ -726,8 +749,6 @@ def _form_k10(options, values, errors):
         options.board_input = chosen
     else:
         errors.append(f"board input: '{chosen}' is not one of {', '.join(BOARD_INPUTS)}")
-    if "apply_kicad_rules" in values:
-        options.apply_kicad_rules = bool(values["apply_kicad_rules"])
     for label in input_conflicts(options):
         errors.append(
             f"board input: the board snapshot is read without a DSN, so '{label}' cannot apply. "

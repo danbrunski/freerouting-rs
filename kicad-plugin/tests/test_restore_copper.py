@@ -4,6 +4,7 @@ session's 0.1 µm) and on the `.kicad_pcb` path (the reader's 0.1 µm plus the
 session's). Fake pcbnew items here; the plugin's Route flow through the stub
 `pcbnew` and `wx` of `stub_ui`."""
 
+import options
 import pytest
 import restore_copper
 import stub_ui
@@ -389,8 +390,7 @@ def route_env(tmp_path, monkeypatch, make_fake_router, isolated_env):
         monkeypatch.setattr(plugin.tools, "find_tool", lambda name: plugin.tools.Tool(name, router))
         monkeypatch.setattr(plugin.tools, "query_version", lambda tool, timeout=10: (0, 1, 0, "abc"))
         dialog = plugin.Dialog(None, stub_ui.FakeBoard(pcb, tracks=tracks))
-        if board_input == "kicad_pcb":
-            dialog.board_input.SetSelection(1)  # the keepouts stay on (K13.7)
+        dialog.board_input.SetSelection(options.BOARD_INPUTS.index(board_input))  # the keepouts stay on (K13.7)
         return dialog
 
     return make_dialog, ui, pcb.parent / "freerouting-rs"

@@ -472,7 +472,7 @@ rules).
 
   Verdict under keep_rule_by_hand: (1) 9 of 11 rows judged; vme-wren and jetson-agx-thor-baseboard are not (both arms aborted at the 600 s timeout); (2) holds: kicad_pcb has manufacturing_breaches, below_minimum and via_in_pad 0 on all nine; (3) holds: 68 ≤ 73; (4) no row to explain. (5) **keep dsn**, clause (1) failed on vme-wren and jetson-agx-thor-baseboard: "not met on the full set", which K13.7 takes only with the owner's acceptance of those two rows.
 
-- [ ] **K13.7 — Switch the default.** Only if K13.6 passes the switch rule, or the owner
+- [~] **K13.7 — Switch the default.** Only if K13.6 passes the switch rule, or the owner
   accepts the listed exceptions:
   - `board_input` defaults to `kicad_pcb`, with an options schema bump. The same bump drops
     `apply_kicad_rules`, which does nothing since K13.1 (saved files that have it still load);
@@ -524,6 +524,53 @@ rules).
     the DSN input, and 54 px high with its text after switching to the snapshot. `show_input_note` lays the
     Board page out again (`Layout`, `FitInside`); without that the text grew to 486 x 54 px while its grid row
     stayed 18 px, over the rows below. The note's look inside KiCad is part of the owner's run.
+  - *Partial 2026-10-21:* decided 2026-10-21: the default switches to `kicad_pcb`; vme-wren and
+    jetson-agx-thor-baseboard accepted unjudged. Done (plugin Python and docs only; no router change):
+    - **Default.** `options.PROFILE_DEFAULTS["enhanced"]` gains `board_input = kicad_pcb`, with the comment naming K13.6,
+      `docs/roadmap/prereg/K13.json`, the nine judged rows (0 manufacturing breaches, 68 unconnected against `dsn`'s 73)
+      and the acceptance of the two unjudged rows. `legacy` keeps `dsn` (the dataclass default; Java's plugin reads a
+      DSN, D11). The profile choice in the dialog moves no other field.
+    - **Schema 6.** `SCHEMA = 6`, `READABLE_SCHEMAS = (1..6)`; `apply_kicad_rules` is dropped from `RouteOptions`,
+      `_restore_k09`, `_form_k10`, the dialog (`saved_kicad_rules`, `form_values`, `show_options`) and the presets
+      (a preset that still names it applies quietly, `presets._RETIRED`). The greyed ".kicad_dru" check box is removed,
+      not kept (it read and wrote nothing; its text moved into the board input's tooltip). The module docstring's
+      `"schema": 2` is fixed. A file that has the field loads and is saved again as schema 6 without it.
+    - **Saved choice.** `to_dict` leaves defaults out, so a file without `board_input` takes the profile's input; a file
+      without it that turns on a DSN-only fix-up (`input_conflicts`: `class_widths`, `fixed_pour_classes` as wires or `auto`,
+      `drop_pour_nets`, `route_on_plane_layers`) takes `dsn` (`RouteOptions.from_dict`). `presets.apply` does the same for a
+      preset that names no input and adds a warning line. `headless_run.py`: `export` always writes the DSN and `snapshot`
+      always takes the snapshot, whatever `board_input` says; `route` and `import` follow it. `tools/kicad-oracle/grade.sh
+      --export plugin` writes an options copy with `board_input: dsn` and uses it for `export` and `import`;
+      `tools/kicad-reader/plugin-input-ab.sh` already sets `board_input` per arm (confirmed, unchanged);
+      `kicad_steps.py` names `restore.DSN` itself (unchanged).
+    - **Wording.** `BOARD_INPUT_LABELS` ("Board snapshot"), the tooltip and `plugin.py`'s and `snapshot.py`'s docstrings no
+      longer say "experimental" (stage labels unchanged); `BOARD_INPUTS` keeps the order (dsn, kicad_pcb).
+    - **Docs.** `docs/development/kicad-plugin.md` (which input runs, how to pick the other, `legacy`, the saved-options rules,
+      schema 6), `kicad-plugin/README.md`, `README.md`, `tools/kicad-oracle/README.md`; `docs/DIVERGENCES.md`, kicad-plugin
+      section: one new line (the plugin reads the open board by default, Java's exports a DSN) and the `apply_kicad_rules` line
+      updated. `docs/roadmap/prereg/K13.json` (schema 5) untouched; `crates/freerouting-dev/tests/prereg_k13.rs` does not read the plugin.
+    - **Tests** (new `kicad-plugin/tests/test_board_input_default.py`, 50 tests; RED first: 20 of the file's tests failed before the
+      code): the default (`test_the_enhanced_profile_reads_the_board_and_legacy_the_dsn`, `test_no_saved_file_gives_the_snapshot`), the
+      kept choice (`test_enhanced_with_the_dsn_writes_the_choice_and_reads_it_back`, `test_enhanced_with_the_snapshot_writes_nothing`,
+      `test_a_schema_6_file_saying_dsn_loads_dsn`), the migration (`test_a_schema_5_file_without_a_choice_takes_the_profiles_default`,
+      `test_a_schema_5_file_with_apply_kicad_rules_loads_and_saves_without_it`, `test_a_saved_dsn_fixup_without_a_choice_keeps_the_dsn`
+      over six fix-ups and schemas 3 to 6, `test_schema_6_is_written_and_every_older_schema_still_reads`), presets (six fix-ups move
+      to `dsn` with a warning; a preset naming `kicad_pcb` keeps it; the canary preset on the new default gives `dsn`;
+      `test_the_canary_preset_file_reproduces_dsn_export_on_the_fixture` unchanged and green). In `test_input_choice.py`:
+      `test_a_board_with_no_saved_file_opens_on_the_snapshot_with_only_the_keepouts_note`, `test_a_route_with_the_defaults_runs_the_snapshot`,
+      `test_a_saved_dsn_choice_keeps_the_dsn`, `test_the_legacy_profile_opens_on_the_dsn`, `test_the_profile_choice_does_not_move_the_input`,
+      `test_a_schema_5_board_with_class_widths_and_no_choice_still_routes_on_the_dsn`; the DSN fallback tests now run on the default and
+      still say so. `test_snapshot.py`: the headless `route`, `export` and `snapshot` modes. Existing tests that meant the DSN now say
+      `board_input = dsn` (`test_route_dialog.py`, `test_gui_mode.py`, `test_restore_copper.py`, `test_scripted_flow.py`,
+      `test_kicad_dru_args.py`, `test_board_rules_both_inputs.py`, `test_options.py`); none was loosened. `python3 -m pytest
+      kicad-plugin/tests` (router binary of main, `FREEROUTING_RS_BIN`): 574 passed, 22 skipped, 0 failed (22 skipped before the
+      change; the skips need a Python with pcbnew or a jar). `python3 -m unittest discover -s tests` in `tools/kicad-oracle`: 44 OK.
+    - **Open.** `load` returns the dataclass defaults, not `profile_defaults("enhanced")`, for a board with no
+      `route-options.json`; so a fresh board starts with the completion sweep off while a saved enhanced file gets it (K09.9). Not
+      changed here; the operator decides.
+    - **Remains: the owner's confirmation from a run inside KiCad is recorded.** The owner should check: the Board page's input choice
+      opens on "Board snapshot" and its note (the keepouts line, no other text); a Route on the snapshot imports the result; Undo after a
+      Route that brought track arcs back (K13.8, untested inside KiCad).
 
 - [x] **K13.8 — The DSN path returns input track arcs as arcs** (added 2026-10-21, from K13.6;
   decided 2026-10-20: routing never breaks the board's manufacturing rules, and `dsn` stays the

@@ -11,14 +11,19 @@ pcbnew (WSL: the system python3 of KiCad 10.0.7).
 way the plugin's Route button does (`export_flow.prepare`), and
 WORK/<stem>.args.json: the router flags `RouteOptions.to_args` gives, with
 the board's minimum track width, and the fix-up log. OPTIONS.json is a
-`route-options.json` (what the dialog saves).
+`route-options.json` (what the dialog saves). `export` always writes the DSN,
+whatever OPTIONS.json's `board_input` says (K13.7: that is `kicad_pcb` for a
+file without the key under `enhanced`); `snapshot` takes the snapshot the same way.
 
 `import` loads BOARD again in a new process (a second LoadBoard in one
 process returned an unwrapped SwigPyObject in 10.0.7), locks the tracks as
 the plugin does for `fix_existing`, calls `ImportSpecctraSES`, puts the input
 copper back at its own coordinates and its track arcs back as arcs
 (`restore_copper`, Q22.3, K13.8) and saves the result as OUT, with the
-original lock states restored.
+original lock states restored. OPTIONS.json's `board_input` names the input the
+session was routed from (it sets the bound of the copper put back): for a DSN
+session write `"board_input": "dsn"`, as a file without the key means `kicad_pcb`
+under `enhanced`, `dsn` under `legacy` (K13.7).
 
 `snapshot` (K10) loads BOARD, applies the in-memory EDITs (nothing is saved),
 and takes the board snapshot the plugin's `board_input = kicad_pcb` takes
@@ -29,7 +34,8 @@ and takes the board snapshot the plugin's `board_input = kicad_pcb` takes
 `--no-live-project` (the live project copy fails, as on a KiCad without it).
 
 `route` prepares the board and runs ROUTER with the same RouteRun and arguments
-as the plugin. It writes WORK/<stem>.ses and <stem>.result.json; use `import`
+as the plugin, for the input OPTIONS.json names (`board_input`; the default is
+`kicad_pcb` under `enhanced` and `dsn` under `legacy`, as in the dialog). It writes WORK/<stem>.ses and <stem>.result.json; use `import`
 to apply the session to a copy. BOARD is never saved. Both input modes refill
 zones before preparing the input. The args JSON records its SHA256.
 
@@ -41,6 +47,7 @@ import hashlib
 import json
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "freerouting_rs"))
@@ -61,7 +68,7 @@ def _options(path):
 
 
 def export(board_path, work, options_path):
-    opts = _options(options_path)
+    opts = replace(_options(options_path), board_input=options.INPUT_DSN)
     board = pcbnew.LoadBoard(board_path)
     work = Path(work)
     work.mkdir(parents=True, exist_ok=True)
@@ -99,7 +106,7 @@ def import_ses(board_path, ses, out, options_path):
 
 
 def snapshot_mode(board_path, work, options_path, edits):
-    opts = _options(options_path)
+    opts = replace(_options(options_path), board_input=options.INPUT_KICAD_PCB)
     board = pcbnew.LoadBoard(board_path)
     live = True
     for edit in edits:

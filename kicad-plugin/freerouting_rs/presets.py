@@ -20,6 +20,11 @@ skipped and named in the warnings; nothing here raises. The values are checked
 by `RouteOptions.from_dict`, the rules of the options file: a bad value keeps
 the default.
 
+K13.7: a preset that names no `board_input` but turns a DSN-only fix-up on
+(`options.input_conflicts`) moves the input to `dsn`, with a warning, so that
+applying it never leaves the dialog refusing its own Route. Presets written by
+`save` name every option and are unaffected.
+
 Pure Python (no pcbnew, no wx).
 """
 
@@ -42,6 +47,9 @@ _FIELDS = {f.name for f in fields(options.RouteOptions)}
 _NULLABLE = ("improvement_threshold", "min_trace_width_um", "start_ripup_costs", "sweep_passes", "pass_hint")
 # Left out of a saved preset: the pass hint is a memory of the last run on one board.
 _NOT_SAVED = ("pass_hint",)
+# Options that were dropped from the format: a preset that still names one
+# applies without a warning (K13.7: `apply_kicad_rules`, no effect since K13.1).
+_RETIRED = ("apply_kicad_rules",)
 
 
 @dataclass
@@ -128,6 +136,8 @@ def apply(preset, current):
     warnings = []
     out = current
     for key, value in preset.data.items():
+        if key in _RETIRED:
+            continue
         if key not in _FIELDS:
             warnings.append(f"preset {preset.name}: unknown option {key!r} ignored")
             continue
@@ -142,7 +152,24 @@ def apply(preset, current):
             warnings.append(f"preset {preset.name}: {key}={value!r} is not valid, ignored")
             continue
         out = replace(out, **{key: good})
-    return out, warnings
+    return _dsn_for_fixups(preset, current, out, warnings), warnings
+
+
+def _dsn_for_fixups(preset, current, out, warnings):
+    """K13.7: `out`, with the input moved to `dsn` when the preset names no
+    input and turned on a DSN-only fix-up that `current` did not have; the
+    warning is appended to `warnings`."""
+    if "board_input" in preset.data or out.board_input != options.INPUT_KICAD_PCB:
+        return out
+    before = options.input_conflicts(replace(current, board_input=options.INPUT_KICAD_PCB))
+    added = [label for label in options.input_conflicts(out) if label not in before]
+    if not added:
+        return out
+    warnings.append(
+        f"preset {preset.name}: turns on {', '.join(repr(label) for label in added)}, which need KiCad's DSN export; "
+        f"the board input is set to {options.INPUT_DSN}"
+    )
+    return replace(out, board_input=options.INPUT_DSN)
 
 
 def slug(name):

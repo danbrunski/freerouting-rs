@@ -20,7 +20,9 @@ def env(tmp_path, monkeypatch, make_fake_gui, isolated_env):
         pkg_tools = plugin.tools  # freerouting_rs.tools, not the top-level test import
         monkeypatch.setattr(pkg_tools, "find_tool", lambda name: pkg_tools.Tool(name, gui))
         monkeypatch.setattr(pkg_tools, "query_version", lambda tool, timeout=10: (0, 1, 0, "abc"))
-        return plugin.Dialog(None, stub_ui.FakeBoard(pcb))
+        dialog = plugin.Dialog(None, stub_ui.FakeBoard(pcb))
+        dialog.board_input.SetSelection(0)  # these tests mean the DSN; the default is the snapshot (K13.7)
+        return dialog
 
     return make_dialog, ui, pcb.parent / "freerouting-rs"
 

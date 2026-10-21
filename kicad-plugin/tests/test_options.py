@@ -94,13 +94,15 @@ def test_save_load_save_gives_equal_json(tmp_path):
     assert loaded == chosen
     options.save(second, loaded)
     assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")
-    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 5
+    assert json.loads(first.read_text(encoding="utf-8"))["schema"] == options.SCHEMA == 6
 
 
 def test_defaults_round_trip_too(tmp_path):
     path = tmp_path / "o.json"
     options.save(path, RouteOptions())
     assert options.load(path) == RouteOptions()
+    options.save(path, options.profile_defaults())
+    assert options.load(path) == options.profile_defaults()
 
 
 def test_a_damaged_stored_dict_restores_defaults_without_an_exception():
@@ -136,10 +138,12 @@ def test_booleans_are_not_numbers():
 
 
 def test_load_of_missing_or_broken_files(tmp_path):
-    assert options.load(tmp_path / "missing.json") == RouteOptions()
+    # K13.7: the dataclass defaults, with the default profile's board input (the snapshot)
+    expected = replace(RouteOptions(), board_input="kicad_pcb")
+    assert options.load(tmp_path / "missing.json") == expected
     broken = tmp_path / "broken.json"
     broken.write_text("{not json", encoding="utf-8")
-    assert options.load(broken) == RouteOptions()
+    assert options.load(broken) == expected
 
 
 def test_rule_area_fixup_comes_from_the_k01_setting_until_options_are_saved(tmp_path):
@@ -409,6 +413,7 @@ def test_schema_2_files_load_and_take_the_new_defaults():
 def test_the_form_reads_the_k09_fields():
     chosen, errors = options.from_form(
         {
+            "board_input": "dsn",  # these are the DSN's fix-ups
             "class_widths": "Power_High=0.3, GND=0.4",
             "fixed_pour_classes": "Power_High, Switch_Node",
             "fixed_pour_mode": "engine",
@@ -429,7 +434,7 @@ def test_the_form_reads_the_k09_fields():
     assert (chosen.fix_existing, chosen.start_ripup_costs, chosen.sweep, chosen.sweep_passes, chosen.use_pass_hint) == (
         True, 1500, "free", 2, True,
     )  # fmt: skip
-    _, errors = options.from_form({"class_widths": "Power_High", "sweep": "sometimes", "start_ripup_costs": "x"})
+    _, errors = options.from_form({"board_input": "dsn", "class_widths": "Power_High", "sweep": "sometimes", "start_ripup_costs": "x"})
     assert len(errors) == 3
 
 
@@ -504,7 +509,7 @@ def test_pin_escape_is_saved_per_board_and_restored(tmp_path):
     on = replace(options.profile_defaults("enhanced"), pin_escape=True)
     options.save(path, on)
     stored = json.loads(path.read_text(encoding="utf-8"))
-    assert stored == {"schema": 5, "profile": "enhanced", "pin_escape": True}
+    assert stored == {"schema": 6, "profile": "enhanced", "pin_escape": True}
     assert options.load(path) == on
     # Off is the default and is left out of the file.
     options.save(path, options.profile_defaults("legacy"))

@@ -1973,9 +1973,17 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 - **A snapshot route applies the `.kicad_dru` too** (K13.1, `export_flow.kicad_dru_args`, always on,
   every profile): `--apply-design-rules` for every Route with `board_input = kicad_pcb`, so the
   board's own rules reach the router on both inputs (decided 2026-10-20). K10.3's option
-  `apply_kicad_rules` no longer decides it: the dialog's check box is ticked and greyed, and the
-  saved value is kept as it was. Route in GUI applies the rules on neither input. Pinned by
-  `test_board_rules_both_inputs.py`.
+  `apply_kicad_rules` no longer decides it, and schema 6 of the options file dropped it with its
+  check box (K13.7; a file that has it still loads). Route in GUI applies the rules on neither
+  input. Pinned by `test_board_rules_both_inputs.py`.
+- **The plugin reads the open board directly by default** (K13.7, decided 2026-10-21;
+  `options.PROFILE_DEFAULTS`): under the `enhanced` profile `board_input` is `kicad_pcb`, a
+  `SaveBoard` snapshot read by the router's own reader, and the run falls back to KiCad's DSN export,
+  saying so, when the reader refuses the board (K13.3). Java's plugin always exports a DSN, and the
+  `legacy` profile keeps `dsn`. A saved file keeps an explicit choice; one without it takes the
+  profile's input, or `dsn` when it turns on a DSN-only fix-up. Pinned by
+  `test_board_input_default.py` (the defaults, the saved choice, the schema migration, the presets)
+  and `test_input_choice.py` (the dialog and the fallback).
 - **Board Setup's minimum clearance is passed** (Q22.10, `options.BOARD_MINIMUM_SETTINGS`):
   `m_MinClearance` becomes `--router.board_minimums.clearance_um` under both profiles; 0 passes
   nothing. Pinned by `test_min_clearance.py`.
