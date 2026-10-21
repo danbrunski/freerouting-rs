@@ -912,6 +912,7 @@ fn numbers_round_trip_exactly() {
                 net: None,
                 clearance_class: None,
                 wire_type: None,
+                attr: None,
             })],
         }),
         ..Pcb::default()

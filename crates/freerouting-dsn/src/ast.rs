@@ -349,7 +349,18 @@ pub struct Wire {
     pub net: Option<NetId>,
     pub clearance_class: Option<String>,
     pub wire_type: Option<WireType>,
+    /// `(attr a)`. Specctra's values are `test`, `fanout`, `bus` and
+    /// `jumper`, which Java skips; [`WIRE_ATTR_OBSTACLE`] is this port's own
+    /// (Q22.4).
+    pub attr: Option<String>,
 }
+
+/// `(attr obstacle)` on a conduction-area wire: the area is an obstacle to
+/// the traces and vias of other nets whatever `router.plane_as_obstacle`
+/// says. Not Specctra and not Java: the KiCad plugin and the `.kicad_pcb`
+/// reader write it for a copper shape KiCad gives a net (Q22.4), which is
+/// fixed copper, not a pour. Java skips the scope.
+pub const WIRE_ATTR_OBSTACLE: &str = "obstacle";
 
 /// A `(via padstack x y ...)` scope in the wiring or a session.
 #[derive(Clone, Debug, PartialEq)]

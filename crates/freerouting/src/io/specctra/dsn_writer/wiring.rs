@@ -62,6 +62,7 @@ fn wire(cx: &Cx, item: &Item) -> Option<Wire> {
         net: Some(net),
         clearance_class: Some(cx.class_name(item.clearance_class())),
         wire_type: fixed_state_type(item.fixed_state()),
+        attr: None,
     })
 }
 
@@ -104,5 +105,9 @@ fn conduction_area(cx: &Cx, item: &Item) -> Option<Wire> {
         net: Some(net),
         clearance_class: Some(cx.class_name(item.clearance_class())),
         wire_type: fixed_state_type(item.fixed_state()),
+        // Q22.4: a net's fixed copper shape stays one when read back
+        attr: area
+            .is_fixed_obstacle()
+            .then(|| freerouting_dsn::ast::WIRE_ATTR_OBSTACLE.to_owned()),
     })
 }

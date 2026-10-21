@@ -414,6 +414,9 @@ impl Writer {
                 if let Some(wire_type) = &wire.wire_type {
                     self.wire_type(wire_type);
                 }
+                if let Some(attr) = &wire.attr {
+                    self.name_scope("attr", attr);
+                }
                 self.close();
             }
             WiringItem::Via(via) => {

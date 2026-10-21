@@ -162,6 +162,7 @@ pub fn kicad_session(board: &BasicBoard, path: &Path) -> Result<(Session, usize)
                             net: None,
                             clearance_class: None,
                             wire_type: None,
+                            attr: None,
                         }));
                     }
                 }

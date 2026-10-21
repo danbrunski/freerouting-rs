@@ -75,6 +75,10 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
 - The syntax tree keeps `wire_keepout` as its own kind (`KeepoutKind::WireKeepout`, test
   `wire_keepout_keeps_its_kind`); Java lexes it as `keepout`. The board builds it as a
   keepout, as Java does (`issue754_item_ids_do_not_change`, `issue754_ground_area_still_blocks_vias`).
+- A wire's `(attr a)` is read into `Wire::attr` and written back (Q22.4); Java skips it.
+  `(attr obstacle)` (`ast::WIRE_ATTR_OBSTACLE`) on a conduction-area wire is this port's own
+  value, written only by the KiCad plugin and the `.kicad_pcb` reader for a copper shape of a net
+  (see freerouting and freerouting-kicad below; `the_written_dsn_keeps_the_areas`).
 - Every unknown named scope is reported once per keyword per file, with the keyword, the
   enclosing scope and its first position (Q09.6), except a quiet list of KiCad scopes that carry
   no constraint: `property` inside `layer` (`only_listed_kicad_scopes_skip_without_a_warning`).
@@ -92,6 +96,16 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
 - `autoroute_settings` counts as read wherever it is (see freerouting-dsn), so
   `adjustPlaneAutorouteSettings` runs only for files without that scope; Java also runs
   it when the scope comes after the first keepout or plane.
+- A conduction-area wire with `(attr obstacle)` (Q22.4, `parser/wiring.rs`) becomes a
+  conduction area that is an obstacle to the traces and vias of other nets
+  (`BasicBoard::insert_fixed_copper_area`), and `router.plane_as_obstacle` never clears it
+  (`RoutingBoard::change_plane_as_obstacle` skips it), and two such areas of a net that meet are
+  in contact (`conduction_area_normal_contacts`; Java's areas touch only traces, pins and vias), so
+  the pieces of one stroked shape are one copper. Java skips the attribute and reads the wire as
+  a conduction area other nets may cross. Only the KiCad plugin and the `.kicad_pcb`
+  reader write the attribute, for a copper shape of a net; a DSN without it reads as before.
+  Pinned by `tests/copper_graphics.rs` (`plane_as_obstacle_never_clears_a_net_shape`,
+  `the_dsn_text_gives_the_same_areas`, `the_pieces_of_a_stroked_shape_are_one_copper`).
 - Where Java ends with an exception the port keeps going: keepouts, planes and windows
   whose area does not resolve are dropped (NullPointerException); circles and polyline
   paths in the boundary are left out of the outline (ClassCastException); a wire on an
@@ -1177,16 +1191,23 @@ compare them on 12 committed boards and the 56-board corpus).
   footprint or of a net without pins, and keepouts named `copper_text` for a visible text: a
   box that holds the glyphs (no font engine: `1.25 × width` per character plus the stroke, by
   `1.8 × height` plus the stroke, a footprint text the square of half side `hypot(width,
-  height)`). A shape of a net with pins is left out, with the warning "copper graphics: N
-  shape(s) of a net left out (Q22.4 remainder)" (decided 2026-10-20: fixed wires of that net
-  covering it cut vfo-controller's route at 120 s with 7 unrouted; the remainder, one
-  conduction polygon of the net plus a keepout of its outline for other nets, is in Q22.4).
+  height)`). A shape of a net with pins becomes copper of that net (decided 2026-10-20, option
+  (a)): each polygon of the same outline code (the filled body, the rectangle of each stroke
+  piece; a circle as a polygon) becomes a conduction-area wire of the net, `(type fix)` with
+  `(attr obstacle)`, at the end of the wiring. The engine makes it a conduction area that joins
+  the net and is an obstacle to other nets whatever `router.plane_as_obstacle` says; it is
+  system-fixed, so neither the session nor the `.kicad_pcb` output carries it. An earlier model,
+  fixed wires of the net covering each shape in 50 µm strips, gave vfo-controller 665 wires
+  under the 0.2 mm minimum width and cut its route at 120 s; it was dropped.
   Pinned by `crates/freerouting-kicad/tests/copper_graphics.rs`
   (`a_footprint_copper_line_becomes_a_keepout_on_its_layer`,
   `a_copper_text_becomes_a_keepout_box_that_holds_its_glyphs`,
-  `a_shape_of_a_net_is_left_out_and_logged`,
+  `shapes_of_a_net_become_conduction_areas_of_their_net`, `the_written_dsn_keeps_the_areas`,
   `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts`) and the engine's
-  `tests/copper_graphics.rs` (`the_route_goes_round_the_copper_line_and_the_copper_text`).
+  `tests/copper_graphics.rs` (`the_route_goes_round_the_copper_line_and_the_copper_text`,
+  `other_nets_keep_clear_of_a_net_s_copper_and_the_net_connects_through_it`,
+  `the_session_and_the_kicad_output_leave_the_net_shapes_out`,
+  `the_output_check_counts_a_crossing_as_routed_and_keeps_the_area`).
 - The `.kicad_pro`'s minimum clearance (`min_clearance`, `m_MinClearance`; Q22.10,
   `project::BoardMinimums::clearance`) is read, none where the file leaves it out (KiCad's
   default is 0) or sets 0; a `.kicad_pcb` job sets it as `router.board_minimums.clearance_um`
@@ -1733,10 +1754,13 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   export, the reader's `copper_graphic` keepouts (see freerouting-kicad), corners rounded to
   1 µm, and for a visible text keepouts of the outer outlines of KiCad's own glyph strokes
   (`TransformTextToPolySet`; the box for a knockout text or a text box) named `copper_text`. A
-  shape of a net the DSN lists is left out and counted in the log, as in the reader. Pinned by
+  shape of a net the DSN lists becomes conduction-area wires of that net with `(attr obstacle)`
+  at the end of the wiring, the reader's polygons, as in the reader. Pinned by
   `test_copper_graphics.py` (`test_a_footprint_line_on_copper_becomes_a_keepout_on_its_layer`,
   `test_a_copper_text_becomes_keepouts_of_its_glyph_outlines`,
-  `test_a_shape_of_a_net_is_left_out_and_logged`,
+  `test_a_filled_shape_of_a_net_becomes_a_conduction_area_of_its_net`,
+  `test_a_stroked_shape_of_a_net_becomes_the_area_of_its_stroke`,
+  `test_the_fixture_through_pcbnew_gives_the_reader_s_obstacles`,
   `test_kicad_board_collects_copper_shapes_and_visible_texts`).
 - **The project's `.kicad_dru` is passed for a DSN route** (Q22.5, `export_flow.kicad_dru_args`,
   always on, every profile): `--kicad-dru <board>.kicad_dru` when the file exists and the router

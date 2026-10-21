@@ -20,12 +20,17 @@ and one of sonde-xilinx over a `gr_text "GND"` on F.Cu.
   outlines of KiCad's own glyph strokes (`TransformTextToPolySet`, collected
   by `kicad_board.copper_graphics`; a glyph's counter is kept out too), or the
   box KiCad gives a knockout text or a text box.
-- A shape of a net the DSN lists is left out, and counted in the log
-  ("N shape(s) of a net left out (Q22.4 remainder)"). Decided 2026-10-20:
-  fixed wires of that net covering it (boundary wires plus 0.05 mm strips)
-  cut vfo-controller's route at 120 s with 7 unrouted, against 1.4 s and 0
-  without them. The remainder is one conduction polygon of the net plus a
-  keepout of its outline that holds only for other nets.
+- A shape of a net the DSN lists is copper of that net (decided 2026-10-20,
+  option (a)): each polygon of `edge_graphics.shape_polygons` (a filled body,
+  and the rectangle of each piece of the stroke) becomes a conduction-area
+  wire of the net, `(wire (polygon ...) (net N) (type fix) (attr obstacle))`,
+  at the end of the wiring. The router joins it to its net (the pieces of one
+  shape are in contact with each other) and keeps every
+  other net its clearance from it, whatever `router.plane_as_obstacle` says;
+  the session leaves it out (it is fixed), so KiCad keeps its own shape. An
+  earlier model, fixed wires covering each shape in 0.05 mm strips, gave
+  vfo-controller 665 wires under the 0.2 mm minimum width and cut its route at
+  120 s; it was dropped.
 
 The router keeps a keepout its default clearance from a net (the larger of
 the net's class clearance and the Default class's, as KiCad does with a shape
@@ -47,11 +52,32 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
 
 KEEPOUT_NAME = "copper_graphic"
 TEXT_KEEPOUT_NAME = "copper_text"
+OBSTACLE_ATTR = "obstacle"  # the router's `ast::WIRE_ATTR_OBSTACLE`
 
 
 def _keepout(name, layer, poly, nl):
     coords = " ".join(f"{um(x)} {-um(y)}" for x, y in list(poly) + [poly[0]])
     return f'    (keepout "{name}" (polygon {layer} 0 {coords})){nl}'
+
+
+def _area_wire(layer, net, poly, nl):
+    coords = " ".join(f"{um(x)} {-um(y)}" for x, y in list(poly) + [poly[0]])
+    return f"    (wire (polygon {layer} 0 {coords}) (net {net}) (type fix) (attr {OBSTACLE_ATTR})){nl}"
+
+
+def _insert_wires(dsn, text, wires):
+    """`text` (the DSN `dsn` was read from, edited only after its wiring) with
+    `wires` at the end of the wiring, or in a new wiring scope."""
+    nl = dsn.nl
+    if dsn.wiring is not None:
+        close = dsn.wiring.end - 1
+        at = dsn.text.rfind("\n", 0, close)
+        at = at - 1 if at > 0 and dsn.text[at - 1] == "\r" else at
+        if at < dsn.wiring.start:  # `(wiring)` on one line
+            return text[:close] + nl + "".join(wires) + text[close:]
+        return text[:at] + nl + "".join(wires).rstrip("\r\n") + text[at:]
+    close = dsn.text.rstrip().rfind(")")
+    return text[:close] + f"  (wiring{nl}" + "".join(wires) + f"  ){nl}" + text[close:]
 
 
 def apply(dsn_text, facts):
@@ -67,16 +93,20 @@ def apply(dsn_text, facts):
     layers = {name for name, _kind, _atom in dsn.layers}
     nl = dsn.nl
     keepouts = []
+    net_wires = []
     n_keepout_shapes = n_net_shapes = n_texts = 0
     for shape in shapes:
         layer = shape["layer"]
         if layer not in layers:
             continue
         net = shape.get("net") or ""
-        if net and net in dsn.net_class:
-            n_net_shapes += 1  # left out (module docs)
-            continue
         body, strokes = edge_graphics.shape_polygons(shape)
+        if net and net in dsn.net_class:
+            token = dsn.net_token(net)
+            polys = ([body] if body else []) + strokes
+            net_wires += [_area_wire(dsn.layer_token(layer), token, poly, nl) for poly in polys]
+            n_net_shapes += 1
+            continue
         keepouts += [_keepout(KEEPOUT_NAME, dsn.layer_token(layer), poly, nl) for poly in ([body] if body else []) + strokes]
         n_keepout_shapes += 1
     for text in texts:
@@ -87,18 +117,23 @@ def apply(dsn_text, facts):
         n_texts += 1 if polys else 0
     log = []
     out = dsn_text
+    if net_wires:  # after the structure in the file: insert it first
+        out = _insert_wires(dsn, out, net_wires)
+        log.append(
+            f"copper graphics: {n_net_shapes} shape(s) of a net as fixed copper of their net "
+            f"({len(net_wires)} areas)"
+        )
     if keepouts:
         via = next(iter(_children(dsn.structure, "via")), None)
         anchor = via.start if via is not None else dsn.structure.end - 1
         at = dsn.text.rfind("\n", 0, anchor)
         at = at - 1 if at > 0 and dsn.text[at - 1] == "\r" else at
         out = out[:at] + nl + "".join(keepouts).rstrip("\r\n") + out[at:]
-        log.append(
+        log.insert(
+            0,
             f"copper graphics: {n_keepout_shapes} shape(s) and {n_texts} text(s) on copper kept clear "
-            f"({len(keepouts)} keepouts)"
+            f"({len(keepouts)} keepouts)",
         )
-    if n_net_shapes:
-        log.append(f"copper graphics: {n_net_shapes} shape(s) of a net left out (Q22.4 remainder)")
     ties = facts.get("net_tie_shapes") or 0
     if ties and keepouts:
         log.append(f"copper graphics: {ties} net-tie shape(s) kept clear as keepouts, their nets left out")

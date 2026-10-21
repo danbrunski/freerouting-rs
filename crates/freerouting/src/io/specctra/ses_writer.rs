@@ -540,6 +540,7 @@ fn wire(board: &BasicBoard, item: &Item, transform: &CoordinateTransform) -> Wir
         net: None,
         clearance_class: None,
         wire_type: fixed_state_type(item.fixed_state()),
+        attr: None,
     }
 }
 
@@ -627,5 +628,6 @@ fn conduction_area(
         net: None,
         clearance_class: None,
         wire_type: None,
+        attr: None,
     }))
 }

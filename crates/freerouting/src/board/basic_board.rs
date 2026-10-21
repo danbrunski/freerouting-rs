@@ -1018,6 +1018,34 @@ impl BasicBoard {
         )
     }
 
+    /// Inserts the copper shape of a net (Q22.4: a wire with `(attr
+    /// obstacle)`): a conduction area of `net_numbers` that is an obstacle to
+    /// the traces and vias of other nets and stays one whatever
+    /// `router.plane_as_obstacle` says
+    /// ([`RoutingBoard::change_plane_as_obstacle`](crate::board::RoutingBoard::change_plane_as_obstacle)
+    /// skips it). Not Java.
+    pub fn insert_fixed_copper_area(
+        &mut self,
+        area: Area,
+        layer: i32,
+        net_numbers: &[i32],
+        clearance_class: i32,
+        fixed_state: FixedState,
+    ) -> ItemId {
+        let id = self.insert_conduction_area(
+            area,
+            layer,
+            net_numbers,
+            clearance_class,
+            true,
+            fixed_state,
+        );
+        if let Some(ItemKind::Area(area)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
+            area.set_fixed_obstacle(true);
+        }
+        id
+    }
+
     /// Inserts an outline of component `component_id`. Returns `None` for
     /// an unbounded area.
     #[allow(clippy::too_many_arguments)]
@@ -1865,9 +1893,16 @@ impl BasicBoard {
         result
     }
 
+    /// Java `ConductionArea.getNormalContacts`: the traces ending, and the
+    /// pins and vias centred, in the area. Not Java: two fixed copper shapes
+    /// of a net (Q22.4, [`insert_fixed_copper_area`](Self::insert_fixed_copper_area))
+    /// whose areas meet are in contact too, so the pieces of one stroked
+    /// shape are one copper.
     fn conduction_area_normal_contacts(&self, item: &Item) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
         let layer = item.first_layer();
+        let is_fixed = |i: &Item| i.as_area().is_some_and(|a| a.is_fixed_obstacle());
+        let fixed = is_fixed(item);
         for i in 0..self.tile_shape_count(item) {
             let Some(shape) = self.tile_shape(item, i) else {
                 continue;
@@ -1884,6 +1919,10 @@ impl BasicBoard {
                     ItemKind::Pin(_) | ItemKind::Via(_) => {
                         shape.contains(&Point::Int(other.drill().expect("drill").center))
                     }
+                    ItemKind::Area(_) if fixed && is_fixed(other) => (0..self
+                        .tile_shape_count(other))
+                        .filter_map(|j| self.tile_shape(other, j))
+                        .any(|t| t.intersects_tile(&shape)),
                     _ => false,
                 };
                 if contained {

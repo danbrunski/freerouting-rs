@@ -183,7 +183,9 @@ impl RoutingBoard {
     }
 
     /// Sets whether the conduction areas on signal layers are obstacles for
-    /// other nets, and whether the router ignores conduction areas.
+    /// other nets, and whether the router ignores conduction areas. A fixed
+    /// copper shape of a net (Q22.4,
+    /// [`BasicBoard::insert_fixed_copper_area`]) stays an obstacle.
     pub fn change_plane_as_obstacle(&mut self, value: bool) {
         let target_ignore = !value;
         let mut something_changed = false;
@@ -194,7 +196,10 @@ impl RoutingBoard {
             };
             let on_signal_layer =
                 self.board.layer_structure.layers[area.layer() as usize].is_signal;
-            if on_signal_layer && area.conduction_is_obstacle() != value {
+            if on_signal_layer
+                && !area.is_fixed_obstacle()
+                && area.conduction_is_obstacle() != value
+            {
                 self.board.set_conduction_is_obstacle(id, value);
                 something_changed = true;
             }

@@ -198,19 +198,25 @@ pub fn edge_rects(
 /// A closed polygon keepout (KiCad's frame, nm) in the DSN frame (µm, Y
 /// negated).
 pub(crate) fn keepout(name: &str, layer: &str, poly: &[F]) -> Keepout {
-    let pt = |p: F| Point::new(um_f(p.0), -um_f(p.1));
     Keepout {
         kind: KeepoutKind::Keepout,
         area: Area {
             name: Some(name.to_owned()),
-            shape: Shape::Polygon {
-                layer: LayerRef::Named(layer.to_owned()),
-                aperture_width: 0.0,
-                points: poly.iter().chain(poly.first()).map(|p| pt(*p)).collect(),
-            },
+            shape: polygon_shape(layer, poly),
             windows: Vec::new(),
             clearance_class: None,
         },
+    }
+}
+
+/// A closed polygon (KiCad's frame, nm) on `layer` in the DSN frame (µm, Y
+/// negated), its first corner repeated at the end.
+pub(crate) fn polygon_shape(layer: &str, poly: &[F]) -> Shape {
+    let pt = |p: F| Point::new(um_f(p.0), -um_f(p.1));
+    Shape::Polygon {
+        layer: LayerRef::Named(layer.to_owned()),
+        aperture_width: 0.0,
+        points: poly.iter().chain(poly.first()).map(|p| pt(*p)).collect(),
     }
 }
 

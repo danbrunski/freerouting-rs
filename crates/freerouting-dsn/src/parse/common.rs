@@ -751,7 +751,7 @@ impl Parser<'_> {
     // Wiring
     // -----------------------------------------------------------------------
 
-    /// `(wire shape (window ...) (net ...) (clearance_class c) (type t))`
+    /// `(wire shape (window ...) (net ...) (clearance_class c) (type t) (attr a))`
     /// after its keyword.
     pub(super) fn wire_scope(&mut self) -> Result<Wire> {
         let mut wire = Wire {
@@ -760,6 +760,7 @@ impl Parser<'_> {
             net: None,
             clearance_class: None,
             wire_type: None,
+            attr: None,
         };
         loop {
             match self.item("wire")? {
@@ -772,6 +773,7 @@ impl Parser<'_> {
                         wire.clearance_class = Some(self.string_scope("clearance_class")?)
                     }
                     "type" => wire.wire_type = self.wire_type_scope()?,
+                    "attr" => wire.attr = Some(self.string_scope("attr")?),
                     _ => self.skip_unknown(&keyword, pos, "wire")?,
                 },
             }

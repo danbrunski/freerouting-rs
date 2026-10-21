@@ -36,6 +36,10 @@
     )
     (component l:pad
       (place P1 4000 -4000 front 0 (PN x))
+      (place P2 6000 -4000 front 0 (PN x))
+    )
+    (component l:smdjumper
+      (place J2 24000 -14000 front 0 (PN x))
     )
   )
   (library
@@ -46,6 +50,10 @@
     )
     (image l:pad
       (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+    )
+    (image l:smdjumper
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 2500)
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 2 0 -2500)
     )
     (padstack Round[A]Pad_1200.000000_um
       (shape (circle F.Cu 1200))
@@ -67,9 +75,12 @@
       (pins J1-2 J1-2@1)
     )
     (net FG
-      (pins P1-1)
+      (pins P1-1 P2-1)
     )
-    (class kicad_default FG N2
+    (net N3
+      (pins J2-1 J2-2)
+    )
+    (class kicad_default FG N2 N3
       (circuit
         (use_via "Via[0-1]_600:300_um")
       )

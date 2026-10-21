@@ -622,6 +622,13 @@ impl<W: Write> SessionWriter<'_, W> {
                 self.shape(window, false)?;
                 self.file.end_scope()?;
             }
+            // Q22.4's own attribute; Java writes none
+            if let Some(attr) = &wire.attr {
+                self.file.start_scope()?;
+                self.file.write("attr ")?;
+                self.ident(attr)?;
+                self.file.end_scope()?;
+            }
         }
         self.file.end_scope()
     }

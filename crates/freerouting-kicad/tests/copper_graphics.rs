@@ -1,16 +1,20 @@
 //! Q22.4: the reader carries copper shapes and copper texts, which KiCad's
-//! DSN export leaves out, as keepouts; a shape of a net with pins is left out
-//! with a warning (`freerouting_kicad::copper_graphics`).
+//! DSN export leaves out, as keepouts, and a shape of a net with pins as
+//! conduction-area wires of that net with `(attr obstacle)`
+//! (`freerouting_kicad::copper_graphics`).
 //!
 //! The fixture (`crates/freerouting/tests/data/kicad/q22-copper-graphics.kicad_pcb`,
 //! shared with the plugin's `test_copper_graphics.py` and the engine's
 //! `tests/copper_graphics.rs`): J1's two pads numbered 2 (net N2) at (12, 10)
 //! and (18, 10) mm with a 0.5 mm B.Cu `fp_line` of no net from (13.2, 10) to
-//! (16.8, 10) between them, a 1.5 mm `gr_text "GND"` on F.Cu at (15, 10), and
-//! a filled F.Cu `gr_poly` of net FG, (3, 3)-(7, 5), under P1, which is left
-//! out.
+//! (16.8, 10) between them, a 1.5 mm `gr_text "GND"` on F.Cu at (15, 10), a
+//! filled F.Cu `gr_poly` of net FG, (3, 3)-(7, 5), under FG's pads P1 and P2,
+//! and a 1 mm F.Cu `gr_line` of net FG from (20, 14) to (28, 14) across N3's
+//! straight path.
 
-use freerouting_dsn::ast::{Keepout, LayerRef, Shape, WireType, WiringItem};
+use freerouting_dsn::ast::{
+    Keepout, LayerRef, Shape, WIRE_ATTR_OBSTACLE, Wire, WireType, WiringItem,
+};
 use freerouting_kicad::copper_graphics::{KEEPOUT_NAME, TEXT_KEEPOUT_NAME};
 
 const BOARD: &str =
@@ -43,8 +47,8 @@ fn close(got: &[(f64, f64)], want: &[(f64, f64)]) -> bool {
             .all(|(g, w)| (g.0 - w.0).abs() < 1e-6 && (g.1 - w.1).abs() < 1e-6)
 }
 
-/// The fixed wires of the read board (the reader makes them only from
-/// locked tracks; the fixtures have none).
+/// The fixed wires of the read board that are not net shapes (the reader
+/// makes them only from locked tracks; the fixtures have none).
 fn fixed_wires(read: &freerouting_kicad::KicadRead) -> usize {
     read.pcb
         .wiring
@@ -52,11 +56,39 @@ fn fixed_wires(read: &freerouting_kicad::KicadRead) -> usize {
         .unwrap()
         .items
         .iter()
-        .filter(|i| matches!(i, WiringItem::Wire(w) if w.wire_type == Some(WireType::Fix)))
+        .filter(|i| {
+            matches!(i, WiringItem::Wire(w) if w.wire_type == Some(WireType::Fix) && w.attr.is_none())
+        })
         .count()
 }
 
-const LEFT_OUT: &str = "copper graphics: 1 shape(s) of a net left out (Q22.4 remainder)";
+/// The conduction-area wires with `(attr obstacle)`, in wiring order.
+fn area_wires(read: &freerouting_kicad::KicadRead) -> Vec<&Wire> {
+    read.pcb
+        .wiring
+        .as_ref()
+        .unwrap()
+        .items
+        .iter()
+        .filter_map(|i| match i {
+            WiringItem::Wire(w) if w.attr.as_deref() == Some(WIRE_ATTR_OBSTACLE) => Some(w),
+            _ => None,
+        })
+        .collect()
+}
+
+fn shape_polygon(shape: &Shape) -> (String, Vec<(f64, f64)>) {
+    let Shape::Polygon {
+        layer: LayerRef::Named(layer),
+        points,
+        aperture_width,
+    } = shape
+    else {
+        panic!("{shape:?}");
+    };
+    assert_eq!(*aperture_width, 0.0);
+    (layer.clone(), points.iter().map(|p| (p.x, p.y)).collect())
+}
 
 #[test]
 fn a_footprint_copper_line_becomes_a_keepout_on_its_layer() {
@@ -99,16 +131,59 @@ fn a_copper_text_becomes_a_keepout_box_that_holds_its_glyphs() {
 }
 
 #[test]
-fn a_shape_of_a_net_is_left_out_and_logged() {
+fn shapes_of_a_net_become_conduction_areas_of_their_net() {
     let read = freerouting_kicad::read(BOARD, None).unwrap();
     let keepouts = &read.pcb.structure.as_ref().unwrap().keepouts;
-    // no keepout for the FG polygon: one line, one text
+    // no keepout for the FG shapes: one line, one text
     assert_eq!(named(keepouts, KEEPOUT_NAME).len(), 1);
     assert_eq!(named(keepouts, TEXT_KEEPOUT_NAME).len(), 1);
-    // and no copper of FG
     assert_eq!(fixed_wires(&read), 0);
-    let messages: Vec<&str> = read.warnings.iter().map(|w| w.message.as_str()).collect();
-    assert!(messages.contains(&LEFT_OUT), "{messages:?}");
+    let areas = area_wires(&read);
+    // the plugin's areas (test_copper_graphics.py), in the DSN frame: the
+    // polygon, then the line's stroke, 0.5 mm on each side and past each end
+    let want = [
+        vec![
+            (3000.0, -3000.0),
+            (7000.0, -3000.0),
+            (7000.0, -5000.0),
+            (3000.0, -5000.0),
+            (3000.0, -3000.0),
+        ],
+        vec![
+            (19500.0, -14500.0),
+            (28500.0, -14500.0),
+            (28500.0, -13500.0),
+            (19500.0, -13500.0),
+            (19500.0, -14500.0),
+        ],
+    ];
+    assert_eq!(areas.len(), want.len(), "{areas:?}");
+    for (wire, want) in areas.iter().zip(&want) {
+        assert_eq!(wire.shapes.len(), 1);
+        let (layer, poly) = shape_polygon(&wire.shapes[0]);
+        assert_eq!(layer, "F.Cu");
+        assert!(close(&poly, want), "{poly:?}");
+        assert_eq!(wire.net.as_ref().map(|n| n.name.as_str()), Some("FG"));
+        assert_eq!(wire.wire_type, Some(WireType::Fix));
+        assert!(wire.windows.is_empty() && wire.clearance_class.is_none());
+    }
+    // after the board's own wiring (none here), and no warning
+    let items = &read.pcb.wiring.as_ref().unwrap().items;
+    assert!(matches!(items.last(), Some(WiringItem::Wire(w)) if w.attr.is_some()));
+    assert!(
+        read.warnings
+            .iter()
+            .all(|w| !w.message.contains("left out"))
+    );
+}
+
+#[test]
+fn the_written_dsn_keeps_the_areas() {
+    let read = freerouting_kicad::read(BOARD, None).unwrap();
+    let text = read.pcb.to_dsn();
+    let back = freerouting_dsn::Pcb::parse(&text).unwrap();
+    assert_eq!(back.wiring, read.pcb.wiring);
+    assert_eq!(text.matches("(attr obstacle)").count(), 2, "{text}");
 }
 
 #[test]
@@ -139,10 +214,6 @@ fn net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts() {
     assert_eq!(layers, ["B.Cu", "F.Cu"]);
     assert!(named(&keepouts, TEXT_KEEPOUT_NAME).is_empty());
     assert_eq!(fixed_wires(&read), 0);
-    // nothing left out: the tie line has no net, LONE has no pins
-    assert!(
-        read.warnings
-            .iter()
-            .all(|w| !w.message.contains("left out"))
-    );
+    // no areas: the tie line has no net, LONE has no pins
+    assert!(area_wires(&read).is_empty());
 }

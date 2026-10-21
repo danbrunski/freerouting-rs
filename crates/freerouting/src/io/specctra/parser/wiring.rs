@@ -1,6 +1,9 @@
 //! The wiring scope: traces, vias and conduction areas.
 //!
-//! Port of `io.specctra.parser.Wiring.readScope`.
+//! Port of `io.specctra.parser.Wiring.readScope`. Not Java: a conduction-area
+//! wire with `(attr obstacle)` ([`ast::WIRE_ATTR_OBSTACLE`], which Java
+//! skips) is the copper shape of a net (Q22.4) and becomes an area that is an
+//! obstacle to other nets ([`crate::board::BasicBoard::insert_fixed_copper_area`]).
 
 use std::collections::BTreeMap;
 
@@ -183,6 +186,16 @@ fn read_wire(ctx: &mut ReadContext, names: &NetNames, wire: &ast::Wire) {
         let mut shapes = vec![border];
         shapes.extend(holes);
         match transform_area_to_board(&shapes, &transform) {
+            // Q22.4: the copper shape of a net, an obstacle to other nets
+            Some(area) if wire.attr.as_deref() == Some(ast::WIRE_ATTR_OBSTACLE) => {
+                Some(board.insert_fixed_copper_area(
+                    area,
+                    layer.no,
+                    &net_numbers,
+                    clearance_class,
+                    fixed,
+                ))
+            }
             Some(area) => Some(board.insert_conduction_area(
                 area,
                 layer.no,

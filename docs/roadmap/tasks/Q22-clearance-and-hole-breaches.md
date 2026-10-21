@@ -423,7 +423,7 @@ Sequencing:
     - `python3 -m pytest kicad-plugin/tests` (venv `target/orchestrator/k02/venv`): 436 passed, 19
       skipped. `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'`: 36 tests OK.
 
-- [~] **Q22.4 — Copper graphics and copper text are obstacles.** On copper layers:
+- [x] **Q22.4 — Copper graphics and copper text are obstacles.** On copper layers:
   - footprint lines, rectangles, polygons, arcs, circles and visible text;
   - board-level graphics and text.
 
@@ -512,6 +512,67 @@ Sequencing:
       vfo, miniscope (6 net shapes) and openair (2) graded again. Until then a track of another
       net can cross a net shape of a listed net (KiCad reports it as `clearance` or
       `shorting_items`).
+  - *Done 2026-10-20:* option (a). A shape of a net the DSN lists becomes one conduction-area
+    wire of that net per polygon of the keepout outline code (filled body; one rectangle per
+    stroke piece; a circle as a polygon; KiCad's shapes have no holes):
+    `(wire (polygon <layer> 0 ...) (net <net>) (type fix) (attr obstacle))` at the end of the
+    wiring, in the plugin (`copper_graphics.py`) and the reader (`copper_graphics::net_wires`,
+    `read.rs`). No separate keepout is needed: the engine reads `(attr obstacle)`
+    (`ast::WIRE_ATTR_OBSTACLE`, new `Wire::attr`) as a conduction area that is an obstacle to
+    other nets (`BasicBoard::insert_fixed_copper_area`); `change_plane_as_obstacle` never clears
+    it (without that, `router.plane_as_obstacle = false`, both profiles' value, would let other
+    nets cross); two such areas of a net that meet are in contact, so the 34 chords of an arc
+    are one copper (without it miniscope's engine ledger had 162 unrouted against main's 55).
+    - Fixture extended: P2 (FG) beside P1 under the FG polygon, J2's two F.Cu pads of N3 at
+      (24, 11.5) and (24, 16.5), a 1 mm F.Cu `gr_line` of FG from (20, 14) to (28, 14) across
+      N3's straight path; `kicad-plugin/tests/data/q22-copper-graphics.dsn` re-exported with
+      KiCad 10.0.7's `pcbnew.ExportSpecctraDSN`.
+    - Plugin (`test_copper_graphics.py`, 16 passed with KiCad 10.0.7's pcbnew, venv 15 passed
+      1 skipped): `test_a_filled_shape_of_a_net_becomes_a_conduction_area_of_its_net`,
+      `test_a_stroked_shape_of_a_net_becomes_the_area_of_its_stroke` (19.5..28.5 x
+      13.5..14.5 mm), `test_a_circle_of_a_net_becomes_a_polygon_area`,
+      `test_a_net_line_becomes_an_area_beside_the_keepouts`,
+      `test_net_and_layer_names_keep_the_dsn_s_quoting`,
+      `test_a_wiring_on_one_line_or_none_takes_the_areas`, and
+      `test_the_fixture_through_pcbnew_gives_the_reader_s_obstacles` (pcbnew gives both FG
+      shapes; the areas equal the reader's).
+    - Reader (`crates/freerouting-kicad/tests/copper_graphics.rs`, 5 passed):
+      `shapes_of_a_net_become_conduction_areas_of_their_net` (the plugin's two polygons, to
+      1e-6 µm, net FG, `fix`, last in the wiring, no warning) and
+      `the_written_dsn_keeps_the_areas` (DSN text round trip).
+    - Engine (`crates/freerouting/tests/copper_graphics.rs`, 8 passed):
+      `other_nets_keep_clear_of_a_net_s_copper_and_the_net_connects_through_it` (legacy and
+      enhanced: P1 and P2 each touch only the FG polygon, nothing without the areas; incomplete
+      0; N3's F.Cu gap to the FG line >= 1999 units; the control
+      `without_the_obstacles_the_route_crosses_the_copper_graphics` crosses it),
+      `the_session_and_the_kicad_output_leave_the_net_shapes_out` (no `polygon` in the SES;
+      `final_copper` has the traces and vias only; no `gr_`/`zone`/`fp_poly`/`fp_line` added to
+      the `.kicad_pcb`), `the_output_check_counts_a_crossing_as_routed_and_keeps_the_area`
+      (an N3 trace over the FG line is a routed `Clearance` breach whose removable items are the
+      trace only; the areas stay), `plane_as_obstacle_never_clears_a_net_shape`,
+      `the_dsn_text_gives_the_same_areas`, `the_pieces_of_a_stroked_shape_are_one_copper` (a
+      0.8 mm `gr_arc` between two pads: incomplete 0; 33 without the contact rule).
+    - Legacy: `tools/parity-check.sh --no-probes` PARITY OK, connection parity 7 of 7 exact
+      (38 s). A DSN without `(attr obstacle)` reads as before.
+    - Graded once per arm with KiCad 10.0.7 (`grade.sh --export plugin {"schema": 4}`,
+      enhanced, `ulimit -v 8000000`, `timeout 300`; release CLIs of main `a36a5c0` and of this
+      change on it; `target/orchestrator/q224a/out/{mine,main}-{final,t270}`). Routing-caused
+      copper errors (`clearance`, `shorting_items`, `hole_clearance`, `copper_edge_clearance`,
+      `solder_mask_bridge`, below-minimum) are 0 in every row and both arms, against the net
+      shapes too:
+      | board | areas | route this / main | engine unrouted this / main | KiCad unconnected this / main (input) |
+      |---|---|---|---|---|
+      | vfo | 3 | 1.12 s / 17.76 s | 4 / 5 | 14 / 13 (87) |
+      | miniscope (`--timeout 270`) | 111 | 270 s / 270 s | 62 / 57 | 67 / 61 (294) |
+      | openair (`--timeout 270`) | 10 | 270 s / 270 s | 57 / 62 | 58 / 63 (316) |
+
+      vfo's `drc_real` is `starved_thermal` 6 / 5 (GND zone thermals), its open FG connections
+      are the Q18 edge and mask keepouts' (see above). miniscope and openair need more than
+      300 s in both arms, so they were cut by the router's own `--timeout 270` to get a session;
+      their per-pass times are the same in both arms (miniscope 10.0..25.4 s against
+      9.9..28.4 s). openair's `isolated_copper` 2 / 2 and silk items are not copper rules. On
+      main `039a859`, before Q22.11 and Q22.12, the uncapped runs gave openair 31 / 59 KiCad
+      unconnected (120 s against the 300 s cap) and miniscope 59 / 59.
 
 - [x] **Q22.5 — `.kicad_dru` clearances between item types.**
   - `dru.rs` learns the conditions `A.Type` (`'track'`, `'via'`, `'pad'`), `A.isPlated()` and
@@ -1113,3 +1174,19 @@ Sequencing:
     - fc-rom through the plugin's export, one KiCad grade: 0 routing-caused `solder_mask_bridge`,
       with KiCad unconnected and route time beside it (main: 79 unconnected, 271 s; use
       `--timeout 270` or a pass cap, the same in both arms).
+
+- [ ] **Q22.17 — Net shapes cost less to route around** (added 2026-10-20). Q22.4 makes each
+  copper shape of a listed net a fixed conduction area of its net. That is correct, but on
+  miniscope its 111 area pieces, mostly arc chords at the 5 µm maximum error, leave 67 KiCad
+  unconnected against main's 61 at an equal 270 s cap. Its best pass leaves 81 unrouted against
+  69 (decided 2026-10-20: keep the areas and reduce their cost).
+  - Merge each stroked shape's pieces into one outline polygon, and chord net-shape arcs at a
+    coarser maximum error that still covers the copper, in the plugin and the reader alike.
+  - Check the open question from Q22.4: a pin connects to an area only when its drill centre is
+    inside it (Java's rule). Count the pads on miniscope, vfo and openair that only overlap a net
+    shape's edge, and fix the connection test for `enhanced` if KiCad calls them connected.
+  - **Accept:**
+    - plugin and reader tests: a stroked arc shape becomes one area that covers the stroke;
+    - miniscope through the plugin's export at the same cap, one KiCad grade: 0 routing-caused
+      copper errors, with KiCad unconnected beside Q22.4's 67 and main's 61;
+    - the pad count, and its fix or the reason it stays.

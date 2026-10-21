@@ -37,8 +37,9 @@
 //!   board's own mask apertures, named `solder_mask`) and [`mask`]
 //!   (the pads' solder-mask expansions, in [`read::Extras::solder_mask`]).
 //! - Q22.4 adds [`copper_graphics`]: copper shapes and copper texts, which the
-//!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); shapes
-//!   of a net with pins are left out with a warning.
+//!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); a
+//!   shape of a net with pins becomes conduction-area wires of that net with
+//!   `(attr obstacle)`.
 //! - K08 adds [`write`]: the copper index of the file
 //!   ([`KicadRead::copper_index`]), the geometry diff against a routed board,
 //!   and the text splice that writes the routed copper into a copy of the

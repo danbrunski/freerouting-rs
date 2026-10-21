@@ -271,6 +271,10 @@ pub struct ObstacleArea {
     side_changed: bool,
     /// The area on the board (Java `precalculatedAbsoluteArea`).
     area: Area,
+    /// A conduction area that stays an obstacle to other nets whatever
+    /// `router.plane_as_obstacle` says: a wire with `(attr obstacle)`, the
+    /// copper shape of a net (Q22.4). Not Java (no DSN Java reads has one).
+    fixed_obstacle: bool,
 }
 
 impl ObstacleArea {
@@ -292,7 +296,19 @@ impl ObstacleArea {
             translation,
             rotation_in_degree,
             side_changed,
+            fixed_obstacle: false,
         }
+    }
+
+    /// True for a conduction area that stays an obstacle to other nets
+    /// whatever `router.plane_as_obstacle` says (Q22.4,
+    /// [`BasicBoard::insert_fixed_copper_area`](crate::board::BasicBoard::insert_fixed_copper_area)).
+    pub fn is_fixed_obstacle(&self) -> bool {
+        self.fixed_obstacle
+    }
+
+    pub(crate) fn set_fixed_obstacle(&mut self, value: bool) {
+        self.fixed_obstacle = value;
     }
 
     /// The area in board coordinates.

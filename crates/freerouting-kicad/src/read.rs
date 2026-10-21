@@ -652,7 +652,8 @@ pub fn read_with_rules(
         keepouts.extend(crate::edge_keepouts::mask_keepouts(&masks, front, back));
     }
     // Q22.4: copper shapes and texts as keepouts; shapes of a net that has
-    // pins (and so is in the network) are left out and counted.
+    // pins (and so is in the network) become fixed copper of that net, at
+    // the end of the wiring.
     let copper_graphics =
         crate::copper_graphics::read_copper_graphics(board, &layers, &nets, &mut warnings)?;
     let has_net = |net: u32| {
@@ -667,10 +668,13 @@ pub fn read_with_rules(
         has_net,
         project.max_error,
     ));
-    warnings.extend(crate::copper_graphics::left_out_warning(
+    let net_shape_wires = crate::copper_graphics::net_wires(
         &copper_graphics,
+        &layers,
+        &nets,
         has_net,
-    ));
+        project.max_error,
+    );
 
     let clearance = um(i64::from(default_values.clearance));
     let structure = Structure {
@@ -787,6 +791,7 @@ pub fn read_with_rules(
                 .into_iter()
                 .map(WiringItem::Wire)
                 .chain(board_vias.iter().map(|v| WiringItem::Via(v.to_dsn())))
+                .chain(net_shape_wires.into_iter().map(WiringItem::Wire))
                 .collect(),
         }),
     };

@@ -235,6 +235,7 @@ pub fn read_wires(
             } else {
                 WireType::Other("route".to_owned())
             }),
+            attr: None,
         })
         .collect();
     (wires, stats)

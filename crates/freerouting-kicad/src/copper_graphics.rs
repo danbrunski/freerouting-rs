@@ -29,13 +29,18 @@
 //!   side `hypot(width, height)` about its anchor, which holds the box at any
 //!   angle and justification. The KiCad plugin uses KiCad's own glyph strokes
 //!   (`TransformTextToPolySet`).
-//! - A shape of a net with pins is left out, and counted in a warning
-//!   ([`left_out_warning`]: "N shape(s) of a net left out (Q22.4
-//!   remainder)"). Decided 2026-10-20: fixed wires of that net covering it
-//!   (boundary wires plus 50 µm strips) cut vfo-controller's route at 120 s
-//!   with 7 unrouted, against 1.4 s and 0 without them. The remainder is one
-//!   conduction polygon of the net plus a keepout of its outline that holds
-//!   only for other nets.
+//! - A shape of a net with pins is copper of that net ([`net_wires`],
+//!   decided 2026-10-20, option (a)): each polygon of
+//!   `edge_keepouts::shape_polygons` (a filled body, and the rectangle of each
+//!   piece of the stroke) becomes a conduction-area wire of the net, `(type
+//!   fix)`, with `(attr obstacle)` ([`WIRE_ATTR_OBSTACLE`]), at the end of
+//!   the wiring. The router joins it to its net (the pieces of one shape are
+//!   in contact with each other) and keeps every other net its clearance
+//!   from it, whatever `router.plane_as_obstacle` says; the session
+//!   leaves it out (it is fixed), so KiCad keeps its own shape. KiCad's
+//!   shapes have no holes. An earlier model, fixed wires covering each shape
+//!   in 50 µm strips, gave vfo-controller 665 wires under the 0.2 mm minimum
+//!   width and cut its route at 120 s; it was dropped.
 //!
 //! The router keeps a keepout its default clearance from a net (the larger of
 //! the net's class clearance and the Default class's, as KiCad does with a
@@ -45,9 +50,9 @@
 //! rounded to 1 µm. `docs/DIVERGENCES.md` lists the difference from the
 //! export.
 
-use freerouting_dsn::ast::Keepout;
+use freerouting_dsn::ast::{Keepout, NetId, WIRE_ATTR_OBSTACLE, Wire, WireType};
 
-use crate::edge_keepouts::{F, keepout, shape_polygons};
+use crate::edge_keepouts::{F, keepout, polygon_shape, shape_polygons};
 use crate::error::{KicadError, Warning};
 use crate::footprints::{Graphic, normalize_180, parse_shape};
 use crate::layers::Layers;
@@ -342,15 +347,31 @@ pub fn keepouts(
     out
 }
 
-/// The warning that counts the shapes `has_net` says have a routable net,
-/// which are left out (module docs); `None` with none.
-pub fn left_out_warning(
+/// The conduction-area wires (module docs) of the shapes `has_net` says
+/// have a routable net, in shape order, each piece in
+/// `edge_keepouts::shape_polygons` order.
+pub fn net_wires(
     graphics: &CopperGraphics,
+    layers: &Layers,
+    nets: &NetTable,
     has_net: impl Fn(u32) -> bool,
-) -> Option<Warning> {
-    let n = graphics.shapes.iter().filter(|s| has_net(s.net)).count();
-    (n > 0).then(|| Warning {
-        line: 0,
-        message: format!("copper graphics: {n} shape(s) of a net left out (Q22.4 remainder)"),
-    })
+    max_error: i32,
+) -> Vec<Wire> {
+    let mut out = Vec::new();
+    for s in graphics.shapes.iter().filter(|s| has_net(s.net)) {
+        let (body, strokes) = shape_polygons(&s.graphic, max_error);
+        let name = nets.name(s.net).unwrap_or("").replace('"', "''");
+        out.extend(body.iter().chain(strokes.iter()).map(|p| Wire {
+            shapes: vec![polygon_shape(layers.name(s.layer), p)],
+            windows: Vec::new(),
+            net: Some(NetId {
+                name: name.clone(),
+                subnet: None,
+            }),
+            clearance_class: None,
+            wire_type: Some(WireType::Fix),
+            attr: Some(WIRE_ATTR_OBSTACLE.to_owned()),
+        }));
+    }
+    out
 }
