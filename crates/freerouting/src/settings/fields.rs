@@ -631,6 +631,8 @@ settings_table! {
                 "A rules layer scope naming an unknown layer applies to all layers: `true` (unset) keeps this Java bug, `false` ignores the scope with a warning (N06.12); profile `enhanced` uses `false` (N06.13)."),
             (any_angle_skip_length_squared, bool, opt, None, None, "anyAngleSkipLengthSquared", [], Flat::No, true,
                 "Any-angle pull-tight compares SKIP_LENGTH with a squared distance: `true` (unset) keeps this Java bug, `false` compares its square (N06.12, an arm of prereg/N06.12-ripup-pass.json); profile `enhanced` uses `false` (N06.13)."),
+            (same_net_via_pad_violation, bool, opt, None, None, "sameNetViaPadViolation", [], Flat::No, true,
+                "The router's score and pre-existing count take a via in or beside a pad of its own net as a clearance violation (every `.kicad_pcb` padstack is `(attach off)`): `true` (unset) keeps this Java count, `false` leaves out such pairs unless one item is copper the router placed, an unfixed trace or via (K15.5); in neither profile (no measurement yet)."),
         }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {

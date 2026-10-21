@@ -12,6 +12,7 @@ use freerouting_geometry::{FloatPoint, PolylineShapeOps};
 use super::clearance::ClearanceViolation;
 use super::incompletes::{AirLine, NetIncompletes, max_connections, net_item_lists};
 use super::json::java_format_fixed;
+use super::kicad_report::{self, ReportRules};
 use super::report::{DrcPosition, DrcReport, DrcViolation, DrcViolationItem, FREEROUTING_VERSION};
 use super::summary::{CongestionZone, DiagnosticViolation, DrcSummary};
 use super::unconnected::{UnconnectedItems, UnconnectedKind, all_unconnected_items};
@@ -93,6 +94,7 @@ pub struct DesignRulesChecker<'a> {
     net_incompletes: Option<Vec<NetIncompletes>>,
     max_connections: usize,
     check_zone_islands: bool,
+    report_rules: ReportRules,
 }
 
 impl<'a> DesignRulesChecker<'a> {
@@ -103,6 +105,7 @@ impl<'a> DesignRulesChecker<'a> {
             net_incompletes: None,
             max_connections: 0,
             check_zone_islands: true,
+            report_rules: ReportRules::default(),
         }
     }
 
@@ -120,6 +123,18 @@ impl<'a> DesignRulesChecker<'a> {
         self.check_zone_islands = enabled;
     }
 
+    /// Chooses how [`generate_report`](Self::generate_report) counts clearance
+    /// and dangling items: as KiCad does (the default) or as Java does
+    /// (K15.5, [`ReportRules`]). Not in Java.
+    pub fn set_report_rules(&mut self, rules: ReportRules) {
+        self.report_rules = rules;
+    }
+
+    /// The report's counting ([`set_report_rules`](Self::set_report_rules)).
+    pub fn report_rules(&self) -> ReportRules {
+        self.report_rules
+    }
+
     /// Runs all checks: clearance, unconnected items, zone islands and the
     /// incomplete connections.
     pub fn check(&mut self) -> DrcFindings {
@@ -131,14 +146,30 @@ impl<'a> DesignRulesChecker<'a> {
         }
     }
 
-    /// Java `getAllClearanceViolations`.
+    /// Java `getAllClearanceViolations`: the list the router's score and the
+    /// pre-existing count read.
+    ///
+    /// With `router.java_quirks.same_net_via_pad_violation` set to `false` on the
+    /// board (K15.5), a violation between items of a common net is left out
+    /// unless one of them is copper the router placed (an unfixed trace or
+    /// via): a via of the input in or beside a pad of its net, which Java counts
+    /// because every padstack read from a `.kicad_pcb` is `(attach off)`.
     pub fn all_clearance_violations(&self) -> Vec<ClearanceViolation> {
-        self.board.all_clearance_violations()
+        let all = self.board.all_clearance_violations();
+        // PARITY(quirk, java_quirks.same_net_via_pad_violation): Java counts every
+        // pair `Item.isObstacle` reports, same-net via and pad pairs included;
+        // `false` leaves out those with no routed copper (K15.5).
+        if self.board.java_quirks().same_net_via_pad_violation {
+            return all;
+        }
+        all.into_iter()
+            .filter(|v| !kicad_report::is_same_net_input_pair(self.board, v))
+            .collect()
     }
 
     /// Java `getAllUnconnectedItems`.
     pub fn all_unconnected_items(&mut self) -> Vec<UnconnectedItems> {
-        all_unconnected_items(self.board, &mut self.contacts)
+        all_unconnected_items(self.board, &mut self.contacts, ReportRules::Java)
     }
 
     /// Java `getZoneIslandViolations`.
@@ -244,6 +275,11 @@ impl<'a> DesignRulesChecker<'a> {
     /// DRC report of the board in KiCad's JSON schema, with coordinates in
     /// `coordinate_unit` (`mm`, `mil`, `inch` or `um`; the board unit
     /// otherwise).
+    ///
+    /// Under [`ReportRules::Kicad`] (the default; K15.5, not Java) the
+    /// clearance violations between items of one net with no routed copper,
+    /// and the dangling traces and vias, are counted as KiCad counts them
+    /// (see [`ReportRules`]); the scores are the router's either way.
     pub fn generate_report(&mut self, source_file: &str, coordinate_unit: &str) -> DrcReport {
         let mut report = DrcReport::new(
             coordinate_unit,
@@ -251,12 +287,15 @@ impl<'a> DesignRulesChecker<'a> {
             &format!("Freerouting {FREEROUTING_VERSION}"),
         );
         let violations = self.all_clearance_violations();
-        for violation in &violations {
+        let rules = self.report_rules;
+        for violation in violations.iter().filter(|v| {
+            rules == ReportRules::Java || kicad_report::reports_clearance(self.board, v)
+        }) {
             report
                 .violations
                 .push(self.clearance_report_violation(violation, coordinate_unit));
         }
-        for unconnected in self.all_unconnected_items() {
+        for unconnected in all_unconnected_items(self.board, &mut self.contacts, rules) {
             let entry = self.unconnected_report_violation(&unconnected, coordinate_unit);
             if unconnected.kind == UnconnectedKind::UnconnectedItems {
                 report.unconnected_items.push(entry);

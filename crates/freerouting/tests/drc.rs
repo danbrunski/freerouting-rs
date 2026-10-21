@@ -17,8 +17,8 @@ use freerouting::board::RoutingBoard;
 use freerouting::board::items::{ItemId, ItemKind};
 use freerouting::board::structure::{FixedState, Layer, LayerStructure};
 use freerouting::drc::{
-    ClearanceViolation, ClearanceViolationCategory, DesignRulesChecker, UnconnectedKind,
-    ZoneIslandKind, aggregate_sorted_by_severity, load_design,
+    ClearanceViolation, ClearanceViolationCategory, DesignRulesChecker, ReportRules,
+    UnconnectedKind, ZoneIslandKind, aggregate_sorted_by_severity, load_design,
 };
 use freerouting::geometry::{
     Area, Circle, ConvexShape, IntBox, IntPoint, Point, Polyline, PolylineShape, PolylineShapeOps,
@@ -262,8 +262,10 @@ fn issue575_unconnected_items() {
         assert!(dangling.contains(&id), "track {id} must be dangling");
     }
 
+    // Java's counting (K15.5: the report counts as KiCad does by default).
+    drc.set_report_rules(ReportRules::Java);
     let report = drc.generate_report(UNCONNECTED_FIXTURE, "mm");
-    let report_count = |t: &str| {
+    let count = |report: &freerouting::drc::DrcReport, t: &str| {
         report
             .violations
             .iter()
@@ -271,9 +273,16 @@ fn issue575_unconnected_items() {
             .count()
     };
     // Java: 110, 4 and 44 (the 1919 difference above).
-    assert_eq!(report_count("track_dangling"), 109);
-    assert_eq!(report_count("via_dangling"), 4);
+    assert_eq!(count(&report, "track_dangling"), 109);
+    assert_eq!(count(&report, "via_dangling"), 4);
     assert_eq!(report.unconnected_items.len(), 44);
+    // KiCad's counting (K15.5, measured 2026-10-21): every one of the 109
+    // tracks ends on copper of its net (most inside a pad off its centre), the
+    // 4 vias stay dangling, and the split nets are Java's.
+    let kicad = DesignRulesChecker::new(&board).generate_report(UNCONNECTED_FIXTURE, "mm");
+    assert_eq!(count(&kicad, "track_dangling"), 0);
+    assert_eq!(count(&kicad, "via_dangling"), 4);
+    assert_eq!(kicad.unconnected_items.len(), 44);
 }
 
 // ---------------------------------------------------------------------------

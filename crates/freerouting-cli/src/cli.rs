@@ -230,6 +230,7 @@ fn run_drc_mode(parsed: &Args, printer: &Printer) -> Code {
         )]);
         return Code::usage();
     };
+    printer.print(&ignored_drc_settings(parsed));
     let mut options = DrcRunOptions::new(design);
     options.session_file = parsed.session_file.as_ref().map(PathBuf::from);
     options.rules_file = parsed.rules_file.as_ref().map(PathBuf::from);
@@ -264,6 +265,33 @@ fn run_drc_mode(parsed: &Args, printer: &Printer) -> Code {
         None => println!("{json}"),
     }
     Code::success()
+}
+
+/// K15.5: `-drc` reads no router settings (Java's `DrcRunner` neither): the
+/// check uses the design's own rules, its rules file and session. One warning
+/// per router setting the command line or the environment sets, so that a
+/// flag such as `--router.hole_clearance_um` is not taken to apply. The
+/// configuration file's settings are a user's standing defaults, not asked
+/// for this run, and are not listed.
+fn ignored_drc_settings(parsed: &Args) -> Vec<LogLine> {
+    let environment = parse_process_environment();
+    [
+        ("the command line", parsed.patch.set_paths()),
+        ("the environment", environment.patch.set_paths()),
+    ]
+    .into_iter()
+    .flat_map(|(source, paths)| {
+        paths.into_iter().map(move |path| {
+            line(
+                LogLevel::Warn,
+                format!(
+                    "The DRC (-drc) ignores router.{path}, set by {source}: the check reads \
+                     no router settings, only the design, its rules file and session."
+                ),
+            )
+        })
+    })
+    .collect()
 }
 
 /// The job of `-de ... -do ...`: Java's `CliRunner.initializeCli`, then the

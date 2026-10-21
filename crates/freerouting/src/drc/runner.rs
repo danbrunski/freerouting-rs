@@ -7,6 +7,7 @@
 use std::path::{Path, PathBuf};
 
 use super::checker::DesignRulesChecker;
+use super::kicad_report::ReportRules;
 use super::report::DrcReport;
 use crate::board::RoutingBoard;
 use crate::io::kicad::{DesignKind, design_kind, read_design};
@@ -26,6 +27,9 @@ pub struct DrcRunOptions {
     pub rules_file: Option<PathBuf>,
     /// The unit of the report coordinates.
     pub coordinate_unit: String,
+    /// How the report counts clearance and dangling items: as KiCad does
+    /// (the default) or as Java does (K15.5, [`ReportRules`]).
+    pub report_rules: ReportRules,
 }
 
 impl DrcRunOptions {
@@ -36,6 +40,7 @@ impl DrcRunOptions {
             session_file: None,
             rules_file: None,
             coordinate_unit: "mm".into(),
+            report_rules: ReportRules::default(),
         }
     }
 }
@@ -123,7 +128,9 @@ fn design_name(design: &Path) -> String {
 
 /// Port of `DrcRunner.initializeDrc`: loads the design (and session), runs
 /// the checker and returns the report with the V2 quality and optimizer
-/// scores.
+/// scores. The report counts as [`DrcRunOptions::report_rules`] says (KiCad's
+/// by default, K15.5). The check reads no router settings: the board is the
+/// design's, with its rules file and session.
 pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
     let mut messages = Vec::new();
     let design = &options.design_file;
@@ -181,7 +188,9 @@ pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
     load_scope.finish();
     let source = file_name(design);
     let drc_scope = crate::run_stats::stage("drc", 0);
-    let report = DesignRulesChecker::new(&board).generate_report(&source, &options.coordinate_unit);
+    let mut checker = DesignRulesChecker::new(&board);
+    checker.set_report_rules(options.report_rules);
+    let report = checker.generate_report(&source, &options.coordinate_unit);
     drc_scope.finish();
     Ok(DrcRun {
         board,

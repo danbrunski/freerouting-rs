@@ -8,6 +8,7 @@ use std::collections::BTreeSet;
 
 use crate::util::{HashMap, HashSet};
 
+use super::kicad_report::{self, ReportRules};
 use crate::board::BasicBoard;
 use crate::board::items::ItemId;
 use crate::util::java_hash_map_order;
@@ -55,9 +56,14 @@ pub struct UnconnectedItems {
 /// identity hash codes; here a group is ordered by item id, highest first,
 /// and the representative is its first pin, else its first trace, else its
 /// first item.
+///
+/// Under [`ReportRules::Kicad`] (K15.5, not Java) the dangling traces and vias
+/// are KiCad's ([`kicad_report::track_dangling`], [`kicad_report::via_dangling`]);
+/// the split nets are Java's under both.
 pub(crate) fn all_unconnected_items(
     board: &BasicBoard,
     contacts: &mut HashMap<ItemId, Vec<ItemId>>,
+    rules: ReportRules,
 ) -> Vec<UnconnectedItems> {
     let mut result: Vec<UnconnectedItems> = Vec::new();
     let mut items_by_net: HashMap<i32, Vec<ItemId>> = HashMap::default();
@@ -123,9 +129,13 @@ pub(crate) fn all_unconnected_items(
             continue;
         }
         let id = item.id();
-        if (board.trace_start_contacts(id).is_empty() || board.trace_end_contacts(id).is_empty())
-            && !result.iter().any(|u| u.first_item == id)
-        {
+        let dangling = match rules {
+            ReportRules::Java => {
+                board.trace_start_contacts(id).is_empty() || board.trace_end_contacts(id).is_empty()
+            }
+            ReportRules::Kicad => kicad_report::track_dangling(board, id),
+        };
+        if dangling && !result.iter().any(|u| u.first_item == id) {
             result.push(UnconnectedItems {
                 first_item: id,
                 second_item: None,
@@ -135,7 +145,11 @@ pub(crate) fn all_unconnected_items(
         }
     }
     for item in board.items() {
-        if item.is_via() && board.is_tail(item.id()) {
+        let dangling = |id| match rules {
+            ReportRules::Java => board.is_tail(id),
+            ReportRules::Kicad => kicad_report::via_dangling(board, id),
+        };
+        if item.is_via() && dangling(item.id()) {
             result.push(UnconnectedItems {
                 first_item: item.id(),
                 second_item: None,

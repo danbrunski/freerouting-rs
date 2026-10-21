@@ -35,8 +35,9 @@ use freerouting::settings::{
 const CORES: usize = 8;
 
 /// The N06 inventory: 35 rows of kind (b) (two added by N06.14, one by N06.15 and one
-/// by N06.16) and 5 of kind (c) (N07.4 removed the six (c) switches no code read).
-const SWITCH_COUNT: usize = 40;
+/// by N06.16) and 5 of kind (c) (N07.4 removed the six (c) switches no code read), and
+/// K15.5's `same_net_via_pad_violation`.
+const SWITCH_COUNT: usize = 41;
 
 /// The switches profile `enhanced` turns off (N06.13), in inventory order. The
 /// first round (2026-10-19): the accepted batches M (N06.5), F (N06.6), S
@@ -141,7 +142,12 @@ fn every_switch_is_a_settings_key_in_inventory_order() {
         assert!(field.json, "{} is read from settings files", field.path);
         assert!(field.doc.contains("`true` (unset)"), "{}", field.path);
         let item = JavaQuirks::fix_item(field.name).expect("an owning item");
-        assert!(item.starts_with("N06."), "{}: {item}", field.path);
+        // N06's inventory, and the K15 switches found after it.
+        assert!(
+            item.starts_with("N06.") || item.starts_with("K15."),
+            "{}: {item}",
+            field.path
+        );
     }
     assert_eq!(JavaQuirks::default(), JavaQuirks::JAVA);
     assert!(JavaQuirks::JAVA.fixed_ids().is_empty());

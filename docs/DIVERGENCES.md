@@ -244,6 +244,23 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
 - The report's `date` is in UTC; Java uses the local zone. `freeroutingVersion` is
   `rs-<crate version>`.
 - `RoutingBoard::reduce_nets_of_route_items` reports whether a net was removed.
+- **The report counts what KiCad counts** (K15.5, `drc::kicad_report`, `ReportRules::Kicad`, the
+  default of `DesignRulesChecker::generate_report`, `-drc`, a route's `.drc` output and the GUI's
+  export). Java's types and texts stay; three counts change, under both profiles:
+  `clearance`/`holeClearance` leave out a pair whose items share a net unless one is copper the
+  router placed (a trace or via neither user nor system fixed): every `.kicad_pcb` padstack is
+  `(attach off)`, so Java's `Item.isObstacle` makes each via in or beside a pad of its own net a
+  violation, which KiCad never reports; a via the run put in a pad stays reported (D8).
+  `via_dangling` is a via whose copper meets its net on fewer than two layers
+  (`stub_contacts::via_contact_layers`), not Java's `isTail` (contacts only at its centre), so a via
+  joining an SMD pad off its centre to a plane is connected. `track_dangling` is a trace with an
+  end point on no copper of its net on its layer (Q20's anchor test), so a T junction or an end
+  inside a pad off its centre is connected. The split nets, the scores, `check()` and
+  `all_unconnected_items()` (the GUI's lists) stay Java's. On the pcu board (K15.5) the counts go
+  from holeClearance 165, via_dangling 117, track_dangling 15 to 44, 17, 2. Pinned by
+  `tests/drc_kicad_report.rs`; `tests/reference_drc.rs` compares `ReportRules::Java` with Java.
+- `-drc` reads no router settings, as Java's `DrcRunner`; the CLI now warns once per router
+  setting given on the command line or in the environment (K15.5, `tests/drc_settings.rs`).
 - For an unknown net, the item descriptions print `null`; Java throws.
 - `Issue721-Autorouter_CE2632_HarryMu_2026-6-15.dsn` quotes its class nets with `'`.
   Java keeps the quotes, so its nets stay in the default class; the port reads them
@@ -2355,6 +2372,18 @@ neighbour sort are taken on the simplex, so a gap walk ends within `n + 1` steps
 counts `any_angle_room_side_mismatches` in either arm. `prereg/N06.16.json`'s run of
 2026-10-20 accepted it under `enhanced`: both boards abort at the 8000000 kB cap under `true`
 and route under `false`, and the other 6 rows are identical.
+
+**K15.5 same-net vias in pads (in neither profile)**
+
+`same_net_via_pad_violation` is `true` (Java) unset and in both profiles. Every padstack the
+KiCad reader writes is `(attach off)`, so Java's `Item.isObstacle` counts each via in or beside
+a pad of its own net as a clearance violation, and the router's score and pre-existing count
+carry them (121 of the committed pcu board's 165 hole clearance items, all input vias). With it
+`false`, `DesignRulesChecker::all_clearance_violations` leaves out a pair whose items share a net
+unless one is copper the router placed (a trace or via neither user nor system fixed), so a via
+the run puts in a pad still counts; the search's obstacle test is unchanged (D8)
+(`tests/drc_kicad_report.rs::score_switch_leaves_out_only_the_inputs_same_net_pairs`). No
+measurement has run, so `enhanced` keeps Java's count.
 
 ## Profile `enhanced`
 

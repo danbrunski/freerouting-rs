@@ -442,7 +442,11 @@ fn item_violations(
 /// True if the end point `end` of trace `item` lies on copper of its net on
 /// its layer (KiCad connects a track end that way: its anchor inside the
 /// other item, not its round cap touching it).
-fn end_on_copper(board: &BasicBoard, item: &Item, end: &freerouting_geometry::Point) -> bool {
+pub(crate) fn end_on_copper(
+    board: &BasicBoard,
+    item: &Item,
+    end: &freerouting_geometry::Point,
+) -> bool {
     let Some(trace) = item.as_trace() else {
         return true;
     };

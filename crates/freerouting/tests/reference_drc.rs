@@ -10,6 +10,11 @@
 //! `legacy` by construction. A board-level behaviour that a profile switches
 //! (N04's contacts inside pads) must be pinned to `legacy` here.
 //!
+//! **Report rules (K15.5).** The report counts same-net clearance pairs and
+//! dangling traces and vias as KiCad does by default (`ReportRules::Kicad`,
+//! docs/DIVERGENCES.md); this comparison pins Java's counting
+//! (`ReportRules::Java`), as it pins `legacy`. `tests/drc.rs` pins KiCad's.
+//!
 //! Compared exactly: the clearance and hole clearance violations and the
 //! dangling vias (descriptions, item ids and positions, in report order),
 //! the unconnected item groups (as sets: Java picks a group's
@@ -25,7 +30,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use freerouting::drc::json::JsonValue;
 use freerouting::drc::{
-    DesignRulesChecker, DrcReport, DrcRunOptions, DrcViolation, load_design, run_drc,
+    DesignRulesChecker, DrcReport, DrcRunOptions, DrcViolation, ReportRules, load_design, run_drc,
 };
 use freerouting::io::read_session;
 
@@ -183,6 +188,7 @@ fn rust_report(mode: &str, fixture: &str) -> DrcReport {
     }
     let mut checker = DesignRulesChecker::new(&board);
     checker.set_check_zone_islands(false);
+    checker.set_report_rules(ReportRules::Java);
     let source = path.file_name().unwrap().to_string_lossy().into_owned();
     checker.generate_report(&source, "mm")
 }
@@ -375,6 +381,7 @@ fn drc_with_a_rules_file_matches_java() {
         ("Issue029-hw48na_invalid.rules", "08-drc-invalid-rules"),
     ] {
         let mut options = DrcRunOptions::new(fixtures_dir().join("Issue029-hw48na.dsn"));
+        options.report_rules = ReportRules::Java;
         options.rules_file = Some(fixtures_dir().join(rules));
         let run = run_drc(&options).unwrap();
         let differences = compare(&java[rules], &run.report);
@@ -408,6 +415,7 @@ fn drc_with_a_rules_file_matches_java() {
 #[test]
 fn a_missing_rules_file_is_a_warning() {
     let mut options = DrcRunOptions::new(fixtures_dir().join("Issue029-hw48na.dsn"));
+    options.report_rules = ReportRules::Java;
     options.rules_file = Some(PathBuf::from("no/such/file.rules"));
     let run = run_drc(&options).unwrap();
     assert!(

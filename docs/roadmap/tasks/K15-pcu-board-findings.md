@@ -204,7 +204,7 @@ item-type rules), N06 (`router.java_quirks`).
     - a test that pins the minimum on a small board with an unconditional `track_width` rule;
     - each odd width named with its source.
 
-- [ ] **K15.5 — The DRC report and the router's violations count what KiCad counts.**
+- [x] **K15.5 — The DRC report and the router's violations count what KiCad counts.**
   - **Change:**
     - `-drc` against KiCad 10 on the committed pcu board (`--router.hole_clearance_um=260`):
       | Type | freerouting-rs | KiCad |
@@ -240,6 +240,80 @@ item-type rules), N06 (`router.java_quirks`).
     - on the pcu board, each of the four types equals KiCad's or differs by named items;
     - tests per case (same-net hole clearance, a via to a plane, a stub);
     - connection-parity 7 of 7 if engine code `legacy` runs changes; DIVERGENCES lines.
+
+    *Done 2026-10-21:* the report counts as KiCad (`drc/kicad_report.rs`, `ReportRules::Kicad`, the
+    default of `DesignRulesChecker::generate_report`: `-drc`, a route's `.drc` output, the GUI's
+    export); `ReportRules::Java` keeps Java's report, which `tests/reference_drc.rs` now pins.
+    - *Changes:* `clearance`/`holeClearance` leave out a same-net pair unless one item is routed
+      copper (a trace or via neither user nor system fixed), so a via the run puts in a pad stays
+      reported; `BasicBoard::is_obstacle` is unchanged (D8). `via_dangling` is a via meeting its net
+      on fewer than two layers (`stub_contacts::via_contact_layers`); `track_dangling` an end point
+      on no copper of its net (`board_rules::end_on_copper`, now `pub(crate)`). The split nets,
+      the scores, `check()` and `all_unconnected_items()` (GUI lists) stay Java's.
+    - *The score:* new `router.java_quirks.same_net_via_pad_violation` (unset/`true` = Java's
+      count; marker in `DesignRulesChecker::all_clearance_violations`, which the statistics and
+      `record_pre_existing_violations` read). `false` drops the same pairs, routed vias still
+      counted. In neither profile: promoting it needs a preregistered measurement.
+    - *`-drc` settings:* warn only. One WARN per router setting from the command line or the
+      environment ("The DRC (-drc) ignores router.hole_clearance_um, set by the command line: ...").
+      Not applied under `enhanced`: that needs `prepare_job`'s board steps (`job/prepare.rs`), and
+      `router.hole_clearance_um` grows the drill items' tree shapes, which would add the octagon
+      hole pairs (the 142 -> 217 rise) to the report with no KiCad-style hole check.
+    - *pcu board* (committed `1b161c7` copy, `-de Power_Control_Unit_24V.kicad_pcb -drc`, 0.36 s;
+      KiCad: `kicad-cli pcb drc --format json --severity-all`, KiCad 10.0.7):
+
+      | Type | before (`aacdfc2`) | after | KiCad 10.0.7 |
+      |---|---|---|---|
+      | holeClearance | 165 (121 same net) | 44 | `hole_clearance` 8 |
+      | via_dangling | 117 | 17 | 0 |
+      | track_dangling | 15 | 2 | 3 |
+      | clearance | 4 | 4 | 0 |
+
+      - holeClearance 44 and clearance 4: 39 pad pairs inside one footprint (J17, U11, U23, U26,
+        J13, U34, U33, U28, U2), 5 trace-pad pairs (INA_ALERT_2 at RN3.1, BUS_GND at R110.2) and 4
+        trace pairs (CH1_NO 1.8 mm against Net-(U12-PGTH)). All are 0.1467 mm or more apart. The
+        router checks the net-class clearances (0.15-0.25 mm). KiCad applies the `.kicad_dru`'s
+        unconditional `Minimum copper-to-copper spacing (5 mil)` instead. A kicad-cli run on a copy
+        with a duplicated U23 reported that rule's 0.1270 mm against a Pour3A pad (class 0.25).
+        Also, 3 of the 5 trace-pad pairs and all 4 trace pairs pass with round track ends (exact
+        0.1598, 0.1604 and 0.2806 mm). The board's octagonal trace caps make them short.
+      - KiCad's 8 `hole_clearance`: J17 A1/B12/A12/B1 and J13 A1-B12/A4-B9/A12-B1/A9-B4 against
+        their own footprint's NPTH (0.1733-0.2063 < 0.254 mm). Java's report has no
+        copper-to-hole check.
+      - via_dangling 17: V_BUS_24V vias at (173.54, 94.80), (172.44, 94.80), (172.44, 95.90),
+        (195.94, 94.80), (195.94, 95.90), (197.04, 94.80), (101.44, 107.30), (102.54, 107.30),
+        (83.44, 107.30), (84.54, 107.30), (119.44, 107.30), (120.54, 107.30), (64.44, 96.40),
+        (65.54, 95.30), (90.95, 86.17), (92.15, 86.17), (93.35, 86.17). Each sits in an F.Cu pour
+        of its net (U12-U16, U18 IN, 24V entry) and in the In2.Cu plane. The DSN structure reader
+        drops a signal-layer pour of a net with a plane layer (`insert_planes`), so the board has
+        the via on In2.Cu only. The other 100 now count their pad or trace on F.Cu or B.Cu and
+        their plane.
+      - track_dangling: the 2 are VCC_3V3 #7153 (197.478, 43.2503) and USB_VBUS_SENSE #12034
+        (194.6262, 51.6541), both in KiCad's list. KiCad's third is FE_HGATE's 0.3 mm segment
+        (94.0442 -> 93.9193, 45.8749). Both of its ends lie on the 0.5 mm FE_HGATE segment's
+        copper (0.1249 mm from that segment's end, within its 0.25 mm half width), so the anchor
+        test connects it. The other 12 of the 15 end on another trace of their net, mid-segment
+        or at an inner corner: #11833, #11292, #10907, #10885, #10606, #10511, #10121, #9637,
+        #9627, #9032, #7286, #6959.
+    - *Tests:* `tests/drc_kicad_report.rs` (5, one synthetic DSN):
+      `kicad_report_counts_different_nets_and_copper_overlap` covers the same-net input via
+      dropped, the routed via kept, the via joining pad C1-1 off its centre to the Gnd.Cu plane,
+      the T junction and the stub. Also `java_report_counts_same_net_pairs_and_centre_contacts`,
+      `score_switch_leaves_out_only_the_inputs_same_net_pairs`,
+      `the_default_report_is_kicads_and_the_board_findings_stay_javas` and
+      `the_fixture_has_an_input_via_and_a_routed_via_in_pads_of_their_net` (`is_obstacle`
+      unchanged). `tests/drc.rs::issue575_unconnected_items` pins Java 109/4/44 and KiCad 0/4/44.
+      `freerouting-cli/tests/drc_settings.rs`. `tests/settings_java_quirks.rs` has 41 switches.
+    - *Gate:* `cargo fmt --all --check` 0; `cargo clippy --workspace --all-targets -- -D warnings`
+      clean; `cargo test -p freerouting` all pass; `-p freerouting-cli` 181 passed;
+      `-p freerouting-gui --test ui_drc` 24 passed. The connection-parity check
+      (`PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh`) passed: probes
+      PASS in 375 s, 7 of 7 exact, 7 SES byte-identical. No SES changes under either profile:
+      the switch is unset in both, and `enhanced`'s set is unchanged
+      (`legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set`), so no
+      ses-diff was run.
+    - *DIVERGENCES:* "The report counts what KiCad counts" and the `-drc` settings line under
+      Design rule check, plus "K15.5 same-net vias in pads" under Java quirk switches.
 
 - [ ] **K15.6 — The run stops when nothing routes.**
   - **Change:** with bug 1 present, the zoned pcu board ran pass after pass at `routed 0`, `failed

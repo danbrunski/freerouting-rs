@@ -150,6 +150,8 @@ java_quirks! {
     opt_threshold_fraction: "N06.12",
     rules_unknown_layer_scope: "N06.12",
     any_angle_skip_length_squared: "N06.12",
+    // Found after N06 (K15.5): the score's same-net via and pad pairs.
+    same_net_via_pad_violation: "K15.5",
 }
 
 impl Default for JavaQuirks {
