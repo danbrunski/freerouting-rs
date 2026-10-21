@@ -14,10 +14,12 @@ directly, with none of those DSN steps (`snapshot.py`).
 Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), the
 Edge.Cuts, Margin and board mask-aperture keepouts (Q18.5, Q18.7, `edge_graphics`,
 always on), the copper graphics and texts (Q22.4, `copper_graphics`, always on), the
-thermal-spoke keepouts (Q22.20, `thermal_spokes`, always on), then the
+thermal-spoke keepouts (Q22.20, `thermal_spokes`, always on), the unlocked
+track arcs as polylines (K13.8, `track_arcs`, always on), then the
 K09 fix-ups (`dsn_fixups`); the pads' solder-mask apertures go to the router as
 a flag (Q18.7, `solder_mask_args`). After `ImportSpecctraSES`, `after_import` sets the
-drills KiCad's import takes from the net class instead of the session. A fix-up that fails is logged with a WARNING and
+drills KiCad's import takes from the net class instead of the session, and puts the
+input copper back (`restore_copper`; track arcs need the pcbnew module). A fix-up that fails is logged with a WARNING and
 leaves the DSN as it was before that step; it never blocks routing.
 """
 
@@ -38,6 +40,7 @@ try:  # inside the plugin package
         ses_vias,
         snapshot,
         thermal_spokes,
+        track_arcs,
     )
 except ImportError:  # tests and headless scripts put this folder on sys.path
     import copper_graphics
@@ -51,6 +54,7 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
     import ses_vias
     import snapshot
     import thermal_spokes
+    import track_arcs
 
 
 def _read(path):
@@ -216,6 +220,25 @@ def fix_thermal_spokes(board, pcbnew, dsn):
     return lines
 
 
+def fix_track_arcs(board, dsn):
+    """K13.8: each unlocked track arc as the polyline the `.kicad_pcb` reader
+    lays, in place of the one chord KiCad's export writes (`track_arcs`).
+    Always on: routed copper keeps its clearance from the arc, and
+    `restore_copper` puts the arc back after the import. Returns the log lines
+    (none without an unlocked arc)."""
+    try:
+        arcs = track_arcs.collect(board)
+        if not arcs:
+            return []
+        text = _read(dsn)
+        new_text, lines = track_arcs.apply(text, arcs)
+        if new_text != text:
+            _write(dsn, new_text)
+    except Exception as e:  # never block routing on the fix-up
+        lines = [f"WARNING: track arcs left as chords: {e!r}"]
+    return lines
+
+
 def solder_mask_args(board, pcbnew, dsn):
     """Q18.7: the router flag that keeps other nets out of the pads' mask
     apertures (`kicad_board.mask_expansions`), for the pads whose aperture
@@ -281,6 +304,7 @@ def prepare(board, pcbnew, dsn, opts, export):
     lines += fix_edge_graphics(board, pcbnew, dsn)
     lines += fix_copper_graphics(board, pcbnew, dsn)
     lines += fix_thermal_spokes(board, pcbnew, dsn)
+    lines += fix_track_arcs(board, dsn)
     mask_args, mask_lines = solder_mask_args(board, pcbnew, dsn)
     lines += mask_lines
     args, more = fix_dsn(board, pcbnew, dsn, opts)
@@ -322,7 +346,8 @@ def after_import(board, ses, pcbnew=None, originals=(), board_input=options.INPU
     """Corrects what KiCad's `ImportSpecctraSES` gets wrong: the drill of
     routed vias (`ses_vias`), then the coordinates of the input copper
     (`restore_copper`, Q22.3: `originals` are `restore_copper.originals` taken
-    before the import). Returns the log lines; never raises."""
+    before the import; K13.8: the original track arcs, with `pcbnew` given).
+    Returns the log lines; never raises."""
     lines = []
     try:
         changed = kicad_board.fix_via_drills(board, ses_vias.vias(_read(ses)))
@@ -333,7 +358,8 @@ def after_import(board, ses, pcbnew=None, originals=(), board_input=options.INPU
             lines.append(f"via drills: {changed} via(s) set to their session padstack's drill")
     if originals:
         try:
-            counts = restore_copper.restore(board.GetTracks(), originals, restore_copper.bound_nm(board_input))
+            editor = restore_copper.PcbnewEditor(board, pcbnew) if hasattr(pcbnew, "PCB_ARC") else None
+            counts = restore_copper.restore(board.GetTracks(), originals, restore_copper.bound_nm(board_input), editor)
             lines.append(restore_copper.log_line(counts))
         except Exception as e:  # keep the import as it is
             lines.append(f"WARNING: input copper not restored: {e!r}")

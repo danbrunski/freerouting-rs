@@ -7,6 +7,7 @@ session's). Fake pcbnew items here; the plugin's Route flow through the stub
 import pytest
 import restore_copper
 import stub_ui
+import track_arcs
 
 F_CU, B_CU = 0, 2
 
@@ -133,7 +134,7 @@ def test_an_input_track_that_the_export_rounds_comes_back_at_its_nanometre_coord
     assert back.points == [(192322000, 73575000), (194175000, 75427500)]  # the round trip moved it
     counts = restore_copper.restore([back], restore_copper.originals([original]), restore_copper.bound_nm("dsn"))
     assert back.points == list(DIFF_N)
-    assert counts == {"tracks": 1, "vias": 0, "ends": 0, "unmatched": 0}
+    assert counts == {"tracks": 1, "vias": 0, "arcs": 0, "ends": 0, "unmatched": 0}
 
 
 def test_a_restored_item_gets_the_originals_uuid_and_a_moved_one_keeps_its_own():
@@ -164,7 +165,7 @@ def test_a_track_the_router_moved_2_um_stays_as_imported():
     counts = restore_copper.restore([moved, routed], restore_copper.originals([original]), 600)
     assert moved.points == [(150002000, 50000000), (160000000, 50000000)]
     assert routed.points == [(150002000, 50000000), (150002000, 40000000)]
-    assert counts == {"tracks": 0, "vias": 0, "ends": 0, "unmatched": 1}
+    assert counts == {"tracks": 0, "vias": 0, "arcs": 0, "ends": 0, "unmatched": 1}
 
 
 def test_the_bound_is_the_exports_rounding_plus_the_sessions():
@@ -187,7 +188,7 @@ def test_vias_come_back_and_need_the_same_size_and_drill():
     counts = restore_copper.restore([back, back_drill, routed], restore_copper.originals([original, other_drill]), 600)
     assert back.points == [at] and routed.points[0] == at
     assert back_drill.points == [(100000000, 1000000)]
-    assert counts == {"tracks": 0, "vias": 1, "ends": 1, "unmatched": 1}
+    assert counts == {"tracks": 0, "vias": 1, "arcs": 0, "ends": 1, "unmatched": 1}
 
 
 def test_a_track_in_the_other_direction_gets_the_originals_direction_and_width():
@@ -226,12 +227,132 @@ def test_duplicates_match_the_nearest_then_in_board_order():
 
 def test_locked_tracks_and_arcs_are_left_alone():
     kept = track("SIG", (1000049, 2000000), (5000000, 2000000), locked=True)
-    arc = Item("PCB_ARC", "SIG", ((1000049, 2000000), (5000000, 2000000)), 200000)
+    arc = ArcItem("SIG", A_ARC, locked=True)
     assert restore_copper.originals([kept, arc]) == []
     locked_copy = track("SIG", (1000000, 2000000), (5000000, 2000000), locked=True)
     original = track("SIG", (1000049, 2000000), (5000000, 2000000))
     counts = restore_copper.restore([locked_copy], restore_copper.originals([original]), 600)
     assert locked_copy.points[0] == (1000000, 2000000) and counts["unmatched"] == 1
+
+
+# --- K13.8: track arcs -----------------------------------------------------------
+
+# `data/arc_pair.kicad_pcb`'s arc of net A: radius 1 mm around (100, 100) mm.
+A_ARC = ((101000000, 100000000), (100800000, 100600000), (100000000, 101000000))
+
+
+class ArcItem(Item):
+    """A PCB_ARC: start, mid, end."""
+
+    def __init__(self, net, points, width=200000, **kw):
+        super().__init__("PCB_ARC", net, points, width, **kw)
+
+    def GetMid(self):
+        return Pt(*self.points[1])
+
+    def GetEnd(self):
+        return Pt(*self.points[2])
+
+    def GetNet(self):
+        return self.net
+
+
+class Editor:
+    """`restore`'s editor on a list of board items."""
+
+    def __init__(self, board):
+        self.board, self.added, self.removed = board, [], []
+
+    def add_arc(self, rec, like):
+        arc = ArcItem(like.GetNetname(), rec.points, rec.width, layer=rec.layer[0])
+        arc.m_Uuid = Kiid(rec.uuid)
+        self.board.append(arc)
+        self.added.append(arc)
+        return arc
+
+    def remove(self, item):
+        self.board.remove(item)
+        self.removed.append(item)
+
+
+def polyline(net, points, trip, width=200000):
+    """The imported tracks of a polyline that went through `trip`."""
+    pts = [(trip(x), trip(y)) for x, y in points]
+    return [track(net, a, b, width=width) for a, b in zip(pts, pts[1:])]
+
+
+def test_an_arc_whose_polyline_comes_back_unmoved_is_put_back_as_the_arc():
+    """The DSN path: `track_arcs` lays the arc through the export's `%.6g` ends;
+    the session gives the polyline back; the arc returns with its uuid."""
+    original = ArcItem("A", A_ARC)
+    lead = track("A", (101000000, 97000000), A_ARC[0])
+    records = restore_copper.originals([lead, original])
+    pieces = polyline("A", track_arcs.arc_points(*A_ARC), dsn_trip)
+    board = [imported(lead, dsn_trip)] + pieces
+    editor = Editor(board)
+    counts = restore_copper.restore(list(board), records, 600, editor)
+    assert counts == {"tracks": 1, "vias": 0, "arcs": 1, "ends": 0, "unmatched": 0}
+    assert editor.removed == pieces and len(editor.added) == 1
+    arc = editor.added[0]
+    assert arc.points == list(A_ARC) and arc.width == 200000 and arc.net == "A" and arc.layer == F_CU
+    assert arc.m_Uuid.AsString() == original.m_Uuid.AsString()
+    assert board == [board[0], arc] and board[0].points == list(lead.points)
+
+
+def test_the_readers_polyline_comes_back_as_the_arc_on_the_kicad_pcb_path():
+    records = restore_copper.originals([ArcItem("A", A_ARC)])
+    pieces = polyline("A", track_arcs.arc_points(*A_ARC), reader_trip)
+    editor = Editor(list(pieces))
+    counts = restore_copper.restore(pieces, records, 200, editor)
+    assert counts["arcs"] == 1 and editor.board == editor.added
+
+
+def test_a_reversed_polyline_split_at_a_junction_is_still_the_arc():
+    """The session may run the path end to start, and a routed track that
+    joins it splits one chord in two (the new point lies inside the arc)."""
+    pts = track_arcs.arc_points(*A_ARC)[::-1]
+    a, b = pts[5], pts[6]
+    pts.insert(6, ((a[0] + b[0]) // 2, (a[1] + b[1]) // 2))
+    pieces = polyline("A", pts, dsn_trip)
+    routed = track("A", pieces[5].points[1], (99000000, 99000000))
+    board = pieces[::-1] + [routed]
+    editor = Editor(board)
+    counts = restore_copper.restore(list(board), restore_copper.originals([ArcItem("A", A_ARC)]), 600, editor)
+    assert counts["arcs"] == 1 and sorted(map(id, editor.removed)) == sorted(map(id, pieces))
+    assert board == [routed, editor.added[0]]
+
+
+def test_a_chord_or_a_moved_polyline_stays_as_imported():
+    records = restore_copper.originals([ArcItem("A", A_ARC)])
+    chord = [track("A", A_ARC[0], A_ARC[2])]  # what KiCad's export writes
+    moved = track_arcs.arc_points(*A_ARC)
+    moved[9] = (moved[9][0] + 3000, moved[9][1])  # one point 3 µm off the arc
+    for pieces in (chord, polyline("A", moved, dsn_trip), polyline("A", track_arcs.arc_points(*A_ARC)[:-3], dsn_trip)):
+        editor = Editor(list(pieces))
+        counts = restore_copper.restore(list(pieces), records, 600, editor)
+        assert counts["arcs"] == 0 and counts["unmatched"] == 1 and editor.added == editor.removed == []
+
+
+def test_another_width_layer_or_net_is_not_the_arc_and_no_editor_puts_back_nothing():
+    records = restore_copper.originals([ArcItem("A", A_ARC)])
+    pts = track_arcs.arc_points(*A_ARC)
+    for pieces in (polyline("A", pts, dsn_trip, width=250000), polyline("B", pts, dsn_trip)):
+        assert restore_copper.restore(list(pieces), records, 600, Editor(list(pieces)))["arcs"] == 0
+    other_layer = polyline("A", pts, dsn_trip)
+    for t in other_layer:
+        t.layer = B_CU
+    assert restore_copper.restore(list(other_layer), records, 600, Editor(list(other_layer)))["arcs"] == 0
+    assert restore_copper.restore(polyline("A", pts, dsn_trip), records, 600)["arcs"] == 0
+
+
+def test_a_routed_track_that_met_the_arcs_end_follows_it():
+    records = restore_copper.originals([ArcItem("A", A_ARC)])
+    pieces = polyline("A", track_arcs.arc_points(*A_ARC), dsn_trip)
+    routed = track("A", (100000400, 101000000), (97000000, 101000000))  # 0.4 µm off the arc's end
+    board = pieces + [routed]
+    counts = restore_copper.restore(list(board), records, 600, Editor(board))
+    assert counts["arcs"] == 1 and counts["ends"] == 1 and routed.points[0] == A_ARC[2]
+    assert restore_copper.log_line(counts).endswith("left as routed (Q22.3), 1 track arc(s) back as arcs (K13.8)")
 
 
 def test_the_order_of_the_imported_items_does_not_change_the_result():

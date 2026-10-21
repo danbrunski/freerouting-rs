@@ -161,6 +161,18 @@ field they lack takes the profile's default):
   `headless_run.py import` and the oracle's `kicad_steps.py import` all call it; `plugin.log` gets one
   `input copper: ...` line. Tests: `test_restore_copper.py`,
   `tools/kicad-oracle/tests/test_import_restore.py` (real pcbnew).
+- **Track arcs** (K13.8): KiCad 10.0.7's DSN export writes each track arc as one chord
+  (CM5_MINIMA_3: 172 clearance items in K13.6, the chords of differential-pair arcs). After the
+  export `export_flow.fix_track_arcs` (`track_arcs.py`, always on) replaces the chord of each
+  unlocked arc in the wiring with the polyline the `.kicad_pcb` reader lays for it
+  (`tracks.rs::arc_points`, ported to Python and identical on 289027 points of 2200 arcs);
+  `plugin.log` gets a `track arcs: N of M unlocked arc(s) written as polylines` line. After the
+  import `restore_copper` puts an original arc back as an arc where its polyline (from either
+  input) came back unmoved, through `restore_copper.PcbnewEditor` (pcbnew passed in; without it no
+  arc is put back), and the `input copper:` line ends with `K track arc(s) back as arcs`. Tests:
+  `test_track_arcs.py`, `test_restore_copper.py` (the arc tests), `test_arc_round_trip.py`
+  (real pcbnew and kicad-cli on `tests/data/arc_pair.kicad_pcb`, two arcs at exactly the class
+  clearance).
 - **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
   manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
   shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named
@@ -707,7 +719,8 @@ corpus run, `canary_pwr_fan_inlet`).
 the test fails on any other difference, and on a listed one that no longer occurs):
 
 - rule-area kinds as above (K06.2): the reader has `place_keepout`s and fewer full keepouts;
-- track arcs are followed as polylines, the export writes one chord (K06.5);
+- track arcs are followed as polylines, the export writes one chord (K06.5; the plugin's DSN path
+  writes the same polylines since K13.8, `track_arcs.py`);
 - copper zones that footprints own stay planes, the export drops them (K06.4, K00 question 6);
 - the order of the non-default net classes (project order against `std::unordered_map` order) and of the
   outline's holes (`tastexx-pcb`);

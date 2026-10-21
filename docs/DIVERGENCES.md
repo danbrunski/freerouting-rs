@@ -1864,6 +1864,22 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_a_routed_track_that_ends_on_a_restored_track_follows_it`,
   `test_a_track_the_router_moved_2_um_stays_as_imported`) and
   `tools/kicad-oracle/tests/test_import_restore.py`.
+- **Track arcs go to the router as polylines and come back as arcs** (K13.8, `track_arcs.py`,
+  `export_flow.fix_track_arcs`, always on; `restore_copper.py`). KiCad 10.0.7's DSN export writes
+  each track arc as one chord, and Java's plugin routes and imports that chord: on CM5_MINIMA_3
+  the chords came back in place of the arcs, 172 clearance items inside differential pairs
+  (K13.6). The plugin replaces the chord of each unlocked arc in the DSN's wiring with the
+  polyline the `.kicad_pcb` reader lays (ends as exported, points on the arc, no chord over 1 µm
+  from it or 0.1 rad long), so routed copper keeps its clearance from the arc to within 1 µm.
+  After the import, on both inputs, an original unlocked arc whose polyline came back unmoved
+  (the same net and layer, width within 0.1 µm, ends within the input's bound, every point and
+  chord midpoint within that bound plus 1 µm of the arc) is put back as the arc, with its own
+  start, mid, end, width and uuid; a chord or a polyline the router moved stays as imported.
+  Locked arcs stay chords in the DSN and are kept by the import. Under both profiles. Pinned by
+  `test_track_arcs.py`, `test_restore_copper.py::test_an_arc_whose_polyline_comes_back_unmoved_is_put_back_as_the_arc`,
+  `test_a_chord_or_a_moved_polyline_stays_as_imported` and
+  `test_arc_round_trip.py::test_two_arcs_at_the_class_clearance_come_back_as_arcs_with_no_clearance_item`
+  (real pcbnew and kicad-cli).
 - **Board Setup's minimums are passed as hard floors** (Q18, `options.board_minimum_args`,
   `export_flow.router_args`): `m_TrackMinWidth`, `m_ViasMinSize`, `m_MinThroughDrill`,
   `m_ViasMinAnnularWidth`, `m_CopperEdgeClearance` and `m_HoleClearance` become

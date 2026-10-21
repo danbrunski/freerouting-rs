@@ -494,7 +494,7 @@ rules).
     owner to accept those two rows, or a new registration that judges them, and then the
     owner's run inside KiCad.
 
-- [ ] **K13.8 — The DSN path returns input track arcs as arcs** (added 2026-10-21, from K13.6;
+- [x] **K13.8 — The DSN path returns input track arcs as arcs** (added 2026-10-21, from K13.6;
   decided 2026-10-20: routing never breaks the board's manufacturing rules, and `dsn` stays the
   fallback whatever K13.7 decides). On CM5_MINIMA_3 the `dsn` arm has 172 routing-caused
   `clearance` items, all between the two tracks of five differential pairs (netclass `100ohm`
@@ -521,3 +521,106 @@ rules).
     - the same run in the `kicad_pcb` arm stays at 0 routing-caused manufacturing items;
     - a DIVERGENCES line (kicad-plugin), and `python3 -m pytest kicad-plugin/tests` passes;
       `legacy` keeps connection-parity 7 of 7 if engine code changes.
+
+  *Done 2026-10-21:* the fix is in and clauses 1, 3 and 4 hold. Clause 2: the dsn run at the
+  300 s limit was cut by `timeout` (exit 124, route 300.9 s), and the script marks such a run
+  aborted and ungraded. Its session (`3cd2afa5…`) is byte-identical to the 600 s run's, which
+  finished in 438.7 s and was graded: 0 routing-caused `clearance`, every manufacturing type 0,
+  unconnected 0. Decided 2026-10-21: clause 2 is met on that session, because the 300 s limit
+  produced the same copper. The route-time cost of the polylines is K13.9.
+  - **Cause, confirmed** on `target/orchestrator/k136/out/dsn/CM5_MINIMA_3`. KiCad 10.0.7's
+    `ExportSpecctraDSN` writes each of the 200 unlocked track arcs as one chord, start to end. 192
+    are two-point wires and 8 are one leg of a 3-point path that merges two arcs, for example
+    `(path B.Cu 140 119505 -29387 119288 -29604.7 119070 -29822.5 ...)`. The chords have sagitta
+    0.0205–0.1508 mm. The session returns them as `(type protect)` wires, and the routed board
+    has 0 arcs: 196 arcs are now a chord segment. `restore_copper._kind` gave `None` for
+    `PCB_ARC`, so no arc was put back. Of the 172 `clearance` items, 123 are between two chord
+    segments and the other 49 between a chord and another track.
+  - **Fix.** `kicad-plugin/freerouting_rs/track_arcs.py` is new: `export_flow.fix_track_arcs` is
+    always on, after the thermal-spoke step. It replaces the chord of each unlocked arc in the
+    DSN's wiring with the reader's polyline (`tracks.rs::arc_points`, ported). The ends stay as
+    KiCad wrote them; no chord lies over 1 µm from the arc or spans over 0.1 rad. The port matches
+    the Rust reader exactly on 2200 arcs: CM5's 200 plus 2000 random ones, 289027 points, checked
+    by a scratch probe binary. `restore_copper` now records unlocked arcs. After tracks and vias it
+    puts back an arc when a chain of unmatched imported tracks lays it unmoved:
+    - same net and layer, width within 0.1 µm;
+    - ends within the input's bound;
+    - every point and every chord midpoint within the bound plus 1 µm of the arc, each point
+      further along it.
+
+    The arc comes back with its own start, mid, end, width and uuid, through
+    `restore_copper.PcbnewEditor(board, pcbnew)`, which takes pcbnew as an argument and creates
+    the `PCB_ARC`. A bare chord or a moved polyline stays as imported. Locked arcs stay chords.
+    `export_flow.after_import` and `tools/kicad-oracle/kicad_steps.py import` pass the editor.
+    The kicad_pcb path gets its arcs back the same way.
+  - **Tests**, written first. At HEAD `test_arc_round_trip.py` failed, and the same steps by hand
+    gave 2 `clearance` items (actual 0.0828 mm) and 0 arcs. Now:
+    - `kicad-plugin/tests/test_arc_round_trip.py::test_two_arcs_at_the_class_clearance_come_back_as_arcs_with_no_clearance_item`
+      uses real pcbnew and kicad-cli on the new fixture `tests/data/arc_pair.kicad_pcb`: arcs of
+      radius 1.0 and 1.4 mm, 0.2 mm wide, gap 0.2 mm (the Default class clearance). It runs the
+      `headless_run.py` export with the fix-ups, a session of the unmoved wiring, and the
+      `headless_run.py` import. Both arcs come back at their own start, mid and end, every track
+      equals the input with uuids, and DRC shows no `clearance` item;
+    - `test_track_arcs.py`, 7 tests, including `test_arc_points_are_the_readers_points` and
+      `test_a_chord_in_a_merged_path_run_end_to_start_gets_its_points_in_path_order`;
+    - `test_restore_copper.py`, 6 new tests, including
+      `test_an_arc_whose_polyline_comes_back_unmoved_is_put_back_as_the_arc`,
+      `test_a_reversed_polyline_split_at_a_junction_is_still_the_arc` and
+      `test_a_chord_or_a_moved_polyline_stays_as_imported`.
+  - **Runs.** Binary `target/orchestrator/k138/bin/freerouting-rs-k138` (`freerouting-rs 0.1.0
+    (git 21972677a983)`, sha256 `e545fc6c…`, no Rust change). Script
+    `tools/kicad-reader/plugin-input-ab.sh` run from the worktree, options
+    `{"schema": 5, "profile": "enhanced"}`, `ROUTE_MEMORY_KB=8000000`, one kicad-cli at a time,
+    board copy `target/orchestrator/k138/boards/cm5_minima`, outputs under
+    `target/orchestrator/k138/out/`. Every grade is `rules: project`.
+
+    | Arm, limit | rc | aborted | route s | p+l s | unconnected (input) | caused by type | mfg / below / vip | arcs back | session |
+    |---|---|---|---|---|---|---|---|---|---|
+    | dsn, 300 s | 124 | **1** | 300.9 | 1.98 | not graded | | | | `3cd2afa5` |
+    | dsn, 600 s | 0 | 0 | 438.7 | 1.96 | 0 (0) | silk_edge_clearance 3, silk_overlap 18 | 0 / 0 / 0 | 200 | `3cd2afa5` |
+    | kicad_pcb, 300 s | 0 | 0 | 180.5 | 1.65 | 0 (0) | silk_edge_clearance 3, silk_overlap 18 | 0 / 0 / 0 | 200 | `976b9df2` |
+
+    - The DRC errors of the dsn 600 s board are those of K13.6's kicad_pcb arm:
+      copper_edge_clearance 2, courtyards_overlap 2, holes_co_located 2. Routing-caused
+      `clearance` fell from 172 to 0. The 21 silk items are on the input board (K13.6).
+    - All 200 arcs on the routed dsn board equal the input's: start, mid, end, width, layer, net
+      and uuid.
+    - Import line: `1835 track(s) and 444 via(s) back at their own coordinates, 6 routed end(s)
+      moved onto them, 49 input item(s) left as routed (Q22.3), 200 track arc(s) back as arcs
+      (K13.8)`.
+    - The kicad_pcb session is byte-identical to K13.6's (`976b9df2`); only the arcs changed on
+      import.
+  - **Route time.** The dsn arm is slower than K13.6's 265.9 s. Each pass takes about 20.5 s
+    instead of 12.1 s. The engine stops after 18 passes without improvement (20 unrouted in the
+    router's count, 925.11, 993 violations against 1148 with chords) and then runs 2 sweeps.
+    Running the same binary on the two DSNs for 80 s gave 12.0 s per pass on K13.6's chord DSN and
+    20.4–20.9 s on the polyline DSN. That DSN is byte-identical to `track_arcs.apply` run on
+    K13.6's DSN. A coarser polyline (0.5 rad, 10 µm, 600 points instead of 3000) took 13.6 s per
+    pass, so the pass time grows with the number of points. K13.6's kicad_pcb arm reads the same
+    polylines at 8.4 s per pass with 14 unrouted. Not profiled: `perf` is missing and ptrace is
+    restricted.
+  - **Gate.** `cargo fmt --all --check` passes; there is no Rust change, so clippy and the parity
+    check were not needed. `FREEROUTING_RS_BIN=target/orchestrator/k138/target/release
+    target/orchestrator/k09/venv/bin/pytest kicad-plugin/tests`: 525 passed, 6 skipped (pcbnew
+    not importable in the venv: 3; canary-pwr board: 1; `KICAD_METADATA_REPO`: 2).
+    `python3 -I -m unittest discover -s tools/kicad-oracle/tests`: 44 tests OK.
+
+- [ ] **K13.9 — Polyline arcs don't slow the DSN path's passes** (added 2026-10-21, from K13.8).
+  With K13.8's polylines, CM5_MINIMA_3's dsn route takes 438.7 s against K13.6's 265.9 s with
+  chords. Each pass takes about 20.5 s instead of 12.1 s, and the engine still stops after 18
+  passes without improvement and then runs 2 sweeps. Probes of the same binary for 80 s each gave
+  12.0 s per pass on K13.6's chord DSN, 20.4–20.9 s on the polyline DSN, and 13.6 s on a coarser
+  polyline (0.5 rad, 10 µm: 600 points instead of 3000). The `.kicad_pcb` reader lays the same
+  polylines, and K13.6's kicad_pcb arm runs 8.4 s per pass. So the cost is in how the router
+  handles the DSN's 3000-point input wires, not in the points themselves.
+  - Find where the pass time goes. `perf` is not installed and ptrace is restricted, so use the
+    engine's own timers or a counting build. Compare the two inputs' boards after load: how the
+    input wires become items (one polyline trace or many, fixed state, tree entries), and what
+    each pass does with them (the optimizer, rip-up and the search tree).
+  - **Accept:**
+    - the cause named, with the numbers that show it;
+    - CM5_MINIMA_3, one `tools/kicad-reader/plugin-input-ab.sh dsn` run with K13.6's options and
+      `ROUTE_TIMEOUT_S=300`: exit 0 inside the limit, graded under its own rules, every
+      manufacturing type 0 and the 200 arcs back as arcs, unconnected beside 0;
+    - a test that pins the fix. If engine code changes, `legacy` keeps connection-parity 7 of 7
+      and the gate's tests pass. An `enhanced`-only change gets its DIVERGENCES line.

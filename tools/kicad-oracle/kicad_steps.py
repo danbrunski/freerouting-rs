@@ -20,7 +20,9 @@ plugin package.
 
 `import` then puts the input copper back at its own coordinates, as the plugin
 does (Q22.3, `restore_copper.py`, loaded the same way): KiCad's DSN export
-rounds it to `%.6g`.
+rounds it to `%.6g`. An input track arc comes back as an arc only where the
+session returns a polyline of it (the plugin's export, K13.8); this script's
+`export` writes KiCad's chord, which stays a chord.
 """
 
 import json
@@ -130,7 +132,7 @@ def import_session(unrouted, ses, out):
         print("SES import failed", file=sys.stderr)
         return 1
     changed = fix_via_drills(board, ses)
-    counts = restore.restore(board.Tracks(), originals, restore.bound_nm(restore.DSN))
+    counts = restore.restore(board.Tracks(), originals, restore.bound_nm(restore.DSN), restore.PcbnewEditor(board, pcbnew))
     pcbnew.SaveBoard(out, board)
     print("SES imported, fix_via_drills reported %d; %s" % (changed, restore.log_line(counts)))
     return 0

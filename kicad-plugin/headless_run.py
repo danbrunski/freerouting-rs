@@ -16,8 +16,9 @@ the board's minimum track width, and the fix-up log. OPTIONS.json is a
 `import` loads BOARD again in a new process (a second LoadBoard in one
 process returned an unwrapped SwigPyObject in 10.0.7), locks the tracks as
 the plugin does for `fix_existing`, calls `ImportSpecctraSES`, puts the input
-copper back at its own coordinates (`restore_copper`, Q22.3) and saves the
-result as OUT, with the original lock states restored.
+copper back at its own coordinates and its track arcs back as arcs
+(`restore_copper`, Q22.3, K13.8) and saves the result as OUT, with the
+original lock states restored.
 
 `snapshot` (K10) loads BOARD, applies the in-memory EDITs (nothing is saved),
 and takes the board snapshot the plugin's `board_input = kicad_pcb` takes
