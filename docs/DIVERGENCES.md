@@ -1440,10 +1440,32 @@ compare them on 12 committed boards and the 56-board corpus).
   `router.input_fixups.drop_pour_nets`, off by default): the planes of the listed nets on the
   first and last copper layer leave the tree, as the plugin's `drop_pour_nets` drops their
   `(plane ...)`; their inner-layer planes stay. A net the board does not have is a warning naming
-  it and is left out (the DSN fix-up passes it silently). A DSN input ignores all three `router.input_fixups.*`
+  it and is left out (the DSN fix-up passes it silently). A DSN input ignores all four `router.input_fixups.*`
   settings with one warning (`k14_fixups.rs::engine::a_dsn_job_ignores_the_settings_with_a_warning`).
   Pinned by `tests/k14_fixups.rs::dropped_pours_equal_the_fixed_up_export_and_inner_planes_stay`,
   `an_unknown_net_is_a_warning_that_names_it` and
+  `kicad-plugin/tests/test_snapshot_fixups.py::test_auto_on_the_snapshot_gives_the_dsn_paths_lists`.
+- **Pours of listed classes as fixed wires on a `.kicad_pcb` input** (K14.4, `fixups`,
+  `fill_wires`, `router.input_fixups.fixed_pour_classes`, off by default under both profiles): each
+  filled zone on the first or last copper layer whose net is in a listed class, and not in
+  `drop_pour_nets` (dropping wins), gives `(type fix)` wires of its net covering its fill, first in
+  the wiring, and the planes of that net on that layer leave the tree, as the plugin's
+  `fixed_pour_classes` in `wires` mode rewrites KiCad's export; Java has neither. The fill is the
+  file's `(filled_polygon ...)` (read for this setting only), the rectangles and wires are the
+  plugin's `fill_rects` and `_wire` arithmetic, bit-identical. An unknown class is an error naming
+  it. The wires are `SYSTEM_FIXED`: the session leaves them out, as on the DSN path, and the
+  engine's `.kicad_pcb` writer now leaves every `SYSTEM_FIXED` trace out too (a locked original,
+  which its diff keeps anyway, or such a wire). The plugin's snapshot passes it, `auto` resolved
+  from the board's classes (`dsn_fixups.auto_fixed_pour_classes_of_board`), and resolves `auto`
+  for `fixed_pour_mode = engine` the same way. Pinned by
+  `tests/k14_fixups.rs::fixed_pours_equal_the_fixed_up_export` (44 wires, net, layer, width and
+  coordinates in order, and the planes, exactly equal to the plugin's export parsed),
+  `fixed_pours_alone_equal_the_fixed_up_export`, `several_fixed_pours_come_in_the_plugins_zone_order`,
+  `a_dropped_net_is_not_covered_by_fixed_wires`, `an_unfilled_pour_keeps_its_plane`,
+  `the_fills_read_from_the_file_equal_the_plugins_board_facts`,
+  `an_unknown_fixed_pour_class_is_an_error_that_names_it`,
+  `engine::the_fixed_pour_wires_are_on_the_board_and_in_no_output`,
+  `crates/freerouting-cli/tests/cli_k14_fixed_pours.rs` and
   `kicad-plugin/tests/test_snapshot_fixups.py::test_auto_on_the_snapshot_gives_the_dsn_paths_lists`.
 - Against the export's board the reader's differences are exactly the ones above and nothing
   else: `crates/freerouting/tests/kicad_parity.rs` lists each with its reason and fails on any

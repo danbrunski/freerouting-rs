@@ -51,7 +51,8 @@
 //! - K13.1 adds [`pad_clearance`]: pads' own larger clearances, as circle
 //!   keepouts (`pad_clearance`), as the plugin's DSN fix-up writes them.
 //! - K14 adds [`fixups`]: the KiCad plugin's DSN fix-ups (class widths, plane
-//!   layers opened to routing, dropped pours of listed nets) done on the tree,
+//!   layers opened to routing, dropped pours of listed nets, and the pours of
+//!   listed classes as fixed wires over their fill, [`fill_wires`]) done on the tree,
 //!   from the engine's `router.input_fixups.*` settings, so a `.kicad_pcb`
 //!   input gets what the plugin's fixed-up DSN export gives.
 //! - K08 adds [`write`]: the copper index of the file

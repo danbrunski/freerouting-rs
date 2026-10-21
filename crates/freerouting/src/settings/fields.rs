@@ -546,6 +546,8 @@ settings_table! {
                 "Plane (power) layers opened to routing: each becomes a signal layer and keeps its planes, as the plugin's `route_on_plane_layers` turns `(type power)` into `(type signal)`; a layer that is not a power layer is an error (K14.2)."),
             (drop_pour_nets, Vec<String>, opt, None, None, "dropPourNets", [], Flat::No, true,
                 "Nets whose zones on the outer copper layers are left out of the planes, as the plugin's `drop_pour_nets` drops their `(plane ...)`; their inner-layer zones stay (K14.3)."),
+            (fixed_pour_classes, Vec<String>, opt, None, None, "fixedPourClasses", [], Flat::No, true,
+                "Net classes whose filled zones on the outer copper layers become fixed wires of their net covering the fill (the file's `filled_polygon`), their planes on that layer dropped, as the plugin's `fixed_pour_classes` in `wires` mode does; a net in `drop_pour_nets` is dropped instead; an unknown class is an error. The session never holds the wires (K14.4)."),
         }
         java_quirks, JavaQuirksPatch, JavaQuirksSettings, "javaQuirks",
         "The Java bugs kept for parity, one switch each (N06; not a Java section). Unset is `true`, Java's behaviour; profile `legacy` keeps every switch `true`, profile `enhanced` turns off the fixes N06.13 promoted." {

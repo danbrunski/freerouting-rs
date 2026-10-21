@@ -274,6 +274,7 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("input_fixups.class_widths", None),
         ("input_fixups.route_on_plane_layers", None),
         ("input_fixups.drop_pour_nets", None),
+        ("input_fixups.fixed_pour_classes", None),
     ];
     // N06: every `java_quirks` switch is unset, which is `true` (Java's
     // behaviour); `tests/settings_java_quirks.rs` checks the ids.

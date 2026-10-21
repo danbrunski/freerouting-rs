@@ -152,11 +152,16 @@ PLUGIN FLAGS (not in Java)
   --router.input_fixups.class_widths=<class>=<um>[,...]
   --router.input_fixups.route_on_plane_layers=<layer>[,...]
   --router.input_fixups.drop_pour_nets=<net>[,...]
+  --router.input_fixups.fixed_pour_classes=<class>[,...]
       With a .kicad_pcb input, change the board as the KiCad plugin's DSN
       fix-ups change KiCad's export (K14): set each class's track width, in
       micrometers; make each plane (power) layer a signal layer, keeping its
       planes; leave each net's zones on the outer copper layers out of the
-      planes, keeping its inner-layer zones. A class or layer the board does
+      planes, keeping its inner-layer zones; cover each filled zone on the
+      outer copper layers whose net is in a listed class with fixed wires of
+      its net, from the zone's fill in the file, in place of its plane (a
+      dropped net is dropped instead). The fixed wires are never written to
+      the session or to a .kicad_pcb output. A class or layer the board does
       not have, or a layer that is not a plane layer, fails the run with a
       message naming it; an unknown net is a warning. A class whose width an
       applied .kicad_dru track_width rule sets keeps the rule's width. Off by

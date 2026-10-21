@@ -54,11 +54,14 @@ of naming them:
   minimum track width): a 1.5 mm class cannot reach a 0.25 mm QFN pin.
 
 K14: on the board snapshot (`board_input = kicad_pcb`) there is no DSN text;
-`class_widths`, `route_on_plane_layers` and `drop_pour_nets` go to the router
-as `router.input_fixups.*` flags (`input_fixup_args`), which the `.kicad_pcb`
-reader applies to its tree with the same effect, and their `"auto"` lists are
-resolved from the board facts alone (`resolve_on_board`; the classes from
-`export_flow.board_classes`).
+`class_widths`, `route_on_plane_layers`, `drop_pour_nets` and (K14.4)
+`fixed_pour_classes` in `wires` mode go to the router as
+`router.input_fixups.*` flags (`input_fixup_args`), which the `.kicad_pcb`
+reader applies to its tree with the same effect (the fixed wires from the
+snapshot's own `filled_polygon`s, with this module's `fill_rects` and `_wire`
+arithmetic ported to `crates/freerouting-kicad/src/fill_wires.rs`), and their
+`"auto"` lists are resolved from the board facts alone (`resolve_on_board`;
+the classes from `export_flow.board_classes`).
 
 Pure Python: no pcbnew, no wx. The board facts come from
 `kicad_board.collect` as plain dicts.
@@ -279,14 +282,25 @@ class Dsn:
 
 def auto_fixed_pour_classes(board, dsn):
     """Classes of the outer pours above the lowest zone priority of their layer."""
+    return _auto_fixed_pour_classes(board, dsn.net_class)
+
+
+def auto_fixed_pour_classes_of_board(board):
+    """K14.4: `auto_fixed_pour_classes` without the DSN, from the board's own
+    net classes (`board["classes"]["net_class"]`, `export_flow.board_classes`,
+    named as KiCad's export names them), for the board snapshot."""
+    return _auto_fixed_pour_classes(board, (board.get("classes") or {}).get("net_class") or {})
+
+
+def _auto_fixed_pour_classes(board, net_class):
     lowest = {}
     for z in board.get("zones", []):
         if z["outer"]:
             lowest[z["layer"]] = min(lowest.get(z["layer"], z["priority"]), z["priority"])
     classes = set()
     for z in board.get("zones", []):
-        if z["outer"] and z["priority"] > lowest[z["layer"]] and z["net"] in dsn.net_class:
-            classes.add(dsn.net_class[z["net"]])
+        if z["outer"] and z["priority"] > lowest[z["layer"]] and z["net"] in net_class:
+            classes.add(net_class[z["net"]])
     return sorted(classes)
 
 
@@ -349,10 +363,12 @@ def _auto_class_widths(board, default, widths, net_class):
 
 
 def resolve_on_board(settings, board):
-    """K14: `resolve` for the board snapshot, which has no DSN: `class_widths`
-    and `drop_pour_nets` from the board facts alone (`kicad_board.collect`
-    plus `board["classes"]`). `fixed_pour_classes` is left as it is (K14.4)."""
+    """K14: `resolve` for the board snapshot, which has no DSN: every `"auto"`
+    list from the board facts alone (`kicad_board.collect` plus
+    `board["classes"]`)."""
     out = dict(settings)
+    if out.get("fixed_pour_classes") == AUTO:
+        out["fixed_pour_classes"] = auto_fixed_pour_classes_of_board(board)
     if out.get("drop_pour_nets") == AUTO:
         out["drop_pour_nets"] = auto_drop_pour_nets(board)
     if out.get("class_widths") == AUTO:
@@ -554,6 +570,7 @@ INPUT_FIXUP_SETTINGS = {
     "class_widths": "router.input_fixups.class_widths",
     "route_on_plane_layers": "router.input_fixups.route_on_plane_layers",
     "drop_pour_nets": "router.input_fixups.drop_pour_nets",
+    "fixed_pour_classes": "router.input_fixups.fixed_pour_classes",
 }
 
 
@@ -563,9 +580,11 @@ def _passable(name):
 
 
 def input_fixup_args(settings):
-    """K14.1-K14.3: the router flags that make the `.kicad_pcb` reader apply
-    `class_widths`, `route_on_plane_layers` and `drop_pour_nets` of `settings`
-    (with no `"auto"` left: `resolve_on_board`). A class width goes as
+    """K14.1-K14.4: the router flags that make the `.kicad_pcb` reader apply
+    `class_widths`, `route_on_plane_layers`, `drop_pour_nets` and
+    `fixed_pour_classes` (the `wires` mode; `options.dsn_settings` leaves it
+    empty in `engine` mode) of `settings` (with no `"auto"` left:
+    `resolve_on_board`). A class width goes as
     `<class>=<um>`, rounded with `um` as `apply` writes it. Returns `(args,
     log_lines)`; a name the router's comma-separated list cannot carry (a
     comma, blanks around it) is left out with a WARNING line."""
@@ -581,6 +600,7 @@ def input_fixup_args(settings):
         ("class_widths", entries),
         ("route_on_plane_layers", list(settings.get("route_on_plane_layers") or [])),
         ("drop_pour_nets", sorted(settings.get("drop_pour_nets") or [])),
+        ("fixed_pour_classes", sorted(settings.get("fixed_pour_classes") or [])),
     ]
     for key, values in lists:
         if key != "class_widths":

@@ -43,7 +43,9 @@
 //! `.kicad_pcb` it was read from, without `ImportSpecctraSES`: it reads the
 //! input again ([`read_kicad_bytes`]: the copper index of
 //! [`freerouting_kicad::write`]), maps the board's traces and vias to KiCad
-//! layers, nets and via sizes ([`final_copper`]), diffs them against the
+//! layers, nets and via sizes ([`final_copper`]; `SYSTEM_FIXED` traces left
+//! out, as the session leaves them out, so the fixed wires of K14.4's
+//! `fixed_pour_classes` never become tracks), diffs them against the
 //! file's copper by exact geometry in board units, cuts out what the board no
 //! longer has and adds the rest before the final `)`, with deterministic
 //! UUIDs. Every other byte stays as it was; zones are not refilled. It refuses
@@ -67,6 +69,7 @@ pub use freerouting_kicad::{Extras, KicadError, ReadOptions, ReadReport};
 use super::specctra::{BoardReadResult, build_board, read_board};
 use crate::board::BasicBoard;
 use crate::board::items::ItemKind;
+use crate::board::structure::FixedState;
 use crate::dsn::ast::Pcb;
 use crate::io::CoordinateTransform;
 
@@ -312,6 +315,30 @@ pub struct KicadSource {
     pub hash: u128,
 }
 
+/// K14.4: the zones and fills of the `.kicad_pcb` a board is read from
+/// ([`freerouting_kicad::fixups::pour_fills`]), for
+/// `router.input_fixups.fixed_pour_classes`. The tree keeps no fills, so the file is
+/// read again; a file that changed since it was read is refused, as
+/// [`render_kicad_board`] refuses it.
+pub fn read_pour_fills(
+    source: &KicadSource,
+) -> Result<Vec<freerouting_kicad::fixups::PourFill>, String> {
+    let bytes = std::fs::read(&source.path).map_err(|e| {
+        format!(
+            "couldn't read the zone fills of '{}': {e}",
+            source.path.display()
+        )
+    })?;
+    if fnv1a128(&bytes) != source.hash {
+        return Err(format!(
+            "'{}' changed since the board was read; read it again",
+            source.path.display()
+        ));
+    }
+    let text = freerouting_kicad::sexpr::decode(&bytes).map_err(|e| e.to_string())?;
+    freerouting_kicad::fixups::pour_fills(text).map_err(|e| e.to_string())
+}
+
 /// The board's coordinate transform as a [`BoardFrame`]: nanometres to board
 /// units exactly as the board builder maps the reader's tree (`um`, Y
 /// negated, then the transform and `round`), and back on the grid.
@@ -365,6 +392,13 @@ impl BoardFrame for TransformFrame {
 
 /// The traces and vias of `board`, in its item order, in the terms of the
 /// file's copper index (KiCad layer positions, net codes, via sizes).
+///
+/// `SYSTEM_FIXED` traces are left out, as the session writer leaves them out
+/// (`ses_writer::session_nets`), so the `.kicad_pcb` output and the session
+/// carry the same copper. On a `.kicad_pcb` input such a trace is a locked
+/// track of the file, which the diff keeps anyway, or a fixed wire
+/// `router.input_fixups.fixed_pour_classes` laid over a pour's fill (K14.4),
+/// which is not copper of the board.
 pub fn final_copper(board: &BasicBoard, index: &CopperIndex) -> Result<Vec<FinalItem>, String> {
     let layer_of = |l: i32| -> Result<usize, String> {
         let name = usize::try_from(l)
@@ -385,6 +419,9 @@ pub fn final_copper(board: &BasicBoard, index: &CopperIndex) -> Result<Vec<Final
         .collect();
     let mut out = Vec::new();
     for item in board.items() {
+        if item.is_trace() && item.fixed_state() == FixedState::SystemFixed {
+            continue;
+        }
         let Some(&net_number) = item.net_numbers().first() else {
             continue;
         };

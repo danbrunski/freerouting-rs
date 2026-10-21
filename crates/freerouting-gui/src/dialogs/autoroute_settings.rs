@@ -143,6 +143,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "input_fixups.drop_pour_nets",
         "a change to a .kicad_pcb input (K14.3), passed by the KiCad plugin",
     ),
+    (
+        "input_fixups.fixed_pour_classes",
+        "a change to a .kicad_pcb input (K14.4), passed by the KiCad plugin",
+    ),
     ("result_json", "a file path for the CLI's result manifest"),
     (
         "autorouter.save_intermediate_stages",

@@ -216,7 +216,7 @@ K13 (the snapshot is the default).
     - *DIVERGENCES:* "Pours of listed nets dropped on a `.kicad_pcb` input" (it also states what
       a DSN input does with the three settings).
 
-- [ ] **K14.4 — Pours of listed classes as fixed wires.**
+- [x] **K14.4 — Pours of listed classes as fixed wires.**
   - **Change:**
     - For each filled outer-layer zone whose net is in a listed class, the reader's plane is
       dropped.
@@ -234,6 +234,92 @@ K13 (the snapshot is the default).
       `auto`;
     - a DIVERGENCES line;
     - `legacy` keeps connection-parity 7 of 7 if engine code that `legacy` runs changes.
+
+    *Done 2026-10-21:* setting `router.input_fixups.fixed_pour_classes` (class names), beside
+    K14.1-K14.3's (`settings/fields.rs`, JSON `fixedPourClasses`; `tests/settings_defaults.rs`
+    unset under both profiles; CLI help; GUI `CLI_ONLY`; the DSN-input warning names it).
+    - *Where:* `fixups.rs` (`InputFixups::fixed_pour_classes`, `pour_fills`, `apply_with_fills`)
+      runs `dsn_fixups.apply`'s pour loop on the tree: the board's own zones in file order (rule
+      areas and footprint zones out, as `board.Zones()`), F.Cu then B.Cu (`GetLayerSet().Seq()`),
+      filled as `parseZONE` sets `IsFilled` (`(fill yes ...)`, `zones::is_filled`), the class from
+      the network's class lists (last wins, as `Dsn.net_class`), `drop_pour_nets` first (dropping
+      wins); each `fill_rects` rectangle gives a `_wire` path (`fill_wires.rs`, ported in
+      `4c1fd8e`), `(type fix)`, net and layer as named, put first in the wiring; the planes of each
+      covered `(net, layer)` go. The fill is the file's `(filled_polygon ...)` (`zones::read_fills`,
+      `parseOutlinePoints`' points, `nm / 1e6` as `pcbnew.ToMM`), read again in
+      `job::prepare::apply_input_fixups` through `io::kicad::read_pour_fills` (hash-checked as the
+      K08 writer is) only when the setting is set. An unknown class is an error naming it.
+    - *Recorded expectation:* `tools/kicad-reader/k14_fixed_pours.py` (no pcbnew; rerun:
+      `python3 -I tools/kicad-reader/k14_fixed_pours.py`) applies `dsn_fixups.apply`, loaded by
+      path, to the committed `k14-fixups.kicad10.dsn` and `k14-fixups.board.json`:
+      `k14-fixups.fixed-pours.dsn` (all four, 44 wires, 3 outer planes removed),
+      `k14-fixups.fixed-pours-only.dsn` (44 wires, 1 plane) and `k14-fixups.fixed-pours-default.dsn`
+      (`kicad_default` and Power: 317 wires for 3 pours). `auto_fixed_pour_classes` on the board
+      facts gives `["Power"]` (VBUS, priority 1, over GND's priority-0 pour on F.Cu; GND is in
+      `kicad_default` on this fixture), and the script checks the board's classes give the same.
+      `k14-fixups.fixed.dsn` is unchanged.
+    - *Port test:* `crates/freerouting-kicad/tests/fill_wires.rs` (landed in `4c1fd8e`), 6 passed.
+    - *Reader test:* `cargo test -p freerouting-kicad --test k14_fixups`: 25 passed.
+      `fixed_pours_equal_the_fixed_up_export` (the wiring equals the parsed `fixed-pours.dsn`
+      exactly: 44 wires, net, layer, width and both points, in order; no difference, so no bound
+      needed, the integers come from `um`; planes, classes and layer types equal too),
+      `fixed_pours_alone_equal_the_fixed_up_export`, `several_fixed_pours_come_in_the_plugins_zone_order`
+      (317 wires), `a_dropped_net_is_not_covered_by_fixed_wires`, `an_unfilled_pour_keeps_its_plane`,
+      `the_fills_read_from_the_file_equal_the_plugins_board_facts` (every outer fill point equals
+      the board facts' `f64`), `an_unknown_fixed_pour_class_is_an_error_that_names_it`,
+      `engine::an_unknown_fixed_pour_class_fails_the_job_naming_it`,
+      `engine::a_dsn_job_ignores_the_settings_with_a_warning` (now with the fourth setting).
+      RED: with the pour loop returning nothing, 19 passed, 4 failed (the four export
+      comparisons); GREEN 23, then 25 with the engine tests.
+    - *Route test, every output:* the session writer already leaves `SYSTEM_FIXED` items out
+      (`ses_writer::session_nets`), which is how the DSN path keeps the wires out of
+      `ImportSpecctraSES`; the reader's `(type fix)` wires are `SYSTEM_FIXED` too. The `.kicad_pcb`
+      writer did not: a release run of the fixture with the setting wrote 90 segments, 44 of them the
+      fill wires. `io::kicad::final_copper` now skips `SYSTEM_FIXED` traces (a locked original, which
+      the K08 diff keeps anyway, or a fill wire); the same run then writes 46 segments, none of the
+      fill widths, and its session's 37 paths include none of the 44 (checked by value). Tests:
+      `k14_fixups.rs::engine::the_fixed_pour_wires_are_on_the_board_and_in_no_output` (the board has
+      VBUS `SYSTEM_FIXED` traces on F.Cu; the session has no wire and equals the one without the
+      setting; the rendered `.kicad_pcb` equals the input; RED with the filter off: "a fill wire
+      became a track") and `crates/freerouting-cli/tests/cli_k14_fixed_pours.rs` (2 passed:
+      `-do fixed.ses+fixed.kicad_pcb+fixed.dsn`, the `.dsn` holds 44 `(type fix)` wires, the session
+      none, the `.kicad_pcb` equals the input; the unknown class fails the run). The reader's track
+      handling (`tracks.rs`) reads only `segment`/`arc`, and the plugin's `fix_existing` locks
+      pcbnew's tracks before the snapshot; the fill wires are made from zones after both, so neither
+      can count them, and `restore_copper` sees only pcbnew's tracks and the session's.
+    - *Plugin:* `dsn_fixups.auto_fixed_pour_classes_of_board` (the board's `classes`),
+      `resolve_on_board` resolves `fixed_pour_classes`; `snapshot_fixups` passes
+      `--router.input_fixups.fixed_pour_classes=Power` in `wires` mode, named or `auto`;
+      `snapshot_engine_args` resolves `auto` from the board in `engine` mode and passes
+      `--router.plane_obstacle_net_classes=Power`; `input_conflicts` returns `[]` (kept for K14.5,
+      as are K13.7's two DSN rules). Tests (`test_snapshot_fixups.py`):
+      `test_the_recorded_fixed_pour_exports_are_the_dsn_fixups_of_the_recorded_export`,
+      `test_auto_on_the_snapshot_gives_the_dsn_paths_lists` (board and DSN agree, `["Power"]`),
+      `test_the_flags_carry_the_settings_as_the_dsn_fixup_writes_them`,
+      `test_the_snapshot_passes_the_fixed_pour_classes_explicit_or_auto`,
+      `test_engine_pours_on_the_snapshot_resolve_auto_from_the_board`,
+      `test_the_router_lays_the_fixed_pour_wires_and_writes_none` (against the router); the refusal
+      tests became acceptance tests (`test_snapshot.py::test_the_fixed_pour_wires_no_longer_refuse_the_snapshot`,
+      `test_no_dsn_rewrite_refuses_the_default_snapshot`,
+      `test_engine_and_wire_pours_named_or_auto_work_on_a_snapshot`,
+      `test_headless_route_takes_the_fixed_pour_classes_on_a_snapshot`,
+      `test_the_form_accepts_every_dsn_option_on_a_snapshot`,
+      `test_route_dialog.py::test_a_snapshot_route_passes_the_fixed_pour_classes_to_the_router`,
+      `test_board_input_default.py::test_the_note_names_no_fixup_that_keeps_the_snapshot_from_running`:
+      `input_note` has no DSN line now, and
+      `test_input_choice.py::test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_what_blocks_it`).
+      RED: these against main's plugin modules, 14 failed. GREEN: `pytest kicad-plugin/tests`
+      with `FREEROUTING_RS_BIN` at this tree's release build, 614 passed, 6 skipped.
+    - *Difference between the paths:* none on the fixture (exact). The plugin walks pcbnew's zones
+      in memory, the reader the saved file's; they agree once the board was loaded from a file KiCad
+      saved, and a zone drawn in the session before the snapshot could change only the wires' order
+      (`fixups.rs` docs).
+    - *DIVERGENCES:* "Pours of listed classes as fixed wires on a `.kicad_pcb` input"
+      (freerouting-kicad); the K14.3 line now says all four settings are ignored on a DSN input.
+    - *legacy:* the setting is unset under both profiles and `final_copper` runs only for a
+      `.kicad_pcb` output; still, `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes`: 7 of 7 exact, PARITY OK. `cargo test --workspace
+      --no-fail-fast`: 2838 passed, 0 failed.
 
 - [ ] **K14.5 — The plugin stops sending these boards to the DSN.** Once K14.1–K14.4 have landed:
   - **Change:**

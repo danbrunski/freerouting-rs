@@ -280,17 +280,13 @@ def test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_wh
     why, and the snapshot was refused only at Route."""
     make_dialog, ui, work = env
     dialog = make_dialog("route", saved=CANARY_SAVED)
-    assert dialog.board_input.GetSelection() == 0
-    assert dialog.input_note.label == f"{FIXED} needs KiCad's DSN export: turn it off to route the board snapshot."
+    assert dialog.board_input.GetSelection() == 0  # K13.7's load rule, until K14.5
+    # K14.4: no fix-up needs the DSN export any more, so the note names none
+    assert dialog.input_note.label == ""
     dialog.board_input.SetSelection(1)
     dialog.on_input_changed(None)
-    assert dialog.input_note.label.split("\n")[0] == (
-        f"The board snapshot cannot apply {FIXED}: turn it off, or choose KiCad's DSN export."
-    )
-    for box in (dialog.widths, dialog.fixed_pours, dialog.drop_pours):  # each text box calls on_input_changed
-        box.SetValue("")
-        dialog.on_input_changed(None)
     assert dialog.input_note.label == options.input_ignored_note(options.profile_defaults())
+    assert FIXED not in dialog.input_note.label
     dialog.on_route(None)
     assert len(ui.snapshots) == 1 and ui.exports == []
     assert ui.messages[-1][0].startswith("Routed and imported the result into the board.")

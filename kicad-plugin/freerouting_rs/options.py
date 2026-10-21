@@ -668,11 +668,10 @@ def _form_k09(options, values, errors, number):
 
 
 # The K09 options that rewrite the DSN text, by the name the dialog shows
-# (K10.4). A `.kicad_pcb` input has no DSN text to rewrite, and the reader's
-# tree has no form of these yet, so `board_input = kicad_pcb` refuses them,
-# except `edge_and_pad_keepouts` (K13.7): the reader writes those keepouts
-# itself, so on the snapshot that option is ignored, not refused
-# (`input_ignored`).
+# (K10.4). A `.kicad_pcb` input has no DSN text to rewrite; since K14 the
+# router's reader applies four of them to its tree (`input_conflicts` refuses
+# none), and `edge_and_pad_keepouts` is ignored there, not refused (K13.7): the
+# reader writes those keepouts itself (`input_ignored`).
 DSN_REWRITE_LABELS = {
     "class_widths": "Class widths",
     "fixed_pour_classes": "Fixed pour classes",
@@ -708,19 +707,15 @@ def input_conflicts(opts):
     a list, for `opts.board_input == "kicad_pcb"`; empty for a DSN input or
     when none is on.
 
-    Only `fixed_pour_classes` in `wires` mode or as `auto` is left (K14.4).
-    `fixed_pour_classes` in `engine` mode is allowed when the classes are
-    named: it is the engine flag `--router.plane_obstacle_net_classes`, which
-    does not touch the input. `class_widths`, `drop_pour_nets` and
-    `route_on_plane_layers` work on the snapshot since K14.1-K14.3: the
-    router's `.kicad_pcb` reader applies them (`router.input_fixups.*`,
-    `export_flow.snapshot_fixups`), `auto` resolved from the board."""
-    if opts.board_input != INPUT_KICAD_PCB:
-        return []
-    out = []
-    if opts.fixed_pour_classes and (opts.fixed_pour_mode == "wires" or opts.fixed_pour_classes == AUTO):
-        out.append(DSN_REWRITE_LABELS["fixed_pour_classes"])
-    return out
+    None is left since K14.4, so the list is always empty; K14.5 decides what
+    becomes of the function. `class_widths`, `drop_pour_nets`,
+    `route_on_plane_layers` (K14.1-K14.3) and `fixed_pour_classes` in `wires`
+    mode (K14.4) work on the snapshot: the router's `.kicad_pcb` reader
+    applies them (`router.input_fixups.*`, `export_flow.snapshot_fixups`),
+    `auto` resolved from the board. `fixed_pour_classes` in `engine` mode is
+    the engine flag `--router.plane_obstacle_net_classes`, `auto` resolved
+    from the board too (`export_flow.snapshot_engine_args`)."""
+    return []
 
 
 # The options that are on and do nothing on a `.kicad_pcb` input, by dialog

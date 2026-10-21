@@ -21,6 +21,12 @@ const BOARD: &str = include_str!("data/k14-fixups.kicad_pcb");
 const PROJECT: &str = include_str!("data/k14-fixups.kicad_pro");
 const EXPORT: &str = include_str!("data/k14-fixups.kicad10.dsn");
 const FIXED: &str = include_str!("data/k14-fixups.fixed.dsn");
+// K14.4: `tools/kicad-reader/k14_fixed_pours.py` (no pcbnew) applies `dsn_fixups.apply`
+// to the export above with the plugin's board facts `k14-fixups.board.json`.
+const FIXED_POURS: &str = include_str!("data/k14-fixups.fixed-pours.dsn");
+const FIXED_POURS_ONLY: &str = include_str!("data/k14-fixups.fixed-pours-only.dsn");
+const FIXED_POURS_DEFAULT: &str = include_str!("data/k14-fixups.fixed-pours-default.dsn");
+const BOARD_FACTS: &str = include_str!("data/k14-fixups.board.json");
 
 fn read() -> KicadRead {
     read_with("board.dsn", BOARD, Some(PROJECT), ReadOptions::default()).unwrap()
@@ -36,6 +42,7 @@ fn all_three() -> InputFixups {
         class_widths: vec![("Power".into(), 600.0), ("Switch".into(), 800.0)],
         route_on_plane_layers: vec!["In2.Cu".into()],
         drop_pour_nets: vec!["GND".into()],
+        fixed_pour_classes: Vec::new(),
     }
 }
 
@@ -324,6 +331,212 @@ fn the_setting_lists_parse_and_bad_entries_are_errors() {
     }
 }
 
+// ---- K14.4: pours of listed classes as fixed wires ------------------------------------
+
+fn wiring(p: &Pcb) -> Vec<freerouting_dsn::ast::WiringItem> {
+    p.wiring
+        .as_ref()
+        .map(|w| w.items.clone())
+        .unwrap_or_default()
+}
+
+fn with_fixed_pours(base: InputFixups, classes: &[&str]) -> InputFixups {
+    let classes: Vec<String> = classes.iter().map(|c| c.to_string()).collect();
+    base.with_fixed_pour_classes(&classes)
+}
+
+fn fixed_pour_tree(fixups: &InputFixups) -> (Pcb, Vec<String>) {
+    let mut pcb = read().pcb;
+    let fills = fixups::pour_fills(BOARD).unwrap();
+    let log = fixups::apply_with_fills(&mut pcb, fixups, &[], &fills).unwrap();
+    (pcb, log)
+}
+
+/// The wire integers in the order `_wire` writes them, for messages.
+fn wire_numbers(items: &[freerouting_dsn::ast::WiringItem]) -> Vec<(String, String, Vec<f64>)> {
+    use freerouting_dsn::ast::{Shape, WiringItem};
+    items
+        .iter()
+        .filter_map(|i| match i {
+            WiringItem::Wire(w) => Some(w),
+            _ => None,
+        })
+        .map(|w| match &w.shapes[..] {
+            [
+                Shape::Path {
+                    layer: LayerRef::Named(l),
+                    width,
+                    points,
+                },
+            ] => (
+                w.net.as_ref().map(|n| n.name.clone()).unwrap_or_default(),
+                l.clone(),
+                std::iter::once(*width)
+                    .chain(points.iter().flat_map(|p| [p.x, p.y]))
+                    .collect(),
+            ),
+            other => panic!("not one path: {other:?}"),
+        })
+        .collect()
+}
+
+/// The reader's fill of each outer pour is the plugin's (`kicad_board._zones`, pcbnew's
+/// `GetFilledPolysList` after the refill), point for point: the same `f64` millimetres.
+#[test]
+fn the_fills_read_from_the_file_equal_the_plugins_board_facts() {
+    let facts: serde_json::Value = serde_json::from_str(BOARD_FACTS).unwrap();
+    let outer: Vec<_> = facts["zones"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|z| z["outer"].as_bool().unwrap())
+        .collect();
+    let fills = fixups::pour_fills(BOARD).unwrap();
+    assert_eq!(fills.len(), outer.len());
+    assert_eq!(fills.len(), 3, "GND F.Cu, VBUS F.Cu, GND B.Cu");
+    for (fill, z) in fills.iter().zip(&outer) {
+        assert_eq!(fill.net, z["net"].as_str().unwrap());
+        assert_eq!(fill.layer, z["layer"].as_str().unwrap());
+        assert_eq!(fill.filled, z["filled"].as_bool().unwrap());
+        let chains: Vec<Vec<(f64, f64)>> = z["fill"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| {
+                c.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|p| (p[0].as_f64().unwrap(), p[1].as_f64().unwrap()))
+                    .collect()
+            })
+            .collect();
+        assert_eq!(fill.chains, chains, "{} on {}", fill.net, fill.layer);
+    }
+}
+
+/// All four fix-ups: the tree's wiring (count, net, layer, width and coordinates, in
+/// order: exact, the wires' integers come from `um`), planes, classes and layer types
+/// equal the plugin's fixed-up export, parsed.
+#[test]
+fn fixed_pours_equal_the_fixed_up_export() {
+    let (r, log) = fixed_pour_tree(&with_fixed_pours(all_three(), &["Power"]));
+    let f = parse(FIXED_POURS);
+    assert_eq!(wire_numbers(&wiring(&r)).len(), 44);
+    assert_eq!(wire_numbers(&wiring(&r)), wire_numbers(&wiring(&f)));
+    assert_eq!(wiring(&r), wiring(&f));
+    assert_eq!(plane_list(&r), plane_list(&f));
+    assert!(copper::planes(&r, &f).is_empty());
+    assert_eq!(class_rules(&r), class_rules(&f));
+    assert_eq!(layer_types(&r), layer_types(&f));
+    assert!(
+        log.iter()
+            .any(|l| l == "pours: 44 fixed wires for 1 pour(s) of Power; 1 outer plane(s) removed"),
+        "{log:?}"
+    );
+    // VBUS lost its F.Cu plane and keeps In2.Cu's; GND lost both outer ones
+    assert_eq!(
+        plane_list(&r),
+        [
+            ("GND".to_owned(), "In1.Cu".to_owned()),
+            ("VBUS".to_owned(), "In2.Cu".to_owned()),
+            ("V3V3".to_owned(), "In2.Cu".to_owned())
+        ]
+    );
+}
+
+#[test]
+fn fixed_pours_alone_equal_the_fixed_up_export() {
+    let (r, _) = fixed_pour_tree(&with_fixed_pours(InputFixups::default(), &["Power"]));
+    let f = parse(FIXED_POURS_ONLY);
+    assert_eq!(wiring(&r), wiring(&f));
+    assert_eq!(plane_list(&r), plane_list(&f));
+    assert!(copper::planes(&r, &f).is_empty());
+    // the rest of the tree is the export's
+    let e = parse(EXPORT);
+    assert_eq!(class_rules(&r), class_rules(&e));
+    assert_eq!(layer_types(&r), layer_types(&e));
+}
+
+/// Three pours on two layers: the plugin's zone order (GND F.Cu, VBUS F.Cu, GND B.Cu).
+#[test]
+fn several_fixed_pours_come_in_the_plugins_zone_order() {
+    let fixups = with_fixed_pours(InputFixups::default(), &["kicad_default", "Power"]);
+    let (r, log) = fixed_pour_tree(&fixups);
+    let f = parse(FIXED_POURS_DEFAULT);
+    assert_eq!(wire_numbers(&wiring(&r)).len(), 317);
+    assert_eq!(wiring(&r), wiring(&f));
+    assert_eq!(plane_list(&r), plane_list(&f));
+    assert!(
+        log.iter().any(|l| l
+            == "pours: 317 fixed wires for 3 pour(s) of Power, kicad_default; 3 outer plane(s) \
+                removed"),
+        "{log:?}"
+    );
+}
+
+/// `drop_pour_nets` wins over `fixed_pour_classes`: GND (kicad_default) is dropped, not
+/// covered, as `dsn_fixups.apply` skips a dropped net before it looks at the class.
+#[test]
+fn a_dropped_net_is_not_covered_by_fixed_wires() {
+    let both = InputFixups {
+        drop_pour_nets: vec!["GND".into()],
+        ..InputFixups::default()
+    };
+    let (r, _) = fixed_pour_tree(&with_fixed_pours(both, &["kicad_default", "Power"]));
+    let f = parse(FIXED_POURS);
+    assert_eq!(wiring(&r), wiring(&f));
+    assert_eq!(plane_list(&r), plane_list(&f));
+}
+
+#[test]
+fn an_unknown_fixed_pour_class_is_an_error_that_names_it() {
+    let mut pcb = read().pcb;
+    let fills = fixups::pour_fills(BOARD).unwrap();
+    let fixups = with_fixed_pours(InputFixups::default(), &["Power", "Nope"]);
+    let e = fixups::apply_with_fills(&mut pcb, &fixups, &[], &fills).unwrap_err();
+    assert_eq!(e.setting, "router.input_fixups.fixed_pour_classes");
+    assert!(e.message.contains("Nope"), "{e}");
+    assert_eq!(pcb, read().pcb, "nothing changed");
+    // without the fills the setting cannot apply
+    let e = fixups::apply(
+        &mut pcb,
+        &with_fixed_pours(InputFixups::default(), &["Power"]),
+    );
+    assert_eq!(
+        e.unwrap_err().setting,
+        "router.input_fixups.fixed_pour_classes"
+    );
+}
+
+/// A zone `(fill ...)` without `yes` is not filled (`ZONE::IsFilled`): its pour keeps
+/// its plane and gives no wires, whatever `filled_polygon`s it has.
+#[test]
+fn an_unfilled_pour_keeps_its_plane() {
+    let marker = "(fill yes\n\t\t\t(thermal_gap 0.5)";
+    let at = BOARD.find("(net \"VBUS\")\n\t\t(layer \"F.Cu\")").unwrap();
+    let rel = BOARD[at..].find(marker).unwrap();
+    let text = format!(
+        "{}(fill{}",
+        &BOARD[..at + rel],
+        &BOARD[at + rel + "(fill yes".len()..]
+    );
+    let fills = fixups::pour_fills(&text).unwrap();
+    assert!(
+        !fills[1].filled && fills[1].chains.is_empty(),
+        "{:?}",
+        fills[1].net
+    );
+    let mut pcb = read().pcb;
+    let fixups = with_fixed_pours(InputFixups::default(), &["Power"]);
+    let log = fixups::apply_with_fills(&mut pcb, &fixups, &[], &fills).unwrap();
+    assert!(wiring(&pcb).is_empty());
+    assert_eq!(plane_list(&pcb), plane_list(&parse(EXPORT)));
+    assert_eq!(
+        log,
+        ["pours: 0 fixed wires for 0 pour(s) of Power; 0 outer plane(s) removed"]
+    );
+}
+
 // ---- the engine: `router.input_fixups.*` in `prepare_job` ------------------------------
 
 mod engine {
@@ -412,9 +625,10 @@ mod engine {
                 (
                     &fixups.class_widths,
                     &fixups.route_on_plane_layers,
-                    &fixups.drop_pour_nets
+                    &fixups.drop_pour_nets,
+                    &fixups.fixed_pour_classes
                 ),
-                (&None, &None, &None),
+                (&None, &None, &None, &None),
                 "{profile:?}"
             );
         }
@@ -488,12 +702,83 @@ mod engine {
         );
     }
 
+    fn with_fixed_pours(mut patch: SettingsPatch, classes: &[&str]) -> SettingsPatch {
+        patch.input_fixups.fixed_pour_classes =
+            Some(classes.iter().map(|s| s.to_string()).collect());
+        patch
+    }
+
+    /// K14.4: the fixed wires reach the board as `SYSTEM_FIXED` traces of VBUS on F.Cu,
+    /// and neither the session nor the `.kicad_pcb` output holds them (the DSN path's
+    /// property: `ImportSpecctraSES` never sees them).
+    #[test]
+    fn the_fixed_pour_wires_are_on_the_board_and_in_no_output() {
+        use freerouting::board::structure::FixedState;
+        use freerouting::io::specctra::{SesStyle, write_ses};
+        let read =
+            freerouting::io::kicad::read_kicad_input(&board_path(), Default::default()).unwrap();
+        let hash = read.source_hash;
+        let mut input = JobInput::new(Vec::new(), "k14-fixups");
+        input.rules = RulesChoice::None;
+        input.set_kicad(read);
+        let plain = prepare_job(&input, &CTX).unwrap();
+        input.cli = Some(with_fixed_pours(SettingsPatch::default(), &["Power"]));
+        let job = prepare_job(&input, &CTX).unwrap();
+        assert!(log_of(&job).iter().any(|l| l
+            == "input fix-up: pours: 44 fixed wires for 1 pour(s) of Power; 1 outer plane(s) \
+                removed"));
+        let vbus = job
+            .board
+            .rules
+            .nets
+            .iter()
+            .find(|n| n.name == "VBUS")
+            .unwrap()
+            .net_number;
+        let fixed: Vec<_> = job
+            .board
+            .items()
+            .filter(|i| i.as_trace().is_some() && i.net_numbers() == [vbus])
+            .collect();
+        assert!(!fixed.is_empty());
+        assert!(fixed.iter().all(
+            |i| i.fixed_state() == FixedState::SystemFixed && i.as_trace().unwrap().layer == 0
+        ));
+        // the board's own copper is the same with and without the wires
+        let traces =
+            |b: &freerouting::board::RoutingBoard| b.items().filter(|i| i.is_trace()).count();
+        assert_eq!(traces(&plain.board), 0);
+        let ses = write_ses(&job.board, "k14-fixups", SesStyle::Java);
+        assert!(!ses.contains("(wire"), "{ses}");
+        assert_eq!(ses, write_ses(&plain.board, "k14-fixups", SesStyle::Java));
+        let (text, _) =
+            freerouting::io::kicad::render_kicad_board(&board_path(), &job.board, Some(hash))
+                .unwrap();
+        assert!(!text.contains("(segment"), "a fill wire became a track");
+        assert_eq!(text, super::BOARD, "nothing to write back");
+    }
+
+    #[test]
+    fn an_unknown_fixed_pour_class_fails_the_job_naming_it() {
+        let patch = with_fixed_pours(SettingsPatch::default(), &["Nope"]);
+        match prepare_job(&kicad_job(patch), &CTX) {
+            Err(JobError::Settings(m)) => assert_eq!(
+                m,
+                "router.input_fixups.fixed_pour_classes: the board has no net class Nope"
+            ),
+            other => panic!("{:?}", other.map(|_| ())),
+        }
+    }
+
     /// A DSN input has no reader's tree: the settings are ignored with one warning, and
     /// the board is KiCad's export as it is (In2.Cu stays a plane layer), even for names
     /// the board does not have.
     #[test]
     fn a_dsn_job_ignores_the_settings_with_a_warning() {
-        let patch = cli(&["In2.Cu", "In9.Cu"], &["Nope=300"], &["GND"]);
+        let patch = with_fixed_pours(
+            cli(&["In2.Cu", "In9.Cu"], &["Nope=300"], &["GND"]),
+            &["Power", "Nope"],
+        );
         let job = prepare_job(&dsn_job(patch), &CTX).unwrap();
         let warnings: Vec<_> = log_of(&job)
             .into_iter()
@@ -503,10 +788,11 @@ mod engine {
             warnings,
             [
                 "router.input_fixups.class_widths, router.input_fixups.route_on_plane_layers, \
-                 router.input_fixups.drop_pour_nets only apply to a .kicad_pcb input; ignored for \
-                 this DSN input"
+                 router.input_fixups.drop_pour_nets, router.input_fixups.fixed_pour_classes only \
+                 apply to a .kicad_pcb input; ignored for this DSN input"
             ]
         );
         assert!(!job.board.layer_structure.layers[2].is_signal);
+        assert_eq!(job.board.items().filter(|i| i.is_trace()).count(), 0);
     }
 }

@@ -247,7 +247,7 @@ fn apply_input_fixups(
     pcb: Option<&mut Cow<'_, Pcb>>,
     log: &mut Vec<LogLine>,
 ) -> Result<(), JobError> {
-    use crate::io::kicad::reader::fixups::{InputFixups, SECTION, apply_with_rules};
+    use crate::io::kicad::reader::fixups::{InputFixups, SECTION, apply_with_fills};
     let section = &patch.input_fixups;
     let list = |v: &Option<Vec<String>>| v.clone().unwrap_or_default();
     let fixups = InputFixups::from_lists(
@@ -255,13 +255,21 @@ fn apply_input_fixups(
         &list(&section.route_on_plane_layers),
         &list(&section.drop_pour_nets),
     )
-    .map_err(|e| JobError::Settings(e.to_string()))?;
+    .map_err(|e| JobError::Settings(e.to_string()))?
+    .with_fixed_pour_classes(&list(&section.fixed_pour_classes));
     if fixups.is_empty() {
         return Ok(());
     }
-    match (input.kicad_source.is_some(), pcb) {
-        (true, Some(tree)) => {
-            let lines = apply_with_rules(tree.to_mut(), &fixups, &input.rules_track_widths)
+    match (&input.kicad_source, pcb) {
+        (Some(source), Some(tree)) => {
+            // K14.4: the fills are read from the file again, for this setting only
+            let fills = if fixups.fixed_pour_classes.is_empty() {
+                Vec::new()
+            } else {
+                crate::io::kicad::read_pour_fills(source)
+                    .map_err(|e| JobError::Settings(format!("{SECTION}.fixed_pour_classes: {e}")))?
+            };
+            let lines = apply_with_fills(tree.to_mut(), &fixups, &input.rules_track_widths, &fills)
                 .map_err(|e| JobError::Settings(e.to_string()))?;
             for line in lines {
                 let level = if line.starts_with("WARNING:") {
@@ -280,6 +288,7 @@ fn apply_input_fixups(
                     !fixups.route_on_plane_layers.is_empty(),
                 ),
                 ("drop_pour_nets", !fixups.drop_pour_nets.is_empty()),
+                ("fixed_pour_classes", !fixups.fixed_pour_classes.is_empty()),
             ]
             .into_iter()
             .filter(|(_, on)| *on)

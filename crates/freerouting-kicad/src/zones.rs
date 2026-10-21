@@ -10,6 +10,19 @@
 //! KiCad's DSN export writes (`zone->IterateWithHoles()`), never the
 //! `filled_polygon`: fills can be stale or absent on a routed board.
 //!
+//! The fill is read for one setting only, K14.4's
+//! `router.input_fixups.fixed_pour_classes` ([`crate::fixups::pour_fills`]),
+//! which covers a pour's fill with fixed wires as the KiCad plugin's DSN
+//! fix-up covers pcbnew's `GetFilledPolysList`: [`is_filled`] is
+//! `ZONE::IsFilled` as `parseZONE` sets it (a `yes` in the zone's
+//! `(fill ...)` list), and [`read_fills`] the outlines of each
+//! `(filled_polygon (layer L) [(island)] (pts ...))`, one outline per list, in
+//! file order, with `parseOutlinePoints`'s points (the outline's
+//! [`read_chain`]). A `filled_polygon` without a layer is on the zone's first
+//! layer in KiCad's layer-id order (`GetFirstLayer`, legacy single-layer
+//! zones). The plugin refills the zones before it saves the snapshot (K12), so
+//! the file's fill is the one the DSN path reads from pcbnew.
+//!
 //! Defaults come from `ZONE::ZONE` and `ZONE_SETTINGS::ZONE_SETTINGS`
 //! (`zone_settings.cpp`): tracks, vias and pads `not_allowed`, footprints and
 //! copper pour `allowed`. A `(keepout ...)` child resets pads and footprints
@@ -177,7 +190,7 @@ fn append_point(chain: &mut Vec<Pt>, p: Pt) {
 
 /// `parseOutlinePoints` for one `(polygon (pts ...))`. Returns the chain and
 /// the number of arcs in it.
-fn read_chain(pts: NodeRef<'_>) -> (Vec<Pt>, u32) {
+pub(crate) fn read_chain(pts: NodeRef<'_>) -> (Vec<Pt>, u32) {
     let mut chain: Vec<Pt> = Vec::new();
     let mut arcs = 0;
     for item in pts.items().skip(1).filter(|i| i.is_list()) {
@@ -379,4 +392,43 @@ pub fn make_plane(
             clearance_class: None,
         },
     }
+}
+
+/// `ZONE::IsFilled` as `parseZONE` sets it: the zone's `(fill ...)` list has the
+/// atom `yes` (`(fill yes (thermal_gap ...) ...)`). A zone without it is not
+/// filled, whatever `filled_polygon`s it has.
+pub fn is_filled(zone: NodeRef<'_>) -> bool {
+    zone.children("fill").any(|fill| {
+        fill.items()
+            .skip(1)
+            .any(|i| !i.is_list() && i.text() == "yes")
+    })
+}
+
+/// The `(filled_polygon ...)` outlines of a zone, in file order, each with the
+/// copper position (0 top) of its layer: `(layer L)` resolved by `map`, or
+/// `first_layer` without one. A polygon on a layer that is not one copper layer
+/// of the board is left out (`ZONE::GetFilledPolysList` is asked only for the
+/// zone's own copper layers).
+pub fn read_fills(
+    zone: NodeRef<'_>,
+    map: &ZoneLayerMap,
+    first_layer: Option<usize>,
+) -> Vec<(usize, Vec<Pt>)> {
+    let count = map.layers.count();
+    let mut out = Vec::new();
+    for fp in zone.children("filled_polygon") {
+        let layer = match fp.child("layer").and_then(|l| l.str_value(1)) {
+            Some(name) => map.resolve(&name).and_then(|mask| {
+                let at = cu_stack_order(mask, count);
+                (at.len() == 1).then(|| at[0])
+            }),
+            None => first_layer,
+        };
+        let (Some(layer), Some(pts)) = (layer, fp.child("pts")) else {
+            continue;
+        };
+        out.push((layer, read_chain(pts).0));
+    }
+    out
 }
