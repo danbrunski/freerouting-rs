@@ -9,6 +9,16 @@
 //! on a side when its layers name that side's mask (`F.Mask`, `B.Mask`,
 //! `*.Mask`), as the file has them (a back footprint's pads already say
 //! `B.Mask`). The DSN carries none of this.
+//!
+//! Q22.12: KiCad's DRC (`solder_mask_bridge`) also keeps copper of another
+//! net `solder_mask_to_copper_clearance` (`m_SolderMaskToCopperClearance`,
+//! [`crate::project::Project::solder_mask_to_copper`], default 0) from an
+//! aperture. [`expansion`] folds it in: a side with an aperture expands by
+//! margin + clearance (at least 0), so the router (`job::solder_mask`) and
+//! Q20's output check (`drc::board_rules`, which reads the same
+//! `router.solder_mask_expansions`) both work on the aperture grown by the
+//! clearance, with no setting of its own. The plugin folds it the same way
+//! (`kicad_board.mask_expansions`). With 0 nothing changes.
 
 use crate::sexpr::NodeRef;
 use crate::units::nm;
@@ -93,11 +103,13 @@ pub fn read_masks(board: NodeRef<'_>) -> Vec<FootprintMasks> {
 }
 
 /// The expansion per side of pad `pad` of `fp` (nm, 0 for no aperture or a
-/// margin at or below 0).
-pub fn expansion(fp: &FootprintMasks, pad: usize, board_nm: i32) -> (i32, i32) {
+/// margin at or below 0), grown by `clearance_nm` (Q22.12: the board's
+/// `solder_mask_to_copper_clearance`; module docs).
+pub fn expansion(fp: &FootprintMasks, pad: usize, board_nm: i32, clearance_nm: i32) -> (i32, i32) {
     let Some(p) = fp.pads.get(pad) else {
         return (0, 0);
     };
-    let e = p.margin.or(fp.margin).unwrap_or(board_nm).max(0);
+    let margin = p.margin.or(fp.margin).unwrap_or(board_nm);
+    let e = margin.saturating_add(clearance_nm.max(0)).max(0);
     (if p.front { e } else { 0 }, if p.back { e } else { 0 })
 }

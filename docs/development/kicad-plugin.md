@@ -170,6 +170,7 @@ field they lack takes the profile's default):
   KiCad 10's `IsAnyFill` stands in for the removed `IsFilled`); `export_flow.solder_mask_args` passes the pads whose mask
   aperture reaches past the DSN's smallest class clearance as `--router.solder_mask_expansions`
   (pocketsdr-v3-0: its 9 test points, 0.1016 mm on B.Mask). Both log one line in `plugin.log`.
+  Both grow by the board's `m_SolderMaskToCopperClearance` (Q22.12; 0 changes nothing).
   Tests: `test_edge_graphics.py`, `test_solder_mask.py`.
 - Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
   `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),

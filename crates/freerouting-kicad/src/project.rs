@@ -172,6 +172,11 @@ pub struct Project {
     pub max_error: i32,
     /// `board.design_settings.rules.min_hole_clearance`, nm (default 0.25 mm).
     pub hole_clearance: i32,
+    /// `board.design_settings.rules.solder_mask_to_copper_clearance`
+    /// (`m_SolderMaskToCopperClearance`), nm (KiCad's default 0; a negative
+    /// value counts as 0). Q22.12: [`crate::mask`] and
+    /// [`crate::edge_keepouts::mask_polygons`] grow the mask apertures by it.
+    pub solder_mask_to_copper: i32,
     /// Board Setup's minimum manufacturing rules (Q18); KiCad's defaults
     /// where the file leaves them out, unknown where it sets them to 0.
     pub minimums: BoardMinimums,
@@ -189,6 +194,7 @@ impl Default for Project {
             assignments: Vec::new(),
             max_error: mm_to_nm(0.005),
             hole_clearance: mm_to_nm(0.25),
+            solder_mask_to_copper: 0,
             minimums: BoardMinimums::default(),
             notes: Vec::new(),
         }
@@ -241,6 +247,9 @@ impl Project {
             }
             if let Some(v) = mm(rules, "min_hole_clearance") {
                 p.hole_clearance = v;
+            }
+            if let Some(v) = mm(rules, "solder_mask_to_copper_clearance") {
+                p.solder_mask_to_copper = v.max(0);
             }
             p.minimums = BoardMinimums::of_rules(rules);
         }

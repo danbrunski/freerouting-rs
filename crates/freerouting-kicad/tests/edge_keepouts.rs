@@ -171,3 +171,75 @@ fn the_boards_mask_apertures_become_keepouts_on_their_copper_side() {
     let back = freerouting_dsn::Pcb::parse(&r.pcb.to_dsn()).unwrap();
     assert_eq!(masks(&back.structure.unwrap().keepouts).len(), 3);
 }
+
+fn span(points: &[(f64, f64)]) -> ((f64, f64), (f64, f64)) {
+    points.iter().fold(
+        ((f64::MAX, f64::MIN), (f64::MAX, f64::MIN)),
+        |((x0, x1), (y0, y1)), p| ((x0.min(p.0), x1.max(p.0)), (y0.min(p.1), y1.max(p.1))),
+    )
+}
+
+fn mask_pro(clearance_mm: f64) -> String {
+    format!(
+        r#"{{"board": {{"design_settings": {{"rules": {{"solder_mask_to_copper_clearance": {clearance_mm}}}}}}}}}"#
+    )
+}
+
+/// Q22.12: the `.kicad_pro`'s `solder_mask_to_copper_clearance` grows every
+/// board mask aperture by it; 0 (KiCad's default, as with no key) keeps
+/// Q18.7's keepouts byte for byte.
+#[test]
+fn the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance() {
+    let plain = masks(&read(MASKS, None));
+    assert_eq!(masks(&read(MASKS, Some(&mask_pro(0.0)))), plain);
+    let no_key = r#"{"board": {"design_settings": {"rules": {"max_error": 0.005}}}}"#;
+    assert_eq!(masks(&read(MASKS, Some(no_key))), plain);
+    let grown = masks(&read(MASKS, Some(&mask_pro(0.05))));
+    let close = |a: f64, b: f64| (a - b).abs() < 1e-6;
+    // the filled polygon: its body as it was, then a rectangle within 0.05 mm
+    // of each side, reaching 0.05 mm past both ends
+    assert_eq!(grown[0], plain[0]);
+    let square: Vec<(f64, f64)> = grown[1..5]
+        .iter()
+        .inspect(|k| assert_eq!(k.0, "F.Cu"))
+        .flat_map(|k| k.1.clone())
+        .collect();
+    let ((x0, x1), (y0, y1)) = span(&square);
+    assert!(close(x0, 9950.0) && close(x1, 20050.0), "{square:?}");
+    assert!(close(y0, -20050.0) && close(y1, -9950.0), "{square:?}");
+    for k in &grown[1..5] {
+        let ((a, b), (c, d)) = span(&k.1);
+        // each strip is 0.1 mm across, the side's length plus 0.1 mm long
+        let (w, h) = (b - a, d - c);
+        assert!(close(w.min(h), 100.0) && close(w.max(h), 10100.0), "{k:?}");
+    }
+    // the filled circle on B.Cu: its body, then strips around its chords whose
+    // inner edge lies 0.05 mm (plus the maximum error) outside the 2 mm circle
+    assert_eq!(grown[5], plain[1]);
+    let circle: Vec<_> = grown.iter().filter(|k| k.0 == "B.Cu").skip(1).collect();
+    assert!(circle.len() > 16);
+    let inside = |poly: &[(f64, f64)], p: (f64, f64)| {
+        let crosses: Vec<f64> = poly
+            .windows(2)
+            .map(|w| (w[1].0 - w[0].0) * (p.1 - w[0].1) - (w[1].1 - w[0].1) * (p.0 - w[0].0))
+            .collect();
+        crosses.iter().all(|c| *c >= 0.0) || crosses.iter().all(|c| *c <= 0.0)
+    };
+    for i in 0..360 {
+        let a = f64::from(i).to_radians();
+        let p = (35000.0 + 2049.9 * a.cos(), -25000.0 + 2049.9 * a.sin());
+        assert!(circle.iter().any(|k| inside(&k.1, p)), "{p:?} uncovered");
+    }
+    for k in &circle {
+        for p in &k.1 {
+            let r = (p.0 - 35000.0).hypot(p.1 + 25000.0);
+            assert!(r < 2120.0, "a strip corner at {r} µm");
+        }
+    }
+    // the 0.4 mm line: the rectangle within 0.2 + 0.05 mm of it
+    let line = &grown.last().unwrap().1;
+    let ((x0, x1), (y0, y1)) = span(line);
+    assert!(close(x0, 4750.0) && close(x1, 15250.0), "{line:?}");
+    assert!(close(y0, -30250.0) && close(y1, -29750.0), "{line:?}");
+    assert_eq!(grown.len(), 1 + 4 + 1 + circle.len() + 1);
+}

@@ -404,3 +404,37 @@ def test_kicad_10_says_any_fill_instead_of_filled():
     ring = [nm(*q) for q in APERTURE]
     board = Board([Kicad10Shape(p.SHAPE_T_POLY, p.F_Mask, 0, poly=PolySet([ring]), filled=True)], outline=[RING])
     assert [s["filled"] for s in kicad_board.edge_graphics(board, p)["shapes"]] == [True]
+
+
+# Q22.12: the board's solder-mask-to-copper clearance grows the mask apertures
+
+
+def test_the_mask_to_copper_clearance_grows_each_mask_shape():
+    plain, _ = edge_graphics.apply(TWO, facts(mask_shape("ring", APERTURE)))
+    zero = dict(facts(mask_shape("ring", APERTURE)), mask_to_copper_mm=0.0)
+    assert edge_graphics.apply(TWO, zero)[0] == plain
+    grown, log = edge_graphics.apply(TWO, dict(facts(mask_shape("ring", APERTURE)), mask_to_copper_mm=0.05))
+    ks = mask_keepouts(grown)
+    # the body as it was, then a rectangle within 0.05 mm of each side
+    assert ks[0] == mask_keepouts(plain)[0] and len(ks) == 1 + 4
+    strips = [corners(k)[:-1] for k in ks[1:]]
+    xs = [x for s in strips for x, _ in s]
+    ys = [y for s in strips for _, y in s]
+    assert (min(xs), max(xs), min(ys), max(ys)) == (129.95, 140.05, 59.95, 70.05)
+    assert all(any(inside(s, p) for s in strips) for p in [(129.951, 65.0), (135.0, 70.049), (140.049, 60.0)])
+    assert not any(inside(s, (129.94, 65.0)) for s in strips)
+    assert log[-1].endswith("(5 keepouts)")
+    line = mask_shape("polyline", [(120.0, 60.0), (120.0, 80.0)], width=0.4, filled=False)
+    out, _ = edge_graphics.apply(TWO, dict(facts(line), mask_to_copper_mm=0.05))
+    (k,) = mask_keepouts(out)
+    assert corners(k)[:4] == [(119.75, 59.75), (119.75, 80.25), (120.25, 80.25), (120.25, 59.75)]
+
+
+def test_kicad_board_reports_the_mask_to_copper_clearance():
+    class MaskBoard(Board):
+        def GetDesignSettings(self):
+            return SimpleNamespace(m_CopperEdgeClearance=self.edge_nm, m_SolderMaskToCopperClearance=50000)
+
+    p = FAKE_PCBNEW
+    assert kicad_board.edge_graphics(MaskBoard([], outline=[RING]), p)["mask_to_copper_mm"] == 0.05
+    assert kicad_board.edge_graphics(Board([], outline=[RING]), p)["mask_to_copper_mm"] == 0.0

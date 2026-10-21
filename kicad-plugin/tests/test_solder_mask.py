@@ -45,11 +45,16 @@ class Footprint:
 
 
 class Board:
-    def __init__(self, footprints):
-        self.footprints = footprints
+    def __init__(self, footprints, mask_to_copper_nm=None):
+        self.footprints, self.mask_to_copper_nm = footprints, mask_to_copper_nm
 
     def GetFootprints(self):
         return self.footprints
+
+    def GetDesignSettings(self):
+        if self.mask_to_copper_nm is None:  # a pcbnew without the setting
+            return SimpleNamespace()
+        return SimpleNamespace(m_SolderMaskToCopperClearance=self.mask_to_copper_nm)
 
 
 P = PCBNEW
@@ -114,3 +119,48 @@ def test_the_flow_logs_the_flag_and_never_raises(tmp_path):
     assert lines == ["solder mask: 1 pad(s) whose aperture reaches past their clearance kept clear of other nets"]
     args, lines = export_flow.solder_mask_args(object(), PCBNEW, dsn)
     assert args == [] and lines[0].startswith("WARNING: solder-mask apertures skipped: AttributeError")
+
+
+# Q22.12: the board's solder-mask-to-copper clearance grows every pad aperture
+
+
+def test_the_mask_to_copper_clearance_grows_every_aperture_with_a_mask():
+    pads = [
+        Footprint("TP9", [Pad("1", BACK, 101600)]),
+        Footprint("R1", [Pad("1", FRONT, 50800), Pad("2", (P.F_Cu,), 50800)]),  # pad 2 tented
+    ]
+    board = Board(pads)
+    plain = kicad_board.mask_expansions(board, PCBNEW, 0.09)
+    assert plain == [{"ref": "TP9", "pin": "1", "front_mm": 0.0, "back_mm": 0.1016}]
+    assert kicad_board.mask_expansions(board, PCBNEW, 0.09, 0) == plain
+    grown = kicad_board.mask_expansions(board, PCBNEW, 0.09, 50000)
+    assert grown == [
+        {"ref": "TP9", "pin": "1", "front_mm": 0.0, "back_mm": 0.1516},
+        {"ref": "R1", "pin": "1", "front_mm": 0.1008, "back_mm": 0.0},  # 0.0508 + 0.05 past 0.09
+    ]
+    assert options.solder_mask_args(grown) == ["--router.solder_mask_expansions=TP9:1=0,151.6;R1:1=100.8,0"]
+
+
+def test_a_negative_margin_takes_the_clearance_off_first():
+    board = Board([Footprint("U1", [Pad("1", FRONT, -100000)])])
+    assert kicad_board.mask_expansions(board, PCBNEW, 0.09, 50000) == []
+    assert kicad_board.mask_expansions(board, PCBNEW, 0.09, 200000) == [
+        {"ref": "U1", "pin": "1", "front_mm": 0.1, "back_mm": 0.0}
+    ]
+
+
+def test_the_clearance_comes_from_the_design_settings():
+    assert kicad_board.mask_to_copper_nm(Board([], 50000)) == 50000
+    assert kicad_board.mask_to_copper_nm(Board([], 0)) == 0
+    assert kicad_board.mask_to_copper_nm(Board([], -5)) == 0
+    assert kicad_board.mask_to_copper_nm(Board([])) == 0  # KiCad's default
+
+
+def test_the_flow_passes_the_grown_apertures(tmp_path):
+    dsn = tmp_path / "b.dsn"
+    dsn.write_text(TWO, encoding="utf-8")
+    pads = [Footprint("R1", [Pad("1", FRONT, 150000)])]  # within the 0.2 mm floor
+    assert export_flow.solder_mask_args(Board(pads, 0), PCBNEW, dsn) == ([], [])
+    args, lines = export_flow.solder_mask_args(Board(pads, 100000), PCBNEW, dsn)
+    assert args == ["--router.solder_mask_expansions=R1:1=250,0"]
+    assert len(lines) == 1

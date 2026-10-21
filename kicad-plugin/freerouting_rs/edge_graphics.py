@@ -33,6 +33,14 @@ polygon (a circle `SAGITTA_MM` and 1 um wider), its stroke and an unfilled
 shape the rectangles within half the stroke of each piece. The keepout holds
 every net out, the net of the copper under the aperture too.
 
+Q22.12: KiCad's DRC also keeps copper of another net
+`m_SolderMaskToCopperClearance` from an aperture, so `mask_polygons` grows each
+shape by it (`kicad_board.edge_graphics`' `mask_to_copper_mm`): the shape's
+stroke is taken twice the clearance wider, so a filled body gets a rectangle
+within the clearance of each side and a stroke widens by it on each side. With
+0 the keepouts are Q18.7's. The pads' apertures grow by it in
+`kicad_board.mask_expansions`.
+
 The `.kicad_pcb` reader (`crates/freerouting-kicad`, `edge_keepouts.rs`) does
 the same for a `.kicad_pcb` input. Pure Python: the board facts come from
 `kicad_board.edge_graphics`, in KiCad's frame (mm, Y down).
@@ -159,13 +167,18 @@ def mask_polygons(facts):
     (`side` 0 for F.Mask, 1 for B.Mask; mm, KiCad's frame), and the number of
     shapes. A filled shape is its own polygon (a circle `SAGITTA_MM` and 1 um
     wider), its stroke and an unfilled shape the rectangles within half the
-    stroke of each piece."""
+    stroke of each piece. Q22.12: grown by `facts["mask_to_copper_mm"]` (the
+    board's solder-mask-to-copper clearance) through a stroke twice that
+    wider; 0 or absent leaves the shapes as they are."""
     out, shapes = [], 0
+    grow = max(facts.get("mask_to_copper_mm") or 0.0, 0.0)
     for shape in facts.get("shapes") or []:
         if shape["layer"] not in MASK_LAYERS:
             continue
         side = MASK_LAYERS.index(shape["layer"])
         shapes += 1
+        if grow > 0:
+            shape = dict(shape, width_mm=max(shape.get("width_mm", 0.0), 0.0) + 2 * grow)
         body, strokes = shape_polygons(shape)
         out += [(side, poly) for poly in ([body] if body else []) + strokes]
     return out, shapes

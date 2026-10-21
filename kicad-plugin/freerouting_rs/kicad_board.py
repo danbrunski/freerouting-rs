@@ -215,7 +215,7 @@ def edge_graphics(board, pcbnew):
             name = next((n for lid, n in masks if lid is not None and layer == lid), None)
         if name is not None:
             shapes += _edge_shapes(pcbnew, item, name)
-    return {"edge_clearance_mm": edge, "outline_mm": rings, "shapes": shapes}
+    return {"edge_clearance_mm": edge, "outline_mm": rings, "shapes": shapes, "mask_to_copper_mm": _mm(pcbnew, mask_to_copper_nm(board))}
 
 
 def _cast(item):
@@ -293,12 +293,23 @@ def _expansion(pad, layer):
         return pad.GetSolderMaskExpansion()
 
 
-def mask_expansions(board, pcbnew, floor_mm):
+def mask_to_copper_nm(board):
+    """Q22.12: the board's `m_SolderMaskToCopperClearance` (nm, at least 0; 0
+    when this pcbnew has none, KiCad's default)."""
+    value = getattr(board.GetDesignSettings(), "m_SolderMaskToCopperClearance", 0) or 0
+    return max(int(value), 0)
+
+
+def mask_expansions(board, pcbnew, floor_mm, clearance_nm=0):
     """Q18.7: the pads whose solder-mask aperture reaches past `floor_mm` (the
     smallest clearance the router keeps, `Dsn.min_clearance_mm`), as `{"ref",
     "pin", "front_mm", "back_mm"}` in footprint and pad order (0 for a side
     without an aperture or an expansion within the floor). `pin` is the DSN pin name of KiCad's export: the pad number,
-    `<number>@<n>` for its n-th repeat; non-plated holes are not pins."""
+    `<number>@<n>` for its n-th repeat; non-plated holes are not pins.
+    Q22.12: a side with an aperture expands by `GetSolderMaskExpansion` +
+    `clearance_nm` (the board's `m_SolderMaskToCopperClearance`, which KiCad's
+    DRC keeps other nets' copper from the aperture), as the `.kicad_pcb`
+    reader's `mask::expansion` does; 0 leaves the expansions as they were."""
     npth = getattr(pcbnew, "PAD_ATTRIB_NPTH", None)
     sides = ((pcbnew.F_Cu, pcbnew.F_Mask), (pcbnew.B_Cu, pcbnew.B_Mask))
     out = []
@@ -316,7 +327,7 @@ def mask_expansions(board, pcbnew, floor_mm):
                 pin = f"{number}@{seen[number]}"
             per_side = []
             for cu, mask in sides:
-                e = _expansion(pad, cu) if pad.IsOnLayer(cu) and pad.IsOnLayer(mask) else 0
+                e = _expansion(pad, cu) + clearance_nm if pad.IsOnLayer(cu) and pad.IsOnLayer(mask) else 0
                 per_side.append(_mm(pcbnew, e) if _mm(pcbnew, e) > floor_mm else 0.0)
             if any(per_side):
                 out.append({"ref": fp.GetReference(), "pin": pin, "front_mm": per_side[0], "back_mm": per_side[1]})

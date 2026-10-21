@@ -1155,6 +1155,19 @@ compare them on 12 committed boards and the 56-board corpus).
   expansions. Pinned by
   `tests/edge_keepouts.rs::the_boards_mask_apertures_become_keepouts_on_their_copper_side`; the
   `kicad_parity.rs` comparison leaves them out.
+- **Mask apertures grow by the board's solder-mask-to-copper clearance** (Q22.12, `mask`,
+  `edge_keepouts::mask_polygons`, `Project::solder_mask_to_copper`): KiCad's DRC keeps copper of
+  another net `solder_mask_to_copper_clearance` from a mask aperture (`solder_mask_bridge`;
+  fc-rom-vomitter-nescart 0.05 mm, mydevboard and solarmeshtastic 0.005 mm). The reader takes it
+  from the `.kicad_pro` (`board.design_settings.rules`, KiCad's default 0 when the key is
+  missing, a negative value as 0) and folds it into both mask inputs: a pad side with an
+  aperture expands by margin + clearance (at least 0) before the smallest-class-clearance filter,
+  so `router.solder_mask_expansions` and Q20's output check carry the grown aperture with no
+  setting of their own; each board F.Mask / B.Mask shape is taken with a stroke twice the
+  clearance wider (square corners, a superset of the rounded growth). With 0 the DSN and the
+  settings are Q18.7's byte for byte. Pinned by
+  `tests/edge_keepouts.rs::the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance` and
+  `crates/freerouting/tests/solder_mask.rs::the_projects_mask_to_copper_clearance_grows_the_pad_apertures`.
 - **Copper shapes and copper texts are obstacles** (Q22.4, `copper_graphics`): KiCad's DRC
   keeps other copper its clearance from every shape and visible text on a copper layer, and the
   export writes none of them (footprint copper lines only as drawing outline; pcietest had 127
@@ -1685,6 +1698,18 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_edge_graphics.py` (`test_a_filled_front_mask_polygon_keeps_the_top_copper_out_of_it`,
   `test_a_back_mask_shape_goes_on_the_bottom_copper`,
   `test_kicad_board_collects_the_boards_mask_shapes_but_not_the_footprints`).
+- **Mask apertures grow by the board's solder-mask-to-copper clearance** (Q22.12,
+  `kicad_board.mask_to_copper_nm`, `kicad_board.mask_expansions`, `edge_graphics.mask_polygons`):
+  the plugin reads `GetDesignSettings().m_SolderMaskToCopperClearance` (0 when this pcbnew has
+  none) and grows both mask inputs as the `.kicad_pcb` reader does (see freerouting-kicad): each
+  pad side with an aperture by `GetSolderMaskExpansion` + the clearance, before the DSN floor
+  filter, and each board mask shape through a stroke twice the clearance wider
+  (`edge_graphics` facts `mask_to_copper_mm`). With 0 the DSN and the flags are Q18.7's. Pinned
+  by `test_solder_mask.py` (`test_the_mask_to_copper_clearance_grows_every_aperture_with_a_mask`,
+  `test_a_negative_margin_takes_the_clearance_off_first`,
+  `test_the_clearance_comes_from_the_design_settings`, `test_the_flow_passes_the_grown_apertures`)
+  and `test_edge_graphics.py` (`test_the_mask_to_copper_clearance_grows_each_mask_shape`,
+  `test_kicad_board_reports_the_mask_to_copper_clearance`).
 - **Copper shapes and copper texts become obstacles** (Q22.4, `copper_graphics.py`,
   `kicad_board.copper_graphics`, `export_flow.fix_copper_graphics`, always on): after KiCad's
   export, the reader's `copper_graphic` keepouts (see freerouting-kicad), corners rounded to

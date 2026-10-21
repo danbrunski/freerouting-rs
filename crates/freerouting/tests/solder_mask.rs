@@ -243,3 +243,79 @@ fn a_kicad_pcb_input_carries_the_pads_mask_expansions() {
         gap_to_tp(&board, 0)
     );
 }
+
+/// `q18-mask-bridge.kicad_pcb` with a `.kicad_pro` setting
+/// `solder_mask_to_copper_clearance` (none: no project file).
+fn read_with_mask_clearance(clearance_mm: Option<f64>) -> freerouting::io::kicad::KicadInput {
+    use freerouting::io::kicad::{ReadOptions, read_kicad_input};
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!(
+        "q2212-mask-clearance-{}",
+        clearance_mm.map_or("none".to_owned(), |c| c.to_string())
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    let pcb = dir.join("q18-mask-bridge.kicad_pcb");
+    std::fs::copy(repo_root().join(BRIDGE_PCB), &pcb).unwrap();
+    let pro = dir.join("q18-mask-bridge.kicad_pro");
+    match clearance_mm {
+        Some(c) => std::fs::write(
+            &pro,
+            format!(
+                r#"{{"board": {{"design_settings": {{"rules": {{"solder_mask_to_copper_clearance": {c}}}}}}}}}"#
+            ),
+        )
+        .unwrap(),
+        None => {
+            let _ = std::fs::remove_file(&pro);
+        }
+    }
+    read_kicad_input(&pcb, ReadOptions::default()).unwrap()
+}
+
+fn expansions(read: &freerouting::io::kicad::KicadInput) -> Vec<(String, i32, i32)> {
+    read.extras
+        .solder_mask
+        .iter()
+        .map(|e| (format!("{}:{}", e.component, e.pin), e.front_nm, e.back_nm))
+        .collect()
+}
+
+/// Q22.12: the project's `solder_mask_to_copper_clearance` grows each pad's
+/// aperture by it (TP1 0.5 + 0.05 mm); 0 is no project at all; a clearance
+/// that takes the board's 0.05 mm margin past the 0.2 mm class clearance
+/// lists P1 and P2 too. The job routes SIG outside the grown aperture.
+#[test]
+fn the_projects_mask_to_copper_clearance_grows_the_pad_apertures() {
+    let none = expansions(&read_with_mask_clearance(None));
+    assert_eq!(none, vec![("TP1:1".to_owned(), 500_000, 0)]);
+    assert_eq!(expansions(&read_with_mask_clearance(Some(0.0))), none);
+    assert_eq!(
+        expansions(&read_with_mask_clearance(Some(0.05))),
+        vec![("TP1:1".to_owned(), 550_000, 0)]
+    );
+    assert_eq!(
+        expansions(&read_with_mask_clearance(Some(0.2))),
+        vec![
+            ("P1:1".to_owned(), 250_000, 0),
+            ("P2:1".to_owned(), 250_000, 0),
+            ("TP1:1".to_owned(), 700_000, 0)
+        ]
+    );
+    let mut input = JobInput::new(Vec::new(), "q18-mask-bridge");
+    input.set_kicad(read_with_mask_clearance(Some(0.05)));
+    let mut patch = SettingsPatch {
+        profile: Some("legacy".to_string()),
+        ..SettingsPatch::default()
+    };
+    patch.optimizer.enabled = Some(false);
+    patch.autorouter.max_passes = Some(3);
+    input.extra_sources.push((Source::Testing, patch));
+    let prepared = prepare_job(&input, &ResolveContext { cores: 1 }).unwrap();
+    assert_eq!(
+        prepared.settings.solder_mask_expansions.as_deref(),
+        Some("TP1:1=550,0")
+    );
+    let board = route(prepared);
+    assert_eq!(incomplete(&board), 0);
+    let (gap, _) = gap_to_tp(&board, 0);
+    assert!(gap >= 5499.0, "gap {gap}");
+}

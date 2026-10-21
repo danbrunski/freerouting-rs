@@ -12,6 +12,10 @@
 //! KiCad plugin fills it in from pcbnew (`kicad_board.mask_expansions`) and a
 //! `.kicad_pcb` input from the reader (`freerouting_kicad::read::Extras`),
 //! each listing only the pads whose expansion exceeds their own clearance.
+//! Both fold the board's `solder_mask_to_copper_clearance` into the
+//! expansion (Q22.12: KiCad keeps other nets' copper that far from an
+//! aperture), so the listed values are the grown apertures, here and in Q20's
+//! output check (`drc::board_rules`), which reads the same setting.
 //!
 //! [`apply_solder_mask_expansions`] gives each listed pin a clearance class of
 //! its own, `<class>+mask<front>/<back>` (board units): a copy of the pin's

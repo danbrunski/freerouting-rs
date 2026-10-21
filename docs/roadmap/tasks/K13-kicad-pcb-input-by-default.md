@@ -69,7 +69,10 @@ rules).
       it would affect;
     - the `.kicad_pcb` path applies the `.kicad_dru` item-type and hole rules by default, as the
       DSN path does since Q22.5. Today it needs `--apply-design-rules` (K10.3) (decided
-      2026-10-20: the board's own rules reach the router on both inputs).
+      2026-10-20: the board's own rules reach the router on both inputs);
+    - the two inputs filter mask expansions at the smallest class clearance the same way. Today
+      the plugin zeroes each side at or under the floor, and the reader keeps both sides when
+      either exceeds it (found in Q22.12).
 
 - [x] **K13.2 — Existing copper comes back unchanged.** Find which rounding moves the ends of
   existing tracks on `One-Air-Max`. The reader rounds to 0.1 µm and the export to `%.6g`. Make

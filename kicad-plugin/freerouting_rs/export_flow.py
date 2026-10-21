@@ -192,11 +192,12 @@ def fix_copper_graphics(board, pcbnew, dsn):
 def solder_mask_args(board, pcbnew, dsn):
     """Q18.7: the router flag that keeps other nets out of the pads' mask
     apertures (`kicad_board.mask_expansions`), for the pads whose aperture
-    reaches past the smallest clearance of the exported DSN. Returns
+    reaches past the smallest clearance of the exported DSN, grown by the
+    board's solder-mask-to-copper clearance (Q22.12). Returns
     `(args, log_lines)`; never raises."""
     try:
         floor = dsn_fixups.Dsn(_read(dsn)).min_clearance_mm()
-        pads = kicad_board.mask_expansions(board, pcbnew, floor)
+        pads = kicad_board.mask_expansions(board, pcbnew, floor, kicad_board.mask_to_copper_nm(board))
     except Exception as e:  # never block routing on it
         return [], [f"WARNING: solder-mask apertures skipped: {e!r}"]
     if not pads:

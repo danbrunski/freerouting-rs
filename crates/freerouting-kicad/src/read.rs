@@ -300,7 +300,7 @@ pub fn read_with_rules(
                     .push(PinRef::new(component_id.clone(), pin.id.clone()));
             }
             let (front_nm, back_nm) = masks.get(fp_index).map_or((0, 0), |m| {
-                crate::mask::expansion(m, pin.pad_index, board_mask)
+                crate::mask::expansion(m, pin.pad_index, board_mask, project.solder_mask_to_copper)
             });
             if front_nm > 0 || back_nm > 0 {
                 extras.solder_mask.push(crate::mask::PadMaskExpansion {
@@ -644,7 +644,11 @@ pub fn read_with_rules(
     ));
     // Q18.7: the board's own mask apertures, on the copper of their side.
     if let (Some(front), Some(back)) = (copper_names.first(), copper_names.last()) {
-        let masks = crate::edge_keepouts::mask_polygons(&board_shapes, project.max_error);
+        let masks = crate::edge_keepouts::mask_polygons(
+            &board_shapes,
+            project.max_error,
+            project.solder_mask_to_copper,
+        );
         keepouts.extend(crate::edge_keepouts::mask_keepouts(&masks, front, back));
     }
     // Q22.4: copper shapes and texts as keepouts; shapes of a net that has

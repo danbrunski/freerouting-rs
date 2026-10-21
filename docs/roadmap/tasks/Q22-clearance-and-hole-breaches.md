@@ -858,7 +858,7 @@ Sequencing:
       is not floored yet (follow-up).
     - The full Q22.7 rows are graded by Q22.8's registered run, not here.
 
-- [ ] **Q22.12 — Copper keeps the board's solder-mask-to-copper clearance** (added 2026-10-20;
+- [x] **Q22.12 — Copper keeps the board's solder-mask-to-copper clearance** (added 2026-10-20;
   decided 2026-10-20: routing never breaks the board's manufacturing rules). KiCad's
   `solder_mask_to_copper_clearance` (`m_SolderMaskToCopperClearance`, default 0) keeps copper of
   another net that far from a mask aperture. Q18.7's mask keepouts cover only the aperture.
@@ -870,6 +870,44 @@ Sequencing:
       aperture grown by the clearance; with 0, nothing changes;
     - fc-rom routed through the plugin's export: 0 routing-caused `solder_mask_bridge`, with KiCad
       unconnected beside it.
+    - *Amended 2026-10-20* (decided 2026-10-20): fc-rom's clause moves to Q22.16. Its 7
+      routing-caused `solder_mask_bridge` items come from a footprint-level mask aperture,
+      J1's `fp_poly`, which this item's clearance doesn't reach: its pads open 0.05 mm, plus
+      0.05 mm makes 0.1 mm, still under the 0.15 mm Default clearance. The plugin export is
+      byte-identical with and without Q22.12 on fc-rom, mydevboard and solarmeshtastic. This
+      item is met by the tests and by that measurement.
+
+    *Done 2026-10-20* (first written as a Partial note, before the amendment above): built and
+    tested; the fc-rom clause moved to Q22.16, as amended above. Carried by folding, no new setting: the reader (`Project::solder_mask_to_copper` from
+    the `.kicad_pro`'s `board.design_settings.rules.solder_mask_to_copper_clearance`, 0 when
+    missing, a negative value as 0) and the plugin (`kicad_board.mask_to_copper_nm`, from
+    `GetDesignSettings().m_SolderMaskToCopperClearance`) add it to each pad side's expansion
+    (`mask::expansion`, `kicad_board.mask_expansions`: margin + clearance, at least 0, before the
+    smallest-class-clearance filter), so `router.solder_mask_expansions`, `job::solder_mask` and
+    Q20's output check all use the grown aperture; and they take each board F.Mask / B.Mask shape
+    with a stroke twice the clearance wider (`edge_keepouts::mask_polygons`,
+    `edge_graphics.mask_polygons`). The engine is unchanged. Tests, written first (each failed on
+    main 039a859): `crates/freerouting-kicad/tests/edge_keepouts.rs::the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance`
+    (0 and no key give Q18.7's keepouts; 0.05 mm: square 9.95..20.05 mm, line 4.75..15.25 mm,
+    circle covered at 2.0499 mm), `crates/freerouting/tests/solder_mask.rs::the_projects_mask_to_copper_clearance_grows_the_pad_apertures`
+    (TP1 500 000 nm with no project and with 0, 550 000 with 0.05 mm, P1/P2 250 000 and TP1
+    700 000 with 0.2 mm; the job's setting `TP1:1=550,0` and the routed gap ≥ 0.5499 mm),
+    plugin `test_solder_mask.py` (4 new) and `test_edge_graphics.py` (2 new; 0 gives the same DSN
+    text). fc-rom (`tools/kicad-oracle/grade.sh --export plugin {"schema": 5}`, main's release
+    binary in both arms, the engine being unchanged; `--timeout 270`, since a 300 s kill left no
+    SES; `target/orchestrator/q2212/runs/out-{before,after}`): before (main) and after both
+    routing-caused `solder_mask_bridge` 7, `via_dangling` 1, KiCad unconnected 79 (input 424),
+    route 270.73 s / 272.64 s. The exported DSN differs only in its `(pcb "<path>")` line and the
+    router flags are identical: fc-rom's pads open 0.05 mm, + 0.05 = 0.1 mm stays under the
+    0.15 mm Default clearance, and it has no board-level mask shape. mydevboard and
+    solarmeshtastic plugin exports are likewise identical on main and here. Remainder: the 7 are
+    Track–Polygon bridges with J1's footprint `fp_poly` aperture on F.Mask and B.Mask
+    (`cartridge_edge_72`, 93.5 x 11.3 mm over the 72 fingers, whose pads have no mask layer of
+    their own), which Q18.7 leaves to the pads; KiCad caps the type at 199 (192 pre-existing
+    Pad–Polygon + 7), and by geometry 51 routed track segments (48 nets) touch that aperture,
+    against 57 in the designer's own board. Needs a new item for footprint-level mask apertures
+    (operator decision: keepouts that still let each finger's net reach its pad, or accept edge
+    connectors as inherent); parity and gate in the dispatch report.
 
 - [x] **Q22.13 — The grader matches copper on boards that name nets by number** (added
   2026-10-20). In a KiCad 6–9 file (e.g. One-Air-Max, version 20241229), items name their net by
@@ -942,3 +980,23 @@ Sequencing:
     - each part's cost named, from a run with that part alone changed;
     - 0 routing-caused `clearance`, `hole_clearance` and `hole_to_hole` in the after row. If the
       cost stays, say why the engine can't express the exact rule.
+
+- [ ] **Q22.16 — Footprint mask apertures keep other nets out** (added 2026-10-20; decided
+  2026-10-20: routing never breaks the board's manufacturing rules, so no grader exception for
+  edge connectors). fc-rom's J1 (`cartridge_edge_72`) has one `fp_poly` on F.Mask and one on
+  B.Mask, an aperture of 93.5 × 11.3 mm over 72 fingers. The finger pads have no mask layer of
+  their own. Q18.7 leaves footprint mask shapes to the pads, so tracks run through the aperture:
+  7 routing-caused `solder_mask_bridge` items (Track–Polygon) on main e49b89a. KiCad caps the
+  type at 199, so the real count is hidden. By geometry, 51 routed segments of 48 nets touch the
+  aperture. Found in Q22.12.
+  - Footprint mask shapes become keepouts on their copper side, in the plugin and the
+    `.kicad_pcb` reader. A pad inside the aperture keeps a way in for its own net: a track
+    reaches it from the part of the pad outside the aperture (J1's pads extend 2 mm beyond it),
+    or the keepout excludes the pad's own copper. Pick whichever the engine supports. Q20's
+    output check judges against the same shapes.
+  - **Accept:**
+    - plugin and reader tests written first on a fixture: a footprint mask polygon over two pads
+      of different nets; a third net's route stays out; each pad's own net still connects;
+    - fc-rom through the plugin's export, one KiCad grade: 0 routing-caused `solder_mask_bridge`,
+      with KiCad unconnected and route time beside it (main: 79 unconnected, 271 s; use
+      `--timeout 270` or a pass cap, the same in both arms).

@@ -35,6 +35,15 @@
 //! its stroke, or an unfilled shape's, the rectangles within half the width of
 //! each piece. The keepout holds every net out, the net of the copper under
 //! the aperture too.
+//!
+//! Q22.12: KiCad's DRC also keeps copper of another net
+//! `solder_mask_to_copper_clearance` from an aperture, so [`mask_polygons`]
+//! grows each shape by it (the `.kicad_pro`'s value, default 0): the stroke
+//! of the shape is taken `2 x` the clearance wider, so a filled body gets a
+//! rectangle within the clearance of each side (square corners, a superset of
+//! the rounded growth) and a stroke widens by the clearance on each side.
+//! With 0 the keepouts are those of Q18.7. The router keeps its default
+//! clearance from a keepout on top of that, as before.
 
 use freerouting_dsn::ast::{Area, Keepout, KeepoutKind, LayerRef, Point, Shape};
 
@@ -216,8 +225,14 @@ pub fn edge_keepouts(rects: &[[F; 4]], layers: &[String]) -> Vec<Keepout> {
 
 /// Q18.7: the polygons (nm, KiCad's frame) of the board-level F.Mask and
 /// B.Mask shapes of `board_shapes`, each with its side (`true` for B.Mask), in
-/// file order.
-pub fn mask_polygons(board_shapes: &[Graphic], max_error: i32) -> Vec<(bool, Vec<F>)> {
+/// file order. Q22.12: grown by `clearance_nm` (the board's
+/// `solder_mask_to_copper_clearance`) through a stroke `2 * clearance_nm`
+/// wider ([`grown`]); 0 leaves them as they are.
+pub fn mask_polygons(
+    board_shapes: &[Graphic],
+    max_error: i32,
+    clearance_nm: i32,
+) -> Vec<(bool, Vec<F>)> {
     let mut out = Vec::new();
     for g in board_shapes {
         let back = match g.layer.as_str() {
@@ -225,11 +240,28 @@ pub fn mask_polygons(board_shapes: &[Graphic], max_error: i32) -> Vec<(bool, Vec
             "B.Mask" => true,
             _ => continue,
         };
-        let (body, strokes) = shape_polygons(g, max_error);
+        let (body, strokes) = shape_polygons(&grown(g, clearance_nm), max_error);
         out.extend(body.into_iter().map(|b| (back, b)));
         out.extend(strokes.into_iter().map(|s| (back, s)));
     }
     out
+}
+
+/// Q22.12: `g` with its stroke `2 * clearance_nm` wider, so
+/// [`shape_polygons`] covers every point within `clearance_nm` of the
+/// aperture: a filled body stays as it is and its outline gets rectangles
+/// within `clearance_nm` (plus half the stroke) of each piece, reaching as far
+/// past both ends; a stroke grows on each side. `g` itself for 0 or less.
+fn grown(g: &Graphic, clearance_nm: i32) -> std::borrow::Cow<'_, Graphic> {
+    if clearance_nm <= 0 {
+        return std::borrow::Cow::Borrowed(g);
+    }
+    let mut wider = g.clone();
+    wider.width = g
+        .width
+        .max(0)
+        .saturating_add(clearance_nm.saturating_mul(2));
+    std::borrow::Cow::Owned(wider)
 }
 
 /// The filled body of a closed shape (a polygon, rectangle or circle; a
