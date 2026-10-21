@@ -1,7 +1,7 @@
 # Q22 — Routed output keeps the board's copper and hole clearance
 
-Opened 2026-10-20 from the grades of N04.3 and Q16.5 ([archive/N04](archive/N04-contacts-inside-pads.md),
-[archive/Q16](archive/Q16-no-dangling-stubs.md)). Decided 2026-10-20: routing never breaks the
+Opened 2026-10-20 from the grades of N04.3 and Q16.5 ([archive/N04](N04-contacts-inside-pads.md),
+[archive/Q16](Q16-no-dangling-stubs.md)). Decided 2026-10-20: routing never breaks the
 board's manufacturing rules, graded under the board's own rules. Routing-caused `clearance` and
 `hole_clearance` are 0 in every arm.
 
@@ -758,7 +758,7 @@ Sequencing:
     - `cargo test -p freerouting-dev --test prereg_q22`: 5 passed. `cargo fmt --all --check`
       is clean, and `cargo clippy -p freerouting-dev --tests -- -D warnings` is clean.
 
-- [ ] **Q22.8 — Re-measure.** Run Q22.7 as registered (`docs/roadmap/prereg/Q22.json`). It runs
+- [x] **Q22.8 — Re-measure.** Run Q22.7 as registered (`docs/roadmap/prereg/Q22.json`). It runs
   only after Q22.16, Q22.17, Q22.18 and Q22.19 are all `[x]` on main (Q22.19 added 2026-10-20,
   before any number; the registration's candidate is main when Q22.8 runs). Its first amendment,
   written before any route, names the q22 commit and the sha256 of both binaries.
@@ -767,6 +767,136 @@ Sequencing:
     - every guard is 0 in `q22`;
     - the change in KiCad unconnected is given per row, with the rows that Q22.4's obstacles cost
       named.
+  - *Amendment 1 (2026-10-21, after both builds, before any route, grade or kicad-cli run):* the
+    registration's placeholders, filled in. `docs/roadmap/prereg/Q22.json` is unchanged (sha256
+    `43bd85aaeb488de5a5a2a8c9ac440bc07495d4e11106f0a51fcb779ffced1a72`, 0 amendments in its
+    array), so `prereg_q22.rs` keeps its pin.
+    - **Q22_COMMIT = `7538e34e64817014ac1ca422f3af3f13f272b2f8`**, "feat: routed copper leaves
+      room for a zone's thermal spokes (Q22.20)", main when Q22.8 runs (the candidate is "main when
+      Q22.8 runs", decided 2026-10-21, before any number). Beyond Q22.16/Q22.17/Q22.18 it carries
+      Q22.19 (`a33d227`, a net tie's copper keepout lets the tie's nets in) and Q22.20 (`7538e34`,
+      routed copper leaves room for a zone's thermal spokes). `a8b4ae7..7538e34` is 20 commits.
+    - **Binaries** (`cargo build --release -p freerouting-cli`, `CARGO_BUILD_JOBS=2
+      CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0`, one at a time):
+      - before: `Q/target-before/release/freerouting-rs`, sha256
+        `bbacf7b7ea0132816bc9882adb45ebd76d4080c9db7292e09efad564954e738d`, `freerouting-rs 0.1.0
+        (git a8b4ae7daf18)`;
+      - q22: `Q/target-q22/release/freerouting-rs`, sha256
+        `fb03fd2e4a65fa8e3591702d3847abd5be53fb53cf4dd58d6d96c25b7ad6f47a`, `freerouting-rs 0.1.0
+        (git 7538e34e6481)`.
+    - **Grader** (the q22 commit's `tools/kicad-oracle/`, in both trees), sha256: `grade.sh`
+      `3e1f121294a69ca8313408767fb2cab597505f2c584b1ae16374e951cf8756e1`, `oracle_lib.py`
+      `9a3240ed76765da9f4f2ac1cd02dc7916dc44025a91b34b75014476237807622`, `kicad_steps.py`
+      `c24abd10c9dd60177c636f7481b6b54044ebf41877102819f3eb31421d240860`, `via_in_pad.py`
+      `e70eac185cb375fe5ddc07e16a8d5c47875b445ea8ae1ce774ea8c0c4092f0c7`.
+    - **Plugins**: `kicad-plugin/headless_run.py` of before-tree (`a8b4ae7`)
+      `fc42fa56acafbd28f83e6b742147f8594065fdb515a50c4ae07916017bd91559`, of q22-tree
+      `a4f5ce154770de92d68e1f7e5d7a13e13a0fa67c541283dacddc37b2b15789ec`.
+    - **KiCad**: WSL KiCad 10.0.7 (`kicad-cli version` 10.0.7, `kicad_steps.py version` under
+      `python3` 10.0.7).
+    - **Options**: `options.SCHEMA` = 5 at the q22 commit and at `a8b4ae7`, `READABLE_SCHEMAS` =
+      (1, 2, 3, 4, 5) in both; `profile_defaults('enhanced').to_dict()` is `{"schema": 5,
+      "profile": "enhanced"}` in both trees. So the one file `Q/options.json` (sha256
+      `28ca842377b7c65d39de85cecaad65b5c352bf4df32d764c2d50d19ca6cc352e`) serves both arms; the
+      schema did not move.
+    - **Checks** (`trees.steps`): `diff -r Q/before-tree/tools/kicad-oracle
+      Q/q22-tree/tools/kicad-oracle` printed nothing; `git -C Q/before-tree diff --quiet a8b4ae7
+      -- kicad-plugin crates Cargo.toml Cargo.lock` exited 0. `grep -n kicad-plugin
+      Q/q22-tree/tools/kicad-oracle/*.sh Q/q22-tree/tools/kicad-oracle/*.py` finds `grade.sh:16`
+      (a comment), `grade.sh:52` (`HEADLESS=…/kicad-plugin/headless_run.py`) and
+      `kicad_steps.py:18` (a docstring) and `:32` (`PLUGIN_MODULES`, used only at lines 104–121 by
+      `restore_copper` and `import_session`, the bare-export import that `--export plugin` does not
+      run). The q22 grader reads nothing else of `kicad-plugin/`.
+    - **Boards**: all 14 inputs hash as `boards.files`, and each `.kicad_pro`/`.kicad_dru` as
+      `boards.rules_files` (no row has an unregistered `.kicad_dru`).
+    - Q = `/home/thebo/code/freerouting-rs/target/orchestrator/q228`. Runner
+      `Q/run.sh` (sha256 `cf254a5382778e20a7373d2a38c308a1505f1a46bea53a7d0bb6e13770ebf026`):
+      each arm's registered command verbatim, row by row in set order, `before` then `q22`, with
+      stdin from `/dev/null`, a wait while `pgrep -x kicad-cli` prints anything, and then the q22
+      commit's `via_in_pad.py` on `OUT/routed` and `OUT/unrouted`. Ledger `Q/progress.md`.
+  - *Amendment 2 (2026-10-21, after the numbers; changes no number):* step (2) of
+    `keep_rule_by_hand` registers `freerouting-dev gate --records records.json --prereg
+    docs/roadmap/prereg/Q22.json --all-pairs` without `--baseline`; the q22 commit's
+    `freerouting-dev` exits 2 on it ("--baseline is required"; output kept in
+    `Q/gate-all-pairs-registered-cmd.txt`). It was run with `--baseline Q/baseline.json` added,
+    which the tool compares for the primary pair only. Q22.json is hash-pinned and not edited here.
+  - *Done 2026-10-21 (verdict: guards met):* run as registered, one route and one kicad-cli at a
+    time, 28 grade.sh calls (14 rows × 2 arms) from 01:58:16 to 02:37:18 (39.0 min; route time
+    before 855.6 s, q22 1302.1 s). Every grade is `rules` = project and `routing_caused_basis` =
+    copper; no row unjudged, no rerun, no machine crash.
+    - **Gate.** `freerouting-dev` of the q22 commit: `gate --records Q/records.json --baseline
+      Q/baseline.json --prereg docs/roadmap/prereg/Q22.json --write-baseline` 0 refusals, exit
+      0; `gate … --all-pairs` (amendment 2) 0 refusals in both pairs. The verdict pair `before ->
+      q22` has no HARD and no UNGRADED line, so the guards are met. Printed, not used: its paired
+      mark "improved 8/14, regressed 0, neutral 6: FAIL"; the reported pair `q22 -> before` has 8
+      HARD lines, all `before.manufacturing_breaches` (ch32v003 5, cm4-edge-ai 28, fc-rom 7,
+      mydevboard 2, nudac 55, pcietest 252, pocketsdr-v3-0 501, vna-usb-pd 2).
+    - **Table.** unc = KiCad unconnected (input in brackets); mfg = manufacturing_breaches; bm =
+      below_minimum (copper basis); vip = via_in_pad; s = route_seconds; ab = aborted; same = the
+      row's two sessions are byte-identical. below_minimum_all is 0 in every arm and row.
+
+      | row | arm | unc (input) | routing_caused_by_type | mfg | bm | vip | s | ab | same | Δ unc |
+      |---|---|---|---|---|---|---|---|---|---|---|
+      | pcietest | before | 4 (256) | clearance 128, shorting_items 124, items_not_allowed 2, track_dangling 1 | 252 | 0 | 0 | 156.21 | 0 | no | |
+      | pcietest | q22 | 4 (256) | — | 0 | 0 | 0 | 225.70 | 0 | no | 0 |
+      | cm4-edge-ai | before | 0 (0) | clearance 28 | 28 | 0 | 0 | 14.12 | 0 | no | |
+      | cm4-edge-ai | q22 | 0 (0) | — | 0 | 0 | 0 | 39.01 | 0 | no | 0 |
+      | nudac | before | 0 (0) | hole_clearance 55 | 55 | 0 | 0 | 0.92 | 0 | no | |
+      | nudac | q22 | 0 (0) | — | 0 | 0 | 0 | 0.92 | 0 | no | 0 |
+      | ch32v003 | before | 0 (3) | clearance 5, starved_thermal 1 | 5 | 0 | 0 | 3.30 | 0 | no | |
+      | ch32v003 | q22 | 5 (3) | — | 0 | 0 | 0 | 17.86 | 0 | no | +5 |
+      | mydevboard | before | 0 (0) | clearance 2 | 2 | 0 | 0 | 17.86 | 0 | yes | |
+      | mydevboard | q22 | 0 (0) | — | 0 | 0 | 0 | 16.73 | 0 | yes | 0 |
+      | vna-usb-pd | before | 0 (0) | clearance 2 | 2 | 0 | 0 | 0.24 | 0 | yes | |
+      | vna-usb-pd | q22 | 0 (0) | — | 0 | 0 | 0 | 0.24 | 0 | yes | 0 |
+      | picodebugger | before | 0 (0) | — | 0 | 0 | 0 | 1.11 | 0 | yes | |
+      | picodebugger | q22 | 0 (0) | — | 0 | 0 | 0 | 1.17 | 0 | yes | 0 |
+      | canary-pwr | before | 45 (153) | starved_thermal 1 | 0 | 0 | 0 | 273.35 | 0 | no | |
+      | canary-pwr | q22 | 45 (153) | track_dangling 6 | 0 | 0 | 0 | 426.96 | 0 | no | 0 |
+      | sonde-xilinx | before | 0 (0) | — | 0 | 0 | 0 | 0.36 | 0 | yes | |
+      | sonde-xilinx | q22 | 0 (0) | — | 0 | 0 | 0 | 0.55 | 0 | yes | 0 |
+      | pic_programmer | before | 0 (0) | — | 0 | 0 | 0 | 0.67 | 0 | yes | |
+      | pic_programmer | q22 | 0 (0) | — | 0 | 0 | 0 | 1.05 | 0 | yes | 0 |
+      | flight-computer | before | 1 (0) | — | 0 | 0 | 0 | 1.10 | 0 | yes | |
+      | flight-computer | q22 | 1 (0) | — | 0 | 0 | 0 | 1.12 | 0 | yes | 0 |
+      | laser-backplane | before | 0 (0) | — | 0 | 0 | 0 | 5.51 | 0 | no | |
+      | laser-backplane | q22 | 0 (0) | — | 0 | 0 | 0 | 0.47 | 0 | no | 0 |
+      | pocketsdr-v3-0 | before | 40 (322) | clearance 499, hole_to_hole 2 | 501 | 0 | 0 | 109.75 | 0 | no | |
+      | pocketsdr-v3-0 | q22 | 72 (322) | — | 0 | 0 | 0 | 300.06 | 1 | no | +32 |
+      | fc-rom | before | 79 (424) | solder_mask_bridge 7, via_dangling 1 | 7 | 0 | 0 | 271.14 | 1 | no | |
+      | fc-rom | q22 | 70 (424) | — | 0 | 0 | 0 | 270.25 | 1 | no | −9 |
+
+      Totals: KiCad unconnected before 169, q22 197 (+28). vias in pads on the routed board equal
+      the input's on every row (raw: nudac 18, vna-usb-pd 8, ch32v003, mydevboard and
+      flight-computer 1).
+    - **Aborted.** pocketsdr-v3-0 q22 was stopped by the 300 s `timeout` (engine exit 124; the CLI
+      saved its SES on SIGTERM and logged COMPLETED at 5 min 0.05 s), graded as registered. fc-rom
+      stopped at the router's own `--timeout 270` in both arms (`TIMED_OUT`, "stopped by
+      wall-clock limit; result is timing-dependent"), graded as registered. No other row was cut.
+    - **Q22.4's obstacles.** The q22 export logs count Q22.4's copper-graphic keepouts on four
+      rows: pcietest 259 shapes, 0 texts (259 keepouts); sonde-xilinx 0 shapes, 8 texts (61
+      keepouts); pic_programmer 0 shapes, 19 texts (149 keepouts); flight-computer 1 shape (1
+      keepout) plus 1 net-tie shape (Q22.19). No row logs net shapes as fixed areas ("shape(s) of
+      a net as fixed copper"), so the net-area count is 0 on all 14. Those four rows' KiCad
+      unconnected is unchanged (Δ 0), so **Q22.4's obstacles cost no row** here. The two rows
+      that lost connections carry none of Q22.4's obstacles: ch32v003 +5 (q22's extra flags
+      `--router.board_minimums.hole_to_hole_um=250` and `--kicad-dru`, 88 thermal spoke ways)
+      and pocketsdr-v3-0 +32 (aborted at 300 s; `--router.board_minimums.clearance_um=127`,
+      `hole_to_hole_um=254`, `--kicad-dru`, 531 thermal spoke ways, 9 mask pads). This
+      registration does not separate those causes.
+    - **Sessions** (sha256 of `OUT/ARM/ROW/work/BASE.ses`, before / q22): pcietest `fb119b9d8bab…`
+      / `70b316857ae9…`; cm4-edge-ai `6b6e8ba57f0c…` / `ddbb82efacb9…`; nudac `4f6a99c54bf7…` /
+      `51c21009036d…`; ch32v003 `006d9492371d…` / `405c3ad85baf…`; mydevboard both
+      `2d52f98275c8…`; vna-usb-pd both `1e3b1e6a5fd0…`; picodebugger both `ff6e1145673f…`;
+      canary-pwr `e67b8b33172e…` / `ca3a847430ce…`; sonde-xilinx both `c7ce19dc5b97…`;
+      pic_programmer both `158a5ccb00b0…`; flight-computer both `6b492e347824…`; laser-backplane
+      `8ef3d6d25546…` / `d86e89e50ee7…`; pocketsdr-v3-0 `ff10ff4d4c10…` / `8b294f0284fb…`; fc-rom
+      `bf1b75fbbd57…` / `d5aa7639ff24…` (full hashes in `Q/table.json`).
+    - **Outputs** under Q: `out/ARM/ROW/` (summary.json, via_in_pad.json, via_in_pad_input.json,
+      work/), `records.json` (sha256 `4a3dd8f3…`, built by `build_records.py`, `04d50a2e…`),
+      `baseline.json`, `table.json`, `gate-baseline.txt`, `gate-all-pairs.txt`,
+      `gate-verdict.txt`, `progress.md`. The release target directories were deleted after this
+      note; the trees stay.
 
 - [x] **Q22.9 — Canary-pwr: which change costs 18 → 26.** Two runs, one at a time, with main's
   release CLI. Each route is about 2 min, under `ulimit -v 8000000` and `timeout 600`.
