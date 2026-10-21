@@ -1,0 +1,312 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "K14.6-saved-fixups",
+  "registered": "2026-10-21",
+  "checklist": "docs/roadmap/tasks/K14-snapshot-dsn-fixups.md (K14.6 registers and measures; the run waits until K14.1-K14.5 are on main)",
+  "question": "With canary-pwr's own saved route-options.json (schema 4: class widths, fixed pour classes in wires mode, dropped pours of GND, max_passes 1, min_trace_width_um 150, start_ripup_costs 1500, sweep_passes 2), does the board snapshot read directly (board_input = kicad_pcb), which applies those fix-ups through K14.1, K14.3 and K14.4's router settings, route the board with zero routing-caused manufacturing breaches, below-minimum copper and vias in pads, graded by KiCad under the board's own rules, with a KiCad-unconnected count no higher than KiCad's DSN export with the plugin's DSN fix-ups (board_input = dsn) within the board's band of 10; and do the same guards hold on the dsn arm?",
+  "rule": "totals",
+  "totals": {
+    "accept": "no-regress",
+    "signal": [
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "canary-pwr-95882f00": 10
+    },
+    "min_boards": 3
+  },
+  "noise_why": "canary-pwr's registered band, 10: docs/roadmap/prereg/K09.json `noise.canary-pwr` = 10 (its source: 'N02: canary-pwr variants' +-10', docs/roadmap/tasks/archive/N02-keep-rule-for-defaults.md), carried unchanged into docs/roadmap/prereg/K09.9-rerun.json (the plugin's headless path on canary-pwr with the K09 fix-ups) and every N05 and N06 canary-pwr row; routing-quality.md's totals rule: 'until it is measured, max(2, 5 % of the board's connections), and 10 for canary-pwr'. Why a band and not K13's 0: the two arms give the router different input bytes (KiCad's export against the reader, K13.2's rounding, fixed wires made from pcbnew's fill polygons against the snapshot's filled_polygon), and routing-quality.md says that on canary-pwr 'a small input change moves completion by about +-10 unrouted connections'. With one board the set noise is sqrt(10^2) = 10, so the gate's no-regress total clause is keep_rule's clause (2) exactly: kicad_pcb - dsn <= 10; its per-board clause (worse than 2 x 10) is looser and decides nothing here. min_boards stays 3 because the parser refuses less (gate_totals.rs: 'not below 3'); the three-board minimum is for keep decisions, this registration decides no default (decides_no_default), so the gate's 'REFUSED ... N=1' line is expected and is not a failure of the rule (keep_rule_by_hand)",
+  "engine": "freerouting-rs release CLI of main when K14.6 runs, after K14.1, K14.2, K14.3, K14.4 and K14.5 have all landed (K14.6: the plugin passes the fix-ups on the snapshot and no longer refuses them); one Linux build for both arms, in a detached worktree TREE = target/orchestrator/k146/tree of that commit (`CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target cargo build --release -p freerouting-cli`); the KiCad plugin (kicad-plugin/headless_run.py and freerouting_rs/) and tools/kicad-oracle of the same tree; WSL KiCad 10.0.7 (kicad-cli and pcbnew; the script refuses a version mismatch). The first amendment, written after the build and before either arm runs, names the commit, the binary's sha256 and `freerouting-rs --version`, the sha256 of tools/kicad-oracle/grade.sh and oracle_lib.py and of kicad-plugin/headless_run.py, freerouting_rs/export_flow.py, dsn_fixups.py and options.py at that commit, the router flags K14.1, K14.3 and K14.4 added (they have no names at registration), and validity (a)",
+  "placeholders": {
+    "ROOT": "the main checkout, /home/thebo/code/freerouting-rs; every path here is relative to it, and every command runs from it",
+    "TREE": "target/orchestrator/k146/tree: the detached worktree of the commit amendment 1 names",
+    "ENGINE": "/home/thebo/code/freerouting-rs/target/orchestrator/k146/target/release/freerouting-rs (the absolute path of the release build of TREE)",
+    "BOARD": "target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb (the set's row)",
+    "OPTIONS": "target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json (options.path)",
+    "OUT": "target/orchestrator/k146/out"
+  },
+  "arms": {
+    "dsn": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=1800 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=OUT/kicad_pcb/canary-pwr TREE/tools/kicad-reader/plugin-input-ab.sh dsn BOARD OPTIONS OUT/dsn/canary-pwr",
+      "board_input": "dsn",
+      "options": {
+        "schema": 4,
+        "profile": "enhanced",
+        "max_passes": 1,
+        "min_trace_width_um": 150.0,
+        "class_widths": {
+          "GND": 0.4,
+          "Power": 0.3,
+          "Power_High": 0.3,
+          "Switch_Node": 0.3
+        },
+        "fixed_pour_classes": [
+          "Power_High",
+          "Switch_Node"
+        ],
+        "drop_pour_nets": [
+          "GND"
+        ],
+        "start_ripup_costs": 1500,
+        "sweep_passes": 2,
+        "board_input": "dsn"
+      },
+      "settings": {},
+      "what": "baseline: `headless_run.py export`: pcbnew.ExportSpecctraDSN and the plugin's DSN fix-ups from these options (dsn_fixups.apply: `(rule (width W))` for GND, Power, Power_High and Switch_Node; the outer-layer pours of Power_High and Switch_Node replaced by fixed wires covering their fill, fixed_pour_mode wires being the default; the outer-layer planes of GND dropped), with the rule-area fix-up and edge and pad keepouts (both on by default); the router flags of <stem>.args.json (options.to_args plus export_flow.router_args: the Board Setup minimums read from the board and the path's own flags); the session imported whole by `headless_run.py import`"
+    },
+    "kicad_pcb": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=1800 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=OUT/dsn/canary-pwr TREE/tools/kicad-reader/plugin-input-ab.sh kicad_pcb BOARD OPTIONS OUT/kicad_pcb/canary-pwr",
+      "board_input": "kicad_pcb",
+      "options": {
+        "schema": 4,
+        "profile": "enhanced",
+        "max_passes": 1,
+        "min_trace_width_um": 150.0,
+        "class_widths": {
+          "GND": 0.4,
+          "Power": 0.3,
+          "Power_High": 0.3,
+          "Switch_Node": 0.3
+        },
+        "fixed_pour_classes": [
+          "Power_High",
+          "Switch_Node"
+        ],
+        "drop_pour_nets": [
+          "GND"
+        ],
+        "start_ripup_costs": 1500,
+        "sweep_passes": 2,
+        "board_input": "kicad_pcb"
+      },
+      "settings": {},
+      "what": "candidate: `headless_run.py snapshot` (the zones refilled, the board saved with SaveBoard and its live project with SaveProjectCopy, K10.1-K10.2) and the router flags of <stem>.args.json, which once K14.1, K14.3 and K14.4 have landed carry the same three fix-ups as router settings applied to the reader's tree (the class rules' widths, the GND outer-layer planes dropped, the Power_High and Switch_Node outer-layer planes replaced by fixed wires from the snapshot's filled_polygon); the same import"
+    }
+  },
+  "baseline_arm": "dsn",
+  "candidate_arm": "kicad_pcb",
+  "pairs": {
+    "verdict": [
+      "dsn",
+      "kicad_pcb"
+    ],
+    "reported": [
+      [
+        "kicad_pcb",
+        "dsn"
+      ]
+    ]
+  },
+  "pairs_why": "the verdict pair judges kicad_pcb's hard metrics and the unconnected clause; the reported pair, printed by --all-pairs, puts dsn under the same hard metrics, because the guard holds in both arms (keep_rule (1))",
+  "options": {
+    "path": "target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json",
+    "sha256": "1ffe579f33e0be21f7bc3482cc3dc7420f76e22ce98271c44e7a8ed713859df2",
+    "source": "the copy of canary-pwr's saved options that `git archive` made with the board: canary 95882f00's hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json, last changed in c2020a48 ('fix(pwr): operator's hand routing kept, the pours it cut reconnected'), byte-identical to the canary working tree's at registration. Both arms read this file; the script copies it per arm to <outdir>/opts.json and sets `board_input` to the arm's value (its json.dump of the parsed file, keys in file order, board_input last), so the arms' options are `saved` plus board_input",
+    "saved_text": "{\n  \"schema\": 4,\n  \"profile\": \"enhanced\",\n  \"max_passes\": 1,\n  \"min_trace_width_um\": 150.0,\n  \"class_widths\": {\n    \"GND\": 0.4,\n    \"Power\": 0.3,\n    \"Power_High\": 0.3,\n    \"Switch_Node\": 0.3\n  },\n  \"fixed_pour_classes\": [\n    \"Power_High\",\n    \"Switch_Node\"\n  ],\n  \"drop_pour_nets\": [\n    \"GND\"\n  ],\n  \"start_ripup_costs\": 1500,\n  \"sweep_passes\": 2\n}\n",
+    "saved": {
+      "schema": 4,
+      "profile": "enhanced",
+      "max_passes": 1,
+      "min_trace_width_um": 150.0,
+      "class_widths": {
+        "GND": 0.4,
+        "Power": 0.3,
+        "Power_High": 0.3,
+        "Switch_Node": 0.3
+      },
+      "fixed_pour_classes": [
+        "Power_High",
+        "Switch_Node"
+      ],
+      "drop_pour_nets": [
+        "GND"
+      ],
+      "start_ripup_costs": 1500,
+      "sweep_passes": 2
+    },
+    "read_by_plugin": "today's plugin (options.SCHEMA 6, READABLE_SCHEMAS 1-6) reads this schema 4 file with RouteOptions.from_dict: profile enhanced starts from profile_defaults('enhanced') (sweep free, board_input kicad_pcb, edge_and_pad_keepouts on, rule_area_fixup on, fixed_pour_mode wires, optimizer on, threads automatic, pin_escape off, fix_existing off), then takes the file's fields: max_passes 1, min_trace_width_um 150.0, class_widths {GND 0.4, Power 0.3, Power_High 0.3, Switch_Node 0.3}, fixed_pour_classes [Power_High, Switch_Node], drop_pour_nets [GND], start_ripup_costs 1500, sweep_passes 2. The file names no board_input, so K13.7's load rule (a file without the choice that turns on a DSN-only fix-up takes dsn) gives dsn until K14.5 removes that rule; the script writes board_input per arm, so the rule decides neither arm. At registration (main 4c1fd8e): to_dict = {schema 6, profile enhanced, max_passes 1, min_trace_width_um 150.0, class_widths {...}, fixed_pour_classes [...], drop_pour_nets [GND], start_ripup_costs 1500, sweep_passes 2, board_input dsn}; to_args = --max-passes 1 --router.min_trace_width_um=150 --router.scoring.start_ripup_costs=1500 --router.autorouter.sweep=free --router.autorouter.sweep_passes=2; with board_input kicad_pcb, input_conflicts = ['Class widths', 'Fixed pour classes', 'Drop pours of nets'] (validity (a) needs it empty)",
+    "class_widths_vs_board_setup": "the class widths equal Board Setup's net-class track widths on this board (canary-pwr.kicad_pro net_settings.classes at 95882f00: Default 0.2, CAN 0.3, GND 0.4, Power 0.3, Power_High 0.3, Switch_Node 0.3 mm), so class_widths changes no width here; the operator's 2026-10-18 args.json log says the same ('class GND: width 400 -> 400 um', Power, Power_High and Switch_Node 300 -> 300). The fix-up is still applied in both arms and checked by validity (b) and (c)",
+    "board_minimums": "Board Setup at 95882f00 (canary-pwr.kicad_pro design_settings.rules): min_track_width 0.15 mm (min_trace_width_um 150 is the same value), min_via_diameter 0.4, min_through_hole_diameter 0.3, min_copper_edge_clearance 0.3, min_hole_clearance 0.25 mm",
+    "not_in_file": "route_on_plane_layers (K14.2), fixed_pour_mode engine and the `auto` lists are not in the saved options, so this run does not exercise them"
+  },
+  "boards": {
+    "set": "tools/bench/sets/k14-fixups.txt",
+    "eligibility": "the one row K14.6 names, canary-pwr at the revision below, fixed before any run",
+    "rows": {
+      "canary-pwr-95882f00": {
+        "input": "target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
+        "source": "canary 95882f00 (canary HEAD at registration, 'docs(pwr): FAB-NOTES gives the panel layout and where its tabs can go') hardware/canary-pwr-rev1.0, copied 2026-10-21 with `git -C ../canary archive 95882f00 hardware/canary-pwr-rev1.0 | tar -x -C target/orchestrator/k146/boards/canary-95882f00`, unedited, including the operator's freerouting-rs/ folder (route-options.json is options.path; the script does not read the rest). The .kicad_pcb last changed in 88e68eac ('added labels'); 95882f00 changed only FAB-NOTES.md, so the .kicad_pcb, .kicad_pro, .kicad_dru and route-options.json are byte-identical at 88e68eac and 95882f00",
+        "working_tree": "at registration `git -C ../canary status --short hardware/canary-pwr-rev1.0` is empty and the working tree's .kicad_pcb, .kicad_pro, .kicad_dru and freerouting-rs/route-options.json hash as registered (only ignored files besides: .history/, canary-pwr.kicad_pcb.zip, canary-pwr.kicad_prl, freerouting-rs/plugin.log, gen/__pycache__/). The owner's Route inside KiCad runs on the working copy as it is then; K14.6's note records that board's sha256 and whether it still equals boards.files",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "options": {
+          "schema": 4,
+          "profile": "enhanced",
+          "max_passes": 1,
+          "min_trace_width_um": 150.0,
+          "class_widths": {
+            "GND": 0.4,
+            "Power": 0.3,
+            "Power_High": 0.3,
+            "Switch_Node": 0.3
+          },
+          "fixed_pour_classes": [
+            "Power_High",
+            "Switch_Node"
+          ],
+          "drop_pour_nets": [
+            "GND"
+          ],
+          "start_ripup_costs": 1500,
+          "sweep_passes": 2
+        },
+        "router_args": [],
+        "pass_cap": false,
+        "timeout_s": 1800
+      }
+    },
+    "files": {
+      "canary-pwr-95882f00": "b290e4f7119806b2b70823974f457be2cfcfdb69b1e6cf461413a31a2175c616"
+    },
+    "rules_files": {
+      "canary-pwr-95882f00": {
+        "kicad_pro": "c44fd214855fda1b99f15ad13cea069a915f1e34bda8591258e076ec7b6fab77",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8"
+      }
+    }
+  },
+  "script": {
+    "path": "tools/kicad-reader/plugin-input-ab.sh",
+    "sha256": "17af015a4adfffd328704c5bf7243af8b75315a81010effbc393275df5d1f8af",
+    "what": "K13.5's version, unchanged: per router call ulimit -v ROUTE_MEMORY_KB and timeout -k 10 ROUTE_TIMEOUT_S; the plugin's own export or snapshot and import; grading as tools/kicad-oracle/grade.sh --keep-tracks under the project's own .kicad_pro/.kicad_dru with the copper classes forced to error, routing-caused items on Q22.2's copper basis; SHARE_GRADE_WITH. K13.json pins the same hash and crates/freerouting-dev/tests/prereg_k13.rs checks it, so editing the script would amend K13 too. Its header sentence 'with `board_input = kicad_pcb` they have no DSN text to act on and do nothing' describes main before K14.1-K14.4; what each arm does is TREE's plugin, so the sentence goes stale when they land and is left alone for that reason"
+  },
+  "grading": "as K13.6: the dsn arm runs first, then kicad_pcb with SHARE_GRADE_WITH=OUT/dsn/canary-pwr; when the two sessions are byte-identical the kicad_pcb arm copies dsn's grade (summary grade_shared_with) and grades nothing. The grade is under the board's own rules (summary rules = project: the copy's canary-pwr.kicad_pro and canary-pwr.kicad_dru, hashed in boards.rules_files), `kicad-cli pcb drc --severity-all --refill-zones` on the input and the routed board, routing-caused items on the copper basis (Q22.2), the same oracle, metrics and manufacturing types as K13.6. kicad-cli only while `pgrep -a kicad-cli` shows none, one job at a time; the two arms one after the other, never in parallel, and no other heavy run at the same time",
+  "limits": "every router call (the load check and the route) under ulimit -v 8000000 (ROUTE_MEMORY_KB) and timeout -k 10 1800 (ROUTE_TIMEOUT_S). canary-pwr is exempt from the few-minute rule (decided 2026-10-20), so no cap is added to the saved max_passes 1: no --router.fanout.max_passes and no router args after `--`; the run is the board's saved setup. 1800 s is 2.7 x the longest canary-pwr route on record (K13.6: canary-pwr-1a7df77, dsn, 672.2 s with unlimited passes); the saved options cap the routing passes at 1, and the operator's 2026-10-18 plugin run of them on an earlier board took 56 s from the export to the import (canary's plugin.log, 21:01:57 to 21:02:53). A call that hits the timeout or is killed by a signal (exit status 124 or above) is aborted = 1, is not graded and is not rerun",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "manufacturing_breaches",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "errors_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "routing_caused_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drc_real",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "prepare_load_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "route_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "input_unconnected",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "summary via_in_pad: tools/kicad-oracle/via_in_pad.py's vias_in_pads on the routed board minus the input board's, floored at 0 (the demos' own vias in pads are not routing's); a hard metric because the gate requires it (D8: a via in a pad is a failure)",
+    "below_minimum": "summary below_minimum: routed tracks and vias (those whose nanometre copper key, oracle_lib.copper_key, the input board does not have) narrower than the Board Setup minimum track width, with a diameter under the minimum via diameter or a drill under the minimum through-hole drill (kicad_steps.py stats' board_minimums_mm), summed",
+    "manufacturing_breaches": "summary manufacturing_breaches: the routing-caused KiCad DRC items (oracle_lib.summarize with both boards' copper, Q22.2: an item is routing-caused when it involves a track or via the input board does not have at the same nanometre coordinates, width, layer and net) of the types clearance, hole_clearance, hole_to_hole, copper_edge_clearance, track_width, via_diameter, annular_width, drill_out_of_range, solder_mask_bridge, shorting_items, summed. The other routing-caused types are in routing_caused_by_type",
+    "kicad_unconnected": "summary unconnected: kicad-cli's unconnected_items on the routed board",
+    "errors_by_type": "summary violations: every DRC item of severity error on the routed board, by type (copper classes forced to error), pre-existing ones included",
+    "routing_caused_by_type": "summary routing_caused_by_type, every type",
+    "drc_real": "the sum of routing_caused_by_type",
+    "prepare_load_seconds": "summary prepare_s + load_s: the plugin's export or snapshot (headless pcbnew) plus the router's `-de FILE -drc` (parse, build, check)",
+    "route_seconds": "summary route_s",
+    "input_unconnected": "summary input_unconnected: kicad-cli's unconnected_items on the input board as given",
+    "via_in_pad_raw": "summary via_in_pad_raw, the routed board's count with the input's vias in pads",
+    "aborted": "summary aborted"
+  },
+  "validity": "checked before keep_rule is applied: (a) K14.5 has landed: options.input_conflicts of `saved` with board_input kicad_pcb is empty at TREE (amendment 1 records the check, made with options.py loaded by path, no pcbnew, never importing the freerouting_rs package); (b) the kicad_pcb arm applied the fix-ups: OUT/kicad_pcb/canary-pwr/work/canary-pwr.args.json's `args` carry amendment 1's K14.1, K14.3 and K14.4 flags naming GND, Power, Power_High and Switch_Node (widths), GND (dropped outer pours) and Power_High and Switch_Node (fixed wires), and its `log` reports them; (c) the dsn arm applied them: OUT/dsn/canary-pwr/work/canary-pwr.args.json's `log` has the 'pours: N fixed wires for M pour(s) of Power_High, Switch_Node; K outer plane(s) removed (dropped nets: GND)' line and the four 'class <name>: width' lines. A run that fails (a), (b) or (c) did not measure K14: it is recorded, not judged, and repeats only after the fix, under an amendment",
+  "keep_rule": "K14.6's Accept clauses for the measurement, all three: (1) guards: in both arms manufacturing_breaches = 0, below_minimum = 0 and via_in_pad = 0, absolutely, not 'no worse than the other arm' (decided 2026-10-20: routing never breaks the board's manufacturing rules; routing-quality.md, order of importance items 1 and 2); (2) unconnected: kicad_pcb's kicad_unconnected is at most dsn's + 10 (noise_why); (3) both arms' session_sha256 (summary.json) are recorded in K14.6's note. An arm that is aborted or not graded fails (1) and (2). K14.6's fourth clause, the owner's Route inside KiCad, is not measured here (decision_table)",
+  "keep_rule_by_hand": "the gate cannot judge one board (its three-board minimum), so K14.6 applies keep_rule by hand from OUT/dsn/canary-pwr/summary.json and OUT/kicad_pcb/canary-pwr/summary.json. The gate is run for its checks only: `freerouting-dev gate --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/K14.json --write-baseline`, then `freerouting-dev gate --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/K14.json --all-pairs` (K13.json amendment 1: --all-pairs needs --baseline), where records.json carries per arm the metrics above from summary.json and the input sha256. Its HARD lines of both pairs are clause (1); its 'totals verdict' with set noise 10 is clause (2); its 'REFUSED ... N=1' line is the three-board minimum and is expected; anything else it prints is reported, not judged",
+  "on_failure": "decided 2026-10-20 (routing-quality.md, order of importance item 1, and K14.6's Accept): a routing-caused manufacturing breach, below-minimum copper or a via in a pad in either arm blocks K14.6, which stays [~] naming the items. A kicad_pcb breach that dsn does not have is a defect of K14.1-K14.4 or of the snapshot path; one in both arms, or in dsn only, is a defect of the shared code or of the DSN path, named as such. The fix lands as an item of its own, then this run repeats at the fixed commit under an amendment that names the fix, with nothing else changed. 'Fix gains, don't remove them' (decided 2026-10-20, Q18) applies: a kicad_pcb arm that routes better but breaches gets the breach fixed and is measured again; the K14 settings are not removed, and these boards are not sent back to the DSN to dodge a guard. Clause (2) failing (kicad_pcb more than 10 above dsn) keeps K14.6 [~] with the difference explained, and is handled the same way",
+  "decides_no_default": "this registration decides no default: K14's four settings stay off by default under both profiles (K14's Design), board_input's default stays kicad_pcb under enhanced (K13.7) whatever this run shows, and no ENHANCED entry changes. It checks that a board's saved DSN fix-ups route on the default input as well as on the DSN",
+  "decision_table": {
+    "met": "K14.6's note records the per-arm table, validity (a)-(c) and both session sha256s; K14.6 becomes [x] only once the owner's confirmation from a Route inside KiCad on canary-pwr, with its saved options, on the snapshot, is recorded too",
+    "not met": "K14.6 stays [~] naming the clause that failed and its items (on_failure)"
+  },
+  "report": "per arm: kicad_unconnected (and input_unconnected), errors_by_type, routing_caused_by_type, manufacturing_breaches, below_minimum and below_minimum_by_kind, via_in_pad, prepare_load_seconds (prepare_s + load_s), route_seconds, aborted, session_sha256, design_sha256, args_sha256 and whether the grade is shared; validity (a)-(c) with the fixed-wire and dropped-plane counts each arm's args.json log reports; the routing-caused items of each arm that also appear on the input board at the same place and type (pre-existing violations counted again on copper the round trip re-laid, K13.2), named, not subtracted",
+  "known_effects": "both arms import the session whole, as the plugin does (fix_existing is off in the saved file): ImportSpecctraSES deletes the board's unlocked tracks and vias and adds the session's, and places the footprints. Existing copper comes back at the router's resolution, and copper that moved by even 1 nm counts as routing-caused on the copper basis. The fixed wires are in neither session (K14.4's route test; the DSN path's property), so the pours they stand for are refilled from the zones after the import in both arms. The two arms' fixed wires come from different fill sources (pcbnew's polygons against the snapshot's filled_polygon) and may differ within the bound K14.4's note gives; that is part of what is measured",
+  "stop_rule": "one registered run per arm; no reruns with other settings; an aborted arm is recorded and not rerun. A rerun at a fixed commit after a guard or validity failure is an amendment naming the fix (on_failure). Any change after the first number goes in `amendments` with its reason",
+  "seen_before_registration": "no route or grade of this board revision with these options exists in this repository, and the implementer routed and graded nothing. On record: K13.6 (main daa32c1, the plugin's default options, not these) graded canary-pwr 1a7df77 at 48 (dsn) and 45 (kicad_pcb) unconnected and the 2a7e070b plugin row at 23 and 21, with 0 manufacturing breaches in all four arms; the operator's plugin runs of these saved options on 2026-10-18 (canary's tracked freerouting-rs/canary-pwr.args.json and its ignored plugin.log: Windows KiCad 10.0.5, the dsn path, an earlier board with input_sha256 1d8c44c6...) logged 'pours: 119 fixed wires for 12 pour(s) of Power_High, Switch_Node; 16 outer plane(s) removed (dropped nets: GND)'. No KiCad grade of that run was read for this registration",
+  "not_registered": [
+    "K14.2's route_on_plane_layers, fixed_pour_mode engine and the `auto` lists (not in the saved options)",
+    "the owner's Route inside KiCad (Windows KiCad, the dialog, the working copy): K14.6's last Accept clause, recorded in its note, not by this script",
+    "any other board, or canary-pwr at another revision",
+    "options other than the saved file's, and a pass cap beyond its max_passes 1",
+    "KiCad 11's IPC path"
+  ],
+  "heavy_run": [
+    "cd /home/thebo/code/freerouting-rs && git worktree add --detach target/orchestrator/k146/tree <K14_COMMIT: main once K14.1-K14.5 have landed>",
+    "cd /home/thebo/code/freerouting-rs/target/orchestrator/k146/tree && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target cargo build --release -p freerouting-cli && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target cargo test -p freerouting-dev --test prereg_k14",
+    "write amendment 1 (`engine`; validity (a)) and update the pin in crates/freerouting-dev/tests/prereg_k14.rs in the same change, before either arm runs",
+    "cd /home/thebo/code/freerouting-rs && mkdir -p target/orchestrator/k146/out && pgrep -a kicad-cli; then, with none running: FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target/release/freerouting-rs ROUTE_TIMEOUT_S=1800 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k146/out/kicad_pcb/canary-pwr target/orchestrator/k146/tree/tools/kicad-reader/plugin-input-ab.sh dsn target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json target/orchestrator/k146/out/dsn/canary-pwr > target/orchestrator/k146/out/dsn.log 2>&1; echo \"EXIT $?\" >> target/orchestrator/k146/out/dsn.log",
+    "cd /home/thebo/code/freerouting-rs && pgrep -a kicad-cli; then, with none running and the dsn log's EXIT line written: FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target/release/freerouting-rs ROUTE_TIMEOUT_S=1800 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k146/out/dsn/canary-pwr target/orchestrator/k146/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json target/orchestrator/k146/out/kicad_pcb/canary-pwr > target/orchestrator/k146/out/kicad_pcb.log 2>&1; echo \"EXIT $?\" >> target/orchestrator/k146/out/kicad_pcb.log"
+  ],
+  "timing": "registered 2026-10-21 at main 4c1fd8e, before K14.1-K14.3 and K14.5 landed and with K14.4 only in part (fill_wires.rs, 4c1fd8e), before any route or grade of either arm",
+  "amendments": []
+}

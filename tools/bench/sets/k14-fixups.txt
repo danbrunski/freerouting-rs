@@ -1,0 +1,12 @@
+# K14.6 (docs/roadmap/prereg/K14.json): canary-pwr with its own saved DSN fix-ups (class widths,
+# fixed pour classes, dropped pours), on the plugin's two board inputs, `dsn` (KiCad's DSN export with
+# the plugin's DSN fix-ups) against `kicad_pcb` (the board snapshot, read directly, with K14's router
+# settings), each arm routed and graded by
+# `tools/kicad-reader/plugin-input-ab.sh <arm> <row> <options.json> <out>`.
+# Paths are relative to the main checkout's root (under target/, not in git). The copy was made
+# 2026-10-21 with `git -C ../canary archive 95882f00 hardware/canary-pwr-rev1.0`, unedited; its
+# .kicad_pcb last changed in canary 88e68eac.
+# Options (both arms; the script sets `board_input` per arm): the copy's own saved file,
+# target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json
+# After `#`: the options and the pass cap (the same in both arms) and the timeout.
+target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb  # saved options, their max_passes 1, no added cap, 1800 s

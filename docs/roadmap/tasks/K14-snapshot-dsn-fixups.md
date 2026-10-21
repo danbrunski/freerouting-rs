@@ -143,7 +143,7 @@ K13 (the snapshot is the default).
       the dialog form accepts each on the snapshot; the note has no DSN line;
     - `python3 -m pytest kicad-plugin/tests` passes.
 
-- [ ] **K14.6 — `canary-pwr` with its saved fix-ups, on both inputs.**
+- [~] **K14.6 — `canary-pwr` with its saved fix-ups, on both inputs.**
   - **Preregister first:** `docs/roadmap/prereg/K14.json` and `tools/bench/sets/k14-fixups.txt`.
     - Board: `canary-pwr` at the canary revision named in the registration.
     - Options: a copy of the board's saved `route-options.json` (the class widths, fixed pour
@@ -161,3 +161,51 @@ K13 (the snapshot is the default).
     - both sessions' sha256s are recorded;
     - the owner's confirmation from a Route inside KiCad on `canary-pwr`, with its saved options,
       on the snapshot, is recorded.
+
+  *Partial 2026-10-21:* the registration half is in, **no number yet**: nothing was routed or graded,
+  and no kicad-cli or KiCad ran. Registered at main `4c1fd8e`, before K14.1–K14.3 and K14.5 landed and
+  with K14.4 in part.
+  - **Files.** `docs/roadmap/prereg/K14.json` (id `K14.6-saved-fixups`, sha256
+    `81b0c6f3eaad13c082511075d2207de2c12635cff76b65b4e35f397eccf61501`), `tools/bench/sets/k14-fixups.txt`
+    (1 row, sha256 `39434e90e576b35af82dba327f57f1b7dd6c5dcc80d79634cc9220100cc91d53`) and the pin test
+    `crates/freerouting-dev/tests/prereg_k14.rs` (sha256
+    `a76d080c234a8c451192412ee214e416696bbf5862d04e03df78ab99ef456855`). The script stays K13.5's
+    `plugin-input-ab.sh` (`17af015a…`, pinned by K13.json too), so it is not edited.
+  - **Board.** canary `95882f00` (HEAD at registration) `hardware/canary-pwr-rev1.0`, copied with `git
+    archive` to `target/orchestrator/k146/boards/canary-95882f00/`. Its `.kicad_pcb` (sha256 `b290e4f7…`,
+    version 20260206) last changed in `88e68eac`. The canary working tree's board, `.kicad_pro`,
+    `.kicad_dru` and `route-options.json` equal HEAD's at registration.
+  - **Options.** The copy's own `freerouting-rs/route-options.json` (schema 4, sha256 `1ffe579f…`), recorded
+    verbatim in `options.saved_text`. `board_input` is set per arm by the script. Its class widths equal
+    Board Setup's (GND 0.4, Power/Power_High/Switch_Node 0.3 mm).
+  - **Rule.** Both arms must hold 0 for `manufacturing_breaches`, `below_minimum` and `via_in_pad`.
+    `kicad_pcb`'s unconnected must be at most `dsn`'s + 10, where 10 is canary-pwr's band from K09.json
+    (N02). Both session sha256s are recorded. The rule is applied by hand, because the gate needs 3
+    boards. A breach blocks the item and gets fixed, not removed. The registration decides no default.
+  - **Test and gate.** `cargo test -p freerouting-dev --test prereg_k14`: 7 passed, with the board,
+    rules and options hashes checked against the copy. `cargo fmt --all --check` and `cargo clippy -p
+    freerouting-dev --all-targets -- -D warnings` are clean.
+  - **Remains.**
+    1. K14.1–K14.5 land on main.
+    2. The heavy run, from the main checkout, with `K14_COMMIT` = that main:
+       - heavy run pending: `git worktree add --detach target/orchestrator/k146/tree <K14_COMMIT> && cd
+         target/orchestrator/k146/tree && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0
+         CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+         CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target cargo build
+         --release -p freerouting-cli`;
+       - then K14.json amendment 1 (the commit, the binary, the hashes, K14's router flags, validity (a)),
+         with the pin updated;
+       - then, with `pgrep -a kicad-cli` empty, the dsn arm:
+         heavy run pending: `mkdir -p target/orchestrator/k146/out &&
+         FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k146/target/release/freerouting-rs
+         ROUTE_TIMEOUT_S=1800 ROUTE_MEMORY_KB=8000000
+         SHARE_GRADE_WITH=target/orchestrator/k146/out/kicad_pcb/canary-pwr
+         target/orchestrator/k146/tree/tools/kicad-reader/plugin-input-ab.sh dsn
+         target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb
+         target/orchestrator/k146/boards/canary-95882f00/hardware/canary-pwr-rev1.0/freerouting-rs/route-options.json
+         target/orchestrator/k146/out/dsn/canary-pwr`;
+       - then the same command with `dsn` and `kicad_pcb` swapped (the arm, `SHARE_GRADE_WITH=…/out/dsn/canary-pwr`
+         and the outdir `…/out/kicad_pcb/canary-pwr`). K14.json's `heavy_run` spells out both commands with
+         their logs.
+    3. The owner's confirmation from a Route inside KiCad on canary-pwr, with its saved options, on
+       the snapshot (recording that board's sha256).
