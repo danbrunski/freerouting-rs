@@ -1347,7 +1347,10 @@ Sequencing:
       |---|---|---|---|---|---|
       | main a18b970 (Q22.16's run) | 78 (input 424) | 270.13 | 7 (type capped at 199) | 47 (45) | |
       | Q22.16 part (Q22.16's run) | 82 | 270.16 | 8 (type capped at 199) | 50 (47) | |
-      | Q22.16 remainder + Q22.18 | 70 (input 424) | 270.14 | 0 (drc_real 0; type capped at 199 in input and routed) | 0 (0) | 0 |
+      | Q22.16 remainder + Q22.18 (before the containment and strip fix) | 70 (input 424) | 270.14 | 0 (drc_real 0; type capped at 199 in input and routed) | 0 (0) | 0 |
+      | after the containment and strip fix, a43b10e (`out-fcrom-q2218d`) | 70 (input 424) | 270.15 | 0 (drc_real 0, no other routing-caused type; capped at 199 in input and routed) | 0 (0) | 0 |
+
+      a43b10e: 2014 tracks, 360 vias, 0 below the board's minimum width, via diameter or drill.
     - `legacy`: `tools/parity-check.sh --no-probes` PASS, connection parity 7 of 7 exact (bytes
       equal), 51 s.
 
@@ -1490,7 +1493,13 @@ Sequencing:
       | dev-board (`--timeout 270`, finishes early) | main | 13 (input 94) | 37.37 | 0 | 0 |
       | dev-board | Q22.18 | 11 (input 94) | 38.78 | 0 | 0 |
       | canary-pwr ab786fcc (`--timeout 600`) | main | 60 (input 174) | 600.19 | 0 | 2 `starved_thermal` |
-      | canary-pwr ab786fcc | Q22.18 | 58 (input 174) | 600.20 | 0 | 2 `starved_thermal` |
+      | canary-pwr ab786fcc | Q22.18 (before the containment and strip fix) | 58 (input 174) | 600.20 | 0 | 2 `starved_thermal` |
+      | canary-pwr ab786fcc | after the containment and strip fix, a43b10e (`out-canary-q2218d`) | 38 (input 174) | 352.99 | 0 | 6 `starved_thermal` |
+
+      canary-pwr at a43b10e: 1315 tracks, 139 vias, 0 below minimum. The route stopped at its
+      pass limit, not the timeout; the engine's own score was 27 unrouted and 8 violations. The 6
+      `starved_thermal` are all on J1's GND PTH pads 6, 14, 20 and 25 (F.Cu and B.Cu). The 2
+      before were J5 pad 9 and J3 pad 2.
 
       dev-board has 60 `solder_mask_pads` keepouts and canary-pwr 2012 (its footprint
       polygons' chords), none over pads of two nets, so neither board has pads cut back; the
