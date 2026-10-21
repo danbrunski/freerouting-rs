@@ -208,15 +208,41 @@ def test_the_profile_choice_does_not_move_the_input(env):
     assert dialog.board_input.GetSelection() == 1
 
 
-def test_a_schema_5_board_with_class_widths_and_no_choice_still_routes_on_the_dsn(env):
-    """The board's saved setup must not refuse its own Route (K13: a run never
-    fails just because of the input choice)."""
+# K14.5: a saved file with each K09 fix-up that rewrites the DSN text and no `board_input`
+SAVED_FIXUPS = {
+    "class_widths": {"class_widths": {"GND": 0.4}},
+    "class_widths_auto": {"class_widths": "auto"},
+    "fixed_pour_wires": {"fixed_pour_classes": ["Power"], "fixed_pour_mode": "wires"},
+    "fixed_pour_engine": {"fixed_pour_classes": ["Power"], "fixed_pour_mode": "engine"},
+    "fixed_pour_auto": {"fixed_pour_classes": "auto"},
+    "drop_pour_nets": {"drop_pour_nets": ["GND"]},
+    "route_on_plane_layers": {"route_on_plane_layers": ["In2.Cu"]},
+}
+
+
+@pytest.mark.parametrize("name", sorted(SAVED_FIXUPS))
+def test_a_board_saved_with_a_fixup_and_no_choice_opens_on_the_snapshot_and_routes_there(env, name):
+    """K14.5 (K13.7's load rule is gone): the board's saved setup runs on the default input, and
+    Route does not refuse it."""
     make_dialog, ui, work = env
-    dialog = make_dialog("route", saved={"schema": 5, "profile": "enhanced", "class_widths": {"GND": 0.4}})
-    assert dialog.board_input.GetSelection() == 0
+    dialog = make_dialog("route", saved={"schema": 5, "profile": "enhanced", **SAVED_FIXUPS[name]})
+    assert dialog.board_input.GetSelection() == 1
+    assert "DSN" not in dialog.input_note.label
+    dialog.on_route(None)
+    assert len(ui.snapshots) == 1 and ui.exports == []
+    assert not any(style & 0x400 for _, style in ui.messages)  # no error box
+    assert ui.messages[-1][0].startswith("Routed and imported the result into the board.")
+    assert result(work)["input"] == "kicad_pcb" and result(work)["input_fallback_reason"] is None
+
+
+@pytest.mark.parametrize("name", sorted(SAVED_FIXUPS))
+def test_a_board_saved_with_a_fixup_and_the_dsn_keeps_the_dsn(env, name):
+    make_dialog, ui, work = env
+    dialog = make_dialog("route", saved={"schema": 6, "profile": "enhanced", "board_input": "dsn", **SAVED_FIXUPS[name]})
+    assert dialog.board_input.GetSelection() == 0 and dialog.input_note.label == ""
     dialog.on_route(None)
     assert ui.snapshots == [] and len(ui.exports) == 1
-    assert ui.messages[-1][0].startswith("Routed and imported the result into the board.")
+    assert json.loads((work / "route-options.json").read_text(encoding="utf-8"))["board_input"] == "dsn"
 
 
 def test_a_schema_5_file_with_apply_kicad_rules_routes_and_is_saved_as_schema_6(env):
@@ -271,25 +297,21 @@ CANARY_SAVED = {  # canary-pwr's route-options.json from a run before K13.7: its
     "fixed_pour_classes": ["Power_High", "Switch_Node"],
     "drop_pour_nets": ["GND"],
 }
-# K14.1-K14.3: of canary's three only the fixed pour wires still need the DSN (K14.4)
-FIXED = "'Fixed pour classes'"
 
 
-def test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_what_blocks_it(env):
-    """The owner's run (2026-10-21): canary-pwr opened on the DSN with no word
-    why, and the snapshot was refused only at Route."""
+def test_canary_pwrs_saved_options_open_on_the_snapshot_and_route_there(env):
+    """The owner's run (2026-10-21): canary-pwr opened on the DSN, and the snapshot was refused at
+    Route. K14.5: it opens on the snapshot with only the keepouts note, and routes there."""
     make_dialog, ui, work = env
     dialog = make_dialog("route", saved=CANARY_SAVED)
-    assert dialog.board_input.GetSelection() == 0  # K13.7's load rule, until K14.5
-    # K14.4: no fix-up needs the DSN export any more, so the note names none
-    assert dialog.input_note.label == ""
-    dialog.board_input.SetSelection(1)
-    dialog.on_input_changed(None)
+    assert dialog.board_input.GetSelection() == 1
     assert dialog.input_note.label == options.input_ignored_note(options.profile_defaults())
-    assert FIXED not in dialog.input_note.label
     dialog.on_route(None)
     assert len(ui.snapshots) == 1 and ui.exports == []
     assert ui.messages[-1][0].startswith("Routed and imported the result into the board.")
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["class_widths"] == CANARY_SAVED["class_widths"] and "board_input" not in saved
+    assert saved["fixed_pour_classes"] == CANARY_SAVED["fixed_pour_classes"] and saved["drop_pour_nets"] == ["GND"]
 
 
 def test_the_note_wraps_to_the_board_inputs_column(env, monkeypatch):

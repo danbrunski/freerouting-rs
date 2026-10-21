@@ -2,6 +2,7 @@
 folder or the user's, applied over the dialog's options."""
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import options
@@ -164,4 +165,5 @@ def test_the_canary_fixture_preset_gives_the_old_preset_values_and_arguments():
         "route_on_plane_layers": [],
     }
     # and the file is a valid options file by itself
-    assert RouteOptions.from_dict(data) == chosen
+    # (K14.5: the file names no input, so it takes the profile's default, the snapshot, with its fix-ups on)
+    assert RouteOptions.from_dict(data) == replace(chosen, board_input="kicad_pcb")

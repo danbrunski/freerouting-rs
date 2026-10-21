@@ -196,7 +196,6 @@ def test_engine_pours_on_the_snapshot_resolve_auto_from_the_board(monkeypatch):
     monkeypatch.setattr(export_flow.snapshot, "take", lambda *a: (True, ["snapshot taken"]))
     ok, args, lines, _ = export_flow.prepare_snapshot(object(), object(), "w", STEM, "d", replace(engine, edge_and_pad_keepouts=False))
     assert ok and args == ["--router.plane_obstacle_net_classes=Power"]
-    assert options.input_conflicts(engine) == []
 
 
 def test_a_failing_board_read_is_a_warning_and_no_flags(monkeypatch):
@@ -215,7 +214,6 @@ def test_prepare_snapshot_adds_the_flags(monkeypatch):
     ok, args, lines, locked = export_flow.prepare_snapshot(object(), object(), "w", STEM, "d", chosen)
     assert ok and args == FLAGS and locked == []
     assert "board snapshot fix-ups for the router: " + " ".join(FLAGS) in lines
-    assert options.input_conflicts(chosen) == []
 
 
 @pytest.fixture(scope="module")

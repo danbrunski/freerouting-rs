@@ -71,9 +71,9 @@ board class in their help text.
   - "Stop and keep result" finishes the current step and imports the best board so far. "Abort"
     imports nothing.
   - "Route in GUI" watches the routing in the desktop app.
-  - Rule areas are fixed up before routing. Optional DSN fix-ups (class widths, fixed or dropped
-    pours, edge and pad clearances as keepouts) reproduce canary's export, and presets save a
-    set of options for reuse.
+  - Rule areas are fixed up before routing. Optional fix-ups (class widths, fixed or dropped
+    pours, opened plane layers, edge and pad clearances as keepouts) reproduce canary's export on
+    either board input, and presets save a set of options for reuse.
   - It routes a snapshot of the open board through the router's own `.kicad_pcb` reader by default,
     and uses KiCad's DSN export instead when the reader refuses the board, or when you pick it
     (the Legacy profile defaults to the DSN, as Java's plugin does).

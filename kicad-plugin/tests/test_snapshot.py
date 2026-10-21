@@ -197,27 +197,6 @@ DSN_REWRITES = {
 }
 
 
-# K14.1-K14.3: the router's reader applies these on the snapshot (`router.input_fixups.*`)
-READER_FIXUPS = ("class_widths", "drop_pour_nets", "route_on_plane_layers")
-
-
-def test_the_fixed_pour_wires_no_longer_refuse_the_snapshot():
-    """K14.4: `wires` mode, named or `auto`, goes to the router's reader."""
-    value, _ = DSN_REWRITES["fixed_pour_classes"]
-    for classes in (value, "auto"):
-        assert options.input_conflicts(RouteOptions(**{**KICAD, "fixed_pour_classes": classes})) == []
-        assert options.input_conflicts(RouteOptions(fixed_pour_classes=classes)) == []
-
-
-@pytest.mark.parametrize("name", READER_FIXUPS)
-def test_the_reader_fixups_no_longer_refuse_the_snapshot(name):
-    value, _ = DSN_REWRITES[name]
-    assert options.input_conflicts(RouteOptions(**{**KICAD, name: value})) == []
-    assert options.input_conflicts(RouteOptions(**{name: value})) == []
-    if name != "route_on_plane_layers":  # the one with no `auto`
-        assert options.input_conflicts(RouteOptions(**{**KICAD, name: "auto"})) == []
-
-
 def test_the_defaults_are_accepted_on_the_snapshot_and_the_keepouts_are_ignored():
     """K13.7: `edge_and_pad_keepouts` is on by default (K09.9) and the reader
     writes the same keepouts itself (edge shapes and `min_copper_edge_clearance`,
@@ -225,23 +204,12 @@ def test_the_defaults_are_accepted_on_the_snapshot_and_the_keepouts_are_ignored(
     option is ignored there."""
     assert RouteOptions().edge_and_pad_keepouts
     default_snapshot = RouteOptions(board_input="kicad_pcb")
-    assert options.input_conflicts(default_snapshot) == []
     assert options.input_ignored(default_snapshot) == [DSN_REWRITES["edge_and_pad_keepouts"][1]]
     note = options.input_ignored_note(default_snapshot)
     assert "'Keep the board-edge and pad clearances'" in note and "ignored" in note
     # nothing is ignored when the option is off, or on the DSN input, where it applies
     assert options.input_ignored(opts()) == [] and options.input_ignored_note(opts()) == ""
     assert options.input_ignored(RouteOptions()) == [] and options.input_ignored_note(RouteOptions()) == ""
-
-
-def test_no_dsn_rewrite_refuses_the_default_snapshot():
-    """K14.4: none of the four is left in `input_conflicts`."""
-    others = {name: v for name, v in DSN_REWRITES.items() if name != "edge_and_pad_keepouts"}
-    assert len(others) == 4
-    for name, (value, _label) in others.items():
-        chosen = RouteOptions(board_input="kicad_pcb", **{name: value})  # the keepouts stay on
-        assert options.input_conflicts(chosen) == [], name
-        assert options.input_ignored(chosen) == [DSN_REWRITES["edge_and_pad_keepouts"][1]]
 
 
 def test_the_snapshot_run_log_carries_the_ignored_note_once():
@@ -319,8 +287,10 @@ def test_headless_route_follows_the_profile_when_the_options_name_no_input(monke
     assert "snapshot" in command
     _, command = run_headless_route(monkeypatch, tmp_path / "b", {"profile": "legacy"})
     assert "export" in command
-    # a DSN-only fix-up and no choice keeps the DSN
+    # K14.5: a fix-up and no choice takes the profile's input too; a file that says `dsn` keeps it
     _, command = run_headless_route(monkeypatch, tmp_path / "c", {"class_widths": {"GND": 0.4}})
+    assert "snapshot" in command
+    _, command = run_headless_route(monkeypatch, tmp_path / "d", {"class_widths": {"GND": 0.4}, "board_input": "dsn"})
     assert "export" in command
 
 
@@ -339,7 +309,7 @@ def test_headless_export_and_snapshot_modes_set_their_input_whatever_the_options
 
 
 def test_every_k09_option_is_either_checked_or_allowed():
-    """The K09 fields: five rewrite the DSN text (none refuses a snapshot since K14.4); the rest are
+    """The K09 fields: five rewrite the DSN text (the reader applies four on a snapshot since K14, and ignores the fifth); the rest are
     router flags or board locks and work on a snapshot. A new K09 option has to
     be put in one list."""
     checked = set(DSN_REWRITES)
@@ -360,18 +330,6 @@ def test_every_k09_option_is_either_checked_or_allowed():
         "min_trace_width_um", "timeout", "rule_area_fixup", "profile", "stages", "board_input",
     }  # fmt: skip
     assert k09 == checked | allowed
-    assert options.input_conflicts(
-        opts(fix_existing=True, start_ripup_costs=1500, sweep="free", sweep_passes=2, use_pass_hint=True, pass_hint=3)
-    ) == []
-
-
-def test_engine_and_wire_pours_named_or_auto_work_on_a_snapshot():
-    """K14.4: `engine` resolves `auto` from the board (`snapshot_engine_args`),
-    `wires` goes to the reader (`snapshot_fixups`)."""
-    for mode in ("engine", "wires"):
-        for classes in (["Power_High"], "auto"):
-            assert options.input_conflicts(opts(fixed_pour_classes=classes, fixed_pour_mode=mode)) == [], (mode, classes)
-    assert options.input_conflicts(opts(class_widths="auto")) == []  # K14.1
 
 
 def test_the_form_accepts_every_dsn_option_on_a_snapshot():

@@ -52,10 +52,14 @@ K13.7 (schema 6): `board_input` defaults to `kicad_pcb` under `enhanced`
 (`PROFILE_DEFAULTS`); `legacy` keeps `dsn`, as Java's plugin exports a DSN. The
 file keeps an explicit choice: `to_dict` leaves a default out, so before schema
 6 a saved `dsn` was never written, and a file without `board_input` has no
-saved choice and takes the profile's default. One exception: a file without
-the choice that turns on a DSN-only fix-up (`dsn_text_fixups`) takes `dsn`, so
-the board's own saved setup does not refuse its Route. `apply_kicad_rules` is
-gone (it decided nothing since K13.1); a file that has it still loads.
+saved choice and takes the profile's default, whatever fix-ups it turns on
+(K14.5).
+K13.7 sent such a file to `dsn`, because the snapshot refused the four K09
+fix-ups that rewrite the DSN text (`class_widths`, `fixed_pour_classes`,
+`drop_pour_nets`, `route_on_plane_layers`); the router's reader applies all
+four since K14.1-K14.4, so nothing refuses a snapshot and a file that says
+`dsn` is the only one that keeps it. `apply_kicad_rules` is gone (it decided
+nothing since K13.1); a file that has it still loads.
 """
 
 import json
@@ -280,10 +284,6 @@ class RouteOptions:
         v = data.get("pin_escape")
         if isinstance(v, bool):
             out.pin_escape = v
-        # K13.7: no saved choice, and a DSN-only fix-up on: the DSN (saved
-        # before the snapshot was the default, when `dsn` was never written).
-        if data.get("board_input") not in BOARD_INPUTS and dsn_text_fixups(out):
-            out.board_input = INPUT_DSN
         return out
 
 
@@ -667,55 +667,12 @@ def _form_k09(options, values, errors, number):
         options.pass_hint = number("pass_hint", int, 1, MAX_PASSES_RANGE[1])
 
 
-# The K09 options that rewrite the DSN text, by the name the dialog shows
-# (K10.4). A `.kicad_pcb` input has no DSN text to rewrite; since K14 the
-# router's reader applies four of them to its tree (`input_conflicts` refuses
-# none), and `edge_and_pad_keepouts` is ignored there, not refused (K13.7): the
-# reader writes those keepouts itself (`input_ignored`).
-DSN_REWRITE_LABELS = {
-    "class_widths": "Class widths",
-    "fixed_pour_classes": "Fixed pour classes",
-    "drop_pour_nets": "Drop pours of nets",
-    "edge_and_pad_keepouts": "Keep the board-edge and pad clearances",
-    "route_on_plane_layers": "Route on plane layers",
-}
-
-
-def dsn_text_fixups(opts):
-    """K13.7's list, which `input_conflicts` was before K14.1-K14.3: the dialog
-    labels of the four K09 fix-ups that rewrite KiCad's DSN text and are on,
-    for `opts.board_input == "kicad_pcb"` (empty for a DSN input). K13.7's two
-    DSN rules use it, unchanged until K14.5 removes them: a saved file that
-    names no input and has one loads on the DSN (`from_dict`), and
-    `presets.apply` moves such a preset to the DSN with a warning."""
-    if opts.board_input != INPUT_KICAD_PCB:
-        return []
-    out = []
-    if opts.class_widths:
-        out.append(DSN_REWRITE_LABELS["class_widths"])
-    if opts.fixed_pour_classes and (opts.fixed_pour_mode == "wires" or opts.fixed_pour_classes == AUTO):
-        out.append(DSN_REWRITE_LABELS["fixed_pour_classes"])
-    if opts.drop_pour_nets:
-        out.append(DSN_REWRITE_LABELS["drop_pour_nets"])
-    if opts.route_on_plane_layers:
-        out.append(DSN_REWRITE_LABELS["route_on_plane_layers"])
-    return out
-
-
-def input_conflicts(opts):
-    """The dialog labels of the options that need the DSN text and are on, as
-    a list, for `opts.board_input == "kicad_pcb"`; empty for a DSN input or
-    when none is on.
-
-    None is left since K14.4, so the list is always empty; K14.5 decides what
-    becomes of the function. `class_widths`, `drop_pour_nets`,
-    `route_on_plane_layers` (K14.1-K14.3) and `fixed_pour_classes` in `wires`
-    mode (K14.4) work on the snapshot: the router's `.kicad_pcb` reader
-    applies them (`router.input_fixups.*`, `export_flow.snapshot_fixups`),
-    `auto` resolved from the board. `fixed_pour_classes` in `engine` mode is
-    the engine flag `--router.plane_obstacle_net_classes`, `auto` resolved
-    from the board too (`export_flow.snapshot_engine_args`)."""
-    return []
+# The dialog's label of the one K09 option the snapshot ignores. The other four that
+# rewrite the DSN text (class widths, fixed pour classes, dropped pours, plane layers)
+# work on both inputs since K14: the DSN path edits the exported text, the router's
+# reader edits its tree (`router.input_fixups.*`). Nothing refuses a snapshot, so
+# there is no list of conflicts (K14.5; `input_conflicts` was K10.4's).
+KEEPOUTS_LABEL = "Keep the board-edge and pad clearances"
 
 
 # The options that are on and do nothing on a `.kicad_pcb` input, by dialog
@@ -726,7 +683,7 @@ def input_conflicts(opts):
 # `.kicad_pro` as the router's `copper_to_edge_clearance_um` for the outline,
 # and `pad_clearance::read_pad_clearances`/`keepouts` for the pads.
 IGNORED_ON_KICAD_PCB = {
-    DSN_REWRITE_LABELS["edge_and_pad_keepouts"]: (
+    KEEPOUTS_LABEL: (
         "the reader keeps the copper-to-edge clearance and the pads' own clearances itself"
     ),
 }
@@ -742,7 +699,7 @@ def input_ignored(opts):
         return []
     out = []
     if opts.edge_and_pad_keepouts:
-        out.append(DSN_REWRITE_LABELS["edge_and_pad_keepouts"])
+        out.append(KEEPOUTS_LABEL)
     return out
 
 
@@ -753,39 +710,20 @@ def input_ignored_note(opts):
 
 
 def input_note(opts):
-    """The dialog's note under the board input, one line per point, or "".
-    On the board snapshot: the DSN fix-ups that are on and keep it from running
-    (Route refuses them, `input_conflicts`), then `input_ignored_note`. On the
-    DSN export: the fix-ups that need it, so the snapshot cannot run until they
-    are off (a saved file with them loads on the DSN, `from_dict`)."""
-    needs_dsn = input_conflicts(replace(opts, board_input=INPUT_KICAD_PCB))
-    lines = []
-    if needs_dsn:
-        names = " and ".join(filter(None, (", ".join(f"'{n}'" for n in needs_dsn[:-1]), f"'{needs_dsn[-1]}'")))
-        them = "them" if len(needs_dsn) > 1 else "it"
-        if opts.board_input == INPUT_KICAD_PCB:
-            lines.append(f"The board snapshot cannot apply {names}: turn {them} off, or choose KiCad's DSN export.")
-        else:
-            need = "need" if len(needs_dsn) > 1 else "needs"
-            lines.append(f"{names} {need} KiCad's DSN export: turn {them} off to route the board snapshot.")
-    ignored = input_ignored_note(opts)
-    if ignored:
-        lines.append(ignored)
-    return "\n".join(lines)
+    """The dialog's note under the board input: what the chosen input ignores
+    (`input_ignored_note`), or "". No fix-up needs the DSN export since K14, so
+    the note names none (K14.5)."""
+    return input_ignored_note(opts)
 
 
 def _form_k10(options, values, errors):
     """The K10 fields of the form; a field the form leaves out keeps the
-    profile's default. Refuses a board snapshot while a DSN-rewriting option
-    is on, naming each (K10.4); `edge_and_pad_keepouts` is ignored there, not
-    refused (K13.7)."""
+    profile's default. Every option is accepted on either input: the four
+    fix-ups work on both (K14), `edge_and_pad_keepouts` is ignored on the
+    snapshot (K13.7)."""
     chosen = str(values.get("board_input", options.board_input)).strip().lower()
     if chosen in BOARD_INPUTS:
         options.board_input = chosen
     else:
         errors.append(f"board input: '{chosen}' is not one of {', '.join(BOARD_INPUTS)}")
-    for label in input_conflicts(options):
-        errors.append(
-            f"board input: the board snapshot is read without a DSN, so '{label}' cannot apply. "
-            f"Turn it off, or choose {BOARD_INPUT_LABELS[INPUT_DSN]}."
-        )
+

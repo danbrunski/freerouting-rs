@@ -25,7 +25,8 @@ Its toolbar button opens a dialog that:
   time limit, seed, minimum trace width) and the others are saved per board in
   `freerouting-rs/route-options.json`. The minimum trace width defaults to the Board Setup
   minimum track width, which the DSN does not carry.
-- **DSN fix-ups and flow** (K09, `dsn_fixups.py`, ported from canary's `dsn_export.py`): per
+- **Fix-ups and flow** (K09, `dsn_fixups.py`, ported from canary's `dsn_export.py`; on the board
+  snapshot the router's `.kicad_pcb` reader applies the same four, K14): per
   class routed widths, outer pours of listed classes kept as fixed copper (or kept clear by the
   router), outer pours of listed nets dropped, the board-edge and pad clearances as keepouts (on by
   default: they are board rules), inner plane layers opened to routing, an add-only run that keeps
@@ -38,13 +39,13 @@ Its toolbar button opens a dialog that:
   `.kicad_pcb` reader, instead of KiCad's DSN export. When the reader refuses the board (a file older than
   KiCad 6, or a construct it does not support) the plugin exports the DSN instead and says so. The Board
   page's "Board input" picks the other input; the Legacy profile defaults to the DSN, as Java's plugin
-  reads a DSN. A board's saved choice is kept; a saved file without one takes the profile's default, except
-  that one with a DSN-only fix-up (below) keeps the DSN, and an older file's `apply_kicad_rules` is dropped
-  when it is saved again. The snapshot is refused while an option that rewrites the
-  DSN is on (class widths, fixed or dropped pours, opened plane layers); the note under "Board input" names
-  them on either input, before Route. The board-edge and pad clearances box
-  (on by default) does not refuse it: the reader keeps those clearances itself, so the box is ignored on the
-  snapshot, and the dialog and the run log say so. The project's
+  reads a DSN. A board's saved choice is kept; a saved file without one takes the profile's default,
+  whatever fix-ups it turns on, and an older file's `apply_kicad_rules` is dropped when it is saved again.
+  All four fix-ups that rewrite the DSN text (class widths, fixed or dropped pours, opened plane layers) work
+  on both inputs: on the DSN the plugin edits the export, on the snapshot the router's reader applies them
+  (`router.input_fixups.*`, K14), so nothing refuses the snapshot. The board-edge and pad clearances box
+  (on by default) is done by the reader itself on the snapshot, so the box is ignored there, and the dialog and
+  the run log say so. The project's
   `.kicad_dru` rules reach the router on both inputs (`--kicad-dru` for the DSN, `--apply-design-rules` for the
   snapshot; K13.1). The result comes back through the same SES import.
   Measured on eight boards (K10.5, `docs/development/kicad-plugin.md`): the snapshot grades the same on four,

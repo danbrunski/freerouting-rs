@@ -17,7 +17,7 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
 - **The dialog's layout.** The board's paths, the **Presets** row and the buttons stay in view; the
   options sit on three tabs: **Route** (profile, passes, threads, optimizer, net classes, time
   limit, seed, minimum width), **Board and DSN** (board input, `.kicad_dru` switch, rule-area fix,
-  the K09 DSN fix-ups) and **Advanced** (the K09 flow settings and the N01 stage choices). The
+  the K09 fix-ups, which work on either input since K14) and **Advanced** (the K09 flow settings and the N01 stage choices). The
   tabs open tall enough for the longest one, so none scrolls where the screen has the room (owner,
   2026-10-18). On a smaller screen the dialog is cut to 90 % of the display's work area
   (`layout.py`, `Dialog.fit_to_display`) and the pages scroll; before the tabs, the stacked groups
@@ -118,9 +118,10 @@ promotion is made here; historical 33-versus-39 counts are not an accepted A/B.
 ## DSN fix-ups and the canary flow (K09)
 
 KiCad's export is not what canary's graded flow routed: `hardware/tools/dsn_export.py` (the owner's canary
-repo) rewrote it. The plugin now does the same transforms itself, each an option of the dialog's "DSN
-fix-ups" group (Board and DSN tab) or "Flow" group (Advanced tab), saved in `route-options.json` (schema 3; schema 1 and 2 files still load, a
-field they lack takes the profile's default):
+repo) rewrote it. The plugin now does the same transforms itself, each an option of the dialog's "Fix-ups"
+group (Board and DSN tab) or "Flow" group (Advanced tab), saved in `route-options.json` (schema 3; schema 1 and 2 files still load, a
+field they lack takes the profile's default). The four that rewrite the DSN text work on the board snapshot
+too, applied by the router's reader (K14); "The K09 fix-ups on each input" below says how:
 
 | option | what it does | default |
 |---|---|---|
@@ -771,11 +772,13 @@ under question 1's rule; K13.6's measurement switched it (below).
 **Saved options (K13.7, schema 6).** `to_dict` leaves a default out, so before schema 6 a saved `dsn` was never
 written and a file without `board_input` meant `dsn`. Now a file keeps an explicit choice (`dsn` under
 Enhanced and `kicad_pcb` under Legacy are written), and a file without `board_input` takes the profile's
-default, with one exception: a file that names no input but turns on a DSN-only fix-up (`class_widths`,
-`fixed_pour_classes` as wires or `auto`, `drop_pour_nets`, `route_on_plane_layers`; `options.input_conflicts`)
-takes `dsn`, so a board's saved setup never refuses its own Route. A preset that leaves out `board_input` and
-turns such a fix-up on moves the input to `dsn` and logs a warning saying so (`presets.apply`); presets written by
-"Save as preset..." name every option and are unaffected. `apply_kicad_rules` is gone from the options (it
+default, whatever fix-ups it turns on. K13.7 had one exception, removed by K14.5 (2026-10-21): a file that
+named no input but turned on one of the four fix-ups that rewrite the DSN text (`class_widths`,
+`fixed_pour_classes` as wires or `auto`, `drop_pour_nets`, `route_on_plane_layers`) took `dsn`, and
+`presets.apply` moved a preset without an input to `dsn` with a warning, because the snapshot refused them.
+The router's reader applies all four since K14.1-K14.4, so a file or preset without `board_input` keeps the
+profile's input (or the one the dialog has), and a file that says `dsn` keeps `dsn`. canary-pwr's saved options
+(schema 4: class widths, fixed pour classes, dropped pours, no `board_input`) open on the snapshot. `apply_kicad_rules` is gone from the options (it
 decided nothing since K13.1) together with its greyed check box; a file or preset that has it still loads and
 is saved again as schema 6 without it. A board with no `route-options.json` opens on the snapshot, with the Enhanced profile's
 defaults (`load` returns `profile_defaults(DEFAULT_PROFILE)`, the same as a file that names only the profile;
@@ -811,22 +814,29 @@ although the profile table above says a new board starts from it). Tests:
   `.kicad_dru` but has no such switch and says so in the log, on the snapshot as on the DSN (no `--kicad-dru`
   either). The minimum track width stays `--router.min_trace_width_um` on both paths. The `-drc` mode does not
   apply the rules. Tests: `test_board_rules_both_inputs.py`.
-- **The K09 restriction (K10.4, K13.7).** The K09 options that rewrite DSN text (`class_widths`,
-  `fixed_pour_classes` as `wires` or `auto`, `drop_pour_nets`, `route_on_plane_layers`) cannot apply to a
-  `.kicad_pcb`, so the dialog refuses `kicad_pcb` while any is on and names it
-  (`options.input_conflicts`; `test_snapshot.py`). `edge_and_pad_keepouts` (a board rule, on by default,
-  K09.9) is not refused: the reader writes the same keepouts itself, so on `kicad_pcb` it is *ignored*
-  (`options.input_ignored`, `input_ignored_note`). What covers it: the outline's copper-to-edge clearance is
+- **The K09 fix-ups on each input (K10.4 refused four on the snapshot; K14 and K14.5 replaced the refusal).**
+  Since K14.5 (2026-10-21) nothing refuses `kicad_pcb`: `options.input_conflicts` and `options.dsn_text_fixups`
+  are gone, and so is the `Incompatible board input options` exit of `headless_run.py route`.
+
+  | option | DSN input | board snapshot |
+  |---|---|---|
+  | `class_widths` (named or `auto`) | text edit of the export (`dsn_fixups`) | `--router.input_fixups.class_widths` (K14.1), `auto` resolved from the board (`dsn_fixups.resolve_on_board`) |
+  | `fixed_pour_classes`, `wires` (named or `auto`) | text edit | `--router.input_fixups.fixed_pour_classes` (K14.4): the reader lays the fixed wires from the snapshot's `filled_polygon`s |
+  | `fixed_pour_classes`, `engine` (named or `auto`) | `--router.plane_obstacle_net_classes` | the same engine flag, `auto` resolved from the board (`export_flow.snapshot_engine_args`) |
+  | `drop_pour_nets` (named or `auto`) | text edit | `--router.input_fixups.drop_pour_nets` (K14.3) |
+  | `route_on_plane_layers` | text edit | `--router.input_fixups.route_on_plane_layers` (K14.2) |
+  | `edge_and_pad_keepouts` | text edit (keepouts written into the export) | done by the reader itself, so the box is *ignored* (`options.input_ignored`, `input_ignored_note`) |
+  | `fix_existing`, rip-up cost, sweep, pass hint, `pin_escape` | board locks and engine flags | the same |
+
+  What covers the keepouts on the snapshot: the outline's copper-to-edge clearance is
   `min_copper_edge_clearance` of the `.kicad_pro`, passed as `router.copper_to_edge_clearance_um`
   (`crates/freerouting-kicad/src/read.rs`, `job::prepare::board_minimums_patch`); the Edge.Cuts and Margin
   shapes the outline does not carry become `edge_clearance` keepouts (`edge_keepouts::edge_rects`,
   `edge_keepouts::edge_keepouts`, Q18.5); the pads' own clearances become `pad_clearance` circles
   (`pad_clearance::read_pad_clearances`, `pad_clearance::keepouts`, K13.1). The dialog shows a note under
   the board input (`Dialog.input_note`, text from `options.input_note`, refreshed by `on_input_changed` on the
-  input choice, the keepouts box, the pour mode and the four fix-up text boxes, and by `show_options`). Besides
-  the ignored keepouts it names the DSN fix-ups that are on: on the snapshot, "The board snapshot cannot apply
-  ...: turn them off, or choose KiCad's DSN export." (Route still refuses them); on the DSN, "... need KiCad's
-  DSN export: turn them off to route the board snapshot." (a saved file with them loads on the DSN). The note
+  input choice and the keepouts box, and by `show_options`). It holds the ignored-keepouts line on the snapshot
+  and nothing else; before K14.5 it also named the fix-ups that kept the snapshot from running. The note
   wraps to the board input's laid-out width (`wrap_input_note`, again on the choice's `EVT_SIZE`), not a fixed
   520 px: the owner's run (2026-10-21) found the fixed width running off a dialog that was fitted while the
   note was empty. The snapshot
@@ -836,9 +846,12 @@ although the profile table above says a new board starts from it). Tests:
   (`test_the_defaults_are_accepted_on_the_snapshot_and_the_keepouts_are_ignored`,
   `test_headless_route_takes_the_default_options_on_a_snapshot_and_prints_the_note`),
   `test_input_choice.py` (`test_the_defaults_route_the_snapshot_and_the_dialog_says_the_keepouts_are_ignored`,
-  `test_the_note_follows_the_input_and_the_keepouts_box`). `fixed_pour_mode = engine` with named classes,
-  `fix_existing`, the rip-up cost, the sweep and the pass hint are engine flags or board locks and work. The
-  rule-area fix-up (K01.2) does nothing (the reader maps rule areas by flags); the run log says so once.
+  `test_the_note_follows_the_input_and_the_keepouts_box`,
+  `test_a_board_saved_with_a_fixup_and_no_choice_opens_on_the_snapshot_and_routes_there`,
+  `test_canary_pwrs_saved_options_open_on_the_snapshot_and_route_there`), `test_board_input_default.py`
+  (`test_the_form_accepts_each_fixup_on_either_input`, `test_the_note_has_no_dsn_line_for_any_fixup`,
+  the saved-file and preset tests) and `test_snapshot_fixups.py`. The rule-area fix-up (K01.2) does nothing on
+  the snapshot (the reader maps rule areas by flags); the run log says so once.
 - **Presets** (see above) work with both inputs.
 - **Fallback to the DSN (K13.3, `input_choice.py`).** When the reader refuses the snapshot, the run uses the
   DSN export instead and routes that, so the input choice never fails a run. Two refusals are recognised: the

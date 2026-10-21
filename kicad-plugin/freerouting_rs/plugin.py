@@ -308,7 +308,7 @@ class Dialog(wx.Dialog):
         route_page, board_page, advanced_page = self.pages
         # A group box's controls are its children (wxWidgets 3.3 logs a
         # warning for a control in the box's sizer but not in the box).
-        dsn_group = wx.StaticBoxSizer(wx.VERTICAL, board_page, "DSN fix-ups")
+        dsn_group = wx.StaticBoxSizer(wx.VERTICAL, board_page, "Fix-ups")
         flow_group = wx.StaticBoxSizer(wx.VERTICAL, advanced_page, "Flow")
         stages_group = wx.StaticBoxSizer(wx.VERTICAL, advanced_page, "Stages")
         preset_group = wx.StaticBoxSizer(wx.VERTICAL, self, "Presets")
@@ -400,17 +400,17 @@ class Dialog(wx.Dialog):
         dropdowns.fix_dark_lists([self.profile, self.board_input, self.preset_choice, self.pour_mode, self.sweep] + [c for c, _ in self.stage_choices.values()])
 
     def add_k09_controls(self, saved, dsn_box, flow_box):
-        """The K09 fields: DSN fix-ups (in `dsn_box`) and the flow's router
-        settings (in `flow_box`)."""
+        """The K09 fields: the fix-ups (in `dsn_box`, which work on either board
+        input since K14) and the flow's router settings (in `flow_box`)."""
         self.widths = wx.TextCtrl(dsn_box, value=options.format_class_widths(saved.class_widths))
         self.widths.SetHint("as exported, or CLASS=mm, CLASS=mm, or auto")
-        self.widths.SetToolTip("Routed width per net class in mm, written into the DSN; auto caps wide classes at their narrowest SMD pad")
+        self.widths.SetToolTip("Routed width per net class in mm, applied on either board input; auto caps wide classes at their narrowest SMD pad")
         self.fixed_pours = wx.TextCtrl(dsn_box, value=options.format_names(saved.fixed_pour_classes))
         self.fixed_pours.SetHint("none, e.g. CLASS, CLASS, or auto")
         self.fixed_pours.SetToolTip("Net classes whose outer-layer pours other nets must keep out of; auto: pours above their layer's lowest zone priority")
         self.pour_mode = wx.Choice(dsn_box, choices=list(options.POUR_MODES))
         self.pour_mode.SetSelection(options.POUR_MODES.index(saved.fixed_pour_mode))
-        self.pour_mode.SetToolTip("wires: the fill becomes fixed copper in the DSN; engine: the router keeps foreign nets out (Q01)")
+        self.pour_mode.SetToolTip("wires: the fill becomes fixed copper on either board input; engine: the router keeps foreign nets out (Q01)")
         self.drop_pours = wx.TextCtrl(dsn_box, value=options.format_names(saved.drop_pour_nets))
         self.drop_pours.SetHint("none, e.g. NET, NET, or auto")
         self.drop_pours.SetToolTip("Nets whose outer-layer pours are left out, so their pads fan out to the inner plane; auto: a net alone on an inner layer")
@@ -447,15 +447,15 @@ class Dialog(wx.Dialog):
         self.board_input.SetToolTip(
             "What the router reads. The board snapshot (the default of the Enhanced profile) is "
             "the open board saved with SaveBoard and read by the router's own reader (rule areas by "
-            "their flags, track arcs, unsaved Board Setup changes); it cannot be combined with the "
-            "DSN fix-ups below, except the board-edge and pad clearances box, which it ignores. "
+            "their flags, track arcs, unsaved Board Setup changes). The fix-ups below work on both "
+            "inputs, except the board-edge and pad clearances box, which the snapshot ignores. "
             "KiCad's DSN export is the default of the Legacy profile and the fallback when the "
             "reader refuses the board. The .kicad_dru beside the board reaches the router on both "
             "inputs (Route only)."
         )
         # K13.7: the keepouts box is on by default and does nothing on the
-        # snapshot; a note says so instead of refusing the run. It also names
-        # the DSN fix-ups that keep the snapshot from running, on either input.
+        # snapshot; a note says so instead of refusing the run. No fix-up needs
+        # the DSN export (K14), so the note names none.
         self.input_note = wx.StaticText(page, label="")
         self.input_page = page  # laid out again when the note's text changes
         # Until the dialog is laid out (then the board input's width, __init__).
@@ -463,9 +463,6 @@ class Dialog(wx.Dialog):
         self.board_input.Bind(wx.EVT_CHOICE, self.on_input_changed)
         self.board_input.Bind(wx.EVT_SIZE, self.on_input_choice_size)
         self.keepouts.Bind(wx.EVT_CHECKBOX, self.on_input_changed)
-        self.pour_mode.Bind(wx.EVT_CHOICE, self.on_input_changed)
-        for box in (self.widths, self.fixed_pours, self.drop_pours, self.open_layers):
-            box.Bind(wx.EVT_TEXT, self.on_input_changed)
         self.keepouts.SetToolTip(
             "Applies to KiCad's DSN export. The board snapshot ignores it: the reader keeps the copper-to-edge "
             "clearance and the pads' own clearances itself."
@@ -474,8 +471,8 @@ class Dialog(wx.Dialog):
 
     def show_input_note(self):
         """The non-blocking note under the board input (`options.input_note`,
-        K13.7): the DSN fix-ups that keep the snapshot from running, and the
-        options the chosen input ignores."""
+        K13.7): the options the chosen input ignores (K14.5: no fix-up needs the
+        DSN export, so none is named)."""
         shown, _errors = options.from_form({**self.k09_values(), **self.k10_values()})  # Route reports the errors
         self.input_note_text = options.input_note(shown)
         self.wrap_input_note(self.input_note_width)

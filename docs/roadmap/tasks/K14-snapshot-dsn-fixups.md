@@ -321,7 +321,7 @@ K13 (the snapshot is the default).
       tools/parity-check.sh --no-probes`: 7 of 7 exact, PARITY OK. `cargo test --workspace
       --no-fail-fast`: 2838 passed, 0 failed.
 
-- [ ] **K14.5 — The plugin stops sending these boards to the DSN.** Once K14.1–K14.4 have landed:
+- [x] **K14.5 — The plugin stops sending these boards to the DSN.** Once K14.1–K14.4 have landed:
   - **Change:**
     - `input_conflicts` returns nothing for any of the four; keep it, empty, if other refusals
       remain.
@@ -336,6 +336,63 @@ K13 (the snapshot is the default).
     - plugin tests: a saved file and a preset with each fix-up route on the snapshot (stub UI);
       the dialog form accepts each on the snapshot; the note has no DSN line;
     - `python3 -m pytest kicad-plugin/tests` passes.
+
+    *Done 2026-10-21:* plugin Python, tests and docs only; no engine code, so no parity run (the router
+    binary of main `383de4a`, a debug build, was used for the tests that call it).
+    - *Removed.* `options.input_conflicts` (nothing else refused: the form's refusal loop and
+      `headless_run.py route`'s `Incompatible board input options` exit were its only callers),
+      `options.dsn_text_fixups` and `DSN_REWRITE_LABELS` (kept only for K13.7's rules; the one label still
+      used is now `KEEPOUTS_LABEL` for the ignored-keepouts line), `presets._dsn_for_fixups` (the preset
+      move to `dsn` and its warning) and the load rule at the end of `RouteOptions.from_dict`. A file or
+      preset without `board_input` takes the profile's input (the dialog's, for a preset); a file that says
+      `dsn` keeps it. `options.input_note` stays, as `input_ignored_note` (the keepouts line, snapshot only);
+      the text boxes and the pour mode no longer re-run it. Docstrings of `options.py` and `presets.py` say
+      so. `plugin.py`: tooltips of class widths and pour mode and the board input's say "on either board
+      input" (the board input's no longer says the snapshot cannot be combined with the fix-ups), and the
+      group box is "Fix-ups" (was "DSN fix-ups").
+    - *Tests, RED then GREEN.* RED: the new and rewritten tests against main's plugin modules, 41 failed,
+      633 passed, 6 skipped. GREEN: `pytest kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this build's
+      `target/debug`): 674 passed, 6 skipped (pcbnew-only and the PCM validator, as before);
+      `test_snapshot_fixups.py` and `test_snapshot_headless.py`: 21 passed, none skipped.
+      - saved files: `test_board_input_default.py::test_a_saved_fixup_without_a_choice_takes_the_profiles_input`
+        (7 fix-up shapes: `class_widths` named and `auto`, `fixed_pour_classes` in `wires`, `engine` and `auto`,
+        `drop_pour_nets`, `route_on_plane_layers`; schemas 3 to 6; `legacy` stays `dsn`),
+        `::test_a_saved_fixup_with_a_choice_keeps_the_choice` (`dsn` stays `dsn`),
+        `::test_the_canary_preset_file_as_a_saved_options_file_takes_the_snapshot`,
+        `::test_the_k13_7_rules_and_the_refusal_are_gone`;
+      - routes there through the stub UI: `test_input_choice.py::test_a_board_saved_with_a_fixup_and_no_choice_opens_on_the_snapshot_and_routes_there`
+        (7 shapes: opens on the snapshot, one snapshot, no export, no error box, `input` is `kicad_pcb`),
+        `::test_a_board_saved_with_a_fixup_and_the_dsn_keeps_the_dsn` (7 shapes: one export, no snapshot),
+        `test_snapshot.py::test_headless_route_follows_the_profile_when_the_options_name_no_input` (headless
+        `route` takes the snapshot with a fix-up and no input, `export` with `dsn`);
+      - presets: `test_board_input_default.py::test_a_preset_with_a_fixup_and_no_input_keeps_the_input_it_found_without_a_warning`
+        (7 shapes, both inputs, no warning), `::test_the_canary_preset_on_the_new_default_stays_on_the_snapshot`;
+      - the form: `::test_the_form_accepts_each_fixup_on_either_input` (7 shapes, both inputs, no error),
+        `::test_the_form_accepts_all_the_fixups_together_on_the_snapshot`;
+      - the note: `::test_the_note_has_no_dsn_line_for_any_fixup` (7 shapes, both inputs: equal to the ignored
+        note, no "DSN"), `::test_the_note_with_the_canary_fixups_is_the_ignored_note_or_nothing`;
+      - canary-pwr's saved shape (schema 4: class widths, fixed pour classes, dropped pours, no
+        `board_input`; synthetic, `test_input_choice.py::CANARY_SAVED`; nothing read from `../canary`):
+        `test_input_choice.py::test_canary_pwrs_saved_options_open_on_the_snapshot_and_route_there` (opens on the
+        snapshot with only the keepouts note, Route goes through the snapshot, the saved file keeps the fix-ups
+        and writes no `board_input`).
+    - *K13.7 tests removed or rewritten.* Removed: `test_snapshot.py::test_the_fixed_pour_wires_no_longer_refuse_the_snapshot`,
+      `::test_the_reader_fixups_no_longer_refuse_the_snapshot`, `::test_no_dsn_rewrite_refuses_the_default_snapshot`,
+      `::test_engine_and_wire_pours_named_or_auto_work_on_a_snapshot` (all asserted `input_conflicts == []`; the
+      form, route and note tests above replace them), the `input_conflicts` assertions in `test_snapshot.py`,
+      `test_snapshot_fixups.py`. Rewritten: `test_board_input_default.py::test_a_saved_dsn_fixup_without_a_choice_keeps_the_dsn`
+      (now takes the snapshot), `::test_a_preset_with_a_dsn_fixup_and_no_input_moves_to_the_dsn_with_a_warning`
+      (now keeps the input, no warning), `::test_the_canary_preset_file_as_a_saved_options_file_keeps_the_dsn`,
+      `::test_the_canary_preset_on_the_new_default_gives_its_dsn_export`, the two note tests;
+      `test_input_choice.py::test_a_schema_5_board_with_class_widths_and_no_choice_still_routes_on_the_dsn` and
+      `::test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_what_blocks_it` (now the two
+      "opens on the snapshot" tests); `test_presets.py` (the canary preset as an options file takes the
+      profile's input); `test_route_dialog.py` (group title "Fix-ups"). None was loosened.
+    - *Docs.* `docs/development/kicad-plugin.md` (a table of the fix-ups on each input; the saved-options rule),
+      `kicad-plugin/README.md`, `README.md`, and the K13.7 line in `docs/DIVERGENCES.md` (the K10.4
+      refusal had no DIVERGENCES line of its own). All four fix-ups work on both inputs; `edge_and_pad_keepouts`
+      is done by the reader itself on the snapshot and ignored there.
+    - *Not done:* nothing in KiCad ran (no Windows build, no Route inside KiCad); K14.6 grades canary-pwr.
 
 - [~] **K14.6 — `canary-pwr` with its saved fix-ups, on both inputs.**
   - **Preregister first:** `docs/roadmap/prereg/K14.json` and `tools/bench/sets/k14-fixups.txt`.

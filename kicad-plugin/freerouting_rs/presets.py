@@ -20,10 +20,11 @@ skipped and named in the warnings; nothing here raises. The values are checked
 by `RouteOptions.from_dict`, the rules of the options file: a bad value keeps
 the default.
 
-K13.7: a preset that names no `board_input` but turns a DSN-only fix-up on
-(`options.dsn_text_fixups`) moves the input to `dsn`, with a warning, so that
-applying it never leaves the dialog refusing its own Route. Presets written by
-`save` name every option and are unaffected.
+A preset that names no `board_input` leaves the input as it is, whatever
+fix-ups it turns on (K14.5). K13.7 moved such a preset to `dsn`, with a
+warning, because the snapshot refused the fix-ups that rewrite the DSN text;
+the router's reader applies all of them now (K14.1-K14.4). Presets written by
+`save` name every option.
 
 Pure Python (no pcbnew, no wx).
 """
@@ -152,24 +153,7 @@ def apply(preset, current):
             warnings.append(f"preset {preset.name}: {key}={value!r} is not valid, ignored")
             continue
         out = replace(out, **{key: good})
-    return _dsn_for_fixups(preset, current, out, warnings), warnings
-
-
-def _dsn_for_fixups(preset, current, out, warnings):
-    """K13.7: `out`, with the input moved to `dsn` when the preset names no
-    input and turned on a DSN-only fix-up that `current` did not have; the
-    warning is appended to `warnings`."""
-    if "board_input" in preset.data or out.board_input != options.INPUT_KICAD_PCB:
-        return out
-    before = options.dsn_text_fixups(replace(current, board_input=options.INPUT_KICAD_PCB))
-    added = [label for label in options.dsn_text_fixups(out) if label not in before]
-    if not added:
-        return out
-    warnings.append(
-        f"preset {preset.name}: turns on {', '.join(repr(label) for label in added)}, which need KiCad's DSN export; "
-        f"the board input is set to {options.INPUT_DSN}"
-    )
-    return replace(out, board_input=options.INPUT_DSN)
+    return out, warnings
 
 
 def slug(name):

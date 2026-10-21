@@ -2032,9 +2032,14 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `SaveBoard` snapshot read by the router's own reader, and the run falls back to KiCad's DSN export,
   saying so, when the reader refuses the board (K13.3). Java's plugin always exports a DSN, and the
   `legacy` profile keeps `dsn`. A saved file keeps an explicit choice; one without it takes the
-  profile's input, or `dsn` when it turns on a DSN-only fix-up. Pinned by
-  `test_board_input_default.py` (the defaults, the saved choice, the schema migration, the presets)
-  and `test_input_choice.py` (the dialog and the fallback).
+  profile's input, whatever fix-ups it turns on (K14.5: the reader applies all four K09 fix-ups that
+  rewrite the DSN text, so K13.7's rule that sent such a file, or a preset without an input, to `dsn`
+  is gone, and nothing refuses a snapshot; `class_widths`, `fixed_pour_classes` in `wires` and
+  `engine` mode, `drop_pour_nets` and `route_on_plane_layers` work on both inputs, and
+  `edge_and_pad_keepouts` is done by the reader itself on the snapshot). Pinned by
+  `test_board_input_default.py` (the defaults, the saved choice, the schema migration, the presets,
+  the form and the note for each fix-up) and `test_input_choice.py` (the dialog, canary-pwr's saved
+  shape on the snapshot, and the fallback).
 - **Board Setup's minimum clearance is passed** (Q22.10, `options.BOARD_MINIMUM_SETTINGS`):
   `m_MinClearance` becomes `--router.board_minimums.clearance_um` under both profiles; 0 passes
   nothing. Pinned by `test_min_clearance.py`.

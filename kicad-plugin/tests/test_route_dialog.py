@@ -217,7 +217,7 @@ def test_the_options_sit_on_three_tabs_and_the_buttons_stay_outside(env):
     assert [page_of(c, dialog) for c in on_board] == [board] * len(on_board)
     assert [page_of(c, dialog) for c in on_advanced] == [advanced] * len(on_advanced)
     # The fix-up, flow and stage controls are children of their group's box.
-    assert {dialog.widths.parent.label, dialog.ripup.parent.label, next(iter(dialog.stage_choices.values()))[0].parent.label} == {"DSN fix-ups", "Flow", "Stages"}
+    assert {dialog.widths.parent.label, dialog.ripup.parent.label, next(iter(dialog.stage_choices.values()))[0].parent.label} == {"Fix-ups", "Flow", "Stages"}
     assert [b.label for b in ui.buttons if b.parent is dialog] == ["Route", "Route in GUI", "Open in viewer", "Import SES...", "Close"]
     assert [(b.label, b.parent.label) for b in ui.buttons if b.parent is not dialog] == [("Apply", "Presets"), ("Save as preset...", "Presets")]
     assert all(page_of(b, dialog) is None for b in ui.buttons)

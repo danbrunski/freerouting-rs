@@ -161,10 +161,6 @@ def route(board_path, work, options_path, router):
         )
         return 2
     opts = _options(options_path)
-    conflicts = options.input_conflicts(opts)
-    if conflicts:
-        print("Incompatible board input options: " + ", ".join(conflicts), file=sys.stderr)
-        return 2
     ignored = options.input_ignored_note(opts)
     if ignored:
         print("Note: " + ignored)

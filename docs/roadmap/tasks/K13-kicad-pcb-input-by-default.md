@@ -112,7 +112,7 @@ rules).
   | Footprint courtyards | carried as image outlines, drawing only | carried (`structure.rs::image_outlines_equal_the_export`), with the courtyards the export drops (K07.6); no routing effect (`image_outlines.rs` docs) |
   | Coordinate precision | carried differently: `%.6g`, about 1 µm lost above 100 mm; input copper put back within 600 nm after the import (Q22.3, `test_restore_copper.py::test_an_input_track_that_the_export_rounds_comes_back_at_its_nanometre_coordinates`) | carried: nanometres rounded to 0.1 µm (`numbers.rs::nm_rounds_like_kicad_not_like_frommm`, `copper.rs::copper_equals_the_export`); input copper put back within 200 nm (K13.2, `test_restore_copper.py::test_a_fully_routed_board_on_the_kicad_pcb_path_comes_back_unchanged`) |
   | Board outline, malformed outline as its bounding box | carried | carried (`structure.rs::outlines_equal_the_export`, `notched_outline_and_slot`) |
-  | K09 DSN rewrites (`class_widths`, `fixed_pour_classes` as wires or auto, `drop_pour_nets`, `route_on_plane_layers`): plugin options, not board rules | carried (`test_dsn_fixups.py`) | missing: refused (K10.4, `options.input_conflicts`). Board: canary-pwr's preset (`test_dsn_fixups.py::test_the_canary_preset_file_reproduces_dsn_export_on_the_fixture`); K13.7 decides |
+  | K09 DSN rewrites (`class_widths`, `fixed_pour_classes` as wires or auto, `drop_pour_nets`, `route_on_plane_layers`): plugin options, not board rules | carried (`test_dsn_fixups.py`) | missing: refused (K10.4, `options.input_conflicts`). Board: canary-pwr's preset (`test_dsn_fixups.py::test_the_canary_preset_file_reproduces_dsn_export_on_the_fixture`); K13.7 decides. *Since K14 (2026-10-21): carried, applied by the reader (`router.input_fixups.*`, `tests/k14_fixups.rs`); `input_conflicts` is gone (K14.5).* |
 
   - **Clause 2** (every carried row has a test that names it): the table names one per row. Added
     where none named the reader: `k13_inputs.rs::the_kicad_pcb_reader_applies_item_type_rules`, the
@@ -592,6 +592,7 @@ rules).
     - **Remains: the owner's confirmation from a run inside KiCad is recorded.** The owner should check: the Board page's input choice
       opens on "Board snapshot" and its note (the keepouts line, no other text); a Route on the snapshot imports the result; Undo after a
       Route that brought track arcs back (K13.8, untested inside KiCad).
+    - *2026-10-21:* K14.5 removed this item's two DSN rules (the load rule in `options.from_dict` and `presets.apply`'s move to `dsn`), now that the board snapshot applies all four fix-ups; a file or preset without `board_input` takes the profile's input.
 
 - [x] **K13.8 — The DSN path returns input track arcs as arcs** (added 2026-10-21, from K13.6;
   decided 2026-10-20: routing never breaks the board's manufacturing rules, and `dsn` stays the
