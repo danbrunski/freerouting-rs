@@ -311,6 +311,9 @@ def test_the_note_wraps_to_the_board_inputs_column(env, monkeypatch):
     dialog.widths.SetValue("")
     dialog.on_input_changed(None)
     assert dialog.input_note.wrapped == 250
+    monkeypatch.setattr(type(dialog), "__bool__", lambda self: False, raising=False)  # closed before the call ran
+    dialog.wrap_input_note_later(200)
+    assert dialog.input_note.wrapped == 250
 
 
 def test_a_kicad_5_board_is_exported_as_a_dsn_without_routing_the_snapshot(env):

@@ -497,7 +497,12 @@ class Dialog(wx.Dialog):
         evt.Skip()
         width = evt.GetSize().width
         if width > 0 and width != self.input_note_width:
-            wx.CallAfter(self.wrap_input_note, width)
+            wx.CallAfter(self.wrap_input_note_later, width)
+
+    def wrap_input_note_later(self, width):
+        # A closed dialog is falsy in wxPython; its controls are gone.
+        if self:
+            self.wrap_input_note(width)
 
     def on_input_changed(self, _evt):
         self.show_input_note()
