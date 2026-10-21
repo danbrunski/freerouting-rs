@@ -1,0 +1,23 @@
+# Q22.7 (docs/roadmap/prereg/Q22.json): main a8b4ae7 (before) against main after Q22.16,
+# Q22.17 and Q22.18 are all [x] (q22),
+# each row routed through the plugin's export (grade.sh --export plugin, the plugin's
+# default options) and graded by the q22 commit's tools/kicad-oracle under the board's own rules.
+# Rows: Q22.7's list plus pocketsdr-v3-0 and fc-rom. Paths are relative to the main checkout's
+# root (under target/, not in git); copied 2026-10-20 from target/corpus/projects, WSL KiCad
+# 10.0.7's /usr/share/kicad/demos and `git -C ../canary archive ab786fcc`.
+# After `#`: whether the row keeps its tracks (--keep-tracks) or is routed whole, the router's
+# own timeout when it has one, and the row's limit (timeout -k 10, the same in both arms).
+target/orchestrator/q227/boards/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb  # pcietest: --keep-tracks, 300 s
+target/orchestrator/q227/boards/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb  # cm4-edge-ai: --keep-tracks, 300 s
+target/orchestrator/q227/boards/nudac-nudac/nudac-nudac.kicad_pcb  # nudac: --keep-tracks, 300 s
+target/orchestrator/q227/boards/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb  # ch32v003: --keep-tracks, 300 s
+target/orchestrator/q227/boards/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb  # mydevboard: --keep-tracks, 300 s
+target/orchestrator/q227/boards/vna-usb-pd/vna-usb-pd.kicad_pcb  # vna-usb-pd: --keep-tracks, 300 s
+target/orchestrator/q227/boards/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb  # picodebugger: --keep-tracks, 300 s
+target/orchestrator/q227/boards/canary-ab786fcc/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb  # canary-pwr: --keep-tracks, 600 s
+target/orchestrator/q227/boards/sonde-xilinx/sonde-xilinx.kicad_pcb  # sonde-xilinx: --keep-tracks, 300 s
+target/orchestrator/q227/boards/pic_programmer/pic_programmer.kicad_pcb  # pic_programmer: --keep-tracks, 300 s
+target/orchestrator/q227/boards/flight-computer-core-board/flight-computer-core-board.kicad_pcb  # flight-computer: --keep-tracks, 300 s
+target/orchestrator/q227/boards/laser-backplane-dvi-laserbackplane-dvi/laser-backplane-dvi-laserbackplane-dvi.kicad_pcb  # laser-backplane: --keep-tracks, 300 s
+target/orchestrator/q227/boards/pocketsdr-v3-0/pocketsdr-v3-0.kicad_pcb  # pocketsdr-v3-0: routed whole, 300 s
+target/orchestrator/q227/boards/fc-rom-vomitter-nescart/fc-rom-vomitter-nescart.kicad_pcb  # fc-rom: routed whole, router --timeout 270, 300 s

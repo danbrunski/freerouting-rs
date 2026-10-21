@@ -1,0 +1,435 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q22.8-clearance-remeasure",
+  "registered": "2026-10-20",
+  "checklist": "docs/roadmap/tasks/Q22-clearance-and-hole-breaches.md (Q22.7 registers, Q22.8 measures)",
+  "question": "Graded by KiCad under each board's own rules with one grader (tools/kicad-oracle of the q22 commit), does main after Q22 (the q22 commit, with Q22.16, Q22.17 and Q22.18 in) route the 14 rows through the plugin's export with the plugin's default options and zero routing-caused manufacturing breaches on every row, and what did Q22 cost or save in KiCad unconnected items against main a8b4ae7, the last main before any Q22 routing or plugin fix?",
+  "rule": "paired",
+  "rule_text": "Decided 2026-10-20: Q22's fixes are correctness fixes, already landed, so there is no profile promotion and no keep decision. The verdict is the guard alone (keep_rule). The gate's paired improve/regress verdict on kicad_unconnected is printed and not used",
+  "engine": "two release builds of freerouting-cli, one per arm (arms.*.engine); Q22.8's first amendment, written after both builds and before any route, names the q22 commit, both binaries' sha256 and `freerouting-rs --version`, the sha256 of the q22 commit's tools/kicad-oracle/{grade.sh,oracle_lib.py,kicad_steps.py,via_in_pad.py} and of each tree's kicad-plugin/headless_run.py, and options.SCHEMA at the q22 commit",
+  "trees": {
+    "Q": "/home/thebo/code/freerouting-rs/target/orchestrator/q228",
+    "steps": [
+      "git -C /home/thebo/code/freerouting-rs worktree add --detach Q/q22-tree Q22_COMMIT",
+      "git -C /home/thebo/code/freerouting-rs worktree add --detach Q/before-tree a8b4ae7",
+      "rm -rf Q/before-tree/tools/kicad-oracle && git -C /home/thebo/code/freerouting-rs archive Q22_COMMIT tools/kicad-oracle | tar -x -C Q/before-tree",
+      "check: `diff -r Q/before-tree/tools/kicad-oracle Q/q22-tree/tools/kicad-oracle` prints nothing; `git -C Q/before-tree diff --quiet a8b4ae7 -- kicad-plugin crates Cargo.toml Cargo.lock` exits 0",
+      "in each tree: CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=Q/target-ARM cargo build --release -p freerouting-cli (one build at a time)",
+      "write Q/options.json: {\"schema\": 5, \"profile\": \"enhanced\"} (options.default)"
+    ],
+    "how_the_arm_picks_its_plugin": "grade.sh sets HERE to its own directory and runs HEADLESS=$HERE/../../kicad-plugin/headless_run.py for --export plugin (export and import). Run from Q/before-tree, the q22 commit's grade.sh therefore exports and imports with a8b4ae7's headless_run.py and its freerouting_rs modules, while LIB (oracle_lib.py) and STEPS (kicad_steps.py: version, strip, stats) are the q22 commit's. kicad_steps.py reads kicad-plugin/freerouting_rs (PLUGIN_MODULES) only in its own `import`, which grade.sh runs for the bare export only, never with --export plugin. via_in_pad.py imports only pcbnew. Q22.8's first amendment checks with `grep -n kicad-plugin Q/q22-tree/tools/kicad-oracle/*.sh Q/q22-tree/tools/kicad-oracle/*.py` that the q22 grader still reads nothing else of kicad-plugin/, or says what it reads",
+    "how_the_arm_picks_its_engine": "the engine command names the arm's binary by absolute path (Q/target-ARM/release/freerouting-rs); grade.sh runs it from OUT/work. FREEROUTING_DEV=/nonexistent turns off grade.sh's optional tidiness step (Q15.2) in both arms, so neither arm reads a freerouting-dev"
+  },
+  "command_placeholders": {
+    "Q": "trees.Q, the measurement's directory (absolute)",
+    "ARM": "the arm's name, before or q22 (written out in each arm's command)",
+    "ROW": "the row's key in boards.rows",
+    "BOARD": "the main checkout's root joined with the row's `input` (absolute; grade.sh takes the .kicad_pcb itself and reads its .kicad_pro/.kicad_dru beside it)",
+    "KEEP_TRACKS": "--keep-tracks when the row's keep_tracks is true, else nothing",
+    "LIMIT": "the row's timeout_s",
+    "ROW_ARGS": "the row's router_args (after the plugin's flags, which grade.sh puts right after the {SES} argument), nothing when empty",
+    "{DSN} {SES}": "grade.sh's own: OUT/work/BASE.dsn and OUT/work/BASE.ses, OUT = Q/out/ARM/ROW and BASE the .kicad_pcb's stem",
+    "Q22_COMMIT": "the q22 commit, named in Q22.8's first amendment"
+  },
+  "arms": {
+    "before": {
+      "commit": "a8b4ae7",
+      "engine": "Q/target-before/release/freerouting-rs: `cargo build --release -p freerouting-cli` of a8b4ae7 in its detached worktree Q/before-tree (CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0, CARGO_TARGET_DIR=Q/target-before); profile enhanced as it is at a8b4ae7",
+      "plugin": "kicad-plugin/ of a8b4ae7, as checked out in Q/before-tree: headless_run.py export (export_flow.prepare: pcbnew.ExportSpecctraDSN, the plugin's DSN fix-ups and the router flags it passes, <stem>.args.json, with the row's Board Setup minimums that export_flow.router_args reads from the board) and headless_run.py import (ImportSpecctraSES and export_flow.after_import)",
+      "grader": "tools/kicad-oracle/ of the q22 commit (Q22_COMMIT) in both arms: grade.sh, oracle_lib.py, kicad_steps.py and via_in_pad.py, with Q22.2's copper basis, Q22.6's --export plugin and Q22.13's net-number mapping; WSL KiCad 10.0.7 (kicad-cli and pcbnew under python3; grade.sh refuses a version mismatch)",
+      "tree": "Q/before-tree, built as `trees` says",
+      "command": "cd Q/before-tree && FREEROUTING_DEV=/nonexistent bash tools/kicad-oracle/grade.sh --out Q/out/before/ROW KEEP_TRACKS --export plugin Q/options.json BOARD -- env LIMIT=LIMIT bash -c 'ulimit -v 8000000; exec timeout -k 10 \"$LIMIT\" \"$0\" -de \"$1\" -do \"$2\" \"${@:3}\"' Q/target-before/release/freerouting-rs {DSN} {SES} ROW_ARGS",
+      "options": {
+        "schema": 5,
+        "profile": "enhanced"
+      },
+      "settings": {},
+      "what": "baseline: the engine and plugin of main a8b4ae7, the last main before any Q22 routing or plugin fix (Q22.3 landed at 5c79e31, Q22.4 and Q22.10 at 9651fab). Its plugin passes the Q18 Board Setup minimums (track width, via diameter, drill and annular ring, copper-to-edge and hole clearance) but not m_MinClearance (Q22.10) or m_HoleToHoleMin (Q22.11), no --kicad-dru (Q22.5), writes no copper-graphic keepouts or net areas (Q22.4) and its import does not put input copper back (Q22.3). Reported, not guarded: its breaches are what Q22 fixed"
+    },
+    "q22": {
+      "commit": "Q22_COMMIT",
+      "engine": "Q/target-q22/release/freerouting-rs: `cargo build --release -p freerouting-cli` of Q22_COMMIT in its detached worktree Q/q22-tree (CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0, CARGO_TARGET_DIR=Q/target-q22); profile enhanced as it is at Q22_COMMIT",
+      "plugin": "kicad-plugin/ of Q22_COMMIT, as checked out in Q/q22-tree: headless_run.py export (export_flow.prepare: pcbnew.ExportSpecctraDSN, the plugin's DSN fix-ups and the router flags it passes, <stem>.args.json, with the row's Board Setup minimums that export_flow.router_args reads from the board) and headless_run.py import (ImportSpecctraSES and export_flow.after_import)",
+      "grader": "tools/kicad-oracle/ of the q22 commit (Q22_COMMIT) in both arms: grade.sh, oracle_lib.py, kicad_steps.py and via_in_pad.py, with Q22.2's copper basis, Q22.6's --export plugin and Q22.13's net-number mapping; WSL KiCad 10.0.7 (kicad-cli and pcbnew under python3; grade.sh refuses a version mismatch)",
+      "tree": "Q/q22-tree, built as `trees` says",
+      "command": "cd Q/q22-tree && FREEROUTING_DEV=/nonexistent bash tools/kicad-oracle/grade.sh --out Q/out/q22/ROW KEEP_TRACKS --export plugin Q/options.json BOARD -- env LIMIT=LIMIT bash -c 'ulimit -v 8000000; exec timeout -k 10 \"$LIMIT\" \"$0\" -de \"$1\" -do \"$2\" \"${@:3}\"' Q/target-q22/release/freerouting-rs {DSN} {SES} ROW_ARGS",
+      "options": {
+        "schema": 5,
+        "profile": "enhanced"
+      },
+      "settings": {},
+      "what": "candidate: main when Q22.8 runs, after Q22.16, Q22.17 and Q22.18 are all [x] on main: Q22.3 (input copper back at its own coordinates), Q22.4 (copper graphics and text as keepouts, net shapes as fixed areas), Q22.5/Q22.14/Q22.15 (the .kicad_dru through --kicad-dru), Q22.10 (board minimum clearance), Q22.11 (hole to hole), Q22.12 (mask-to-copper clearance), Q22.16 (footprint mask apertures as keepouts, part landed at 0c2a93d; its remainder: a pad partly inside a multi-net footprint mask aperture reaches the router as its part outside it), Q22.17 (cheaper net shapes) and Q22.18 (mask keepouts keep only the mask rule's clearance; board-level mask shapes let their own net's pads in), plus every other change on main between a8b4ae7 and that commit. Guarded"
+    }
+  },
+  "baseline_arm": "before",
+  "candidate_arm": "q22",
+  "pairs": {
+    "verdict": [
+      "before",
+      "q22"
+    ],
+    "reported": [
+      [
+        "q22",
+        "before"
+      ]
+    ]
+  },
+  "pairs_why": "the verdict pair puts q22 under the hard metrics (the guards); the reported pair, printed by --all-pairs and not counted, lists before's breaches as HARD lines. before is reported, not guarded (decided 2026-10-20)",
+  "options": {
+    "file": "Q/options.json, written once before any route and used by both arms",
+    "default": {
+      "schema": 5,
+      "profile": "enhanced"
+    },
+    "default_why": "the plugin's defaults: options.profile_defaults('enhanced').to_dict() is {\"schema\": 5, \"profile\": \"enhanced\"} at registration (main 5926b61), and a8b4ae7's options.READABLE_SCHEMAS is (1, 2, 3, 4, 5), so a8b4ae7's plugin reads the same file. The Board Setup minimums are not options: each arm's plugin reads them from the board (export_flow.router_args), which is why the arms' flags differ by Q22.10's and Q22.11's minimums and Q22.5's --kicad-dru",
+    "if_the_schema_moves": "decided 2026-10-20: if the q22 commit's options.SCHEMA is one a8b4ae7's READABLE_SCHEMAS lacks, each arm gets its own commit's default options (Q/options-ARM.json, options.profile_defaults('enhanced').to_dict() of that commit's plugin) and the --export plugin argument names that file; Q22.8's first amendment says which and gives both files"
+  },
+  "boards": {
+    "set": "tools/bench/sets/q22-clearance.txt",
+    "eligibility": "fixed before any run, none dropped after a number: the rows Q22.7 lists (N04.3's rows with a breach: pcietest, cm4-edge-ai, nudac, ch32v003, mydevboard, vna-usb-pd, picodebugger; canary-pwr at canary ab786fcc; the demos with copper text, sonde-xilinx and pic_programmer; two clean N04.3 rows, flight-computer and laser-backplane), plus pocketsdr-v3-0 (named in Q22.7's Limit clause; Q22.10, Q22.11) and fc-rom (fc-rom-vomitter-nescart; Q22.12, Q22.16), decided 2026-10-20. Every row is a KiCad 6+ project with its own .kicad_pro (vna-usb-pd is a 5.99 nightly, which routing-quality.md counts), so every grade has rules = project",
+    "rows": {
+      "pcietest": {
+        "input": "target/orchestrator/q227/boards/pcietestpcb-pcietest/pcietestpcb-pcietest.kicad_pcb",
+        "source": "target/corpus/projects/pcietestpcb-pcietest/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20221018,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "Q22.7's Limit clause (added 2026-10-20): at least 300 s; at 120 s both of Q22.4's arms were cut by wall clock (the CLI saves on SIGTERM)",
+        "why": "N04.3 center breaches: clearance 237, hole_clearance 70 (Q22.2's copper basis: clearance 127, hole_clearance 0); Q22.4's footprint copper lines. Limit clause: cut by wall clock at 120 s in Q22.4's both arms"
+      },
+      "cm4-edge-ai": {
+        "input": "target/orchestrator/q227/boards/cm4-edge-ai-carrier-cm4-edge-ai-carrier/cm4-edge-ai-carrier-cm4-edge-ai-carrier.kicad_pcb",
+        "source": "target/corpus/projects/cm4-edge-ai-carrier-cm4-edge-ai-carrier/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "N04.3 center breaches: clearance 25 (input copper moved by the %.6g round trip; Q22.3)"
+      },
+      "nudac": {
+        "input": "target/orchestrator/q227/boards/nudac-nudac/nudac-nudac.kicad_pcb",
+        "source": "target/corpus/projects/nudac-nudac/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20211014,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "N04.3 center breaches: hole_clearance 18 (54 on Q22.2's copper basis; Q22.3)"
+      },
+      "ch32v003": {
+        "input": "target/orchestrator/q227/boards/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb",
+        "source": "target/corpus/projects/ch32v003-usb-devboard-ch32v003-usb-devboard/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20221018,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "N04.3 center breaches: clearance 5 (3 moved input copper, Q22.3; 2 under the .kicad_dru rule 'Pad to Track clearance)', Q22.5); Q22.11, Q22.14 and Q22.15's board"
+      },
+      "mydevboard": {
+        "input": "target/orchestrator/q227/boards/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb",
+        "source": "target/corpus/projects/mydevboard-rp2040dev/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "N04.3 center breaches: clearance 1 (moved input copper; Q22.3)"
+      },
+      "vna-usb-pd": {
+        "input": "target/orchestrator/q227/boards/vna-usb-pd/vna-usb-pd.kicad_pcb",
+        "source": "target/corpus/projects/vna-usb-pd/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20210606,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "N04.3 center breaches: clearance 2 (moved input copper; Q22.3). A KiCad 5.99 nightly with its own .kicad_pro, which routing-quality.md counts as KiCad 6+"
+      },
+      "picodebugger": {
+        "input": "target/orchestrator/q227/boards/picodebugger-picoprobetester/picodebugger-picoprobetester.kicad_pcb",
+        "source": "target/corpus/projects/picodebugger-picoprobetester/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20221018,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "N04.3 center breaches: clearance 1 (an input pair listed in the other order; 0 on Q22.2's copper basis)"
+      },
+      "canary-pwr": {
+        "input": "target/orchestrator/q227/boards/canary-ab786fcc/hardware/canary-pwr-rev1.0/canary-pwr.kicad_pcb",
+        "source": "canary ab786fcc hardware/canary-pwr-rev1.0 (`git -C ../canary archive ab786fcc hardware/canary-pwr-rev1.0 | tar -x`, unedited): N04.3's canary-pwr row (its .kicad_pcb hashes as N04.json's)",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 600,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 600 s (Q22.6's plugin-export route took 227 s, Q22.9's four routes 33.5-121.2 s under timeout 600)",
+        "why": "N04.3 center breaches: annular_width 4 (the grader's import; Q22.2), and FID3's pad clearance on the bare export (Q22.6)"
+      },
+      "sonde-xilinx": {
+        "input": "target/orchestrator/q227/boards/sonde-xilinx/sonde-xilinx.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo '/usr/share/kicad/demos/sonde xilinx/' (cp -r of the folder; the .kicad_pcb, .kicad_pro and .kicad_sch renamed from 'sonde xilinx.*' to 'sonde-xilinx.*' so that no path has a space, as Q22.4's copy; contents unedited)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "a demo with copper text (8 texts): Q16.5's base arm had clearance 1 against gr_text 'GND' (Q22.4)"
+      },
+      "pic_programmer": {
+        "input": "target/orchestrator/q227/boards/pic_programmer/pic_programmer.kicad_pcb",
+        "source": "WSL KiCad 10.0.7 demo /usr/share/kicad/demos/pic_programmer/ (cp -r of the folder, unedited)",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "a demo with copper text (19 texts, Q22.1); no breach on record"
+      },
+      "flight-computer": {
+        "input": "target/orchestrator/q227/boards/flight-computer-core-board/flight-computer-core-board.kicad_pcb",
+        "source": "target/corpus/projects/flight-computer-core-board/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20240108,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "a clean N04.3 row (no routing-caused clearance, hole_clearance or below-minimum); has 1 footprint copper fp_poly (Q22.1)"
+      },
+      "laser-backplane": {
+        "input": "target/orchestrator/q227/boards/laser-backplane-dvi-laserbackplane-dvi/laser-backplane-dvi-laserbackplane-dvi.kicad_pcb",
+        "source": "target/corpus/projects/laser-backplane-dvi-laserbackplane-dvi/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20241229,
+        "rules": "project",
+        "keep_tracks": true,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "decided 2026-10-20: 300 s",
+        "why": "a clean N04.3 row (no routing-caused clearance, hole_clearance or below-minimum)"
+      },
+      "pocketsdr-v3-0": {
+        "input": "target/orchestrator/q227/boards/pocketsdr-v3-0/pocketsdr-v3-0.kicad_pcb",
+        "source": "target/corpus/projects/pocketsdr-v3-0/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20240108,
+        "rules": "project",
+        "keep_tracks": false,
+        "timeout_s": 300,
+        "router_args": [],
+        "limit_source": "Q22.7's Limit clause: at least 300 s; Q22.10 completed in 217.8 s with the board minimum clearance, Q22.11's after arm took 288.9 s (24 -> 29 passes) under a 600 s limit",
+        "why": "Q22.7's Limit clause and Q22.10/Q22.11's board: 499 routing-caused clearance under 'board minimum clearance 0.1270 mm' before Q22.10. Routed whole (its tracks stripped), as Q22.10 and Q22.11 graded it"
+      },
+      "fc-rom": {
+        "input": "target/orchestrator/q227/boards/fc-rom-vomitter-nescart/fc-rom-vomitter-nescart.kicad_pcb",
+        "source": "target/corpus/projects/fc-rom-vomitter-nescart/ (cp -r of the folder on 2026-10-20, unedited; corpus data, read only with python3 -I)",
+        "kicad_pcb_version": 20260206,
+        "rules": "project",
+        "keep_tracks": false,
+        "timeout_s": 300,
+        "router_args": [
+          "--timeout",
+          "270"
+        ],
+        "limit_source": "decided 2026-10-20: the router's own --timeout 270 (after the plugin's flags) under the 300 s kill; in Q22.12 a plain kill at 300 s left no SES, and --timeout 270 gave 270.73 / 272.64 s with a SES",
+        "why": "Q22.12/Q22.16's board: 7 routing-caused solder_mask_bridge against J1's footprint mask fp_poly on main e49b89a and a36a5c0. Routed whole (its tracks stripped), as Q22.12 graded it"
+      }
+    },
+    "files": {
+      "pcietest": "feb6d267a8e946942a83840170686d37e1d1871e53fb26c7647ce308e4652477",
+      "cm4-edge-ai": "602134459697fce219f88e4d5402530888b451890c62952b5c1f0392a5681626",
+      "nudac": "834cbf033cc031a4b1939cc0b2663ed3806fff3786cdf7805438f65b3ff13ba6",
+      "ch32v003": "1f124ae435d7b8198d3e0224555a0ab96881f39148e4b42a84761be1d323b988",
+      "mydevboard": "ae2d86d1f74f27f1a1ae549c5dc03920cb1923dd01c67994b15940798df8f703",
+      "vna-usb-pd": "864b97903b5d8d7ec52fec29a7c6881a69e5f606c349cd018205e6d27c1b79e3",
+      "picodebugger": "279bb309ae5b99b333a3218cc9f45ac726488b12bffcf726bfd1341610b4def3",
+      "canary-pwr": "15aa06a375786b846e3a8f41ac8b2fc8d17e9acfdae9b1da7a93ad60ac813ee1",
+      "sonde-xilinx": "d0dee876715fcdd3f656dd6a77cc1141c39bec4d6f8492a3784d38edd6b9a998",
+      "pic_programmer": "1ca70b620506818eb0227e2863bbd573d1fec1672072dc43d0dbe8475e69c8fb",
+      "flight-computer": "04ba05dff4a9058be6f61120125120459b80c0febc48e089481aeedec8aa5e30",
+      "laser-backplane": "460d984ce7fc0daff6143887ba542fea66d9a4ef49bb5fcd8b282ae18560d10d",
+      "pocketsdr-v3-0": "fdf3e54733ce14496f05d271701b373b99a7b6cb40c8f8c352b16d1f47fbff34",
+      "fc-rom": "08ab09d1a2d513e31d7d2463b9eed42a5f40de45618d25a94df0b8a8ec1a4030"
+    },
+    "rules_files": {
+      "pcietest": {
+        "kicad_pro": "bfc688e78d4d2be5010b097cb2d86dc6cbbc9085fdff78ce17e887ed9b578c3f"
+      },
+      "cm4-edge-ai": {
+        "kicad_pro": "12896630ee7bf7aa2e2af98cf668256f07c3bb24386264866fbb28610f7205fb"
+      },
+      "nudac": {
+        "kicad_pro": "984fdce2c4b6d560eacd15f311207d4b8d453229e6c62b61aa5765106590603b"
+      },
+      "ch32v003": {
+        "kicad_pro": "d54291f8eee461a1e6e44a7c5ecb03f7fab3e6aa5a014118f5e773278aa19456",
+        "kicad_dru": "fd0ca20d64c2740c21a33c9521cd51c148cc86baf90ea032e9f208569feb8b85"
+      },
+      "mydevboard": {
+        "kicad_pro": "272db24a172511ece273270f80513cdbd867233813235ff945d54ab8cd31b2d0"
+      },
+      "vna-usb-pd": {
+        "kicad_pro": "05cc8b217f5fe9ad22f53455b12191c4ae939c3470890c8cf85f4f0bb8ad820f"
+      },
+      "picodebugger": {
+        "kicad_pro": "4dfe0963cabd44f5ea8c76bafc1469fb2c4953b991c8680c175ccb29b2ea8d59"
+      },
+      "canary-pwr": {
+        "kicad_pro": "665cba3d4b76b4f7ac7e5b5a761558576726ff9612be07c3b82de18eca742de9",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8"
+      },
+      "sonde-xilinx": {
+        "kicad_pro": "ee60a96f93cc36549b52da9b3eea9547d5ea1e83a671c449668987edfb73a901"
+      },
+      "pic_programmer": {
+        "kicad_pro": "3b0ac39da5af86d0baa2a64da55a89c39ba00148dc82b54f3062f5c3650a5cc5"
+      },
+      "flight-computer": {
+        "kicad_pro": "d0093e3c5cca680c10c2004d94d63aeca1d5084cd07c1f8dc6dd8a86604048b7"
+      },
+      "laser-backplane": {
+        "kicad_pro": "14ec5d8d5686fc2c588b81ed7c4080d80909d1e70794c7f3bfecace048fae39c"
+      },
+      "pocketsdr-v3-0": {
+        "kicad_pro": "54d7662e1c73ce245a9ce3fa945cf9869b8e020098bd934d66189667b4157ab0",
+        "kicad_dru": "8cf252c1a100f6d3962e8bb70ec036995453c870b782bcf168661122921e8eed"
+      },
+      "fc-rom": {
+        "kicad_pro": "a03f5e494c2fa4ba57467d2101a977b03c68ae9cb556a1d1f61a377c191efb18"
+      }
+    },
+    "why": "Paths are relative to the main checkout's root, under target/ (not in git); the copies were made 2026-10-20 into target/orchestrator/q227/boards/, and a missing copy is re-made from the row's source and must hash as registered. The twelve rows from N04.3 hash as docs/roadmap/prereg/N04.json's `boards.files`. keep_tracks: the N04.3 rows are graded with --keep-tracks as N04.3 graded them (their breaches were on boards with their own copper, and Q22.3's restore only acts there); pocketsdr-v3-0 and fc-rom are routed whole, as Q22.10 and Q22.12 graded them and as their limits were measured"
+  },
+  "grading": "one KiCad grade per distinct session: each arm and row is one grade.sh call, which routes once and grades that session once (kicad-cli pcb drc --severity-all --refill-zones of the unrouted and the routed board, each with the row's original .kicad_pro/.kicad_dru and the copper classes forced to error; summary `rules` = project on every row); nothing is graded twice or rerun. The arms' sessions come from different DSNs and are imported by different plugins, so each grade is its own; two byte-identical sessions of a row are reported as such. Then via_in_pad.py (the q22 commit's) on OUT/ARM/ROW/routed/BASE.kicad_pcb and OUT/ARM/ROW/unrouted/BASE.kicad_pcb with KiCad's python3. Row by row in set order, before first, then q22; one route and one kicad-cli at a time (start a grade.sh call only while `pgrep -x kicad-cli` shows none)",
+  "limits": "every route under ulimit -v 8000000 and timeout -k 10 LIMIT, LIMIT = the row's timeout_s, the same in both arms (decided 2026-10-20): 300 s for every row but canary-pwr (600 s); fc-rom also gets the router's own --timeout 270 after the plugin's flags (ROW_ARGS). Sources per row in boards.rows.*.limit_source. A route stopped by its limit is aborted = 1; it is graded when it left a SES (the CLI saves on SIGTERM and at its own --timeout), its guard counts like any other row's, and it is not rerun. A row with no SES is not graded (summary graded false) and is unjudged. Routing time in the worst case: 2 x (13 x 300 + 600) s = 2.5 h; Q22.8 is a batch measurement and goes through the orchestrator's heavy-run queue",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "manufacturing_breaches",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "routing_caused_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "errors_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drc_real",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "input_unconnected",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "route_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "below_minimum_all",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "via_in_pad_raw",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "via_in_pad.py's vias_in_pads on the routed board minus the input (unrouted) board's, floored at 0; the gate requires it as a hard metric (D8: a via in a pad is a failure)",
+    "below_minimum": "routed tracks and vias, those whose nanometre copper key (oracle_lib.copper_key over oracle_lib.read_copper of OUT/ARM/ROW/routed/BASE.kicad_pcb) the input board (OUT/ARM/ROW/unrouted/BASE.kicad_pcb, oracle_lib.input_copper_keys) does not have, strictly below the Board Setup minimum track width, via diameter or via drill (OUT/ARM/ROW/routed/copper.json board_minimums_mm), summed: the copper basis of Q22.2, computed as tools/kicad-reader/plugin-input-ab.sh's below_minimum does",
+    "manufacturing_breaches": "the sum over clearance, hole_clearance, hole_to_hole, copper_edge_clearance, track_width, via_diameter, annular_width, drill_out_of_range, solder_mask_bridge, shorting_items of summary drc_real_by_type: the routing-caused KiCad DRC items on the copper basis (summary routing_caused_basis = copper; Q22.2: an item is routing-caused when it involves a track or via the input board does not have at the same nanometre coordinates, width, layer and net). A row whose summary says routing_caused_basis = report is unjudged",
+    "kicad_unconnected": "summary unconnected_items: kicad-cli's unconnected items on the routed board",
+    "routing_caused_by_type": "summary drc_real_by_type, every type",
+    "errors_by_type": "summary routed_by_type: every DRC item on the routed board by type, pre-existing ones included",
+    "drc_real": "summary drc_real, the sum of routing_caused_by_type",
+    "input_unconnected": "summary input_unconnected_items: kicad-cli's unconnected items on the unrouted board (the input as given for keep_tracks rows, the stripped board otherwise)",
+    "route_seconds": "summary engine_seconds: the engine command's wall time",
+    "aborted": "1 when summary engine_exit >= 124 (timeout's kill) or OUT/ARM/ROW/work/engine.log has 'finished with state: TIMED_OUT' (the router's own --timeout); else 0",
+    "below_minimum_all": "the sum of summary copper.below_minimum (kicad_steps.py stats): every track and via on the routed board below the Board Setup minimums, input copper included; reported only, since keep_tracks rows carry the designer's own copper",
+    "via_in_pad_raw": "via_in_pad.py's vias_in_pads on the routed board"
+  },
+  "guards": "Absolute, decided 2026-10-20 (routing-quality.md, order of importance item 1): in q22, on every row, manufacturing_breaches = 0 (routing-caused clearance, hole_clearance, hole_to_hole, copper_edge_clearance, track_width, via_diameter, annular_width, drill_out_of_range, solder_mask_bridge, shorting_items) and below_minimum = 0, on the copper basis (Q22.2); and via_in_pad = 0, the hard metric the gate requires (D8). Not 'no new breach versus before'. before is reported, not guarded: its breaches are the point",
+  "keep_rule": "Decided 2026-10-20: Q22's fixes are correctness fixes, already landed, so there is no profile promotion. The verdict is 'guards met' when every row's q22 arm is graded on the copper basis with manufacturing_breaches = 0, below_minimum = 0 and via_in_pad = 0. Otherwise it is 'guards not met', with each row and item that breaks them (DRC type, the items KiCad names, the rule and the actual distance). A q22 row that is not graded is unjudged, and the verdict is then 'not established on the full set', with the unjudged rows named. A guard breach is a new Q22 item to fix, not a reason to remove a fix (decided 2026-10-20)",
+  "keep_rule_by_hand": "The gate expresses the zero guards (hard metrics on the verdict pair's candidate) but not 'no keep decision', so Q22.8 applies the rule from the records: (1) records.json carries per row and arm the metrics above from OUT/ARM/ROW/summary.json, via_in_pad.json and the copper computation, the input sha256 and the arms block as registered; (2) `freerouting-dev gate --records records.json --baseline baseline.json --prereg docs/roadmap/prereg/Q22.json --write-baseline`, then `freerouting-dev gate --records records.json --prereg docs/roadmap/prereg/Q22.json --all-pairs`; both must report 0 refusals; (3) the verdict comes from the verdict pair's HARD and UNGRADED lines only: none gives 'guards met'; every HARD line names a row and metric that breaks a guard; every UNGRADED line is an unjudged row; (4) the paired improve/regress verdict on kicad_unconnected and the reported pair's HARD lines (before's breaches) are printed and do not decide anything",
+  "report": "per row and arm: kicad_unconnected and input_unconnected; routing_caused_by_type (every type) and manufacturing_breaches, below_minimum, via_in_pad; route_seconds and aborted; the session sha256 (OUT/ARM/ROW/work/BASE.ses) and whether the row's two sessions are byte-identical; per row the change in kicad_unconnected (q22 - before). Q22.8's note names the rows whose kicad_unconnected the obstacles of Q22.4 cost (Q22.8's Accept clause), with the export log's counts of copper-graphic keepouts and net-shape areas for each",
+  "known_effects": "before's plugin writes no copper-graphic keepouts, passes no --kicad-dru, board minimum clearance or hole-to-hole minimum, and its import does not restore input copper, so its rows are expected to carry the breaches Q22 fixed. The q22 arm's extra obstacles and floors can leave connections open (Q22.4, Q22.14/Q22.15: ch32v003 18 -> 34 KiCad unconnected); that cost is reported, not judged (Q22 'Decisions made here'). A route cut by its limit stops at a wall-clock point ('result is timing-dependent' in the router log), so an aborted row's numbers are not reproducible to the item; the guard holds for whatever it wrote",
+  "stop_rule": "one registered run per arm and row; no reruns with other settings; an aborted route is graded if it left a SES and is not rerun. A change after the first number goes in `amendments` with its reason",
+  "seen_before_registration": "Numbers on these rows exist only from other setups, none with these two arms under this grader: N04.3's center arm (main b98074e, bare export, --keep-tracks; the breach table at the top of Q22); Q22.2's and Q22.3's re-summaries and re-imports of those saved sessions; Q22.4's re-measure (pcietest clearance 130 -> 0 at a 120 s cut, sonde-xilinx 2 -> 0, mydevboard 0 -> 0; vfo, miniscope and openair, not rows here); Q22.6's canary-pwr (inside_pad, 0 clearance, 58 unconnected, 227 s); Q22.10's pocketsdr-v3-0 (clearance 499 -> 0, 39 unconnected at 217.8 s); Q22.11's ch32v003 and pocketsdr-v3-0; Q22.12's fc-rom (solder_mask_bridge 7, 79 unconnected, 271-273 s); Q22.14/Q22.15's ch32v003 (34 unconnected, 0 breaches at a36a5c0). The registration was written from those notes; nothing was routed or graded for it",
+  "not_registered": [
+    "profile legacy, and any plugin option off its default",
+    "the bare export (grade.sh without --export plugin) and the kicad_pcb board input (K13's measurement)",
+    "uncapped or longer routes of the rows cut by their limit",
+    "Windows KiCad 10.0.5, and running inside the KiCad editor",
+    "tidiness (FREEROUTING_DEV is off in both arms)",
+    "Q22.7's first wording of the arms ('before (main)' and 'q22 (Q22.2-Q22.6)'), replaced on 2026-10-20 by a8b4ae7 and the q22 commit"
+  ],
+  "decision_table": {
+    "guards met": "Q22.8 is ticked with the per-row table; Q22's fixes stand",
+    "guards not met": "Q22.8 records each breaking row and item; each cause becomes a new Q22 item; no fix is removed",
+    "not established on the full set": "Q22.8 is left partial, naming the unjudged rows and why"
+  },
+  "timing": "registered 2026-10-20, written at main 5926b61 and rebased onto main 0c2a93d (Q22.16 in part: footprint mask keepouts; Q22.16 still [~], Q22.17 and Q22.18 open; 0c2a93d changes nothing in tools/kicad-oracle or the plugin's options), before any route or grade of either arm under this registration. Q22.8 runs only after Q22.16, Q22.17 and Q22.18 are all [x] on main; its first amendment names the q22 commit and both binaries' sha256 before any route",
+  "amendments": []
+}

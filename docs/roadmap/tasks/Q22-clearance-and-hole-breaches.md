@@ -686,7 +686,7 @@ Sequencing:
       in `--router.autorouter.sweep=free`, `--router.min_trace_width_um=150` and the plugin's 128 edge strips and 6 pad circles, so the 16 is not a measurement of the flag.
     - README: "`--export plugin OPTIONS.json` (Q22.6)", the summary fields and the files table.
 
-- [ ] **Q22.7 — Register the re-measurement.** Write `docs/roadmap/prereg/Q22.json` and
+- [x] **Q22.7 — Register the re-measurement.** Write `docs/roadmap/prereg/Q22.json` and
   `tools/bench/sets/q22-clearance.txt` before any number.
   - **Boards:**
     - N04.3's rows with a breach: pcietest, cm4-edge-ai, nudac, ch32v003, mydevboard, vna-usb-pd
@@ -706,8 +706,61 @@ Sequencing:
     at least 300 s, or a work budget. At 120 s both are cut by wall clock (the CLI saves on
     SIGTERM). pocketsdr-v3-0 needs 217.8 s to complete with the board minimum clearance.
   - **Accept:** the registration and its pin test (`prereg_q22.rs`) are in, with no number yet.
+  - *Done 2026-10-20:* written at main `5926b61` and rebased onto `0c2a93d` (Q22.16 in part;
+    nothing in `tools/kicad-oracle` or the plugin's options changed); no route, no grade and no
+    kicad-cli run, so no number yet.
+    - **Files.** `docs/roadmap/prereg/Q22.json` (id `Q22.8-clearance-remeasure`, sha256
+      `43bd85aaeb488de5a5a2a8c9ac440bc07495d4e11106f0a51fcb779ffced1a72`, 0 amendments),
+      `tools/bench/sets/q22-clearance.txt` (14 rows) and the pin test
+      `crates/freerouting-dev/tests/prereg_q22.rs` (5 tests).
+    - **Arms** (decided 2026-10-20). `before` is the engine and plugin of main `a8b4ae7`, the last
+      main before any Q22 routing or plugin fix. `q22` is main when Q22.8 runs, after Q22.16,
+      Q22.17 and Q22.18 are all `[x]`. Both arms are graded by the q22 commit's `tools/kicad-oracle`.
+      - How: `grade.sh` runs `$HERE/../../kicad-plugin/headless_run.py`. The before tree is a
+        detached worktree of `a8b4ae7` whose `tools/kicad-oracle/` is replaced by the q22 commit's
+        (`git archive Q22_COMMIT tools/kicad-oracle | tar -x`), so it exports and imports with
+        `a8b4ae7`'s plugin and grades with q22's scripts.
+      - `kicad_steps.py` reads plugin modules only in its bare-export `import`, which
+        `--export plugin` does not run.
+      - Each engine is named by absolute path. `FREEROUTING_DEV=/nonexistent` turns off tidiness
+        in both arms.
+      - Options: `{"schema": 5, "profile": "enhanced"}` in both, one file. That is the plugin's
+        default at `5926b61`, and `a8b4ae7`'s `READABLE_SCHEMAS` is (1–5); both checked by
+        loading `options.py` by path. If the schema moves, each arm gets its own commit's
+        defaults.
+      - Each plugin reads the Board Setup minimums from the board.
+    - **Boards.** Copied to `target/orchestrator/q227/boards/`; the sha256 of each is in
+      `boards.files`, and its `.kicad_pro`/`.kicad_dru` in `boards.rules_files`.
+      - Q22.7's 12 rows: pcietest, cm4-edge-ai, nudac, ch32v003, mydevboard, vna-usb-pd,
+        picodebugger, canary-pwr (`git -C ../canary archive ab786fcc`), sonde-xilinx (the demo,
+        files renamed without the space), pic_programmer, flight-computer and laser-backplane.
+        They hash as `N04.json`'s and are graded `--keep-tracks`, as N04.3 graded them.
+      - Added: `pocketsdr-v3-0` and `fc-rom` (fc-rom-vomitter-nescart), routed whole, as Q22.10
+        and Q22.12 graded them.
+    - **Limits.** Every route runs under `ulimit -v 8000000` and `timeout -k 10`, the same in both
+      arms:
+      - 300 s for pcietest and pocketsdr-v3-0, from this item's Limit clause: Q22.4 cut both at
+        120 s; pocketsdr took 217.8 s in Q22.10 and 288.9 s in Q22.11;
+      - fc-rom: the router's `--timeout 270` under the 300 s kill (Q22.12: a plain 300 s kill left
+        no SES);
+      - canary-pwr: 600 s;
+      - every other row: 300 s.
 
-- [ ] **Q22.8 — Re-measure.** Run Q22.7 as registered.
+      The limits were decided 2026-10-20.
+    - **Guards.** In `q22`, every row has 0 routing-caused `clearance`, `hole_clearance`,
+      `hole_to_hole`, `copper_edge_clearance`, `track_width`, `via_diameter`, `annular_width`,
+      `drill_out_of_range`, `solder_mask_bridge` and `shorting_items`. Below-minimum routed copper
+      is also 0, on the copper basis (Q22.2). `via_in_pad` is 0 too, because the gate requires it
+      (D8). `before` is reported, not guarded.
+    - **Verdict.** The verdict is "guards met", or the rows and items that break the guards.
+      There is no promotion. The registration says how Q22.8 applies the verdict from the gate's
+      HARD and UNGRADED lines (`keep_rule_by_hand`).
+    - `cargo test -p freerouting-dev --test prereg_q22`: 5 passed. `cargo fmt --all --check`
+      is clean, and `cargo clippy -p freerouting-dev --tests -- -D warnings` is clean.
+
+- [ ] **Q22.8 — Re-measure.** Run Q22.7 as registered (`docs/roadmap/prereg/Q22.json`). It runs
+  only after Q22.16, Q22.17 and Q22.18 are all `[x]` on main. Its first amendment, written before any route, names
+  the q22 commit and the sha256 of both binaries.
   - **Accept:**
     - the per-row table is in the done note;
     - every guard is 0 in `q22`;
