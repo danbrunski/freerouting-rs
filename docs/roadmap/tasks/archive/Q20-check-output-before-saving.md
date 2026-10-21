@@ -41,7 +41,7 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
 
 ## Checklist
 
-- [~] **Q20.1 — The check covers the board's rules.** On routed copper, the engine's DRC
+- [x] **Q20.1 — The check covers the board's rules.** On routed copper, the engine's DRC
   reports each of these:
   - clearance between nets;
   - track width under the board minimum;
@@ -124,12 +124,85 @@ stubs), Q04.3 (`quality::output_guard`, the batch loop's finish hook).
     Edge.Cuts lines of Q18.5 and the board's own mask apertures of Q18.7 are keepouts in the
     router's model (`edge_clearance`, `solder_mask`), which `check_board_rules` reports as
     `keepout` (every non-conduction area; `copper_inside_a_keepout`), never as
-    `copper_edge_clearance` (that is the outline's `board_edge` class alone). Remains: the copper
-    the DSN does not carry (footprint `fp_line` copper and board copper text and graphics, Q22.4,
-    running) and `.kicad_dru` clearances by item type (Q22.5, K13), which the check sees once
-    they are router obstacles and rules; then this comparison again for slice, whose two
-    `copper_edge_clearance` the Margin keepout should now turn into router-side `keepout`
-    avoidance (not re-measured here).
+    `copper_edge_clearance` (that is the outline's `board_edge` class alone). What this note left
+    open (copper graphics and net copper shapes as obstacles, Q22.4 `c2cc058`; `.kicad_dru`
+    item-type and hole rules, Q22.5/Q22.14/Q22.15 `039a859`, `a18b970`; `hole_to_hole`, Q22.11
+    `e49b89a`; the mask expansion grown by solder_mask_to_copper, Q22.12 `a36a5c0`; the Margin
+    and inner Edge.Cuts keepouts, Q18.5; `.kicad_dru` on a `.kicad_pcb` by default, K13.1
+    `5926b61`) has landed; the re-measurement is the Done note below.
+  - *Done 2026-10-20:* the comparison again on main `454785c`, KiCad 10.0.7, release builds in
+    `target/orchestrator/q201/target`, every run under `ulimit -v 8000000` and `timeout 300`.
+    `board_rules_on_kept_sessions` gained `Q20_KICAD_DRU` (`<stem>=<file>` pairs: that row's DSN
+    gets the `.kicad_dru` as `--kicad-dru` gives it, and the rules report is printed) and prints
+    each routed breach's item nets.
+    - *Kept sessions, their own DSNs* (`Q20_DATA_ROOT=<main checkout>
+      Q20_SES_DIR=<main checkout>/target/orchestrator/q18/out/mp1
+      Q20_SET=tools/bench/sets/q18-board-minimums.txt Q20_FLAGS="--gui.enabled=false
+      --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150 -mp 1
+      --router.special.diagnostics=rip-stats --stats json"`, Q18.6's mp1 flags): the same counts
+      as the table above on every row. Again with `--router.board_minimums.hole_to_hole_um=250`
+      (each row's `min_hole_to_hole` is 0.25 mm) and canary's own `.kicad_dru` (canary
+      `9511d9a3`, `Q20_KICAD_DRU`): unchanged; `hole_to_hole` 0 on every row, as KiCad's
+      `hole_to_hole` 0. Of the KiCad-graded rows only canary-pwr has a `.kicad_dru`; its 10
+      rules are clearance 0.13 mm inside one footprint's courtyard (`A.insideCourtyard('Q2')`
+      and so on), which the reader reports UNSUPPORTED: they only relax KiCad's clearance, and
+      the check reports no routed `clearance` there, so no item is in one and not the other.
+    - *Kept sessions, the plugin's DSN* (each row's board with its tracks and vias stripped by
+      `tools/kicad-oracle/kicad_steps.py strip`, exported by `kicad-plugin/headless_run.py
+      export` with `{"schema": 5}`, the row's plugin arguments; pcbnew only), so the check sees
+      the new keepouts and copper the sessions were routed without:
+
+      | row | check, routed | KiCad routing-caused (kept grade) |
+      |---|---|---|
+      | mydevboard | via_dangling 6 | via_dangling 6, starved_thermal 1 |
+      | slice | via_dangling 2, keepout 2 | via_dangling 2, copper_edge_clearance 2, starved_thermal 5 |
+      | flight-computer | via_dangling 5 | via_dangling 5, starved_thermal 1 |
+      | laser-backplane | 0 | track_dangling 33 |
+      | vfo | via_dangling 11, keepout 10 | via_dangling 11, starved_thermal 4 |
+
+      slice's 2 `keepout`: one is KiCad's 2 `copper_edge_clearance` ("Segment on Margin" at
+      (124.6, 129.15) mm against the +5V via at (124.4951, 122.7162) and its 1.40 mm B.Cu stub),
+      now an `edge_clearance` keepout the check sees, the other a GNDPWR trace onto the net-tie
+      NT1's B.Cu copper (`copper_graphic` keepout 127.7..129.7 × 113.2..117.2 mm): the plugin
+      writes a net-tie shape as a keepout for every net, the tie's own nets too
+      (`copper_graphics.py`), where KiCad lets them touch it. vfo's 10 `keepout` are traces inside
+      the board's F.Mask/B.Mask shape (`solder_mask` keepouts, 160.0..175.8 × 80.9..105.9 mm): the
+      Q18.7 keepout holds every net out, the net under the aperture too, where KiCad's
+      `solder_mask_bridge` needs copper of two nets in one aperture. Both are the router's model
+      being stricter than KiCad on sessions routed before the model, not breaches KiCad finds.
+      canary-pwr's kept session (routed on `fixtures/canary-pwr/canary-pwr-9511d9a.dsn`, which
+      carries 179 input wires) checked against the plugin's DSN of the unstripped board: 632
+      `keepout` pairs of 11 routed traces against Q22.16's `solder_mask_pads` keepouts of one
+      footprint (IC_LM61460AFSQRJRRQ1, 14 mask shapes, 2012 keepouts), 7 of them overlapping
+      (the rest within the keepout's 0.2 mm clearance); every overlapped piece meets one routed
+      net only and all of them are keepouts over pins of two or more nets (no net), entered next
+      to the trace's own pin, which KiCad (one net per aperture) does not flag: 0
+      `solder_mask_bridge` in its grade. Q22.16's module docs name this case.
+    - *slice, routed fresh the way the plugin does* (`tools/kicad-oracle/grade.sh --out <dir>
+      --export plugin {"schema": 5} target/corpus/projects/slice-dcmt-bread-slice/<board>.kicad_pcb
+      -- bash -c "ulimit -v 8000000; exec timeout -k 10 300 <release freerouting-rs> -de '{DSN}'
+      -do '{SES}' --result-json '{SES}.result.json' --gui.enabled=false {PLUGIN_ARGS}"`, default
+      options, profile `enhanced`; the plugin's fix-ups wrote 186 `edge_clearance` keepouts for
+      21 Edge.Cuts/Margin shapes at 0.025 mm, 2 `solder_mask`, 1 `copper_graphic`; route 2.96 s):
+
+      | | KiCad routing-caused | check, routed |
+      |---|---|---|
+      | slice, fresh | 0 (`drc_real` 0; unconnected 9, input 54) | 0 (input 0) |
+
+      KiCad's `copper_edge_clearance` is 0 in the routed board (it was 2 in mp1), the check
+      finds 0 on the same DSN and session (`board_rules_on_kept_sessions` with `Q20_SET` the
+      graded DSN and its plugin arguments), and the router's own `output_check` (repair) found 0
+      of 113 checked. The Margin lines are not breached.
+    - *Known disagreements, re-confirmed:* every `starved_thermal` item of the kept grades is a
+      zone and a pad (mydevboard 1, slice 6, flight-computer 1, vfo 6 in `routed/drc.json`), no
+      track or via: zone fill, and the current grader (Q22.2's routing-caused, an item involving
+      a routed track or via) no longer counts it (fresh slice: `starved_thermal` 2 routed, 1
+      input, `drc_real` 0). laser's 33 `track_dangling`: each of the 33 tracks has an end inside
+      a DSN `plane` polygon of its net (25 at KiCad's item position, 8 at the other end), so a
+      plane is its DSN outline in the router's model, not KiCad's fill.
+    - No routing-caused item KiCad reports is missed by the check once the check sees the
+      board's keepouts; every item the check adds is one of the router's stricter models named
+      above.
 
 - [x] **Q20.2 — Check and repair before saving.** After the optimizer, and before the session is
   written, run the check on routed items:

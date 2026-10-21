@@ -335,8 +335,11 @@ fn the_check_is_deterministic() {
 /// second clause). `Q20_DATA_ROOT` is the checkout the set's rows are
 /// relative to, `Q20_SES_DIR` the directory of the arm's `<board>.ses`,
 /// `Q20_SET` the board set (`tools/bench/sets/q18-board-minimums.txt`) and
-/// `Q20_FLAGS` the arm's flags before each row's own. Prints, per row, the
-/// routed breaches per rule and the input ones.
+/// `Q20_FLAGS` the arm's flags before each row's own. `Q20_KICAD_DRU`
+/// (optional) lists `<stem>=<file>` pairs, separated by spaces: that row's
+/// DSN gets the board's `.kicad_dru` as `--kicad-dru <file>` gives it, and
+/// the rules file's report is printed. Prints, per row, the routed breaches
+/// per rule and the input ones.
 #[test]
 #[ignore = "needs kept sessions; see the doc comment"]
 fn board_rules_on_kept_sessions() {
@@ -351,6 +354,12 @@ fn board_rules_on_kept_sessions() {
         .unwrap_or_default()
         .split_whitespace()
         .map(str::to_string)
+        .collect();
+    let dru_files: Vec<(String, std::path::PathBuf)> = std::env::var("Q20_KICAD_DRU")
+        .unwrap_or_default()
+        .split_whitespace()
+        .filter_map(|pair| pair.split_once('='))
+        .map(|(stem, file)| (stem.to_string(), std::path::PathBuf::from(file)))
         .collect();
     for line in set.lines().map(str::trim) {
         if line.is_empty() || line.starts_with('#') {
@@ -370,7 +379,21 @@ fn board_rules_on_kept_sessions() {
         let mut input = JobInput::new(std::fs::read(&dsn).unwrap(), stem.clone());
         input.dsn_dir = dsn.parent().map(std::path::Path::to_path_buf);
         input.cli = Some(flags.parse.patch);
+        let dru = dru_files.iter().find(|(s, _)| *s == stem).map(|(_, f)| f);
+        if let Some(file) = dru {
+            let rules = std::fs::read_to_string(file).expect("the .kicad_dru");
+            input.kicad_dru = Some((file.clone(), rules));
+        }
         let prepared = prepare_job(&input, &ResolveContext { cores: 1 }).expect("loads");
+        if dru.is_some() {
+            let report = prepared
+                .log
+                .iter()
+                .skip_while(|l| !l.text.contains("design rules"));
+            for line in report {
+                println!("  log: {}", line.text);
+            }
+        }
         let mut board = prepared.board;
         let limits = BoardRuleLimits::of(&board, &prepared.board_settings);
         let input_copper = InputCopper::of(&board);
@@ -404,8 +427,17 @@ fn board_rules_on_kept_sessions() {
             BoardRuleCounts::text(&counts.input)
         );
         for v in found.iter().filter(|v| v.origin == Origin::Routed) {
+            let nets: Vec<Vec<i32>> = v
+                .items
+                .iter()
+                .map(|id| {
+                    board
+                        .item(*id)
+                        .map_or(Vec::new(), |i| i.net_numbers().to_vec())
+                })
+                .collect();
             println!(
-                "  {} layer {} at ({:.0}, {:.0}) items {:?} required {:.0} actual {:.0}",
+                "  {} layer {} at ({:.0}, {:.0}) items {:?} nets {nets:?} required {:.0} actual {:.0}",
                 v.rule.name(),
                 v.layer,
                 v.location.x,
