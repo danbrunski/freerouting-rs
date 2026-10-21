@@ -42,6 +42,9 @@ TITLE = "freerouting-rs"
 TICK_MS = 100
 # The route dialog's tabs, in order.
 TABS = ("Route", "Board and DSN", "Advanced")
+# The board input note's wrap width (px) until the dialog is laid out; then it
+# wraps to the board input's column (Dialog.wrap_input_note).
+INPUT_NOTE_WIDTH = 360
 
 
 def export_dsn(board, dsn):
@@ -390,6 +393,7 @@ class Dialog(wx.Dialog):
         sizer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 12)
         self.SetSizerAndFit(sizer)
         self.fit_to_display()
+        self.wrap_input_note(self.board_input.GetSize().width or INPUT_NOTE_WIDTH)
         self.CentreOnParent()
         # KiCad 10's wxWidgets draws the selected row of a dark drop-down
         # white on white on recent Windows 11 builds (dropdowns.py).
@@ -450,11 +454,18 @@ class Dialog(wx.Dialog):
             "inputs (Route only)."
         )
         # K13.7: the keepouts box is on by default and does nothing on the
-        # snapshot; a note says so instead of refusing the run.
+        # snapshot; a note says so instead of refusing the run. It also names
+        # the DSN fix-ups that keep the snapshot from running, on either input.
         self.input_note = wx.StaticText(page, label="")
         self.input_page = page  # laid out again when the note's text changes
+        # Until the dialog is laid out (then the board input's width, __init__).
+        self.input_note_width = INPUT_NOTE_WIDTH
         self.board_input.Bind(wx.EVT_CHOICE, self.on_input_changed)
+        self.board_input.Bind(wx.EVT_SIZE, self.on_input_choice_size)
         self.keepouts.Bind(wx.EVT_CHECKBOX, self.on_input_changed)
+        self.pour_mode.Bind(wx.EVT_CHOICE, self.on_input_changed)
+        for box in (self.widths, self.fixed_pours, self.drop_pours, self.open_layers):
+            box.Bind(wx.EVT_TEXT, self.on_input_changed)
         self.keepouts.SetToolTip(
             "Applies to KiCad's DSN export. The board snapshot ignores it: the reader keeps the copper-to-edge "
             "clearance and the pads' own clearances itself."
@@ -462,18 +473,31 @@ class Dialog(wx.Dialog):
         self.show_input_note()
 
     def show_input_note(self):
-        """The non-blocking note under the board input: the options that are on
-        and ignored by the chosen input (`options.input_ignored_note`, K13.7)."""
-        shown = options.RouteOptions(
-            board_input=options.BOARD_INPUTS[max(self.board_input.GetSelection(), 0)],
-            edge_and_pad_keepouts=bool(self.keepouts.GetValue()),
-        )
-        self.input_note.SetLabel(options.input_ignored_note(shown))
-        self.input_note.Wrap(520)
+        """The non-blocking note under the board input (`options.input_note`,
+        K13.7): the DSN fix-ups that keep the snapshot from running, and the
+        options the chosen input ignores."""
+        shown, _errors = options.from_form({**self.k09_values(), **self.k10_values()})  # Route reports the errors
+        self.input_note_text = options.input_note(shown)
+        self.wrap_input_note(self.input_note_width)
+
+    def wrap_input_note(self, width):
+        """Wraps the note to `width`, the board input's column: a fixed width
+        breaks out of a dialog that was fitted while the note was empty (the
+        owner's run, 2026-10-21)."""
+        self.input_note_width = width
+        self.input_note.SetLabel(self.input_note_text)
+        self.input_note.Wrap(width)
         # The note starts empty on a DSN input; without a new layout its text
         # would stay clipped to the empty label's size.
         self.input_page.Layout()
         self.input_page.FitInside()
+
+    def on_input_choice_size(self, evt):
+        """The board input was laid out again: the note follows its width."""
+        evt.Skip()
+        width = evt.GetSize().width
+        if width > 0 and width != self.input_note_width:
+            wx.CallAfter(self.wrap_input_note, width)
 
     def on_input_changed(self, _evt):
         self.show_input_note()

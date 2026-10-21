@@ -822,7 +822,14 @@ although the profile table above says a new board starts from it). Tests:
   shapes the outline does not carry become `edge_clearance` keepouts (`edge_keepouts::edge_rects`,
   `edge_keepouts::edge_keepouts`, Q18.5); the pads' own clearances become `pad_clearance` circles
   (`pad_clearance::read_pad_clearances`, `pad_clearance::keepouts`, K13.1). The dialog shows a note under
-  the board input (`Dialog.input_note`, refreshed by `on_input_changed` and `show_options`), the snapshot
+  the board input (`Dialog.input_note`, text from `options.input_note`, refreshed by `on_input_changed` on the
+  input choice, the keepouts box, the pour mode and the four fix-up text boxes, and by `show_options`). Besides
+  the ignored keepouts it names the DSN fix-ups that are on: on the snapshot, "The board snapshot cannot apply
+  ...: turn them off, or choose KiCad's DSN export." (Route still refuses them); on the DSN, "... need KiCad's
+  DSN export: turn them off to route the board snapshot." (a saved file with them loads on the DSN). The note
+  wraps to the board input's laid-out width (`wrap_input_note`, again on the choice's `EVT_SIZE`), not a fixed
+  520 px: the owner's run (2026-10-21) found the fixed width running off a dialog that was fitted while the
+  note was empty. The snapshot
   run's `plugin.log` carries the same line (`snapshot.notes`), and `headless_run.py route` prints it with
   `Note:`; the run goes ahead. When the reader refuses the snapshot and the DSN runs instead, the box applies
   again and the line is dropped from the log. Tests: `test_snapshot.py`

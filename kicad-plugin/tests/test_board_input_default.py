@@ -245,3 +245,31 @@ def test_the_canary_preset_on_the_new_default_gives_its_dsn_export():
 
 def replace_input(opts, board_input):
     return replace(opts, board_input=board_input)
+
+
+# --- the dialog's note under the board input (K13.7, the owner's run) -----------------------------
+
+CANARY_FIXUPS = {"class_widths": {"GND": 0.4}, "fixed_pour_classes": ["Power_High"], "drop_pour_nets": ["GND"]}
+THREE = "'Class widths', 'Fixed pour classes' and 'Drop pours of nets'"
+
+
+def test_the_note_names_the_fixups_that_keep_the_snapshot_from_running():
+    on_snapshot = replace(options.profile_defaults(), **CANARY_FIXUPS)
+    assert options.input_note(on_snapshot).split("\n") == [
+        f"The board snapshot cannot apply {THREE}: turn them off, or choose KiCad's DSN export.",
+        options.input_ignored_note(on_snapshot),
+    ]
+    on_dsn = replace(on_snapshot, board_input="dsn")
+    assert options.input_note(on_dsn) == f"{THREE} need KiCad's DSN export: turn them off to route the board snapshot."
+    one = replace(options.profile_defaults(), class_widths={"GND": 0.4}, edge_and_pad_keepouts=False)
+    assert options.input_note(one) == "The board snapshot cannot apply 'Class widths': turn it off, or choose KiCad's DSN export."
+    assert options.input_note(replace(one, board_input="dsn")) == (
+        "'Class widths' needs KiCad's DSN export: turn it off to route the board snapshot."
+    )
+
+
+def test_the_note_without_a_conflict_is_the_ignored_note_or_nothing():
+    assert options.input_note(options.profile_defaults()) == options.input_ignored_note(options.profile_defaults()) != ""
+    assert options.input_note(options.profile_defaults("legacy")) == ""  # the DSN, nothing that needs it
+    engine = replace(options.profile_defaults(), fixed_pour_classes=["Power"], fixed_pour_mode="engine")
+    assert options.input_note(engine) == options.input_ignored_note(engine)  # an engine flag, both inputs

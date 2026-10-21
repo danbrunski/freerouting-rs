@@ -70,10 +70,31 @@ class Control:
     def SetLabel(self, text):
         self.label = text
 
+    size = (0, 0)  # what the layout gave the control; a test sets it
+
+    def GetSize(self):
+        return Size(*self.size)
+
+    def Wrap(self, width):  # StaticText: the width the label was last wrapped to
+        self.wrapped = width
+
     def __getattr__(self, name):  # SetHint, SetToolTip, Enable, Bind, Pulse, ...
         if name.startswith("__"):
             raise AttributeError(name)
         return lambda *a, **k: None
+
+
+class SizeEvent:
+    """A wx.SizeEvent: the control's new size."""
+
+    def __init__(self, width, height):
+        self.size = Size(width, height)
+
+    def GetSize(self):
+        return self.size
+
+    def Skip(self):
+        pass
 
 
 class Sizer:
@@ -268,6 +289,7 @@ def build_wx(ui):
         ui.messages.append((text, style))
 
     wx.MessageBox = message_box
+    wx.CallAfter = lambda fn, *args, **kwargs: fn(*args, **kwargs)  # no event loop: at once
     wx.__getattr__ = lambda name: 0  # remaining constants (sizer flags, styles)
     return wx
 

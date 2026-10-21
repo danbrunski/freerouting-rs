@@ -41,7 +41,8 @@ Its toolbar button opens a dialog that:
   reads a DSN. A board's saved choice is kept; a saved file without one takes the profile's default, except
   that one with a DSN-only fix-up (below) keeps the DSN, and an older file's `apply_kicad_rules` is dropped
   when it is saved again. The snapshot is refused while an option that rewrites the
-  DSN is on (class widths, fixed or dropped pours, opened plane layers). The board-edge and pad clearances box
+  DSN is on (class widths, fixed or dropped pours, opened plane layers); the note under "Board input" names
+  them on either input, before Route. The board-edge and pad clearances box
   (on by default) does not refuse it: the reader keeps those clearances itself, so the box is ignored on the
   snapshot, and the dialog and the run log say so. The project's
   `.kicad_dru` rules reach the router on both inputs (`--kicad-dru` for the DSN, `--apply-design-rules` for the

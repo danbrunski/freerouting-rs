@@ -572,6 +572,23 @@ rules).
       (RED first): `test_board_input_default.py::test_no_saved_file_starts_from_the_default_profile_with_its_sweep`;
       `test_options.py::test_load_of_missing_or_broken_files` and the two `test_gui_mode.py` argument lists now expect
       `--router.autorouter.sweep=free`. `pytest kicad-plugin/tests`: 575 passed, 22 skipped, 0 failed.
+    - **The owner's first run (2026-10-21, canary-pwr-rev1.0, Windows, KiCad 10).** Two findings, both fixed in the
+      plugin; the run is to be repeated:
+      - the note under "Board input" ran off the right side. It was wrapped at a fixed 520 px, and a dialog fitted
+        while the note was empty (the board opened on the DSN) is narrower. It now wraps to the board input's
+        laid-out width (`Dialog.wrap_input_note`, again on the choice's `EVT_SIZE`). Real wx 4.2.1 on `xvfb-run`
+        (stub `pcbnew`, dialog 730 px wide): main wraps at 520 px whatever the column (3 lines, 485 px); the fix
+        wraps to the column (542 px: 5 lines ending at x 637 in a 652 px page; widened by 200 px: 4 lines, 725 px;
+        narrowed back: 5 lines, 535 px). Test: `test_input_choice.py::test_the_note_wraps_to_the_board_inputs_column`;
+      - the board opened on the DSN with no word why: its saved options (schema 4, from a 2026-10-18 run) turn on
+        `class_widths`, `fixed_pour_classes` and `drop_pour_nets`, so it loads on the DSN (the rule above), and the
+        snapshot was refused only at Route. The note now names those fix-ups on either input (`options.input_note`):
+        on the DSN "... need KiCad's DSN export: turn them off to route the board snapshot.", on the snapshot "The
+        board snapshot cannot apply ...: turn them off, or choose KiCad's DSN export.", refreshed as the fix-up boxes
+        change. Tests: `test_board_input_default.py::test_the_note_names_the_fixups_that_keep_the_snapshot_from_running`,
+        `::test_the_note_without_a_conflict_is_the_ignored_note_or_nothing`,
+        `test_input_choice.py::test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_what_blocks_it`.
+        `pytest kicad-plugin/tests`: 579 passed, 22 skipped, 0 failed.
     - **Remains: the owner's confirmation from a run inside KiCad is recorded.** The owner should check: the Board page's input choice
       opens on "Board snapshot" and its note (the keepouts line, no other text); a Route on the snapshot imports the result; Undo after a
       Route that brought track arcs back (K13.8, untested inside KiCad).

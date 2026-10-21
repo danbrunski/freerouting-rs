@@ -738,6 +738,28 @@ def input_ignored_note(opts):
     return "; ".join(f"'{label}' is ignored on the board snapshot: {IGNORED_ON_KICAD_PCB[label]}" for label in input_ignored(opts))
 
 
+def input_note(opts):
+    """The dialog's note under the board input, one line per point, or "".
+    On the board snapshot: the DSN fix-ups that are on and keep it from running
+    (Route refuses them, `input_conflicts`), then `input_ignored_note`. On the
+    DSN export: the fix-ups that need it, so the snapshot cannot run until they
+    are off (a saved file with them loads on the DSN, `from_dict`)."""
+    needs_dsn = input_conflicts(replace(opts, board_input=INPUT_KICAD_PCB))
+    lines = []
+    if needs_dsn:
+        names = " and ".join(filter(None, (", ".join(f"'{n}'" for n in needs_dsn[:-1]), f"'{needs_dsn[-1]}'")))
+        them = "them" if len(needs_dsn) > 1 else "it"
+        if opts.board_input == INPUT_KICAD_PCB:
+            lines.append(f"The board snapshot cannot apply {names}: turn {them} off, or choose KiCad's DSN export.")
+        else:
+            need = "need" if len(needs_dsn) > 1 else "needs"
+            lines.append(f"{names} {need} KiCad's DSN export: turn {them} off to route the board snapshot.")
+    ignored = input_ignored_note(opts)
+    if ignored:
+        lines.append(ignored)
+    return "\n".join(lines)
+
+
 def _form_k10(options, values, errors):
     """The K10 fields of the form; a field the form leaves out keeps the
     profile's default. Refuses a board snapshot while a DSN-rewriting option
