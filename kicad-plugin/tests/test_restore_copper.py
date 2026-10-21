@@ -390,8 +390,7 @@ def route_env(tmp_path, monkeypatch, make_fake_router, isolated_env):
         monkeypatch.setattr(plugin.tools, "query_version", lambda tool, timeout=10: (0, 1, 0, "abc"))
         dialog = plugin.Dialog(None, stub_ui.FakeBoard(pcb, tracks=tracks))
         if board_input == "kicad_pcb":
-            dialog.board_input.SetSelection(1)
-            dialog.keepouts.SetValue(False)  # a DSN rewrite: refused on a snapshot
+            dialog.board_input.SetSelection(1)  # the keepouts stay on (K13.7)
         return dialog
 
     return make_dialog, ui, pcb.parent / "freerouting-rs"

@@ -474,12 +474,12 @@ def test_the_snapshot_result_comes_back_through_the_detaching_import(env):
 def test_a_snapshot_with_a_dsn_rewrite_on_is_refused_before_anything_is_saved(env):
     make_dialog, ui, work = env
     dialog = make_dialog("route")
-    dialog.board_input.SetSelection(1)  # the keepouts option is on by default
+    dialog.board_input.SetSelection(1)  # the keepouts option is on by default and is only ignored (K13.7)
     dialog.widths.SetValue("GND=0.4")
     dialog.on_route(None)
     assert ui.snapshots == [] and ui.exports == [] and ui.imports == []
     text = ui.messages[-1][0]
-    assert "'Class widths'" in text and "'Keep the board-edge and pad clearances'" in text
+    assert "'Class widths'" in text and "'Keep the board-edge and pad clearances'" not in text
     assert not (work / "route-options.json").exists()
 
 

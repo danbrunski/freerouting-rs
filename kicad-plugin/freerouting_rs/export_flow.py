@@ -319,7 +319,9 @@ def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
     snapshot (`snapshot.take`), after locking the tracks first for
     `fix_existing` as `prepare` does (the reader writes a locked track as
     fixed copper). No DSN fix-up applies: `options.input_conflicts` keeps the
-    options that need one off. `fixed_pour_mode = engine` with named classes
+    options that need one off; `edge_and_pad_keepouts` is ignored, because the
+    reader writes those keepouts itself (`options.input_ignored`, K13.7), and
+    `snapshot.notes` says so in the log. `fixed_pour_mode = engine` with named classes
     is the one K09 option that works here, because it is an engine flag.
     Returns `(ok, router_args, log_lines, locked_tracks)`."""
     try:

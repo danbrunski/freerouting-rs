@@ -647,7 +647,10 @@ def _form_k09(options, values, errors, number):
 
 # The K09 options that rewrite the DSN text, by the name the dialog shows
 # (K10.4). A `.kicad_pcb` input has no DSN text to rewrite, and the reader's
-# tree has no form of these yet, so `board_input = kicad_pcb` refuses them.
+# tree has no form of these yet, so `board_input = kicad_pcb` refuses them,
+# except `edge_and_pad_keepouts` (K13.7): the reader writes those keepouts
+# itself, so on the snapshot that option is ignored, not refused
+# (`input_ignored`).
 DSN_REWRITE_LABELS = {
     "class_widths": "Class widths",
     "fixed_pour_classes": "Fixed pour classes",
@@ -674,17 +677,50 @@ def input_conflicts(opts):
         out.append(DSN_REWRITE_LABELS["fixed_pour_classes"])
     if opts.drop_pour_nets:
         out.append(DSN_REWRITE_LABELS["drop_pour_nets"])
-    if opts.edge_and_pad_keepouts:
-        out.append(DSN_REWRITE_LABELS["edge_and_pad_keepouts"])
     if opts.route_on_plane_layers:
         out.append(DSN_REWRITE_LABELS["route_on_plane_layers"])
     return out
 
 
+# The options that are on and do nothing on a `.kicad_pcb` input, by dialog
+# label, with why (K13.7). `edge_and_pad_keepouts` is on by default (K09.9);
+# the reader already keeps copper off the board edge and clear of pads' own
+# clearances: `edge_keepouts::edge_rects`/`edge_keepouts` for Edge.Cuts and
+# Margin shapes the outline does not carry, `min_copper_edge_clearance` of the
+# `.kicad_pro` as the router's `copper_to_edge_clearance_um` for the outline,
+# and `pad_clearance::read_pad_clearances`/`keepouts` for the pads.
+IGNORED_ON_KICAD_PCB = {
+    DSN_REWRITE_LABELS["edge_and_pad_keepouts"]: (
+        "the reader keeps the copper-to-edge clearance and the pads' own clearances itself"
+    ),
+}
+
+
+def input_ignored(opts):
+    """The dialog labels of the options that are on but have no effect for
+    `opts.board_input == "kicad_pcb"`, as a list; empty for a DSN input or when
+    none is on. They are not conflicts: the run goes ahead (K13.7). Today only
+    `edge_and_pad_keepouts`, whose keepouts the reader writes itself
+    (`IGNORED_ON_KICAD_PCB`)."""
+    if opts.board_input != INPUT_KICAD_PCB:
+        return []
+    out = []
+    if opts.edge_and_pad_keepouts:
+        out.append(DSN_REWRITE_LABELS["edge_and_pad_keepouts"])
+    return out
+
+
+def input_ignored_note(opts):
+    """One line saying what `input_ignored` lists and why, or "" when nothing
+    is ignored. Shared by the dialog, the run log and `headless_run.py`."""
+    return "; ".join(f"'{label}' is ignored on the board snapshot: {IGNORED_ON_KICAD_PCB[label]}" for label in input_ignored(opts))
+
+
 def _form_k10(options, values, errors):
     """The K10 fields of the form; a field the form leaves out keeps the
     profile's default. Refuses a board snapshot while a DSN-rewriting option
-    is on, naming each (K10.4)."""
+    is on, naming each (K10.4); `edge_and_pad_keepouts` is ignored there, not
+    refused (K13.7)."""
     chosen = str(values.get("board_input", options.board_input)).strip().lower()
     if chosen in BOARD_INPUTS:
         options.board_input = chosen

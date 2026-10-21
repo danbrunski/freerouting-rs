@@ -362,7 +362,10 @@ class Dialog(wx.Dialog):
         )
         fill_page(
             board_page,
-            labelled_grid(board_page, (("Board input", self.board_input), ("", self.apply_rules), ("", self.fix_areas))),
+            labelled_grid(
+                board_page,
+                (("Board input", self.board_input), ("", self.input_note), ("", self.apply_rules), ("", self.fix_areas)),
+            ),
             self.fill_dsn_group(dsn_group),
         )
         fill_page(advanced_page, self.fill_flow_group(flow_group), self.fill_stages_group(stages_group, saved))
@@ -439,8 +442,19 @@ class Dialog(wx.Dialog):
             "What the router reads. KiCad's DSN export is the default. The board snapshot is "
             "the open board saved with SaveBoard and read by the router's own reader (rule areas by "
             "their flags, track arcs, unsaved Board Setup changes); it cannot be combined with the "
-            "DSN fix-ups below. Experimental."
+            "DSN fix-ups below, except the board-edge and pad clearances box, which it ignores. Experimental."
         )
+        # K13.7: the keepouts box is on by default and does nothing on the
+        # snapshot; a note says so instead of refusing the run.
+        self.input_note = wx.StaticText(page, label="")
+        self.input_page = page  # laid out again when the note's text changes
+        self.board_input.Bind(wx.EVT_CHOICE, self.on_input_changed)
+        self.keepouts.Bind(wx.EVT_CHECKBOX, self.on_input_changed)
+        self.keepouts.SetToolTip(
+            "Applies to KiCad's DSN export. The board snapshot ignores it: the reader keeps the copper-to-edge "
+            "clearance and the pads' own clearances itself."
+        )
+        self.show_input_note()
         # K13.1: the board's own rules reach the router on both inputs, so the
         # box is always on and greyed; the saved value is kept as it was.
         self.apply_rules = wx.CheckBox(page, label="Apply the project's .kicad_dru rules (always, both inputs; Route only)")
@@ -451,6 +465,23 @@ class Dialog(wx.Dialog):
             "--apply-design-rules for the snapshot. Route in GUI reads it only."
         )
         self.saved_kicad_rules = saved.apply_kicad_rules
+
+    def show_input_note(self):
+        """The non-blocking note under the board input: the options that are on
+        and ignored by the chosen input (`options.input_ignored_note`, K13.7)."""
+        shown = options.RouteOptions(
+            board_input=options.BOARD_INPUTS[max(self.board_input.GetSelection(), 0)],
+            edge_and_pad_keepouts=bool(self.keepouts.GetValue()),
+        )
+        self.input_note.SetLabel(options.input_ignored_note(shown))
+        self.input_note.Wrap(520)
+        # The note starts empty on a DSN input; without a new layout its text
+        # would stay clipped to the empty label's size.
+        self.input_page.Layout()
+        self.input_page.FitInside()
+
+    def on_input_changed(self, _evt):
+        self.show_input_note()
 
     def k10_values(self):
         return {
@@ -536,6 +567,7 @@ class Dialog(wx.Dialog):
         self.pour_mode.SetSelection(options.POUR_MODES.index(opts.fixed_pour_mode))
         self.drop_pours.SetValue(options.format_names(opts.drop_pour_nets))
         self.keepouts.SetValue(opts.edge_and_pad_keepouts)
+        self.show_input_note()
         self.open_layers.SetValue(options.format_names(opts.route_on_plane_layers))
         self.fix_existing.SetValue(opts.fix_existing)
         self.ripup.SetValue("" if opts.start_ripup_costs is None else str(opts.start_ripup_costs))

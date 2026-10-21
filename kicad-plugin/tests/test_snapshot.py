@@ -2,6 +2,9 @@
 files staged beside the snapshot, and the options check. Pure Python: pcbnew
 is a small fake."""
 
+import json
+import sys
+import types
 from pathlib import Path
 
 import options
@@ -195,7 +198,7 @@ DSN_REWRITES = {
 }
 
 
-@pytest.mark.parametrize("name", sorted(DSN_REWRITES))
+@pytest.mark.parametrize("name", sorted(set(DSN_REWRITES) - {"edge_and_pad_keepouts"}))  # that one is ignored (K13.7)
 def test_each_dsn_rewriting_option_refuses_the_snapshot_by_name(name):
     value, label = DSN_REWRITES[name]
     chosen = RouteOptions(**{**KICAD, name: value})
@@ -204,10 +207,89 @@ def test_each_dsn_rewriting_option_refuses_the_snapshot_by_name(name):
     assert options.input_conflicts(RouteOptions(**{name: value})) == []
 
 
-def test_the_defaults_refuse_the_snapshot_until_the_keepouts_are_off():
-    assert RouteOptions().edge_and_pad_keepouts  # the board's clearances, on by default (K09.9)
-    assert options.input_conflicts(RouteOptions(board_input="kicad_pcb")) == [DSN_REWRITES["edge_and_pad_keepouts"][1]]
-    assert options.input_conflicts(opts()) == []
+def test_the_defaults_are_accepted_on_the_snapshot_and_the_keepouts_are_ignored():
+    """K13.7: `edge_and_pad_keepouts` is on by default (K09.9) and the reader
+    writes the same keepouts itself (edge shapes and `min_copper_edge_clearance`,
+    the pads' own clearances), so the snapshot takes the defaults and says the
+    option is ignored there."""
+    assert RouteOptions().edge_and_pad_keepouts
+    default_snapshot = RouteOptions(board_input="kicad_pcb")
+    assert options.input_conflicts(default_snapshot) == []
+    assert options.input_ignored(default_snapshot) == [DSN_REWRITES["edge_and_pad_keepouts"][1]]
+    note = options.input_ignored_note(default_snapshot)
+    assert "'Keep the board-edge and pad clearances'" in note and "ignored" in note
+    # nothing is ignored when the option is off, or on the DSN input, where it applies
+    assert options.input_ignored(opts()) == [] and options.input_ignored_note(opts()) == ""
+    assert options.input_ignored(RouteOptions()) == [] and options.input_ignored_note(RouteOptions()) == ""
+
+
+def test_the_other_four_dsn_rewrites_still_refuse_the_default_snapshot_by_name():
+    others = {name: v for name, v in DSN_REWRITES.items() if name != "edge_and_pad_keepouts"}
+    assert len(others) == 4
+    for name, (value, label) in others.items():
+        chosen = RouteOptions(board_input="kicad_pcb", **{name: value})  # the keepouts stay on
+        assert options.input_conflicts(chosen) == [label], name
+        assert options.input_ignored(chosen) == [DSN_REWRITES["edge_and_pad_keepouts"][1]]
+
+
+def test_the_snapshot_run_log_carries_the_ignored_note_once():
+    lines = snapshot.notes(RouteOptions(board_input="kicad_pcb"))
+    assert sum("ignored" in line and "Keep the board-edge and pad clearances" in line for line in lines) == 1
+    assert not any("Keep the board-edge" in line for line in snapshot.notes(opts()))
+
+
+def load_headless_run(monkeypatch):
+    """`headless_run.py` by path, with an empty `pcbnew` (it imports one at the
+    top); nothing here touches a board."""
+    import importlib.util
+
+    from conftest import REPO
+
+    monkeypatch.setitem(sys.modules, "pcbnew", types.ModuleType("pcbnew"))
+    spec = importlib.util.spec_from_file_location("headless_run_under_test", REPO / "kicad-plugin" / "headless_run.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def run_headless_route(monkeypatch, tmp_path, saved):
+    """`headless_run.route` on options `saved`, with the preparation process
+    replaced by a recorder that fails (code 7) so nothing else runs. Returns
+    `(exit code, the preparation command)`."""
+    headless = load_headless_run(monkeypatch)
+    board = tmp_path / "proj" / "b.kicad_pcb"
+    board.parent.mkdir()
+    path = tmp_path / "options.json"
+    path.write_text(json.dumps({"schema": 4, **saved}), encoding="utf-8")
+    calls = []
+
+    def fake_run(command, *args, **kwargs):
+        calls.append(command)
+        return types.SimpleNamespace(returncode=7)
+
+    monkeypatch.setattr(headless.subprocess, "run", fake_run)
+    code = headless.route(str(board), str(tmp_path / "work"), str(path), "router")
+    return code, (calls[0] if calls else None)
+
+
+def test_headless_route_takes_the_default_options_on_a_snapshot_and_prints_the_note(monkeypatch, tmp_path, capsys):
+    code, command = run_headless_route(monkeypatch, tmp_path, {"board_input": "kicad_pcb"})
+    assert code == 7 and "snapshot" in command
+    out = capsys.readouterr()
+    assert "Incompatible" not in out.err
+    assert "Keep the board-edge and pad clearances" in out.out and "ignored" in out.out
+
+
+def test_headless_route_still_refuses_a_dsn_option_on_a_snapshot(monkeypatch, tmp_path, capsys):
+    code, command = run_headless_route(monkeypatch, tmp_path, {"board_input": "kicad_pcb", "class_widths": {"GND": 0.4}})
+    assert code == 2 and command is None
+    assert "Incompatible board input options: Class widths" in capsys.readouterr().err
+
+
+def test_headless_route_on_the_dsn_prints_no_note(monkeypatch, tmp_path, capsys):
+    code, command = run_headless_route(monkeypatch, tmp_path, {"board_input": "dsn"})
+    assert code == 7 and "export" in command
+    assert "ignored" not in capsys.readouterr().out
 
 
 def test_every_k09_option_is_either_checked_or_allowed():
@@ -247,11 +329,14 @@ def test_engine_pours_with_named_classes_work_on_a_snapshot_but_auto_does_not():
 
 
 def test_the_form_refuses_a_snapshot_with_a_dsn_option_on_and_names_it():
-    chosen, errors = options.from_form({"board_input": "kicad_pcb", "edge_and_pad_keepouts": True, "class_widths": "GND=0.4"})
+    chosen, errors = options.from_form({"board_input": "kicad_pcb", "class_widths": "GND=0.4"})
     assert chosen.board_input == "kicad_pcb"
-    assert len(errors) == 2
-    assert "'Class widths'" in errors[0] or "'Class widths'" in errors[1]
-    assert any("'Keep the board-edge and pad clearances'" in e for e in errors)
+    assert len(errors) == 1 and "'Class widths'" in errors[0]
+    # the keepouts are on by default and do not refuse the snapshot (K13.7)
+    chosen, errors = options.from_form({"board_input": "kicad_pcb"})
+    assert errors == [] and chosen.board_input == "kicad_pcb" and chosen.edge_and_pad_keepouts
+    chosen, errors = options.from_form({"board_input": "kicad_pcb", "edge_and_pad_keepouts": True})
+    assert errors == [] and chosen.edge_and_pad_keepouts
     chosen, errors = options.from_form({"board_input": "kicad_pcb", "edge_and_pad_keepouts": False})
     assert errors == [] and chosen.board_input == "kicad_pcb"
     _, errors = options.from_form({"board_input": "ses"})

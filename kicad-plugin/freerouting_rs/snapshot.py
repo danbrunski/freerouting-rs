@@ -31,6 +31,10 @@ the plugin uses it, and falls back to (a) with a WARNING line when the call
 is missing or fails. The `.kicad_dru` rules are not in memory (KiCad parses
 the file), so they are copied from disk.
 
+**Options that do nothing here.** `edge_and_pad_keepouts` (on by default) is
+ignored: the reader writes the board-edge and pad-clearance keepouts itself
+(K13.7, `options.input_ignored`), and `notes` says so once in the run log.
+
 **Rule areas.** The reader maps rule areas by their flags (K06.2), so the
 rule-area fix-up of K01.2, which rewrites DSN text, is not applied; `notes`
 says so once in the run log.
@@ -116,6 +120,9 @@ def notes(opts):
         out.append(
             "rule-area fix-up not applied: the router reads the board's rule areas by their flags (K06.2)"
         )
+    ignored = options.input_ignored_note(opts)
+    if ignored:
+        out.append(ignored)
     out.append("the .kicad_dru rules are applied (--apply-design-rules; a DSN route gets --kicad-dru; Route in GUI reads them only)")
     return out
 

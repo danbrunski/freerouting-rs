@@ -493,6 +493,37 @@ rules).
     judged rows `kicad_pcb` has 0 breaches and 68 unconnected against `dsn`'s 73. K13.7 needs the
     owner to accept those two rows, or a new registration that judges them, and then the
     owner's run inside KiCad.
+  - *Partial 2026-10-21:* the sub-bullet "the dialog accepts `kicad_pcb` with the default options" is
+    done; the default, the schema bump, `apply_kicad_rules`, the "experimental" label and the DIVERGENCES
+    line still wait on the owner. `options.input_conflicts` no longer lists `edge_and_pad_keepouts`;
+    new `options.input_ignored(opts)` (the dialog labels of the options on but ignored on `kicad_pcb`:
+    that one) and `input_ignored_note(opts)` (the line with the reason). The reader covers what the DSN
+    fix-up wrote: the outline's copper-to-edge clearance (`min_copper_edge_clearance` of the `.kicad_pro` ->
+    `router.copper_to_edge_clearance_um`, `read.rs` / `job::prepare::board_minimums_patch`, K13.1's table
+    row for Q18.5), Edge.Cuts and Margin shapes off the outline (`edge_keepouts::edge_rects`,
+    `edge_keepouts::edge_keepouts`) and the pads' own clearances (`pad_clearance::read_pad_clearances`,
+    `pad_clearance::keepouts`; `k13_inputs.rs::pads_own_clearances_become_circle_keepouts`). The dialog shows
+    the note in `Dialog.input_note` (refreshed on the choice, the box and `show_options`), `snapshot.notes`
+    puts it in `plugin.log` (dropped when the run falls back to the DSN, where the box applies), and
+    `headless_run.py route` prints `Note: ...`; none blocks. Tests (RED first: 14 failed before the code,
+    which included every snapshot dialog test once their `keepouts.SetValue(False)` workaround was removed):
+    `test_snapshot.py::test_the_defaults_are_accepted_on_the_snapshot_and_the_keepouts_are_ignored` (renamed
+    from `test_the_defaults_refuse_the_snapshot_until_the_keepouts_are_off`),
+    `::test_the_other_four_dsn_rewrites_still_refuse_the_default_snapshot_by_name`,
+    `::test_the_snapshot_run_log_carries_the_ignored_note_once`,
+    `::test_the_form_refuses_a_snapshot_with_a_dsn_option_on_and_names_it` (defaults accepted, `class_widths`
+    refused), `::test_headless_route_takes_the_default_options_on_a_snapshot_and_prints_the_note`,
+    `::test_headless_route_still_refuses_a_dsn_option_on_a_snapshot`,
+    `::test_headless_route_on_the_dsn_prints_no_note`,
+    `test_input_choice.py::test_the_defaults_route_the_snapshot_and_the_dialog_says_the_keepouts_are_ignored`,
+    `::test_the_note_follows_the_input_and_the_keepouts_box`, and
+    `test_route_dialog.py::test_a_snapshot_with_a_dsn_rewrite_on_is_refused_before_anything_is_saved`
+    (`class_widths` refused, the keepouts not named). `python3 -m pytest kicad-plugin/tests` (router binary
+    of 2f961b5 in `FREEROUTING_RS_BIN`): 531 passed, 6 skipped, 0 failed. Real wx (wxPython 4.2.1, GTK3,
+    `xvfb-run`, stub `pcbnew`, the package loaded without its `__init__`): the note is 18 px high and empty on
+    the DSN input, and 54 px high with its text after switching to the snapshot. `show_input_note` lays the
+    Board page out again (`Layout`, `FitInside`); without that the text grew to 486 x 54 px while its grid row
+    stayed 18 px, over the rows below. The note's look inside KiCad is part of the owner's run.
 
 - [x] **K13.8 — The DSN path returns input track arcs as arcs** (added 2026-10-21, from K13.6;
   decided 2026-10-20: routing never breaks the board's manufacturing rules, and `dsn` stays the

@@ -101,7 +101,8 @@ def prepare(board, pcbnew, work_dir, stem, board_dir, dsn, opts, export, fallbac
             lines = lines + [input_line(chosen, None)]
             return Prepared(True, opts, chosen, None, design, args, lines, locked)
         kicad_board.restore_locks(locked)
-        lines = lines + [f"WARNING: the snapshot is not usable ({reason}); the DSN export is used instead"]
+        note = options.input_ignored_note(opts)  # the DSN run applies that option
+        lines = [line for line in lines if line != note] + [f"WARNING: the snapshot is not usable ({reason}); the DSN export is used instead"]
     elif reason is not None:
         lines = [f"the router refused the snapshot ({reason}); the DSN export is used instead"]
     used = dataclasses.replace(opts, board_input=options.INPUT_DSN)

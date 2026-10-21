@@ -794,14 +794,27 @@ unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's ru
   `.kicad_dru` but has no such switch and says so in the log, on the snapshot as on the DSN (no `--kicad-dru`
   either). The minimum track width stays `--router.min_trace_width_um` on both paths. The `-drc` mode does not
   apply the rules. Tests: `test_board_rules_both_inputs.py`.
-- **The K09 restriction (K10.4).** The K09 options that rewrite DSN text (`class_widths`, `fixed_pour_classes`
-  as `wires` or `auto`, `drop_pour_nets`, `edge_and_pad_keepouts`, `route_on_plane_layers`) cannot apply to a
+- **The K09 restriction (K10.4, K13.7).** The K09 options that rewrite DSN text (`class_widths`,
+  `fixed_pour_classes` as `wires` or `auto`, `drop_pour_nets`, `route_on_plane_layers`) cannot apply to a
   `.kicad_pcb`, so the dialog refuses `kicad_pcb` while any is on and names it
-  (`options.input_conflicts`; `test_snapshot.py`). Note `edge_and_pad_keepouts` is on by default (a board rule,
-  K09.9): untick it to use the snapshot, and the reader has no copper-to-edge strips of its own, so edge
-  clearance is the router's. `fixed_pour_mode = engine` with named classes, `fix_existing`, the rip-up cost, the
-  sweep and the pass hint are engine flags or board locks and work. The rule-area fix-up (K01.2) does nothing
-  (the reader maps rule areas by flags); the run log says so once.
+  (`options.input_conflicts`; `test_snapshot.py`). `edge_and_pad_keepouts` (a board rule, on by default,
+  K09.9) is not refused: the reader writes the same keepouts itself, so on `kicad_pcb` it is *ignored*
+  (`options.input_ignored`, `input_ignored_note`). What covers it: the outline's copper-to-edge clearance is
+  `min_copper_edge_clearance` of the `.kicad_pro`, passed as `router.copper_to_edge_clearance_um`
+  (`crates/freerouting-kicad/src/read.rs`, `job::prepare::board_minimums_patch`); the Edge.Cuts and Margin
+  shapes the outline does not carry become `edge_clearance` keepouts (`edge_keepouts::edge_rects`,
+  `edge_keepouts::edge_keepouts`, Q18.5); the pads' own clearances become `pad_clearance` circles
+  (`pad_clearance::read_pad_clearances`, `pad_clearance::keepouts`, K13.1). The dialog shows a note under
+  the board input (`Dialog.input_note`, refreshed by `on_input_changed` and `show_options`), the snapshot
+  run's `plugin.log` carries the same line (`snapshot.notes`), and `headless_run.py route` prints it with
+  `Note:`; the run goes ahead. When the reader refuses the snapshot and the DSN runs instead, the box applies
+  again and the line is dropped from the log. Tests: `test_snapshot.py`
+  (`test_the_defaults_are_accepted_on_the_snapshot_and_the_keepouts_are_ignored`,
+  `test_headless_route_takes_the_default_options_on_a_snapshot_and_prints_the_note`),
+  `test_input_choice.py` (`test_the_defaults_route_the_snapshot_and_the_dialog_says_the_keepouts_are_ignored`,
+  `test_the_note_follows_the_input_and_the_keepouts_box`). `fixed_pour_mode = engine` with named classes,
+  `fix_existing`, the rip-up cost, the sweep and the pass hint are engine flags or board locks and work. The
+  rule-area fix-up (K01.2) does nothing (the reader maps rule areas by flags); the run log says so once.
 - **Presets** (see above) work with both inputs.
 - **Fallback to the DSN (K13.3, `input_choice.py`).** When the reader refuses the snapshot, the run uses the
   DSN export instead and routes that, so the input choice never fails a run. Two refusals are recognised: the

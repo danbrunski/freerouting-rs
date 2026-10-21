@@ -158,6 +158,9 @@ def route(board_path, work, options_path, router):
     if conflicts:
         print("Incompatible board input options: " + ", ".join(conflicts), file=sys.stderr)
         return 2
+    ignored = options.input_ignored_note(opts)
+    if ignored:
+        print("Note: " + ignored)
     mode = "snapshot" if opts.board_input == options.INPUT_KICAD_PCB else "export"
     # Keep pcbnew preparation in its own process (KiCad 10 SWIG lifetimes).
     prepared = subprocess.run([sys.executable, "-I", __file__, mode, board_path, work, options_path])

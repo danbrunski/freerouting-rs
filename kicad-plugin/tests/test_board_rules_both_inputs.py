@@ -60,5 +60,5 @@ def test_the_option_itself_no_longer_adds_the_switch():
 
 
 def test_the_snapshot_log_says_the_rules_are_applied():
-    notes = snapshot.notes(snapshot_options(rule_area_fixup=False))
+    notes = snapshot.notes(snapshot_options(rule_area_fixup=False, edge_and_pad_keepouts=False))
     assert notes == ["the .kicad_dru rules are applied (--apply-design-rules; a DSN route gets --kicad-dru; Route in GUI reads them only)"]
