@@ -32,6 +32,7 @@ try:  # inside the plugin package
         kicad_areas,
         kicad_board,
         options,
+        restore_copper,
         rule_areas,
         ses_vias,
         snapshot,
@@ -43,6 +44,7 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
     import kicad_areas
     import kicad_board
     import options
+    import restore_copper
     import rule_areas
     import ses_vias
     import snapshot
@@ -266,9 +268,11 @@ def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
     return True, args, lines, locked
 
 
-def after_import(board, ses, pcbnew=None):
-    """Corrects what KiCad's `ImportSpecctraSES` gets wrong (`ses_vias`):
-    the drill of routed vias. Returns the log lines; never raises."""
+def after_import(board, ses, pcbnew=None, originals=(), board_input=options.INPUT_DSN):
+    """Corrects what KiCad's `ImportSpecctraSES` gets wrong: the drill of
+    routed vias (`ses_vias`), then the coordinates of the input copper
+    (`restore_copper`, Q22.3: `originals` are `restore_copper.originals` taken
+    before the import). Returns the log lines; never raises."""
     lines = []
     try:
         changed = kicad_board.fix_via_drills(board, ses_vias.vias(_read(ses)))
@@ -277,6 +281,12 @@ def after_import(board, ses, pcbnew=None):
     else:
         if changed:
             lines.append(f"via drills: {changed} via(s) set to their session padstack's drill")
+    if originals:
+        try:
+            counts = restore_copper.restore(board.GetTracks(), originals, restore_copper.bound_nm(board_input))
+            lines.append(restore_copper.log_line(counts))
+        except Exception as e:  # keep the import as it is
+            lines.append(f"WARNING: input copper not restored: {e!r}")
     if pcbnew is not None:
         try:
             lines += refill(board, pcbnew, "after session import")

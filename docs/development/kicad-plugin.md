@@ -151,7 +151,16 @@ field they lack takes the profile's default):
   `test_save_as_preset_...`, `test_a_malformed_preset_file_...`).
 - **After the import** the plugin sets every routed via's drill from the session padstack
   (`ses_vias.py`): KiCad 10's `ImportSpecctraSES` takes the drill from the net class, which gave
-  0.6 mm vias a 0.4 mm drill and a 0.1 mm annular ring on `canary-pwr`.
+  0.6 mm vias a 0.4 mm drill and a 0.1 mm annular ring on `canary-pwr`. Then the copper that was
+  on the board comes back at its own coordinates (`restore_copper.py`, Q22.3, K13.2): each imported
+  track or via that matches an unlocked original (net, layer, width within 0.1 µm or via size and
+  drill, every coordinate within 0.6 µm on the DSN path and 0.2 µm on the `kicad_pcb` path) gets the
+  original's coordinates, width and uuid back, and routed ends within the bound of a restored end
+  move onto it. KiCad's `%.6g` export had moved input copper by up to 0.6 µm (cm4-edge-ai: 25
+  clearance items, nudac: 54 hole clearance items). The plugin's Route and Route in GUI,
+  `headless_run.py import` and the oracle's `kicad_steps.py import` all call it; `plugin.log` gets one
+  `input copper: ...` line. Tests: `test_restore_copper.py`,
+  `tools/kicad-oracle/tests/test_import_restore.py` (real pcbnew).
 - **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
   manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
   shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named
@@ -164,7 +173,8 @@ field they lack takes the profile's default):
   Tests: `test_edge_graphics.py`, `test_solder_mask.py`.
 - Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
   `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),
-  `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`.
+  `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`,
+  `restore_copper.py` (pure: the input copper back after the import, Q22.3).
   `plugin.py` and `kicad-plugin/headless_run.py` both go through `export_flow`, so a headless run
   routes what a plugin run routes. A failing fix-up is logged as a WARNING in `plugin.log` and routing
   goes on with the DSN as it was.

@@ -68,7 +68,7 @@ rules).
     - every row the reader lacks is fixed in the reader (test first) or listed with the board
       it would affect.
 
-- [ ] **K13.2 — Existing copper comes back unchanged.** Find which rounding moves the ends of
+- [x] **K13.2 — Existing copper comes back unchanged.** Find which rounding moves the ends of
   existing tracks on `One-Air-Max`. The reader rounds to 0.1 µm and the export to `%.6g`. Make
   the `kicad_pcb` path return copper that was already on the board at KiCad's own coordinates.
   - **Accept:**
@@ -76,6 +76,80 @@ rules).
       imported board's DRC report equals the original's;
     - on `One-Air-Max`, the pre-existing `/Solar_module/SYS`–`VBAT` violation counts against
       the same segment pairs as on the original board.
+    - *Amended 2026-10-20* (decided 2026-10-20): the second clause is met when the violation has
+      the original's item count and distance, and every `SYS` and `VBAT` segment comes back with
+      the original's nanometre geometry and uuid. Which of two equally close segments KiCad names
+      follows the board's item order, which neither `ImportSpecctraSES` nor the pcbnew API can
+      rebuild. The note below shows both hold.
+
+  *Done 2026-10-20* (first written as a Partial note, before the amendment above): the copper comes back unchanged, and the first clause holds. On the second
+  clause, the item count and the distance now match the original, but KiCad names a different
+  segment in one of the two items.
+  - **The rounding.** The `kicad_pcb` path rounds twice: the reader to 0.1 µm, then the session to
+    0.1 µm. `ImportSpecctraSES` replaces every unlocked track and via with the session's copy.
+    554 of One-Air-Max's 2064 input tracks, arcs and vias are off the 0.1 µm grid (the export's
+    `%.6g` would move 560). The fix is Q22.3's `restore_copper.py`, with the 200 nm bound on this
+    path (`options.board_input`, passed by `plugin.finish_import` and `headless_run.py import`). A
+    restored item also gets the original's uuid, because KiCad's attribution can follow the item
+    order (below).
+  - **Clause 1, the board with nothing left to route.**
+    - The stub test is
+      `test_restore_copper.py::test_a_fully_routed_board_on_the_kicad_pcb_path_comes_back_unchanged`:
+      the Route flow on the `kicad_pcb` path, every input track and via back with its geometry and
+      uuid.
+    - The real run is `ecc83-pp`, a KiCad 10.0.7 demo (`target/orchestrator/k135/boards/ecc83`).
+      Command: `tools/kicad-reader/plugin-input-ab.sh kicad_pcb` with `{"schema": 5, "profile":
+      "enhanced"}`, the release `freerouting-rs` built from `ba38e3f`, and KiCad 10.0.7.
+      - The input's DRC and the routed board's DRC are equal as multisets: 17 items each, compared
+        by type, severity, description and item descriptions and positions, with uuids left out
+        (`target/orchestrator/q223/scratch/drc_equal.py`).
+      - All 59 input copper items are on the routed board to the nanometre. The router added 11
+        segments, stubs to pad centres.
+      - The control is the same session imported by `main`'s `headless_run.py` (a8b4ae7, no
+        restore). Its DRC is also equal (17 = 17), but 23 of the 59 input items came back moved.
+        So on this board the copper comparison tells the two imports apart, and the DRC comparison
+        does not.
+  - **Clause 2, One-Air-Max** (`target/orchestrator/k135/boards/openair-max`, same command and
+    options). The route took 210 s with no pass cap and gave KiCad unconnected 2. This run used the
+    code before the last change, which only indexes the restored ends by grid cell (same matches;
+    `test_restore_copper.py` and the five Q22.3 rows were run again after it). The import log:
+    `input copper: 1635 track(s) and 410 via(s) back at their own coordinates, 45 routed end(s) moved
+    onto them, 3 input item(s) left as routed`.
+
+    | Board | `SYS`–`VBAT` items on `In1.Cu` (PWR) | Actual | All `clearance` errors |
+    |---|---|---|---|
+    | original | `VBAT` 4.9243 / `SYS` 8.0070; `SYS` 2.8057 / `VBAT` 1.5429 | 0.0910 mm | 12 |
+    | K10.5's `kicad_pcb` arm (c8b91b7) | 3 pairs | — | 15 |
+    | control (`main`'s import, same session `758f17c9…`) | `SYS` 8.0070 / `VBAT` 4.9243; `SYS` **2.8058** / `VBAT` 4.9243 | **0.0911** mm (554 input items moved) | 13 |
+    | restored | `VBAT` 4.9243 / `SYS` **2.8057**; `SYS` 2.8057 / `VBAT` 1.5429 | 0.0910 mm | 13 |
+
+    - Restored, every `SYS` and `VBAT` segment has the original's nanometre geometry and uuid
+      (2045 of the routed board's 2839 tracks and vias carry an input uuid, and none of them differs
+      in geometry). The count (2) and the distance (0.0910 mm) match the original.
+    - The difference is which of the two `SYS` segments KiCad names for `VBAT` 4.9243. The two
+      segments meet at (169.84, 63.64705), the closest point, and both are 0.0910 mm from it.
+    - **What decides it.** It is not the copper:
+      - three DRC runs of each file are identical;
+      - the original board, loaded and saved by pcbnew, still names `SYS` 8.0070;
+      - the routed board, loaded and saved, still names `SYS` 2.8057;
+      - an experiment that took the earlier routed board (the same geometry with the session's
+        uuids), set the input uuids in pcbnew and saved it named `SYS` 8.0070, as the original does
+        (`target/orchestrator/q223/runs/reorder/oam-uuid/`).
+
+      The choice follows the order of the board's items (scripts `scratch/reorder.py` and
+      `scratch/uuids.py`).
+  - **KiCad's naming.** Matching it too would need the import to rebuild the original's item
+    order. Neither the plugin's `ImportSpecctraSES` path nor KiCad's API offers that. Restoring
+    the uuids is the most this item can do in the copper itself, and the amendment above accepts
+    it.
+  - The 199 routing-caused `drill_out_of_range` and the 3 routing-caused `clearance` in this run's
+    `summary.json` are a grader artefact, not routing.
+    - One-Air-Max's file (version 20241229) names nets by number in its items, so
+      `oracle_lib.read_copper` gives the input copper net codes and the routed board net names, and
+      no key matches.
+    - With the numbers mapped to names, 1 routing-caused error is left: a routed `VBAT` track on B.Cu
+      across footprint F2's copper segment, Q22.4's cause.
+    - The grader fix is Q22.13. It lands before K13.6 runs.
 
 - [x] **K13.3 — Fall back to the DSN export.** When the reader refuses the snapshot, the plugin
   exports the DSN instead and routes that. The run log and the result summary name the input

@@ -15,7 +15,8 @@ the board's minimum track width, and the fix-up log. OPTIONS.json is a
 
 `import` loads BOARD again in a new process (a second LoadBoard in one
 process returned an unwrapped SwigPyObject in 10.0.7), locks the tracks as
-the plugin does for `fix_existing`, calls `ImportSpecctraSES` and saves the
+the plugin does for `fix_existing`, calls `ImportSpecctraSES`, puts the input
+copper back at its own coordinates (`restore_copper`, Q22.3) and saves the
 result as OUT, with the original lock states restored.
 
 `snapshot` (K10) loads BOARD, applies the in-memory EDITs (nothing is saved),
@@ -48,6 +49,7 @@ import pcbnew  # noqa: E402
 import export_flow  # noqa: E402
 import kicad_board  # noqa: E402
 import options  # noqa: E402
+import restore_copper  # noqa: E402
 import routing  # noqa: E402
 import tools  # noqa: E402
 
@@ -84,10 +86,11 @@ def import_ses(board_path, ses, out, options_path):
     opts = _options(options_path)
     board = pcbnew.LoadBoard(board_path)
     locked = kicad_board.lock_tracks(board) if opts.fix_existing else []
+    originals = restore_copper.originals(board.GetTracks())  # the unlocked ones the import replaces
     if not pcbnew.ImportSpecctraSES(board, ses):
         print("SES import failed", file=sys.stderr)
         return 1
-    lines = export_flow.after_import(board, ses, pcbnew)
+    lines = export_flow.after_import(board, ses, pcbnew, originals, opts.board_input)
     kicad_board.restore_locks(locked)
     pcbnew.SaveBoard(out, board)
     print("IMPORTED " + "; ".join(lines))

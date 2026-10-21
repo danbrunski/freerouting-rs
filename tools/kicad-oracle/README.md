@@ -39,8 +39,12 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
    net class, so a `Via[0-3]_600:300_um` on a net of a 0.8 / 0.4 mm class came
    back 0.6 / 0.4 and KiCad's DRC reported an annular ring of 0.1 mm
    (canary-pwr, 4 `annular_width` items); the drill is set back to the
-   padstack's 0.3 mm. `kicad_steps.py` loads `kicad-plugin/freerouting_rs/`'s
-   `ses_vias.py` and `kicad_board.py` by path, never the plugin package.
+   padstack's 0.3 mm. Then the input copper goes back to its own coordinates
+   and uuids (`restore_copper.py`, Q22.3): KiCad's DSN export prints `%.6g`, so
+   the session gave back input tracks and vias up to 0.6 µm off, and the grade
+   counted them as moved. `kicad_steps.py` loads `kicad-plugin/freerouting_rs/`'s
+   `ses_vias.py`, `kicad_board.py` and `restore_copper.py` by path, never the
+   plugin package.
 5. Copies the board's **original** `.kicad_pro`/`.kicad_dru` over both staged
    boards (a router must not grade itself under rules it wrote). A project
    without a `.kicad_pro` gets the one KiCad wrote when step 2 first saved the
@@ -179,12 +183,13 @@ comparison.
 |---|---|---|
 | `grade.sh` | bash | the steps above |
 | `grade-set.sh` | bash | `grade.sh` over a set file, `grades.tsv` |
-| `kicad_steps.py` | KiCad's python (`pcbnew`) | strip, export, import (with the via-drill fix), copper statistics, pad list (tests) |
+| `kicad_steps.py` | KiCad's python (`pcbnew`) | strip, export, import (with the via-drill fix and the input copper restored), copper statistics, pad list (tests) |
 | `oracle_lib.py` | plain python3 | keepout fix, SES placement strip, class widths, severity forcing, `.kicad_pcb` copper reader, routing-caused split (Q22.2), summary |
 | `dangling_visible.py` | KiCad's python (`pcbnew`) | splits KiCad's `via_dangling`/`track_dangling` into what the DSN shows and the plane-fill limit (a via or track end inside a DSN plane of its net, outside KiCad's fill), Q16.4 |
 | `tests/test_dangling_visible.py` | plain python3 | unit tests of its DSN plane reader and point-in-polygon test |
 | `tests/test_oracle_lib.py`, `tests/test_routing_caused.py` | plain python3 | unit tests: `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'` |
 | `tests/test_import_via_drill.py` | KiCad's python (skipped without `pcbnew`) | the import sets a `Via[0-1]_600:300_um` on a 0.8 / 0.4 mm class to drill 0.3 mm |
+| `tests/test_import_restore.py` | KiCad's python (skipped without `pcbnew`) | Q22.3: the import puts an input track and via moved under 0.6 µm back at their nanometre coordinates and uuids, a routed end follows, a track moved 2 µm stays |
 | `tests/run-plugin-export-test.sh` | bash + KiCad, no Java | Q22.6: `--export plugin` routes the plugin's DSN (byte-identical to `headless_run.py export`'s), passes its flags, `{PLUGIN_ARGS}`, not graded without a place for them |
 | `tests/run-oracle-tests.sh` | bash + KiCad + Java | end-to-end checks (via in pad, graze under a warning-level clearance, pre-existing edge item, missing `kicad-cli`, KiCad processes and checksums) |
 | `tests/inject.py`, `tests/make_edge_board.py` | python3 / KiCad's python | session edits and the synthetic edge board for those checks |

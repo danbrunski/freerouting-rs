@@ -28,6 +28,7 @@ from . import (
     options,
     presets,
     progress,
+    restore_copper,
     routing,
     snapshot,
     summary,
@@ -814,10 +815,13 @@ class Dialog(wx.Dialog):
             wx.MessageBox(run.outcome_text(), TITLE, wx.OK | wx.ICON_INFORMATION, self)
 
     def finish_import(self, ses, summary_text, stopped):
+        # Q22.3: the unlocked tracks and vias that import_ses detaches and the session replaces
+        originals = restore_copper.originals(self.board.GetTracks())
         if not import_ses(self.board, ses):
             self.error(f"KiCad could not import\n{ses}")
             return
-        log_lines(self.work_dir, ses, export_flow.after_import(self.board, ses, pcbnew))
+        lines = export_flow.after_import(self.board, ses, pcbnew, originals, self.used.board_input)
+        log_lines(self.work_dir, ses, lines)
         pcbnew.Refresh()
         head = "Stopped early; imported the best board so far." if stopped else "Routed and imported the result into the board."
         text = head + ("\n\n" + summary_text if summary_text else "")

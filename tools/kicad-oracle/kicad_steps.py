@@ -17,6 +17,10 @@ session's padstack (`Via[0-3]_600:300_um` is 0.6 / 0.3), and the plugin sets it
 back (`ses_vias.vias`, `kicad_board.fix_via_drills`). Both modules are plain
 Python files loaded by path from kicad-plugin/freerouting_rs, never through the
 plugin package.
+
+`import` then puts the input copper back at its own coordinates, as the plugin
+does (Q22.3, `restore_copper.py`, loaded the same way): KiCad's DSN export
+rounds it to `%.6g`.
 """
 
 import json
@@ -108,14 +112,27 @@ def fix_via_drills(board, ses):
     return kicad_board.fix_via_drills(_TracksBoard(board), session_vias)
 
 
+def restore_copper():
+    """The plugin's `restore_copper` module (Q22.3), loaded by path."""
+    sys.path.insert(0, str(PLUGIN_MODULES))
+    try:
+        import restore_copper as module
+    finally:
+        sys.path.remove(str(PLUGIN_MODULES))
+    return module
+
+
 def import_session(unrouted, ses, out):
     board = pcbnew.LoadBoard(unrouted)
+    restore = restore_copper()
+    originals = restore.originals(board.Tracks())  # the unlocked ones the import replaces
     if not pcbnew.ImportSpecctraSES(board, ses):
         print("SES import failed", file=sys.stderr)
         return 1
     changed = fix_via_drills(board, ses)
+    counts = restore.restore(board.Tracks(), originals, restore.bound_nm(restore.DSN))
     pcbnew.SaveBoard(out, board)
-    print("SES imported, fix_via_drills reported %d" % changed)
+    print("SES imported, fix_via_drills reported %d; %s" % (changed, restore.log_line(counts)))
     return 0
 
 

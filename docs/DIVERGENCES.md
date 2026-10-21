@@ -1613,6 +1613,19 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   class's drill, not its padstack's (a 0.6 mm via on a 0.4 mm-drill class got a 0.1 mm annular
   ring on `canary-pwr`); the plugin sets the session's drill after the import
   (`ses_vias.py`, pinned by `test_imported_vias_get_the_sessions_drill_not_the_class_drill`).
+- **The board's own copper comes back at its own coordinates** (Q22.3, K13.2,
+  `restore_copper.py`, called by `export_flow.after_import`, `headless_run.py import` and the
+  oracle's `kicad_steps.py import`). Java's plugin imports the SES as it is, so input tracks and
+  vias come back where KiCad's `%.6g` DSN export (or the `.kicad_pcb` reader's 0.1 µm) and the
+  session's 0.1 µm put them, up to 0.6 µm off. After the import each track or via that matches an
+  unlocked original (same net and layer, width within 0.1 µm or the same via size and drill, every
+  coordinate within 0.6 µm on the DSN path, 0.2 µm on the `kicad_pcb` path) gets the original's
+  coordinates, width and uuid back, and routed ends within that bound of a restored end move onto
+  it, unless that leaves a zero-length track. Anything moved further stays as imported. Under both
+  profiles. Pinned by `test_restore_copper.py` (`test_an_input_track_that_the_export_rounds_comes_back_at_its_nanometre_coordinates`,
+  `test_a_routed_track_that_ends_on_a_restored_track_follows_it`,
+  `test_a_track_the_router_moved_2_um_stays_as_imported`) and
+  `tools/kicad-oracle/tests/test_import_restore.py`.
 - **Board Setup's minimums are passed as hard floors** (Q18, `options.board_minimum_args`,
   `export_flow.router_args`): `m_TrackMinWidth`, `m_ViasMinSize`, `m_MinThroughDrill`,
   `m_ViasMinAnnularWidth`, `m_CopperEdgeClearance` and `m_HoleClearance` become

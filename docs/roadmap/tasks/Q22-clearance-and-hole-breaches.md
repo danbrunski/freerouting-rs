@@ -326,7 +326,7 @@ Sequencing:
       Q22.4's (routed tracks over footprint copper lines), the 54 Q22.3's (input copper moved
       under 1 µm). The `FILL_TYPES` narrowing stays. Every clause above now holds.
 
-- [ ] **Q22.3 — Input copper comes back at its own coordinates.** After `ImportSpecctraSES`, each
+- [x] **Q22.3 — Input copper comes back at its own coordinates.** After `ImportSpecctraSES`, each
   imported track or via that matches an unlocked original of the same net, layer and width (or
   size and drill) gets the original back. "Matches" means within the export's `%.6g` bound: 0.5 µm
   per coordinate under 1 m, plus the session's 0.1 µm.
@@ -346,6 +346,82 @@ Sequencing:
       - nudac's `hole_clearance` 18 → 0;
       - KiCad unconnected unchanged on all five;
     - `python3 -m pytest kicad-plugin/tests` passes.
+  - *Done 2026-10-20:* new `kicad-plugin/freerouting_rs/restore_copper.py` (`originals`, `restore`,
+    `bound_nm`, `log_line`; pure Python, pcbnew items passed in).
+    - **What it does.** The originals are the board's unlocked tracks and vias, read as plain tuples
+      before `ImportSpecctraSES` (the same set `plugin.detach_unlocked_tracks` takes off; with
+      `fix_existing` that set is empty, because the K09 locks keep the copper). A match has the same
+      kind, net and layer (a via: its layer pair), the same width within the session's 0.1 µm (a
+      via: the same size and drill, after `fix_via_drills`), and every coordinate within 600 nm
+      (`%.6g` under 1 m plus the session) on the DSN path or 200 nm on the `kicad_pcb` path, a
+      track in either direction. A restored item gets the original's coordinates, width and uuid
+      (the uuid is K13.2's). Then the ends of the unrestored imported items within the bound of a
+      restored end of their net move onto it, unless that leaves a track of length 0.
+    - **Determinism.** The index is keyed by (kind, net, layer, grid cell) and built in board order.
+      Every candidate pair is sorted by (squared distance, the original's order, the imported item's
+      order) and taken greedily, each item once.
+    - **Call sites.** `export_flow.after_import(board, ses, pcbnew, originals, board_input)` runs it
+      after the drill fix and before the refill. `plugin.Dialog.finish_import` reads the originals
+      from the board just before `import_ses` detaches them. `import_ses` keeps its signature, because
+      `test_threads.py` plants code at `def import_ses(board, ses):`. `headless_run.py import` reads
+      them after the `fix_existing` locks. `tools/kicad-oracle/kicad_steps.py import` loads the module
+      by path and uses the DSN bound. `plugin.log` gets `input copper: N track(s) and M via(s) back at
+      their own coordinates, K routed end(s) moved onto them, U input item(s) left as routed (Q22.3)`.
+    - **Stub-`pcbnew` tests** (`kicad-plugin/tests/test_restore_copper.py`, 15):
+      - `test_an_input_track_that_the_export_rounds_comes_back_at_its_nanometre_coordinates`: cm4's
+        `PCIe_RX_N` end 192.322488 mm, rounded to 192.322 by `%.6g`, comes back to the nanometre;
+      - `test_a_routed_track_that_ends_on_a_restored_track_follows_it`: another net's track does
+        not follow;
+      - `test_a_track_the_router_moved_2_um_stays_as_imported`: and so does a routed track ending on
+        it;
+      - the bound at 600/601/200 nm; vias with the same and with another drill; a reversed track
+        that gets the original's direction and a 158.75 µm width; another width, layer or net; nearest
+        first, then board order; locked tracks and arcs; the import order not changing the result;
+        uuids; a 0.5 µm router stub that would shrink to nothing (cm4-edge-ai, below);
+      - through the stub `wx`/`pcbnew` Route flow: `test_route_puts_the_input_copper_back_after_the_import`
+        (log line checked), `test_a_fully_routed_board_on_the_kicad_pcb_path_comes_back_unchanged`, and
+        `test_fix_existing_keeps_the_input_copper_and_restores_nothing`.
+      - With `restore` replaced by a no-op, 7 of the 10 unit tests written by then failed. The 3
+        that passed check items that must stay as imported.
+    - **Real pcbnew:** `tools/kicad-oracle/tests/test_import_restore.py` (KiCad 10.0.7, `kicad_steps.py
+      import` on `make_legacy_board.py`'s board). A track moved 0.4 / 0.3 µm and a via moved 0.2 / 0.4 µm
+      come back with their uuids, a routed end follows, and a track moved 2 µm stays.
+    - **The saved N04.3 `center` sessions**, imported again
+      (`target/orchestrator/q223/scratch/regrade.sh ROW`: a copy of
+      `n04q16/out/n04/center/ROW/`, `kicad_steps.py import` of its `unrouted` board and `noplace.ses`,
+      the original `.kicad_pro` put back, one `kicad-cli pcb drc --severity-all --refill-zones`
+      (KiCad 10.0.7), `kicad_steps.py stats`, `oracle_lib.py summarize` with both boards). "Before" is
+      the saved routed board summarized by this checkout's `oracle_lib` (Q22.2's numbers). Outputs are
+      in `target/orchestrator/q223/regrade/ROW/`.
+
+      | Row | Routing-caused before | Routing-caused after | KiCad unconnected | Restored tracks / vias, ends moved, originals left as routed |
+      |---|---|---|---|---|
+      | cm4-edge-ai | clearance 25 | none | 0 → 0 | 705 / 136, 101, 13 |
+      | ch32v003 | clearance 5, starved_thermal 1 | clearance **2** in three runs, **1** in the last (`rule 'Pad to Track clearance)'`, the routed `J1-SHIELD` track against the GND vias at 0.1881 and 0.1981 mm: Q22.5's pair) | 0 → 0 | 252 / 29, 44, 3 |
+      | mydevboard | clearance 1 | none | 0 → 0 | 479 / 41, 3, 0 |
+      | vna-usb-pd | clearance 2 | none | 0 → 0 | 149 / 43, 0, 0 |
+      | nudac | hole_clearance 54 | none (61 `hole_clearance` on the routed board, 61 on the input, all pre-existing) | 0 → 0 | 539 / 194, 1, 5 |
+
+      - nudac is 54 → 0, not 18 → 0: Q22.2 amended its count to 54.
+      - ch32v003's 2 or 1 is KiCad's reporting, not the copper. All four imports restored the same
+        items (252 / 29 / 44 / 3), and the routed track is the same.
+        - The last run listed only the 0.1981 mm via. KiCad's DRC reports one clearance item per
+          track unless "report all track errors" is on, and which via it names follows the order of
+          the board's items.
+        - The routed items get new uuids on every import, and so a new order. K13.2 found the same
+          effect.
+        - Q22.5 removes both.
+      - ch32v003's `starved_thermal` also went (U1 pad 1 against the GND zone now has 2 spokes, as on
+        the input).
+      - The first cm4 run gave one `tracks_crossing`. The router had joined a pad centre (179.2875 mm)
+        to the rounded end of an input track (179.288) with a 0.5 µm stub. Following both ends left a
+        zero-length track, which KiCad reports as `tracks_crossing`. The fix is that a follow never
+        leaves a zero-length track
+        (`test_a_routed_stub_that_would_shrink_to_nothing_stays_as_imported`). All five rows were
+        imported and graded again after that fix, after the uuid restore and after the last code
+        change (restored ends indexed by grid cell). The table is the last run.
+    - `python3 -m pytest kicad-plugin/tests` (venv `target/orchestrator/k02/venv`): 436 passed, 19
+      skipped. `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'`: 36 tests OK.
 
 - [~] **Q22.4 — Copper graphics and copper text are obstacles.** On copper layers:
   - footprint lines, rectangles, polygons, arcs, circles and visible text;
@@ -691,3 +767,19 @@ Sequencing:
       aperture grown by the clearance; with 0, nothing changes;
     - fc-rom routed through the plugin's export: 0 routing-caused `solder_mask_bridge`, with KiCad
       unconnected beside it.
+
+- [ ] **Q22.13 — The grader matches copper on boards that name nets by number** (added
+  2026-10-20). In a KiCad 6–9 file (e.g. One-Air-Max, version 20241229), items name their net by
+  number. A board KiCad 10 saves names it by name. `oracle_lib.read_copper` returns whatever the file holds, so on the
+  input board as copied no copper key matches the routed board's. `plugin-input-ab.sh` then counts
+  every item touching input copper as routing-caused: on One-Air-Max that was 199
+  `drill_out_of_range` and 3 `clearance`, where 1 is routing's (found in K13.2). `grade.sh` is not
+  affected, since both of its boards are saved by KiCad 10.
+  - `read_copper` maps net numbers to names through the file's `(net N "name")` table, or through
+    the footprint pads' nets on KiCad 10 files without a table, so both boards' keys use names.
+  - **Accept:**
+    - a test in `tools/kicad-oracle/tests/` reads one copper item written both ways and gets the
+      same key;
+    - One-Air-Max's K13.2 run (`target/orchestrator/q223/runs/`) summarized again: 1
+      routing-caused copper error, the `VBAT`–F2 track;
+    - the oracle's tests pass.
