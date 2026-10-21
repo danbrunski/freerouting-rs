@@ -17,6 +17,7 @@ pub mod state;
 pub mod state_hash;
 pub mod structure;
 mod trace_ops;
+pub(crate) mod unbounded_items;
 
 pub use autoroute_log::AutorouteChange;
 pub use basic_board::BasicBoard;

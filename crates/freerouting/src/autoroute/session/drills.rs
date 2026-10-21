@@ -163,6 +163,10 @@ impl DrillPageArray {
     /// Java `new DrillPageArray(board, maxPageWidth)` (`:34-61`) on the
     /// board box `bounds`. The last column and row end at the bounds. The
     /// sections of the pages are not allocated.
+    ///
+    /// DIVERGENCE: an empty `bounds` (negative row or column counts) gives no
+    /// pages, where Java throws `NegativeArraySizeException` (`:42`). Since
+    /// K15.1 a read board's box is not empty (DIVERGENCES, "Maze search").
     pub fn new(bounds: IntBox, max_page_width: i32) -> DrillPageArray {
         let length = f64::from(bounds.ur.x) - f64::from(bounds.ll.x);
         let height = f64::from(bounds.ur.y) - f64::from(bounds.ll.y);
@@ -896,6 +900,18 @@ mod tests {
         assert_eq!(DrillPageArray::max_page_width(6000.0), 30000);
         assert_eq!(DrillPageArray::max_page_width(1999.9), 10000);
         assert_eq!(DrillPageArray::max_page_width(0.0), 10000);
+    }
+
+    #[test]
+    fn an_empty_board_box_gives_no_pages() {
+        // Java: NegativeArraySizeException. The box is the one an unbounded
+        // item box gave before K15.1 (`IntBox.offset` wrapped).
+        let wrapped = IntBox::new(398000, -1502000, -2147482649, -2147482649);
+        for bounds in [IntBox::EMPTY, wrapped] {
+            let array = DrillPageArray::new(bounds, 10000);
+            assert!(array.column_count() < 0 || array.row_count() < 0);
+            assert!(array.pages().is_empty());
+        }
     }
 
     #[test]

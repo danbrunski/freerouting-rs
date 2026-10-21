@@ -280,17 +280,31 @@ impl IntBox {
     }
 
     /// The box offset by `dist`: to the outside if `dist > 0`, else to the inside.
+    ///
+    /// DIVERGENCE (K15.1): the coordinates saturate at `i32::MIN` and
+    /// `i32::MAX`. Java's `int` sums wrap, so the box of an unbounded shape
+    /// (see [`IntBox::has_infinite_coordinate`]) offset outwards came out
+    /// empty. Inside the limits the result is Java's.
     pub fn offset(&self, dist: f64) -> IntBox {
         if dist == 0.0 || self.is_empty() {
             return *self;
         }
         let r = round_to_i32(dist);
         IntBox::new(
-            self.ll.x.wrapping_sub(r),
-            self.ll.y.wrapping_sub(r),
-            self.ur.x.wrapping_add(r),
-            self.ur.y.wrapping_add(r),
+            self.ll.x.saturating_sub(r),
+            self.ll.y.saturating_sub(r),
+            self.ur.x.saturating_add(r),
+            self.ur.y.saturating_add(r),
         )
+    }
+
+    /// True if a coordinate is `i32::MIN` or `i32::MAX`: the box of an
+    /// unbounded shape, whose infinite corners round to the limits
+    /// (`Simplex::bounding_box`). [`IntBox::EMPTY`] has none.
+    pub fn has_infinite_coordinate(&self) -> bool {
+        [self.ll.x, self.ll.y, self.ur.x, self.ur.y]
+            .iter()
+            .any(|&c| c == i32::MIN || c == i32::MAX)
     }
 
     /// The box with its horizontal extension offset by `dist`.
