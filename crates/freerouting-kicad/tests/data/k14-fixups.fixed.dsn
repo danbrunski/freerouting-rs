@@ -1,0 +1,179 @@
+(pcb "/home/thebo/code/freerouting-rs/target/orchestrator/k141/wt/crates/freerouting-kicad/tests/data/k14-fixups.kicad10.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer In1.Cu
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer In2.Cu
+      (type signal)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  50000 -40000  0 -40000  0 0  50000 0  50000 -40000)
+    )
+    
+    (plane VBUS (polygon F.Cu 0  3000 -3000  14000 -3000  14000 -14000  3000 -14000  3000 -3000))
+    
+    (plane GND (polygon In1.Cu 0  1000 -1000  49000 -1000  49000 -39000  1000 -39000  1000 -1000))
+    (plane VBUS (polygon In2.Cu 0  1000 -1000  24500 -1000  24500 -39000  1000 -39000  1000 -1000))
+    (plane V3V3 (polygon In2.Cu 0  25500 -1000  49000 -1000  49000 -39000  25500 -39000
+            25500 -1000))
+    (via "Via[0-3]_800:400_um" "Via[0-3]_1000:500_um")
+    (rule
+      (width 250)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component k14:U1
+      (place U1 20000 -20000 front 0 (PN V))
+    )
+    (component k14:C1
+      (place C1 8000 -8000 front 0 (PN V))
+      (place C2 40000 -32000 front 0 (PN V))
+    )
+    (component k14:U2
+      (place U2 32000 -20000 front 0 (PN V))
+    )
+    (component k14:J1
+      (place J1 44000 -8000 front 0 (PN V))
+    )
+    (component k14:L1
+      (place L1 32000 -10000 front 0 (PN V))
+    )
+  )
+  (library
+    (image k14:U1
+      (pin Rect[T]Pad_600.000000x1200.000000_um 1 0 0)
+      (pin Rect[T]Pad_600.000000x1200.000000_um 2 1270 0)
+      (pin Rect[T]Pad_600.000000x1200.000000_um 3 2540 0)
+      (pin Rect[T]Pad_600.000000x1200.000000_um 4 3810 0)
+      (pin Rect[T]Pad_600.000000x1200.000000_um 5 5080 0)
+    )
+    (image k14:C1
+      (pin Rect[T]Pad_1000.000000x1200.000000_um 1 0 0)
+      (pin Rect[T]Pad_1000.000000x1200.000000_um 2 2000 0)
+    )
+    (image k14:U2
+      (pin Rect[T]Pad_800.000000x1600.000000_um 1 0 0)
+      (pin Rect[T]Pad_800.000000x1600.000000_um 2 1500 0)
+      (pin Rect[T]Pad_800.000000x1600.000000_um 3 3000 0)
+    )
+    (image k14:J1
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 2 2000 0)
+    )
+    (image k14:L1
+      (pin Rect[T]Pad_1500.000000x2000.000000_um 1 0 0)
+      (pin Rect[T]Pad_1500.000000x2000.000000_um 2 4000 0)
+    )
+    (padstack Rect[T]Pad_600.000000x1200.000000_um
+      (shape (rect F.Cu -300 -600 300 600))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_800.000000x1600.000000_um
+      (shape (rect F.Cu -400 -800 400 800))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1000.000000_um
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1200.000000_um
+      (shape (rect F.Cu -500 -600 500 600))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1500.000000x2000.000000_um
+      (shape (rect F.Cu -750 -1000 750 1000))
+      (attach off)
+    )
+    (padstack "Via[0-3]_800:400_um"
+      (shape (circle F.Cu 800))
+      (shape (circle In1.Cu 800))
+      (shape (circle In2.Cu 800))
+      (shape (circle B.Cu 800))
+      (attach off)
+    )
+    (padstack "Via[0-3]_1000:500_um"
+      (shape (circle F.Cu 1000))
+      (shape (circle In1.Cu 1000))
+      (shape (circle In2.Cu 1000))
+      (shape (circle B.Cu 1000))
+      (attach off)
+    )
+  )
+  (network
+    (net VBUS
+      (pins U1-1 C1-1 L1-2)
+    )
+    (net V3V3
+      (pins U1-2 J1-2 C2-1)
+    )
+    (net SIG1
+      (pins U1-3 U2-3)
+    )
+    (net SIG2
+      (pins U1-4 J1-1)
+    )
+    (net GND
+      (pins U1-5 C1-2 U2-2 C2-2)
+    )
+    (net VSW
+      (pins U2-1 L1-1)
+    )
+    (class kicad_default GND SIG1 SIG2
+      (circuit
+        (use_via "Via[0-3]_800:400_um")
+      )
+      (rule
+        (width 250)
+        (clearance 200)
+      )
+    )
+    (class Switch VSW
+      (circuit
+        (use_via "Via[0-3]_1000:500_um")
+      )
+      (rule
+        (width 800)
+        (clearance 250)
+      )
+    )
+    (class Power V3V3 VBUS
+      (circuit
+        (use_via "Via[0-3]_1000:500_um")
+      )
+      (rule
+        (width 600)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

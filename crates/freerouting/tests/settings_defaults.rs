@@ -270,6 +270,10 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("board_minimums.from_classes", None),
         // P02.1: unset, which is off.
         ("debug.audit_incremental", None),
+        // K14: unset, which changes nothing (both profiles).
+        ("input_fixups.class_widths", None),
+        ("input_fixups.route_on_plane_layers", None),
+        ("input_fixups.drop_pour_nets", None),
     ];
     // N06: every `java_quirks` switch is unset, which is `true` (Java's
     // behaviour); `tests/settings_java_quirks.rs` checks the ids.

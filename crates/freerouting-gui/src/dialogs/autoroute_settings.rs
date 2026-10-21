@@ -131,6 +131,18 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "solder_mask_expansions",
         "per-pad data (Q18.7), filled in by the KiCad plugin or read from a .kicad_pcb",
     ),
+    (
+        "input_fixups.class_widths",
+        "a change to a .kicad_pcb input (K14.1), passed by the KiCad plugin",
+    ),
+    (
+        "input_fixups.route_on_plane_layers",
+        "a change to a .kicad_pcb input (K14.2), passed by the KiCad plugin",
+    ),
+    (
+        "input_fixups.drop_pour_nets",
+        "a change to a .kicad_pcb input (K14.3), passed by the KiCad plugin",
+    ),
     ("result_json", "a file path for the CLI's result manifest"),
     (
         "autorouter.save_intermediate_stages",

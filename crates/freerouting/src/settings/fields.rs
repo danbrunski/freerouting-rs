@@ -538,6 +538,15 @@ settings_table! {
             (from_classes, bool, opt, None, None, "fromClasses", [], Flat::No, true,
                 "With `track_width_um` unset, the narrowest class width in the design is the minimum track width (unset: off, profile `legacy`, Java's neck-downs); profile `enhanced` turns it on (Q18)."),
         }
+        input_fixups, InputFixupsPatch, InputFixupsSettings, "inputFixups",
+        "The KiCad plugin's DSN fix-ups (K09) for a `.kicad_pcb` input (K14; not a Java section): the reader's tree is changed as the plugin changes KiCad's DSN export. Names only (the plugin resolves its `auto` lists); an unknown class or layer is an error, an unknown net a warning. A DSN input ignores them, with a warning. Unset (the default, both profiles) changes nothing." {
+            (class_widths, Vec<String>, opt, None, None, "classWidths", [], Flat::No, true,
+                "Net class track widths as `<class>=<width in micrometers>` entries: each class's width rule is set to it, as the plugin's `class_widths` writes the class's `(rule (width W))`; a class an applied `.kicad_dru` `track_width` rule sets keeps the rule's width (K14.1)."),
+            (route_on_plane_layers, Vec<String>, opt, None, None, "routeOnPlaneLayers", [], Flat::No, true,
+                "Plane (power) layers opened to routing: each becomes a signal layer and keeps its planes, as the plugin's `route_on_plane_layers` turns `(type power)` into `(type signal)`; a layer that is not a power layer is an error (K14.2)."),
+            (drop_pour_nets, Vec<String>, opt, None, None, "dropPourNets", [], Flat::No, true,
+                "Nets whose zones on the outer copper layers are left out of the planes, as the plugin's `drop_pour_nets` drops their `(plane ...)`; their inner-layer zones stay (K14.3)."),
+        }
         java_quirks, JavaQuirksPatch, JavaQuirksSettings, "javaQuirks",
         "The Java bugs kept for parity, one switch each (N06; not a Java section). Unset is `true`, Java's behaviour; profile `legacy` keeps every switch `true`, profile `enhanced` turns off the fixes N06.13 promoted." {
             (simplex_prev_division_line, bool, opt, None, None, "simplexPrevDivisionLine", [], Flat::No, true,

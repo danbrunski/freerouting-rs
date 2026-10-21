@@ -1416,6 +1416,35 @@ compare them on 12 committed boards and the 56-board corpus).
   `tests/k13_inputs.rs::pads_own_clearances_become_circle_keepouts` and
   `kicad-plugin/tests/test_mask_floor.py::test_pad_clearance_circles_match_the_readers`; the
   `kicad_parity.rs` comparison leaves them out.
+- **Class widths on a `.kicad_pcb` input** (K14.1, `fixups`, `router.input_fixups.class_widths`,
+  off by default under both profiles): `<class>=<um>` entries set each class's first width rule
+  in the reader's tree, as the plugin's DSN fix-up `class_widths` writes `(rule (width W))` into
+  KiCad's export; Java has neither. The plugin's snapshot passes it, `auto` resolved from the
+  board (`dsn_fixups.resolve_on_board`, the classes from `export_flow.board_classes`). A class the
+  board has no width rule for is an error naming it. A class whose width an applied `.kicad_dru`
+  `track_width` rule set keeps the rule's width, with one line naming the class and the rule, as on
+  the DSN path, where `--kicad-dru` runs after the text fix-up. Pinned by
+  `tests/k14_fixups.rs::class_widths_equal_the_fixed_up_export` (the tree's class rules equal the
+  plugin's fixed-up export of `tests/data/k14-fixups.kicad_pcb`, parsed, exactly),
+  `a_class_the_kicad_dru_track_width_sets_keeps_the_rules_width`,
+  `an_unknown_class_is_an_error_that_names_it` and
+  `kicad-plugin/tests/test_snapshot_fixups.py::test_auto_on_the_snapshot_gives_the_dsn_paths_lists`.
+- **Plane layers opened to routing on a `.kicad_pcb` input** (K14.2, `fixups`,
+  `router.input_fixups.route_on_plane_layers`, off by default): each listed power layer becomes
+  a signal layer and keeps its planes, as the plugin's `route_on_plane_layers` turns the export's
+  `(type power)` into `(type signal)`. An unknown layer, or one that is not a power layer, is an
+  error naming it. Pinned by
+  `tests/k14_fixups.rs::opened_plane_layers_equal_the_fixed_up_export_and_keep_their_planes` and
+  `an_unknown_layer_or_a_signal_layer_is_an_error_that_names_it`.
+- **Pours of listed nets dropped on a `.kicad_pcb` input** (K14.3, `fixups`,
+  `router.input_fixups.drop_pour_nets`, off by default): the planes of the listed nets on the
+  first and last copper layer leave the tree, as the plugin's `drop_pour_nets` drops their
+  `(plane ...)`; their inner-layer planes stay. A net the board does not have is a warning naming
+  it and is left out (the DSN fix-up passes it silently). A DSN input ignores all three `router.input_fixups.*`
+  settings with one warning (`k14_fixups.rs::engine::a_dsn_job_ignores_the_settings_with_a_warning`).
+  Pinned by `tests/k14_fixups.rs::dropped_pours_equal_the_fixed_up_export_and_inner_planes_stay`,
+  `an_unknown_net_is_a_warning_that_names_it` and
+  `kicad-plugin/tests/test_snapshot_fixups.py::test_auto_on_the_snapshot_gives_the_dsn_paths_lists`.
 - Against the export's board the reader's differences are exactly the ones above and nothing
   else: `crates/freerouting/tests/kicad_parity.rs` lists each with its reason and fails on any
   other, and on a listed one that no longer occurs; the item order is the export's except for

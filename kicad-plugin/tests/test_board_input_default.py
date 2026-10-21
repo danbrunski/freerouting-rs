@@ -152,8 +152,11 @@ def test_a_saved_dsn_fixup_without_a_choice_keeps_the_dsn(name, schema):
 
 def test_a_saved_dsn_fixup_with_a_snapshot_choice_stays_on_the_snapshot():
     # an explicit choice is kept; the dialog's form check names the conflict
+    loaded = RouteOptions.from_dict({"schema": 5, "board_input": "kicad_pcb", "fixed_pour_classes": ["Power"]})
+    assert loaded.board_input == "kicad_pcb" and options.input_conflicts(loaded) == ["Fixed pour classes"]
+    # K14.1: the reader applies class widths, so they are no conflict there
     loaded = RouteOptions.from_dict({"schema": 5, "board_input": "kicad_pcb", "class_widths": {"GND": 0.4}})
-    assert loaded.board_input == "kicad_pcb" and options.input_conflicts(loaded) == ["Class widths"]
+    assert loaded.board_input == "kicad_pcb" and options.input_conflicts(loaded) == []
 
 
 def test_options_that_need_no_dsn_text_do_not_move_the_input():
@@ -250,22 +253,19 @@ def replace_input(opts, board_input):
 # --- the dialog's note under the board input (K13.7, the owner's run) -----------------------------
 
 CANARY_FIXUPS = {"class_widths": {"GND": 0.4}, "fixed_pour_classes": ["Power_High"], "drop_pour_nets": ["GND"]}
-THREE = "'Class widths', 'Fixed pour classes' and 'Drop pours of nets'"
-
-
 def test_the_note_names_the_fixups_that_keep_the_snapshot_from_running():
+    # K14.1-K14.3: class widths and dropped pours work on the snapshot; the fixed pour wires don't yet (K14.4)
     on_snapshot = replace(options.profile_defaults(), **CANARY_FIXUPS)
     assert options.input_note(on_snapshot).split("\n") == [
-        f"The board snapshot cannot apply {THREE}: turn them off, or choose KiCad's DSN export.",
+        "The board snapshot cannot apply 'Fixed pour classes': turn it off, or choose KiCad's DSN export.",
         options.input_ignored_note(on_snapshot),
     ]
     on_dsn = replace(on_snapshot, board_input="dsn")
-    assert options.input_note(on_dsn) == f"{THREE} need KiCad's DSN export: turn them off to route the board snapshot."
-    one = replace(options.profile_defaults(), class_widths={"GND": 0.4}, edge_and_pad_keepouts=False)
-    assert options.input_note(one) == "The board snapshot cannot apply 'Class widths': turn it off, or choose KiCad's DSN export."
-    assert options.input_note(replace(one, board_input="dsn")) == (
-        "'Class widths' needs KiCad's DSN export: turn it off to route the board snapshot."
-    )
+    assert options.input_note(on_dsn) == "'Fixed pour classes' needs KiCad's DSN export: turn it off to route the board snapshot."
+    three = dict(class_widths={"GND": 0.4}, drop_pour_nets="auto", route_on_plane_layers=["In1.Cu"])
+    one = replace(options.profile_defaults(), edge_and_pad_keepouts=False, **three)
+    assert options.input_note(one) == ""
+    assert options.input_note(replace(one, board_input="dsn")) == ""
 
 
 def test_the_note_without_a_conflict_is_the_ignored_note_or_nothing():

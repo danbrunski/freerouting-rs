@@ -66,6 +66,7 @@ READER_PREFIXES = (
     "arcs followed:",
     "footprint copper zones:",
     "custom pads",
+    "input fix-up:",  # K14: the router's lines for `router.input_fixups.*`
 )
 
 

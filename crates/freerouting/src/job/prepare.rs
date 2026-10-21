@@ -11,7 +11,9 @@
 //!    unknown one is a [`JobError::Settings`]), config file, DSN,
 //!    environment, CLI (and any extra sources, for example a testing
 //!    profile);
-//! 2. read the board; a `.kicad_dru` given for a DSN input
+//! 2. read the board; a `.kicad_pcb` input's tree first gets the plugin's DSN
+//!    fix-ups that `router.input_fixups.*` asks for (K14, [`apply_input_fixups`];
+//!    a DSN input ignores them, with a warning); a `.kicad_dru` given for a DSN input
 //!    ([`JobInput::kicad_dru`], `--kicad-dru`, Q22.5) is applied to the
 //!    parsed tree first, and its `hole_clearance` floor (or a `.kicad_pcb`'s,
 //!    [`JobInput::rules_hole_clearance`]) raises `router.hole_clearance_um`
@@ -142,6 +144,10 @@ pub struct JobInput {
     /// Q22.14: the `hole_to_hole` floor of a `.kicad_pcb`'s `.kicad_dru`
     /// rules; raises `router.board_minimums.hole_to_hole_um` the same way.
     pub rules_hole_to_hole: Option<HoleClearance>,
+    /// K14.1: the classes whose width an applied `.kicad_dru` `track_width` rule
+    /// of a `.kicad_pcb` set, with the rule ([`set_kicad`](Self::set_kicad)):
+    /// `router.input_fixups.class_widths` keeps them at the rule's width.
+    pub rules_track_widths: Vec<(String, String)>,
 }
 
 impl JobInput {
@@ -165,6 +171,7 @@ impl JobInput {
             kicad_dru: None,
             rules_hole_clearance: None,
             rules_hole_to_hole: None,
+            rules_track_widths: Vec::new(),
         }
     }
 
@@ -189,6 +196,7 @@ impl JobInput {
         self.read_log = warnings.chain(report).chain(rule_warnings).collect();
         self.rules_hole_clearance = read.rules.hole_clearance.clone();
         self.rules_hole_to_hole = read.rules.hole_to_hole.clone();
+        self.rules_track_widths = read.rules.track_widths.clone();
         // Q18: the `.kicad_pro`'s Board Setup minimums are hard floors, at
         // the DSN's priority: a config file sets them below, the command
         // line over them.
@@ -223,6 +231,71 @@ impl JobInput {
             None => file_name.to_string(),
         }
     }
+}
+
+/// K14: `router.input_fixups.*` ([`crate::io::kicad::reader::fixups`]) onto the
+/// tree of a `.kicad_pcb` input ([`JobInput::kicad_source`]), with one info line per
+/// change. An unknown class or layer, or a layer that is not a plane, is a
+/// [`JobError::Settings`] naming it; an unknown net is a warning. A class the board's
+/// `.kicad_dru` `track_width` rule set keeps the rule's width
+/// ([`JobInput::rules_track_widths`]), as on the DSN path.
+/// A DSN input has no reader's tree: the settings are ignored there, with one warning
+/// naming them (KiCad's DSN export takes the plugin's text fix-ups instead).
+fn apply_input_fixups(
+    input: &JobInput,
+    patch: &SettingsPatch,
+    pcb: Option<&mut Cow<'_, Pcb>>,
+    log: &mut Vec<LogLine>,
+) -> Result<(), JobError> {
+    use crate::io::kicad::reader::fixups::{InputFixups, SECTION, apply_with_rules};
+    let section = &patch.input_fixups;
+    let list = |v: &Option<Vec<String>>| v.clone().unwrap_or_default();
+    let fixups = InputFixups::from_lists(
+        &list(&section.class_widths),
+        &list(&section.route_on_plane_layers),
+        &list(&section.drop_pour_nets),
+    )
+    .map_err(|e| JobError::Settings(e.to_string()))?;
+    if fixups.is_empty() {
+        return Ok(());
+    }
+    match (input.kicad_source.is_some(), pcb) {
+        (true, Some(tree)) => {
+            let lines = apply_with_rules(tree.to_mut(), &fixups, &input.rules_track_widths)
+                .map_err(|e| JobError::Settings(e.to_string()))?;
+            for line in lines {
+                let level = if line.starts_with("WARNING:") {
+                    LogLevel::Warn
+                } else {
+                    LogLevel::Info
+                };
+                push(log, level, format!("input fix-up: {line}"));
+            }
+        }
+        _ => {
+            let names: Vec<String> = [
+                ("class_widths", !fixups.class_widths.is_empty()),
+                (
+                    "route_on_plane_layers",
+                    !fixups.route_on_plane_layers.is_empty(),
+                ),
+                ("drop_pour_nets", !fixups.drop_pour_nets.is_empty()),
+            ]
+            .into_iter()
+            .filter(|(_, on)| *on)
+            .map(|(name, _)| format!("{SECTION}.{name}"))
+            .collect();
+            push(
+                log,
+                LogLevel::Warn,
+                format!(
+                    "{} only apply to a .kicad_pcb input; ignored for this DSN input",
+                    names.join(", ")
+                ),
+            );
+        }
+    }
+    Ok(())
 }
 
 /// The name of the settings source of a `.kicad_pro`'s Board Setup minimums.
@@ -421,6 +494,8 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let mut patch = merged.patch;
     raise_hole_clearance(&mut patch, hole_floor.as_ref(), Some(&mut log));
     raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), Some(&mut log));
+    // K14: the plugin's DSN fix-ups, on the tree of a `.kicad_pcb` input.
+    apply_input_fixups(input, &patch, pcb.as_mut(), &mut log)?;
 
     // 2. Read the board, with the readers' `router.java_quirks.*` (N06) of the
     // first merge.

@@ -9,7 +9,9 @@ outside the standard library and the plugin's pure modules. Call it on
 KiCad's UI thread only.
 
 `prepare_snapshot` is the K10 form: the board snapshot the router reads
-directly, with none of those DSN steps (`snapshot.py`).
+directly, with none of those DSN steps (`snapshot.py`); the K09 fix-ups
+`class_widths`, `drop_pour_nets` and `route_on_plane_layers` go to the router
+as flags its reader applies to the board (K14, `snapshot_fixups`).
 
 Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), the
 Edge.Cuts, Margin and board mask-aperture keepouts (Q18.5, Q18.7, `edge_graphics`,
@@ -138,6 +140,39 @@ def board_minimums_nm(board):
         except Exception:  # an older pcbnew without the attribute
             continue
     return out
+
+
+def _dsn_mm(nm):
+    """A length in nm as `dsn_fixups.Dsn` reads it back from KiCad's export,
+    which prints micrometres with `%.6g`."""
+    return float(f"{nm / 1000.0:.6g}") / 1000.0
+
+
+def board_classes(board):
+    """K14.1: the board's net classes as KiCad's DSN export names them, for
+    `dsn_fixups.auto_class_widths_of_board` on the board snapshot:
+    `{"default_width_mm", "widths_mm": {class: mm}, "net_class": {net:
+    class}}`. Each net's class is its effective one
+    (`NET_SETTINGS.GetEffectiveNetClass`, an aggregate such as
+    `Power,Default` included); `Default` is `kicad_default`, as in the export.
+    The widths go through the export's `%.6g` micrometres, so they are the
+    floats the DSN path reads."""
+    settings = board.GetDesignSettings().m_NetSettings
+    widths, net_class = {}, {}
+    for name in board.GetNetsByName().keys():
+        name = str(name)
+        if not name:
+            continue
+        nc = settings.GetEffectiveNetClass(name)
+        cls = str(nc.GetName())
+        cls = "kicad_default" if cls == "Default" else cls
+        net_class[name] = cls
+        widths[cls] = _dsn_mm(nc.GetTrackWidth())
+    return {
+        "default_width_mm": _dsn_mm(settings.GetDefaultNetclass().GetTrackWidth()),
+        "widths_mm": widths,
+        "net_class": net_class,
+    }
 
 
 def save_arguments(board, pcbnew, design, opts, extra_args=(), lines=()):
@@ -314,15 +349,43 @@ def prepare(board, pcbnew, dsn, opts, export):
     return True, args, lines + more, locked
 
 
+def snapshot_fixups(board, pcbnew, opts):
+    """K14.1-K14.3: `class_widths`, `drop_pour_nets` and
+    `route_on_plane_layers` for the board snapshot, as router flags
+    (`dsn_fixups.input_fixup_args`); the `.kicad_pcb` reader applies them to
+    its tree as `dsn_fixups.apply` changes the DSN. `auto` is resolved from
+    the board (`kicad_board.collect`, `board_classes`), as `fix_dsn` resolves
+    it from the board and the DSN. Returns `(router_args, log_lines)`; a
+    failure is a WARNING line and no flags, as a failed DSN fix-up is."""
+    settings = {
+        "class_widths": opts.class_widths,
+        "drop_pour_nets": opts.drop_pour_nets,
+        "route_on_plane_layers": opts.route_on_plane_layers,
+    }
+    if not any(settings.values()):
+        return [], []
+    try:
+        info = {}
+        if options.AUTO in (settings["class_widths"], settings["drop_pour_nets"]):
+            info = kicad_board.collect(board, pcbnew)
+            if settings["class_widths"] == options.AUTO:
+                info["classes"] = board_classes(board)
+        return dsn_fixups.input_fixup_args(dsn_fixups.resolve_on_board(settings, info))
+    except Exception as e:  # never block routing on the fix-up
+        return [], [f"WARNING: board snapshot fix-ups skipped: {e!r}"]
+
+
 def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
     """K10: the `board_input = kicad_pcb` counterpart of `prepare`. Takes the
     snapshot (`snapshot.take`), after locking the tracks first for
     `fix_existing` as `prepare` does (the reader writes a locked track as
-    fixed copper). No DSN fix-up applies: `options.input_conflicts` keeps the
-    options that need one off; `edge_and_pad_keepouts` is ignored, because the
+    fixed copper). No DSN text is fixed up: `class_widths`, `drop_pour_nets`
+    and `route_on_plane_layers` go to the router as flags its reader applies
+    (K14, `snapshot_fixups`); `options.input_conflicts` keeps the fixed pour
+    wires off (K14.4); `edge_and_pad_keepouts` is ignored, because the
     reader writes those keepouts itself (`options.input_ignored`, K13.7), and
-    `snapshot.notes` says so in the log. `fixed_pour_mode = engine` with named classes
-    is the one K09 option that works here, because it is an engine flag.
+    `snapshot.notes` says so in the log. `fixed_pour_mode = engine` with named
+    classes works here too, because it is an engine flag.
     Returns `(ok, router_args, log_lines, locked_tracks)`."""
     try:
         filled = refill(board, pcbnew)
@@ -338,6 +401,9 @@ def prepare_snapshot(board, pcbnew, work_dir, stem, board_dir, opts):
     if opts.fixed_pour_mode == "engine" and opts.fixed_pour_classes and opts.fixed_pour_classes != options.AUTO:
         args = dsn_fixups.engine_plane_obstacle_args(opts.fixed_pour_classes)
         lines.append(f"pours of {', '.join(opts.fixed_pour_classes)} kept clear by the router ({' '.join(args)})")
+    fix_args, fix_lines = snapshot_fixups(board, pcbnew, opts)
+    args += fix_args
+    lines += fix_lines
     lines += snapshot.notes(opts)
     if locked:
         lines.append(f"fix existing: {len(locked)} track(s) and via(s) in the snapshot as fixed")

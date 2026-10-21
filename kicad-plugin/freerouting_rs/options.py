@@ -53,7 +53,7 @@ K13.7 (schema 6): `board_input` defaults to `kicad_pcb` under `enhanced`
 file keeps an explicit choice: `to_dict` leaves a default out, so before schema
 6 a saved `dsn` was never written, and a file without `board_input` has no
 saved choice and takes the profile's default. One exception: a file without
-the choice that turns on a DSN-only fix-up (`input_conflicts`) takes `dsn`, so
+the choice that turns on a DSN-only fix-up (`dsn_text_fixups`) takes `dsn`, so
 the board's own saved setup does not refuse its Route. `apply_kicad_rules` is
 gone (it decided nothing since K13.1); a file that has it still loads.
 """
@@ -282,7 +282,7 @@ class RouteOptions:
             out.pin_escape = v
         # K13.7: no saved choice, and a DSN-only fix-up on: the DSN (saved
         # before the snapshot was the default, when `dsn` was never written).
-        if data.get("board_input") not in BOARD_INPUTS and input_conflicts(out):
+        if data.get("board_input") not in BOARD_INPUTS and dsn_text_fixups(out):
             out.board_input = INPUT_DSN
         return out
 
@@ -682,14 +682,13 @@ DSN_REWRITE_LABELS = {
 }
 
 
-def input_conflicts(opts):
-    """The dialog labels of the options that need the DSN text and are on, as
-    a list, for `opts.board_input == "kicad_pcb"`; empty for a DSN input or
-    when none is on.
-
-    `fixed_pour_classes` in `engine` mode is allowed when the classes are
-    named: it is the engine flag `--router.plane_obstacle_net_classes`, which
-    does not touch the input. `auto` needs the DSN text to find the classes."""
+def dsn_text_fixups(opts):
+    """K13.7's list, which `input_conflicts` was before K14.1-K14.3: the dialog
+    labels of the four K09 fix-ups that rewrite KiCad's DSN text and are on,
+    for `opts.board_input == "kicad_pcb"` (empty for a DSN input). K13.7's two
+    DSN rules use it, unchanged until K14.5 removes them: a saved file that
+    names no input and has one loads on the DSN (`from_dict`), and
+    `presets.apply` moves such a preset to the DSN with a warning."""
     if opts.board_input != INPUT_KICAD_PCB:
         return []
     out = []
@@ -701,6 +700,26 @@ def input_conflicts(opts):
         out.append(DSN_REWRITE_LABELS["drop_pour_nets"])
     if opts.route_on_plane_layers:
         out.append(DSN_REWRITE_LABELS["route_on_plane_layers"])
+    return out
+
+
+def input_conflicts(opts):
+    """The dialog labels of the options that need the DSN text and are on, as
+    a list, for `opts.board_input == "kicad_pcb"`; empty for a DSN input or
+    when none is on.
+
+    Only `fixed_pour_classes` in `wires` mode or as `auto` is left (K14.4).
+    `fixed_pour_classes` in `engine` mode is allowed when the classes are
+    named: it is the engine flag `--router.plane_obstacle_net_classes`, which
+    does not touch the input. `class_widths`, `drop_pour_nets` and
+    `route_on_plane_layers` work on the snapshot since K14.1-K14.3: the
+    router's `.kicad_pcb` reader applies them (`router.input_fixups.*`,
+    `export_flow.snapshot_fixups`), `auto` resolved from the board."""
+    if opts.board_input != INPUT_KICAD_PCB:
+        return []
+    out = []
+    if opts.fixed_pour_classes and (opts.fixed_pour_mode == "wires" or opts.fixed_pour_classes == AUTO):
+        out.append(DSN_REWRITE_LABELS["fixed_pour_classes"])
     return out
 
 

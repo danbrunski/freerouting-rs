@@ -21,7 +21,7 @@ by `RouteOptions.from_dict`, the rules of the options file: a bad value keeps
 the default.
 
 K13.7: a preset that names no `board_input` but turns a DSN-only fix-up on
-(`options.input_conflicts`) moves the input to `dsn`, with a warning, so that
+(`options.dsn_text_fixups`) moves the input to `dsn`, with a warning, so that
 applying it never leaves the dialog refusing its own Route. Presets written by
 `save` name every option and are unaffected.
 
@@ -161,8 +161,8 @@ def _dsn_for_fixups(preset, current, out, warnings):
     warning is appended to `warnings`."""
     if "board_input" in preset.data or out.board_input != options.INPUT_KICAD_PCB:
         return out
-    before = options.input_conflicts(replace(current, board_input=options.INPUT_KICAD_PCB))
-    added = [label for label in options.input_conflicts(out) if label not in before]
+    before = options.dsn_text_fixups(replace(current, board_input=options.INPUT_KICAD_PCB))
+    added = [label for label in options.dsn_text_fixups(out) if label not in before]
     if not added:
         return out
     warnings.append(

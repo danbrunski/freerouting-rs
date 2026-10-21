@@ -53,6 +53,13 @@ of naming them:
   wider than the narrowest SMD pad of its nets (never below the board's
   minimum track width): a 1.5 mm class cannot reach a 0.25 mm QFN pin.
 
+K14: on the board snapshot (`board_input = kicad_pcb`) there is no DSN text;
+`class_widths`, `route_on_plane_layers` and `drop_pour_nets` go to the router
+as `router.input_fixups.*` flags (`input_fixup_args`), which the `.kicad_pcb`
+reader applies to its tree with the same effect, and their `"auto"` lists are
+resolved from the board facts alone (`resolve_on_board`; the classes from
+`export_flow.board_classes`).
+
 Pure Python: no pcbnew, no wx. The board facts come from
 `kicad_board.collect` as plain dicts.
 """
@@ -292,30 +299,64 @@ def auto_drop_pour_nets(board):
     return sorted({next(iter(nets)) for nets in by_layer.values() if len(nets) == 1})
 
 
-def auto_class_widths(board, dsn):
-    """{class: mm} for the classes wider than the board's default width that
-    have an SMD pad narrower than their width: that pad's width, at least
-    the board's minimum track width."""
-    default = dsn.default_width_mm()
-    pad_min = board.get("smd_pad_min_mm") or {}
-    floor = board.get("min_track_mm") or 0.0
+def _dsn_class_widths(dsn):
+    """{class: mm} of the DSN's classes that have a width."""
     out = {}
-    for name in sorted(dsn.classes):
+    for name in dsn.classes:
         node = dsn.class_width_node(name)
         if node is None:
             continue
         try:
-            width = float(node.text) / 1000.0
+            out[name] = float(node.text) / 1000.0
         except ValueError:
             continue
+    return out
+
+
+def auto_class_widths(board, dsn):
+    """{class: mm} for the classes wider than the board's default width that
+    have an SMD pad narrower than their width: that pad's width, at least
+    the board's minimum track width."""
+    return _auto_class_widths(board, dsn.default_width_mm(), _dsn_class_widths(dsn), dsn.net_class)
+
+
+def auto_class_widths_of_board(board):
+    """K14.1: `auto_class_widths` without the DSN, from the board's own
+    classes (`board["classes"]`, `export_flow.board_classes`: the default
+    width, each class's width and each net's class, named and rounded as
+    KiCad's export writes them), for the board snapshot."""
+    classes = board.get("classes") or {}
+    return _auto_class_widths(
+        board, classes.get("default_width_mm"), classes.get("widths_mm") or {}, classes.get("net_class") or {}
+    )
+
+
+def _auto_class_widths(board, default, widths, net_class):
+    pad_min = board.get("smd_pad_min_mm") or {}
+    floor = board.get("min_track_mm") or 0.0
+    out = {}
+    for name in sorted(widths):
+        width = widths[name]
         if default is not None and width <= default:
             continue
-        nets = [n for n, c in dsn.net_class.items() if c == name and n in pad_min]
+        nets = [n for n, c in net_class.items() if c == name and n in pad_min]
         if not nets:
             continue
         narrowest = min(pad_min[n] for n in nets)
         if narrowest < width:
             out[name] = max(narrowest, floor)
+    return out
+
+
+def resolve_on_board(settings, board):
+    """K14: `resolve` for the board snapshot, which has no DSN: `class_widths`
+    and `drop_pour_nets` from the board facts alone (`kicad_board.collect`
+    plus `board["classes"]`). `fixed_pour_classes` is left as it is (K14.4)."""
+    out = dict(settings)
+    if out.get("drop_pour_nets") == AUTO:
+        out["drop_pour_nets"] = auto_drop_pour_nets(board)
+    if out.get("class_widths") == AUTO:
+        out["class_widths"] = auto_class_widths_of_board(board)
     return out
 
 
@@ -506,6 +547,55 @@ def wanted(settings):
 
 
 _ENGINE_LIST = re.compile(r"^[^,=\s]+$")
+
+# K14: the router settings of the board snapshot's fix-ups (`router.input_fixups.*`),
+# by `apply`'s setting name.
+INPUT_FIXUP_SETTINGS = {
+    "class_widths": "router.input_fixups.class_widths",
+    "route_on_plane_layers": "router.input_fixups.route_on_plane_layers",
+    "drop_pour_nets": "router.input_fixups.drop_pour_nets",
+}
+
+
+def _passable(name):
+    """A name a comma-separated command-line list keeps as it is."""
+    return bool(name) and "," not in name and name == name.strip()
+
+
+def input_fixup_args(settings):
+    """K14.1-K14.3: the router flags that make the `.kicad_pcb` reader apply
+    `class_widths`, `route_on_plane_layers` and `drop_pour_nets` of `settings`
+    (with no `"auto"` left: `resolve_on_board`). A class width goes as
+    `<class>=<um>`, rounded with `um` as `apply` writes it. Returns `(args,
+    log_lines)`; a name the router's comma-separated list cannot carry (a
+    comma, blanks around it) is left out with a WARNING line."""
+    args, lines, skipped = [], [], []
+    widths = settings.get("class_widths") or {}
+    entries = []
+    for name in sorted(widths):
+        if _passable(name):
+            entries.append(f"{name}={um(float(widths[name]))}")
+        else:
+            skipped.append(name)
+    lists = [
+        ("class_widths", entries),
+        ("route_on_plane_layers", list(settings.get("route_on_plane_layers") or [])),
+        ("drop_pour_nets", sorted(settings.get("drop_pour_nets") or [])),
+    ]
+    for key, values in lists:
+        if key != "class_widths":
+            skipped += [v for v in values if not _passable(v)]
+            values = [v for v in values if _passable(v)]
+        if values:
+            args.append(f"--{INPUT_FIXUP_SETTINGS[key]}=" + ",".join(values))
+    if args:
+        lines.append("board snapshot fix-ups for the router: " + " ".join(args))
+    if skipped:
+        lines.append(
+            "WARNING: left out of the board snapshot fix-ups, the command line cannot carry them: "
+            + ", ".join(repr(n) for n in skipped)
+        )
+    return args, lines
 
 
 def engine_plane_obstacle_args(classes):

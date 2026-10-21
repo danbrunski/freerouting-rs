@@ -183,6 +183,11 @@ pub struct DruReport {
     /// The `hole_to_hole` floor of the applied rules (Q22.14): the caller
     /// raises `router.board_minimums.hole_to_hole_um` to it.
     pub hole_to_hole: Option<HoleClearance>,
+    /// K14.1: `(DSN class, rule name)` for each class whose width an applied
+    /// `track_width` rule set, in rule order. `router.input_fixups.class_widths`
+    /// leaves these classes alone ([`crate::fixups::apply_with_rules`]), as on
+    /// the DSN path, where `--kicad-dru` runs after the plugin's text fix-up.
+    pub track_widths: Vec<(String, String)>,
 }
 
 impl DruReport {
@@ -813,6 +818,7 @@ fn apply_with_vias(
         hole: None,
         hole_to_hole: None,
         via_annular_nm: item_types::via_annular_nm(network, structure, extra_vias),
+        track_widths: Vec::new(),
     };
     for rule in &file.rules {
         let mut rr = RuleReport {
@@ -838,6 +844,7 @@ fn apply_with_vias(
     report.warnings = ctx.warnings;
     report.hole_clearance = ctx.hole;
     report.hole_to_hole = ctx.hole_to_hole;
+    report.track_widths = ctx.track_widths;
     report
 }
 
@@ -894,6 +901,8 @@ struct ApplyCtx<'a> {
     /// The smallest annular ring of the board's via padstacks, from their
     /// names (Q22.15); `None` when a via's drill is unknown.
     via_annular_nm: Option<i64>,
+    /// [`DruReport::track_widths`].
+    track_widths: Vec<(String, String)>,
 }
 
 /// One item of a pair, as a condition sees it.
@@ -955,10 +964,10 @@ fn rule_status(
     let typed = class_cond.as_ref().is_some_and(Cond::has_item_terms);
     match kind {
         "track_width" => track_width(
+            &rule.name,
             bounds,
             class_cond.as_ref(),
             &layer_names,
-            &classes,
             ctx,
             network,
             structure,
@@ -995,14 +1004,15 @@ fn rule_status(
 
 /// A `track_width` constraint: the `opt` width of the classes it selects.
 fn track_width(
+    rule_name: &str,
     bounds: &Bounds,
     class_cond: Option<&Cond>,
     layer_names: &[String],
-    classes: &[String],
-    ctx: &ApplyCtx<'_>,
+    ctx: &mut ApplyCtx<'_>,
     network: &mut Network,
     structure: &mut Structure,
 ) -> Status {
+    let classes: Vec<String> = network.classes.iter().map(|c| c.name.clone()).collect();
     let Some(width) = bounds.opt else {
         return Status::Unsupported("track_width without an opt value".to_owned());
     };
@@ -1010,7 +1020,7 @@ fn track_width(
         return Status::Unsupported("track_width on selected layers has no DSN form".to_owned());
     }
     let mut targets = Vec::new();
-    for c in classes {
+    for c in &classes {
         // a width is a track's: the rule is evaluated for a track
         let probe = Probe {
             class: kicad_name(c),
@@ -1036,6 +1046,8 @@ fn track_width(
     if targets.iter().any(|t| t == DSN_DEFAULT) {
         set_width(&mut structure.rules, width);
     }
+    ctx.track_widths
+        .extend(targets.iter().map(|t| (t.clone(), rule_name.to_owned())));
     Status::Applied {
         effects: targets.len(),
     }

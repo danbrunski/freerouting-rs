@@ -477,12 +477,26 @@ def test_the_snapshot_result_comes_back_through_the_detaching_import(env):
 def test_a_snapshot_with_a_dsn_rewrite_on_is_refused_before_anything_is_saved(env):
     make_dialog, ui, work = env
     dialog = make_dialog("route", snapshot=True)  # the keepouts option is on by default and is only ignored (K13.7)
-    dialog.widths.SetValue("GND=0.4")
+    dialog.fixed_pours.SetValue("Power")  # the fixed pour wires still need the DSN (K14.4)
     dialog.on_route(None)
     assert ui.snapshots == [] and ui.exports == [] and ui.imports == []
     text = ui.messages[-1][0]
-    assert "'Class widths'" in text and "'Keep the board-edge and pad clearances'" not in text
+    assert "'Fixed pour classes'" in text and "'Keep the board-edge and pad clearances'" not in text
     assert not (work / "route-options.json").exists()
+
+
+def test_a_snapshot_route_passes_the_reader_fixups_to_the_router(env):
+    """K14.1-K14.3: class widths, dropped pours and opened plane layers route on
+    the snapshot, as `router.input_fixups.*` flags."""
+    make_dialog, ui, work = env
+    dialog = snapshot_dialog(make_dialog, "echo")
+    dialog.widths.SetValue("GND=0.4")
+    dialog.drop_pours.SetValue("GND")
+    dialog.on_route(None)
+    assert ui.snapshots == [(work / "b.kicad_pcb", True)] and ui.exports == []
+    lines = ui.messages[-1][0].splitlines()
+    assert "--router.input_fixups.class_widths=GND=400" in lines
+    assert "--router.input_fixups.drop_pour_nets=GND" in lines
 
 
 def test_a_failed_snapshot_says_so_and_routes_nothing(env, monkeypatch):

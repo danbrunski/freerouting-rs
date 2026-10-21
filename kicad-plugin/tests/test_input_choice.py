@@ -271,7 +271,8 @@ CANARY_SAVED = {  # canary-pwr's route-options.json from a run before K13.7: its
     "fixed_pour_classes": ["Power_High", "Switch_Node"],
     "drop_pour_nets": ["GND"],
 }
-THREE = "'Class widths', 'Fixed pour classes' and 'Drop pours of nets'"
+# K14.1-K14.3: of canary's three only the fixed pour wires still need the DSN (K14.4)
+FIXED = "'Fixed pour classes'"
 
 
 def test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_what_blocks_it(env):
@@ -280,11 +281,11 @@ def test_a_board_kept_on_the_dsn_by_its_fixups_says_why_and_the_snapshot_says_wh
     make_dialog, ui, work = env
     dialog = make_dialog("route", saved=CANARY_SAVED)
     assert dialog.board_input.GetSelection() == 0
-    assert dialog.input_note.label == f"{THREE} need KiCad's DSN export: turn them off to route the board snapshot."
+    assert dialog.input_note.label == f"{FIXED} needs KiCad's DSN export: turn it off to route the board snapshot."
     dialog.board_input.SetSelection(1)
     dialog.on_input_changed(None)
     assert dialog.input_note.label.split("\n")[0] == (
-        f"The board snapshot cannot apply {THREE}: turn them off, or choose KiCad's DSN export."
+        f"The board snapshot cannot apply {FIXED}: turn it off, or choose KiCad's DSN export."
     )
     for box in (dialog.widths, dialog.fixed_pours, dialog.drop_pours):  # each text box calls on_input_changed
         box.SetValue("")
