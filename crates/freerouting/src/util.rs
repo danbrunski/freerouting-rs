@@ -56,6 +56,9 @@ pub fn compare_ignore_case(a: &str, b: &str) -> Ordering {
 #[derive(Clone, Debug)]
 pub struct CaseInsensitive(pub String);
 
+/// Found in the ordered map only.
+impl crate::datastructures::DenseKey for CaseInsensitive {}
+
 impl PartialEq for CaseInsensitive {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal

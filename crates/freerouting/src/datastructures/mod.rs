@@ -14,4 +14,4 @@ pub use id_generator::{IdGenerator, ItemIdGenerator};
 pub use planar_delaunay_triangulation::{PlanarDelaunayTriangulation, ResultEdge};
 pub use shape_tree::{BestFirstHeap, LeafId, ShapeTree};
 pub(crate) use undoable_objects::StateRecord;
-pub use undoable_objects::UndoableObjects;
+pub use undoable_objects::{DenseKey, UndoableObjects};

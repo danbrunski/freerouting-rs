@@ -185,7 +185,13 @@ impl PolylineArea {
         if let Some(pieces) = cache.get() {
             return Some(pieces.clone());
         }
-        let mut curr_pieces = self.inner.border.split_to_convex()?;
+        let mut curr_pieces: Vec<(TileShape, Option<IntBox>)> = self
+            .inner
+            .border
+            .split_to_convex()?
+            .into_iter()
+            .map(with_box)
+            .collect();
         for hole in &self.inner.holes {
             if hole.dimension() < 2 {
                 // Java logs "PolylineArea. split_to_convex: dimension 2 for hole expected".
@@ -193,11 +199,57 @@ impl PolylineArea {
             }
             let hole_pieces = hole.split_to_convex()?;
             for hole_piece in &hole_pieces {
+                // K13.9: a piece whose box is apart from the hole piece's keeps its
+                // shape ([`TileShape::cutout_apart`]). Only bounded shapes have a box
+                // that holds them, and only a hole piece of dimension 2 has a known
+                // answer there: Java cuts a one-line simplex (a half plane, dimension
+                // 2, unbounded) out of a piece far from it into several.
+                let hole_box = (hole_piece.dimension() == 2 && hole_piece.is_bounded())
+                    .then(|| hole_piece.bounding_box());
                 let mut new_pieces = Vec::new();
-                for divide_piece in &curr_pieces {
+                for (divide_piece, piece_box) in &curr_pieces {
                     if stoppable.is_some_and(|s| s.is_stop_requested()) {
                         return None;
                     }
+                    if let (Some(hole_box), Some(piece_box)) = (hole_box, piece_box)
+                        && piece_box.is_apart_from(&hole_box)
+                    {
+                        let piece = divide_piece.cutout_apart(hole_piece);
+                        if piece.dimension() == 2 {
+                            new_pieces.push(with_box(piece));
+                        }
+                        continue;
+                    }
+                    for piece in divide_piece.cutout_counted(hole_piece, quirks, reach)? {
+                        if piece.dimension() == 2 {
+                            new_pieces.push(with_box(piece));
+                        }
+                    }
+                }
+                curr_pieces = new_pieces;
+            }
+        }
+        let pieces = curr_pieces.into_iter().map(|(piece, _)| piece).collect();
+        Some(cache.get_or_init(|| pieces).clone())
+    }
+
+    /// [`Self::split_to_convex_counted`] as Java computes it, every hole piece cut out of
+    /// every piece, without the cache. The reference of `tests/split_skip.rs` (K13.9).
+    #[doc(hidden)]
+    pub fn split_to_convex_reference(
+        &self,
+        quirks: SplitQuirks,
+        reach: &mut SplitReach,
+    ) -> Option<Vec<TileShape>> {
+        let mut curr_pieces = self.inner.border.split_to_convex()?;
+        for hole in &self.inner.holes {
+            if hole.dimension() < 2 {
+                continue;
+            }
+            let hole_pieces = hole.split_to_convex()?;
+            for hole_piece in &hole_pieces {
+                let mut new_pieces = Vec::new();
+                for divide_piece in &curr_pieces {
                     for piece in divide_piece.cutout_counted(hole_piece, quirks, reach)? {
                         if piece.dimension() == 2 {
                             new_pieces.push(piece);
@@ -207,7 +259,7 @@ impl PolylineArea {
                 curr_pieces = new_pieces;
             }
         }
-        Some(cache.get_or_init(|| curr_pieces).clone())
+        Some(curr_pieces)
     }
 
     /// The area turned by `factor` times 90 degrees around `pole`.
@@ -236,6 +288,13 @@ impl PolylineArea {
             self.inner.holes.iter().map(f).collect(),
         )
     }
+}
+
+/// A piece with its bounding box when it is bounded, which the split compares with
+/// each hole piece's.
+fn with_box(piece: TileShape) -> (TileShape, Option<IntBox>) {
+    let b = piece.is_bounded().then(|| piece.bounding_box());
+    (piece, b)
 }
 
 #[cfg(test)]

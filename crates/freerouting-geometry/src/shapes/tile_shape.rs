@@ -1047,6 +1047,30 @@ impl TileShape {
         }
     }
 
+    /// What [`Self::cutout_counted`] returns when `shape`, of dimension 2, does not
+    /// meet this shape: the one piece, this shape, in the representation each branch
+    /// gives back (a box through `simplify`, an octagon as a simplex when `shape` is
+    /// one), and nothing added to the reach counts. It skips the intersection that
+    /// `cutout_counted` computes to find that out (K13.9). The caller must know the two
+    /// are apart, as [`PolylineArea::split_to_convex_counted`] does from their bounding
+    /// boxes; `tests/split_skip.rs` checks the two against each other.
+    ///
+    /// [`PolylineArea::split_to_convex_counted`]: super::PolylineArea::split_to_convex_counted
+    pub fn cutout_apart(&self, shape: &TileShape) -> TileShape {
+        match (self, shape) {
+            (TileShape::IntBox(d), TileShape::IntBox(_)) => TileShape::IntBox(*d),
+            (TileShape::IntBox(d), TileShape::IntOctagon(_)) => {
+                TileShape::IntOctagon(d.to_int_octagon()).simplify()
+            }
+            (TileShape::IntBox(d), TileShape::Simplex(_)) => {
+                TileShape::Simplex(d.to_simplex()).simplify()
+            }
+            (TileShape::IntOctagon(d), TileShape::Simplex(_)) => TileShape::Simplex(d.to_simplex()),
+            (TileShape::IntOctagon(d), _) => TileShape::IntOctagon(*d),
+            (TileShape::Simplex(d), _) => TileShape::Simplex(d.clone()),
+        }
+    }
+
     fn cutout_from_box(
         &self,
         d: &IntBox,

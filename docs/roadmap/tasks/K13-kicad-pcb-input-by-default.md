@@ -605,7 +605,7 @@ rules).
     not importable in the venv: 3; canary-pwr board: 1; `KICAD_METADATA_REPO`: 2).
     `python3 -I -m unittest discover -s tools/kicad-oracle/tests`: 44 tests OK.
 
-- [ ] **K13.9 — Polyline arcs don't slow the DSN path's passes** (added 2026-10-21, from K13.8).
+- [x] **K13.9 — Polyline arcs don't slow the DSN path's passes** (added 2026-10-21, from K13.8).
   With K13.8's polylines, CM5_MINIMA_3's dsn route takes 438.7 s against K13.6's 265.9 s with
   chords. Each pass takes about 20.5 s instead of 12.1 s, and the engine still stops after 18
   passes without improvement and then runs 2 sweeps. Probes of the same binary for 80 s each gave
@@ -624,3 +624,96 @@ rules).
       manufacturing type 0 and the 200 arcs back as arcs, unconnected beside 0;
     - a test that pins the fix. If engine code changes, `legacy` keeps connection-parity 7 of 7
       and the gate's tests pass. An `enhanced`-only change gets its DIVERGENCES line.
+  - *Done 2026-10-21:* the passes now take 12.8 s on the dsn path, against 20.5 s. The route
+    takes 278.0 s, inside the 300 s limit, and gives the same session as K13.8, byte for byte.
+  - **Cause.** The polylines cost time per room, not as board items. Pass 2 of the main
+    `91b2f38` binary was compared on the polyline DSN and on K13.6's chord DSN, with counting
+    and timing builds; `-mp 3`, scratch files under `target/orchestrator/k139/probe/`.
+    - The 3000-point arcs add trace segments as holes to every drill page near them. The page
+      split (`PolylineArea::split_to_convex_counted`) took 2.47 s against 0.34 s, for the same
+      3060 pages. Drills went from 60964 to 84648.
+    - `check_drill_layer` took 5.55 s against 2.36 s, with 804k calls against 578k. Within
+      it, `drill_breaks_hole_to_hole` took 2.86 s for 295k calls, of which 68k were distinct.
+    - The clearance queries return more leaves: 113.8M against 69.8M per pass. Per leaf,
+      `Simplex::enlarge` took 1.77 s against 0.35 s and the intersection test 1.15 s against
+      0.21 s. Item and tree-entry lookups by id reached 115.8M per pass in `BTreeMap`s.
+    - The progress statistics (a full clearance scan every 10 connections) took 0.78 s against
+      0.18 s.
+    - The `.kicad_pcb` arm is not cheaper per room: 347 µs per room against 338 µs for the
+      polylines and 201 µs for the chords. It searches 23657 rooms against 60286, because it
+      starts with 24 unrouted nets instead of 31 and tries 22 connections per pass instead of
+      31, 4 of them failing instead of 8.
+  - **Fix.** Every change is an exact speed-up in the layer where the time went. Each step was
+    checked: the same SES and the same events, with `elapsed_ms` left out. Times are per pass,
+    polyline and chord DSN:
+    | step | polyline | chord |
+    |---|---|---|
+    | baseline | 20.4 s | 12.1 s |
+    | split skip and hole-to-hole memo | 17.4 s | 11.2 s |
+    | enlarge memo and box pre-test | 15.4 s | 10.5 s |
+    | dense keys in `UndoableObjects` | 13.5 s | 9.25 s |
+    | dense keys for tree entries | 13.2 s | 8.98 s |
+    | statistics memo, with `--progress json` | 12.66 s | 8.8 s |
+    - Geometry:
+      - `PolylineArea::split_to_convex_counted` skips the cutout when a piece and a hole piece
+        are both bounded and their boxes are apart. It uses `IntBox::is_apart_from`, which
+        needs a gap of more than 1 unit on each side, computed in i64. The skipped piece
+        becomes `TileShape::cutout_apart`, the representation `cutout_counted` returns there.
+        A one-line simplex (dimension 2, unbounded) is never skipped: Java cuts pieces far
+        from it into several, as on Issue756-tomu-fpga9.
+      - `Simplex::enlarge` keeps its first result by the offset's bits; the original is
+        `enlarge_uncached`.
+    - Engine:
+      - `ShapeSearchTree::clearance_search_entries_where` drops a leaf whose enlarged box is
+        apart from the query's before the exact intersection test.
+      - `MazeSearch::hole_to_hole` memoizes `drill_breaks_hole_to_hole` per drill and ripped
+        via. That query is not metered, so the work units are unchanged.
+      - `UndoableObjects` mirrors its `BTreeMap` in a vector for ids below 4Mi
+        (`DenseKey`, ItemId only). `ShapeSearchTree.entries` is the new `ItemIdMap`
+        (`board/search/entry_map.rs`), a vector below 1Mi ids. Both keep the map's order for
+        iteration.
+      - `PassRunner` keeps the progress events' `BoardStatistics` by `state_hash`, up to 64
+        states (`StatisticsMemo`).
+    - No polyline is coarsened and no result changes, so DIVERGENCES has no line.
+  - **Tests.** They were written after the profiling-driven fixes. RED was shown by breaking
+    each fix:
+    - `crates/freerouting-geometry/tests/split_skip.rs`, 7 tests:
+      - the split against `split_to_convex_reference` (pieces and `SplitReach`) on a 300-segment
+        arc page, 150 seeded random pages and the one-line simplex hole;
+      - `cutout_apart` against `cutout_counted`, over 1000 or more apart pairs;
+      - `enlarge` against `enlarge_uncached`;
+      - `enlarge_keeps_its_first_result`, which checks pointer identity;
+      - `is_apart_from` at its margin and at `i32::MIN`/`i32::MAX`.
+
+      With the enlarge cache off and `simplify` dropped from `cutout_apart`, 3 of 6 failed.
+      Without the `is_bounded` guard, `a_one_line_simplex_hole_is_cut_out_of_pieces_far_from_it`
+      failed, and so did `board_probe_scores::scores_match_java`: Issue756-tomu-fpga9 had
+      incomplete 24 against Java's 35.
+    - `datastructures::undoable_objects::tests::dense_lookups_answer_as_the_map_does` runs
+      20000 random operations against a map-only key type.
+    - `board::search::entry_map::tests::iterates_in_item_id_order_across_the_vector_and_the_map`
+      covers negative ids.
+    - `autoroute::batch::pass::statistics_memo_tests::a_board_state_seen_before_reuses_its_statistics`.
+    - A workspace run with a cross-check in the skip branch printed 0 mismatches.
+  - **Runs.** Binary `target/orchestrator/k139/bin/freerouting-rs-k139` (`freerouting-rs 0.1.0
+    (git 91b2f38d5891)` plus this diff, sha256 `3a7ccd2a…`). Script
+    `tools/kicad-reader/plugin-input-ab.sh`, options `{"schema": 5, "profile": "enhanced"}`,
+    `ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000`, one kicad-cli at a time. Board copy
+    `target/orchestrator/k139/boards/cm5_minima`, outputs under `target/orchestrator/k139/out/`.
+    The kicad_pcb arm ran with `SHARE_GRADE_WITH` the dsn arm; the sessions differ, so both
+    were graded.
+    | arm | rc | aborted | route s | p+l s | pass s (mean, 18 passes) | unconnected (input) | caused by type | mfg / below / vip | arcs back | session |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | dsn | 0 | 0 | 278.0 | 1.91 | 12.84 (pass 1 13.39) | 0 (0) | silk_edge_clearance 3, silk_overlap 18 | 0 / 0 / 0 | 200 | `3cd2afa5121b012e8519e7f561f8d21d726d617e60917d6771d5d0fc067739c7` |
+    | kicad_pcb | 0 | 0 | 111.3 | 1.59 | 5.16 (pass 1 5.76) | 0 (0) | silk_edge_clearance 3, silk_overlap 18 | 0 / 0 / 0 | 200 | `976b9df2fb0e4f1d0baf408f2910cfb032099854dbc6e71bad75144ff68f23be` |
+    - Both arms are graded under `rules: project`. The DRC errors are those of K13.8:
+      copper_edge_clearance 2, courtyards_overlap 2, holes_co_located 2.
+    - Both sessions equal K13.8's byte for byte. The dsn arm took 438.7 s in K13.8 and the
+      kicad_pcb arm 180.5 s.
+  - **Gate.**
+    - `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
+      are clean.
+    - `cargo test --workspace --no-fail-fast`: 2798 passed, 0 failed.
+    - `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+      PASS, 7 of 7 exact.
+    - `pytest kicad-plugin/tests`: 525 passed, 6 skipped.

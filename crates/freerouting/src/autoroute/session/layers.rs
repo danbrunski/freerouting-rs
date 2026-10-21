@@ -362,11 +362,19 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
     /// ([`BasicBoard::hole_to_hole_breach`](crate::board::BasicBoard::hole_to_hole_breach)),
     /// with the largest drill of the rule's vias; `ripped` is the via a
     /// ripped room removes. False without a distance (Java).
-    fn drill_breaks_hole_to_hole(&self, drill: DrillId, ripped: Option<ItemId>) -> bool {
-        let board = &*self.s.board;
-        if board.rules.hole_to_hole() <= 0 {
+    ///
+    /// Asked again for the same drill and ripped via, it answers from the
+    /// search's memo (K13.9): the board is the same during a search, and
+    /// the query is not metered, so the memo changes no result and no work
+    /// count.
+    fn drill_breaks_hole_to_hole(&mut self, drill: DrillId, ripped: Option<ItemId>) -> bool {
+        if self.s.board.rules.hole_to_hole() <= 0 {
             return false;
         }
+        if let Some(&breaks) = self.hole_to_hole.get(&(drill, ripped)) {
+            return breaks;
+        }
+        let board = &*self.s.board;
         let radius = self
             .s
             .control
@@ -380,7 +388,9 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
             .fold(0.0, f64::max);
         let center = self.s.drill(drill).location.to_float();
         let ignore: Vec<ItemId> = ripped.into_iter().collect();
-        board.hole_to_hole_breach(center, radius, &ignore).is_some()
+        let breaks = board.hole_to_hole_breach(center, radius, &ignore).is_some();
+        self.hole_to_hole.insert((drill, ripped), breaks);
+        breaks
     }
 
     /// `checkLayerWithAnyMatchingVia` on the drill's room of `layer`.

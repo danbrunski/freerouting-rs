@@ -46,7 +46,8 @@
 //! benchmark profile. A Java exception inside the pass returns false; the
 //! port has no such path.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::autoroute::AttemptState;
 use crate::autoroute::batch::connection::{connection_params, pull_tight_after_connection};
@@ -152,6 +153,47 @@ pub struct PassRunner {
     total_items_routed: i64,
     /// P02.1's audit, when `router.debug.audit_incremental` is on.
     audit: Option<IncrementalAudit>,
+    /// The progress events' board statistics by board state (K13.9).
+    statistics: StatisticsMemo,
+}
+
+/// The board statistics of the progress events, by the board's
+/// [`state_hash`](crate::board::RoutingBoard::state_hash) (K13.9). The
+/// passes of a run that changes nothing reach the same board states again,
+/// and the statistics, which check every item for clearance violations, are
+/// a function of the board: a state seen before reuses them. Kept for the
+/// runner's passes, at most [`StatisticsMemo::CAP`] states. Equal for
+/// `PartialEq` whatever it holds: it is no part of the runner's state.
+#[derive(Clone, Default)]
+struct StatisticsMemo(BTreeMap<u128, Arc<BoardStatistics>>);
+
+impl StatisticsMemo {
+    const CAP: usize = 64;
+
+    fn get(&mut self, board: &RoutingBoard) -> Arc<BoardStatistics> {
+        let hash = board.state_hash();
+        if let Some(stats) = self.0.get(&hash) {
+            return Arc::clone(stats);
+        }
+        let stats = Arc::new(BoardStatistics::new(board));
+        if self.0.len() >= Self::CAP {
+            self.0.clear();
+        }
+        self.0.insert(hash, Arc::clone(&stats));
+        stats
+    }
+}
+
+impl PartialEq for StatisticsMemo {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
+impl std::fmt::Debug for StatisticsMemo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "StatisticsMemo({} states)", self.0.len())
+    }
 }
 
 impl PassRunner {
@@ -188,6 +230,7 @@ impl PassRunner {
             max_items,
             total_items_routed: 0,
             audit: None,
+            statistics: StatisticsMemo::default(),
         }
     }
 
@@ -271,7 +314,14 @@ impl PassRunner {
         }
         observer.on_items(board, &tasks);
         outcome.items = tasks.len();
-        let mut progress = ProgressState::new(self.phase, pass, tasks.len(), board, ctx);
+        let mut progress = ProgressState::new(
+            self.phase,
+            pass,
+            tasks.len(),
+            board,
+            ctx,
+            &mut self.statistics,
+        );
         let ripup_cost = stages
             .ripup
             .ripup_cost(self.phase, pass, self.start_ripup_costs);
@@ -324,7 +374,13 @@ impl PassRunner {
                 // G07.4: the listener sees the connection's items before its
                 // progress event.
                 flush_journal(board, ctx.events);
-                progress.after_connection(board, ctx, &outcome, result.airline);
+                progress.after_connection(
+                    board,
+                    ctx,
+                    &outcome,
+                    result.airline,
+                    &mut self.statistics,
+                );
             }
         }
         let option = if self.remove_unconnected_vias {
@@ -347,7 +403,7 @@ impl PassRunner {
             incomplete_nets: outcome.incomplete_nets.clone(),
             ..PassReport::default()
         });
-        progress.at_pass_end(board, ctx, &outcome);
+        progress.at_pass_end(board, ctx, &outcome, &mut self.statistics);
         outcome
     }
 
@@ -415,6 +471,7 @@ impl ProgressState {
         items: usize,
         board: &RoutingBoard,
         ctx: &StageCtx,
+        memo: &mut StatisticsMemo,
     ) -> ProgressState {
         let mut state = ProgressState {
             progress: Progress {
@@ -426,13 +483,13 @@ impl ProgressState {
             items_since_statistics: 0,
         };
         if ctx.events.is_listening() {
-            state.statistics(board, ctx);
+            state.statistics(board, ctx, memo);
         }
         state
     }
 
-    fn statistics(&mut self, board: &RoutingBoard, ctx: &StageCtx) {
-        let stats = BoardStatistics::new(board);
+    fn statistics(&mut self, board: &RoutingBoard, ctx: &StageCtx, memo: &mut StatisticsMemo) {
+        let stats = memo.get(board);
         self.progress.violations = stats.clearance_violations.total_count;
         self.progress.score = stats.router_score(Some(ctx.settings));
         self.items_since_statistics = 0;
@@ -455,6 +512,7 @@ impl ProgressState {
             freerouting_geometry::FloatPoint,
             freerouting_geometry::FloatPoint,
         )>,
+        memo: &mut StatisticsMemo,
     ) {
         self.progress.items_to_go = self.progress.items_to_go.saturating_sub(1);
         if !ctx.events.is_listening() {
@@ -462,7 +520,7 @@ impl ProgressState {
         }
         self.items_since_statistics += 1;
         if self.items_since_statistics >= PROGRESS_STATISTICS_ITEM_INTERVAL {
-            self.statistics(board, ctx);
+            self.statistics(board, ctx, memo);
         }
         self.counters(outcome);
         self.progress.incomplete = board.routing_ledger().incomplete_count(board);
@@ -470,11 +528,17 @@ impl ProgressState {
         ctx.events.progress(self.progress.clone());
     }
 
-    fn at_pass_end(&mut self, board: &RoutingBoard, ctx: &StageCtx, outcome: &PassOutcome) {
+    fn at_pass_end(
+        &mut self,
+        board: &RoutingBoard,
+        ctx: &StageCtx,
+        outcome: &PassOutcome,
+        memo: &mut StatisticsMemo,
+    ) {
         if !ctx.events.is_listening() {
             return;
         }
-        self.statistics(board, ctx);
+        self.statistics(board, ctx, memo);
         self.counters(outcome);
         self.progress.incomplete = outcome.incomplete;
         self.progress.airline = None;
@@ -567,5 +631,43 @@ pub fn route_passes_for_optimizer(
         completed
     } else {
         completed.saturating_sub(1)
+    }
+}
+
+#[cfg(test)]
+mod statistics_memo_tests {
+    use super::*;
+
+    fn board() -> RoutingBoard {
+        let crate::io::specctra::BoardReadResult::Success { board, .. } =
+            crate::io::specctra::read_board_from_str(include_str!(
+                "../../../../../fixtures/Issue413-test.dsn"
+            ))
+        else {
+            panic!("fixture")
+        };
+        *board
+    }
+
+    /// K13.9: a board state seen before reuses its statistics; a changed board
+    /// gets its own, equal to the statistics computed from scratch.
+    #[test]
+    fn a_board_state_seen_before_reuses_its_statistics() {
+        let mut board = board();
+        let mut memo = StatisticsMemo::default();
+        let first = memo.get(&board);
+        assert_eq!(*first, BoardStatistics::new(&board));
+        assert!(Arc::ptr_eq(&first, &memo.get(&board)));
+        let removed = board
+            .item_ids()
+            .into_iter()
+            .rev()
+            .any(|id| board.remove_item(id));
+        assert!(removed, "no item to remove");
+        let changed = memo.get(&board);
+        assert!(!Arc::ptr_eq(&first, &changed));
+        assert_eq!(*changed, BoardStatistics::new(&board));
+        assert_ne!(*changed, *first);
+        assert!(Arc::ptr_eq(&changed, &memo.get(&board)));
     }
 }

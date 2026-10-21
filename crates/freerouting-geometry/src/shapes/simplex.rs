@@ -21,6 +21,10 @@ struct SimplexInner {
     float_corners: Box<[OnceLock<FloatPoint>]>,
     bounding_box: OnceLock<IntBox>,
     bounding_octagon: OnceLock<IntOctagon>,
+    /// The first [`Simplex::enlarge`] computed, by the offset's bits (K13.9): a
+    /// search tree's clearance query enlarges the same stored shape by the same
+    /// half clearance again and again.
+    enlarged: OnceLock<(u64, Simplex)>,
 }
 
 /// A convex shape defined as the intersection of the half-planes on the left of
@@ -318,6 +322,7 @@ impl Simplex {
                 float_corners: (0..n).map(|_| OnceLock::new()).collect(),
                 bounding_box: OnceLock::new(),
                 bounding_octagon: OnceLock::new(),
+                enlarged: OnceLock::new(),
             }),
         }
     }
@@ -444,7 +449,27 @@ impl Simplex {
     }
 
     /// This simplex enlarged by `offset`, intersected with the enlarged bounding octagon.
+    ///
+    /// The first offset's result is kept with the simplex (shared by its clones) and
+    /// returned again for the same offset (K13.9); the value is the one computed.
     pub fn enlarge(&self, offset: f64) -> Simplex {
+        if offset == 0.0 {
+            return self.clone();
+        }
+        let bits = offset.to_bits();
+        if let Some((cached, result)) = self.inner.enlarged.get()
+            && *cached == bits
+        {
+            return result.clone();
+        }
+        let result = self.enlarge_uncached(offset);
+        // Only the first offset is kept; a later one is computed every time.
+        let _ = self.inner.enlarged.set((bits, result.clone()));
+        result
+    }
+
+    /// [`Self::enlarge`] computed now, without the kept result: its reference.
+    pub fn enlarge_uncached(&self, offset: f64) -> Simplex {
         if offset == 0.0 {
             return self.clone();
         }

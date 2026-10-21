@@ -44,7 +44,7 @@
     allow(unused_imports, unused_variables, unused_mut)
 )]
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use freerouting_geometry::jmath::JavaRandom;
 use freerouting_geometry::jmath::min_f64;
@@ -125,6 +125,10 @@ pub struct MazeSearch<'s, 'b, S: SearchSink = NoopSink, C: ExtraCost = NoExtraCo
     /// The connections of `Connection.get`, cached per item as Java caches
     /// them in `ItemAutorouteInfo` (A04.6).
     pub(crate) connections: ConnectionCache,
+    /// The answers of `drill_breaks_hole_to_hole` by drill and ripped via
+    /// (K13.9): the board does not change during a search, so each pair is
+    /// asked once; the query is not metered.
+    pub(crate) hole_to_hole: BTreeMap<(super::drills::DrillId, Option<ItemId>), bool>,
     destination: Option<(ExpandableRef, usize)>,
     current: Option<MazeListElement>,
     steps: u64,
@@ -167,6 +171,7 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             settings,
             random,
             connections: ConnectionCache::default(),
+            hole_to_hole: BTreeMap::new(),
             destination: None,
             current: None,
             steps: 0,

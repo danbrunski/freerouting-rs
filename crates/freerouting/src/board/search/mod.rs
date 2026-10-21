@@ -41,6 +41,7 @@
 
 pub mod audit;
 pub mod entries;
+mod entry_map;
 pub mod fingerprint;
 pub mod memo;
 pub mod tree_object;
@@ -190,7 +191,7 @@ pub struct ShapeSearchTree {
     /// The clearance class the shapes are compensated for; 0 for none.
     compensated_clearance_class: i32,
     tree: ShapeTree<TreeObject>,
-    entries: BTreeMap<ItemId, ItemEntries>,
+    entries: entry_map::ItemIdMap<ItemEntries>,
     rooms: BTreeMap<RoomId, RoomEntry>,
     /// The board's trace-shape memo (P02.5); `None` for a tree of its own,
     /// which computes every shape.
@@ -209,7 +210,7 @@ impl ShapeSearchTree {
             kind,
             compensated_clearance_class,
             tree: ShapeTree::new(directions),
-            entries: BTreeMap::new(),
+            entries: entry_map::ItemIdMap::default(),
             rooms: BTreeMap::new(),
             memo: None,
             room_order: RoomOrder::Tree,
@@ -723,11 +724,13 @@ impl ShapeSearchTree {
         sorted.sort_by_key(|(clearance, entry_id, _)| (*clearance, *entry_id));
         let mut current_half_clearance = 0;
         let mut current_offset_shape = shape.clone();
+        let mut current_offset_box = current_offset_shape.bounding_box();
         for (clearance, _, leaf) in sorted {
             let half_clearance = clearance / 2;
             if half_clearance != current_half_clearance {
                 current_half_clearance = half_clearance;
                 current_offset_shape = shape.enlarge(f64::from(half_clearance));
+                current_offset_box = current_offset_shape.bounding_box();
             }
             let (object, shape_index) = self.tree.leaf(leaf);
             let TreeObject::Item(id) = object else {
@@ -737,7 +740,10 @@ impl ShapeSearchTree {
                 continue;
             };
             let offset_shape = tree_shape.enlarge(f64::from(current_half_clearance));
-            if current_offset_shape.intersects_tile(&offset_shape) {
+            // K13.9: shapes whose boxes are apart do not intersect.
+            if !current_offset_box.is_apart_from(&offset_shape.bounding_box())
+                && current_offset_shape.intersects_tile(&offset_shape)
+            {
                 result.push(TreeEntry {
                     item: id,
                     shape_index,

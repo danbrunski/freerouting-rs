@@ -4,6 +4,93 @@ use std::sync::Arc;
 /// Index of a version node in the node arena.
 type NodeIdx = usize;
 
+/// A key with a small non-negative integer index, by which [`UndoableObjects`]
+/// finds the current node in a vector instead of its ordered map (K13.9): the
+/// search trees look an item up by id for every leaf a query returns, about 116
+/// million times per autorouter pass on CM5_MINIMA_3. The map stays the source of
+/// the key order; the vector only answers lookups.
+pub trait DenseKey {
+    /// The key's index, or `None` to be found in the map only.
+    fn dense_index(&self) -> Option<usize> {
+        None
+    }
+}
+
+/// Keys at or above this index are looked up in the map (4 Mi slots, 32 MiB).
+const DENSE_LIMIT: usize = 1 << 22;
+
+/// No node in a slot of [`KeyMap::dense`].
+const NO_SLOT: NodeIdx = NodeIdx::MAX;
+
+impl DenseKey for i32 {
+    fn dense_index(&self) -> Option<usize> {
+        usize::try_from(*self).ok()
+    }
+}
+
+/// The current node of each key: an ordered map, mirrored by a vector for the
+/// keys with a [`DenseKey::dense_index`] below [`DENSE_LIMIT`].
+#[derive(Clone)]
+struct KeyMap<K> {
+    map: BTreeMap<K, NodeIdx>,
+    dense: Vec<NodeIdx>,
+}
+
+impl<K: std::fmt::Debug> std::fmt::Debug for KeyMap<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.map.fmt(f)
+    }
+}
+
+impl<K: Ord + DenseKey> KeyMap<K> {
+    fn new() -> Self {
+        KeyMap {
+            map: BTreeMap::new(),
+            dense: Vec::new(),
+        }
+    }
+
+    fn slot(key: &K) -> Option<usize> {
+        key.dense_index().filter(|&i| i < DENSE_LIMIT)
+    }
+
+    fn get(&self, key: &K) -> Option<&NodeIdx> {
+        match Self::slot(key) {
+            Some(i) => self.dense.get(i).filter(|idx| **idx != NO_SLOT),
+            None => self.map.get(key),
+        }
+    }
+
+    fn contains_key(&self, key: &K) -> bool {
+        self.get(key).is_some()
+    }
+
+    fn insert(&mut self, key: K, idx: NodeIdx) -> Option<NodeIdx> {
+        if let Some(i) = Self::slot(&key) {
+            if i >= self.dense.len() {
+                self.dense.resize(i + 1, NO_SLOT);
+            }
+            self.dense[i] = idx;
+        }
+        self.map.insert(key, idx)
+    }
+
+    fn remove(&mut self, key: &K) -> Option<NodeIdx> {
+        if let Some(slot) = Self::slot(key).and_then(|i| self.dense.get_mut(i)) {
+            *slot = NO_SLOT;
+        }
+        self.map.remove(key)
+    }
+
+    fn iter(&self) -> std::collections::btree_map::Iter<'_, K, NodeIdx> {
+        self.map.iter()
+    }
+
+    fn values(&self) -> std::collections::btree_map::Values<'_, K, NodeIdx> {
+        self.map.values()
+    }
+}
+
 /// One version of an object.
 #[derive(Clone, Debug)]
 struct Node<K, V> {
@@ -54,8 +141,8 @@ pub(crate) enum StateRecord<'a, K, V> {
 /// [`UndoableObjects::save_for_undo`], the same way Java mutates the object
 /// after `saveForUndo` stored a clone of it.
 #[derive(Clone, Debug)]
-pub struct UndoableObjects<K: Ord + Clone, V: Clone> {
-    objects: BTreeMap<K, NodeIdx>,
+pub struct UndoableObjects<K: Ord + Clone + DenseKey, V: Clone> {
+    objects: KeyMap<K>,
     nodes: Vec<Option<Node<K, V>>>,
     free: Vec<NodeIdx>,
     deleted_objects_stack: Vec<Vec<NodeIdx>>,
@@ -64,18 +151,18 @@ pub struct UndoableObjects<K: Ord + Clone, V: Clone> {
     gc_threshold: usize,
 }
 
-impl<K: Ord + Clone, V: Clone> Default for UndoableObjects<K, V> {
+impl<K: Ord + Clone + DenseKey, V: Clone> Default for UndoableObjects<K, V> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
+impl<K: Ord + Clone + DenseKey, V: Clone> UndoableObjects<K, V> {
     const MIN_GC_THRESHOLD: usize = 1024;
 
     pub fn new() -> Self {
         UndoableObjects {
-            objects: BTreeMap::new(),
+            objects: KeyMap::new(),
             nodes: Vec::new(),
             free: Vec::new(),
             deleted_objects_stack: Vec::new(),
@@ -474,7 +561,7 @@ impl<K: Ord + Clone, V: Clone> UndoableObjects<K, V> {
         });
         let mut handles: Vec<Option<usize>> = vec![None; self.nodes.len()];
         let mut next_handle = 0;
-        for (key, &idx) in &self.objects {
+        for (key, &idx) in self.objects.iter() {
             visit(StateRecord::Key(key));
             self.walk_node(Some(idx), &mut handles, &mut next_handle, &mut visit);
         }
@@ -643,5 +730,62 @@ mod tests {
 
     fn values_i32(objects: &UndoableObjects<i32, i32>) -> Vec<(i32, i32)> {
         objects.iter().map(|(k, v)| (*k, *v)).collect()
+    }
+
+    /// An `i32` key found in the map only, the model of the dense lookups.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+    struct Sparse(i32);
+
+    impl DenseKey for Sparse {}
+
+    /// K13.9: keys with a dense index (negative ones, ones beyond the vector's
+    /// limit, and everything between) answer every lookup as the map alone does,
+    /// through inserts, deletes, undo, redo and garbage collection.
+    #[test]
+    fn dense_lookups_answer_as_the_map_does() {
+        let mut rnd = freerouting_geometry::jmath::JavaRandom::new(139);
+        let mut dense: UndoableObjects<i32, i32> = UndoableObjects::new();
+        let mut sparse: UndoableObjects<Sparse, i32> = UndoableObjects::new();
+        let limit = i32::try_from(DENSE_LIMIT).unwrap();
+        let keys: Vec<i32> = (0..40)
+            .chain([-3, -1, limit - 1, limit, limit + 5, i32::MAX])
+            .collect();
+        for step in 0..20_000 {
+            let key = keys[rnd.next_int(keys.len() as i32) as usize];
+            match rnd.next_int(8) {
+                0..=2 => {
+                    dense.insert(key, step);
+                    sparse.insert(Sparse(key), step);
+                }
+                3 => {
+                    assert_eq!(dense.delete(&key), sparse.delete(&Sparse(key)));
+                }
+                4 => {
+                    dense.generate_snapshot();
+                    sparse.generate_snapshot();
+                }
+                5 => {
+                    assert_eq!(dense.undo().is_some(), sparse.undo().is_some());
+                }
+                6 => {
+                    assert_eq!(dense.redo().is_some(), sparse.redo().is_some());
+                }
+                _ => {
+                    if dense.save_for_undo(&key) {
+                        assert!(sparse.save_for_undo(&Sparse(key)));
+                        *dense.get_mut(&key).unwrap() += 1;
+                        *sparse.get_mut(&Sparse(key)).unwrap() += 1;
+                    } else {
+                        assert!(!sparse.save_for_undo(&Sparse(key)));
+                    }
+                }
+            }
+            for &k in &keys {
+                assert_eq!(dense.get(&k), sparse.get(&Sparse(k)), "step {step} key {k}");
+                assert_eq!(dense.contains(&k), sparse.contains(&Sparse(k)));
+            }
+            let model: Vec<(i32, i32)> = sparse.iter().map(|(k, v)| (k.0, *v)).collect();
+            assert_eq!(values_i32(&dense), model, "step {step}");
+        }
     }
 }

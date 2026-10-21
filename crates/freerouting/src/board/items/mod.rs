@@ -40,6 +40,13 @@ use crate::library::PadstackId;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ItemId(pub i32);
 
+/// The board's item list finds an item by its id in a vector (K13.9).
+impl crate::datastructures::DenseKey for ItemId {
+    fn dense_index(&self) -> Option<usize> {
+        usize::try_from(self.0).ok()
+    }
+}
+
 impl Ord for ItemId {
     fn cmp(&self, other: &Self) -> Ordering {
         other.0.cmp(&self.0)

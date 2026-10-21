@@ -181,6 +181,21 @@ impl IntBox {
         other.union_octagon(&self.to_int_octagon())
     }
 
+    /// True if this box and `other`, each grown by one unit on every side, do not
+    /// meet, so no shape inside one has a point in common with a shape inside the
+    /// other (K13.9). An empty box is never apart. A simplex's box comes from its
+    /// corners in `f64`, rounded outwards; the unit covers a corner that rounding put
+    /// on the wrong side of an integer.
+    pub fn is_apart_from(&self, other: &IntBox) -> bool {
+        if self.is_empty() || other.is_empty() {
+            return false;
+        }
+        i64::from(self.ur.x) + 1 < i64::from(other.ll.x) - 1
+            || i64::from(other.ur.x) + 1 < i64::from(self.ll.x) - 1
+            || i64::from(self.ur.y) + 1 < i64::from(other.ll.y) - 1
+            || i64::from(other.ur.y) + 1 < i64::from(self.ll.y) - 1
+    }
+
     /// The intersection of this box with `other`.
     pub fn intersection_box(&self, other: &IntBox) -> IntBox {
         if other.ll.x > self.ur.x
