@@ -460,3 +460,13 @@ K13 (the snapshot is the default).
          their logs.
     3. The owner's confirmation from a Route inside KiCad on canary-pwr, with its saved options, on
        the snapshot (recording that board's sha256).
+
+  *Partial 2026-10-21 (amendment 1):* K14.1–K14.5 are on main; `K14_COMMIT` = `98f11e7`. TREE built
+  (release binary sha256 `d37543af…`, `freerouting-rs 0.1.0 (git 98f11e7ae822)`; `prereg_k14` in TREE: 7
+  passed). Amendment 1 is in K14.json (sha256 now `c554c5b0…`, pinned in `prereg_k14.rs`, which also
+  expects one amendment): the commit, the binary, the grader and plugin hashes, WSL KiCad 10.0.7, K14's
+  router flags and the exact `args` validity (b) expects on the `kicad_pcb` arm
+  (`class_widths=GND=400,Power=300,Power_High=300,Switch_Node=300`, `drop_pour_nets=GND`,
+  `fixed_pour_classes=Power_High,Switch_Node`). Validity (a) is recorded as its equivalent, because
+  K14.5 removed `options.input_conflicts`: the function is gone, `saved` loads on `kicad_pcb` and the
+  form adds no error. Still no number: the two arms run next, then the owner's Route.

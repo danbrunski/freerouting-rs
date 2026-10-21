@@ -91,7 +91,7 @@ fn the_registration_is_valid_and_names_its_arms_and_metrics() {
     assert_eq!(prereg.set.as_deref(), Some(SET));
     assert_eq!(prereg.boards.keys().collect::<Vec<_>>(), [ROW]);
     assert!(prereg.totals_registered);
-    assert_eq!(prereg.amendments, 0);
+    assert_eq!(prereg.amendments, 1);
     let roles: Vec<(&str, Role)> = prereg
         .specs
         .iter()
@@ -303,6 +303,6 @@ fn the_script_is_the_registered_one() {
 fn the_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "81b0c6f3eaad13c082511075d2207de2c12635cff76b65b4e35f397eccf61501"
+        "c554c5b0b2183e32eab66cc5311354e58e22c67f5fd516dc42d9db05053350cb"
     );
 }
