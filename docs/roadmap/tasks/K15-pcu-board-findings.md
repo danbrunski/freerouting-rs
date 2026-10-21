@@ -339,3 +339,18 @@ item-type rules), N06 (`router.java_quirks`).
       `pad_clearance.rs` module docs state the pad-then-footprint rule; DIVERGENCES "A footprint's own
       clearance reaches its pads (K15.9)". The plugin's DSN fix-up reads the pad's own value only
       (kicad-plugin lane, not changed here).
+
+- [ ] **K15.10 — The desktop app routes a `.kicad_pcb` with the board's own minimums.**
+  - **Change:** `freerouting-gui/src/session.rs::read_design_timed` reads a `.kicad_pcb` with
+    `ReadOptions::default()` (`apply_design_rules` off) and builds its job without
+    `JobInput::set_kicad`'s sources. So a desktop-app route of a KiCad board gets neither Board
+    Setup's minimums (Q18's floors, `board_minimums_patch`) nor the `.kicad_dru` (K13.1, K15.3),
+    which the CLI and the plugin both apply. Found 2026-10-21 by the orchestrator's K15.3 agent, by
+    code reading. Read the board as the CLI does (the same `ReadOptions` and the same extra
+    sources in the job), so the desktop app and the CLI route the same board with the same settings.
+  - **Accept:**
+    - a GUI test (the session harness, no window) on a small `.kicad_pcb` with a `.kicad_pro`
+      minimum and a `.kicad_dru` floor: the settings the session routes with equal the CLI's
+      `--dump-settings` for the same board, values and sources;
+    - the GUI's settings dialog shows where those values came from, if it shows provenance;
+    - no window opens on the desktop (`xvfb-run` for anything that draws).
