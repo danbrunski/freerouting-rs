@@ -58,6 +58,7 @@ use std::collections::BTreeSet;
 
 use freerouting_geometry::Stoppable;
 
+use super::batch::report::describe_item;
 use super::control::AutorouteControl;
 use super::path::{InsertError, Located, RipupCosts, insert_located, locate};
 use super::session::Session;
@@ -180,15 +181,8 @@ pub fn route_connection_with_widths<S: SearchSink>(
     );
     let (result, located) = match searched {
         Searched::InitFailed => {
-            let details = format!(
-                "Failed to route connection between {}, because the maze search algorithm \
-                 could not be created.",
-                describe_connection(board, start, dest)
-            );
-            return (
-                AttemptResult::with_details(AttemptState::Failed, details),
-                sink,
-            );
+            let reason = ", because the maze search algorithm could not be created";
+            return (failed_attempt(board, start, dest, reason), sink);
         }
         Searched::Done { result, located } => (result, located),
     };
@@ -324,13 +318,7 @@ pub(crate) fn finish_connection(
     ripped: &BTreeSet<ItemId>,
     stop: Option<&dyn Stoppable>,
 ) -> (AttemptResult, bool) {
-    let failed = |board: &RoutingBoard, reason: &str| {
-        let details = format!(
-            "Failed to route connection between {}{reason}.",
-            describe_connection(board, start, dest)
-        );
-        AttemptResult::with_details(AttemptState::Failed, details)
-    };
+    let failed = |board: &RoutingBoard, reason: &str| failed_attempt(board, start, dest, reason);
     if !found {
         return (
             failed(
@@ -465,6 +453,109 @@ fn is_disabled_signal_layer(board: &RoutingBoard, ctrl: &AutorouteControl, layer
         .get(index)
         .is_some_and(|l| l.is_signal);
     !active && signal
+}
+
+/// A `Failed` result for the connection between `start` and `dest`:
+/// `details` is Java's sentence (`Failed to route connection between <items>
+/// <reason>.`), `log_details` the same frame with [`describe_connection_named`]
+/// (K15.7).
+fn failed_attempt(
+    board: &RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+    reason: &str,
+) -> AttemptResult {
+    let details = format!(
+        "Failed to route connection between {}{reason}.",
+        describe_connection(board, start, dest)
+    );
+    let named = format!(
+        "Failed to route connection between {}{reason}.",
+        describe_connection_named(board, start, dest)
+    );
+    AttemptResult::with_details(AttemptState::Failed, details).with_log_details(named)
+}
+
+/// The most pins a side of [`describe_connection_named`] lists by name.
+const NAMED_PINS_PER_SIDE: usize = 3;
+
+/// [`describe_connection`] for the log (K15.7): each side names its pins as
+/// `Ref-Pad` ([`describe_item`], so a pin of index 0 has its name too) and
+/// counts the rest in brackets, `U12-9 (+212 vias and traces of net GND)`.
+/// A side with no pin names its first item. A side lists at most
+/// [`NAMED_PINS_PER_SIDE`] pins, so a line stays short however large the
+/// connected sets are.
+pub fn describe_connection_named(
+    board: &RoutingBoard,
+    start: &BTreeSet<ItemId>,
+    dest: &BTreeSet<ItemId>,
+) -> String {
+    format!(
+        "{} and {}",
+        describe_side(board, start),
+        describe_side(board, dest)
+    )
+}
+
+fn describe_side(board: &RoutingBoard, set: &BTreeSet<ItemId>) -> String {
+    let items: Vec<&Item> = set.iter().filter_map(|id| board.item(*id)).collect();
+    let mut named: Vec<&Item> = items
+        .iter()
+        .copied()
+        .filter(|i| i.is_pin())
+        .take(NAMED_PINS_PER_SIDE)
+        .collect();
+    if named.is_empty() {
+        named.extend(items.first().copied());
+    }
+    if named.is_empty() {
+        return "(nothing)".to_string();
+    }
+    let mut text = named
+        .iter()
+        .map(|i| describe_item(board, i.id()))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let rest: Vec<&Item> = items
+        .iter()
+        .copied()
+        .filter(|i| !named.iter().any(|n| n.id() == i.id()))
+        .collect();
+    if rest.is_empty() {
+        return text;
+    }
+    // Kinds in a fixed order, so the text does not depend on the set's order.
+    let mut kinds: Vec<String> = Vec::new();
+    for (label, test) in [
+        ("pins", (|i: &Item| i.is_pin()) as fn(&Item) -> bool),
+        ("vias", |i: &Item| i.is_via()),
+        ("traces", |i: &Item| i.is_trace()),
+    ] {
+        if rest.iter().any(|i| test(i)) {
+            kinds.push(label.to_string());
+        }
+    }
+    if rest
+        .iter()
+        .any(|i| !(i.is_pin() || i.is_via() || i.is_trace()))
+    {
+        kinds.push("other items".to_string());
+    }
+    let kinds = match kinds.as_slice() {
+        [one] => one.clone(),
+        [init @ .., last] => format!("{} and {last}", init.join(", ")),
+        [] => String::new(),
+    };
+    text.push_str(&format!(" (+{} {kinds}", rest.len()));
+    let net = named
+        .first()
+        .and_then(|i| i.net_numbers().first().copied())
+        .and_then(|n| board.rules.nets.get(n));
+    if let Some(net) = net {
+        text.push_str(&format!(" of net {}", net.name));
+    }
+    text.push(')');
+    text
 }
 
 /// Java `describeConnection` (`:296-300`): the start items' and the
@@ -768,6 +859,97 @@ mod tests {
             unlocated.details,
             "Failed to route connection between pin of component #2 and ."
         );
+    }
+
+    /// K15.7: the log text names pins as `Ref-Pad` (pin index 0 too), the
+    /// frame and Java's `details` stay.
+    #[test]
+    fn a_failed_connection_names_its_pins_by_reference_and_pad_in_the_log() {
+        let (mut board, control, net) = board_and_control();
+        let named = |board: &RoutingBoard, name: &str| {
+            board
+                .items()
+                .filter(|i| i.is_pin() && i.contains_net(net))
+                .map(|i| i.id())
+                .find(|id| describe_item(board, *id) == name)
+                .expect("the pin")
+        };
+        let (a, b) = (named(&board, "U1-1"), named(&board, "U2-1"));
+        let (start, dest): (BTreeSet<ItemId>, BTreeSet<ItemId>) =
+            ([a].into_iter().collect(), [b].into_iter().collect());
+        let result = finish_connection(
+            &mut board, &start, &dest, &control, false, None, &dest, None,
+        )
+        .0;
+        assert_eq!(
+            result.log_text(),
+            "Failed to route connection between U1-1 and U2-1, because no connection was \
+             found between their nets."
+        );
+        // Java's text is kept in `details`, for the probe that compares it.
+        assert_eq!(
+            result.details,
+            "Failed to route connection between pin of component #1 and pin of component #2, \
+             because no connection was found between their nets."
+        );
+    }
+
+    /// K15.7: a side with many items stays one short line, the rest counted
+    /// by kind with the net's name.
+    #[test]
+    fn a_large_side_is_counted_in_brackets_and_the_line_stays_short() {
+        let (mut board, _, net) = board_and_control();
+        let a = board
+            .items()
+            .filter(|i| i.is_pin() && i.contains_net(net))
+            .map(|i| i.id())
+            .find(|id| describe_item(&board, *id) == "U1-1")
+            .expect("U1-1");
+        let rules = &board.rules;
+        let rule = rules.via_rules.nth(0).expect("a via rule");
+        let info = rules.via_rules.get(rule).vias()[0];
+        let padstack = rules.via_infos.get(info).padstack;
+        let mut side: BTreeSet<ItemId> = [a].into_iter().collect();
+        for i in 0..300 {
+            let center = IntPoint::new(100 + i * 20, 100);
+            side.insert(board.insert_via(
+                padstack,
+                center,
+                &[net],
+                0,
+                crate::board::structure::FixedState::Unfixed,
+                true,
+            ));
+        }
+        let text = describe_side(&board, &side);
+        assert_eq!(text, "U1-1 (+300 vias of net A)");
+        let java = describe_connection(&board, &side, &BTreeSet::new());
+        assert!(java.len() > 1000, "Java's text is {} chars", java.len());
+        assert_eq!(
+            describe_connection_named(&board, &side, &BTreeSet::new()),
+            "U1-1 (+300 vias of net A) and (nothing)"
+        );
+    }
+
+    #[test]
+    fn a_side_without_pins_names_its_first_item_and_lists_at_most_three_pins() {
+        let (board, _, net) = board_and_control();
+        let pins: Vec<ItemId> = board
+            .items()
+            .filter(|i| i.is_pin())
+            .map(|i| i.id())
+            .collect();
+        assert_eq!(pins.len(), 3);
+        let outline = board.outline().expect("an outline").id();
+        let side: BTreeSet<ItemId> = pins.iter().copied().chain([outline]).collect();
+        let text = describe_side(&board, &side);
+        assert!(
+            text.contains(", ") && text.contains("(+1 other items"),
+            "{text}"
+        );
+        let only_outline: BTreeSet<ItemId> = [outline].into_iter().collect();
+        assert_eq!(describe_side(&board, &only_outline), "boardoutline");
+        let _ = net;
     }
 
     #[test]

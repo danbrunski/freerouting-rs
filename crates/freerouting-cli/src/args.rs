@@ -25,7 +25,9 @@
 //! - `-mp` and `-mt` values are read with `Integer.decode`; a value Java
 //!   cannot decode is logged as an error and left to be read as an argument.
 //! - `-mt` sets the flat `max_threads`, which no stage reads headless, so it
-//!   does nothing (`mt_does_nothing_headless`).
+//!   does nothing (`mt_does_nothing_headless`). `--threads` sets the threads of
+//!   the optimizer and the analyses (DRC, statistics); the autorouter's passes
+//!   are sequential (D5), whatever the count.
 //! - `-de` with `-do` switches the router on, unless `--router.enabled` or
 //!   `--router.autorouter.enabled` is given.
 //!
@@ -43,7 +45,7 @@
 //!   walk: `--max-passes`, `--threads`, `--timeout` and `--result-json` become
 //!   the `--router.*` flags that set the same fields, so they can never do
 //!   more than the settings do. `--progress`, `--seed`, `--apply-design-rules`
-//!   (K10.3), `--no-design-rules` (K13.1), `--kicad-dru` (Q22.5), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
+//!   (K10.3), `--no-design-rules` (K13.1), `--kicad-dru` (Q22.5), `--stdin-commands` (K15.8), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
 //!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
@@ -374,6 +376,13 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
         Setting::CliOnly("applies a board's .kicad_dru clearance rules to a DSN input (Q22.5)"),
     ),
     (
+        "--stdin-commands",
+        true,
+        Setting::CliOnly(
+            "`on` (default) reads `stop` and `stop-router` from standard input during a route; `off` never reads it (K15.8)",
+        ),
+    ),
+    (
         "--version",
         false,
         Setting::CliOnly("prints the version line"),
@@ -465,6 +474,9 @@ pub struct Args {
     pub console_level: Option<String>,
     /// `--progress` (C08.3).
     pub progress: ProgressMode,
+    /// `--stdin-commands off` was given (K15.8): a route does not read standard
+    /// input.
+    pub no_stdin_commands: bool,
     /// `--apply-design-rules` was given (K10.3). A `.kicad_pcb` route reads
     /// the `.kicad_dru` rules into the board by default since K13.1, so the
     /// switch only says so.
@@ -842,6 +854,13 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
             "--apply-design-rules" => out.apply_design_rules = true,
             "--no-design-rules" => out.no_design_rules = true,
             "--kicad-dru" => out.kicad_dru = Some(value),
+            "--stdin-commands" => match value.to_lowercase().as_str() {
+                "on" => out.no_stdin_commands = false,
+                "off" => out.no_stdin_commands = true,
+                _ => out.usage_errors.push(format!(
+                    "--stdin-commands: '{value}' is not a mode (use on or off)"
+                )),
+            },
             "--version" => out.version = true,
             "--capabilities" => out.capabilities = true,
             "--progress" => match value.to_lowercase().as_str() {

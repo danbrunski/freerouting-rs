@@ -19,6 +19,8 @@
 //!   occur here.
 
 use super::{LogLevel, LogLine};
+use crate::autoroute::batch::report::describe_item;
+use crate::board::items::ItemId;
 use crate::board::{BasicBoard, RoutingBoard};
 use crate::rules::ItemClass;
 use crate::settings::RouterSettings;
@@ -55,21 +57,74 @@ pub fn um_to_board_units(board: &BasicBoard, um: f64) -> i32 {
     round_to_i32(scaled)
 }
 
+/// The pin-to-outline gap of a board and where it comes from (K15.7).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PinGap {
+    /// The smallest gap in board units, as [`BasicBoard::minimum_pin_gap`].
+    pub gap: f64,
+    /// The pin that sets it (the first one on a tie); `None` without pins.
+    pub pin: Option<ItemId>,
+    /// True if that pin lies wholly outside the outline.
+    pub pin_outside: bool,
+    /// The pins left out of the gap because they lie wholly outside the
+    /// outline (only when asked), in item order.
+    pub left_out: Vec<ItemId>,
+}
+
 impl BasicBoard {
     /// `BoardOutline.minimumPinGap()`: the smallest gap in board units
     /// between the copper of any pin, on any layer it reaches, and the
     /// outline lines. 0 if a pin touches or crosses the outline, `+∞` if the
     /// board has no pins (or no outline).
     pub fn minimum_pin_gap(&self) -> f64 {
+        self.pin_gap(false).gap
+    }
+
+    /// [`Self::minimum_pin_gap`] with the pin that sets the gap. With
+    /// `leave_out_off_board`, a pin whose pad shapes all lie wholly outside
+    /// the outline is not counted and goes to [`PinGap::left_out`]; without,
+    /// the gap is Java's exactly (such a pin gives 0).
+    pub fn pin_gap(&self, leave_out_off_board: bool) -> PinGap {
         let Some(outline) = self.outline().and_then(|item| item.as_board_outline()) else {
-            return f64::INFINITY;
+            return PinGap {
+                gap: f64::INFINITY,
+                pin: None,
+                pin_outside: false,
+                left_out: Vec::new(),
+            };
         };
-        let shapes = self.items().filter(|item| item.is_pin()).flat_map(|item| {
+        let mut left_out = Vec::new();
+        let mut shapes: Vec<(ItemId, &Shape)> = Vec::new();
+        for item in self.items().filter(|item| item.is_pin()) {
             let drill = item.drill().expect("a pin has drill data");
             let layers = (drill.last_layer - drill.first_layer + 1).max(0) as usize;
-            (0..layers).filter_map(move |i| drill.shape(i))
+            let pin_shapes: Vec<&Shape> = (0..layers).filter_map(|i| drill.shape(i)).collect();
+            if leave_out_off_board
+                && !pin_shapes.is_empty()
+                && pin_shapes.iter().all(|s| outline.is_wholly_outside(s))
+            {
+                left_out.push(item.id());
+            } else {
+                shapes.extend(pin_shapes.into_iter().map(|s| (item.id(), s)));
+            }
+        }
+        let (gap, pin) = outline.minimum_pin_gap_with(shapes.iter().map(|(id, s)| (*id, *s)));
+        let pin_outside = pin.is_some_and(|id| {
+            self.item(id)
+                .and_then(|item| item.drill())
+                .is_some_and(|drill| {
+                    let layers = (drill.last_layer - drill.first_layer + 1).max(0) as usize;
+                    (0..layers)
+                        .filter_map(|i| drill.shape(i))
+                        .all(|s| outline.is_wholly_outside(s))
+                })
         });
-        outline.minimum_pin_gap(shapes)
+        PinGap {
+            gap,
+            pin,
+            pin_outside,
+            left_out,
+        }
     }
 }
 
@@ -127,15 +182,43 @@ pub fn apply_edge_clearance(
     if uses_default {
         // The default is only a guess: never demand more edge clearance than
         // the input already has.
-        let minimum_pin_gap = board.minimum_pin_gap();
-        if minimum_pin_gap < f64::from(units) {
-            let capped = d2i(0.0_f64.max(minimum_pin_gap.floor()));
+        let skip = settings.edge_cap_skips_off_board_pins.unwrap_or(false);
+        let pins = board.pin_gap(skip);
+        for pin in &pins.left_out {
             log(
                 &mut lines,
-                LogLevel::Debug,
+                LogLevel::Warn,
+                format!(
+                    "Copper-to-edge clearance cap: pin {} lies wholly outside the board outline \
+                     and is left out.",
+                    describe_item(board, *pin)
+                ),
+            );
+        }
+        let minimum_pin_gap = pins.gap;
+        if minimum_pin_gap < f64::from(units) {
+            let capped = d2i(0.0_f64.max(minimum_pin_gap.floor()));
+            let pin = pins.pin.map_or_else(
+                || "a pin".to_string(),
+                |id| format!("pin {}", describe_item(board, id)),
+            );
+            let gap_um = crate::board::structure::Unit::scale(
+                minimum_pin_gap,
+                board.communication.unit,
+                crate::board::structure::Unit::Um,
+            ) / f64::from(board.communication.resolution.max(1));
+            let outside = if pins.pin_outside {
+                " and lies wholly outside the board outline (router.edge_cap_skips_off_board_pins \
+                 leaves such a pin out)"
+            } else {
+                ""
+            };
+            log(
+                &mut lines,
+                LogLevel::Info,
                 format!(
                     "Copper-to-edge clearance capped from {units} to {capped} board units \
-                     because a pin is closer to the board outline."
+                     because {pin} is {gap_um:.1} um from the board outline{outside}."
                 ),
             );
             units = capped;

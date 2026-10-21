@@ -101,6 +101,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "board override of the job, set with the CLI or a settings file",
     ),
     (
+        "edge_cap_skips_off_board_pins",
+        "the profile's choice (K15.7): enhanced on, legacy unset",
+    ),
+    (
         "hole_clearance_um",
         "board override of the job, set with the CLI or a settings file",
     ),

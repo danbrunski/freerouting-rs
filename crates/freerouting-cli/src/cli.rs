@@ -448,7 +448,9 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     ctx.collect_report = wants_manifest;
     ctx.registry = Some(freerouting_stages::shared_registry());
     let interrupts = Arc::new(Interrupts::new(ctx.clone()));
-    {
+    // `--stdin-commands off` (K15.8): the process never reads standard input,
+    // so a shell `while read` loop keeps its lines. Signals still work.
+    if !parsed.no_stdin_commands {
         let printer = printer.clone();
         stop::spawn_stdin_reader(Arc::clone(&ctx.cancel), move |command| {
             let what = match command {

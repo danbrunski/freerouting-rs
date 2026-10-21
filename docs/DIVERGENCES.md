@@ -608,6 +608,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `job_prepare_reference.rs` compares the settings, the tuned layer arrays, the clearance
   matrix and the post-load DRC count with Java's dumps, which run the real second merge, on
   every board and scenario.
+- The log line of the default copper-to-edge cap names the pin that sets the gap and the gap in
+  um, at Info (the port logged it at Debug, unnamed, as Java does): `Copper-to-edge clearance capped from 2500 to 0 board units
+  because pin FID1-1 is 0.0 um from the board outline` (K15.7,
+  `legacy_keeps_javas_cap_and_names_the_off_board_pin`). The value is Java's unless
+  `router.edge_cap_skips_off_board_pins=true` (opt-in, unset in both profiles until measured):
+  then a pin wholly outside the outline (a fiducial left at (0, 0)) is left out of the cap, each
+  one named in a warning; a pin that crosses the outline still counts
+  (`an_off_board_pin_is_left_out_of_the_edge_cap_when_the_setting_is_on`).
 - `ignore_net_classes` names that match no net class are warned about in the job log; Java
   warns only on its API path.
 - The tuning's debug log ("changed parameters") and `job.drcSettings.clearanceToleranceUm`
@@ -1044,6 +1052,14 @@ maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
 - Java's `Necked retry routed net ...` info line and its trace logging are not written; the pass
   runner returns the `Max items limit reached` and `Autorouter <details>` job log lines in
   `PassOutcome::log`.
+- The `Autorouter Failed to route connection between ...` line (and the failure log's reason) names
+  each side's pins as `Ref-Pad` and counts the rest of a connected set in brackets, `between
+  U12-9 and C66-1 (+212 vias and traces of net GND), because ...` (K15.7); Java prints every
+  item's `Item.toString` (`pin #9 of component #385`), up to 10416 characters a line. The
+  sentence frame and the reason are Java's, and `AttemptResult::details` keeps Java's whole text,
+  so the insert probe still compares it (`a_failed_connection_names_its_pins_by_reference_and_pad_in_the_log`,
+  `a_large_side_is_counted_in_brackets_and_the_line_stays_short`). Both profiles log the new text;
+  the SES does not depend on it.
 - Java bugs fixed outright in N06.2: the optimizer's helper returns the number of
   nonempty routing passes rather than Java's count plus one
   (`route_passes_for_optimizer_counts_nonempty_passes`); a fanout-only run explicitly
@@ -1632,7 +1648,9 @@ plugin_flags}.rs`)
   (the same field as Java's `--router.result_json=`), `--timeout`, `--max-passes`, `--threads`
   and `--seed`. The last four are aliases of settings and never add behaviour. `--threads`
   sets `autorouter.max_threads`, which Java's batch router ignores; the port sizes the job's
-  analysis threads with it (DRC, statistics, airlines; P03.1), which changes no output. `--seed 0`
+  analysis threads with it (DRC, statistics, airlines; P03.1), which changes no output. The
+  autorouter's passes are sequential (D5) at any count; only the optimizer and the analyses use the
+  threads, and `--help` says so (K15.8). `--seed 0`
   means Java's own seeds; any other value exits 2 (`seed_zero_is_accepted_and_any_other_value_is_refused`).
   A `--timeout` over 24 hours is capped with a warning.
 - `--progress json` writes every stderr line as a JSON object; the `progress` events are counted
@@ -1663,6 +1681,10 @@ plugin_flags}.rs`)
   Ctrl-Break on Windows, through the `ctrlc` crate) are handled: the first is `stop`, the
   second aborts with exit 130 and no output (`sigint_and_sigterm_are_a_stop`,
   `two_signals_abort`); Java's CLI has no such two-level stop.
+  The reader consumes standard input from the start of a route, so a shell `while read` loop
+  loses its lines; `--stdin-commands off` (K15.8, default `on`; the plugin relies on `stop`)
+  does not start it, and signals still work (`tests/stdin_commands.rs`,
+  `with_stdin_commands_off_three_lines_stay_unread`, `by_default_the_route_reads_standard_input`).
 - A stop request also ends a trace normalization (`BasicBoard::normalize_traces_until`, from the
   insertion after a route and from pull-tight): the first pass runs to its end, a later pass ends
   at its next trace and the traces stay as they are, as at the iteration limit, but the net is not

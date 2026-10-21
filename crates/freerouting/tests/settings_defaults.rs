@@ -275,6 +275,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("input_fixups.route_on_plane_layers", None),
         ("input_fixups.drop_pour_nets", None),
         ("input_fixups.fixed_pour_classes", None),
+        // K15.7: unset, which counts every pin in the edge cap (Java's).
+        ("edge_cap_skips_off_board_pins", None),
     ];
     // N06: every `java_quirks` switch is unset, which is `true` (Java's
     // behaviour); `tests/settings_java_quirks.rs` checks the ids.

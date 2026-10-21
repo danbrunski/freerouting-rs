@@ -208,7 +208,8 @@ pub struct WorkStats {
 pub struct ConnectionOutcome {
     /// The attempt's state (Java `AutorouteAttemptState`).
     pub state: AttemptState,
-    /// Java's details text.
+    /// Java's details text; for a failed connection the log text of
+    /// `AttemptResult::log_text` (K15.7: `Ref-Pad` names).
     pub details: String,
     /// The items ripped up, in `TreeSet<Item>` order (highest id first).
     pub ripped: BTreeSet<ItemId>,

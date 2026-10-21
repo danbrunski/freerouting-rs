@@ -487,7 +487,7 @@ item-type rules), N06 (`router.java_quirks`).
     - parity 7 of 7 if `legacy`'s stop rule changes. Java's rule is kept for `legacy` behind a quirk
       if they differ.
 
-- [ ] **K15.7 — Failure messages and the edge-clearance cap name board items.**
+- [x] **K15.7 — Failure messages and the edge-clearance cap name board items.**
   - **Change:**
     - "Failed to route connection between pin #9 of component #385" names the reference designator
       and the pad number (`U12 pad 9`), in the log and in the result JSON.
@@ -510,8 +510,50 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu board's first failure lines quoted before and after;
     - Java's text stays in any output that parity compares (check `ses-diff` and the parity
       check, 7 of 7).
+  - *Done 2026-10-21:*
+    - Text. A failed connection's log line keeps Java's frame and reason and writes each side as
+      the pins' `Ref-Pad` names (`describe_item`; pin index 0 too), at most three pins per side,
+      then a bracketed count of the rest with the net: `between U12-9 and C66-1 (+212 vias and
+      traces of net BUS_GND), because ...` (`autoroute/connection.rs`, `describe_connection_named`).
+      `AttemptResult` has a second field, `log_details`; `details` keeps Java's whole text,
+      because `fixtures/reference/probe/insert/*.jsonl` holds Java's `Failed to route connection
+      ...` lines and `autoroute_probe_insert` compares them (the dispatch assumed probes do not
+      compare it). `pass.rs` and the failure log take `log_text()`. The result JSON already names
+      `Ref-Pad` (`quality::verdict` uses `describe_item`); no change there. No consumer parses the
+      line: `kicad-plugin/freerouting_rs` and `tools/` never match it (the plugin test data
+      `progress-bm01.jsonl` is a recorded log), the `Autorouter ` prefix and the frame are kept.
+    - Edge cap. `BasicBoard::pin_gap(leave_out)` returns the gap and the pin that sets it;
+      `minimum_pin_gap()` is unchanged (`minimum_pin_gap_with`, `is_wholly_outside` on
+      `BoardOutline`). The cap line is Info and names the pin and the gap in um. New setting
+      `edge_cap_skips_off_board_pins` (opt-in, unset in both profiles; decided 2026-10-21 at
+      review: an ENHANCED entry needs a preregistered measurement, and it changes the edge
+      clearance of corpus boards such as Issue367-Charger, 0 -> 250 um): a pin whose pad shapes all lie wholly outside the outline is left out,
+      with one WARNING per pin.
+    - Accept 1: `autoroute::connection::tests::{a_failed_connection_names_its_pins_by_reference_and_pad_in_the_log,
+      a_large_side_is_counted_in_brackets_and_the_line_stays_short (300 vias: `U1-1 (+300 vias of
+      net A)`, Java's text 1524 chars),
+      a_side_without_pins_names_its_first_item_and_lists_at_most_three_pins}`; the edge cap on a
+      board with a fiducial at (0, 0) outside the outline and a pad 0.1 mm inside:
+      `tests/k15_edge_cap.rs` (`legacy_keeps_javas_cap_and_names_the_off_board_pin`: capped to 0,
+      names FID1-1; `an_off_board_pin_is_left_out_of_the_edge_cap_when_the_setting_is_on`: one WARNING,
+      capped to 100.0 um, names U2-1; `legacy_leaves_the_setting_unset_and_enhanced_sets_it`).
+    - Accept 2, pcu board (`-mp 1 --timeout 300`, 80 failure lines, 3 min in an opt-level 1
+      build). Before (`route_v7`, first line, cut): `Autorouter Failed to route connection between
+      pin #8 of component #330 and polylinetrace, polylinetrace, polylinetrace, polylinetrace,
+      via, polylinetrace, via, ... pin #1 of component #333, pin of component #332, ...` (over
+      1000 characters). After: `Autorouter Failed to route connection between U26-1@1, U26-1 (+2
+      traces of net V_BUS_24V) and C37-1, C36-1, C49-1 (+224 pins, vias, traces and other items
+      of net V_BUS_24V), because no connection was found between their nets.`; `... between C88-1
+      and C37-1, C36-1, C49-1 (+227 pins, vias, traces and other items of net V_BUS_24V),
+      because no connection was found between their nets.` The edge cap did not show on this
+      board: the `.kicad_dru` raises `copper_to_edge_clearance_um` to 381, so the default cap does
+      not run (a DSN input of it would).
+    - Accept 3: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: 7 of 7 exact, SES byte-identical, 79 s; `autoroute_probe_insert` (compares
+      Java's `details`) passes; `rules_writer.rs` and `job_prepare_reference.rs` pin `legacy`
+      (the first needed the pin, because `enhanced` changes `board_edge` on Issue367-Charger).
 
-- [ ] **K15.8 — The CLI's standard input and `--threads` are documented.**
+- [x] **K15.8 — The CLI's standard input and `--threads` are documented.**
   - **Change:**
     - The CLI reads stop requests from standard input, so in a shell `while read` loop it eats the
       loop's input. Add a flag that ignores standard input (or reads it only from a terminal), and
@@ -526,6 +568,23 @@ item-type rules), N06 (`router.java_quirks`).
       statistics). `parallel.rs` says the router stays sequential (D5).
     - The DIVERGENCES `--threads` line is already right; `help.txt` isn't.
   - **Accept:** a CLI test with stdin closed and with a pipe; the help text; the CLI docs.
+  - *Done 2026-10-21:*
+    - `--stdin-commands on|off` (default `on`; `args.rs`, `cli.rs::route_job`, listed by
+      `--capabilities` through `EXTRA_FLAGS`; a bad value is exit 2). With `off`
+      `spawn_stdin_reader` is not started; signals are unchanged.
+    - Tests (`crates/freerouting-cli/tests/stdin_commands.rs`): the binary runs under `sh` with
+      `cat` after it on one standard input of three lines: `with_stdin_commands_off_three_lines_stay_unread`
+      (and the `=off` form) leaves all three for `cat`, `by_default_the_route_reads_standard_input`
+      leaves none; `with_stdin_commands_off_and_stdin_closed_the_route_completes` (stdin null);
+      `stop_still_stops_with_stdin_commands_on` (`stop` after the first route event: at most one
+      pass, exit 0, SES written); `a_bad_value_is_a_usage_error`. `version.rs` and `args_java.rs`
+      (`EXTRA_FLAGS.len() == 15`) agree.
+    - Help: `STOPPING A RUN` says the route reads and consumes standard input, names the
+      `while read` loop and the two ways out (the flag, `< /dev/null`); `--threads` and `-mt` say
+      the autorouter's passes are sequential (D5), that the threads go to the optimizer and the
+      analyses (DRC, statistics), and that the result is the same at any count. `args.rs` and
+      `stop.rs` module docs, the DIVERGENCES `--threads` and stopping lines and `engine.md` say
+      the same.
 
 - [x] **K15.9 — A pad's own clearance is kept on a `.kicad_pcb` input.**
   - **Change:** the report saw a fiducial's 0.6 mm local clearance broken by a GND trace and called

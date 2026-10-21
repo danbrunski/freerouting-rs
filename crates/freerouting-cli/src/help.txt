@@ -50,8 +50,9 @@ PARAMETERS
       Setting: autorouter.max_passes [default: 0]
   -mt <number_of_threads>
       Accepted, and as in Java it has no effect on a headless run (it sets
-      the flat max_threads, which no stage reads). Use
-      --router.optimizer.max_threads for the optimizer.
+      the flat max_threads, which no stage reads). The autorouter's passes
+      are sequential, so no thread count speeds them up. Use --threads, or
+      --router.optimizer.max_threads for the optimizer alone.
       Setting: max_threads
   -oit <threshold>
       Optimizer improvement threshold; a value between 0 and 1 is a fraction
@@ -129,8 +130,14 @@ PLUGIN FLAGS (not in Java)
       The same as -mp.
       Setting: autorouter.max_passes
   --threads <number>
-      Threads of the autorouter and the optimizer; never changes the result.
+      Threads of the optimizer and of the analyses (the design rules check and
+      the board statistics). The autorouter's passes are sequential: they run
+      on one core at any count. The result is the same at any count.
       Setting: autorouter.max_threads, optimizer.max_threads
+  --stdin-commands on|off
+      on (the default): a route reads the lines `stop` and `stop-router` from
+      standard input (see STOPPING A RUN). off: it never reads standard input.
+      Ctrl-C and SIGTERM still stop it.
   --apply-design-rules
       With a .kicad_pcb input, apply the rules of the <design>.kicad_dru that
       the router can express to the board, as --kicad-dru does for a DSN.
@@ -206,6 +213,11 @@ STOPPING A RUN
     stop-router  stop the router and let the optimizer run
   End of input is not a stop. A stop during the load, or a second interrupt,
   aborts the run: nothing is written and the exit code is 130.
+  A route reads standard input for these lines from the start, and it
+  consumes what it reads: in a shell loop such as
+      while read b; do freerouting-rs -de $b.dsn -do $b.ses; done < list
+  the first run eats the rest of the list. Give each run --stdin-commands off
+  (or `< /dev/null`) there. Ctrl-C and SIGTERM work either way.
 
 EXIT CODES
   0    the job finished (or timed out) and wrote an output file; incomplete

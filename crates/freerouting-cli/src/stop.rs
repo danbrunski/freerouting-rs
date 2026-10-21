@@ -15,6 +15,13 @@
 //! Anything else is ignored. **End of input is not a stop**: the plugin
 //! passes `stdin=DEVNULL`, which is an immediate EOF.
 //!
+//! **The reader consumes standard input.** It starts for every route, and
+//! `Stdin` reads in blocks, so in a shell `while read ...; do freerouting-rs
+//! ...; done` it eats the loop's lines. `--stdin-commands off` (K15.8) does
+//! not start it; the process then never reads standard input, and Ctrl-C and
+//! SIGTERM still stop the run. The default stays on: the KiCad plugin writes
+//! `stop` to a pipe.
+//!
 //! **Interrupts.** [`Interrupts`] is the policy for Ctrl-C and SIGTERM: the
 //! first is `stop`, the second aborts the run (the job ends `Cancelled`,
 //! nothing is written, exit 130). A stop that arrives while the board is

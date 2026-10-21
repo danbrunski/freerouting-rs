@@ -1050,7 +1050,7 @@ mod plugin_flags {
         assert!(a.usage_errors.is_empty());
         assert_eq!(a.design_file.as_deref(), Some("a.dsn"));
         assert_eq!(a.output_file.as_deref(), Some("a.ses"));
-        assert_eq!(EXTRA_FLAGS.len(), 14);
+        assert_eq!(EXTRA_FLAGS.len(), 15);
     }
 
     /// Q22.5: `--kicad-dru FILE` takes the file and warns about nothing.

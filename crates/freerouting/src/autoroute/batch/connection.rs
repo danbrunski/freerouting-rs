@@ -455,7 +455,7 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
             if work_limit_hit {
                 crate::run_stats::record_work_limit_hit(false);
             }
-            let mut outcome = ConnectionOutcome::new(result.state, result.details);
+            let mut outcome = ConnectionOutcome::new(result.state, result.log_text().to_owned());
             outcome.ripped = ripped;
             outcome.ripped_costs = costs;
             outcome.first_new_id = max_id_before.wrapping_add(1);
@@ -527,7 +527,10 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
 
 /// An outcome of `result` with nothing else known.
 fn failed_outcome(result: AttemptResult) -> ConnectionOutcome {
-    with_failure(ConnectionOutcome::new(result.state, result.details))
+    with_failure(ConnectionOutcome::new(
+        result.state,
+        result.log_text().to_owned(),
+    ))
 }
 
 /// Fills [`ConnectionOutcome::failure`] for a failed state.
@@ -678,7 +681,10 @@ impl NeckDownPolicy for FreeroutingNeckDown {
             }
         }
         pull_tight_after_connection(board, p.pull_tight_accuracy, &control.trace_costs);
-        Some(ConnectionOutcome::new(result.state, result.details))
+        Some(ConnectionOutcome::new(
+            result.state,
+            result.log_text().to_owned(),
+        ))
     }
 }
 

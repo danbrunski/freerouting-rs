@@ -793,14 +793,56 @@ impl BoardOutline {
     /// and never larger than the true gap for round pads, which are
     /// measured from their bounding box.
     pub fn minimum_pin_gap<'a>(&self, pin_shapes: impl IntoIterator<Item = &'a Shape>) -> f64 {
+        self.minimum_pin_gap_with(pin_shapes.into_iter().map(|shape| ((), shape)))
+            .0
+    }
+
+    /// [`Self::minimum_pin_gap`] over shapes that carry a key, and the key of
+    /// the first shape that sets the gap (`None` without shapes or with only
+    /// unbounded ones). K15.7 names the pin with it.
+    pub fn minimum_pin_gap_with<'a, K: Copy>(
+        &self,
+        pin_shapes: impl IntoIterator<Item = (K, &'a Shape)>,
+    ) -> (f64, Option<K>) {
         let mut result = f64::INFINITY;
-        for shape in pin_shapes {
-            result = result.min(self.corner_gap(shape));
+        let mut at = None;
+        for (key, shape) in pin_shapes {
+            let gap = self.corner_gap(shape);
+            if gap < result {
+                result = gap;
+                at = Some(key);
+            }
             if result <= 0.0 {
-                return 0.0;
+                return (0.0, at);
             }
         }
-        result
+        (result, at)
+    }
+
+    /// True if `pad_shape` has no sampled point inside the outline (the
+    /// points [`Self::minimum_pin_gap`] samples), so that it lies wholly
+    /// outside it. An empty or unbounded shape is not outside.
+    pub fn is_wholly_outside(&self, pad_shape: &Shape) -> bool {
+        if pad_shape.is_empty() || !pad_shape.is_bounded() {
+            return false;
+        }
+        !Self::sample_points(pad_shape)
+            .into_iter()
+            .any(|point| self.contains_float(point))
+    }
+
+    /// The points `cornerGap` measures from: a polygon's corners, else the
+    /// corners of the bounding box.
+    fn sample_points(pad_shape: &Shape) -> Vec<FloatPoint> {
+        match pad_shape {
+            Shape::Polyline(polyline) => (0..polyline.border_line_count())
+                .map(|c| polyline.corner_approx(c))
+                .collect(),
+            other => {
+                let bounds = other.bounding_box();
+                (0..4).map(|c| bounds.corner(c).to_float()).collect()
+            }
+        }
     }
 
     /// Java `BoardOutline.cornerGap`.
@@ -809,18 +851,8 @@ impl BoardOutline {
         if pad_shape.is_empty() || !pad_shape.is_bounded() {
             return result;
         }
-        match pad_shape {
-            Shape::Polyline(polyline) => {
-                for c in 0..polyline.border_line_count() {
-                    result = result.min(self.distance_to_outline(polyline.corner_approx(c)));
-                }
-            }
-            other => {
-                let bounds = other.bounding_box();
-                for c in 0..4 {
-                    result = result.min(self.distance_to_outline(bounds.corner(c).to_float()));
-                }
-            }
+        for point in Self::sample_points(pad_shape) {
+            result = result.min(self.distance_to_outline(point));
         }
         result
     }

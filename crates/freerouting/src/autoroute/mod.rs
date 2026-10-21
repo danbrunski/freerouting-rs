@@ -156,7 +156,13 @@ impl AttemptState {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttemptResult {
     pub state: AttemptState,
+    /// Java's detail text. The insert probe compares it with Java's, so it
+    /// keeps Java's `Item.toString` wording.
     pub details: String,
+    /// The text for the log in place of `details`, when the port words it
+    /// differently (K15.7: reference designators and pad numbers, not item
+    /// and component ids). `None`: `details` is the log text.
+    pub log_details: Option<String>,
 }
 
 impl AttemptResult {
@@ -165,6 +171,7 @@ impl AttemptResult {
         AttemptResult {
             state,
             details: String::new(),
+            log_details: None,
         }
     }
 
@@ -173,7 +180,20 @@ impl AttemptResult {
         AttemptResult {
             state,
             details: details.into(),
+            log_details: None,
         }
+    }
+
+    /// This result with `text` as its log text.
+    pub fn with_log_details(mut self, text: String) -> AttemptResult {
+        self.log_details = Some(text);
+        self
+    }
+
+    /// What the log and the failure log show: [`Self::log_details`] if set,
+    /// else [`Self::details`].
+    pub fn log_text(&self) -> &str {
+        self.log_details.as_deref().unwrap_or(&self.details)
     }
 }
 
