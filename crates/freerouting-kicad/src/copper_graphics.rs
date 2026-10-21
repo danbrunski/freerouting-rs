@@ -13,11 +13,17 @@
 //! [`read_copper_graphics`] collects them, in board order then footprint
 //! order; [`keepouts`] makes them obstacles:
 //!
-//! - A shape with no net, of a net-tie footprint (`net_tie_pad_groups`; its
-//!   ties stay ties), or of a net without pins (not in the DSN's network)
-//!   becomes keepouts named [`KEEPOUT_NAME`] on its layer: the body of a
-//!   filled polygon, rectangle or circle and the rectangles within half the
-//!   stroke of each piece (`edge_keepouts::shape_polygons`).
+//! - A shape with no net, or of a net without pins (not in the DSN's
+//!   network) becomes keepouts named [`KEEPOUT_NAME`] on its layer: the body
+//!   of a filled polygon, rectangle or circle and the rectangles within half
+//!   the stroke of each piece (`edge_keepouts::shape_polygons`).
+//! - A shape of a net-tie footprint (`net_tie_pad_groups`; its ties stay
+//!   ties) becomes the same pieces named [`NET_TIE_KEEPOUT_NAME`] (Q22.19):
+//!   the router lets in the nets of the pins under the shape's pieces (the
+//!   tie's pads it touches) and keeps every other net its clearance out
+//!   (`io::specctra::parser::pad_keepouts` in the engine), as KiCad lets
+//!   copper of the tie's nets touch the shape. Q22.4 wrote them as
+//!   [`KEEPOUT_NAME`], which kept the tie's own nets out too.
 //! - A visible text (`gr_text`, `gr_text_box`, `fp_text`, a footprint
 //!   `property` on copper) becomes one keepout named [`TEXT_KEEPOUT_NAME`]:
 //!   a box that holds every glyph. The reader has no font engine, so the box
@@ -65,6 +71,10 @@ use crate::units::{ki_round, mm_to_nm};
 pub const KEEPOUT_NAME: &str = "copper_graphic";
 /// The name of the keepouts of copper texts.
 pub const TEXT_KEEPOUT_NAME: &str = "copper_text";
+/// The name of the keepouts of a net-tie footprint's copper shapes (Q22.19):
+/// the router's `NET_TIE_KEEPOUT_NAME`, which lets the nets of the pins under
+/// them in.
+pub const NET_TIE_KEEPOUT_NAME: &str = "net_tie";
 /// A shape on a copper layer.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CopperShape {
@@ -73,6 +83,8 @@ pub struct CopperShape {
     pub layer: usize,
     /// KiCad net code; 0 for none and in a net-tie footprint.
     pub net: u32,
+    /// In a net-tie footprint (Q22.19, [`NET_TIE_KEEPOUT_NAME`]).
+    pub net_tie: bool,
 }
 
 /// A visible text on a copper layer.
@@ -88,7 +100,7 @@ pub struct CopperText {
 pub struct CopperGraphics {
     pub shapes: Vec<CopperShape>,
     pub texts: Vec<CopperText>,
-    /// Shapes of net-tie footprints (kept out with no net).
+    /// Shapes of net-tie footprints (`net_tie` keepouts, Q22.19).
     pub net_tie_shapes: usize,
 }
 
@@ -275,6 +287,7 @@ pub fn read_copper_graphics(
                     graphic,
                     layer,
                     net,
+                    net_tie: false,
                 });
             }
         } else if matches!(head, "gr_text" | "gr_text_box")
@@ -308,6 +321,7 @@ pub fn read_copper_graphics(
                         graphic,
                         layer,
                         net,
+                        net_tie: tie,
                     });
                 }
             } else if matches!(head, "fp_text" | "property")
@@ -332,10 +346,15 @@ pub fn keepouts(
     let mut out = Vec::new();
     for s in graphics.shapes.iter().filter(|s| !has_net(s.net)) {
         let (body, strokes) = shape_polygons(&s.graphic, max_error);
+        let name = if s.net_tie {
+            NET_TIE_KEEPOUT_NAME
+        } else {
+            KEEPOUT_NAME
+        };
         out.extend(
             body.iter()
                 .chain(strokes.iter())
-                .map(|p| keepout(KEEPOUT_NAME, layers.name(s.layer), p)),
+                .map(|p| keepout(name, layers.name(s.layer), p)),
         );
     }
     out.extend(

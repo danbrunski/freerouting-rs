@@ -15,7 +15,7 @@
 use freerouting_dsn::ast::{
     Keepout, LayerRef, Shape, WIRE_ATTR_OBSTACLE, Wire, WireType, WiringItem,
 };
-use freerouting_kicad::copper_graphics::{KEEPOUT_NAME, TEXT_KEEPOUT_NAME};
+use freerouting_kicad::copper_graphics::{KEEPOUT_NAME, NET_TIE_KEEPOUT_NAME, TEXT_KEEPOUT_NAME};
 
 const BOARD: &str =
     include_str!("../../freerouting/tests/data/kicad/q22-copper-graphics.kicad_pcb");
@@ -210,8 +210,13 @@ fn net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts() {
         .iter()
         .map(|k| polygon(k).0)
         .collect();
-    // board shapes first, then the footprints'
-    assert_eq!(layers, ["B.Cu", "F.Cu"]);
+    // the board's shape; the tie's line is a `net_tie` keepout (Q22.19)
+    assert_eq!(layers, ["B.Cu"]);
+    let ties: Vec<String> = named(&keepouts, NET_TIE_KEEPOUT_NAME)
+        .iter()
+        .map(|k| polygon(k).0)
+        .collect();
+    assert_eq!(ties, ["F.Cu"]);
     assert!(named(&keepouts, TEXT_KEEPOUT_NAME).is_empty());
     assert_eq!(fixed_wires(&read), 0);
     // no areas: the tie line has no net, LONE has no pins
@@ -284,4 +289,32 @@ fn a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends() {
             );
         }
     }
+}
+
+/// Q22.19 (`crates/freerouting/tests/data/kicad/q22-net-tie.kicad_pcb`): the
+/// net-tie footprint NT1's filled F.Cu polygon (16..24, 13.5..16.5 mm), which
+/// joins its pads of nets A and B, is one `net_tie` keepout at the default
+/// clearance, the same polygon the KiCad plugin writes (`q22-net-tie.dsn`,
+/// `kicad-plugin/tests/test_copper_graphics.py`); the router lets A and B in
+/// and keeps every other net out (`crates/freerouting/tests/net_tie.rs`).
+#[test]
+fn a_net_tie_shape_is_a_net_tie_keepout_the_same_as_the_plugins() {
+    let board = include_str!("../../freerouting/tests/data/kicad/q22-net-tie.kicad_pcb");
+    let plugin = include_str!("../../freerouting/tests/data/kicad/q22-net-tie.dsn");
+    let read = freerouting_kicad::read(board, None).unwrap();
+    let keepouts = read.pcb.structure.as_ref().unwrap().keepouts.clone();
+    let ties = named(&keepouts, NET_TIE_KEEPOUT_NAME);
+    assert_eq!(ties.len(), 1, "{keepouts:?}");
+    assert!(named(&keepouts, KEEPOUT_NAME).is_empty());
+    assert_eq!(ties[0].area.clearance_class, None);
+    let want = freerouting_dsn::Pcb::parse(plugin).unwrap();
+    let want = want.structure.as_ref().unwrap().keepouts.clone();
+    let want = named(&want, NET_TIE_KEEPOUT_NAME);
+    assert_eq!(want.len(), 1);
+    let (layer, points) = polygon(ties[0]);
+    let (want_layer, want_points) = polygon(want[0]);
+    assert_eq!(layer, want_layer);
+    assert!(close(&points, &want_points), "{points:?} {want_points:?}");
+    assert_eq!(fixed_wires(&read), 0);
+    assert!(area_wires(&read).is_empty());
 }

@@ -1,5 +1,5 @@
 //! Q22.16, Q22.18: a solder-mask aperture as a keepout fitted to the pins
-//! under it. Not Java.
+//! under it; Q22.19: a net tie's copper shape too. Not Java.
 //!
 //! KiCad's DRC (`solder_mask_bridge`) flags copper of two nets in one mask
 //! aperture. The KiCad plugin and the `.kicad_pcb` reader write each mask
@@ -26,7 +26,19 @@
 //!   another net). A pin entered only from inside it stays unrouted;
 //! - **no pin with a net**: a keepout for every net, as Java reads it.
 //!
-//! The first two keep their name and are obstacles for traces and vias only
+//! Q22.19: a net-tie footprint's copper shape (`net_tie`,
+//! `NET_TIE_KEEPOUT_NAME`, written by the KiCad plugin and the `.kicad_pcb`
+//! reader for each piece of the shape, with the board's default area
+//! clearance) carries the nets of the pins under it and under every `net_tie`
+//! keepout on its layer it is joined to by touching ones (the pieces of one
+//! shape touch each other), however many nets that is: KiCad lets copper of
+//! the tie's nets touch the shape and keeps every other net its clearance
+//! from it. A pin of another footprint touching the shape counts too (on a
+//! board KiCad accepts, only the tie's own pads touch it). With no pin under
+//! the joined pieces it is Java's plain keepout. `net_tie` keepouts are never
+//! fitted with mask keepouts, nor mask keepouts with them.
+//!
+//! The fitted ones keep their name and are obstacles for traces and vias only
 //! (`ObstacleArea::is_pad_keepout`): they are no copper, so a pin under one,
 //! or a pin of another net beside it, is no violation. The name is
 //! otherwise ignored, as Java ignores it; a DSN without these names reads as
@@ -43,13 +55,14 @@ use super::structure::insert_keepout;
 use crate::board::RoutingBoard;
 use crate::board::items::ItemId;
 
-use crate::board::items::{MASK_KEEPOUT_NAMES, SHARED_PAD_KEEPOUT_NAME};
+use crate::board::items::{FITTED_KEEPOUT_NAMES, NET_TIE_KEEPOUT_NAME, SHARED_PAD_KEEPOUT_NAME};
 
-/// True if `area` is a mask-aperture keepout (module docs).
+/// True if `area` is a keepout fitted to its pins: a mask aperture or a net
+/// tie's copper (module docs).
 pub(crate) fn is_pad_keepout(area: &DsnArea) -> bool {
     area.name
         .as_deref()
-        .is_some_and(|n| MASK_KEEPOUT_NAMES.contains(&n))
+        .is_some_and(|n| FITTED_KEEPOUT_NAMES.contains(&n))
 }
 
 /// Inserts the keepouts [`super::structure::read_structure`] put aside (module
@@ -60,7 +73,10 @@ pub(crate) fn insert_pad_keepouts(ctx: &mut ReadContext) -> bool {
         return true;
     }
     let fits: Vec<Option<Fit>> = areas.iter().map(|area| fit(ctx, area)).collect();
-    let groups = aperture_groups(&fits);
+    let mut groups = aperture_groups(&fits);
+    for (i, g) in net_tie_groups(&fits) {
+        groups[i] = g;
+    }
     areas
         .iter()
         .zip(&fits)
@@ -79,14 +95,17 @@ struct Fit {
     pieces: Vec<TileShape>,
     boxes: Vec<IntBox>,
     shared: bool,
+    /// Q22.19: a `net_tie` keepout.
+    tie: bool,
     nets: BTreeSet<i32>,
 }
 
 /// What a keepout is fitted to: the nets of the pins under it, and whether
-/// it is `solder_mask_shared`.
+/// it is `solder_mask_shared` or `net_tie`.
 #[derive(Clone, Default)]
 struct Group {
     shared: bool,
+    tie: bool,
     nets: BTreeSet<i32>,
 }
 
@@ -109,6 +128,7 @@ fn fit(ctx: &ReadContext, area: &DsnArea) -> Option<Fit> {
         boxes: pieces.iter().map(|p| p.bounding_box()).collect(),
         pieces,
         shared: area.name.as_deref() == Some(SHARED_PAD_KEEPOUT_NAME),
+        tie: area.name.as_deref() == Some(NET_TIE_KEEPOUT_NAME),
         nets,
     })
 }
@@ -123,13 +143,14 @@ fn fit(ctx: &ReadContext, area: &DsnArea) -> Option<Fit> {
 fn aperture_groups(fits: &[Option<Fit>]) -> Vec<Group> {
     let own = |f: &Fit| Group {
         shared: f.shared,
+        tie: f.tie,
         nets: f.nets.clone(),
     };
-    let fitted = |f: &Fit| f.shared || !f.nets.is_empty();
+    let fitted = |f: &Fit| !f.tie && (f.shared || !f.nets.is_empty());
     fits.iter()
         .map(|f| match f {
             None => Group::default(),
-            Some(f) if fitted(f) => own(f),
+            Some(f) if f.tie || fitted(f) => own(f),
             Some(f) => {
                 let mut g = own(f);
                 for o in fits.iter().flatten().filter(|o| fitted(o) && meet(f, o)) {
@@ -142,7 +163,50 @@ fn aperture_groups(fits: &[Option<Fit>]) -> Vec<Group> {
         .collect()
 }
 
-/// True if two mask keepouts on one layer share a point.
+/// Q22.19: the group of each `net_tie` keepout, by index: the nets of the
+/// pins under every `net_tie` keepout joined to it on its layer by a chain of
+/// touching ones (module docs). Components in index order; the nets are a
+/// sorted set.
+fn net_tie_groups(fits: &[Option<Fit>]) -> Vec<(usize, Group)> {
+    let ties: Vec<(usize, &Fit)> = fits
+        .iter()
+        .enumerate()
+        .filter_map(|(i, f)| f.as_ref().filter(|f| f.tie).map(|f| (i, f)))
+        .collect();
+    let mut component: Vec<usize> = (0..ties.len()).collect();
+    for a in 0..ties.len() {
+        for b in a + 1..ties.len() {
+            if meet(ties[a].1, ties[b].1) {
+                let (ca, cb) = (component[a], component[b]);
+                let (keep, drop) = (ca.min(cb), ca.max(cb));
+                component
+                    .iter_mut()
+                    .filter(|c| **c == drop)
+                    .for_each(|c| *c = keep);
+            }
+        }
+    }
+    let nets_of = |c: usize| -> BTreeSet<i32> {
+        ties.iter()
+            .zip(&component)
+            .filter(|(_, k)| **k == c)
+            .flat_map(|((_, f), _)| f.nets.iter().copied())
+            .collect()
+    };
+    ties.iter()
+        .zip(&component)
+        .map(|((i, _), c)| {
+            let group = Group {
+                shared: false,
+                tie: true,
+                nets: nets_of(*c),
+            };
+            (*i, group)
+        })
+        .collect()
+}
+
+/// True if two fitted keepouts on one layer share a point.
 fn meet(a: &Fit, b: &Fit) -> bool {
     a.layer == b.layer
         && a.pieces.iter().zip(&a.boxes).any(|(pa, ba)| {
@@ -154,6 +218,11 @@ fn meet(a: &Fit, b: &Fit) -> bool {
 }
 
 fn insert_fitted(ctx: &mut ReadContext, area: &DsnArea, layer: &str, group: &Group) -> bool {
+    if group.tie {
+        // Q22.19: every net of the tie's pins passes; none, Java's keepout.
+        let nets: Vec<i32> = group.nets.iter().copied().collect();
+        return insert_keepout(ctx, area, 0, false, (!nets.is_empty()).then_some(&nets[..]));
+    }
     match group.nets.len() {
         _ if group.shared => insert_keepout(ctx, area, 0, false, Some(&[])),
         0 => insert_keepout(ctx, area, 0, false, None),

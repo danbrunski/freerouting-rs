@@ -1537,7 +1537,7 @@ Sequencing:
       this step), 0 `solder_mask_bridge`, drc_real 0, 4.66 s route, 356 tracks, 29 vias.
       Connection parity: 7 of 7 exact. canary-pwr was not re-graded.
 
-- [ ] **Q22.19 — A net tie's copper lets its own nets in** (added 2026-10-20, from Q20.1's
+- [x] **Q22.19 — A net tie's copper lets its own nets in** (added 2026-10-20, from Q20.1's
   re-check). Q22.4 writes each copper shape of a net-tie footprint (`net_tie_pad_groups`) as a
   keepout with no net: `copper_graphics.py` on the DSN path, `copper_graphics.rs` in the reader.
   That keeps every net out, the tie's own nets too. KiCad lets copper of the tie's nets touch the
@@ -1553,6 +1553,56 @@ Sequencing:
       clearance from the shape;
     - slice routed fresh as Q20.1's Done note did, one KiCad grade: J1-10 to NT1-2 routed, KiCad
       routing-caused 0, KiCad unconnected beside Q20.1's 9.
+  - *Done 2026-10-21* (on a43b10e, Q22.16/Q22.18 unlanded): the plugin and the reader write each
+    piece of a net-tie footprint's copper shape as a keepout named `net_tie` (default clearance),
+    and the engine fits it like a mask keepout (`io/specctra/parser/pad_keepouts.rs`,
+    `board::items::NET_TIE_KEEPOUT_NAME`): it carries the nets of the pins under it and under every
+    `net_tie` keepout on its layer joined to it by touching ones, however many (a sorted set), is
+    an obstacle only for traces and vias of other nets (`ObstacleArea::is_pad_keepout`), keeps the
+    default clearance, and is never fitted with mask keepouts; with no pin under it, Java's
+    keepout. The DSN writer writes it back under its name. A Java DSN has no `net_tie` name.
+    - Fixture `crates/freerouting/tests/data/kicad/q22-net-tie.kicad_pcb`: NT1 (net tie, filled
+      F.Cu polygon 16..24 x 13.5..16.5 mm over its 1 mm round pads NT1-1 of A at (17.5, 15) and
+      NT1-2 of B at (22.5, 15)), A from PA (5, 15), B from PB (35, 15), C from PC1 (20, 5) to
+      PC2 (20, 25) across the tie. `q22-net-tie-base.dsn` is KiCad 10.0.7's export,
+      `q22-net-tie.dsn` the plugin's `copper_graphics.apply` of it (one `keepout "net_tie"`).
+    - Engine, `crates/freerouting/tests/net_tie.rs`, 7 tests:
+      `the_net_tie_keepout_carries_the_nets_of_the_tie_pads` (plugin and reader: one keepout of
+      A and B), `the_plugins_net_tie_lets_its_nets_in_and_keeps_c_out` and
+      `the_readers_net_tie_lets_its_nets_in_and_keeps_c_out` (legacy and enhanced: 0 incomplete,
+      A and B traces inside the tie's area, C's F.Cu gap to it >= 1999 board units),
+      `with_a_keepout_for_every_net_the_ties_pads_stay_unrouted` (renamed `copper_graphic`,
+      Q22.4's model: 2 incomplete), `the_output_check_lets_the_ties_nets_in_and_keeps_the_clearance`
+      (an A trace into the tie: no breach; ending 0.1 mm from B's pad: one `clearance` A–B; C at
+      0.25 mm: none; at 0.1 mm or across: one `keepout`),
+      `a_ties_pieces_share_its_nets_and_a_piece_with_no_pin_is_a_plain_keepout`,
+      `the_dsn_writer_keeps_the_net_tie_keepout`.
+    - Reader, `crates/freerouting-kicad/tests/copper_graphics.rs`:
+      `a_net_tie_shape_is_a_net_tie_keepout_the_same_as_the_plugins` (the polygon equals the
+      plugin DSN's to 1e-6 µm, no clearance class) and
+      `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts` (updated: the tie's line is
+      `net_tie`).
+    - Plugin, `kicad-plugin/tests/test_copper_graphics.py`: `test_a_net_tie_shape_is_a_net_tie_keepout`,
+      `test_net_tie_shapes_are_logged` (new log line),
+      `test_kicad_board_collects_copper_shapes_and_visible_texts` (`net_tie` flag), and the
+      pcbnew-gated `test_the_net_tie_fixture_through_pcbnew_gives_the_routed_dsn` (KiCad 10.0.7:
+      the plugin's output equals `q22-net-tie.dsn` byte for byte). Venv: 488 passed, 21 skipped;
+      system `python3` with pcbnew: `test_copper_graphics.py` 18 passed, 0 skipped.
+    - slice, fresh: `tools/kicad-oracle/grade.sh --out target/orchestrator/q2219/runs/slice
+      --export plugin {"schema": 5} target/corpus/projects/slice-dcmt-bread-slice/slice-dcmt-bread-slice.kicad_pcb
+      -- bash -c "ulimit -v 8000000; exec timeout -k 10 300 <bin> -de '{DSN}' -do '{SES}'
+      --result-json '{SES}.result.json' --gui.enabled=false {PLUGIN_ARGS}"`, release binary
+      `freerouting-rs 0.1.0 (git a43b10e31357)` with this diff (sha256 `2893f262…`), one KiCad
+      10.0.7 grade. The DSN carries one `keepout "net_tie"` (B.Cu 127.7..129.7 x 113.2..117.2 mm).
+      Route 0.54 s, `COMPLETED`, output check 0 of 110. KiCad routing-caused 0 (`drc_real` 0, no
+      type), KiCad unconnected 8 (input 54; Q20.1's fresh route 9). J1-10 to NT1-2 (GNDPWR) is in
+      the unrouted board's unconnected list and not in the routed one's; the 8 left are GND,
+      +12V and VS pad-to-zone or pad-to-pad items. `starved_thermal` 2 routed, 1 input (zone
+      fill, not routing-caused, as in Q20.1). Copper below the board minimums: 0.
+    - Gate: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+      clean; `cargo test --workspace` 2777 passed, 0 failed, 56 ignored;
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: 7 of 7
+      exact.
 
 - [ ] **Q22.20 — Routed copper leaves room for a zone's thermal spokes** (added 2026-10-21, from
   Q22.18's canary-pwr grade). Board Setup's `min_resolved_spokes` (default 2) is the one rule in

@@ -11,11 +11,17 @@ and one of sonde-xilinx over a `gr_text "GND"` on F.Cu.
 
 `apply` writes them into the DSN:
 
-- A shape with no net, or of a net-tie footprint (its ties stay ties), or of a
-  net the DSN does not list, becomes keepouts named `KEEPOUT_NAME` on its
-  layer: the filled body of a filled polygon, rectangle or circle and the
-  rectangles within half the stroke of each piece
+- A shape with no net, or of a net the DSN does not list, becomes keepouts
+  named `KEEPOUT_NAME` on its layer: the filled body of a filled polygon,
+  rectangle or circle and the rectangles within half the stroke of each piece
   (`edge_graphics.shape_polygons`, curves cut into chords).
+- A shape of a net-tie footprint (its ties stay ties) becomes the same
+  pieces named `NET_TIE_KEEPOUT_NAME` (Q22.19): the router lets in the nets
+  of the pins under the shape's pieces (the tie's pads it touches) and keeps
+  every other net its clearance out (the engine's
+  `io/specctra/parser/pad_keepouts.rs`), as KiCad lets copper of the tie's
+  nets touch the shape. Q22.4 wrote them as `KEEPOUT_NAME`, which kept the
+  tie's own nets out too.
 - A visible text becomes keepouts named `TEXT_KEEPOUT_NAME`: the outer
   outlines of KiCad's own glyph strokes (`TransformTextToPolySet`, collected
   by `kicad_board.copper_graphics`; a glyph's counter is kept out too), or the
@@ -52,6 +58,7 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
 
 KEEPOUT_NAME = "copper_graphic"
 TEXT_KEEPOUT_NAME = "copper_text"
+NET_TIE_KEEPOUT_NAME = "net_tie"  # the router's `NET_TIE_KEEPOUT_NAME` (Q22.19)
 OBSTACLE_ATTR = "obstacle"  # the router's `ast::WIRE_ATTR_OBSTACLE`
 
 
@@ -107,7 +114,8 @@ def apply(dsn_text, facts):
             net_wires += [_area_wire(dsn.layer_token(layer), token, poly, nl) for poly in polys]
             n_net_shapes += 1
             continue
-        keepouts += [_keepout(KEEPOUT_NAME, dsn.layer_token(layer), poly, nl) for poly in ([body] if body else []) + strokes]
+        name = NET_TIE_KEEPOUT_NAME if shape.get("net_tie") else KEEPOUT_NAME
+        keepouts += [_keepout(name, dsn.layer_token(layer), poly, nl) for poly in ([body] if body else []) + strokes]
         n_keepout_shapes += 1
     for text in texts:
         if text["layer"] not in layers:
@@ -136,5 +144,5 @@ def apply(dsn_text, facts):
         )
     ties = facts.get("net_tie_shapes") or 0
     if ties and keepouts:
-        log.append(f"copper graphics: {ties} net-tie shape(s) kept clear as keepouts, their nets left out")
+        log.append(f"copper graphics: {ties} net-tie shape(s) kept clear of other nets, their pads' nets let in")
     return out, log

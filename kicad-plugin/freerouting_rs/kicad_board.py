@@ -269,7 +269,8 @@ def _text_polygons(pcbnew, item, max_error):
 def copper_graphics(board, pcbnew):
     """Q22.4: what `copper_graphics.apply` reads. Every shape on a copper layer
     of the board and its footprints (the `edge_graphics` dicts plus `net`:
-    its net name, empty for none or in a net-tie footprint), every visible
+    its net name, empty for none or in a net-tie footprint, and `net_tie`:
+    True in a net-tie footprint, Q22.19), every visible
     text on a copper layer (`layer`, `polygons`), in board order then
     footprint order, and the number of net-tie shapes."""
     is_copper = getattr(pcbnew, "IsCopperLayer", None)
@@ -300,6 +301,8 @@ def copper_graphics(board, pcbnew):
             ties += 1 if tie else 0
             for shape in _edge_shapes(pcbnew, item, name):
                 shape["net"] = net
+                if tie:  # Q22.19: a `net_tie` keepout, its pads' nets let in
+                    shape["net_tie"] = True
                 shapes.append(shape)
     return {"shapes": shapes, "texts": texts, "net_tie_shapes": ties}
 

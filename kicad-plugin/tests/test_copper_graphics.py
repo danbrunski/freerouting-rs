@@ -195,8 +195,21 @@ def test_shapes_off_the_dsn_layers_and_nothing_on_copper_change_nothing():
 
 
 def test_net_tie_shapes_are_logged():
-    _text, log = copper_graphics.apply(DSN, facts([LINE], ties=1))
-    assert log[-1] == "copper graphics: 1 net-tie shape(s) kept clear as keepouts, their nets left out"
+    _text, log = copper_graphics.apply(DSN, facts([dict(LINE, net_tie=True)], ties=1))
+    assert log[-1] == "copper graphics: 1 net-tie shape(s) kept clear of other nets, their pads' nets let in"
+
+
+def test_a_net_tie_shape_is_a_net_tie_keepout():
+    """Q22.19: a net-tie footprint's shape is a `net_tie` keepout, which the
+    router fits to the tie's pads under it (their nets pass, every other net
+    keeps its clearance), at the same corners as a `copper_graphic` one."""
+    text, _ = copper_graphics.apply(DSN, facts([dict(LINE, net_tie=True)], ties=1))
+    (tie,) = keepouts(text, copper_graphics.NET_TIE_KEEPOUT_NAME)
+    assert keepouts(text, copper_graphics.KEEPOUT_NAME) == []
+    plain, _ = copper_graphics.apply(DSN, facts([LINE]))
+    (line,) = keepouts(plain, copper_graphics.KEEPOUT_NAME)
+    assert corners(tie) == corners(line)
+    assert "clearance_class" not in tie
 
 
 # --- the pcbnew side ----------------------------------------------------------
@@ -344,6 +357,8 @@ def test_kicad_board_collects_copper_shapes_and_visible_texts():
         ("F.Cu", "", [(5, 5), (6, 5)]),  # a net-tie footprint keeps its ties: no net
     ]
     assert got["shapes"][1] == LINE
+    assert got["shapes"][2]["net_tie"] is True  # Q22.19
+    assert "net_tie" not in got["shapes"][0]
     assert got["net_tie_shapes"] == 1
 
 
@@ -445,3 +460,28 @@ def test_a_stroked_arc_s_pieces_cover_the_stroke_and_its_round_ends():
             a = math.radians(10 * k)
             p = (ex + 0.3 * math.cos(a), ey + 0.3 * math.sin(a))
             assert covered(p), p
+
+
+NET_TIE_DIR = REPO / "crates" / "freerouting" / "tests" / "data" / "kicad"
+
+
+def test_the_net_tie_fixture_through_pcbnew_gives_the_routed_dsn():
+    """Q22.19, with KiCad's pcbnew: `q22-net-tie.kicad_pcb`'s net tie NT1 (a
+    filled F.Cu polygon, 16..24 x 13.5..16.5 mm, over its pads of nets A and
+    B) comes out as one `net_tie` keepout over the polygon, and the plugin's
+    DSN for KiCad 10.0.7's export (`q22-net-tie-base.dsn`) is
+    `q22-net-tie.dsn`, which the engine routes in `tests/net_tie.rs` (A reaches
+    its pad through the tie, C keeps its clearance) and the reader matches in
+    `crates/freerouting-kicad/tests/copper_graphics.rs`."""
+    pcbnew = pytest.importorskip("pcbnew")
+    board = pcbnew.LoadBoard(str(NET_TIE_DIR / "q22-net-tie.kicad_pcb"))
+    got = kicad_board.copper_graphics(board, pcbnew)
+    assert got["net_tie_shapes"] == 1
+    (shape,) = got["shapes"]
+    assert shape["net_tie"] is True and shape["net"] == ""
+    base = (NET_TIE_DIR / "q22-net-tie-base.dsn").read_text(encoding="utf-8")
+    out, log = copper_graphics.apply(base, got)
+    assert out == (NET_TIE_DIR / "q22-net-tie.dsn").read_text(encoding="utf-8")
+    (tie,) = keepouts(out, copper_graphics.NET_TIE_KEEPOUT_NAME)
+    assert corners(tie) == ("F.Cu", [(16.0, 13.5), (24.0, 13.5), (24.0, 16.5), (16.0, 16.5), (16.0, 13.5)])
+    assert log[-1] == "copper graphics: 1 net-tie shape(s) kept clear of other nets, their pads' nets let in"

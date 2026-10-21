@@ -1188,6 +1188,25 @@ compare them on 12 committed boards and the 56-board corpus).
   `the_one_net_keepout_is_an_obstacle_for_other_nets_traces_only`,
   `the_shared_keepout_holds_every_nets_traces_out_and_no_pin`,
   `a_pad_of_the_shapes_own_net_under_a_board_level_mask_shape_connects`).
+- **A net tie's copper keepout lets the tie's nets in** (Q22.19,
+  `io::specctra::parser::pad_keepouts`, `NET_TIE_KEEPOUT_NAME`; Java reads the name and ignores
+  it): the KiCad plugin and the `.kicad_pcb` reader write each piece of a net-tie footprint's
+  copper shape as a keepout named `net_tie` at the default clearance. It is inserted after the
+  components and carries the nets of the pins under it and under every `net_tie` keepout on its
+  layer joined to it by touching ones (a shape's pieces), however many: those nets route through
+  it, every other net keeps its clearance from it, as KiCad lets copper of the tie's nets touch
+  the shape. Like the mask keepouts it is an obstacle for traces and vias only, and never fitted
+  with them; with no pin under the joined pieces it is Java's keepout. A pin of another footprint
+  touching the shape counts too (KiCad counts the tie's own pads; on a board KiCad accepts only
+  those touch it). Q22.4 wrote these as `copper_graphic`, a keepout for every net, which left
+  slice's J1-10 to NT1-2 (GNDPWR) open. The DSN writer writes it back under its name. Pinned by
+  `tests/net_tie.rs` (`the_net_tie_keepout_carries_the_nets_of_the_tie_pads`,
+  `the_plugins_net_tie_lets_its_nets_in_and_keeps_c_out`,
+  `the_readers_net_tie_lets_its_nets_in_and_keeps_c_out`,
+  `with_a_keepout_for_every_net_the_ties_pads_stay_unrouted`,
+  `the_output_check_lets_the_ties_nets_in_and_keeps_the_clearance`,
+  `a_ties_pieces_share_its_nets_and_a_piece_with_no_pin_is_a_plain_keepout`,
+  `the_dsn_writer_keeps_the_net_tie_keepout`).
 - **Q20's output check finds copper inside a keepout that keeps no clearance** (Q22.18,
   `drc::board_rules`, `zero_clearance_keepouts`): the clearance check (Java's
   `clearance_violations`, as ported) reports a shortfall of the required clearance, so copper
@@ -1263,8 +1282,10 @@ compare them on 12 committed boards and the 56-board corpus).
   export writes none of them (footprint copper lines only as drawing outline; pcietest had 127
   routed tracks over its connectors' B.Cu `fp_line`s, sonde-xilinx one over a `gr_text`). The
   reader adds keepouts named `copper_graphic` on the shape's layer (a filled body, and the
-  rectangles within half the stroke of each piece) for a shape of no net, of a net-tie
-  footprint or of a net without pins, and keepouts named `copper_text` for a visible text: a
+  rectangles within half the stroke of each piece) for a shape of no net or of a net without
+  pins, the same pieces named `net_tie` for a shape of a net-tie footprint (Q22.19: the router
+  lets the tie's pads' nets in, see above; Q22.4 named them `copper_graphic`, which kept those
+  nets out too), and keepouts named `copper_text` for a visible text: a
   box that holds the glyphs (no font engine: `1.25 × width` per character plus the stroke, by
   `1.8 × height` plus the stroke, a footprint text the square of half side `hypot(width,
   height)`). A shape of a net with pins becomes copper of that net (decided 2026-10-20, option
@@ -1279,7 +1300,8 @@ compare them on 12 committed boards and the 56-board corpus).
   (`a_footprint_copper_line_becomes_a_keepout_on_its_layer`,
   `a_copper_text_becomes_a_keepout_box_that_holds_its_glyphs`,
   `shapes_of_a_net_become_conduction_areas_of_their_net`, `the_written_dsn_keeps_the_areas`,
-  `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts`) and the engine's
+  `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts`,
+  `a_net_tie_shape_is_a_net_tie_keepout_the_same_as_the_plugins`) and the engine's
   `tests/copper_graphics.rs` (`the_route_goes_round_the_copper_line_and_the_copper_text`,
   `other_nets_keep_clear_of_a_net_s_copper_and_the_net_connects_through_it`,
   `the_session_and_the_kicad_output_leave_the_net_shapes_out`,
@@ -1874,7 +1896,8 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_edge_graphics.py::test_the_mask_keepouts_hold_the_exact_grown_apertures_after_rounding`.
 - **Copper shapes and copper texts become obstacles** (Q22.4, `copper_graphics.py`,
   `kicad_board.copper_graphics`, `export_flow.fix_copper_graphics`, always on): after KiCad's
-  export, the reader's `copper_graphic` keepouts (see freerouting-kicad), corners rounded to
+  export, the reader's `copper_graphic` keepouts and, for a net-tie footprint's shape, its
+  `net_tie` keepouts (Q22.19, see freerouting-kicad), corners rounded to
   1 µm, and for a visible text keepouts of the outer outlines of KiCad's own glyph strokes
   (`TransformTextToPolySet`; the box for a knockout text or a text box) named `copper_text`. A
   shape of a net the DSN lists becomes conduction-area wires of that net with `(attr obstacle)`
@@ -1884,7 +1907,9 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_a_filled_shape_of_a_net_becomes_a_conduction_area_of_its_net`,
   `test_a_stroked_shape_of_a_net_becomes_the_area_of_its_stroke`,
   `test_the_fixture_through_pcbnew_gives_the_reader_s_obstacles`,
-  `test_kicad_board_collects_copper_shapes_and_visible_texts`).
+  `test_kicad_board_collects_copper_shapes_and_visible_texts`,
+  `test_a_net_tie_shape_is_a_net_tie_keepout`,
+  `test_the_net_tie_fixture_through_pcbnew_gives_the_routed_dsn`).
 - **The project's `.kicad_dru` is passed for a DSN route** (Q22.5, `export_flow.kicad_dru_args`,
   always on, every profile): `--kicad-dru <board>.kicad_dru` when the file exists and the router
   reads KiCad's export; Java's plugin never applies the file. Not passed for the `.kicad_pcb`
