@@ -413,7 +413,7 @@ rules).
     hashes were checked against the copies, and a changed hash fails the test. `cargo fmt --all
     --check` and `cargo clippy -p freerouting-dev --tests -- -D warnings` are clean.
 
-- [ ] **K13.6 — Measure.** Run K13.5 as registered, after K13.1, K13.2 and K13.4 are on main
+- [x] **K13.6 — Measure.** Run K13.5 as registered, after K13.1, K13.2 and K13.4 are on main
   (decided 2026-10-20: both arms re-lay unlocked input copper, so until K13.2 a violation already
   on the board counts as routing-caused in both). It starts with one smoke run of
   `plugin-input-ab.sh` on a board outside the set. A script fix that smoke run needs is a
@@ -426,6 +426,50 @@ rules).
       the done note;
     - every board where `kicad_pcb` grades worse is explained;
     - the verdict under K13's switch rule is recorded.
+
+  *Amendment 2026-10-21:* `docs/roadmap/prereg/K13.json` amendment 1 (before any registered row) names commit `daa32c1`, the binary, the script and grader hashes, K13.1's option meaning, the smoke run and the gate's `--all-pairs --baseline` form.
+  Amendment 2 (after the rows, nothing rerun) records that the gate writes no baseline for a run with aborted rows, and the judged-rows gate run used for its checks.
+
+  *Done 2026-10-21:* K13.json run as registered on main `daa32c1` (`freerouting-rs 0.1.0 (git daa32c1e6d47)`, sha256 `fd575683…`), WSL KiCad 10.0.7, `plugin-input-ab.sh` `17af015a…` from the detached tree `target/orchestrator/k136/tree`, driver `target/orchestrator/k136/run.sh`, rows in set order, dsn then kicad_pcb, one run each, every router call under `ulimit -v 8000000` and `timeout -k 10` of the row's limit. Smoke run first on pic_programmer (outside the set): both arms exit 0, graded, no script fix. Rows ran 02:47:30–04:21:49 (1 h 34 min). Outputs: `target/orchestrator/k136/out/<arm>/<row>/summary.json`, `records.json`, `table.json`, `items.json` (every routing-caused item), `gate-*.txt`, ledger `progress.md`.
+
+  Per row and arm (unconnected = kicad-cli's on the routed board, input's in brackets; errors = every DRC error of the routed board, pre-existing included; caused = routing-caused by type; mfg / below / vip = manufacturing_breaches, below_minimum, via_in_pad; p+l = prepare_s + load_s; every grade `rules: project`, basis copper, graded fresh: no two sessions were byte-identical, so no grade was shared):
+
+  | Row | Arm | Unconnected | Errors by type | Caused by type | mfg | below | vip | p+l s | route s | aborted | session |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | ecc83-pp | dsn | 0 (0) | – | – | 0 | 0 | 0 | 0.32 | 0.2 | 0 | `432e2d38` |
+  | ecc83-pp | kicad_pcb | 0 (0) | – | – | 0 | 0 | 0 | 0.33 | 0.2 | 0 | `ca95a2f1` |
+  | interf_u | dsn | 0 (0) | starved_thermal 2 | – | 0 | 0 | 0 | 0.58 | 1.1 | 0 | `2643010f` |
+  | interf_u | kicad_pcb | 0 (0) | starved_thermal 2 | – | 0 | 0 | 0 | 0.56 | 1.1 | 0 | `52994e66` |
+  | complex_hierarchy | dsn | 0 (0) | – | – | 0 | 0 | 0 | 0.79 | 0.3 | 0 | `e6e4999d` |
+  | complex_hierarchy | kicad_pcb | 0 (0) | – | – | 0 | 0 | 0 | 0.73 | 0.2 | 0 | `4c3b1505` |
+  | kit-dev-coldfire-xilinx_5213 | dsn | 0 (0) | – | – | 0 | 0 | 0 | 1.17 | 51.6 | 0 | `b63314ce` |
+  | kit-dev-coldfire-xilinx_5213 | kicad_pcb | 0 (0) | – | – | 0 | 0 | 0 | 0.91 | 56.0 | 0 | `0c0bef58` |
+  | CM5_MINIMA_3 | dsn | 0 (0) | clearance 172, copper_edge_clearance 2, courtyards_overlap 2, holes_co_located 2 | clearance 172, silk_edge_clearance 3, silk_overlap 18 | **172** | 0 | 0 | 1.59 | 265.9 | 0 | `807c3dd2` |
+  | CM5_MINIMA_3 | kicad_pcb | 0 (0) | copper_edge_clearance 2, courtyards_overlap 2, holes_co_located 2 | silk_edge_clearance 3, silk_overlap 18 | 0 | 0 | 0 | 1.60 | 180.9 | 0 | `976b9df2` |
+  | canary-pwr-1a7df77 | dsn | 48 (153) | – | – | 0 | 0 | 0 | 2.97 | 672.2 | 0 | `abac11b2` |
+  | canary-pwr-1a7df77 | kicad_pcb | 45 (153) | – | – | 0 | 0 | 0 | 0.85 | 629.4 | 0 | `47597cde` |
+  | One-Air-Max | dsn | 2 (0) | clearance 12, drill_out_of_range 199, padstack_invalid 4, solder_mask_bridge 10, zones_intersect 1 | silk_edge_clearance 2, silk_over_copper 1, silk_overlap 4 | 0 | 0 | 0 | 1.28 | 213.3 | 0 | `8f061a88` |
+  | One-Air-Max | kicad_pcb | 2 (0) | the same as dsn | the same as dsn | 0 | 0 | 0 | 1.31 | 203.8 | 0 | `a9a466eb` |
+  | video | dsn | 0 (0) | – | – | 0 | 0 | 0 | 3.39 | 139.5 | 0 | `02748ddc` |
+  | video | kicad_pcb | 0 (0) | – | – | 0 | 0 | 0 | 3.05 | 140.0 | 0 | `8a420e46` |
+  | vme-wren | dsn | not graded | | | | | | 43.22 | 603.3 | **1** | `5265aee6` |
+  | vme-wren | kicad_pcb | not graded | | | | | | 40.18 | 608.5 | **1** | none |
+  | jetson-agx-thor-baseboard | dsn | not graded | | | | | | 60.45 | 608.9 | **1** | none |
+  | jetson-agx-thor-baseboard | kicad_pcb | not graded | | | | | | 18.85 | 608.5 | **1** | none |
+  | canary-pwr-plugin-2a7e070b | dsn | 23 (133) | – | track_dangling 3 | 0 | 0 | 0 | 2.95 | 145.3 | 0 | `fd6b64a3` |
+  | canary-pwr-plugin-2a7e070b | kicad_pcb | 21 (133) | – | track_dangling 3 | 0 | 0 | 0 | 0.85 | 187.3 | 0 | `f6ba8b6f` |
+
+  The four aborted arms hit the 600 s timeout in the route call (timeout exit 124; the load calls exited 0), all four still in the fanout stage except jetson kicad_pcb (fanout done at 87.2 %, routing pass 1 took 169 s, then the sweep). vme-wren dsn's router caught the signal, kept its best board and wrote a session (exit 0 inside `timeout`, so still aborted); the other three logged `CANCELLED` and wrote none. Not graded, not rerun. Their prepare times are the plugin's export or snapshot in pcbnew (vme-wren 41 s / 36 s, jetson 58 s / 13 s); the router's load is 2–6 s.
+
+  Totals of kicad_unconnected over the nine judged rows: dsn 73, kicad_pcb 68. Routing-caused items also on the input board at the same place and type (named, not subtracted), identical in both arms: CM5_MINIMA_3, all 21 of its routing-caused items: 18 silk_overlap between the B.Silkscreen arcs and segments of Module301 and Module302 (at (127.25, 77.6), (94.25, 77.6), (94.25, 29.6), (127.25, 29.6), (90.75, 29.6)) and 3 silk_edge_clearance (J1 F.Silkscreen, Module301 and Module302 against Edge.Cuts, at (89.28, 28.44) and (126.42, 81.07)); One-Air-Max, all 7: silk_overlap C11/PM1 (147.09, 65.85), C12/CO2 (147.34, 59.87), C45/C48's reference (183.56, 85.23), C43/C42's reference (189.19, 85.08), silk_over_copper U8's arc on D7 pad 1 (139.66, 82.00), silk_edge_clearance BAT1 and LED2 against Edge.Cuts (128.18, 120.4), (141.91, 114.64). They count as routing-caused only because `oracle_lib.routed_item` takes any item described `Arc …` that is not routed copper for a routed arc, and footprint silkscreen arcs are described `Arc of <ref> on <layer>`; none is a manufacturing type. canary-pwr-plugin's 3 track_dangling are one +12V_PROT F.Cu stub of 0.15 mm at (141.7713, 74.8329), the same in both arms and not on the input.
+
+  Rows where kicad_pcb grades worse: none. On every judged row kicad_pcb has at most dsn's unconnected (lower on canary-pwr-1a7df77, 48 → 45, and canary-pwr-plugin-2a7e070b, 23 → 21) and at most dsn's count of every routing-caused type (lower on CM5_MINIMA_3: clearance 172 → 0). One-Air-Max leaves 2 unconnected in both arms on an input with 0 (both: C62 pad 2 to the /VOUT4 zone on B.Cu; dsn also two /VOUT5 zone islands at (130.56, 99.07), kicad_pcb that zone to U17 pad 3); the count is the same, so the row is not worse. The gate's `WORSE than 2 x its band` lines name only the reported pair (dsn worse on the two canary rows), none in the verdict pair.
+
+  dsn breach, a defect of the current default: CM5_MINIMA_3, 172 routing-caused `clearance` items, all between the two tracks of one of five differential pairs (`/CM5/ETH_PI.TRD0` 49, `TRD1` 41, `TRD2` 16, `/CM5/PCIE_PI.RX` 37, `TX` 29; netclass `100ohm` 0.2 mm, actual 0.1381–0.1988 mm, 106 items; `90ohm` 0.154 mm, actual 0.0678–0.1421 mm, 66 items; e.g. `/CM5/PCIE_PI.TX_P`/`TX_N` on F.Cu at (116.10, 41.01)), every one within 0.5 mm of one of the input's 200 track arcs. KiCad's DSN export lays each arc as one chord; the import brings the chords back, and a chord cuts inside its partner's clearance. The snapshot path reads the arcs as polylines (K13.1's table) and has 0.
+
+  Gate: the registered `--write-baseline` prints 4 UNGRADED (the aborted arms), 0 REFUSED, writes no baseline, exit 1; the `--all-pairs` step (with `--baseline`, amendment 1) exits 1 on the missing baseline (amendment 2). The judged-rows check (`--all-pairs --rows` of the nine, baseline written from those rows): `0 refusal(s)` in both pairs; verdict pair: no HARD line, no WORSE line, totals 73 → 68, `totals verdict: accept` (its DRIFT/INVERTED lines are artefacts of that baseline's default metric table); reported pair: `HARD CM5_MINIMA_3.dsn.manufacturing_breaches = 172`.
+
+  Verdict under keep_rule_by_hand: (1) 9 of 11 rows judged; vme-wren and jetson-agx-thor-baseboard are not (both arms aborted at the 600 s timeout); (2) holds: kicad_pcb has manufacturing_breaches, below_minimum and via_in_pad 0 on all nine; (3) holds: 68 ≤ 73; (4) no row to explain. (5) **keep dsn**, clause (1) failed on vme-wren and jetson-agx-thor-baseboard: "not met on the full set", which K13.7 takes only with the owner's acceptance of those two rows.
 
 - [ ] **K13.7 — Switch the default.** Only if K13.6 passes the switch rule, or the owner
   accepts the listed exceptions:

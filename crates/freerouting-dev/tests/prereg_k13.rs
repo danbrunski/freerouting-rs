@@ -248,6 +248,6 @@ fn the_script_is_the_registered_one() {
 fn the_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "a470fa311beffa3f80af1663c251fdf3234445b3d213c34bbc00668ee7408770"
+        "5ad0d40501025013dbd6ba452ba0f1f438a44ee83a6a77a088159e19b7d7cb40"
     );
 }
