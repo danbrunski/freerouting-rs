@@ -77,7 +77,9 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
    of its items is a track or via that the unrouted board does not have with
    the same coordinates (to the nanometre; the order of a track's ends does
    not matter), width, layer and net (a via: position, diameter, drill, layers
-   and net). Pads, footprint graphics, text, zones and unchanged input tracks
+   and net; a net is its name, so a KiCad 6-9 file that names nets by number is
+   read through its `(net N "name")` table, and one with numbers and no table is an
+   error, Q22.13). Pads, footprint graphics, text, zones and unchanged input tracks
    and vias are input copper, and an item made only of input copper is
    pre-existing, whatever the input report listed: KiCad prints a pair in
    either order, once per copper layer, and stops a type at its cap, so the two

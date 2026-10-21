@@ -768,7 +768,7 @@ Sequencing:
     - fc-rom routed through the plugin's export: 0 routing-caused `solder_mask_bridge`, with KiCad
       unconnected beside it.
 
-- [ ] **Q22.13 — The grader matches copper on boards that name nets by number** (added
+- [x] **Q22.13 — The grader matches copper on boards that name nets by number** (added
   2026-10-20). In a KiCad 6–9 file (e.g. One-Air-Max, version 20241229), items name their net by
   number. A board KiCad 10 saves names it by name. `oracle_lib.read_copper` returns whatever the file holds, so on the
   input board as copied no copper key matches the routed board's. `plugin-input-ab.sh` then counts
@@ -783,3 +783,26 @@ Sequencing:
     - One-Air-Max's K13.2 run (`target/orchestrator/q223/runs/`) summarized again: 1
       routing-caused copper error, the `VBAT`–F2 track;
     - the oracle's tests pass.
+
+    *Done 2026-10-20:* `oracle_lib.read_copper` maps an unquoted `(net N)` through the file's
+    top-level `(net N "name")` table (`net_table`; net 0 is the empty name); a quoted name is kept as
+    written, so a name like `"12"` stays a name. KiCad 10 writes names, so no pad-net fallback was
+    needed. Numbers with no table, or a number missing from it, raise `ValueError`. Tests (written
+    first, 7 of the 8 failed before the change): `NumberedNetsTest` in
+    `tools/kicad-oracle/tests/test_routing_caused.py` (`test_a_segment_written_both_ways_has_one_key`,
+    `test_an_arc_and_a_via_written_both_ways_have_one_key`, `test_net_zero_is_the_empty_name`,
+    `test_a_quoted_name_that_looks_like_a_number_stays_a_name`,
+    `test_numbers_without_a_net_table_are_an_error`,
+    `test_a_number_missing_from_the_table_is_an_error`,
+    `test_a_footprint_pad_net_is_not_taken_for_the_net_table`,
+    `test_an_old_input_track_is_pre_existing_next_to_a_new_routed_board`). One-Air-Max's K13.2 run
+    (`target/orchestrator/q223/runs/kicad_pcb/One-Air-Max`) summarized again, no routing and no new
+    DRC: `python3 -I tools/kicad-oracle/oracle_lib.py summarize routed/drc.json input/drc.json
+    routed/copper.json grade-meta.json grade.json routed/One-Air-Max.kicad_pcb
+    input/One-Air-Max.kicad_pcb` gives `drc_real` 8 = `clearance` 1, `silk_edge_clearance` 2,
+    `silk_over_copper` 1, `silk_overlap` 4 (before: `clearance` 3, `drill_out_of_range` 199 and the same
+    silk items). The one copper error is `Track [/Solar_module/VBAT]` on B.Cu against `Segment [<no net>]
+    of F2` on B.Cu (clearance 0.1 mm, actual 0.0 mm). `below_minimum` computed with the same call as
+    `plugin-input-ab.sh` goes from 410 (`via_drill`) to 0. Output in `target/orchestrator/q2213/out/`.
+    `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'`: 44 tests OK;
+    `kicad-plugin/tests` (k02 venv): 454 passed, 20 skipped. `plugin-input-ab.sh` is unchanged.

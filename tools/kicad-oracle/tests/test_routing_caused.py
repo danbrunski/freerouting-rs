@@ -181,6 +181,73 @@ class RoutingCausedTest(unittest.TestCase):
         self.assertEqual(self.split([v], routed, text)[1], [v])
 
 
+class NumberedNetsTest(unittest.TestCase):
+    """Q22.13: KiCad 6-9 files name a track's net by number, KiCad 10 files by name."""
+
+    TABLE = '\t(net 0 "")\n\t(net 1 "A")\n\t(net 12 "/Solar_module/SYS")\n'
+
+    @staticmethod
+    def numbered(text, name, number):
+        return text.replace('(net "%s")' % name, "(net %d)" % number)
+
+    def old_board(self, *items, table=None):
+        table = self.TABLE if table is None else table
+        head = '(kicad_pcb\n\t(version 20241229)\n' + table
+        return head + "".join(items) + ")\n"
+
+    def test_a_segment_written_both_ways_has_one_key(self):
+        old = self.old_board(self.numbered(segment("s", 1, 2, 3, 4, net="/Solar_module/SYS"), "/Solar_module/SYS", 12))
+        new = board(segment("s", 1, 2, 3, 4, net="/Solar_module/SYS"))
+        old_record = lib.read_copper(old)["s"]
+        self.assertEqual(old_record["net"], "/Solar_module/SYS")
+        self.assertEqual(lib.copper_key(old_record), lib.copper_key(lib.read_copper(new)["s"]))
+
+    def test_an_arc_and_a_via_written_both_ways_have_one_key(self):
+        old = self.old_board(
+            self.numbered(arc("a", (1, 1), (2, 1.5), (3, 1), net="A"), "A", 1),
+            self.numbered(via("v", 15, 15, net="A"), "A", 1),
+        )
+        new = board(arc("a", (1, 1), (2, 1.5), (3, 1)), via("v", 15, 15))
+        old_copper, new_copper = lib.read_copper(old), lib.read_copper(new)
+        for uuid in ("a", "v"):
+            self.assertEqual(lib.copper_key(old_copper[uuid]), lib.copper_key(new_copper[uuid]), uuid)
+
+    def test_net_zero_is_the_empty_name(self):
+        old = self.old_board(self.numbered(segment("s", 1, 2, 3, 4, net="X"), "X", 0))
+        self.assertEqual(lib.read_copper(old)["s"]["net"], "")
+
+    def test_a_quoted_name_that_looks_like_a_number_stays_a_name(self):
+        text = board(segment("s", 1, 2, 3, 4, net="12"))
+        self.assertEqual(lib.read_copper(text)["s"]["net"], "12")
+
+    def test_numbers_without_a_net_table_are_an_error(self):
+        old = self.old_board(self.numbered(segment("s", 1, 2, 3, 4, net="A"), "A", 1), table="")
+        with self.assertRaises(ValueError) as caught:
+            lib.read_copper(old)
+        self.assertIn("net table", str(caught.exception))
+
+    def test_a_number_missing_from_the_table_is_an_error(self):
+        old = self.old_board(self.numbered(segment("s", 1, 2, 3, 4, net="A"), "A", 99))
+        with self.assertRaises(ValueError):
+            lib.read_copper(old)
+
+    def test_a_footprint_pad_net_is_not_taken_for_the_net_table(self):
+        pad = '\t(footprint "T:P"\n\t\t(pad "1" smd rect (at 0 0) (net 5 "P"))\n\t)\n'
+        old = self.old_board(pad, self.numbered(segment("s", 1, 2, 3, 4, net="A"), "A", 1))
+        self.assertEqual(lib.read_copper(old)["s"]["net"], "A")
+
+    def test_an_old_input_track_is_pre_existing_next_to_a_new_routed_board(self):
+        input_old = self.old_board(self.numbered(segment("in", 10, 10, 13, 10, net="A"), "A", 1))
+        routed = board(segment("in", 10, 10, 13, 10), segment("new", 30, 10, 38, 10))
+        violations = [
+            violation("clearance", track("in"), PAD),
+            violation("clearance", track("new"), OTHER_PAD),
+        ]
+        real, pre = lib.split_routing_caused(violations, lib.read_copper(routed), lib.read_copper(input_old))
+        self.assertEqual([v["items"][0]["uuid"] for v in real], ["new"])
+        self.assertEqual(len(pre), 1)
+
+
 class FillTypesTest(unittest.TestCase):
     """A starved thermal or isolated copper item names only a zone (and a pad), so it carries no
     track to tell input from routing; the fill depends on what routing cut. These two types keep

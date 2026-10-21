@@ -317,16 +317,60 @@ def copper_key(record):
     return (record["kind"], record["net"], ends, record.get("mid"), record["width"], record["layer"])
 
 
+_NET_TABLE_ENTRY = re.compile(r'^\t\(net (\d+) "((?:[^"\\]|\\.)*)"\)', re.MULTILINE)
+_ITEM_NET = re.compile(r'\(net\s+(?:(\d+)\s*\)|"((?:[^"\\]|\\.)*)")')
+
+
+def net_table(pcb_text):
+    """number -> name of the file's top-level `(net N "name")` entries (KiCad 6-9; KiCad 10 writes
+    none). Net 0 is the empty name, as KiCad's unconnected net."""
+    table = {int(number): name for number, name in _NET_TABLE_ENTRY.findall(pcb_text)}
+    table.setdefault(0, "")
+    return table
+
+
+def _item_net_name(item_text, table_source):
+    """The net name of one copper item: a quoted name as written (KiCad 10), or a number looked
+    up in the file's net table (KiCad 6-9). `table_source` is a callable returning the table."""
+    m = _ITEM_NET.search(item_text)
+    if m is None:
+        return ""
+    if m.group(1) is None:
+        return m.group(2)
+    number = int(m.group(1))
+    if number == 0:
+        return ""
+    table = table_source()
+    if len(table) == 1:  # only the implicit net 0
+        raise ValueError(
+            "the board names nets by number ((net %d)) but has no net table to map them to names" % number
+        )
+    if number not in table:
+        raise ValueError("net number %d is not in the board's net table" % number)
+    return table[number]
+
+
 def read_copper(pcb_text):
     """uuid -> record of every segment, arc and via of a .kicad_pcb text written by KiCad
-    (top-level items start after one tab). Coordinates and sizes in integer nanometres."""
+    (top-level items start after one tab). Coordinates and sizes in integer nanometres. A net is
+    always its name: KiCad 6-9 files name an item's net by number, and the file's net table maps
+    it (a file with numbered nets and no table raises ValueError, since a guess would give keys
+    that match nothing, or the wrong net)."""
     items = {}
+    table = None
+
+    def table_source():
+        nonlocal table
+        if table is None:
+            table = net_table(pcb_text)
+        return table
+
     for m in _COPPER_SCOPE.finditer(pcb_text):
         start = m.start() + 1  # the opening parenthesis, after the tab
-        node = _parse_sexpr(pcb_text[start:scope_end(pcb_text, start)])
+        item_text = pcb_text[start:scope_end(pcb_text, start)]
+        node = _parse_sexpr(item_text)
         uuid = _field(node, "uuid") or _field(node, "tstamp")
-        net = _field(node, "net")
-        record = {"kind": node[0], "net": net[1] if net and len(net) > 1 else ""}
+        record = {"kind": node[0], "net": _item_net_name(item_text, table_source)}
         try:
             if node[0] == "via":
                 record["at"] = _point_nm(_field(node, "at"))
