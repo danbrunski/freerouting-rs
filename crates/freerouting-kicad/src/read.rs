@@ -256,6 +256,13 @@ pub fn read_with_rules(
     // Q18.5: the Edge.Cuts and Margin shapes the outline does not carry, from
     // the footprints as filed (before the flip).
     let edge_graphics = crate::edge_keepouts::edge_graphics(&board_shapes, &footprints);
+    // Q22.16: the footprints' own mask apertures, from the footprints as filed.
+    let footprint_apertures = crate::footprint_masks::footprint_mask_polygons(
+        &footprints,
+        &masks,
+        project.max_error,
+        project.solder_mask_to_copper,
+    );
     lap("outline");
     if outline.malformed {
         warnings.push(Warning {
@@ -651,6 +658,11 @@ pub fn read_with_rules(
             project.solder_mask_to_copper,
         );
         keepouts.extend(crate::edge_keepouts::mask_keepouts(&masks, front, back));
+        keepouts.extend(crate::footprint_masks::footprint_mask_keepouts(
+            &footprint_apertures,
+            front,
+            back,
+        ));
     }
     // Q22.4: copper shapes and texts as keepouts; shapes of a net that has
     // pins (and so is in the network) become fixed copper of that net, at

@@ -2,6 +2,10 @@
 //! the board.
 //!
 //! Port of `io.specctra.parser.Structure.readScope` and its helpers.
+//!
+//! Not Java (Q22.16): a `keepout` named `solder_mask_pads`, a footprint's
+//! solder-mask aperture, is inserted after the components
+//! ([`super::pad_keepouts`]).
 
 use crate::util::HashSet;
 
@@ -15,7 +19,7 @@ use super::layer::{DsnLayer, DsnLayerStructure};
 use super::shape::{DsnArea, DsnShape, DsnShapeKind, rectangle_to_board, transform_area_to_board};
 use super::{NetKey, PlaneInfo, ReadContext};
 use crate::board::RoutingBoard;
-use crate::board::items::ItemId;
+use crate::board::items::{AreaKind, ItemId};
 use crate::board::state::{Communication, SpecctraParserInfo};
 use crate::board::structure::{AngleRestriction, FixedState, Layer, LayerStructure};
 use crate::datastructures::ItemIdGenerator;
@@ -142,6 +146,13 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
             ast::KeepoutKind::PlaceKeepout => 2,
         };
         match DsnArea::resolve(&keepout.area, Some(&ctx.layer_structure), false) {
+            // Q22.16: inserted once the pins are on the board.
+            Some(area)
+                if keepout.kind == ast::KeepoutKind::Keepout
+                    && super::pad_keepouts::is_pad_keepout(&area) =>
+            {
+                ctx.pad_keepouts.push(area)
+            }
             Some(area) => {
                 keepouts[index].push((area, keepout.kind == ast::KeepoutKind::WireKeepout))
             }
@@ -188,7 +199,7 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
     }
     for (index, list) in keepouts.iter().enumerate() {
         for (area, wire) in list {
-            if !insert_keepout(ctx, area, index, *wire) {
+            if !insert_keepout(ctx, area, index, *wire, &[]) {
                 return false;
             }
         }
@@ -329,8 +340,15 @@ fn insert_missing_power_planes(ctx: &mut ReadContext, layer_info: &[DsnLayer]) {
 /// keepouts and 2 for place keepouts.
 /// Inserts a keepout of group `kind` on its layers; a `wire` keepout (a
 /// Specctra `wire_keepout`, built as a keepout) is also recorded in the
-/// board's `wire_keepouts` (Q09.3).
-fn insert_keepout(ctx: &mut ReadContext, area: &DsnArea, kind: usize, wire: bool) -> bool {
+/// board's `wire_keepouts` (Q09.3). A keepout of `nets` lets them through
+/// (Q22.16; none for every keepout Java reads).
+pub(super) fn insert_keepout(
+    ctx: &mut ReadContext,
+    area: &DsnArea,
+    kind: usize,
+    wire: bool,
+    nets: &[i32],
+) -> bool {
     let transform = ctx.coordinate_transform;
     let Some(keepout_area) = transform_area_to_board(&area.shapes, &transform) else {
         ctx.log("Shape.transform_area_to_board: keepout area could not be converted");
@@ -357,14 +375,14 @@ fn insert_keepout(ctx: &mut ReadContext, area: &DsnArea, kind: usize, wire: bool
             .collect();
         for i in signal_layers {
             if (i as usize) < ctx.board().layer_count() {
-                let id = insert_keepout_on_layer(ctx.board(), &keepout_area, i, area, kind);
+                let id = insert_keepout_on_layer(ctx.board(), &keepout_area, i, area, kind, nets);
                 if wire {
                     ctx.board().wire_keepouts.push(id);
                 }
             }
         }
     } else if layer.no >= 0 {
-        let id = insert_keepout_on_layer(ctx.board(), &keepout_area, layer.no, area, kind);
+        let id = insert_keepout_on_layer(ctx.board(), &keepout_area, layer.no, area, kind, nets);
         if wire {
             ctx.board().wire_keepouts.push(id);
         }
@@ -375,12 +393,13 @@ fn insert_keepout(ctx: &mut ReadContext, area: &DsnArea, kind: usize, wire: bool
     true
 }
 
-fn insert_keepout_on_layer(
+pub(super) fn insert_keepout_on_layer(
     board: &mut RoutingBoard,
     keepout_area: &Area,
     layer: i32,
     area: &DsnArea,
     kind: usize,
+    nets: &[i32],
 ) -> ItemId {
     let clearance_class = match &area.clearance_class {
         None => {
@@ -406,6 +425,19 @@ fn insert_keepout_on_layer(
     };
     let area = keepout_area.clone();
     match kind {
+        0 if !nets.is_empty() => board.insert_area(
+            AreaKind::Obstacle,
+            area,
+            layer,
+            freerouting_geometry::Vector::ZERO,
+            0.0,
+            false,
+            nets,
+            clearance_class,
+            0,
+            Some(super::pad_keepouts::PAD_KEEPOUT_NAME.to_owned()),
+            FixedState::SystemFixed,
+        ),
         1 => board.insert_via_obstacle(area, layer, clearance_class, FixedState::SystemFixed),
         2 => board.insert_component_obstacle(area, layer, clearance_class, FixedState::SystemFixed),
         _ => board.insert_obstacle(area, layer, clearance_class, FixedState::SystemFixed),

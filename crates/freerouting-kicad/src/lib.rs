@@ -36,6 +36,9 @@
 //!   does not carry, as copper keepouts named `edge_clearance`, and the
 //!   board's own mask apertures, named `solder_mask`) and [`mask`]
 //!   (the pads' solder-mask expansions, in [`read::Extras::solder_mask`]).
+//!   Q22.16 adds [`footprint_masks`]: a footprint's own mask shapes as
+//!   keepouts named `solder_mask_pads`, which the router fits to the pads
+//!   under them.
 //! - Q22.4 adds [`copper_graphics`]: copper shapes and copper texts, which the
 //!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); a
 //!   shape of a net with pins becomes conduction-area wires of that net with
@@ -100,6 +103,7 @@ pub mod dru;
 pub mod edge_keepouts;
 pub mod error;
 pub mod fmt6g;
+pub mod footprint_masks;
 pub mod footprints;
 pub mod header;
 pub mod image_outlines;

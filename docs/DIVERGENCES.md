@@ -1160,6 +1160,26 @@ compare them on 12 committed boards and the 56-board corpus).
   `.kicad_pcb` job passes them as `router.solder_mask_expansions` at the DSN's priority
   (`job::prepare::solder_mask_patch`). The export carries no mask. Pinned by
   `tests/solder_mask.rs::a_kicad_pcb_input_carries_the_pads_mask_expansions`.
+- **A `keepout` named `solder_mask_pads` is fitted to the pins under it** (Q22.16,
+  `io::specctra::parser::pad_keepouts`; Java reads the name and ignores it): the KiCad plugin and
+  the `.kicad_pcb` reader write a footprint's own F.Mask / B.Mask shape under that name. It is
+  inserted after the components, after the pins whose shape on its layer meets it: pins of one
+  net make it a keepout that carries that net, which routes through it while every other net
+  keeps out (it keeps the name and, being no copper, is an obstacle for traces and vias of other
+  nets only, never for a pin or another area as Java's net-carrying keepout is,
+  `ObstacleArea::is_pad_keepout`); pins of two or more nets are cut out of it (each pin's bounding tile grown by the
+  keepout's clearance to it), so no net crosses the aperture and a pin that reaches out of it is
+  entered from outside; no pin with a net leaves Java's keepout. The DSN writer writes a keepout
+  that carries a net back under the name. A DSN without the name reads as Java reads it. The
+  router still ends a trace at the pin's centre, so on a pin of a multi-net aperture whose centre
+  lies inside it (fc-rom's edge fingers) the trace runs along its own pad into the aperture,
+  which KiCad flags. Pinned by `tests/footprint_mask.rs`
+  (`the_plugins_keepouts_keep_other_nets_out_and_let_each_pads_net_in`,
+  `the_readers_keepouts_keep_other_nets_out_and_let_each_pads_net_in`,
+  `plain_keepouts_over_the_pads_leave_them_unrouted`,
+  `the_output_check_reports_another_nets_trace_in_the_aperture`,
+  `the_dsn_writer_keeps_the_net_of_the_keepout`,
+  `the_one_net_keepout_is_an_obstacle_for_other_nets_traces_only`).
 - **The board's own solder-mask apertures are copper keepouts** (Q18.7, `edge_keepouts`): KiCad's
   DRC flags copper of two nets in one mask aperture (`solder_mask_bridge`), and a board-level
   F.Mask or B.Mask shape is an aperture no pad owns (slice-dcmt-bread-slice's two filled
@@ -1167,8 +1187,8 @@ compare them on 12 committed boards and the 56-board corpus).
   adds keepouts named `solder_mask` on the top (F.Mask) or bottom (B.Mask) copper layer: a filled
   shape's own polygon (a circle grown by the maximum error and 1 µm), and its stroke, or an
   unfilled shape's, the rectangles within half the stroke of each piece. They hold every net
-  out, the net of the copper under the aperture too. Footprint mask shapes are left to the pads'
-  expansions. Pinned by
+  out, the net of the copper under the aperture too. Footprint mask shapes were left to the pads'
+  expansions until Q22.16 (below). Pinned by
   `tests/edge_keepouts.rs::the_boards_mask_apertures_become_keepouts_on_their_copper_side`; the
   `kicad_parity.rs` comparison leaves them out.
 - **Mask apertures grow by the board's solder-mask-to-copper clearance** (Q22.12, `mask`,
@@ -1184,6 +1204,15 @@ compare them on 12 committed boards and the 56-board corpus).
   settings are Q18.7's byte for byte. Pinned by
   `tests/edge_keepouts.rs::the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance` and
   `crates/freerouting/tests/solder_mask.rs::the_projects_mask_to_copper_clearance_grows_the_pad_apertures`.
+- **A footprint's own solder-mask shapes are copper keepouts** (Q22.16, `footprint_masks`,
+  `mask::FootprintMasks::allow_bridges`): KiCad's export leaves a footprint's F.Mask / B.Mask
+  shapes out (fc-rom-vomitter-nescart's J1, a 93.5 x 11.3 mm `fp_poly` over 72 edge fingers
+  whose pads have no mask layer, let other nets' tracks through: 7 routing-caused
+  `solder_mask_bridge`, KiCad's per-type cap hiding the rest). The reader adds each, as filed,
+  as `edge_keepouts::mask_polygons` makes a board shape (grown by Q22.12's clearance), named
+  `solder_mask_pads` on its side's copper; the router fits it to the pins under it (see
+  freerouting). A footprint with `(attr ... allow_soldermask_bridges)` gets none: KiCad's DRC
+  ignores its apertures. Pinned by `tests/footprint_masks.rs`.
 - **Copper shapes and copper texts are obstacles** (Q22.4, `copper_graphics`): KiCad's DRC
   keeps other copper its clearance from every shape and visible text on a copper layer, and the
   export writes none of them (footprint copper lines only as drawing outline; pcietest had 127
@@ -1761,7 +1790,7 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   freerouting-kicad) written into the exported DSN, corners rounded to 1 µm. Pinned by
   `test_edge_graphics.py` (`test_a_filled_front_mask_polygon_keeps_the_top_copper_out_of_it`,
   `test_a_back_mask_shape_goes_on_the_bottom_copper`,
-  `test_kicad_board_collects_the_boards_mask_shapes_but_not_the_footprints`).
+  `test_kicad_board_collects_the_boards_mask_shapes_and_the_footprints`).
 - **Mask apertures grow by the board's solder-mask-to-copper clearance** (Q22.12,
   `kicad_board.mask_to_copper_nm`, `kicad_board.mask_expansions`, `edge_graphics.mask_polygons`):
   the plugin reads `GetDesignSettings().m_SolderMaskToCopperClearance` (0 when this pcbnew has
@@ -1774,6 +1803,13 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_the_clearance_comes_from_the_design_settings`, `test_the_flow_passes_the_grown_apertures`)
   and `test_edge_graphics.py` (`test_the_mask_to_copper_clearance_grows_each_mask_shape`,
   `test_kicad_board_reports_the_mask_to_copper_clearance`).
+- **A footprint's own solder-mask shapes become keepouts** (Q22.16, `footprint_masks`,
+  `kicad_board.footprint_mask_facts`, `edge_graphics.mask_polygons`, part of
+  `export_flow.fix_edge_graphics`): the reader's `solder_mask_pads` keepouts (see
+  freerouting-kicad) written into the exported DSN, none for a footprint whose
+  `AllowSolderMaskBridges()` is true; the router fits them to the pins under them (see
+  freerouting). Pinned by `test_footprint_masks.py`, whose output is the DSN
+  `crates/freerouting/tests/footprint_mask.rs` routes.
 - **Copper shapes and copper texts become obstacles** (Q22.4, `copper_graphics.py`,
   `kicad_board.copper_graphics`, `export_flow.fix_copper_graphics`, always on): after KiCad's
   export, the reader's `copper_graphic` keepouts (see freerouting-kicad), corners rounded to

@@ -37,6 +37,9 @@ pub struct PadMask {
 pub struct FootprintMasks {
     pub margin: Option<i32>,
     pub pads: Vec<PadMask>,
+    /// Q22.16: `(attr ... allow_soldermask_bridges)`; KiCad's DRC ignores the
+    /// footprint's mask apertures ([`crate::footprint_masks`]).
+    pub allow_bridges: bool,
 }
 
 /// A pad whose aperture is wider than its copper, per outer side (nm, 0 for
@@ -98,6 +101,11 @@ pub fn read_masks(board: NodeRef<'_>) -> Vec<FootprintMasks> {
         .filter(|c| c.is_list() && matches!(c.head(), Some("footprint") | Some("module")))
         .map(|fp| FootprintMasks {
             margin: margin_of(fp),
+            allow_bridges: fp.child("attr").is_some_and(|a| {
+                a.items()
+                    .skip(1)
+                    .any(|t| t.text() == "allow_soldermask_bridges")
+            }),
             pads: fp
                 .items()
                 .filter(|c| c.is_list() && c.head() == Some("pad"))

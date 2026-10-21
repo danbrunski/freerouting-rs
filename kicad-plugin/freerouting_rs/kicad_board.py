@@ -187,7 +187,8 @@ def edge_graphics(board, pcbnew):
     DSN export writes (`GetBoardPolygonOutlines` with the bounding box
     inferred, as the export does), and every Edge.Cuts and Margin shape of the
     board and its footprints, in board order then footprint order, and every
-    F.Mask and B.Mask shape of the board itself (Q18.7)."""
+    F.Mask and B.Mask shape of the board itself (Q18.7) and of its footprints
+    (Q22.16, each with a `footprint` key: `footprint_mask_facts`)."""
     edge = _mm(pcbnew, board.GetDesignSettings().m_CopperEdgeClearance)
     outline = pcbnew.SHAPE_POLY_SET()
     try:
@@ -201,21 +202,38 @@ def edge_graphics(board, pcbnew):
     layers = ((pcbnew.Edge_Cuts, "Edge.Cuts"), (pcbnew.Margin, "Margin"))
     # Q18.7: the board's own solder-mask shapes (apertures no pad owns)
     masks = ((getattr(pcbnew, "F_Mask", None), "F.Mask"), (getattr(pcbnew, "B_Mask", None), "B.Mask"))
-    items = [(item, True) for item in board.GetDrawings()]
+    items = [(item, None) for item in board.GetDrawings()]
     for fp in board.GetFootprints():
-        items += [(item, False) for item in fp.GraphicalItems()]
-    shapes = []
-    for item, on_board in items:
+        items += [(item, fp) for item in fp.GraphicalItems()]
+    shapes, fp_facts = [], {}
+    for item, fp in items:
         item = item.Cast() if hasattr(item, "Cast") else item
         if not hasattr(item, "GetShape"):  # texts
             continue
         layer = item.GetLayer()
         name = next((n for lid, n in layers if layer == lid), None)
-        if name is None and on_board:
-            name = next((n for lid, n in masks if lid is not None and layer == lid), None)
+        mask = None if name else next((n for lid, n in masks if lid is not None and layer == lid), None)
         if name is not None:
             shapes += _edge_shapes(pcbnew, item, name)
+        elif mask is not None:
+            got = _edge_shapes(pcbnew, item, mask)
+            if fp is not None:  # Q22.16: a footprint's own aperture
+                facts = fp_facts.setdefault(id(fp), footprint_mask_facts(pcbnew, fp))
+                got = [dict(g, footprint=facts) for g in got]
+            shapes += got
     return {"edge_clearance_mm": edge, "outline_mm": rings, "shapes": shapes, "mask_to_copper_mm": _mm(pcbnew, mask_to_copper_nm(board))}
+
+
+def footprint_mask_facts(pcbnew, fp):
+    """Q22.16: what `footprint_masks.keepout_name` reads of a footprint with a
+    mask shape of its own: its reference and whether it allows solder-mask
+    bridges (`AllowSolderMaskBridges`, KiCad 7+; false where pcbnew has
+    none)."""
+    try:
+        allow = bool(getattr(fp, "AllowSolderMaskBridges", lambda: False)())
+    except Exception:  # an unknown pcbnew: the aperture is kept clear
+        allow = False
+    return {"ref": getattr(fp, "GetReference", lambda: "")(), "allow_bridges": allow}
 
 
 def _cast(item):

@@ -32,9 +32,22 @@ fn board_of(r: BoardReadResult) -> RoutingBoard {
     }
 }
 
+/// The reader's board without its Q22.16 footprint mask-aperture keepouts
+/// (`solder_mask_pads`, over the USB-C pads), which KiCad's export does not
+/// write: Java's session, routed without them, runs 82 times within their
+/// clearance, and this test is about the frame.
 fn boards() -> (RoutingBoard, RoutingBoard) {
-    let input =
+    let mut input =
         read_kicad_input(&dir().join("dev-board.kicad_pcb"), ReadOptions::default()).unwrap();
+    let keepouts = &mut input.pcb.structure.as_mut().unwrap().keepouts;
+    let before = keepouts.len();
+    keepouts.retain(|k| {
+        k.area.name.as_deref()
+            != Some(freerouting_kicad::footprint_masks::FOOTPRINT_MASK_KEEPOUT_NAME)
+    });
+    // J1's 12 F.Mask polygons, each with the four strips of the board's
+    // solder-mask-to-copper clearance (Q22.12)
+    assert_eq!(before - keepouts.len(), 60);
     let export =
         Pcb::parse(&std::fs::read_to_string(dir().join("dev-board.kicad10.dsn")).unwrap()).unwrap();
     (

@@ -248,6 +248,11 @@ fn planes_and_keepouts(cx: &Cx) -> (Vec<Plane>, Vec<Keepout>) {
                 let java_writes = class > 0 && cx.class_name(class) != "default";
                 let clearance_class =
                     (java_writes || class != default_area_class).then(|| cx.class_name(class));
+                // Q22.16: a keepout that lets the net of its pads through keeps
+                // the name that says so; read back, it finds the same pads.
+                let name = (kind == AreaKind::Obstacle && item.net_count() > 0).then(|| {
+                    crate::io::specctra::parser::pad_keepouts::PAD_KEEPOUT_NAME.to_owned()
+                });
                 keepouts.push(Keepout {
                     kind: match kind {
                         AreaKind::ViaObstacle => KeepoutKind::ViaKeepout,
@@ -257,7 +262,7 @@ fn planes_and_keepouts(cx: &Cx) -> (Vec<Plane>, Vec<Keepout>) {
                         _ => KeepoutKind::Keepout,
                     },
                     area: DsnArea {
-                        name: None,
+                        name,
                         shape,
                         windows,
                         clearance_class,

@@ -41,6 +41,11 @@ within the clearance of each side and a stroke widens by it on each side. With
 0 the keepouts are Q18.7's. The pads' apertures grow by it in
 `kicad_board.mask_expansions`.
 
+Q22.16: a footprint's own mask shapes (`kicad_board.edge_graphics` gives them a
+`footprint` key) become keepouts the same way, named `solder_mask_pads` by
+`footprint_masks`, which the router fits to the pads under them; none for a
+footprint that allows bridges.
+
 The `.kicad_pcb` reader (`crates/freerouting-kicad`, `edge_keepouts.rs`) does
 the same for a `.kicad_pcb` input. Pure Python: the board facts come from
 `kicad_board.edge_graphics`, in KiCad's frame (mm, Y down).
@@ -49,8 +54,10 @@ the same for a `.kicad_pcb` input. Pure Python: the board facts come from
 import math
 
 try:  # inside the plugin package
+    from . import footprint_masks
     from .dsn_fixups import Dsn, _children, um
 except ImportError:  # tests and headless scripts put this folder on sys.path
+    import footprint_masks
     from dsn_fixups import Dsn, _children, um
 
 KEEPOUT_NAME = "edge_clearance"
@@ -163,25 +170,34 @@ def quads(facts, default_clearance_mm):
 
 
 def mask_polygons(facts):
-    """Q18.7: `(side, polygon)` of every board-level mask shape of `facts`
-    (`side` 0 for F.Mask, 1 for B.Mask; mm, KiCad's frame), and the number of
-    shapes. A filled shape is its own polygon (a circle `SAGITTA_MM` and 1 um
-    wider), its stroke and an unfilled shape the rectangles within half the
-    stroke of each piece. Q22.12: grown by `facts["mask_to_copper_mm"]` (the
-    board's solder-mask-to-copper clearance) through a stroke twice that
-    wider; 0 or absent leaves the shapes as they are."""
-    out, shapes = [], 0
+    """Q18.7: `(side, polygon, name, footprint?)` of every mask shape of
+    `facts` (`side` 0 for F.Mask, 1 for B.Mask; mm, KiCad's frame), and the
+    number of board shapes and of footprint shapes. A filled shape is its own polygon (a circle
+    `SAGITTA_MM` and 1 um wider), its stroke and an unfilled shape the
+    rectangles within half the stroke of each piece. Q22.12: grown by
+    `facts["mask_to_copper_mm"]` (the board's solder-mask-to-copper clearance)
+    through a stroke twice that wider; 0 or absent leaves the shapes as they
+    are. A board shape is named `MASK_KEEPOUT_NAME`; Q22.16: a footprint's
+    shape `footprint_masks.keepout_name`, and none is left out."""
+    out, shapes, fp_shapes = [], 0, 0
     grow = max(facts.get("mask_to_copper_mm") or 0.0, 0.0)
     for shape in facts.get("shapes") or []:
         if shape["layer"] not in MASK_LAYERS:
             continue
         side = MASK_LAYERS.index(shape["layer"])
-        shapes += 1
+        name = MASK_KEEPOUT_NAME
+        if "footprint" in shape:
+            name = footprint_masks.keepout_name(shape["footprint"])
+            if name is None:
+                continue
+            fp_shapes += 1
+        else:
+            shapes += 1
         if grow > 0:
             shape = dict(shape, width_mm=max(shape.get("width_mm", 0.0), 0.0) + 2 * grow)
         body, strokes = shape_polygons(shape)
-        out += [(side, poly) for poly in ([body] if body else []) + strokes]
-    return out, shapes
+        out += [(side, poly, name, "footprint" in shape) for poly in ([body] if body else []) + strokes]
+    return out, shapes, fp_shapes
 
 
 def shape_polygons(shape):
@@ -214,7 +230,7 @@ def apply(dsn_text, facts):
     the log lines; unchanged with nothing to keep out."""
     dsn = Dsn(dsn_text)
     rects, shapes = quads(facts, dsn.default_clearance_mm())
-    masks, mask_shapes = mask_polygons(facts)
+    masks, mask_shapes, fp_mask_shapes = mask_polygons(facts)
     if not rects and not masks:
         return dsn_text, []
     if dsn.structure is None:
@@ -226,7 +242,7 @@ def apply(dsn_text, facts):
         return f'    (keepout "{name}" (polygon {dsn.layer_token(layer)} 0 {coords})){dsn.nl}'
 
     lines = [keepout(KEEPOUT_NAME, layer, quad) for layer in layers for quad in rects]
-    mask_lines = [keepout(MASK_KEEPOUT_NAME, layers[-1] if side else layers[0], poly) for side, poly in masks]
+    mask_lines = [keepout(name, layers[-1] if side else layers[0], poly) for side, poly, name, _fp in masks]
     via = next(iter(_children(dsn.structure, "via")), None)
     if via is not None:
         at = dsn.text.rfind("\n", 0, via.start)
@@ -242,9 +258,14 @@ def apply(dsn_text, facts):
             f"edge graphics: {shapes} Edge.Cuts/Margin shape(s) off the board outline kept {edge:g} mm clear "
             f"({len(lines)} keepouts)"
         )
-    if mask_lines:
+    if mask_shapes:
         log.append(
             f"solder-mask graphics: {mask_shapes} board F.Mask/B.Mask shape(s) kept clear on their copper side "
-            f"({len(mask_lines)} keepouts)"
+            f"({sum(1 for m in masks if not m[3])} keepouts)"
+        )
+    if fp_mask_shapes:
+        log.append(
+            f"solder-mask graphics: {fp_mask_shapes} footprint F.Mask/B.Mask shape(s) kept clear on their copper "
+            f"side, but for their pads ({sum(1 for m in masks if m[3])} keepouts)"
         )
     return text, log

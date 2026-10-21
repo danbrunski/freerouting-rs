@@ -8,6 +8,7 @@ use super::parser::ReadContext;
 use super::parser::dsn_file::adjust_plane_autoroute_settings;
 use super::parser::library::read_library;
 use super::parser::network::{insert_components, insert_logical_parts, read_network};
+use super::parser::pad_keepouts::insert_pad_keepouts;
 use super::parser::structure::read_structure;
 use super::parser::wiring::read_wiring;
 use crate::board::RoutingBoard;
@@ -233,6 +234,9 @@ fn read_scopes(ctx: &mut ReadContext, pcb: &Pcb) -> bool {
         }
         insert_components(ctx, pcb.placement.as_ref());
         insert_logical_parts(ctx, pcb.part_library.as_ref());
+    }
+    if !insert_pad_keepouts(ctx) {
+        return false;
     }
     if let Some(wiring) = &pcb.wiring
         && !read_wiring(ctx, wiring)

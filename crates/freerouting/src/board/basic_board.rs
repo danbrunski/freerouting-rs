@@ -1605,7 +1605,8 @@ impl BasicBoard {
                     if area.is_conduction_area() && !area.conduction_is_obstacle() {
                         return false;
                     }
-                    return other.net_count() > 0;
+                    // Q22.16: a pad keepout is no copper.
+                    return other.net_count() > 0 && !area.is_pad_keepout();
                 }
                 if !other.shares_net(item) {
                     if other.is_pin()
@@ -1667,6 +1668,10 @@ impl BasicBoard {
                 !other.shares_net(item)
             }
             ItemKind::Area(area) => match area.kind {
+                // Q22.16: no copper, so traces and vias of other nets only.
+                AreaKind::Obstacle if area.is_pad_keepout() => {
+                    !other.shares_net(item) && (other.is_trace() || other.is_via())
+                }
                 AreaKind::Obstacle => Self::obstacle_area_is_obstacle(item, other),
                 AreaKind::Conduction { is_obstacle, .. } => {
                     (is_obstacle || self.area_policy_blocks_item(item, other))

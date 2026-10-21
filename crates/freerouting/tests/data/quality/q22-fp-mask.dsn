@@ -1,0 +1,111 @@
+(pcb q22-fp-mask-base.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "8.0 (freerouting-kicad)")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+    )
+    (layer B.Cu
+      (type signal)
+    )
+    (boundary
+      (path pcb 0
+        40000 -30000 0 -30000 0 0 40000 0
+        40000 -30000
+      )
+    )
+    (keepout "solder_mask_pads" (polygon F.Cu 0 14000 -11000 26000 -11000 26000 -19000 14000 -19000 14000 -11000))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 31300 -24300 32700 -24300 32700 -25700 31300 -25700 31300 -24300))
+    (via Via[0-1]_600:300_um)
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component l:edge2
+      (place J1 20000 -11000 front 0 (PN x))
+    )
+    (component l:pad
+      (place PA 17000 -3000 front 0 (PN x))
+      (place PB 23000 -3000 front 0 (PN x))
+      (place PC1 5000 -17000 front 0 (PN x))
+      (place PC2 35000 -17000 front 0 (PN x))
+      (place PD 22000 -25000 front 0 (PN x))
+    )
+    (component l:land
+      (place U1 32000 -25000 front 0 (PN x))
+    )
+  )
+  (library
+    (image l:edge2
+      (pin Rect[T]Pad_2000.000000x6000.000000_um 1 -3000 -1000)
+      (pin Rect[T]Pad_2000.000000x6000.000000_um 2 3000 -1000)
+    )
+    (image l:pad
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+    )
+    (image l:land
+      (outline
+        (path signal 0
+          -700 700 700 700 700 -700 -700 -700
+          -700 700
+        )
+      )
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+    )
+    (padstack Rect[T]Pad_2000.000000x6000.000000_um
+      (shape
+        (rect F.Cu -1000 -3000 1000 3000)
+      )
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1000.000000_um
+      (shape
+        (rect F.Cu -500 -500 500 500)
+      )
+      (attach off)
+    )
+    (padstack Via[0-1]_600:300_um
+      (shape
+        (circle F.Cu 600 0 0)
+      )
+      (shape
+        (circle B.Cu 600 0 0)
+      )
+      (attach off)
+    )
+  )
+  (network
+    (net A
+      (pins J1-1 PA-1)
+    )
+    (net B
+      (pins J1-2 PB-1)
+    )
+    (net C
+      (pins PC1-1 PC2-1)
+    )
+    (net D
+      (pins U1-1 PD-1)
+    )
+    (class kicad_default
+      A B C D
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+      (circuit
+        (use_via Via[0-1]_600:300_um)
+      )
+    )
+  )
+  (wiring)
+)

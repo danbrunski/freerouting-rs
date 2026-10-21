@@ -373,7 +373,7 @@ def test_edge_and_mask_keepouts_together():
     assert log[0].startswith("edge graphics: 1 Edge.Cuts/Margin shape(s)")
 
 
-def test_kicad_board_collects_the_boards_mask_shapes_but_not_the_footprints():
+def test_kicad_board_collects_the_boards_mask_shapes_and_the_footprints():
     p = FAKE_PCBNEW
     ring = [nm(*q) for q in APERTURE]
     board = Board(
@@ -381,16 +381,19 @@ def test_kicad_board_collects_the_boards_mask_shapes_but_not_the_footprints():
             Shape(p.SHAPE_T_POLY, p.F_Mask, 0, poly=PolySet([ring]), filled=True),
             Shape(p.SHAPE_T_SEGMENT, p.B_Mask, 200000, start=nm(1, 1), end=nm(2, 2)),
         ],
-        # a footprint's mask shapes belong to its pads' apertures (the pads' expansion)
+        # Q22.16: a footprint's own mask shape comes with its footprint's facts
+        # (test_footprint_masks.py has the rest)
         [Footprint([Shape(p.SHAPE_T_POLY, p.F_Mask, 0, poly=PolySet([ring]), filled=True)])],
         outline=[RING],
     )
     got = kicad_board.edge_graphics(board, p)
-    assert [(s["layer"], s["kind"], s["filled"]) for s in got["shapes"]] == [
-        ("F.Mask", "ring", True),
-        ("B.Mask", "polyline", False),
+    assert [(s["layer"], s["kind"], s["filled"], "footprint" in s) for s in got["shapes"]] == [
+        ("F.Mask", "ring", True, False),
+        ("B.Mask", "polyline", False, False),
+        ("F.Mask", "ring", True, True),
     ]
     assert got["shapes"][0]["points"] == APERTURE
+    assert got["shapes"][2]["footprint"] == {"ref": "", "allow_bridges": False}
 
 
 def test_kicad_10_says_any_fill_instead_of_filled():

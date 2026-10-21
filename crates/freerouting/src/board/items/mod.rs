@@ -256,6 +256,10 @@ pub enum AreaKind {
     Conduction { is_obstacle: bool, is_filled: bool },
 }
 
+/// The name of a footprint's mask-aperture keepout (Q22.16,
+/// [`ObstacleArea::is_pad_keepout`]).
+pub const PAD_KEEPOUT_NAME: &str = "solder_mask_pads";
+
 /// A keepout or a conduction area.
 ///
 /// Port of `board.model.items.ObstacleArea` and its subclasses
@@ -309,6 +313,14 @@ impl ObstacleArea {
 
     pub(crate) fn set_fixed_obstacle(&mut self, value: bool) {
         self.fixed_obstacle = value;
+    }
+
+    /// True for a footprint's mask-aperture keepout over pads of one net
+    /// (Q22.16, `io::specctra::parser::pad_keepouts`): it carries that net
+    /// but is no copper, so it is an obstacle only for traces and vias of
+    /// other nets, never for pins or other areas.
+    pub fn is_pad_keepout(&self) -> bool {
+        self.name.as_deref() == Some(PAD_KEEPOUT_NAME)
     }
 
     /// The area in board coordinates.
