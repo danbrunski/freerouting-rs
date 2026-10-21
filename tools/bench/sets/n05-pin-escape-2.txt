@@ -1,0 +1,22 @@
+# N05.3's pin-escape re-registration (docs/roadmap/prereg/N05-pin-escape-2.json):
+# router.fanout.pin_escape = straight against off, under profile enhanced, with the absolute
+# guard (zero routing-caused manufacturing breaches, below-minimum copper and vias in pads in
+# each arm). Each row is a KiCad 6+ project's .kicad_pcb, routed whole and graded through the
+# plugin's own export and import by
+# `tools/kicad-oracle/grade.sh --export plugin OPTIONS.json <the row's .kicad_pcb>`.
+# Eligibility is decided from the inputs: the board has a part freerouting_krt::fanout::qfn::
+# qualifying_parts qualifies (X10's frame: edge rows, at least 8 side pins, pitch at most
+# 0.65 mm), from qualifying_parts_on_a_set before any route. The first seven rows are
+# N05-pin-escape's (same files); the last three are the smallest eligible projects it did not
+# use. Each comment: row key, pad-to-pad connections, qualifying parts, timeout.
+# Paths are relative to the main checkout's root (read only), copies made 2026-10-20.
+target/orchestrator/n05pe2/boards/mydevboard-rp2040dev/mydevboard-rp2040dev.kicad_pcb  # mydevboard-rp2040dev: 130 connections, U1 56 at 0.4, J1 20 at 0.5, 120 s
+target/orchestrator/n05pe2/boards/canary-pwr-9511d9a3/canary-pwr.kicad_pcb  # canary-pwr: 309 connections, U1 38 at 0.5, U3 10 at 0.5, U6 and U8 8 at 0.65, 600 s
+target/orchestrator/n05pe2/boards/vfo-controller-catvfoctrl/vfo-controller-catvfoctrl.kicad_pcb  # vfo-controller-catvfoctrl: 113 connections, U1 48 at 0.5, 120 s
+target/orchestrator/n05pe2/boards/flight-computer-core-board/flight-computer-core-board.kicad_pcb  # flight-computer-core-board: 98 connections, U5 28 at 0.5, U4 8 at 0.65, 120 s
+target/orchestrator/n05pe2/boards/ch32v003-usb-devboard-ch32v003-usb-devboard/ch32v003-usb-devboard-ch32v003-usb-devboard.kicad_pcb  # ch32v003-usb-devboard-ch32v003-usb-devboard: 74 connections, U3 20 at 0.4, J1 20 at 0.5, 120 s
+target/orchestrator/n05pe2/boards/solarmeshtasticnode-meshtasticnode-bq25185/solarmeshtasticnode-meshtasticnode-bq25185.kicad_pcb  # solarmeshtasticnode-meshtasticnode-bq25185: 102 connections, U1 10 at 0.4, 120 s
+target/orchestrator/n05pe2/boards/cc1101-module-cc1101-module/cc1101-module-cc1101-module.kicad_pcb  # cc1101-module-cc1101-module: 43 connections, U1 20 at 0.5, 120 s
+target/orchestrator/n05pe2/boards/vna-usb-pd/vna-usb-pd.kicad_pcb  # vna-usb-pd: 73 connections, J101 20 at 0.5, U101 10 at 0.5, 120 s
+target/orchestrator/n05pe2/boards/picodvi-picodvi/picodvi-picodvi.kicad_pcb  # picodvi-picodvi: 102 connections, U1 56 at 0.4, J5 21 at 0.5, 120 s
+target/orchestrator/n05pe2/boards/openmuscle-flexgrid-om-flexgrid-rigid-pcb/openmuscle-flexgrid-om-flexgrid-rigid-pcb.kicad_pcb  # openmuscle-flexgrid-om-flexgrid-rigid-pcb: 157 connections, J4 20 at 0.5, IC1 14 at 0.5, U1 24 at 0.65, 120 s

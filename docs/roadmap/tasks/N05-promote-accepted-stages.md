@@ -517,6 +517,20 @@ Prerequisites: N01; each candidate's own accepted measurement.
     use. A metric that skips the rules the DSN lacks is not used: item 1 counts every board rule. mydevboard's 57 → 55
     is less than Q21.4's 57 → 44 (engine 6b59998): main 980fd6a has Q18.5/Q18.7's margin and
     mask apertures and Q20's repair, which Q21.4 did not.
+    2026-10-20, re-registered, no number yet: `docs/roadmap/prereg/N05-pin-escape-2.json`
+    (sha256 `fc3ccc691fa9e6636a3a53d0bfe6a46153f1f787b8c2a1df2e69ceeab319c4c3`, no amendment),
+    pinned by `crates/freerouting-dev/tests/prereg_n05_pin_escape_2.rs` (5 tests); set
+    `tools/bench/sets/n05-pin-escape-2.txt`, copies in `target/orchestrator/n05pe2/boards/`. Arms
+    `enhanced` against `enhanced+pin_escape` (`--router.fanout.pin_escape=straight`), one release
+    build of main after Q22.8 (the first amendment names the commit and the binary's sha256 before
+    any route), `-mp 1 --router.scoring.start_ripup_costs=1500` kept because this registration
+    gave them for time under the same 120 s / 600 s limits. Rows: these 7 (same files) plus the
+    3 smallest eligible KiCad 6+ projects it did not use (`qualifying_parts_on_a_set` output of
+    980fd6a, `crates/freerouting-krt` unchanged since): vna-usb-pd (73 connections), picodvi (102),
+    openmuscle-flexgrid (157); set noise 19.67. Guards absolute in each arm (the 10 manufacturing
+    types on the copper basis as `Q22.json` defines them, below-minimum copper, vias in pads); a
+    baseline breach blocks the row and the promotion waits. Keep rule: N02 totals, `accept:
+    no-regress`, and a lower total.
 
   *Partial 2026-10-20:* no run of N05.3's own is pending. The measurements the earlier note waited
   for are closed and their checklists archived (N03.3, N04.3, Q04.4, Q08.3, Q11.6, Q12.5, X13;
