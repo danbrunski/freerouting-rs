@@ -470,3 +470,40 @@ K13 (the snapshot is the default).
   `fixed_pour_classes=Power_High,Switch_Node`). Validity (a) is recorded as its equivalent, because
   K14.5 removed `options.input_conflicts`: the function is gone, `saved` loads on `kicad_pcb` and the
   form adds no error. Still no number: the two arms run next, then the owner's Route.
+
+  *Partial 2026-10-21 (the run):* K14.json run as registered and amended, from the main checkout with TREE
+  `target/orchestrator/k146/tree` (`98f11e7`), binary `d37543af…`, WSL KiCad 10.0.7, `plugin-input-ab.sh`
+  `17af015a…`, `ROUTE_TIMEOUT_S=1800`, `ROUTE_MEMORY_KB=8000000`, dsn first, then kicad_pcb with
+  `SHARE_GRADE_WITH` (the sessions differ, so each arm was graded), `pgrep -x kicad-cli` empty before each.
+  Outputs: `target/orchestrator/k146/out/<arm>/canary-pwr/summary.json`, `route.log`, `work/canary-pwr.args.json`.
+
+  | | dsn | kicad_pcb |
+  |---|---|---|
+  | KiCad unconnected (input) | 0 (0) | 0 (0) |
+  | errors by type | none | none |
+  | routing-caused by type | none | none |
+  | manufacturing breaches / below minimum / via in pad | 0 / 0 / 0 | 0 / 0 / 0 |
+  | prepare + load, route (s) | 3.20, 38.2 | 1.01, 31.7 |
+  | router: unrouted nets at start, final unrouted / violations | 146, 109 / 206 | 105, 86 / 206 |
+  | aborted | 0 | 0 |
+  | session sha256 | `73250af03ac4e5321aeadc45ab179b0f38b3d37e18b86cf58a0ea0e6afb1773e` | `27b2446a2e3850a2265a4fb6f7e201413abb3cc739406a47d27a1ac34eea26b4` |
+  | design sha256 | `696472a3…` | `166bcbb9…` |
+  | args sha256 | `0e890d65…` | `ef736990…` |
+
+  - *Validity.* (a) as amendment 1 records. (b) the kicad_pcb `args` carry exactly the three flags amendment
+    1 names; the args.json `log` reports them ("board snapshot fix-ups for the router: …"), and the router
+    applied them (`route.log`: four `input fix-up: class … width` lines, "pours: 183 fixed wires for 12
+    pour(s) of Power_High, Switch_Node; 14 outer plane(s) removed" and "pours: 2 outer plane(s) removed
+    (dropped nets: GND)"). Amendment 1 put the router's lines in the args.json `log`; they are in
+    `route.log`, which changes no number. (c) the dsn `log` has "pours: 183 fixed wires for 12 pour(s) of
+    Power_High, Switch_Node; 16 outer plane(s) removed (dropped nets: GND)" and the four `class … width`
+    lines. Both arms: 183 fixed wires for 12 pours, 16 outer planes removed.
+  - *Rule.* Every routing-caused manufacturing type, below-minimum and via-in-pad is 0 in both arms.
+    kicad_pcb's KiCad unconnected 0 ≤ dsn's 0 + 10. Both session sha256s are above. All three hold.
+  - *What the numbers say.* This canary revision is already routed (1397 segments, 212 vias), and KiCad
+    counts 0 unconnected on the input, so the grade cannot separate the arms on completion; it does show
+    both inputs re-import the saved setup's routing with no breach. The router's own counts differ
+    (146 against 105 unrouted nets at the start) because it does not count connections made through
+    pours the same way on the two inputs (K13.1's table); KiCad's count decides here.
+  - *Remains:* the owner's confirmation from a Route inside KiCad on canary-pwr, with its saved options,
+    on the snapshot (recording that board's sha256). The same run confirms K13.7.
