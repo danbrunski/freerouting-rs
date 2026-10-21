@@ -13,6 +13,7 @@
 //! | `track_width` | a trace narrower than the board's minimum track width ([`board_min_trace_half_width`](crate::autoroute::control::board_min_trace_half_width)) |
 //! | `via_diameter`, `drill_out_of_range`, `annular_width` | a via below `router.board_minimums.via_*` (the measure of [`AutorouteControl::via_meets_minimums`](crate::autoroute::control::AutorouteControl::via_meets_minimums)) |
 //! | `hole_clearance` | copper of another net closer to a drill hole (a via's, a through-hole pin's) than `router.hole_clearance_um` |
+//! | `hole_to_hole` | a via's drill hole closer to another drill (a via's, a through-hole pin's), of any net, than `router.board_minimums.hole_to_hole_um` (Q22.11, [`crate::board::hole_spacing`]) |
 //! | `solder_mask_bridge` | a trace or via of another net inside a pad's mask opening on an outer layer (a listed pad enlarged by its expansion, [`BoardRuleLimits::mask_openings`]) |
 //! | `via_in_pad` | a via whose copper overlaps an SMD pad on a common layer (`freerouting-dev`'s gate metric) |
 //! | `track_dangling`, `via_dangling` | a trace end that meets no copper of its net, a via that meets its net on at most one layer (Q16's [`stub_contacts`](crate::quality::stub_contacts)) |
@@ -85,6 +86,8 @@ pub enum BoardRule {
     AnnularRing,
     /// Copper of another net too close to a drill hole.
     HoleClearance,
+    /// A via's drill hole too close to another drill hole, of any net.
+    HoleToHole,
     /// Copper of another net inside a pad's mask opening.
     MaskBridge,
     /// A via on an SMD pad.
@@ -97,7 +100,7 @@ pub enum BoardRule {
 
 impl BoardRule {
     /// Every rule, in report order.
-    pub const ALL: [BoardRule; 12] = [
+    pub const ALL: [BoardRule; 13] = [
         BoardRule::Clearance,
         BoardRule::EdgeClearance,
         BoardRule::Keepout,
@@ -106,6 +109,7 @@ impl BoardRule {
         BoardRule::ViaDrill,
         BoardRule::AnnularRing,
         BoardRule::HoleClearance,
+        BoardRule::HoleToHole,
         BoardRule::MaskBridge,
         BoardRule::ViaInPad,
         BoardRule::TrackDangling,
@@ -123,6 +127,7 @@ impl BoardRule {
             BoardRule::ViaDrill => "drill_out_of_range",
             BoardRule::AnnularRing => "annular_width",
             BoardRule::HoleClearance => "hole_clearance",
+            BoardRule::HoleToHole => "hole_to_hole",
             BoardRule::MaskBridge => "solder_mask_bridge",
             BoardRule::ViaInPad => "via_in_pad",
             BoardRule::TrackDangling => "track_dangling",
@@ -415,6 +420,7 @@ fn item_violations(
         }
         ItemKind::Via(via) => {
             out.extend(via_size(board, item, limits));
+            out.extend(hole_to_hole(board, item));
             out.extend(via_in_pad(board, item));
             if stub_contacts::via_contact_layers(board, item).len() <= 1 {
                 out.push(Raw {
@@ -627,6 +633,39 @@ fn note_hole(
         entry.actual = gap;
         entry.location = centre;
     }
+}
+
+/// Q22.11: the drills, of any net, that via `via`'s hole comes closer to
+/// than the board's hole-to-hole distance (none without one).
+fn hole_to_hole(board: &BasicBoard, via: &Item) -> Vec<Raw> {
+    let required = f64::from(board.rules.hole_to_hole());
+    let (Some(radius), Some(drill)) = (board.hole_radius(via), via.drill()) else {
+        return Vec::new();
+    };
+    if required <= 0.0 {
+        return Vec::new();
+    }
+    let centre = drill.center.to_float();
+    board
+        .hole_to_hole_breaches(centre, radius, &[via.id()])
+        .into_iter()
+        .map(|(other_id, gap)| {
+            let other = board.item_ref(other_id);
+            let (first, second) = if other.is_via() && other_id < via.id() {
+                (other_id, via.id())
+            } else {
+                (via.id(), other_id)
+            };
+            Raw {
+                rule: BoardRule::HoleToHole,
+                items: pair(first, second),
+                layer: -1,
+                location: centre,
+                required,
+                actual: gap.max(0.0),
+            }
+        })
+        .collect()
 }
 
 /// How far a hole query reaches around copper: the hole clearance plus the

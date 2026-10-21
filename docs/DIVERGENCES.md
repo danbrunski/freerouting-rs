@@ -388,6 +388,17 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `without_a_minimum_clearance_the_matrix_is_the_dsns`,
   `the_board_minimum_clearance_raises_every_clearance_below_it`,
   `routed_copper_keeps_the_board_minimum_clearance`).
+- `board_minimums.hole_to_hole_um` (Q22.11, `job::hole_to_hole`, `board::hole_spacing`) is a
+  settings field Java does not have, unset by default: the board's minimum distance between two
+  drill holes, edge to edge, of any net (KiCad Board Setup `m_HoleToHoleMin`). Set, the maze
+  search drops a drill location whose via hole (the largest drill of the rule's vias) comes
+  closer to a via's or a multi-layer pin's drill, the via insertion skips such a via type, a
+  via move (optimizer, shove) to such a place is refused, and Q20's output check reports
+  `hole_to_hole` for a via that breaks it. Clearance keeps different nets apart; two vias of
+  one net had no floor. Unset, nothing changes (`tests/hole_to_hole.rs`:
+  `without_a_minimum_the_vias_are_javas`,
+  `vias_of_one_net_keep_the_board_hole_to_hole_distance`,
+  `the_output_check_reports_holes_closer_than_the_minimum`).
 - `cleanup.remove_stubs` (Q16.2, `quality::stubs`) is a settings field Java does not have, unset
   by default and in `legacy` (off: Java leaves the stubs of unfinished connections on the
   board); profile `enhanced` turns it on (N05.3, the "Profile `enhanced`" line below). On, `run_pipeline` ends with a cleanup after the last routing or optimizer step and
@@ -1168,6 +1179,11 @@ compare them on 12 committed boards and the 56-board corpus).
   default is 0) or sets 0; a `.kicad_pcb` job sets it as `router.board_minimums.clearance_um`
   (`job::prepare::board_minimums_patch`). Pinned by
   `tests/clearance_floor.rs::a_kicad_pcb_input_passes_its_minimum_clearance`.
+- The `.kicad_pro`'s minimum hole-to-hole distance (`min_hole_to_hole`, `m_HoleToHoleMin`;
+  Q22.11, `project::BoardMinimums::hole_to_hole`) is read, KiCad's default of 0.25 mm where the
+  file leaves it out, none where it sets 0; a `.kicad_pcb` job sets it as
+  `router.board_minimums.hole_to_hole_um` (`job::prepare::board_minimums_patch`). Pinned by
+  `tests/hole_to_hole.rs::a_kicad_pcb_input_passes_its_hole_to_hole_minimum`.
 - Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
   area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
   footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
@@ -1686,6 +1702,10 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
 - **Board Setup's minimum clearance is passed** (Q22.10, `options.BOARD_MINIMUM_SETTINGS`):
   `m_MinClearance` becomes `--router.board_minimums.clearance_um` under both profiles; 0 passes
   nothing. Pinned by `test_min_clearance.py`.
+- **Board Setup's minimum hole-to-hole distance is passed** (Q22.11,
+  `options.BOARD_MINIMUM_SETTINGS`): `m_HoleToHoleMin` becomes
+  `--router.board_minimums.hole_to_hole_um` under both profiles; 0 passes nothing. Pinned by
+  `test_hole_to_hole.py`.
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,

@@ -1,0 +1,63 @@
+(pcb q22-same-net-vias.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic Q22.11 fixture: net A has an F.Cu and a B.Cu pad on each side of a B.Cu keepout wall, so it needs one via on each side")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  20000 0  20000 20000  0 20000  0 0)
+    )
+    (keepout "" (rect B.Cu 9900 0 10100 20000))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 250)
+      (clearance 200)
+    )
+  )
+  (placement
+    (component "FPAD"
+      (place A1 8500 10000 front 0)
+      (place A3 11500 10000 front 0)
+    )
+    (component "BPAD"
+      (place A2 8500 11500 front 0)
+      (place A4 11500 11500 front 0)
+    )
+  )
+  (library
+    (image "FPAD"
+      (pin FrontPad 1 0 0)
+    )
+    (image "BPAD"
+      (pin BackPad 1 0 0)
+    )
+    (padstack FrontPad
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack BackPad
+      (shape (rect B.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net A (pins A1-1 A2-1 A3-1 A4-1))
+    (class kicad_default "" A
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 250) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

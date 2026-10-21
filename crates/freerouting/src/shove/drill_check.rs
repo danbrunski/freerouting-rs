@@ -100,6 +100,16 @@ impl TraceShover<'_> {
             return false;
         };
         let (first_layer, last_layer, center) = (data.first_layer, data.last_layer, data.center);
+        // Q22.11: not Java's; nothing without a board hole-to-hole distance.
+        if let Some(radius) = board.hole_radius(item) {
+            let moved = center.translate_by(vector).to_float();
+            if board
+                .hole_to_hole_breach(moved, radius, ignore_items)
+                .is_some()
+            {
+                return false;
+            }
+        }
         let nets = item.net_numbers().to_vec();
         let class = item.clearance_class();
         let item = item.clone();

@@ -9,7 +9,7 @@
 //! **The check** is [`check_board_rules`] with the limits the router routed
 //! under ([`BoardRuleLimits::of`]): clearance, copper-to-edge clearance,
 //! keepouts, track width, via diameter, drill and annular ring, hole
-//! clearance, vias in pads, dangling traces and vias (see
+//! clearance, hole to hole (Q22.11), vias in pads, dangling traces and vias (see
 //! [`crate::drc::board_rules`]).
 //!
 //! **When.** [`run_pipeline`](crate::autoroute::pipeline::run_pipeline)

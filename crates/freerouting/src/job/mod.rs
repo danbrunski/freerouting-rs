@@ -14,6 +14,7 @@
 
 pub mod clearance_floor;
 pub mod deadline;
+pub mod hole_to_hole;
 pub mod log;
 pub mod outputs;
 pub mod overrides;

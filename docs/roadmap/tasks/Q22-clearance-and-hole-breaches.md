@@ -795,7 +795,7 @@ Sequencing:
       | Minimum connection width | `min_connection` / `m_MinConn` (default 0) | no: zone fill only | n/a |
       | Silk and text | `min_silk_clearance`, `min_text_height`, `min_text_thickness` | no | n/a |
 
-- [ ] **Q22.11 — Vias of the same net keep the board's hole-to-hole distance** (added 2026-10-20;
+- [x] **Q22.11 — Vias of the same net keep the board's hole-to-hole distance** (added 2026-10-20;
   decided 2026-10-20: routing never breaks the board's manufacturing rules, graded under the
   board's own rules). KiCad's `min_hole_to_hole` (`m_HoleToHoleMin`, default 0.25 mm) applies
   between any two drills, of any net. Q22.10 keeps vias of different nets apart (clearance plus
@@ -809,6 +809,54 @@ Sequencing:
     - pinning tests written first: an engine test where two vias of one net would sit closer
       than the minimum; a reader test; a plugin test. DIVERGENCES lines;
     - routing-caused `hole_to_hole` 0 on the Q22.7 rows, with KiCad unconnected beside it.
+  - *Done 2026-10-20:*
+    - Engine: `BoardRules::hole_to_hole` (board units), set by `job/hole_to_hole.rs`
+      (`apply_hole_to_hole`, called in `overrides::apply_all` after the clearance floor; logs
+      "Board minimum hole to hole 250.0 um (2500 board units): ..."). The rule is
+      `board/hole_spacing.rs` (`BasicBoard::hole_to_hole_breaches`, `hole_to_hole_breach`,
+      `hole_radius`): gap = centre distance less both drill radii, any net, vias and multi-layer
+      pins, no tolerance; the query is `ShapeSearchTree::items_near_unmetered`, so the work
+      meter counts the same. Asked by the maze search (`session/layers.rs`,
+      `drill_breaks_hole_to_hole` in `expand_to_other_layers`, with the largest drill of the
+      rule's vias), the via insertion (`TraceShover::check_via`) and every via move
+      (`TraceShover::check_drill_item_move`: the via optimizer and shoved vias). Q20's output
+      check has the rule `hole_to_hole` (`BoardRule::HoleToHole`, `drc/board_rules.rs`), so
+      `repair` removes a routed via that breaks it. The KRT stages that insert vias directly
+      (QFN/BGA fanout, diff-pair legs) do not ask; the output check covers them.
+    - Tests: `crates/freerouting/tests/hole_to_hole.rs`, fixture
+      `tests/data/quality/q22-same-net-vias.dsn` (net A needs one via each side of a B.Cu wall).
+      The fixture was probed on the unchanged path first: the two vias of net A sit 1.0 mm apart
+      hole to hole. 4 tests: `without_a_minimum_the_vias_are_javas` (legacy, unset: vias at
+      (93500, 98287) and (106500, 98287), gap 10000 units, no log line);
+      `vias_of_one_net_keep_the_board_hole_to_hole_distance` (legacy and enhanced, 1500 um:
+      complete, 2 vias, gap >= 15000; measured 26631);
+      `the_output_check_reports_holes_closer_than_the_minimum` (one `hole_to_hole`, both vias
+      routed items, required 15000, actual 10000; none at 10000);
+      `a_kicad_pcb_input_passes_its_hole_to_hole_minimum` (the reader: missing key 0.25 mm,
+      0 is none, 0.3 gives 300000 nm and `hole_to_hole_um` 300.0). Plugin:
+      `kicad-plugin/tests/test_hole_to_hole.py`, 2 tests (`m_HoleToHoleMin` 254000 passes
+      `--router.board_minimums.hole_to_hole_um=254`; 0 passes nothing). `settings_defaults`
+      pins the field unset; the GUI lists it in `CLI_ONLY`.
+    - DIVERGENCES: an engine line (`board_minimums.hole_to_hole_um`), a freerouting-kicad line
+      (`min_hole_to_hole`) and a kicad-plugin line (`m_HoleToHoleMin`).
+    - Routing check on main `039a859` (with Q22.5) against this change, `grade.sh --export
+      plugin` (`{"schema": 4}`, enhanced, each row's Board Setup minimums passed by the plugin,
+      rows routed whole), one KiCad 10.0.7 grade each
+      (`target/orchestrator/q2211/out/{before,q2211}/`):
+
+      | Row | limit | routing-caused `hole_to_hole` before → after | KiCad unconnected before → after | route time |
+      |---|---|---|---|---|
+      | ch32v003 (`min_hole_to_hole` 0.25) | 300 s | 0 → 0 | 38 → 38 | 11.0 → 11.3 s |
+      | pocketsdr-v3-0 (0.254) | 600 s | 0 → 0 | 39 → 32 | 194.7 → 288.9 s (24 → 29 passes) |
+
+      Both arms have no routing-caused `clearance`, `hole_clearance` or `below_minimum`
+      (ch32v003's only routing-caused type is `isolated_copper` 12 in both). On the pre-Q22.5
+      main `6229b29` (`out-pre-rebase-6229b29/`) ch32v003 had 1 routing-caused `hole_to_hole` in
+      both arms: a PD6 via against a VBUS via, 0.4147 mm, under the `.kicad_dru` rule "hole to
+      hole clearance (different nets)" (0.5 mm), not Board Setup's 0.25 mm; the router logs
+      that constraint as UNSUPPORTED (no DSN form), so a `.kicad_dru` `hole_to_hole` constraint
+      is not floored yet (follow-up).
+    - The full Q22.7 rows are graded by Q22.8's registered run, not here.
 
 - [ ] **Q22.12 — Copper keeps the board's solder-mask-to-copper clearance** (added 2026-10-20;
   decided 2026-10-20: routing never breaks the board's manufacturing rules). KiCad's
@@ -861,3 +909,36 @@ Sequencing:
     `plugin-input-ab.sh` goes from 410 (`via_drill`) to 0. Output in `target/orchestrator/q2213/out/`.
     `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'`: 44 tests OK;
     `kicad-plugin/tests` (k02 venv): 454 passed, 20 skipped. `plugin-input-ab.sh` is unchanged.
+
+- [ ] **Q22.14 — `.kicad_dru` hole-to-hole rules reach the router** (added 2026-10-20; decided
+  2026-10-20: routing never breaks the board's manufacturing rules). The reader logs
+  `constraint hole_to_hole: UNSUPPORTED`. On main 6229b29 a ch32v003 PD6 via sat 0.4147 mm from
+  a VBUS via, under its rule "hole to hole clearance (different nets)" (0.5 mm) (found in
+  Q22.11). Option (a), decided 2026-10-20: the dru reader raises
+  `router.board_minimums.hole_to_hole_um` to the largest `hole_to_hole` minimum among the rules
+  that can apply. This is conservative, since it also holds a different-net rule between holes of
+  one net, and it is logged with the rule's name. Both inputs: `--kicad-dru` on the DSN path and
+  the `.kicad_pcb` reader.
+  - **Accept:**
+    - a reader test written first: a `.kicad_dru` with a 0.5 mm `hole_to_hole` rule raises the
+      minimum to 500 µm, a smaller rule leaves Board Setup's value, and the log names the rule;
+    - ch32v003 through the plugin's export, one KiCad grade: routing-caused `hole_to_hole` 0,
+      with KiCad unconnected beside it.
+
+- [ ] **Q22.15 — What Q22.5 costs on ch32v003** (added 2026-10-20). With the plugin's default
+  options (`grade.sh --export plugin`, `{"schema": 4}`), ch32v003's KiCad unconnected went
+  18 → 38 between main 6229b29 and 039a859, the Q22.5 merge, in both of Q22.11's arms. Q22.5's
+  mapping is conservative in two places:
+  - its hole rules become one board-wide `router.hole_clearance_um` floor of 330 µm, which
+    also holds for via holes, where the rule names plated pads;
+  - a routed default-class via keeps the via-to-track value from other vias and pads.
+
+  Find which part costs the 20, and make the mapping exact where the engine can express it,
+  for example a hole clearance for plated pad holes only, with 0 routing-caused manufacturing
+  breaches kept.
+  - **Accept:**
+    - before and after rows on ch32v003 with the plugin defaults, one KiCad grade each:
+      KiCad unconnected and routing-caused items by type;
+    - each part's cost named, from a run with that part alone changed;
+    - 0 routing-caused `clearance`, `hole_clearance` and `hole_to_hole` in the after row. If the
+      cost stays, say why the engine can't express the exact rule.

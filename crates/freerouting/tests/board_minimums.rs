@@ -335,13 +335,14 @@ fn kicad_board_minimums_default_to_kicads_and_zero_is_none() {
             copper_edge_clearance: Some(500_000),
             hole_clearance: Some(250_000),
             clearance: None,
+            hole_to_hole: Some(250_000),
         }
     );
     let zero = Project::parse(
         r#"{"board": {"design_settings": {"rules": {"min_track_width": 0.0,
             "min_via_diameter": 0.0, "min_through_hole_diameter": 0.0,
             "min_via_annular_width": 0.0, "min_copper_edge_clearance": 0.0,
-            "min_hole_clearance": 0.0}}}}"#,
+            "min_hole_clearance": 0.0, "min_hole_to_hole": 0.0}}}}"#,
     )
     .unwrap();
     assert_eq!(zero.minimums, BoardMinimums::NONE);

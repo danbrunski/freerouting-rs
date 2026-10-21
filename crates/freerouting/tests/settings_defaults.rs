@@ -265,6 +265,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("board_minimums.via_annular_um", None),
         // Q22.10: unset, which is unknown (no floor).
         ("board_minimums.clearance_um", None),
+        // Q22.11: unset, which is unknown (no hole-to-hole minimum).
+        ("board_minimums.hole_to_hole_um", None),
         ("board_minimums.from_classes", None),
         // P02.1: unset, which is off.
         ("debug.audit_incremental", None),

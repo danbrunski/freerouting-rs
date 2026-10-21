@@ -892,6 +892,9 @@ pub struct BoardRules {
     pin_edge_to_turn_dist: f64,
     use_slow_autoroute_algorithm: bool,
     hole_clearance: i32,
+    /// Q22.11: the minimum distance between two drill holes, edge to edge,
+    /// in board units (0: none, Java's board; `board::hole_spacing`).
+    hole_to_hole: i32,
     /// Clearance violations smaller than this are tolerated (micrometers).
     pub clearance_tolerance_um: f64,
     /// The per-net obstacle hook for conduction areas (B09.4); `None`, the
@@ -915,6 +918,7 @@ impl BoardRules {
             pin_edge_to_turn_dist: 0.0,
             use_slow_autoroute_algorithm: false,
             hole_clearance: 0,
+            hole_to_hole: 0,
             clearance_tolerance_um: 1.0,
             area_obstacle_policy: None,
         }
@@ -962,6 +966,16 @@ impl BoardRules {
 
     pub fn set_hole_clearance(&mut self, value: i32) {
         self.hole_clearance = value.max(0);
+    }
+
+    /// Q22.11: the minimum hole-to-hole distance in board units (0: none).
+    pub fn hole_to_hole(&self) -> i32 {
+        self.hole_to_hole
+    }
+
+    /// Q22.11: sets the minimum hole-to-hole distance (negative is 0).
+    pub fn set_hole_to_hole(&mut self, value: i32) {
+        self.hole_to_hole = value.max(0);
     }
 
     /// Sets the trace half width of the default class on `layer`.

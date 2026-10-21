@@ -89,6 +89,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "a board rule (Q22.10), passed by the KiCad plugin or read from a .kicad_pro",
     ),
     (
+        "board_minimums.hole_to_hole_um",
+        "a board rule (Q22.11), passed by the KiCad plugin or read from a .kicad_pro",
+    ),
+    (
         "board_minimums.from_classes",
         "the profile's choice (Q18): enhanced on, legacy off",
     ),

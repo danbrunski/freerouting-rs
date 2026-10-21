@@ -450,6 +450,26 @@ impl ShapeSearchTree {
         });
     }
 
+    /// Q22.11: the items with a tree shape whose bounds overlap the bounds
+    /// of `shape`, on any layer, in ascending id order, without touching the
+    /// work meter: the hole-to-hole check is no Java search, so a run with a
+    /// hole-to-hole minimum stops its work limits at the same counts
+    /// ([`crate::board::hole_spacing`]).
+    pub fn items_near_unmetered(&self, shape: &TileShape) -> BTreeSet<ItemId> {
+        let Some(bounds) = shape.bounding_shape(self.tree.bounding_directions()) else {
+            return BTreeSet::new();
+        };
+        self.tree
+            .overlaps_reference(&bounds)
+            .0
+            .into_iter()
+            .filter_map(|leaf| match self.tree.leaf(leaf).0 {
+                TreeObject::Item(id) => Some(id),
+                TreeObject::Room(_) => None,
+            })
+            .collect()
+    }
+
     /// Appends the entries of items and rooms whose shape overlaps `shape`
     /// on `layer` (all layers if negative) to `result`, in Java's leaf order
     /// (rooms first, ids descending, then shape index). Rooms are obstacles

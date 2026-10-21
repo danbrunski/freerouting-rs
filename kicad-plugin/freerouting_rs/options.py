@@ -489,6 +489,7 @@ BOARD_MINIMUM_SETTINGS = (
     ("m_CopperEdgeClearance", "router.copper_to_edge_clearance_um"),
     ("m_HoleClearance", "router.hole_clearance_um"),
     ("m_MinClearance", "router.board_minimums.clearance_um"),  # Q22.10
+    ("m_HoleToHoleMin", "router.board_minimums.hole_to_hole_um"),  # Q22.11
 )
 
 

@@ -145,6 +145,14 @@ impl TraceShover<'_> {
         let Some(padstack) = self.board.library.padstacks.get(via_info.padstack).cloned() else {
             return false;
         };
+        // Q22.11: not Java's; nothing without a board hole-to-hole distance.
+        if self
+            .board
+            .hole_to_hole_breach(location.to_float(), padstack.get_drill_radius(), &[])
+            .is_some()
+        {
+            return false;
+        }
         let hole_shape = hole_check_shape(self.board, &padstack, location);
         let ninety = is_ninety_degree(self.board);
         for layer in padstack.from_layer()..=padstack.to_layer() {

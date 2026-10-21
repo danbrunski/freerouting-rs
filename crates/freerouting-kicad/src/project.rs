@@ -82,7 +82,7 @@ impl ClassDef {
 /// reader takes KiCad 6+ boards only, whose rules live in the project)
 /// (`board_design_settings.h`: track 0.2 mm, via 0.5 mm, through drill
 /// 0.3 mm, annular ring 0.1 mm, copper to edge 0.5 mm, copper to hole 0.25 mm, minimum
-/// clearance 0, which is none); `None` when the file
+/// clearance 0, which is none, hole to hole 0.25 mm); `None` when the file
 /// sets it to 0 (KiCad's "no minimum"). The router takes them as hard floors
 /// (`router.board_minimums.*`, `router.copper_to_edge_clearance_um`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -103,6 +103,9 @@ pub struct BoardMinimums {
     /// under every net class (Q22.10). KiCad's default is 0, so a missing
     /// key is `None`.
     pub clearance: Option<i32>,
+    /// `min_hole_to_hole` (`m_HoleToHoleMin`): drill hole to drill hole, of
+    /// any net, edge to edge (Q22.11).
+    pub hole_to_hole: Option<i32>,
 }
 
 impl Default for BoardMinimums {
@@ -116,6 +119,7 @@ impl Default for BoardMinimums {
             copper_edge_clearance: Some(mm_to_nm(0.5)),
             hole_clearance: Some(mm_to_nm(0.25)),
             clearance: None,
+            hole_to_hole: Some(mm_to_nm(0.25)),
         }
     }
 }
@@ -130,6 +134,7 @@ impl BoardMinimums {
         copper_edge_clearance: None,
         hole_clearance: None,
         clearance: None,
+        hole_to_hole: None,
     };
 
     /// The minimums of a `rules` object; a missing key keeps KiCad's default.
@@ -147,6 +152,7 @@ impl BoardMinimums {
             copper_edge_clearance: rule("min_copper_edge_clearance", d.copper_edge_clearance),
             hole_clearance: rule("min_hole_clearance", d.hole_clearance),
             clearance: rule("min_clearance", d.clearance),
+            hole_to_hole: rule("min_hole_to_hole", d.hole_to_hole),
         }
     }
 }

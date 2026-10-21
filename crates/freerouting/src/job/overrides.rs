@@ -391,6 +391,8 @@ pub fn apply_all(
     // Q22.10: not Java's; nothing without `router.board_minimums.clearance_um`.
     // First, so the edge and hole classes the next two make keep their own rules.
     let mut lines = super::clearance_floor::apply_clearance_floor(board, settings);
+    // Q22.11: not Java's; nothing without `router.board_minimums.hole_to_hole_um`.
+    lines.extend(super::hole_to_hole::apply_hole_to_hole(board, settings));
     lines.extend(apply_edge_clearance(board, settings, state));
     lines.extend(apply_hole_clearance(board, settings).0);
     lines.extend(apply_plane_nets(board, settings));

@@ -27,6 +27,7 @@ use super::queue::MazeListElement;
 use super::search::MazeSearch;
 use super::sink::{BlockReason, ExtraCost, SearchSink, sink};
 use super::{Adjustment, ExpandableRef, Room, RoomError};
+use crate::board::items::ItemId;
 use crate::shove::drill_check::CheckDrillResult;
 use crate::shove::trace_check::TraceShover;
 use crate::shove::via_check::ShoveDepths;
@@ -220,6 +221,10 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
             Room::Obstacle { item, .. } => Some(*item),
             _ => None,
         });
+        // Q22.11: not Java's; nothing without a board hole-to-hole distance.
+        if self.drill_breaks_hole_to_hole(drill, obstacle_item) {
+            return Ok(());
+        }
         if let Some(item) = obstacle_item {
             if !control.ripup_allowed {
                 return Ok(());
@@ -350,6 +355,32 @@ impl<S: SearchSink, C: ExtraCost> MazeSearch<'_, '_, S, C> {
             self.push(new_element)?;
         }
         Ok(())
+    }
+
+    /// Q22.11: true if a via of the rule at `drill` comes closer to another
+    /// drill than the board's hole-to-hole distance
+    /// ([`BasicBoard::hole_to_hole_breach`](crate::board::BasicBoard::hole_to_hole_breach)),
+    /// with the largest drill of the rule's vias; `ripped` is the via a
+    /// ripped room removes. False without a distance (Java).
+    fn drill_breaks_hole_to_hole(&self, drill: DrillId, ripped: Option<ItemId>) -> bool {
+        let board = &*self.s.board;
+        if board.rules.hole_to_hole() <= 0 {
+            return false;
+        }
+        let radius = self
+            .s
+            .control
+            .via_rule_vias(&board.rules)
+            .iter()
+            .filter_map(|id| {
+                let padstack = board.rules.via_infos.get(*id).padstack;
+                board.library.padstacks.get(padstack)
+            })
+            .map(|p| p.get_drill_radius())
+            .fold(0.0, f64::max);
+        let center = self.s.drill(drill).location.to_float();
+        let ignore: Vec<ItemId> = ripped.into_iter().collect();
+        board.hole_to_hole_breach(center, radius, &ignore).is_some()
     }
 
     /// `checkLayerWithAnyMatchingVia` on the drill's room of `layer`.
