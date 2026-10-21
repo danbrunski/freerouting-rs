@@ -1553,3 +1553,25 @@ Sequencing:
       clearance from the shape;
     - slice routed fresh as Q20.1's Done note did, one KiCad grade: J1-10 to NT1-2 routed, KiCad
       routing-caused 0, KiCad unconnected beside Q20.1's 9.
+
+- [ ] **Q22.20 — Routed copper leaves room for a zone's thermal spokes** (added 2026-10-21, from
+  Q22.18's canary-pwr grade). Board Setup's `min_resolved_spokes` (default 2) is the one rule in
+  Q22.10's table that routing breaks indirectly, and it was left "not floored". On canary-pwr
+  `ab786fcc`, the final Q22.18 binary routes 38 KiCad unconnected against 58, but leaves 6
+  routing-caused `starved_thermal`, up from 2. All 6 are on J1's GND through-hole pads 6, 14, 20
+  and 25, against the GND zones on F.Cu and B.Cu (`target/orchestrator/q2218/runs/out-canary-q2218d`).
+  KiCad's fill can no longer place the minimum number of spokes between those pads and their zone.
+  - Find which routed copper blocks the spokes: copper of another net in the spoke corridors, or
+    a track of the pad's own net that the fill doesn't count as a spoke. Then keep that room in
+    `enhanced`, on both inputs. One way is a corridor obstacle for other nets: the zone's thermal
+    gap plus spoke width, plus the clearance, along each spoke direction KiCad uses for the pad
+    and zone, for every pad that a zone of its net connects by thermal relief. Keep at least
+    `min_resolved_spokes` corridors free.
+  - **Accept:**
+    - an engine or input test: a pad inside a zone of its net with thermal relief; a trace of
+      another net routed past it leaves `min_resolved_spokes` spoke corridors free, and the pad
+      is still reachable;
+    - canary-pwr `ab786fcc` through the plugin's export (`--timeout 600`), one KiCad grade:
+      0 routing-caused `starved_thermal` and every Q22.8 guard 0, with KiCad unconnected beside
+      38;
+    - the DIVERGENCES line (enhanced only), and Q22.10's table row updated.
