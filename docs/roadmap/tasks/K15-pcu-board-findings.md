@@ -17,6 +17,18 @@ item-type rules), N06 (`router.java_quirks`).
   owner's repository, not a corpus board. Copy the files with `git -C ../power-control-unit archive`
   into `target/` for runs. Small cases cut from it go in `fixtures/` or a crate's `tests/data/`. The
   two repro boards of bug 1 are already in `docs/development/pcu-rev2/`.
+- **Copies, logs and the binary** (2026-10-21).
+  - The report's routing runs used `8c952e7` (2026-10-19). That was before Q18 (`b98074e`) made
+    Board Setup's minimums router floors, and before pad clearances were read (`5926b61`).
+  - Copies are in `target/orchestrator/pcu-rev2/` (gitignored), because the originals were in a
+    session's temporary scratchpad:
+    - `boards/placed_v7/`: the v7 input, 0 tracks; `.kicad_pcb` sha256 `948a4804…`;
+    - `boards/final_v7/`: v7's output, `1e16823a…`;
+    - `boards/committed-1b161c7/`: the committed board, `af63f202…`, with its `.kicad_pro` and
+      `.kicad_dru`;
+    - `logs/route_<run>.err.gz`: the `--progress json` logs of v4, v5, v7, v7c, v7c2, v8, v8n,
+      v9, v9n, v9nc, hc and test;
+    - `logs/route_<run>.json.gz`: their result manifests, with the settings.
 - **Bug 1's cause** (orchestrator investigation `pcu1`, 2026-10-21, on main `383de4a`). The pads are
   not the cause. C65's F.Fab `fp_circle` (r 5 mm) is written as a polyline outline. The board builder
   enlarges it to a convex simplex (`polygon_path_to_board`, `Simplex::enlarge`). Then
@@ -36,7 +48,7 @@ item-type rules), N06 (`router.java_quirks`).
     connection. DIVERGENCES does not list this.
 - **Bug 3's cause.** `dru.rs` (`rule_status`) reports a rule without a condition as UNSUPPORTED,
   and so is every constraint kind other than `clearance`, `track_width`, `hole_clearance` and
-  `hole_to_hole`. The pcu file's 13 rules are mostly unconditional board-wide minimums:
+  `hole_to_hole`. The pcu file's 12 rules are mostly unconditional board-wide minimums:
   - track width, clearance, hole size, hole clearance;
   - edge clearance (`(layer outer)` 0.254 mm, `(layer inner)` 0.381 mm);
   - annular ring (`A.Type == 'Via'`; plated pads over 0.4 mm drill);
@@ -99,6 +111,16 @@ item-type rules), N06 (`router.java_quirks`).
       (the plated-slot `hole_size (max ...)`, a pad annular ring) is reported by name with why it is
       left out.
     - The same on both inputs (the reader and `--kicad-dru` on a DSN).
+  - **Found 2026-10-21** (`-drc` at `084f3a9` on the committed board). The file has 12 rules:
+    - 9 are UNSUPPORTED as "rule without a condition": track width, clearance, hole size, hole
+      clearance, edge clearance outer and inner, and the three `disallow` rules;
+    - line 16 (via annular ring, `A.Type == 'Via'`): "constraint 'annular_width' has no DSN form";
+    - line 21 (pad annular ring): "condition term 'A.Hole_Size_X > 0.4mm'";
+    - line 59 (plated slots): "condition term 'A.Hole_Size_X != A.Hole_Size_Y'".
+
+    A min-only `track_width` is refused even with a condition ("track_width without an opt
+    value"). On this board, Board Setup is stricter than the file except for hole clearance (0.25
+    against 0.254 mm).
   - **Accept:**
     - dru tests on a copy of the pcu `.kicad_dru` (copied into `crates/freerouting-kicad/tests/data/`
       with its source named): every rule is APPLIED or reported with its reason, and none says
@@ -116,6 +138,21 @@ item-type rules), N06 (`router.java_quirks`).
     the optimizer, existing copper) and where the odd widths come from (0.2498, 0.2502, 0.2538,
     0.2792, 0.3554 mm). Neck-down below the class width but at or above the minimum is allowed;
     say where the board's own copper had such widths before the route.
+  - **Found 2026-10-21** (code reading, and `--dump-settings` at `084f3a9`):
+    - The report's runs used `8c952e7`, before Q18 (`b98074e`) made Board Setup's minimums
+      router floors. v5 and v7 had no `min_trace_width_um`, so nothing set the floor.
+    - 0.15, 0.12 and 0.10 mm are exactly the micro neck-down's candidates on a 0.2 mm class
+      (`autoroute/path/insert.rs`, `micro_neckdown_half_widths`): 3/4, 3/5 and 1/2 of the class
+      width. A candidate below `AutorouteControl::min_trace_half_width` is skipped.
+    - On main, `--dump-settings` on the committed board shows
+      `board_minimums.track_width_um = 200.0 (kicad_pro board minimums)`, so all three are
+      skipped. No route has confirmed it yet.
+    - The DIVERGENCES `board_minimums` entry credits the 0.15 mm tracks to "the pin neck-down";
+      they are the micro neck-down's.
+    - 0.2498, 0.2538, 0.2792 and 0.3554 mm are pad widths of 0.25, 0.254, 0.2794 and 0.3556 mm
+      less 2 board units. That is Java's pin neck-down, `board/pin_exits.rs::trace_neckdown_half_width`
+      (`max(0.5·pin_min_width − 1, 1)`), on nets whose class is wider than the pad. 0.2502 mm fits
+      the same formula; its pad is not identified.
   - **Accept:**
     - a run on a copy of the pcu board, a few minutes at most (`--max-passes` and `--timeout` to
       fit, report flags), graded by KiCad under the board's own rules: 0 routing-caused
@@ -138,6 +175,23 @@ item-type rules), N06 (`router.java_quirks`).
     - Where the router's own violation count (its score) uses the same checks, and Java counts
       them, the fix sits behind a `router.java_quirks.<id>` (legacy keeps Java's count). Where
       only the report uses them, it changes under both profiles.
+  - **Found 2026-10-21:**
+    - `-drc` ignores router settings: `DrcRunOptions` carries only the design, session, rules
+      file and unit. The table's `--router.hole_clearance_um=260` had no effect.
+    - Without it, at `084f3a9`, the counts are holeClearance 165 (121 same net),
+      via_dangling 117, track_dangling 15, clearance 4, isolated_island_dead_copper 20,
+      unconnected 77, in 0.28 s.
+    - **Same net.** The reader writes `(attach off)` on every padstack (`pads.rs`, `read.rs`),
+      so `BasicBoard::is_obstacle`'s via branch makes a same-net via inside an SMD pin an
+      obstacle. The search uses the same test, and changing it would let the router put vias in
+      pads (owner rule, D8). So the fix belongs in the report and the score, not in
+      `is_obstacle`. Q20's `hole_clearance` (`drc/board_rules.rs`) already skips same-net pairs.
+    - **Dangling vias.** `is_tail` counts contacts by Java's centre rule: a pin counts only when
+      its centre is the via's. Q16's stub cleanup counts copper overlap
+      (`quality/stub_contacts.rs::via_contact_layers`).
+    - **The score.** `autoroute/batch/snapshot.rs` reads `clearance_violations` from the same
+      list. The 142 -> 217 rise is `job/overrides.rs::apply_hole_clearance` growing the drill
+      items' tree shapes.
   - **Accept:**
     - on the pcu board, each of the four types equals KiCad's or differs by named items;
     - tests per case (same-net hole clearance, a via to a plane, a stub);
@@ -151,6 +205,15 @@ item-type rules), N06 (`router.java_quirks`).
     Reproduce it on the zoned variant, with the report's flags and the bad C65, on main before
     K15.1, a few minutes at most. If it doesn't stop, make the stop rule end a run whose passes
     route nothing and leave the score unchanged (`autoroute/batch/control.rs`).
+  - **Found 2026-10-21** in the report's own logs (`target/orchestrator/pcu-rev2/logs/`):
+    - `route_v4` is the zoned board with the bad C65: 20 planes, 151 vias, 1484 failures a
+      pass, `job_timeout` 40 min, without `plane_obstacle_net_classes`, on `8c952e7`. It stopped
+      itself after 18 passes of about 1 s each, with "has not improved enough" (score 71.03).
+    - The report's 40-minute timeout is `route_v5`, which routed normally: 8 passes of
+      160–319 s, 185 unrouted.
+    - Every timeout in the logs (v5, v7, v8, v8n, v9, v9n) had passes of 80–338 s, so the
+      18-pass stop came after the limit.
+    - What remains is the same board with `plane_obstacle_net_classes` on main.
   - **Accept:**
     - the reproduction with its pass log, or the note that it stops, with the pass count;
     - a test of the stop on a board where nothing can route, if the rule changes;
@@ -164,6 +227,17 @@ item-type rules), N06 (`router.java_quirks`).
     - "Copper-to-edge clearance capped from 2500 to 0 board units because a pin is closer to the
       board outline" names the pin. A footprint wholly outside the outline (a fiducial left at
       (0, 0)) is left out of the cap, with a WARNING naming it.
+  - **Found 2026-10-21:**
+    - The text comes from `autoroute/connection.rs` (`describe_connection`, `java_item_text`).
+    - Pin index 0 prints "pin of component #2" with no number. The component number follows the
+      DSN placement order, which the reader groups by image.
+    - Each side lists every item of the connected set. In `route_v4` and `route_v7`, 9310 of
+      27330 failure lines are over 1000 characters and the longest is 10416 ("via, via, ...").
+    - `autoroute/batch/report.rs::describe_item` already gives `Ref-Pad`.
+    - The edge cap (`job/overrides.rs::apply_edge_clearance`) logs at Debug, and only when the
+      setting is exactly the 250 µm default. On main a `.kicad_pcb` input takes the value from the
+      `.kicad_pro` or KiCad's 500 µm, so the cap now shows mostly on DSN inputs.
+      `BasicBoard::minimum_pin_gap` drops the item ids, and a pin outside the outline gives 0.
   - **Accept:**
     - tests on small boards for both messages;
     - the pcu board's first failure lines quoted before and after;
@@ -177,6 +251,13 @@ item-type rules), N06 (`router.java_quirks`).
       a sentence in `--help`.
     - `--threads` help says which stages use the threads: the report saw the autorouter on one
       core and only the optimizer using 24.
+  - **Found 2026-10-21:**
+    - `crates/freerouting-cli/src/stop.rs::spawn_stdin_reader` starts for every route
+      (`cli.rs::route_job`). The plugin relies on it (`tools.py`: `stdin=PIPE`, writes
+      `stop`), so it stays on by default.
+    - `autorouter.max_threads` only sizes the analyses' `ThreadBudget` (`job/run.rs`: DRC and
+      statistics). `parallel.rs` says the router stays sequential (D5).
+    - The DIVERGENCES `--threads` line is already right; `help.txt` isn't.
   - **Accept:** a CLI test with stdin closed and with a pipe; the help text; the CLI docs.
 
 - [ ] **K15.9 — A pad's own clearance is kept on a `.kicad_pcb` input.**
@@ -185,6 +266,11 @@ item-type rules), N06 (`router.java_quirks`).
     K13.7 (`pad_clearance::read_pad_clearances`, `read.rs`). Find which clearance the fiducial
     carries (pad, footprint, or the solder-mask opening) and whether the reader at main keeps it.
     Fix what is missing.
+  - **Found 2026-10-21:**
+    - FID1–FID3 carry `(clearance 0.6)` on their pads (`F.Cu`, `F.Mask`), at (52, 33),
+      (194.48, 99.96) and (80, 147.5) mm.
+    - The reader has read pad clearances since `5926b61` (after the report's binary).
+    - A footprint-level `(clearance)` is not read (`pad_clearance.rs` module doc).
   - **Accept:**
     - the pcu fiducial cut into a small fixture: the keepout is there;
     - a route keeps 0.6 mm from it;
