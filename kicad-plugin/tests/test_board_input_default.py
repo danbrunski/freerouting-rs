@@ -43,7 +43,24 @@ def test_no_saved_file_gives_the_snapshot(tmp_path):
     broken.write_text("{not json", encoding="utf-8")
     for path in (work / "route-options.json", broken):
         assert options.load(path).board_input == "kicad_pcb"
-        assert options.load(path) == replace(RouteOptions(), board_input="kicad_pcb")  # the sweep stays as it was
+
+
+def test_no_saved_file_starts_from_the_default_profile_with_its_sweep(tmp_path):
+    # A board with no file gets what a file of only the default profile gets,
+    # K09.9's completion sweep included (before, it got the dataclass defaults).
+    work = tmp_path / "freerouting-rs"
+    broken = tmp_path / "broken.json"
+    broken.write_text("{not json", encoding="utf-8")
+    profile_only = tmp_path / "profile-only.json"
+    profile_only.write_text(json.dumps({"schema": options.SCHEMA, "profile": options.DEFAULT_PROFILE}), encoding="utf-8")
+    for path in (work / "route-options.json", broken):
+        assert options.load(path) == options.profile_defaults(options.DEFAULT_PROFILE) == options.load(profile_only)
+        assert options.load(path).sweep == "free"
+    assert options.load_for_board(work) == options.profile_defaults()
+    assert options.load_for_board(work, {"fix_rule_areas": False}) == replace(options.profile_defaults(), rule_area_fixup=False)
+    # Saved again, nothing beyond the schema and the profile is written.
+    options.save(work / "route-options.json", options.load_for_board(work))
+    assert json.loads((work / "route-options.json").read_text(encoding="utf-8")) == {"schema": 6, "profile": "enhanced"}
 
 
 def test_the_snapshot_input_is_not_called_experimental():

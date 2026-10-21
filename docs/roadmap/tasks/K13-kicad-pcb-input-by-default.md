@@ -565,9 +565,13 @@ rules).
       `test_kicad_dru_args.py`, `test_board_rules_both_inputs.py`, `test_options.py`); none was loosened. `python3 -m pytest
       kicad-plugin/tests` (router binary of main, `FREEROUTING_RS_BIN`): 574 passed, 22 skipped, 0 failed (22 skipped before the
       change; the skips need a Python with pcbnew or a jar). `python3 -m unittest discover -s tests` in `tools/kicad-oracle`: 44 OK.
-    - **Open.** `load` returns the dataclass defaults, not `profile_defaults("enhanced")`, for a board with no
-      `route-options.json`; so a fresh board starts with the completion sweep off while a saved enhanced file gets it (K09.9). Not
-      changed here; the operator decides.
+    - **Fixed with it.** `options.load` gave the dataclass defaults for a board with no `route-options.json`, so a fresh board
+      started with the completion sweep off while a file naming only `enhanced` got it (K09.9), against the profile table's "a new
+      board ... start[s] from it". Decided 2026-10-21 (recommended, an accepted gain that never reached a new board): `load`
+      returns `profile_defaults(DEFAULT_PROFILE)`. Boards whose file already says `"sweep": ""` keep it (a saved choice). Test
+      (RED first): `test_board_input_default.py::test_no_saved_file_starts_from_the_default_profile_with_its_sweep`;
+      `test_options.py::test_load_of_missing_or_broken_files` and the two `test_gui_mode.py` argument lists now expect
+      `--router.autorouter.sweep=free`. `pytest kicad-plugin/tests`: 575 passed, 22 skipped, 0 failed.
     - **Remains: the owner's confirmation from a run inside KiCad is recorded.** The owner should check: the Board page's input choice
       opens on "Board snapshot" and its note (the keepouts line, no other text); a Route on the snapshot imports the result; Undo after a
       Route that brought track arcs back (K13.8, untested inside KiCad).

@@ -777,8 +777,10 @@ takes `dsn`, so a board's saved setup never refuses its own Route. A preset that
 turns such a fix-up on moves the input to `dsn` and logs a warning saying so (`presets.apply`); presets written by
 "Save as preset..." name every option and are unaffected. `apply_kicad_rules` is gone from the options (it
 decided nothing since K13.1) together with its greyed check box; a file or preset that has it still loads and
-is saved again as schema 6 without it. A board with no `route-options.json` opens on the snapshot (it still
-starts without the completion sweep: `load` returns the dataclass defaults with the profile's input). Tests:
+is saved again as schema 6 without it. A board with no `route-options.json` opens on the snapshot, with the Enhanced profile's
+defaults (`load` returns `profile_defaults(DEFAULT_PROFILE)`, the same as a file that names only the profile;
+before K13.7 it returned the dataclass defaults, so a new board started without K09.9's completion sweep
+although the profile table above says a new board starts from it). Tests:
 `test_board_input_default.py`, `test_input_choice.py` (the dialog), `test_snapshot.py`.
 
 - **The snapshot** (`snapshot.py`, `export_flow.prepare_snapshot`): on KiCad's UI thread, `pcbnew.SaveBoard(path,

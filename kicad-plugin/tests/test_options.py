@@ -138,8 +138,8 @@ def test_booleans_are_not_numbers():
 
 
 def test_load_of_missing_or_broken_files(tmp_path):
-    # K13.7: the dataclass defaults, with the default profile's board input (the snapshot)
-    expected = replace(RouteOptions(), board_input="kicad_pcb")
+    # The default profile's options (K13.7: the snapshot, and K09.9's sweep)
+    expected = options.profile_defaults(options.DEFAULT_PROFILE)
     assert options.load(tmp_path / "missing.json") == expected
     broken = tmp_path / "broken.json"
     broken.write_text("{not json", encoding="utf-8")

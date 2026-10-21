@@ -538,16 +538,15 @@ def _fmt(number):
 
 
 def load(path):
-    """Options from `path`; the dataclass defaults, with the default profile's
-    board input (the snapshot under `enhanced`, K13.7), when it is absent or
-    unreadable. Not `profile_defaults(DEFAULT_PROFILE)`: that also turns on the
-    completion sweep, which a board with no file has not had so far (K09.9 sets
-    it only for a file that `from_dict` reads); the K13.7 note leaves that open."""
+    """Options from `path`; the default profile's (`profile_defaults`) when it
+    is absent or unreadable, the same as a file that names only that profile.
+    Until K13.7 this gave the dataclass defaults, so a board with no file
+    started without `enhanced`'s completion sweep (K09.9)."""
     try:
         with open(path, encoding="utf-8") as f:
             return RouteOptions.from_dict(json.load(f))
     except (OSError, ValueError):
-        return replace(RouteOptions(), board_input=profile_defaults(DEFAULT_PROFILE).board_input)
+        return profile_defaults(DEFAULT_PROFILE)
 
 
 def save(path, options, stage_defaults=None):

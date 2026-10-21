@@ -33,8 +33,9 @@ def test_a_gui_that_writes_the_session_is_imported(env):
     dialog.on_route_gui(None)
     # The command line is `freerouting-gui -de x.dsn -do x.ses` plus the route options.
     argv = json.loads((work / "b.ses.argv").read_text(encoding="utf-8"))
+    # A board with no saved options gets the Enhanced profile's sweep (K09.9).
     assert argv == ["-de", str(work / "b.dsn"), "-do", str(work / "b.ses"), "--router.min_trace_width_um=150",
-                    "--router.board_minimums.track_width_um=150"]  # fmt: skip
+                    "--router.autorouter.sweep=free", "--router.board_minimums.track_width_um=150"]  # fmt: skip
     # The import step was reached, on the session the GUI wrote.
     assert ui.imports == [work / "b.ses"]
     assert "imported the result" in ui.messages[-1][0]
@@ -52,7 +53,7 @@ def test_the_gui_gets_the_options_but_not_the_seed(env):
     argv = json.loads((work / "b.ses.argv").read_text(encoding="utf-8"))
     assert argv[4:] == [
         "--max-passes", "7", "--threads", "2", "--router.optimizer.enabled=false", "--router.min_trace_width_um=150",
-        "--router.board_minimums.track_width_um=150",
+        "--router.autorouter.sweep=free", "--router.board_minimums.track_width_um=150",
     ]  # fmt: skip
 
 
