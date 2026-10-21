@@ -1197,6 +1197,17 @@ compare them on 12 committed boards and the 56-board corpus).
   file leaves it out, none where it sets 0; a `.kicad_pcb` job sets it as
   `router.board_minimums.hole_to_hole_um` (`job::prepare::board_minimums_patch`). Pinned by
   `tests/hole_to_hole.rs::a_kicad_pcb_input_passes_its_hole_to_hole_minimum`.
+- **`.kicad_dru` `hole_to_hole` rules reach the router** (Q22.14, `dru::item_types::hole_to_hole`;
+  Java's plugin never applies the `.kicad_dru`): the largest `hole_to_hole` minimum among the
+  rules that can match a pair of holes with a via (of one net or of two) raises
+  `router.board_minimums.hole_to_hole_um`, over Board Setup's `min_hole_to_hole` and the command
+  line (the larger wins), on both inputs (`--kicad-dru`, and the `.kicad_pcb` reader with
+  `apply_design_rules`), and the log names the rules. Conservative (decided 2026-10-20, option
+  (a)): a rule for holes of two nets also holds between holes of one net, with a warning; a rule
+  between pads only is left out. ch32v003: 0.5 mm from "hole to hole clearance (different nets)"
+  (`tests/dru_holes.rs`: `a_hole_to_hole_rule_is_a_floor`,
+  `the_largest_rule_that_can_apply_wins`, `the_job_raises_board_setups_hole_to_hole`,
+  `a_kicad_pcb_job_takes_the_larger_of_board_setup_and_the_rules`).
 - Rule areas that ban only footprints, pads or copper pour, or nothing (a KiCad 9 placement
   area), are not keepouts; KiCad's export makes each a full `keepout`. An area that bans
   footprints adds a `place_keepout`; a copper-pour-only area warns that the plane is not cut
@@ -1230,7 +1241,14 @@ compare them on 12 committed boards and the 56-board corpus).
   they match (a warning names a rule that is applied more widely than its condition); a rule
   asking no more than the DSN gives, one about pads only, and one about zones, text or
   same-net pairs is reported and left out. A `hole_clearance` rule becomes a floor of
-  `router.hole_clearance_um`, the command line's value included. With several net classes a
+  `router.hole_clearance_um`, the command line's value included, unless it is between plated
+  holes and tracks only (Q22.15): then a via hole's becomes `via_wire` of the rule's value less
+  the smallest annular ring of the via padstack names (`Via[a-b]_<d>:<drill>_um`), and a plated
+  pad's `pin_wire` of the value itself (the DSN gives no pad drill; warned). On ch32v003 the floor
+  of 330 µm also kept every routed via's copper from pad and via drills, which the rule does not
+  ask: KiCad unconnected 38 → 34 with Q22.14 in, 0 routing-caused breaches (`tests/dru_holes.rs`:
+  `a_plated_hole_rule_becomes_via_and_pin_to_track_clearances`,
+  `a_via_without_a_known_drill_keeps_the_floor`). With several net classes a
   routed via of the default class is kept from other vias and pads at the via-to-track value
   (conservative). A `(layer ...)` that names no copper layer of the board (`inner` on two
   layers) now leaves its rule out instead of applying it on every layer. Pinned by

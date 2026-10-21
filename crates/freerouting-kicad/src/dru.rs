@@ -12,9 +12,12 @@
 //! - (Q22.5) a **clearance** whose condition asks about item types
 //!   (`A.Type`, `B.Type == A.Type`, `A.isPlated()`, `A.Pad_Type`) becomes the
 //!   DSN's typed clearances, and a **hole_clearance** a floor of
-//!   `router.hole_clearance_um` ([`DruReport::hole_clearance`]); see
+//!   `router.hole_clearance_um` ([`DruReport::hole_clearance`]), or (Q22.15)
+//!   for plated holes against tracks typed copper clearances; see
 //!   [`item_types`] for the mapping, what is applied more widely (with a
-//!   warning in [`DruReport::warnings`]) and what is left out.
+//!   warning in [`DruReport::warnings`]) and what is left out;
+//! - (Q22.14) a **hole_to_hole** constraint a floor of
+//!   `router.board_minimums.hole_to_hole_um` ([`DruReport::hole_to_hole`]).
 //!
 //! A DSN input gets the same with [`apply_to_pcb`] (`--kicad-dru`, Q22.5).
 //! A `(layer ...)` clause that names no copper layer of the board (`inner` on
@@ -27,8 +30,8 @@
 //! and kept out: a condition with a term this module cannot evaluate
 //! (`insideCourtyard`, `intersectsArea`, `inDiffPair`, ...) makes the rule
 //! UNSUPPORTED and names the first such term, in both modes; so does a
-//! constraint kind other than `clearance`, `hole_clearance` and `track_width`
-//! and a rule without a condition.
+//! constraint kind other than `clearance`, `hole_clearance`, `hole_to_hole`
+//! and `track_width` and a rule without a condition.
 //!
 //! # Conditions
 //!
@@ -154,7 +157,9 @@ impl RuleReport {
     }
 }
 
-/// A `hole_clearance` the router applies to every hole (Q22.5).
+/// A `hole_clearance` the router applies to every hole (Q22.5), or a
+/// `hole_to_hole` distance it keeps between every routed via hole and every
+/// drill (Q22.14).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HoleClearance {
     /// The largest `min` of the applied rules, in nanometres.
@@ -175,6 +180,9 @@ pub struct DruReport {
     /// The `hole_clearance` floor of the applied rules (Q22.5): the caller
     /// raises `router.hole_clearance_um` to it.
     pub hole_clearance: Option<HoleClearance>,
+    /// The `hole_to_hole` floor of the applied rules (Q22.14): the caller
+    /// raises `router.board_minimums.hole_to_hole_um` to it.
+    pub hole_to_hole: Option<HoleClearance>,
 }
 
 impl DruReport {
@@ -645,6 +653,20 @@ impl Cond {
         }
     }
 
+    /// The condition with `A.Net == B.Net` taken as `same` (Q22.14: two holes
+    /// of one net have a hole-to-hole distance). An empty `&&` is true and an
+    /// empty `||` false.
+    pub(crate) fn with_same_net(&self, same: bool) -> Cond {
+        match self {
+            Cond::SameNet if same => Cond::And(Vec::new()),
+            Cond::SameNet => Cond::Or(Vec::new()),
+            Cond::Not(c) => Cond::Not(Box::new(c.with_same_net(same))),
+            Cond::And(v) => Cond::And(v.iter().map(|c| c.with_same_net(same)).collect()),
+            Cond::Or(v) => Cond::Or(v.iter().map(|c| c.with_same_net(same)).collect()),
+            c => c.clone(),
+        }
+    }
+
     /// Splits the layer terms of the top-level conjunction off. A layer term
     /// anywhere else is returned as an error naming it.
     fn split_layers(&self) -> Result<(Option<Cond>, Vec<String>), String> {
@@ -763,6 +785,20 @@ pub fn apply_in_units(
     layers: &[String],
     nm_per_unit: f64,
 ) -> DruReport {
+    apply_with_vias(file, apply, network, structure, layers, nm_per_unit, &[])
+}
+
+/// [`apply_in_units`]; `extra_vias` are further via padstack names (the
+/// library's) for the vias' annular ring (Q22.15).
+fn apply_with_vias(
+    file: &DruFile,
+    apply: bool,
+    network: &mut Network,
+    structure: &mut Structure,
+    layers: &[String],
+    nm_per_unit: f64,
+    extra_vias: &[String],
+) -> DruReport {
     let mut report = DruReport {
         present: true,
         ..DruReport::default()
@@ -775,6 +811,8 @@ pub fn apply_in_units(
         typed: item_types::Typed::default(),
         warnings: Vec::new(),
         hole: None,
+        hole_to_hole: None,
+        via_annular_nm: item_types::via_annular_nm(network, structure, extra_vias),
     };
     for rule in &file.rules {
         let mut rr = RuleReport {
@@ -799,6 +837,7 @@ pub fn apply_in_units(
     }
     report.warnings = ctx.warnings;
     report.hole_clearance = ctx.hole;
+    report.hole_to_hole = ctx.hole_to_hole;
     report
 }
 
@@ -819,16 +858,23 @@ pub fn apply_to_pcb(
         Some(Unit::Inch) => 25.4e6,
         Some(Unit::Mil) | None => 25.4e3,
     };
+    let library_vias: Vec<String> = pcb
+        .library
+        .iter()
+        .flat_map(|l| &l.padstacks)
+        .map(|p| p.name.clone())
+        .collect();
     let structure = pcb.structure.get_or_insert_with(Structure::default);
     let layers: Vec<String> = structure.layers.iter().map(|l| l.name.clone()).collect();
     let network = pcb.network.get_or_insert_with(Network::default);
-    Ok(apply_in_units(
+    Ok(apply_with_vias(
         &file,
         true,
         network,
         structure,
         &layers,
         nm_per_unit,
+        &library_vias,
     ))
 }
 
@@ -843,6 +889,11 @@ struct ApplyCtx<'a> {
     typed: item_types::Typed,
     warnings: Vec<String>,
     hole: Option<HoleClearance>,
+    /// The `hole_to_hole` floor (Q22.14).
+    hole_to_hole: Option<HoleClearance>,
+    /// The smallest annular ring of the board's via padstacks, from their
+    /// names (Q22.15); `None` when a via's drill is unknown.
+    via_annular_nm: Option<i64>,
 }
 
 /// One item of a pair, as a condition sees it.
@@ -875,7 +926,10 @@ fn rule_status(
     if let Some(term) = cond.first_unsupported() {
         return unsupported(format!("condition term '{term}'"));
     }
-    if !matches!(kind, "clearance" | "track_width" | "hole_clearance") {
+    if !matches!(
+        kind,
+        "clearance" | "track_width" | "hole_clearance" | "hole_to_hole"
+    ) {
         return unsupported(format!("constraint '{kind}' has no DSN form"));
     }
     if let Some(sev) = &rule.severity
@@ -914,6 +968,12 @@ fn rule_status(
                 return unsupported("hole_clearance without a min value".to_owned());
             };
             item_types::hole_clearance(rule, min, class_cond.as_ref(), &classes, ctx)
+        }
+        "hole_to_hole" => {
+            let Some(min) = bounds.min else {
+                return unsupported("hole_to_hole without a min value".to_owned());
+            };
+            item_types::hole_to_hole(rule, min, class_cond.as_ref(), &classes, ctx)
         }
         _ if typed => {
             let Some(min) = bounds.min else {

@@ -948,7 +948,7 @@ Sequencing:
     `python3 -m unittest discover -s tools/kicad-oracle/tests -p 'test_*.py'`: 44 tests OK;
     `kicad-plugin/tests` (k02 venv): 454 passed, 20 skipped. `plugin-input-ab.sh` is unchanged.
 
-- [ ] **Q22.14 — `.kicad_dru` hole-to-hole rules reach the router** (added 2026-10-20; decided
+- [x] **Q22.14 — `.kicad_dru` hole-to-hole rules reach the router** (added 2026-10-20; decided
   2026-10-20: routing never breaks the board's manufacturing rules). The reader logs
   `constraint hole_to_hole: UNSUPPORTED`. On main 6229b29 a ch32v003 PD6 via sat 0.4147 mm from
   a VBUS via, under its rule "hole to hole clearance (different nets)" (0.5 mm) (found in
@@ -962,8 +962,50 @@ Sequencing:
       minimum to 500 µm, a smaller rule leaves Board Setup's value, and the log names the rule;
     - ch32v003 through the plugin's export, one KiCad grade: routing-caused `hole_to_hole` 0,
       with KiCad unconnected beside it.
+  - *Done 2026-10-20:* on main `a36a5c0` (written on `e49b89a`, rebased; the grades below were
+    rerun on `a36a5c0` and match the `e49b89a` runs in `target/orchestrator/q2214/runs-e49b89a/`).
+    - **Reader.** `dru.rs` accepts the constraint `hole_to_hole`; `dru/item_types.rs::hole_to_hole`
+      evaluates the condition for every pair of holes (via, plated pad, NPTH pad) with at least
+      one via, each pair both of one net and of two (`Cond::with_same_net`: `A.Net == B.Net`
+      taken true and false), and raises `DruReport::hole_to_hole` (largest `min`, the applied
+      rules' names) for a rule that matches any; a rule between pads only is left out ("covers
+      only pad pairs, which routing never moves"), one naming no hole is ignored. A rule that
+      misses some pair (a different-nets rule) warns that it becomes a floor of
+      `router.board_minimums.hole_to_hole_um` for every drill, of any net.
+    - **Both inputs.** `--kicad-dru` on a DSN (`prepare_job` → `apply_kicad_dru`) and the
+      `.kicad_pcb` reader with `apply_design_rules` (`JobInput::rules_hole_to_hole`, set by
+      `set_kicad`). `raise_hole_to_hole` (a shared `raise_floor` with `raise_hole_clearance`)
+      raises the setting after every merge, over Board Setup's `min_hole_to_hole` (the plugin's
+      `--router.board_minimums.hole_to_hole_um`, or the `.kicad_pro` source) and the command line:
+      the larger wins, and the log names the rules ("router.board_minimums.hole_to_hole_um raised
+      from 250 to 500 by the .kicad_dru rules 'hole to hole clearance (different nets)', 'via to
+      via clearance (same nets)'").
+    - **Tests, written first** (`crates/freerouting-kicad/tests/dru_holes.rs` did not compile
+      before the change: no `DruReport::hole_to_hole`): `a_hole_to_hole_rule_is_a_floor` (0.5 mm
+      → 500000 nm, named, one warning, tree unchanged), `the_largest_rule_that_can_apply_wins`
+      (ch32v003's three rules: applied, applied, pad pairs ignored; 500000),
+      `a_rule_without_holes_is_left_out`, `the_job_raises_board_setups_hole_to_hole` (Board Setup
+      250 → 5000 board units = 500 µm with the log line naming the rule; a 0.2 mm rule leaves 250
+      with "is 250, no less"; Board Setup 600 kept; no Board Setup value → 500; no file →
+      unchanged), `the_kicad_pcb_reader_reads_the_hole_to_hole_rules` (500000 with
+      `apply_design_rules`, ignored without), `a_kicad_pcb_job_takes_the_larger_of_board_setup_and_the_rules`
+      (`classes.kicad_pcb`, `.kicad_pro` default 0.25 mm, `.kicad_dru` 0.5 mm → setting 500.0
+      and "Board minimum hole to hole 500.0 um").
+    - **ch32v003** through the plugin's export (`tools/kicad-oracle/grade.sh --export plugin`,
+      `{"schema": 4}`, one KiCad 10.0.7 grade; board copied to `target/orchestrator/q2214/board/`,
+      runs in `target/orchestrator/q2214/runs/`, routes under `ulimit -v 8000000` and
+      `timeout 300`): with Q22.14 and Q22.15 (`after`) routing-caused `hole_to_hole` **0**
+      (`clearance` 0, `hole_clearance` 0, below-minimum 0; only `isolated_copper` 16), KiCad
+      unconnected **34** (input 57), route 14.1 s. Q22.14 alone on main (`q2214-only`: main's
+      binary with `--router.board_minimums.hole_to_hole_um=500` after the plugin's flags):
+      `hole_to_hole` 0, unconnected 39 (main 38). Q22.15 alone (`q2215-only`: this build with the
+      three `hole_to_hole` rules taken out of the `.kicad_dru` the router reads; KiCad grades
+      with the original): `hole_to_hole` **3**, unconnected 30, so the floor is what keeps them
+      out.
+    - DIVERGENCES: freerouting-kicad, "`.kicad_dru` `hole_to_hole` rules reach the router".
+      `--kicad-dru` in `help.txt` names the setting.
 
-- [ ] **Q22.15 — What Q22.5 costs on ch32v003** (added 2026-10-20). With the plugin's default
+- [x] **Q22.15 — What Q22.5 costs on ch32v003** (added 2026-10-20). With the plugin's default
   options (`grade.sh --export plugin`, `{"schema": 4}`), ch32v003's KiCad unconnected went
   18 → 38 between main 6229b29 and 039a859, the Q22.5 merge, in both of Q22.11's arms. Q22.5's
   mapping is conservative in two places:
@@ -980,6 +1022,77 @@ Sequencing:
     - each part's cost named, from a run with that part alone changed;
     - 0 routing-caused `clearance`, `hole_clearance` and `hole_to_hole` in the after row. If the
       cost stays, say why the engine can't express the exact rule.
+  - *Done 2026-10-20:* on main `a36a5c0`, with Q22.14 in. Every row: ch32v003 through
+    `tools/kicad-oracle/grade.sh --export plugin` (`{"schema": 4}`, enhanced, the plugin's Board
+    Setup flags), one KiCad 10.0.7 grade, routes under `ulimit -v 8000000` and `timeout 300`
+    (`target/orchestrator/q2214/route.sh`, `engine.sh`; runs in `target/orchestrator/q2214/runs/`).
+    A part is switched alone by changing only the `.kicad_dru` the router reads (`engine.sh`
+    swaps the `--kicad-dru` path; variants in `target/orchestrator/q2214/dru/`); KiCad always
+    grades with the board's own file.
+
+    | Row | router binary and rules | KiCad unconnected (input 57) | routing-caused by type | route |
+    |---|---|---|---|---|
+    | no `--kicad-dru` (Q22.5 off; 6229b29 had 18, `clearance` 19, `hole_clearance` 4, `hole_to_hole` 1) | main | 18 | `clearance` 17, `hole_clearance` 5, `hole_to_hole` 1, `isolated_copper` 17 | 4.0 s |
+    | **before**: Q22.5 as merged | main, the board's rules | **38** | `isolated_copper` 12 | 11.5 s |
+    | part 1 alone back: no hole floor | main, the three `hole_clearance` rules out (`router.hole_clearance_um` stays Board Setup's 250) | 22 | `hole_clearance` 9 (all a routed via's hole against a track under `'PTH to Track clearance)'` 0.33 mm), `hole_to_hole` 1 | 5.0 s |
+    | the typed rule alone back | main, `'Pad to Track clearance)'` out | 38 | `clearance` 8, `isolated_copper` 14 | 11.9 s |
+    | part 1 exact for vias (emulated) | main, the via and PTH hole rules replaced by `A.Type == 'via' && B.Type == 'track'` clearance 0.2538 mm (0.33 less the via's 76.2 µm ring); NPTH floor 254 | 34 | `hole_to_hole` 1 | 13.4 s |
+    | Q22.14 alone | main, `--router.board_minimums.hole_to_hole_um=500` after the plugin's flags | 39 | `isolated_copper` 12 | 10.8 s |
+    | Q22.15 alone | this change, the three `hole_to_hole` rules out | 30 | `hole_to_hole` 3, `isolated_copper` 20 | 14.2 s |
+    | **after**: Q22.14 + Q22.15 | this change, the board's rules | **34** | `isolated_copper` 16 (`clearance` 0, `hole_clearance` 0, `hole_to_hole` 0, below-minimum 0) | 14.1 s |
+
+    - **Part 1, the 330 µm hole floor, costs 16 of the 20** (38 → 22 without it), but 12 of those
+      16 are KiCad's own rule: `A.isPlated()` is true for a via, and `'PTH to Track clearance)'`
+      comes after `'via to track clearance'` in the file (KiCad's last matching rule wins), so a
+      via hole keeps 0.33 mm from tracks; without the floor KiCad finds 9 such breaches. The
+      conservative part, the floor also keeping every routed via's copper 0.33 mm from pad and via
+      drills (KiCad asks Board Setup's 0.25 mm) and NPTH holes 0.33 mm from copper (0.254 mm),
+      costs **4** (38 → 34 with only the via part expressed exactly).
+    - **Part 2 costs 0 on ch32v003**: it has one net class, so a routed via's class is not kept
+      at the via-to-track value from other vias and pads. Measured on the routed DSN with the
+      board's `.kicad_dru` (`build_board` after `apply_to_pcb`, layer 0, 0.1 µm units): `via`
+      against `via`, `pin`, `smd` and `area` 1270, against `default` (wires) 2538; `pin` against
+      wires 3300; without the rules `default` 1270 and `smd` 318 only. No run can switch it, as it
+      does not arise (Q22.5's `plated_is_exact_with_one_class`).
+    - **The typed rule** `'Pad to Track clearance)'` costs 0 beside the floor (38 → 38 without it,
+      with 8 `clearance` breaches) and 4 without it (22 vs 18).
+    - **The mapping made exact** (`dru/item_types.rs`, module docs "Hole clearance"): a
+      `hole_clearance` rule between plated holes and tracks only becomes `via_wire` of its value
+      less the smallest annular ring of the board's via padstacks, read from their names
+      (`Via[a-b]_<diameter>:<drill>_um`, the name the engine reads a via's drill from; ch32v003
+      0.33 − 0.0762 = 0.2538 mm), and `pin_wire` of its value (warned: the DSN gives no pad drill,
+      so the pad's copper edge stands for its hole). Any other match (an NPTH hole, a hole against
+      pad or via copper) and a via name without a drill stay floors of `router.hole_clearance_um`.
+      ch32v003's floor is now the NPTH rule's 254 µm. A pad-pad hole pair is left out.
+      Tests (`crates/freerouting-kicad/tests/dru_holes.rs`):
+      `a_plated_hole_rule_becomes_via_and_pin_to_track_clearances` (fixture via 600:300: `via_wire`
+      180, `pin_wire` 330, no floor, one warning naming the rule),
+      `a_via_hole_rule_uses_the_via_annular_ring` (0.4 mm → `via_wire` 250; 0.254 mm asks no more
+      than 150 µm and is left out), `npth_and_pad_copper_rules_stay_floors` (254000, 300000),
+      `a_via_without_a_known_drill_keeps_the_floor` (330000),
+      `the_job_keeps_board_setups_hole_clearance_for_a_plated_rule` (hole clearance 2500 units,
+      `via`–wire 1800). Q22.5's `hole_clearance_is_a_floor`,
+      `the_job_applies_the_rules_and_the_hole_floor` and `ch32v003_rules_report` now use an NPTH
+      or pad-copper rule for the floor (`'via to track clearance'` is "asks for no more than the
+      DSN gives", the floor 254000).
+    - **After: 34, 0 routing-caused breaches.** The 4 the exact via mapping saves on main are
+      eaten by Q22.14's 500 µm hole-to-hole floor (Q22.15 alone 30 with 3 `hole_to_hole`; Q22.14
+      alone 39). The rest of the 18 → 34 is what the board's rules ask (via holes 0.33 mm from
+      tracks, plated copper 0.2 mm from tracks, 0.5 mm between holes of different nets).
+    - **What the engine cannot say yet** (follow-ups, not code here):
+      1. a hole-to-hole distance per net relation: `BoardRules::hole_to_hole` is one value for
+         every drill pair, so ch32v003's 0.5 mm rule for different nets also holds between two
+         vias of one net (its rule 0.254 mm); `board/hole_spacing.rs` would take a same-net and a
+         different-net distance (Q22.14's option (b));
+      2. a plated pad's hole against tracks: the DSN gives no pad drill, so `pin_wire` takes the
+         whole value; the plugin could name the drill in the pad's padstack, as KiCad names a
+         via's, or the engine could keep a hole-to-track clearance apart from
+         `router.hole_clearance_um` (in `drill_hole_clearance_delta` for the trace trees, and in
+         `drc/board_rules.rs`'s hole check for traces), with the global for via copper;
+      3. the NPTH floor (254 µm) is global, so it also keeps via copper 4 µm further from every
+         drill than Board Setup asks; the same split as 2 would remove it.
+    - DIVERGENCES: freerouting-kicad, the Q22.5 line ("unless it is between plated holes and
+      tracks only (Q22.15) ..."). `--kicad-dru` in `help.txt` says how hole rules are applied.
 
 - [ ] **Q22.16 — Footprint mask apertures keep other nets out** (added 2026-10-20; decided
   2026-10-20: routing never breaks the board's manufacturing rules, so no grader exception for

@@ -455,24 +455,26 @@ fn rules_that_change_nothing_are_left_out() {
     }
 }
 
-/// A plated `hole_clearance` becomes a floor of `router.hole_clearance_um`,
-/// with a warning; the tree is unchanged.
+/// An NPTH `hole_clearance`, and one against pad copper, become a floor of
+/// `router.hole_clearance_um`, with a warning; the tree is unchanged. (A
+/// plated hole against tracks becomes typed clearances, Q22.15:
+/// `tests/dru_holes.rs`.)
 #[test]
 fn hole_clearance_is_a_floor() {
     let text = format!(
         "{}{}",
         rule(
-            "PTH to Track",
+            "NPTH to Track",
             "hole_clearance",
             "0.33mm",
-            "A.isPlated() && B.Type == 'track'"
+            "A.Pad_Type == 'NPTH, mechanical' && B.Type == 'track'"
         ),
-        "(rule \"via\" (constraint hole_clearance (min 0.254mm)) (condition \"A.Type == 'via' && B.Type == 'track'\"))\n"
+        "(rule \"via\" (constraint hole_clearance (min 0.254mm)) (condition \"A.Type == 'via' && B.Type == 'pad'\"))\n"
     );
     let (pcb, report) = applied(&text);
     let hole = report.hole_clearance.expect("a floor");
     assert_eq!(hole.nm, 330_000);
-    assert_eq!(hole.rules, ["PTH to Track", "via"]);
+    assert_eq!(hole.rules, ["NPTH to Track", "via"]);
     assert_eq!(report.warnings.len(), 2);
     assert_eq!(pcb, tree());
 }
@@ -499,10 +501,10 @@ fn prepared(dru: Option<&str>, cli_hole_um: Option<f64>) -> (f64, Vec<String>) {
 #[test]
 fn the_job_applies_the_rules_and_the_hole_floor() {
     let text = rule(
-        "PTH to Track",
+        "NPTH to Track",
         "hole_clearance",
         "0.33mm",
-        "A.isPlated() && B.Type == 'track'",
+        "A.Pad_Type == 'NPTH, mechanical' && B.Type == 'track'",
     );
     let (none, _) = prepared(None, Some(250.0));
     assert_eq!(none, 250.0);
@@ -561,12 +563,15 @@ fn ch32v003_rules_report() {
         [
             "ignored: asks for no more than the DSN gives",
             "ignored: its layers are not copper layers of the board",
-            "applied",
+            // Q22.15: 0.254 mm less the via's 150 µm ring is below 150 µm
+            "ignored: asks for no more than the DSN gives",
             "ignored: covers only pad pairs, which routing never moves",
             "applied",
             "applied",
             "applied",
         ]
     );
-    assert_eq!(report.hole_clearance.unwrap().nm, 330_000);
+    // Q22.15: the PTH rule became via_wire and pin_wire; the NPTH rule is
+    // the floor
+    assert_eq!(report.hole_clearance.unwrap().nm, 254_000);
 }

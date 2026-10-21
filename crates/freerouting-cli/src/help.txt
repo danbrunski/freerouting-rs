@@ -139,8 +139,10 @@ PLUGIN FLAGS (not in Java)
   --kicad-dru <design.kicad_dru>
       With a DSN input, apply the board's KiCad custom rules that the router
       can express: class-pair clearances, class track widths, clearances
-      between item types (tracks, vias, plated and SMD pads) and hole
-      clearances, which raise router.hole_clearance_um. A rule the router can
+      between item types (tracks, vias, plated and SMD pads), hole
+      clearances (plated holes to tracks as via and pad clearances, others
+      raising router.hole_clearance_um) and hole-to-hole distances, which
+      raise router.board_minimums.hole_to_hole_um. A rule the router can
       only apply more widely is applied with a warning; one that asks for no
       more than the DSN gives is reported and left out. A .kicad_pcb input
       ignores it with a warning (use --apply-design-rules).

@@ -70,14 +70,42 @@
 //!
 //! # Hole clearance
 //!
-//! A `hole_clearance` rule whose condition matches a hole (via, plated or
-//! NPTH pad) and copper becomes a floor of the board-wide
-//! `router.hole_clearance_um` (Q18): [`super::DruReport::hole_clearance`]
-//! carries the largest value and the caller raises the setting to it. The
-//! typed matrix is a copper-to-copper clearance and cannot say a hole's, and
-//! a per-padstack conversion (hole clearance minus annular ring) would need a
-//! clearance class per padstack. The global is conservative: it also keeps
-//! holes from pads and from other vias, which KiCad's rule may not ask.
+//! A `hole_clearance` rule is evaluated for every pair of a hole (via, plated
+//! or NPTH pad) and copper (a pad's hole against another pad's copper is
+//! left out: routing never moves a pad).
+//!
+//! - **Plated holes against tracks only** (Q22.15; ch32v003's
+//!   `A.isPlated() && B.Type == 'track'`): the via and the pin are round
+//!   copper around their hole, so the rule becomes typed copper clearances.
+//!   A via hole keeps `min` from tracks as `via_wire` of `min` less the
+//!   smallest annular ring of the board's via padstacks, read from their
+//!   names (`Via[a-b]_<diameter>:<drill>_um`, KiCad's and the reader's; the
+//!   engine takes a via's drill from the same name). A plated pad's hole
+//!   keeps `min` from tracks as `pin_wire` of `min` itself, with a warning:
+//!   the DSN gives no pad drill, so the pad's copper edge stands for its
+//!   hole. When a via name gives no drill the rule is a floor, as below.
+//! - **Any other match** (an NPTH hole, which reaches the router as a
+//!   keepout, or a hole against pad or via copper) becomes a floor of the
+//!   board-wide `router.hole_clearance_um` (Q18):
+//!   [`super::DruReport::hole_clearance`] carries the largest value and the
+//!   caller raises the setting to it. The global is conservative: it keeps
+//!   every hole from all copper, which KiCad's rule may not ask.
+//!
+//! Before Q22.15 the plated rule was a floor too: on ch32v003 (one net class,
+//! `'PTH to Track clearance)'` 0.33 mm over Board Setup's 0.25 mm) it also
+//! kept every routed via's copper 0.33 mm from pad drills and other vias'
+//! drills, which KiCad's rule does not ask.
+//!
+//! # Hole to hole
+//!
+//! A `hole_to_hole` rule (Q22.14) is evaluated for every pair of holes with
+//! at least one via (routing places no pad), each pair both of one net and
+//! of two nets. One that matches any becomes a floor of
+//! `router.board_minimums.hole_to_hole_um` (Q22.11), which keeps every routed
+//! via hole that far from every drill, of any net:
+//! [`super::DruReport::hole_to_hole`] carries the largest value (decided
+//! 2026-10-20, option (a)). It is conservative: a rule for holes of two nets
+//! also holds between holes of one net, with a warning.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -158,6 +186,11 @@ impl ItemType {
     /// Whether the item has copper.
     pub fn has_copper(self) -> bool {
         self != ItemType::NpthPad
+    }
+
+    /// Whether the item is a pad.
+    pub fn is_pad(self) -> bool {
+        !matches!(self, ItemType::Track | ItemType::Via)
     }
 }
 
@@ -592,7 +625,8 @@ pub(super) fn clearance(
     Status::Applied { effects }
 }
 
-/// A `hole_clearance` constraint: a floor of `router.hole_clearance_um`.
+/// A `hole_clearance` constraint: typed copper clearances for plated holes
+/// against tracks, else a floor of `router.hole_clearance_um` (module docs).
 pub(super) fn hole_clearance(
     rule: &DruRule,
     min_nm: i64,
@@ -601,31 +635,27 @@ pub(super) fn hole_clearance(
     ctx: &mut ApplyCtx<'_>,
 ) -> Status {
     let names = kicad_classes(classes);
-    let (mut hit, mut miss) = (false, false);
+    let mut matched: BTreeSet<(ItemType, ItemType)> = BTreeSet::new();
+    let (mut pads_only, mut miss) = (false, false);
     for (i, a) in names.iter().enumerate() {
         for b in &names[i..] {
-            for ta in ItemType::ALL.into_iter().filter(|t| t.has_hole()) {
-                for tb in ItemType::ALL.into_iter().filter(|t| t.has_copper()) {
-                    let pa = Probe {
-                        class: a,
-                        item: Some(ta),
-                    };
-                    let pb = Probe {
-                        class: b,
-                        item: Some(tb),
-                    };
+            for hole in ItemType::ALL.into_iter().filter(|t| t.has_hole()) {
+                for copper in ItemType::ALL.into_iter().filter(|t| t.has_copper()) {
                     // `a` and `b` may each be the hole
-                    let qa = Probe {
-                        item: Some(tb),
-                        ..pa
-                    };
-                    let qb = Probe {
-                        item: Some(ta),
-                        ..pb
-                    };
-                    for (x, y) in [(pa, pb), (qb, qa)] {
-                        match holds(cond, x, y) {
-                            Ok(true) => hit = true,
+                    for (x, y) in [(*a, *b), (*b, *a)] {
+                        let h = Probe {
+                            class: x,
+                            item: Some(hole),
+                        };
+                        let c = Probe {
+                            class: y,
+                            item: Some(copper),
+                        };
+                        match holds(cond, h, c) {
+                            Ok(true) if hole.is_pad() && copper.is_pad() => pads_only = true,
+                            Ok(true) => {
+                                matched.insert((hole, copper));
+                            }
                             Ok(false) => miss = true,
                             Err(e) => return Status::Unsupported(e),
                         }
@@ -634,11 +664,23 @@ pub(super) fn hole_clearance(
             }
         }
     }
-    if !hit {
-        return Status::Ignored("matches no hole and copper pair".to_owned());
+    if matched.is_empty() {
+        let why = if pads_only {
+            "covers only pad pairs, which routing never moves"
+        } else {
+            "matches no hole and copper pair"
+        };
+        return Status::Ignored(why.to_owned());
     }
     if !ctx.apply {
         return Status::Ignored("apply_design_rules is off".to_owned());
+    }
+    let plated_to_tracks = matched
+        .iter()
+        .all(|(h, c)| *c == ItemType::Track && h.is_plated());
+    if plated_to_tracks && let Some(status) = plated_to_track(rule, min_nm, &matched, classes, ctx)
+    {
+        return status;
     }
     let floor = ctx.hole.get_or_insert(HoleClearance {
         nm: min_nm,
@@ -656,4 +698,165 @@ pub(super) fn hole_clearance(
         ));
     }
     Status::Applied { effects: 1 }
+}
+
+/// Q22.15: a plated hole against tracks as `via_wire` (less the vias'
+/// annular ring) and `pin_wire`; `None` when a via's drill is unknown.
+fn plated_to_track(
+    rule: &DruRule,
+    min_nm: i64,
+    matched: &BTreeSet<(ItemType, ItemType)>,
+    classes: &[String],
+    ctx: &mut ApplyCtx<'_>,
+) -> Option<Status> {
+    let has = |t: ItemType| matched.iter().any(|(h, _)| *h == t);
+    let mut wanted: Vec<(KindPair, f64)> = Vec::new();
+    if has(ItemType::Via) {
+        let annular = ctx.via_annular_nm?;
+        wanted.push((pair(Kind::Via, Kind::Wire), (min_nm - annular) as f64));
+    }
+    if has(ItemType::PthPad) {
+        wanted.push((pair(Kind::Pin, Kind::Wire), min_nm as f64));
+    }
+    let mut names: Vec<String> = classes.to_vec();
+    if names.is_empty() {
+        names.push(ctx.base.default_name());
+    }
+    let mut effects = 0;
+    let mut raised: BTreeSet<KindPair> = BTreeSet::new();
+    for (i, a) in names.iter().enumerate() {
+        for b in &names[i..] {
+            for (k, nm) in &wanted {
+                if nm / ctx.nm_per_unit > ctx.base.get(a, b, *k) {
+                    effects += 1;
+                    raised.insert(*k);
+                }
+            }
+        }
+    }
+    if effects == 0 {
+        return Some(Status::Ignored(
+            "asks for no more than the DSN gives".to_owned(),
+        ));
+    }
+    for (k, nm) in wanted.iter().filter(|(k, _)| raised.contains(k)) {
+        ctx.typed.require(*k, nm / ctx.nm_per_unit);
+    }
+    if raised.contains(&pair(Kind::Pin, Kind::Wire)) {
+        ctx.warnings.push(format!(
+            "design rule '{}' (line {}): hole_clearance {} of plated pads keeps tracks that far \
+             from the pad's copper, since the DSN gives no pad drill",
+            rule.name,
+            rule.line,
+            mm(min_nm)
+        ));
+    }
+    Some(Status::Applied { effects })
+}
+
+/// A `hole_to_hole` constraint (Q22.14): a floor of
+/// `router.board_minimums.hole_to_hole_um` (module docs).
+pub(super) fn hole_to_hole(
+    rule: &DruRule,
+    min_nm: i64,
+    cond: Option<&Cond>,
+    classes: &[String],
+    ctx: &mut ApplyCtx<'_>,
+) -> Status {
+    let names = kicad_classes(classes);
+    let variants: Vec<Option<Cond>> = [false, true]
+        .into_iter()
+        .map(|same| cond.map(|c| c.with_same_net(same)))
+        .collect();
+    let (mut via, mut pads, mut miss) = (false, false, false);
+    let holes = ItemType::ALL.into_iter().filter(|t| t.has_hole());
+    for (i, a) in names.iter().enumerate() {
+        for b in &names[i..] {
+            for ta in holes.clone() {
+                for tb in holes.clone() {
+                    let pa = Probe {
+                        class: a,
+                        item: Some(ta),
+                    };
+                    let pb = Probe {
+                        class: b,
+                        item: Some(tb),
+                    };
+                    for c in &variants {
+                        match holds(c.as_ref(), pa, pb) {
+                            Ok(true) if ta.is_pad() && tb.is_pad() => pads = true,
+                            Ok(true) => via = true,
+                            Ok(false) => miss = true,
+                            Err(e) => return Status::Unsupported(e),
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if !via {
+        let why = if pads {
+            "covers only pad pairs, which routing never moves"
+        } else {
+            "matches no pair of holes"
+        };
+        return Status::Ignored(why.to_owned());
+    }
+    if !ctx.apply {
+        return Status::Ignored("apply_design_rules is off".to_owned());
+    }
+    let floor = ctx.hole_to_hole.get_or_insert(HoleClearance {
+        nm: min_nm,
+        rules: Vec::new(),
+    });
+    floor.nm = floor.nm.max(min_nm);
+    floor.rules.push(rule.name.clone());
+    if miss {
+        ctx.warnings.push(format!(
+            "design rule '{}' (line {}): hole_to_hole {} becomes a floor of \
+             router.board_minimums.hole_to_hole_um, which keeps every routed via hole that far \
+             from every drill, of any net",
+            rule.name,
+            rule.line,
+            mm(min_nm)
+        ));
+    }
+    Status::Applied { effects: 1 }
+}
+
+/// Q22.15: the smallest annular ring, in nanometres, of the via padstacks the
+/// DSN names (the structure's, the network's and its classes', and the
+/// `Via[`-named ones of `extra`). `None` when there is none or a name gives
+/// no drill.
+pub(super) fn via_annular_nm(
+    network: &Network,
+    structure: &Structure,
+    extra: &[String],
+) -> Option<i64> {
+    let listed = structure
+        .via
+        .iter()
+        .flat_map(|v| v.padstacks.iter().chain(&v.spare))
+        .chain(network.vias.iter().map(|v| &v.padstack))
+        .chain(
+            network
+                .classes
+                .iter()
+                .flat_map(|c| c.circuit.iter().flat_map(|c| &c.use_via)),
+        );
+    let library = extra.iter().filter(|n| n.starts_with("Via["));
+    let mut smallest: Option<i64> = None;
+    for name in listed.chain(library) {
+        let ring = annular_of_name(name)?;
+        smallest = Some(smallest.map_or(ring, |s| s.min(ring)));
+    }
+    smallest
+}
+
+/// `Via[a-b]_<diameter>:<drill>_um`: half the difference, in nanometres.
+fn annular_of_name(name: &str) -> Option<i64> {
+    let sizes = name.strip_suffix("_um")?.rsplit_once('_')?.1;
+    let (d, drill) = sizes.split_once(':')?;
+    let (d, drill): (f64, f64) = (d.parse().ok()?, drill.parse().ok()?);
+    (drill > 0.0 && d >= drill).then(|| ((d - drill) * 500.0).round() as i64)
 }

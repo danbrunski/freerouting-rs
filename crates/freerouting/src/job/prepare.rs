@@ -15,7 +15,9 @@
 //!    ([`JobInput::kicad_dru`], `--kicad-dru`, Q22.5) is applied to the
 //!    parsed tree first, and its `hole_clearance` floor (or a `.kicad_pcb`'s,
 //!    [`JobInput::rules_hole_clearance`]) raises `router.hole_clearance_um`
-//!    after each merge, over the command line too. Without either nothing
+//!    after each merge, over the command line too, as its `hole_to_hole`
+//!    floor (Q22.14, [`JobInput::rules_hole_to_hole`]) raises
+//!    `router.board_minimums.hole_to_hole_um`. Without either nothing
 //!    changes;
 //! 3. `set_layer_count` if the counts differ, then the board-specific cost
 //!    tuning, the net-class exclusions and the five overrides. **The costs
@@ -137,6 +139,9 @@ pub struct JobInput {
     /// `.kicad_pcb` ([`set_kicad`](Self::set_kicad)). [`prepare_job`] raises
     /// `router.hole_clearance_um` to it after every merge.
     pub rules_hole_clearance: Option<HoleClearance>,
+    /// Q22.14: the `hole_to_hole` floor of a `.kicad_pcb`'s `.kicad_dru`
+    /// rules; raises `router.board_minimums.hole_to_hole_um` the same way.
+    pub rules_hole_to_hole: Option<HoleClearance>,
 }
 
 impl JobInput {
@@ -159,6 +164,7 @@ impl JobInput {
             kicad_source: None,
             kicad_dru: None,
             rules_hole_clearance: None,
+            rules_hole_to_hole: None,
         }
     }
 
@@ -182,6 +188,7 @@ impl JobInput {
         });
         self.read_log = warnings.chain(report).chain(rule_warnings).collect();
         self.rules_hole_clearance = read.rules.hole_clearance.clone();
+        self.rules_hole_to_hole = read.rules.hole_to_hole.clone();
         // Q18: the `.kicad_pro`'s Board Setup minimums are hard floors, at
         // the DSN's priority: a config file sets them below, the command
         // line over them.
@@ -380,8 +387,11 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     };
     // Q22.5: the `.kicad_dru` of a DSN input, onto the tree.
     let mut hole_floor = input.rules_hole_clearance.clone();
+    let mut hole_to_hole_floor = input.rules_hole_to_hole.clone();
     if let (Some((path, rules)), Some(tree)) = (&input.kicad_dru, pcb.as_mut()) {
-        hole_floor = apply_kicad_dru(tree.to_mut(), path, rules, &mut log).or(hole_floor);
+        let (hole, hole_to_hole) = apply_kicad_dru(tree.to_mut(), path, rules, &mut log);
+        hole_floor = hole.or(hole_floor);
+        hole_to_hole_floor = hole_to_hole.or(hole_to_hole_floor);
     }
 
     // 1. The first merge.
@@ -410,6 +420,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let mut provenance = merged.provenance;
     let mut patch = merged.patch;
     raise_hole_clearance(&mut patch, hole_floor.as_ref(), Some(&mut log));
+    raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), Some(&mut log));
 
     // 2. Read the board, with the readers' `router.java_quirks.*` (N06) of the
     // first merge.
@@ -462,6 +473,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         provenance = merged.provenance;
         patch = merged.patch;
         raise_hole_clearance(&mut patch, hole_floor.as_ref(), None);
+        raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), None);
         let (rules_board, outcome) = apply_rules_file(board, &rules, &input.design_name);
         board = rules_board;
         log.extend(outcome.log);
@@ -554,13 +566,13 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
 }
 
 /// Q22.5: applies a `.kicad_dru` to a DSN tree; the report goes to `log`.
-/// Returns the rules' `hole_clearance` floor.
+/// Returns the rules' `hole_clearance` and (Q22.14) `hole_to_hole` floors.
 fn apply_kicad_dru(
     pcb: &mut Pcb,
     path: &std::path::Path,
     text: &str,
     log: &mut Vec<LogLine>,
-) -> Option<HoleClearance> {
+) -> (Option<HoleClearance>, Option<HoleClearance>) {
     push(
         log,
         LogLevel::Info,
@@ -574,7 +586,7 @@ fn apply_kicad_dru(
             for warning in &report.warnings {
                 push(log, LogLevel::Warn, warning.clone());
             }
-            report.hole_clearance
+            (report.hole_clearance, report.hole_to_hole)
         }
         Err(e) => {
             push(
@@ -582,7 +594,7 @@ fn apply_kicad_dru(
                 LogLevel::Warn,
                 format!("the .kicad_dru file could not be read: {e}"),
             );
-            None
+            (None, None)
         }
     }
 }
@@ -595,11 +607,38 @@ fn raise_hole_clearance(
     floor: Option<&HoleClearance>,
     log: Option<&mut Vec<LogLine>>,
 ) {
+    let setting = "router.hole_clearance_um";
+    raise_floor(&mut patch.hole_clearance_um, setting, floor, log);
+}
+
+/// Q22.14: raises `router.board_minimums.hole_to_hole_um` (Board Setup's
+/// `min_hole_to_hole`, Q22.11) to the `.kicad_dru` floor the same way: the
+/// larger wins.
+fn raise_hole_to_hole(
+    patch: &mut SettingsPatch,
+    floor: Option<&HoleClearance>,
+    log: Option<&mut Vec<LogLine>>,
+) {
+    let setting = "router.board_minimums.hole_to_hole_um";
+    raise_floor(
+        &mut patch.board_minimums.hole_to_hole_um,
+        setting,
+        floor,
+        log,
+    );
+}
+
+fn raise_floor(
+    value: &mut Option<f64>,
+    setting: &str,
+    floor: Option<&HoleClearance>,
+    log: Option<&mut Vec<LogLine>>,
+) {
     let Some(floor) = floor else {
         return;
     };
     let um = floor.nm as f64 / 1000.0;
-    let current = patch.hole_clearance_um.unwrap_or(0.0);
+    let current = value.unwrap_or(0.0);
     let names = floor
         .rules
         .iter()
@@ -608,21 +647,19 @@ fn raise_hole_clearance(
         .join(", ");
     let raised = um > current;
     if raised {
-        patch.hole_clearance_um = Some(um);
+        *value = Some(um);
     }
     if let Some(log) = log {
         let (level, text) = if raised {
             (
                 LogLevel::Warn,
-                format!(
-                    "router.hole_clearance_um raised from {current} to {um} by the .kicad_dru rules {names}"
-                ),
+                format!("{setting} raised from {current} to {um} by the .kicad_dru rules {names}"),
             )
         } else {
             (
                 LogLevel::Info,
                 format!(
-                    "router.hole_clearance_um is {current}, no less than the .kicad_dru rules {names} ask ({um})"
+                    "{setting} is {current}, no less than the .kicad_dru rules {names} ask ({um})"
                 ),
             )
         };
