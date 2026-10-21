@@ -29,7 +29,9 @@
 //! The `.kicad_dru` rules are applied only with
 //! [`ReadOptions::apply_design_rules`]; the default is off, because KiCad's
 //! DSN export ignores that file and applying it changes routing (K00
-//! question 7).
+//! question 7). A DSN input gets a board's `.kicad_dru` with `--kicad-dru`
+//! ([`crate::job::prepare::JobInput::kicad_dru`], Q22.5), which the plugin
+//! passes for every DSN route.
 //!
 //! # Writing the routed copper back (K08)
 //!

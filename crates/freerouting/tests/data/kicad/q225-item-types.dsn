@@ -1,0 +1,98 @@
+(pcb q225-item-types.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.0")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  0 0  40000 0  40000 -20000  0 -20000  0 0)
+    )
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 150)
+      (clearance 37.5 (type smd_smd))
+    )
+  )
+  (placement
+    (component q225:THT
+      (place J1 10000 -5000 front 0 (PN THT))
+    )
+    (component q225:SMD
+      (place R1 30000 -5000 front 0 (PN SMD))
+    )
+  )
+  (library
+    (image q225:THT
+      (pin Round[A]Pad_1700_um 1 -1270 0)
+      (pin Round[A]Pad_1700_um 2 1270 0)
+    )
+    (image q225:SMD
+      (pin RoundRect[T]Pad_1000x1200_um 1 -1000 0)
+      (pin RoundRect[T]Pad_1000x1200_um 2 1000 0)
+    )
+    (padstack Round[A]Pad_1700_um
+      (shape (circle F.Cu 1700))
+      (shape (circle B.Cu 1700))
+      (attach off)
+    )
+    (padstack RoundRect[T]Pad_1000x1200_um
+      (shape (rect F.Cu -500 -600 500 600))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net GND
+      (pins J1-1 R1-1)
+    )
+    (net VCC
+      (pins J1-2 R1-2)
+    )
+    (net SIG)
+    (class kicad_default GND SIG
+      (circuit
+        (use_via "Via[0-1]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 150)
+      )
+    )
+    (class Power VCC
+      (circuit
+        (use_via "Via[0-1]_600:300_um")
+      )
+      (rule
+        (width 300)
+        (clearance 250)
+      )
+    )
+  )
+  (wiring
+    (wire (path F.Cu 200  2000 -15000  38000 -15000)(net SIG)(type route))
+    (wire (path B.Cu 300  2000 -18000  38000 -18000)(net VCC)(type route))
+    (via "Via[0-1]_600:300_um"  20000 -10000 (net GND)(type route))
+    (via "Via[0-1]_600:300_um"  25000 -10000 (net VCC)(type route))
+  )
+)

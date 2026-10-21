@@ -43,7 +43,7 @@
 //!   walk: `--max-passes`, `--threads`, `--timeout` and `--result-json` become
 //!   the `--router.*` flags that set the same fields, so they can never do
 //!   more than the settings do. `--progress`, `--seed`, `--apply-design-rules`
-//!   (K10.3), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
+//!   (K10.3), `--kicad-dru` (Q22.5), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
 //!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
@@ -362,6 +362,11 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
         ),
     ),
     (
+        "--kicad-dru",
+        true,
+        Setting::CliOnly("applies a board's .kicad_dru clearance rules to a DSN input (Q22.5)"),
+    ),
+    (
         "--version",
         false,
         Setting::CliOnly("prints the version line"),
@@ -456,6 +461,9 @@ pub struct Args {
     /// `--apply-design-rules` was given (K10.3): the route reads the
     /// `.kicad_dru` rules of a `.kicad_pcb` into the board.
     pub apply_design_rules: bool,
+    /// `--kicad-dru FILE` (Q22.5): the `.kicad_dru` whose rules a DSN input
+    /// gets.
+    pub kicad_dru: Option<String>,
     /// `--version` was given (C08.2).
     pub version: bool,
     /// `--capabilities` was given (C08.2).
@@ -821,6 +829,7 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
         let value = value.unwrap_or_default();
         match name {
             "--apply-design-rules" => out.apply_design_rules = true,
+            "--kicad-dru" => out.kicad_dru = Some(value),
             "--version" => out.version = true,
             "--capabilities" => out.capabilities = true,
             "--progress" => match value.to_lowercase().as_str() {

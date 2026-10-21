@@ -66,7 +66,10 @@ rules).
     - the table is in the done note;
     - every row the reader carries has a test that names it;
     - every row the reader lacks is fixed in the reader (test first) or listed with the board
-      it would affect.
+      it would affect;
+    - the `.kicad_pcb` path applies the `.kicad_dru` item-type and hole rules by default, as the
+      DSN path does since Q22.5. Today it needs `--apply-design-rules` (K10.3) (decided
+      2026-10-20: the board's own rules reach the router on both inputs).
 
 - [x] **K13.2 — Existing copper comes back unchanged.** Find which rounding moves the ends of
   existing tracks on `One-Air-Max`. The reader rounds to 0.1 µm and the export to `%.6g`. Make

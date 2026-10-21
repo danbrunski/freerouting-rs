@@ -84,9 +84,30 @@ def router_args(board, opts, extra_args=(), for_gui=False):
         minimum = nm / 1000.0 if nm and nm > 0 else None
     except Exception:  # older pcbnew without the attribute
         minimum = None
-    return opts.to_args(minimum, for_gui=for_gui, extra_args=extra_args) + options.board_minimum_args(
-        board_minimums_nm(board)
+    return (
+        opts.to_args(minimum, for_gui=for_gui, extra_args=extra_args)
+        + options.board_minimum_args(board_minimums_nm(board))
+        + kicad_dru_args(board, opts, for_gui)
     )
+
+
+def kicad_dru_args(board, opts, for_gui=False):
+    """Q22.5: `--kicad-dru <board>.kicad_dru` when the router reads KiCad's
+    DSN export and the project has custom rules. The export drops that file;
+    the router applies the clearance rules it can express (item types, net
+    classes, hole clearance). Always on, in every profile: a fix to the
+    input. The `.kicad_pcb` input reads the file itself (`--apply-design-rules`),
+    and the GUI's command line has no such flag."""
+    if for_gui or opts.board_input != options.INPUT_DSN:
+        return []
+    try:
+        name = board.GetFileName()
+    except Exception:  # not a pcbnew board
+        return []
+    if not name:
+        return []
+    dru = Path(name).with_suffix(".kicad_dru")
+    return ["--kicad-dru", str(dru)] if dru.is_file() else []
 
 
 def board_minimums_nm(board):

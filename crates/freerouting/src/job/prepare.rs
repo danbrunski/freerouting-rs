@@ -11,7 +11,12 @@
 //!    unknown one is a [`JobError::Settings`]), config file, DSN,
 //!    environment, CLI (and any extra sources, for example a testing
 //!    profile);
-//! 2. read the board;
+//! 2. read the board; a `.kicad_dru` given for a DSN input
+//!    ([`JobInput::kicad_dru`], `--kicad-dru`, Q22.5) is applied to the
+//!    parsed tree first, and its `hole_clearance` floor (or a `.kicad_pcb`'s,
+//!    [`JobInput::rules_hole_clearance`]) raises `router.hole_clearance_um`
+//!    after each merge, over the command line too. Without either nothing
+//!    changes;
 //! 3. `set_layer_count` if the counts differ, then the board-specific cost
 //!    tuning, the net-class exclusions and the five overrides. **The costs
 //!    are tuned on the bounding box before it is expanded**, and the tuning
@@ -58,6 +63,7 @@ use super::overrides::{self, OverrideState};
 use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
 use crate::dsn::ast::{Pcb, RulesFile};
+use crate::io::kicad::reader::dru::HoleClearance;
 use crate::io::kicad::reader::project::BoardMinimums;
 pub use crate::io::kicad::{
     DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input, same_file,
@@ -123,6 +129,14 @@ pub struct JobInput {
     /// The `.kicad_pcb` the design was read from ([`set_kicad`](Self::set_kicad)),
     /// for a `.kicad_pcb` output (K08).
     pub kicad_source: Option<crate::io::kicad::KicadSource>,
+    /// Q22.5: a board's `.kicad_dru` for a DSN input (`--kicad-dru`): its
+    /// path, for the log, and its text. [`prepare_job`] applies its rules to
+    /// the parsed DSN before the board is built.
+    pub kicad_dru: Option<(PathBuf, String)>,
+    /// Q22.5: the `hole_clearance` floor of the `.kicad_dru` rules of a
+    /// `.kicad_pcb` ([`set_kicad`](Self::set_kicad)). [`prepare_job`] raises
+    /// `router.hole_clearance_um` to it after every merge.
+    pub rules_hole_clearance: Option<HoleClearance>,
 }
 
 impl JobInput {
@@ -143,6 +157,8 @@ impl JobInput {
             cli: None,
             extra_sources: Vec::new(),
             kicad_source: None,
+            kicad_dru: None,
+            rules_hole_clearance: None,
         }
     }
 
@@ -160,7 +176,12 @@ impl JobInput {
             level: LogLevel::Info,
             text,
         });
-        self.read_log = warnings.chain(report).collect();
+        let rule_warnings = read.rules.warnings.iter().map(|text| LogLine {
+            level: LogLevel::Warn,
+            text: text.clone(),
+        });
+        self.read_log = warnings.chain(report).chain(rule_warnings).collect();
+        self.rules_hole_clearance = read.rules.hole_clearance.clone();
         // Q18: the `.kicad_pro`'s Board Setup minimums are hard floors, at
         // the DSN's priority: a config file sets them below, the command
         // line over them.
@@ -352,10 +373,15 @@ fn read_rules_file(path: &std::path::Path, log: &mut Vec<LogLine>) -> Option<Rul
 pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob, JobError> {
     let mut log = input.read_log.clone();
     let text = freerouting_dsn::decode(&input.dsn);
-    let pcb: Option<Cow<'_, Pcb>> = match &input.pcb {
+    let mut pcb: Option<Cow<'_, Pcb>> = match &input.pcb {
         Some(pcb) => Some(Cow::Borrowed(pcb)),
         None => Pcb::parse(&text).ok().map(Cow::Owned),
     };
+    // Q22.5: the `.kicad_dru` of a DSN input, onto the tree.
+    let mut hole_floor = input.rules_hole_clearance.clone();
+    if let (Some((path, rules)), Some(tree)) = (&input.kicad_dru, pcb.as_mut()) {
+        hole_floor = apply_kicad_dru(tree.to_mut(), path, rules, &mut log).or(hole_floor);
+    }
 
     // 1. The first merge.
     let mut sources = vec![(Source::Defaults, defaults(ctx))];
@@ -382,6 +408,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     }
     let mut provenance = merged.provenance;
     let mut patch = merged.patch;
+    raise_hole_clearance(&mut patch, hole_floor.as_ref(), Some(&mut log));
 
     // 2. Read the board, with the readers' `router.java_quirks.*` (N06) of the
     // first merge.
@@ -433,6 +460,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         let merged = resolve(&second, ctx);
         provenance = merged.provenance;
         patch = merged.patch;
+        raise_hole_clearance(&mut patch, hole_floor.as_ref(), None);
         let (rules_board, outcome) = apply_rules_file(board, &rules, &input.design_name);
         board = rules_board;
         log.extend(outcome.log);
@@ -522,6 +550,83 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         ses_summary,
         rules_path,
     })
+}
+
+/// Q22.5: applies a `.kicad_dru` to a DSN tree; the report goes to `log`.
+/// Returns the rules' `hole_clearance` floor.
+fn apply_kicad_dru(
+    pcb: &mut Pcb,
+    path: &std::path::Path,
+    text: &str,
+    log: &mut Vec<LogLine>,
+) -> Option<HoleClearance> {
+    push(
+        log,
+        LogLevel::Info,
+        format!("KiCad design rules file: {}", path.display()),
+    );
+    match freerouting_kicad::dru::apply_to_pcb(pcb, text) {
+        Ok(report) => {
+            for line in report.lines() {
+                push(log, LogLevel::Info, line);
+            }
+            for warning in &report.warnings {
+                push(log, LogLevel::Warn, warning.clone());
+            }
+            report.hole_clearance
+        }
+        Err(e) => {
+            push(
+                log,
+                LogLevel::Warn,
+                format!("the .kicad_dru file could not be read: {e}"),
+            );
+            None
+        }
+    }
+}
+
+/// Q22.5: raises `router.hole_clearance_um` to the `.kicad_dru` floor, after
+/// every source (the command line's value included: a board rule is a
+/// floor). Logs the outcome when `log` is given.
+fn raise_hole_clearance(
+    patch: &mut SettingsPatch,
+    floor: Option<&HoleClearance>,
+    log: Option<&mut Vec<LogLine>>,
+) {
+    let Some(floor) = floor else {
+        return;
+    };
+    let um = floor.nm as f64 / 1000.0;
+    let current = patch.hole_clearance_um.unwrap_or(0.0);
+    let names = floor
+        .rules
+        .iter()
+        .map(|r| format!("'{r}'"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let raised = um > current;
+    if raised {
+        patch.hole_clearance_um = Some(um);
+    }
+    if let Some(log) = log {
+        let (level, text) = if raised {
+            (
+                LogLevel::Warn,
+                format!(
+                    "router.hole_clearance_um raised from {current} to {um} by the .kicad_dru rules {names}"
+                ),
+            )
+        } else {
+            (
+                LogLevel::Info,
+                format!(
+                    "router.hole_clearance_um is {current}, no less than the .kicad_dru rules {names} ask ({um})"
+                ),
+            )
+        };
+        push(log, level, text);
+    }
 }
 
 /// Records the board's clearance violations as its pre-existing ones (Java

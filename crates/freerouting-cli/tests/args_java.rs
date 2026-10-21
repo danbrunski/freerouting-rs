@@ -1050,7 +1050,26 @@ mod plugin_flags {
         assert!(a.usage_errors.is_empty());
         assert_eq!(a.design_file.as_deref(), Some("a.dsn"));
         assert_eq!(a.output_file.as_deref(), Some("a.ses"));
-        assert_eq!(EXTRA_FLAGS.len(), 12);
+        assert_eq!(EXTRA_FLAGS.len(), 13);
+    }
+
+    /// Q22.5: `--kicad-dru FILE` takes the file and warns about nothing.
+    #[test]
+    fn kicad_dru_takes_a_file() {
+        let a = parse_strs(&[
+            "-de",
+            "a.dsn",
+            "--kicad-dru",
+            "/p/a.kicad_dru",
+            "-do",
+            "a.ses",
+        ]);
+        assert_eq!(count(&a, LogLevel::Warn), 0, "{:?}", a.log);
+        assert!(a.usage_errors.is_empty());
+        assert_eq!(a.kicad_dru.as_deref(), Some("/p/a.kicad_dru"));
+        assert_eq!(a.output_file.as_deref(), Some("a.ses"));
+        let missing = parse_strs(&["-de", "a.dsn", "--kicad-dru"]);
+        assert_eq!(missing.usage_errors, ["--kicad-dru needs a value"]);
     }
 
     /// K10.3: `--apply-design-rules` is a switch without a value: it sets

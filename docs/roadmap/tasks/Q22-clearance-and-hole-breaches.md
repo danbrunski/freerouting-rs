@@ -513,7 +513,7 @@ Sequencing:
       net can cross a net shape of a listed net (KiCad reports it as `clearance` or
       `shorting_items`).
 
-- [ ] **Q22.5 — `.kicad_dru` clearances between item types.**
+- [x] **Q22.5 — `.kicad_dru` clearances between item types.**
   - `dru.rs` learns the conditions `A.Type` (`'track'`, `'via'`, `'pad'`), `A.isPlated()` and
     `A.Pad_Type`. It maps each onto the DSN's typed clearances: `via_wire`, `pin_wire`,
     `smd_wire`, `via_via` and so on.
@@ -532,6 +532,61 @@ Sequencing:
     - a DIVERGENCES line (Java's plugin never applies the `.kicad_dru`), module docs and a
       pinning test;
     - `cargo fmt`, `clippy` and the touched crates' tests pass.
+  - *Done 2026-10-20:* on main `5c79e31` (Q22.3, Q22.4 and Q22.10 in).
+    - **Conditions.** `dru.rs` parses `X.Type == 't'`, `B.Type == A.Type`, `X.isPlated()`,
+      `X.Pad_Type == 'v'` and `A.Net ==`/`!= B.Net`; `dru/item_types.rs` (new) evaluates a rule
+      for every pair of item types (track, via, through-hole, SMD, edge-connector and NPTH pad)
+      and net classes and writes the DSN's typed clearances: the default class's in the
+      structure (so its routed vias, input vias and pins take them), every other class's after
+      its own clearance, and every class pair as a typed `class_class` block. A pad-pad rule, a
+      zone rule and a same-net rule are left out; several rules on a kind pair keep the largest.
+    - **Hole clearance** (decided here, module docs of `item_types`): a `hole_clearance` rule that
+      matches a hole and copper becomes a floor of the board-wide `router.hole_clearance_um`,
+      applied in `prepare_job` after every merge (over a smaller command-line value, never
+      lowering a larger one). The typed matrix is copper to copper, and a per-padstack
+      conversion would need a clearance class per padstack; the global is conservative.
+    - **Inputs.** New CLI flag `--kicad-dru FILE` for a DSN input (`args.rs`, `help.txt`,
+      `cli.rs`; `JobInput::kicad_dru`); `--apply-design-rules` stays the `.kicad_pcb` switch and
+      now applies the same item-type rules. The plugin passes `--kicad-dru <board>.kicad_dru` for
+      every DSN route when the file exists (`export_flow.kicad_dru_args`, every profile; not for
+      the GUI or the snapshot input).
+    - **Tests.** `crates/freerouting-kicad/tests/dru_item_types.rs` (13) on the new fixture
+      `crates/freerouting/tests/data/kicad/q225-item-types.dsn` (`kicad_default` 150 µm and
+      `Power` 250 µm with its own clearance class), measuring the clearance classes the built
+      board's wires, routed vias, input vias, pins and SMD pads really have:
+      `type_via_and_track_sets_via_wire`, `type_pad_sets_pin_and_smd_wire`,
+      `plated_sets_via_and_pin_wire_in_every_class` (Power pins and vias against default
+      wires and back), `plated_is_exact_with_one_class` (nothing else changes),
+      `pad_type_sets_smd_wire_with_a_warning`, `same_type_sets_wire_wire`,
+      `net_class_term_is_applied_to_every_class_with_a_warning`,
+      `rules_that_change_nothing_are_left_out`, `hole_clearance_is_a_floor`,
+      `the_job_applies_the_rules_and_the_hole_floor` (250 → 330 µm, 400 kept, unchanged without
+      a file), `ch32v003_rules_report`, `item_terms_parse`,
+      `the_fixture_has_two_clearance_classes`. Plugin: `kicad-plugin/tests/test_kicad_dru_args.py`
+      (2). CLI: `args_java.rs::kicad_dru_takes_a_file`.
+    - **ch32v003** (`center` flags of N04.3, `tools/kicad-oracle/grade.sh --keep-tracks --export
+      plugin` with `{"schema": 5}`, one KiCad 10.0.7 grade per arm; runs in
+      `target/orchestrator/q225/runs/`):
+
+      | Arm | routing-caused by type | KiCad unconnected | route |
+      |---|---|---|---|
+      | before (main's plugin, no `--kicad-dru`) | `clearance` 2: `'Pad to Track clearance)'`, the `J1-SHIELD` B.Cu track against the GND vias at 0.1881 and 0.1981 mm | 0 (input 3) | 3.29 s |
+      | after (`--kicad-dru` passed) | none: `clearance` 0, `hole_clearance` 0, `below_minimum` 0 | 0 (input 3) | 13.22 s |
+
+      The router log applies `'Pad to Track clearance)'` (2 targets: via-wire, pin-wire) and
+      raises `router.hole_clearance_um` from 250 to 330 (`'via to track clearance'`, `'NPTH to
+      Track clearance)'`, `'PTH to Track clearance)'`); `'Minimum Trace Spacing (outer layer)'`
+      is left out (no more than the DSN), the inner-layer rules are left out (no inner layer),
+      the pad-pad rule is left out. Pre-existing items 30 in both. The engine's own count of
+      unrouted connections went 31 → 43, which KiCad's grade does not see (0 unconnected in
+      both, the board's zones connect them).
+    - **DIVERGENCES**: freerouting-kicad ("`.kicad_dru` clearances between item types reach
+      the router"), freerouting-cli (`--kicad-dru`), kicad-plugin ("The project's `.kicad_dru`
+      is passed for a DSN route").
+    - **Gate**: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test -p freerouting-kicad -p freerouting -p freerouting-cli`
+      passes (CLI rerun after updating `EXTRA_FLAGS.len()` to 13); `pytest kicad-plugin/tests`
+      456 passed, 20 skipped; `tools/parity-check.sh --no-probes` 7 of 7 exact.
 
 - [x] **Q22.6 — The grader can route the plugin's export.**
   - `grade.sh --export plugin OPTIONS.json` exports with `headless_run.py export` (the plugin's

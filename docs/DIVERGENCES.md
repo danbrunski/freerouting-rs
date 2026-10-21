@@ -1194,6 +1194,20 @@ compare them on 12 committed boards and the 56-board corpus).
   `ReadOptions::apply_design_rules`, off by default (K00 question 7; `supported_rules_change_the_tree_exactly`,
   `option_off_leaves_the_tree_alone`, `design_rules_reach_the_board`). `canary-pwr`'s ten
   `insideCourtyard` rules are all UNSUPPORTED (`canary_pwr_rules_are_unsupported_by_name`).
+- **`.kicad_dru` clearances between item types reach the router** (Q22.5, `dru::item_types`;
+  Java's plugin never applies the `.kicad_dru`): conditions on `A.Type` (`track`, `via`, `pad`),
+  `B.Type == A.Type`, `A.isPlated()` and `A.Pad_Type` become the DSN's typed clearances
+  (`via_wire`, `pin_wire`, `smd_wire`, ...), applied to every net-class pair of the kind pairs
+  they match (a warning names a rule that is applied more widely than its condition); a rule
+  asking no more than the DSN gives, one about pads only, and one about zones, text or
+  same-net pairs is reported and left out. A `hole_clearance` rule becomes a floor of
+  `router.hole_clearance_um`, the command line's value included. With several net classes a
+  routed via of the default class is kept from other vias and pads at the via-to-track value
+  (conservative). A `(layer ...)` that names no copper layer of the board (`inner` on two
+  layers) now leaves its rule out instead of applying it on every layer. Pinned by
+  `tests/dru_item_types.rs` (`plated_is_exact_with_one_class`,
+  `plated_sets_via_and_pin_wire_in_every_class`, `hole_clearance_is_a_floor`,
+  `ch32v003_rules_report`, ...).
 - Against the export's board the reader's differences are exactly the ones above and nothing
   else: `crates/freerouting/tests/kicad_parity.rs` lists each with its reason and fails on any
   other, and on a listed one that no longer occurs; the item order is the export's except for
@@ -1325,6 +1339,10 @@ plugin_flags}.rs`)
   not in `--capabilities`. They write per-stage work counts and times and change no result: the
   session is byte-identical with and without them and the counts of two runs are equal
   (`stats_change_no_session_and_the_counts_repeat`).
+- `--kicad-dru FILE` (Q22.5) applies a KiCad `.kicad_dru` to a DSN input (`JobInput::kicad_dru`,
+  `prepare_job`); Java has no such flag. An unreadable file fails the run; with a `.kicad_pcb`
+  input the flag is ignored with a warning. Pinned by
+  `dru_item_types.rs::the_job_applies_the_rules_and_the_hole_floor`.
 
 ## freerouting-gui
 
@@ -1661,6 +1679,10 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `test_a_copper_text_becomes_keepouts_of_its_glyph_outlines`,
   `test_a_shape_of_a_net_is_left_out_and_logged`,
   `test_kicad_board_collects_copper_shapes_and_visible_texts`).
+- **The project's `.kicad_dru` is passed for a DSN route** (Q22.5, `export_flow.kicad_dru_args`,
+  always on, every profile): `--kicad-dru <board>.kicad_dru` when the file exists and the router
+  reads KiCad's export; Java's plugin never applies the file. Not passed for the `.kicad_pcb`
+  snapshot (which reads it itself) or the GUI. Pinned by `test_kicad_dru_args.py`.
 - **Board Setup's minimum clearance is passed** (Q22.10, `options.BOARD_MINIMUM_SETTINGS`):
   `m_MinClearance` becomes `--router.board_minimums.clearance_um` under both profiles; 0 passes
   nothing. Pinned by `test_min_clearance.py`.

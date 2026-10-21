@@ -504,6 +504,31 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     if let Some(read) = kicad_input {
         input.set_kicad(read);
     }
+    // Q22.5: a board's `.kicad_dru` for a DSN input.
+    if let Some(file) = &parsed.kicad_dru {
+        if kicad {
+            log_lines.push(line(
+                LogLevel::Warn,
+                "--kicad-dru only applies to a DSN input; a .kicad_pcb reads the .kicad_dru next to it (--apply-design-rules)",
+            ));
+        } else {
+            match std::fs::read(file) {
+                Ok(bytes) => {
+                    input.kicad_dru = Some((
+                        PathBuf::from(file),
+                        String::from_utf8_lossy(&bytes).into_owned(),
+                    ))
+                }
+                Err(e) => {
+                    printer.print(&log_lines);
+                    return Finish::of(fail(
+                        printer,
+                        format!("Couldn't read the --kicad-dru file '{file}': {e}"),
+                    ));
+                }
+            }
+        }
+    }
     input.config_file = config;
     input.environment = environment;
 
