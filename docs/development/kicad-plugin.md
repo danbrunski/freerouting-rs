@@ -762,12 +762,16 @@ unlocked tracks first, 9bc7ee6). Making it the default was decided by K10.5's ru
   editor (owner, with K02.8).
 - **The reader's report.** The router's own log lists the reader's report lines and warnings; after a Route run
   the plugin copies those (`snapshot.reader_lines`) to `plugin.log`.
-- **`apply_kicad_rules` (K10.3)**, off by default: passes `--apply-design-rules` (new CLI switch,
-  `cli_kicad.rs::the_apply_design_rules_switch_changes_the_class_rules`: on the `classes` board the rule
-  "fast tracks" takes the Fast wires from 0.1 mm to 0.3 mm in the session; `design_rules_reach_the_board` is
-  the engine-level test) only with `board_input = kicad_pcb` and only for Route. "Route in GUI" reads the
-  `.kicad_dru` but has no such switch and says so in the log. The minimum track width stays
-  `--router.min_trace_width_um` on both paths. The `-drc` mode does not apply the rules.
+- **`apply_kicad_rules` (K10.3)** no longer decides anything (K13.1, decided 2026-10-20: the board's own rules
+  reach the router on both inputs). Every snapshot Route gets `--apply-design-rules`
+  (`export_flow.kicad_dru_args`, as a DSN Route gets `--kicad-dru`), and the CLI applies a `.kicad_pcb`'s
+  `.kicad_dru` by default anyway (`--no-design-rules` turns it off; `cli_kicad.rs::the_apply_design_rules_switch_changes_the_class_rules`:
+  on the `classes` board the rule "fast tracks" takes the Fast wires from 0.1 mm to 0.3 mm in the session;
+  `design_rules_reach_the_board` is the engine-level test). The dialog's check box is ticked and greyed, and the
+  saved value is kept as it was (K13.7 can drop the field with its schema bump). "Route in GUI" reads the
+  `.kicad_dru` but has no such switch and says so in the log, on the snapshot as on the DSN (no `--kicad-dru`
+  either). The minimum track width stays `--router.min_trace_width_um` on both paths. The `-drc` mode does not
+  apply the rules. Tests: `test_board_rules_both_inputs.py`.
 - **The K09 restriction (K10.4).** The K09 options that rewrite DSN text (`class_widths`, `fixed_pour_classes`
   as `wires` or `auto`, `drop_pour_nets`, `edge_and_pad_keepouts`, `route_on_plane_layers`) cannot apply to a
   `.kicad_pcb`, so the dialog refuses `kicad_pcb` while any is on and names it

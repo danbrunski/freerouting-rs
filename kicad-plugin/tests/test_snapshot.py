@@ -55,30 +55,23 @@ def test_the_dsn_input_is_the_default_and_adds_nothing():
 # --- K10.3: the .kicad_dru switch -----------------------------------------------
 
 
-def test_the_rules_switch_is_passed_only_when_the_option_is_on_and_the_input_is_the_snapshot():
+def test_the_rules_switch_is_passed_for_every_snapshot_route_and_never_for_a_dsn():
+    # K13.1: the board's rules reach the router on both inputs, so the
+    # snapshot gets the switch whatever `apply_kicad_rules` says;
+    # `export_flow.kicad_dru_args` adds it (test_board_rules_both_inputs.py).
     assert opts().to_args() == []
-    assert opts(apply_kicad_rules=True).to_args() == ["--apply-design-rules"]
+    assert opts(apply_kicad_rules=True).to_args() == []
     assert snapshot.router_args(opts(apply_kicad_rules=True)) == ["--apply-design-rules"]
-    assert snapshot.router_args(opts()) == []
+    assert snapshot.router_args(opts()) == ["--apply-design-rules"]
     # not on a DSN input, whatever the option says
-    assert RouteOptions(apply_kicad_rules=True).to_args() == []
-    # not for the GUI, which has no such switch
-    assert opts(apply_kicad_rules=True).to_args(for_gui=True) == []
-    # in order: after the K09 router flags, before extra args and stages
-    args = opts(apply_kicad_rules=True, sweep="free", stages={"a.b": "x"}).to_args(150.0, extra_args=["--e"])
-    assert args == [
-        "--router.min_trace_width_um=150",
-        "--router.autorouter.sweep=free",
-        "--apply-design-rules",
-        "--e",
-        "--router.a.b=x",
-    ]
+    assert snapshot.router_args(RouteOptions(apply_kicad_rules=True)) == []
 
 
 def test_the_run_log_notes_say_what_a_snapshot_does_not_do():
     assert any("rule-area fix-up not applied" in n for n in snapshot.notes(opts()))
-    assert snapshot.notes(opts(rule_area_fixup=False)) == []
-    assert any("--apply-design-rules" in n for n in snapshot.notes(opts(apply_kicad_rules=True)))
+    assert all("rule-area" not in n for n in snapshot.notes(opts(rule_area_fixup=False)))
+    for old in (False, True):
+        assert any("--apply-design-rules" in n for n in snapshot.notes(opts(apply_kicad_rules=old)))
 
 
 def test_the_reader_lines_are_picked_out_of_the_router_log():

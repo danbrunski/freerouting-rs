@@ -101,10 +101,11 @@ def disk_sources(board_dir, stem):
 
 
 def router_args(opts):
-    """The router flags the snapshot adds: `--apply-design-rules` when the
-    option is on (`options.RouteOptions.to_args` puts it in order; this is the
-    same decision for callers that need only the extras)."""
-    return ["--apply-design-rules"] if wanted(opts) and opts.apply_kicad_rules else []
+    """The router flags the snapshot adds: `--apply-design-rules`, for every
+    snapshot route (K13.1: the board's own rules reach the router on both
+    inputs, as `--kicad-dru` gives them to a DSN route; the router applies
+    them by default anyway). `export_flow.kicad_dru_args` passes it."""
+    return ["--apply-design-rules"] if wanted(opts) else []
 
 
 def notes(opts):
@@ -115,8 +116,7 @@ def notes(opts):
         out.append(
             "rule-area fix-up not applied: the router reads the board's rule areas by their flags (K06.2)"
         )
-    if opts.apply_kicad_rules:
-        out.append("--apply-design-rules: the .kicad_dru rules are applied (Route and the CLI; Route in GUI reads them only)")
+    out.append("the .kicad_dru rules are applied (--apply-design-rules; a DSN route gets --kicad-dru; Route in GUI reads them only)")
     return out
 
 
@@ -179,5 +179,5 @@ def take(board, pcbnew, work_dir, stem, board_dir):
         lines.append("project: no .kicad_pro, the reader uses KiCad's default net class")
     if "dru" in disk:
         shutil.copyfile(disk["dru"], files["dru"])
-        lines.append(f"design rules: {disk['dru'].name} copied from disk (read by the router, applied only with --apply-design-rules)")
+        lines.append(f"design rules: {disk['dru'].name} copied from disk (read and applied by the router)")
     return True, lines

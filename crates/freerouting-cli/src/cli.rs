@@ -458,14 +458,22 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     }
 
     let kicad = design_kind(Path::new(design)) == DesignKind::KicadPcb;
-    if parsed.apply_design_rules && !kicad {
-        log_lines.push(line(
-            LogLevel::Warn,
-            "--apply-design-rules only applies to a .kicad_pcb input; it is ignored here",
-        ));
+    for (given, flag) in [
+        (parsed.apply_design_rules, "--apply-design-rules"),
+        (parsed.no_design_rules, "--no-design-rules"),
+    ] {
+        if given && !kicad {
+            log_lines.push(line(
+                LogLevel::Warn,
+                format!("{flag} only applies to a .kicad_pcb input; it is ignored here"),
+            ));
+        }
     }
+    // K13.1: a `.kicad_pcb` route applies its `.kicad_dru` rules unless
+    // `--no-design-rules` (decided 2026-10-20: the board's own rules reach
+    // the router on both inputs; a DSN route gets them with `--kicad-dru`).
     let read_options = ReadOptions {
-        apply_design_rules: parsed.apply_design_rules,
+        apply_design_rules: !parsed.no_design_rules,
         ..ReadOptions::default()
     };
     let (dsn, kicad_input) = if kicad {
@@ -509,7 +517,7 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
         if kicad {
             log_lines.push(line(
                 LogLevel::Warn,
-                "--kicad-dru only applies to a DSN input; a .kicad_pcb reads the .kicad_dru next to it (--apply-design-rules)",
+                "--kicad-dru only applies to a DSN input; a .kicad_pcb reads and applies the .kicad_dru next to it",
             ));
         } else {
             match std::fs::read(file) {

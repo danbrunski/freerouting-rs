@@ -441,14 +441,21 @@ class Dialog(wx.Dialog):
             "their flags, track arcs, unsaved Board Setup changes); it cannot be combined with the "
             "DSN fix-ups below. Experimental."
         )
-        self.apply_rules = wx.CheckBox(page, label="Apply the project's .kicad_dru rules (snapshot, Route only)")
-        self.apply_rules.SetValue(saved.apply_kicad_rules)
-        self.apply_rules.SetToolTip("Class-pair clearances and class track widths of the .kicad_dru beside the board (--apply-design-rules)")
+        # K13.1: the board's own rules reach the router on both inputs, so the
+        # box is always on and greyed; the saved value is kept as it was.
+        self.apply_rules = wx.CheckBox(page, label="Apply the project's .kicad_dru rules (always, both inputs; Route only)")
+        self.apply_rules.SetValue(True)
+        self.apply_rules.Disable()
+        self.apply_rules.SetToolTip(
+            "The .kicad_dru beside the board reaches the router on both inputs: --kicad-dru for the DSN export, "
+            "--apply-design-rules for the snapshot. Route in GUI reads it only."
+        )
+        self.saved_kicad_rules = saved.apply_kicad_rules
 
     def k10_values(self):
         return {
             "board_input": options.BOARD_INPUTS[max(self.board_input.GetSelection(), 0)],
-            "apply_kicad_rules": self.apply_rules.GetValue(),
+            "apply_kicad_rules": self.saved_kicad_rules,
         }
 
     def fill_dsn_group(self, group):
@@ -523,7 +530,7 @@ class Dialog(wx.Dialog):
         self.fix_areas.SetValue(opts.rule_area_fixup)
         self.profile.SetSelection(options.PROFILES.index(opts.profile))
         self.board_input.SetSelection(options.BOARD_INPUTS.index(opts.board_input))
-        self.apply_rules.SetValue(opts.apply_kicad_rules)
+        self.saved_kicad_rules = opts.apply_kicad_rules
         self.widths.SetValue(options.format_class_widths(opts.class_widths))
         self.fixed_pours.SetValue(options.format_names(opts.fixed_pour_classes))
         self.pour_mode.SetSelection(options.POUR_MODES.index(opts.fixed_pour_mode))
@@ -799,7 +806,7 @@ class Dialog(wx.Dialog):
 
     def route_gui(self, chosen, extra):
         self.ses.unlink(missing_ok=True)
-        if snapshot.wanted(self.used) and self.used.apply_kicad_rules:
+        if snapshot.wanted(self.used):
             log_lines(self.work_dir, self.design, ["Route in GUI reads the .kicad_dru but does not apply it (use Route)"])
         run = routing.GuiRun(self.gui, self.design, self.ses, export_flow.router_args(self.board, self.used, extra, for_gui=True))
         try:

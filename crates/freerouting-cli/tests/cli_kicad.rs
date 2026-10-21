@@ -133,12 +133,15 @@ fn a_kicad_5_file_exits_1() {
     assert!(!dir.join("out.ses").exists());
 }
 
-/// K10.3: `--apply-design-rules` puts the expressible `.kicad_dru` rules on
-/// the board of a `.kicad_pcb` input, as `ReadOptions::apply_design_rules`
-/// does in `design_rules_reach_the_board`. On the `classes` board the rule
+/// K10.3, K13.1: a `.kicad_pcb` route puts the expressible `.kicad_dru`
+/// rules on the board by default (decided 2026-10-20: the board's own rules
+/// reach the router on both inputs), as `ReadOptions::apply_design_rules`
+/// does in `design_rules_reach_the_board`; `--apply-design-rules` says the
+/// same and `--no-design-rules` turns it off. On the `classes` board the rule
 /// "fast tracks" (track width 0.3 mm for class Fast) changes the width of the
-/// routed Fast wires in the session from 0.1 mm to 0.3 mm; without the
-/// switch the rules are read, reported as ignored, and change nothing.
+/// routed Fast wires in the session from 0.1 mm to 0.3 mm; with
+/// `--no-design-rules` the rules are read, reported as ignored, and change
+/// nothing.
 #[test]
 fn the_apply_design_rules_switch_changes_the_class_rules() {
     let dir = scratch("kicad-dru");
@@ -172,8 +175,10 @@ fn the_apply_design_rules_switch_changes_the_class_rules() {
             std::fs::read_to_string(dir.join(name)).unwrap(),
         )
     };
-    let (off_log, off) = route("off.ses", &[]);
-    let (on_log, on) = route("on.ses", &["--apply-design-rules"]);
+    let (off_log, off) = route("off.ses", &["--no-design-rules"]);
+    let (on_log, on) = route("on.ses", &[]);
+    let (_, explicit) = route("explicit.ses", &["--apply-design-rules"]);
+    assert_eq!(explicit, on, "--apply-design-rules is the default");
 
     for rule in ["clearance", "track_width"] {
         assert!(
@@ -200,6 +205,74 @@ fn the_apply_design_rules_switch_changes_the_class_rules() {
     assert!(widths(&off).iter().any(|w| w == "1000"), "{off}");
     assert!(widths(&on).iter().any(|w| w == "3000"), "{on}");
     assert!(!on.lines().zip(off.lines()).all(|(a, b)| a == b));
+}
+
+/// K13.1: the item-type, hole-clearance and hole-to-hole rules of a
+/// `.kicad_pcb`'s `.kicad_dru` reach the route by default, as `--kicad-dru`
+/// gives them to a DSN route since Q22.5 and Q22.14/15; `--no-design-rules`
+/// reports them and applies none.
+#[test]
+fn a_kicad_pcb_route_applies_the_item_type_and_hole_rules_by_default() {
+    let dir = scratch("kicad-dru-default");
+    let synthetic = repo("fixtures/kicad/synthetic");
+    for name in ["classes.kicad_pcb", "classes.kicad_pro"] {
+        std::fs::copy(synthetic.join(name), dir.join(name)).unwrap();
+    }
+    std::fs::write(
+        dir.join("classes.kicad_dru"),
+        "(version 1)\n\
+         (rule \"via to track\"\n\t(constraint clearance (min 0.4mm))\n\t\
+         (condition \"A.Type == 'via' && B.Type == 'track'\"))\n\
+         (rule \"NPTH to Track\"\n\t(constraint hole_clearance (min 0.6mm))\n\t\
+         (condition \"A.Pad_Type == 'NPTH, mechanical' && B.Type == 'track'\"))\n\
+         (rule \"holes of two nets\"\n\t(constraint hole_to_hole (min 0.5mm))\n\t\
+         (condition \"A.Net != B.Net\"))\n",
+    )
+    .unwrap();
+    let board = arg(&dir.join("classes.kicad_pcb"));
+    let route = |name: &str, extra: &[&str]| {
+        let mut args = vec!["-de", board.as_str(), "-do", name, "--max-passes", "1"];
+        args.extend_from_slice(extra);
+        let out = run_in(&dir, &args);
+        assert_eq!(code(&out), 0, "{}", stderr(&out));
+        stderr(&out)
+    };
+    let on = route("on.ses", &[]);
+    for applied in [
+        "constraint clearance: applied",
+        "router.hole_clearance_um raised from 250 to 600 by the .kicad_dru rules 'NPTH to Track'",
+        "router.board_minimums.hole_to_hole_um raised from 250 to 500 by the .kicad_dru rules 'holes of two nets'",
+    ] {
+        assert!(on.contains(applied), "missing '{applied}' in {on}");
+    }
+    let off = route("off.ses", &["--no-design-rules"]);
+    assert!(off.contains("ignored (apply_design_rules is off)"), "{off}");
+    assert!(!off.contains("raised from"), "{off}");
+}
+
+/// K13.1: `--apply-design-rules` and `--no-design-rules` together are a
+/// usage error.
+#[test]
+fn the_two_design_rules_switches_together_are_a_usage_error() {
+    let dir = scratch("kicad-dru-both");
+    let board = repo("fixtures/kicad/synthetic/classes.kicad_pcb");
+    let out = run_in(
+        &dir,
+        &[
+            "-de",
+            &arg(&board),
+            "-do",
+            "out.ses",
+            "--apply-design-rules",
+            "--no-design-rules",
+        ],
+    );
+    assert_eq!(code(&out), 2, "{}", stderr(&out));
+    assert!(
+        stderr(&out).contains("--no-design-rules"),
+        "{}",
+        stderr(&out)
+    );
 }
 
 /// K10.3: the switch means nothing to a DSN input; it says so and routes.

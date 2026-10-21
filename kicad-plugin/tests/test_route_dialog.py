@@ -433,18 +433,21 @@ def test_route_with_the_snapshot_gives_the_router_the_kicad_pcb(env):
     assert not (work / "b.kicad_prl").exists()
     lines = ui.messages[-1][0].splitlines()
     assert lines[lines.index("-de") + 1] == str(work / "b.kicad_pcb")
-    assert "--apply-design-rules" in lines
+    assert lines.count("--apply-design-rules") == 1
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["board_input"] == "kicad_pcb" and saved["apply_kicad_rules"] is True
+    # K13.1: the check box is always on and greyed; the saved value stays the file's
+    assert saved["board_input"] == "kicad_pcb" and "apply_kicad_rules" not in saved
+    assert dialog.apply_rules.GetValue() is True
     log = (work / "plugin.log").read_text(encoding="utf-8")
     assert "rule-area fix-up not applied" in log and "snapshot: b.kicad_pcb" in log
 
 
-def test_the_rules_switch_is_not_passed_while_the_option_is_off(env):
+def test_the_rules_switch_is_passed_while_the_old_option_is_off(env):
+    # K13.1: the board's rules reach the router on both inputs.
     make_dialog, ui, work = env
     dialog = snapshot_dialog(make_dialog, "echo")
     dialog.on_route(None)
-    assert "--apply-design-rules" not in ui.messages[-1][0].splitlines()
+    assert "--apply-design-rules" in ui.messages[-1][0].splitlines()
 
 
 def test_the_default_input_still_exports_the_dsn(env):

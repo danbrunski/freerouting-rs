@@ -27,9 +27,13 @@
 //! message.
 //!
 //! The `.kicad_dru` rules are applied only with
-//! [`ReadOptions::apply_design_rules`]; the default is off, because KiCad's
-//! DSN export ignores that file and applying it changes routing (K00
-//! question 7). A DSN input gets a board's `.kicad_dru` with `--kicad-dru`
+//! [`ReadOptions::apply_design_rules`]. The reader's default is off, because
+//! KiCad's DSN export ignores that file (K00 question 7), and so is every
+//! caller here ([`read_design`], [`read_kicad_board`]: the GUI, the DRC
+//! runner). A route from the command line turns it on (K13.1, decided
+//! 2026-10-20: the board's own rules reach the router on both inputs;
+//! `--no-design-rules` turns it off), as a DSN route gets a board's
+//! `.kicad_dru` with `--kicad-dru`
 //! ([`crate::job::prepare::JobInput::kicad_dru`], Q22.5), which the plugin
 //! passes for every DSN route.
 //!

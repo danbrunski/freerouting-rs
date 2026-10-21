@@ -137,8 +137,8 @@ fn walk(
 }
 
 /// The holes of the outline (K05), and the edge-clearance keepouts of Q18.5,
-/// and Q18.7 mask-aperture keepouts, which KiCad's export does not write
-/// (`freerouting_kicad::edge_keepouts`).
+/// Q18.7 mask-aperture keepouts and K13.1 pad-clearance circles, which KiCad's
+/// export does not write (`freerouting_kicad::edge_keepouts`, `pad_clearance`).
 fn is_hole(k: &Keepout) -> bool {
     matches!(poly(&k.area.shape), Some(("signal", _)))
         || matches!(
@@ -146,6 +146,7 @@ fn is_hole(k: &Keepout) -> bool {
             Some(
                 freerouting_kicad::edge_keepouts::KEEPOUT_NAME
                     | freerouting_kicad::edge_keepouts::MASK_KEEPOUT_NAME
+                    | freerouting_kicad::pad_clearance::KEEPOUT_NAME
             )
         )
 }

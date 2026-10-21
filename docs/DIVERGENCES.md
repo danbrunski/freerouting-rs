@@ -1154,7 +1154,9 @@ compare them on 12 committed boards and the 56-board corpus).
   outline have them; the comparison with the export leaves them out).
 - **Pads' solder-mask expansions** (Q18.7, `mask`, `Extras::solder_mask`): a pad's
   `solder_mask_margin`, else its footprint's, else the board's `pad_to_mask_clearance`, per
-  side with a mask layer, for the pads whose expansion exceeds the smallest class clearance; a
+  side with a mask layer, for the pads whose expansion exceeds the smallest class clearance, each
+  side judged alone (K13.1, `mask::keep_above_floor`: a side at or under it is 0, as the plugin's
+  `kicad_board.mask_expansions`; `tests/k13_inputs.rs`); a
   `.kicad_pcb` job passes them as `router.solder_mask_expansions` at the DSN's priority
   (`job::prepare::solder_mask_patch`). The export carries no mask. Pinned by
   `tests/solder_mask.rs::a_kicad_pcb_input_carries_the_pads_mask_expansions`.
@@ -1252,7 +1254,7 @@ compare them on 12 committed boards and the 56-board corpus).
 - The board's `<stem>.kicad_dru` is read and every rule reported (applied, ignored or UNSUPPORTED
   with the first unsupported term); KiCad's export ignores the file, so Java has never seen these
   rules. The expressible ones (class-pair clearance, class track width) change the board only with
-  `ReadOptions::apply_design_rules`, off by default (K00 question 7; `supported_rules_change_the_tree_exactly`,
+  `ReadOptions::apply_design_rules`, off by default in the reader and on for a CLI route since K13.1 (K00 question 7; `supported_rules_change_the_tree_exactly`,
   `option_off_leaves_the_tree_alone`, `design_rules_reach_the_board`). `canary-pwr`'s ten
   `insideCourtyard` rules are all UNSUPPORTED (`canary_pwr_rules_are_unsupported_by_name`).
 - **`.kicad_dru` clearances between item types reach the router** (Q22.5, `dru::item_types`;
@@ -1276,6 +1278,17 @@ compare them on 12 committed boards and the 56-board corpus).
   `tests/dru_item_types.rs` (`plated_is_exact_with_one_class`,
   `plated_sets_via_and_pin_wire_in_every_class`, `hole_clearance_is_a_floor`,
   `ch32v003_rules_report`, ...).
+- **Pads' own larger clearances are copper keepouts** (K13.1, `pad_clearance`): KiCad's DRC keeps
+  other copper a pad's `(clearance v)` from it, and the export writes no per-pad clearance
+  (canary-pwr's six 0.6 mm fiducials gave one routing-caused `clearance` on the bare export in
+  Q22.6; tinytapeout-demo and CM5_MINIMA_3 have such pads too). The reader adds, for each pad
+  whose own clearance exceeds the default, a circle keepout named `pad_clearance` on each outer
+  copper layer of the pad, `max(size) + 2 · (clearance − default)` across, as the plugin's
+  `edge_and_pad_keepouts` writes it on the DSN path (at the file's nanometres; the plugin rounds to
+  µm). The keepout holds every net out, the pad's own too, as on the DSN path. Pinned by
+  `tests/k13_inputs.rs::pads_own_clearances_become_circle_keepouts` and
+  `kicad-plugin/tests/test_mask_floor.py::test_pad_clearance_circles_match_the_readers`; the
+  `kicad_parity.rs` comparison leaves them out.
 - Against the export's board the reader's differences are exactly the ones above and nothing
   else: `crates/freerouting/tests/kicad_parity.rs` lists each with its reason and fails on any
   other, and on a listed one that no longer occurs; the item order is the export's except for
@@ -1411,6 +1424,18 @@ plugin_flags}.rs`)
   `prepare_job`); Java has no such flag. An unreadable file fails the run; with a `.kicad_pcb`
   input the flag is ignored with a warning. Pinned by
   `dru_item_types.rs::the_job_applies_the_rules_and_the_hole_floor`.
+- **A `.kicad_pcb` route applies its `.kicad_dru` rules by default** (K13.1, decided 2026-10-20:
+  the board's own rules reach the router on both inputs): `cli.rs` reads the board with
+  `ReadOptions::apply_design_rules` on, so the class-pair, track-width, item-type, hole-clearance
+  and hole-to-hole rules reach the route as `--kicad-dru` gives them to a DSN route. K10.3 applied
+  them only with `--apply-design-rules`, which now only says the default; `--no-design-rules`
+  (new) reads and reports the file and applies nothing; both together are a usage error. Java
+  reads no `.kicad_pcb`. The DRC mode and the GUI still read the rules without applying them, on
+  both inputs. Pinned by `cli_kicad.rs`
+  (`a_kicad_pcb_route_applies_the_item_type_and_hole_rules_by_default`,
+  `the_apply_design_rules_switch_changes_the_class_rules`,
+  `the_two_design_rules_switches_together_are_a_usage_error`) and
+  `args_java.rs::no_design_rules_is_a_switch`.
 
 ## freerouting-gui
 
@@ -1766,6 +1791,12 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   always on, every profile): `--kicad-dru <board>.kicad_dru` when the file exists and the router
   reads KiCad's export; Java's plugin never applies the file. Not passed for the `.kicad_pcb`
   snapshot (which reads it itself) or the GUI. Pinned by `test_kicad_dru_args.py`.
+- **A snapshot route applies the `.kicad_dru` too** (K13.1, `export_flow.kicad_dru_args`, always on,
+  every profile): `--apply-design-rules` for every Route with `board_input = kicad_pcb`, so the
+  board's own rules reach the router on both inputs (decided 2026-10-20). K10.3's option
+  `apply_kicad_rules` no longer decides it: the dialog's check box is ticked and greyed, and the
+  saved value is kept as it was. Route in GUI applies the rules on neither input. Pinned by
+  `test_board_rules_both_inputs.py`.
 - **Board Setup's minimum clearance is passed** (Q22.10, `options.BOARD_MINIMUM_SETTINGS`):
   `m_MinClearance` becomes `--router.board_minimums.clearance_um` under both profiles; 0 passes
   nothing. Pinned by `test_min_clearance.py`.

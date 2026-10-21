@@ -43,7 +43,7 @@
 //!   walk: `--max-passes`, `--threads`, `--timeout` and `--result-json` become
 //!   the `--router.*` flags that set the same fields, so they can never do
 //!   more than the settings do. `--progress`, `--seed`, `--apply-design-rules`
-//!   (K10.3), `--kicad-dru` (Q22.5), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
+//!   (K10.3), `--no-design-rules` (K13.1), `--kicad-dru` (Q22.5), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
 //!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
@@ -358,7 +358,14 @@ pub const EXTRA_FLAGS: &[(&str, bool, Setting)] = &[
         "--apply-design-rules",
         false,
         Setting::CliOnly(
-            "applies the expressible rules of the .kicad_dru beside a .kicad_pcb input (K10.3)",
+            "applies the expressible rules of the .kicad_dru beside a .kicad_pcb input (K10.3; the default since K13.1)",
+        ),
+    ),
+    (
+        "--no-design-rules",
+        false,
+        Setting::CliOnly(
+            "reads and reports the .kicad_dru beside a .kicad_pcb input but applies none of its rules (K13.1)",
         ),
     ),
     (
@@ -458,9 +465,13 @@ pub struct Args {
     pub console_level: Option<String>,
     /// `--progress` (C08.3).
     pub progress: ProgressMode,
-    /// `--apply-design-rules` was given (K10.3): the route reads the
-    /// `.kicad_dru` rules of a `.kicad_pcb` into the board.
+    /// `--apply-design-rules` was given (K10.3). A `.kicad_pcb` route reads
+    /// the `.kicad_dru` rules into the board by default since K13.1, so the
+    /// switch only says so.
     pub apply_design_rules: bool,
+    /// `--no-design-rules` was given (K13.1): a `.kicad_pcb` route reads and
+    /// reports its `.kicad_dru` rules but applies none.
+    pub no_design_rules: bool,
     /// `--kicad-dru FILE` (Q22.5): the `.kicad_dru` whose rules a DSN input
     /// gets.
     pub kicad_dru: Option<String>,
@@ -829,6 +840,7 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
         let value = value.unwrap_or_default();
         match name {
             "--apply-design-rules" => out.apply_design_rules = true,
+            "--no-design-rules" => out.no_design_rules = true,
             "--kicad-dru" => out.kicad_dru = Some(value),
             "--version" => out.version = true,
             "--capabilities" => out.capabilities = true,
@@ -850,6 +862,10 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
             },
             _ => unreachable!("every row of EXTRA_FLAGS is handled"),
         }
+    }
+    if out.apply_design_rules && out.no_design_rules {
+        out.usage_errors
+            .push("--apply-design-rules and --no-design-rules contradict each other".to_owned());
     }
     rest
 }

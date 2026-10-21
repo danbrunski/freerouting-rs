@@ -40,6 +40,8 @@
 //!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); a
 //!   shape of a net with pins becomes conduction-area wires of that net with
 //!   `(attr obstacle)`.
+//! - K13.1 adds [`pad_clearance`]: pads' own larger clearances, as circle
+//!   keepouts (`pad_clearance`), as the plugin's DSN fix-up writes them.
 //! - K08 adds [`write`]: the copper index of the file
 //!   ([`KicadRead::copper_index`]), the geometry diff against a routed board,
 //!   and the text splice that writes the routed copper into a copy of the
@@ -107,6 +109,7 @@ pub mod mask;
 pub mod nets;
 pub mod network;
 pub mod outline;
+pub mod pad_clearance;
 pub mod pads;
 pub mod project;
 pub mod read;

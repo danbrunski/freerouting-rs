@@ -49,6 +49,27 @@ pub struct PadMaskExpansion {
     pub back_nm: i32,
 }
 
+/// K13.1: the entries of `list` with a side wider than `floor_nm` (the
+/// smallest class clearance), each side judged alone: a side at or under the
+/// floor becomes 0, and an entry with no side left is dropped. The plugin's
+/// `kicad_board.mask_expansions` filters the same way. A side within the
+/// floor needs no entry: `job::solder_mask` raises the pad's clearances on
+/// that side to max(clearance, expansion), and every class clearance is at
+/// least the floor. The one exception is a `.kicad_dru` class-pair rule
+/// below the floor (K07.5 applies it as given); neither input lowers the
+/// floor for it.
+pub fn keep_above_floor(list: Vec<PadMaskExpansion>, floor_nm: i32) -> Vec<PadMaskExpansion> {
+    let side = |e: i32| if e > floor_nm { e } else { 0 };
+    list.into_iter()
+        .map(|e| PadMaskExpansion {
+            front_nm: side(e.front_nm),
+            back_nm: side(e.back_nm),
+            ..e
+        })
+        .filter(|e| e.front_nm > 0 || e.back_nm > 0)
+        .collect()
+}
+
 fn margin_of(node: NodeRef<'_>) -> Option<i32> {
     node.child("solder_mask_margin")
         .and_then(|m| m.atom(1))

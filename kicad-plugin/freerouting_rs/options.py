@@ -22,7 +22,7 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `timeout` | `--timeout T` | `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS`, seconds; empty = none |
 | `rule_area_fixup` | (plugin side, K01.2) | on |
 | `board_input` | (plugin side, K10) what the router reads: `dsn` (KiCad's export, default) or `kicad_pcb` (a snapshot of the open board, read directly) | `dsn` |
-| `apply_kicad_rules` | `--apply-design-rules`, only with `board_input = kicad_pcb` (K10.3) | off |
+| `apply_kicad_rules` | kept for saved files, no effect since K13.1: every snapshot route gets `--apply-design-rules` (`export_flow.kicad_dru_args`), as a DSN route gets `--kicad-dru` | off |
 | `profile` | `--profile legacy` (N01.3) | `legacy` or `enhanced` (default, no flag) |
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
 | `pin_escape` | `--router.fanout.pin_escape=straight` (Q21) | off (default, no flag) under both profiles |
@@ -202,9 +202,6 @@ class RouteOptions:
                 args.append(f"--router.autorouter.sweep_passes={self.sweep_passes}")
         if self.pin_escape:
             args.append("--router.fanout.pin_escape=straight")
-        if self.apply_kicad_rules and self.board_input == INPUT_KICAD_PCB and not for_gui:
-            # The GUI reads the rules file without applying it (it has no such switch).
-            args.append("--apply-design-rules")
         args += list(extra_args)
         for key in sorted(self.stages):
             args.append(f"--router.{key}={self.stages[key]}")

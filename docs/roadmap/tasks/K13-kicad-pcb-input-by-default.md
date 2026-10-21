@@ -52,7 +52,7 @@ rules).
 
 ## Checklist
 
-- [ ] **K13.1 — What each input carries.** Make a table of every rule and item the router
+- [x] **K13.1 — What each input carries.** Make a table of every rule and item the router
   reads, with a column per input: the plugin's DSN export and the reader on the snapshot. At
   least these rows:
   - net classes and clearances, and custom `.kicad_dru` rules;
@@ -73,6 +73,107 @@ rules).
     - the two inputs filter mask expansions at the smallest class clearance the same way. Today
       the plugin zeroes each side at or under the floor, and the reader keeps both sides when
       either exceeds it (found in Q22.12).
+
+  *Done 2026-10-20:* written on main `a18b970`, moved onto `c2cc058` (Q22.4's net shapes, which
+  the table describes as landed). The DSN column is KiCad 10's export plus the plugin's
+  fix-ups and flags (`export_flow.prepare`, `router_args`); the reader column is
+  `crates/freerouting-kicad` on the snapshot plus `job::prepare::set_kicad`. On the plugin's
+  snapshot path `export_flow.router_args` passes the same Board Setup flags as on the DSN path, and
+  the command line wins over the `.kicad_pro`.
+
+  | Row | DSN export + plugin | `.kicad_pcb` reader |
+  |---|---|---|
+  | Net classes: clearance, width, via | carried: KiCad's `(class ...)` | carried: `classes.rs` from the `.kicad_pro`, written from the live board (K10.2) (`structure.rs::net_classes_rules_and_vias_equal_the_export`, `synthetic_projects_give_kicad_classes`, `test_snapshot_headless.py::test_an_unsaved_net_class_change_reaches_the_snapshot_only_through_the_live_project`) |
+  | Net-class and class-via order | KiCad's `unordered_map` order | carried differently: project order (`kicad_parity.rs` "order:net classes", `common/copper.rs::via_lists`) |
+  | `.kicad_dru` class-pair clearances, class track widths (K07.5) | carried: `--kicad-dru` (`test_kicad_dru_args.py::test_a_dsn_route_gets_the_kicad_dru`) | carried, **by default since this item** (`cli_kicad.rs::the_apply_design_rules_switch_changes_the_class_rules`, `dru.rs::supported_rules_change_the_tree_exactly`, `kicad_read.rs::design_rules_reach_the_board`) |
+  | `.kicad_dru` item-type clearances (Q22.5) | carried: `--kicad-dru` (`dru_item_types.rs`, 13 tests) | carried by default (new: `k13_inputs.rs::the_kicad_pcb_reader_applies_item_type_rules`, `cli_kicad.rs::a_kicad_pcb_route_applies_the_item_type_and_hole_rules_by_default`) |
+  | `.kicad_dru` `hole_clearance` (Q22.5, Q22.15) | carried (`dru_item_types.rs::the_job_applies_the_rules_and_the_hole_floor`, `dru_holes.rs::a_plated_hole_rule_becomes_via_and_pin_to_track_clearances`) | carried by default (new: `cli_kicad.rs::a_kicad_pcb_route_applies_...`, `router.hole_clearance_um` 250 → 600) |
+  | `.kicad_dru` `hole_to_hole` (Q22.14) | carried (`dru_holes.rs::the_job_raises_board_setups_hole_to_hole`) | carried by default (`dru_holes.rs::a_kicad_pcb_job_takes_the_larger_of_board_setup_and_the_rules`; new: `cli_kicad.rs` 250 → 500) |
+  | `.kicad_dru` terms the router cannot evaluate (`insideCourtyard`, `intersectsArea`, zone rules, pad pairs) | missing: reported UNSUPPORTED or left out, same code | missing, same (`dru.rs::canary_pwr_rules_are_unsupported_by_name`). Boards: canary-pwr (10 `insideCourtyard`), canary-hat (`insideCourtyard`, RF-to-zone), vme-wren (`intersectsArea`), jetson-agx-thor-baseboard (zone) |
+  | Board Setup minimum track width, via diameter, drill, annular ring (Q18.3, Q18.4) | carried: plugin flags from the live board (`test_options.py::test_board_minimums_become_hard_floors`, `test_router_args_carry_the_board_minimums`) | carried: `.kicad_pro` (`board_minimums.rs::a_kicad_pcb_input_passes_its_board_setup_minimums`, `kicad_board_minimums_default_to_kicads_and_zero_is_none`) |
+  | Board minimum clearance (Q22.10) | carried (`test_min_clearance.py`) | carried (`clearance_floor.rs::a_kicad_pcb_input_passes_its_minimum_clearance`) |
+  | Hole-to-hole minimum (Q22.11) | carried (`test_hole_to_hole.py`) | carried (`hole_to_hole.rs::a_kicad_pcb_input_passes_its_hole_to_hole_minimum`) |
+  | Copper-to-edge clearance (Q18.5) | carried: `--router.copper_to_edge_clearance_um`, plus K09.5's edge strips with `edge_and_pad_keepouts` (`test_dsn_fixups.py::test_edge_and_pad_keepouts_on_a_two_layer_board`) | carried: `min_copper_edge_clearance` (`board_minimums.rs::a_kicad_pcb_input_passes_its_board_setup_minimums`); no strips, the router's edge class keeps it |
+  | Hole clearance (Q18.5) | carried: `--router.hole_clearance_um`; NPTH holes as keepouts of drill + 2 × hole clearance (KiCad's export) | carried: `min_hole_clearance` (same test); NPTH holes the same (`pads.rs::make_pads`, `structure.rs::pads_equal_the_export`) |
+  | Margin-layer and inner Edge.Cuts lines (Q18.5) | carried: `edge_graphics.py` (`test_edge_graphics.py::test_a_margin_line_becomes_a_keepout_on_every_copper_layer`) | carried: `edge_keepouts.rs` (`edge_keepouts.rs::margin_and_loose_edge_cuts_shapes_become_keepouts_on_every_copper_layer`, `the_keepouts_follow_the_projects_edge_clearance`) |
+  | Pads' solder-mask expansions (Q18.7) | carried: `--router.solder_mask_expansions` (`test_solder_mask.py::test_only_apertures_past_the_clearance_are_listed_per_side`) | carried: `Extras::solder_mask` (`solder_mask.rs::a_kicad_pcb_input_carries_the_pads_mask_expansions`); the floor filter is now the plugin's, per side (below) |
+  | Solder-mask-to-copper clearance (Q22.12) | carried (`test_solder_mask.py::test_the_mask_to_copper_clearance_grows_every_aperture_with_a_mask`, `test_edge_graphics.py::test_the_mask_to_copper_clearance_grows_each_mask_shape`) | carried (`edge_keepouts.rs::the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance`, `solder_mask.rs::the_projects_mask_to_copper_clearance_grows_the_pad_apertures`) |
+  | Board-level F.Mask / B.Mask shapes (Q18.7) | carried: `edge_graphics.mask_polygons` (`test_edge_graphics.py::test_a_filled_front_mask_polygon_keeps_the_top_copper_out_of_it`) | carried (`edge_keepouts.rs::the_boards_mask_apertures_become_keepouts_on_their_copper_side`) |
+  | Footprint mask shapes | missing on main: left to the pads (fc-rom J1, 7 routing-caused `solder_mask_bridge`); in flight in Q22.16, not touched here | missing on main, the same; in flight in Q22.16 |
+  | Pads' own (local) clearance | carried: K09.5 circles with `edge_and_pad_keepouts`, on by default (`test_dsn_fixups.py::test_edge_and_pad_keepouts_on_a_two_layer_board`); not on a bare export (Q22.6: canary-pwr FID3, 0.5235 mm against 0.6 mm) | was missing, **fixed here**: `pad_clearance.rs`, the same circles (new: `k13_inputs.rs::pads_own_clearances_become_circle_keepouts`; plugin `test_mask_floor.py::test_pad_clearance_circles_match_the_readers` gives the same circles for the same pads). Corpus boards with such pads: canary-pwr (6 × 0.6 mm), tinytapeout-demo (3 × 0.5 mm), CM5_MINIMA_3 (4 NPTH, 1.5 and 1.7 mm), all without a net |
+  | Track arcs | carried differently: one chord per arc (CM5_MINIMA_3: 195 errors against 4 in K10.5) | carried: polylines (`copper.rs::arcs_follow_the_curve`, `cm5_trace_length_matches_kicad`) |
+  | Rule areas and keepouts | carried differently: KiCad's export makes every area a full keepout; `rule_area_fixup` (K01.2) rewrites them by flags (`test_rule_areas.py::test_five_board_level_areas`) | carried: by flags (`copper.rs::rule_areas_map_by_flags`, `rule_area_flag_defaults_follow_kicad`, `footprint_areas_keep_the_files_coordinates`, `wire_keepout.rs::issue754_ground_area_still_blocks_vias`) |
+  | Copper graphics of no net, net ties (Q22.4) | carried: `copper_graphics.py` (`test_copper_graphics.py::test_a_footprint_line_on_copper_becomes_a_keepout_on_its_layer`, `test_net_tie_shapes_are_logged`) | carried (`copper_graphics.rs::a_footprint_copper_line_becomes_a_keepout_on_its_layer`, `net_tie_shapes_and_shapes_of_a_net_without_pins_are_keepouts`; engine `copper_graphics.rs::the_route_goes_round_the_copper_line_and_the_copper_text`) |
+  | Copper text (Q22.4) | carried: the glyph outlines (`test_copper_graphics.py::test_a_copper_text_becomes_keepouts_of_its_glyph_outlines`) | carried differently: a box that holds the glyphs, no font engine (`copper_graphics.rs::a_copper_text_becomes_a_keepout_box_that_holds_its_glyphs`) |
+  | Copper shapes of a net with pins (Q22.4, main `c2cc058`) | carried: conduction-area wires of the net with `(attr obstacle)` at the end of the wiring (`test_copper_graphics.py::test_a_filled_shape_of_a_net_becomes_a_conduction_area_of_its_net`, `test_a_stroked_shape_of_a_net_becomes_the_area_of_its_stroke`, `test_the_fixture_through_pcbnew_gives_the_reader_s_obstacles`) | carried, the same polygons (`copper_graphics.rs::shapes_of_a_net_become_conduction_areas_of_their_net`, `the_written_dsn_keeps_the_areas`; engine `copper_graphics.rs::other_nets_keep_clear_of_a_net_s_copper_and_the_net_connects_through_it`, `plane_as_obstacle_never_clears_a_net_shape`) |
+  | Zones and their fill | carried: the zone outline as a plane, never the fill; K09's `fixed_pour_classes` and `drop_pour_nets` rewrite them (`test_dsn_fixups.py::test_fixed_pour_classes_cover_the_fill_with_fixed_wires_and_drop_its_plane`) | carried: the outline as a plane (`copper.rs::planes_and_netless_zones`, `zone_outline_arcs_are_polylines`); footprint-owned zones kept as planes, which the export drops; K09's wire rewrites missing (refused, K10.4); `fixed_pour_mode = engine` works on both |
+  | Locked tracks and vias | carried: KiCad writes them fixed; `fix_existing` locks all (`test_route_dialog.py::test_fix_existing_keeps_the_tracks_locked_through_the_import_only`) | carried: `fix` wires and vias (`copper.rs::issue180_wires_equal_the_export`, 15 locked wires; `issue180_vias_are_fixed`; `test_route_dialog.py::test_fix_existing_locks_the_tracks_into_the_snapshot`) |
+  | Footprint courtyards | carried as image outlines, drawing only | carried (`structure.rs::image_outlines_equal_the_export`), with the courtyards the export drops (K07.6); no routing effect (`image_outlines.rs` docs) |
+  | Coordinate precision | carried differently: `%.6g`, about 1 µm lost above 100 mm; input copper put back within 600 nm after the import (Q22.3, `test_restore_copper.py::test_an_input_track_that_the_export_rounds_comes_back_at_its_nanometre_coordinates`) | carried: nanometres rounded to 0.1 µm (`numbers.rs::nm_rounds_like_kicad_not_like_frommm`, `copper.rs::copper_equals_the_export`); input copper put back within 200 nm (K13.2, `test_restore_copper.py::test_a_fully_routed_board_on_the_kicad_pcb_path_comes_back_unchanged`) |
+  | Board outline, malformed outline as its bounding box | carried | carried (`structure.rs::outlines_equal_the_export`, `notched_outline_and_slot`) |
+  | K09 DSN rewrites (`class_widths`, `fixed_pour_classes` as wires or auto, `drop_pour_nets`, `route_on_plane_layers`): plugin options, not board rules | carried (`test_dsn_fixups.py`) | missing: refused (K10.4, `options.input_conflicts`). Board: canary-pwr's preset (`test_dsn_fixups.py::test_the_canary_preset_file_reproduces_dsn_export_on_the_fixture`); K13.7 decides |
+
+  - **Clause 2** (every carried row has a test that names it): the table names one per row. Added
+    where none named the reader: `k13_inputs.rs::the_kicad_pcb_reader_applies_item_type_rules`, the
+    two CLI tests above, and the mask and pad-clearance tests below.
+  - **Clause 3** (rows the reader lacks): the pads' own clearance is fixed in the reader. The
+    others are listed with their boards above: footprint mask shapes (fc-rom, Q22.16), the unsupported `.kicad_dru` terms (both inputs, same
+    code), and the K09 rewrites (canary-pwr's preset, K13.7).
+  - **Clause 4, the `.kicad_dru` by default on the `.kicad_pcb` path.**
+    - What `--apply-design-rules` gated: only `ReadOptions::apply_design_rules` in `cli.rs`'s route
+      job, which `dru::apply` uses for every rule kind (class pairs, widths, item types, hole
+      clearance, hole-to-hole). The CLI's route now reads with it on unless the new
+      `--no-design-rules`; `--apply-design-rules` stays and only says the default; both together
+      are a usage error (exit 2). K09/K10 had no off switch (off was the default); this is it.
+    - Not changed: the reader's own `ReadOptions::default()` (off, the export-parity mode the
+      reader and parity tests use), the `-drc` mode and the GUI. Neither of those gets
+      `--kicad-dru` on a DSN either, so both inputs still agree there.
+    - Plugin: `export_flow.kicad_dru_args` passes `--apply-design-rules` for every snapshot Route,
+      as it passes `--kicad-dru` for a DSN Route; `options.to_args` no longer adds it. The K10.3
+      option `apply_kicad_rules` decides nothing now. The dialog's check box is ticked and greyed,
+      the saved value is kept as it was, and K13.7's schema bump can drop the field. Route in GUI
+      logs that it reads the rules only, on any snapshot.
+    - Tests, written before the code (`--no-design-rules` did not parse on main):
+      `cli_kicad.rs::a_kicad_pcb_route_applies_the_item_type_and_hole_rules_by_default` (default:
+      "constraint clearance: applied", hole clearance 250 → 600 and hole-to-hole 250 → 500 by the
+      named rules; `--no-design-rules`: "ignored (apply_design_rules is off)", nothing raised),
+      `the_apply_design_rules_switch_changes_the_class_rules` (rewritten: the default session equals
+      the `--apply-design-rules` one, and Fast wires are 3000 against 1000 with
+      `--no-design-rules`), `the_two_design_rules_switches_together_are_a_usage_error`,
+      `args_java.rs::no_design_rules_is_a_switch` (`EXTRA_FLAGS.len()` 14). Plugin:
+      `test_board_rules_both_inputs.py` (5: the snapshot gets the switch with the option off or
+      on, every profile on both inputs, the GUI on neither, `to_args` adds none, the log note);
+      `test_snapshot.py` and `test_route_dialog.py` updated to the new rule.
+  - **Clause 5, the mask floor.**
+    - Rule picked: each side alone; a side at or under the smallest class clearance is 0, and a pad
+      with no side left is not listed. That is the plugin's rule.
+    - Why it is safe: `job::solder_mask` raises the pad's clearances on a side to max(clearance,
+      expansion), and every class clearance is at least the floor. So a side within the floor
+      would raise nothing, and zeroing it loses nothing. Keeping both sides when either exceeds
+      (the reader's old rule) protects no more in that case.
+    - The exception: a `.kicad_dru` class-pair rule below the floor, which K07.5 applies as
+      given. Neither rule covers it, because both drop a pad whose sides are both within the
+      floor. No `.kicad_dru` in the corpus or in canary has an applied class-pair clearance (7
+      files scanned: their clearance rules are zone, area or courtyard rules), so it is listed
+      here and not fixed.
+    - The reader's expansions are equal on both sides of a pad (one margin), so its output does not
+      change on any board. Only the plugin's per-layer expansions (KiCad 9+) can differ by side.
+    - Code: `mask::keep_above_floor` (new), called by `read.rs`. Tests: reader
+      `k13_inputs.rs::mask_expansions_are_filtered_per_side_at_the_smallest_class_clearance` (fixture
+      `tests/data/k13-mask-floor.kicad_pcb`: F1 (300, 0), T1 (250, 250), T2 (300, 0), B1 (0, 300) µm;
+      F2 at the floor and T3 under it not listed) and `a_side_at_or_under_the_floor_is_zeroed_and_the_other_kept`
+      ((300, 100) → (300, 0); (200, 200.001) → (0, 200.001)). Plugin `test_mask_floor.py`: the same
+      pads give the same list, and the same per-side pairs.
+  - DIVERGENCES: freerouting-kicad (the mask line amended; "Pads' own larger clearances are copper
+    keepouts"), freerouting-cli ("A `.kicad_pcb` route applies its `.kicad_dru` rules by default"),
+    kicad-plugin ("A snapshot route applies the `.kicad_dru` too"). Docs: `io/kicad.rs` and
+    `read.rs` (`ReadOptions`) module docs, `help.txt`, `kicad-plugin/README.md`, and
+    `docs/development/kicad-plugin.md` (the `apply_kicad_rules` bullet).
+  - Gate on `c2cc058` plus this change: `cargo fmt --all --check` clean; `cargo clippy --workspace
+    --all-targets -- -D warnings` clean; `cargo test --workspace --no-fail-fast` 286 suites, 2737
+    passed, 0 failed (on the `a18b970` base, `ui_routing.rs::live_redraw_patches_before_the_job_ends`
+    hit its 120 s limit once under load and passed alone in 110.5 s); `pytest kicad-plugin/tests` 476
+    passed, 20 skipped; `tools/parity-check.sh --no-probes` connection parity PASS, 7 of 7 exact.
 
 - [x] **K13.2 — Existing copper comes back unchanged.** Find which rounding moves the ends of
   existing tracks on `One-Air-Max`. The reader rounds to 0.1 µm and the export to `%.6g`. Make
@@ -316,7 +417,10 @@ rules).
   (decided 2026-10-20: both arms re-lay unlocked input copper, so until K13.2 a violation already
   on the board counts as routing-caused in both). It starts with one smoke run of
   `plugin-input-ab.sh` on a board outside the set. A script fix that smoke run needs is a
-  registration amendment before any registered row runs.
+  registration amendment before any registered row runs. The first amendment, which names the
+  commit and the binary, also records that K13.1 changed what the options mean. The registration
+  says `apply_kicad_rules` off, but since K13.1 every snapshot route applies the `.kicad_dru`,
+  and the reader adds the pads' own clearances, as the DSN arm already did (decided 2026-10-20).
   - **Accept:**
     - the per-board table (unconnected, errors by type, prepare + load time, route time) is in
       the done note;
@@ -325,7 +429,8 @@ rules).
 
 - [ ] **K13.7 — Switch the default.** Only if K13.6 passes the switch rule, or the owner
   accepts the listed exceptions:
-  - `board_input` defaults to `kicad_pcb`, with an options schema bump;
+  - `board_input` defaults to `kicad_pcb`, with an options schema bump. The same bump drops
+    `apply_kicad_rules`, which does nothing since K13.1 (saved files that have it still load);
   - saved `dsn` choices are kept;
   - the dialog stops calling it experimental;
   - the dialog accepts `kicad_pcb` with the default options. Today it refuses the pair because

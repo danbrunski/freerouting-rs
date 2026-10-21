@@ -1050,7 +1050,7 @@ mod plugin_flags {
         assert!(a.usage_errors.is_empty());
         assert_eq!(a.design_file.as_deref(), Some("a.dsn"));
         assert_eq!(a.output_file.as_deref(), Some("a.ses"));
-        assert_eq!(EXTRA_FLAGS.len(), 13);
+        assert_eq!(EXTRA_FLAGS.len(), 14);
     }
 
     /// Q22.5: `--kicad-dru FILE` takes the file and warns about nothing.
@@ -1082,6 +1082,28 @@ mod plugin_flags {
         assert!(a.usage_errors.is_empty());
         assert_eq!(a.design_file.as_deref(), Some("a.kicad_pcb"));
         assert!(!parse_strs(&["-de", "a.dsn"]).apply_design_rules);
+    }
+
+    /// K13.1: `--no-design-rules` is a switch without a value that turns
+    /// off the `.kicad_dru` rules of a `.kicad_pcb` route (on by default).
+    #[test]
+    fn no_design_rules_is_a_switch() {
+        let a = parse_strs(&["--no-design-rules", "-de", "a.kicad_pcb", "-do", "a.ses"]);
+        assert!(a.no_design_rules);
+        assert!(!a.apply_design_rules);
+        assert_eq!(count(&a, LogLevel::Warn), 0, "{:?}", a.log);
+        assert!(a.usage_errors.is_empty());
+        assert!(!parse_strs(&["-de", "a.kicad_pcb"]).no_design_rules);
+        let both = parse_strs(&[
+            "--apply-design-rules",
+            "--no-design-rules",
+            "-de",
+            "a.kicad_pcb",
+        ]);
+        assert_eq!(
+            both.usage_errors,
+            ["--apply-design-rules and --no-design-rules contradict each other"]
+        );
     }
 
     /// The settings file path stays together with its flag.

@@ -96,9 +96,16 @@ def kicad_dru_args(board, opts, for_gui=False):
     DSN export and the project has custom rules. The export drops that file;
     the router applies the clearance rules it can express (item types, net
     classes, hole clearance). Always on, in every profile: a fix to the
-    input. The `.kicad_pcb` input reads the file itself (`--apply-design-rules`),
-    and the GUI's command line has no such flag."""
-    if for_gui or opts.board_input != options.INPUT_DSN:
+    input. K13.1: the `.kicad_pcb` input reads the file itself and gets
+    `--apply-design-rules`, also always (decided 2026-10-20: the board's own
+    rules reach the router on both inputs; the K10.3 option
+    `apply_kicad_rules` no longer decides it). The GUI's command line has
+    neither flag."""
+    if for_gui:
+        return []
+    if opts.board_input == options.INPUT_KICAD_PCB:
+        return snapshot.router_args(opts)
+    if opts.board_input != options.INPUT_DSN:
         return []
     try:
         name = board.GetFileName()

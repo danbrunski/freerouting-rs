@@ -133,9 +133,12 @@ PLUGIN FLAGS (not in Java)
       Setting: autorouter.max_threads, optimizer.max_threads
   --apply-design-rules
       With a .kicad_pcb input, apply the rules of the <design>.kicad_dru that
-      the router can express (class-pair clearances, class track widths) to
-      the board. Without it the file is read and reported only. Other inputs
+      the router can express to the board, as --kicad-dru does for a DSN.
+      This is the default for a route; the switch only says so. Other inputs
       ignore it with a warning.
+  --no-design-rules
+      With a .kicad_pcb input, read and report the <design>.kicad_dru but
+      apply none of its rules. Other inputs ignore it with a warning.
   --kicad-dru <design.kicad_dru>
       With a DSN input, apply the board's KiCad custom rules that the router
       can express: class-pair clearances, class track widths, clearances
@@ -145,7 +148,7 @@ PLUGIN FLAGS (not in Java)
       raise router.board_minimums.hole_to_hole_um. A rule the router can
       only apply more widely is applied with a warning; one that asks for no
       more than the DSN gives is reported and left out. A .kicad_pcb input
-      ignores it with a warning (use --apply-design-rules).
+      ignores it with a warning: it applies the .kicad_dru next to it.
   --seed <number>
       Reserved. 0 means Java's own seeds; any other value is refused.
   --profile <legacy|enhanced>

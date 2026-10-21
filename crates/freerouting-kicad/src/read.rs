@@ -48,7 +48,8 @@ pub struct Extras {
     /// a project file.
     pub board_minimums: crate::project::BoardMinimums,
     /// The pads whose solder-mask aperture reaches past the smallest clearance
-    /// of the board's net classes, in pin order (Q18.7, [`crate::mask`]).
+    /// of the board's net classes, in pin order, each side judged alone
+    /// (Q18.7, K13.1, [`crate::mask::keep_above_floor`]).
     pub solder_mask: Vec<crate::mask::PadMaskExpansion>,
 }
 
@@ -92,10 +93,10 @@ pub struct ReadOptions {
     /// reader keeps them as planes (K00 question 6, K06.4), after the board's
     /// own zones, and warns once per zone.
     pub drop_footprint_zones: bool,
-    /// Apply the `.kicad_dru` rules the DSN can express (class-pair
-    /// clearances, class track widths). Off by default: KiCad's DSN export
-    /// ignores the file, so Java never saw these rules, and applying them
-    /// changes routing (K00 question 7). Rules that cannot be expressed are
+    /// Apply the `.kicad_dru` rules the DSN can express ([`crate::dru`]).
+    /// Off by default: KiCad's DSN export ignores the file, so Java never saw
+    /// these rules (K00 question 7). The CLI's route turns it on (K13.1;
+    /// `--no-design-rules` keeps it off). Rules that cannot be expressed are
     /// reported either way ([`KicadRead::rules`]).
     pub apply_design_rules: bool,
 }
@@ -471,16 +472,16 @@ pub fn read_with_rules(
         .as_ref()
         .map(|c| c.values)
         .unwrap_or_else(|| table.values_of_name("Default"));
-    // Q18.7: only an aperture wider than some class's clearance can matter
+    // Q18.7: only an aperture wider than some class's clearance can matter;
+    // K13.1: each side alone, as the plugin
     let min_clearance = in_use
         .iter()
         .map(|c| c.values.clearance)
         .chain([default_values.clearance])
         .min()
         .unwrap_or(0);
-    extras
-        .solder_mask
-        .retain(|e| e.front_nm.max(e.back_nm) > min_clearance);
+    extras.solder_mask =
+        crate::mask::keep_above_floor(std::mem::take(&mut extras.solder_mask), min_clearance);
     // (name, diameter, top, bottom, drill)
     let mut via_defs: Vec<(String, i32, usize, usize, i32)> = vec![(
         via_name(
@@ -675,6 +676,18 @@ pub fn read_with_rules(
         has_net,
         project.max_error,
     );
+
+    // K13.1: pads' own larger clearances, as the plugin's K09.5 circles.
+    if let (Some(front), Some(back)) = (copper_names.first(), copper_names.last()) {
+        let pads = crate::pad_clearance::read_pad_clearances(board);
+        let default_clearance = default_values.clearance;
+        keepouts.extend(crate::pad_clearance::keepouts(
+            &pads,
+            default_clearance,
+            front,
+            back,
+        ));
+    }
 
     let clearance = um(i64::from(default_values.clearance));
     let structure = Structure {

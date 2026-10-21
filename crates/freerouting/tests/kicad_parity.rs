@@ -15,7 +15,8 @@
 //!
 //! The reader's Q18.5 edge-clearance keepouts (named
 //! `freerouting_kicad::edge_keepouts::KEEPOUT_NAME`, which KiCad's export does
-//! not write), and its Q18.7 mask-aperture keepouts (`MASK_KEEPOUT_NAME`), are
+//! not write), its Q18.7 mask-aperture keepouts (`MASK_KEEPOUT_NAME`) and its
+//! K13.1 pad-clearance circles (`freerouting_kicad::pad_clearance`), are
 //! taken out of the reader's tree before the comparison;
 //! [`edge_keepouts_are_the_only_extra_keepouts`] pins that they are exactly
 //! the named ones, one per rectangle and copper layer.
@@ -75,12 +76,13 @@ fn unwrap_board(r: BoardReadResult, what: &str) -> RoutingBoard {
 /// it had.
 fn without_edge_keepouts(mut pcb: Pcb) -> (Pcb, usize) {
     use freerouting_kicad::edge_keepouts::{KEEPOUT_NAME, MASK_KEEPOUT_NAME};
+    use freerouting_kicad::pad_clearance::KEEPOUT_NAME as PAD_KEEPOUT_NAME;
     let keepouts = &mut pcb.structure.as_mut().unwrap().keepouts;
     let before = keepouts.len();
     keepouts.retain(|k| {
         !matches!(
             k.area.name.as_deref(),
-            Some(KEEPOUT_NAME | MASK_KEEPOUT_NAME)
+            Some(KEEPOUT_NAME | MASK_KEEPOUT_NAME | PAD_KEEPOUT_NAME)
         )
     });
     let removed = before - keepouts.len();
