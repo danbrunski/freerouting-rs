@@ -759,8 +759,9 @@ Sequencing:
       is clean, and `cargo clippy -p freerouting-dev --tests -- -D warnings` is clean.
 
 - [ ] **Q22.8 — Re-measure.** Run Q22.7 as registered (`docs/roadmap/prereg/Q22.json`). It runs
-  only after Q22.16, Q22.17 and Q22.18 are all `[x]` on main. Its first amendment, written before any route, names
-  the q22 commit and the sha256 of both binaries.
+  only after Q22.16, Q22.17, Q22.18 and Q22.19 are all `[x]` on main (Q22.19 added 2026-10-20,
+  before any number; the registration's candidate is main when Q22.8 runs). Its first amendment,
+  written before any route, names the q22 commit and the sha256 of both binaries.
   - **Accept:**
     - the per-row table is in the done note;
     - every guard is 0 in `q22`;
@@ -1336,3 +1337,20 @@ Sequencing:
     - dev-board (the corpus `dev-board`, Q22.16's `kicad_frame.rs` board) and canary-pwr
       (`ab786fcc`) through the plugin's export, before and after, one KiCad grade each: 0
       routing-caused `solder_mask_bridge`, with KiCad unconnected beside it.
+
+- [ ] **Q22.19 — A net tie's copper lets its own nets in** (added 2026-10-20, from Q20.1's
+  re-check). Q22.4 writes each copper shape of a net-tie footprint (`net_tie_pad_groups`) as a
+  keepout with no net: `copper_graphics.py` on the DSN path, `copper_graphics.rs` in the reader.
+  That keeps every net out, the tie's own nets too. KiCad lets copper of the tie's nets touch the
+  shape and asks only the other nets to keep clearance. On slice (`slice-dcmt-bread-slice`), a
+  fresh default-options plugin route leaves J1-10 to NT1-2 (GNDPWR) open, with 9 KiCad
+  unconnected, where Q18.6's kept mp1 session connected it with copper KiCad accepts.
+  - A net-tie shape keeps out every net but the nets of the pads it touches, on both inputs; how
+    the engine carries a shape of two nets is the item's choice. Copper of another net still
+    keeps the board's clearance from it.
+  - **Accept:**
+    - plugin and reader tests: a net-tie footprint whose copper shape joins pads of nets A and B;
+      a trace of net A reaches its pad through the shape's area, and one of net C keeps the
+      clearance from the shape;
+    - slice routed fresh as Q20.1's Done note did, one KiCad grade: J1-10 to NT1-2 routed, KiCad
+      routing-caused 0, KiCad unconnected beside Q20.1's 9.
