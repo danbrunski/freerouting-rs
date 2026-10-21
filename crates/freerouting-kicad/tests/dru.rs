@@ -289,7 +289,10 @@ fn conditions_choose_class_pairs() {
         got,
         vec![(vec!["Fast".to_owned(), "Fast".to_owned()], true)]
     );
-    // no condition, an unknown layer, and a width on a layer are unsupported
+    // an unknown layer, a constraint kind with no form and a hole_size for one
+    // class (K15.3: one board-wide value) are unsupported; a rule without a
+    // condition is not (a floor, ignored here because the options leave the
+    // rules off)
     let r = read_with_rules(
         "c.dsn",
         &board.0,
@@ -297,10 +300,12 @@ fn conditions_choose_class_pairs() {
         Some(
             "(version 1)\n(rule \"bare\" (constraint clearance (min 1mm)))\n\
              (rule \"nolayer\" (layer \"In9.Cu\") (constraint clearance (min 1mm)) (condition \"A.NetClass == 'Fast'\"))\n\
-             (rule \"hole\" (constraint hole_size (min 0.3mm)) (condition \"A.NetClass == 'Fast'\"))\n",
+             (rule \"hole\" (constraint hole_size (min 0.3mm)) (condition \"A.NetClass == 'Fast'\"))\n\
+             (rule \"len\" (constraint length (max 50mm)) (condition \"A.NetClass == 'Fast'\"))\n",
         ),
         ReadOptions::default(),
     )
     .unwrap();
-    assert_eq!(r.rules.unsupported().count(), 3);
+    let unsupported: Vec<&str> = r.rules.unsupported().map(|r| r.name.as_str()).collect();
+    assert_eq!(unsupported, ["nolayer", "hole", "len"]);
 }

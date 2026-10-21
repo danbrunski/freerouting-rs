@@ -94,7 +94,7 @@ item-type rules), N06 (`router.java_quirks`).
     - with the quirk unset, both are Java's (the K15.1 board still routes, through K15.1's fix);
     - the settings test, the help text, a DIVERGENCES line, and connection-parity 7 of 7.
 
-- [ ] **K15.3 — Board-wide `.kicad_dru` rules apply.**
+- [x] **K15.3 — Board-wide `.kicad_dru` rules apply.**
   - **Change:**
     - A rule with no condition applies to every class pair, layer and item it can.
     - A constraint kind the router has a setting for applies as that setting, never lowering a
@@ -129,6 +129,50 @@ item-type rules), N06 (`router.java_quirks`).
     - a rule below Board Setup's value leaves Board Setup's;
     - module docs and a DIVERGENCES line if KiCad's semantics are narrowed (one edge clearance for
       all layers).
+  - *Done 2026-10-21:* `dru::floors` (new) and `dru.rs`: a rule with no condition is no longer
+    UNSUPPORTED; `track_width`, `clearance` (no condition), `hole_size`, `annular_width` and
+    `edge_clearance` `min`s are `DruReport::floors` (`BoardFloors`); `job::prepare::raise_board_floors`
+    raises `router.board_minimums.{track_width,clearance,via_drill,via_annular}_um` and
+    `router.copper_to_edge_clearance_um` after every merge, over the command line, the larger
+    winning, on both inputs (the reader's `JobInput::set_kicad`, and `--kicad-dru` on a DSN).
+    `disallow blind_via|buried_via|micro_via` is "met" or removes those padstacks (`floors::disallow`).
+    KiCad's semantics of a rule without a condition and the narrowing (one edge clearance for all
+    layers, the largest, with a warning; a `min` limited to some net classes is never a board-wide
+    floor: `track_width` raises those classes' width rules, the other kinds are UNSUPPORTED) are in
+    `dru/floors.rs`'s module docs and a DIVERGENCES line.
+    - Accept 1: `tests/data/pcu-rev2.kicad_dru` (commit 1b161c7, source named in its header);
+      `dru_floors.rs::every_rule_of_the_pcu_file_is_applied_or_reported_with_its_reason`: 12
+      constraints; on the two-layer test board 6 applied, `inner` ignored (no inner layer), the three
+      `disallow` rules ignored as "met", the two pad-hole rules UNSUPPORTED with the term and "the
+      router places no pads"; none says "rule without a condition"; the DSN and the `.kicad_pcb`
+      agree. On the real four-layer board (`freerouting-rs -de Power_Control_Unit_24V.kicad_pcb -do
+      ...`, log): 7 applied, 3 met, 2 UNSUPPORTED (line 21, line 59).
+    - Accept 2: `each_mapped_setting_has_the_rules_value_on_both_inputs` (track 250, clearance 300,
+      via drill 400, annular 150, edge 600, hole clearance 300 um, from a DSN job and a `.kicad_pcb`
+      job), `the_floors_are_the_rules_values` (pcu values 127/127/254/127 um, edge 381 um on six
+      layers), `disallow_removes_the_via_kinds_a_board_offers` (vias.kicad_pcb: only `Via[0-5]` left).
+    - Accept 3: `a_rule_below_board_setup_leaves_board_setups_value` (DSN job with the command line's
+      200/150/300/150/500/300 um keeps them, log "is 200, no less than ..."; `.kicad_pcb` job keeps
+      Board Setup's track 200, drill 300, edge 500 um and raises annular 100 to 127 and hole clearance
+      250 to 254). The real board's log: hole clearance 250 -> 254, clearance floor 0 -> 127, annular
+      100 -> 127; track, drill, edge unchanged.
+    - Accept 4: DIVERGENCES "Board-wide `.kicad_dru` rules without a condition apply (K15.3)".
+    - Class-limited `min` (review 2026-10-21): `a_class_limited_track_width_min_raises_only_that_class_on_a_dsn`
+      (q225: `Power` 300 -> 500 um, `kicad_default` 200 and the command line's
+      `board_minimums.track_width_um` unchanged; Default selected: its and the structure's width
+      rise; below the class's width: ignored), `..._on_a_kicad_pcb` (`hasNetclass('Fast')`: the two
+      100 um classes -> 150, 250 and 600 unchanged, Board Setup's 200 stays),
+      `a_class_limited_hole_size_min_is_unsupported` (`hole_size`, `annular_width`,
+      `edge_clearance`, both inputs: UNSUPPORTED "limited to some net classes; the router keeps one
+      board-wide value", no floor).
+    - Also: `crates/freerouting-kicad/tests/dru.rs::conditions_choose_class_pairs` updated (a rule
+      without a condition and `hole_size` are no longer UNSUPPORTED; `length` stands in).
+    - Gate: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+      `cargo test -p freerouting-kicad` and `-p freerouting-cli` green, `-p freerouting` lib (309) and
+      the KiCad, board-minimum and job tests green;
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: 7 exact.
+    - Also: the `--kicad-dru` paragraph of `crates/freerouting-cli/src/help.txt` lists the kinds now
+      applied. The plugin's `edge_and_pad_keepouts` is unchanged (decided: the DIVERGENCES note covers it).
 
 - [ ] **K15.4 — No track below the board's minimum on the pcu board.**
   - **Change:** the report's v5 output had 495 segments under the 0.2 mm Default width: 0.15 mm
@@ -260,7 +304,7 @@ item-type rules), N06 (`router.java_quirks`).
     - The DIVERGENCES `--threads` line is already right; `help.txt` isn't.
   - **Accept:** a CLI test with stdin closed and with a pipe; the help text; the CLI docs.
 
-- [ ] **K15.9 — A pad's own clearance is kept on a `.kicad_pcb` input.**
+- [x] **K15.9 — A pad's own clearance is kept on a `.kicad_pcb` input.**
   - **Change:** the report saw a fiducial's 0.6 mm local clearance broken by a GND trace and called
     pad-local clearances "not read". The reader writes pads' own clearances as keepouts since
     K13.7 (`pad_clearance::read_pad_clearances`, `read.rs`). Find which clearance the fiducial
@@ -275,3 +319,23 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu fiducial cut into a small fixture: the keepout is there;
     - a route keeps 0.6 mm from it;
     - the doc line the report read says what is kept.
+  - *Done 2026-10-21:* the reader at main already read a pad's own `(clearance)` (the fiducials'
+    pads carry `(clearance 0.6)`, `(solder_mask_margin 0.5)`; the footprint has none, and the
+    solder-mask margin is not a clearance). On the real board `read` gives three `pad_clearance`
+    circles on F.Cu, 1.9 mm across (1 + 2 * (0.6 - the Default class's 0.15)), at (52, 33),
+    (194.48, 99.96) and (80, 147.5) mm. What was missing: a footprint-level `(clearance)`.
+    `pad_clearance::read_pad_clearances` now gives a pad with no positive clearance of its own the
+    footprint's (KiCad 10.0.7 `PAD.GetLocalClearance` on a three-pad footprint: pad 1 and pad 3
+    `(clearance 0)` inherit 0.6, pad 2 keeps 0.3).
+    - Accept 1: `tests/data/k15-fiducial.kicad_pcb` (FID1's footprint verbatim from commit
+      1b161c7 at (52, 33) mm, two GND pads across it); `crates/freerouting/tests/k15_pad_clearance.rs::the_fiducials_keepout_is_there`
+      and `freerouting-kicad/tests/k15_pad_clearance.rs::the_pcu_fiducial_has_its_circle`
+      (1.8 mm circle on F.Cu at the default 0.2 mm), `a_footprint_clearance_reaches_the_pads_without_their_own`,
+      `the_pads_own_clearance_wins_over_the_footprints`.
+    - Accept 2: `a_route_keeps_the_pads_own_clearance` routes the fixture on `legacy` and `enhanced`:
+      the GND trace on F.Cu is 0.652 mm from the pad's edge with the keepout and 0.245 mm without it.
+    - Accept 3: `docs/development/kicad-plugin.md` (the line the report read, "pad-local clearances are
+      not carried into the DSN model yet") and `pcu-rev2-board-report.md` now say what is kept; the
+      `pad_clearance.rs` module docs state the pad-then-footprint rule; DIVERGENCES "A footprint's own
+      clearance reaches its pads (K15.9)". The plugin's DSN fix-up reads the pad's own value only
+      (kicad-plugin lane, not changed here).

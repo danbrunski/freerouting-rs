@@ -18,6 +18,15 @@
 //!   warning in [`DruReport::warnings`]) and what is left out;
 //! - (Q22.14) a **hole_to_hole** constraint a floor of
 //!   `router.board_minimums.hole_to_hole_um` ([`DruReport::hole_to_hole`]).
+//! - (K15.3) a rule **without a condition**, and a `min` of `track_width`,
+//!   `clearance`, `hole_size`, `annular_width` (vias) and `edge_clearance`, a
+//!   board-wide floor of the matching setting ([`DruReport::floors`]); and
+//!   `disallow blind_via|buried_via|micro_via`, met or removing those vias from
+//!   the router's choices. KiCad applies a rule with no `(condition)` to every
+//!   pair of items it can constrain, and a `min` is a lower bound the DRC
+//!   checks: a floor that only raises, never lowering Board Setup's value or
+//!   another rule's. [`floors`] has the details and what is narrowed (one
+//!   edge clearance for all layers, a layer or class limit applied board-wide).
 //!
 //! A DSN input gets the same with [`apply_to_pcb`] (`--kicad-dru`, Q22.5).
 //! A `(layer ...)` clause that names no copper layer of the board (`inner` on
@@ -30,8 +39,9 @@
 //! and kept out: a condition with a term this module cannot evaluate
 //! (`insideCourtyard`, `intersectsArea`, `inDiffPair`, ...) makes the rule
 //! UNSUPPORTED and names the first such term, in both modes; so does a
-//! constraint kind other than `clearance`, `hole_clearance`, `hole_to_hole`
-//! and `track_width` and a rule without a condition.
+//! constraint kind other than `clearance`, `hole_clearance`, `hole_to_hole`,
+//! `track_width`, `hole_size`, `annular_width`, `edge_clearance` and
+//! `disallow`. A rule with no condition is no longer left out (K15.3).
 //!
 //! # Conditions
 //!
@@ -57,8 +67,10 @@ use freerouting_dsn::ast::{ClassClass, LayerRule, Network, Rule, Structure};
 
 use crate::sexpr::Tree;
 
+mod floors;
 mod item_types;
 
+pub use floors::BoardFloors;
 pub use item_types::{ItemType, Kind};
 
 /// A `(constraint kind (min v) (opt v) (max v))` value in nanometres.
@@ -188,6 +200,11 @@ pub struct DruReport {
     /// leaves these classes alone ([`crate::fixups::apply_with_rules`]), as on
     /// the DSN path, where `--kicad-dru` runs after the plugin's text fix-up.
     pub track_widths: Vec<(String, String)>,
+    /// K15.3: the board-wide floors of the applied rules without a condition
+    /// (or with one that holds everywhere): track width, clearance, via drill,
+    /// via annular ring and copper-to-edge clearance. The caller raises the
+    /// matching settings to them ([`BoardFloors`]).
+    pub floors: BoardFloors,
 }
 
 impl DruReport {
@@ -341,7 +358,15 @@ fn parse_rule(item: &crate::sexpr::NodeRef<'_>) -> DruRule {
             }
             Some("severity") => rule.severity = c.str_value(1).map(|s| s.into_owned()),
             Some("constraint") => {
-                let kind = c.str_value(1).map(|k| k.into_owned()).unwrap_or_default();
+                let mut kind = c.str_value(1).map(|k| k.into_owned()).unwrap_or_default();
+                if kind == "disallow" {
+                    // `(constraint disallow blind_via buried_via)`: the item
+                    // kinds are the kind's arguments (K15.3)
+                    for v in c.items().skip(2).filter(|v| !v.is_list()) {
+                        kind.push(' ');
+                        kind.push_str(v.text().trim_matches('"'));
+                    }
+                }
                 let mut b = Bounds::default();
                 for v in c.items().skip(2).filter(|v| v.is_list()) {
                     let n = v.str_value(1).and_then(|t| parse_distance(&t));
@@ -819,6 +844,7 @@ fn apply_with_vias(
         hole_to_hole: None,
         via_annular_nm: item_types::via_annular_nm(network, structure, extra_vias),
         track_widths: Vec::new(),
+        floors: BoardFloors::default(),
     };
     for rule in &file.rules {
         let mut rr = RuleReport {
@@ -845,6 +871,7 @@ fn apply_with_vias(
     report.hole_clearance = ctx.hole;
     report.hole_to_hole = ctx.hole_to_hole;
     report.track_widths = ctx.track_widths;
+    report.floors = ctx.floors;
     report
 }
 
@@ -903,6 +930,8 @@ struct ApplyCtx<'a> {
     via_annular_nm: Option<i64>,
     /// [`DruReport::track_widths`].
     track_widths: Vec<(String, String)>,
+    /// [`DruReport::floors`].
+    floors: BoardFloors,
 }
 
 /// One item of a pair, as a condition sees it.
@@ -929,16 +958,20 @@ fn rule_status(
     structure: &mut Structure,
 ) -> Status {
     let unsupported = |why: String| Status::Unsupported(why);
-    let Some(cond) = &rule.condition else {
-        return unsupported("rule without a condition".to_owned());
-    };
-    if let Some(term) = cond.first_unsupported() {
-        return unsupported(format!("condition term '{term}'"));
+    if let Some(term) = rule.condition.as_ref().and_then(Cond::first_unsupported) {
+        return unsupported(unsupported_term(term));
     }
-    if !matches!(
+    if !(matches!(
         kind,
-        "clearance" | "track_width" | "hole_clearance" | "hole_to_hole"
-    ) {
+        "clearance"
+            | "track_width"
+            | "hole_clearance"
+            | "hole_to_hole"
+            | "hole_size"
+            | "annular_width"
+            | "edge_clearance"
+    ) || kind.starts_with("disallow "))
+    {
         return unsupported(format!("constraint '{kind}' has no DSN form"));
     }
     if let Some(sev) = &rule.severity
@@ -947,9 +980,12 @@ fn rule_status(
         return Status::Ignored("severity ignore".to_owned());
     }
     // layer selection: the (layer ...) clause plus the top-level layer terms
-    let (class_cond, cond_layers) = match cond.split_layers() {
-        Ok(x) => x,
-        Err(e) => return unsupported(e),
+    let (class_cond, cond_layers) = match &rule.condition {
+        Some(cond) => match cond.split_layers() {
+            Ok(x) => x,
+            Err(e) => return unsupported(e),
+        },
+        None => (None, Vec::new()),
     };
     let mut wanted: Vec<String> = rule.layers.clone();
     wanted.extend(cond_layers);
@@ -963,11 +999,71 @@ fn rule_status(
     let classes: Vec<String> = network.classes.iter().map(|c| c.name.clone()).collect();
     let typed = class_cond.as_ref().is_some_and(Cond::has_item_terms);
     match kind {
-        "track_width" => track_width(
-            &rule.name,
+        "track_width" => {
+            if bounds.opt.is_none() {
+                return floors::floor(
+                    rule,
+                    kind,
+                    bounds,
+                    class_cond.as_ref(),
+                    &layer_names,
+                    &classes,
+                    ctx,
+                    network,
+                    structure,
+                );
+            }
+            let status = track_width(
+                &rule.name,
+                bounds,
+                class_cond.as_ref(),
+                &layer_names,
+                ctx,
+                network,
+                structure,
+            );
+            if matches!(status, Status::Applied { .. }) && bounds.min.is_some() {
+                floors::floor(
+                    rule,
+                    kind,
+                    bounds,
+                    class_cond.as_ref(),
+                    &layer_names,
+                    &classes,
+                    ctx,
+                    network,
+                    structure,
+                );
+            }
+            status
+        }
+        "hole_size" | "annular_width" | "edge_clearance" => floors::floor(
+            rule,
+            kind,
             bounds,
             class_cond.as_ref(),
             &layer_names,
+            &classes,
+            ctx,
+            network,
+            structure,
+        ),
+        "clearance" if rule.condition.is_none() => floors::floor(
+            rule,
+            kind,
+            bounds,
+            None,
+            &layer_names,
+            &classes,
+            ctx,
+            network,
+            structure,
+        ),
+        _ if kind.starts_with("disallow ") => floors::disallow(
+            rule,
+            &kind["disallow ".len()..],
+            class_cond.as_ref(),
+            &classes,
             ctx,
             network,
             structure,
@@ -999,6 +1095,18 @@ fn rule_status(
             ctx,
             network,
         ),
+    }
+}
+
+/// The reason of an UNSUPPORTED condition term; a term about a pad's hole
+/// says why the router has nothing for it (K15.3).
+fn unsupported_term(term: &str) -> String {
+    if term.contains("Hole_Size") || term.contains("Hole_") {
+        format!(
+            "condition term '{term}' (it asks about a pad's hole, and the router places no pads)"
+        )
+    } else {
+        format!("condition term '{term}'")
     }
 }
 

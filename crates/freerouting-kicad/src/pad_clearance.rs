@@ -17,10 +17,17 @@
 //!   makes up the rest;
 //! - footprint and pad order, front before back, as the plugin.
 //!
-//! The pad's own clearance only, as the plugin reads it; a footprint-level
-//! `(clearance v)` is not taken. Coordinates keep the file's nanometres
-//! (the plugin rounds to whole µm). A keepout holds every net out, the pad's
-//! own net too, as on the DSN path.
+//! Which clearance a pad has (K15.9, checked against KiCad 10.0.7's
+//! `PAD::GetLocalClearance` on a three-pad footprint): the pad's own
+//! `(clearance v)` when it is positive; else the footprint's own
+//! `(clearance v)` (`FOOTPRINT::GetLocalClearance`), which every pad without
+//! one of its own inherits, a pad's `(clearance 0)` meaning "none" and
+//! inheriting too. The plugin's DSN fix-up reads the pad's own value only;
+//! the reader takes both, so a footprint-level value (a library footprint's
+//! fiducial or keep-clear pad) is kept as well. The solder-mask margin is not
+//! a clearance (Q18.7 handles the aperture). Coordinates keep the file's
+//! nanometres (the plugin rounds to whole µm). A keepout holds every net out,
+//! the pad's own net too, as on the DSN path.
 
 use freerouting_dsn::ast::{Area, Keepout, KeepoutKind, LayerRef, Shape};
 
@@ -51,8 +58,8 @@ fn pt(node: NodeRef<'_>) -> Option<Pt> {
     ))
 }
 
-/// Every pad of `board`'s footprints with a positive `(clearance v)` on an
-/// outer copper layer, in footprint and pad order.
+/// Every pad of `board`'s footprints with a positive clearance of its own, or
+/// of its footprint, on an outer copper layer, in footprint and pad order.
 pub fn read_pad_clearances(board: NodeRef<'_>) -> Vec<PadClearance> {
     let mut out = Vec::new();
     let footprints = board
@@ -62,13 +69,15 @@ pub fn read_pad_clearances(board: NodeRef<'_>) -> Vec<PadClearance> {
         let at = fp.child("at");
         let fp_pos = at.and_then(pt).unwrap_or((0, 0));
         let fp_orient = at.and_then(|a| a.f64(3)).unwrap_or(0.0);
-        for pad in fp.children("pad") {
-            let Some(local) = pad
-                .child("clearance")
+        let positive = |node: NodeRef<'_>| {
+            node.child("clearance")
                 .and_then(|c| c.atom(1))
                 .and_then(parse_board_units)
                 .filter(|v| *v > 0)
-            else {
+        };
+        let footprint_local = positive(fp);
+        for pad in fp.children("pad") {
+            let Some(local) = positive(pad).or(footprint_local) else {
                 continue;
             };
             let (mut front, mut back) = (false, false);

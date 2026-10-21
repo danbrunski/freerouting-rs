@@ -203,4 +203,4 @@ Re-checked at `084f3a9` (main `2d38fdd` changes only docs), with the run logs an
   gain is a fanout on the routed board (186 -> 105 on v7c) and then pass 1 (-> 82).
   [Q23](../roadmap/tasks/Q23-restart-from-the-best-board.md).
 - **Usability**: [K15.7–K15.9](../roadmap/tasks/K15-pcu-board-findings.md). Pad-local clearances are read since `5926b61`, which the
-  fiducials use. A footprint-level clearance is still not read.
+  fiducials use. A footprint-level clearance is read too since K15.9 (a pad's own value wins).

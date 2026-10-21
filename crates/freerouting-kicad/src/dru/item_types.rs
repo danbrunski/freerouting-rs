@@ -506,7 +506,7 @@ impl Typed {
 }
 
 /// The class names a condition is evaluated for (KiCad's names).
-fn kicad_classes(classes: &[String]) -> Vec<&str> {
+pub(super) fn kicad_classes(classes: &[String]) -> Vec<&str> {
     if classes.is_empty() {
         vec!["Default"]
     } else {
@@ -515,7 +515,7 @@ fn kicad_classes(classes: &[String]) -> Vec<&str> {
 }
 
 /// Whether `cond` holds for the pair in either order.
-fn holds(cond: Option<&Cond>, a: Probe<'_>, b: Probe<'_>) -> Result<bool, String> {
+pub(super) fn holds(cond: Option<&Cond>, a: Probe<'_>, b: Probe<'_>) -> Result<bool, String> {
     match cond {
         None => Ok(true),
         Some(c) => Ok(c.eval(a, Some(b))? || c.eval(b, Some(a))?),

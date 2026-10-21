@@ -737,7 +737,9 @@ the class-pair clearance (`class_class`) and class track width (`opt`) rules; a 
 cannot evaluate (`insideCourtyard`, `intersectsArea`, `inDiffPair`, item types) makes the rule UNSUPPORTED and
 is named in both modes. `canary-pwr`'s ten `insideCourtyard` rules are all UNSUPPORTED
 (`canary_pwr_rules_are_unsupported_by_name`). Board minimums of the `.kicad_pro` (track 0.15, annular 0.15, edge
-clearance 0.3 for `canary-pwr`) and pad-local clearances are not carried into the DSN model yet.
+clearance 0.3 for `canary-pwr`) are floors of the router's settings since Q18; pad-local clearances are read since K13.1
+(`pad_clearance`: a pad's own `(clearance)`, else its footprint's since K15.9, as a circle keepout), and rules without a condition
+(`track_width`, `clearance`, `hole_size`, `annular_width`, `edge_clearance`, `disallow` via kinds) apply since K15.3 (`dru::floors`).
 
 **Regenerating the reference exports and running the corpus.** `tools/kicad-reader/export.sh <board> <out.dsn>`
 exports a board with KiCad 10.0.7 (WSL; `--windows` for 10.0.5), `fetch-corpus.sh target/kicad-corpus` and

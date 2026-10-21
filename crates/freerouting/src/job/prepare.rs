@@ -67,7 +67,7 @@ use super::overrides::{self, OverrideState};
 use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
 use crate::dsn::ast::{Pcb, RulesFile};
-use crate::io::kicad::reader::dru::HoleClearance;
+use crate::io::kicad::reader::dru::{BoardFloors, HoleClearance};
 use crate::io::kicad::reader::project::BoardMinimums;
 pub use crate::io::kicad::{
     DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input, same_file,
@@ -148,6 +148,10 @@ pub struct JobInput {
     /// of a `.kicad_pcb` set, with the rule ([`set_kicad`](Self::set_kicad)):
     /// `router.input_fixups.class_widths` keeps them at the rule's width.
     pub rules_track_widths: Vec<(String, String)>,
+    /// K15.3: the board-wide floors of a `.kicad_pcb`'s `.kicad_dru` rules
+    /// (track width, clearance, via drill and annular ring, edge clearance);
+    /// [`prepare_job`] raises the matching settings to them after every merge.
+    pub rules_floors: BoardFloors,
 }
 
 impl JobInput {
@@ -172,6 +176,7 @@ impl JobInput {
             rules_hole_clearance: None,
             rules_hole_to_hole: None,
             rules_track_widths: Vec::new(),
+            rules_floors: BoardFloors::default(),
         }
     }
 
@@ -197,6 +202,7 @@ impl JobInput {
         self.rules_hole_clearance = read.rules.hole_clearance.clone();
         self.rules_hole_to_hole = read.rules.hole_to_hole.clone();
         self.rules_track_widths = read.rules.track_widths.clone();
+        self.rules_floors = read.rules.floors.clone();
         // Q18: the `.kicad_pro`'s Board Setup minimums are hard floors, at
         // the DSN's priority: a config file sets them below, the command
         // line over them.
@@ -470,10 +476,14 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     // Q22.5: the `.kicad_dru` of a DSN input, onto the tree.
     let mut hole_floor = input.rules_hole_clearance.clone();
     let mut hole_to_hole_floor = input.rules_hole_to_hole.clone();
+    let mut board_floors = input.rules_floors.clone();
     if let (Some((path, rules)), Some(tree)) = (&input.kicad_dru, pcb.as_mut()) {
-        let (hole, hole_to_hole) = apply_kicad_dru(tree.to_mut(), path, rules, &mut log);
+        let (hole, hole_to_hole, floors) = apply_kicad_dru(tree.to_mut(), path, rules, &mut log);
         hole_floor = hole.or(hole_floor);
         hole_to_hole_floor = hole_to_hole.or(hole_to_hole_floor);
+        if !floors.is_empty() {
+            board_floors = floors;
+        }
     }
 
     // 1. The first merge.
@@ -503,6 +513,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let mut patch = merged.patch;
     raise_hole_clearance(&mut patch, hole_floor.as_ref(), Some(&mut log));
     raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), Some(&mut log));
+    raise_board_floors(&mut patch, &board_floors, Some(&mut log));
     // K14: the plugin's DSN fix-ups, on the tree of a `.kicad_pcb` input.
     apply_input_fixups(input, &patch, pcb.as_mut(), &mut log)?;
 
@@ -558,6 +569,7 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         patch = merged.patch;
         raise_hole_clearance(&mut patch, hole_floor.as_ref(), None);
         raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), None);
+        raise_board_floors(&mut patch, &board_floors, None);
         let (rules_board, outcome) = apply_rules_file(board, &rules, &input.design_name);
         board = rules_board;
         log.extend(outcome.log);
@@ -656,7 +668,7 @@ fn apply_kicad_dru(
     path: &std::path::Path,
     text: &str,
     log: &mut Vec<LogLine>,
-) -> (Option<HoleClearance>, Option<HoleClearance>) {
+) -> (Option<HoleClearance>, Option<HoleClearance>, BoardFloors) {
     push(
         log,
         LogLevel::Info,
@@ -670,7 +682,7 @@ fn apply_kicad_dru(
             for warning in &report.warnings {
                 push(log, LogLevel::Warn, warning.clone());
             }
-            (report.hole_clearance, report.hole_to_hole)
+            (report.hole_clearance, report.hole_to_hole, report.floors)
         }
         Err(e) => {
             push(
@@ -678,7 +690,7 @@ fn apply_kicad_dru(
                 LogLevel::Warn,
                 format!("the .kicad_dru file could not be read: {e}"),
             );
-            (None, None)
+            (None, None, BoardFloors::default())
         }
     }
 }
@@ -710,6 +722,47 @@ fn raise_hole_to_hole(
         floor,
         log,
     );
+}
+
+/// K15.3: raises the settings of the board-wide `.kicad_dru` floors
+/// ([`BoardFloors`]) the same way: the larger of the rule and the setting wins,
+/// the command line's value included.
+fn raise_board_floors(
+    patch: &mut SettingsPatch,
+    floors: &BoardFloors,
+    mut log: Option<&mut Vec<LogLine>>,
+) {
+    let minimums = &mut patch.board_minimums;
+    let list: [(&mut Option<f64>, &str, &Option<HoleClearance>); 5] = [
+        (
+            &mut minimums.track_width_um,
+            "router.board_minimums.track_width_um",
+            &floors.track_width,
+        ),
+        (
+            &mut minimums.clearance_um,
+            "router.board_minimums.clearance_um",
+            &floors.clearance,
+        ),
+        (
+            &mut minimums.via_drill_um,
+            "router.board_minimums.via_drill_um",
+            &floors.via_drill,
+        ),
+        (
+            &mut minimums.via_annular_um,
+            "router.board_minimums.via_annular_um",
+            &floors.via_annular,
+        ),
+        (
+            &mut patch.copper_to_edge_clearance_um,
+            "router.copper_to_edge_clearance_um",
+            &floors.edge_clearance,
+        ),
+    ];
+    for (value, setting, floor) in list {
+        raise_floor(value, setting, floor.as_ref(), log.as_deref_mut());
+    }
 }
 
 fn raise_floor(
