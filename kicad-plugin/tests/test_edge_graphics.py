@@ -28,7 +28,7 @@ def keepouts(text):
 
 def corners(line):
     """The polygon corners of a keepout line, in KiCad's frame (mm)."""
-    nums = [float(v) for v in line.split("(polygon ")[1].rstrip(")").split()[2:]]
+    nums = [float(v) for v in line.split("(polygon ")[1].split(")")[0].split()[2:]]
     return [(x / 1000.0, -y / 1000.0) for x, y in zip(nums[::2], nums[1::2])]
 
 
@@ -330,25 +330,29 @@ def test_a_filled_front_mask_polygon_keeps_the_top_copper_out_of_it():
     out, log = edge_graphics.apply(TWO, facts(mask_shape("ring", APERTURE)))
     assert keepouts(out) == []
     ks = mask_keepouts(out)
-    assert ks == [
+    # the body, then (Q22.18) a strip within 1 um of each side
+    assert ks[:2] == [
         '(keepout "solder_mask" (polygon F.Cu 0 130000 -60000 140000 -60000 140000 -70000 130000 -70000 '
-        "130000 -60000))"
+        "130000 -60000) (clearance_class null))",
+        '(keepout "solder_mask" (polygon F.Cu 0 129999 -60001 140001 -60001 140001 -59999 129999 -59999 '
+        "129999 -60001) (clearance_class null))",
     ]
-    assert log == ["solder-mask graphics: 1 board F.Mask/B.Mask shape(s) kept clear on their copper side (1 keepouts)"]
+    assert len(ks) == 5
+    assert log == ["solder-mask graphics: 1 board F.Mask/B.Mask shape(s) kept clear on their copper side (5 keepouts)"]
     assert out.index("(via ") > out.index('(keepout "solder_mask"') > out.index("(boundary")
 
 
 def test_a_back_mask_shape_goes_on_the_bottom_copper():
     out, _ = edge_graphics.apply(TWO, facts(mask_shape("ring", APERTURE, layer="B.Mask")))
     ks = mask_keepouts(out)
-    assert len(ks) == 1 and "(polygon B.Cu 0 " in ks[0]
+    assert len(ks) == 5 and all("(polygon B.Cu 0 " in k for k in ks)
 
 
 def test_an_unfilled_mask_shape_keeps_its_stroke_and_a_filled_one_its_stroke_too():
     line = mask_shape("polyline", [(120.0, 60.0), (120.0, 80.0)], width=0.4, filled=False)
     out, _ = edge_graphics.apply(TWO, facts(line))
     (k,) = mask_keepouts(out)
-    assert corners(k)[:4] == [(119.8, 59.8), (119.8, 80.2), (120.2, 80.2), (120.2, 59.8)]
+    assert corners(k)[:4] == [(119.799, 59.799), (119.799, 80.201), (120.201, 80.201), (120.201, 59.799)]
     stroked = mask_shape("ring", APERTURE, width=0.2)
     out, _ = edge_graphics.apply(TWO, facts(stroked))
     assert len(mask_keepouts(out)) == 1 + 4  # the body and its four sides
@@ -356,7 +360,7 @@ def test_an_unfilled_mask_shape_keeps_its_stroke_and_a_filled_one_its_stroke_too
 
 def test_a_filled_mask_circle_is_covered_by_its_polygon():
     out, _ = edge_graphics.apply(TWO, facts(mask_shape("circle", [(135.0, 65.0), (137.0, 65.0)])))
-    (k,) = mask_keepouts(out)
+    k = mask_keepouts(out)[0]
     poly = corners(k)[:-1]
     import math
 
@@ -368,7 +372,7 @@ def test_a_filled_mask_circle_is_covered_by_its_polygon():
 def test_edge_and_mask_keepouts_together():
     margin = shape("polyline", [(120.0, 60.0), (120.0, 80.0)])
     out, log = edge_graphics.apply(TWO, facts(margin, mask_shape("ring", APERTURE)))
-    assert len(keepouts(out)) == 2 and len(mask_keepouts(out)) == 1 and len(log) == 2
+    assert len(keepouts(out)) == 2 and len(mask_keepouts(out)) == 5 and len(log) == 2
     # the edge keepouts never count the mask shape
     assert log[0].startswith("edge graphics: 1 Edge.Cuts/Margin shape(s)")
 
@@ -418,19 +422,19 @@ def test_the_mask_to_copper_clearance_grows_each_mask_shape():
     assert edge_graphics.apply(TWO, zero)[0] == plain
     grown, log = edge_graphics.apply(TWO, dict(facts(mask_shape("ring", APERTURE)), mask_to_copper_mm=0.05))
     ks = mask_keepouts(grown)
-    # the body as it was, then a rectangle within 0.05 mm of each side
+    # the body as it was, then a rectangle within 0.05 mm (and Q22.18's 1 um) of each side
     assert ks[0] == mask_keepouts(plain)[0] and len(ks) == 1 + 4
     strips = [corners(k)[:-1] for k in ks[1:]]
     xs = [x for s in strips for x, _ in s]
     ys = [y for s in strips for _, y in s]
-    assert (min(xs), max(xs), min(ys), max(ys)) == (129.95, 140.05, 59.95, 70.05)
-    assert all(any(inside(s, p) for s in strips) for p in [(129.951, 65.0), (135.0, 70.049), (140.049, 60.0)])
+    assert (min(xs), max(xs), min(ys), max(ys)) == (129.949, 140.051, 59.949, 70.051)
+    assert all(any(inside(s, p) for s in strips) for p in [(129.95, 65.0), (135.0, 70.05), (140.05, 60.0)])
     assert not any(inside(s, (129.94, 65.0)) for s in strips)
     assert log[-1].endswith("(5 keepouts)")
     line = mask_shape("polyline", [(120.0, 60.0), (120.0, 80.0)], width=0.4, filled=False)
     out, _ = edge_graphics.apply(TWO, dict(facts(line), mask_to_copper_mm=0.05))
     (k,) = mask_keepouts(out)
-    assert corners(k)[:4] == [(119.75, 59.75), (119.75, 80.25), (120.25, 80.25), (120.25, 59.75)]
+    assert corners(k)[:4] == [(119.749, 59.749), (119.749, 80.251), (120.251, 80.251), (120.251, 59.749)]
 
 
 def test_kicad_board_reports_the_mask_to_copper_clearance():
@@ -441,3 +445,61 @@ def test_kicad_board_reports_the_mask_to_copper_clearance():
     p = FAKE_PCBNEW
     assert kicad_board.edge_graphics(MaskBoard([], outline=[RING]), p)["mask_to_copper_mm"] == 0.05
     assert kicad_board.edge_graphics(Board([], outline=[RING]), p)["mask_to_copper_mm"] == 0.0
+
+
+def in_ring(poly, p):
+    """Even-odd point in polygon, the boundary counted inside."""
+    hit = False
+    for a, b in zip(poly, poly[1:] + poly[:1]):
+        cross = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+        on_line = abs(cross) < 1e-12
+        if on_line and min(a[0], b[0]) <= p[0] <= max(a[0], b[0]) and min(a[1], b[1]) <= p[1] <= max(a[1], b[1]):
+            return True
+        if (a[1] > p[1]) != (b[1] > p[1]) and p[0] < a[0] + (p[1] - a[1]) * (b[0] - a[0]) / (b[1] - a[1]):
+            hit = not hit
+    return hit
+
+
+def test_the_mask_keepouts_hold_the_exact_grown_apertures_after_rounding():
+    """Q22.18: a mask keepout has clearance class 0, so the router may lay
+    copper on its edge; the written keepouts (1 um grid) must hold every
+    point at exactly mask_to_copper from each aperture, curves and corners
+    included (Q22.18's 1 um margin)."""
+    import math
+
+    c = 0.0504  # off the 1 um grid, so rounding alone would cut inside
+    shapes = [
+        mask_shape("ring", APERTURE),
+        mask_shape("circle", [(115.0, 65.0), (117.0, 65.0)]),
+        mask_shape("polyline", [(120.0, 60.0), (120.0, 80.0)], width=0.4, filled=False),
+        # a quarter arc, centre (127.6, 134.8) r 5.65 mm, 0.2 mm wide
+        mask_shape("arc", [(127.6, 129.15), (131.595154, 130.804846), (133.25, 134.8)], width=0.2, filled=False),
+    ]
+    out, _ = edge_graphics.apply(TWO, dict(facts(*shapes), mask_to_copper_mm=c))
+    ks = [corners(k)[:-1] for k in mask_keepouts(out)]
+
+    def held(p):
+        return any(in_ring(k, p) for k in ks)
+
+    def around(x, y, r):
+        return [(x + r * math.cos(math.radians(i * 5)), y + r * math.sin(math.radians(i * 5))) for i in range(72)]
+
+    points = []
+    # the square: each side pushed out by c, each corner a quarter circle of radius c
+    for t in range(101):
+        v = 130.0 + 10.0 * t / 100
+        points += [(v, 60.0 - c), (v, 70.0 + c), (130.0 - c, v - 70.0), (140.0 + c, v - 70.0)]
+    for x, y in APERTURE:
+        points += around(x, y, c)
+    points += around(115.0, 65.0, 2.0 + c)
+    # the line: its sides at 0.2 + c, its round ends
+    points += [(120.0 + s * (0.2 + c), 60.0 + 20.0 * t / 100) for s in (-1, 1) for t in range(101)]
+    points += around(120.0, 60.0, 0.2 + c) + around(120.0, 80.0, 0.2 + c)
+    # the arc: both rims at 0.1 + c, its round ends
+    for i in range(201):
+        a = -math.pi / 2 + (math.pi / 2) * i / 200
+        for r in (5.65 - 0.1 - c, 5.65 + 0.1 + c):
+            points.append((127.6 + r * math.cos(a), 134.8 + r * math.sin(a)))
+    points += around(127.6, 129.15, 0.1 + c) + around(133.25, 134.8, 0.1 + c)
+    missed = [p for p in points if not held(p)]
+    assert missed == []

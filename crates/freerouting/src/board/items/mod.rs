@@ -260,6 +260,22 @@ pub enum AreaKind {
 /// [`ObstacleArea::is_pad_keepout`]).
 pub const PAD_KEEPOUT_NAME: &str = "solder_mask_pads";
 
+/// The name of a footprint's mask-aperture keepout over pads of two or more
+/// nets (Q22.16): it holds every net out, the pads' own too.
+pub const SHARED_PAD_KEEPOUT_NAME: &str = "solder_mask_shared";
+
+/// The name of a board-level mask-aperture keepout (Q18.7; Q22.18 fits it to
+/// the pins under it like [`PAD_KEEPOUT_NAME`]).
+pub const BOARD_MASK_KEEPOUT_NAME: &str = "solder_mask";
+
+/// The names of the mask-aperture keepouts the DSN reader fits to the pins
+/// under them (`io::specctra::parser::pad_keepouts`).
+pub const MASK_KEEPOUT_NAMES: [&str; 3] = [
+    BOARD_MASK_KEEPOUT_NAME,
+    PAD_KEEPOUT_NAME,
+    SHARED_PAD_KEEPOUT_NAME,
+];
+
 /// A keepout or a conduction area.
 ///
 /// Port of `board.model.items.ObstacleArea` and its subclasses
@@ -315,12 +331,15 @@ impl ObstacleArea {
         self.fixed_obstacle = value;
     }
 
-    /// True for a footprint's mask-aperture keepout over pads of one net
-    /// (Q22.16, `io::specctra::parser::pad_keepouts`): it carries that net
-    /// but is no copper, so it is an obstacle only for traces and vias of
-    /// other nets, never for pins or other areas.
+    /// True for a mask-aperture keepout fitted to the pins under it (Q22.16,
+    /// Q22.18, `io::specctra::parser::pad_keepouts`): over pins of one net it
+    /// carries that net, over pins of several nets none. It is no copper, so
+    /// it is an obstacle only for traces and vias of the nets it does not
+    /// carry, never for pins or other areas.
     pub fn is_pad_keepout(&self) -> bool {
-        self.name.as_deref() == Some(PAD_KEEPOUT_NAME)
+        self.name
+            .as_deref()
+            .is_some_and(|n| MASK_KEEPOUT_NAMES.contains(&n))
     }
 
     /// The area in board coordinates.

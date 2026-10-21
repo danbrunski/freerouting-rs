@@ -51,7 +51,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use freerouting_geometry::{FloatPoint, Shape, TileShape};
+use freerouting_geometry::{FloatPoint, PolylineShapeOps, Shape, TileShape};
 
 use super::clearance::parallel_map;
 use crate::board::BasicBoard;
@@ -391,6 +391,7 @@ fn item_violations(
         return Vec::new();
     };
     let mut out = clearance(board, item);
+    out.extend(zero_clearance_keepouts(board, item));
     out.extend(hole_clearance(board, item, reach));
     match &item.kind {
         ItemKind::Trace(trace) => {
@@ -504,6 +505,56 @@ fn clearance(board: &BasicBoard, item: &Item) -> Vec<Raw> {
             })
         })
         .collect()
+}
+
+/// Q22.18: copper inside a keepout that keeps no clearance from it (a mask
+/// aperture's `(clearance_class null)`, already grown by the board's
+/// solder-mask-to-copper clearance). The clearance check measures a
+/// shortfall, and a required 0 has none, so the overlap is found here: one
+/// breach per keepout and layer, at the centre of the first overlap.
+fn zero_clearance_keepouts(board: &BasicBoard, item: &Item) -> Vec<Raw> {
+    let matrix = &board.rules.clearance_matrix;
+    let mut seen = BTreeSet::new();
+    let mut out = Vec::new();
+    for i in 0..board.tile_shape_count(item) {
+        let Some(shape) = board.tile_shape(item, i) else {
+            continue;
+        };
+        let layer = item.shape_layer(i);
+        for id in board.overlapping_objects(&shape, layer) {
+            let other = board.item_ref(id);
+            let keepout = other.as_area().is_some_and(|a| !a.is_conduction_area());
+            if !keepout
+                || seen.contains(&(id, layer))
+                || matrix.get_value(
+                    other.clearance_class(),
+                    item.clearance_class(),
+                    layer,
+                    false,
+                ) != 0
+                || !board.is_obstacle(other, item)
+            {
+                continue;
+            }
+            let inside = (0..board.tile_shape_count(other))
+                .filter(|j| other.shape_layer(*j) == layer)
+                .filter_map(|j| board.tile_shape(other, j))
+                .map(|o| shape.intersection(&o))
+                .find(|x| x.dimension() == 2);
+            if let Some(x) = inside {
+                seen.insert((id, layer));
+                out.push(Raw {
+                    rule: BoardRule::Keepout,
+                    items: pair(item.id(), id),
+                    layer,
+                    location: x.centre_of_gravity(),
+                    required: 0.0,
+                    actual: 0.0,
+                });
+            }
+        }
+    }
+    out
 }
 
 /// True if the copper of `a` and `b` on `layer` comes closer than

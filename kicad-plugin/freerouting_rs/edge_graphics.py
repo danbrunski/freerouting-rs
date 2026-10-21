@@ -30,21 +30,29 @@ mask aperture. A board-level F.Mask or B.Mask shape (an exposed-copper area no
 pad owns; slice-dcmt-bread-slice has two) becomes a keepout named
 `MASK_KEEPOUT_NAME` on the copper layer of its side: a filled shape is its own
 polygon (a circle `SAGITTA_MM` and 1 um wider), its stroke and an unfilled
-shape the rectangles within half the stroke of each piece. The keepout holds
-every net out, the net of the copper under the aperture too.
+shape the rectangles within half the stroke of each piece. Q22.18: the router
+fits it to the pins under it (a pad of one net under it is reached, pads of
+several nets keep every net out), and it carries `(clearance_class null)`
+(`MASK_CLEARANCE_CLASS`): copper keeps the solder-mask-to-copper clearance
+below from the aperture, no more.
 
 Q22.12: KiCad's DRC also keeps copper of another net
 `m_SolderMaskToCopperClearance` from an aperture, so `mask_polygons` grows each
 shape by it (`kicad_board.edge_graphics`' `mask_to_copper_mm`): the shape's
 stroke is taken twice the clearance wider, so a filled body gets a rectangle
-within the clearance of each side and a stroke widens by it on each side. With
-0 the keepouts are Q18.7's. The pads' apertures grow by it in
+within the clearance of each side and a stroke widens by it on each side.
+Q22.18: every shape grows by `MASK_MARGIN_MM` (1 um) more, so with no clearance
+a body gets 1 um strips too: the keepouts keep no clearance of their own and
+must hold KiCad's exact grown aperture after the chords and the 1 um rounding
+(342 nm inside it at worst before, on canary-pwr; 0 after). The pads' apertures grow by it in
 `kicad_board.mask_expansions`.
 
 Q22.16: a footprint's own mask shapes (`kicad_board.edge_graphics` gives them a
 `footprint` key) become keepouts the same way, named `solder_mask_pads` by
 `footprint_masks`, which the router fits to the pads under them; none for a
-footprint that allows bridges.
+footprint that allows bridges. `pad_trim.trim` then renames one over pads of
+several nets `solder_mask_shared` and cuts those pads back to their part
+outside it.
 
 The `.kicad_pcb` reader (`crates/freerouting-kicad`, `edge_keepouts.rs`) does
 the same for a `.kicad_pcb` input. Pure Python: the board facts come from
@@ -54,15 +62,20 @@ the same for a `.kicad_pcb` input. Pure Python: the board facts come from
 import math
 
 try:  # inside the plugin package
-    from . import footprint_masks
+    from . import footprint_masks, pad_trim
     from .dsn_fixups import Dsn, _children, um
 except ImportError:  # tests and headless scripts put this folder on sys.path
     import footprint_masks
+    import pad_trim
     from dsn_fixups import Dsn, _children, um
 
 KEEPOUT_NAME = "edge_clearance"
 MASK_KEEPOUT_NAME = "solder_mask"
 MASK_LAYERS = ("F.Mask", "B.Mask")
+MASK_CLEARANCE_CLASS = "null"  # Q22.18: the router's class 0, no clearance of its own
+# Q22.18: every mask aperture grows by this on top of the clearance, so the keepout holds KiCad's
+# exact grown aperture after the 1 um rounding (at most 0.71 um inward) and the router's 0.1 um
+MASK_MARGIN_MM = 0.001
 SAGITTA_MM = 0.005  # chords of arcs and circles stay this close to the curve
 MIN_HALF_MM = 0.001  # a keepout is at least the line itself
 ON_OUTLINE_MM = 0.02  # an Edge.Cuts piece this close to an outer contour is the outline
@@ -176,11 +189,11 @@ def mask_polygons(facts):
     `SAGITTA_MM` and 1 um wider), its stroke and an unfilled shape the
     rectangles within half the stroke of each piece. Q22.12: grown by
     `facts["mask_to_copper_mm"]` (the board's solder-mask-to-copper clearance)
-    through a stroke twice that wider; 0 or absent leaves the shapes as they
-    are. A board shape is named `MASK_KEEPOUT_NAME`; Q22.16: a footprint's
+    through a stroke twice that wider, and Q22.18's `MASK_MARGIN_MM` more (so
+    the 1 um rounding never cuts inside KiCad's aperture). A board shape is named `MASK_KEEPOUT_NAME`; Q22.16: a footprint's
     shape `footprint_masks.keepout_name`, and none is left out."""
     out, shapes, fp_shapes = [], 0, 0
-    grow = max(facts.get("mask_to_copper_mm") or 0.0, 0.0)
+    grow = max(facts.get("mask_to_copper_mm") or 0.0, 0.0) + MASK_MARGIN_MM
     for shape in facts.get("shapes") or []:
         if shape["layer"] not in MASK_LAYERS:
             continue
@@ -237,12 +250,15 @@ def apply(dsn_text, facts):
         raise ValueError("no (structure ...) in the DSN")
     layers = [name for name, _kind, _atom in dsn.layers]
 
-    def keepout(name, layer, poly):
+    def keepout(name, layer, poly, clearance_class=None):
         coords = " ".join(f"{um(x)} {-um(y)}" for x, y in poly + poly[:1])
-        return f'    (keepout "{name}" (polygon {dsn.layer_token(layer)} 0 {coords})){dsn.nl}'
+        cls = f" (clearance_class {clearance_class})" if clearance_class else ""
+        return f'    (keepout "{name}" (polygon {dsn.layer_token(layer)} 0 {coords}){cls}){dsn.nl}'
 
     lines = [keepout(KEEPOUT_NAME, layer, quad) for layer in layers for quad in rects]
-    mask_lines = [keepout(name, layers[-1] if side else layers[0], poly) for side, poly, name, _fp in masks]
+    mask_lines = [
+        keepout(name, layers[-1] if side else layers[0], poly, MASK_CLEARANCE_CLASS) for side, poly, name, _fp in masks
+    ]
     via = next(iter(_children(dsn.structure, "via")), None)
     if via is not None:
         at = dsn.text.rfind("\n", 0, via.start)
@@ -268,4 +284,6 @@ def apply(dsn_text, facts):
             f"solder-mask graphics: {fp_mask_shapes} footprint F.Mask/B.Mask shape(s) kept clear on their copper "
             f"side, but for their pads ({sum(1 for m in masks if m[3])} keepouts)"
         )
+        text, trim_log = pad_trim.trim(text)
+        log += trim_log
     return text, log

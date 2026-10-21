@@ -9,9 +9,10 @@ on its side's copper, grown by the solder-mask-to-copper clearance like the
 board's own mask shapes (Q18.7, Q22.12), named `keepout_name`:
 `FOOTPRINT_MASK_KEEPOUT_NAME`. The router reads the name
 (`crates/freerouting/src/io/specctra/parser/pad_keepouts.rs`): over pads of one
-net the keepout lets that net through, over pads of several nets it keeps every
-net out but leaves the pads themselves free, so a pad that reaches out of the
-aperture is entered from outside. A footprint KiCad lets bridge
+net the keepout lets that net through, over pads of several nets (`pad_trim`
+renames it `solder_mask_shared` and cuts those pads back to their part outside
+it) it keeps every net out. Q22.18: with `(clearance_class null)`, no clearance
+on top of the grown aperture. A footprint KiCad lets bridge
 (`allow_soldermask_bridges`, a solder jumper) has none: KiCad's DRC ignores its
 apertures. The `.kicad_pcb` reader does the same
 (`crates/freerouting-kicad/src/footprint_masks.rs`).

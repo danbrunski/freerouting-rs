@@ -13,9 +13,10 @@
 //! `solder_mask_to_copper_clearance` (Q22.12) like the board's own mask
 //! shapes, and named [`FOOTPRINT_MASK_KEEPOUT_NAME`]. The router reads the
 //! name (`freerouting::io::specctra::parser::pad_keepouts`): over pads of
-//! one net the keepout lets that net through, over pads of several nets it
-//! keeps every net out but leaves the pads themselves free, so a pad that
-//! reaches out of the aperture is entered from outside.
+//! one net the keepout lets that net through, over pads of several nets
+//! ([`crate::pad_trim`] renames it [`SHARED_MASK_KEEPOUT_NAME`] and cuts
+//! those pads back to their part outside it) it keeps every net out. Q22.18:
+//! with `(clearance_class null)`, no clearance on top of the grown aperture.
 //!
 //! A footprint KiCad lets bridge (`(attr ... allow_soldermask_bridges)`, a
 //! solder jumper) has no keepout: KiCad's DRC ignores its apertures. The
@@ -25,13 +26,17 @@
 
 use freerouting_dsn::ast::Keepout;
 
-use crate::edge_keepouts::{F, keepout, mask_polygons};
+use crate::edge_keepouts::{F, mask_keepout, mask_polygons};
 use crate::footprints::Footprint;
 use crate::mask::FootprintMasks;
 
 /// The name of a footprint's mask-aperture keepouts: the router's
 /// `PAD_KEEPOUT_NAME`.
 pub const FOOTPRINT_MASK_KEEPOUT_NAME: &str = "solder_mask_pads";
+
+/// The name of a footprint's mask-aperture keepout over pads of two or more
+/// nets ([`crate::pad_trim`]): the router's `SHARED_PAD_KEEPOUT_NAME`.
+pub const SHARED_MASK_KEEPOUT_NAME: &str = "solder_mask_shared";
 
 /// The keepout polygons (nm, KiCad's frame) of every footprint's F.Mask /
 /// B.Mask shapes, each with its side (`true` for B.Mask), in footprint then
@@ -62,7 +67,7 @@ pub fn footprint_mask_keepouts(
     polygons
         .iter()
         .map(|(is_back, poly)| {
-            keepout(
+            mask_keepout(
                 FOOTPRINT_MASK_KEEPOUT_NAME,
                 if *is_back { back } else { front },
                 poly,

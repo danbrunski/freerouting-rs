@@ -38,7 +38,8 @@
 //!   (the pads' solder-mask expansions, in [`read::Extras::solder_mask`]).
 //!   Q22.16 adds [`footprint_masks`]: a footprint's own mask shapes as
 //!   keepouts named `solder_mask_pads`, which the router fits to the pads
-//!   under them.
+//!   under them, and [`pad_trim`]: pads under one that pads of several nets
+//!   share, cut back to their part outside it (`solder_mask_shared`).
 //! - Q22.4 adds [`copper_graphics`]: copper shapes and copper texts, which the
 //!   export leaves out, as keepouts (`copper_graphic`, `copper_text`); a
 //!   shape of a net with pins becomes conduction-area wires of that net with
@@ -114,6 +115,7 @@ pub mod nets;
 pub mod network;
 pub mod outline;
 pub mod pad_clearance;
+pub mod pad_trim;
 pub mod pads;
 pub mod project;
 pub mod read;

@@ -20,8 +20,16 @@
         40000 -30000
       )
     )
-    (keepout "solder_mask_pads" (polygon F.Cu 0 14000 -11000 26000 -11000 26000 -19000 14000 -19000 14000 -11000))
-    (keepout "solder_mask_pads" (polygon F.Cu 0 31300 -24300 32700 -24300 32700 -25700 31300 -25700 31300 -24300))
+    (keepout "solder_mask_shared" (polygon F.Cu 0 14000 -11000 26000 -11000 26000 -19000 14000 -19000 14000 -11000) (clearance_class null))
+    (keepout "solder_mask_shared" (polygon F.Cu 0 13999 -11001 26001 -11001 26001 -10999 13999 -10999 13999 -11001) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 25999 -10999 25999 -19001 26001 -19001 26001 -10999 25999 -10999) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 26001 -18999 13999 -18999 13999 -19001 26001 -19001 26001 -18999) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 14001 -19001 14001 -10999 13999 -10999 13999 -19001 14001 -19001) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 31300 -24300 32700 -24300 32700 -25700 31300 -25700 31300 -24300) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 31299 -24301 32701 -24301 32701 -24299 31299 -24299 31299 -24301) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 32699 -24299 32699 -25701 32701 -25701 32701 -24299 32699 -24299) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 32701 -25699 31299 -25699 31299 -25701 32701 -25701 32701 -25699) (clearance_class null))
+    (keepout "solder_mask_pads" (polygon F.Cu 0 31301 -25701 31301 -24299 31299 -24299 31299 -25701 31301 -25701) (clearance_class null))
     (via Via[0-1]_600:300_um)
     (rule
       (width 200)
@@ -46,8 +54,8 @@
   )
   (library
     (image l:edge2
-      (pin Rect[T]Pad_2000.000000x6000.000000_um 1 -3000 -1000)
-      (pin Rect[T]Pad_2000.000000x6000.000000_um 2 3000 -1000)
+      (pin Rect[T]Pad_2000.000000x6000.000000_um_outside_mask_1 1 -3000 1001)
+      (pin Rect[T]Pad_2000.000000x6000.000000_um_outside_mask_1 2 3000 1001)
     )
     (image l:pad
       (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
@@ -80,6 +88,10 @@
       (shape
         (circle B.Cu 600 0 0)
       )
+      (attach off)
+    )
+    (padstack Rect[T]Pad_2000.000000x6000.000000_um_outside_mask_1
+      (shape (polygon F.Cu 0 1000 -1000 1000 999 -1000 999 -1000 -1000 1000 -1000))
       (attach off)
     )
   )

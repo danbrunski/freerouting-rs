@@ -820,6 +820,14 @@ pub fn read_with_rules(
                 .collect(),
         }),
     };
+    // Q22.16: pads under a footprint aperture that pads of several nets
+    // share, cut back to their part outside it.
+    let mut pcb = pcb;
+    warnings.extend(
+        crate::pad_trim::trim_shared_pads(&mut pcb)
+            .into_iter()
+            .map(|message| Warning { line: 0, message }),
+    );
     Ok(KicadRead {
         pcb,
         warnings,

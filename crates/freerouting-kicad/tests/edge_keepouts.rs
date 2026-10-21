@@ -133,7 +133,11 @@ fn the_boards_mask_apertures_become_keepouts_on_their_copper_side() {
     let all = read(MASKS, None);
     assert!(edge(&all).is_empty());
     let ks = masks(&all);
-    assert_eq!(ks.len(), 3, "{ks:?}");
+    // Q22.18: each shape also gets a strip within 1 µm (`MASK_MARGIN_NM`) of
+    // each piece of its outline: the polygon's 4, the circle's chords, and the
+    // line is its own strip
+    let circle_strips = ks.len() - 1 - 4 - 1 - 1;
+    assert!(circle_strips > 16, "{ks:?}");
     // the polygon as it is, closed, on F.Cu (DSN frame: µm, Y negated)
     assert_eq!(ks[0].0, "F.Cu");
     assert_eq!(
@@ -147,29 +151,30 @@ fn the_boards_mask_apertures_become_keepouts_on_their_copper_side() {
         ]
     );
     // the circle on B.Cu, its chords outside the 2 mm circle
-    assert_eq!(ks[1].0, "B.Cu");
-    let ring = &ks[1].1;
+    assert_eq!(ks[5].0, "B.Cu");
+    let ring = &ks[5].1;
     assert!(ring.len() > 16);
     for w in ring.windows(2) {
         let mid = ((w[0].0 + w[1].0) / 2.0, (w[0].1 + w[1].1) / 2.0);
         let r = (mid.0 - 35000.0).hypot(mid.1 + 25000.0);
         assert!(r >= 2000.0, "chord midpoint at {r} µm");
     }
-    // the line: the rectangle within half its 0.4 mm stroke, on F.Cu
-    assert_eq!(ks[2].0, "F.Cu");
-    let xs: Vec<f64> = ks[2].1.iter().map(|p| p.0).collect();
-    let ys: Vec<f64> = ks[2].1.iter().map(|p| p.1).collect();
+    // the line: the rectangle within half its 0.4 mm stroke and 1 µm, on F.Cu
+    let line = ks.last().unwrap();
+    assert_eq!(line.0, "F.Cu");
+    let xs: Vec<f64> = line.1.iter().map(|p| p.0).collect();
+    let ys: Vec<f64> = line.1.iter().map(|p| p.1).collect();
     let span = |v: &[f64]| {
         v.iter()
             .fold((f64::MAX, f64::MIN), |a, x| (a.0.min(*x), a.1.max(*x)))
     };
     let close = |a: (f64, f64), b: (f64, f64)| (a.0 - b.0).abs() < 1e-6 && (a.1 - b.1).abs() < 1e-6;
-    assert!(close(span(&xs), (4800.0, 15200.0)), "{xs:?}");
-    assert!(close(span(&ys), (-30200.0, -29800.0)), "{ys:?}");
+    assert!(close(span(&xs), (4799.0, 15201.0)), "{xs:?}");
+    assert!(close(span(&ys), (-30201.0, -29799.0)), "{ys:?}");
     // they survive the DSN text
     let r = freerouting_kicad::read(MASKS, None).unwrap();
     let back = freerouting_dsn::Pcb::parse(&r.pcb.to_dsn()).unwrap();
-    assert_eq!(masks(&back.structure.unwrap().keepouts).len(), 3);
+    assert_eq!(masks(&back.structure.unwrap().keepouts).len(), ks.len());
 }
 
 fn span(points: &[(f64, f64)]) -> ((f64, f64), (f64, f64)) {
@@ -186,8 +191,8 @@ fn mask_pro(clearance_mm: f64) -> String {
 }
 
 /// Q22.12: the `.kicad_pro`'s `solder_mask_to_copper_clearance` grows every
-/// board mask aperture by it; 0 (KiCad's default, as with no key) keeps
-/// Q18.7's keepouts byte for byte.
+/// board mask aperture by it; 0 (KiCad's default) gives the keepouts of no key
+/// (Q18.7's, with Q22.18's 1 µm strips).
 #[test]
 fn the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance() {
     let plain = masks(&read(MASKS, None));
@@ -197,7 +202,7 @@ fn the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance() {
     let grown = masks(&read(MASKS, Some(&mask_pro(0.05))));
     let close = |a: f64, b: f64| (a - b).abs() < 1e-6;
     // the filled polygon: its body as it was, then a rectangle within 0.05 mm
-    // of each side, reaching 0.05 mm past both ends
+    // (and Q22.18's 1 µm) of each side, reaching as far past both ends
     assert_eq!(grown[0], plain[0]);
     let square: Vec<(f64, f64)> = grown[1..5]
         .iter()
@@ -205,17 +210,17 @@ fn the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance() {
         .flat_map(|k| k.1.clone())
         .collect();
     let ((x0, x1), (y0, y1)) = span(&square);
-    assert!(close(x0, 9950.0) && close(x1, 20050.0), "{square:?}");
-    assert!(close(y0, -20050.0) && close(y1, -9950.0), "{square:?}");
+    assert!(close(x0, 9949.0) && close(x1, 20051.0), "{square:?}");
+    assert!(close(y0, -20051.0) && close(y1, -9949.0), "{square:?}");
     for k in &grown[1..5] {
         let ((a, b), (c, d)) = span(&k.1);
-        // each strip is 0.1 mm across, the side's length plus 0.1 mm long
+        // each strip is 0.102 mm across, the side's length plus that long
         let (w, h) = (b - a, d - c);
-        assert!(close(w.min(h), 100.0) && close(w.max(h), 10100.0), "{k:?}");
+        assert!(close(w.min(h), 102.0) && close(w.max(h), 10102.0), "{k:?}");
     }
     // the filled circle on B.Cu: its body, then strips around its chords whose
     // inner edge lies 0.05 mm (plus the maximum error) outside the 2 mm circle
-    assert_eq!(grown[5], plain[1]);
+    assert_eq!(grown[5], plain[5]);
     let circle: Vec<_> = grown.iter().filter(|k| k.0 == "B.Cu").skip(1).collect();
     assert!(circle.len() > 16);
     let inside = |poly: &[(f64, f64)], p: (f64, f64)| {
@@ -227,19 +232,102 @@ fn the_mask_apertures_grow_by_the_projects_mask_to_copper_clearance() {
     };
     for i in 0..360 {
         let a = f64::from(i).to_radians();
-        let p = (35000.0 + 2049.9 * a.cos(), -25000.0 + 2049.9 * a.sin());
+        let p = (35000.0 + 2050.9 * a.cos(), -25000.0 + 2050.9 * a.sin());
         assert!(circle.iter().any(|k| inside(&k.1, p)), "{p:?} uncovered");
     }
     for k in &circle {
         for p in &k.1 {
             let r = (p.0 - 35000.0).hypot(p.1 + 25000.0);
-            assert!(r < 2120.0, "a strip corner at {r} µm");
+            assert!(r < 2122.0, "a strip corner at {r} µm");
         }
     }
     // the 0.4 mm line: the rectangle within 0.2 + 0.05 mm of it
     let line = &grown.last().unwrap().1;
     let ((x0, x1), (y0, y1)) = span(line);
-    assert!(close(x0, 4750.0) && close(x1, 15250.0), "{line:?}");
-    assert!(close(y0, -30250.0) && close(y1, -29750.0), "{line:?}");
+    assert!(close(x0, 4749.0) && close(x1, 15251.0), "{line:?}");
+    assert!(close(y0, -30251.0) && close(y1, -29749.0), "{line:?}");
     assert_eq!(grown.len(), 1 + 4 + 1 + circle.len() + 1);
+}
+
+/// True if `p` lies inside the closed polygon `ring` (even-odd rule).
+fn in_ring(ring: &[(f64, f64)], p: (f64, f64)) -> bool {
+    let mut inside = false;
+    for w in ring.windows(2) {
+        let ((x1, y1), (x2, y2)) = (w[0], w[1]);
+        if (y1 > p.1) != (y2 > p.1) && p.0 < x1 + (p.1 - y1) * (x2 - x1) / (y2 - y1) {
+            inside = !inside;
+        }
+    }
+    inside
+}
+
+/// Q22.18: with `(clearance_class null)` the router may lay copper on a mask
+/// keepout's edge, so the keepouts must hold KiCad's exact grown aperture
+/// (each shape grown by the 0.05 mm solder-mask-to-copper clearance) after
+/// the router's 0.1 µm rounding. Every point at exactly the grown distance
+/// from the shapes of `data/q18-mask-graphics.kicad_pcb` (the filled square,
+/// the filled 2 mm circle, the 0.4 mm line) and of an added 0.2 mm arc
+/// (centre (27, 5), r 2 mm, its upper half) lies strictly inside one of the
+/// keepouts of its side: the worst inward distance is at most 0.
+#[test]
+fn the_mask_keepouts_hold_the_exact_grown_apertures_after_rounding() {
+    let arc = "  (gr_arc (start 25 5) (mid 27 3) (end 29 5) (stroke (width 0.2) (type solid)) \
+               (layer \"F.Mask\"))\n  (footprint";
+    let text = MASKS.replacen("  (footprint", arc, 1);
+    assert_ne!(text, MASKS);
+    let c = 0.05;
+    let ks: Vec<(String, Vec<(f64, f64)>)> = masks(&read(&text, Some(&mask_pro(c))))
+        .into_iter()
+        .map(|(l, pts)| {
+            let grid = |v: f64| (v * 10.0).round() / 10.0;
+            (
+                l,
+                pts.into_iter().map(|(x, y)| (grid(x), grid(y))).collect(),
+            )
+        })
+        .collect();
+    // base curves (KiCad mm), the layer and the distance the aperture reaches
+    type Base = (&'static str, Vec<(f64, f64)>, f64);
+    let mut bases: Vec<Base> = Vec::new();
+    let steps = |n: usize, f: &dyn Fn(f64) -> (f64, f64)| -> Vec<(f64, f64)> {
+        (0..=n).map(|i| f(i as f64 / n as f64)).collect()
+    };
+    let square: Vec<(f64, f64)> = [(10.0, 10.0), (20.0, 10.0), (20.0, 20.0), (10.0, 20.0)]
+        .iter()
+        .zip([(20.0, 10.0), (20.0, 20.0), (10.0, 20.0), (10.0, 10.0)].iter())
+        .flat_map(|(a, b)| steps(200, &|t| (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t)))
+        .collect();
+    bases.push(("F.Cu", square, c));
+    let tau = std::f64::consts::TAU;
+    bases.push((
+        "B.Cu",
+        steps(720, &|t| {
+            (35.0 + 2.0 * (tau * t).cos(), 25.0 + 2.0 * (tau * t).sin())
+        }),
+        c,
+    ));
+    bases.push(("F.Cu", steps(200, &|t| (5.0 + 10.0 * t, 30.0)), 0.2 + c));
+    let half = std::f64::consts::PI;
+    bases.push((
+        "F.Cu",
+        steps(360, &|t| {
+            (27.0 - 2.0 * (half * t).cos(), 5.0 - 2.0 * (half * t).sin())
+        }),
+        0.1 + c,
+    ));
+    let mut checked = 0;
+    for (layer, points, d) in &bases {
+        for q in points {
+            for k in 0..72 {
+                let a = f64::from(k) * 5.0_f64.to_radians();
+                let p = ((q.0 + d * a.cos()) * 1000.0, -(q.1 + d * a.sin()) * 1000.0);
+                assert!(
+                    ks.iter().any(|(l, ring)| l == layer && in_ring(ring, p)),
+                    "{p:?} ({layer}) lies outside every mask keepout"
+                );
+                checked += 1;
+            }
+        }
+    }
+    assert!(checked > 100_000);
 }

@@ -3,9 +3,9 @@
 //!
 //! Port of `io.specctra.parser.Structure.readScope` and its helpers.
 //!
-//! Not Java (Q22.16): a `keepout` named `solder_mask_pads`, a footprint's
-//! solder-mask aperture, is inserted after the components
-//! ([`super::pad_keepouts`]).
+//! Not Java (Q22.16, Q22.18): a `keepout` named `solder_mask`,
+//! `solder_mask_pads` or `solder_mask_shared`, a solder-mask aperture, is
+//! inserted after the components ([`super::pad_keepouts`]).
 
 use crate::util::HashSet;
 
@@ -199,7 +199,7 @@ pub(crate) fn read_structure(ctx: &mut ReadContext, structure: &ast::Structure) 
     }
     for (index, list) in keepouts.iter().enumerate() {
         for (area, wire) in list {
-            if !insert_keepout(ctx, area, index, *wire, &[]) {
+            if !insert_keepout(ctx, area, index, *wire, None) {
                 return false;
             }
         }
@@ -340,14 +340,15 @@ fn insert_missing_power_planes(ctx: &mut ReadContext, layer_info: &[DsnLayer]) {
 /// keepouts and 2 for place keepouts.
 /// Inserts a keepout of group `kind` on its layers; a `wire` keepout (a
 /// Specctra `wire_keepout`, built as a keepout) is also recorded in the
-/// board's `wire_keepouts` (Q09.3). A keepout of `nets` lets them through
-/// (Q22.16; none for every keepout Java reads).
+/// board's `wire_keepouts` (Q09.3). `Some(nets)` makes it a mask-aperture
+/// keepout under its name that lets `nets` through (Q22.16; `None` for every
+/// keepout Java reads).
 pub(super) fn insert_keepout(
     ctx: &mut ReadContext,
     area: &DsnArea,
     kind: usize,
     wire: bool,
-    nets: &[i32],
+    nets: Option<&[i32]>,
 ) -> bool {
     let transform = ctx.coordinate_transform;
     let Some(keepout_area) = transform_area_to_board(&area.shapes, &transform) else {
@@ -399,7 +400,7 @@ pub(super) fn insert_keepout_on_layer(
     layer: i32,
     area: &DsnArea,
     kind: usize,
-    nets: &[i32],
+    nets: Option<&[i32]>,
 ) -> ItemId {
     let clearance_class = match &area.clearance_class {
         None => {
@@ -423,19 +424,20 @@ pub(super) fn insert_keepout_on_layer(
             }
         }
     };
+    let area_name = area.name.clone();
     let area = keepout_area.clone();
     match kind {
-        0 if !nets.is_empty() => board.insert_area(
+        0 if nets.is_some() => board.insert_area(
             AreaKind::Obstacle,
             area,
             layer,
             freerouting_geometry::Vector::ZERO,
             0.0,
             false,
-            nets,
+            nets.unwrap_or_default(),
             clearance_class,
             0,
-            Some(super::pad_keepouts::PAD_KEEPOUT_NAME.to_owned()),
+            area_name,
             FixedState::SystemFixed,
         ),
         1 => board.insert_via_obstacle(area, layer, clearance_class, FixedState::SystemFixed),

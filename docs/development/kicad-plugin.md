@@ -171,7 +171,12 @@ field they lack takes the profile's default):
   aperture reaches past the DSN's smallest class clearance as `--router.solder_mask_expansions`
   (pocketsdr-v3-0: its 9 test points, 0.1016 mm on B.Mask). Both log one line in `plugin.log`.
   Both grow by the board's `m_SolderMaskToCopperClearance` (Q22.12; 0 changes nothing).
-  Tests: `test_edge_graphics.py`, `test_solder_mask.py`.
+  A footprint's own F.Mask/B.Mask shapes become `solder_mask_pads` keepouts (Q22.16,
+  `footprint_masks.py`); `pad_trim.py` renames one over pads of several nets
+  `solder_mask_shared` and cuts those pads back to their part outside it (fc-rom's J1: 72
+  fingers), and logs each pad it cannot reach. Every mask keepout carries
+  `(clearance_class null)` (Q22.18). Tests: `test_edge_graphics.py`, `test_solder_mask.py`,
+  `test_footprint_masks.py`.
 - Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
   `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),
   `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`,

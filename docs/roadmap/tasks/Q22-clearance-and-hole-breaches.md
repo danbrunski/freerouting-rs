@@ -1209,7 +1209,7 @@ Sequencing:
     - DIVERGENCES: freerouting-kicad, the Q22.5 line ("unless it is between plated holes and
       tracks only (Q22.15) ..."). `--kicad-dru` in `help.txt` says how hole rules are applied.
 
-- [~] **Q22.16 — Footprint mask apertures keep other nets out** (added 2026-10-20; decided
+- [x] **Q22.16 — Footprint mask apertures keep other nets out** (added 2026-10-20; decided
   2026-10-20: routing never breaks the board's manufacturing rules, so no grader exception for
   edge connectors). fc-rom's J1 (`cartridge_edge_72`) has one `fp_poly` on F.Mask and one on
   B.Mask, an aperture of 93.5 × 11.3 mm over 72 fingers. The finger pads have no mask layer of
@@ -1303,6 +1303,53 @@ Sequencing:
       DIVERGENCES lines under freerouting, freerouting-kicad and kicad-plugin, and Q18.7's
       reader text amended.
     - `legacy`: `tools/parity-check.sh --no-probes` PASS, connection parity 7 exact.
+  - *Done 2026-10-20* (the remainder, option (b), on main 0c2a93d): the `.kicad_pcb` reader
+    (`crates/freerouting-kicad/src/pad_trim.rs`, run at the end of `read.rs`) and the plugin
+    (`kicad-plugin/freerouting_rs/pad_trim.py`, run by `edge_graphics.apply`), operation for
+    operation, rename a `solder_mask_pads` keepout over pads (any footprint's, overlapping
+    > 1 µm²) of two or more nets `solder_mask_shared`, and give each one-layer pad under such
+    keepouts a padstack of its largest part outside them (the pad cut by one keepout edge's
+    outer half-plane, a polygon rounded to 1 µm, `<padstack>_outside_mask_<k>`) with the pin's
+    anchor at that part's centroid, unrotated; an image other components share is copied as
+    `<image>_<ref>`. A pad with no part outside is named with its net in a warning (reader) or a
+    `WARNING:` log line (plugin) and stays unrouted; a pad on several layers stays as it is. The
+    engine (`io/specctra/parser/pad_keepouts.rs`) inserts a `solder_mask_shared` keepout, and a
+    `solder_mask_pads` one it finds over two nets, as a keepout that carries no net: an obstacle
+    for every net's traces and vias, the pads' own too, never for a pin
+    (`ObstacleArea::is_pad_keepout`); the cut-out of pin tiles is gone. DSN round trip: the DSN
+    gives a pin its padstack and anchor per image pin (`(pin <padstack> [(rotate r)] <name> x
+    y)`), so a per-pin padstack and an offset anchor read back the same
+    (`a_pad_partly_inside_a_shared_aperture_is_cut_back_to_its_part_outside` re-parses
+    `to_dsn()` and compares the library); the SES carries only wires and vias, and
+    `io::kicad::final_copper` (the `.kicad_pcb` path) only traces and vias, so the cut pads
+    never reach KiCad. Fallback (a) was not needed.
+    - Fixture test: `crates/freerouting/tests/footprint_mask.rs` (11 tests, all pass):
+      `the_plugins_keepouts_keep_other_nets_out_and_let_each_pads_net_in` and
+      `the_readers_keepouts_keep_other_nets_out_and_let_each_pads_net_in` now assert 0
+      incomplete and no trace or via of any net in J1's aperture (A and B reach their fingers'
+      2 × 2 mm part above it); also `a_footprint_keepout_over_pads_of_two_nets_keeps_every_net_out`,
+      `the_shared_keepout_holds_every_nets_traces_out_and_no_pin`,
+      `the_output_check_reports_another_nets_trace_in_the_aperture` (an A trace along its finger
+      into the aperture is a `keepout` breach now). `q22-fp-mask.dsn` is regenerated from the
+      plugin. Reader: `crates/freerouting-kicad/tests/footprint_masks.rs` (9 pass;
+      `a_pad_partly_inside_a_shared_aperture_is_cut_back_to_its_part_outside` pins the plugin's
+      exact corners, `a_pad_wholly_inside_a_shared_aperture_is_named_in_a_warning`,
+      `a_shared_image_is_copied_for_the_component_whose_pads_are_cut`). Plugin:
+      `test_footprint_masks.py` (10 pass; 4 new, incl.
+      `test_the_placement_frame_inverts_for_both_sides_and_flip_styles`).
+    - fc-rom, regraded on the branch through the plugin's export
+      (`tools/kicad-oracle/grade.sh --export plugin`, `{"schema": 5}`, `--timeout 270`, one
+      KiCad 10.0.7 grade; `target/orchestrator/q2218/runs/out-fcrom-q2218`). The plugin cuts
+      J1's 72 fingers (4 of its 10 keepouts are shared). Segments in J1's aperture counted on
+      the routed board by geometry (box 23.05..116.65 × 72.55..83.95 mm):
+
+      | arm | KiCad unconnected | route s | routing-caused `solder_mask_bridge` | segments (nets) in J1's aperture | vias in it |
+      |---|---|---|---|---|---|
+      | main a18b970 (Q22.16's run) | 78 (input 424) | 270.13 | 7 (type capped at 199) | 47 (45) | |
+      | Q22.16 part (Q22.16's run) | 82 | 270.16 | 8 (type capped at 199) | 50 (47) | |
+      | Q22.16 remainder + Q22.18 | 70 (input 424) | 270.14 | 0 (drc_real 0; type capped at 199 in input and routed) | 0 (0) | 0 |
+    - `legacy`: `tools/parity-check.sh --no-probes` PASS, connection parity 7 of 7 exact (bytes
+      equal), 51 s.
 
 - [x] **Q22.17 — Net shapes cost less to route around** (added 2026-10-20). Q22.4 makes each
   copper shape of a listed net a fixed conduction area of its net. That is correct, but on
@@ -1398,7 +1445,7 @@ Sequencing:
       (b) versions each gave `tools/parity-check.sh --no-probes` PARITY OK, connection parity 7
       of 7 exact.
 
-- [ ] **Q22.18 — Mask keepouts keep only the clearance the mask rule asks** (added 2026-10-20,
+- [x] **Q22.18 — Mask keepouts keep only the clearance the mask rule asks** (added 2026-10-20,
   from Q22.16). Q18.7's board-level `solder_mask` keepouts and Q22.16's `solder_mask_pads`
   keepouts take the default area clearance (0.2 mm), on top of Q22.12's growth by the board's
   solder-mask-to-copper clearance. KiCad's `solder_mask_bridge` only asks that copper stay out of
@@ -1415,6 +1462,71 @@ Sequencing:
     - dev-board (the corpus `dev-board`, Q22.16's `kicad_frame.rs` board) and canary-pwr
       (`ab786fcc`) through the plugin's export, before and after, one KiCad grade each: 0
       routing-caused `solder_mask_bridge`, with KiCad unconnected beside it.
+  - *Done 2026-10-20* (main 0c2a93d): the reader (`edge_keepouts::mask_keepout`,
+    `MASK_CLEARANCE_CLASS`) and the plugin (`edge_graphics.MASK_CLEARANCE_CLASS`) write every
+    `solder_mask`, `solder_mask_pads` and `solder_mask_shared` keepout with `(clearance_class
+    null)`: the DSN's per-keepout class, which the engine resolves with
+    `clearance_matrix.get_no` to class 0 (`"null"`, all clearances 0), the smallest it has; the
+    aperture is grown by Q22.12's clearance as before. The engine resolves board-level
+    `solder_mask` keepouts by the pins under them like Q22.16's (`pad_keepouts.rs`): one net, the
+    keepout carries it; two or more, it carries none and holds every net out; none, Java's
+    keepout. Q20's output check (`drc/board_rules.rs`, `zero_clearance_keepouts`) now reports
+    copper overlapping a keepout whose clearance is 0, which the clearance-shortfall check
+    cannot see.
+    - Engine tests (`crates/freerouting/tests/footprint_mask.rs`):
+      `another_nets_trace_may_run_at_the_apertures_edge_but_not_in_it` (a 0.2 mm C trace with
+      its edge on U1's aperture edge: no breach; 50 µm in: a `keepout` breach; the same edge
+      trace with the default area class, as before Q22.18: a breach) and
+      `a_pad_of_the_shapes_own_net_under_a_board_level_mask_shape_connects` (U1's keepout as
+      `solder_mask`: 0 incomplete, D in its aperture, nothing in J1's). Reader:
+      `footprint_masks.rs::the_mask_keepouts_keep_no_clearance_of_their_own`; plugin:
+      `test_footprint_masks.py`, `test_edge_graphics.py` assert the class.
+    - Grades through the plugin's export (`{"schema": 5}`, one KiCad 10.0.7 grade each; before =
+      main 0c2a93d's scripts and release binary, after = the branch;
+      `target/orchestrator/q2218/runs/out-{dev,canary}-{main,q2218}`):
+
+      | board | arm | KiCad unconnected | route s | routing-caused `solder_mask_bridge` | other routing-caused |
+      |---|---|---|---|---|---|
+      | dev-board (`--timeout 270`, finishes early) | main | 13 (input 94) | 37.37 | 0 | 0 |
+      | dev-board | Q22.18 | 11 (input 94) | 38.78 | 0 | 0 |
+      | canary-pwr ab786fcc (`--timeout 600`) | main | 60 (input 174) | 600.19 | 0 | 2 `starved_thermal` |
+      | canary-pwr ab786fcc | Q22.18 | 58 (input 174) | 600.20 | 0 | 2 `starved_thermal` |
+
+      dev-board has 60 `solder_mask_pads` keepouts and canary-pwr 2012 (its footprint
+      polygons' chords), none over pads of two nets, so neither board has pads cut back; the
+      unconnected difference is the class 0. The `starved_thermal` pair is in both arms.
+    - `legacy`: connection parity 7 of 7 exact (with Q22.16 above).
+    - *Containment, 2026-10-21:* with class 0, each written keepout must hold KiCad's exact
+      grown aperture. Worst inward distance of the written polygons from the exact aperture
+      (pcbnew `TransformShapeToPolygon`, 2 nm error outside, offset by the expansion plus
+      `solder_mask_to_copper`, shapely, exports only). Before:
+      - q22-fp-mask: 0 nm on both paths;
+      - dev-board (`solder_mask_pads`): 2.0 nm on both paths;
+      - canary-pwr ab786fcc (`solder_mask_pads`): 342.4 nm (plugin, its 1 µm rounding) and
+        2.6 nm (reader, chords plus 0.1 µm rounding).
+
+      Fix, the same in both paths: every mask shape grows by 1 µm on top of the clearance
+      (`edge_keepouts::MASK_MARGIN_NM`, `edge_graphics.MASK_MARGIN_MM`), so a body always gets
+      its strips. After: 0.0 nm on both paths on those three boards, and on vfo-controller and
+      slice-dcmt-bread-slice (`solder_mask`).
+
+      The strips have no pin under them, so the engine had fitted each one as Java's plain
+      keepout, which blocked the pad's own net. That was already the case on main wherever
+      Q22.12's clearance is above 0. `pad_keepouts.rs` now fits a pinless, unshared mask keepout
+      to the mask keepouts with pins, or shared ones, that it meets directly; this is not
+      transitive, so touching apertures of two nets keep their own.
+
+      Tests:
+      - `edge_keepouts.rs::the_mask_keepouts_hold_the_exact_grown_apertures_after_rounding` and
+        `test_edge_graphics.py::test_the_mask_keepouts_hold_the_exact_grown_apertures_after_rounding`;
+        both fail with the margin at 0;
+      - `footprint_mask.rs::an_apertures_strips_are_fitted_with_its_body` and
+        `touching_apertures_of_two_nets_keep_their_own_nets`.
+
+      The fixture is regenerated: 10 keepouts, and J1's fingers are cut to 2 x 1.999 mm.
+      dev-board (`--timeout 270`, `out-dev-q2218d`): 0 KiCad unconnected (input 94; 11 before
+      this step), 0 `solder_mask_bridge`, drc_real 0, 4.66 s route, 356 tracks, 29 vias.
+      Connection parity: 7 of 7 exact. canary-pwr was not re-graded.
 
 - [ ] **Q22.19 — A net tie's copper lets its own nets in** (added 2026-10-20, from Q20.1's
   re-check). Q22.4 writes each copper shape of a net-tie footprint (`net_tie_pad_groups`) as a

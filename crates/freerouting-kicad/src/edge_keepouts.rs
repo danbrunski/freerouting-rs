@@ -33,8 +33,12 @@
 //! copper layer of its side ([`mask_polygons`], [`mask_keepouts`]): a filled
 //! shape is its own polygon (a circle the maximum error and 1 µm wider), and
 //! its stroke, or an unfilled shape's, the rectangles within half the width of
-//! each piece. The keepout holds every net out, the net of the copper under
-//! the aperture too.
+//! each piece. The keepout held every net out, the net of the copper under
+//! the aperture too; Q22.18: the router fits it to the pins under it
+//! (`freerouting::io::specctra::parser::pad_keepouts`), so a pad of one net
+//! under it is reached, and it carries `(clearance_class null)`
+//! ([`MASK_CLEARANCE_CLASS`]): copper keeps the board's
+//! solder-mask-to-copper clearance (below) from the aperture, no more.
 //!
 //! Q22.12: KiCad's DRC also keeps copper of another net
 //! `solder_mask_to_copper_clearance` from an aperture, so [`mask_polygons`]
@@ -42,8 +46,11 @@
 //! of the shape is taken `2 x` the clearance wider, so a filled body gets a
 //! rectangle within the clearance of each side (square corners, a superset of
 //! the rounded growth) and a stroke widens by the clearance on each side.
-//! With 0 the keepouts are those of Q18.7. The router keeps its default
-//! clearance from a keepout on top of that, as before.
+//! Q22.18: every shape grows by [`MASK_MARGIN_NM`] (1 µm) on top of the
+//! clearance, so with no clearance a body gets 1 µm strips too: a mask keepout
+//! keeps no clearance of its own, and the written keepouts must hold KiCad's
+//! exact grown aperture after the chords and the DSN rounding (2.6 nm inside
+//! it at worst before, on canary-pwr; 0 after).
 
 use freerouting_dsn::ast::{Area, Keepout, KeepoutKind, LayerRef, Point, Shape};
 
@@ -209,6 +216,25 @@ pub(crate) fn keepout(name: &str, layer: &str, poly: &[F]) -> Keepout {
     }
 }
 
+/// The clearance class of the mask-aperture keepouts (Q22.18): the router's
+/// class 0, which keeps no clearance, since the aperture is already grown by
+/// the board's solder-mask-to-copper clearance (Q22.12).
+pub const MASK_CLEARANCE_CLASS: &str = "null";
+
+/// What every mask aperture grows by on top of the board's
+/// solder-mask-to-copper clearance (Q22.18), nm: with no clearance of its
+/// own, the router may lay copper on the keepout's edge, so the keepout must
+/// hold KiCad's exact grown aperture after the plugin's 1 µm rounding (at most
+/// 0.71 µm inward; 0.34 µm measured on canary-pwr) and the router's 0.1 µm.
+pub const MASK_MARGIN_NM: i32 = 1_000;
+
+/// [`keepout`] with [`MASK_CLEARANCE_CLASS`] (Q22.18).
+pub(crate) fn mask_keepout(name: &str, layer: &str, poly: &[F]) -> Keepout {
+    let mut k = keepout(name, layer, poly);
+    k.area.clearance_class = Some(MASK_CLEARANCE_CLASS.to_owned());
+    k
+}
+
 /// A closed polygon (KiCad's frame, nm) on `layer` in the DSN frame (µm, Y
 /// negated), its first corner repeated at the end.
 pub(crate) fn polygon_shape(layer: &str, poly: &[F]) -> Shape {
@@ -233,7 +259,8 @@ pub fn edge_keepouts(rects: &[[F; 4]], layers: &[String]) -> Vec<Keepout> {
 /// B.Mask shapes of `board_shapes`, each with its side (`true` for B.Mask), in
 /// file order. Q22.12: grown by `clearance_nm` (the board's
 /// `solder_mask_to_copper_clearance`) through a stroke `2 * clearance_nm`
-/// wider ([`grown`]); 0 leaves them as they are.
+/// wider ([`grown`]). Q22.18: always [`MASK_MARGIN_NM`] more, so the keepout
+/// holds the exact grown aperture after rounding.
 pub fn mask_polygons(
     board_shapes: &[Graphic],
     max_error: i32,
@@ -246,7 +273,8 @@ pub fn mask_polygons(
             "B.Mask" => true,
             _ => continue,
         };
-        let (body, strokes) = shape_polygons(&grown(g, clearance_nm), max_error);
+        let grow = clearance_nm.max(0).saturating_add(MASK_MARGIN_NM);
+        let (body, strokes) = shape_polygons(&grown(g, grow), max_error);
         out.extend(body.into_iter().map(|b| (back, b)));
         out.extend(strokes.into_iter().map(|s| (back, s)));
     }
@@ -321,7 +349,7 @@ pub fn mask_keepouts(polygons: &[(bool, Vec<F>)], front: &str, back: &str) -> Ve
     polygons
         .iter()
         .map(|(is_back, poly)| {
-            keepout(MASK_KEEPOUT_NAME, if *is_back { back } else { front }, poly)
+            mask_keepout(MASK_KEEPOUT_NAME, if *is_back { back } else { front }, poly)
         })
         .collect()
 }
