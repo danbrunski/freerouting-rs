@@ -49,6 +49,7 @@ rules).
 | K13.1–K13.4 | reader tests and fixtures under `crates/freerouting-kicad/tests/` | `crates/freerouting-kicad/src/**`, `kicad-plugin/freerouting_rs/{snapshot,export_flow,plugin}.py` |
 | K13.5–K13.6 | `tools/bench/sets/k13-input.txt`, `docs/roadmap/prereg/K13.json` | `tools/kicad-reader/plugin-input-ab.sh` |
 | K13.7 | — | `kicad-plugin/freerouting_rs/options.py` (default, schema), the options dialog, `docs/development/kicad-plugin.md`, `kicad-plugin/README.md`, `docs/DIVERGENCES.md` |
+| K13.8 | plugin tests and fixtures under `kicad-plugin/tests/` | `kicad-plugin/freerouting_rs/{restore_copper,export_flow,dsn_fixups}.py` and a new fix-up module, `kicad-plugin/headless_run.py`, `tools/kicad-oracle/kicad_steps.py`, `docs/DIVERGENCES.md`, `docs/development/kicad-plugin.md` |
 
 ## Checklist
 
@@ -487,3 +488,36 @@ rules).
     - plugin tests for the default, the kept saved choice and the schema migration;
     - `python3 -m pytest kicad-plugin/tests` passes;
     - the owner's confirmation from a run inside KiCad is recorded.
+  - *Waits 2026-10-21:* K13.6's verdict is "keep dsn" (clause (1): vme-wren and
+    jetson-agx-thor-baseboard aborted at 600 s in both arms and are not judged). On the nine
+    judged rows `kicad_pcb` has 0 breaches and 68 unconnected against `dsn`'s 73. K13.7 needs the
+    owner to accept those two rows, or a new registration that judges them, and then the
+    owner's run inside KiCad.
+
+- [ ] **K13.8 — The DSN path returns input track arcs as arcs** (added 2026-10-21, from K13.6;
+  decided 2026-10-20: routing never breaks the board's manufacturing rules, and `dsn` stays the
+  fallback whatever K13.7 decides). On CM5_MINIMA_3 the `dsn` arm has 172 routing-caused
+  `clearance` items, all between the two tracks of five differential pairs (netclass `100ohm`
+  0.2 mm: actual 0.1381–0.1988 mm; `90ohm` 0.154 mm: 0.0678–0.1421 mm), each within 0.5 mm of
+  one of the input's 200 track arcs. K13.6's reading: KiCad's `ExportSpecctraDSN` lays each
+  unlocked arc as one chord, the router keeps it, `ImportSpecctraSES` replaces the arc with the
+  chord, and `restore_copper` skips arcs ("the session has none"). The `kicad_pcb` arm reads arcs
+  as polylines and has 0.
+  - First confirm the cause on `target/orchestrator/k136/out/dsn/CM5_MINIMA_3` (the DSN's wires
+    against the board's arcs, and the routed board's tracks at the breach points).
+  - Fix so that input copper the router did not move comes back as it was, arcs included, and
+    routed copper is checked against the arcs' true shape, not their chords. For example, write
+    each unlocked arc into the DSN as a polyline at the reader's tolerance (as the `kicad_pcb`
+    path reads it), and let `restore_copper` put an original arc back when the imported segments
+    match it within its bound. Both the plugin's import and the oracle's `kicad_steps.py import`
+    use `restore_copper`.
+  - **Accept:**
+    - a plugin test on a fixture with a pair of arcs at exactly the class clearance: after the
+      export, the fix-ups and the import, the arcs come back as arcs at their own coordinates and
+      KiCad's DRC (where pcbnew is available) has no clearance item between them;
+    - CM5_MINIMA_3, one `tools/kicad-reader/plugin-input-ab.sh dsn` run with K13.6's options
+      and limit (`ROUTE_TIMEOUT_S=300`), graded under its own rules: 0 routing-caused
+      `clearance` and every manufacturing type 0, unconnected beside K13.6's 0;
+    - the same run in the `kicad_pcb` arm stays at 0 routing-caused manufacturing items;
+    - a DIVERGENCES line (kicad-plugin), and `python3 -m pytest kicad-plugin/tests` passes;
+      `legacy` keeps connection-parity 7 of 7 if engine code changes.
