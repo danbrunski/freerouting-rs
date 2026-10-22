@@ -38,6 +38,7 @@ try:  # inside the plugin package
         edge_graphics,
         kicad_areas,
         kicad_board,
+        kicad_rules,
         options,
         plane_priority,
         restore_copper,
@@ -53,6 +54,7 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
     import edge_graphics
     import kicad_areas
     import kicad_board
+    import kicad_rules
     import options
     import plane_priority
     import restore_copper
@@ -316,6 +318,40 @@ def solder_mask_args(board, pcbnew, dsn):
     ]
 
 
+def dru_path(board):
+    """The `<board>.kicad_dru` beside the board file, or None for a board with no file name."""
+    try:
+        name = board.GetFileName()
+    except Exception:  # not a pcbnew board
+        return None
+    return Path(name).with_suffix(".kicad_dru") if name else None
+
+
+def filler_clearance_nm(board, zones_nm):
+    """K15.32: the smallest clearance KiCad's zone filler can apply between the signal-layer
+    zones and other nets' copper, for `router.cleanup.pour_clearance_um`: the smallest of the
+    zones' own clearances (`zones_nm`) and every `clearance` constraint of the board's `.kicad_dru`
+    (conditional rules included; a custom rule replaces the zone's own value in KiCad 10.0.7's
+    filler, K15.29, K15.32). The net classes' clearances are left out: measured on 10.0.7, a class
+    clearance below the zone's changes nothing and one above it raises the gap. Returns
+    `(nanometres or None, log_lines)`; None when the rules file exists and cannot be read, so the value is unknown and the router
+    keeps its own clearances. Never raises."""
+    values, lines = [zones_nm], []
+    path = dru_path(board)
+    if path is not None and path.is_file():
+        try:
+            rules = kicad_rules.clearance_minimums_nm(_read(path))
+        except (OSError, ValueError) as e:  # RulesError is a ValueError; a bad encoding too
+            return None, [f"WARNING: {path.name} unreadable ({e}); no pour clearance passed, the router keeps its own"]
+        if rules:
+            values += [nm for _, nm in rules]
+            lines.append(
+                f"{path.name}: {len(rules)} clearance rule(s), smallest {min(nm for _, nm in rules) / 1000:g} um "
+                "(KiCad's filler lets them win over the zones' own clearance)"
+            )
+    return min(values), lines
+
+
 def pour_rule_args(board, pcbnew, dsn):
     """K15.27: the router flags `--router.cleanup.pour_min_thickness_um` and
     `--router.cleanup.pour_clearance_um` for a DSN input (K15.29: and
@@ -341,9 +377,10 @@ def pour_rule_args(board, pcbnew, dsn):
         return [], [f"WARNING: zone thickness and clearance not passed: {e!r}"]
     if rules is None:
         return [], []
+    clearance, clearance_lines = filler_clearance_nm(board, rules["clearance_nm"])
     args = options.pour_rule_args(
         rules["min_thickness_nm"],
-        rules["clearance_nm"],
+        clearance,
         rules.get("island_removal", False),
         rules.get("islands_kept_nets", ()),
     )
@@ -352,9 +389,10 @@ def pour_rule_args(board, pcbnew, dsn):
     removal = any(a.startswith("--router.cleanup.pour_island_removal=") for a in args)
     kept = rules.get("islands_kept_nets") or []
     islands = f", islands no pad reaches dropped (kept on {len(kept)} net(s))" if removal else ""
-    return args, [
+    shown = f"clearance {clearance / 1000:g} um" if clearance and clearance > 0 else "no clearance"
+    return args, clearance_lines + [
         f"signal-layer zones: {rules['zones']} on {', '.join(rules['layers'])}; the cleanup judges their pours "
-        f"by min thickness {rules['min_thickness_nm'] / 1000:g} um and clearance {rules['clearance_nm'] / 1000:g} um"
+        f"by min thickness {rules['min_thickness_nm'] / 1000:g} um and {shown}"
         f"{islands} ({' '.join(args)})"
     ]
 

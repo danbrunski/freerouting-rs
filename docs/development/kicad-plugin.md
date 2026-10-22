@@ -206,7 +206,21 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   `--router.cleanup.pour_islands_kept_nets=<net>,...`, the nets of the zones whose mode is not 0
   (always); a mode that cannot be read, or a kept net's name with a comma or surrounding spaces,
   passes neither. The log line then adds `, islands no pad reaches dropped (kept on N net(s))`.
-  Tests: `test_pour_islands.py`.
+  Tests: `test_pour_islands.py`. K15.32: the clearance flag is the smallest clearance KiCad's zone
+  filler can apply to those zones, not the zones' alone: `export_flow.filler_clearance_nm` takes the
+  minimum of the zone clearance and every `(constraint clearance (min ...))` of `<board>.kicad_dru`
+  (`kicad_rules.py`, a stdlib S-expression reader; conditional rules count, other constraint types
+  do not). Measured on KiCad 10.0.7 (`kicad-cli pcb drc --refill-zones` on K15.29's
+  `b-no-bus-gnd`, a 0.5 mm zone, default class 0.2 mm; fill area of zone USB_OUT in mm2): no rule
+  0.893; an unconditional rule of 0.127 mm 7.701 (0.127 mm gap), of 0.4 mm 7.119 and of 0.8 mm
+  4.523, so a matching rule replaces the zone's value, up as well as down; a rule matching
+  `A.NetName` of the neighbouring track 0.3 mm 7.408, one matching no item or no rule 0.893; a
+  net class clearance of 0.1 mm 0.893 (as 0.2 mm), of 0.9 mm 4.254 (0.9 mm gap): a class below the
+  zone's changes nothing, so classes are not read. Taking the smallest over all rules is the safe
+  side: a floor above KiCad's gap would make the cleanup's fill smaller than KiCad's and remove a
+  trace KiCad counts connected. A `.kicad_dru` that cannot be read passes no clearance flag (the router
+  keeps its own clearances; thickness and island flags are unaffected) and logs a WARNING; no file
+  is no rule. Tests: `test_pour_clearance.py`.
 - **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
   manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
   shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named
