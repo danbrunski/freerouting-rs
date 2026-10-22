@@ -1148,3 +1148,20 @@ item-type rules), N06 (`router.java_quirks`).
     - Gate: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
       clean; `cargo test -p freerouting-cli -p freerouting`: all pass. The plugin calls no `-drc`,
       so no pytest run.
+
+- [ ] **K15.18 — Under `enhanced` a via to a cut plane lands where the plane is filled.**
+  - **Change:** after K15.15 a plane has windows where a higher-priority zone of another net fills.
+    On K15.15's fixture (`crates/freerouting-kicad/tests/data/k15-overlapping-planes.kicad_pcb`, J1's
+    pad alone), `legacy` reaches V_BUS_12V's own part of In2.Cu with a trace on the power layer
+    (Java's rule) and routes 0 open; `enhanced` lays no trace on a power layer
+    (`router.power_layer_traces=none`, Q13), its fan-out via lands in the window, and the
+    connection stays open (`tests/k15_overlapping_planes.rs::the_router_reaches_the_lower_plane_where_it_is_filled`).
+    Find where `enhanced` chooses the via's place for a plane connection, and make it a place
+    where the via's own plane is filled (outside every window), or route the trace on a signal
+    layer to such a place.
+  - **Accept:**
+    - the fixture routes 0 open under `enhanced`, with the via outside V_BUS_24V's window, and the
+      test's expected value changes with a note;
+    - the pcu board's `.kicad_pcb` route (K15.15's command), graded by KiCad: unconnected not up,
+      0 below-minimum, 0 routing-caused DRC;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).
