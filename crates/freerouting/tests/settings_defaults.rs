@@ -247,6 +247,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("autorouter.sweep_after_optimizer", None),
         // Q04.3: unset, which is off.
         ("autorouter.output_guard", None),
+        // Q23.3: unset, which is off.
+        ("autorouter.restarts_from_best", None),
         // Q04.1: unset, which is the `quantum-stop` defaults.
         ("quantum_stop.grace", None),
         ("quantum_stop.checks", None),

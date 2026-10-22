@@ -45,4 +45,8 @@ pub fn register(registry: &mut StageRegistry) {
         .insert(super::transaction::ROUTER_ID, |s| {
             Box::new(super::transaction::TransactionalRipup::from_settings(s))
         });
+    // Q23.3: the restarts from the best board (`router.autorouter.restarts_from_best`)
+    // have no registry slot: like Q10's sweep they run from the batch loop's
+    // finish (`quality::restart::after_loop`), with a new pass controller of
+    // the job's kind from this registry.
 }

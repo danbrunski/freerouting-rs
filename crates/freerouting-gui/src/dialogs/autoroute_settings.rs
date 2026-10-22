@@ -195,6 +195,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "quality option without a Java control",
     ),
     (
+        "autorouter.restarts_from_best",
+        "quality option without a Java control (Q23.3, opt-in until Q23.4)",
+    ),
+    (
         "fanout.start_via_diameter_mm",
         "fanout tuning without a Java control",
     ),

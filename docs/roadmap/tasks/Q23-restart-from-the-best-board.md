@@ -136,7 +136,7 @@ Unrouted counts are the router's.
     took 265 s, and the remaining time went to the fanout and the stages after the passes. A
     timeout should stop those too; not followed up here.
 
-- [ ] **Q23.2 — Preregister the measurement.**
+- [x] **Q23.2 — Preregister the measurement.**
   - **Change:** register before any number of Q23.4 exists:
     - short runs only (decided 2026-10-22): each arm a few minutes per board (`--max-passes`
       and `--timeout` set so), no hour-long arms;
@@ -152,7 +152,30 @@ Unrouted counts are the router's.
     - the decision table.
   - **Accept:** the prereg pin test `prereg_q23.rs` passes with the hashes.
 
-- [ ] **Q23.3 — The restart stage.**
+  *Done 2026-10-22:* registered before any Q23.4 number.
+  - Files: `docs/roadmap/prereg/Q23.json` (sha256 `64ca9b3f17860bdf0e39b3d1dfc7291f275a2e04526108b9cbbdf9bfa1524e30`,
+    pinned by `the_registration_is_pinned_by_its_hash`) and `tools/bench/sets/q23-restart.txt`.
+  - Arms: `base` (`enhanced`, `--max-passes 1`, a safety `--timeout` per row) against `restart`
+    (the same plus `--router.autorouter.restarts_from_best=1`; Q23.1's step: the fanout, then
+    pass 1 again on the best board). The key is not `restarts`, which is Q12's removed setting
+    (see Q23.3); the registration's `setting_name` says so.
+  - Rows (7, 5 distinct boards; decided 2026-10-22 by the dispatch, in place of `placed_v7` and the
+    five owner DSNs): the PCU board as Q23.1 continued it (`final_v7.kicad_pcb` by absolute path
+    with the committed `.kicad_pro`/`.kicad_dru`, `1e16823a...`, skipped when missing, Q23.1's
+    flags, 900 s); `canary-pwr-pours1..3` (one board, canary's flags, 300 s); three benchmark
+    boards with 500+ connections: `Issue690-kit-dev-coldfire-xilinx_5213` (541),
+    `Issue753-CPU-85_r104` (569), `Issue066-Project_GP8B` (759), 300 s each.
+  - Signal `unrouted` (score); hard `via_in_pad`, `below_minimum`; guard `drc_real` (KiCad's
+    on the PCU and canary rows, the router's `-drc` routing-caused clearance violations on the
+    benchmark rows); work guard `maze_work_units` (`--stats json`) of `restart` at most 2.0x
+    `base`'s on every row; paired rule `{min_boards 3, improve_all_but 1, max_regress 0}`;
+    validity rule (a row whose arm hit its timeout is left out); decision table pass / fail /
+    not measured.
+  - `cargo test -p freerouting-dev --test prereg_q23`: 5 passed (the arms differ by the one
+    setting, the rows match the set with their flags and hashes, the PCU rules files hash as
+    registered, the work guard and decision table, the pin).
+
+- [x] **Q23.3 — The restart stage.**
   - **Change:**
     - `quality/restart.rs`, registered as a stage, runs the steps in "Decisions made here"
       (or Q23.1's step) up to `router.autorouter.restarts` times.
@@ -167,6 +190,52 @@ Unrouted counts are the router's.
       `legacy` is untouched;
     - `tools/determinism-check.sh` on two boards with `restarts=1`;
     - help text and a DIVERGENCES line.
+
+  *Done 2026-10-22:*
+  - **Setting name.** `router.autorouter.restarts` is Q12's removed portfolio key
+    (`settings/removed.rs` refuses it: "router.autorouter.restarts was removed on 2026-10-20"),
+    so the stage takes `router.autorouter.restarts_from_best` (i32; unset, 0 or negative: off;
+    unset in both profiles, not in `ENHANCED`). Reusing `restarts` needs its tombstone removed:
+    an operator decision, raised in the report.
+  - **Stage.** `crates/freerouting/src/quality/restart.rs`, called from one hook in
+    `run_batch_loop` after the finish and before Q10's sweep (`LoopOutcome::restart` holds its
+    outcome). It has no registry slot (none fits a loop-level stage, as for Q10's sweep);
+    `quality/register.rs` notes that, and the restart builds a new pass controller of the job's
+    kind from `StageRegistry::builtin()` by the controller's id. Each restart: the best board kept
+    as a `Clone`, `run_batch_loop` again on it (the fanout, the passes from pass 1, the loop's
+    finish) with the job's stages, no board stages, its own `CancelToken` with the job's full
+    stops relayed, and `restarts_from_best`, `sweep` and `output_guard` unset; kept only if its
+    router score is strictly higher (`beats`), else the best board comes back and the restarts
+    stop. No time reaches a decision; a timeout or cancel stops the restart's loop and the better
+    board is kept.
+  - **Tests** (`cargo test -p freerouting --test restart`, 5 passed):
+    `a_restart_completes_the_connection_the_first_loop_left_open` (`q06-sole-wall.dsn`, `-mp 1`:
+    1 unrouted without, 0 with one restart);
+    `a_restart_that_does_not_gain_stops_after_one_and_keeps_the_best_board`
+    (`q06-fixed-cage.dsn`, `restarts_from_best=3`: one restart, dropped, SES equal to the run
+    without); `unset_zero_and_negative_change_nothing` (SES and log equal);
+    `a_restart_is_deterministic`; `a_stop_during_a_restart_keeps_the_best_board_and_reaches_the_job`
+    (a full stop at the restart's first connection: the best board, "stopped on request", the job's
+    token stopped). Unit tests `quality::restart::tests` (3).
+  - **Unset is main's engine:** the quick benchmark set (9 boards, profile `enhanced`, default
+    passes) routed by main `dd9dbf6`'s release CLI and this branch's: 9 of 9 SES byte-identical
+    (`cmp`, stronger than `ses-diff`). `legacy` untouched:
+    `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+    7 of 7 exact, `PARITY OK`.
+  - **Determinism:** `tools/determinism-check.sh` (idle against 24 burners), release CLI with
+    `--router.autorouter.restarts_from_best=1`: `Issue508-DAC2020_bm07` default passes (the restart
+    is kept, unrouted 6 -> 0) "identical"; `Issue508-DAC2020_bm01` `-mp 1` (kept, 44 -> 40)
+    "identical".
+  - **Help and DIVERGENCES:** `--router.autorouter.restarts_from_best=<number>` in
+    `crates/freerouting-cli/src/help.txt`; "Restarts from the best board" in `docs/DIVERGENCES.md`
+    (freerouting section, after the add-only sweep).
+  - **Ripple of the new field** (outside the ownership table, one line each): the field's unset
+    default in `crates/freerouting/tests/settings_defaults.rs` and a `CLI_ONLY` entry in
+    `crates/freerouting-gui/src/dialogs/autoroute_settings.rs`
+    (`every_router_setting_has_a_control`; `cargo test -p freerouting-gui`: 227 passed).
+  - **Gate:** `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+    warnings` clean; `cargo test --no-fail-fast -p freerouting -p freerouting-cli -p
+    freerouting-dev`: 2151 passed, 0 failed, 33 ignored (262 test binaries).
 
 - [ ] **Q23.4 — Measure and decide.**
   - **Change:** run Q23.2's registration. Apply its decision table: keep the stage opt-in, or

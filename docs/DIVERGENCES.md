@@ -1090,6 +1090,24 @@ maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
   `a_sweep_connection_that_adds_a_violation_is_undone_and_the_others_kept`
   (`tests/quality_sweep.rs`, `k15-sweep-guard.dsn`).
 
+**Restarts from the best board** (`quality::restart`, Q23.3; tests `tests/restart.rs`)
+- New, with no Java counterpart (Java reaches it only by routing its own output again in a second
+  run): with `router.autorouter.restarts_from_best=N` (unset, 0 or negative: off, in both
+  profiles and not in `ENHANCED`) the batch loop, after its finish has put the best board back,
+  runs the loop again on that board up to N times: the fanout stage, then the passes from pass 1
+  (pass 1's rip-up costs and ordering) with a new pass controller of the job's kind and no board
+  stages, then that loop's own finish. A restart is kept only if its router score is strictly
+  higher than the best board's; otherwise the best board comes back (a `Clone`) and the restarts
+  stop. They also stop on a complete board or a requested stop; a timeout during a restart stops
+  it and keeps the better of its best board and the best board before it. Inside a restart
+  `restarts_from_best`, `sweep` and `output_guard` are unset; Q10's sweep runs once after the
+  restarts. On `q06-sole-wall.dsn` with `-mp 1` one restart routes net B, which the first loop
+  left open (`a_restart_completes_the_connection_the_first_loop_left_open`); on
+  `q06-fixed-cage.dsn` the restart gains nothing, is dropped and the SES is the run's without it
+  (`a_restart_that_does_not_gain_stops_after_one_and_keeps_the_best_board`). Q23's checklist names
+  the key `restarts`, which is Q12's removed portfolio setting (`settings::removed`), so the stage
+  takes `restarts_from_best`. Opt-in until Q23.4's measurement (`docs/roadmap/prereg/Q23.json`).
+
 **Straight pin escapes** (`router.fanout.pin_escape`, Q21; `freerouting-krt` stage
 `krt-pin-escape`, tests `crates/freerouting-krt/tests/pin_escape.rs`)
 - New, with no Java counterpart (Java's only pre-pass is `BatchFanout`, which ends each SMD pin in

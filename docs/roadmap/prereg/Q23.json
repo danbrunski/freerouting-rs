@@ -1,0 +1,200 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "Q23.4-restart-from-the-best-board",
+  "registered": "2026-10-22",
+  "checklist": "docs/roadmap/tasks/Q23-restart-from-the-best-board.md (Q23.2 registers; Q23.4 runs and decides)",
+  "question": "With one pass per loop, does one restart from the best board (router.autorouter.restarts_from_best=1: the fanout, then the passes again from pass 1, kept only if it beats the best board) leave fewer unrouted connections than the same run without it on at least N-1 of the registered boards, with none worse, no via in a pad, no copper below the board minimum, no more real DRC items than the run without it, and at most twice its maze work on every row?",
+  "rule": "paired",
+  "setting_name": "Q23's checklist names the setting router.autorouter.restarts; that key is Q12's removed portfolio setting (crates/freerouting/src/settings/removed.rs refuses it with its removal note), so Q23.3 implements it as router.autorouter.restarts_from_best, and the restart arm sets that key",
+  "arms": {
+    "base": {
+      "engine": "freerouting-rs release CLI of main after Q23.3 lands, one Linux build for both arms (its --version git sha in Q23.4's note); the default profile enhanced",
+      "command": "target/release/freerouting-rs -de {IN} -do {OUT} --max-passes 1 --timeout {TIMEOUT_S} --stats json --result-json {RESULT} --progress json {ROW_FLAGS}",
+      "settings": {},
+      "what": "baseline: the fanout, then pass 1, then the loop's finish (best-board restore)"
+    },
+    "restart": {
+      "engine": "freerouting-rs release CLI of main after Q23.3 lands, one Linux build for both arms (its --version git sha in Q23.4's note); the default profile enhanced",
+      "command": "target/release/freerouting-rs -de {IN} -do {OUT} --max-passes 1 --timeout {TIMEOUT_S} --stats json --result-json {RESULT} --progress json {ROW_FLAGS} --router.autorouter.restarts_from_best=1",
+      "settings": {
+        "router.autorouter.restarts_from_best": "1"
+      },
+      "what": "base, then one restart from its best board: the fanout and pass 1 again, kept only if its router score beats the best board's"
+    }
+  },
+  "baseline_arm": "base",
+  "candidate_arm": "restart",
+  "boards": {
+    "set": "tools/bench/sets/q23-restart.txt",
+    "eligibility": "every row of the set, fixed here before any run: the PCU rev 2.0 board as Q23.1 continued it (v7's 60-minute output final_v7 with the committed .kicad_pro and .kicad_dru beside it; skipped when the file is missing, and then the verdict has one board fewer), the three canary-pwr pour variants of owner.txt, and the three benchmark.txt boards with 500 or more connections whose default run takes at most about 10 minutes (Issue690-kit-dev-coldfire-xilinx_5213 541, Issue753-CPU-85_r104 569, Issue066-Project_GP8B 759); a row on which base leaves no unrouted connection is neutral and reported, not dropped",
+    "grouped": "fixtures/canary-pwr/canary-pwr-pours{1,2,3}.dsn are one board for pass_rule (variants of one placement; their unrouted counts are summed), so the verdict judges 5 distinct boards (4 without the PCU file)",
+    "row_flags": "each row's own router flags, in its set comment and in rows below: the PCU board takes Q23.1's (the Pour1A and Pour3A classes as plane obstacles, the stub cleanup), canary-pwr its own saved options' (start_ripup_costs 1500, min_trace_width_um 150, as Q10 and Q20), the benchmark boards none",
+    "rows": {
+      "/home/dan/code/freerouting-rs/target/orchestrator/pcu-rev2/out/q23/input/final_v7.kicad_pcb": {
+        "row": "pcu",
+        "flags": [
+          "--router.plane_obstacle_net_classes=Pour1A,Pour3A",
+          "--router.cleanup.remove_stubs=true"
+        ],
+        "timeout_s": 900,
+        "input": "kicad_pcb",
+        "output": "kicad_pcb",
+        "grading": "kicad"
+      },
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": {
+        "row": "canary-pwr-pours1",
+        "flags": [
+          "--router.scoring.start_ripup_costs=1500",
+          "--router.min_trace_width_um=150"
+        ],
+        "timeout_s": 300,
+        "input": "dsn",
+        "output": "ses",
+        "grading": "canary"
+      },
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": {
+        "row": "canary-pwr-pours2",
+        "flags": [
+          "--router.scoring.start_ripup_costs=1500",
+          "--router.min_trace_width_um=150"
+        ],
+        "timeout_s": 300,
+        "input": "dsn",
+        "output": "ses",
+        "grading": "canary"
+      },
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": {
+        "row": "canary-pwr-pours3",
+        "flags": [
+          "--router.scoring.start_ripup_costs=1500",
+          "--router.min_trace_width_um=150"
+        ],
+        "timeout_s": 300,
+        "input": "dsn",
+        "output": "ses",
+        "grading": "canary"
+      },
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": {
+        "row": "coldfire-5213",
+        "flags": [],
+        "timeout_s": 300,
+        "input": "dsn",
+        "output": "ses",
+        "grading": "router"
+      },
+      "fixtures/Issue753-CPU-85_r104.dsn": {
+        "row": "cpu-85",
+        "flags": [],
+        "timeout_s": 300,
+        "input": "dsn",
+        "output": "ses",
+        "grading": "router"
+      },
+      "fixtures/Issue066-Project_GP8B.dsn": {
+        "row": "gp8b",
+        "flags": [],
+        "timeout_s": 300,
+        "input": "dsn",
+        "output": "ses",
+        "grading": "router"
+      }
+    },
+    "files": {
+      "/home/dan/code/freerouting-rs/target/orchestrator/pcu-rev2/out/q23/input/final_v7.kicad_pcb": "1e16823a400eca33b1f882aef4abf06764a860f4b60988b25a6359623f74e8b3",
+      "fixtures/canary-pwr/canary-pwr-pours1.dsn": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "fixtures/canary-pwr/canary-pwr-pours2.dsn": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "fixtures/canary-pwr/canary-pwr-pours3.dsn": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "fixtures/Issue753-CPU-85_r104.dsn": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "fixtures/Issue066-Project_GP8B.dsn": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857"
+    },
+    "rules_files": {
+      "kicad_pro": "770241e49d5989410a0bd90c25d9de615e00cd66ae85a738d0e27708c1d704a4",
+      "kicad_dru": "c2e552f2dbe6e13a7a4c22f7383477994420565d02867b6a1b117b827d9beff2",
+      "note": "the PCU row's final_v7.kicad_pro and final_v7.kicad_dru beside the board: the committed board's (1b161c7), as Q23.1 ran it"
+    }
+  },
+  "grading": "one grade per distinct output (an arm whose output is byte-identical to the other's shares its grade). kicad (the PCU row): kicad-cli pcb drc --severity-all --refill-zones --format json on the input board and on the router's .kicad_pcb output, with the committed .kicad_pro/.kicad_dru beside both and the copper classes forced to error, routing-caused items counted as tools/kicad-oracle/grade.sh counts them (Q22.2: an item that involves a track or via the input does not have at the same coordinates, width, layer and net), via_in_pad by tools/kicad-oracle/via_in_pad.py; canary (canary-pwr rows): Q10's canary grade (fixtures/canary-pwr/README.md, Grading); router (the benchmark rows, which have no KiCad project): the router's own checks, see metric_definitions. kicad-cli only while `pgrep -a kicad-cli` shows none; every route under ulimit -v 8000000, one at a time",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "drc_real",
+      "role": "guard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "unrouted",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "maze_work_units",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "wall_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "vias whose copper overlaps an SMD pad that the input does not have: kicad rows via_in_pad.py on the output board; canary and router rows freerouting-dev gate collect's session_via_in_pad on the DSN with the SES",
+    "below_minimum": "routed copper below the board minimum: kicad and canary rows the grade's copper.below_minimum; router rows the result manifest's output_check.by_rule track_width + via_diameter + annular_width + drill_out_of_range of the routed copper the run saved (Q20's check, profile enhanced's output_check=repair; its `remaining` must be 0)",
+    "drc_real": "real DRC items the routing caused: kicad and canary rows the grade's drc_real; router rows the clearance violations of `freerouting-rs -drc` on the DSN with the SES, minus those of the DSN alone",
+    "unrouted": "the router's unrouted count of the saved board: the result manifest's board_statistics.connections.incomplete_count",
+    "kicad_unconnected": "KiCad's unconnected items of the graded board (kicad and canary rows only); reported",
+    "maze_work_units": "the run's `--stats json` total.counts.maze_work_units (every maze search of the job, the restart's included)",
+    "wall_seconds": "the run's elapsed wall time (other routes may not overlap: one at a time); reported, not compared"
+  },
+  "work_guard": {
+    "metric": "maze_work_units",
+    "max_ratio": 2.0,
+    "rule": "on every row, restart's maze_work_units is at most 2.0 times base's (a restart is at most one more first loop); a row over it fails the work guard"
+  },
+  "pass_rule": {
+    "min_boards": 3,
+    "improve_all_but": 1,
+    "max_regress": 0
+  },
+  "keep_rule": "the paired rule on unrouted (the canary-pwr rows summed as one board): restart improves on at least N-1 distinct boards and is worse on none; every hard metric 0 in restart on every row; drc_real not higher than base's on any row; the work guard holds on every row. Print the luck rate 1 in 2^N for the N distinct boards judged",
+  "validity": "a row is left out (named with its reason, `--left-out ROW=REASON`) only when an arm hit its safety --timeout (the job log's timeout line or the result manifest's timed-out state; the timeout keeps the best board, so the row would compare time, not work) or its input file is missing (the PCU row); with fewer than 3 distinct boards left the verdict is NOT MEASURED",
+  "decision_table": {
+    "pass": "keep the restart stage opt-in (router.autorouter.restarts_from_best unset in both profiles, not in ENHANCED); its DIVERGENCES line stays; Q23.5 may follow N05's recipe under the totals rule with its own registration",
+    "fail": "any of the paired rule, a hard metric, the drc_real guard or the work guard fails: remove quality/restart.rs, its setting, its batch-loop hook, its help text and DIVERGENCES line (Q rule 5); Q23.5 closes with a note",
+    "not_measured": "fewer than 3 distinct boards judged: no decision; the stage stays opt-in and Q23.4 stays open"
+  },
+  "stop_rule": "one run per arm and row (the engine is deterministic, D2); no reruns with other pass caps, restart counts, timeouts or row lists",
+  "not_registered": [
+    "restart counts other than 1",
+    "pass caps other than --max-passes 1 (the default passes take hours on the PCU board; decided 2026-10-22: short runs only)",
+    "an equal-work arm (base with --max-passes 2): Q23.1's `long` question, not this verdict",
+    "the PCU board's unrouted placement (placed_v7 or unrouted-1b161c7): its fanout and pass 1 alone take 5 to 10 minutes per arm"
+  ],
+  "timing": "registered before any Q23.4 number; Q23.3's tests and determinism checks on q06-sole-wall, q06-fixed-cage and the small benchmark boards are not runs of these arms",
+  "amendments": []
+}

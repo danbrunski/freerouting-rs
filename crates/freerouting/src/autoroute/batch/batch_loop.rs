@@ -30,6 +30,8 @@
 //!    history board or the input board, `Replaced` sent), the final
 //!    `remove_tails(NONE)` when the router ran and was not stopped, and the
 //!    history cleared.
+//! 6. Q23.3's restarts from the best board when `router.autorouter.restarts_from_best`
+//!    is positive (not Java, [`crate::quality::restart`]), then Q10's sweep.
 //!
 //! **Statistics once per board state.** Java builds `BoardStatistics`
 //! three or four times per pass with the same result; the loop builds it
@@ -207,6 +209,9 @@ pub struct LoopOutcome {
     pub sweep: Option<crate::quality::sweep::SweepOutcome>,
     /// Q04.3: the output guard, if `router.autorouter.output_guard` was on.
     pub output_guard: Option<crate::quality::output_guard::GuardOutcome>,
+    /// Q23.3: the restarts from the best board, if
+    /// `router.autorouter.restarts_from_best` was positive.
+    pub restart: Option<crate::quality::restart::RestartOutcome>,
 }
 
 impl LoopOutcome {
@@ -266,6 +271,21 @@ pub fn run_batch_loop(
         figures = run.passes(board, stages, executor, ctx, timed_out, figures);
     }
     figures = run.finish(board, stages, executor, ctx, figures);
+    // Q23.3: restarts from the best board (`router.autorouter.restarts_from_best`,
+    // unset: off), before the sweep.
+    if let Some(restart) = crate::quality::restart::after_loop(
+        board,
+        stages,
+        executor,
+        ctx,
+        &run.outcome,
+        &figures,
+        timed_out,
+    ) {
+        run.outcome.log.extend(restart.log.iter().cloned());
+        figures = restart.after.clone();
+        run.outcome.restart = Some(restart);
+    }
     // Q10: the add-only sweep (`router.autorouter.sweep`, off by default).
     if let Some(sweep) =
         crate::quality::sweep::after_loop(board, stages, executor, ctx, &run.outcome, timed_out())

@@ -14,6 +14,7 @@ pub mod pour_fill;
 pub mod pour_guard;
 pub mod pour_islands;
 pub mod register;
+pub mod restart;
 pub mod stop_rule;
 pub mod stub_contacts;
 pub mod stubs;

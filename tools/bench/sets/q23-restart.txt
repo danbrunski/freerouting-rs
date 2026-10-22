@@ -1,0 +1,12 @@
+# Q23.2's rows (docs/roadmap/prereg/Q23.json): base (enhanced) against restart (enhanced plus
+# router.autorouter.restarts_from_best=1), both with --max-passes 1 (decided 2026-10-22: every
+# arm a few minutes per board). Each comment names the row, its own router flags and the arm's
+# safety --timeout. The PCU board is not in the repository: it is read by absolute path and the
+# row is skipped when the file is missing. The three canary-pwr variants count as one board.
+/home/dan/code/freerouting-rs/target/orchestrator/pcu-rev2/out/q23/input/final_v7.kicad_pcb  # pcu: --router.plane_obstacle_net_classes=Pour1A,Pour3A --router.cleanup.remove_stubs=true, 900 s
+fixtures/canary-pwr/canary-pwr-pours1.dsn  # canary-pwr-pours1: --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150, 300 s
+fixtures/canary-pwr/canary-pwr-pours2.dsn  # canary-pwr-pours2: --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150, 300 s
+fixtures/canary-pwr/canary-pwr-pours3.dsn  # canary-pwr-pours3: --router.scoring.start_ripup_costs=1500 --router.min_trace_width_um=150, 300 s
+fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn  # coldfire-5213: no flags, 300 s
+fixtures/Issue753-CPU-85_r104.dsn  # cpu-85: no flags, 300 s
+fixtures/Issue066-Project_GP8B.dsn  # gp8b: no flags, 300 s
