@@ -63,6 +63,10 @@ pub mod transaction;
 pub use transaction::{CheckPolicy, TransactionResult};
 pub mod obstacle_view;
 
+// K15.31: `router.pour_fill_contacts`, a pour's contacts from its opened
+// fill, island by island.
+pub mod pour_contacts;
+
 // N06: the cutouts' split switches on the board.
 pub(crate) mod placed_shapes;
 pub(crate) mod split_switches;

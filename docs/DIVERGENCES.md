@@ -468,6 +468,34 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   The pcu board's extra items are connections the router counts done through a pour's outline
   where KiCad's fill does not join them, and two nets without a pour (`SCL`, `DRV_SUP`) left
   unrouted.
+- `pour_fill_contacts` (K15.31, `board::pour_contacts`) is a settings field Java does not have,
+  unset by default and in both profiles (Java's rule: a conduction area joins every pin and via of
+  its net centred in its outline and every trace of its net ending there,
+  `ConductionArea.getNormalContacts`). `true` (opt-in) makes the board's connectivity (connected
+  sets, so the routing ledger's incomplete count, the DRC's incompletes and the connections the
+  batch router routes) take a signal-layer pour of a `.kicad_pcb` input (an area K15.23's
+  `PourFills` judges by its opened fill) from that fill, island by island: a Java contact belongs to
+  the island of the opened fill (core grown back by the opening's radius, every island kept) whose
+  piece holds its point and to none elsewhere; the area item stands for its main island (largest,
+  among those with a pin contact first), the items of each other island are in contact with each
+  other directly, and the cycle rule joins two trace ends only within one island
+  (`area_joins_trace_ends`, `BasicBoard::pour_cycle`). The fills are cached on the board and
+  forgotten at every item and search-tree change near them. `BasicBoard::normal_contacts` stays
+  Java's; power layers, a DSN input and an area whose fill has no piece keep the outline. With
+  `pour_fill_target` too the search reaches such an area only in its main island's core. On
+  `tests/data/kicad/pcu-k1531/a-pads-in-three-islands` (EFUSE_NO_2 cut in three by `VCC_3V3`,
+  KiCad 2 unconnected `/CH2_NO` items) Java's rule counts `/CH2_NO` complete, `true` counts 2 open,
+  and `true` with `pour_fill_target` routes the islands together (0; KiCad 0)
+  (`tests/k15_pour_fill_contacts.rs`). It is meant together with `pour_fill_target` (alone it
+  counts the open islands but does not route them); the two stay separate settings (decided
+  2026-10-22). Not in `enhanced` (its default needs a measurement, K15.37): on top of
+  `enhanced` (main `48fad8c`, plugin default options, `--max-passes 2 --timeout 240`, KiCad
+  10.0.7) the pcu board's `.kicad_pcb` route goes from KiCad unconnected 47 (router incomplete 11)
+  to 48 (49) with `true` and 21 (22) with `true` and `pour_fill_target` (49 (14) with
+  `pour_fill_target` alone), 0 routing-caused, route time 163 s -> 175 s and 176 s; canary-pwr's
+  (`95882f00`, K15.14's `pcb-off` command) from 40 (27) to 38 (39) and 26 (27) (31 (19) with
+  `pour_fill_target` alone), route time 92 s -> 181 s and 153 s, with 1 routing-caused
+  `track_dangling` in the second arm (`/Supervisor/CAN_EN`, no pour net; K15.31's note).
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which

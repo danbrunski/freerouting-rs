@@ -92,6 +92,12 @@ pub struct BasicBoard {
     /// core of its fill holds both ([`crate::autoroute::pour_target`]). A
     /// [`BoardSnapshot`] keeps it.
     pub(crate) pour_fill_target: bool,
+    /// K15.31 (`router.pour_fill_contacts`): the connectivity joins a
+    /// signal-layer pour of a `.kicad_pcb` to the contacts its opened fill
+    /// reaches, island by island ([`crate::board::pour_contacts`]). The
+    /// fills are cached and forgotten where the board changes; a
+    /// [`BoardSnapshot`] keeps the switch, not the cache.
+    pub(crate) pour_contacts: crate::board::pour_contacts::PourContacts,
     /// `router.java_quirks.*` (N06): the switches of the Java bugs that shove,
     /// pull-tight, the DRC, the statistics, the readers and the interactive code
     /// read through the board ([`Self::java_quirks`]). A [`BoardSnapshot`] keeps
@@ -193,6 +199,7 @@ impl BasicBoard {
             wire_keepouts: Vec::new(),
             contact_rule: Default::default(),
             pour_fill_target: false,
+            pour_contacts: Default::default(),
             dropped_pours: Arc::default(),
             kicad_report_rules: Arc::default(),
             wire_joints: Arc::default(),
@@ -344,6 +351,7 @@ impl BasicBoard {
             search_config: self.search_trees.search_config(),
             contact_rule: self.contact_rule,
             pour_fill_target: self.pour_fill_target,
+            pour_fill_contacts: self.pour_contacts.is_on(),
             java_quirks: self.java_quirks,
             dropped_pours: self.dropped_pours.clone(),
             kicad_report_rules: self.kicad_report_rules.clone(),
@@ -382,6 +390,9 @@ impl BasicBoard {
             wire_keepouts: Vec::new(),
             contact_rule: snapshot.contact_rule,
             pour_fill_target: snapshot.pour_fill_target,
+            pour_contacts: crate::board::pour_contacts::PourContacts::new(
+                snapshot.pour_fill_contacts,
+            ),
             java_quirks: snapshot.java_quirks,
             dropped_pours: snapshot.dropped_pours.clone(),
             kicad_report_rules: snapshot.kicad_report_rules.clone(),
@@ -471,6 +482,22 @@ impl BasicBoard {
         if let Some(journal) = &mut self.journal {
             journal.record(id, Record::Inserted, &item.net_numbers, item.bounding_box());
         }
+        self.note_pour_change_of(id);
+    }
+
+    /// K15.31: [`note_pour_change`](Self::note_pour_change) for item `id` as
+    /// it is now.
+    fn note_pour_change_of(&mut self, id: ItemId) {
+        if !self.pour_contacts.is_on() {
+            return;
+        }
+        let Some(item) = self.items.get(&id) else {
+            return;
+        };
+        let (first, last) = (item.first_layer(), item.last_layer());
+        let (bounds, area) = (item.bounding_box(), item.is_conduction_area());
+        let nets = item.net_numbers.clone();
+        self.note_pour_change(first, last, bounds, &nets, area);
     }
 
     /// What the bookkeeping needs of an item that leaves the item list.
@@ -479,11 +506,13 @@ impl BasicBoard {
             id: item.id(),
             nets: item.net_numbers.clone(),
             connectable: item.is_connectable_kind(),
-            bounds: if self.journal.is_some() {
+            bounds: if self.journal.is_some() || self.pour_contacts.is_on() {
                 item.bounding_box()
             } else {
                 IntBox::EMPTY
             },
+            layers: (item.first_layer(), item.last_layer()),
+            area: item.is_conduction_area(),
         }
     }
 
@@ -495,6 +524,8 @@ impl BasicBoard {
         if let Some(journal) = &mut self.journal {
             journal.record(note.id, Record::Removed, &note.nets, note.bounds);
         }
+        let (first, last) = note.layers;
+        self.note_pour_change(first, last, note.bounds, &note.nets, note.area);
     }
 
     /// Records that item `id` changed in place: marks its nets for a
@@ -509,6 +540,7 @@ impl BasicBoard {
         if let Some(journal) = &mut self.journal {
             journal.record(id, Record::Changed, &item.net_numbers, item.bounding_box());
         }
+        self.note_pour_change_of(id);
     }
 
     /// Records that the nets of item `id` changed from `old_nets`.
@@ -523,6 +555,11 @@ impl BasicBoard {
         if let Some(journal) = &mut self.journal {
             journal.record(id, Record::Changed, old_nets, item.bounding_box());
             journal.record(id, Record::Changed, &item.net_numbers, IntBox::EMPTY);
+        }
+        // K15.31: the fills near it, for its old nets as for its new ones.
+        let near = (item.first_layer(), item.last_layer(), item.bounding_box());
+        if self.pour_contacts.is_on() {
+            self.note_pour_change(near.0, near.1, near.2, &[], false);
         }
     }
 
@@ -568,6 +605,9 @@ impl BasicBoard {
         {
             item.on_the_board = true;
         }
+        // K15.31: the fills see the trees, so every tree change forgets
+        // those it may change, whichever operation makes it.
+        self.note_pour_change_of(id);
     }
 
     /// Removes and inserts item `id` in the search trees `indexes` only (the
@@ -586,6 +626,7 @@ impl BasicBoard {
         if let Some(item) = self.items.get(&id) {
             self.search_trees.reinsert_in(indexes, item, &ctx);
         }
+        self.note_pour_change_of(id);
     }
 
     /// Removes the entries of item `id` from every search tree but leaves it
@@ -605,6 +646,7 @@ impl BasicBoard {
         if !on_board {
             return;
         }
+        self.note_pour_change_of(id);
         self.search_trees.remove(id);
         if let Some(item) = self.items.get_mut(&id) {
             item.on_the_board = false;
@@ -1341,6 +1383,7 @@ impl BasicBoard {
             self.items.delete(&id);
         }
         self.ledger.invalidate();
+        self.pour_contacts.forget_all();
     }
 
     // ------------------------------------------------------------------
@@ -2174,6 +2217,24 @@ impl BasicBoard {
             .into_iter()
     }
 
+    /// The contacts a connected set follows from `id`: its normal contacts,
+    /// and under `router.pour_fill_contacts` (K15.31) a judged pour's
+    /// contacts island by island unless the set stops at planes
+    /// ([`crate::board::pour_contacts`]). The memo holds Java's contacts
+    /// only.
+    fn connectivity_contacts(
+        &self,
+        id: ItemId,
+        stop_at_plane: bool,
+        contacts: &mut HashMap<ItemId, Vec<ItemId>>,
+    ) -> std::vec::IntoIter<ItemId> {
+        let java = self.cached_normal_contacts(id, contacts);
+        if stop_at_plane || !self.pour_contacts.is_on() {
+            return java;
+        }
+        self.pour_aware_contacts(id, java.collect()).into_iter()
+    }
+
     fn connected_set_recu(
         &self,
         id: ItemId,
@@ -2185,7 +2246,7 @@ impl BasicBoard {
         // Java recurses; an explicit stack visits the items in the same
         // depth-first order.
         let mut stack: Vec<std::vec::IntoIter<ItemId>> =
-            vec![self.cached_normal_contacts(id, contacts)];
+            vec![self.connectivity_contacts(id, stop_at_plane, contacts)];
         while let Some(top) = stack.last_mut() {
             let Some(contact) = top.next() else {
                 stack.pop();
@@ -2199,7 +2260,7 @@ impl BasicBoard {
                 continue;
             }
             if result.insert(contact) {
-                stack.push(self.cached_normal_contacts(contact, contacts));
+                stack.push(self.connectivity_contacts(contact, stop_at_plane, contacts));
             }
         }
     }
@@ -2306,9 +2367,18 @@ impl BasicBoard {
         let start_contacts = self.trace_start_contacts(id);
         let mut visited = start_contacts.clone();
         let ignore_areas = self.ignore_cycles_with_areas(self.item_ref(id));
-        start_contacts
+        let java = start_contacts
             .iter()
-            .any(|contact| self.is_cycle_recu(*contact, &mut visited, id, id, ignore_areas))
+            .any(|contact| self.is_cycle_recu(*contact, &mut visited, id, id, ignore_areas));
+        // K15.31: under `router.pour_fill_contacts` a cycle through a pour
+        // is one through an island of its fill (`pour_cycle` says when it
+        // must be asked).
+        if self.pour_cycle_asked(id, java)
+            && let Some(cycle) = self.pour_cycle(id)
+        {
+            return cycle;
+        }
+        java
     }
 
     /// Java `Item.isTail`: a trace with an open end, or a via with at most
@@ -2604,7 +2674,7 @@ impl BasicBoard {
     /// to `changed_nets`. Returns false if there is nothing to undo.
     pub fn undo(&mut self, mut changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
         self.components.undo();
-        let journaling = self.journal.is_some();
+        let needs_bounds = self.journal.is_some() || self.pour_contacts.is_on();
         let mut notes = Vec::new();
         let result = self.items.undo_with(|cancelled| {
             if let Some(nets) = changed_nets.as_deref_mut() {
@@ -2612,7 +2682,7 @@ impl BasicBoard {
             }
             // Java's `SearchTreeManager.remove` takes it off the board.
             cancelled.on_the_board = false;
-            notes.push(cancelled_note(cancelled, journaling));
+            notes.push(cancelled_note(cancelled, needs_bounds));
         });
         self.apply_undo_redo(result, notes, changed_nets)
     }
@@ -2620,14 +2690,14 @@ impl BasicBoard {
     /// Restores the state before the last undo.
     pub fn redo(&mut self, mut changed_nets: Option<&mut BTreeSet<i32>>) -> bool {
         self.components.redo();
-        let journaling = self.journal.is_some();
+        let needs_bounds = self.journal.is_some() || self.pour_contacts.is_on();
         let mut notes = Vec::new();
         let result = self.items.redo_with(|cancelled| {
             if let Some(nets) = changed_nets.as_deref_mut() {
                 nets.extend(cancelled.net_numbers().iter().copied());
             }
             cancelled.on_the_board = false;
-            notes.push(cancelled_note(cancelled, journaling));
+            notes.push(cancelled_note(cancelled, needs_bounds));
         });
         self.apply_undo_redo(result, notes, changed_nets)
     }
@@ -2832,18 +2902,23 @@ struct RemovalNote {
     nets: Vec<i32>,
     connectable: bool,
     bounds: IntBox,
+    /// K15.31: the item's layers, and whether it is a conduction area.
+    layers: (i32, i32),
+    area: bool,
 }
 
-fn cancelled_note(item: &Item, journaling: bool) -> RemovalNote {
+fn cancelled_note(item: &Item, needs_bounds: bool) -> RemovalNote {
     RemovalNote {
         id: item.id(),
         nets: item.net_numbers.clone(),
         connectable: item.is_connectable_kind(),
-        bounds: if journaling {
+        bounds: if needs_bounds {
             item.bounding_box()
         } else {
             IntBox::EMPTY
         },
+        layers: (item.first_layer(), item.last_layer()),
+        area: item.is_conduction_area(),
     }
 }
 

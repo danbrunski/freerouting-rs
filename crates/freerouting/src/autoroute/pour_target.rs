@@ -76,7 +76,11 @@
 //! Everything else is Java's: the router's own contacts stay the outline
 //! (`BasicBoard::conduction_area_normal_contacts`), so a trace ending in the
 //! fill is a contact as before, and the rooms, doors, costs and the queue
-//! order are unchanged. Power layers, a DSN input and an area no zone of the
+//! order are unchanged. K15.31's `router.pour_fill_contacts`
+//! ([`crate::board::pour_contacts`]) takes the connectivity's contacts from
+//! the fill's islands; with both settings the search reaches an area in the
+//! core of the island the area stands for ([`fill_tiles`]), and the cycle
+//! rule joins two trace ends only in one island. Power layers, a DSN input and an area no zone of the
 //! file matches keep the outline (`PourFills` gives them no fill). The fill
 //! is computed per search, so it is the fill of the board the connection is
 //! routed on (about 0.3 ms per pour on the pcu board); later connections
@@ -125,12 +129,29 @@ impl BasicBoard {
 
     /// True if contact `contact`, common to both ends of trace `trace`,
     /// joins them into a cycle (Java: always). Under
+    /// `router.pour_fill_contacts` (K15.31) a judged pour joins them only
+    /// where one island of its fill holds both ends. Under
     /// `router.pour_fill_target` a conduction area that `PourFills` judges
     /// by its opened fill keeps the trace only as a bridge into its fill
     /// (module docs, "The cycle rule"): one end in the core, computed now
     /// ([`opened_fill_core`]), and the other end out of the core and not
     /// at a pin or via of the opened fill.
     pub(crate) fn area_joins_trace_ends(&self, contact: ItemId, trace: ItemId) -> bool {
+        // K15.31: under `router.pour_fill_contacts` the pour joins the two
+        // ends only if one island of its fill holds both
+        // (`board::pour_contacts`); then the rest of the rule.
+        if let (Some(islands), Some(t)) = (
+            self.pour_islands(contact),
+            self.item(trace).and_then(|i| i.as_trace()),
+        ) {
+            match (
+                islands.island_at(&t.first_corner()),
+                islands.island_at(&t.last_corner()),
+            ) {
+                (Some(a), Some(b)) if a == b => {}
+                _ => return false,
+            }
+        }
         if !self.pour_fill_target || !read_from_kicad_pcb(self) {
             return true;
         }
@@ -174,7 +195,9 @@ fn read_from_kicad_pcb(board: &BasicBoard) -> bool {
 
 /// Per conduction area of `items` that `PourFills` judges by its opened
 /// fill, the core of that fill on `board` now ([`opened_fill_core`]); empty
-/// for a board not read from a `.kicad_pcb`.
+/// for a board not read from a `.kicad_pcb`. Under
+/// `router.pour_fill_contacts` (K15.31) the core of the area's main island
+/// only ([`BasicBoard::pour_islands`]).
 pub fn fill_tiles<'a>(
     board: &BasicBoard,
     items: impl IntoIterator<Item = &'a ItemId>,
@@ -189,7 +212,14 @@ pub fn fill_tiles<'a>(
         .collect();
     areas
         .into_iter()
-        .filter_map(|id| Some((id, opened_fill_core(board, board.item(id)?)?.tiles)))
+        .filter_map(|id| {
+            // K15.31: under `router.pour_fill_contacts` the area stands for
+            // its main island, so the search reaches that island's core.
+            if let Some(islands) = board.pour_islands(id) {
+                return Some((id, islands.main_core()));
+            }
+            Some((id, opened_fill_core(board, board.item(id)?)?.tiles))
+        })
         .collect()
 }
 

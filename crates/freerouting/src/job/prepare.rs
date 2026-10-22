@@ -781,6 +781,8 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     log.extend(contacts);
     // K15.25: `router.pour_fill_target`.
     board.set_pour_fill_target(settings.pour_fill_target == Some(true));
+    // K15.31: `router.pour_fill_contacts`.
+    board.set_pour_fill_contacts(settings.pour_fill_contacts == Some(true));
     // Q14: `router.via_clearance`; an unknown value fails the job.
     crate::autoroute::via_clearance::validate(&settings).map_err(JobError::Settings)?;
     // N03.1: `router.room_order` and `router.work_unit`; an unknown value
@@ -1094,6 +1096,8 @@ pub fn prepare_board_for_routing(
     // Java's rule.
     // K15.25: `router.pour_fill_target`.
     board.set_pour_fill_target(settings.pour_fill_target == Some(true));
+    // K15.31: `router.pour_fill_contacts`.
+    board.set_pour_fill_contacts(settings.pour_fill_contacts == Some(true));
     match crate::board::contact_rule::apply(board, &settings) {
         Ok(line) => log.extend(line),
         Err(e) => {

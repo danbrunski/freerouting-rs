@@ -157,6 +157,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
     ("output_check", "quality option without a Java control"),
     ("pour_fill_target", "quality option without a Java control"),
     (
+        "pour_fill_contacts",
+        "quality option without a Java control",
+    ),
+    (
         "solder_mask_expansions",
         "per-pad data (Q18.7), filled in by the KiCad plugin or read from a .kicad_pcb",
     ),

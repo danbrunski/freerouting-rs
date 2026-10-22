@@ -107,6 +107,9 @@ pub struct BoardSnapshot {
     /// The board's `router.pour_fill_target` (K15.25), which a restored
     /// board keeps.
     pub(crate) pour_fill_target: bool,
+    /// The board's `router.pour_fill_contacts` (K15.31); a restored board
+    /// starts with an empty fill cache.
+    pub(crate) pour_fill_contacts: bool,
     /// The board's `router.java_quirks.*` switches (N06), which a restored board
     /// and a deep copy keep.
     pub(crate) java_quirks: crate::settings::JavaQuirks,

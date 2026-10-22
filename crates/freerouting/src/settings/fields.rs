@@ -294,6 +294,8 @@ settings_table! {
             "The board-rule check before saving (Q20): `off` (unset, Java), `report` (log and count the routed copper that breaks a board rule) or `repair` (remove it, retry its connections once, remove what still breaks a rule; profile `enhanced`'s value)."),
         (pour_fill_target, bool, opt, None, None, "pourFillTarget", [], Flat::No, true,
             "On a `.kicad_pcb` input, the maze search reaches a signal-layer pour only where its fill, opened by the zone's minimum thickness, reaches (K15.25); unset or `false` is Java's rule (anywhere inside the pour's outline); unset in both profiles (opt-in, K15.25's note)."),
+        (pour_fill_contacts, bool, opt, None, None, "pourFillContacts", [], Flat::No, true,
+            "On a `.kicad_pcb` input, the router's connectivity (the incomplete count and the connections it routes) joins a pin, via or trace end to a signal-layer pour only where the pour's fill, opened by the zone's minimum thickness, reaches it, and each island of that fill only to its own contacts (K15.31); unset or `false` is Java's rule (anywhere inside the pour's outline); unset in both profiles (opt-in, its default needs a measurement)."),
     }
     sections {
         autorouter, AutorouterPatch, AutorouterSettings, "autorouter",

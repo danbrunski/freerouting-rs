@@ -140,6 +140,7 @@ impl BasicBoard {
         if self.contact_rule != rule {
             self.contact_rule = rule;
             self.ledger.invalidate();
+            self.pour_contacts.forget_all();
         }
     }
 

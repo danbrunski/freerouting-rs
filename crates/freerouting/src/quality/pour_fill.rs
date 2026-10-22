@@ -2,7 +2,9 @@
 //!
 //! The router's contacts are Java's: a conduction area joins every trace of
 //! its net that ends inside its outline (`ConductionArea.getNormalContacts`),
-//! and Q16.4's cleanup contacts ([`stub_contacts`]) take the outline too. A
+//! and Q16.4's cleanup contacts ([`stub_contacts`]) take the outline too
+//! (opt-in, K15.31's `router.pour_fill_contacts` takes the connectivity's
+//! from this fill, island by island: [`crate::board::pour_contacts`]). A
 //! pour is no obstacle (Java's `Structure.insertPlanes`; `enhanced` leaves
 //! `router.plane_obstacle_all_pours` unset), so other nets route across it,
 //! and KiCad's refill keeps the fill clear of their copper and then removes
@@ -203,7 +205,7 @@ impl PourFills {
 /// opened fill: the largest clearance of its class on its layer plus its
 /// minimum thickness, and a margin of 2000 resolution units as the fill
 /// model's search box has.
-fn reach(board: &BasicBoard, area: &Item) -> i32 {
+pub(crate) fn reach(board: &BasicBoard, area: &Item) -> i32 {
     let clearance = board
         .rules
         .clearance_matrix

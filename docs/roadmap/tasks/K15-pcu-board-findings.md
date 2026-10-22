@@ -2596,7 +2596,7 @@ item-type rules), N06 (`router.java_quirks`).
       every arm), so **"not kept, no gain"**: `router.pour_fill_target` stays opt-in, unset in both
       profiles, and the plugin offers it as an option (the outcome is applied in the next change).
 
-- [ ] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
+- [~] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
   - **Change:** the router's pour contacts are Java's (`BasicBoard::conduction_area_normal_contacts`,
     `ConductionArea.getNormalContacts`): every pin and via centred in the outline and every trace
     ending there. On K15.25's pcu runs with `pour_fill_target` (`target/orchestrator/k1525/runs/b/`)
@@ -2614,6 +2614,111 @@ item-type rules), N06 (`router.java_quirks`).
       setting, alone and with `pour_fill_target`, graded by KiCad: unconnected, the router's
       incomplete against it, 0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
     - `legacy` unchanged (parity 7 of 7).
+  - *Partial 2026-10-22* (worktree branch `k1531`, rebased onto main `48fad8c`; every number
+    below is the first seen, before any later measurement): accept 1 and 3 hold; accept 2 holds on
+    every arm but one: canary-pwr with both settings has 1 routing-caused `track_dangling`
+    (`/Supervisor/CAN_EN`, no pour net, below). *Remains:* that stub (K15.36), and the setting's
+    default, which needs a measurement on K15.30's set (a prereg), with both settings together
+    (K15.37; the setting alone is worse, below). Decided 2026-10-22: the two stay separate
+    settings, documented as meant together (`router.pour_fill_contacts` does not switch on
+    `pour_fill_target`), so each stays configurable on its own; K15.37 measures the pair.
+    - *Setting:* `router.pour_fill_contacts` (bool; unset or `false` is Java's rule; unset in
+      `legacy` and `enhanced`, not in `ENHANCED`). Documented in `settings/fields.rs`,
+      `tests/settings_defaults.rs` (unset), the GUI's no-control list, the module docs of the new
+      `board/pour_contacts.rs` (and `autoroute/pour_target.rs`, `quality/pour_fill.rs`), and
+      DIVERGENCES (board model, `pour_fill_contacts`). `prepare_job` sets it on the board;
+      snapshots keep it (`BoardSnapshot::pour_fill_contacts`); it acts only on a `.kicad_pcb`.
+    - *Cause:* the router's connectivity joins a conduction area to every Java contact inside its
+      outline: `BasicBoard::conduction_area_normal_contacts` (`board/basic_board.rs`, the pin/via
+      and trace arms test `contains` on the outline) feeds `connected_set_recu`, which
+      `NetIncompletes` (`drc/incompletes.rs`), the routing ledger (`drc/ledger.rs`) and the batch
+      router's `route_sets` (`autoroute/batch/connection.rs`) use. On the pcu route (K15.25's
+      `final-true`) `VCC_3V3`'s tracks cut EFUSE_NO_2 in three; U4 pad 8's track ends in the top
+      left part and pad 10's in the right one, and the router counted `/CH2_NO` complete.
+    - *Design:* the contacts change only in the connected sets (`connectivity_contacts` in
+      `connected_set_recu`, unless `stop_at_plane`); `normal_contacts` stays Java's. Per judged
+      area, `fill_geometry` takes `opened_fill_core` and grows each core tile back by the radius
+      (as `PourFills::all_pieces`); the islands come from `pour_islands::island_numbers` (split
+      out of `islands_of`, same output). A Java contact point (drill centre, trace end, inside the
+      outline) belongs to the island whose piece holds it. **Islands:** each island is its own
+      connected group. The area item stands for its main island (pin contacts first, then any
+      contact, then the largest area) and its contacts are that island's members; the members of
+      every other island are in contact with each other directly; a point in no island joins
+      nothing. All islands count, not only K15.29's kept ones (`PourFills::pieces`): an island
+      KiCad removes has a copper group with no pad, so counting it joins no pad to another, and
+      K15.29's test is a search over the net's copper that would run at every change. **Cycle
+      rule:** Java's insertion removed every trace the search found between two islands (both
+      ends in the outline), and `Trace.isCycle` then removed the vias and the inner-layer trace
+      between them (seen on the fixture with a temporary print of the located paths: "Routed"
+      with no new copper). So `area_joins_trace_ends` (`autoroute/pour_target.rs`) joins two ends
+      only in one island, and `BasicBoard::pour_cycle` (a search over the island-aware contacts)
+      answers `isCycle` where it can differ from Java's (a Java cycle, or a trace with an end in
+      a judged pour's outline). **Search:** with `pour_fill_target` too, `fill_tiles` gives the
+      main island's core only.
+    - *Keeping the fill current:* the fill and the contacts are cached on the board
+      (`PourContacts`, behind a `Mutex` like the ledger). Every `note_*` hook (insert, remove,
+      change, net change, undo/redo) and every search-tree insert/remove/reinsert forgets them for
+      each judged area on the item's layers whose outline tiles, grown by `pour_fill::reach`,
+      meet the item's box, and marks that area's nets dirty in the ledger. An item of the area's
+      own net forgets only the contacts (the opening takes none of its own copper). `PourFills`'
+      cache (forgotten only at removals) is not used. Cost: a fill model is about 25 ms per pour
+      on canary-pwr, about 2000 of them per route (temporary counters). The first version took
+      203 s on canary-pwr with both settings; after the own-net, tile-box and cycle changes it
+      took 153 s with the same session (`cce88912…`). The tree hooks changed no session with both
+      settings. The first version's canary-pwr arm with the setting alone (84 unconnected,
+      87 incomplete, 4 `track_dangling`, session `428207a7…`) became 38/39/0 (`ca3becbe…`), so
+      that first arm read a stale fill somewhere.
+    - *Accept 1:* `crates/freerouting/tests/k15_pour_fill_contacts.rs` (3 tests) on
+      `tests/data/kicad/pcu-k1531/`. `make_boards.py` takes zone EFUSE_NO_2 verbatim and the
+      copper and pads around it from K15.25's `runs/b/final-true`; each board is as KiCad 10.0.7
+      `pcb drc --refill-zones --save-board` saved it. KiCad: `a-pads-in-three-islands` has 2
+      unconnected `/CH2_NO` items, `b-no-vcc-cut` none.
+      - `a_pad_the_fill_does_not_reach_is_not_joined_through_the_pour`: unset or `false`, both
+        boards 0 incomplete (recount and ledger) and U4 pad 8 joined to all 8 pins; with the
+        setting, `b` 0 and `a` 2: {U4-8, U17-18..20, R85-2}, {C54-1}, {U4-10, R8-1};
+      - `with_the_setting_the_router_routes_the_islands_together_or_counts_them_open` (the board
+        without `/CH2_NO`'s tracks, `enhanced`, 3 passes): unset 0 incomplete, `false` the same
+        copper; the setting alone the same copper and 2 open; with `pour_fill_target` 0 and all
+        pins joined. The release CLI on the same board, graded by KiCad
+        (`target/orchestrator/k1531/scratch/fx/`): unset 2 `/CH2_NO` unconnected, alone 2 (the
+        router counts them), both 0;
+      - `the_islands_are_recomputed_when_the_board_changes`: inserting the `VCC_3V3` tracks into
+        `b` makes 3 islands, and the ledger (built before) counts 2.
+      - RED: with islands off (`pour_islands` returning `None`) 3 failed; with no forgetting
+        2 failed (islands 1 vs 3; `(1, 1)` vs `(0, 0)`); with Java's `isCycle` the routing test
+        failed (`(2, 2)` vs `(0, 0)`). GREEN: 3 passed; `k15_pour_fill_stub` (6) and
+        `k15_pour_island_via` (4) unchanged.
+    - *Accept 2:* K15.25's commands (`plugin-input-ab.sh kicad_pcb ... -- --max-passes 2
+      --timeout 240`, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`;
+      `target/orchestrator/k1531/scripts/pcu3.sh`, `canary3.sh`), release binary of this tree on
+      main `48fad8c` (`bin/v3`), graded by KiCad 10.0.7, runs in
+      `target/orchestrator/k1531/runs/rebased-pcu/` and `rebased-canary/`. Every session is
+      byte-identical to the same arm on base `c7c4e07` (`bin/v2`, `runs/final-*`, run first):
+
+      | board, arm | KiCad unconnected | router incomplete | routing-caused | below-min | mfg | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | pcu, unset | 47 | 11 | none | 0 | 0 | 162.9 | `bd0a87fd…` |
+      | pcu, `pour_fill_target` | 49 | 14 | none | 0 | 0 | 160.0 | `a1118e6c…` |
+      | pcu, `pour_fill_contacts` | 48 | 49 | none | 0 | 0 | 174.9 | `6a7350da…` |
+      | pcu, both | **21** | 22 | none | 0 | 0 | 176.2 | `25cf997a…` |
+      | canary-pwr, unset | 40 | 27 | none | 0 | 0 | 92.2 | `f1d2da90…` |
+      | canary-pwr, `pour_fill_target` | 31 | 19 | none | 0 | 0 | 93.0 | `0b534572…` |
+      | canary-pwr, `pour_fill_contacts` | 38 | 39 | none | 0 | 0 | 181.2 | `ca3becbe…` |
+      | canary-pwr, both | **26** | 27 | track_dangling 1 | 0 | 0 | 152.5 | `cce88912…` |
+
+      With the setting, the router's incomplete is within 1 of KiCad's count in every arm;
+      without it, 11 against 47 and 19 against 31. The setting alone counts the open islands but
+      does not route them: a search between two islands starts or ends in the outline, which
+      holds both, and inserts nothing. The `track_dangling` is a 0.0725 mm B.Cu stub of
+      `/Supervisor/CAN_EN` from (144.777, 79.0511) to (144.7257, 79.1024) mm at a junction of
+      three of its traces, with no pad or via there. Its end lies within the cap of the junction,
+      which N04.4's trace-to-trace contact counts and KiCad does not (not confirmed in the
+      router).
+    - *Accept 3:* `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. Every changed path returns Java's
+      answer while the setting is off.
+    - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2993 passed, 0 failed, 56 ignored.
 
 - [x] **K15.32 — The plugin's pour clearance is the clearance KiCad's filler applies.**
   - **Change:** K15.27's plugin passes `--router.cleanup.pour_clearance_um` as the smallest zone
@@ -2944,4 +3049,36 @@ item-type rules), N06 (`router.java_quirks`).
       below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm (K15.23's command):
       unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+
+- [ ] **K15.36 — A trace stub at a junction of its own net's traces is not left dangling.**
+  - **Change:** K15.31's canary-pwr arm with `router.pour_fill_contacts` and `pour_fill_target`
+    (`95882f00`, K15.14's `pcb-off` command; `target/orchestrator/k1531/runs/rebased-canary/`,
+    session `cce88912`) has 1 routing-caused item: KiCad 10.0.7 reports `track_dangling` on a
+    0.0725 mm B.Cu stub of `/Supervisor/CAN_EN` from (144.777, 79.0511) to (144.7257, 79.1024) mm,
+    at a junction of three of its traces, with no pad or via there. Its end lies within the cap of
+    the junction, which N04.4's trace-to-trace contact counts and KiCad does not (inferred from
+    the geometry, not traced in the router). Find why the router lays and keeps it, and make the
+    route leave no such stub (the cleanup removes it, or the router does not lay it), on both
+    inputs.
+  - **Accept:**
+    - a test on a small board cut from that route (named in the test, every coordinate from it):
+      the stub is gone, the junction's connections stay;
+    - the canary-pwr arm again with both settings, graded by KiCad: 0 routing-caused,
+      unconnected not up (26), 0 below-minimum, 0 manufacturing breaches; the pcu `.kicad_pcb`
+      arm with both settings (K15.31's): unconnected not up (21), 0 routing-caused;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).
+
+- [ ] **K15.37 — Measure `pour_fill_contacts` with `pour_fill_target` under `enhanced`.**
+  - **Change:** K15.31's first numbers on top of `enhanced` (main `48fad8c`, plugin default
+    options, `--max-passes 2 --timeout 240`, KiCad 10.0.7): the pcu board's `.kicad_pcb` route
+    goes from KiCad unconnected 47 to 21 with both settings, canary-pwr's from 40 to 26; route time
+    163 s -> 176 s and 92 s -> 153 s. Register a measurement of the pair against `enhanced` on
+    K15.30's set (`tools/bench/sets/k15-fill-target.txt`, its helper `tools/bench/k15_all_pours.py`,
+    K15.30's registration as the model), after K15.36, and run it through the orchestrator's heavy
+    queue.
+  - **Accept:**
+    - the registration (prereg JSON, its pin test, the set) committed before any run;
+    - the records and the verdict in the note, and the outcome applied as its decision table says
+      (both settings into `ENHANCED`, a plugin option, or neither);
+    - `legacy` unchanged (the settings are unset there; parity 7 of 7).
 

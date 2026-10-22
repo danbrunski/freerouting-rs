@@ -136,6 +136,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("output_check", None),
         // K15.25: unset, the search ends anywhere inside a pour's outline.
         ("pour_fill_target", None),
+        // K15.31: unset, a pour joins every contact inside its outline.
+        ("pour_fill_contacts", None),
         // autorouter.
         ("autorouter.enabled", b(true)),
         ("autorouter.algorithm", s("freerouting-router")),

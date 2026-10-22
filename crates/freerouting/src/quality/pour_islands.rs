@@ -242,6 +242,21 @@ fn removes_islands(board: &BasicBoard, area: &Item) -> bool {
 /// shapes meet on a layer (a sweep over the bounding boxes in x order), in
 /// the order of their first piece.
 fn islands_of(pieces: &[Piece]) -> Vec<Vec<Piece>> {
+    let numbers = island_numbers(pieces);
+    let mut islands: Vec<Vec<Piece>> = Vec::new();
+    for (piece, n) in pieces.iter().zip(numbers) {
+        if n == islands.len() {
+            islands.push(Vec::new());
+        }
+        islands[n].push(piece.clone());
+    }
+    islands
+}
+
+/// Per piece of `pieces` the number of its island ([`islands_of`]): the
+/// islands numbered 0, 1, ... in the order of their first piece. K15.31's
+/// router contacts take the islands from it too.
+pub(crate) fn island_numbers(pieces: &[Piece]) -> Vec<usize> {
     let boxes: Vec<IntBox> = pieces.iter().map(|(_, s)| s.bounding_box()).collect();
     let mut order: Vec<usize> = (0..pieces.len()).collect();
     order.sort_by_key(|i| (boxes[*i].ll.x, *i));
@@ -269,17 +284,13 @@ fn islands_of(pieces: &[Piece]) -> Vec<Vec<Piece>> {
         }
     }
     let mut number: BTreeMap<usize, usize> = BTreeMap::new();
-    let mut islands: Vec<Vec<Piece>> = Vec::new();
-    for (i, piece) in pieces.iter().enumerate() {
-        let r = root(&mut parent, i);
-        let next = number.len();
-        let n = *number.entry(r).or_insert(next);
-        if n == islands.len() {
-            islands.push(Vec::new());
-        }
-        islands[n].push(piece.clone());
-    }
-    islands
+    (0..pieces.len())
+        .map(|i| {
+            let r = root(&mut parent, i);
+            let next = number.len();
+            *number.entry(r).or_insert(next)
+        })
+        .collect()
 }
 
 /// The items of `area`'s net, other than `skip`, whose bounding box meets
