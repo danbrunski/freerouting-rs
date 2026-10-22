@@ -800,7 +800,7 @@ item-type rules), N06 (`router.java_quirks`).
       (`f-rule-clearance`, `e-npth-pads`): RED without it (`clearance_um: None` against
       `Some(127.0)`), GREEN with it.
 
-- [ ] **K15.12 — A sweep pass that adds a violation keeps the connections that don't.**
+- [x] **K15.12 — A sweep pass that adds a violation keeps the connections that don't.**
   - **Change:** the add-only sweep (`quality/sweep.rs`, `SweepController::after_pass`) rolls a
     whole pass back when the violation count rises. On K15.4's `.kicad_pcb` run of the pcu board
     (main `41cf105`, plugin default options, `--max-passes 2 --timeout 240`, files in
@@ -820,6 +820,50 @@ item-type rules), N06 (`router.java_quirks`).
       after, 0 below-minimum and 0 new routing-caused DRC errors;
     - the sweep is opt-in in `legacy` (unset there), so `legacy` is untouched; a DIVERGENCES line
       if `enhanced`'s default path changes.
+  - *Done 2026-10-21:* on main `bad4171` (branch `k1512`).
+    - The change (`quality/sweep.rs`): before, `AddOnlyRouter::route` only turned rip-up off and
+      `SweepController::after_pass` rolled the whole pass back when `after.violations >
+      before.violations`. Now `AddOnlyRouter::route` clones the board before each sweep connection,
+      routes it, and `added_violations` counts the router's clearance violations
+      (`drc::counts_clearance_violation`, the filter `DesignRulesChecker::all_clearance_violations`
+      uses, now shared) on the items the connection inserted or changed (a clone shares every
+      unchanged item, so a pointer test finds them) against those of the items it removed or
+      changed on the board before. When the count rises, the board before comes back
+      (`swap_in`), the connection counts as failed, and the job log says which connection and where:
+      `Add-only sweep pass #1 (free): undid the connection of S2-1 (net A): it added 1 clearance
+      violation(s), the first polylinetrace (net A) - S5-1 (net X) on F.Cu at (20.000, 5.000) mm.`;
+      the pass line adds `, undone N` (`SweepPassRecord::undone`). The pass-level rules are
+      unchanged: a pass that raises the incomplete count, or the violations through a pair the
+      guard's count misses, is still undone whole.
+    - Accept 1: `a_sweep_connection_that_adds_a_violation_is_undone_and_the_others_kept`
+      (`tests/quality_sweep.rs`, new fixture `tests/data/quality/k15-sweep-guard.dsn`: nets A and B
+      to route, a lone pad of net X; a test router routes nothing in the batch loop and, in the
+      sweep, "routes" A by a detour over X's pad). RED at main: `free: B kept, A undone` left
+      `[1, 2]` right `[1]` (the whole pass undone). GREEN, `free` and `fixed`: B routed, A's two
+      pin connections undone (pass 1 `routed 1, failed 2, undone 2; incomplete 2 -> 1, violations
+      0 -> 0`), no trace of net A left, `DesignRulesChecker` violations 0.
+    - Accept 2, the pcu `.kicad_pcb` run (`tools/kicad-reader/plugin-input-ab.sh kicad_pcb
+      target/orchestrator/k154/stripped/Power_Control_Unit_24V.kicad_pcb
+      target/orchestrator/k154/opts-default.json <out> -- --max-passes 2 --timeout 240 --stats
+      json`, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`, outputs in
+      `target/orchestrator/k1512/runs/`). On main `bad4171` the sweep no longer rolls back (K15.15
+      changed the planes): pass 1 routed 52, incomplete 65 -> 14, violations 4 -> 4; pass 2 14 ->
+      11. No corpus row of `k15-all-pours.txt` in K15.14's runs (`target/orchestrator/k1514/out/`)
+      rolls a pass back for a violation either (their roll-backs are passes that routed nothing),
+      so the test builds the case. With the guard the guard undoes nothing on pcu and the session
+      is byte-identical (sha256 `a2d99014…`). KiCad 10.0.7 under the board's own rules, before
+      (main) and after: unconnected 47 and 47 (input 499), `below_minimum` 0 and 0,
+      `manufacturing_breaches` 0 and 0, routing-caused `track_dangling` 1 and 1 (the same
+      session: no new routing-caused item). Cost (`--stats json`): sweep pass 1 21.85 s -> 18.93 s,
+      pass 2 7.93 s -> 5.10 s (wall time, machine noise), search-tree queries 6802257 -> 6805704 and
+      1046255 -> 1046615 (+0.05% and +0.03%, the guard's checks); route_s 198.3 -> 168.1.
+    - Accept 3: `legacy` and the engine's own `enhanced` leave `router.autorouter.sweep` unset
+      (`freerouting-rs --profile legacy --dump-settings`: `autorouter.sweep = (unset)`), so
+      `run_sweep` and the guard are never reached; only the plugin's default `enhanced` run passes
+      `sweep=free`. Shared code changed only by moving the checker's filter into
+      `counts_clearance_violation` (same result): `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes` PARITY OK, 7 of 7 `[exact]`. DIVERGENCES: a K15.12 line
+      under "Add-only completion sweep".
 
 - [~] **K15.13 — Routing keeps a pour whole, or counts it split.**
   - **Change:** on K15.4's DSN run of the pcu board (`target/orchestrator/k154/grade-main-dsn/`,

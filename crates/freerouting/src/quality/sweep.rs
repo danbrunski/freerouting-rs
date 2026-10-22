@@ -17,6 +17,18 @@
 //! - the ripup policy's repeated-failure ripup ([`RipupPolicy::after_failure`],
 //!   which removes a failing net's wiring) does nothing.
 //!
+//! **The violation guard** (K15.12). Each connection of a sweep pass routes
+//! on the board as it was before it, kept as a `Clone`. When its routing
+//! adds clearance violations (counted as the router counts them, on the
+//! items it inserted or changed, against the items it removed or changed:
+//! [`added_violations`]), the board before it comes back at once, the
+//! connection counts as failed, and the job log names it, the first new
+//! violation's two items, its layer and its centre in mm ("undid the
+//! connection of ..."). The pass goes on with the next connection, so a
+//! pass keeps every connection that adds none. Before K15.12 the controller
+//! undid the whole pass instead (the pcu board at `41cf105`: 53 connections
+//! routed, violations 4 -> 5, all 53 undone).
+//!
 //! Sweep passes are numbered from 1, as in Java's second run: pass 1 routes
 //! in the ordering's `select` order and pass 2 reorders, the strict check and
 //! the maze budget are those of the pass number. Pull-tight and the shover
@@ -26,7 +38,9 @@
 //! routes nothing, the board is complete, or `sweep_passes` (default
 //! [`DEFAULT_SWEEP_PASSES`]) is reached. Each pass is kept only if the board
 //! after it has no more incomplete connections and no more clearance
-//! violations than before; otherwise, and when a pass routed nothing, the
+//! violations than before (after the guard, the violations rise only through
+//! a pair the guard's count misses, see [`added_violations`]); otherwise, and
+//! when a pass routed nothing, the
 //! board before the pass comes back (a `Clone`, so the search tree keeps its
 //! shape and the work counts after it are those of no pass at all). Q04's
 //! quantum rule can replace the cap later.
@@ -64,18 +78,21 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::autoroute::AttemptState;
 use crate::autoroute::batch::batch_loop::{LoopOutcome, LoopStages, PassExecutor};
 use crate::autoroute::batch::pass::{PassOutcome, PassStages};
+use crate::autoroute::batch::report::describe_item;
 use crate::autoroute::batch::snapshot::BoardFigures;
 use crate::autoroute::events::{CancelToken, Phase, RelayLevels, with_stop_relay};
 use crate::autoroute::stages::{
     ConnectionOutcome, ConnectionParams, ConnectionRouter, Optimizer, RipupPolicy, RouteTask,
     StageCtx, StopReason, UnknownStage,
 };
-use crate::board::RoutingBoard;
 use crate::board::items::{ItemId, StopConnectionOption};
 use crate::board::search::audit::AuditPoint;
 use crate::board::structure::FixedState;
+use crate::board::{BasicBoard, RoutingBoard};
+use crate::drc::{ClearanceViolation, counts_clearance_violation};
 use crate::job::deadline::{StopLevel, Watcher};
 use crate::job::{LogLevel, LogLine};
 use crate::settings::RouterSettings;
@@ -226,8 +243,11 @@ pub struct SweepPassRecord {
     pub pass: u32,
     /// Connections routed.
     pub routed: usize,
-    /// Connections that failed.
+    /// Connections that failed, the undone ones included.
     pub failed: usize,
+    /// Connections undone because their routing added a clearance
+    /// violation (K15.12).
+    pub undone: usize,
     /// Incomplete connections before the pass.
     pub incomplete_before: usize,
     /// Incomplete connections after the pass (before a roll-back).
@@ -330,10 +350,18 @@ impl SweepController {
     }
 }
 
-/// The connection router of a sweep: the job's, with rip-up off.
+/// The connection router of a sweep: the job's, with rip-up off, and the
+/// violation guard (K15.12): a connection whose routing adds clearance
+/// violations ([`added_violations`]) is undone at once (the board before it
+/// comes back) and counts as failed.
 struct AddOnlyRouter<'a> {
     inner: &'a mut dyn ConnectionRouter,
     job: &'a CancelToken,
+    /// The sweep pass number and the mode, for the log lines.
+    pass: u32,
+    mode: SweepMode,
+    /// The log lines of the connections undone in this pass, in order.
+    undone: Vec<String>,
 }
 
 impl ConnectionRouter for AddOnlyRouter<'_> {
@@ -356,8 +384,145 @@ impl ConnectionRouter for AddOnlyRouter<'_> {
             ripup_allowed: false,
             ..p.clone()
         };
-        self.inner.route(board, task, &params, ctx)
+        let before = board.clone();
+        let outcome = self.inner.route(board, task, &params, ctx);
+        let added = added_violations(&before, board);
+        let Some(first) = added.first.filter(|_| added.count > 0) else {
+            return outcome;
+        };
+        let connection = format!(
+            "{} ({})",
+            describe_item(&before, task.item),
+            net_names(&before, &[task.net])
+        );
+        self.undone.push(format!(
+            "Add-only sweep pass #{} ({}): undid the connection of {connection}: it added {} \
+             clearance violation(s), the first {}.",
+            self.pass,
+            self.mode.as_str(),
+            added.count,
+            violation_text(board, &first)
+        ));
+        swap_in(board, before, ctx);
+        ConnectionOutcome {
+            state: AttemptState::Failed,
+            details: format!(
+                "{connection}: undone by the add-only sweep, it added {} clearance violation(s)",
+                added.count
+            ),
+            ripped: BTreeSet::new(),
+            ripped_costs: Vec::new(),
+            failure: None,
+            ..outcome
+        }
     }
+}
+
+/// The clearance violations one connection added (K15.12).
+struct AddedViolations {
+    /// How many more violations the board has after the connection.
+    count: usize,
+    /// The first violation after it that was not there before.
+    first: Option<ClearanceViolation>,
+}
+
+/// A violation's items and layer, each pair once (as
+/// `BasicBoard::all_clearance_violations` keys them).
+type PairKey = (i32, i32, i32);
+
+/// The violations a connection that took the board from `before` to `after`
+/// added. Only the items it changed can gain or lose a violation: those of
+/// `after` that `before` lacks or holds as another version (an inserted or
+/// replaced item; a clone shares every unchanged item), and those of
+/// `before` that `after` lacks or changed. The count is the violations of
+/// the first on `after` less those of the second on `before`, each counted as
+/// the router counts them ([`counts_clearance_violation`]), so it is the
+/// change of the board's violation count unless a pair is found only from
+/// the side of an unchanged item; the pass's own check still sees that.
+fn added_violations(before: &BasicBoard, after: &BasicBoard) -> AddedViolations {
+    let was = counted_violations(before, &changed_items(after, before));
+    let now = counted_violations(after, &changed_items(before, after));
+    let count = now.len().saturating_sub(was.len());
+    let was: BTreeSet<PairKey> = was.into_iter().map(|(key, _)| key).collect();
+    let first = now
+        .into_iter()
+        .find(|(key, _)| !was.contains(key))
+        .map(|(_, v)| v);
+    AddedViolations { count, first }
+}
+
+/// The items of `to` that `from` does not hold as the same version, in id
+/// order.
+fn changed_items(from: &BasicBoard, to: &BasicBoard) -> Vec<ItemId> {
+    to.items()
+        .filter(|item| {
+            !from
+                .item(item.id())
+                .is_some_and(|old| std::ptr::eq(old, *item))
+        })
+        .map(|item| item.id())
+        .collect()
+}
+
+/// The counted clearance violations of `ids` on `board`, each pair of items
+/// and layer once, in the order found.
+fn counted_violations(board: &BasicBoard, ids: &[ItemId]) -> Vec<(PairKey, ClearanceViolation)> {
+    let mut seen = BTreeSet::new();
+    let mut result = Vec::new();
+    for id in ids {
+        for v in board.clearance_violations(*id) {
+            let (a, b) = (v.first_item.0, v.second_item.0);
+            let key = (a.min(b), a.max(b), v.layer);
+            if counts_clearance_violation(board, &v) && seen.insert(key) {
+                result.push((key, v));
+            }
+        }
+    }
+    result
+}
+
+/// `first (nets) - second (nets) on <layer> at (x, y) mm`.
+fn violation_text(board: &BasicBoard, v: &ClearanceViolation) -> String {
+    let item = |id: ItemId| {
+        let nets = board
+            .item(id)
+            .map(|item| item.net_numbers().to_vec())
+            .unwrap_or_default();
+        if nets.is_empty() {
+            describe_item(board, id)
+        } else {
+            format!("{} ({})", describe_item(board, id), net_names(board, &nets))
+        }
+    };
+    let layer = usize::try_from(v.layer)
+        .ok()
+        .and_then(|i| board.layer_structure.layers.get(i))
+        .map_or_else(|| format!("layer {}", v.layer), |l| l.name.clone());
+    let mm = board.board_unit_to_um_factor() / 1000.0;
+    let at = v.location();
+    format!(
+        "{} - {} on {layer} at ({:.3}, {:.3}) mm",
+        item(v.first_item),
+        item(v.second_item),
+        at.x * mm,
+        at.y * mm
+    )
+}
+
+/// `net A` or `nets A, B`.
+fn net_names(board: &BasicBoard, nets: &[i32]) -> String {
+    let names: Vec<String> = nets
+        .iter()
+        .map(|n| {
+            board
+                .rules
+                .nets
+                .get(*n)
+                .map_or_else(|| format!("#{n}"), |net| net.name.clone())
+        })
+        .collect();
+    let plural = if names.len() == 1 { "" } else { "s" };
+    format!("net{plural} {}", names.join(", "))
 }
 
 /// The ripup policy of a sweep: the job's costs and strict check, and no
@@ -557,10 +722,14 @@ pub fn run_sweep(
         }
         let saved = board.clone();
         let scope = crate::run_stats::stage("sweep", pass);
+        let mut undone = Vec::new();
         let result = {
             let mut router = AddOnlyRouter {
                 inner: &mut *stages.router,
                 job: ctx.cancel,
+                pass,
+                mode: config.mode,
+                undone: Vec::new(),
             };
             let mut ripup = AddOnlyRipup {
                 inner: &mut *stages.ripup,
@@ -571,12 +740,15 @@ pub fn run_sweep(
                 ripup: &mut ripup,
             };
             // A job stop also ends the connection in progress.
-            with_stop_relay(ctx.cancel, &local, RelayLevels::FullStop, || {
+            let result = with_stop_relay(ctx.cancel, &local, RelayLevels::FullStop, || {
                 executor.run_pass(board, pass, &mut sweep_stages, &mut local_ctx)
-            })
+            });
+            undone.append(&mut router.undone);
+            result
         };
         scope.finish();
         outcome.log.extend(result.log.iter().cloned());
+        outcome.log.extend(undone.iter().cloned());
         let after = executor.figures(board, settings);
         let step = controller.after_pass(&result, &figures, &after);
         let kept = !matches!(step, SweepStep::Rollback(_));
@@ -585,17 +757,23 @@ pub fn run_sweep(
                 pass,
                 routed: result.routed,
                 failed: result.failed,
+                undone: undone.len(),
                 incomplete_before: figures.incomplete,
                 incomplete_after: after.incomplete,
                 violations_after: after.violations,
                 kept,
             });
             outcome.log.push(format!(
-                "Add-only sweep pass #{pass} ({}): routed {}, failed {}; incomplete {} -> {}, \
+                "Add-only sweep pass #{pass} ({}): routed {}, failed {}{}; incomplete {} -> {}, \
                  violations {} -> {}{}.",
                 config.mode.as_str(),
                 result.routed,
                 result.failed,
+                if undone.is_empty() {
+                    String::new()
+                } else {
+                    format!(", undone {}", undone.len())
+                },
                 figures.incomplete,
                 after.incomplete,
                 figures.violations,

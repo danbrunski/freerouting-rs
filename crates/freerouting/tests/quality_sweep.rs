@@ -6,6 +6,11 @@
 //! whose pads sit 0.2 mm from the outline. Pass 1 routes A by ripping B's
 //! wire, and B is then incomplete but routable round A's new trace (Q06's
 //! `found` verdict). With `-mp 1` nothing routes B again; the sweep does.
+//!
+//! K15.12's fixture is `k15-sweep-guard.dsn`: nets A (S1-S2) and B (S3-S4)
+//! to route and a lone pad of net X (S5) under A's detour. A test router
+//! (`ViolatingRouter`) routes nothing in the batch loop, so both connections
+//! reach the sweep, and there "routes" A by a detour that crosses X's pad.
 
 mod autoroute_common;
 
@@ -14,16 +19,24 @@ use std::path::Path;
 use std::sync::Arc;
 
 use autoroute_common::repo_root;
+use freerouting::autoroute::AttemptState;
+use freerouting::autoroute::batch::connection::FreeroutingConnectionRouter;
 use freerouting::autoroute::events::{CancelToken, NullEvents};
 use freerouting::autoroute::pipeline::{PipelineJob, PipelineOutcome, run_pipeline};
+use freerouting::autoroute::stages::{
+    ConnectionOutcome, ConnectionParams, ConnectionRouter, RouteTask, StageCtx, StageRegistry,
+};
 use freerouting::board::RoutingBoard;
 use freerouting::board::structure::FixedState;
+use freerouting::drc::DesignRulesChecker;
+use freerouting::geometry::{IntPoint, Point};
 use freerouting::io::specctra::ses_writer::{SesStyle, write_ses};
 use freerouting::job::prepare::{JobInput, PreparedJob, RulesChoice, prepare_job};
 use freerouting::settings::profiles::TestingProfile;
 use freerouting::settings::{ResolveContext, Source};
 
 const SOLE_WALL: &str = "crates/freerouting/tests/data/quality/q06-sole-wall.dsn";
+const GUARD: &str = "crates/freerouting/tests/data/quality/k15-sweep-guard.dsn";
 
 /// The sweep settings of a run.
 #[derive(Clone, Copy, Default)]
@@ -274,4 +287,148 @@ fn the_sweep_keeps_fixed_states_of_the_input() {
         .filter(|s| **s >= FixedState::UserFixed)
         .count();
     assert_eq!(fixed_wiring(&fixed), user_fixed);
+}
+
+const VIOLATING_ROUTER: &str = "k15-violating-router";
+
+/// K15.12's test router: Java's, except that it routes nothing while rip-up
+/// is allowed (the batch loop; the sweep turns rip-up off), and that it
+/// "routes" net A by a detour from S1 down to y = 5 mm, across and up to S2,
+/// which runs over the pad of net X (S5) and adds one clearance violation.
+struct ViolatingRouter {
+    inner: FreeroutingConnectionRouter,
+}
+
+impl ConnectionRouter for ViolatingRouter {
+    fn id(&self) -> &'static str {
+        VIOLATING_ROUTER
+    }
+
+    fn route(
+        &mut self,
+        board: &mut RoutingBoard,
+        task: &RouteTask,
+        p: &ConnectionParams,
+        ctx: &mut StageCtx,
+    ) -> ConnectionOutcome {
+        if p.ripup_allowed {
+            return ConnectionOutcome::new(AttemptState::Failed, "the sweep routes");
+        }
+        let a = net(board, "A");
+        if task.net != a {
+            return self.inner.route(board, task, p, ctx);
+        }
+        let class = freerouting::rules::BoardRules::default_clearance_class();
+        let points = [
+            (50000, 250000),
+            (50000, 50000),
+            (350000, 50000),
+            (350000, 250000),
+        ]
+        .map(|(x, y)| Point::Int(IntPoint::new(x, y)));
+        board.insert_trace_points(&points, 0, 1000, &[a], class, FixedState::Unfixed);
+        ConnectionOutcome::new(AttemptState::Routed, "a detour across net X's pad")
+    }
+}
+
+fn net(board: &RoutingBoard, name: &str) -> i32 {
+    board
+        .rules
+        .nets
+        .get_by_name(name, 1)
+        .expect("net")
+        .net_number
+}
+
+/// The guard fixture with the test router and `sweep`, after one pass, no
+/// fanout and no optimizer.
+fn route_guard(sweep: Sweep) -> (RoutingBoard, Vec<String>) {
+    let mut registry = StageRegistry::builtin();
+    registry.connection_router.insert(VIOLATING_ROUTER, |s| {
+        Box::new(ViolatingRouter {
+            inner: FreeroutingConnectionRouter::from_settings(s),
+        })
+    });
+    let path = repo_root().join(GUARD);
+    let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{GUARD}: {e}"));
+    let mut profile = TestingProfile::default();
+    profile.set_optimizer_enabled(false);
+    profile.set_fanout_enabled(false);
+    profile.set_max_passes(1);
+    profile.patch.autorouter.sweep = sweep.mode.map(str::to_string);
+    profile.patch.autorouter.connection_router = Some(VIOLATING_ROUTER.to_string());
+    let mut input = JobInput::new(bytes, JobInput::design_name_of(GUARD));
+    input.rules = RulesChoice::Adjacent;
+    input.dsn_dir = path.parent().map(Path::to_path_buf);
+    input.extra_sources = vec![(Source::Testing, profile.patch)];
+    let prepared = prepare_job(&input, &ResolveContext { cores: 1 })
+        .unwrap_or_else(|e| panic!("{GUARD}: {e}"));
+    let job = PipelineJob {
+        settings: &prepared.settings,
+        board_settings: &prepared.board_settings,
+        cancel: Arc::new(CancelToken::new()),
+        events: &NullEvents,
+        deadline: None,
+        registry: Some(&registry),
+    };
+    let mut outcome = run_pipeline(prepared.board, &job).unwrap_or_else(|f| panic!("{}", f.error));
+    let board = outcome.board.take().expect("no listener took the board");
+    (board, outcome.log.iter().map(|l| l.text.clone()).collect())
+}
+
+fn violations(board: &RoutingBoard) -> usize {
+    DesignRulesChecker::new(board)
+        .all_clearance_violations()
+        .len()
+}
+
+fn incomplete_nets(board: &RoutingBoard) -> Vec<i32> {
+    let mut nets: Vec<i32> = board
+        .routing_ledger()
+        .incomplete_net_numbers(board)
+        .into_iter()
+        .collect();
+    nets.sort_unstable();
+    nets
+}
+
+/// K15.12: a sweep connection that adds a clearance violation is undone on
+/// its own; the pass keeps the connection that adds none.
+#[test]
+fn a_sweep_connection_that_adds_a_violation_is_undone_and_the_others_kept() {
+    let (off, _) = route_guard(Sweep::default());
+    let (a, b) = (net(&off, "A"), net(&off, "B"));
+    assert_eq!(incomplete_nets(&off), vec![a, b], "the loop routes nothing");
+    assert_eq!(violations(&off), 0);
+    for sweep in [FREE, FIXED] {
+        let mode = sweep.mode.unwrap_or_default();
+        let (board, log) = route_guard(sweep);
+        assert_eq!(incomplete_nets(&board), vec![a], "{mode}: B kept, A undone");
+        assert_eq!(violations(&board), 0, "{mode}: the violations do not rise");
+        assert!(
+            board
+                .items()
+                .filter(|item| item.is_trace())
+                .all(|item| !item.contains_net(a)),
+            "{mode}: none of A's detour is left"
+        );
+        let lines = sweep_lines(&log);
+        let undone = format!(
+            "Add-only sweep pass #1 ({mode}): undid the connection of S2-1 (net A): it \
+             added 1 clearance violation(s), the first polylinetrace (net A) - S5-1 (net X) on F.Cu at (20.000, 5.000) mm."
+        );
+        // Both of A's pins are items of the pass; S2-1 comes first.
+        assert_eq!(
+            lines.first().map(|l| l.as_str()),
+            Some(undone.as_str()),
+            "{mode}"
+        );
+        assert!(
+            lines.iter().any(|l| l.starts_with(&format!(
+                "Add-only sweep pass #1 ({mode}): routed 1, failed 2, undone 2; \
+                 incomplete 2 -> 1, violations 0 -> 0."
+            ))),
+            "{mode}: {lines:#?}"
+        );
+    }
 }

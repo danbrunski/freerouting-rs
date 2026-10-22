@@ -1,0 +1,41 @@
+(pcb k15-sweep-guard.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "freerouting-rs K15.12 synthetic fixture")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary (path pcb 0  0 0  40000 0  40000 30000  0 30000  0 0))
+    (via "Via[0-1]_600:300_um")
+    (rule (width 200) (clearance 200))
+  )
+  (placement
+    (component SMD
+      (place S1 5000 25000 front 0)
+      (place S2 35000 25000 front 0)
+      (place S3 12000 15000 front 0)
+      (place S4 28000 15000 front 0)
+      (place S5 20000 5000 front 0)
+    )
+  )
+  (library
+    (image SMD (pin SmdPad 1 0 0))
+    (padstack SmdPad (shape (rect F.Cu -300 -300 300 300)) (attach off))
+    (padstack "Via[0-1]_600:300_um" (shape (circle F.Cu 600)) (shape (circle B.Cu 600)) (attach off))
+  )
+  (network
+    (net A (pins S1-1 S2-1))
+    (net B (pins S3-1 S4-1))
+    (net X (pins S5-1))
+    (class kicad_default "" A B X
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 200) (clearance 200))
+    )
+  )
+  (wiring
+  )
+)

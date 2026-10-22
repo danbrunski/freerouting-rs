@@ -871,6 +871,16 @@ maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
   incomplete connection without (`sole_wall_ends_complete_with_the_sweep_and_incomplete_without`);
   off is the unchanged engine (`off_is_the_unchanged_engine`, and the A14 gate). Off by default
   until Q10.4's measurement.
+- K15.12, the sweep's violation guard (the plugin's default `enhanced` run, which passes
+  `sweep=free`; `legacy` leaves the sweep unset and never reaches it): a sweep connection whose
+  routing adds clearance violations, counted as the router counts them on the items it inserted or
+  changed, is undone at once (the board before it comes back), counts as failed and is named in
+  the job log with the first new violation's items, layer and centre ("undid the connection of
+  ..."); the pass goes on and keeps the connections that add none. Before, the whole pass was
+  undone when the board's violations rose (the pcu board at `41cf105`: 53 connections routed,
+  violations 4 -> 5, all undone). A pass that raises the incomplete count is still undone whole.
+  `a_sweep_connection_that_adds_a_violation_is_undone_and_the_others_kept`
+  (`tests/quality_sweep.rs`, `k15-sweep-guard.dsn`).
 
 **Straight pin escapes** (`router.fanout.pin_escape`, Q21; `freerouting-krt` stage
 `krt-pin-escape`, tests `crates/freerouting-krt/tests/pin_escape.rs`)

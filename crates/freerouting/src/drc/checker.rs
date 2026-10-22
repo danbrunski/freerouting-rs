@@ -78,6 +78,17 @@ impl BasicBoard {
     }
 }
 
+/// True if [`DesignRulesChecker::all_clearance_violations`] counts violation
+/// `v` of `board` (the router's violations; K15.12's sweep counts a
+/// connection's violations with it).
+pub(crate) fn counts_clearance_violation(board: &BasicBoard, v: &ClearanceViolation) -> bool {
+    // PARITY(quirk, java_quirks.same_net_via_pad_violation): Java counts every
+    // pair `Item.isObstacle` reports, same-net via and pad pairs included;
+    // `false` leaves out those with no routed copper (K15.5).
+    board.java_quirks().same_net_via_pad_violation
+        || !kicad_report::is_same_net_input_pair(board, v)
+}
+
 /// The design rules checker of a board.
 ///
 /// Port of `drc.DesignRulesChecker`. The board must not change while a
@@ -157,14 +168,11 @@ impl<'a> DesignRulesChecker<'a> {
     /// because every padstack read from a `.kicad_pcb` is `(attach off)`.
     pub fn all_clearance_violations(&self) -> Vec<ClearanceViolation> {
         let all = self.board.all_clearance_violations();
-        // PARITY(quirk, java_quirks.same_net_via_pad_violation): Java counts every
-        // pair `Item.isObstacle` reports, same-net via and pad pairs included;
-        // `false` leaves out those with no routed copper (K15.5).
         if self.board.java_quirks().same_net_via_pad_violation {
             return all;
         }
         all.into_iter()
-            .filter(|v| !kicad_report::is_same_net_input_pair(self.board, v))
+            .filter(|v| counts_clearance_violation(self.board, v))
             .collect()
     }
 

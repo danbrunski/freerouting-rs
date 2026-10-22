@@ -42,6 +42,7 @@ pub use summary::{CongestionZone, DiagnosticViolation, DrcSummary};
 pub use unconnected::{UnconnectedItems, UnconnectedKind};
 pub use zone_islands::{Island, Trapezoid, ZoneIslandKind, ZoneIslandViolation, fill_islands};
 
+pub(crate) use checker::counts_clearance_violation;
 /// Ordered parallel map, shared with the feasibility diagnostic (Q03).
 pub(crate) use clearance::parallel_map;
 
