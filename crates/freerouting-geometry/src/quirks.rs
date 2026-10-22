@@ -7,7 +7,10 @@
 //! [`TileShape::cutout_with`](crate::TileShape::cutout_with)) and a `bool` for the rational
 //! perpendicular projection
 //! ([`Point::perpendicular_projection_with`](crate::Point::perpendicular_projection_with),
-//! [`TileShapeOps::nearest_point_with`](crate::TileShapeOps::nearest_point_with)).
+//! [`TileShapeOps::nearest_point_with`](crate::TileShapeOps::nearest_point_with)), and a
+//! `bool` for the placement of a tile shape (`placed_shape_convex`, K15.2:
+//! [`PlacementTransform::shape_with`](crate::PlacementTransform::shape_with),
+//! [`PlacementTransform::area_with`](crate::PlacementTransform::area_with)).
 //! `true` is Java's behaviour; the functions without `_with` keep it.
 //!
 //! [`SplitReach`] counts where the cutouts' switches matter (N06.4's reachability

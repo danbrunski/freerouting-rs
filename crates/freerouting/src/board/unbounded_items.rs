@@ -8,8 +8,10 @@
 //! (`PlacementTransform::shape`, bug 1 of
 //! `docs/development/pcu-rev2-board-report.md`: C65's F.Fab circle at
 //! y = 105.242039 mm). Pads and a component's tile-shaped areas go through
-//! the same placement and could get one too; K15.2 makes the placed shape
-//! convex.
+//! the same placement and could get one too. With
+//! `router.java_quirks.placed_shape_convex = false` (K15.2,
+//! `board/placed_shapes.rs`) the placed shape is the convex hull of its rounded
+//! corners and never unbounded; unset (both profiles) it is Java's.
 //!
 //! [`BasicBoard::expand_bounding_box_to_include_all_items`] leaves such an
 //! item out of the board box and returns [`warning`] for it. Java takes the

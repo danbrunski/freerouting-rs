@@ -58,10 +58,18 @@ impl BasicBoard {
     /// item-list order, and the outline's keepout piece count is retaken (see the
     /// module docs). Nothing else is touched, so a value with the same split
     /// switches changes no tree.
+    ///
+    /// When `placed_shape_convex` changes, the component items whose placed
+    /// shapes change are placed again and reinserted
+    /// ([`placed_shapes`](crate::board::placed_shapes), K15.2).
     pub fn set_java_quirks(&mut self, quirks: JavaQuirks) {
         let old = self.java_quirks.split();
+        let old_placed = self.java_quirks.placed_shape_convex;
         self.java_quirks = quirks;
         let new = quirks.split();
+        if old_placed != quirks.placed_shape_convex {
+            self.replace_placed_shapes();
+        }
         if old != new {
             self.resplit_items(old, new);
         }
@@ -148,7 +156,7 @@ pub(crate) fn same_pieces(a: &Option<Vec<TileShape>>, b: &Option<Vec<TileShape>>
     }
 }
 
-fn same_tile(a: &TileShape, b: &TileShape) -> bool {
+pub(crate) fn same_tile(a: &TileShape, b: &TileShape) -> bool {
     match (a, b) {
         (TileShape::IntBox(x), TileShape::IntBox(y)) => x == y,
         (TileShape::IntOctagon(x), TileShape::IntOctagon(y)) => x == y,

@@ -114,7 +114,7 @@ item-type rules), N06 (`router.java_quirks`).
       violations, score 953.78 in 26.6 s, the same as the snapped copy (before: 128 unrouted,
       2790 "could not be created").
 
-- [ ] **K15.2 — A placed outline or pad stays convex after rounding.**
+- [x] **K15.2 — A placed outline or pad stays convex after rounding.**
   - **Change:** `PlacementTransform::shape` gives the convex hull of the rounded corners, so no
     shape built from a placed polygon has reflex vertices. Pads go through the same function, and
     Java cuts such a pad along the reflex edge, so the fix sits behind
@@ -127,6 +127,56 @@ item-type rules), N06 (`router.java_quirks`).
       `freerouting-geometry`);
     - with the quirk unset, both are Java's (the K15.1 board still routes, through K15.1's fix);
     - the settings test, the help text, a DIVERGENCES line, and connection-parity 7 of 7.
+  - *Done 2026-10-21:* `router.java_quirks.placed_shape_convex` (`settings/java_quirks.rs`, owner
+    `K15.2`; `settings/fields.rs`, JSON `placedShapeConvex`) reaches the geometry as the
+    `java_corners` argument of `PlacementTransform::shape_with` / `area_with` (`shape` / `area` keep
+    Java's), as `rational_perp_projection` reaches it: no global. `false` takes
+    `PolygonShape::convex_hull` of the rounded corners, marked
+    `// PARITY(quirk, java_quirks.placed_shape_convex):` in `placement_transform.rs`. Every caller
+    passes `BasicBoard::java_quirks().placed_shape_convex`: pins (`basic_board.rs::pin_drill_data`),
+    component areas (`absolute_area`, `item_ops.rs::refresh_derived_data`), component outlines
+    (`refresh_derived_data`), auxiliary pad shapes (`io/specctra/parser/network.rs`,
+    `interactive/copy.rs`). A switch changed after reading places the component items again and
+    reinserts those whose shapes change (`board/placed_shapes.rs`, from `set_java_quirks`). Not in
+    `ENHANCED`: both profiles keep Java's shape.
+    - Accept 1 (`freerouting-geometry/tests/placed_shape_convex.rs`; RED on a stub that ignored the
+      flag: 3 of 3 failed, GREEN 3 of 3):
+      `c65s_outline_is_bounded_with_the_switch_off` (the 77-line simplex from
+      `tests/data/k15/c65-nm-position.kicad10.dsn` at (572510.06, -1052420.39): unset box ur
+      `(i32::MAX, i32::MAX)`, off box (522059, -1102908)-(623010, -1001932), the box of its rounded
+      corners, every corner inside, also through `area_with`);
+      `a_pad_rounded_to_a_reflex_vertex_keeps_its_hull_with_the_switch_off` (a 24-gon pad r 2500
+      enlarged by 75, component at (100000, -50000), pin offset (0, 0.13), found by a search over
+      fractional positions: unset cuts 8 rounded corners off, off is the hull, mirrored too);
+      `convex_placements_are_the_same_under_both_values` (120 placements: where the rounded corners
+      are convex both values give the same shape).
+    - Accept 2: unset is Java's in both tests above; K15.1's tests pass unchanged
+      (`cli_unbounded_outline` 4 of 4, `unbounded_item_box` 3 of 3). Switch off:
+      `tests/k15_placed_shape_convex.rs` (no unbounded item and no warning on the three KiCad DSN
+      exports; only C65's outline changes; a board switched after reading has the boxes of one read
+      with the switch, and back); `freerouting-cli/tests/cli_placed_shape_convex.rs`:
+      `c65-nm-position.kicad_pcb` and the KiCad DSN exports route 2 of 2 / 6 of 6 / 2 of 2 in
+      `legacy` and `enhanced` with `--router.java_quirks.placed_shape_convex=false`, 0 "could not be
+      created", no "unbounded shape" line.
+    - Accept 3: `tests/settings_java_quirks.rs` (42 switches with K15.5's; `placed_shape_convex` owned by K15.2
+      and `true` in both profiles; every key round-trips, has its marker);
+      `settings_defaults.rs` lists every `java_quirks` field from the table (unchanged, passes); the
+      help text is the field's doc, printed by `--dump-settings` (the GUI has no quirk controls,
+      `dialogs/autoroute_settings.rs`). DIVERGENCES "K15.2 placed shapes convex (in neither
+      profile)" under "Java quirk switches, opt-in", and the K15.1 board-model line points to it.
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: 7 of 7
+      exact, PARITY OK (63 s).
+    - Also: `quality/neckdown/bounded_neck.rs::courtyard` leaves an outline with an unbounded box out
+      (both the courtyard and the all-outlines fallback), unconditionally:
+      `bounded_neck::tests::the_courtyard_fallback_leaves_an_unbounded_outline_out` (RED without the
+      filter: the fallback's box reached `i32::MAX`). It logs nothing of its own: the stage has no
+      log channel, and the job's K15.1 warning already names the item. No route in the test suite
+      reaches it: with temporary instrumentation over `cargo test --workspace`, `courtyard` ran 59
+      times (42 components without outlines, 14 with a courtyard, 3 from the unit test) and met an
+      unbounded outline only in the unit test; C65 has a courtyard, so its routes never use the
+      fallback.
+    - Gate: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+      clean; `cargo test --workspace` 2874 passed, 0 failed.
 
 - [x] **K15.3 — Board-wide `.kicad_dru` rules apply.**
   - **Change:**

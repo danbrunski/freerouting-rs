@@ -1,4 +1,23 @@
 //! Placement of component-local geometry on the board.
+//!
+//! [`PlacementTransform::shape`] adds the placement in floating point and rounds
+//! each corner after the whole transformation, as Java's `PlacementTransform.shape`
+//! (`PlacementTransform.java:54-68`) does. A tile shape's rounded corners then go to
+//! [`TileShape::get_instance_from_points`], which takes them for a convex polygon.
+//! Where short edges round to reflex vertices (a chamfer edge of an enlarged simplex
+//! a unit or two long), the half-planes of the corners' edges cut corners off the
+//! shape, or leave it unbounded: C65's fabrication outline at y = 105.242039 mm in
+//! bug 1 of `docs/development/pcu-rev2-board-report.md` gets a box reaching
+//! `i32::MAX`.
+//!
+//! `router.java_quirks.placed_shape_convex` (K15.2) reaches this crate as the
+//! `java_corners` argument of [`PlacementTransform::shape_with`] and
+//! [`PlacementTransform::area_with`]: `true` (the switch unset, and the functions
+//! without `_with`) is Java's; `false` takes the convex hull of the rounded corners
+//! ([`PolygonShape::convex_hull`]) first, so a placed tile shape holds every rounded
+//! corner and is bounded. Where the rounded corners are convex the hull is the
+//! polygon itself, so both values give the same shape
+//! (`tests/placed_shape_convex.rs`; DIVERGENCES, "Java quirk switches, opt-in").
 
 use crate::float_point::FloatPoint;
 use crate::jmath::{d2i, floor_mod};
@@ -67,6 +86,21 @@ impl PlacementTransform {
     /// translated by `offset` inside the component, on the board. The corners are
     /// rounded after the whole transformation.
     pub fn shape(&self, shape: &Shape, offset: FloatPoint, pin_rotation: f64) -> Shape {
+        self.shape_with(shape, offset, pin_rotation, true)
+    }
+
+    /// [`Self::shape`] with `router.java_quirks.placed_shape_convex` (K15.2) as
+    /// `java_corners`: `true` hands a tile shape's rounded corners to
+    /// [`TileShape::get_instance_from_points`] as they are (Java's), `false` their
+    /// convex hull (see the module docs). A circle or a polygon shape is placed the
+    /// same way under both.
+    pub fn shape_with(
+        &self,
+        shape: &Shape,
+        offset: FloatPoint,
+        pin_rotation: f64,
+        java_corners: bool,
+    ) -> Shape {
         if shape.is_empty() {
             return shape.clone();
         }
@@ -92,8 +126,12 @@ impl PlacementTransform {
             }
             let normalized = if unique.len() < 3 {
                 unique
-            } else {
+            } else if java_corners {
+                // PARITY(quirk, java_quirks.placed_shape_convex): Java takes the rounded
+                // corners for a convex polygon (`PlacementTransform.java:60-61`).
                 PolygonShape::new(&unique).corners().to_vec()
+            } else {
+                PolygonShape::new(&unique).convex_hull().corners().to_vec()
             };
             let tile = match normalized.len() {
                 0 => TileShape::IntBox(IntBox::EMPTY),
@@ -119,14 +157,23 @@ impl PlacementTransform {
     /// If the area has holes and the border or a hole places to a circle (a
     /// `ClassCastException` in Java).
     pub fn area(&self, area: &Area) -> Area {
-        let border = self.shape(&area.get_border(), FloatPoint::ZERO, 0.0);
+        self.area_with(area, true)
+    }
+
+    /// [`Self::area`] with `router.java_quirks.placed_shape_convex` (K15.2) as
+    /// `java_corners`, for the border and every hole ([`Self::shape_with`]).
+    ///
+    /// # Panics
+    /// As [`Self::area`].
+    pub fn area_with(&self, area: &Area, java_corners: bool) -> Area {
+        let border = self.shape_with(&area.get_border(), FloatPoint::ZERO, 0.0, java_corners);
         let holes = area.get_holes();
         if holes.is_empty() {
             return Area::Shape(border);
         }
         let placed_holes: Vec<PolylineShape> = holes
             .iter()
-            .map(|h| expect_polyline(self.shape(h, FloatPoint::ZERO, 0.0)))
+            .map(|h| expect_polyline(self.shape_with(h, FloatPoint::ZERO, 0.0, java_corners)))
             .collect();
         Area::PolylineArea(PolylineArea::new(expect_polyline(border), placed_holes))
     }

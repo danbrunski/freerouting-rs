@@ -377,10 +377,13 @@ fn insert_aux_obstacles(board: &mut RoutingBoard, pin_id: ItemId, inserted: &mut
             continue;
         };
         for aux_shape in aux_shapes {
-            let shape = transform.shape(
+            // PARITY(quirk, java_quirks.placed_shape_convex): `true` places the
+            // auxiliary shape as Java does (K15.2).
+            let shape = transform.shape_with(
                 &aux_shape.to_shape(),
                 package_pin.exact_relative_location(),
                 package_pin.rotation_in_degree,
+                board.java_quirks().placed_shape_convex,
             );
             let area = match shape {
                 Shape::Polyline(p) => Area::PolylineArea(PolylineArea::new(p, Vec::new())),

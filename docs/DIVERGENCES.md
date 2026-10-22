@@ -181,7 +181,8 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   bounding box." (`board::unbounded_items`). Bug 1 of
   `docs/development/pcu-rev2-board-report.md`: C65's F.Fab circle, placed at y = 105.242039 mm,
   rounds to a non-convex polygon and `PlacementTransform::shape` builds a simplex with three
-  parallel lines from it (K15.2). Java at the pin takes the union, `IntBox.offset(1000)` wraps,
+  parallel lines from it (`router.java_quirks.placed_shape_convex = false` takes the convex hull
+  instead, K15.2; unset in both profiles). Java at the pin takes the union, `IntBox.offset(1000)` wraps,
   the board box is empty, every room completion fails, and Java aborts in `DrillPageArray`
   with a `NegativeArraySizeException`; the port routed nothing on such a board. A board with no
   such item gets Java's box. Tests `tests/unbounded_item_box.rs` and
@@ -2154,7 +2155,8 @@ promoted the 30 switches of the accepted batches into `enhanced`, and its second
 its third round (2026-10-20) N06.14's two, one line each under "Profile `enhanced`"; the others
 stay `true` in both profiles for good: their measurement rejected them, or they are (c) rows left
 as Java
-([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)).
+([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)). K15.2 added `placed_shape_convex` after
+N06; it stays `true` in both profiles until its preregistered measurement.
 
 **N06.4 geometry cutout fixes (`simplex_prev_division_line` in profile `enhanced` since N06.13's second round)**
 
@@ -2414,6 +2416,28 @@ unless one is copper the router placed (a trace or via neither user nor system f
 the run puts in a pad still counts; the search's obstacle test is unchanged (D8)
 (`tests/drc_kicad_report.rs::score_switch_leaves_out_only_the_inputs_same_net_pairs`). No
 measurement has run, so `enhanced` keeps Java's count.
+
+**K15.2 placed shapes convex (in neither profile)**
+
+`placed_shape_convex` is `true` (Java) unset, under `legacy` and under `enhanced`; it joins
+`ENHANCED` only after a preregistered measurement. Java's `PlacementTransform.shape`
+(`PlacementTransform.java:54-68`) rounds a placed tile shape's corners and hands them to
+`TileShape.getInstance` as a convex polygon. Where short edges (an enlarged simplex's chamfers,
+a unit or two long) round to reflex vertices, the edges' half-planes cut corners off a pad or
+leave a shape unbounded (C65's F.Fab circle in bug 1 of
+`docs/development/pcu-rev2-board-report.md`, whose box reaches `i32::MAX`; K15.1 leaves such an
+item out of the board box). With it `false`, `PlacementTransform::shape_with` and `area_with`
+take the convex hull of the rounded corners first, for every placed pin shape, component outline,
+component area and auxiliary pad shape; where the rounded corners are convex both values give the
+same shape (`freerouting-geometry/tests/placed_shape_convex.rs`: C65's outline is bounded, with
+the box of its rounded corners; a 24-gon pad enlarged by 75 units at a position that rounds to
+reflex vertices keeps the 8 corners Java cuts off). On bug 1's repro the switch `false` leaves no
+unbounded item and no K15.1 warning, and the boards route 2 of 2 and 6 of 6 in both profiles
+(`tests/k15_placed_shape_convex.rs`, `freerouting-cli/tests/cli_placed_shape_convex.rs`). A
+switch changed after reading places the component items again and reinserts those whose shapes
+change (`board/placed_shapes.rs`), so the board has the shapes of one read with it. Not a Java
+change: `bounded-neck`'s courtyard (an `enhanced` stage) leaves an unbounded outline out of a
+component's courtyard box, whatever the switch (`bounded_neck::tests::the_courtyard_fallback_leaves_an_unbounded_outline_out`).
 
 ## Profile `enhanced`
 

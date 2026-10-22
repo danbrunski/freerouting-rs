@@ -330,6 +330,9 @@ impl BasicBoard {
     pub(crate) fn refresh_derived_data(&self, item: &mut Item) {
         let component_id = item.component_id;
         let rotate_first = self.components.flip_style_rotate_first();
+        // PARITY(quirk, java_quirks.placed_shape_convex): `true` places the areas and
+        // outlines as Java does (K15.2).
+        let java_corners = self.java_quirks.placed_shape_convex;
         let placed = (component_id > 0)
             .then(|| self.components.get(ComponentId(component_id)))
             .flatten()
@@ -346,14 +349,14 @@ impl BasicBoard {
             }
             ItemKind::Area(area) => match &placed {
                 Some(transform) => {
-                    let absolute = transform.area(area.relative_area());
+                    let absolute = transform.area_with(area.relative_area(), java_corners);
                     area.set_area(absolute);
                 }
                 None => area.update_area(rotate_first),
             },
             ItemKind::ComponentOutline(outline) => match &placed {
                 Some(transform) => {
-                    let absolute = transform.area(outline.relative_area());
+                    let absolute = transform.area_with(outline.relative_area(), java_corners);
                     outline.set_area(absolute);
                 }
                 None => outline.update_area(rotate_first),

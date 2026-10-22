@@ -29,7 +29,8 @@
 //! - the DSN reader's `ReadContext`
 //!   ([`build_board_with`](crate::io::specctra::dsn_reader::build_board_with));
 //! - the geometry crate, as an explicit argument
-//!   ([`JavaQuirks::split`], `rational_perp_projection`).
+//!   ([`JavaQuirks::split`], `rational_perp_projection`, and `placed_shape_convex`
+//!   as `PlacementTransform::shape_with`'s `java_corners`).
 //!
 //! Every read site carries the marker `// PARITY(quirk, java_quirks.<id>):` beside
 //! Java's path. The inert `simplex_prev_division_line` (its `false` changes nothing)
@@ -39,6 +40,9 @@
 //! `direction_compare_zero`, `route_stubs_layer_test`, `polyline_array_reversal` and
 //! `avoid_acid_traps_disabled`, each left as Java with `false` changing nothing); their
 //! sites keep a plain comment, and a settings file naming one is now an unknown key.
+//! K15.2 added `placed_shape_convex` (the convex hull of a placed tile shape's
+//! rounded corners) after N06; it is in neither profile's table, so both keep Java's
+//! shape until a preregistered measurement decides.
 
 use freerouting_geometry::SplitQuirks;
 
@@ -144,6 +148,8 @@ java_quirks! {
     // (b) rows found after the inventory (N03.2, N06.16).
     shove_via_into_pending_piece: "N06.15",
     any_angle_room_side_index: "N06.16",
+    // (b) rows found after N06 (K15).
+    placed_shape_convex: "K15.2",
     // (c) rows.
     ripup_pass_no_unset: "N06.12",
     in_front_of_pad_side0_flank: "N06.12",

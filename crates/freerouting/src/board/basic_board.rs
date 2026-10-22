@@ -803,10 +803,13 @@ impl BasicBoard {
                 board_layer_count - i as i32 - first_layer - 1
             };
             shapes.push(padstack.get_shape(padstack_layer).map(|s| {
-                transform.shape(
+                // PARITY(quirk, java_quirks.placed_shape_convex): `true` places the
+                // pad as Java does (K15.2).
+                transform.shape_with(
                     &Shape::from(s.clone()),
                     package_pin.exact_relative_location(),
                     package_pin.rotation_in_degree,
+                    self.java_quirks.placed_shape_convex,
                 )
             }));
         }
@@ -869,9 +872,11 @@ impl BasicBoard {
             && let Some(component) = self.components.get(ComponentId(component_id))
             && component.is_placed()
         {
+            // PARITY(quirk, java_quirks.placed_shape_convex): `true` places the
+            // component's area as Java does (K15.2).
             return component
                 .placement_transform(self.components.flip_style_rotate_first())
-                .area(relative);
+                .area_with(relative, self.java_quirks.placed_shape_convex);
         }
         free()
     }

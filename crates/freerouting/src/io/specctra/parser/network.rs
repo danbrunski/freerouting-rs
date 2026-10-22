@@ -1118,10 +1118,13 @@ fn insert_component(
                 continue;
             }
             for aux in aux_shapes {
-                let shape = transform_shape.shape(
+                // PARITY(quirk, java_quirks.placed_shape_convex): `true` places the
+                // auxiliary shape as Java does (K15.2).
+                let shape = transform_shape.shape_with(
                     &aux.to_shape(),
                     package_pin.exact_relative_location(),
                     package_pin.rotation_in_degree,
+                    board.java_quirks().placed_shape_convex,
                 );
                 let area = match shape {
                     Shape::Polyline(p) => Area::PolylineArea(PolylineArea::new(p, Vec::new())),

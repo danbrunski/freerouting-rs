@@ -161,6 +161,13 @@ fn class_min_widths(board: &RoutingBoard, layers: usize) -> Vec<i32> {
 
 /// The courtyard box of component `component`: its courtyard outlines,
 /// else all its outlines; `None` without one.
+///
+/// An outline whose box is not bounded (K15.1: a placed shape whose rounded
+/// corners are not convex, `router.java_quirks.placed_shape_convex` unset) is
+/// left out, as the board box leaves it out; the job's warning from
+/// [`expand_bounding_box_to_include_all_items`](crate::board::BasicBoard::expand_bounding_box_to_include_all_items)
+/// already names it. Without the guard its box would make the neck distance
+/// `i32::MAX`, so the zone would cover the board.
 fn courtyard(board: &RoutingBoard, component: i32) -> Option<IntBox> {
     let outlines: Vec<(bool, IntBox)> = board
         .items()
@@ -169,6 +176,7 @@ fn courtyard(board: &RoutingBoard, component: i32) -> Option<IntBox> {
             i.as_component_outline()
                 .map(|o| (o.is_courtyard, i.bounding_box()))
         })
+        .filter(|(_, b)| !b.has_infinite_coordinate())
         .collect();
     let any_courtyard = outlines.iter().any(|(c, _)| *c);
     outlines
@@ -354,5 +362,75 @@ impl NeckDownPolicy for BoundedNeck {
         widen_after_retry(board, task.net, first_new, &control, zones, self.widen_back);
         pull_tight_after_connection(board, p.pull_tight_accuracy, &control.trace_costs);
         Some(ConnectionOutcome::new(result.state, result.details))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::courtyard;
+    use crate::board::RoutingBoard;
+    use crate::board::items::ItemId;
+    use crate::io::specctra::{BoardReadResult, read_board_from_str};
+
+    /// Bug 1's repro (KiCad 10.0.7's DSN export, `tests/data/k15/`): C65's
+    /// F.Fab circle places to an unbounded simplex (K15.1).
+    fn c65_board() -> (RoutingBoard, i32) {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/data/k15/c65-nm-position.kicad10.dsn"
+        );
+        let text = std::fs::read_to_string(path).expect("fixture");
+        let BoardReadResult::Success { board, .. } = read_board_from_str(&text) else {
+            panic!("the repro reads");
+        };
+        let c65 = board.components.get_by_name("C65").expect("C65").id.0;
+        (*board, c65)
+    }
+
+    fn outlines(board: &RoutingBoard, component: i32) -> Vec<(ItemId, bool, bool)> {
+        board
+            .items()
+            .filter(|i| i.component_id() == component)
+            .filter_map(|i| {
+                i.as_component_outline().map(|o| {
+                    (
+                        i.id(),
+                        o.is_courtyard,
+                        i.bounding_box().has_infinite_coordinate(),
+                    )
+                })
+            })
+            .collect()
+    }
+
+    /// The fallback to all outlines (a component without a courtyard) leaves
+    /// the unbounded outline out.
+    #[test]
+    fn the_courtyard_fallback_leaves_an_unbounded_outline_out() {
+        let (mut board, c65) = c65_board();
+        let all = outlines(&board, c65);
+        let unbounded: Vec<ItemId> = all.iter().filter(|o| o.2).map(|o| o.0).collect();
+        assert_eq!(unbounded.len(), 1, "{all:?}");
+        // With its courtyard C65 never reaches the fallback.
+        let with_courtyard = courtyard(&board, c65).expect("a courtyard");
+        assert!(!with_courtyard.has_infinite_coordinate());
+        // Keep the unbounded outline and one bounded outline that is not the
+        // courtyard: the fallback takes the bounded one's box only.
+        let kept = all
+            .iter()
+            .find(|o| !o.1 && !o.2)
+            .map(|o| o.0)
+            .expect("a bounded outline");
+        for (id, _, _) in &all {
+            if *id != unbounded[0] && *id != kept {
+                assert!(board.remove_item_checked(*id, true), "{id:?}");
+            }
+        }
+        assert_eq!(outlines(&board, c65).len(), 2);
+        let kept_box = board.item(kept).expect("kept").bounding_box();
+        assert_eq!(courtyard(&board, c65), Some(kept_box));
+        // Only the unbounded outline left: no courtyard box at all.
+        assert!(board.remove_item_checked(kept, true));
+        assert_eq!(courtyard(&board, c65), None);
     }
 }

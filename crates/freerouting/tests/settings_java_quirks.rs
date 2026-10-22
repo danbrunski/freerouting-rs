@@ -36,8 +36,8 @@ const CORES: usize = 8;
 
 /// The N06 inventory: 35 rows of kind (b) (two added by N06.14, one by N06.15 and one
 /// by N06.16) and 5 of kind (c) (N07.4 removed the six (c) switches no code read), and
-/// K15.5's `same_net_via_pad_violation`.
-const SWITCH_COUNT: usize = 41;
+/// K15.5's `same_net_via_pad_violation` and K15.2's `placed_shape_convex`.
+const SWITCH_COUNT: usize = 42;
 
 /// The switches profile `enhanced` turns off (N06.13), in inventory order. The
 /// first round (2026-10-19): the accepted batches M (N06.5), F (N06.6), S
@@ -185,6 +185,10 @@ fn legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set() {
         },
     )]);
     assert_eq!(JavaQuirks::from_settings(&enhanced), enhanced_quirks());
+    // K15.2's switch is Java's in both profiles until its measurement.
+    assert_eq!(JavaQuirks::fix_item("placed_shape_convex"), Some("K15.2"));
+    assert!(JavaQuirks::from_settings(&enhanced).placed_shape_convex);
+    assert!(JavaQuirks::from_settings(&legacy).placed_shape_convex);
     // The table holds the promoted switches, each once, as `false`.
     let mut table: Vec<&str> = ENHANCED
         .iter()
