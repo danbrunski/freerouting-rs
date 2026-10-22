@@ -1121,8 +1121,51 @@ item-type rules), N06 (`router.java_quirks`).
       gains `must_judge: [pcu-76163c7]`, and the gate step reads the amended copy and takes
       `--left-out` (K15.21). Seen before the run: amendment 2's run, K15.20's pocketsdr run,
       K15.19's wisweep runs and K15.12's pcu runs.
-    - heavy run pending: the registered `run`, `collect` and gate calls at amendment 3
-      (`target/orchestrator/k1514/out/`; amendment 2's outputs are in `out-b8bbe78/`).
+    - *Run 2026-10-22 (amendment 3, engine `4916e6d`, `target/orchestrator/k1514/out/`):* the
+      registered `run` (38 calls, every one `EXIT 0`), `collect`, then the gate calls as amended
+      (`--prereg docs/roadmap/prereg/K15.14.json`, `25e8f26f…`, 3 amendments, 0 refusals).
+      Outcome: **not kept, no gain** (the decision table's third row). The setting stays opt-in,
+      unset in both profiles, and the plugin offers it as an option.
+      - *Validity:* (c) holds. (b) leaves out `pocketsdr-v3-0` (`--left-out`): its `pcb-off` arm
+        ended TIMED_OUT at the `--timeout 240` cap (KiCad 50 unconnected), `pcb-on` COMPLETED (115);
+        both graded with hard limits 0. 16 rows judged, `pcu-76163c7` among them (`must_judge`).
+        (a): no `-off` arm logs the pour-guard line and every `-on` arm does
+        (`loratracker-hardware-loratracker-hat` guards 0 pours, judged as it is).
+      - *Guard (1) holds:* 0 manufacturing breaches, 0 below-minimum and 0 vias in pads in all 38
+        graded arms (K15.19's fixes: wisweep 1 and 7 breaches before).
+      - *S fails* (`freerouting-dev gate`, `gate-verdict.log`): KiCad unconnected 368 -> 493
+        (+125) over the 16 judged rows against a set noise of 67.09; `totals verdict: reject`;
+        openmuscle (+21, band 8) and pcie-active-backplane (+78, band 14) worse than twice their
+        band. `--all-pairs`: `pcb-off -> pcb-on` FAIL, the reported pair `pcb-on -> pcb-off` PASS.
+        For the record (decided before them by the S row): guard (2) drc_real 16 -> 7 holds;
+        guard (3) fails on 4 rows (moteus 40 -> 67 against 22, openmuscle, pcie-active-backplane,
+        wisweep 25 -> 45 against 11); guard (4) route time 595.7 -> 688.8 s (x1.156) holds.
+      - *DSN pair* (decides nothing beyond guard (1), which holds): pcu 55 -> 31, canary-pwr
+        38 -> 36; the 3-board rule refuses N = 2.
+
+        | row | KiCad unc. off -> on | band | router inc. | drc_real | route s | Zone-Zone | pours |
+        |---|---|---|---|---|---|---|---|
+        | pcu-76163c7 | 47 -> 20 | 43 | 11 -> 20 | 1 -> 0 | 163.3 -> 156.6 | 34 -> 6 | 54 |
+        | canary-pwr-95882f00 | 40 -> 36 | 10 | 27 -> 38 | 0 -> 0 | 96.6 -> 153.8 | 18 -> 7 | 16 |
+        | interf_u | 17 -> 17 | 11 | 2 -> 2 | 1 -> 1 | 5.7 -> 5.7 | 0 -> 0 | 1 |
+        | pic_programmer | 3 -> 3 | 7 | 0 -> 0 | 0 -> 0 | 0.6 -> 0.6 | 0 -> 0 | 1 |
+        | kit-dev-coldfire-xilinx_5213 | 25 -> 21 | 28 | 4 -> 3 | 3 -> 0 | 113.3 -> 113.8 | 0 -> 1 | 3 |
+        | complex_hierarchy | 81 -> 81 | 14 | 81 -> 81 | 0 -> 0 | 0.1 -> 0.1 | 0 -> 0 | 143 |
+        | loratracker-hardware-loratracker-hat | 44 -> 44 | 12 | 46 -> 46 | 0 -> 0 | 56.7 -> 56.9 | 0 -> 0 | 0 |
+        | m-fc-g474-rev-a-m-fc | 5 -> 15 | 14 | 3 -> 17 | 1 -> 2 | 24.1 -> 51.5 | 2 -> 2 | 3 |
+        | macroprocessor-diode-matrix-rom-dip | 6 -> 6 | 8 | 5 -> 5 | 0 -> 0 | 0.7 -> 0.7 | 0 -> 0 | 1 |
+        | moteus-moteus-c1 | 40 -> 67 | 22 | 30 -> 76 | 4 -> 1 | 61.6 -> 25.5 | 8 -> 2 | 51 |
+        | nudac-nudac | 11 -> 16 | 9 | 5 -> 11 | 1 -> 0 | 10.4 -> 10.8 | 0 -> 0 | 2 |
+        | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 7 -> 28 | 8 | 1 -> 27 | 1 -> 0 | 7.2 -> 8.9 | 0 -> 0 | 2 |
+        | pcie-active-backplane-pcie-active-backplane-x16-4layer | 5 -> 83 | 14 | 3 -> 83 | 0 -> 0 | 24.2 -> 85.8 | 0 -> 0 | 3 |
+        | pocketsdr-v3-0 | 50 -> 115 | left out | 42 -> 103 | 0 -> 0 | 240.1 -> 60.2 | 2 -> 6 | 4 |
+        | solarmeshtasticnode-meshtasticnode-bq25185 | 10 -> 9 | 6 | 10 -> 9 | 0 -> 0 | 6.1 -> 7.8 | 0 -> 0 | 2 |
+        | vna-usb-pd | 2 -> 2 | 4 | 0 -> 2 | 0 -> 0 | 2.3 -> 0.9 | 2 -> 0 | 5 |
+        | wisweep-driver-board | 25 -> 45 | 11 | 20 -> 43 | 4 -> 3 | 22.8 -> 9.4 | 4 -> 4 | 16 |
+
+      - The gain is the owner boards': pcu 47 -> 20 (Zone-Zone 34 -> 6) and canary-pwr 40 -> 36.
+        On corpus boards whose pours are large (pcie-active-backplane's three, openmuscle's two),
+        keeping every foreign net out of them leaves those nets unrouted.
 
 - [x] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
