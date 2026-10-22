@@ -2557,7 +2557,7 @@ item-type rules), N06 (`router.java_quirks`).
       | nudac-nudac (drc_real 1 -> 0) | 11 | 12 | +1 | 9 |
       | solarmeshtasticnode-meshtasticnode-bq25185 | 10 | 9 | -1 | 6 |
       | wisweep-driver-board (drc_real 4 -> 3) | 27 | 29 | +2 | 11 |
-      | the 9 other judged rows | 129 | 129 | 0 | |
+      | the 9 other judged rows | 114 | 114 | 0 | |
 
       Total 370 -> 363 (-7) against the set noise 67.09: `freerouting-dev gate --all-pairs`
       "FAILS: the improvement 7 does not exceed the set noise 67.09", totals verdict reject, pair
