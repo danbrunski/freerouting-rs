@@ -663,7 +663,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   (`copper_graphic`, `copper_text`, `net_tie`) keeps the clearance; a `.kicad_pcb` input and Java's
   fill are unchanged (`tests/k15_pour_keepout.rs` on `tests/data/kicad/pcu-k1535/`, cut from the
   pcu board's DSN route: KiCad 10.0.7 fills BUCK_SW up to L1's rule area and V_PD_IN to 1.6566 mm
-  from F1's NPTH, and the model covers both, where it lay 0.127 mm short). Power layers and the
+  from F1's NPTH, and the model covers both, where it lay 0.127 mm short). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
+  its end segments (`stub_contacts::trace_dangling`): a pad, via or pour that meets both ends of a
+  segment connects it, and a track segment that meets both counts only for the end nearer its own
+  ends (KiCad's `getMinDist`; a tie counts for both), so a stub off a junction whose far end lies
+  in the junction traces' copper is removed (`tests/k15_junction_stub.rs` on
+  `tests/data/kicad/canary-k1536/`, cut from canary-pwr's `.kicad_pcb` route: `/Supervisor/CAN_EN`'s
+  0.0725 mm B.Cu stub, which KiCad reports `track_dangling`, goes and the junction's traces stay;
+  kept with a track ending at its far end). Power layers and the
   router's own contacts keep the outline. Q16.3 measured the first
   version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
   (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one

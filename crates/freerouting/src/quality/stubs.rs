@@ -22,8 +22,11 @@
 //! - is unfixed (`Item.isRoutable`, so `type fix` and `type protect` copper
 //!   stays), of exactly one net, and its deletion is not forbidden;
 //! - connects fewer than two of its net's items, counted as KiCad counts
-//!   them ([`stub_contacts`], Q16.4): a trace with an end whose cap meets
-//!   no other copper of its net (KiCad's `track_dangling`), a via whose pad
+//!   them ([`stub_contacts`], Q16.4): a trace with an end KiCad counts
+//!   dangling (KiCad's `track_dangling`, [`stub_contacts::trace_dangling`],
+//!   K15.36: an end whose cap meets no other copper of its net, or meets
+//!   only tracks that meet the segment's other end too and lie nearer it,
+//!   as at a short stub off a junction), a via whose pad
 //!   meets copper of its net on at most one layer (KiCad's `via_dangling`).
 //!   Copper meets copper wherever their shapes intersect on a layer, by the
 //!   board's exact shape intersection: a via on a trace's body, a trace end
@@ -149,10 +152,7 @@ fn is_removable_stub_with(
     }
     let fills = Some(fills);
     let dangling = match &item.kind {
-        ItemKind::Trace(trace) => {
-            !stub_contacts::end_has_contact_with(board, item, &trace.first_corner(), fills)
-                || !stub_contacts::end_has_contact_with(board, item, &trace.last_corner(), fills)
-        }
+        ItemKind::Trace(_) => stub_contacts::trace_dangling_with(board, item, fills),
         ItemKind::Via(_) => stub_contacts::via_contact_layers_with(board, item, fills).len() <= 1,
         _ => false,
     };

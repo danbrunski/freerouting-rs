@@ -3186,7 +3186,7 @@ item-type rules), N06 (`router.java_quirks`).
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2992 passed, 0 failed, 56 ignored.
       The plugin is unchanged.
 
-- [ ] **K15.36 — A trace stub at a junction of its own net's traces is not left dangling.**
+- [x] **K15.36 — A trace stub at a junction of its own net's traces is not left dangling.**
   - **Change:** K15.31's canary-pwr arm with `router.pour_fill_contacts` and `pour_fill_target`
     (`95882f00`, K15.14's `pcb-off` command; `target/orchestrator/k1531/runs/rebased-canary/`,
     session `cce88912`) has 1 routing-caused item: KiCad 10.0.7 reports `track_dangling` on a
@@ -3203,6 +3203,62 @@ item-type rules), N06 (`router.java_quirks`).
       unconnected not up (26), 0 below-minimum, 0 manufacturing breaches; the pcu `.kicad_pcb`
       arm with both settings (K15.31's): unconnected not up (21), 0 routing-caused;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Done 2026-10-22* (branch `k1536` from main `b1f429b`; every number below is the first seen,
+    before any later measurement):
+    - *Cause*: a probe (a temporary print with a backtrace in `BasicBoard::insert_item` and
+      `stubs::is_removable_stub_with`, profiling build, same session `cce88912...`) shows the stub
+      is its own router trace, made by pull-tight: `remove_tails` (`autoroute/batch/pass.rs`) ->
+      `pull_tight_after_connection` -> `smoothen_end_corners_at_trace` -> `split_traces` ->
+      `split_trace_at_line` (`board/trace_ops.rs`). The fanout's neckdown had put the junction at
+      (144.7257, 79.1024); the smoothing moved it to (144.777, 79.0511) on the via's wire and left
+      the piece between as a trace. The board's contact rule is `center` (Java's): no contact at
+      the far end. The cleanup's test (Q16.4, `stub_contacts::end_has_contact`) found the via's
+      wire's copper within the far end's cap (0.0725 mm from its end), so both ends had a
+      contact and it stayed. KiCad 10.0.7's `CONNECTIVITY_DATA::TestTrackEndpointDangling`
+      (`connectivity_data.cpp`) counts a track that meets both ends of a segment for the end
+      nearer its own ends only (`getMinDist`); the via's wire, the neckdown and U7's wire each
+      meet both ends and are nearer the junction, so the far end has no count.
+    - *Fix*: `stub_contacts::trace_dangling(_with)` (new) counts a trace's end segments as
+      `TestTrackEndpointDangling` does: a pad, via or pour (its opened fill) that meets both ends
+      connects the segment; a track segment (another trace's or the trace's own) that meets both
+      counts for the nearer end only (a tie counts for both); the end-cap test is the same.
+      `stubs::is_removable_stub_with` uses it for traces. The cleanup is `enhanced` only; the
+      router's contacts are unchanged.
+    - *Accept 1*: `crates/freerouting/tests/k15_junction_stub.rs` (3 tests) on
+      `tests/data/kicad/canary-k1536/` (`make_boards.py`: `/Supervisor/CAN_EN`'s B.Cu copper from
+      U7 pad 6 to the via at (151.7716, 51.5288) from the route, every coordinate from it). KiCad
+      10.0.7 `pcb drc --severity-all`: `a-stub-at-a-junction` reports the stub
+      `track_dangling`; `b-stub-end-on-a-track` (plus a track from the far end to a test pad)
+      none. `the_stub_s_far_end_is_dangling_as_kicad_counts_it`,
+      `the_cleanup_removes_the_stub_and_keeps_the_junction` (1 trace removed, U7's connected set
+      is the same less the stub), `a_stub_whose_far_end_meets_a_track_there_stays`. RED with the
+      old rule: 2 failed (`trace_dangling` false; `is_removable_stub` false); GREEN: 3 passed.
+    - *Accept 2*: K15.31's scripts (`target/orchestrator/k1536/scripts/canary3.sh`, `pcu3.sh`,
+      `--max-passes 2 --timeout 240`), release binary of this tree (`k1536/bin/v1`), graded by
+      KiCad 10.0.7, outputs in `target/orchestrator/k1536/runs/rebased-canary/` and
+      `rebased-pcu/`:
+
+      | board, arm | KiCad unconnected | router incomplete | routing-caused | below-min | mfg | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | canary-pwr, both | 26 (was 26) | 27 | none (was track_dangling 1) | 0 | 0 | 154.1 | `7811ea5a...` |
+      | pcu, both | 21 (21) | 22 | none | 0 | 0 | 176.3 | `25cf997a...` (same) |
+      | canary-pwr, unset | 40 (40) | 27 | none | 0 | 0 | 92.6 | `f1d2da90...` (same) |
+      | pcu, unset | 47 (47) | 12 (was 11) | none | 0 | 0 | 164.6 | `2e8bf394...` (was `bd0a87fd...`) |
+
+      canary-pwr with both settings: the cleanup removes 2 trace stubs (was 1); the session
+      differs from `cce88912...` by the `/Supervisor/CAN_EN` stub alone. pcu unset: the cleanup
+      removes 8 traces (was 7); before, the output check found 1 `track_dangling` after it
+      (its KiCad-rule report, `drc/kicad_report.rs::track_dangling`), removed it and retried
+      `/CH6_NO`, whose retry added a via pair from (130.0807, 106.6024) to (127.811, 111.2185)
+      that the router counts as joining and KiCad does not (47 both times). Now the output check
+      finds no breach and retries nothing: router incomplete 11 -> 12, KiCad unchanged. That the
+      cleanup now removes the trace the output check removed is inferred (the counts, and U8's
+      pad 8 to pad 10 wire, one SES wire before, is two now, joined at (126.9387, 105.8281)), not
+      traced.
+    - *Accept 3*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 `[exact]`, `bytes true` (the change is the `enhanced` cleanup).
+    - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2996 passed, 0 failed, 56 ignored.
 
 - [ ] **K15.37 — Measure `pour_fill_contacts` with `pour_fill_target` under `enhanced`.**
   - **Change:** K15.31's first numbers on top of `enhanced` (main `48fad8c`, plugin default

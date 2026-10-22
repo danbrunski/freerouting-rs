@@ -30,9 +30,23 @@
 //! - **a trace end has a contact** ([`end_has_contact`]) when the cap of the
 //!   end, the disc of half the trace's width around it, intersects a piece
 //!   of another item of its net on its layer (N04's end-cap test; an end at
-//!   a rational point tests the point alone). The cap is a little more
-//!   generous than KiCad's point test, so the cleanup keeps a trace KiCad
-//!   might still call dangling, never the reverse;
+//!   a rational point tests the point alone). KiCad tests the same cap
+//!   (`accuracy`, half the track's width). Until K15.36 the cleanup called a
+//!   trace dangling only where an end had no such contact;
+//! - **a trace is dangling** ([`trace_dangling`], K15.36) as KiCad 10.0.7's
+//!   `CONNECTIVITY_DATA::TestTrackEndpointDangling` counts its end segments
+//!   (a router trace is KiCad's tracks from corner to corner; an inner
+//!   segment meets its neighbours at both ends). An item of the net counts
+//!   for an end of the segment when its copper meets the end's cap; a pad,
+//!   via or pour that meets both ends connects the segment; a track segment
+//!   (another trace's, or one of the trace's own) that meets both counts
+//!   only for the end nearer to its own ends (KiCad's `getMinDist`; a tie
+//!   counts for both here). The segment is dangling unless both ends are
+//!   counted. So a short stub off a junction, whose far end lies within the
+//!   cap of the junction's traces, is dangling, as KiCad reports it
+//!   (canary-pwr's `/Supervisor/CAN_EN` stub of 0.0725 mm,
+//!   `tests/k15_junction_stub.rs`), where [`end_has_contact`] sees the
+//!   junction's copper at both ends;
 //! - **a via's contact layers** ([`via_contact_layers`]) are the layers on
 //!   which its pad touches another item of its net. KiCad's `via_dangling`
 //!   is a via connected on fewer than two layers.
@@ -45,10 +59,10 @@
 
 use std::collections::BTreeSet;
 
-use freerouting_geometry::{Circle, Point, Shape, TileShape};
+use freerouting_geometry::{Circle, FloatPoint, Point, Shape, TileShape};
 
 use crate::board::BasicBoard;
-use crate::board::items::{Item, ItemId, ItemKind};
+use crate::board::items::{Item, ItemId, ItemKind, PolylineTrace};
 use crate::quality::pour_fill::{Piece, PourFills};
 
 /// The copper of `item` (see the module docs); empty for items that are no
@@ -196,6 +210,154 @@ pub fn end_has_contact_with(
                     })
                 })
         })
+}
+
+/// True if trace `trace_item` has an end KiCad counts dangling (KiCad's
+/// `TestTrackEndpointDangling` on its end segments, K15.36; module docs).
+pub fn trace_dangling(board: &BasicBoard, trace_item: &Item) -> bool {
+    trace_dangling_with(board, trace_item, None)
+}
+
+/// [`trace_dangling`], a pour's copper taken from `fills`.
+pub fn trace_dangling_with(
+    board: &BasicBoard,
+    trace_item: &Item,
+    fills: Option<&PourFills>,
+) -> bool {
+    let Some(trace) = trace_item.as_trace() else {
+        return false;
+    };
+    let own = track_segments(trace);
+    let Some(last) = own.len().checked_sub(1) else {
+        return false;
+    };
+    let ends: &[usize] = if last == 0 { &[0] } else { &[0, last] };
+    ends.iter()
+        .any(|k| segment_dangling(board, trace_item, &own, *k, fills))
+}
+
+/// One segment of a trace as KiCad's track: its ends, their approximations
+/// and its copper.
+struct TrackSegment {
+    ends: [Point; 2],
+    approx: [FloatPoint; 2],
+    shape: Shape,
+}
+
+impl TrackSegment {
+    /// KiCad's `getMinDist` of a track: the distance to its nearer end.
+    fn min_dist(&self, p: FloatPoint) -> f64 {
+        self.approx[0].distance(p).min(self.approx[1].distance(p))
+    }
+}
+
+/// The segments of `trace`, corner `i` to corner `i + 1`.
+fn track_segments(trace: &PolylineTrace) -> Vec<TrackSegment> {
+    let corners = trace.polyline.corners();
+    let approx = trace.polyline.corner_approx_arr();
+    (0..trace.tile_shape_count())
+        .filter_map(|i| {
+            let shape = trace.polyline.offset_shape(trace.half_width, i)?;
+            Some(TrackSegment {
+                ends: [corners[i].clone(), corners[i + 1].clone()],
+                approx: [approx[i], approx[i + 1]],
+                shape: Shape::from(shape),
+            })
+        })
+        .collect()
+}
+
+/// True if the cap of radius `half_width` around `end` meets `shape` (an end
+/// at a rational point tests the point alone, as [`end_has_contact`]).
+fn cap_meets(shape: &Shape, end: &Point, half_width: i32) -> bool {
+    match end {
+        Point::Int(centre) => shape.intersects_circle(&Circle::new(*centre, half_width)),
+        _ => shape.contains(end),
+    }
+}
+
+/// Which ends of a segment one item of its net meets, as KiCad's
+/// `TestTrackEndpointDangling` counts them.
+enum EndsMet {
+    /// A pad, via or zone that meets both ends: the segment is connected.
+    Both,
+    /// Whether the item counts for the start and for the end.
+    Ends(bool, bool),
+}
+
+/// What track segment `o` does for segment `s` of half width `half_width`:
+/// a track that meets both ends counts for the end nearer its own ends only
+/// (KiCad's "short segments which can be connected to the *same* other item
+/// on each end"). A tie counts for both ends here (KiCad: the end), so the
+/// cleanup never calls an end dangling that KiCad counts connected.
+fn track_meets(o: &TrackSegment, s: &TrackSegment, half_width: i32) -> EndsMet {
+    let start = cap_meets(&o.shape, &s.ends[0], half_width);
+    let end = cap_meets(&o.shape, &s.ends[1], half_width);
+    if start && end {
+        let (to_start, to_end) = (o.min_dist(s.approx[0]), o.min_dist(s.approx[1]));
+        return EndsMet::Ends(to_start <= to_end, to_end <= to_start);
+    }
+    EndsMet::Ends(start, end)
+}
+
+/// True if segment `k` of trace `item` (its segments `own`) is dangling as
+/// KiCad counts it: no item of its net meets it at both ends, or the items
+/// that meet it count for one end only.
+fn segment_dangling(
+    board: &BasicBoard,
+    item: &Item,
+    own: &[TrackSegment],
+    k: usize,
+    fills: Option<&PourFills>,
+) -> bool {
+    let Some(trace) = item.as_trace() else {
+        return false;
+    };
+    let (layer, half_width) = (trace.layer, trace.half_width);
+    let s = &own[k];
+    let region = TileShape::IntBox(s.shape.bounding_box());
+    let mut met = own
+        .iter()
+        .enumerate()
+        .filter(|(j, _)| *j != k)
+        .map(|(_, o)| track_meets(o, s, half_width))
+        .collect::<Vec<_>>();
+    for id in board.overlapping_objects(&region, layer) {
+        let other = board.item_ref(id);
+        if id == item.id() || !other.shares_net(item) {
+            continue;
+        }
+        match other.as_trace() {
+            Some(t) if t.layer == layer => met.extend(
+                track_segments(t)
+                    .iter()
+                    .map(|o| track_meets(o, s, half_width)),
+            ),
+            Some(_) => {}
+            None => met.push(with_pieces(board, other, fills, |pieces| {
+                let meets = |end: &Point| {
+                    pieces
+                        .iter()
+                        .any(|(l, shape)| *l == layer && cap_meets(shape, end, half_width))
+                };
+                match (meets(&s.ends[0]), meets(&s.ends[1])) {
+                    (true, true) => EndsMet::Both,
+                    (start, end) => EndsMet::Ends(start, end),
+                }
+            })),
+        }
+    }
+    let (mut start, mut end) = (false, false);
+    for m in met {
+        match m {
+            EndsMet::Both => return false,
+            EndsMet::Ends(a, b) => {
+                start |= a;
+                end |= b;
+            }
+        }
+    }
+    !(start && end)
 }
 
 /// The layers on which via `via`'s pad meets the copper of another item of
