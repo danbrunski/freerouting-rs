@@ -1,0 +1,28 @@
+# K15.30 (docs/roadmap/prereg/K15.30.json): router.pour_fill_target (K15.25) under profile enhanced,
+# the KiCad plugin's default options, unset against set, on the plugin's .kicad_pcb input only (the
+# setting does not act on a DSN: autoroute/pour_target.rs `read_from_kicad_pcb`), 34 calls, each arm
+# routed and graded by
+# `tools/kicad-reader/plugin-input-ab.sh kicad_pcb <row> tools/bench/k15-all-pours.options.json <out>`
+# (the exact commands are the registration's `commands`; `tools/bench/k15_all_pours.py run` runs them).
+# The rows are K15.14's (tools/bench/sets/k15-all-pours.txt), verbatim and in its order, none left
+# out: the same stripped boards that `k15_all_pours.py prepare docs/roadmap/prereg/K15.14.json` made
+# under target/orchestrator/k1514/boards/ (absolute paths under the main checkout's target/, not in
+# git; keep that directory until K15.30's run is done). A row whose board is missing is skipped.
+# After `#`: the source, its signal-layer pours, the pass cap and deadline, and the call timeout.
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcu-76163c7/Power_Control_Unit_24V.kicad_pcb  # pcu-76163c7: power-control-unit 76163c7, 83 signal-layer pour(s) of 46 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/canary-pwr-95882f00/canary-pwr.kicad_pcb  # canary-pwr-95882f00: canary 95882f00, 19 signal-layer pour(s) of 12 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/interf_u/interf_u.kicad_pcb  # interf_u: /usr/share/kicad/demos/interf_u, 1 signal-layer pour(s) of 1 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pic_programmer/pic_programmer.kicad_pcb  # pic_programmer: /usr/share/kicad/demos/pic_programmer, 1 signal-layer pour(s) of 1 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb  # kit-dev-coldfire-xilinx_5213: /usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213, 3 signal-layer pour(s) of 2 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/complex_hierarchy/complex_hierarchy.kicad_pcb  # complex_hierarchy: /usr/share/kicad/demos/complex_hierarchy, 155 signal-layer pour(s) of 48 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/loratracker-hardware-loratracker-hat/loratracker_hat.kicad_pcb  # loratracker-hardware-loratracker-hat: target/corpus/src/loratracker-hardware-loratracker-hat, 8 signal-layer pour(s) of 2 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/m-fc-g474-rev-a-m-fc/M-FC.kicad_pcb  # m-fc-g474-rev-a-m-fc: target/corpus/src/m-fc-g474-rev-a-m-fc, 56 signal-layer pour(s) of 7 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/macroprocessor-diode-matrix-rom-dip/diode-matrix-rom-dip.kicad_pcb  # macroprocessor-diode-matrix-rom-dip: target/corpus/src/macroprocessor-diode-matrix-rom-dip, 1 signal-layer pour(s) of 1 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/moteus-moteus-c1/moteus_c1.kicad_pcb  # moteus-moteus-c1: target/corpus/src/moteus-moteus-c1, 45 signal-layer pour(s) of 10 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/nudac-nudac/NuDAC.kicad_pcb  # nudac-nudac: target/corpus/src/nudac-nudac, 4 signal-layer pour(s) of 2 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/openmuscle-flexgrid-om-flexgrid-rigid-pcb/OM-FlexGrid-Rigid-PCB.kicad_pcb  # openmuscle-flexgrid-om-flexgrid-rigid-pcb: target/corpus/src/openmuscle-flexgrid-om-flexgrid-rigid-pcb, 2 signal-layer pour(s) of 2 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie_active_backplane_x16_4layer.kicad_pcb  # pcie-active-backplane-pcie-active-backplane-x16-4layer: target/corpus/src/pcie-active-backplane-pcie-active-backplane-x16-4layer, 3 signal-layer pour(s) of 3 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pocketsdr-v3-0/v3.0.kicad_pcb  # pocketsdr-v3-0: target/corpus/src/pocketsdr-v3-0, 1 signal-layer pour(s) of 1 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/solarmeshtasticnode-meshtasticnode-bq25185/MeshtasticNode_BQ25185.kicad_pcb  # solarmeshtasticnode-meshtasticnode-bq25185: target/corpus/src/solarmeshtasticnode-meshtasticnode-bq25185, 4 signal-layer pour(s) of 3 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/vna-usb-pd/usb_pd.kicad_pcb  # vna-usb-pd: target/corpus/src/vna-usb-pd, 3 signal-layer pour(s) of 3 net(s); --max-passes 2 --timeout 240, 300 s
+/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/wisweep-driver-board/driver-board.kicad_pcb  # wisweep-driver-board: target/corpus/src/wisweep-driver-board, 13 signal-layer pour(s) of 10 net(s); --max-passes 2 --timeout 240, 300 s

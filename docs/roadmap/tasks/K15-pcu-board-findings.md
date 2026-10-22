@@ -2462,7 +2462,7 @@ item-type rules), N06 (`router.java_quirks`).
       `pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's release directory): 707
       passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2).
 
-- [ ] **K15.30 — Measure `pour_fill_target` under `enhanced`.**
+- [~] **K15.30 — Measure `pour_fill_target` under `enhanced`.**
   - **Change:** K15.25's `router.pour_fill_target` (the search aims for a `.kicad_pcb` signal
     pour's opened fill; the cycle rule keeps only a bridge into it) is opt-in. On the pcu board
     KiCad's unconnected goes 47 -> 49 with it, on canary-pwr (`95882f00`) 40 -> 31, with 0
@@ -2479,6 +2479,65 @@ item-type rules), N06 (`router.java_quirks`).
       outcome applied (an `ENHANCED` entry and its DIVERGENCES profile line, or the plugin option
       with a test);
     - `legacy` unchanged.
+  - *Partial 2026-10-22:* Accept 1 is written (registered at main `da87319`, to be committed before
+    any run of the set); Accept 2 and 3 remain here, in K15.30: the registered run (K13.5's
+    `plugin-input-ab.sh` per call) is a heavy run, queued by the orchestrator in
+    `target/orchestrator/pending-heavy-runs.md`. **No number of this measurement exists**: nothing was routed or graded, no
+    kicad-cli ran.
+    - *Files:* `docs/roadmap/prereg/K15.30.json` (id `K15.30-fill-target`) sha256
+      `209d8c14ace2015f583591c93ae735cc08f2cc518b6b7c5f8481cb4a0df32a6b`, 0 amendments;
+      `tools/bench/sets/k15-fill-target.txt` (K15.14's 17 rows verbatim under a header naming
+      K15.30) sha256 `b7339dd3138342e9ba446b331dd89956901041c1e08ac7443486bcbdac464a6f`; the pin
+      test `crates/freerouting-dev/tests/prereg_k15_30.rs`. The helper is K15.14's
+      `tools/bench/k15_all_pours.py`, unchanged (`8de88dd8…`): `run` runs a registration's
+      `commands` verbatim and `collect` reads the arms and metrics it lists, so nothing in it is
+      K15.14's flag or arms.
+    - *Registration:* K15.14's with the differences it lists (`differences`): arms `pcb-off`
+      (baseline, setting unset) and `pcb-on` (`--router.pour_fill_target=true`), the `.kicad_pcb`
+      input only (`no_dsn_why`: `fill_tiles` and `area_joins_trace_ends` give Java's rule unless
+      `read_from_kicad_pcb`); every command is K15.14's `pcb-*` command of the row with
+      `target/orchestrator/k1530/` for the tree, output and build, and this flag (`--max-passes 2
+      --timeout 240`, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`, options `{"schema": 6}`,
+      KiCad 10.0.7, the boards at K15.14's paths under `target/orchestrator/k1514/boards/`, all 17
+      present with their hashes on 2026-10-22). Totals rule `improve`, K15.14's noise (canary-pwr
+      10, others max(2, ceil(5 % of connections)): 67.09 over K15.14's 16 judged rows, 72.32 over
+      all 17), its guards (0 manufacturing breaches, below-minimum and vias in pads in every arm;
+      `drc_real` not up; no row worse than its band; route time at most 1.25x), `must_judge`
+      pcu-76163c7 and canary-pwr-95882f00, validity (a) from the result manifests'
+      `settings_snapshot.pour_fill_target`, `pour_guard_pours` dropped. Decision table: not
+      measured, breach (opt-in, not offered until fixed), not kept no gain / not kept guard (unset
+      in both profiles, the plugin offers it), kept (`ENHANCED` entry, its test, DIVERGENCES
+      profile line, parity 7 of 7). `seen_before_registration`: K15.25's runs (pcu 47 -> 49,
+      canary-pwr 40 -> 31, and its other runs of the setting), K15.14's amendment-3 run, and
+      Zone-Zone pcu 36 -> 36, canary-pwr 18 -> 13 from a `collect` format check on K15.25's arms.
+    - *Calls and time:* 34 calls (17 rows x 2). K15.14's amendment-3 run took about 38 min for 38
+      calls (16 min `pcb-off`, 14 min `pcb-on`, 8 min DSN); with K15.25's -2 % to +13 % route time
+      for the setting, about 32-36 min expected, at most 3.1 h if every call hit its 300 s cap.
+    - *Pin test:* `cargo test -p freerouting-dev --test prereg_k15_30`: RED 9 failed before the
+      registration existed (`docs/roadmap/prereg/K15.30.json: No such file`); GREEN 9 passed (the
+      registration's and the set's hashes, the rows, boards and rules files equal to K15.14's and
+      hashing as registered, the 34 commands against their templates and K15.14's `pcb-*`
+      commands, the helper's `run --dry-run` printing exactly them, the script and helper hashes,
+      the rule, noise, guards, validity, `must_judge` and decision table, 0 amendments).
+      `--test prereg_k15_14`: 8 passed, unchanged.
+    - heavy run pending: `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+      target/orchestrator/k1530/tree <K15_30_COMMIT> && cd target/orchestrator/k1530/tree &&
+      CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+      CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1530/target-release
+      cargo build --release -p freerouting-cli -p freerouting-dev` and `cargo test --release -p
+      freerouting-dev --test prereg_k15_30` (same environment); then `cd
+      /home/thebo/code/freerouting-rs && python3 -I
+      target/orchestrator/k1530/tree/tools/bench/k15_all_pours.py prepare
+      target/orchestrator/k1530/tree/docs/roadmap/prereg/K15.30.json` (every row `present`); then
+      amendment 1 (the commit, the binary, the grader and plugin hashes) with the pin updated,
+      committed to main; then `mkdir -p target/orchestrator/k1530/out && python3 -I
+      target/orchestrator/k1530/tree/tools/bench/k15_all_pours.py run
+      target/orchestrator/k1530/tree/docs/roadmap/prereg/K15.30.json >
+      target/orchestrator/k1530/out/run.log 2>&1; echo "EXIT $?" >>
+      target/orchestrator/k1530/out/run.log`; then `collect` and the two gate calls
+      (`--write-baseline`, `--all-pairs`, `--prereg docs/roadmap/prereg/K15.30.json` as amended,
+      `--left-out ROW=REASON` for a row validity (b) leaves out) as `heavy_run` spells out. Keep
+      `target/orchestrator/k1514/boards/` until this run is done.
 
 - [ ] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
   - **Change:** the router's pour contacts are Java's (`BasicBoard::conduction_area_normal_contacts`,
