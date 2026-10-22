@@ -71,13 +71,22 @@
 //! the board gives it. Nothing reads a hash order; the same board gives the
 //! same pieces.
 //!
+//! **The maze search (K15.25).** Under `router.pour_fill_target` the search
+//! reaches such a pour only in the core of its opened fill
+//! ([`opened_fill_core`]: the eroded fill before the growth back), which it
+//! computes per connection on the board that connection is routed on
+//! ([`pour_target`](crate::autoroute::pour_target)). The core lies inside
+//! the pieces, so the cleanup counts a search's end there as a contact.
+//!
 //! [`stub_contacts`]: crate::quality::stub_contacts
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use freerouting_geometry::{IntBox, IntPoint, Point, PolylineShapeOps, Shape, TileShape};
+use freerouting_geometry::{
+    IntBox, IntPoint, Point, PolylineShapeOps, Shape, TileShape, TileShapeOps,
+};
 
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId};
@@ -245,6 +254,22 @@ fn opening_radius(board: &BasicBoard, area: &Item) -> Option<f64> {
 fn opened_fill(board: &BasicBoard, area: &Item, opening: Opening) -> Vec<Piece> {
     let layer = area.first_layer();
     let r = opening.radius;
+    eroded_tiles(board, area, opening)
+        .map(|tile| {
+            let grown = if r > 0.0 { tile.enlarge(r) } else { tile };
+            (layer, Shape::from(grown))
+        })
+        .collect()
+}
+
+/// The tiles of `area`'s fill model eroded by `opening`, before the growth
+/// back.
+fn eroded_tiles(
+    board: &BasicBoard,
+    area: &Item,
+    opening: Opening,
+) -> impl Iterator<Item = TileShape> {
+    let r = opening.radius;
     let islands = if opening.clearance_floor > 0.0 {
         opened_fill_islands(board, area, r, opening.clearance_floor)
     } else if r > 0.0 {
@@ -253,14 +278,62 @@ fn opened_fill(board: &BasicBoard, area: &Item, opening: Opening) -> Vec<Piece> 
         crate::drc::fill_islands(board, area)
     };
     islands
-        .iter()
-        .flat_map(|island| &island.trapezoids)
-        .filter_map(trapezoid_tile)
-        .map(|tile| {
-            let grown = if r > 0.0 { tile.enlarge(r) } else { tile };
-            (layer, Shape::from(grown))
+        .into_iter()
+        .flat_map(|island| island.trapezoids)
+        .filter_map(|t| trapezoid_tile(&t))
+}
+
+/// K15.25: the core of a pour's opened fill ([`opened_fill_core`]).
+#[derive(Clone, Debug)]
+pub struct FillCore {
+    /// The fill model eroded by the opening's radius, as tiles.
+    pub tiles: Vec<TileShape>,
+    /// The opening's radius in board units: the core grown by it is the
+    /// opened fill ([`PourFills::pieces`]).
+    pub radius: f64,
+}
+
+impl FillCore {
+    /// True if a tile of the core holds `point`.
+    pub fn holds(&self, point: &Point) -> bool {
+        self.tiles.iter().any(|tile| tile.contains(point))
+    }
+
+    /// True if the opened fill (the core grown back by the radius, as
+    /// [`PourFills::pieces`] grows it) holds `point`.
+    pub fn reaches(&self, point: &Point) -> bool {
+        let r = self.radius;
+        self.tiles.iter().any(|tile| {
+            if r > 0.0 {
+                tile.enlarge(r).contains(point)
+            } else {
+                tile.contains(point)
+            }
         })
-        .collect()
+    }
+}
+
+/// K15.25: the core of `area`'s opened fill on the board now, the fill
+/// model eroded by the opening's radius `r` before the growth back (module
+/// docs), or `None` when [`PourFills::pieces`] judges `area` by its
+/// outline. Every point of the core lies at least `r` inside the opened
+/// fill, so a trace end there is in KiCad's refilled fill even where the
+/// growth back is more generous than KiCad's round inflate. Not cached:
+/// the maze search asks for it once per connection, on the board that
+/// connection is routed on.
+pub fn opened_fill_core(board: &BasicBoard, area: &Item) -> Option<FillCore> {
+    // `opening_radius` takes a zone of the file: a DSN input's pours have
+    // none, so the search's target stays their outline (K15.26's fills are
+    // the cleanup's only).
+    let radius = opening_radius(board, area)?;
+    let opening = Opening {
+        radius,
+        clearance_floor: 0.0,
+    };
+    Some(FillCore {
+        tiles: eroded_tiles(board, area, opening).collect(),
+        radius,
+    })
 }
 
 /// A trapezoid of the fill model as an integer convex tile, its corners

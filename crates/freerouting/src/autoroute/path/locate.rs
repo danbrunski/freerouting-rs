@@ -273,7 +273,11 @@ fn calculate_starting_point(
         .ok_or(npe.clone())?;
     let room = target.room.ok_or(npe)?;
     let shape = connection.intersection(room_shape(s, room, AT_STARTING_POINT)?);
-    Ok(round_to_integer(shape.centre_of_gravity()))
+    let centre = shape.centre_of_gravity();
+    // K15.25 (`router.pour_fill_target`): the end lies in the pour's fill.
+    let parts = s.pour_fill_parts(target.item, &shape).unwrap_or_default();
+    let end = crate::autoroute::pour_target::end_point(&parts, centre).unwrap_or(centre);
+    Ok(round_to_integer(end))
 }
 
 impl Locator<'_, '_> {
@@ -334,7 +338,16 @@ impl Locator<'_, '_> {
             .trace_connection_shape(self.s.tree(), door.item, door.tree_entry)
             .ok_or(npe.clone())?;
         let room = door.room.ok_or(npe)?;
-        let shape = connection.intersection(room_shape(self.s, room, AT_CONSTRUCTOR)?);
+        let mut shape = connection.intersection(room_shape(self.s, room, AT_CONSTRUCTOR)?);
+        // K15.25 (`router.pour_fill_target`): a start pour is reached in its
+        // fill, in the part nearest the previous corner.
+        let parts = self
+            .s
+            .pour_fill_parts(door.item, &shape)
+            .unwrap_or_default();
+        if let Some(part) = crate::autoroute::pour_target::nearest_part(&parts, self.current_from) {
+            shape = part.clone();
+        }
         if shape.dimension() >= 2 {
             // The target is a conduction area: shrink it by the trace half
             // width for a safe connection.

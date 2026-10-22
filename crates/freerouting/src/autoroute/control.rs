@@ -207,6 +207,13 @@ pub struct AutorouteControl {
     /// `router.power_layer_traces`; [`init_net`](Self::init_net) reads it to
     /// set [`Self::own_plane_areas`].
     pub power_layer_traces: crate::autoroute::power_layer_traces::PowerLayerTraces,
+    /// K15.25 (`router.pour_fill_target`): the search reaches a conduction
+    /// area of the start or destination set that
+    /// [`PourFills`](crate::quality::pour_fill::PourFills) judges by its
+    /// opened fill (a signal-layer pour of a `.kicad_pcb`) only where that
+    /// fill reaches ([`pour_target`](super::pour_target)). False is Java's
+    /// rule: anywhere inside the outline.
+    pub pour_fill_target: bool,
     /// True if the board may have trace obstacles that let vias through
     /// (Q09: a trace-only keepout, or the pour guard's `traces` mode), so a
     /// drill may pass a layer where only those cover its location. False on
@@ -345,6 +352,7 @@ impl AutorouteControl {
             own_plane_layers: vec![false; layer_count],
             own_plane_areas: None,
             power_layer_traces: settings.power_layer_traces(),
+            pour_fill_target: settings.pour_fill_target(),
             vias_pass_trace_only_areas: false,
             via_clearance_class: 0,
             net_class_via_clearance_class: None,

@@ -300,6 +300,9 @@ impl BasicBoard {
                             if !ignore_areas
                                 && self.trace_start_contacts(id).contains(&entry.item)
                                 && self.trace_end_contacts(id).contains(&entry.item)
+                                // K15.25: under `router.pour_fill_target` only
+                                // where the pour is filled at both ends.
+                                && self.area_joins_trace_ends(entry.item, id)
                             {
                                 // a cycle with the conduction area
                                 self.remove_item(id);

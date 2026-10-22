@@ -695,10 +695,23 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
             let Some(target_shape) = target_shape else {
                 continue;
             };
-            let Some(connection_point) = target_shape.nearest_point_approx(entry_middle) else {
-                return Err(RoomError::NullPointer {
-                    at: "MazeSearchEngine.expandToTargetDoors",
-                });
+            let in_fill = self.s.pour_fill.contains_key(&item);
+            let connection_point = if in_fill {
+                // K15.25 (`router.pour_fill_target`): a pour is reached only
+                // where its opened fill meets the room.
+                let in_room = target_shape.intersection(self.room_shape(room)?);
+                let parts = self.s.pour_fill_parts(item, &in_room).unwrap_or_default();
+                match crate::autoroute::pour_target::nearest_point(&parts, entry_middle) {
+                    Some(point) => point,
+                    None => continue,
+                }
+            } else {
+                let Some(point) = target_shape.nearest_point_approx(entry_middle) else {
+                    return Err(RoomError::NullPointer {
+                        at: "MazeSearchEngine.expandToTargetDoors",
+                    });
+                };
+                point
             };
             if !self.trace_stays_in_own_plane(layer, element, connection_point) {
                 // Q13 (`own_plane`): the hop would lay a trace on a power

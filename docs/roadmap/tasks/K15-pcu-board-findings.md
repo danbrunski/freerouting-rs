@@ -1965,7 +1965,7 @@ item-type rules), N06 (`router.java_quirks`).
       canary-pwr 6) all load in the router (`-de -drc`, rc 0). `crates/` is unchanged, so
       `legacy` on the committed DSNs (connection-parity) is unchanged; no parity run made.
 
-- [ ] **K15.25 — The router's search reaches a `.kicad_pcb` signal pour where it is filled.**
+- [~] **K15.25 — The router's search reaches a `.kicad_pcb` signal pour where it is filled.**
   - **Change:** K15.23 made the stub cleanup judge a signal-layer pour of a `.kicad_pcb` by the
     router's fill model opened by the zone's `min_thickness` (`quality/pour_fill.rs`). The
     router's own contacts and the maze search's destination are still the pour's outline
@@ -1986,6 +1986,154 @@ item-type rules), N06 (`router.java_quirks`).
       `track_dangling`, unconnected not up (47), 0 below-minimum, 0 manufacturing breaches, the
       route time against K15.23's (181.1 s, 162.3 s);
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Partial 2026-10-22* (second pass, on the first pass's WIP `f029319`): accept 1 and 3 hold
+    with the setting set; accept 2 does not: with the setting the pcu route has KiCad unconnected
+    49 > 47 (0 routing-caused, 0 below-minimum, 0 manufacturing breaches under `repair` and
+    `report`). By the orchestrator's rule (decided 2026-10-22: the setting stays in `ENHANCED` as
+    a correctness rule only if neither the pcu board's KiCad unconnected nor a second board's goes
+    up, with 0 routing-caused added) `router.pour_fill_target` is now **opt-in**, unset in both
+    profiles. *Remains:* the pcu board's extra unconnected items (below; they come from the
+    router's own pour contacts, the outline, which K15.25 left Java's) and the choice of making it
+    a default, which needs a measurement over more boards: K15.30 measures it, K15.31 takes the
+    router's own pour contacts from the opened fill (decided 2026-10-22: canary-pwr's 40 -> 31 is
+    measured, not dropped).
+    - *Setting:* `router.pour_fill_target` (bool; unset/`false` Java's rule; unset in `legacy`
+      and `enhanced`, opt-in). No existing setting fits: the search's target and the board's cycle
+      rule, not `pad_contacts` (pins) nor the cleanup. Documented in `settings/fields.rs`,
+      `tests/settings_defaults.rs` (unset), the GUI's no-control list, the module docs of
+      `autoroute/pour_target.rs` ("Not in `enhanced`", with the numbers), DIVERGENCES (board
+      model, `pour_fill_target`: opt-in and why). The first pass's `ENHANCED` entry and its
+      "Profile `enhanced`" line are removed (`settings/profile.rs`).
+    - *Cause:* the search's destination on a pour is its outline tiles: a target door's
+      connection point is the tile's nearest point (`expand_to_target_doors`,
+      `autoroute/session/search.rs`), the path ends at the centre of gravity of tile within room
+      (`calculate_starting_point`, `autoroute/path/locate.rs`). On the fixture that is (124.5279,
+      109.2002) mm in the strip. Second cause, found on the pcu run: Java's cycle rule removes a
+      trace piece whose two ends lie in one conduction area (`split_trace_item`'s
+      `FoundKind::ConductionArea` branch, `board/trace_ops.rs`; `trace_is_overlap`,
+      `board/basic_board.rs`). The insertion splits the found path at its corners, so a path that
+      reaches the core keeps only its part up to the first corner inside the outline: `/CH2_NO`'s
+      fanout reached EFUSE_NO_2's core at (138.049, 102.1244) mm, the piece from (139.644,
+      102.1244) was removed, KiCad flagged the 0.1017 mm rest `track_dangling` (traced with a
+      board-insert/remove hook and backtraces, `target/orchestrator/k1525/scratch/dbg/`).
+    - *Fix:* `autoroute/pour_target.rs` (new). Per search, `Session::init` takes the core of each
+      start or destination pour's opened fill (`quality/pour_fill.rs::opened_fill_core`, now a
+      `FillCore` with the tiles and the radius: K15.23's eroded fill before the growth back;
+      `PourFills`' selection unchanged, a `.kicad_pcb` only): a target door is expanded only where
+      tile within room meets the core (connection point: nearest point of those parts), the
+      located end is Java's point if a part holds it else the centre of gravity of the nearest
+      part, a start door with no core part is not queued and the start's final target shape is
+      the nearest part. The board's cycle rule (`BasicBoard::area_joins_trace_ends`, board flag
+      set by `prepare_job`, kept in snapshots) keeps a trace with both ends in such a pour only as
+      a bridge into the fill (second pass, below). A first version targeted the grown pieces: the
+      fixture route ended at (124.6279, 110.42) mm, on the outline's edge (KiCad accepted it), so
+      the core replaced them. A second version judged the cycle rule by the grown pieces: the same
+      `/CH2_NO` stub (the fill reached the corner during the fanout, later routing cut it).
+    - *Second pass, the lost connections* (item 1 of the dispatch). Same binary (`f029319`'s tree,
+      `target/orchestrator/k1525/bin/v1`), the setting off against on: off is K15.23's route
+      byte for byte (session `bd0a87fd…`, 47 unconnected, router 11); on is the first pass's
+      (`ab2efa8a…`, 49, 14). Instrumented runs (a temporary `K1525D` trace of every insertion
+      failure and every trace the cycle rule kept, and `K1525_OFF` switches for the parts; the
+      patch is `target/orchestrator/k1525/scratch/debug-instrumentation.patch`, not committed;
+      logs in `target/orchestrator/k1525/runs/dbg/`):
+      - the first pass's cycle rule (`area_joins_trace_ends`, `autoroute/pour_target.rs`: Java's
+        cycle only if the core holds both ends) kept 25 distinct traces Java removes, only one of
+        them a bridge (`/CH2_NO`'s). One is `Net-(U24-SW2)`'s trace 5303 from (52.8133, 122.7795)
+        to (52.8133, 122.3244) mm inside its F.Cu pour, neither end in the fill (one end a via,
+        the other bare), kept at every normalization (7 times). `Net-(U24-BST1)` then routes
+        around it at y 121.97 instead of 122.2, and `/V_PD_IN`'s C71-2 connection (net 10, from
+        U24's pin at (55.1, 122.4) mm) fails to insert on F.Cu at (53.4463, 121.6225) mm
+        (`ForcedInsert::Partial`, all 4 attempts): the "could not be inserted" failures;
+      - `/Charger Circuit/DRV_SUP` (U11-23, no pour) fails to insert at (139.3033, 50.0811) mm
+        with no kept trace near it: a knock-on of the changed board;
+      - with the cycle rule switched off (`K1525_OFF=cycle`) the route is 12 incomplete,
+        `/V_PD_IN` and `DRV_SUP` routed, `Net-(J2-Pin_1)` failed; with the start rule off
+        (`K1525_OFF=start`) 13, `/V_PD_IN` routed, `DRV_SUP` failed; the core target itself
+        changes the fanout (escaped pins 882 -> 884 in every arm with it on);
+      - KiCad's 3 more items (v1, per net, off -> on): `/CH2_NO` 1 -> 2 (U4's pad 8 at
+        (137.343, 96.3) mm and the track to the core: pad 8 lies in EFUSE_NO_2's outline, which
+        the router counts as joining it, where KiCad's fill does not reach), `/CH2_SENSE` 1 -> 2,
+        `/CH5_NO` 1 -> 2 (R11's pad 1 and a B.Cu track, the same kind), `Net-(Q2-D)` 0 -> 3 (zone
+        islands), `DRV_SUP` 0 -> 1, `/V_INRUSH` 2 -> 3; fewer on `/BAT_VP`, `/CH6_NO`,
+        `/CH7_NO`, `USB_GND`, `Net-(Q4-D)`.
+    - *Second pass, the fix:* the cycle rule keeps a trace only as a bridge into the fill: the
+      core holds exactly one end and the other end is not at a pin or via that the opened fill
+      reaches (`FillCore::reaches`: the core grown back by the radius, as `PourFills::pieces`
+      grows it). Both ends in the core, neither, or the far end at such a pin or via: Java's
+      removal. On the pcu board it keeps 8 distinct traces (was 25), `/V_PD_IN` routes, and the
+      route still has 49 unconnected and 14 incomplete (session `a1118e6c…`): `SCL` (U24-10)
+      fails to insert and `DRV_SUP` finds no connection, two nets without a pour. Per net against
+      off: `/CH2_NO` 1 -> 2 (two tracks from two U4 pads the router joins through EFUSE_NO_2's
+      outline, not KiCad's fill), `/CH5_NO` 1 -> 2 (R11, the same kind), `Net-(F4-Pad2)` 0 -> 1
+      (a SPARE_V island), `DRV_SUP` 0 -> 1, `SCL` 0 -> 1; `/CH6_NO` 3 -> 2, `USB_GND` 6 -> 5,
+      `/V_PD_IN` 1 -> 0. Insertion failures over the run 135 -> 66, "could not be inserted" 47 ->
+      36, "no connection was found" 10 -> 16 (all on `SDA`, `Net-(U11-ICHG)` and `DRV_SUP`).
+      The remaining extra items are pads the router's contact rule (the outline, Java's
+      `ConductionArea.getNormalContacts`) counts joined where KiCad's fill does not reach, and
+      which pads stay so changes from route to route; K15.25 keeps the router's contacts Java's.
+    - *Accept 1:* `tests/k15_pour_fill_stub.rs`, run with `pour_fill_target = true` on top of
+      `enhanced` (the tests set it now): `the_route_from_j2_leaves_no_stub_with_the_fill_target`
+      (renamed from `..._under_enhanced`) expects 0 incomplete with one `/CH6_NO` trace ending at
+      (124.3789, 110.5231) mm, in a piece of the opened fill and in its core, with the cleanup
+      and the output check and without them; `legacy` and `enhanced` (unset) still end at
+      (124.5279, 109.2002) mm, and `enhanced` with its cleanup leaves 1 incomplete (K15.23's
+      expected value, back). `a_trace_from_the_fill_to_the_strip_is_a_cycle_only_under_javas_rule`
+      has three arms (`legacy`, `enhanced`: a cycle; `enhanced` with the setting: no cycle). New
+      in the second pass: `the_cycle_rule_keeps_only_a_bridge_into_the_fill` (a trace between two
+      points of the strip, neither in the core, and a trace from the core to a `/CH6_NO` via that
+      the opened fill reaches outside the core are both Java's cycles under the setting). RED:
+      with the first pass's rule it failed at the strip trace (`is_cycle_through_the_pour` false);
+      with the bridge rule minus the pin-or-via clause it failed at the via trace (overlap false,
+      cycle true). GREEN: 6 passed. First pass (kept): release CLI on the fixture without the
+      stub, KiCad 10.0.7 `pcb drc --refill-zones`: `legacy` `track_dangling` 1 + 1 unconnected,
+      the fill target none, 0 unconnected (`target/orchestrator/k1525/runs/fixture/`).
+    - *Accept 2:* K15.18's off-arm command (`plugin-input-ab.sh kicad_pcb k154/stripped/...
+      k154/opts-default.json <out> -- --max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300`,
+      `ROUTE_MEMORY_KB=8000000`; `target/orchestrator/k1525/scripts/armsb.sh`), graded by KiCad
+      10.0.7, release binaries of this tree; second-pass runs in `target/orchestrator/k1525/runs/b/`
+      (first pass: `runs/`, `first-core-only/`, `second-pieces-cycle/`). Route times of the
+      second-pass runs are with other builds on the machine (clippy and the test build ran beside
+      the final arms):
+
+      | arm | KiCad unconnected | router incomplete | below-min | mfg | routing-caused | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | K15.23, default | 47 | 11 | 0 | 0 | none | 181.1 | `bd0a87fd…` |
+      | K15.23, `output_check=report` | 47 | 12 | 0 | 0 | track_dangling 1 | 162.3 | `b0b5367e…` |
+      | first pass: core target, Java cycle rule | 44 | 12 | 0 | 0 | track_dangling 1 (`/CH2_NO`) | 159.6 | `840e0575…` |
+      | first pass: cycle rule by grown pieces | 45 | 12 | 0 | 0 | track_dangling 1 (`/CH2_NO`) | 157.5 | `d88528e2…` |
+      | first pass: core cycle rule, default (`v1-true`) | 49 | 14 | 0 | 0 | none | 167.7 | `ab2efa8a…` |
+      | same binary, `pour_fill_target=false` (`v1-false`) | 47 | 11 | 0 | 0 | none | 164.3 | `bd0a87fd…` |
+      | **final, unset (`enhanced`'s default now)** | 47 | 11 | 0 | 0 | none | 166.4 | `bd0a87fd…` |
+      | **final, `pour_fill_target=true`** | 49 | 14 | 0 | 0 | none | 179.0 | `a1118e6c…` |
+      | **final, `true`, `output_check=report`** | 49 | 14 | 0 | 0 | none | 164.8 | `a1118e6c…` |
+
+      With the setting the default and report runs are byte-identical (the output check finds
+      nothing to repair). Unset, the route is K15.23's byte for byte. A fill core costs about
+      0.3 ms per pour on this board (first pass).
+    - *Second board* (item 3 of the dispatch): `canary-pwr-95882f00` of
+      `tools/bench/sets/k15-all-pours.txt` (19 signal-layer pours of 12 nets, K15.14's `pcb-off`
+      96.6 s; the owner's other board and the row with the most signal-layer pours per net among
+      the rows under 3 minutes after the pcu board), K15.14's command
+      (`plugin-input-ab.sh kicad_pcb <row> tools/bench/k15-all-pours.options.json <out> --
+      --max-passes 2 --timeout 240`; `target/orchestrator/k1525/scripts/board2.sh`, runs in
+      `target/orchestrator/k1525/runs/c/`), this tree's release binary, graded by KiCad 10.0.7:
+
+      | arm | KiCad unconnected | router incomplete | routing-caused | below-min | mfg | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | unset (`final-unset`; `r2-false` the same) | 40 | 27 | none | 0 | 0 | 95.9 | `f1d2da90…` |
+      | `pour_fill_target=true` (`final-true`; `r2-true` the same) | 31 | 19 | none | 0 | 0 | 108.0 | `0b534572…` |
+
+      (`r2-*`: 93.3 s and 93.1 s, beside two other routes; `final-*` beside a test build.)
+    - *Decision:* pcu 47 -> 49 and canary-pwr 40 -> 31, 0 routing-caused added on both: the pcu
+      clause fails, so the setting is opt-in (above). Numbers seen in this order: v1 off/on, the
+      instrumented runs, the bridge rule's pcu run (49), then canary-pwr, then the decision, then
+      the final arms (all byte-identical to the earlier runs of the same code).
+    - *Accept 3:* shared code changes only under the setting (`legacy` and `enhanced` leave it
+      unset; the cycle rule returns Java's answer when the board flag is off):
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+      PARITY OK, 7 of 7 `[exact]`, `bytes true`.
+    - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2971 passed, 0 failed, 56 ignored.
 
 - [~] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
   - **Change:** K15.23's opened fill applies to a `.kicad_pcb` only (a zone of the file gives its
@@ -2200,3 +2348,40 @@ item-type rules), N06 (`router.java_quirks`).
       U24-OUT `via_dangling`, unconnected not up (47), 0 below-minimum, 0 manufacturing breaches;
       the `.kicad_pcb` arm (K15.23's command): unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged.
+
+- [ ] **K15.30 — Measure `pour_fill_target` under `enhanced`.**
+  - **Change:** K15.25's `router.pour_fill_target` (the search aims for a `.kicad_pcb` signal
+    pour's opened fill; the cycle rule keeps only a bridge into it) is opt-in. On the pcu board
+    KiCad's unconnected goes 47 -> 49 with it, on canary-pwr (`95882f00`) 40 -> 31, with 0
+    routing-caused items in each arm (K15.25's note). Preregister a measurement of `enhanced`
+    with the setting unset against set on K15.14's set (`tools/bench/sets/k15-all-pours.txt`,
+    the `.kicad_pcb` input; the setting does not act on a DSN), with K15.14's guards
+    (manufacturing breaches, below-minimum, routing-caused DRC, route time) and a decision table:
+    kept, it joins `ENHANCED`; not kept, the plugin offers it as an option (as K15.14). The run
+    is a heavy run, through the orchestrator.
+  - **Accept:**
+    - the prereg (`docs/roadmap/prereg/K15.30.json`, its set and its pin test) committed before
+      any run of the set;
+    - the registered run's records and the gate's verdict in the note, and the decision table's
+      outcome applied (an `ENHANCED` entry and its DIVERGENCES profile line, or the plugin option
+      with a test);
+    - `legacy` unchanged.
+
+- [ ] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
+  - **Change:** the router's pour contacts are Java's (`BasicBoard::conduction_area_normal_contacts`,
+    `ConductionArea.getNormalContacts`): every pin and via centred in the outline and every trace
+    ending there. On K15.25's pcu runs with `pour_fill_target` (`target/orchestrator/k1525/runs/b/`)
+    KiCad reports items the router counts as joined through a pour's outline where KiCad's fill
+    does not reach: `/CH2_NO` U4 pad 8 at (137.343, 96.3) mm and `/CH5_NO` R11 pad 1 (K15.25's
+    note). Under `enhanced` on a `.kicad_pcb`, let the router's connectivity (the incomplete
+    count and the connections it routes) take a signal-layer pour's contacts from its opened fill
+    (`quality/pour_fill.rs`), so a pad the fill does not reach is routed to, with `legacy`
+    unchanged. Behind a setting; its default needs a measurement (K15.30's set) unless it costs
+    nothing on both boards.
+  - **Accept:**
+    - a test on a small board cut from the pcu route: a pad in the outline outside the opened fill
+      is not connected through the pour, and the router routes it or counts it open;
+    - the pcu and canary-pwr `.kicad_pcb` routes (K15.25's commands, a few minutes each) with the
+      setting, alone and with `pour_fill_target`, graded by KiCad: unconnected, the router's
+      incomplete against it, 0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
+    - `legacy` unchanged (parity 7 of 7).

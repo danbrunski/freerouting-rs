@@ -87,6 +87,11 @@ pub struct BasicBoard {
     /// Where a trace end connects to a pin (N04, `router.pad_contacts`;
     /// [`crate::board::contact_rule`]). A [`BoardSnapshot`] keeps it.
     pub(crate) contact_rule: crate::board::contact_rule::ContactRule,
+    /// K15.25 (`router.pour_fill_target`): a signal-layer pour of a
+    /// `.kicad_pcb` joins a trace's two ends into a cycle only where the
+    /// core of its fill holds both ([`crate::autoroute::pour_target`]). A
+    /// [`BoardSnapshot`] keeps it.
+    pub(crate) pour_fill_target: bool,
     /// `router.java_quirks.*` (N06): the switches of the Java bugs that shove,
     /// pull-tight, the DRC, the statistics, the readers and the interactive code
     /// read through the board ([`Self::java_quirks`]). A [`BoardSnapshot`] keeps
@@ -187,6 +192,7 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
             contact_rule: Default::default(),
+            pour_fill_target: false,
             dropped_pours: Arc::default(),
             kicad_report_rules: Arc::default(),
             wire_joints: Arc::default(),
@@ -337,6 +343,7 @@ impl BasicBoard {
             shape_memo: self.search_trees.shape_memo().clone(),
             search_config: self.search_trees.search_config(),
             contact_rule: self.contact_rule,
+            pour_fill_target: self.pour_fill_target,
             java_quirks: self.java_quirks,
             dropped_pours: self.dropped_pours.clone(),
             kicad_report_rules: self.kicad_report_rules.clone(),
@@ -374,6 +381,7 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
             contact_rule: snapshot.contact_rule,
+            pour_fill_target: snapshot.pour_fill_target,
             java_quirks: snapshot.java_quirks,
             dropped_pours: snapshot.dropped_pours.clone(),
             kicad_report_rules: snapshot.kicad_report_rules.clone(),
@@ -2283,7 +2291,11 @@ impl BasicBoard {
     pub fn trace_is_overlap(&self, id: ItemId) -> bool {
         let start = self.trace_start_contacts(id);
         let end = self.trace_end_contacts(id);
-        !start.is_disjoint(&end)
+        // K15.25: under `router.pour_fill_target` a pour is common to both
+        // ends only where it is filled (always true otherwise).
+        start
+            .intersection(&end)
+            .any(|common| self.area_joins_trace_ends(*common, id))
     }
 
     /// True if trace `id` is part of a cycle (Java `Trace.isCycle`).

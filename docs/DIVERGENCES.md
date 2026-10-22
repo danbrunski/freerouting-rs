@@ -435,6 +435,39 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   (`tests/k15_overlapping_planes.rs`, `the_router_reaches_the_lower_plane_where_it_is_filled`,
   `the_via_in_the_overlap_stays_open_under_legacy`). The pcu board's `.kicad_pcb` route under the
   plugin's default options is byte-identical to main's (session `a2d99014…`, KiCad unconnected 47).
+- `pour_fill_target` (K15.25, `autoroute::pour_target`) is a settings field Java does not have,
+  unset by default and in both profiles (Java's rule: the maze search reaches a conduction area
+  anywhere inside its outline, its tree shapes). `true` (opt-in) makes the search reach a signal-layer
+  pour of a `.kicad_pcb` input (a zone of the file; the areas K15.23's `PourFills` judges by
+  their opened fill) only in the core of that fill, the router's fill model on the board as the
+  connection's search begins eroded by half the zone's `min_thickness` less 1 µm: a target door to
+  the pour is expanded only where its tile within the room meets the core in two dimensions, its
+  connection point is the nearest point of those parts, the located path ends at Java's point if
+  a part holds it and else at the centre of gravity of the nearest part, and a start door whose
+  room meets no core is not queued. The board's cycle rule follows it: Java removes a trace both
+  of whose ends lie in one conduction area of its net (`PolylineTrace.split`, `Trace.isOverlap`),
+  so the insertion cut a found path back to its first corner inside the outline, outside the fill;
+  under `true` such a trace is kept only as a bridge into the fill: the core holds one end and the
+  other end is not at a pin or via that the opened fill reaches; with both ends in the core, with
+  neither, or with the far end at such a pin or via it is removed as Java removes it
+  (`BasicBoard::area_joins_trace_ends`; `tests/k15_pour_fill_stub.rs`,
+  `a_trace_from_the_fill_to_the_strip_is_a_cycle_only_under_javas_rule`,
+  `the_cycle_rule_keeps_only_a_bridge_into_the_fill`). The router's contacts
+  stay the outline; power layers and a DSN input are unchanged. On `tests/data/kicad/pcu-k1523/a-stub-beside-a-crossing` without the
+  `/CH6_NO` stub, Java's rule routes J2 to (124.5279, 109.2002) mm, in a 0.347 mm strip of
+  EFUSE_NO_6 past a crossing track that KiCad's refill drops (`track_dangling`, 1 unconnected;
+  `enhanced`'s cleanup then removes the trace and leaves the connection open), and `true` routes
+  it to (124.3789, 110.5231) mm, where KiCad 10.0.7's refill reaches (no `track_dangling`, 0
+  unconnected), with and without the cleanup and the output check
+  (`tests/k15_pour_fill_stub.rs`, `the_route_from_j2_leaves_no_stub_with_the_fill_target`).
+  Not in `enhanced` (K15.25, decided 2026-10-22: a correctness rule joins only if neither the pcu
+  board's KiCad unconnected nor a second board's goes up): on top of `enhanced`, the pcu board's
+  `.kicad_pcb` route (tracks stripped, plugin default options, `--max-passes 2 --timeout 240`)
+  goes from KiCad unconnected 47 to 49 and router incomplete 11 to 14, canary-pwr's (`95882f00`,
+  stripped, K15.14's `pcb-off` command) from 40 to 31, with 0 routing-caused items in each arm.
+  The pcu board's extra items are connections the router counts done through a pour's outline
+  where KiCad's fill does not join them, and two nets without a pour (`SCL`, `DRV_SUP`) left
+  unrouted.
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which

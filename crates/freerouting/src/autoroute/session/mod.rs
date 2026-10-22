@@ -367,6 +367,11 @@ pub struct Session<'b> {
     pub(crate) drills: Vec<drills::ExpansionDrill>,
     /// The width policy (Q17.1); `None` reads the control's widths.
     pub(crate) widths: Option<&'b dyn WidthPolicy>,
+    /// K15.25 (`router.pour_fill_target`): the opened fill's tiles of each
+    /// start or destination conduction area the search reaches only where
+    /// it is filled ([`pour_target`](crate::autoroute::pour_target)); set by
+    /// [`init`](Self::init), empty under Java's rule.
+    pub(crate) pour_fill: BTreeMap<ItemId, Vec<TileShape>>,
 }
 
 impl<'b> Session<'b> {
@@ -421,6 +426,7 @@ impl<'b> Session<'b> {
             drill_pages: None,
             drills: Vec::new(),
             widths: None,
+            pour_fill: BTreeMap::new(),
         }
     }
 
@@ -470,6 +476,18 @@ impl<'b> Session<'b> {
             None => self.control.compensated_trace_half_width[layer],
             Some(_) => self.shape_compensated_half_width(self.room(room).shape(), layer),
         }
+    }
+
+    /// K15.25: the parts of `shape` (a tile of conduction area `item`
+    /// within a room) where the area's opened fill reaches, or `None` when
+    /// the search reaches `item` anywhere (Java's rule; [`Self::pour_fill`]).
+    pub(crate) fn pour_fill_parts(
+        &self,
+        item: ItemId,
+        shape: &TileShape,
+    ) -> Option<Vec<TileShape>> {
+        let tiles = self.pour_fill.get(&item)?;
+        Some(crate::autoroute::pour_target::fill_parts(tiles, shape))
     }
 
     /// The board.

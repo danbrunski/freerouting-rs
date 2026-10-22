@@ -134,6 +134,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("work_unit", None),
         ("pad_contacts", None),
         ("output_check", None),
+        // K15.25: unset, the search ends anywhere inside a pour's outline.
+        ("pour_fill_target", None),
         // autorouter.
         ("autorouter.enabled", b(true)),
         ("autorouter.algorithm", s("freerouting-router")),

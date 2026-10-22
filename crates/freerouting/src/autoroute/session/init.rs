@@ -36,6 +36,13 @@ impl Session<'_> {
     ) -> Result<bool, RoomError> {
         self.reduce_trace_shapes_at_tie_pins(start);
         self.reduce_trace_shapes_at_tie_pins(destination);
+        if self.control.pour_fill_target {
+            // K15.25: the pours reached only where they are filled.
+            self.pour_fill = crate::autoroute::pour_target::fill_tiles(
+                self.board,
+                start.iter().chain(destination.iter()),
+            );
+        }
         if !self.join_destinations(destination) {
             return Ok(false);
         }
@@ -176,7 +183,15 @@ impl Session<'_> {
                     .trace_connection_shape(self.tree(), target.item, target.tree_entry)
                     .ok_or(npe.clone())?;
                 let room_shape = self.room(door_room).shape().ok_or(npe)?;
-                let center = connection.intersection(room_shape).centre_of_gravity();
+                let in_room = connection.intersection(room_shape);
+                let mut center = in_room.centre_of_gravity();
+                if let Some(parts) = self.pour_fill_parts(target.item, &in_room) {
+                    // K15.25: a start pour is left only where it is filled.
+                    match crate::autoroute::pour_target::end_point(&parts, center) {
+                        Some(point) => center = point,
+                        None => continue,
+                    }
+                }
                 let sorting_value = self.distance.calculate_point(&center, layer);
                 let key = QueueKey::new(sorting_value, 0.0, self.target_door_java_id(door)?, 0);
                 let element = MazeListElement {

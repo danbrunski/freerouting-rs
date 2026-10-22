@@ -292,6 +292,8 @@ settings_table! {
             "Where a trace end connects to a pin (N04): `center` (unset, Java: only at the pin's centre) or `inside_pad` (wherever the trace's round end overlaps the pin's pad on the trace's layer, KiCad's rule)."),
         (output_check, String, opt, None, None, "outputCheck", [], Flat::No, true,
             "The board-rule check before saving (Q20): `off` (unset, Java), `report` (log and count the routed copper that breaks a board rule) or `repair` (remove it, retry its connections once, remove what still breaks a rule; profile `enhanced`'s value)."),
+        (pour_fill_target, bool, opt, None, None, "pourFillTarget", [], Flat::No, true,
+            "On a `.kicad_pcb` input, the maze search reaches a signal-layer pour only where its fill, opened by the zone's minimum thickness, reaches (K15.25); unset or `false` is Java's rule (anywhere inside the pour's outline); unset in both profiles (opt-in, K15.25's note)."),
     }
     sections {
         autorouter, AutorouterPatch, AutorouterSettings, "autorouter",

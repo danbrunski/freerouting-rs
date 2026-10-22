@@ -90,6 +90,12 @@
 //!
 //! - [`via_clearance`]: `router.via_clearance`, whether a routed via takes
 //!   its via type's clearance class (Java) or its net class's.
+//!
+//! Beyond Java (K15.25):
+//!
+//! - [`pour_target`]: `router.pour_fill_target`, whether the search reaches
+//!   a `.kicad_pcb` signal-layer pour anywhere inside its outline (Java) or
+//!   only where its opened fill reaches.
 
 pub mod batch;
 pub mod connection;
@@ -103,6 +109,7 @@ pub mod item_route_result;
 pub mod java_ids;
 pub mod path;
 pub mod pipeline;
+pub mod pour_target;
 pub mod power_layer_traces;
 pub mod probe;
 pub mod session;
