@@ -115,6 +115,15 @@
 //! the pair stays opt-in too; the plugin offers `pour_fill_contacts` beside
 //! this setting, and K15.41-K15.43 fix the costs and measure again.
 //!
+//! K15.42 (the pair only): a pin alone in a non-main island of a pour
+//! ([`lone_pin_layers`]) is entered and left only on that pour's layer, so the
+//! route joins it through its island. KiCad 10's `starved_thermal` test does not
+//! count the spokes of a pad into an island only that pad connects once the pad
+//! has another spoke, and a track of the pad whose other end lies over the
+//! zone's fill counts as one: such a track left interf_u's U5-16, U9-G11, K3
+//! and K11 "3 spokes connected to isolated island" (K15.37's `pcb-on` arm).
+//! Pinned by `tests/k15_pour_pair_drc.rs::a_pad_alone_in_its_island_is_joined_through_the_island`.
+//!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by
 //! `tests/k15_pour_fill_stub.rs::the_route_from_j2_leaves_no_stub_with_the_fill_target`
@@ -235,6 +244,63 @@ pub fn fill_tiles<'a>(
             Some((id, opened_fill_core(board, board.item(id)?)?.tiles))
         })
         .collect()
+}
+
+/// K15.42: per pin of `items` that lies alone in an island of a judged pour
+/// of its net (under `router.pour_fill_contacts`, [`BasicBoard::pour_islands`]:
+/// the island that holds the pin's centre is not the main one and holds no
+/// other contact), the layers of such pours, in order. KiCad's DRC
+/// (`DRC_TEST_PROVIDER_ZONE_CONNECTIONS::testZoneLayer`, 10.0.0) does not
+/// count the thermal spokes of a pad into an island that only that pad
+/// connects (`m_SingleConnectionOutlines`) once the pad has another spoke,
+/// and it counts as a spoke every track of the pad whose other end lies over
+/// the zone's fill on that layer, on any layer. A pin that such an island
+/// holds alone, joined by a trace on another layer, is so
+/// `starved_thermal` (module docs). The search leaves and enters such a
+/// pin only on those layers, so its connection runs through the island
+/// and the island holds another item of the net.
+pub fn lone_pin_layers<'a>(
+    board: &BasicBoard,
+    items: impl IntoIterator<Item = &'a ItemId>,
+) -> BTreeMap<ItemId, Vec<i32>> {
+    if !read_from_kicad_pcb(board) || !board.pour_fill_contacts() {
+        return BTreeMap::new();
+    }
+    let mut result = BTreeMap::new();
+    let pins: BTreeSet<ItemId> = items
+        .into_iter()
+        .copied()
+        .filter(|id| board.item(*id).is_some_and(|i| i.is_pin()))
+        .collect();
+    for pin in pins {
+        let Some(centre) = board
+            .item(pin)
+            .and_then(|i| i.drill())
+            .map(|d| Point::Int(d.center))
+        else {
+            continue;
+        };
+        let mut layers: Vec<i32> = Vec::new();
+        for area in board.normal_contacts(pin) {
+            let Some(item) = board.item(area).filter(|i| i.is_conduction_area()) else {
+                continue;
+            };
+            let Some(islands) = board.pour_islands(area) else {
+                continue;
+            };
+            let lone = islands
+                .island_at(&centre)
+                .is_some_and(|k| islands.holds_only(k, pin));
+            if lone && !layers.contains(&item.first_layer()) {
+                layers.push(item.first_layer());
+            }
+        }
+        if !layers.is_empty() {
+            layers.sort_unstable();
+            result.insert(pin, layers);
+        }
+    }
+    result
 }
 
 /// The parts of `shape` (an area's tile within a room) that `tiles` (its

@@ -95,6 +95,14 @@ pub struct BoardZone {
     pub islands: Vec<Vec<FloatPoint>>,
     /// K15.23: the zone's minimum fill thickness in board units.
     pub min_thickness: f64,
+    /// K15.42: the least clearance KiCad's filler keeps between the zone and
+    /// another net's copper beyond the router's, in board units: the zone's
+    /// own clearance, which KiCad maxes with the net classes' where no
+    /// `.kicad_dru` rule matches (`DRC_ENGINE::EvalRules`); 0 when the
+    /// board's `.kicad_dru` has a clearance rule (a matching rule replaces
+    /// both, and the router does not evaluate its condition). The router's
+    /// pour target and contacts take it (`quality::pour_fill::opened_fill_core`).
+    pub fill_clearance: f64,
 }
 
 /// K15.38: a rule area of a `.kicad_pcb` on one board layer, in board
@@ -221,6 +229,15 @@ pub fn unconditional_clearance_nm(report: &DruReport) -> Option<i64> {
     report.floors.clearance.as_ref().map(|floor| floor.nm)
 }
 
+/// K15.42: the `.kicad_dru` has a `clearance` constraint, with a condition
+/// or without.
+pub fn has_clearance_rule(report: &DruReport) -> bool {
+    report
+        .rules
+        .iter()
+        .any(|rule| rule.constraints.iter().any(|c| c.kind == "clearance"))
+}
+
 /// The `.kicad_dru` rules of a read `.kicad_pcb` as KiCad applies them: the
 /// read's own report when it applied them, else the file evaluated again on a
 /// copy of the tree (`-drc` reads the board without its rules, as KiCad's
@@ -270,6 +287,13 @@ impl KicadReportInputs {
     pub fn apply_rules(&mut self, report: &DruReport, min_clearance_nm: Option<i64>) {
         if let Some(nm) = unconditional_clearance_nm(report) {
             self.clearance_um = Some(um(nm.max(min_clearance_nm.unwrap_or(0))));
+        }
+        // K15.42: a clearance rule wins over the zones' own clearance where
+        // it matches, so their clearance is no longer known.
+        if has_clearance_rule(report) {
+            for zone in &mut self.zones {
+                zone.clearance = 0.0;
+            }
         }
         if let Some(floor) = &report.hole_clearance {
             let rule = um(floor.nm);
@@ -349,6 +373,7 @@ impl KicadReportInputs {
                     .map(|island| island.iter().map(point).collect())
                     .collect(),
                 min_thickness: transform.dsn_to_board(zone.min_thickness),
+                fill_clearance: transform.dsn_to_board(zone.clearance.max(0.0)),
             })
             .collect();
         let all_filled = !zones.is_empty() && zones.iter().all(|z| z.filled);

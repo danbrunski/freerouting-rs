@@ -18,7 +18,9 @@
 //!   in mm²; `ZONE_SETTINGS`'s default is 0, always);
 //! - **the minimum thickness** (`(min_thickness T)`, K15.23): the router's
 //!   stub cleanup judges a trace end on a pour by the fill it models, opened
-//!   by this width as KiCad's filler opens it.
+//!   by this width as KiCad's filler opens it;
+//! - **the clearance** (`(connect_pads ... (clearance C))`, K15.42): the
+//!   router's pour target and contacts keep it from other nets' copper.
 //!
 //! Only the board's own zones are read, not the zones footprints own, and not
 //! rule areas or zones without a net.
@@ -62,6 +64,11 @@ pub struct ZoneFill {
     /// filler's minimum-thickness opening removes every part of the fill a
     /// disc of this diameter does not fit in.
     pub min_thickness: f64,
+    /// K15.42: the zone's own clearance in µm (`(connect_pads ... (clearance
+    /// C))`, else 0.5 mm; `ZONE::GetLocalClearance`). Where no `.kicad_dru`
+    /// rule matches, KiCad's filler keeps the larger of it and the net
+    /// classes' clearance from other nets' copper (`DRC_ENGINE::EvalRules`).
+    pub clearance: f64,
 }
 
 /// `ZONE_SETTINGS::m_ZoneMinThickness`'s default, 0.25 mm, in µm.
@@ -136,6 +143,7 @@ pub fn zone_fills(
                     .map(|(_, pts)| to_dsn(pts))
                     .collect(),
                 min_thickness,
+                clearance: f64::from(zone.clearance) / 1000.0,
             });
         }
     }

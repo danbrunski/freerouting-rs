@@ -3802,7 +3802,7 @@ item-type rules), N06 (`router.java_quirks`).
       (`tests/k15_pour_fill_contacts.rs`);
     - `legacy` unchanged (the setting is unset there; parity 7 of 7 if shared code changes).
 
-- [ ] **K15.42 — The pour pair's routing-caused DRC.**
+- [~] **K15.42 — The pour pair's routing-caused DRC.**
   - **Change:** K15.37's run failed guard (2): routing-caused DRC over the judged rows 12 -> 27 with
     both settings on. interf_u 1 -> 7 (`starved_thermal` 1 -> 5, `via_dangling` 0 -> 2), moteus
     4 -> 13 (`isolated_copper` 3 -> 12; 3 -> 9 with the target alone in K15.30's run), openmuscle
@@ -3820,6 +3820,76 @@ item-type rules), N06 (`router.java_quirks`).
       unconnected not above 20 and 26 plus their bands; 0 below-minimum and 0 manufacturing
       breaches in every arm;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Partial 2026-10-22* (branch from main `fe1c2e0`; numbers seen before K15.43's registration):
+    two of the three causes are fixed, moteus's `isolated_copper` is not.
+    - **Attribution** (K15.37's `pcb-on` arm, the same session on main):
+      - interf_u `via_dangling` at the GND vias (152.4229, 108.9504) and (160.1648, 109.18):
+        a F.Cu chain joins them. KiCad's fill keeps the zone's 0.5 mm from other nets'
+        copper, so their B.Cu islands hold no pad and island removal 0 deletes them. The
+        router's model (0.254 mm, the net class) joined them to U9-L7. The cause is the fill
+        model, which both settings read.
+      - interf_u `starved_thermal` at U5-16, U9-G11, K3 and K11 ("3/4 spokes connected to
+        isolated island"; U3-19 is also in `pcb-off`), and openmuscle's at J6-1 (162.23,
+        121.75, In1.Cu): each pad lies alone in a fill island. The route reached it by a track
+        on another layer whose far end lies over the fill, and KiCad 10's test counts that
+        track as a spoke and then leaves out the pad's spokes into its single-connection
+        island. The cause is the target.
+      - moteus `isolated_copper` 3 -> 12 (9 with the target alone in K15.30): small mode-1
+        zones are cut into islands with nothing connected (GND F.Cu prio 40, GND In1.Cu prio 29,
+        GNDPWR In1.Cu prio 33, +3V In2.Cu prio 44, V+ In2.Cu prio 34), plus `track_dangling` 1.
+    - **Fixes:**
+      - The pair's fill model (`quality::pour_fill::opened_fill_core`) keeps the zone's
+        `connect_pads` clearance where it is larger, through `drc::BoardZone::fill_clearance`
+        and `opened_fill_islands`'s `clearance_min`. It is 0 when the `.kicad_dru` has a
+        clearance rule.
+      - A pin alone in a non-main island is entered and left only on the pour's layer
+        (`autoroute::pour_target::lone_pin_layers`; `AutorouteSession::pin_layer_allowed` in
+        `start_rooms`, `queue_start_doors` and the target doors of `search.rs`).
+      - Module docs and DIVERGENCES (`pour_fill_contacts` entry) are updated. Neither fix runs
+        outside `pour_fill_target` / `pour_fill_contacts`.
+    - **Tests** (`tests/k15_pour_pair_drc.rs`; boards in `tests/data/kicad/interf_u-k1542/`, cut
+      by `make_boards.py` from K15.37's `pcb-on` route and from this item's first-fix route,
+      each refilled by KiCad 10.0.7):
+      - `the_fill_model_keeps_the_zones_clearance_and_the_via_chain_joins_no_pin` was RED with
+        `clearance_min` 0 (`left: {(1581150, -927100)} right: {}`).
+      - `a_pad_alone_in_its_island_is_joined_through_the_island` was RED without the lone-pin
+        rule (a F.Cu trace at U1-10, `[(0, (1755498, -1292080))]`).
+      - Both are GREEN.
+      - On the CLI route of `b-lone-pad`, KiCad reported U8-12 `starved_thermal` with the
+        first fix alone and none with both.
+    - **Runs** (K15.37's commands, release binary of this tree, `pcb-on` (the pair) then
+      `pcb-off`, as session / KiCad unconnected / drc_real / route s, against K15.37's):
+
+      | row | `pcb-on` K15.37 | `pcb-on` now | `pcb-off` (both runs) |
+      |---|---|---|---|
+      | interf_u | `0257be2e` 13 / 7 / 20.5 | `44fa53da` 4 / 0 / 19.2 | `e3c6ee65` 17 / 1 / 7.3 |
+      | openmuscle | `62a5b3e3` 3 / 2 / 34.1 | `d31ae161` 2 / 0 / 34.5 | `77a5f156` 7 / 1 / 11.9 |
+      | moteus | `5908641f` 30 / 13 / 117.9 | `447b2a9c` 32 / 10 / 103.1 | `9f998f1d` 40 / 4 / 67.7 |
+      | canary-pwr | `7811ea5a` 26 / 0 / 153.2 | `7811ea5a` 26 / 0 / 153.7 | `f1d2da90` 40 / 0 / 92.7 |
+      | pcu | `aa9c84fd` 20 / 0 / 189.6 | `e2168144` 18 / 0 / 192.8 | `2e8bf394` 47 / 0 / 162.4 |
+
+      Notes on the table:
+      - The pcb-on drc_real counts are interf_u `starved_thermal` 5 and `via_dangling` 2 -> 0,
+        openmuscle `starved_thermal` 2 -> 0, and moteus `isolated_copper` 12 -> 9 with
+        `track_dangling` 1 -> 1.
+      - Every `pcb-off` session is K15.37's.
+      - Every arm has 0 below-minimum items and 0 manufacturing breaches.
+      - Met: interf_u (0 <= 1, 4 <= 24), openmuscle (0 <= 1, 2 <= 11), canary-pwr (0, 26 <= 36)
+        and pcu (0, 18 <= 63).
+      - Not met: moteus drc_real 10 > 4 (unconnected 32 <= 52 is met).
+    - **Gate:** `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D
+      warnings` are clean. `cargo test --workspace --no-fail-fast` gives 3013 passed, 0
+      failed. `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes` gives PARITY OK, 7 of 7 exact.
+    - **Remains:** moteus's `isolated_copper` (9 against 3 in `pcb-off`), which the target makes
+      alone too. It needs a router cost or a cleanup that keeps a route from cutting a small
+      zone into an island with no pad, then the moteus `pcb-on` run again.
+    - **Rebased** onto main `f57c298` (K15.40's fill model; the `zone_islands.rs` conflict kept
+      both: K15.40's encoded and edge clearances, then this item's `clearance_min`, equal to
+      K15.40's when it is 0): gate 3021 passed, 0 failed, plugin 730 passed, parity 7 of 7; the
+      pair arms on the rebased release binary (`target/orchestrator/k1542/rebased/`) give the
+      same sessions: interf_u `44fa53da` (4 unconnected, 0 routing-caused, 19.0 s), openmuscle
+      `d31ae161` (2, 0, 34.0 s), 0 below-minimum and 0 manufacturing breaches.
 
 - [ ] **K15.43 — Measure the pour pair again under `enhanced`.**
   - **Change:** after the K15 items that change what the pair routes (K15.40, K15.41, K15.42,

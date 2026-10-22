@@ -680,6 +680,10 @@ impl<'s, 'b, S: SearchSink, C: ExtraCost> MazeSearch<'s, 'b, S, C> {
                 let target = self.s.target_door(door);
                 (target.item, target.tree_entry)
             };
+            if !self.s.pin_layer_allowed(item, layer) {
+                // K15.42: a lone pin is entered only on its pour's layer.
+                continue;
+            }
             let target_shape = {
                 let board = &*self.s.board;
                 let tree = self.s.tree();

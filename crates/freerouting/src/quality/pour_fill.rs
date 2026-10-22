@@ -134,6 +134,15 @@
 //! not. This model feeds the router's pour target (K15.25,
 //! `router.pour_fill_target`) and K15.31's contacts (`router.pour_fill_contacts`)
 //! too.
+//! For those two (K15.42, [`opened_fill_core`]) the model keeps the zone's own
+//! clearance (`(connect_pads (clearance C))`, [`BoardZone::fill_clearance`](crate::drc::BoardZone::fill_clearance))
+//! from other nets' copper where it is above the rule's, as KiCad's filler
+//! does, unless the `.kicad_dru` has a clearance rule (then KiCad's rule
+//! decides and the field is 0); the cleanup's model keeps the rule's, as
+//! before. With the rule's 0.254 mm, interf_u's GND fill joined two vias of a
+//! F.Cu chain to U9 pad L7, where KiCad's fill (0.5 mm) left their islands with
+//! no pad and removed them (`via_dangling`, K15.37's `pcb-on` arm; pinned by
+//! `tests/k15_pour_pair_drc.rs::the_fill_model_keeps_the_zones_clearance_and_the_via_chain_joins_no_pin`).
 //!
 //! **Pad clearances and the board edge (K15.40), on both inputs.**
 //!
@@ -289,7 +298,8 @@ pub(crate) fn reach(board: &BasicBoard, area: &Item) -> i32 {
         .clearance_matrix
         .max_value(area.clearance_class(), area.first_layer());
     let thickness = match zone_of(board, area) {
-        Some(zone) => zone.min_thickness,
+        // K15.42: the router's model keeps the zone's own clearance, if larger
+        Some(zone) => zone.min_thickness + (zone.fill_clearance - f64::from(clearance)).max(0.0),
         None if !board.kicad_report_rules().kicad_pcb => {
             let rules = &board.kicad_report_rules().dsn_pours;
             let net = area.net_numbers().first().copied().unwrap_or(0);
@@ -340,6 +350,10 @@ pub(crate) fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crat
 struct Opening {
     radius: f64,
     clearance_floor: f64,
+    /// K15.42: the least clearance to other nets' copper, above the
+    /// router's (0: none): the router's model of a `.kicad_pcb` zone
+    /// ([`opened_fill_core`]).
+    clearance_min: f64,
     min_thickness: f64,
     blob_radius: f64,
     kicad_keepouts: bool,
@@ -372,6 +386,7 @@ fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
     Some(Opening {
         radius,
         clearance_floor: rules.clearance.max(0.0),
+        clearance_min: 0.0,
         min_thickness,
         blob_radius: half(min_thickness).max(radius),
         kicad_keepouts: true,
@@ -392,6 +407,7 @@ fn kicad_pcb_opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
     Some(Opening {
         radius,
         clearance_floor: 0.0,
+        clearance_min: 0.0,
         min_thickness,
         blob_radius: radius,
         kicad_keepouts: true,
@@ -429,6 +445,7 @@ fn eroded_islands(board: &BasicBoard, area: &Item, opening: Opening, radius: f64
             area,
             radius,
             opening.clearance_floor,
+            opening.clearance_min,
             opening.kicad_keepouts,
         )
     } else if radius > 0.0 {
@@ -549,7 +566,8 @@ pub fn opened_fill_core(board: &BasicBoard, area: &Item) -> Option<FillCore> {
     // `kicad_pcb_opening` takes a zone of the file: a DSN input's pours have
     // none, so the search's target stays their outline (K15.26's fills are
     // the cleanup's only).
-    let opening = kicad_pcb_opening(board, area)?;
+    let mut opening = kicad_pcb_opening(board, area)?;
+    opening.clearance_min = zone_of(board, area).map_or(0.0, |zone| zone.fill_clearance);
     Some(FillCore {
         tiles: eroded_tiles(board, area, opening).collect(),
         radius: opening.radius,

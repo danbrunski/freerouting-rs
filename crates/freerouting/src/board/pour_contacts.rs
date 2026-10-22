@@ -206,6 +206,12 @@ impl AreaIslands {
     pub fn island_count(&self) -> usize {
         self.members.len()
     }
+
+    /// K15.42: true if island `k` is not the main one and holds no contact
+    /// but `item`.
+    pub(crate) fn holds_only(&self, k: usize, item: ItemId) -> bool {
+        k != self.main && self.members.get(k).is_some_and(|m| m.as_slice() == [item])
+    }
 }
 
 impl Clone for PourContacts {

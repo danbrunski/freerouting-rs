@@ -789,7 +789,7 @@ fn area_rings(area: &Area) -> Option<(Ring, Vec<Ring>)> {
 /// `ConductionArea.ensureDetailedFillCache`) and the number of same-net
 /// drill items.
 fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)> {
-    fill_operands_eroded(board, ca, 0.0, 0.0, false)
+    fill_operands_eroded(board, ca, 0.0, 0.0, 0.0, false)
 }
 
 /// K15.35: how KiCad's zone filler treats a keepout of the board, as the
@@ -1023,11 +1023,15 @@ const RULE_AREA_SLACK_UM: f64 = 1.0;
 /// router's net class clearance can be above it); 0 keeps the router's.
 /// K15.35: with `kicad_keepouts` the keepouts are taken as KiCad's filler
 /// takes them ([`KeepoutFill`]); without, as Java's fill takes them.
+/// K15.42: a positive `clearance_min` raises every foreign copper item's
+/// clearance (not a keepout's) to at least it, in board units: the zone's own
+/// clearance, which KiCad's filler maxes with the net classes'.
 fn fill_operands_eroded(
     board: &BasicBoard,
     ca: &Item,
     erode: f64,
     clearance_floor: f64,
+    clearance_min: f64,
     kicad_keepouts: bool,
 ) -> Option<(Vec<Operand>, usize)> {
     let eroded = erode > 0.0;
@@ -1043,7 +1047,8 @@ fn fill_operands_eroded(
             .clearance_matrix
             .max_value(ca.clearance_class(), layer),
     );
-    max_clearance = max_clearance.max(matrix_max.max(clearance_floor) + 100.0 * resolution_um);
+    max_clearance = max_clearance
+        .max(matrix_max.max(clearance_floor).max(clearance_min) + 100.0 * resolution_um);
     if eroded {
         max_clearance += erode;
     }
@@ -1116,10 +1121,14 @@ fn fill_operands_eroded(
             )
         } else if kicad_keepouts && let Some(outline) = other.as_board_outline() {
             edge_fill_clearance(board, ca, other, outline, layer)
-        } else if same_net || clearance_floor <= 0.0 {
+        } else if same_net {
             clearance
-        } else {
+        } else if clearance_floor > 0.0 {
             clearance_floor
+        } else if keepout.is_none() {
+            clearance.max(clearance_min)
+        } else {
+            clearance
         };
         if let Some(drill) = other.drill() {
             let Some(shape) = drill.shape_on_layer(layer) else {
@@ -1283,7 +1292,7 @@ fn edge_strips(ring: &[(f64, f64)], erode: f64) -> Vec<Ring> {
 /// diameter `2 * erode` fits in: the fill after KiCad's minimum-thickness
 /// opening, with the router's clearances.
 pub fn eroded_fill_islands(board: &BasicBoard, ca: &Item, erode: f64) -> Vec<Island> {
-    opened_fill_islands(board, ca, erode, 0.0, false)
+    opened_fill_islands(board, ca, erode, 0.0, 0.0, false)
 }
 
 /// K15.26: [`eroded_fill_islands`] with every foreign obstacle's clearance
@@ -1298,6 +1307,7 @@ pub fn opened_fill_islands(
     ca: &Item,
     erode: f64,
     clearance_floor: f64,
+    clearance_min: f64,
     kicad_keepouts: bool,
 ) -> Vec<Island> {
     let filled = matches!(
@@ -1310,7 +1320,14 @@ pub fn opened_fill_islands(
     if !filled {
         return Vec::new();
     }
-    match fill_operands_eroded(board, ca, erode, clearance_floor, kicad_keepouts) {
+    match fill_operands_eroded(
+        board,
+        ca,
+        erode,
+        clearance_floor,
+        clearance_min,
+        kicad_keepouts,
+    ) {
         Some((operands, drill_count)) => islands_of(&operands, drill_count),
         None => Vec::new(),
     }

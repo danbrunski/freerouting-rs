@@ -372,6 +372,12 @@ pub struct Session<'b> {
     /// it is filled ([`pour_target`](crate::autoroute::pour_target)); set by
     /// [`init`](Self::init), empty under Java's rule.
     pub(crate) pour_fill: BTreeMap<ItemId, Vec<TileShape>>,
+    /// K15.42 (`router.pour_fill_target` with `router.pour_fill_contacts`):
+    /// per start or destination pin that lies alone in an island of a
+    /// judged pour, the layers of those pours, the only ones on which the
+    /// search leaves or enters it ([`lone_pin_layers`](crate::autoroute::pour_target::lone_pin_layers));
+    /// set by [`init`](Self::init).
+    pub(crate) lone_pins: BTreeMap<ItemId, Vec<i32>>,
 }
 
 impl<'b> Session<'b> {
@@ -427,6 +433,7 @@ impl<'b> Session<'b> {
             drills: Vec::new(),
             widths: None,
             pour_fill: BTreeMap::new(),
+            lone_pins: BTreeMap::new(),
         }
     }
 
@@ -476,6 +483,14 @@ impl<'b> Session<'b> {
             None => self.control.compensated_trace_half_width[layer],
             Some(_) => self.shape_compensated_half_width(self.room(room).shape(), layer),
         }
+    }
+
+    /// K15.42: false if `item` is a lone pin ([`Self::lone_pins`]) that the
+    /// search must not leave or enter on `layer`.
+    pub(crate) fn pin_layer_allowed(&self, item: ItemId, layer: i32) -> bool {
+        self.lone_pins
+            .get(&item)
+            .is_none_or(|layers| layers.contains(&layer))
     }
 
     /// K15.25: the parts of `shape` (a tile of conduction area `item`

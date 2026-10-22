@@ -516,7 +516,17 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   it unset too. The KiCad plugin offers it as a per-board checkbox (Advanced tab, Flow group,
   below `pour_fill_target`'s; `RouteOptions.pour_fill_contacts`, off in both profiles;
   `tests/test_options.py`, `tests/test_route_dialog.py`). K15.41-K15.43 fix the costs and
-  measure again.
+  measure again. K15.42 (pair only, so `legacy` and `enhanced` unchanged): the fill model the
+  pour target and the contacts read (`quality::pour_fill::opened_fill_core`) keeps the zone's
+  own clearance (`(connect_pads (clearance C))`, `drc::BoardZone::fill_clearance`) from other
+  nets' copper where it is above the rule's, as KiCad's filler does, unless the `.kicad_dru`
+  has a clearance rule (then 0; the cleanup's `PourFills` model is unchanged); and a pin alone
+  in a non-main island of a pour is reached only on that pour's layer
+  (`autoroute::pour_target::lone_pin_layers`), because KiCad 10 reports `starved_thermal`
+  ("N spokes connected to isolated island") for such a pad joined by a track whose other end
+  lies over the fill. On `tests/data/kicad/interf_u-k1542/` the via chain of
+  `a-via-chain-cut-off` joins no pin (KiCad: `via_dangling`) and `b-lone-pad`'s pads U1-10 and
+  U8-12 take no F.Cu trace (`tests/k15_pour_pair_drc.rs`).
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which

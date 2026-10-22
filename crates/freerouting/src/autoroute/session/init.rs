@@ -42,6 +42,12 @@ impl Session<'_> {
                 self.board,
                 start.iter().chain(destination.iter()),
             );
+            // K15.42: a pin alone in an island of its pour is left and
+            // entered only on the pour's layer.
+            self.lone_pins = crate::autoroute::pour_target::lone_pin_layers(
+                self.board,
+                start.iter().chain(destination.iter()),
+            );
         }
         if !self.join_destinations(destination) {
             return Ok(false);
@@ -153,6 +159,9 @@ impl Session<'_> {
                     .collect()
             };
             for (contained, layer) in shapes {
+                if !self.pin_layer_allowed(id, layer) {
+                    continue;
+                }
                 rooms.push(self.add_incomplete(None, layer, contained));
             }
         }
@@ -177,6 +186,9 @@ impl Session<'_> {
                     at: "MazeSearchEngine.init",
                 };
                 let target = self.target_door(door);
+                if !self.pin_layer_allowed(target.item, layer) {
+                    continue;
+                }
                 let door_room = target.room.ok_or(npe.clone())?;
                 let connection = self
                     .board
