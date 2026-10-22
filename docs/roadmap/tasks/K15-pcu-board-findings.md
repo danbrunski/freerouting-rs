@@ -1965,7 +1965,7 @@ item-type rules), N06 (`router.java_quirks`).
       canary-pwr 6) all load in the router (`-de -drc`, rc 0). `crates/` is unchanged, so
       `legacy` on the committed DSNs (connection-parity) is unchanged; no parity run made.
 
-- [~] **K15.25 — The router's search reaches a `.kicad_pcb` signal pour where it is filled.**
+- [x] **K15.25 — The router's search reaches a `.kicad_pcb` signal pour where it is filled.**
   - **Change:** K15.23 made the stub cleanup judge a signal-layer pour of a `.kicad_pcb` by the
     router's fill model opened by the zone's `min_thickness` (`quality/pour_fill.rs`). The
     router's own contacts and the maze search's destination are still the pour's outline
@@ -2134,6 +2134,21 @@ item-type rules), N06 (`router.java_quirks`).
       PARITY OK, 7 of 7 `[exact]`, `bytes true`.
     - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2971 passed, 0 failed, 56 ignored.
+
+  - *Done 2026-10-22* (main `dce4f86`, K15.31's release binary `target/orchestrator/k1531/bin/v3`,
+    whose crates are main's): Accept 1 and 3 held in the Partial note above. Accept 2 holds with
+    `router.pour_fill_target` and K15.31's `router.pour_fill_contacts` together, the pair whose
+    default K15.37 measures (with `pour_fill_target` alone it stays 49 > 47, above). The pcu
+    `.kicad_pcb` route (K15.18's off-arm command on `target/orchestrator/k154/stripped`, plugin
+    default options, `--max-passes 2 --timeout 240`), graded by KiCad 10.0.7:
+
+    | options | KiCad unconnected | routing-caused | below-minimum | manufacturing | route s | K15.23's s | session |
+    |---|---|---|---|---|---|---|---|
+    | default (`repair`), both settings (K15.31's run, `k1531/runs/rebased-pcu/contacts-target`) | 21 | none | 0 | 0 | 176.2 | 181.1 | `25cf997a...` |
+    | `--router.output_check=report`, both settings (`target/orchestrator/k1525c/runs/both-report`) | 21 | none | 0 | 0 | 185.0 | 162.3 | `25cf997a...` |
+
+    The two sessions are byte-identical: the output check repairs nothing on this route. Whether
+    the pair becomes `enhanced`'s default is K15.37's.
 
 - [x] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
   - **Change:** K15.23's opened fill applies to a `.kicad_pcb` only (a zone of the file gives its
