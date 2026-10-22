@@ -3295,7 +3295,7 @@ item-type rules), N06 (`router.java_quirks`).
     - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2996 passed, 0 failed, 56 ignored.
 
-- [ ] **K15.37 — Measure `pour_fill_contacts` with `pour_fill_target` under `enhanced`.**
+- [~] **K15.37 — Measure `pour_fill_contacts` with `pour_fill_target` under `enhanced`.**
   - **Change:** K15.31's first numbers on top of `enhanced` (main `48fad8c`, plugin default
     options, `--max-passes 2 --timeout 240`, KiCad 10.0.7): the pcu board's `.kicad_pcb` route
     goes from KiCad unconnected 47 to 21 with both settings, canary-pwr's from 40 to 26; route time
@@ -3308,6 +3308,84 @@ item-type rules), N06 (`router.java_quirks`).
     - the records and the verdict in the note, and the outcome applied as its decision table says
       (both settings into `ENHANCED`, a plugin option, or neither);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
+  - *Partial 2026-10-22:* Accept 1 is written (registered at main `c4f74fb`, to be committed before
+    any run of the set); Accept 2 and 3 remain here: the registered run (K13.5's
+    `plugin-input-ab.sh` per call) is a heavy run, queued by the orchestrator in
+    `target/orchestrator/pending-heavy-runs.md`. **No number of this measurement exists**: nothing
+    was routed or graded, no kicad-cli ran (the seen numbers are K15.31's, K15.36's, K15.38's and the
+    orchestrator's check on `c4f74fb`, listed in the registration's `seen_before_registration`).
+    - *Files:* `docs/roadmap/prereg/K15.37.json` (id `K15.37-fill-pair`) sha256
+      `73b58f138f06112c2b6c0d621456b3b625597d24509c406bd4f2900b61911fb5`, 0 amendments;
+      `tools/bench/sets/k15-fill-pair.txt` (K15.30's 17 rows verbatim under a header naming K15.37)
+      sha256 `fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb`; the pin test
+      `crates/freerouting-dev/tests/prereg_k15_37.rs`. The helper is K15.14's
+      `tools/bench/k15_all_pours.py`, unchanged (`8de88dd8...`): `run` runs a registration's
+      `commands` verbatim, so two flags in one command need nothing in it.
+    - *Registration:* K15.30's with the differences it lists (`differences`): arms `pcb-off`
+      (baseline, both settings unset) and `pcb-on` (`--router.pour_fill_contacts=true
+      --router.pour_fill_target=true`), the `.kicad_pcb` input only (`no_dsn_why`: neither setting
+      acts on a DSN); every command is K15.30's command of the row with `target/orchestrator/k1537/`
+      for the tree, output and build, and the two flags (`--max-passes 2 --timeout 240`,
+      `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`, options `{"schema": 6}`, KiCad 10.0.7, the
+      boards at K15.14's paths under `target/orchestrator/k1514/boards/`). Set, rule, noise,
+      metrics, guards (1)-(3) and `must_judge` (pcu-76163c7, canary-pwr-95882f00) are K15.30's.
+      Differences that matter: (a) `pocketsdr-v3-0` stays in the set (guard (1) reads every graded
+      arm; validity (b) leaves it out again if both arms time out, as in K15.30); (b) the pair costs
+      route time (pcu 162.5 s -> 191.6 s, canary-pwr 93.1 s -> 159.8 s on `c4f74fb`), both under
+      the 240 s deadline, so the caps stay K15.30's; a row COMPLETED in `pcb-off` and TIMED_OUT in
+      `pcb-on` (`kit-dev-coldfire-xilinx_5213`, 171 s in K15.30, reaches 240 s at +40 %) is left out
+      of the judgement by validity (b) but named, and guard (4) counts its route time, so a
+      timeout cannot hide a time cost; (c) validity (a) reads both `pour_fill_target` and
+      `pour_fill_contacts` from the manifests; (d) the noise is K15.30's 67.09 over 16 rows (72.32
+      over 17): `connections.maximum_count`, the band's base, is 852 (pcu) and 331 (canary-pwr) in
+      both arms of the check on `c4f74fb`, equal to K15.30's records, and the gate printed 67.09
+      on K15.30's records through this registration (format check below). Decision table: not
+      measured, breach (`pour_fill_contacts` unoffered, K15.30's option stays), not kept no gain /
+      not kept guard (both unset in both profiles; the plugin offers `pour_fill_contacts` beside
+      K15.30's checkbox), kept (both into `ENHANCED` with DIVERGENCES profile lines, parity 7 of 7,
+      and K15.30's plugin option for `pour_fill_target` removed: with the profile carrying the
+      setting it would add an already-set flag and could not switch it off).
+    - *Seen gains vs the noise:* pcu 47 -> 20 and canary-pwr 40 -> 26 are 41 together against a set
+      noise of 67.09, so S holds only if the other 14 judged rows gain 27 more; K15.30's rows moved
+      0 to 2 each with the target alone. 'Not kept, no gain' is the likely outcome and is
+      registered as the keep rule has it; the owner-board numbers go into the plugin option's
+      tooltip then.
+    - *Calls and time:* 34 calls (17 rows x 2). K15.30's run took 34 min (673.7 s routing in
+      `pcb-off`, 706.1 s in `pcb-on` over 16 rows, `pocketsdr-v3-0` 2 x 240 s, the rest snapshot,
+      import and grading); with the pair about +30 s on pcu, +67 s on canary-pwr, up to +72 % on the
+      other rows' 420 s, and more grading (fewer shared grades): about 40-55 min expected, at most
+      3.1 h if every call hit its 300 s cap.
+    - *Pin test:* `cargo test -p freerouting-dev --test prereg_k15_37`: RED 10 failed before the
+      files existed (`docs/roadmap/prereg/K15.37.json: No such file or directory`); GREEN 10 passed
+      (the registration's and the set's hashes, the rows, boards and rules files equal to K15.30's
+      and hashing as registered, the 34 commands against their templates and K15.30's commands with
+      `k1537` and the two flags, the helper's `run --dry-run` printing exactly them, the script and
+      helper hashes, the rule, noise, guards, validity, `must_judge`, decision table, the seen
+      sessions, 0 amendments). `--test prereg_k15_30`: 9 passed and `--test prereg_k15_14`: 8
+      passed, unchanged; `cargo test -p freerouting-dev`: all passed. Format check, nothing routed:
+      `k15_all_pours.py collect` and `freerouting-dev gate --write-baseline` / `--all-pairs
+      --left-out pocketsdr-v3-0=...` of this registration on symlinks to K15.30's finished arms
+      (scratch directory, not recorded as a result) printed K15.30's 370 -> 363 over 16 rows and the
+      noise 67.09: the registration, `collect` and the gate agree.
+    - heavy run pending: `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+      target/orchestrator/k1537/tree <K15_37_COMMIT> && cd target/orchestrator/k1537/tree &&
+      CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+      CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1537/target-release
+      cargo build --release -p freerouting-cli -p freerouting-dev` and `cargo test --release -p
+      freerouting-dev --test prereg_k15_37` (same environment); then `cd
+      /home/thebo/code/freerouting-rs && python3 -I
+      target/orchestrator/k1537/tree/tools/bench/k15_all_pours.py prepare
+      target/orchestrator/k1537/tree/docs/roadmap/prereg/K15.37.json` (every row `present`); then
+      amendment 1 (the commit, the binary, the grader and plugin hashes) with the pin updated
+      (`AMENDMENTS`, the registration's sha256), committed to main; then `mkdir -p
+      target/orchestrator/k1537/out && python3 -I
+      target/orchestrator/k1537/tree/tools/bench/k15_all_pours.py run
+      target/orchestrator/k1537/tree/docs/roadmap/prereg/K15.37.json >
+      target/orchestrator/k1537/out/run.log 2>&1; echo "EXIT $?" >>
+      target/orchestrator/k1537/out/run.log`; then `collect` and the two gate calls
+      (`--write-baseline`, `--all-pairs`, `--prereg docs/roadmap/prereg/K15.37.json` as amended,
+      `--left-out ROW=REASON` for each row validity (b) leaves out) as `heavy_run` spells out. Keep
+      `target/orchestrator/k1514/boards/` until this run is done.
 
 - [x] **K15.38 — The `.kicad_pcb` path's fill model takes the keepouts as KiCad's filler does.**
   - **Change:** K15.35 changed the DSN path only (`Opening::kicad_keepouts` is false for a
