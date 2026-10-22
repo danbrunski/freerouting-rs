@@ -1426,7 +1426,7 @@ item-type rules), N06 (`router.java_quirks`).
       clean; `cargo test -p freerouting-cli -p freerouting`: all pass. The plugin calls no `-drc`,
       so no pytest run.
 
-- [~] **K15.18 — Under `enhanced` a via to a cut plane lands where the plane is filled.**
+- [x] **K15.18 — Under `enhanced` a via to a cut plane lands where the plane is filled.**
   - **Change:** after K15.15 a plane has windows where a higher-priority zone of another net fills.
     On K15.15's fixture (`crates/freerouting-kicad/tests/data/k15-overlapping-planes.kicad_pcb`, J1's
     pad alone), `legacy` reaches V_BUS_12V's own part of In2.Cu with a trace on the power layer
@@ -1509,6 +1509,13 @@ item-type rules), N06 (`router.java_quirks`).
       unchanged (asserted above).
     - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2946 passed, 0 failed, 56 ignored.
+
+  - *Done 2026-10-22:* accept 2's last clause holds on K15.23's run
+    (`target/orchestrator/k1523/runs/pcu-k1523-kicad_pcb-off`: K15.18's off-arm command with
+    K15.23's release binary, which carries this change; graded by KiCad 10.0.7): 47 unconnected,
+    0 below-minimum, 0 manufacturing breaches, 0 routing-caused DRC (the `/CH6_NO`
+    `track_dangling` is gone: K15.23's cleanup removes the stub and the output check's retry
+    routes the connection into EFUSE_NO_6's fill). Accept 1 and 3 as above.
 
 - [x] **K15.19 — No routed track crosses the board edge or an NPTH's hole clearance on wisweep.**
   - **Change:** K15.14's run (`target/orchestrator/k1514/out/wisweep-driver-board/`, engine
@@ -1957,3 +1964,45 @@ item-type rules), N06 (`router.java_quirks`).
       multichannel_mixer 1, One-Air-Max 9, RoyalBlue54L 5, StickHub 1, vme-wren 13,
       canary-pwr 6) all load in the router (`-de -drc`, rc 0). `crates/` is unchanged, so
       `legacy` on the committed DSNs (connection-parity) is unchanged; no parity run made.
+
+- [ ] **K15.25 — The router's search reaches a `.kicad_pcb` signal pour where it is filled.**
+  - **Change:** K15.23 made the stub cleanup judge a signal-layer pour of a `.kicad_pcb` by the
+    router's fill model opened by the zone's `min_thickness` (`quality/pour_fill.rs`). The
+    router's own contacts and the maze search's destination are still the pour's outline
+    (`BasicBoard::conduction_area_normal_contacts`, Java's `ConductionArea.getNormalContacts`).
+    On K15.23's fixture (`crates/freerouting/tests/data/kicad/pcu-k1523/a-stub-beside-a-crossing`,
+    `tests/k15_pour_fill_stub.rs::the_route_from_j2_leaves_no_stub_under_enhanced`) both
+    profiles route J2's `/CH6_NO` to (124.5279, 109.2002) mm, inside the outline where the
+    opened fill does not reach; `enhanced`'s cleanup removes it and the connection stays open
+    (1 incomplete). On the pcu board the connection reached the fill only through the output
+    check's retry (`router.output_check=repair`). Make `enhanced`'s search aim for the pour
+    where its opened fill reaches (the destination or the contact test from `PourFills`), with
+    `legacy` unchanged.
+  - **Accept:**
+    - the fixture's J2 connection routes 0 open under `enhanced`, its end inside the opened
+      fill; the test's expected value changes with a note;
+    - the pcu `.kicad_pcb` route (K15.18's off-arm command, a few minutes), graded by KiCad, with
+      the default options and with `--router.output_check=report`: 0 routing-caused
+      `track_dangling`, unconnected not up (47), 0 below-minimum, 0 manufacturing breaches, the
+      route time against K15.23's (181.1 s, 162.3 s);
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).
+
+- [ ] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
+  - **Change:** K15.23's opened fill applies to a `.kicad_pcb` only (a zone of the file gives its
+    `min_thickness`); on a DSN input the cleanup keeps the pour's outline. On K15.24's pcu
+    `dsn-off` cut arm (`target/orchestrator/k1524/runs/pcu-dsn-off-cut`, the plugin's default
+    options) KiCad reports 2 `via_dangling` (`Net-(U24-OUT)` at (61.22, 118.92) mm, `/CH5_NO` at
+    (112.91, 92.19) mm) and 3 `track_dangling` (two 0.1 mm USB_GND stubs, one `/CH4_NO`). Each
+    ends inside its own net's F.Cu pour outline more than 0.8 mm from the routed board's fill:
+    other nets' copper splits the pour (K15.13's class). Let `enhanced`'s cleanup take a DSN
+    signal-layer pour's copper from the fill model too. A DSN carries no fill and no
+    `min_thickness`: say what opening it uses and why.
+  - **Accept:**
+    - a test on a small DSN with a signal pour that a crossing trace splits: a trace end in the
+      cut-off part is no contact and the cleanup removes it; on the same pour without the
+      crossing it stays;
+    - the pcu board's DSN arm again (K15.24's `target/orchestrator/k1524/runs/arms.sh`, the
+      plugin's default options, a few minutes), graded by KiCad: 0 routing-caused
+      `track_dangling` and `via_dangling`, unconnected not up (47), 0 below-minimum, 0
+      manufacturing breaches;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).
