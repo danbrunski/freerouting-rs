@@ -68,9 +68,9 @@ const TREE: &str = "target/orchestrator/k1543/tree";
 const OUT: &str = "target/orchestrator/k1543/out";
 /// 17 rows x 2 arms (`.kicad_pcb` only).
 const CALLS: usize = 34;
-const AMENDMENTS: usize = 0;
+const AMENDMENTS: usize = 1;
 const REGISTRATION_SHA256: &str =
-    "87ad61a13496455a46b80f7372a8d10fd6551a047626bfbe43b1106d821e48ca";
+    "8ecf0413cf83fcb0d0f2e2481814268fcedd00c47105e6df5fd0a5e3536fcdfe";
 const SET_SHA256: &str = "fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb";
 /// K15.14's registered helper (`helper.sha256` there), unchanged.
 const HELPER_SHA256: &str = "8de88dd8209eb8d073d596bcba200fdcef9f1d5b0c4a9210136103214723488f";
@@ -657,7 +657,13 @@ fn the_registration_records_what_was_seen_before_it() {
     let not_registered = strings(&json, "not_registered").join("\n");
     assert!(not_registered.contains("K15.46"));
     assert!(not_registered.contains("not on main"));
-    assert_eq!(json.get("amendments"), Some(&Json::Array(Vec::new())));
+    // Amendment 1: the commit and the binary, before any arm runs.
+    let amendment = match json.get("amendments") {
+        Some(Json::Array(list)) => list.first().map_or("", |a| string(a, "reason")),
+        other => panic!("amendments: {other:?}"),
+    };
+    assert!(amendment.contains("K15_43_COMMIT = main 29a4cf1"));
+    assert!(amendment.contains("9240307c48ca14e8122efe970069611b5dfb8192ae9ca7826ab67cff95ee1093"));
 }
 
 #[test]
