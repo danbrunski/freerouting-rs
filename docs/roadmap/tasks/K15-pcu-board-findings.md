@@ -1252,7 +1252,7 @@ item-type rules), N06 (`router.java_quirks`).
     - `legacy` unchanged unless Java does the same (say which); parity 7 of 7 if shared code
       changes.
 
-- [ ] **K15.20 — The plugin's snapshot keeps a board name that has a dot in it.**
+- [x] **K15.20 — The plugin's snapshot keeps a board name that has a dot in it.**
   - **Change:** `snapshot.py::snapshot_files` builds each file name with
     `(work / stem).with_suffix(...)`, so for the board `v3.0.kicad_pcb` (stem `v3.0`) it writes
     `v3.kicad_pcb`, `v3.kicad_pro` and `v3.kicad_dru`. The rest of the flow looks for
@@ -1265,6 +1265,19 @@ item-type rules), N06 (`router.java_quirks`).
       `.kicad_pro`, `.kicad_dru` and `.kicad_prl`, and `design_path` names the same board;
     - `pocketsdr-v3-0`'s `pcb-off` command again: a session, graded;
     - `python3 -m pytest kicad-plugin/tests` with the router dir: no new skip.
+  - *Done 2026-10-21:* `snapshot.py::snapshot_files` appends each suffix to the stem
+    (`work / (stem + ".kicad_pcb")` and so on); the other `with_suffix` calls in the plugin
+    (`export_flow.py` `kicad_dru_args`, `save_arguments`) act on a full file name and were right.
+    - Test `kicad-plugin/tests/test_snapshot.py::test_a_dot_in_the_board_name_stays_in_the_snapshots_files`
+      (stems `v3.0`, `ça va.ok`, `board.rev2.1`: the four files are `<stem>.<suffix>` and the board
+      is `design_path`'s): RED before the change (3 failed), GREEN after.
+    - `pocketsdr-v3-0`'s `pcb-off` command again (this tree's `plugin-input-ab.sh` and plugin, the
+      `b8bbe78` release engine, output `target/orchestrator/k1520/pocketsdr-pcb-off/`): `EXIT 0`,
+      work files `v3.0.kicad_pcb`, `.kicad_pro`, `.kicad_dru`, `.args.json`, `.ses`; graded: KiCad
+      unconnected 50 (input 322), 0 routing-caused items, 0 manufacturing breaches, 0
+      below-minimum, 0 vias in pads, route 240.1 s. K15.14's amendment 3 lists this run as seen.
+    - `python3 -m pytest kicad-plugin/tests` with `FREEROUTING_RS_BIN` the debug build dir: 677
+      passed, 6 skipped (pcbnew 3, the canary-pwr board 1, `KICAD_METADATA_REPO` 2), as before.
 
 - [ ] **K15.21 — The gate judges a registered run with a row left out by validity.**
   - **Change:** K15.14's validity rule (b) leaves out a row whose arms don't all complete and

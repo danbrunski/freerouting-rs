@@ -35,6 +35,21 @@ def test_the_design_file_is_the_dsn_or_the_snapshot_beside_it(tmp_path):
     }
 
 
+@pytest.mark.parametrize("stem", ["v3.0", "ça va.ok", "board.rev2.1"])
+def test_a_dot_in_the_board_name_stays_in_the_snapshots_files(tmp_path, stem):
+    # K15.20: `v3.0.kicad_pcb`'s snapshot was written as `v3.kicad_pcb`, and the route
+    # found no session (K15.14's pocketsdr-v3-0 row).
+    work = tmp_path / "freerouting-rs"
+    files = snapshot.snapshot_files(work, stem)
+    assert files == {
+        "pcb": work / (stem + ".kicad_pcb"),
+        "pro": work / (stem + ".kicad_pro"),
+        "dru": work / (stem + ".kicad_dru"),
+        "prl": work / (stem + ".kicad_prl"),
+    }
+    assert files["pcb"] == snapshot.design_path(work, stem, "kicad_pcb")
+
+
 @pytest.mark.parametrize("stem", ["board", "Platine für Größe 2", "板子 v2", "ça va.ok"])
 def test_the_argument_lists_for_both_inputs_with_non_ascii_names(tmp_path, stem):
     work = tmp_path / "Ordner äöü" / "freerouting-rs"

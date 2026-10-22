@@ -85,13 +85,15 @@ def design_path(work_dir, stem, board_input):
 def snapshot_files(work_dir, stem):
     """The files of a snapshot in the work folder: the board, the project and
     the rules beside it (named as the reader looks for them), and the
-    `.kicad_prl` KiCad writes with a project copy and nothing needs."""
-    base = Path(work_dir) / stem
+    `.kicad_prl` KiCad writes with a project copy and nothing needs. The
+    suffix is appended, not swapped: a stem such as `v3.0` keeps its dot
+    (K15.20)."""
+    work = Path(work_dir)
     return {
-        "pcb": base.with_suffix(".kicad_pcb"),
-        "pro": base.with_suffix(".kicad_pro"),
-        "dru": base.with_suffix(".kicad_dru"),
-        "prl": base.with_suffix(".kicad_prl"),
+        "pcb": work / (stem + ".kicad_pcb"),
+        "pro": work / (stem + ".kicad_pro"),
+        "dru": work / (stem + ".kicad_dru"),
+        "prl": work / (stem + ".kicad_prl"),
     }
 
 
