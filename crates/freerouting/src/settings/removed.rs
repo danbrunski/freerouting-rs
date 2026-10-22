@@ -22,6 +22,12 @@
 //!   failed on three boards, the total moved within noise, the work guard
 //!   failed on six rows), and its fail branch removed `quality/portfolio/`
 //!   on 2026-10-20 (`docs/roadmap/tasks/archive/Q12-pass-1-portfolio.md`).
+//! - `autorouter.restarts_from_best`: Q23's restarts from the best board.
+//!   Q23.4's registered run rejected it (3 of 5 boards improved where the
+//!   paired rule needs 4, and the work guard failed on CPU-85 at 2.16 times
+//!   the base run's maze work), and its fail branch removed
+//!   `quality/restart.rs` on 2026-10-22
+//!   (`docs/roadmap/tasks/Q23-restart-from-the-best-board.md`).
 
 use super::fields::FIELDS;
 use super::path::name_matches;
@@ -42,6 +48,7 @@ pub struct RemovedSetting {
 }
 
 const Q12_WHY: &str = "the pass-1 portfolio failed its measurement (Q12.5)";
+const Q23_WHY: &str = "the restarts from the best board failed their measurement (Q23.4)";
 
 /// Every removed key.
 pub const REMOVED: &[RemovedSetting] = &[
@@ -65,6 +72,13 @@ pub const REMOVED: &[RemovedSetting] = &[
         java_name: "portfolioMemoryMb",
         removed: "2026-10-20",
         why: Q12_WHY,
+    },
+    RemovedSetting {
+        section: "autorouter",
+        name: "restarts_from_best",
+        java_name: "restartsFromBest",
+        removed: "2026-10-22",
+        why: Q23_WHY,
     },
 ];
 

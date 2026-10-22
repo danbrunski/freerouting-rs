@@ -106,7 +106,10 @@ fn the_registration_is_valid_and_names_its_arms_and_metrics() {
         !prereg.totals_registered,
         "an opt-in stage: the paired rule"
     );
-    assert_eq!(prereg.amendments, 0);
+    assert_eq!(
+        prereg.amendments, 1,
+        "amendment 1: the canary rows graded as the router rows"
+    );
     assert_eq!(
         (
             prereg.rule.min_boards,
@@ -251,6 +254,6 @@ fn the_work_guard_and_the_decision_table_are_registered() {
 fn the_registration_is_pinned_by_its_hash() {
     assert_eq!(
         registration().sha256,
-        "64ca9b3f17860bdf0e39b3d1dfc7291f275a2e04526108b9cbbdf9bfa1524e30"
+        "576380f4e48e5e45733842268afd3b5af206b62ba6d9e96ce5908f024293ec91"
     );
 }

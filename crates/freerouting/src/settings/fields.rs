@@ -330,8 +330,6 @@ settings_table! {
                 "Run the sweep after the optimizer, then optimize again (Q10.3); unset is false."),
             (output_guard, bool, opt, None, None, "outputGuard", [], Flat::No, true,
                 "Never end worse than the input on completed connections or unconnected pins: fall back to the best history board that isn't, else the input (Q04.3; unset: off)."),
-            (restarts_from_best, i32, opt, None, None, "restartsFromBest", [], Flat::No, true,
-                "Restarts from the best board after the passes: the fanout, then the passes again from pass 1, each kept only if it beats the best board, stopping at the first that doesn't (Q23); unset, 0 or negative is off."),
         }
         fanout, FanoutPatch, FanoutSettings, "fanout",
         "Configuration of the SMD-pin fanout pre-pass." {

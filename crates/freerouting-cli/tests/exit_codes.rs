@@ -31,17 +31,19 @@ fn names_in(dir: &std::path::Path) -> Vec<String> {
 #[test]
 fn removed_portfolio_settings_are_usage_errors() {
     let dir = dir_with_fixture("exit-removed");
-    for flag in [
-        "--router.autorouter.portfolio=4",
-        "--router.autorouter.restarts=2",
-        "--router.autorouter.portfolio_memory_mb=512",
+    for (flag, date) in [
+        ("--router.autorouter.portfolio=4", "2026-10-20"),
+        ("--router.autorouter.restarts=2", "2026-10-20"),
+        ("--router.autorouter.portfolio_memory_mb=512", "2026-10-20"),
+        // Q23.4's fail branch.
+        ("--router.autorouter.restarts_from_best=1", "2026-10-22"),
     ] {
         let out = run_in(&dir, &["-de", FIXTURE, "-do", "o.ses", flag]);
         assert_eq!(code(&out), 2, "{flag}: {}", stderr(&out));
         let key = flag.trim_start_matches("--").split('=').next().unwrap();
         let text = format!("{}{}", stdout(&out), stderr(&out));
         assert!(
-            text.contains(&format!("{key} was removed on 2026-10-20")),
+            text.contains(&format!("{key} was removed on {date}")),
             "{flag}: {text}"
         );
         assert!(

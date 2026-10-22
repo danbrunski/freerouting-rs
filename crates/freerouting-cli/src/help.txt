@@ -133,14 +133,6 @@ PLUGIN FLAGS (not in Java)
   --max-passes <number>
       The same as -mp.
       Setting: autorouter.max_passes
-  --router.autorouter.restarts_from_best=<number>
-      Restarts from the best board: once the passes stop (stagnation or the
-      pass limit), run the fanout and the passes again from pass 1 on the
-      best board, keep the result only if its score beats the best board's,
-      and stop at the first restart that does not; at most this many times.
-      Unset, 0 or a negative number is off, in both profiles. A timeout still
-      stops a restart and keeps the best board.
-      Setting: autorouter.restarts_from_best
   --threads <number>
       Threads of the optimizer and of the analyses (the design rules check and
       the board statistics). The autorouter's passes are sequential: they run

@@ -405,6 +405,24 @@ removed, and its three settings keys are refused. The numbers are in Q12.5's
 note in [Q12](tasks/archive/Q12-pass-1-portfolio.md); the registration stays
 in `docs/roadmap/prereg/Q12.json`.
 
+### 10. Restart from the best board (Q23)
+
+When the pass loop stops, take its best board, run the fanout on it and the
+passes again from pass 1, and keep the result only if it beats the best
+board (`router.autorouter.restarts_from_best`). Q23.1 found that a second
+CLI run's gain on the PCU board and canary-pwr came from that second pass 1.
+
+Status: measured and removed (decided by Q23.4's fail branch, 2026-10-22).
+With `--max-passes 1`, `restart` against `base` improved 3 of 5 boards
+(GP8B 222 -> 159, CPU-85 146 -> 142, coldfire-5213 181 -> 180 unrouted). On
+the PCU board (95) and canary-pwr (331 summed) the restart did not beat the
+best board, so it was dropped. The paired rule needs 4 of 5. The work guard
+(at most 2.0x `base`'s maze work) failed on CPU-85 at 2.16x. No hard limit
+or `drc_real` guard broke. `quality/restart.rs` is removed and its key is
+refused. The numbers are in Q23.4's note in
+[Q23](tasks/archive/Q23-restart-from-the-best-board.md); the registration stays in
+`docs/roadmap/prereg/Q23.json`.
+
 ### Handled elsewhere
 
 - **KiCad rule areas.** KiCad's DSN export turns a rule area that bans only

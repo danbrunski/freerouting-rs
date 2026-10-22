@@ -1,0 +1,140 @@
+{
+  "format": "freerouting-gate-baseline-1",
+  "rows": {
+    "/home/dan/code/freerouting-rs/target/orchestrator/pcu-rev2/out/q23/input/final_v7.kicad_pcb": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "kicad_version": "10.0.6",
+          "unrouted": 95,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "kicad_version": "10.0.6",
+          "unrouted": 95,
+          "via_in_pad": 0
+        }
+      },
+      "board": "pcu",
+      "input_sha256": "1e16823a400eca33b1f882aef4abf06764a860f4b60988b25a6359623f74e8b3",
+      "mark": "neutral"
+    },
+    "fixtures/Issue066-Project_GP8B.dsn": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 222,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 159,
+          "via_in_pad": 0
+        }
+      },
+      "board": "gp8b",
+      "input_sha256": "c340433dbdb86c7b8568e6af97cbc22c37a57687eb4b48fa2da173c6f848e857",
+      "mark": "improve"
+    },
+    "fixtures/Issue690-kit-dev-coldfire-xilinx_5213.dsn": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 4,
+          "unrouted": 181,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 4,
+          "unrouted": 180,
+          "via_in_pad": 0
+        }
+      },
+      "board": "coldfire-5213",
+      "input_sha256": "2c48bf5b21e8ee5c8d357d7535f4fb2753d29213d0578ba146f907c699898452",
+      "mark": "improve"
+    },
+    "fixtures/Issue753-CPU-85_r104.dsn": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 146,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 142,
+          "via_in_pad": 0
+        }
+      },
+      "board": "cpu-85",
+      "input_sha256": "608d28bc5380b3852804d8d9bf443dfef5f7b7d0094fffbaff3715eb791154a6",
+      "mark": "improve"
+    },
+    "fixtures/canary-pwr/canary-pwr-pours1.dsn": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 111,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 111,
+          "via_in_pad": 0
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "da76e69c0350744ac8429b83f2ba005877f69fb5d635b7f94fe073d076b0558b",
+      "mark": "neutral"
+    },
+    "fixtures/canary-pwr/canary-pwr-pours2.dsn": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 112,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 112,
+          "via_in_pad": 0
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "b2547bec1102641324b47786a3eb1564eba1fa43874126811eec318dee8a1c3d",
+      "mark": "neutral"
+    },
+    "fixtures/canary-pwr/canary-pwr-pours3.dsn": {
+      "arms": {
+        "base": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 108,
+          "via_in_pad": 0
+        },
+        "restart": {
+          "below_minimum": 0,
+          "drc_real": 0,
+          "unrouted": 108,
+          "via_in_pad": 0
+        }
+      },
+      "board": "canary-pwr",
+      "input_sha256": "3113a991f69e7c01cbda93a343b8d4af99c871fe2e4c5bd29dd06cd5a8e44a19",
+      "mark": "neutral"
+    }
+  }
+}

@@ -1,18 +1,20 @@
 //! Settings keys the port removed (`settings::removed`): Q12's pass-1
 //! portfolio keys (`autorouter.portfolio`, `autorouter.restarts`,
 //! `autorouter.portfolio_memory_mb`), removed 2026-10-20 by Q12.5's fail
-//! branch. Each source refuses them with a message that names the valid
-//! `router.autorouter` keys; none of them reaches a patch.
+//! branch, and Q23's `autorouter.restarts_from_best`, removed 2026-10-22 by
+//! Q23.4's fail branch. Each source refuses them with a message that names the
+//! valid `router.autorouter` keys; none of them reaches a patch.
 
 use freerouting::settings::env::parse_environment;
 use freerouting::settings::json_file::patch_from_config_text;
 use freerouting::settings::removed::{REMOVED, find_property};
 use freerouting::settings::{FIELDS, SetError, SettingsPatch, parse_cli_arguments};
 
-const KEYS: [&str; 3] = [
+const KEYS: [&str; 4] = [
     "router.autorouter.portfolio",
     "router.autorouter.restarts",
     "router.autorouter.portfolio_memory_mb",
+    "router.autorouter.restarts_from_best",
 ];
 
 fn valid_autorouter_keys() -> String {
@@ -38,6 +40,7 @@ fn the_message_names_the_key_the_reason_and_the_valid_keys() {
     );
     assert!(message.contains("max_passes"), "{message}");
     assert!(!valid_autorouter_keys().contains("portfolio"));
+    assert!(!valid_autorouter_keys().contains("restarts_from_best"));
     assert_eq!(
         REMOVED.iter().map(|r| r.property()).collect::<Vec<_>>(),
         KEYS
@@ -77,16 +80,18 @@ fn the_cli_property_is_refused_and_sets_nothing() {
 
 #[test]
 fn a_settings_file_that_sets_one_fails_to_read() {
-    for name in [
-        "portfolio",
-        "restarts",
-        "portfolio_memory_mb",
-        "portfolioMemoryMb",
+    for (name, date) in [
+        ("portfolio", "2026-10-20"),
+        ("restarts", "2026-10-20"),
+        ("portfolio_memory_mb", "2026-10-20"),
+        ("portfolioMemoryMb", "2026-10-20"),
+        ("restarts_from_best", "2026-10-22"),
+        ("restartsFromBest", "2026-10-22"),
     ] {
         let text = format!(r#"{{"router": {{"autorouter": {{"max_passes": 3, "{name}": 4}}}}}}"#);
         let error = patch_from_config_text(&text).unwrap_err();
         assert!(
-            error.contains(" was removed on 2026-10-20"),
+            error.contains(&format!(" was removed on {date}")),
             "{name}: {error}"
         );
         assert!(

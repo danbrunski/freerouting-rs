@@ -1,11 +1,11 @@
 # Q23 — Restart from the best board
 
 Opened 2026-10-21 from the PCU rev 2.0 board report
-([pcu-rev2-board-report.md](../../development/pcu-rev2-board-report.md), "Runs"). Routing a run's
+([pcu-rev2-board-report.md](../../../development/pcu-rev2-board-report.md), "Runs"). Routing a run's
 own output again was the report's most effective step: v7's 186 unrouted became 82 in v7c, then
 79 in v7c2. The second run did what the first run's last 45 minutes didn't. This checklist finds
 out which step gains, and builds that step into the engine only if a measurement keeps it.
-The report's bugs are [K15](K15-pcu-board-findings.md)'s.
+The report's bugs are [K15](../K15-pcu-board-findings.md)'s.
 
 Prerequisites: Q10 (the add-only sweep, opt-in), A13 (best-board restore), N02 (the totals rule),
 N05 (promotion). Q23.1 and Q23.4 are heavy runs, queued through the orchestrator.
@@ -237,7 +237,7 @@ Unrouted counts are the router's.
     warnings` clean; `cargo test --no-fail-fast -p freerouting -p freerouting-cli -p
     freerouting-dev`: 2151 passed, 0 failed, 33 ignored (262 test binaries).
 
-- [ ] **Q23.4 — Measure and decide.**
+- [x] **Q23.4 — Measure and decide.**
   - **Change:** run Q23.2's registration. Apply its decision table: keep the stage opt-in, or
     remove it and its setting (Q rule 5).
   - **Accept:**
@@ -245,9 +245,116 @@ Unrouted counts are the router's.
     - the 1-in-2^N luck rate printed;
     - heavy run pending until the orchestrator runs it.
 
-- [ ] **Q23.5 — Promote, if kept.**
+  *Done 2026-10-22:* measured as registered (run approved 2026-10-22). The gate **fails**, so the
+  decision table's fail branch removed the stage.
+  - **Engine.** main `8a5e365`, one Linux release build in
+    `target/orchestrator/q23-measure-target/release/freerouting-rs` (sha256 `dd3b18da…`,
+    `freerouting-rs 0.1.0 (git 8a5e365a8cbb)`), used for both arms, with the registered commands.
+    The binary path is not `target/release/`, but it is the same engine, and the registration
+    names only "one Linux build for both arms", so this needs no amendment. KiCad: `/usr/bin/kicad-cli` and
+    pcbnew **10.0.6** (installed package `kicad 10.0.6`; the registration names no version).
+  - **Amendment 1** (`docs/roadmap/prereg/Q23.json`, sha256 `576380f4…`, re-pinned in
+    `prereg_q23.rs`, written before any route). The canary-pwr pours DSNs have no `.kicad_pcb`,
+    so these rows are graded as the router rows: `drc_real` and `below_minimum` come from the
+    router's checks, `via_in_pad` is gate collect's `session_via_in_pad`, and `kicad_unconnected`
+    is null. The router's clearance violations are the `-drc` types `clearance` and
+    `hole_clearance`. The canary group is also judged by hand on summed unrouted.
+  - **Run.** `target/orchestrator/pcu-rev2/out/q23-measure/run.sh`, 14 routes, one at a time,
+    each under `ulimit -v 8000000`, 13:49–14:17 (`run.log`). Grading:
+    - PCU: `pcu_grade.sh`, which runs grade.sh's steps (`force-errors`, `kicad-cli pcb drc
+      --severity-all --refill-zones --format json`, `kicad_steps.py stats`, `oracle_lib.py
+      summarize` on the copper basis), `via_in_pad.py`, and `via_in_pad_added.py` (via_in_pad.py's
+      test on the vias the input lacks);
+    - DSN rows: `dsn_grade.sh` (`-drc`), then `build_records.py` and `freerouting-dev gate
+      collect --group fixtures/canary-pwr/=canary-pwr`.
+
+    Records are in `records.json` (sha256 `a0bd0efe…`), the baseline in `tools/bench/baselines/Q23.json`,
+    and the gate output in `gate.txt`.
+  - **Per row** (router unrouted / KiCad unconnected where graded; maze work units; wall s).
+    `via_in_pad`, `below_minimum` and `drc_real` are 0 / 0 / 0 in both arms on every row except
+    coldfire-5213, where `drc_real` is 4 / 4. No arm hit its timeout; every `final_state` is
+    `COMPLETED`, so no row is left out.
+
+    | row | base | restart | work ratio | restart kept |
+    |---|---|---|---|---|
+    | pcu (`final_v7`, input 206) | 95 / 79; 3,536,888,682; 154.1 | 95 / 79; 6,370,747,981; 250.5 | 1.80 | no (95 -> 95), SES byte-identical |
+    | canary-pwr-pours1 | 111; 1,537,706,638; 59.6 | 111; 2,683,513,410; 123.1 | 1.75 | no, byte-identical |
+    | canary-pwr-pours2 | 112; 1,666,067,583; 61.4 | 112; 2,734,835,937; 110.5 | 1.64 | no, byte-identical |
+    | canary-pwr-pours3 | 108; 1,364,400,741; 55.7 | 108; 2,346,542,486; 105.8 | 1.72 | no, byte-identical |
+    | coldfire-5213 | 181; 30,572,692; 242.9 | 180; 46,739,898; 267.9 | 1.53 | yes (181 -> 180) |
+    | cpu-85 | 146; 805,100,591; 12.2 | 142; 1,740,279,363; 24.8 | **2.16** | yes (146 -> 142) |
+    | gp8b | 222; 2,276,999,413; 58.8 | 159; 4,529,681,025; 117.7 | 1.99 | yes (222 -> 159) |
+
+    - The PCU row's KiCad grade: 0 routing-caused items (512 pre-existing), 79 unconnected against
+      the input's 154, 0 vias in pads that the input lacks (117 in both the input and the output).
+    - The grade counts 24 `track_width` items below the `.kicad_dru` minimum of 0.127 mm. All 24
+      are in the input; `below_min_added.py` finds 0 that the input lacks. So `below_minimum`
+      (routed copper) is 0.
+    - Canary-pwr summed: 331 -> 331.
+  - **Gate.** `freerouting-dev gate --records records.json --prereg docs/roadmap/prereg/Q23.json
+    --baseline baseline.json` gives:
+    - 0 refusals, 7 of 7 rows judged;
+    - "on trial: improved 3/5 board(s), regressed 0, neutral 2 (rule: improve >= N-1, regress <=
+      0)": improved coldfire-5213, cpu-85, gp8b; neutral canary-pwr, pcu;
+    - "N=5: a change whose per-board direction is a coin flip passes this rule 1 run in 32";
+    - **gate: FAIL** (exit 1).
+
+    The registered rule by hand agrees, with the canary rows summed (331 -> 331, neutral):
+    - paired rule: 3 of 5 improved, where 4 are needed: fail;
+    - hard metrics: 0 everywhere;
+    - `drc_real`: never higher than base;
+    - work guard: fails on cpu-85 (2.16x > 2.0).
+
+    Luck rate: 1 in 2^5 = 32.
+  - **Decision: fail.** Q rule 5 removed the stage:
+    - removed: `crates/freerouting/src/quality/restart.rs`, `crates/freerouting/tests/restart.rs`,
+      the `run_batch_loop` hook and `LoopOutcome::restart`, the `quality/mod.rs` and
+      `register.rs` lines, the `restarts_from_best` field, its help text, its `settings_defaults`
+      entry, the GUI `CLI_ONLY` entry and the DIVERGENCES section;
+    - the key `router.autorouter.restarts_from_best` (and `restartsFromBest`) is refused by
+      `settings/removed.rs` ("removed on 2026-10-22: the restarts from the best board failed their
+      measurement (Q23.4)"). The tests are `tests/settings_removed.rs` and
+      `removed_portfolio_settings_are_usage_errors`. The DIVERGENCES removed-settings line names
+      it;
+    - `routing-quality.md` §10 records the result.
+  - **What the numbers say.**
+    - The restart gained on the three benchmark boards, most on GP8B (−63).
+    - On the PCU board and the three canary-pwr variants, its fanout and pass 1 ended at exactly
+      the best board's score (the log says "unrouted 95 -> 95, violations 220 -> 220" on the PCU
+      board), so it was dropped and the output is byte-identical to `base`.
+    - Q23.1's `cont` arm started from `final_v7` (206) and reached 103. Here `base` itself
+      reaches 95 from the same input, and a restart on that result adds nothing.
+  - **Gate after the removal:**
+    - `cargo fmt --all --check` is clean, and so is `cargo clippy --workspace --all-targets -- -D
+      warnings`;
+    - `cargo test --no-fail-fast -p freerouting -p freerouting-cli -p freerouting-dev -p
+      freerouting-gui`: 2456 passed, 0 failed, 36 ignored. One binary, `freerouting-gui --test
+      ui_render`, died with SIGSEGV in the parallel run (software GPU) and passes alone with
+      `--test-threads=1` (7 passed, 1 ignored). The removal touches only a `CLI_ONLY` entry in that
+      crate;
+    - `prereg_q23`: 5 passed;
+    - `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: 7 of 7
+      `[exact]` with equal bytes, `PARITY OK`.
+
+  - **Review notes (orchestrator, 2026-10-22).** Neither changes the verdict.
+    - The PCU row's input was already a routed board (`final_v7`), so its `base` arm was itself
+      Q23.1's continuation: 206 -> 95 in one pass. A restart on top of that could add nothing.
+      With an unrouted PCU input the row could have shown Q23.1's gain, but the rule would still
+      fail on the remaining boards and on the work guard (cpu-85 2.16x).
+    - On canary-pwr, one pass (`base`, 111 unrouted on pours1) beat Q23.1's 14-pass first run
+      (119). So the continuation gain Q23.1 saw there undoes damage the later passes did; it is
+      not a step a restart adds. Where later passes make a board worse is a question for the
+      pass loop and the best-board restore, not a reason to restart.
+
+- [x] **Q23.5 — Promote, if kept.**
   - **Change:** only if Q23.4 keeps the stage: N05's recipe, judged by the totals rule, decides
     whether `router.autorouter.restarts` joins `ENHANCED`.
   - **Accept:**
     - N05's recipe followed, with its registration and gate output;
     - or a note that Q23.4 removed the stage, which closes this item.
+
+  *Done 2026-10-22:* closed without a promotion. Q23.4's gate failed (3 of 5 boards improved,
+  where 4 are needed, and the work guard failed on CPU-85 at 2.16x). The decision table's fail
+  branch removed `quality/restart.rs` and its setting: `router.autorouter.restarts_from_best` is
+  refused by `settings/removed.rs`. Nothing remains to promote, and `settings/profile.rs` is
+  unchanged.

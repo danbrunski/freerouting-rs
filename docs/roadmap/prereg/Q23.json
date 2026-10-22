@@ -196,5 +196,11 @@
     "the PCU board's unrouted placement (placed_v7 or unrouted-1b161c7): its fanout and pass 1 alone take 5 to 10 minutes per arm"
   ],
   "timing": "registered before any Q23.4 number; Q23.3's tests and determinism checks on q06-sole-wall, q06-fixed-cage and the small benchmark boards are not runs of these arms",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "reason": "written before any route of Q23.4: the canary grade the registration names for the canary-pwr rows (Q10's: ses_import.py into the KiCad board, kicad-cli DRC) needs the .kicad_pcb each DSN was exported from, and fixtures/canary-pwr/canary-pwr-pours1..3.dsn record none (their header names a deleted canary scratch DSN; Q10's amendment 2 found the same and left these rows without KiCad metrics); and the router rows' `clearance violations` needs a type list fixed before any number",
+      "changes": "(1) The canary-pwr rows are graded as the router rows: via_in_pad as registered (gate collect's session_via_in_pad on the DSN with the SES), below_minimum the result manifest's output_check.by_rule track_width + via_diameter + annular_width + drill_out_of_range (its `remaining` must be 0), drc_real the `freerouting-rs -drc` clearance violations of the DSN with the SES minus those of the DSN alone; kicad_unconnected is null on them (reported only). (2) On every row graded by the router, `clearance violations` are the -drc report's `violations` of type clearance or hole_clearance (the two the report checks with the board's clearance rules), counted with the same binary and no router flags on both inputs. (3) Records: the rows' metrics come from gate collect (fake bench files carrying each run's result-manifest statistics) plus a script for the PCU row and maze_work_units; the gate judges the rows with board canary-pwr grouping the three variants, and because the gate marks a group by its rows (any regress) while keep_rule sums their unrouted counts, the registered rule is also applied by hand and decides where the two differ. Arms, boards, metrics, rules, timeouts and the decision table unchanged"
+    }
+  ]
 }
