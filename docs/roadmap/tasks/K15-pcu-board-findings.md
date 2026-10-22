@@ -2538,6 +2538,33 @@ item-type rules), N06 (`router.java_quirks`).
       (`--write-baseline`, `--all-pairs`, `--prereg docs/roadmap/prereg/K15.30.json` as amended,
       `--left-out ROW=REASON` for a row validity (b) leaves out) as `heavy_run` spells out. Keep
       `target/orchestrator/k1514/boards/` until this run is done.
+    - *Run 2026-10-22* (amendment 1, abcaf61: K15_30_COMMIT `fb59eb5`, binary `43f10fb7…`, all 17
+      rows present): 34 calls, every one EXIT 0, 04:14-04:48 (34 min), into
+      `target/orchestrator/k1530/out/` (`run.log`, `records.json`, `baseline.json`,
+      `gate-baseline.txt`, `gate-all-pairs.txt`). Validity (a): every `pcb-on` manifest has
+      `pour_fill_target` true, no `pcb-off` one has it. Validity (b) leaves out `pocketsdr-v3-0`
+      (both arms TIMED_OUT at `--timeout 240`; graded, hard limits 0), passed to both gate calls as
+      `--left-out`; 16 rows judged, pcu and canary-pwr among them. Guard (1): 0 manufacturing
+      breaches and 0 below-minimum in all 34 graded arms. KiCad unconnected, `pcb-off` -> `pcb-on`
+      (routing-caused `drc_real` in brackets where it changed):
+
+      | row | off | on | change | band |
+      |---|---|---|---|---|
+      | pcu-76163c7 | 47 | 49 | +2 | 43 |
+      | canary-pwr-95882f00 | 40 | 31 | -9 | 10 |
+      | complex_hierarchy | 81 | 80 | -1 | 14 |
+      | moteus-moteus-c1 (drc_real 4 -> 9) | 40 | 39 | -1 | 22 |
+      | nudac-nudac (drc_real 1 -> 0) | 11 | 12 | +1 | 9 |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 10 | 9 | -1 | 6 |
+      | wisweep-driver-board (drc_real 4 -> 3) | 27 | 29 | +2 | 11 |
+      | the 9 other judged rows | 129 | 129 | 0 | |
+
+      Total 370 -> 363 (-7) against the set noise 67.09: `freerouting-dev gate --all-pairs`
+      "FAILS: the improvement 7 does not exceed the set noise 67.09", totals verdict reject, pair
+      `pcb-off -> pcb-on` FAIL. Decision table, in its order: not "not measured" (16 rows, both
+      `must_judge` rows judged, amendment 1 before the first arm), not "breach" (guard (1) holds in
+      every arm), so **"not kept, no gain"**: `router.pour_fill_target` stays opt-in, unset in both
+      profiles, and the plugin offers it as an option (the outcome is applied in the next change).
 
 - [ ] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
   - **Change:** the router's pour contacts are Java's (`BasicBoard::conduction_area_normal_contacts`,
