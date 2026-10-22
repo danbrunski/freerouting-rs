@@ -67,7 +67,10 @@
 //! area that bans footprints also gets a `place_keepout`; an area that bans only
 //! pads, copper pour or nothing emits no keepout and warns. Track arcs follow
 //! the curve instead of KiCad's chord, copper zones owned by footprints stay
-//! planes (`ReadOptions::drop_footprint_zones` restores KiCad's behaviour), and
+//! planes (`ReadOptions::drop_footprint_zones` restores KiCad's behaviour), a
+//! plane has a window wherever a higher-priority zone of another net fills on its
+//! layer, grown by the zones' clearance ([`zone_priority`], K15.15;
+//! `ReadOptions::uncut_planes` restores the export's whole outlines), and
 //! the vias of net classes come in project order. `docs/DIVERGENCES.md` lists
 //! each with its test.
 //!
@@ -138,6 +141,7 @@ pub mod tracks;
 pub mod units;
 pub mod vias;
 pub mod write;
+pub mod zone_priority;
 pub mod zones;
 
 pub use error::{ErrorKind, KicadError, Warning};

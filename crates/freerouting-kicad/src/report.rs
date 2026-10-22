@@ -32,6 +32,22 @@ pub struct ReadReport {
     pub footprint_zones_kept: Vec<(String, Option<String>)>,
     /// Custom pads built as the convex hull of their parts.
     pub custom_pad_hulls: usize,
+    /// Planes cut where higher-priority zones of other nets fill (K15.15), in
+    /// plane order.
+    pub plane_cuts: Vec<PlaneCut>,
+}
+
+/// One plane cut by higher-priority zones ([`crate::zone_priority`]).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PlaneCut {
+    /// The zone's name, else its net.
+    pub zone: String,
+    pub layer: String,
+    /// The higher zones of other nets that cut a window (names, else nets), in
+    /// zone order.
+    pub by: Vec<String>,
+    /// The windows cut.
+    pub windows: usize,
 }
 
 impl fmt::Display for ReadReport {
@@ -56,6 +72,16 @@ impl fmt::Display for ReadReport {
             }
         }
         writeln!(f, "planes: {}", self.planes)?;
+        for c in &self.plane_cuts {
+            writeln!(
+                f,
+                "  {} on {}: {} window(s) where higher-priority zones fill ({})",
+                c.zone,
+                c.layer,
+                c.windows,
+                c.by.join(", ")
+            )?;
+        }
         writeln!(f, "wires: {}, vias: {}", self.wires, self.vias)?;
         writeln!(
             f,

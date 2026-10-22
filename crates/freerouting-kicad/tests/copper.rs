@@ -13,13 +13,14 @@ use freerouting_dsn::Pcb;
 use freerouting_dsn::ast::{KeepoutKind, Shape, WireType, WiringItem};
 use freerouting_geometry::{IntPoint, Point, PolylineShapeOps};
 
-/// Reads like KiCad's export does, which drops the copper zones footprints own, so that the
-/// trees compare.
+/// Reads like KiCad's export does, which drops the copper zones footprints own and writes
+/// whole zone outlines as planes (K15.15), so that the trees compare.
 fn load(board: &Path) -> (freerouting_kicad::KicadRead, Pcb) {
     let text = std::fs::read_to_string(board).unwrap();
     let pro = std::fs::read_to_string(board.with_extension("kicad_pro")).ok();
     let options = freerouting_kicad::ReadOptions {
         drop_footprint_zones: true,
+        uncut_planes: true,
         ..Default::default()
     };
     let read = freerouting_kicad::read_with("board.dsn", &text, pro.as_deref(), options)
@@ -108,6 +109,7 @@ fn corpus_copper() {
         let pro = std::fs::read_to_string(board.with_extension("kicad_pro")).ok();
         let options = freerouting_kicad::ReadOptions {
             drop_footprint_zones: true,
+            uncut_planes: true,
             ..Default::default()
         };
         let Ok(read) = freerouting_kicad::read_with("board.dsn", &text, pro.as_deref(), options)

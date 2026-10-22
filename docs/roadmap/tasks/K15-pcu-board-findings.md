@@ -1012,7 +1012,7 @@ item-type rules), N06 (`router.java_quirks`).
       target/orchestrator/k1514/out/run.log` (38 calls, the registration's `commands`), then
       `collect` and the gate as `heavy_run` spells out.
 
-- [ ] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
+- [x] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
     V_BUS_12V vias dangling at (165.71, 44.32), (169.05, 47.44) and (173.72, 40.53) mm. Each lies
     where In2.Cu's V_BUS_24V zone (priority 41) overlaps V_BUS_12V's (priority 1). KiCad fills
@@ -1030,6 +1030,71 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu board again (a few minutes), graded by KiCad: 0 routing-caused `via_dangling`;
     - `legacy` unchanged unless Java at the pin does the same (say which); parity 7 of 7 if shared
       code changes.
+  - *Done 2026-10-21:* the `.kicad_pcb` reader cuts each plane where a higher-priority zone of
+    another net fills; the DSN path cannot know priorities (KiCad's export writes none).
+    - *Cause:* the reader builds each plane from its zone's whole outline
+      (`freerouting-kicad/src/zones.rs::make_plane`, `read.rs` plane loop), as KiCad's export does
+      (`specctra_export.cpp` 1190-1280, `zone->IterateWithHoles()`, no priority written). The DSN
+      reader inserts each plane on its own (`io/specctra/parser/structure.rs::insert_planes`), and
+      `BasicBoard::conduction_area_normal_contacts` counts a drill centred in a tile as a contact;
+      Java does the same at the pin (`Structure.java` 1141, `ConductionArea.getNormalContacts` 341).
+      Probe on K15.13's `.kicad_pcb` off arm (routed board read back): each of the 3 vias has the
+      contacts {its F.Cu trace, V_BUS_12V's plane on In2.Cu (outline, 0 windows)}; V_BUS_24V's
+      plane covers the same points. KiCad's fill (`zone_filler.cpp`
+      `buildDifferentNetZoneClearances`) knocks out every higher zone of another net
+      (`ZONE::HigherPriority`: teardrop, then priority, then UUID) by its fill plus the clearance;
+      in the input board V_BUS_12V's `filled_polygon` covers none of the 3 points.
+    - *Fix:* `freerouting-kicad/src/zone_priority.rs` (new): each plane gets one convex window per
+      pair of convex pieces of its outline and of a higher zone's outline (grown by the larger of
+      the two zones' `connect_pads` clearances) that overlap, on a 100 nm grid. `Zone` reads
+      `priority`, `uuid`, the teardrop `attr` and the clearance. The read report lists each cut
+      plane. `ReadOptions::uncut_planes` keeps KiCad's whole outlines (used by the export
+      comparisons in `tests/{copper,k14_fixups}.rs`). DIVERGENCES ("A plane is cut where a
+      higher-priority zone of another net fills"). Engine code is unchanged.
+    - *Accept 1:* fixture `freerouting-kicad/tests/data/k15-overlapping-planes.kicad_pcb` (the
+      pcu's two In2.Cu zones verbatim without fills; J1, a V_BUS_12V pad on F.Cu with a track to a
+      via at (165.71, 44.32) mm; J2, a V_BUS_12V THT pad at (200, 60) mm). KiCad 10.0.7
+      `pcb drc --refill-zones`: 1 unconnected (J1's track and J2), the via dangling.
+      `crates/freerouting/tests/k15_overlapping_planes.rs`:
+      `the_via_in_the_overlap_is_not_on_the_lower_plane` (both profiles: no plane contact,
+      incomplete 1), `the_via_in_the_overlap_stays_open` (routed, both profiles: incomplete 1),
+      `the_router_reaches_the_lower_plane_where_it_is_filled` (J1's pad alone: `legacy` 0
+      incomplete, its In2.Cu trace ends at x 178.37 mm, past V_BUS_24V's edge plus 0.8 mm;
+      `enhanced` 1). `freerouting-kicad/tests/k15_zone_priority.rs` (6 tests) and the
+      `zone_priority` unit tests (4, one at the 2 m coordinate limit). RED: 4 of the 6 reader
+      tests and both engine tests failed ("legacy: the via counts on V_BUS_12V's plane"). GREEN:
+      all pass.
+    - *Accept 2:* release binary at `8b37947` plus this change,
+      `target/orchestrator/k1515/scripts/arms.sh` (K15.13's command:
+      `tools/kicad-reader/plugin-input-ab.sh kicad_pcb k154/stripped/... k154/opts-default.json
+      <out> -- --max-passes 2 --timeout 240 [--router.plane_obstacle_all_pours=true]`,
+      `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`), graded by KiCad 10.0.7; runs in
+      `target/orchestrator/k1515/runs/pcu-kicad_pcb-*`.
+
+      | arm | KiCad unconnected | Zone-Zone (zones) | router incomplete | below-minimum | routing-caused | route s |
+      |---|---|---|---|---|---|---|
+      | off, K15.13 | 96 | 28 (23) | 65 | 0 | track_dangling 3, via_dangling 3 | 164.7 |
+      | off, K15.15 | 47 | 36 (26) | 11 | 0 | track_dangling 1 | 174.9 |
+      | on, K15.13 | 26 | 6 (6) | 23 | 0 | via_dangling 3 | 146.6 |
+      | on, K15.15 | 20 | 6 (6) | 20 | 0 | none | 160.8 |
+
+      0 `via_dangling` and 0 manufacturing breaches in both arms. The off arm's one
+      `track_dangling` is `/CH6_NO` on F.Cu at (124.59, 108.10) mm (not V_BUS_12V). The pcu's read
+      report cuts 28 planes, 27 of them outer-layer pours cut by neighbours' clearance or overlap.
+      DSN arms not rerun: the DSN path is unchanged.
+    - *Accept 3:* engine and DSN code are unchanged, so `legacy` on a DSN (Java's input) is
+      unchanged:
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+      PARITY OK, 7 of 7 exact. On a `.kicad_pcb` input the cut applies under both profiles; Java
+      reads KiCad's export, which has whole outlines, so `legacy` on a `.kicad_pcb` with
+      overlapping zones of different nets and priorities now differs from Java on KiCad's DSN.
+    - *Found:* neither profile routes a connection that starts inside a plane's window or a
+      zone's own hole (the fixture with V_BUS_24V's part drawn as a hole of V_BUS_12V's zone fails
+      the same at this change, where the reader path is unchanged); `enhanced` cannot reach the
+      plane from inside the window with no trace on a power layer.
+    - *Open, outside this item:* whether `legacy` on a `.kicad_pcb` keeps the cut (as K15.9's
+      reader additions do) or gets whole outlines, an operator decision; the plugin's DSN fix-up
+      could cut the planes from pcbnew's priorities (kicad-plugin lane, no item yet).
 
 - [ ] **K15.16 — The report's split nets and islands as KiCad's zone fill joins them.**
   - **Change:** after K15.11 the KiCad-mode `-drc` report on the pcu board (`76163c7`) has 101

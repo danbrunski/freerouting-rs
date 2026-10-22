@@ -143,6 +143,11 @@ pub struct ReadOptions {
     /// `--no-design-rules` keeps it off). Rules that cannot be expressed are
     /// reported either way ([`KicadRead::rules`]).
     pub apply_design_rules: bool,
+    /// Write each copper zone's plane as its whole outline, as KiCad's DSN
+    /// export does. Off by default: a plane gets a window wherever a
+    /// higher-priority zone of another net fills on its layer (K15.15,
+    /// [`crate::zone_priority`]), as KiCad's zone filler leaves it.
+    pub uncut_planes: bool,
 }
 
 /// Reads a board with the name `board.dsn` in the tree.
@@ -655,12 +660,36 @@ pub fn read_with_rules(
         .iter()
         .flat_map(|fp| fp.zones_as_filed.iter())
         .filter(|z| !z.rule_area && !options.drop_footprint_zones);
+    // K15.15: every copper zone KiCad fills, including the footprints' zones the
+    // reader drops, cuts the planes of lower zones of other nets
+    let fillers: Vec<&crate::zones::Zone> = board_zones
+        .iter()
+        .chain(footprints.iter().flat_map(|fp| fp.zones_as_filed.iter()))
+        .filter(|z| !z.rule_area)
+        .collect();
     for zone in board_zones
         .iter()
         .filter(|z| !z.rule_area)
         .chain(footprint_zones)
     {
         for p in layer_id_order(zone.layers, copper) {
+            let cuts = if options.uncut_planes {
+                Some(Vec::new())
+            } else {
+                plane_cuts(zone, p, &fillers, &layers, &nets, &mut report)
+            }
+            .unwrap_or_else(|| {
+                warnings.push(Warning {
+                    line: tree.node(zone.node).line(),
+                    message: format!(
+                        "zone{} on {}: an outline is not a simple polygon, so the zones of \
+                             higher priority are not cut out of its plane",
+                        zone_label(zone),
+                        layers.name(p)
+                    ),
+                });
+                Vec::new()
+            });
             let net_name = match nets
                 .name(zone.net)
                 .filter(|n| zone.net > 0 && !n.is_empty())
@@ -682,7 +711,13 @@ pub fn read_with_rules(
                     n
                 }
             };
-            planes.push(make_plane(zone, layers.name(p), net_name, &board_frame));
+            planes.push(make_plane(
+                zone,
+                layers.name(p),
+                net_name,
+                &cuts,
+                &board_frame,
+            ));
         }
     }
     report.planes = planes.len();
@@ -905,6 +940,58 @@ pub fn read_with_rules(
         rules,
         copper_index,
     })
+}
+
+/// `" 'name'"` for a named zone, else nothing.
+fn zone_label(zone: &crate::zones::Zone) -> String {
+    zone.name
+        .as_deref()
+        .filter(|n| !n.is_empty())
+        .map(|n| format!(" '{n}'"))
+        .unwrap_or_default()
+}
+
+/// K15.15: the windows the zones of `fillers` higher than `zone` on copper
+/// position `layer` cut into its plane ([`crate::zone_priority`]), recorded in
+/// the report. `None` if an outline cannot be split.
+fn plane_cuts(
+    zone: &crate::zones::Zone,
+    layer: usize,
+    fillers: &[&crate::zones::Zone],
+    layers: &Layers,
+    nets: &NetTable,
+    report: &mut ReadReport,
+) -> Option<Vec<Vec<legacy::Pt>>> {
+    use crate::zone_priority::{cuts, knockout_windows};
+    let copper = layers.count();
+    let higher: Vec<&crate::zones::Zone> = fillers
+        .iter()
+        .copied()
+        .filter(|other| !std::ptr::eq(*other, zone) && cuts(zone, other, layer, copper))
+        .collect();
+    if higher.is_empty() {
+        return Some(Vec::new());
+    }
+    let windows = knockout_windows(zone, &higher)?;
+    if !windows.is_empty() {
+        let mut by: Vec<usize> = windows.iter().map(|w| w.0).collect();
+        by.dedup();
+        let name = |z: &crate::zones::Zone| match z.name.as_deref().filter(|n| !n.is_empty()) {
+            Some(n) => n.to_owned(),
+            None => nets
+                .name(z.net)
+                .filter(|_| z.net > 0)
+                .unwrap_or("")
+                .to_owned(),
+        };
+        report.plane_cuts.push(crate::report::PlaneCut {
+            zone: name(zone),
+            layer: layers.name(layer).to_owned(),
+            by: by.into_iter().map(|i| name(higher[i])).collect(),
+            windows: windows.len(),
+        });
+    }
+    Some(windows.into_iter().map(|w| w.1).collect())
 }
 
 /// `IMAGE::makeHash`: the printed contents without whitespace, parentheses

@@ -28,8 +28,14 @@ const FIXED_POURS_ONLY: &str = include_str!("data/k14-fixups.fixed-pours-only.ds
 const FIXED_POURS_DEFAULT: &str = include_str!("data/k14-fixups.fixed-pours-default.dsn");
 const BOARD_FACTS: &str = include_str!("data/k14-fixups.board.json");
 
+/// KiCad's export writes whole outlines as planes; the fixture's In2.Cu zones VBUS and
+/// V3V3 overlap, so the reader is compared with its planes uncut (K15.15).
 fn read() -> KicadRead {
-    read_with("board.dsn", BOARD, Some(PROJECT), ReadOptions::default()).unwrap()
+    let options = ReadOptions {
+        uncut_planes: true,
+        ..ReadOptions::default()
+    };
+    read_with("board.dsn", BOARD, Some(PROJECT), options).unwrap()
 }
 
 fn parse(text: &str) -> Pcb {

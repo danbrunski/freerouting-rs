@@ -8,7 +8,11 @@
 //! appended to the outline as the polyline `SHAPE_LINE_CHAIN::Append( SHAPE_ARC )`
 //! makes at `SHAPE_ARC::DefaultAccuracyForPCB() / 5`, 1 µm. The outline is what
 //! KiCad's DSN export writes (`zone->IterateWithHoles()`), never the
-//! `filled_polygon`: fills can be stale or absent on a routed board.
+//! `filled_polygon`: fills can be stale or absent on a routed board. Unlike the
+//! export, a plane also gets the windows that higher-priority zones of other
+//! nets cut into it ([`make_plane`]'s `cuts`, [`crate::zone_priority`], K15.15):
+//! `(priority N)`, the `(uuid ...)`, a teardrop's `(attr (teardrop ...))` and
+//! the zone's `(connect_pads ... (clearance C))` are read for that.
 //!
 //! The fill is read for one setting only, K14.4's
 //! `router.input_fixups.fixed_pour_classes` ([`crate::fixups::pour_fills`]),
@@ -103,7 +107,20 @@ pub struct Zone {
     pub arcs: u32,
     /// Whether the zone lives in a footprint.
     pub in_footprint: bool,
+    /// `(priority N)`, 0 without one (`ZONE::SetAssignedPriority`).
+    pub priority: u32,
+    /// The zone's `(uuid ...)` as its 16 bytes, `None` without one or when it is
+    /// not 32 hex digits (KiCad then makes a new random one).
+    pub uuid: Option<[u8; 16]>,
+    /// The zone is a teardrop (`(attr (teardrop (type ...)))`).
+    pub teardrop: bool,
+    /// The zone's clearance, nm: `(connect_pads ... (clearance C))`, else
+    /// `ZONE_SETTINGS`'s 0.5 mm (`ZONE::GetLocalClearance`).
+    pub clearance: i32,
 }
+
+/// `ZONE_SETTINGS::m_ZoneClearance`'s default, 0.5 mm.
+pub const DEFAULT_ZONE_CLEARANCE_NM: i32 = 500_000;
 
 impl Zone {
     /// `ZONE::Mirror` about the horizontal line `y = cy`, then the layer flip.
@@ -242,6 +259,10 @@ pub fn parse_zone(
         net: 0,
         arcs: 0,
         in_footprint,
+        priority: 0,
+        uuid: None,
+        teardrop: false,
+        clearance: DEFAULT_ZONE_CLEARANCE_NM,
     };
     let mut unresolved: Vec<String> = Vec::new();
     let mut legacy_net_name: Option<String> = None;
@@ -272,6 +293,16 @@ pub fn parse_zone(
                 zone.layers = m;
             }
             "name" => zone.name = child.str_value(1).map(|n| n.into_owned()),
+            "priority" => {
+                zone.priority = child.atom(1).and_then(|v| v.parse().ok()).unwrap_or(0);
+            }
+            "uuid" | "tstamp" => zone.uuid = child.str_value(1).and_then(|u| parse_uuid(&u)),
+            "attr" => zone.teardrop = child.child("teardrop").is_some(),
+            "connect_pads" => {
+                if let Some(mm) = child.child("clearance").and_then(|c| c.f64(1)) {
+                    zone.clearance = mm_to_nm(mm);
+                }
+            }
             "net_name" => legacy_net_name = child.str_value(1).map(|n| n.into_owned()),
             "keepout" => {
                 zone.rule_area = true;
@@ -342,6 +373,24 @@ pub fn parse_zone(
     Some(zone)
 }
 
+/// The 16 bytes of a UUID written as 32 hex digits (dashes skipped), `None`
+/// otherwise.
+fn parse_uuid(text: &str) -> Option<[u8; 16]> {
+    let digits: Vec<u8> = text
+        .chars()
+        .filter(|&c| c != '-')
+        .map(|c| c.to_digit(16).map(|d| d as u8))
+        .collect::<Option<_>>()?;
+    if digits.len() != 32 {
+        return None;
+    }
+    let mut out = [0u8; 16];
+    for (i, pair) in digits.chunks_exact(2).enumerate() {
+        out[i] = pair[0] << 4 | pair[1];
+    }
+    Some(out)
+}
+
 /// The layers of a mask in `LSET` order, which is KiCad's layer-id order:
 /// F.Cu, B.Cu, In1.Cu, In2.Cu ... Returns physical positions (0 top).
 pub fn layer_id_order(mask: CuMask, count: usize) -> Vec<usize> {
@@ -364,11 +413,14 @@ pub fn cu_stack_order(mask: CuMask, count: usize) -> Vec<usize> {
 }
 
 /// The plane a copper zone makes on one copper layer: the outline and its
-/// holes (K06.4). `frame` takes nanometres to the tree's frame.
+/// holes (K06.4), then `cuts`, the windows higher-priority zones of other nets
+/// cut into it on that layer (K15.15, [`crate::zone_priority`]). `frame` takes
+/// nanometres to the tree's frame.
 pub fn make_plane(
     zone: &Zone,
     layer: &str,
     net: String,
+    cuts: &[Vec<Pt>],
     frame: &dyn Fn(Pt) -> freerouting_dsn::ast::Point,
 ) -> freerouting_dsn::ast::Plane {
     use freerouting_dsn::ast::{Area, LayerRef, Plane, Shape};
@@ -388,7 +440,7 @@ pub fn make_plane(
         area: Area {
             name: None,
             shape: polygon(&zone.outline),
-            windows: zone.holes.iter().map(|h| polygon(h)).collect(),
+            windows: zone.holes.iter().chain(cuts).map(|h| polygon(h)).collect(),
             clearance_class: None,
         },
     }

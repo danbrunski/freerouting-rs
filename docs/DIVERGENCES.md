@@ -1602,6 +1602,30 @@ compare them on 12 committed boards and the 56-board corpus).
   `engine::the_fixed_pour_wires_are_on_the_board_and_in_no_output`,
   `crates/freerouting-cli/tests/cli_k14_fixed_pours.rs` and
   `kicad-plugin/tests/test_snapshot_fixups.py::test_auto_on_the_snapshot_gives_the_dsn_paths_lists`.
+- **A plane is cut where a higher-priority zone of another net fills** (K15.15,
+  `zone_priority`; KiCad 10.0.0 `ZONE::HigherPriority` and
+  `ZONE_FILLER::buildDifferentNetZoneClearances`): KiCad's export writes every copper zone's whole
+  outline as its plane, and Java (`Structure.java` 1141, `ConductionArea.getNormalContacts`) then
+  counts a pin or via centred anywhere in it as connected, but KiCad's filler leaves out of the
+  zone every zone of another net on the layer that is higher (a teardrop above any other zone,
+  then the larger `(priority N)`, then the larger UUID), grown by the clearance between the two.
+  The reader gives the lower plane one convex window per pair of convex pieces of the two outlines
+  that overlap, the higher piece grown by the larger of the two zones' `(connect_pads (clearance
+  C))` (0.5 mm without one); equal priorities without both UUIDs cut nothing.
+  `ReadOptions::uncut_planes` writes the export's whole outlines (the export comparisons in
+  `tests/{copper,k14_fixups}.rs` use it). On the power-control unit In2.Cu's V_BUS_24V (priority
+  41) over V_BUS_12V (priority 1) left three V_BUS_12V vias that the router counted on V_BUS_12V's
+  plane and KiCad found dangling. The cut uses the higher zone's outline, not its fill, so the
+  router may count a connection open where the higher zone's fill does not reach its outline. A
+  DSN input cannot know it (the export writes no priority), so the DSN path and `legacy` on a DSN
+  are unchanged. Pinned by `tests/k15_zone_priority.rs` in `freerouting-kicad`
+  (`the_lower_zones_plane_has_the_higher_zone_cut_out`,
+  `the_higher_priority_decides_which_plane_is_cut`, `equal_priorities_fall_to_the_larger_uuid`,
+  `a_zone_of_the_same_net_cuts_nothing`, `a_teardrop_is_above_every_zone`,
+  `zones_on_different_layers_cut_nothing`; the fixture is the pcu's two In2.Cu zones), the
+  `zone_priority` unit tests, and `crates/freerouting/tests/k15_overlapping_planes.rs`
+  (`the_via_in_the_overlap_is_not_on_the_lower_plane`, `the_via_in_the_overlap_stays_open`,
+  `the_router_reaches_the_lower_plane_where_it_is_filled`).
 - Against the export's board the reader's differences are exactly the ones above and nothing
   else: `crates/freerouting/tests/kicad_parity.rs` lists each with its reason and fails on any
   other, and on a listed one that no longer occurs; the item order is the export's except for
