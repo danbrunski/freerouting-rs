@@ -129,6 +129,20 @@ construction. It is still tested with `ses-diff`.
 
   A missing baseline fails. A partial run may not write the baseline. The
   gate self-tests on every invocation.
+- **Leaving a row out.** A registration that states a `validity` rule (K15.14's:
+  a row whose arms don't all complete is left out, reported by name with its
+  reason) is judged over the rest with `--left-out ROW=REASON`, repeatable, on
+  `--write-baseline`, the verdict and `--all-pairs`. The row must be one of the
+  registered boards, with a reason; every other registered row must still be
+  present and graded, and a missing one that isn't named is still refused. The
+  row's arms may be ungraded, but a measured hard-limit breach in them still
+  fails (guard (1) covers every graded arm, judged row or not). The judged rows
+  must meet `min_boards`, and a `must_judge` row of the registration can't be
+  left out; otherwise the gate prints `NOT MEASURED`, not a verdict. The
+  baseline records the rows and reasons (`left_out`) and the verdict prints
+  them. The gate takes the operator's word for which rows the rule leaves out,
+  so a registration lists `must_judge` rows it can't do without; see
+  `tools/ab/README.md`.
 - **Grade with an independent oracle where one exists.** For boards that have
   a `.kicad_pcb` (the owner's boards, KiCad's bundled demos), import the session
   into KiCad and run KiCad's own DRC (F02.6). Freerouting's DRC grades the

@@ -439,6 +439,63 @@ pub fn run() -> Result<(), Vec<String>> {
         .any(|p| p.class == Class::Inverted && p.text.contains("mark")),
     );
 
+    // Rows left out by a validity rule (K15.21): judged over the rest, named,
+    // recorded in the baseline, and a measured breach still fails.
+    let left = |name: &str| Settings {
+        left_out: [(name.to_string(), "TERMINATED".to_string())].into(),
+        ..Settings::default()
+    };
+    let hole = "\"d\": {\"board\": \"D\", \"arms\": {\"off\": {\"unrouted\": null, \
+                \"via_in_pad\": null}, \"on\": {\"unrouted\": null, \"via_in_pad\": null}}}";
+    let with_hole = parse(&records_text(
+        &[
+            improving("a", "A"),
+            improving("b", "B"),
+            improving("c", "C"),
+            hole.to_string(),
+        ],
+        "\"metrics\": [\"unrouted\", \"via_in_pad\"], ",
+    ));
+    expect(
+        "a row with null hard limits is UNGRADED unless it is left out",
+        baseline_from(&with_hole, &Settings::default()).is_err()
+            && baseline_from(&with_hole, &left("d")).is_ok(),
+    );
+    let kept = baseline_from(&with_hole, &left("d")).expect("left-out baseline");
+    let out = check(&with_hole, &kept, &left("d"));
+    expect(
+        "a run judged over the rest passes and names the row left out",
+        out.passed() && out.lines.iter().any(|l| l.contains("d: TERMINATED")),
+    );
+    expect(
+        "a baseline that left a row out is not the baseline of a run that judges it",
+        check(&with_hole, &kept, &Settings::default())
+            .problems
+            .iter()
+            .any(|p| p.class == Class::Drift && p.text.starts_with("left_out")),
+    );
+    let breach = parse(&records_text(
+        &[
+            improving("a", "A"),
+            improving("b", "B"),
+            improving("c", "C"),
+            row_text(
+                "d",
+                "D",
+                &[("unrouted", 10.0), ("via_in_pad", 0.0)],
+                &[("unrouted", 7.0), ("via_in_pad", 1.0)],
+            ),
+        ],
+        "\"metrics\": [\"unrouted\", \"via_in_pad\"], ",
+    ));
+    expect(
+        "a measured breach in a left-out row is still a HARD failure",
+        check(&breach, &kept, &left("d"))
+            .problems
+            .iter()
+            .any(|p| p.class == Class::Hard && p.text.starts_with("d.on.via_in_pad")),
+    );
+
     if failed.is_empty() {
         Ok(())
     } else {

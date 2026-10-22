@@ -63,7 +63,24 @@
 //!   pass), or a hard metric is null;
 //! - `HARD`: a hard limit is exceeded in the candidate arm;
 //! - `REFUSED`: fewer distinct boards than the rule needs, or a
-//!   preregistration mismatch ([`crate::gate_prereg`]).
+//!   preregistration mismatch ([`crate::gate_prereg`]);
+//! - `NOT MEASURED`: rows left out by the registration's validity rule
+//!   (`--left-out`) leave fewer distinct boards than the rule needs, or leave
+//!   out a row the registration says must be judged. The report ends
+//!   `gate: NOT MEASURED`, not `FAIL`: there is no verdict to give.
+//!
+//! # Rows left out by validity
+//!
+//! `Settings::left_out` (`--left-out ROW=REASON`, K15.21) names rows that a
+//! registration's validity rule leaves out of the judgement. They are not
+//! compared, marked or summed, and the baseline records them (`left_out`:
+//! row to reason) instead of their values. They are not hidden either: the
+//! report names each with its reason and what the gate saw in its arms, and
+//! guard (1) still holds for them. A hard metric above zero in an arm that was
+//! measured (not null, not `graded: false`) is a `HARD` failure whether or not
+//! the row is judged. The gate cannot tell why a row was left out; the
+//! registration states the rule and the operator names the rows
+//! ([`crate::gate_prereg`]).
 //!
 //! # The pass rules
 //!
@@ -196,6 +213,7 @@ pub enum Class {
     Ungraded,
     Hard,
     Refused,
+    NotMeasured,
 }
 
 impl Class {
@@ -211,6 +229,7 @@ impl Class {
             Class::Ungraded => "UNGRADED",
             Class::Hard => "HARD",
             Class::Refused => "REFUSED",
+            Class::NotMeasured => "NOT MEASURED",
         }
     }
 }
@@ -315,6 +334,10 @@ pub struct Settings {
     /// `arms` were chosen by the caller (`--arms`, a registered pair): the
     /// records' own `baseline_arm` / `candidate_arm` don't override them.
     pub arms_pinned: bool,
+    /// Rows a registration's validity rule leaves out of the judgement, with the
+    /// reason (`--left-out ROW=REASON`). They are neither judged nor required
+    /// to be graded, but a measured hard-limit breach in them still fails.
+    pub left_out: BTreeMap<String, String>,
 }
 
 /// The result of a check.
@@ -333,6 +356,22 @@ impl Outcome {
         self.problems.is_empty() && self.rule_ok
     }
 
+    /// Whether there is no verdict to give (`NOT MEASURED` problems).
+    pub fn not_measured(&self) -> bool {
+        self.problems.iter().any(|p| p.class == Class::NotMeasured)
+    }
+
+    /// `PASS`, `FAIL`, or `NOT MEASURED` (which comes before a failure).
+    pub fn verdict_word(&self) -> &'static str {
+        if self.not_measured() {
+            "NOT MEASURED"
+        } else if self.passed() {
+            "PASS"
+        } else {
+            "FAIL"
+        }
+    }
+
     /// The report for people: the lines, then the problems.
     pub fn to_text(&self) -> String {
         let mut out = String::new();
@@ -343,11 +382,7 @@ impl Outcome {
         for problem in &self.problems {
             out.push_str(&format!("{problem}\n"));
         }
-        out.push_str(if self.passed() {
-            "gate: PASS\n"
-        } else {
-            "gate: FAIL\n"
-        });
+        out.push_str(&format!("gate: {}\n", self.verdict_word()));
         out
     }
 }
@@ -861,9 +896,11 @@ fn check_with(records: &Json, baseline: Option<&Json>, settings: &Settings) -> O
     let scoped: Vec<Row<'_>> = rows
         .iter()
         .filter(|r| settings.scope.as_ref().is_none_or(|s| s.contains(r.name)))
+        .filter(|r| !settings.left_out.contains_key(r.name))
         .cloned()
         .collect();
     check_rows(&scoped, &specs, arms, &mut problems);
+    let left_out_lines = left_out_report(&rows, &specs, arms, &settings.left_out, &mut problems);
     let declared = declared_rows(records, &rows);
     if let Some(baseline) = baseline {
         problems.extend(compare_baseline(
@@ -871,6 +908,7 @@ fn check_with(records: &Json, baseline: Option<&Json>, settings: &Settings) -> O
         ));
     }
     outcome.lines = report_lines(&scoped, &specs, arms);
+    outcome.lines.extend(left_out_lines);
     let trial_rows: Vec<(String, String, Mark, bool)> = scoped
         .iter()
         .map(|r| {
@@ -895,6 +933,77 @@ fn check_with(records: &Json, baseline: Option<&Json>, settings: &Settings) -> O
     problems.sort_by(|a, b| a.class.cmp(&b.class).then_with(|| a.text.cmp(&b.text)));
     outcome.problems = problems;
     outcome
+}
+
+/// What the gate saw in one arm of a left-out row.
+fn left_out_arm(
+    row: &Row<'_>,
+    arm_name: &str,
+    specs: &[MetricSpec],
+    problems: &mut Vec<Problem>,
+) -> String {
+    let Some(arm) = row.arm(arm_name) else {
+        return format!("{arm_name}: not run");
+    };
+    if matches!(arm.get("graded"), Some(Json::Bool(false))) {
+        return format!("{arm_name}: not graded");
+    }
+    let mut unmeasured = 0;
+    let mut breaches = Vec::new();
+    for spec in specs.iter().filter(|s| s.role == Role::Hard) {
+        match value_of(arm, spec) {
+            Value::Num(v) if v > 0.0 => {
+                breaches.push(format!("{} = {v}", spec.name));
+                problems.push(Problem::new(
+                    Class::Hard,
+                    format!(
+                        "{}.{arm_name}.{} = {v}: the row is left out of the judgement, but \
+                         this arm was graded and the board's design rules are hard limits (D8); \
+                         the count must be 0",
+                        row.name, spec.name
+                    ),
+                ));
+            }
+            Value::Num(_) => {}
+            _ => unmeasured += 1,
+        }
+    }
+    if !breaches.is_empty() {
+        format!("{arm_name}: BREACH {}", breaches.join(", "))
+    } else if unmeasured > 0 {
+        format!("{arm_name}: not measured")
+    } else {
+        format!("{arm_name}: graded, hard limits 0")
+    }
+}
+
+/// The report lines of the rows left out by validity, and a `HARD` problem for
+/// every measured breach in them (guard (1): every arm that is graded, judged
+/// row or not). A left-out row the run does not have is reported as such.
+pub fn left_out_report(
+    rows: &[Row<'_>],
+    specs: &[MetricSpec],
+    arms: &Arms,
+    left_out: &BTreeMap<String, String>,
+    problems: &mut Vec<Problem>,
+) -> Vec<String> {
+    if left_out.is_empty() {
+        return Vec::new();
+    }
+    let mut lines = vec![format!(
+        "left out of the judgement by the registration's validity rule ({} row(s)):",
+        left_out.len()
+    )];
+    for (name, reason) in left_out {
+        let seen = match rows.iter().find(|r| r.name == name) {
+            None => "not in the run".to_string(),
+            Some(row) => [&arms.base, &arms.cand]
+                .map(|arm| left_out_arm(row, arm, specs, problems))
+                .join(", "),
+        };
+        lines.push(format!("  {name}: {reason}  [{seen}]"));
+    }
+    lines
 }
 
 /// One line per row: the mark and the judged metrics, base -> candidate.

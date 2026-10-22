@@ -43,11 +43,53 @@ ignored silently: a combination that can't be honoured exits 2 with the reason.
 | `--rows a,b` | judges only those rows. A name the run doesn't have is `REFUSED`. `min_boards` and the totals noise (the set noise is `sqrt(sum band^2)`) count the judged boards only. The registration's checks (arms, input hashes, metrics) still cover the whole run |
 | `--eligible` | `--rows` with the registration's `eligible` array; exits 2 if there is none, or with `--rows` too |
 | `--all-pairs` | judges every pair of `pairs` (an array of `[baseline, candidate]`, or `{"verdict": P, "reported": [P, ...]}` with `P` as `[baseline, candidate]` or `{"arms": [...], "rows": "all" or [...]}`), prints each verdict and a summary. Exit 1 if a verdict or listed pair fails; `reported` pairs are printed, not counted. `--baseline` is compared for the primary pair only. Not with `--arms` or `--write-baseline` |
+| `--left-out ROW=REASON` | (repeatable; K15.21) leaves a registered row out of the judgement because the registration's `validity` rule says so. See "Leaving a row out" below. Needs `--prereg` |
 
 A pair whose registration names rows (`"rows": [...]`) needs `--rows` to say
 which to judge. `--write-baseline` records the primary pair on all rows and
 refuses the options above. Without `--prereg`, `--arms` overrides the records'
 own `baseline_arm` / `candidate_arm`; `--eligible` and `--all-pairs` exit 2.
+
+### Leaving a row out (`--left-out`, K15.21)
+
+A registration may say, before any arm runs, that a row is left out of the
+judgement when the run does not complete it (K15.14's validity rule (b): an arm
+that aborted, did not grade or did not finish). `gate` then judges the rows that
+are left in:
+
+```
+freerouting-dev gate --records records.json --prereg reg.json --baseline base.json \
+    --write-baseline --left-out 'ROW=both arms TERMINATED: the cause'
+freerouting-dev gate ... --baseline base.json --all-pairs --left-out 'ROW=the same reason'
+```
+
+What the registration has to state: a non-empty `validity` text (the rule that
+leaves rows out). Without it `--left-out` exits 2. The gate does not read the
+text: it checks only that the rule was written down, and the operator names each
+row and gives the reason, which the verdict, every `--all-pairs` pair and the
+baseline (`left_out`: row to reason) print. Optionally `must_judge` lists the
+registered rows the measurement is "not measured" without (K15.14: the pcu
+board). The row must be one of `boards.files`, given once, with a reason, and not
+also in `--rows`/`--eligible`.
+
+The rules:
+
+- every other registered row must still be in the run and graded; a missing row
+  that is not named is `REFUSED`, as before;
+- a named row may be missing, ungraded (`graded: false`) or have null hard
+  limits without failing the hard-limit check. The report shows, per arm, what
+  the gate saw in it (`not run`, `not graded`, `not measured`, `graded, hard
+  limits 0` or `BREACH`). A hard limit above zero in an arm of that row that was
+  measured is still `HARD` and fails (guard (1): every arm that runs and is
+  graded, judged row or not), whichever pair is judged;
+- `min_boards` and the totals noise count the judged rows only. If the left-out
+  rows take the judged boards below `min_boards`, or leave out a `must_judge`
+  row, the result is `NOT MEASURED` (`gate: NOT MEASURED`, exit 1), which comes
+  before `FAIL`: there is no verdict to give. A run already too small before the
+  left-out rows is the ordinary `REFUSED`;
+- `--write-baseline` accepts the flag, records the judged rows and `left_out`,
+  and refuses where the verdict would be `NOT MEASURED`. Compared with a baseline
+  that left out other rows (or none), the run reports `DRIFT left_out`.
 
 ## `TEMPLATE.json`
 
@@ -57,6 +99,8 @@ own `baseline_arm` / `candidate_arm`; `--eligible` and `--all-pairs` exit 2.
 | `id`, `registered`, `question` | what is measured, when, and what a pass means |
 | `arms` | at least two named arms, each an object with the **engine and commit**, the exact **command** and its **settings**. The run's own `arms` description (`--arms-json`) must be equal to it |
 | `baseline_arm`, `candidate_arm` | which arm is the reference and which is on trial |
+| `validity` | optional text: the rule that leaves a row out of the judgement (`--left-out` needs it) |
+| `must_judge` | optional array of rows of `boards.files` that can't be left out (a left-out one is `NOT MEASURED`) |
 | `boards.set` | the board set file the run used |
 | `boards.files` | **row name → sha256 of the input file** for every board. A board changed after registration is refused with its name |
 | `metrics` | the judged metrics, in order of importance: `name`, `direction` (`lower`, the default, or `higher`), `kind` (`int`, `float`, `counts`), `role`, `tol`, `compared` |

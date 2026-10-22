@@ -60,6 +60,7 @@ pub fn compare_baseline(
     };
     let arms = &settings.arms;
     let mut problems = Vec::new();
+    problems.extend(compare_left_out(baseline, settings));
     let mut sorted: Vec<&Row<'_>> = rows.iter().collect();
     sorted.sort_by(|a, b| a.name.cmp(b.name));
     for row in &sorted {
@@ -111,7 +112,7 @@ pub fn compare_baseline(
         compare_row(row, exp, specs, arms, &mut problems);
     }
     for name in expected.keys() {
-        if rows.iter().any(|r| r.name == name) {
+        if rows.iter().any(|r| r.name == name) || settings.left_out.contains_key(name) {
             continue;
         }
         if !declared.contains(name) {
@@ -131,6 +132,42 @@ pub fn compare_baseline(
         }
     }
     problems
+}
+
+/// The rows the baseline recorded as left out (`left_out`: row to reason).
+pub fn baseline_left_out(baseline: &Json) -> BTreeMap<String, String> {
+    match baseline.get("left_out") {
+        Some(Json::Object(o)) => o
+            .iter()
+            .map(|(k, v)| (k.clone(), v.as_str().unwrap_or("").to_string()))
+            .collect(),
+        _ => BTreeMap::new(),
+    }
+}
+
+/// A run and its baseline must leave out the same rows: a row judged in one and
+/// left out in the other is a different run. The reasons are not compared.
+fn compare_left_out(baseline: &Json, settings: &Settings) -> Option<Problem> {
+    let recorded: BTreeSet<String> = baseline_left_out(baseline).into_keys().collect();
+    let now: BTreeSet<String> = settings.left_out.keys().cloned().collect();
+    (recorded != now).then(|| {
+        let list = |s: &BTreeSet<String>| {
+            if s.is_empty() {
+                "none".to_string()
+            } else {
+                s.iter().cloned().collect::<Vec<_>>().join(", ")
+            }
+        };
+        Problem::new(
+            Class::Drift,
+            format!(
+                "left_out: baseline leaves out {}, this run leaves out {}. Compare only runs \
+                 that judge the same rows",
+                list(&recorded),
+                list(&now)
+            ),
+        )
+    })
 }
 
 fn compare_row(
@@ -311,7 +348,7 @@ pub fn baseline_from(records: &Json, settings: &Settings) -> Result<Json, Vec<Pr
     }
     let declared = declared_rows(records, &rows);
     for name in &declared {
-        if !rows.iter().any(|r| r.name == name) {
+        if !rows.iter().any(|r| r.name == name) && !settings.left_out.contains_key(name) {
             problems.push(Problem::new(
                 Class::Refused,
                 format!("{name} is declared but was not measured; refusing a partial run"),
@@ -324,13 +361,24 @@ pub fn baseline_from(records: &Json, settings: &Settings) -> Result<Json, Vec<Pr
             "the run has no rows".to_string(),
         ));
     }
-    check_rows(&rows, &specs, &arms, &mut problems);
+    let judged: Vec<Row<'_>> = rows
+        .iter()
+        .filter(|r| !settings.left_out.contains_key(r.name))
+        .cloned()
+        .collect();
+    if judged.is_empty() {
+        problems.push(Problem::new(
+            Class::Refused,
+            "every row is left out; there is nothing to record".to_string(),
+        ));
+    }
+    check_rows(&judged, &specs, &arms, &mut problems);
     problems.retain(|p| p.class != Class::Hard);
     if !problems.is_empty() {
         return Err(problems);
     }
     let mut out_rows = BTreeMap::new();
-    for row in &rows {
+    for row in &judged {
         let mut body = BTreeMap::new();
         body.insert("board".to_string(), Json::String(row.board.to_string()));
         if let Some(hash) = row.input_sha256() {
@@ -366,5 +414,13 @@ pub fn baseline_from(records: &Json, settings: &Settings) -> Result<Json, Vec<Pr
         Json::String(BASELINE_FORMAT.to_string()),
     );
     top.insert("rows".to_string(), Json::Object(out_rows));
+    if !settings.left_out.is_empty() {
+        let left_out = settings
+            .left_out
+            .iter()
+            .map(|(k, v)| (k.clone(), Json::String(v.clone())))
+            .collect();
+        top.insert("left_out".to_string(), Json::Object(left_out));
+    }
     Ok(Json::Object(top))
 }

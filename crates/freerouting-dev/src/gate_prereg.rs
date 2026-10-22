@@ -45,6 +45,19 @@
 //! pair on all rows by default; `--arms`, `--rows`, `--eligible` and
 //! `--all-pairs` select among the above ([`crate::gate_cli`]).
 //!
+//! Two more optional fields concern `--left-out ROW=REASON` (K15.21), which
+//! judges the rows a validity rule leaves in:
+//! - `validity` (text): the rule that leaves rows out, written before the run.
+//!   `--left-out` is refused unless the registration states one. The gate does
+//!   not read the text: it checks only that it exists, and prints the operator's
+//!   `ROW=REASON` beside the verdict. The operator names the rows the rule
+//!   leaves out, and the report lists each with its reason and what the gate
+//!   saw in its arms (a graded breach still fails, a hole in a hard limit does
+//!   not). Which rows a rule leaves out is therefore the one thing the gate
+//!   takes on trust, so its `NOT MEASURED` guards are machine-readable:
+//! - `must_judge` (array of rows of `boards.files`): rows the measurement is
+//!   `NOT MEASURED` without, such as K15.14's primary board.
+//!
 //! The report prints the sha256 of the registration file; a test pins that
 //! of the worked example (`tools/ab/examples/`).
 
@@ -53,7 +66,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use freerouting::quality::feasibility::report::sha256_hex;
 
 use crate::gate::{
-    Arms, Class, Direction, Kind, MIN_BOARDS, MetricSpec, Outcome, PassRule, Problem, Role,
+    Arms, Class, Direction, Kind, MIN_BOARDS, MetricSpec, Outcome, PassRule, Problem, Role, Row,
     Settings, check, check_without_baseline, default_metrics, records_rows,
 };
 use crate::gate_totals::TotalsRule;
@@ -104,6 +117,10 @@ pub struct Prereg {
     pub pairs: Vec<Pair>,
     /// The `eligible` rows, when the registration has such a list.
     pub eligible: Option<Vec<String>>,
+    /// The `validity` text: the rule that may leave rows out (`--left-out`).
+    pub validity: Option<String>,
+    /// Rows that must be judged: left out, the measurement is `NOT MEASURED`.
+    pub must_judge: Vec<String>,
 }
 
 fn malformed(text: impl Into<String>) -> Problem {
@@ -411,6 +428,37 @@ impl Prereg {
                 None
             }
         };
+        let validity = match json.get("validity") {
+            None | Some(Json::Null) => None,
+            Some(Json::String(t)) if !t.trim().is_empty() => Some(t.clone()),
+            Some(_) => {
+                problems.push(malformed("`validity` must be a non-empty text"));
+                None
+            }
+        };
+        let must_judge = match json.get("must_judge") {
+            None | Some(Json::Null) => Vec::new(),
+            Some(Json::Array(list)) => {
+                let names: Vec<String> = list
+                    .iter()
+                    .filter_map(Json::as_str)
+                    .map(str::to_string)
+                    .collect();
+                if names.len() != list.len() {
+                    problems.push(malformed("`must_judge` must list row names"));
+                }
+                for row in names.iter().filter(|r| !boards.contains_key(*r)) {
+                    problems.push(malformed(format!(
+                        "must_judge row {row} is not a registered board (`boards.files`)"
+                    )));
+                }
+                names
+            }
+            Some(_) => {
+                problems.push(malformed("`must_judge` must be an array of row names"));
+                Vec::new()
+            }
+        };
         let amendments = match json.get("amendments") {
             Some(Json::Array(a)) => a.len(),
             None => 0,
@@ -436,6 +484,8 @@ impl Prereg {
             amendments,
             pairs,
             eligible,
+            validity,
+            must_judge,
         })
     }
 
@@ -448,6 +498,7 @@ impl Prereg {
             specs: self.specs.clone(),
             totals: self.totals.clone(),
             arms_pinned: false,
+            left_out: BTreeMap::new(),
         }
     }
 
@@ -459,6 +510,14 @@ impl Prereg {
             scope,
             arms_pinned: true,
             ..self.settings()
+        }
+    }
+
+    /// The fewest distinct boards the registered rule judges.
+    pub fn min_boards(&self) -> usize {
+        match (&self.totals, self.totals_registered) {
+            (Some(t), true) => t.min_boards,
+            _ => self.rule.min_boards,
         }
     }
 
@@ -512,6 +571,17 @@ fn weaker_than_global(rule: &PassRule, specs: &[MetricSpec]) -> Vec<Problem> {
 
 /// What differs between the registration and the run's own description.
 pub fn check_registration(prereg: &Prereg, records: &Json) -> Vec<Problem> {
+    check_registration_with(prereg, records, &BTreeMap::new())
+}
+
+/// [`check_registration`] for a run that leaves rows out (`left_out`, row to
+/// reason): a registered row the run does not have is no refusal when it is named
+/// there. Every other registered row must still be in the run.
+pub fn check_registration_with(
+    prereg: &Prereg,
+    records: &Json,
+    left_out: &BTreeMap<String, String>,
+) -> Vec<Problem> {
     let mut out = Vec::new();
     let mut ignored = Vec::new();
     // Arms: names, engine, settings.
@@ -576,7 +646,7 @@ pub fn check_registration(prereg: &Prereg, records: &Json) -> Vec<Problem> {
         }
     }
     for registered in prereg.boards.keys() {
-        if !rows.iter().any(|r| r.name == registered) {
+        if !rows.iter().any(|r| r.name == registered) && !left_out.contains_key(registered) {
             out.push(refused(format!(
                 "board {registered} is registered but missing from the run"
             )));
@@ -592,7 +662,9 @@ pub fn check_registration(prereg: &Prereg, records: &Json) -> Vec<Problem> {
             )),
             Some(t) => {
                 for board in t.noise.keys() {
-                    if !rows.iter().any(|r| r.board == board || r.name == board) {
+                    if !rows.iter().any(|r| r.board == board || r.name == board)
+                        && !left_out.contains_key(board)
+                    {
                         out.push(refused(format!(
                             "totals.noise names board {board}, which no row of the run has"
                         )));
@@ -642,7 +714,7 @@ pub fn check_registered_for(
     prereg: &Prereg,
     settings: &Settings,
 ) -> Outcome {
-    let mut refusals = check_registration(prereg, records);
+    let mut refusals = check_registration_with(prereg, records, &settings.left_out);
     let mut ignored = Vec::new();
     let rows = records_rows(records, &mut ignored);
     if let Some(scope) = &settings.scope {
@@ -656,10 +728,49 @@ pub fn check_registered_for(
         Some(b) => check(records, b, settings),
         None => check_without_baseline(records, settings),
     };
-    let judged = rows
+    let judged_rows: Vec<&Row<'_>> = rows
         .iter()
         .filter(|r| settings.scope.as_ref().is_none_or(|s| s.contains(r.name)))
-        .count();
+        .filter(|r| !settings.left_out.contains_key(r.name))
+        .collect();
+    let judged = judged_rows.len();
+    let mut not_measured = Vec::new();
+    if !settings.left_out.is_empty() {
+        for name in prereg
+            .must_judge
+            .iter()
+            .filter(|n| settings.left_out.contains_key(*n))
+        {
+            not_measured.push(Problem::new(
+                Class::NotMeasured,
+                format!(
+                    "{name} must be judged (the registration's `must_judge`) and is left out: {}",
+                    settings.left_out[name]
+                ),
+            ));
+        }
+        let boards: BTreeSet<&str> = judged_rows.iter().map(|r| r.board).collect();
+        let before: BTreeSet<&str> = rows
+            .iter()
+            .filter(|r| settings.scope.as_ref().is_none_or(|s| s.contains(r.name)))
+            .map(|r| r.board)
+            .collect();
+        let needed = prereg.min_boards();
+        // Only a shortfall the left-out rows cause is "not measured" here; a scope
+        // that was already too small is the ordinary refusal.
+        if boards.len() < needed && before.len() >= needed {
+            not_measured.push(Problem::new(
+                Class::NotMeasured,
+                format!(
+                    "fewer than {needed} distinct boards are judged with {} row(s) left out \
+                     ({} judged: {})",
+                    settings.left_out.len(),
+                    boards.len(),
+                    boards.iter().copied().collect::<Vec<_>>().join(", ")
+                ),
+            ));
+        }
+    }
     let mut lines = vec![format!(
         "prereg {} (sha256 {}, {} amendment(s)): {} refusal(s)",
         prereg.id,
@@ -668,11 +779,16 @@ pub fn check_registered_for(
         refusals.len()
     )];
     lines.push(format!(
-        "pair {} -> {}; judged {} of {} row(s){}",
+        "pair {} -> {}; judged {} of {} row(s){}{}",
         settings.arms.base,
         settings.arms.cand,
         judged,
         rows.len(),
+        if settings.left_out.is_empty() {
+            String::new()
+        } else {
+            format!(", {} left out by validity", settings.left_out.len())
+        },
         if baseline.is_none() {
             "; no baseline comparison (the baseline records the primary pair)"
         } else {
@@ -682,5 +798,6 @@ pub fn check_registered_for(
     lines.append(&mut outcome.lines);
     outcome.lines = lines;
     outcome.problems.splice(0..0, refusals);
+    outcome.problems.extend(not_measured);
     outcome
 }

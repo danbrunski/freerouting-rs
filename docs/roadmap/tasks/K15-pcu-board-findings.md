@@ -1355,7 +1355,7 @@ item-type rules), N06 (`router.java_quirks`).
     - `python3 -m pytest kicad-plugin/tests` with `FREEROUTING_RS_BIN` the debug build dir: 677
       passed, 6 skipped (pcbnew 3, the canary-pwr board 1, `KICAD_METADATA_REPO` 2), as before.
 
-- [ ] **K15.21 — The gate judges a registered run with a row left out by validity.**
+- [x] **K15.21 — The gate judges a registered run with a row left out by validity.**
   - **Change:** K15.14's validity rule (b) leaves out a row whose arms don't all complete and
     judges the rest, and its `heavy_run` adds `--rows` to the gate calls for that. But
     `freerouting-dev gate` refuses such a run whichever way it is called: with the row,
@@ -1372,3 +1372,39 @@ item-type rules), N06 (`router.java_quirks`).
       registration's `min_boards`;
     - K15.14's `heavy_run` gate calls work as written with the flag. Amend the registration only
       when its repeat run needs it (amendment 3).
+  - *Done 2026-10-21:* `freerouting-dev gate --left-out ROW=REASON` (repeatable; `gate_cli.rs`,
+    `gate.rs`, `gate_prereg.rs`, `gate_baseline.rs`; usage text, `tools/ab/README.md`,
+    `routing-quality.md`).
+    - *Rules:* needs `--prereg` and a registration with a non-empty `validity` text (else exit 2);
+      the text is only checked to exist, the operator names the rows and reasons; the row must be
+      one of `boards.files`, with a reason, given once, and not in `--rows`/`--eligible`. Every
+      other registered row must be present and graded. A left-out row may be missing, ungraded
+      or null; a measured hard limit above 0 in any of its arms is still `HARD`. Judged rows
+      below the registration's `min_boards` (caused by the left-out rows), or a left-out row of
+      the new optional `must_judge` array, give `gate: NOT MEASURED` (exit 1), before `FAIL`.
+      `--write-baseline` records the judged rows plus `left_out` (row to reason) and refuses
+      where the verdict would be NOT MEASURED; a baseline with other left-out rows gives `DRIFT
+      left_out`. The verdict, each `--all-pairs` pair and the pair calls print the row, reason
+      and what the gate saw per arm.
+    - *RED:* `cargo test -p freerouting-dev --test gate_left_out` before the flag: 6 failed
+      (`unknown option --left-out`). *GREEN:* 7 passed:
+      `a_terminated_row_is_judged_over_the_rest_and_named_in_output_and_baseline`,
+      `a_missing_row_that_is_not_named_is_still_refused`,
+      `left_out_rows_cannot_take_the_run_below_min_boards`,
+      `a_left_out_row_the_registration_requires_judged_is_not_measured`,
+      `a_graded_left_out_row_with_a_breach_still_fails`,
+      `the_flag_is_refused_where_it_cannot_apply`,
+      `the_totals_rule_sums_noise_over_the_judged_rows_only`; the gate's self-test has 4 more
+      checks (`freerouting-dev gate --self-test`: ok). `cargo test -p freerouting-dev`: 342
+      passed, 0 failed (every `prereg_*` pin test, `prereg_k15_14` 8 passed).
+    - *K15.14's records* (copy of `target/orchestrator/k1514/out/records.json`, this tree's gate,
+      TREE's registration `e17e383a…`), `--left-out 'pocketsdr-v3-0=both arms TERMINATED …'`:
+      `--write-baseline` wrote 16 rows plus `left_out`; the verdict and `--all-pairs` judged 16 of
+      17 rows, total 368 -> 490 against set noise 67.09 (S fails), `HARD
+      wisweep-driver-board.pcb-on.manufacturing_breaches = 7` (and `pcb-off … = 1` in the
+      reported pair), exit 1. The two DSN calls need no flag (pocketsdr has no DSN arms) and
+      give the N = 2 refusal as before. Output: `target/orchestrator/k1521/out/`.
+    - Amendment 3 is the orchestrator's: it should add `--left-out` to `heavy_run`'s baseline and
+      `--all-pairs` calls in place of "adds --rows", and `"must_judge": ["pcu-76163c7"]` (the
+      registration's `validity` text already satisfies the flag; without `must_judge` the gate
+      can't refuse a run that leaves pcu out, only a shortfall of boards).
