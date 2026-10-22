@@ -188,7 +188,13 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   gets one `plane NET on LAYER: cut where ...` line per cut plane, none without one, and then the
   DSN is byte-identical. The pcu board: 28 planes cut (In2.Cu's V_BUS_12V 11346 -> 8585 mm2 under
   V_BUS_24V), 0.11 s. Tests: `test_plane_priority.py` (a fake pcbnew doing rectangle
-  arithmetic, and one test through KiCad's own pcbnew and DSN export).
+  arithmetic, and one test through KiCad's own pcbnew and DSN export). K15.34: with a clearance
+  rule in the board's `.kicad_dru` (`export_flow.dru_clearance_nm`: the smallest positive
+  `clearance` constraint, conditional rules included; a rule of 0 counts none), the gap is the
+  smaller of that and the zones' own, since KiCad 10.0.7's filler lets a matching rule replace the
+  zones' clearance between two fills (two 0.5 mm zones: 0.5055 mm without a rule, 0.1325 mm with
+  0.127 mm). The pcu board's `V_BUS_12V` plane is 8698 mm2 (8585 at 0.5 mm). An unreadable
+  `.kicad_dru` cuts at the zones' value and logs a WARNING; tests: `test_plane_clearance.py`.
 - **Signal-layer zones' thickness and clearance** (K15.27): KiCad's DSN export drops them, and
   the router's cleanup judges a DSN signal-layer pour by KiCad's fill model (K15.26) only when it
   has them. `export_flow.pour_rule_args` (last in `prepare`, after the fix-ups; DSN input only)

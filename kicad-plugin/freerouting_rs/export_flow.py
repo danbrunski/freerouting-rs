@@ -202,16 +202,20 @@ def save_arguments(board, pcbnew, design, opts, extra_args=(), lines=()):
 def fix_plane_priorities(board, pcbnew, dsn):
     """K15.24: each plane where a higher-priority zone of another net fills
     is cut as KiCad's fill cuts it (`kicad_board.plane_cuts`,
-    `plane_priority`). Always on: the router counts no pad or via on a plane
+    `plane_priority`), K15.34: keeping the gap KiCad's filler keeps, which the
+    board's `.kicad_dru` clearance rule lowers (`dru_clearance_nm`). Always on:
+    the router counts no pad or via on a plane
     where KiCad fills another net. Runs first, while the DSN's planes are
     still the export's. Returns the log lines (one per cut plane; none with
     nothing to cut, and then the file is not written)."""
     try:
-        planes = kicad_board.plane_cuts(board, pcbnew)
+        rule_nm, rule_lines = dru_clearance_nm(board)
+        planes = kicad_board.plane_cuts(board, pcbnew, rule_nm)
         if not any(p["cut"] is not None for p in planes):
             return []
         text = _read(dsn)
         new_text, lines = plane_priority.apply(text, planes)
+        lines = rule_lines + lines
         if new_text != text:
             _write(dsn, new_text)
     except Exception as e:  # never block routing on the fix-up
@@ -325,6 +329,29 @@ def dru_path(board):
     except Exception:  # not a pcbnew board
         return None
     return Path(name).with_suffix(".kicad_dru") if name else None
+
+
+def dru_clearance_nm(board):
+    """K15.34: the smallest positive `clearance` constraint of the board's `.kicad_dru` (conditional
+    rules included; a custom rule replaces the zone's own value in KiCad 10.0.7's filler, which
+    holds zone to zone as zone to track, K15.32), for the planes' cut gap. A rule of 0 or without a
+    `min` sets none. Returns `(nanometres or None, log_lines)`; None when there is no rule, and
+    when the file cannot be read (then the zones' own clearance cuts, with a WARNING saying so).
+    Never raises."""
+    path = dru_path(board)
+    if path is None or not path.is_file():
+        return None, []
+    try:
+        rules = kicad_rules.clearance_minimums_nm(_read(path))
+    except (OSError, ValueError) as e:  # RulesError is a ValueError; a bad encoding too
+        return None, [f"WARNING: {path.name} unreadable ({e}); planes cut at the zones' clearance"]
+    values = [nm for _, nm in rules if nm > 0]
+    if not values:
+        return None, []
+    return min(values), [
+        f"{path.name}: planes cut {min(values) / 1000:g} um from a higher zone's fill where the zones' clearance is larger "
+        "(KiCad's filler lets the clearance rule win over the zones' own)"
+    ]
 
 
 def filler_clearance_nm(board, zones_nm):

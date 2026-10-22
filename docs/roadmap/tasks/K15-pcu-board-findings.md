@@ -2844,7 +2844,7 @@ item-type rules), N06 (`router.java_quirks`).
       `python3 -m pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's release
       dir): 716 passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2).
 
-- [ ] **K15.34 — The plugin's plane cuts keep the clearance KiCad's filler applies.**
+- [x] **K15.34 — The plugin's plane cuts keep the clearance KiCad's filler applies.**
   - **Change:** K15.24's `export_flow.fix_plane_priorities` (`plane_priority.py`) cuts a
     lower-priority plane where a higher-priority zone fills, keeping the zones' clearance
     (0.5 mm on the pcu board) from that zone's fill. KiCad 10.0.7's filler applies the
@@ -2861,6 +2861,67 @@ item-type rules), N06 (`router.java_quirks`).
       graded by KiCad: unconnected not up (45), 0 routing-caused, 0 below-minimum, 0 manufacturing
       breaches; K15.33's comparison again: the `/CH7_NO` margin gone, no KiCad copper newly
       outside the model.
+  - *Done 2026-10-22* (branch from main `48fad8c`; every number is the first seen, before any
+    later measurement):
+    - *Measured* (`target/orchestrator/k1534/exp/run.sh`, `gen.py`, `measure.py`: two 20 x 20 mm
+      zones of nets NA, NB on F.Cu, NB (priority 2) over NA (1), 10 mm overlap, island removal
+      never, refilled by `kicad-cli pcb drc --refill-zones --save-board` 10.0.7; gap from NA's
+      fill to NB's left edge, mm):
+
+      | variant | gap |
+      |---|---|
+      | zones 0.5 / 0.5, no `.kicad_dru` | 0.5055 |
+      | zones 0.2 / 0.5 and 0.5 / 0.2, no rule | 0.5055 (the larger) |
+      | no `(clearance)` line (default 0.5) | 0.5055 |
+      | rule `(constraint clearance (min 0.127mm))` | 0.1325 |
+      | rule 0.127 mm, zones 0.2 / 0.5 | 0.1325 |
+      | rule 0.4 mm, zones 0.5 / 0.5 and 0.2 / 0.2 | 0.4055 |
+      | rule `A.Type == 'Zone'`, 0.127 mm | 0.1325 |
+      | rule on `A.NetName == 'NA'`, 0.3 mm / on a net that is not there | 0.3055 / 0.5055 |
+      | net class clearance 0.9 mm | 0.9055 |
+
+      So zone to zone resolves as zone to track (K15.32): a matching rule replaces the zones'
+      value, up or down, the 5 um over is `m_MaxError`, which `kicad_board._knockout` already adds.
+    - *Change*: `export_flow.dru_clearance_nm` (new; the smallest positive `clearance` constraint of
+      `<board>.kicad_dru` through `kicad_rules`, None for no file, no rule, rules of 0, or an
+      unreadable file, which logs `WARNING: ... unreadable (...); planes cut at the zones'
+      clearance`) feeds `kicad_board.plane_cuts(board, pcbnew, rule_clearance_nm)`, whose
+      `_gap(zone, other, rule_nm)` (`kicad_board.py`, used by `_cut_plane` and `_knockout`) is the
+      smaller of the zones' larger own clearance and the rule value. `fix_plane_priorities`
+      (`export_flow.py`) calls it first and logs the rule line with the cut lines. A rule above
+      the zones' value does not widen the cut (as K15.32's min), nor does a rule of 0; net classes
+      are not read; the cut stays wider than KiCad's fill only where a rule above the zones' value
+      applies.
+    - *Accept 1*: `kicad-plugin/tests/test_plane_clearance.py` (6 tests, the fake pcbnew of
+      `test_plane_priority.py`, zones of 0.5 mm): a 0.127 mm rule cuts the lower plane's edge at
+      14.868 mm (15 - 0.127 - 0.005) and not at 14.495; no rule or a file without a clearance rule
+      14.495 (the zones' 0.5); zones of 0.2 / 0.5 mm 14.495 either way; three unreadable files
+      (unbalanced parentheses, bad UTF-8, a non-numeric `min`) cut at 14.495 with a `WARNING ...
+      b.kicad_dru unreadable ... zones' clearance`; a conditional 0.3 mm rule 14.695, a 0.8 mm rule
+      and a 0 rule 14.495; nothing to cut writes nothing. RED (before the change): 3 failed, 3
+      passed (the three that pass are the "as before" cases); GREEN: 6 passed.
+      `test_plane_priority.py` and `test_pour_clearance.py` pass unchanged.
+    - *Accept 2*: release CLI of this branch (built from `48fad8c` plus the plugin change);
+      `target/orchestrator/k1534/runs/arms.sh` (K15.33's, this tree), plugin defaults, graded by
+      KiCad 10.0.7: unconnected 44 (K15.33: 45; not up), routing-caused none, below-minimum 0,
+      manufacturing 0; router incomplete 12 (17), cleanup 22 vias and 5 traces (23, 7), route
+      163.9 s, session `6a90062c...` (K15.33's `d7dcfd7b`). The plugin cut 13 planes (K15.33's
+      DSN: 28; the 15 left uncut lie within 0.5 mm of a higher zone but overlap it by less than
+      0.127 mm) and logged `planes cut 127 um from a higher zone's fill`; `V_BUS_12V` on
+      V_BUS 11346 -> 8698.42 mm2 (8585 at 0.5 mm).
+    - *K15.33's comparison again*: its probe test (the fill model's pieces) is gone, so this
+      compares the DSN's plane polygons with KiCad's refill of the routed board instead
+      (`exp/fill_dump.py`, `plane_compare.py`, `newly.py`, shapely, slivers under 10 um dropped,
+      the 52 zone-layer pairs that are both a plane and have a fill). KiCad copper outside the DSN
+      plane: K15.33's DSN against its own refill 50 pieces, 165.15 mm2 (`/CH7_NO` F.Cu 0.67 mm2 at
+      (169.89, 111.54): the margin K15.33 named at (169.8, 109.9)); this branch's DSN against its
+      refill 22 pieces, 2.43 mm2, no `/CH7_NO` piece. Both DSNs against this branch's refill:
+      K15.33's 54 pieces, 166.15 mm2, this branch's 22, 2.43 mm2. KiCad copper inside K15.33's
+      plane but outside this branch's: 0 pieces (also at a 1 um sliver floor). The remaining 22
+      pieces (largest 0.96 mm2 `Net-(Q2-D)` F.Cu at (145.91, 42.46), then 0.29 mm2 `/V_INRUSH`)
+      lie outside both DSNs' planes, so they are not this item's: K15.35's. This is a plane
+      comparison, not the fill model's, so the model's own numbers (K15.33's 87 pieces) are not
+      repeated here.
 
 - [ ] **K15.35 — The DSN path's fill model covers KiCad's fill.**
   - **Change:** K15.33's comparison of the cleanup's fill model with KiCad 10.0.7's refill of the

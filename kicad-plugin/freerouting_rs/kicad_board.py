@@ -472,11 +472,20 @@ def _clearance(zone):
     return ZONE_CLEARANCE_NM if value is None else int(value)
 
 
-def _knockout(pcbnew, zone, other, max_error):
-    """`other`'s outlines (not its holes, K15.15's rule) grown by the larger of
-    the two zones' own clearances, rounded as KiCad's zone filler grows a
-    knockout (`ZONE::TransformShapeToPolygon`, ERROR_OUTSIDE)."""
+def _gap(zone, other, rule_nm):
+    """The gap KiCad's filler keeps between `zone`'s fill and `other`'s: the larger of the two
+    zones' own clearances; K15.34: with a `.kicad_dru` clearance rule (`rule_nm`, its smallest
+    positive value, None without one) the smaller of that and the zones' (a matching custom rule
+    replaces the zones' value in KiCad 10.0.7, up or down; the smallest it can apply is cut)."""
     gap = max(_clearance(zone), _clearance(other), 0)
+    return gap if rule_nm is None else min(gap, rule_nm)
+
+
+def _knockout(pcbnew, zone, other, max_error, rule_nm=None):
+    """`other`'s outlines (not its holes, K15.15's rule) grown by the gap between the two zones
+    (`_gap`), rounded as KiCad's zone filler grows a
+    knockout (`ZONE::TransformShapeToPolygon`, ERROR_OUTSIDE)."""
+    gap = _gap(zone, other, rule_nm)
     poly = pcbnew.SHAPE_POLY_SET()
     outline = other.Outline()
     for i in range(outline.OutlineCount()):
@@ -486,7 +495,7 @@ def _knockout(pcbnew, zone, other, max_error):
     return poly
 
 
-def _cut_plane(pcbnew, zone, layer, fillers, max_error):
+def _cut_plane(pcbnew, zone, layer, fillers, max_error, rule_nm=None):
     """The plane of `zone` on `layer` as KiCad fills it: `None` if no higher
     zone of another net takes any of it, else `{"by", "polys", "area_mm2"}`."""
     plane = zone.Outline().CloneDropTriangulation()
@@ -498,10 +507,10 @@ def _cut_plane(pcbnew, zone, layer, fillers, max_error):
             continue
         if not other.HigherPriority(zone):
             continue
-        gap = max(_clearance(zone), _clearance(other), 0) + max_error
+        gap = _gap(zone, other, rule_nm) + max_error
         if _apart(own, _bbox(other.Outline()), gap):
             continue
-        knockout = _knockout(pcbnew, zone, other, max_error)
+        knockout = _knockout(pcbnew, zone, other, max_error, rule_nm)
         area = plane.Area()
         plane.BooleanSubtract(knockout)
         if area - plane.Area() > CUT_MIN_NM2:
@@ -526,14 +535,16 @@ def _copper_layers(board, pcbnew, zone):
     ]
 
 
-def plane_cuts(board, pcbnew):
+def plane_cuts(board, pcbnew, rule_clearance_nm=None):
     """K15.24: one dict per `(plane ...)` of KiCad's DSN export, in its order
     (the board's zones that are no rule area and lie on copper, each on its
     copper layers): `net` and `layer` as the export names them (a netless
     zone's plane is `@:no_net_N`), and `cut`, None where no zone of another net
     higher in KiCad's `ZONE::HigherPriority` takes part of it, else the plane
     as KiCad fills it (`plane_priority`). Every copper zone cuts, the
-    footprints' included; rule areas do not."""
+    footprints' included; rule areas do not. K15.34: `rule_clearance_nm`, the board's
+    `.kicad_dru` smallest clearance rule (`export_flow.dru_clearance_nm`), is the gap where it is
+    smaller than the zones' own."""
     max_error = board.GetDesignSettings().m_MaxError
     board_zones = list(board.Zones())
     zones = [z for z in board_zones if not z.GetIsRuleArea() and z.IsOnCopperLayer()]
@@ -550,7 +561,7 @@ def plane_cuts(board, pcbnew):
                 {
                     "net": net,
                     "layer": _layer_name(board, layer),
-                    "cut": _cut_plane(pcbnew, zone, layer, fillers, max_error),
+                    "cut": _cut_plane(pcbnew, zone, layer, fillers, max_error, rule_clearance_nm),
                 }
             )
     return out

@@ -2383,6 +2383,16 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   (`test_the_lower_plane_leaves_out_the_higher_zones_area`,
   `test_without_an_overlap_of_a_higher_zone_the_dsn_is_byte_identical`,
   `test_kicads_export_of_two_overlapping_zones_through_pcbnew`).
+  K15.34: where the board's `.kicad_dru` has a `clearance` rule the gap is the smaller of the
+  zones' and the rules' smallest positive value (`export_flow.dru_clearance_nm`; KiCad 10.0.7's
+  filler keeps a matching rule's value between two zones' fills, up or down, as between a zone and
+  a track: two 0.5 mm zones, no rule 0.5055 mm, rule 0.127 mm 0.1325 mm, 0.4 mm 0.4055 mm, a rule
+  matching nothing 0.5055 mm). A rule above the zones' clearance or of 0 does not widen the
+  cut, and net classes are not read; an unreadable `.kicad_dru` cuts at the zones' value with a
+  WARNING. A conditional rule counts for every pair of zones, so where its condition does not
+  match (KiCad keeps the zones' value there) the DSN plane is up to the difference wider than
+  KiCad's fill; on the pcu board the one rule is unconditional, so the cut is KiCad's. Pinned by
+  `test_plane_clearance.py`.
 - **The DSN path passes the signal-layer zones' thickness and clearance** (K15.27,
   `export_flow.pour_rule_args`, `kicad_board.signal_pour_rules`, always on under both profiles):
   KiCad's export drops each zone's `min_thickness` and clearance, and the router's cleanup (K15.26)
