@@ -464,7 +464,7 @@ item-type rules), N06 (`router.java_quirks`).
     - *DIVERGENCES:* "The report counts what KiCad counts" and the `-drc` settings line under
       Design rule check, plus "K15.5 same-net vias in pads" under Java quirk switches.
 
-- [ ] **K15.6 — The run stops when nothing routes.**
+- [x] **K15.6 — The run stops when nothing routes.**
   - **Change:** with bug 1 present, the zoned pcu board ran pass after pass at `routed 0`, `failed
     1484`, score 71.03, until its 40-minute timeout. The same placement without zones stopped
     after 18 passes. The investigation could not reproduce it on main `383de4a`: it stopped at pass
@@ -486,6 +486,28 @@ item-type rules), N06 (`router.java_quirks`).
     - a test of the stop on a board where nothing can route, if the rule changes;
     - parity 7 of 7 if `legacy`'s stop rule changes. Java's rule is kept for `legacy` behind a quirk
       if they differ.
+
+  *Done 2026-10-21:* it stops; the stop rule does not change.
+  - **Board.** The committed pcu board (`committed-1b161c7`), made with pcbnew 10.0.7 into an
+    unrouted zoned board: its 6609 tracks removed, its 1022 vias kept, C65 moved to
+    (57.251006, 105.242039) mm, and its zones refilled. Saved as
+    `target/orchestrator/pcu-rev2/k156/zoned.kicad_pcb`, beside the committed `.kicad_pro` and
+    `.kicad_dru`.
+  - **Binary.** `084f3a9` (`target/orchestrator/pcu-rev2/k156/freerouting-rs-084f3a9`). Main
+    `aacdfc2` has no change under `autoroute/`, `quality/`, `board/` or `freerouting-geometry`
+    since then, so this is main before K15.1.
+  - **Command.** `freerouting-rs-084f3a9 -de zoned.kicad_pcb -do outzz.kicad_pcb
+    --router.plane_obstacle_net_classes=Pour1A,Pour3A --router.cleanup.remove_stubs=true
+    --router.copper_to_edge_clearance_um=400 --router.hole_clearance_um=260
+    --router.min_trace_width_um=130 --timeout 20m --progress json`.
+  - **Result.**
+    - The load: `planes: 22`, `wires: 0, vias: 1022`, baseline 1208 unrouted, 213 violations.
+    - 18 passes of 1.5–1.7 s, each `routed 0` with 1208 unrouted; 38178 "could not be
+      created" lines.
+    - It stopped itself with "has not improved enough" after 29.5 s (256 MB).
+  - **The report's own log agrees.** `route_v4`, on `8c952e7`, also stopped after 18 passes;
+    see the "Found" note above. The report's 40-minute run was `route_v5`, a normal route.
+  - No test is added, because the rule is unchanged.
 
 - [x] **K15.7 — Failure messages and the edge-clearance cap name board items.**
   - **Change:**
