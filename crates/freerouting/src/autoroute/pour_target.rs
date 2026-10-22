@@ -108,6 +108,13 @@
 //! it as a per-board option (`RouteOptions.pour_fill_target`, off in both
 //! profiles).
 //!
+//! K15.37 measured it together with `router.pour_fill_contacts` (preregistered,
+//! decided 2026-10-22, "not kept, guard"): over 14 judged `.kicad_pcb` corpus
+//! rows KiCad unconnected went 338 -> 272 against a set noise of 59.34, but
+//! routing-caused DRC went 12 -> 27 and route time 1.95 x (limit 1.25 x), so
+//! the pair stays opt-in too; the plugin offers `pour_fill_contacts` beside
+//! this setting, and K15.41-K15.43 fix the costs and measure again.
+//!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by
 //! `tests/k15_pour_fill_stub.rs::the_route_from_j2_leaves_no_stub_with_the_fill_target`

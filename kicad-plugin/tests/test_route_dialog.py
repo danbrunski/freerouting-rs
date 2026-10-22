@@ -617,3 +617,27 @@ def test_the_fill_target_checkbox_is_saved_and_reaches_the_router(env):
     assert saved["schema"] == 6 and saved["pour_fill_target"] is True
     again = make_dialog("echo")
     assert again.pour_fill_target.GetValue() is True
+
+
+def test_the_fill_contacts_checkbox_is_saved_and_reaches_the_router(env):
+    make_dialog, ui, work = env
+    flag = "--router.pour_fill_contacts=true"
+    dialog = make_dialog("echo")
+    assert dialog.pour_fill_contacts.GetValue() is False
+    assert page_of(dialog.pour_fill_contacts, dialog) is dialog.pages[2]  # Advanced
+    assert dialog.pour_fill_contacts.parent.label == "Flow"
+    assert dialog.pour_fill_contacts.parent is dialog.pour_fill_target.parent
+    assert dialog.pour_fill_contacts.label == "Count each pour island as its own connection"
+    tip = dialog.pour_fill_contacts.tooltip
+    assert "End traces where KiCad fills a pour" in tip
+    assert "338 -> 272" in tip and "47 -> 20" in tip and "40 -> 26" in tip and "12 -> 27" in tip
+    assert "board snapshot" in tip
+    dialog.on_route(None)
+    assert flag not in ui.messages[-1][0].splitlines()
+    dialog.pour_fill_contacts.SetValue(True)
+    dialog.on_route(None)
+    assert flag in ui.messages[-1][0].splitlines()
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == 6 and saved["pour_fill_contacts"] is True
+    again = make_dialog("echo")
+    assert again.pour_fill_contacts.GetValue() is True

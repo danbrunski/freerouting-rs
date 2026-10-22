@@ -473,7 +473,9 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   below-minimum items in all 34 graded arms (pcu 47 -> 49, canary-pwr 40 -> 31, the other
   rows within their bands), so `enhanced` leaves it unset too. The KiCad plugin offers it as a
   per-board checkbox (Advanced tab, Flow group; `RouteOptions.pour_fill_target`, off in both
-  profiles; `tests/test_options.py`, `tests/test_route_dialog.py`).
+  profiles; `tests/test_options.py`, `tests/test_route_dialog.py`). K15.37 measured it with
+  `pour_fill_contacts` (the pair, 338 -> 272 over 14 rows, not kept on routing-caused DRC 12 ->
+  27 and route time 1.95 x; the entry below), so it stays opt-in too.
 - `pour_fill_contacts` (K15.31, `board::pour_contacts`) is a settings field Java does not have,
   unset by default and in both profiles (Java's rule: a conduction area joins every pin and via of
   its net centred in its outline and every trace of its net ending there,
@@ -501,7 +503,20 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `pour_fill_target` alone), 0 routing-caused, route time 163 s -> 175 s and 176 s; canary-pwr's
   (`95882f00`, K15.14's `pcb-off` command) from 40 (27) to 38 (39) and 26 (27) (31 (19) with
   `pour_fill_target` alone), route time 92 s -> 181 s and 153 s, with 1 routing-caused
-  `track_dangling` in the second arm (`/Supervisor/CAN_EN`, no pour net; K15.31's note).
+  `track_dangling` in the second arm (`/Supervisor/CAN_EN`, no pour net; K15.31's note). Not made a
+  default (K15.37, preregistered, decided 2026-10-22: "not kept, guard" for the pair with
+  `pour_fill_target`): over 14 judged `.kicad_pcb` corpus rows (K15.30's set; `pocketsdr-v3-0`,
+  `kit-dev-coldfire-xilinx_5213` and `pcie-active-backplane-pcie-active-backplane-x16-4layer`
+  left out, each arm TIMED_OUT at `--timeout 240` in one or both) KiCad unconnected went 338 ->
+  272 against a set noise of 59.34 (pcu 47 -> 20, canary-pwr 40 -> 26), so the gain holds, but
+  routing-caused DRC went 12 -> 27 (guard 2; `interf_u` 1 -> 7, `moteus-moteus-c1` 4 -> 13,
+  `openmuscle-flexgrid-om-flexgrid-rigid-pcb` 1 -> 2) and route time 1.95 x over the judged rows
+  and the two rows that timed out only with the pair (limit 1.25 x; guard 4), with 0
+  manufacturing breaches and 0 below-minimum items in all 34 graded arms. So `enhanced` leaves
+  it unset too. The KiCad plugin offers it as a per-board checkbox (Advanced tab, Flow group,
+  below `pour_fill_target`'s; `RouteOptions.pour_fill_contacts`, off in both profiles;
+  `tests/test_options.py`, `tests/test_route_dialog.py`). K15.41-K15.43 fix the costs and
+  measure again.
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which

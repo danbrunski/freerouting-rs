@@ -3295,7 +3295,7 @@ item-type rules), N06 (`router.java_quirks`).
     - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2996 passed, 0 failed, 56 ignored.
 
-- [~] **K15.37 — Measure `pour_fill_contacts` with `pour_fill_target` under `enhanced`.**
+- [x] **K15.37 — Measure `pour_fill_contacts` with `pour_fill_target` under `enhanced`.**
   - **Change:** K15.31's first numbers on top of `enhanced` (main `48fad8c`, plugin default
     options, `--max-passes 2 --timeout 240`, KiCad 10.0.7): the pcu board's `.kicad_pcb` route
     goes from KiCad unconnected 47 to 21 with both settings, canary-pwr's from 40 to 26; route time
@@ -3441,9 +3441,30 @@ item-type rules), N06 (`router.java_quirks`).
       (interf_u 6.6 -> 6.7 s, complex_hierarchy 0.2 -> 0.3 s, kit-dev-coldfire 171.1 -> 182.7 s,
       pcie 40.8 -> 43.2 s) and left interf_u's and openmuscle's drc_real at 1, so those costs come
       with `pour_fill_contacts`; moteus's `isolated_copper` rose with the target alone too (3 -> 9).
-    - *Remaining:* Accept 2's outcome (the plugin option above); Accept 3 with it (the outcome
-      changes no engine code: `legacy`'s settings stay unset; the parity check runs in that
-      change's gate).
+    - *Outcome applied 2026-10-22:* the plugin option `RouteOptions.pour_fill_contacts` (off in
+      both profiles; `to_args` adds `--router.pour_fill_contacts=true` only when on; `from_dict`,
+      `from_form`; options file schema stays 6, a file without the key means off), the Advanced
+      tab's Flow group checkbox "Count each pour island as its own connection" (below "End traces
+      where KiCad fills a pour"), whose tooltip says it is meant to be used with that option
+      (alone it finds the open islands but does not route them) and gives the measurement without
+      private board names (338 -> 272 over 14 boards, one board 47 -> 20, another 40 -> 26,
+      routing about 1.7 x as long, three boards with more DRC violations, 12 -> 27 in all; board
+      snapshot input only). DIVERGENCES' `pour_fill_contacts` and `pour_fill_target` entries and
+      the "Not in `enhanced`" docs of `board/pour_contacts.rs` (a new paragraph) and
+      `autoroute/pour_target.rs` carry the numbers; the plugin handover
+      (`docs/development/kicad-plugin.md`) lists the option. K15.41-K15.43 fix the costs and
+      measure again.
+    - *Done 2026-10-22:* (1) the registration was committed before any run: `40c9f7f`, amendment 1
+      `034b6e6`; `cargo test -p freerouting-dev --test prereg_k15_37`: 10 passed. (2) The records
+      and the verdict ("not kept, guard", guards (2) and (4)) are in the note above (`4f7866b`),
+      and the outcome is applied: the option with its tests, RED 5 failed (`test_options.py`
+      3, `test_route_dialog.py` 1, `test_snapshot.py::test_every_k09_option_is_either_checked_or_allowed`
+      1) then GREEN 15 passed on the same selection, and the whole plugin suite 730 passed, 7
+      skipped (pcbnew, canary-pwr board, `KICAD_METADATA_REPO` only). (3) `legacy` unchanged: the
+      change touches no engine code (two module doc comments); `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes`: connection parity PASS, 7 of 7 `[exact]`, 56 s;
+      `cargo test -p freerouting --test settings_defaults`: 9 passed. Gate: `cargo fmt --all
+      --check` clean; `cargo clippy --workspace --all-targets -- -D warnings` clean.
 
 - [x] **K15.38 — The `.kicad_pcb` path's fill model takes the keepouts as KiCad's filler does.**
   - **Change:** K15.35 changed the DSN path only (`Opening::kicad_keepouts` is false for a

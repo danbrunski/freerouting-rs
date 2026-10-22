@@ -453,6 +453,16 @@ class Dialog(wx.Dialog):
             "(KiCad unconnected 370 -> 363): it helped some (one board 40 -> 31) and cost others a "
             "few (the measured power-control board 47 -> 49). Applies to the board snapshot input only."
         )
+        self.pour_fill_contacts = wx.CheckBox(flow_box, label="Count each pour island as its own connection")
+        self.pour_fill_contacts.SetValue(saved.pour_fill_contacts)
+        self.pour_fill_contacts.SetToolTip(
+            "Counts each filled island of a pour as its own piece, so the router connects islands "
+            "that KiCad would leave apart. Meant to be used with \"End traces where KiCad fills a "
+            "pour\": alone it finds the open islands but does not route them. With both on, over 14 "
+            "measured boards KiCad's unconnected count went 338 -> 272 (one board 47 -> 20, another "
+            "40 -> 26), but routing took about 1.7 x as long and three boards had more DRC "
+            "violations (12 -> 27 in all). Applies to the board snapshot input only."
+        )
 
     def add_k10_controls(self, saved, page):
         """The K10 field: what the router reads."""
@@ -543,6 +553,7 @@ class Dialog(wx.Dialog):
             ("", self.pin_escape),
             ("", self.plane_obstacle_all_pours),
             ("", self.pour_fill_target),
+            ("", self.pour_fill_contacts),
         )
         group.Add(labelled_grid(group.GetStaticBox(), rows), 0, wx.EXPAND)
         return group
@@ -610,6 +621,7 @@ class Dialog(wx.Dialog):
         self.pin_escape.SetValue(opts.pin_escape)
         self.plane_obstacle_all_pours.SetValue(opts.plane_obstacle_all_pours)
         self.pour_fill_target.SetValue(opts.pour_fill_target)
+        self.pour_fill_contacts.SetValue(opts.pour_fill_contacts)
         for key, (choice, ids) in self.stage_choices.items():
             if opts.stages.get(key) in ids:
                 choice.SetSelection(ids.index(opts.stages[key]))
@@ -667,6 +679,7 @@ class Dialog(wx.Dialog):
             "pin_escape": self.pin_escape.GetValue(),
             "plane_obstacle_all_pours": self.plane_obstacle_all_pours.GetValue(),
             "pour_fill_target": self.pour_fill_target.GetValue(),
+            "pour_fill_contacts": self.pour_fill_contacts.GetValue(),
         }
 
     def fill_stages_group(self, group, saved):

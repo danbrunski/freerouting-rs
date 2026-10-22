@@ -85,6 +85,16 @@
 //! ([`crate::autoroute::pour_target::fill_tiles`]), the copper the area
 //! stands for.
 //!
+//! **Not in `enhanced`** (K15.37, preregistered, decided 2026-10-22, "not
+//! kept, guard"). With `router.pour_fill_target` as well, over 14 judged
+//! `.kicad_pcb` corpus rows KiCad unconnected went 338 -> 272 against a set
+//! noise of 59.34 (the pcu board 47 -> 20, canary-pwr 40 -> 26), but
+//! routing-caused DRC went 12 -> 27 and route time 1.95 x (limit 1.25 x), with
+//! 0 manufacturing breaches in all 34 graded arms. So the setting is opt-in,
+//! unset in both profiles; the KiCad plugin offers it as a per-board option
+//! (`RouteOptions.pour_fill_contacts`), and K15.41-K15.43 fix the costs and
+//! measure again.
+//!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by `tests/k15_pour_fill_contacts.rs`.
 //!
